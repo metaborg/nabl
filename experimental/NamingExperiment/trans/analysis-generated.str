@@ -1,0 +1,102 @@
+module analysis-generated
+
+imports
+  include/NamingExperiment
+  analysis-library
+
+signature constructors
+
+  Entity   : Namespace
+  Module   : Namespace
+  Property : Namespace
+  Function : Namespace
+  Var      : Namespace
+  
+rules // "generated" scoping rules
+      
+  get-scope-types:
+    Module(_, _) -> [Entity(), Module()]
+  
+  get-scope-types:
+    Entity(_, _) -> [Property(), Function()]
+  
+  get-scope-types:
+    Function(_, _, _) -> [Var()]
+  
+  get-scope-types:
+    Block(_) -> [Var()]
+
+rules // "generated" definition fetching rules
+    
+  get-definition:
+    Module(x, _) -> Def([Module(), x | <IndexPath <+ ![]> Module()])
+  
+  get-definition:
+    Entity(x, _) -> Def([Entity(), x | <IndexPath <+ ![]> Entity()])
+  
+  get-definition:
+    Property(x, _) -> Def([Property(), x | <IndexPath <+ ![]> Property()])
+  
+  get-definition:
+    Function(x, _, _) -> Def([Function(), x | <IndexPath <+ ![]> Function()])
+  
+  get-definition:
+    VarDecl(x, _) -> Def([Var(), x | <IndexPath <+ ![]> Var()])
+  
+  get-definition:
+    VarDeclInit(x, _, _) -> Def([Var(), x | <IndexPath <+ ![]> Var()])
+  
+  get-definition:
+    Param(x, _) -> Def([Var(), x | <IndexPath <+ ![]> Var()])
+   
+  // HACK: would be more or less the same as the above
+  //       e.g. get-definition-key: Module(x, _) -> x 
+  get-definition-key:
+    tree -> subterm
+    where
+      one(
+        where(
+          ?_{<id>};
+          ?[_ | _];
+          not(?[Unresolved(_) | _])
+        );
+        ?subterm
+      )
+
+rules // "generated" uri annotation rules
+    
+  annotate-use(|namespace):
+    t -> t{[Unresolved(namespace), t | <IndexPath <+ ![]> namespace]}
+    
+  annotate-names(|def-path):
+    Module(t1, t2) -> Module(t1{def-path}, t2)
+    
+  annotate-names(|def-path):
+    Entity(t1, t2) -> Entity(t1{def-path}, t2)
+    
+  annotate-names(|def-path):
+    Property(t1, t2) -> Property(t1{def-path}, <annotate-use(|Entity())> t2)
+    
+  annotate-names(|def-path):
+    Function(t1, t2, t3) -> Function(t1{def-path}, t2, t3)
+    
+  annotate-names(|def-path):
+    Param(t1, t2) -> Param(t1{def-path}, <annotate-use(|Entity())> t2)
+    
+  annotate-names(|def-path):
+    VarDecl(t1, t2) -> VarDecl(t1{def-path}, <annotate-use(|Entity())> t2)
+    
+  annotate-names(|def-path):
+    VarDeclInit(t1, t2, t3) -> VarDeclInit(t1{def-path}, <annotate-use(|Entity())> t2, t3)
+    
+  annotate-names(|def-path):
+    Assign(t1, t2) -> Assign(<annotate-use(|Var())> t1, t2)
+    
+  annotate-names(|def-path):
+    Var(t1) -> Var(<annotate-use(|Var())> t1)
+    
+  annotate-names(|def-path):
+    PropAccess(t1, t2) -> PropAccess(t1, <annotate-use(|Property())> t2)
+
+  annotate-names(|def-path):
+    Call(t1, t2) -> Call(<annotate-use(|Function())> t1, t2)

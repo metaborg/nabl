@@ -1,0 +1,103 @@
+module test1 
+
+language NamingExperiment
+
+setup [[
+  module M
+    
+  entity A {
+    x : B
+  }
+]]
+
+test Unknown type Q [[
+  entity B {
+    q : Q
+  }
+]] 1 error
+
+test Resolve local property access [[
+  entity B {
+    x : A
+    f() {
+      var v : A = x
+    }
+  }
+]] resolves x#3 to x#2
+
+test Resolve parameter access [[
+  entity B {
+    x : A
+    f(x : A) {
+      var v : A = x
+    }
+  }
+]] resolves x#4 to x#3
+
+test Resolve property access [[
+  entity B {
+    y : A
+    f(a : A) {
+      var v : A = a.x.y.x
+    }
+  }
+]]
+
+test Resolve property access fails [[
+  entity B {
+    y : A
+    f(a : A) {
+      var v : A = a.x.y.x.x
+    }
+  }
+]] 1 error
+
+test Resolve function call [[
+  entity B {
+    f(a : A) {
+      var v : A = f(a)
+    }
+  }
+]]
+
+test Resolve property access fails [[
+  entity B {
+    b : B
+    f(a : A) {
+      var v : A = f(b) 
+    }
+  }
+]] 1 error
+
+test Def before use allowed [[
+  entity B {
+    c : C
+  }
+  entity C {}
+]]
+
+test Def before use error [[
+  entity B {
+    f() {
+      var v : A = w
+      var w : A
+    }
+  }
+]] 1 error
+
+
+/* TODO: following tests fail because of a limitation in the resolver interface...
+
+test Resolve local entity [[
+  entity B {
+    x : B 
+  }
+]] resolves B#2 to B#1
+
+// fails
+test Resolve setup entity [[
+  entity B {
+    x : A
+  }
+]] resolves A#2 to A#1
+*/

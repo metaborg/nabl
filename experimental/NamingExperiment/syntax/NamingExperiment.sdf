@@ -1,0 +1,32 @@
+module NamingExperiment
+
+imports Common 
+ %% SPX
+
+exports
+    
+context-free start-symbols
+
+  Start
+
+context-free syntax
+
+  
+    "module" ID Definition*     -> Start {cons("Module"), scope(Entity), scope(Module)}
+    "entity" ID "{" Member* "}" -> Definition {cons("Entity"), scope(Property)}
+    "import" STRING              -> Definition {cons("Import")}
+    
+    ID ":" ID            -> Member {cons("Property")}
+
+
+    ID "(" { Param "," }* ")" Stm -> Member {cons("Function"), scope(Var)}
+    ID ":" ID           -> Param {cons("Param")}
+    
+    ID "(" {Exp ","}* ")"     -> Exp {cons("Call")}
+    "var" ID ":" ID                 -> Stm {cons("VarDecl")}
+    "var" ID ":" ID "=" Exp            -> Stm {cons("VarDeclInit")}
+    ID "=" Exp                     -> Stm {cons("Assign")}
+    ID                             -> Exp {cons("Var")}         %% or, could be an Entity!
+    %% AMB: ID                  -> Exp {cons("EntityRef")
+    Exp "." ID                -> Exp {cons("PropAccess"), left}
+    "{" Stm* "}"                     -> Stm {cons("Block"), scope(Var)}

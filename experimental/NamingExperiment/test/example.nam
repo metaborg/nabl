@@ -1,0 +1,16 @@
+module M
+
+// Example "NamingExperiment" program (see syntax/NamingExperiment.sdf for the grammar)
+
+entity A {
+  x : B
+}
+
+entity B {
+  y : A
+  f(a : A) {
+      var v : A = a.x.y.x.x // bad: x
+      v = y
+      v = f(v)
+  }
+}

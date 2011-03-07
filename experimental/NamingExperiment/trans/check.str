@@ -1,0 +1,99 @@
+module check
+
+imports
+  libstratego-lib
+  include/NamingExperiment
+  lib/editor-common.generated
+  analysis-library
+  analysis-generated
+  types
+
+rules
+
+  constraint-error:
+    x{[Unresolved(t) | _]} ->
+    (x, $[Unable to resolve [x]])
+  
+  constraint-error:
+    x -> (x, $[Use before definition])
+    where
+      namespace := <index-namespace> x;
+      <is-ordered-namespace> namespace
+    where
+      def  := <index-lookup> x;
+      def' := <index-get-term> def // TODO: don't use index-get-term
+    where
+      // TODO: use origin-offset / offsets in index data
+      <gt> (<origin-line> def', <origin-line> x)
+    <+
+      <gt> (<origin-column> def', <origin-column> x)
+  
+  constraint-error:
+    def -> (def, $[Duplicate definition])
+    where
+      x    := <get-definition-key> def;
+      def' := <index-lookup> x;
+      fail // TODO: something with origin-offset / offsets in index data
+  
+  is-ordered-namespace:
+    Var() -> Var()
+    
+  constraint-error:
+    Call(f, a*) -> (f, $[Illegal argument types, expected [<write-to-string> param-types] not [<write-to-string> arg-types]])
+    where
+      arg-types   := <map(type-of)> a*;
+      def         := <index-lookup> f;
+      param-types := <index-get-data(|ParamTypes())> def;
+      not(
+        <is-params-compatible(|arg-types)> def
+      )
+  
+  constraint-warning = fail
+  constraint-note = fail
+
+/*
+
+  // Analysis: does a topdown traversal of the tree,
+  // and tries to apply the record-entity rule.
+  analyze:
+    t -> t
+    with
+      <topdown(try(record-entity))> t
+
+  // Records the definition of an entity in a dynamic rule GetEntity.
+  record-entity:
+    Entity(x, body) -> Entity(x, body)
+    with
+      // For a name 'x', GetEntity will return the original 'x' tree node
+      rules(
+        GetEntity :+ x -> x
+      )
+*/
+rules
+    /*
+  // Reports an error if a property type is undefined.
+  // This error is reported on the type name 'type'.
+  constraint-error:
+    Property(x, Type(type)) -> (type, $[Type [type] is not defined])
+    where
+      not(!type => "String"); // String and Int are built-in types
+      not(!type => "Int");
+      not(<lookup-one> type) // no entity for this type
+  
+  // Reports an error if an entity is defined more than once.
+  // This constraint is implemented by testing if the "bag" of
+  // all entities x is not a singleton list.
+  constraint-error:
+    Entity(x, _) -> (x, $[Duplicate entity name])
+    where
+      not(<lookup-all-Entity> x => [_])
+  
+  constraint-warning:
+    Entity(x, _) -> (x, $[Entity names must start with a capital])
+    where
+      not(<string-starts-with-capital> x)
+  
+  constraint-note:
+    Module(x @ "example", _) -> (x, $[This is just an example program in the "entities" language
+                                      (this note is defined in trans/check.str) ])
+*/

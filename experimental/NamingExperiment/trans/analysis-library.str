@@ -1,0 +1,338 @@
+module analysis-library
+
+imports
+  include/NamingExperiment
+  libstratego-lib
+  types
+  lib/editor-common.generated
+  analysis-generated
+
+signature constructors
+
+  // Index elements:
+  Def     : List(UriPart) -> Summary
+  Use     : List(UriPart) * List(UriPart) -> Summary
+  BadUse  : List(UriPart) -> Summary
+  DefData : DefDataType * List(UriPart) * Term -> Summary
+  
+  // URI header:
+  Namespace      : UriPart
+  Unresolved     : Namespace -> UriPart
+  INTERNAL_ERROR : UriPart
+  
+  // Remainder of URI:
+  String : UriPart
+  Anon   : Int -> UriPart
+  Anon   : UriPart
+
+rules // extension points
+  
+  // Should return list of Def(_) and/or [namespace | path]
+  adjust-index-lookup(is-use |namespace, path) = fail
+  
+  // adjust-index-select(|namespace, path, use) = fail // (e.g., for imports)
+  
+  // Should call <store-results> on a (list of) DefData 
+  adjust-index-def-data(store-results |namespace, path) = fail
+  
+  // Should return a path
+  adjust-index-path(is-def |namespace, path) = fail
+  
+  // adjust-index-path-from-filesystem(|project-path, path)
+
+rules // analysis traversals
+   
+  analyze-top:
+    ast -> (ast5, defs, uses, data)
+    with
+      {| CurrentAnalysisAst:
+        rules(
+          CurrentAnalysisAst := ast
+        );
+        (ast2, defs) := <analyze-defs(|Anon(), Anon())> ast;
+        <index-summary-parts> defs;
+        ast3         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
+        <index-tree-terms> ast3;
+        data         := <analyze-tree-data> ast3;
+        <index-summary-parts> data;
+        // TODO: resolve any URIs in index data at this point? or re-index data after uses analysis?
+        (ast4, uses) := <analyze-uses> ast3;
+        ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4
+      |}
+  
+  /**
+   * Identifies all definitions in the tree
+   * and annotates them with their URI.
+   * Also annotates uses with a preliminary "Unresolved(_)" URI.
+   */
+  analyze-defs(|head-scope, head-scope-ns):
+    ast -> (ast', defs')
+    with
+      if def := <get-definition> ast then
+        Def(def-path)                     := def;
+        [head-scope-ns', head-scope' | _] := def-path
+      else
+        def-path       := INTERNAL_ERROR();
+        head-scope-ns' := head-scope-ns;
+        head-scope'    := head-scope
+      end;
+      if scope-types := <get-scope-types> ast then
+        {| IndexPath:
+          <list-loop(update-index-path(|head-scope', head-scope-ns', ast))> scope-types;
+          // <balanced-update-path> head-scope';
+          (ast', defs) := <analyze-defs-recurse(|Anon(), Anon(), def-path)> ast
+        |}
+      else
+        (ast', defs) := <analyze-defs-recurse(|head-scope', head-scope-ns', def-path)> ast
+      end;
+      defs' := <![def | defs] <+ !defs>
+  
+  analyze-defs-recurse(|head-scope, head-scope-ns, def-path):
+    ast -> (ast'', defs)
+    where
+      analyzed      := <all(analyze-defs(|head-scope, head-scope-ns))> ast;
+      (ast', defs)  := <unzip-analyzed> analyzed;
+      ast''         := <try(annotate-names(|def-path))> ast'
+  
+  update-index-path(|head-scope, head-scope-ns, ast):
+    scope-type -> scope-type
+    where
+      if !head-scope-ns => Anon() then
+        path  := <IndexPath <+ ![]> scope-type;
+        path' := <do-adjusted-index-path(|scope-type, path, Anon(<new>))> ast
+      else
+        path  := <IndexPath <+ ![]> head-scope-ns;
+        path' := <do-adjusted-index-path(|scope-type, path, head-scope)> ast
+      end;
+      rules(IndexPath: scope-type -> path')
+  
+  /* TODO: consider using simple-update-def-path
+   *       which uses "balanced" path scopes
+   *       e.g. when Entity doesn't scope Function
+   *       then it's hard to access properties from a function
+  balanced-update-index-path:
+    head-scope -> head-scope
+    where
+      if !head-scope => Anon() then
+        head-scope' := Anon(<new>)
+      else
+        head-scope' := head-scope
+      end;
+      (something with do-adjust-path)
+      rules(IndexPath := [head-scope' | <IndexPath <+ ![]> ()])
+  */
+  
+  /**
+   * Analyze all uses, changing their preliminary
+   * "Unresolve(_)" URI to a definite URI of their definition. 
+   */
+  analyze-uses:
+    ast -> (ast'', uses')
+    with
+      analyzed     := <all(analyze-uses)> ast;
+      (ast', uses) := <unzip-analyzed> analyzed;
+      if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
+        if Def(path') := <index-lookup(id |namespace, path)> ast' then
+          ast'' := ast{path'};
+          uses' := [Use([namespace | path], path') | uses]
+        else
+          ast'' := ast';
+          uses' := [BadUse(unresolved) | uses]
+        end
+      else
+        ast'' := ast';
+        uses' := uses
+      end
+  
+  /**
+   * Collects all index data (e.g., types of definitions).
+   */
+  analyze-tree-data:
+    tree -> data
+    where
+      set := <new-iset>;
+      <topdown(analyze-tree-data-part(|set))> tree;
+      data := <iset-elements> set
+  
+  analyze-tree-data-part(|set):
+    tree -> tree
+    where
+      if def-term := <get-definition-key> then
+        _{[namespace | path]} := def-term;
+        if result := <adjust-index-def-data(store-index-data-results(|set) |namespace, path)> tree then
+          <fatal-err(|"Unexpected result from adjust-index-def-data; should call <store-results>")> result
+        end
+      end
+  
+  store-index-data-results(|set):
+    t -> <fail>
+    where
+      if is-list then
+        <iset-addlist(|t)> set
+      else
+        <iset-add(|t)> set
+      end
+  
+  /**
+   * Transforms a term C( (a1, [b1]), (a2, [b2, b3]) )
+   * to a tuple (C(a1, a2), [b1, b2, b3]).
+   */
+  unzip-analyzed:
+    appl -> (appl', unzipped-parts)
+    with
+      appl'          := <all(\(a, _) -> a\)> appl;
+      unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
+
+rules // index construction
+  
+  // TODO: optimize: use hashtables instead of dynamic rules
+    
+  index-summary-parts =
+    list-loop(index-summary-part)
+  
+  index-summary-part:
+    Def(uri @ [namespace, name | path]) -> <id>
+    where
+      parent-uri := [namespace | path];
+      rules(IndexedDef :+ parent-uri -> Def(uri))
+
+  index-summary-part:
+    DefData(kind, uri, contents) -> <id>
+    where
+      rules(IndexedDefData: (kind, uri) -> contents)
+
+  index-tree-terms:
+    tree -> tree
+    where
+      if def-term{uri} := <get-definition-key> then
+        def := Def(uri);
+        rules(
+          IndexedTerm: uri -> tree
+        )
+      end;
+      <all(index-tree-terms)> tree
+
+rules // index API
+
+  index-get-term =
+    with(?Def(uri) | "Def expected"); <IndexedTerm> uri
+  
+  index-get-data(|kind) =
+    with(?Def(uri) | "Def expected"); <IndexedDefData> (kind, uri)
+
+  index-namespace:
+    x{[namespace | path]} -> <index-namespace-unwrap> namespace
+
+  index-path:
+    x{[namespace | path]} -> path'
+    where
+      if !namespace => Unresolved(namespace) then
+        Def(path') := <index-lookup> 
+      else
+        path' := path
+      end
+
+  index-lookup:
+    x{[namespace | path]} -> <index-lookup(id |<index-namespace-unwrap> namespace, path)>
+
+  index-lookup(is-adjust-lookup-enabled |namespace, path):
+    x -> def
+    where
+      candidates  := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path)>;
+      result-path := <index-select(|namespace, path, x)>
+    <+
+      // TODO: optimize: try not to call do-adjust-index-lookup from here
+      [_ | path'] := path;
+      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path')> x
+
+  index-lookup-one-level:
+    x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path)>
+  
+  index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path):
+    x -> defs
+    with
+      is-adjusted-lookup-enabled;
+      do-adjusted-index-lookup(|namespace, path, x);
+      debug(!"adjustedio");
+      mapconcat(\Def(p) -> [Def(p)]\
+          <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path')> x\
+          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
+      ?defs
+    <+
+      defs := <bagof-IndexedDef <+ ![]> [namespace | path]
+
+  index-lookup-all-levels:
+    x{[namespace | path]} -> <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path)>
+  
+  index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path):
+    x -> all-defs
+    with
+      is-adjust-lookup-enabled;
+      do-adjusted-index-lookup(|namespace, path, x);
+      mapconcat(\Def(p) -> [Def(p)]\
+          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path')> x\
+          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
+      ?all-defs
+    <+
+      one-level := <bagof-IndexedDef <+ ![]> [namespace | path];
+      if [_ | path'] := path then
+        all-defs := <concat> [one-level, <index-lookup-all-levels(fail |namespace, path')> x]
+      else
+        all-defs := one-level
+      end
+
+  index-lookup-contained(|namespace):
+    x{[ns | path]} -> defs
+    where
+      if !ns => Unresolved(_) then
+        Def([_ | def-path]) := <index-lookup>;
+        defs := <index-lookup-one-level(id|namespace, def-path)> x 
+      else
+        defs := <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path)>
+      end
+
+  index-lookup-contained-all-levels(|namespace):
+    x{[ns | path]} -> defs
+    where
+      if !ns => Unresolved(_) then
+        Def([_ | def-path]) := <index-lookup>;
+        defs := <index-lookup-all-levels(id|namespace, def-path)> x
+      else
+        defs := <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path)>
+      end
+  
+  index-lookup-container(|namespace):
+    x{[ns | path]} -> def
+    where
+      def := ();
+      fatal-err(|"Not implemented")
+
+  index-namespace-unwrap =
+    \Unresolved(n) -> n\ <+ id
+  
+  do-adjusted-index-lookup(|namespace, path, use) =
+    // UNDONE: try(origin-term);
+    repeat-until(
+      prim("SSL_EXT_get_parent", <id>)
+    , adjust-index-lookup(origin-equal(|use) |namespace, path)
+    )
+
+  index-select(|namespace, path, use) =
+    getfirst(
+      where(
+        ?Def([_, <SRTS-EXT-eq-ignore-annos(|use)> | _])
+      )
+    )
+  
+  do-adjusted-index-path(|namespace, path, def) =
+    adjust-index-path(origin-equal(|def) |namespace, path)
+  <+
+    ![def | path]
+  
+  index-eq(|namespace, expected) =
+    where(
+      ?Def([_, name | _]);
+      <SRTS-EXT-eq-ignore-annos(|expected)> name
+    )
+  
+  external SRTS-EXT-eq-ignore-annos(|t)

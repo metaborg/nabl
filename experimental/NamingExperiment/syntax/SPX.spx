@@ -1,0 +1,87 @@
+//package foo
+
+module example2
+
+context-free syntax
+
+  
+    "module" Module@=ID Definition*     -> Start {"Module", scope(Entity, Module)}
+    "entity" Entity@=ID "{" Member* "}" -> Definition {"Entity", scope(Property, Function)}
+    "import" Module@STRING              -> Definition {"Import"}
+    
+    Property@=ID ":" Entity@ID          -> Member {"Property"}
+
+
+    ID "(" { Param "," }* ")" Stm -> Member {"Function", scope(Var)}
+    Var@=ID ":" Entity@ID           -> Param {"Param"}
+    
+    Function@ID "(" {Exp ","}* ")"      -> Exp {"Call"}        %% or, could be an Entity 
+    "var" Var@=ID ":" Entity@ID         -> Stm {"VarDecl"}
+    "var" Var@=ID ":" Entity@ID "=" Exp -> Stm {"VarDeclInit"}
+    Var@ID "=" Exp                      -> Stm {"Assign"}
+    Var@ID                              -> Exp {"Var"}         %% or, could be a Property!
+    Entity
+    Exp "." Property@ID                 -> Exp {"PropAccess", left}
+    "{" Stm* "}"                        -> Stm {"Block", scope(Var)}
+
+/*
+attributes
+  
+  def PropAccess(e, p):
+    p.Property = e->Property
+  
+  def Import(i):
+    i.Entity += i->Property
+
+rules
+  
+  get-table-Property:
+    exp -> table
+  where
+    <type-of> exp => CLASS(t);
+    <get-table(|"Property")> t
+
+attributes
+
+  def PropAccess(e, p):
+    p.scope-Property := x
+      
+      
+
+/*
+types
+
+  
+  ================================
+  PropAccess(e, p) & e : ENTITY(x)
+
+
+
+/*
+
+possible warnings/errors:
+  - no scope for Function
+  - no definition site for Function
+  - no use sites for Function(?) 
+  - more than one def site defined (problem for naming scopes!)
+  - scope defined on injection
+  - ambiguous scope type (two prods with same syntactic lhs)
+  - inconsistent syntactic sort for definition (=tricky for composition...)
+*/
+
+/*
+scopes
+
+  @Var: //  ordered unique non-shadowing scope Var:
+    Function //(_, _)
+    Block //(_)
+    
+  @Entity: // unordered unique scope
+    Module //(_)
+    
+  @Property: // unordered unique scope
+    Entity //(_, _)
+    
+    unordered unique scope Function:
+      Module(_)
+*/
