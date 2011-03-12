@@ -85,6 +85,31 @@ test Def before use error [[
   }
 ]] 1 error
 
+test Shadowing of property (allowed) [[
+  entity B {
+    a : A
+    f() {
+      var a : A
+    }
+  }
+]]
+
+test Shadowing of var (not allowed) [[
+  entity B {
+    f() {
+      var a : A
+      { 
+        var a : A
+      }
+    }
+  }
+]] 1 error
+
+test Duplicate entity [[
+  entity B {}
+  entity B {}
+]] 1 error
+
 
 /* TODO: following tests fail because of a limitation in the resolver interface...
 

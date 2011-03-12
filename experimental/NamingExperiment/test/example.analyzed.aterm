@@ -1,0 +1,114 @@
+( Module(
+    "M"{[Module(), "M"]}
+  , [ Entity("A"{[Entity(), "A", "M"]}, [Property("x"{[Property(), "x", "A", "M"]}, "B"{[Entity(), "B", "M"]})])
+    , Entity(
+        "B"{[Entity(), "B", "M"]}
+      , [ Property("y"{[Property(), "y", "B", "M"]}, "A"{[Entity(), "A", "M"]})
+        , Function(
+            "f"{[Function(), "f", "B", "M"]}
+          , [Param("a"{[Var(), "a", "f", "B", "M"]}, "A"{[Entity(), "A", "M"]})]
+          , Block(
+              [ VarDeclInit(
+                  "v"{[Var(), "v", Anon("l_2201"), "f", "B", "M"]}
+                , "B"{[Entity(), "B", "M"]}
+                , PropAccess(
+                    PropAccess(PropAccess(PropAccess(Var("a"{[Var(), "a", "f", "B", "M"]}), "x"{[Property(), "x", "A", "M"]}), "y"{[Property(), "y", "B", "M"]}), "x"{[Property(), "x", "A", "M"]})
+                  , "x"{[Unresolved(Property()), "x", "B", "M"]}
+                  )
+                )
+              , Assign("v"{[Var(), "v", Anon("l_2201"), "f", "B", "M"]}, Var("y"{[Property(), "y", "B", "M"]}))
+              , Assign("v"{[Var(), "v", Anon("l_2201"), "f", "B", "M"]}, Call("f"{[Function(), "f", "B", "M"]}, [Var("v"{[Var(), "v", Anon("l_2201"), "f", "B", "M"]})]))
+              , VarDecl("v"{[Var(), "v", Anon("l_2201"), "f", "B", "M"]}, "B"{[Entity(), "B", "M"]})
+              ]
+            )
+          )
+        ]
+      )
+    ]
+  )
+, [ Def([Module(), "M"])
+  , Def([Entity(), "A", "M"])
+  , Def([Property(), "x", "A", "M"])
+  , Def([Entity(), "B", "M"])
+  , Def([Property(), "y", "B", "M"])
+  , Def([Function(), "f", "B", "M"])
+  , Def([Var(), "a", "f", "B", "M"])
+  , Def(
+      [Var(), "v", Anon("l_2201"), "f", "B", "M"]
+    )
+  , Def(
+      [Var(), "v", Anon("l_2201"), "f", "B", "M"]
+    )
+  ]
+, [ Use([Entity(), "M"], [Entity(), "B", "M"])
+  , Use([Entity(), "M"], [Entity(), "A", "M"])
+  , Use([Entity(), "M"], [Entity(), "A", "M"])
+  , Use([Entity(), "M"], [Entity(), "B", "M"])
+  , Use(
+      [Var(), Anon("l_2201"), "f", "B", "M"]
+    , [Var(), "a", "f", "B", "M"]
+    )
+  , Use(
+      [Property(), "B", "M"]
+    , [Property(), "x", "A", "M"]
+    )
+  , Use(
+      [Property(), "B", "M"]
+    , [Property(), "y", "B", "M"]
+    )
+  , Use(
+      [Property(), "B", "M"]
+    , [Property(), "x", "A", "M"]
+    )
+  , BadUse([Unresolved(Property()), "x", "B", "M"])
+  , Use(
+      [Var(), Anon("l_2201"), "f", "B", "M"]
+    , [Var(), "v", Anon("l_2201"), "f", "B", "M"]
+    )
+  , Use(
+      [Var(), Anon("l_2201"), "f", "B", "M"]
+    , [Property(), "y", "B", "M"]
+    )
+  , Use(
+      [Var(), Anon("l_2201"), "f", "B", "M"]
+    , [Var(), "v", Anon("l_2201"), "f", "B", "M"]
+    )
+  , Use(
+      [Function(), "B", "M"]
+    , [Function(), "f", "B", "M"]
+    )
+  , Use(
+      [Var(), Anon("l_2201"), "f", "B", "M"]
+    , [Var(), "v", Anon("l_2201"), "f", "B", "M"]
+    )
+  , Use([Entity(), "M"], [Entity(), "B", "M"])
+  ]
+, [ DefData(Type(), [Entity(), "A", "M"], ENTITY("A"{[Entity(), "A", "M"]}))
+  , DefData(
+      Type()
+    , [Property(), "x", "A", "M"]
+    , ENTITY("B"{[Unresolved(Entity()), "B", "M"]})
+    )
+  , DefData(Type(), [Entity(), "B", "M"], ENTITY("B"{[Entity(), "B", "M"]}))
+  , DefData(
+      Type()
+    , [Property(), "y", "B", "M"]
+    , ENTITY("A"{[Unresolved(Entity()), "A", "M"]})
+    )
+  , DefData(
+      ParamTypes()
+    , [Function(), "f", "B", "M"]
+    , [ENTITY("A"{[Unresolved(Entity()), "A", "M"]})]
+    )
+  , DefData(
+      Type()
+    , [Var(), "a", "f", "B", "M"]
+    , ENTITY("A"{[Unresolved(Entity()), "A", "M"]})
+    )
+  , DefData(
+      Type()
+    , [Var(), "v", Anon("l_2201"), "f", "B", "M"]
+    , ENTITY("B"{[Unresolved(Entity()), "B", "M"]})
+    )
+  ]
+)

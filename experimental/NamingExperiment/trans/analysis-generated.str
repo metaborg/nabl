@@ -48,20 +48,27 @@ rules // "generated" definition fetching rules
   
   get-definition:
     Param(x, _) -> Def([Var(), x | <IndexPath <+ ![]> Var()])
-   
-  // HACK: would be more or less the same as the above
-  //       e.g. get-definition-key: Module(x, _) -> x 
+    
   get-definition-key:
-    tree -> subterm
-    where
-      one(
-        where(
-          ?_{<id>};
-          ?[_ | _];
-          not(?[Unresolved(_) | _])
-        );
-        ?subterm
-      )
+    Module(x, _) -> x
+  
+  get-definition-key:
+    Entity(x, _) -> x
+  
+  get-definition-key:
+    Property(x, _) -> x
+  
+  get-definition-key:
+    Function(x, _, _) -> x
+  
+  get-definition-key:
+    VarDecl(x, _) -> x
+  
+  get-definition-key:
+    VarDeclInit(x, _, _) -> x
+  
+  get-definition-key:
+    Param(x, _) -> x
 
 rules // "generated" uri annotation rules
     

@@ -14,6 +14,8 @@ signature constructors
   Use     : List(UriPart) * List(UriPart) -> Summary
   BadUse  : List(UriPart) -> Summary
   DefData : DefDataType * List(UriPart) * Term -> Summary
+
+  // TODO: add a new constructor for URI header/path separation?
   
   // URI header:
   Namespace      : UriPart
@@ -238,12 +240,25 @@ rules // index API
   index-lookup(is-adjust-lookup-enabled |namespace, path):
     x -> def
     where
-      candidates  := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path)>;
-      result-path := <index-select(|namespace, path, x)>
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path)>;
+      def        := <index-select(|namespace, path, x)>
     <+
       // TODO: optimize: try not to call do-adjust-index-lookup from here
       [_ | path'] := path;
       def         := <index-lookup(is-adjust-lookup-enabled |namespace, path')> x
+
+  index-lookup-outermost:
+    x{[namespace | path]} -> <index-lookup-outermost(id |<index-namespace-unwrap> namespace, path)>
+
+  index-lookup-outermost(is-adjust-lookup-enabled |namespace, path):
+    x -> def
+    where
+      // TODO: optimize: just like index-lookup
+      [_ | path'] := path;
+      def         := <index-lookup-outermost(is-adjust-lookup-enabled |namespace, path')> x
+    <+
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path)>;
+      def        := <index-select(|namespace, path, x)>
 
   index-lookup-one-level:
     x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path)>
@@ -253,7 +268,6 @@ rules // index API
     with
       is-adjusted-lookup-enabled;
       do-adjusted-index-lookup(|namespace, path, x);
-      debug(!"adjustedio");
       mapconcat(\Def(p) -> [Def(p)]\
           <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path')> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
@@ -305,7 +319,7 @@ rules // index API
     x{[ns | path]} -> def
     where
       def := ();
-      fatal-err(|"Not implemented")
+      fatal-err(|"Not implemented") // TODO: index-lookup-container
 
   index-namespace-unwrap =
     \Unresolved(n) -> n\ <+ id

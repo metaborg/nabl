@@ -10,6 +10,8 @@ imports
 
 rules
 
+  // TODO: don't use index-get-term, but store offsets in the index
+
   constraint-error:
     x{[Unresolved(t) | _]} ->
     (x, $[Unable to resolve [x]])
@@ -21,25 +23,22 @@ rules
       <is-ordered-namespace> namespace
     where
       def  := <index-lookup> x;
-      def' := <index-get-term> def // TODO: don't use index-get-term
+      def' := <index-get-term> def
     where
-      // TODO: use origin-offset / offsets in index data
-      <gt> (<origin-line> def', <origin-line> x)
-    <+
-      <gt> (<origin-column> def', <origin-column> x)
+      <gt> (<origin-offset> def', <origin-offset> x)
   
   constraint-error:
     def -> (def, $[Duplicate definition])
     where
-      x    := <get-definition-key> def;
-      def' := <index-lookup> x;
-      fail // TODO: something with origin-offset / offsets in index data
+      def-child  := <get-definition-key> def;
+      def'       := <index-get-term> <index-lookup-outermost> def-child;
+      not(<origin-equal(|def)> def')
   
   is-ordered-namespace:
     Var() -> Var()
     
   constraint-error:
-    Call(f, a*) -> (f, $[Illegal argument types, expected [<write-to-string> param-types] not [<write-to-string> arg-types]])
+    Call(f, a*) -> (f, $[Illegal argument types, expected [<strip-annos; write-to-string> param-types] not [<strip-annos; write-to-string> arg-types]])
     where
       arg-types   := <map(type-of)> a*;
       def         := <index-lookup> f;
@@ -50,6 +49,9 @@ rules
   
   constraint-warning = fail
   constraint-note = fail
+
+  origin-offset =
+    prim("SSL_EXT_origin_offset", <id>) => (<id>, _)
 
 /*
 

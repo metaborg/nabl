@@ -39,7 +39,17 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       filename := <guarantee-extension(|"aterm")> path;
-      result   := selected // we just return the input term
+      result   := <desugar-top> selected // we just return the input term
+  
+    desugar-top =
+      alltd(desugar);
+      where(oncetd(?PropAccess(_, _); debug(!"to:"); origin-term; debug(!"was:")))
+
+    desugar:
+      Function(x, a, body) -> Function(PropAccess(m,x), a, body)
+      where
+        m := "something different"
+
   
   // Prints the abstract syntax ATerm of a selection.
   generate-analyzed:
