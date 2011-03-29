@@ -2,7 +2,7 @@ module test1
 
 language NamingExperiment
 
-setup [[
+setup Header [[
   module M
     
   entity A {
@@ -14,34 +14,35 @@ test Unknown type Q [[
   entity B {
     q : Q
   }
-]] 1 error
+]] => _ // Entity(_, _) //1 error
 
 test Resolve local property access [[
   entity B {
-    x : A
+    [[x]] : A
     f() {
-      var v : A = x
+      var v : A = [[x]]
     }
   }
-]] resolves x#3 to x#2
+]] resolves #2 to #1
+// TODO: occurrence highlighting, ref resolv, lang-specific identifiers?
 
 test Resolve parameter access [[
   entity B {
     x : A
-    f(x : A) {
-      var v : A = x
+    f([[x]] : A) {
+      var v : A = [[x]]
     }
   }
-]] resolves x#4 to x#3
+]] resolves #2 to #1
 
 test Resolve property access [[
   entity B {
-    y : A
+    yyyyy : A
     f(a : A) {
-      var v : A = a.x.y.x
+      var v : A = a.x.y
     }
   }
-]]
+]] //completes y to yyyyz
 
 test Resolve property access fails [[
   entity B {
