@@ -14,7 +14,7 @@ test Unknown type Q [[
   entity B {
     q : Q
   }
-]] => _ // Entity(_, _) //1 error
+]] 1 error
 
 test Resolve local property access [[
   entity B {
@@ -23,7 +23,7 @@ test Resolve local property access [[
       var v : A = [[x]]
     }
   }
-]] resolves #2 to #1
+]] resolve #2 to #1
 // TODO: occurrence highlighting, ref resolv, lang-specific identifiers?
 
 test Resolve parameter access [[
@@ -33,7 +33,7 @@ test Resolve parameter access [[
       var v : A = [[x]]
     }
   }
-]] resolves #2 to #1
+]] resolve #2 to #1
 
 test Resolve property access [[
   entity B {
@@ -42,7 +42,7 @@ test Resolve property access [[
       var v : A = a.x.y
     }
   }
-]] //completes y to yyyyz
+]] complete to "yyyy"
 
 test Resolve property access fails [[
   entity B {
