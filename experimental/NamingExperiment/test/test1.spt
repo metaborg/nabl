@@ -42,7 +42,7 @@ test Resolve property access [[
       var v : A = a.x.y
     }
   }
-]] complete to "yyyy"
+]] complete to "yyayy"
 
 test Resolve property access fails [[
   entity B {
