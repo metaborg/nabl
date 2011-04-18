@@ -70,7 +70,7 @@ rules // analysis traversals
   analyze-defs(|head-scope, head-scope-ns):
     ast -> (ast', defs')
     with
-      if def := <get-definition> ast then
+      if def := <nam-get-definition> ast then
         Def(def-path)                     := def;
         [head-scope-ns', head-scope' | _] := def-path
       else
@@ -78,7 +78,7 @@ rules // analysis traversals
         head-scope-ns' := head-scope-ns;
         head-scope'    := head-scope
       end;
-      if scope-types := <get-scope-types> ast then
+      if scope-types := <nam-get-scope-types> ast then
         {| IndexPath:
           <list-loop(update-index-path(|head-scope', head-scope-ns', ast))> scope-types;
           // <balanced-update-path> head-scope';
@@ -94,7 +94,7 @@ rules // analysis traversals
     where
       analyzed      := <all(analyze-defs(|head-scope, head-scope-ns))> ast;
       (ast', defs)  := <unzip-analyzed> analyzed;
-      ast''         := <try(annotate-names(|def-path))> ast'
+      ast''         := <try(nam-annotate-names(|def-path))> ast'
   
   update-index-path(|head-scope, head-scope-ns, ast):
     scope-type -> scope-type
@@ -159,7 +159,7 @@ rules // analysis traversals
   analyze-tree-data-part(|set):
     tree -> tree
     where
-      if def-term := <get-definition-key> then
+      if def-term := <nam-get-definition-key> then
         _{[namespace | path]} := def-term;
         if result := <adjust-index-def-data(store-index-data-results(|set) |namespace, path)> tree then
           <fatal-err(|"Unexpected result from adjust-index-def-data; should call <store-results>")> result
@@ -206,7 +206,7 @@ rules // index construction
   index-tree-terms:
     tree -> tree
     where
-      if def-term{uri} := <get-definition-key> then
+      if def-term{uri} := <nam-get-definition-key> then
         def := Def(uri);
         rules(
           IndexedTerm: uri -> tree
@@ -350,3 +350,16 @@ rules // index API
     )
   
   external SRTS-EXT-eq-ignore-annos(|t)
+
+rules // interface for generated code
+  
+  nam-get-def(|namespace):
+    x -> Def([namespace, x | <IndexPath <+ ![]> namespace])
+    
+  nam-annotate-use(|namespace):
+    t -> t{[Unresolved(namespace), t | <IndexPath <+ ![]> namespace]}
+    
+  nam-get-scope-types = fail
+  nam-get-definition = fail
+  nam-get-definition-key = fail
+  nam-annotate-names(|def-path) = fail

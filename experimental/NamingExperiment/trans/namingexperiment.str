@@ -66,7 +66,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     where
       // FIXME: this only works for definition paths
       //<debug(!2)> target;
-      def-term           := <get-definition-key> target;
+      def-term           := <nam-get-definition-key> target;
       _{[ns | def-path]} := def-term;
       def-path'  := <take-until(?Anon())> def-path;
       def-path'' := <reverse; separate-by(|".")> def-path'

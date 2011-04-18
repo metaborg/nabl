@@ -30,7 +30,7 @@ rules
   constraint-error:
     def -> (def, $[Duplicate definition])
     where
-      def-child  := <get-definition-key> def;
+      def-child  := <nam-get-definition-key> def;
       def'       := <index-get-term> <index-lookup-outermost> def-child;
       not(<origin-equal(|def)> def')
   

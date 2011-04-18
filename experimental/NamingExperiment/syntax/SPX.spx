@@ -1,5 +1,7 @@
 //package foo
 
+package SPX
+
 module example2
 
 context-free syntax
@@ -9,10 +11,14 @@ context-free syntax
     "entity" Entity@=ID "{" Member* "}" -> Definition {"Entity", scope(Property, Function)}
     "import" Module@STRING              -> Definition {"Import"}
     
+    X@=Test? -> Test
+    
+    X@=a:Test -> Test
+    
     Property@=ID ":" Entity@ID          -> Member {"Property"}
 
 
-    ID "(" { Param "," }* ")" Stm -> Member {"Function", scope(Var)}
+    Function@=ID "(" { Param "," }* ")" Stm -> Member {"Function", scope(Var)}
     Var@=ID ":" Entity@ID           -> Param {"Param"}
     
     Function@ID "(" {Exp ","}* ")"      -> Exp {"Call"}        %% or, could be an Entity 
@@ -20,8 +26,7 @@ context-free syntax
     "var" Var@=ID ":" Entity@ID "=" Exp -> Stm {"VarDeclInit"}
     Var@ID "=" Exp                      -> Stm {"Assign"}
     Var@ID                              -> Exp {"Var"}         %% or, could be a Property!
-    Entity
-    Exp "." Property@ID                 -> Exp {"PropAccess", left}
+    Exp "." Property@ID                 -> Exp {"PropAccess"}
     "{" Stm* "}"                        -> Stm {"Block", scope(Var)}
 
 /*
