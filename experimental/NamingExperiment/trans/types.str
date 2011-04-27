@@ -55,11 +55,11 @@ rules // utility
 rules // store definition and parameter types
     
   adjust-index-def-data(store-results |namespace, path):
-    def -> <store-results> DefData(Type(), [namespace | path], type)
+    def -> <store-results> DefData([namespace | path], Type(), type)
     where
       type := <type-of> def
   
   adjust-index-def-data(store-results |namespace, path):
-    Function(_, params, _) -> <store-results> DefData(ParamTypes(), [namespace | path], types)
+    Function(_, params, _) -> <store-results> DefData([namespace | path], ParamTypes(), types)
     with
       types := <map(type-of)> params

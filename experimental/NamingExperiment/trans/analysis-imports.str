@@ -15,7 +15,7 @@ rules
   //       requires runtime support a project-wide index
 
   adjust-index-def-data(store-results |namespace, path):
-    Module(m, defs) -> <store-results> DefData(Imports(), [namespace | path], import*)
+    Module(m, defs) -> <store-results> DefData([namespace | path], Imports(), import*)
     where
       import* := <filter(get-import-name)> defs
 

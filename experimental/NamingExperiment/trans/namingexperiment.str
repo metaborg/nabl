@@ -54,10 +54,10 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
   editor-resolve:
     (node, position, ast, path, project-path) -> target
     where
-      // TODO: shouldn't work on parent node
+      // TODO: shouldn't work on parent node?
       !node => <one(?subnode) <+ ?subnode>;
-      def     := <index-lookup> subnode;
-      target  := <index-get-term> def
+      def     := <index-lookup> node;
+      target  := /*<index-get-term>*/ def
 
   // Returns "hover help" information for a particular node in the editor.
   // For references, this rule is invoked using the resolved term.
