@@ -270,7 +270,7 @@ rules // index API
     with
       is-adjusted-lookup-enabled;
       do-adjusted-index-lookup(|namespace, path, x);
-      mapconcat(\Def(p) -> [Def(p)]\
+      mapconcat(\d@Def(p) -> [d]\
           <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path')> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
       ?defs
@@ -285,12 +285,12 @@ rules // index API
     with
       is-adjust-lookup-enabled;
       do-adjusted-index-lookup(|namespace, path, x);
-      mapconcat(\Def(p) -> [Def(p)]\
+      mapconcat(\d@Def(p) -> [d]\
           <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path')> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
       ?all-defs
     <+
-      one-level := <prim("LANG_index_get", Def([namespace | path]))>;
+      one-level := <prim("LANG_index_get_children", Def([namespace | path]))>;
       if [_ | path'] := path then
         all-defs := <concat> [one-level, <index-lookup-all-levels(fail |namespace, path')> x]
       else
