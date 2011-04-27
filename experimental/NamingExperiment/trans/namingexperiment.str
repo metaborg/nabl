@@ -77,7 +77,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (node, position, ast, path, project-path) -> proposals'
     where
       editor-init;
-      (ast', _, _, _) := <analyze-top> ast;
+      (ast', _, _, _) := <analyze-top> (ast, path, project-path);
       x              := <collect-one(?COMPLETION(_); debug)> ast';
       debug(!"ok");
       proposals      := <index-lookup-all-levels> x;
