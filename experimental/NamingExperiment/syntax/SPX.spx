@@ -11,10 +11,6 @@ context-free syntax
     "entity" Entity@=ID "{" Member* "}" -> Definition {"Entity", scope(Property, Function)}
     "import" Module@STRING              -> Definition {"Import"}
     
-    X@=Test? -> Test
-    
-    X@=a:Test -> Test
-    
     Property@=ID ":" Entity@ID          -> Member {"Property"}
 
 

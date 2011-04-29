@@ -78,10 +78,8 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     where
       editor-init;
       (ast', _, _, _) := <analyze-top> (ast, path, project-path);
-      x              := <collect-one(?COMPLETION(_); debug)> ast';
-      debug(!"ok");
+      x              := <collect-one(?COMPLETION(_))> ast';
       proposals      := <index-lookup-all-levels> x;
-      debug(!"almost");
       proposals'     := <map(def-to-name)> proposals
 
   def-to-name:
