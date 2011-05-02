@@ -1,11 +1,9 @@
 module analysis-library
 
 imports
-  include/NamingExperiment
   libstratego-lib
   types
   lib/editor-common.generated
-  analysis-generated
 
 signature constructors
 
