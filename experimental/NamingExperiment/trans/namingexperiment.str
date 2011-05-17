@@ -47,7 +47,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      result   := <analyze-top> selected // we just return the input term
+      result   := <analyze-top> (selected, path, project-path) // we just return the input term
   
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
   // Only succeeds for nodes of the form Type(_) for which GetEntity is defined.
