@@ -56,7 +56,6 @@ rules // analysis traversals
         prim("LANG_index_clear_file", full-path);
         <index-summary-parts(|full-path)> defs;
         ast3         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
-        <index-tree-terms> ast3;
         data         := <origin-track-forced(analyze-tree-data)> ast3;
         <index-summary-parts(|full-path)> data;
         // TODO: resolve any URIs in index data at this point? or re-index data after uses analysis?
@@ -140,7 +139,7 @@ rules // analysis traversals
           ast'' := ast{path'};
           uses' := [Use([namespace | path], path') | uses]
         else
-          ast'' := ast';
+          ast'' := ast'; // TODO: remove Unresolved(_) constructor from head?
           uses' := [BadUse(unresolved) | uses]
         end
       else
@@ -188,28 +187,11 @@ rules // analysis traversals
       unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
 
 rules // index construction
-  
-  // TODO: optimize: use hashtables instead of dynamic rules
     
   index-summary-parts(|file) =
     list-loop(with(prim("LANG_index_add", <id>, file)))
 
-  index-tree-terms:
-    tree -> tree
-    where
-      if def-term{uri} := <nam-get-definition-key> then
-        def := Def(uri);
-        rules(
-          IndexedTerm: uri -> tree
-        )
-      end;
-      <all(index-tree-terms)> tree
-
 rules // index API
-
-  /** @deprecated */
-  index-get-term:
-    <with(?Def(uri) | "Def expected")> -> <IndexedTerm> uri
   
   index-get-data(|kind):
     <with(?Def(uri) | "Def expected")> -> data
