@@ -49,6 +49,20 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       filename := <guarantee-extension(|"analyzed.aterm")> path;
       result   := <analyze-top> (selected, path, project-path) // we just return the input term
   
+  generate-defs:
+    (selected, position, ast, path, project-path) -> (filename, result)
+    with
+      editor-init;
+      filename := <guarantee-extension(|"analyzed.aterm")> path;
+      (_, result, _, _) := <analyze-top> (selected, path, project-path)
+  
+  generate-uses:
+    (selected, position, ast, path, project-path) -> (filename, result)
+    with
+      editor-init;
+      filename := <guarantee-extension(|"analyzed.aterm")> path;
+      (_, _, result, _) := <analyze-top> (selected, path, project-path)
+  
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
   // Only succeeds for nodes of the form Type(_) for which GetEntity is defined.
   editor-resolve:

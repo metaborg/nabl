@@ -10,11 +10,38 @@ setup Header [[
   }
 ]]
 
+test Defs [[
+  entity B {
+    
+  }
+]] build generate-defs to 
+   [Def(_), _, _, _]
+
 test Unknown type Q [[
   entity B {
     q : Q
   }
 ]] 1 error
+
+test Resolve property access [[
+  entity B {
+    f(c : C) {
+      var v : C = c.[[c]]
+    }
+  }
+  entity C {
+    [[c]] : C
+  }
+]] resolve #1 to #2
+
+test Resolve local variable [[
+  entity B {
+    f() {
+      var [[a]] : A
+      var b : B = [[a]]
+    }
+  }
+]] resolve #2 to #1
 
 test Resolve local property access [[
   entity B {
@@ -35,7 +62,7 @@ test Resolve parameter access [[
   }
 ]] resolve #2 to #1
 
-test Resolve property access [[
+test Complete property access [[
   entity B {
     yyyyy : A
     f(a : A) {

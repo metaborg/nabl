@@ -43,25 +43,29 @@ rules // extension points
 rules // analysis traversals
    
   analyze-top:
-    (ast, path, project-path) -> (ast5, defs, uses, data)
+    (ast, path, project-path) -> (ast5, defs, uses, data')
     with
-      {| CurrentAnalysisAst:
-        rules(
-          CurrentAnalysisAst := ast
-        );
-        // HACK: use Some() constructor to force origin tracking...
-        (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast);
-        full-path    := $[[project-path]/[path]];
-        prim("LANG_index_setup", $[[project-path]/.cache/index], $[project-path], [], []);
-        prim("LANG_index_clear_file", full-path);
-        <index-summary-parts(|full-path)> defs;
-        ast3         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
-        data         := <origin-track-forced(analyze-tree-data)> ast3;
-        <index-summary-parts(|full-path)> data;
-        // TODO: resolve any URIs in index data at this point? or re-index data after uses analysis?
-        (ast4, uses) := <analyze-uses> ast3;
-        ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4
-      |}
+      // Init
+      full-path := $[[project-path]/[path]];
+      prim("LANG_index_setup", $[[<project-path>]/.cache/index], $[project-path], [], []);
+      prim("LANG_index_clear_file", full-path)
+    with
+      // Add Unresolved annotations, record globals 
+      (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast); // HACK: force origin tracking with Some()... // TODO: still needed?
+      <index-add-all(|full-path)> defs
+    with
+      // Store DefData
+      ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
+      data := <origin-track-forced(analyze-tree-data)> ast3;
+      <index-add-all(|full-path)> data
+    with
+    	// Resolve all unresolved references in the tree
+      (ast4, uses) := <analyze-uses> ast3;
+      ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4
+    with
+    	// Resolve unresolved references in DefData 
+      (data', _) := <analyze-uses> data;
+      <index-add-all(|full-path)> data'
   
   /**
    * Identifies all definitions in the tree
@@ -135,11 +139,14 @@ rules // analysis traversals
       analyzed     := <all(analyze-uses)> ast;
       (ast', uses) := <unzip-analyzed> analyzed;
       if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
+        debug(!"  unresolved");
         if Def(path') := <index-lookup(id |namespace, path)> ast' then
           ast'' := ast{path'};
+          debug(!"  resolved");
           uses' := [Use([namespace | path], path') | uses]
         else
-          ast'' := ast'; // TODO: remove Unresolved(_) constructor from head?
+          ast'' := ast';
+          debug(!"  not resolved");
           uses' := [BadUse(unresolved) | uses]
         end
       else
@@ -188,7 +195,7 @@ rules // analysis traversals
 
 rules // index construction
     
-  index-summary-parts(|file) =
+  index-add-all(|file) =
     list-loop(with(prim("LANG_index_add", <id>, file)))
 
 rules // index API
@@ -342,6 +349,9 @@ rules // index API
         ?Def([_, <SRTS-EXT-eq-ignore-annos(|use)> | _])
       )
     )
+  
+  index-is-definition =
+    where(nam-get-definition-key)
   
   do-adjusted-index-path(|namespace, path, def) =
     adjust-index-path(origin-equal(|def) |namespace, path)

@@ -9,13 +9,15 @@ imports
   types
 
 rules
-
-  // TODO: don't use index-get-term, but store offsets in the index
+  
+  is-ordered-namespace:
+    Var() -> Var()
 
   constraint-error:
     x{[Unresolved(t) | _]} ->
     (x, $[Unable to resolve [x]])
   
+  /* TODO: something with offsets
   constraint-error:
     x -> (x, $[Use before definition])
     where
@@ -26,16 +28,13 @@ rules
       def' := <index-get-term> def
     where
       <gt> (<origin-offset> def', <origin-offset> x)
+  */
   
   constraint-error:
     def -> (def, $[Duplicate definition])
     where
-      def-child  := <nam-get-definition-key> def;
-      def'       := <index-get-term> <index-lookup-outermost> def-child;
-      not(<origin-equal(|def)> def')
-  
-  is-ordered-namespace:
-    Var() -> Var()
+      <index-is-definition> def;
+      <length> (<index-lookup-all> def, 1)
     
   constraint-error:
     Call(f, a*) -> (f, $[Illegal argument types, expected [<strip-annos; write-to-string> param-types] not [<strip-annos; write-to-string> arg-types]])
