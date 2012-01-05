@@ -47,7 +47,7 @@ rules // analysis traversals
     with
       // Init
       full-path := $[[project-path]/[path]];
-      prim("LANG_index_setup", $[[<project-path>]/.cache/index], $[project-path], [], []);
+      prim("LANG_index_setup", "NamingExperiment", [project-path]);
       prim("LANG_index_clear_file", full-path)
     with
       // Add Unresolved annotations, record globals 
