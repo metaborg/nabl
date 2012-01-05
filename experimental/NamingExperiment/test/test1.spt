@@ -138,19 +138,3 @@ test Duplicate entity [[
   entity B {}
 ]] 1 error
 
-
-/* TODO: following tests fail because of a limitation in the resolver interface...
-
-test Resolve local entity [[
-  entity B {
-    x : B 
-  }
-]] resolves B#2 to B#1
-
-// fails
-test Resolve setup entity [[
-  entity B {
-    x : A
-  }
-]] resolves A#2 to A#1
-*/

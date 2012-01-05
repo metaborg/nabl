@@ -61,10 +61,15 @@ rules // analysis traversals
     with
     	// Resolve all unresolved references in the tree
       (ast4, uses) := <analyze-uses> ast3;
+      <index-add-all(|full-path)> uses;
       ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4
     with
     	// Resolve unresolved references in DefData 
-      (data', _) := <analyze-uses> data;
+    	// TODO: <index-remove-all(|fullpath)> data
+      (data', data-uses) := <analyze-uses> data;
+      // TODO: should data uses be added to the list of uses??
+      //       (would it be a comprehensive list in all cases?)
+      // <index-add-all(|full-path)> data-uses;
       <index-add-all(|full-path)> data'
   
   /**
@@ -139,14 +144,11 @@ rules // analysis traversals
       analyzed     := <all(analyze-uses)> ast;
       (ast', uses) := <unzip-analyzed> analyzed;
       if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
-        debug(!"  unresolved");
         if Def(path') := <index-lookup(id |namespace, path)> ast' then
           ast'' := ast{path'};
-          debug(!"  resolved");
-          uses' := [Use([namespace | path], path') | uses]
+          uses' := [Use(path', [namespace | path]) | uses] // TODO: make rhs of Use() useful?
         else
           ast'' := ast';
-          debug(!"  not resolved");
           uses' := [BadUse(unresolved) | uses]
         end
       else

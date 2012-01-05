@@ -68,9 +68,9 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
   editor-resolve:
     (node, position, ast, path, project-path) -> target
     where
-      // TODO: shouldn't work on parent node?
+      // TODO: shouldn't work on parent node? remove this hack?
       !node => <one(?subnode) <+ ?subnode>;
-      def     := <index-lookup> node;
+      def     := <index-lookup> subnode;
       target  := /*<index-get-term>*/ def
 
   // Returns "hover help" information for a particular node in the editor.
@@ -82,7 +82,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       //<debug(!2)> target;
       def-term           := <nam-get-definition-key> target;
       _{[ns | def-path]} := def-term;
-      def-path'  := <take-until(?Anon())> def-path;
+      def-path'  := <take-until(?Anon(_))> def-path;
       def-path'' := <reverse; separate-by(|".")> def-path'
 
   // Completes an identifier when the user presses control-space
@@ -90,6 +90,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
   editor-complete:
     (node, position, ast, path, project-path) -> proposals'
     where
+      debug(!"INC ");
       editor-init;
       (ast', _, _, _) := <analyze-top> (ast, path, project-path);
       x              := <collect-one(?COMPLETION(_))> ast';
