@@ -104,15 +104,6 @@ test Def before use allowed [[
   entity C {}
 ]]
 
-test Def before use error [[
-  entity B {
-    f() {
-      var v : A = w
-      var w : A
-    }
-  }
-]] 1 error
-
 test Shadowing of property (allowed) [[
   entity B {
     a : A
@@ -121,6 +112,16 @@ test Shadowing of property (allowed) [[
     }
   }
 ]]
+
+/*
+test Def before use error [[
+  entity B {
+    f() {
+      var v : A = w
+      var w : A
+    }
+  }
+]] 1 error
 
 test Shadowing of var (not allowed) [[
   entity B {
@@ -137,4 +138,4 @@ test Duplicate entity [[
   entity B {}
   entity B {}
 ]] 1 error
-
+*/
