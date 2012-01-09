@@ -47,7 +47,7 @@ rules // analysis traversals
     with
       // Init
       full-path := $[[project-path]/[path]];
-      prim("LANG_index_setup", "NamingExperiment", [project-path]);
+      prim("LANG_index_setup", "entity-with-aspects", [project-path]);
       prim("LANG_index_clear_file", full-path)
     with
       // Add Unresolved annotations, record globals 
@@ -59,13 +59,13 @@ rules // analysis traversals
       data := <origin-track-forced(analyze-tree-data)> ast3;
       <index-add-all(|full-path)> data
     with
-    	// Resolve all unresolved references in the tree
+        // Resolve all unresolved references in the tree
       (ast4, uses) := <analyze-uses> ast3;
       <index-add-all(|full-path)> uses;
       ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4
     with
-    	// Resolve unresolved references in DefData 
-    	// TODO: <index-remove-all(|fullpath)> data
+        // Resolve unresolved references in DefData 
+        // TODO: <index-remove-all(|fullpath)> data
       (data', data-uses) := <analyze-uses> data;
       // TODO: should data uses be added to the list of uses??
       //       (would it be a comprehensive list in all cases?)
@@ -138,15 +138,20 @@ rules // analysis traversals
    * Analyze all uses, changing their preliminary
    * "Unresolve(_)" URI to a definite URI of their definition. 
    */
-  analyze-uses:
+  analyze-uses = analyze-uses(|None())
+  analyze-uses(|parent):
     ast -> (ast'', uses')
     with
-      analyzed     := <all(analyze-uses)> ast;
+      analyzed     := <all(analyze-uses(|ast))> ast;
       (ast', uses) := <unzip-analyzed> analyzed;
       if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
         if Def(path') := <index-lookup(id |namespace, path)> ast' then
           ast'' := ast{path'};
-          uses' := [Use(path', [namespace | path]) | uses] // TODO: make rhs of Use() useful?
+          if key{keyUri} := <nam-get-definition-key> parent ; not(<eq>(key, ast')) then
+            uses' := [Use(path', keyUri) | uses]
+          else
+            uses' := [Use(path', [namespace | path]) | uses]
+          end
         else
           ast'' := ast';
           uses' := [BadUse(unresolved) | uses]
