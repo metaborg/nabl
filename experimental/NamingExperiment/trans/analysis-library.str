@@ -154,7 +154,7 @@ rules // analysis traversals
           end
         else
           ast'' := ast';
-          uses' := [BadUse(unresolved) | uses]
+          uses' := [BadUse([namespace, x]) | uses]
         end
       else
         ast'' := ast';
