@@ -90,7 +90,6 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
   editor-complete:
     (node, position, ast, path, project-path) -> proposals'
     where
-      debug(!"INC ");
       editor-init;
       (ast', _, _, _) := <analyze-top> (ast, path, project-path);
       x              := <collect-one(?COMPLETION(_))> ast';
