@@ -46,7 +46,7 @@ rules // analysis traversals
     with
       // Init
       full-path := $[[project-path]/[path]];
-      prim("LANG_index_setup", "entity-with-aspects", [project-path])
+      prim("LANG_index_setup", "NamingExperiment", [project-path])
     with 
       // Store copy of defs for diff and clear file
       olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
