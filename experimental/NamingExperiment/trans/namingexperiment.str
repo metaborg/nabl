@@ -22,7 +22,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (ast, path, project-path) -> (ast', errors, warnings, notes)
     with
       editor-init;
-      (ast', defs, uses, data) := <analyze-top>;
+      (ast', _, _, _, _, _) := <analyze-top>;
       errors   := <collect-all(constraint-error, conc)> ast';
       warnings := <collect-all(constraint-warning, conc)> ast';
       notes    := <collect-all(constraint-note, conc)> ast'
@@ -54,14 +54,14 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      (_, result, _, _) := <analyze-top> (selected, path, project-path)
+      (_, result, _, _, _, _) := <analyze-top> (selected, path, project-path)
   
   generate-uses:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      (_, _, result, _) := <analyze-top> (selected, path, project-path)
+      (_, _, result, _, _, _) := <analyze-top> (selected, path, project-path)
   
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
   // Only succeeds for nodes of the form Type(_) for which GetEntity is defined.
@@ -91,7 +91,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (node, position, ast, path, project-path) -> proposals'
     where
       editor-init;
-      (ast', _, _, _) := <analyze-top> (ast, path, project-path);
+      (ast', _, _, _, _, _) := <analyze-top> (ast, path, project-path);
       x              := <collect-one(?COMPLETION(_))> ast';
       proposals      := <index-lookup-all-levels> x;
       proposals'     := <map(def-to-name)> proposals
