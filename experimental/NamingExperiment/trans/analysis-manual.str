@@ -15,10 +15,10 @@ rules
   // Adjust the lookup behavior for properties,
   // overriding the lookup with a list of property Defs
   adjust-index-lookup(is-use |namespace, path):
-    PropAccess(e, <is-use>) -> p*
+    PropAccess(e, innerName@<is-use>) -> p*
     with
       if ENTITY(e-type) := <type-of> e then
-        p* := <index-lookup-contained(|Property())> e-type
+        p* := <index-lookup-contained(|Property(), innerName)> e-type
         //or: p* := [[namespace | <index-path> e-type]]
       else
         p* := []
@@ -33,8 +33,8 @@ rules
   // selecting a function with matching parameter types
   // (if this fails, the normal lookup behavior is used!)
   adjust-index-lookup(is-use |namespace, path):
-    Call(<is-use>, args) -> def
+    Call(innerName@<is-use>, args) -> def
     where
       arg-types := <map(type-of)> args;
-      all-defs  := <index-lookup-all-levels(fail |namespace, path)>;
+      all-defs  := <index-lookup-all-levels(fail |namespace, path, innerName)>;
       def       := <getfirst(is-params-compatible(|arg-types))>

@@ -27,63 +27,56 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       warnings := <collect-all(constraint-warning, conc)> ast';
       notes    := <collect-all(constraint-note, conc)> ast'
   
-  // Transforms a selection to Java
-  generate-java:
-    (selected, position, ast, path, project-path) -> (filename, result)
-    with
-      filename := <guarantee-extension(|"java")> path;
-      result   := <to-java> selected
-  
   // Prints the abstract syntax ATerm of a selection.
   generate-aterm:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       filename := <guarantee-extension(|"aterm")> path;
-      result   := selected // we just return the input term
+      result   := selected
   
-  // Prints the abstract syntax ATerm of a selection.
+  // Prints the analyzed abstract syntax ATerm of a selection.
   generate-analyzed:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      result   := <analyze-top> (selected, path, project-path) // we just return the input term
-  
-  generate-defs:
+      result   := <analyze-top> (selected, path, project-path)   
+      
+  // Prints the entries in the index of the current file.
+  index-currentfile:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
-      editor-init;
-      filename := <guarantee-extension(|"analyzed.aterm")> path;
-      (_, result, _, _, _, _) := <analyze-top> (selected, path, project-path)
-  
-  generate-uses:
+      filename := <guarantee-extension(|"index.currentfile.aterm")> path;
+      result   := <index-get-all-in-file> path
+      
+  // Prints the entries in the index of all files.
+  index-allfiles:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
-      editor-init;
-      filename := <guarantee-extension(|"analyzed.aterm")> path;
-      (_, _, result, _, _, _) := <analyze-top> (selected, path, project-path)
+      filename := <guarantee-extension(|"index.currentfile.aterm")> path;
+      result   := <map(\filename -> (filename, <index-get-all-in-file> filename)\)> <index-get-all-filenames>
   
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
   // Only succeeds for nodes of the form Type(_) for which GetEntity is defined.
   editor-resolve:
     (node, position, ast, path, project-path) -> target
     where
-      // TODO: shouldn't work on parent node? remove this hack?
+      // TODO: shouldn't work on parent node?
       !node => <one(?subnode) <+ ?subnode>;
-      def     := <index-lookup> subnode;
+      def     := <index-lookup> node;
       target  := /*<index-get-term>*/ def
 
   // Returns "hover help" information for a particular node in the editor.
   // For references, this rule is invoked using the resolved term.
-  editor-hover:
+  /*editor-hover:
     (target, position, ast, path, project-path) -> $[[def-path'']]
     where
       // FIXME: this only works for definition paths
       //<debug(!2)> target;
       def-term           := <nam-get-definition-key> target;
       _{[ns | def-path]} := def-term;
-      def-path'  := <take-until(?Anon(_))> def-path;
-      def-path'' := <reverse; separate-by(|".")> def-path'
+      def-path'  := <take-until(?Anon())> def-path;
+      def-path'' := <reverse; separate-by(|".")> def-path'*/
 
   // Completes an identifier when the user presses control-space
   // (the completion identifier in the AST provides additional context information)
@@ -92,9 +85,14 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     where
       editor-init;
       (ast', _, _, _, _, _) := <analyze-top> (ast, path, project-path);
-      x              := <collect-one(?COMPLETION(_))> ast';
-      proposals      := <index-lookup-all-levels> x;
-      proposals'     := <map(def-to-name)> proposals
+      x                     := <collect-one(?COMPLETION(_))> ast';
+      COMPLETION(name)		:= x;
+      (
+        proposals           := <index-lookup-all-levels(|name)> x 
+      <+ 
+        proposals 			:= []
+      );
+      proposals'            := <map(def-to-name)> proposals
 
   def-to-name:
     Def([namespace, name | _]) -> name

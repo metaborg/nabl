@@ -16,9 +16,10 @@ builders
                                                                                                               
   observer : editor-analyze                                                                                   
                                                                                                               
-  builder  : "Show abstract syntax (for selection)" = generate-aterm (openeditor) (realtime) (meta) (source)  
-  builder  : "Show analyzed syntax (for selection)" = generate-analyzed (openeditor) (realtime) (source)                   
-                                                                                                              
+  builder  : "Show abstract syntax" = generate-aterm (openeditor) (realtime) (meta) (source)  
+  builder  : "Show analyzed syntax" = generate-analyzed (openeditor) (realtime) (source)
+  builder  : "Show index entries for current file" = index-currentfile (openeditor) (realtime) (source)   
+  builder  : "Show index entries for all files" = index-allfiles (openeditor) (realtime) (source)                                                                                                            
 
 refactorings
                                                                                   

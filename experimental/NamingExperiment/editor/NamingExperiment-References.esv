@@ -12,4 +12,4 @@ references
 references
                 
   reference _ : editor-resolve
-  hover _     : editor-hover
+  //hover _     : editor-hover
