@@ -77,7 +77,9 @@ rules // analysis traversals
         ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
         
         // Store reads
-        <index-add-all(|full-path)> <iset-elements> readSet
+        if not(<is-test-input> (ast, path)) then
+          <index-add-all(|full-path)> <iset-elements> readSet
+        end
       |}
     with
       // Find removed and added definitions
@@ -96,6 +98,13 @@ rules // analysis traversals
   
   // Compensate for changing anonymous namespace names.
   analyze-diff-eq = ?(Def(u1), Def(u2)); (<eq> (u1, u2) <+ <eq> (<remove-all(?Anon(_))> u1, <remove-all(?Anon(_))> u2))
+  
+  // Tests if the current file is just a testing language input
+  is-test-input:
+    (ast, path) -> (ast, path)
+    where
+      <string-ends-with(|".spt")> path;
+      not(prim("SSL_EXT_origin_language", ast) => "Spoofax-Testing")
   
   analyze-changed(get-all|currentFile):
     defs -> filenames
