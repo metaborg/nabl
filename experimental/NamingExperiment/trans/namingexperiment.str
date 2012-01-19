@@ -77,7 +77,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     where
       // TODO: shouldn't work on parent node? remove this hack?
       !node => <one(?subnode) <+ ?subnode>;
-      def     := <index-lookup> node;
+      def     := <index-lookup> subnode;
       target  := /*<index-get-term>*/ def
 
   // Returns "hover help" information for a particular node in the editor.
