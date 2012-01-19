@@ -64,8 +64,11 @@ rules // analysis traversals
         // Find DefData
         ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
         data := <origin-track-forced(analyze-tree-data)> ast3;
+        <index-add-all(|full-path)> data;
         
+        // Resolve an references in DefData (using what we just stored)
         (data', data-uses) := <analyze-uses> data;
+        <index-remove-all(|full-path)> data;
         <index-add-all(|full-path)> data';
         
         // Resolve all unresolved references in the tree
