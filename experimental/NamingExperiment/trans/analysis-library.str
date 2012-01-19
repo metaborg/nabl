@@ -11,7 +11,7 @@ signature constructors
   Use     : List(UriPart) * List(UriPart) -> Summary
   BadUse  : List(UriPart) -> Summary
   DefData : List(UriPart) * DefDataType * Term -> Summary
-  Read	  : List(UriPart) -> Summary
+  Read    : List(UriPart) -> Summary
 
   // TODO: add a new constructor for URI header/path separation?
   
@@ -54,8 +54,8 @@ rules // analysis traversals
       prim("LANG_index_clear_file", full-path)
     with
       {| ReadSet:
-      	readSet := <new-iset>;
-      	rules(ReadSet: _ -> readSet);
+        readSet := <new-iset>;
+        rules(ReadSet: _ -> readSet);
       
         // Add Unresolved annotations, record globals 
         (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast); // HACK: force origin tracking with Some()... // TODO: still needed?
@@ -65,9 +65,6 @@ rules // analysis traversals
         ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
         data := <origin-track-forced(analyze-tree-data)> ast3;
         
-        // Resolve all unresolved references in the data
-        // TODO: should data uses be added to the list of uses??
-        //       (would it be a comprehensive list in all cases?)
         (data', data-uses) := <analyze-uses> data;
         <index-add-all(|full-path)> data';
         
@@ -81,25 +78,26 @@ rules // analysis traversals
       |}
     with
       // Find removed and added definitions
-  	  (added, removed) := <analyze-diff> (olddefs, defs)
-  	with
-  	  // Schedule re-analysis of files that have a use of a removed def
-  	  <map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))> <analyze-changed(index-get-uses-all|full-path)> removed;
-  	  // Schedule re-analysis of files that have a read of an added def
-  	  <map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))> <analyze-changed(index-get-reads-all|full-path)> added
-  	  
+      (added, removed) := <analyze-diff> (olddefs, defs)
+    with
+      // Schedule re-analysis of files that have a use of a removed def
+      <map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))> <analyze-changed(index-get-uses-all|full-path)> removed;
+      // Schedule re-analysis of files that have a read of an added def
+      <map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))> <analyze-changed(index-get-reads-all|full-path)> added
+      
   analyze-diff: 
-  	(defs1, defs2) -> (added, removed)
-  	with
-  	  added := <diff(analyze-diff-eq)> (defs2, defs1);
-  	  removed := <diff(analyze-diff-eq)> (defs1, defs2)
+    (defs1, defs2) -> (added, removed)
+    with
+      added := <diff(analyze-diff-eq)> (defs2, defs1);
+      removed := <diff(analyze-diff-eq)> (defs1, defs2)
+  
   // Compensate for changing anonymous namespace names.
   analyze-diff-eq = ?(Def(u1), Def(u2)); (<eq> (u1, u2) <+ <eq> (<remove-all(?Anon(_))> u1, <remove-all(?Anon(_))> u2))
   
   analyze-changed(get-all|currentFile):
-  	defs -> filenames
-  	where uses := <mapconcat(get-all)> defs
-  	where filenames := <nub> <remove-all(?currentFile)> <mapconcat(index-get-file-of)> uses
+    defs -> filenames
+    where uses := <mapconcat(get-all)> defs
+    where filenames := <make-set> <remove-all(?currentFile)> <mapconcat(index-get-file-of)> uses
   
   /**
    * Identifies all definitions in the tree
@@ -269,48 +267,48 @@ rules // index API
   index-get-file-of = prim("LANG_index_get_file_of", <id>)
   
   index-get(|uri):
-  	template -> <prim("LANG_index_get", template)>
-  	  with
- 	    if set := <ReadSet> then
- 	  	  <iset-add(|Read(uri))> set
- 	    end
+    template -> <prim("LANG_index_get", template)>
+      with
+       if set := <ReadSet> then
+         <iset-add(|Read(uri))> set
+       end
       
   index-get-children(|template, name):
-  	x -> childs'
-  	  with
-  	  	childs := <prim("LANG_index_get_children", template)> x;
-  	  	
-  	  	// Take inner name when name is a COMPLETION term.
-  	  	(
-  	  	  COMPLETION(name') := name 
-  	  	<+ 
-  	  	  name' := name
-  	  	);
-  	  	
-  	  	// Get namespace and URI.
-  	  	Def([namespace | uri]) := template;
-  	  	
-  	  	if "" := name' then
-  	  		childs' := childs;
-  	  		store := [namespace, <strip-annos> x | uri]
-  	  	else
-  	  		// Filter out unnecessary results using substring filter on name.
-  	  		childs' := <filter(index-substring-filter(|name'))> childs;
-  	  		store := [namespace, name' | uri]
-  		end;
-  		
-  		// Store read in index.
- 	    if set := <ReadSet> then
- 	  	  <iset-add(|Read(store))> set
- 	    end
- 	    
+    x -> childs'
+      with
+        childs := <prim("LANG_index_get_children", template)> x;
+        
+        // Take inner name when name is a COMPLETION term.
+        (
+          COMPLETION(name') := name 
+        <+ 
+          name' := name
+        );
+        
+        // Get namespace and URI.
+        Def([namespace | uri]) := template;
+        
+        if "" := name' then
+          childs' := childs;
+          store := [namespace, <strip-annos> x | uri]
+        else
+          // Filter out unnecessary results using substring filter on name.
+          childs' := <filter(index-substring-filter(|name'))> childs;
+          store := [namespace, name' | uri]
+      end;
+      
+      // Store read in index.
+       if set := <ReadSet> then
+         <iset-add(|Read(store))> set
+       end
+       
   index-substring-filter(|name):
-  	Def([_, n | _]) -> <id>
-  	where <is-substring(!name)> n
-  	
+    Def([_, n | _]) -> <id>
+    where <is-substring(!name)> n
+    
   index-uri:
-  	x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
-  	
+    x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
+    
   index-namespace:
     x{[namespace | path]} -> <index-namespace-unwrap> namespace
 
