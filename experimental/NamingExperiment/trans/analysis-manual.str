@@ -14,27 +14,32 @@ rules
   
   // Adjust the lookup behavior for properties,
   // overriding the lookup with a list of property Defs
-  adjust-index-lookup(is-use |namespace, path):
+  adjust-index-lookup(is-use |namespace, path, name):
     PropAccess(e, innerName@<is-use>) -> p*
     with
-      if ENTITY(e-type) := <type-of> e then
-        p* := <index-lookup-contained(|Property(), <strip-annos> innerName)> e-type
-        //or: p* := [[namespace | <index-path> e-type]]
+    if ENTITY(e-type) := <type-of> e then
+        p* := (<index-lookup-contained(|Property(), <strip-annos> innerName)> e-type)
       else
         p* := []
       end
 
   // Adjust the lookup behavior for variables,
   // overriding the lookup with a list of URIs
-  adjust-index-lookup(is-use |namespace, path):
+  adjust-index-lookup(is-use |namespace, path, name):
     Var(<is-use>) -> [[Var() | path], [Property() | path]]
+    
+  // Why is this needed? shouldn't the Var() adjust handle this?
+  // Adjust the lookup behavior for assignments,
+  // overriding the lookup with a list of URIs
+  adjust-index-lookup(is-use |namespace, path, name):
+    Assign(<is-use>, _) -> [[Var() | path], [Property() | path]]
 
   // Adjust the lookup behavior for function calls,
   // selecting a function with matching parameter types
   // (if this fails, the normal lookup behavior is used!)
-  adjust-index-lookup(is-use |namespace, path):
+  adjust-index-lookup(is-use |namespace, path, name):
     Call(innerName@<is-use>, args) -> def
     where
       arg-types := <map(type-of)> args;
-      all-defs  := <index-lookup-all-levels(fail |namespace, path, <strip-annos> innerName)>;
+      all-defs  := <index-lookup-all-levels(fail |namespace, path, innerName)>;
       def       := <getfirst(is-params-compatible(|arg-types))>

@@ -23,6 +23,12 @@ test Unknown type Q [[
   }
 ]] 1 error
 
+test Resolve entity reference [[
+  entity [[B]] {
+    b : [[B]]
+  }
+]] resolve #2 to #1
+
 test Resolve property access [[
   entity B {
     f(c : C) {
