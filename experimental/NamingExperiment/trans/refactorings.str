@@ -14,11 +14,16 @@ strategies
     with
       (ast', old-defs, old-uses, _, _, _) := <analyze-top> (ast, path, project-path);
       _{old-uri} := <collect-one(origin-equal(|selected-name))> ast';
-      new-uri    := <get-new-uri(|newname)> old-uri;
-      new-ast  := <topdown(try(rename(|old-uri, newname)))> ast';
-      (_, new-defs, new-uses, _, _, _) := <analyze-top> (<strip-annos> new-ast, path, project-path);
-      comparison := <zip> (<conc> (old-defs, old-uses), <conc> (new-defs, new-uses));
-      errors     := <filter(rename-error(|old-uri, new-uri))> comparison
+      new-uri    := <get-new-uri(|newname)> old-uri
+    with
+      if <index-get> Def(new-uri) then
+        errors := ["A definition with this name already exists"]
+      else
+        new-ast  := <topdown(try(rename(|old-uri, newname)))> ast';
+        (_, new-defs, new-uses, _, _, _) := <analyze-top> (<strip-annos> new-ast, path, project-path);
+        comparison := <zip> (<conc> (old-defs, old-uses), <conc> (new-defs, new-uses));
+        errors     := <filter(rename-error(|old-uri, new-uri))> comparison
+      end
 
   rename(|before-uri, after-name):
     a{before-uri} -> after-name
