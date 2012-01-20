@@ -139,10 +139,10 @@ test Shadowing of var (not allowed) [[
     }
   }
 ]] 1 error
-*/
 
 test Duplicate entity [[
   entity B {}
   entity B {}
 ]] 1 error
 
+*/

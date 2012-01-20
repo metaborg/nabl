@@ -55,6 +55,15 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
       (_, _, result, _, _, _) := <analyze-top> (selected, path, project-path)
+  
+  /*
+  generate-reads:
+    (selected, position, ast, path, project-path) -> (filename, result)
+    with
+      editor-init;
+      filename := <guarantee-extension(|"analyzed.aterm")> path;
+      (_, _, _, _, _, _, result) := <analyze-top> (selected, path, project-path)
+  */
       
   // Prints the entries in the index of the current file.
   index-currentfile:

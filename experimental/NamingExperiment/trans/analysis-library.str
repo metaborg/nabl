@@ -268,9 +268,17 @@ rules // index API primitives
       uses := <index-get-all> Use(uri, [])
       
   index-get-reads-all:
-    template -> reads
+    template -> <conc> (reads, readwildcards')
     where
-      reads := <index-get-all> Read(<index-uri>)
+      uri   := <index-uri> template;
+      reads := <index-get-all> Read(uri);
+      if !uri => [namespace, prefix | uri-parent] then
+        readwildcards  := <index-get-all> ReadWildcard([namespace | uri-parent], ());
+        readwildcards' := <index-substring-filter(|prefix)> readwildcards
+      else
+        readwildcards' := []
+      end
+      
  
   index-get-all-in-file:
     template -> <prim("LANG_index_get_all_in_file", template)>
@@ -354,7 +362,7 @@ rules // index API primitives
       store     := [namespace, prefix' | uri];
       // Store read in index.
       if set := <ReadSet> then
-        <iset-add(|ReadWildcard(template, prefix'))> set
+        <iset-add(|ReadWildcard([namespace | uri], prefix'))> set
       end
       
 rules // index lookup rules (take into account adjust-index-lookup)

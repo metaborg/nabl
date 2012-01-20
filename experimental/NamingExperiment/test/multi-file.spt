@@ -1,0 +1,19 @@
+module test3 
+
+language NamingExperiment
+
+test [[
+  module multifile
+  
+  entity C {
+    m : MultiFileEntity
+  }
+]] 
+
+test [[
+  module multifile
+  
+  entity C {
+    m : [[M]]
+  }
+]] complete to "MultiFileEntity"
