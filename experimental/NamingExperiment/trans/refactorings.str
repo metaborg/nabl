@@ -10,22 +10,15 @@ imports
 strategies
  
   rename-entity:
-    (newname, selected-name, position, ast, path, project-path) -> ([(ast, new-ast)], fatal-errors, <conc> (errors1, errors2), warnings)
+    (newname, selected-name, position, ast, path, project-path) -> ([(ast, new-ast)], errors, [], [])
     with
-      say(!""); say(!"");
       (ast', old-defs, old-uses, _, _, _) := <analyze-top> (ast, path, project-path);
       _{old-uri} := <collect-one(origin-equal(|selected-name))> ast';
       new-uri    := <get-new-uri(|newname)> old-uri;
-      write-to-string; debug(!1);
       new-ast  := <topdown(try(rename(|old-uri, newname)))> ast';
-      write-to-string; debug(!2); 
       (_, new-defs, new-uses, _, _, _) := <analyze-top> (<strip-annos> new-ast, path, project-path);
-      
       comparison := <zip> (<conc> (old-defs, old-uses), <conc> (new-defs, new-uses));
-      debug(!6);
-      errors1 := <filter(rename-error(|old-uri, new-uri))> comparison;
-      (errors2, warnings) := <semantic-constraint-issues> (ast, new-ast);
-      fatal-errors := []
+      errors     := <filter(rename-error(|old-uri, new-uri))> comparison
 
   rename(|before-uri, after-name):
     a{before-uri} -> after-name
@@ -39,19 +32,13 @@ strategies
       uri1 := <get-uri> entry1;
       uri2 := <get-uri> entry2;
       if <is-uri-descendant-of> (uri1, old-uri) then
-        <debug(!"net gerenamed? ")> (uri1, uri2);
         not(
           <is-uri-descendant-of> (uri2, new-uri);
-          debug(!2);
           <is-uri-descendant-same(|<length> old-uri)> (uri1, uri2)
         );
-        say(!"  nee!");
         error := "New name collides with existing name"
       else
-        <debug(!"zelfde gebleven? ")> (uri1, uri2);
-        <debug(!"en geen conflict? ")> (uri1, new-uri);
-        (not(!uri1 => uri2) <+ !uri1 => new-uri);
-        say(!"  nee!");
+        (not(!uri1 => uri2) <+ !uri2 => new-uri);
         error := "Existing name collides with new name"
       end
 
@@ -84,9 +71,3 @@ strategies
       <length> a* => ancestor-length
     <+
       <is-uri-descendant-same'(|ancestor-length)> (a*, b*)
-    
-  semantic-constraint-issues:
-    (ast, new-ast) -> (<diff>(new-errors, errors), <diff>(new-warnings, warnings))
-    where
-      (_, errors, warnings, _) := <editor-analyze> (ast, "", "");
-      (_, new-errors, new-warnings, _) := <editor-analyze> (new-ast, "", "")
