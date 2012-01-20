@@ -254,37 +254,43 @@ rules // index API
   index-get-data(|kind):
     <with(?Def(uri) | "Def expected")> -> data
     where
-      <index-get> DefData(uri, kind, []) => [DefData(_, _, data) | _]
+      <index-get-all> DefData(uri, kind, []) => [DefData(_, _, data) | _]
   
   index-get-data-all(|kind):
     <with(?Def(uri) | "Def expected")> -> datas'
     where
-      datas  := <index-get> DefData(uri, kind, []);
+      datas  := <index-get-all> DefData(uri, kind, []);
       datas' := <map(\DefData(_, _, d) -> d\)> datas
       
   index-get-uses-all:
     <with(?Def(uri) | "Def expected")> -> uses
     where
-      uses := <index-get> Use(uri, [])
+      uses := <index-get-all> Use(uri, [])
       
   index-get-reads-all:
-    <with(?Def(uri) | "Def expected")> -> reads
+    template -> reads
     where
-      reads := <index-get> Read(uri)
+      reads := <index-get-all> Read(<index-get-uri>)
  
-  index-get-all-in-file = prim("LANG_index_get_all_in_file", <id>)
+  index-get-all-in-file:
+    template -> <prim("LANG_index_get_all_in_file", template)>
   
-  index-get-all-files = prim("LANG_index_all_filenames")
+  index-get-all-files =
+    prim("LANG_index_all_filenames")
   
-  index-get-files-of = prim("LANG_index_get_file_of", <id>)
+  index-get-files-of:
+    template -> <prim("LANG_index_get_file_of", template)>
   
-  index-get:
+  index-get-all:
     template -> <prim("LANG_index_get", template)>
       with
        if set := <ReadSet> then
          uri := <index-get-uri>;
          <iset-add(|Read(uri))> set
        end
+  
+  index-get:
+    template -> <Fst> <index-get-all> template
   
   index-get-uri:
     Def(uri) -> uri
