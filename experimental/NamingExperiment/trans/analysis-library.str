@@ -7,13 +7,12 @@ imports
 signature constructors
 
   // Index elements:
-  Def     : List(UriPart) -> Summary
-  Use     : List(UriPart) * List(UriPart) -> Summary
-  BadUse  : List(UriPart) -> Summary
-  DefData : List(UriPart) * DefDataType * Term -> Summary
-  Read    : List(UriPart) -> Summary
-
-  // TODO: add a new constructor for URI header/path separation?
+  Def          : List(UriPart) -> Summary
+  Use          : List(UriPart) * List(UriPart) -> Summary
+  BadUse       : List(UriPart) -> Summary
+  DefData      : List(UriPart) * DefDataType * Term -> Summary
+  Read         : List(UriPart) -> Summary
+  ReadWildcard : List(UriPart) -> Summary
   
   // URI header:
   Namespace      : UriPart
@@ -108,8 +107,9 @@ rules // analysis traversals
   
   analyze-changed(get-all|currentFile):
     defs -> filenames
-    where uses := <mapconcat(get-all)> defs
-    where filenames := <make-set> <remove-all(?currentFile)> <mapconcat(index-get-file-of)> uses
+    with
+      uses := <mapconcat(get-all)> defs;
+      filenames := <make-set> <remove-all(?currentFile)> <mapconcat(index-get-files-of)> uses
   
   /**
    * Identifies all definitions in the tree
@@ -254,36 +254,52 @@ rules // index API
   index-get-data(|kind):
     <with(?Def(uri) | "Def expected")> -> data
     where
-      <index-get(|uri)> DefData(uri, kind, []) => [DefData(_, _, data) | _]
+      <index-get> DefData(uri, kind, []) => [DefData(_, _, data) | _]
   
   index-get-data-all(|kind):
     <with(?Def(uri) | "Def expected")> -> datas'
     where
-      datas  := <index-get(|uri)> DefData(uri, kind, []);
+      datas  := <index-get> DefData(uri, kind, []);
       datas' := <map(\DefData(_, _, d) -> d\)> datas
       
   index-get-uses-all:
     <with(?Def(uri) | "Def expected")> -> uses
     where
-      uses := <index-get(|uri)> Use(uri, [])
+      uses := <index-get> Use(uri, [])
       
   index-get-reads-all:
     <with(?Def(uri) | "Def expected")> -> reads
     where
-      reads := <index-get(|uri)> Read(uri)
+      reads := <index-get> Read(uri)
  
   index-get-all-in-file = prim("LANG_index_get_all_in_file", <id>)
   
-  index-get-all-filenames = prim("LANG_index_all_filenames")
+  index-get-all-files = prim("LANG_index_all_filenames")
   
-  index-get-file-of = prim("LANG_index_get_file_of", <id>)
+  index-get-files-of = prim("LANG_index_get_file_of", <id>)
   
-  index-get(|uri):
+  index-get:
     template -> <prim("LANG_index_get", template)>
       with
        if set := <ReadSet> then
+         uri := <index-get-uri>;
          <iset-add(|Read(uri))> set
        end
+  
+  index-get-uri:
+    Def(uri) -> uri
+  
+  index-get-uri:
+    Use(uri, _) -> uri
+  
+  index-get-uri:
+    DefData(uri, _, _) -> uri
+  
+  index-get-uri:
+    Read(uri) -> uri
+  
+  index-get-uri:
+    Read(uri) -> uri
       
   index-get-children(|template, name):
     x -> childs'
