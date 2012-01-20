@@ -68,7 +68,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       filename := <guarantee-extension(|"index.currentfile.aterm")> path;
-      result   := <map(\filename -> (filename, <index-get-all-in-file> filename)\)> <index-get-all-filenames>
+      result   := <map(\filename -> (filename, <index-get-all-in-file> filename)\)> <index-get-all-files>
   
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
   // Only succeeds for nodes of the form Type(_) for which GetEntity is defined.
