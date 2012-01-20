@@ -34,8 +34,8 @@ strategies
   rename-error(|old-uri, new-uri):
     (entry1, entry2) -> (entry1, error)
     where
-      uri1 := <get-uri> entry1;
-      uri2 := <get-uri> entry2;
+      uri1 := <index-uri> entry1;
+      uri2 := <index-uri> entry2;
       if <is-uri-descendant-of> (uri1, old-uri) then
         not(
           <is-uri-descendant-of> (uri2, new-uri);
@@ -57,12 +57,6 @@ strategies
       eq
     <+
       <is-uri-descendant-of'> (<Tl> uri-descendant, uri-ancestor) 
- 
-  get-uri:
-    Def(uri) -> uri
-    
-  get-uri:
-    Use(uri, _) -> uri
   
   is-uri-descendant-same(|ancestor-length):
     (uri1, uri2) -> <id>

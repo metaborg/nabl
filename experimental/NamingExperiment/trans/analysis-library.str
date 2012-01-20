@@ -12,7 +12,7 @@ signature constructors
   BadUse       : List(UriPart) -> Summary
   DefData      : List(UriPart) * DefDataType * Term -> Summary
   Read         : List(UriPart) -> Summary
-  ReadWildcard : List(UriPart) -> Summary
+  ReadWildcard : List(UriPart) * String -> Summary
   
   // URI header:
   Namespace      : UriPart
@@ -249,7 +249,7 @@ rules // index construction
     
   index-clear = prim("LANG_index_clear_all")
 
-rules // index API
+rules // index API primitives
   
   index-get-data(|kind):
     <with(?Def(uri) | "Def expected")> -> data
@@ -270,7 +270,7 @@ rules // index API
   index-get-reads-all:
     template -> reads
     where
-      reads := <index-get-all> Read(<index-get-uri>)
+      reads := <index-get-all> Read(<index-uri>)
  
   index-get-all-in-file:
     template -> <prim("LANG_index_get_all_in_file", template)>
@@ -281,64 +281,41 @@ rules // index API
   index-get-files-of:
     template -> <prim("LANG_index_get_file_of", template)>
   
+  /**
+   * Get all index entries that match the given template.
+   * Example:
+   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"])]
+   */
   index-get-all:
     template -> <prim("LANG_index_get", template)>
       with
        if set := <ReadSet> then
-         uri := <index-get-uri>;
+         uri := <index-uri>;
          <iset-add(|Read(uri))> set
        end
   
+  /**
+   * Get the first index entry that matches the given template, or fail.
+   * Example:
+   *   <index-get-all> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
+   */
   index-get:
     template -> <Fst> <index-get-all> template
   
-  index-get-uri:
+  index-uri:
     Def(uri) -> uri
   
-  index-get-uri:
+  index-uri:
     Use(uri, _) -> uri
   
-  index-get-uri:
+  index-uri:
     DefData(uri, _, _) -> uri
   
-  index-get-uri:
+  index-uri:
     Read(uri) -> uri
   
-  index-get-uri:
-    Read(uri) -> uri
-      
-  index-get-children(|template, name):
-    x -> childs'
-      with
-        childs := <prim("LANG_index_get_children", template)> x;
-        
-        // Take inner name when name is a COMPLETION term.
-        (
-          COMPLETION(name') := name 
-        <+ 
-          name' := name
-        );
-        
-        // Get namespace and URI.
-        Def([namespace | uri]) := template;
-        
-        if "" := name' then
-          childs' := childs;
-          store := [namespace, <strip-annos> x | uri]
-        else
-          // Filter out unnecessary results using substring filter on name.
-          childs' := <filter(index-substring-filter(|name'))> childs;
-          store := [namespace, name' | uri]
-      end;
-      
-      // Store read in index.
-       if set := <ReadSet> then
-         <iset-add(|Read(store))> set
-       end
-       
-  index-substring-filter(|name):
-    Def([_, n | _]) -> <id>
-    where <is-substring(!name)> n
+  index-uri:
+    ReadWildcard(uri, _) -> uri
     
   index-uri:
     x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
@@ -354,96 +331,196 @@ rules // index API
       else
         path' := path
       end
+  
+  index-is-definition =
+    where(nam-get-definition-key)
+      
+  index-get-children(|template, prefix):
+    x -> childs'
+      with
+        childs := <prim("LANG_index_get_children", template)> x;
+        
+        // Take inner name when name is a COMPLETION term.
+        (
+          COMPLETION(prefix') := prefix 
+        <+ 
+          prefix' := prefix
+        );
+        
+        // Get namespace and URI.
+        Def([namespace | uri]) := template;
+        
+        if "" := prefix' then
+          childs' := childs;
+          store := [namespace, <strip-annos> x | uri]
+        else
+          // Filter out unnecessary results using substring filter on name.
+          childs' := <filter(index-substring-filter(|prefix'))> childs;
+          store := [namespace, prefix' | uri]
+      end;
+      
+      // Store read in index.
+       if set := <ReadSet> then
+         <iset-add(|Read(store))> set
+       end
+      
+rules // index lookup rules (take into account adjust-index-lookup)
 
+  /**
+   * Given an annotated AST node, resolves it, returning its Def.
+   */
   index-lookup:
     x{[namespace | path]} -> <index-lookup(id |<index-namespace-unwrap> namespace, path, "")>
 
+  /**
+   * Given an annotated AST node, resolves it, returning all its Defs.
+   */
   index-lookup-all:
     x{[namespace | path]} -> <index-lookup-all(id |<index-namespace-unwrap> namespace, path, "")>
 
-  index-lookup(is-adjust-lookup-enabled |namespace, path, name):
+  /**
+   * Given an annotated AST node, resolves it, returning all its Defs.
+   *
+   * @param prefix    Only Defs with a name that starts with this
+   *                  string are returned.
+   *
+   * @internal
+   */
+  index-lookup(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> def
     where
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, name)>;
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix)>;
       def        := <index-select(|namespace, path, x)>
     <+
       // TODO: optimize: try not to call do-adjust-index-lookup from here
       [_ | path'] := path;
-      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', name)> x
+      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix)> x
 
-  index-lookup-all(is-adjust-lookup-enabled |namespace, path, name):
+  /**
+   * Given an annotated AST node, resolves it, returning all its Defs.
+   *
+   * @param prefix    Only Defs with a name that starts with this
+   *                  string are returned.
+   *
+   * @internal
+   */
+  index-lookup-all(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> defs'
     where
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, name)>;
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix)>;
       defs       := <index-select-all(|namespace, path, x)>;
       // TODO: optimize: try not to call do-adjust-index-lookup from here
       if [_ | path'] := path then
-        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', name)> x;
+        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix)> x;
         defs' := <conc> (defs, defs2)
       else
         defs' := defs
       end
 
-  index-lookup-outermost(|name):
-    x{[namespace | path]} -> <index-lookup-outermost(id |<index-namespace-unwrap> namespace, path, name)>
+  /**
+   * Given an annotated AST node, returns the outermost Def with a corresponding URI. 
+   *
+   * @param prefix    Only Defs with a name that starts with this
+   *                  string are returned.
+   */
+  index-lookup-outermost(|prefix):
+    x{[namespace | path]} -> <index-lookup-outermost(id |<index-namespace-unwrap> namespace, path, prefix)>
 
-  index-lookup-outermost(is-adjust-lookup-enabled |namespace, path, name):
+  /**
+   * Given an annotated AST node, returns the outermost Def with a corresponding URI. 
+   *
+   * @param prefix    Only Defs with a name that starts with this
+   *                  string are returned.
+   *
+   * @internal
+   */
+  index-lookup-outermost(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> def
     where
       // TODO: optimize: just like index-lookup
       [_ | path'] := path;
-      def         := <index-lookup-outermost(is-adjust-lookup-enabled |namespace, path', name)> x
+      def         := <index-lookup-outermost(is-adjust-lookup-enabled |namespace, path', prefix)> x
     <+
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, name)>;
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix)>;
       def        := <index-select(|namespace, path, x)>
 
-  index-lookup-one-level(|name):
-    x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, name)>
+  /**
+   * Given an annotated AST node, returns a Def that has the same parent URI. 
+   *
+   * @param prefix    Only Defs with a name that starts with this
+   *                  string are returned.
+   */
+  index-lookup-one-level(|prefix):
+    x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix)>
   
-  index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path, name):
+  index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path, prefix):
     x -> defs
     with
       is-adjusted-lookup-enabled;
-      do-adjusted-index-lookup(|namespace, path, x, name);
+      do-adjusted-index-lookup(|namespace, path, x, prefix);
       mapconcat(\d@Def(p) -> [d]\
-          <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path', name)> x\
+          <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path', prefix)> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
       ?defs
     <+
-      defs := <index-get-children(|Def([namespace | path]), name)>
+      defs := <index-get-children(|Def([namespace | path]), prefix)>
 
-  index-lookup-all-levels(|name):
-    x{[namespace | path]} -> <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, name)>
+  index-lookup-all-levels(|prefix):
+    x{[namespace | path]} -> <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, prefix)>
   
-  index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path, name):
+  index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> all-defs
     with
       is-adjust-lookup-enabled;
-      do-adjusted-index-lookup(|namespace, path, x, name);
+      do-adjusted-index-lookup(|namespace, path, x, prefix);
       mapconcat(\d@Def(p) -> [d]\
-          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', name)> x\
+          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', prefix)> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
       ?all-defs
     <+
-      one-level := <index-get-children(|Def([namespace | path]), name)>;
+      one-level := <index-get-children(|Def([namespace | path]), prefix)>;
       if [_ | path'] := path then
-        all-defs := <concat> [one-level, <index-lookup-all-levels(fail |namespace, path', name)> x]
+        all-defs := <concat> [one-level, <index-lookup-all-levels(fail |namespace, path', prefix)> x]
       else
         all-defs := one-level
       end
 
-  index-lookup-contained(|namespace, name):
+  /** @Deprecated */
+  index-lookup-contained(|namespace, prefix) =
+    index-lookup-children(|namespace, prefix)
+    
+  index-lookup-contained-all-levels(|namespace, name) =
+    index-lookup-descendants(|namespace, name)
+
+  /**
+   * Given an annotated AST node, resolves it,
+   * and returns all child Defs of its definition.
+   *
+   * @param namespace Only child Defs with this namespace are returned.
+   * @param prefix    Only child Defs with a name that starts with this
+   *                  string are returned.
+   */
+  index-lookup-children(|namespace, prefix):
     x{[ns | path]} -> defs
     with
       if !ns => Unresolved(_) then
         Def([_ | def-path]) := <index-lookup>;
-        defs := <index-lookup-one-level(id|namespace, def-path, name)> x 
+        defs := <index-lookup-one-level(id|namespace, def-path, prefix)> x 
       else
-        defs := <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, name)>
+        defs := <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix)>
       end
-      <+ defs := []
+    <+
+      defs := []
 
-  index-lookup-contained-all-levels(|namespace, name):
+  /**
+   * Given an annotated AST node, resolves it,
+   * and returns all descendant Defs of its definition.
+   *
+   * @param namespace Only child Defs with this namespace are returned.
+   * @param prefix    Only child Defs with a name that starts with this
+   *                  string are returned.
+   */
+  index-lookup-descendants(|namespace, name):
     x{[ns | path]} -> defs
     with
       if !ns => Unresolved(_) then
@@ -452,13 +529,15 @@ rules // index API
       else
         defs := <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, name)>
       end
-      <+ defs := []
-  
-  index-lookup-container(|namespace):
-    x{[ns | path]} -> def
-    with
-      def := ();
-      fatal-err(|"Not implemented") // TODO: index-lookup-container
+    <+
+      defs := []
+
+/** @internal */
+rules // Internal helpers
+       
+  index-substring-filter(|name):
+    Def([_, n | _]) -> <id>
+    where <is-substring(!name)> n
 
   index-namespace-unwrap =
     \Unresolved(n) -> n\ <+ id
@@ -483,9 +562,6 @@ rules // index API
         ?Def([_, <SRTS-EXT-eq-ignore-annos(|use)> | _])
       )
     )
-  
-  index-is-definition =
-    where(nam-get-definition-key)
   
   do-adjusted-index-path(|namespace, path, def) =
     adjust-index-path(origin-equal(|def) |namespace, path)
