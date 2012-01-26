@@ -6,8 +6,9 @@ test No changes after update
   prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-timestamps"]);
   
   <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
-  index-timestamp-set-updated(|"ServiceA");
   with(<call> ("sleep", ["1"]) | "System must provide sleep command");
+  
+  index-timestamp-set-updated(|"ServiceA");
   index-timestamp-get-updates(|"ServiceA") => [_] // expect only timestamp
 
 test Changes after add
