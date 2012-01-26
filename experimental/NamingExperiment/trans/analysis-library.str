@@ -47,7 +47,7 @@ rules // analysis traversals
     with
       // Init
       full-path := $[[project-path]/[path]];
-      prim("LANG_index_setup", "NamingExperiment", [project-path])
+      index-setup(|<prim("SSL_EXT_origin_language", ast)>, [project-path])
     with 
       // Store copy of defs for diff and clear file
       olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
@@ -240,7 +240,11 @@ rules // analysis traversals
       appl'          := <all(\(a, _) -> a\)> appl;
       unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
 
-rules // index construction
+rules // index management
+    
+  index-setup(|language, project-paths) =
+    project-path;
+    prim("LANG_index_setup", language, project-paths)
     
   index-add-all(|file) =
     list-loop(with(prim("LANG_index_add", <id>, file)))
@@ -249,6 +253,8 @@ rules // index construction
     list-loop(with(prim("LANG_index_remove", <id>, file)))
     
   index-clear = prim("LANG_index_clear_all")
+    
+  index-commit = prim("LANG_index_commit")
 
 rules // index API primitives
   

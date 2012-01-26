@@ -1,6 +1,10 @@
-module test3 
+module multi-file 
 
 language NamingExperiment
+
+/*********************************************************************
+ * NOTE: these tests depend on the analysis of multi-file-helper.nam *
+ *********************************************************************/
 
 test [[
   module multifile
