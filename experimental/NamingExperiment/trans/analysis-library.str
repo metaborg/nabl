@@ -83,12 +83,10 @@ rules // analysis traversals
       |}
     with
       // Find removed and added definitions
-      (added, removed) := <analyze-diff> (olddefs, defs)
-    with
-      // Schedule re-analysis of files that have a use of a removed def
-      <map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))> <analyze-changed(|full-path)> removed;
-      // Schedule re-analysis of files that have a read of an added def
-      <map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))> <analyze-changed(|full-path)> added
+  	  (added, removed) := <analyze-diff> (olddefs, defs)
+  	with
+  	  // Schedule re-analysis of files that have a Use or Read of a removed def and Read of an added def.
+  	  reanalyze-all(|added, removed, full-path)
       
   analyze-diff: 
     (defs1, defs2) -> (added, removed)
@@ -105,12 +103,26 @@ rules // analysis traversals
     where
       <string-ends-with(|".spt")> path;
       not(prim("SSL_EXT_origin_language", ast) => "Spoofax-Testing")
-  
-  analyze-changed(|currentFile):
-    defs -> filenames
-    with
-      reads     := <mapconcat(index-get-reads-all)> defs;
-      filenames := <make-set> <remove-all(?currentFile)> <mapconcat(index-get-files-of)> reads
+      
+  analyze-changed(get-all):
+  	defs -> filenames
+  	with 
+  	  uses := <mapconcat(get-all)> defs;
+  	  filesAndSubFiles := <mapconcat(index-get-files-of)> uses;
+  	  filenames := <map(Fst)> filesAndSubFiles
+  	
+  analyze-all-changed-files(|added, removed, full-path):
+  	_ -> changed
+  	with
+      changed := <make-set> <remove-all(?full-path)> <concat> [
+  	  	<analyze-changed(index-get-uses-all)> removed,
+  	  	<analyze-changed(index-get-reads-all)> removed,
+  	  	<analyze-changed(index-get-reads-all)> added
+  	  ]
+  	  
+  reanalyze-all(|added, removed, full-path) =
+    analyze-all-changed-files(|added, removed, full-path);
+    map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))
   
   /**
    * Identifies all definitions in the tree
@@ -185,7 +197,7 @@ rules // analysis traversals
       analyzed     := <all(analyze-uses(|ast))> ast;
       (ast', uses) := <unzip-analyzed> analyzed;
       if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
-        if Def(def-uri) := <index-lookup(id |namespace, path, "")> ast' then // TODO: Change ""
+        if Def(def-uri) := <index-lookup(id |namespace, path, <strip-annos> ast')> ast' then
           ast'' := ast{def-uri};
           if key{keyUri} := <nam-get-definition-key> parent ; not(<eq>(key, ast')) then
             uses' := [Use(def-uri, keyUri) | uses]
@@ -275,15 +287,14 @@ rules // index API primitives
       uses := <index-get-all> Use(uri, [])
       
   index-get-reads-all:
-    template -> <conc> (reads, readwildcards')
+    template -> <conc> (reads, readwildcards)
     where
       uri   := <index-uri> template;
       reads := <index-get-all> Read(uri);
       if !uri => [namespace, prefix | path-parent] then
-        readwildcards  := <index-get-all> ReadWildcard([namespace | path-parent], ());
-        readwildcards' := <filter(index-is-name-substring(|prefix))> readwildcards
+        readwildcards  := <index-get-all> ReadWildcard([namespace | path-parent], prefix)
       else
-        readwildcards' := []
+        readwildcards := []
       end
  
   index-get-all-in-file:
@@ -400,13 +411,13 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * Given an annotated AST node, resolves it, returning its Def.
    */
   index-lookup:
-    x{[namespace | path]} -> <index-lookup(id |<index-namespace-unwrap> namespace, path, "")>
+    x{[namespace | path]} -> <index-lookup(id |<index-namespace-unwrap> namespace, path, <strip-annos> x)>
 
   /**
    * Given an annotated AST node, resolves it, returning all its Defs.
    */
   index-lookup-all:
-    x{[namespace | path]} -> <index-lookup-all(id |<index-namespace-unwrap> namespace, path, "")>
+    x{[namespace | path]} -> <index-lookup-all(id |<index-namespace-unwrap> namespace, path, <strip-annos> x)>
 
   /**
    * Given an annotated AST node, resolves it, returning all its Defs.
