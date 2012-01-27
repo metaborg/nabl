@@ -2,8 +2,8 @@ module analysis-manual
 
 imports
   include/NamingExperiment
+  lib/analysis-library
   analysis-generated
-  analysis-library
   types
 
 rules

@@ -20,8 +20,8 @@ prettyprint:
 prettyprint:
   Property(x, y) -> $[[x] : [<prettyprint> y]]
   
-prettyprint:
-  Type(t) -> $[[t]]
+//prettyprint:
+//  Type(t) -> $[[t]]
 	
 prettyprint=
   where(is-string <+ is-num)

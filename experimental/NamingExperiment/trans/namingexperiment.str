@@ -6,13 +6,13 @@ imports
   libstratego-aterm
   include/NamingExperiment
   lib/editor-common.generated
+  lib/analysis-library
   check
   generate
   prettyprint
   refactorings
   analysis-manual
   analysis-generated
-  analysis-library
 
 rules // Main editor interface (defined by editor/NamingExperiment-Builders and -References.esv)
   

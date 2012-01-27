@@ -2,8 +2,8 @@ module analysis-imports
 
 imports
   include/NamingExperiment
+  lib/analysis-library
   analysis-generated
-  analysis-library
 
 signature constructors
   

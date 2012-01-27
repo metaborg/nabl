@@ -1,4 +1,4 @@
-module analysis-library
+module lib/analysis-library
 
 imports
   libstratego-lib
