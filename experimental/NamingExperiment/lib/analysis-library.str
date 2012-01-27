@@ -287,15 +287,20 @@ rules // index API primitives
       uses := <index-get-all> Use(uri, [])
       
   index-get-reads-all:
-    template -> <conc> (reads, readwildcards)
+    template -> <conc> (reads, readwildcards')
     where
       uri   := <index-uri> template;
       reads := <index-get-all> Read(uri);
       if !uri => [namespace, prefix | path-parent] then
-        readwildcards  := <index-get-all> ReadWildcard([namespace | path-parent], prefix)
+        readwildcards  := <index-get-all> ReadWildcard([namespace | path-parent], ());
+        readwildcards' := <filter(readwildcard-substring(|prefix))> readwildcards
       else
-        readwildcards := []
+        readwildcards' := []
       end
+      
+  readwildcard-substring(|prefix):
+    ReadWildcard(_, name) -> <id>
+    where <is-substring(!prefix)> name
  
   index-get-all-in-file:
     filepath -> entries
