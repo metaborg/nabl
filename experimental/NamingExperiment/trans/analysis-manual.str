@@ -17,7 +17,7 @@ rules
   adjust-index-lookup(is-use |namespace, path, prefix):
     PropAccess(e, <is-use>) -> p*
     with
-    if ENTITY(e-type) := <type-of> e then
+      if ENTITY(e-type) := <type-of> e then
         p* := (<index-lookup-children(|Property(), prefix)> e-type)
       else
         p* := []

@@ -81,7 +81,7 @@ test Resolve property access fails [[
   entity B {
     y : A
     f(a : A) {
-      var v : A = a.x.y.x.x
+      var v : A = a.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.x
     }
   }
 ]] 1 error

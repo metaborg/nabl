@@ -6,7 +6,6 @@ module example2
 
 context-free syntax
 
-  
     "module" Module@=ID Definition*     -> Start {"Module", scope(Entity, Module)}
     "entity" Entity@=ID "{" Member* "}" -> Definition {"Entity", scope(Property, Function)}
     "import" Module@STRING              -> Definition {"Import"}
