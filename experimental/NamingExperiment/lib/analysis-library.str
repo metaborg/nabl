@@ -40,14 +40,14 @@ rules // extension points
   
   // adjust-index-path-from-filesystem(|project-path, path)
 
-rules // analysis traversals
+rules // analysis traversals,
    
   analyze-top:
     (ast, path, project-path) -> (ast5, defs, uses, data', added, removed)
     with
       // Init
       full-path := $[[project-path]/[path]];
-      index-setup(|<prim("SSL_EXT_origin_language", ast)>, [project-path])
+      index-setup(|<collect-one(prim("SSL_EXT_origin_language", <id>))> ast, [project-path])
     with 
       // Store copy of defs for diff and clear file
       olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
@@ -56,7 +56,7 @@ rules // analysis traversals
       {| ReadSet:
         readSet := <new-iset>;
         rules(ReadSet: _ -> readSet);
-      
+        
         // Add Unresolved annotations, record globals 
         (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast); // HACK: force origin tracking with Some()... // TODO: still needed?
         <index-add-all(|full-path)> defs;
@@ -79,7 +79,9 @@ rules // analysis traversals
         // Store reads
         if not(<is-test-input> (ast, path)) then
           <index-add-all(|full-path)> <iset-elements> readSet
-        end
+        end;
+        
+        <iset-destroy> readSet
       |}
     with
       // Find removed and added definitions
