@@ -1,0 +1,150 @@
+module lib/index-library
+
+imports
+  libstratego-lib
+  lib/editor-common.generated
+  
+signature constructors
+  
+  // Index elements
+  DefData      : List(UriPart) * DefDataType * Term -> Summary
+    
+  // URI header
+  Namespace      : UriPart
+  Unresolved     : Namespace -> UriPart
+  INTERNAL_ERROR : UriPart
+  Timestamp      : UriPart
+ 
+  // Remainder of URI
+  String : UriPart
+  Anon   : Int -> UriPart
+  Anon   : UriPart
+  
+rules // Index management
+   
+  /**
+   * Sets up the index library for given language and project paths.
+   * Must be called once before doing anything with the library.
+   */
+  index-setup(|language, project-paths) =
+    project-path;
+    prim("LANG_index_setup", language, project-paths)
+
+  /**
+   * Adds all given elements to the index with given file path and optionally subfile.
+   *
+   * Example:
+   *   <index-add-all(|"fullpath/file.ext")> [Def([Entity(), "Bar"]), ...]
+   *   <index-add-all(|("fullpath/file.ext", "subfile"))> [Def([Entity(), "Bar"]), ...]
+   */
+  index-add-all(|files) =
+    list-loop(with(prim("LANG_index_add", <id>, files)))
+    
+  /**
+   * Removes all given elements from the index that are contained in given file path and optionally subfile.
+   *
+   * Example:
+   *   <index-remove-all(|"fullpath/file.ext")> [Def([Entity(), "Bar"]), ...]
+   *   <index-remove-all(|("fullpath/file.ext", "subfile"))> [Def([Entity(), "Bar"]), ...]
+   */
+  index-remove-all(|files) =
+    list-loop(with(prim("LANG_index_remove", <id>, files)))
+    
+  /**
+   * Removes all elements from the index that are contained in given file path and optionally subfile.
+   *
+   * Example:
+   *   <index-clear-file> "fullpath/file.ext"
+   *   <index-clear-file> ("fullpath/file.ext", "subfile")
+   */
+  index-clear-file = 
+    prim("LANG_index_clear_file", <id>)
+    
+  /**
+   * Clears all elements from the index.
+   */
+  index-clear = 
+    prim("LANG_index_clear_all")
+   
+  /**
+   * Commits index to a file on disk.
+   */
+  index-commit = 
+    prim("LANG_index_commit")
+  
+rules // Index API
+  
+  /**
+   * Gets a list of all files and subfile for current project.
+   *
+   * Example:
+   *   <index-get-all-files> => ["fullpath/file.ext", ...]
+   */   
+  index-get-all-files =
+    prim("LANG_index_all_files")
+  
+  /**
+   * Gets all index entries for the given file path and optionally subfile.
+   *
+   * Example:
+   *   <index-get-all-in-file> "fullpath/file.ext" => [Def([Entity(), "Bar"]), ...]
+   *   <index-get-all-in-file> ("fullpath/file.ext", "subfile") => [Def([Entity(), "Bar"]), ...]
+   */  
+  index-get-all-in-file:
+    filepath -> entries
+    with
+      entries := <prim("LANG_index_get_all_in_file", filepath)>
+    
+  /**
+   * Gets the containing file and subfile of index entry with given template.
+   *
+   * Example:
+   *   <index-get-files-of> Def([Entity(), "Bar"]) => [("fullpath/file.ext", "subfile"), ...]
+   */  
+  index-get-files-of:
+    template -> <prim("LANG_index_get_files_of", template)>
+    
+  /**
+   * Get all index entries that match the given template.
+   *
+   * Example:
+   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"]), ...]
+   */
+  indexlib-get-all:
+    template -> <prim("LANG_index_get", template)>
+ 
+  /**
+   * Get the first index entry that matches the given template, or fail.
+   *
+   * Example:
+   *   <index-get-all> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
+   */
+  indexlib-get:
+    template -> <Fst> <indexlib-get-all> template
+ 
+  /**
+   * Updates the "last updated" timestamp for the given service name.
+   *
+   * @see index-get-changes-since-timestamp(|service)
+   */
+  index-timestamp-set-updated(|service) =
+    prim("LANG_index_add", DefData([Timestamp(), "timestamps", ".internal"], Timestamp(), []), $[/.internal/timestamps/[service]])
+   
+  /**
+   * Gets all files with changes since the last time stamp update for the given service name.
+   */
+  index-timestamp-get-updates(|service):
+    _ -> files
+    with
+      files := <prim("LANG_index_get_files_newer_than", $[/.internal/timestamps/[service]])>
+
+  /**
+   * Gets the URI for given term.
+   */ 
+  index-uri:
+    DefData(uri, _, _) -> uri
+      
+rules // Internal helpers
+  
+  index-namespace-unwrap =
+    \Unresolved(n) -> n\ <+ id

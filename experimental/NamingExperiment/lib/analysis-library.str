@@ -3,27 +3,16 @@ module lib/analysis-library
 imports
   libstratego-lib
   lib/editor-common.generated
+  lib/index-library
  
 signature constructors
  
-  // Index elements:
+  // Index elements
   Def          : List(UriPart) -> Summary
   Use          : List(UriPart) * List(UriPart) -> Summary
   BadUse       : List(UriPart) -> Summary
-  DefData      : List(UriPart) * DefDataType * Term -> Summary
   Read         : List(UriPart) -> Summary
   ReadWildcard : List(UriPart) * String -> Summary
- 
-  // URI header:
-  Namespace      : UriPart
-  Unresolved     : Namespace -> UriPart
-  INTERNAL_ERROR : UriPart
-  Timestamp      : UriPart
- 
-  // Remainder of URI:
-  String : UriPart
-  Anon   : Int -> UriPart
-  Anon   : UriPart
  
 rules // extension points
  
@@ -47,11 +36,11 @@ rules // analysis traversals
     with
       // Init
       full-path := $[[project-path]/[path]];
-      index-setup(|<prim("SSL_EXT_origin_language", ast)>, [project-path])
+      index-setup(|<index-origin-language> ast, [project-path])
     with
       // Store copy of defs for diff and clear file
       olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
-      prim("LANG_index_clear_file", full-path)
+      <index-clear-file> full-path
     with
       {| ReadSet, UnresolvedSet:
         readSet := <new-iset>;
@@ -261,40 +250,52 @@ rules // analysis traversals
       appl'          := <all(\(a, _) -> a\)> appl;
       unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
  
-rules // index management
-   
-  index-setup(|language, project-paths) =
-    project-path;
-    prim("LANG_index_setup", language, project-paths)
-   
-  index-add-all(|file) =
-    list-loop(with(prim("LANG_index_add", <id>, file)))
-   
-  index-remove-all(|file) =
-    list-loop(with(prim("LANG_index_remove", <id>, file)))
-   
-  index-clear = prim("LANG_index_clear_all")
-   
-  index-commit = prim("LANG_index_commit")
- 
 rules // index API primitives
  
+  /**
+   * Gets all DefData entries that match the kind of data and URI in given definition.
+   *
+   * @param kind Only data of this kind is returned.
+   *
+   * Example:
+   *   <index-get-data(|Type())> Def([Entity(), "Bar"]) => [DefData([Entity(), "Bar"], Type(), TYPE("Bar")), ...]
+   */
   index-get-data(|kind):
     <with(?Def(uri) | "Def expected")> -> data
     where
       <index-get-all> DefData(uri, kind, []) => [DefData(_, _, data) | _]
- 
+      
+	/**
+	 * Gets all data entries that match the kind of data and URI in given definition.
+	 *
+	 * @param kind Only data of this kind is returned.
+	 *
+	 * Example:
+	 *   <index-get-data-all(|Type())> Def([Entity(), "Bar"]) => [TYPE("Bar"), ...]
+	 */
   index-get-data-all(|kind):
     <with(?Def(uri) | "Def expected")> -> datas'
     where
       datas  := <index-get-all> DefData(uri, kind, []);
       datas' := <map(\DefData(_, _, d) -> d\)> datas
      
+  /**
+   * Gets all Use entries that match the URI in given definition.
+   *
+   * Example:
+   *   <index-get-uses-all> Def([Entity(), "M", "Bar"]) => [Use([Entity(), "M", "Bar"], [Entity(), "M"]), ...]
+   */
   index-get-uses-all:
     <with(?Def(uri) | "Def expected")> -> uses
     where
       uses := <index-get-all> Use(uri, [])
      
+  /**
+   * Gets all Read or ReadWildcard entries that match the given template.
+   *
+   * Example:
+   *   <index-get-reads-all> [Property(), "Bar", "p"] => [Read([Property(), "Bar", "p"]), ...]
+   */
   index-get-reads-all:
     template -> <conc> (reads, readwildcards')
     where
@@ -302,85 +303,73 @@ rules // index API primitives
       reads := <index-get-all> Read(uri);
       if !uri => [namespace, prefix | path-parent] then
         readwildcards  := <index-get-all> ReadWildcard([namespace | path-parent], ());
-        readwildcards' := <filter(readwildcard-substring(|prefix))> readwildcards
+        readwildcards' := <filter(index-readwildcard-substring(|prefix))> readwildcards
       else
         readwildcards' := []
       end
-     
-  readwildcard-substring(|prefix):
-    ReadWildcard(_, name) -> <id>
-    where <is-substring(!prefix)> name
- 
-  index-get-all-in-file:
-    filepath -> entries
-    with
-      entries := <prim("LANG_index_get_all_in_file", filepath)>
- 
-  index-get-all-files =
-    prim("LANG_index_all_files")
- 
-  /**
-   * Updates the "last updated" timestamp for the given service name.
-   *
-   * @see index-get-changes-since-timestamp(|service)
-   */
-  index-timestamp-set-updated(|service) =
-    prim("LANG_index_add", DefData([Timestamp(), "timestamps", ".internal"], Timestamp(), []), $[/.internal/timestamps/[service]])
-   
-  /**
-   * Gets all files with changes since the last time stamp update
-   * for the given service name.
-   */
-  index-timestamp-get-updates(|service):
-    _ -> files
-    with
-      files := <prim("LANG_index_get_files_newer_than", $[/.internal/timestamps/[service]])>
- 
-  index-get-files-of:
-    template -> <prim("LANG_index_get_file_of", template)>
  
   /**
    * Get all index entries that match the given template.
+   *
    * Example:
-   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"])]
+   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"]), ...]
    */
   index-get-all:
-    template -> <prim("LANG_index_get", template)>
+    template -> <indexlib-get-all> template
       with
        if set := <ReadSet> then
          uri := <index-uri>;
          <iset-add(|Read(uri))> set
        end
- 
+       
   /**
    * Get the first index entry that matches the given template, or fail.
+   *
    * Example:
    *   <index-get-all> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
    */
   index-get:
     template -> <Fst> <index-get-all> template
  
+  /**
+   * Gets the URI for given term.
+   */
   index-uri:
     Def(uri) -> uri
- 
+    
+  /**
+   * Gets the URI for given term.
+   */
   index-uri:
     Use(uri, _) -> uri
- 
-  index-uri:
-    DefData(uri, _, _) -> uri
- 
+    
+  /**
+   * Gets the URI for given term.
+   */
   index-uri:
     Read(uri) -> uri
  
+  /**
+   * Gets the URI for given term.
+   */
   index-uri:
     ReadWildcard(uri, _) -> uri
    
+  /**
+   * Gets the URI for given term.
+   */
   index-uri:
     x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
    
+  /**
+   * Gets the namespace part of the URI for given term.
+   */
   index-namespace:
     x{[namespace | path]} -> <index-namespace-unwrap> namespace
- 
+
+  /**
+   * Gets the path part of the URI for given term.
+   */
   index-path:
     x{[namespace | path]} -> path'
     where
@@ -615,6 +604,8 @@ rules // index lookup rules (take into account adjust-index-lookup)
 /** @internal */
 rules // Internal helpers
        
+  index-origin-language = (origin-term <+ id); prim("SSL_EXT_origin_language", <id>)
+       
   index-is-name-substring(|name):
     template -> <id>
     with
@@ -622,10 +613,11 @@ rules // Internal helpers
     where
       <is-substring(!name)> uri-name
       
+  index-readwildcard-substring(|prefix):
+    ReadWildcard(_, name) -> <id>
+    where <is-substring(!prefix)> name
+      
   index-is-unresolved(|x) = <iset-contains(|x)> <UnresolvedSet>
- 
-  index-namespace-unwrap =
-    \Unresolved(n) -> n\ <+ id
  
   do-adjust-index-lookup(|namespace, path, use, prefix) =
     // UNDONE: try(origin-term);
@@ -658,7 +650,7 @@ rules // Internal helpers
       ?Def([_, name | _]);
       <SRTS-EXT-eq-ignore-annos(|expected)> name
     )
- 
+  
   external SRTS-EXT-eq-ignore-annos(|t)
  
 rules // interface for generated code
