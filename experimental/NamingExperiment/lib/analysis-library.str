@@ -40,7 +40,7 @@ rules // extension points
  
   // adjust-index-path-from-filesystem(|project-path, path)
  
-rules // analysis traversals,
+rules // analysis traversals
    
   analyze-top:
     (ast, path, project-path) -> (ast5, defs, uses, data', added, removed)
@@ -79,17 +79,22 @@ rules // analysis traversals,
         <index-add-all(|full-path)> uses;
         ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
        
-        // Store reads
+        // Store reads into the index (if current language is not testing language)
         if not(<is-test-input> (ast, path)) then
           <index-add-all(|full-path)> <iset-elements> readSet
         end
       |}
     with
-      // Find removed and added definitions
-      (added, removed) := <analyze-diff> (olddefs, defs)
-    with
-      //Schedule re-analysis of files that have a Use or Read of a removed def and Read of an added def.
-      reanalyze-all(|added, removed, full-path)
+      // Schedule re-analysis of dependent files (if current file is not testing language file)
+      // HACK: Depends on file extension, could be other languages with .spt extension?
+      if not(<is-test-file> path) then
+	      // Find removed and added definitions
+	      (added, removed) := <analyze-diff> (olddefs, defs);
+	      // Schedule re-analysis of files that have a Use or Read of a removed def and Read of an added def
+	      reanalyze-all(|added, removed, full-path)
+	    else
+	      (added, removed) := ([], [])
+      end
      
   analyze-diff:
     (defs1, defs2) -> (added, removed)
@@ -97,31 +102,32 @@ rules // analysis traversals,
       added   := <diff(analyze-diff-eq)> (defs2, defs1);
       removed := <diff(analyze-diff-eq)> (defs1, defs2)
  
-  // Compensate for changing anonymous namespace names.
+  // Compensate for changing anonymous namespace names
   analyze-diff-eq = ?(Def(u1), Def(u2)); (<eq> (u1, u2) <+ <eq> (<remove-all(?Anon(_))> u1, <remove-all(?Anon(_))> u2))
  
   // Tests if the current file is just a testing language input
+  is-test-file = string-ends-with(|".spt")
   is-test-input:
     (ast, path) -> (ast, path)
     where
-      <string-ends-with(|".spt")> path;
+      <is-test-file> path;
       not(prim("SSL_EXT_origin_language", ast) => "Spoofax-Testing")
      
   analyze-changed(get-all):
-        defs -> filenames
-        with
-          uses := <mapconcat(get-all)> defs;
-          filesAndSubFiles := <mapconcat(index-get-files-of)> uses;
-          filenames := <map(Fst)> filesAndSubFiles
+    defs -> filenames
+    with
+      uses := <mapconcat(get-all)> defs;
+      filesAndSubFiles := <mapconcat(index-get-files-of)> uses;
+      filenames := <map(Fst)> filesAndSubFiles
        
   analyze-all-changed-files(|added, removed, full-path):
-        _ -> changed
-        with
-      changed := <make-set> <remove-all(?full-path)> <concat> [
-                <analyze-changed(index-get-uses-all)> removed,
-                <analyze-changed(index-get-reads-all)> removed,
-                <analyze-changed(index-get-reads-all)> added
-          ]
+    _ -> changed
+    with
+    changed := <make-set> <remove-all(?full-path <+ is-test-file)> <concat> [
+	    <analyze-changed(index-get-uses-all)> removed,
+	    <analyze-changed(index-get-reads-all)> removed,
+	    <analyze-changed(index-get-reads-all)> added
+    ]
          
   reanalyze-all(|added, removed, full-path) =
     analyze-all-changed-files(|added, removed, full-path);
