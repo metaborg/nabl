@@ -80,14 +80,17 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       result   := <map(\filename -> (filename, <index-get-all-in-file> filename)\)> <index-get-all-files>
   
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
-  // Only succeeds for nodes of the form Type(_) for which GetEntity is defined.
   editor-resolve:
     (node, position, ast, path, project-path) -> target
     where
-      // TODO: shouldn't work on parent node? remove this hack?
-      !node => <one(?subnode) <+ ?subnode>;
+      if <is-test-file> path then
+        // HACK: Workaround for testing language selecting wrong node to resolve
+        !node => <collect-one(?subnode{[_|_]})>
+      else
+        !node => subnode
+      end;
       def     := <index-lookup> subnode;
-      target  := /*<index-get-term>*/ def
+      target  := def
 
   // Returns "hover help" information for a particular node in the editor.
   // For references, this rule is invoked using the resolved term.
@@ -95,7 +98,6 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (target, position, ast, path, project-path) -> $[[def-path'']]
     where
       // FIXME: this only works for definition paths
-      //<debug(!2)> target;
       def-term           := <nam-get-definition-key> target;
       _{[ns | def-path]} := def-term;
       def-path'  := <take-until(?Anon(_))> def-path;
