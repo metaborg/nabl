@@ -363,6 +363,30 @@ rules // index API primitives
       else
         readwildcards' := []
       end
+      
+  /**
+   * Gets a set of all references to other files the given file (and subfile) has, including the file itself.
+   *
+   * @param entryFilter Filter strategy that is applied to all entries of given file to only look
+   *                    at dependency constructs such as Use(_) or Read(_)
+   *
+   * Example:
+   *   <index-file-references(?Read(_) <+ ?ReadWildcard(_, _)))> "fullpath/file.ext" => [("fullpath/otherfile.ext", "subfile"), ...]
+   *   <index-file-references(?Use(_)> ("fullpath/file.ext", "subfile") => [("fullpath/otherfile.ext", "othersubfile"), ...]
+   */
+  index-file-references(entryFilter):
+    file -> files
+    where
+      entries := <index-get-all-in-file> file;
+      references := <filter(entryFilter)> entries;
+      files := <make-set> <mapconcat(index-get-files-of)> references
+      
+  /**
+   * Convenience function for finding Read dependencies to other files of given file.
+   *
+   * @see index-file-references(entryFilter)
+   */
+  index-file-dependencies = index-file-references(?Read(_) <+ ?ReadWildcard(_, _))
  
   /**
    * Get all index entries that match the given template.
