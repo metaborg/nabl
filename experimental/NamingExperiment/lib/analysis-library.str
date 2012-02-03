@@ -67,12 +67,14 @@ rules // analysis traversals
     (ast, path, project-path) -> ast'
     with
       AnalysedResult(ast', _, _, _, _, _) := <analyze-top-internal(|phase, language)> (ast, path, project-path)
-   
+  
   /**
    * Analyses given AST and annotates definition and use sites found in the AST with URIs.
    *
    * @internal
    */
+  analyze-top-internal = analyze-top-internal(|Editor())
+  analyze-top-internal(|phase) = ?(ast, _, _); analyze-top-internal(|phase, <index-origin-language> ast)
   analyze-top-internal(|phase, language):
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with

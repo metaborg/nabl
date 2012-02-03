@@ -6,6 +6,7 @@ imports
   libstratego-aterm
   include/NamingExperiment
   lib/editor-common.generated
+  lib/index-library
   lib/analysis-library
   check
   generate
@@ -22,7 +23,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (ast, path, project-path) -> (ast', errors, warnings, notes)
     with
       editor-init;
-      (ast', _, _, _, _, _) := <analyze-top>;
+      ast'     := <analyze-top>;
       errors   := <collect-all(constraint-error, conc)> ast';
       warnings := <collect-all(constraint-warning, conc)> ast';
       notes    := <collect-all(constraint-note, conc)> ast'
@@ -47,14 +48,14 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      (_, result, _, _, _, _) := <analyze-top> (selected, path, project-path)
+      AnalysedResult(_, result, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
   
   generate-uses:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      (_, _, result, _, _, _) := <analyze-top> (selected, path, project-path)
+      AnalysedResult(_, _, result, _, _, _) := <analyze-top-internal> (selected, path, project-path)
   
   /*
   generate-reads:
@@ -109,15 +110,15 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (node, position, ast, path, project-path) -> proposals'
     where
       editor-init;
-      (ast', _, _, _, _, _) := <analyze-top> (ast, path, project-path);
-      x                     := <collect-one(?COMPLETION(_))> ast';
-      COMPLETION(name)		:= x;
+      ast'              := <analyze-top> (ast, path, project-path);
+      x                 := <collect-one(?COMPLETION(_))> ast';
+      COMPLETION(name)	:= x;
       (
-        proposals           := <index-lookup-all-levels(|name)> x 
+        proposals       := <index-lookup-all-levels(|name)> x 
       <+ 
         proposals 			:= []
       );
-      proposals'            := <map(def-to-name)> proposals
+      proposals'        := <map(def-to-name)> proposals
 
   def-to-name:
     Def([namespace, name | _]) -> name
