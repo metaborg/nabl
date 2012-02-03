@@ -326,7 +326,7 @@ rules // index API primitives
    * Get the first index entry that matches the given template, or fail.
    *
    * Example:
-   *   <index-get-all> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
+   *   <index-get> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
    */
   index-get:
     template -> <Fst> <index-get-all> template

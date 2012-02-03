@@ -96,7 +96,7 @@ rules // Index API
       entries := <prim("LANG_index_get_all_in_file", filepath)>
     
   /**
-   * Gets the containing file and subfile of index entry with given template.
+   * Gets the containing files and subfiles of index entry with given template.
    *
    * Example:
    *   <index-get-files-of> Def([Entity(), "Bar"]) => [("fullpath/file.ext", "subfile"), ...]
@@ -108,7 +108,7 @@ rules // Index API
    * Get all index entries that match the given template.
    *
    * Example:
-   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"]), ...]
+   *   <indexlib-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"]), ...]
    */
   indexlib-get-all:
     template -> <prim("LANG_index_get", template)>
@@ -117,7 +117,7 @@ rules // Index API
    * Get the first index entry that matches the given template, or fail.
    *
    * Example:
-   *   <index-get-all> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
+   *   <indexlib-get> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
    */
   indexlib-get:
     template -> <Fst> <indexlib-get-all> template
