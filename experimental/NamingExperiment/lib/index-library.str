@@ -104,6 +104,9 @@ rules // Index API
   index-get-files-of:
     template -> <prim("LANG_index_get_files_of", template)>
     
+  indexlib-get-all-elements =
+    <mapconcat(index-get-all-in-file)> <index-get-all-files>
+    
   /**
    * Get all index entries that match the given template.
    *

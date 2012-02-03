@@ -7,6 +7,11 @@ imports
  
 signature constructors
  
+  // Analyze constructors
+  AnalysedResult : AST * List(Def) * List(Use) * List(DefData) * List(Def) * List(Def) -> AnalysedResult
+  Editor      : AnalysisPhase
+  Compile     : AnalysisPhase
+ 
   // Index elements
   Def          : List(UriPart) -> Summary
   Use          : List(UriPart) * List(UriPart) -> Summary
@@ -30,17 +35,56 @@ rules // extension points
   // adjust-index-path-from-filesystem(|project-path, path)
  
 rules // analysis traversals
+  
+  /**
+   * Analyses given AST and annotates definition and use sites found in the AST with URIs.
+   * Defaults to Editor() phase and tries to automatically determine language name.
+   *
+   * @see analyze-top(|phase, language)
+   */
+  analyze-top = analyze-top(|Editor())
+  
+  /**
+   * Analyses given AST and annotates definition and use sites found in the AST with URIs.
+   * Tries to automatically determine language name.
+   *
+   * @see analyze-top(|phase, language)
+   */
+  analyze-top(|phase) = ?(ast, _, _); analyze-top(|phase, <index-origin-language> ast)
    
-  analyze-top:
-    (ast, path, project-path) -> (ast5, defs, uses, data', added, removed)
+  /**
+   * Analyses given AST and annotates definition and use sites found in the AST with URIs.
+   *
+   * @param phase     The type of analysis phase. There are currently 2 phases to choose from:
+   *                  - Editor():   All information is stored into the index and dependent files
+   *                                are automatically scheduled for re-analysis.
+   *                  - Compile():  No information is stored and no re-analysis is done.
+   * @param language  The name of the language that is being analysed.
+   *
+   * @see analyze-top-internal(|phase, language)
+   */
+  analyze-top(|phase, language):
+    (ast, path, project-path) -> ast'
+    with
+      AnalysedResult(ast', _, _, _, _, _) := <analyze-top-internal(|phase, language)> (ast, path, project-path)
+   
+  /**
+   * Analyses given AST and annotates definition and use sites found in the AST with URIs.
+   *
+   * @internal
+   */
+  analyze-top-internal(|phase, language):
+    (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with
       // Init
       full-path := $[[project-path]/[path]];
-      index-setup(|<index-origin-language> ast, [project-path])
+      index-setup(|language, [project-path])
     with
-      // Store copy of defs for diff and clear file
-      olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
-      <index-clear-file> full-path
+      if Editor() := phase then
+      	// Store copy of defs for diff and clear file
+        olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
+        <index-clear-file> full-path
+      end
     with
       {| ReadSet, UnresolvedSet:
         readSet := <new-iset>;
@@ -51,32 +95,42 @@ rules // analysis traversals
        
         // Add Unresolved annotations, record globals
         (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast); // HACK: force origin tracking with Some()... // TODO: still needed?
-        <index-add-all(|full-path)> defs;
+        if Editor() := phase then
+          <index-add-all(|full-path)> defs
+        end;
 
         // Find DefData
         ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
         data := <origin-track-forced(analyze-tree-data)> ast3;
-        <index-add-all(|full-path)> data;
+        if Editor() := phase then
+          <index-add-all(|full-path)> data
+        end;
 
         // Resolve an references in DefData (using what we just stored)
         (data', data-uses) := <analyze-uses> data;
-        <index-remove-all(|full-path)> data;
-        <index-add-all(|full-path)> data';
+        if Editor() := phase then
+          <index-remove-all(|full-path)> data;
+          <index-add-all(|full-path)> data'
+        end;
        
         // Resolve all unresolved references in the tree
         (ast4, uses) := <analyze-uses> ast3;
-        <index-add-all(|full-path)> uses;
+        if Editor() := phase then
+          <index-add-all(|full-path)> uses
+        end;
+        
         ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
        
         // Store reads into the index (if current language is not testing language)
-        if not(<is-test-input> (ast, path)) then
+        // TODO: Add phase information to reads?
+        if Editor() := phase; not(<is-test-input(|language)> (ast, path)) then
           <index-add-all(|full-path)> <iset-elements> readSet
         end
       |}
     with
       // Schedule re-analysis of dependent files (if current file is not testing language file)
       // HACK: Depends on file extension, could be other languages with .spt extension?
-      if not(<is-test-file> path) then
+      if Editor() := phase; not(<is-test-file> path) then
 	      // Find removed and added definitions
 	      (added, removed) := <analyze-diff> (olddefs, defs);
 	      // Schedule re-analysis of files that have a Use or Read of a removed def and Read of an added def
@@ -96,11 +150,11 @@ rules // analysis traversals
  
   // Tests if the current file is just a testing language input
   is-test-file = string-ends-with(|".spt")
-  is-test-input:
+  is-test-input(|language):
     (ast, path) -> (ast, path)
     where
       <is-test-file> path;
-      not(prim("SSL_EXT_origin_language", ast) => "Spoofax-Testing")
+      not(!language => "Spoofax-Testing")
      
   analyze-changed(get-all):
     defs -> filenames
