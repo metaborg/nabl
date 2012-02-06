@@ -20,6 +20,8 @@ signature constructors
   Anon   : Int -> UriPart
   Anon   : UriPart
   
+  FileEntries : Term * Term -> Term
+  
 rules // Index management
    
   /**
@@ -70,7 +72,10 @@ rules // Index management
    * Commits index to a file on disk.
    */
   index-commit = 
-    prim("LANG_index_commit")
+    if not(index-timestamp-get-updates(|"LANG_index_commit") => []) then
+      prim("LANG_index_commit");
+      index-timestamp-set-updated(|"LANG_index_commit")
+    end
   
 rules // Index API
   
@@ -159,7 +164,9 @@ rules // Index API
    * @see index-get-changes-since-timestamp(|service)
    */
   index-timestamp-set-updated(|service) =
-    prim("LANG_index_add", DefData([Timestamp(), "timestamps", ".internal"], Timestamp(), []), $[/.internal/timestamps/[service]])
+    file := $[/.internal/timestamps/[service]];
+    <index-clear-file> file;
+    prim("LANG_index_add", DefData([Timestamp(), "timestamps", ".internal"], Timestamp(), []), file)
    
   /**
    * Gets all files with changes since the last time stamp update for the given service name.
