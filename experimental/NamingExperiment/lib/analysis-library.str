@@ -137,9 +137,9 @@ rules // analysis traversals
       // HACK: Depends on file extension, could be other languages with .spt extension?
       if Editor() := phase; not(<is-test-file> path) then
 	      // Find removed and added definitions
-	      (added, removed) := <analyze-diff> (olddefs, defs);
+	      (added, removed) := <analyze-diff> (olddefs, defs)
 	      // Schedule re-analysis of files that have a Use or Read of a removed def and Read of an added def
-	      reanalyze-all(|added, removed, full-path)
+	      //reanalyze-all(|added, removed, full-path)
 	    else
 	      (added, removed) := ([], [])
       end
@@ -482,7 +482,7 @@ rules // index API primitives
   index-uri:
     term -> <?_#(<index-get-first>)> term
     where 
-      not(<?Def(_) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)
+      not(<?Def(_) <+ ?DefData(_, _, _) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)
    
   /**
    * Gets the URI for given term.
@@ -538,7 +538,7 @@ rules // index API primitives
   index-value:
     term -> <?_#(<index-get-second>)> term
     where 
-      not(<?Def(_) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)  
+      not(<?Def(_) <+ ?DefData(_, _, _) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)  
  
   /**
    * Determines if a given AST node is a definition site,
