@@ -34,7 +34,8 @@ rules // extension points
  
   // adjust-index-path-from-filesystem(|project-path, path)
   
-  index-compile-file(|path, project-path) = fail
+  // Should compile given analysed ast.
+  index-compile-ast(|file, subfile, path, project-path) = fail
  
 rules // analysis traversals
   
@@ -321,7 +322,8 @@ rules // compilation
     with
       // Init
       full-path := $[[project-path]/[path]];
-      index-setup(|<index-origin-language> ast, [project-path])
+      language  := <index-origin-language> ast;
+      index-setup(|language, [project-path])
     with
       {| Index-ReadSet:
         readSet := <new-iset>;
@@ -335,7 +337,7 @@ rules // compilation
 	      files := <make-set> <conc> (allDependentFiles, changedFiles);
 	      
 	      // Compile the files
-	      <map(index-compile-file(|path, project-path))> files;
+	      <filter(index-compilation-file(|language, path, project-path))> files;
 	      
 	      // Store compile-time reads.
         <index-add-all(|full-path)> <iset-elements> readSet;
@@ -343,6 +345,15 @@ rules // compilation
         // Update timestamps to current time.
 	      index-timestamp-set-updated(|"compile")
       |}
+
+  index-compilation-file(|language, path, project-path):
+    (file, subfile) -> None()
+    where
+      not(<is-test-file> file) // Don't try compile testing language files.
+    with
+      ast := <parse-file> file;
+      ast' := <analyze-top(|Compile(), language)> (ast, path, project-path);
+      <index-compile-ast(|file, subfile, path, project-path)> ast'
  
 rules // index API primitives
  
