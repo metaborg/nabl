@@ -376,21 +376,59 @@ rules // index API primitives
    *   <index-file-references(?Use(_, _)> ("fullpath/file.ext", "subfile") => 
    *     [("fullpath/otherfile.ext", "othersubfile"), ...]
    */
-  index-file-references(entryFilter):
+  index-get-file-references(entryFilter):
     file -> files
     where
-      entries := <index-get-all-in-file> file;
-      references := <filter(entryFilter)> entries;
-      uris := <filter(index-uri)> references;
-      defs := <map(\uri -> Def(uri)\)> uris;
-      files := <make-set> <mapconcat(index-get-files-of)> defs
+      entries     := <index-get-all-in-file> file;
+      references  := <filter(entryFilter)> entries;
+      uris        := <filter(index-uri)> references;
+      defs        := <map(\uri -> Def(uri)\)> uris;
+      files       := <make-set> <mapconcat(index-get-files-of)> defs
       
   /**
-   * Convenience function for finding Read and Use dependencies to other files of given file.
+   * Convenience function for finding Read and Use dependencies to other files of given file and subfile.
    *
    * @see index-file-references(entryFilter)
+   *
+   * Example:
+   *   <index-file-dependencies> "fullpath/file.ext" => [("fullpath/otherfile.ext", "subfile"), ...]
+   *   <index-file-dependencies> ("fullpath/file.ext", "subfile") => 
+   *     [("fullpath/otherfile.ext", "othersubfile"), ...]
    */
-  index-file-dependencies = index-file-references(?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_, _))
+  index-get-file-dependencies = index-get-file-references(?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_, _))
+  
+  /**
+   * Gets a set of all files that have a reference to the given file and subfile.
+   *
+   * @param createFromDef Construction strategy that creates a list of reference constructs from all 
+   *                      defs of the given file, such as Def(uri) -> [Read(uri), Use(uri, [])]
+   *
+   * Example:
+   *   <index-file-referenced(\Def(uri) -> [Read(uri), Use(uri, [])]\)> "fullpath/file.ext" => 
+   *     [("fullpath/otherfile.ext", "subfile"), ...]
+   *   <index-file-referenced(\Def(uri) -> [Read(uri), Use(uri, [])]\)> ("fullpath/file.ext", "subfile") => 
+   *     [("fullpath/otherfile.ext", "othersubfile"), ...]
+   */
+  index-get-referenced-files(constructFromDef):
+    file -> files
+    where
+      entries     := <index-get-all-in-file> file;
+      defs        := <filter(?Def(_))> entries;
+      referenced  := <concat> <filter(constructFromDef)> defs;
+      files       := <make-set> <mapconcat(index-get-files-of)> referenced
+ 
+  /**
+   * Convenience function for finding files with Read and Use dependencies to the given file and subfile.
+   *
+   * @see index-file-referenced(entryFilter)
+   * @see index-file-dependent-construct
+   *
+   * Example:
+   *   <index-file-dependent> "fullpath/file.ext" => [("fullpath/otherfile.ext", "subfile"), ...]
+   *   <index-file-dependent> ("fullpath/file.ext", "subfile") => 
+   *     [("fullpath/otherfile.ext", "othersubfile"), ...]
+   */
+  index-get-dependent-files = index-get-referenced-files(index-file-dependent-construct)
  
   /**
    * Get all index entries that match the given template.
@@ -703,6 +741,11 @@ rules // Internal helpers
     where <is-substring(!prefix)> name
       
   index-is-unresolved(|x) = <iset-contains(|x)> <UnresolvedSet>
+  
+  index-file-dependent-construct: 
+    Def(uri@[namespace | path]) -> [Read(uri), ReadWildcard([namespace | rest], firstElem), Use(uri, [])]
+    where
+      [firstElem | rest] := path
  
   do-adjust-index-lookup(|namespace, path, use, prefix) =
     // UNDONE: try(origin-term);
