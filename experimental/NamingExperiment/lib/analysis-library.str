@@ -317,9 +317,7 @@ rules // index API primitives
    *   <index-get-data(|Type())> Def([Entity(), "Bar"]) => [DefData([Entity(), "Bar"], Type(), TYPE("Bar")), ...]
    */
   index-get-data(|kind):
-    <with(?Def(uri) | "Def expected")> -> data
-    where
-      <index-get-all> DefData(uri, kind, []) => [DefData(_, _, data) | _]
+    <with(?Def(uri) | "Def expected")> -> <index-get-value> DefData(uri, kind, ())
       
 	/**
 	 * Gets all data entries that match the kind of data and URI in given definition.
@@ -330,10 +328,7 @@ rules // index API primitives
 	 *   <index-get-data-all(|Type())> Def([Entity(), "Bar"]) => [TYPE("Bar"), ...]
 	 */
   index-get-data-all(|kind):
-    <with(?Def(uri) | "Def expected")> -> datas'
-    where
-      datas  := <index-get-all> DefData(uri, kind, []);
-      datas' := <map(\DefData(_, _, d) -> d\)> datas
+    <with(?Def(uri) | "Def expected")> -> <index-get-all-values> DefData(uri, kind, ())
      
   /**
    * Gets all Use entries that match the URI in given definition.
@@ -342,9 +337,7 @@ rules // index API primitives
    *   <index-get-uses-all> Def([Entity(), "M", "Bar"]) => [Use([Entity(), "M", "Bar"], [Entity(), "M"]), ...]
    */
   index-get-uses-all:
-    <with(?Def(uri) | "Def expected")> -> uses
-    where
-      uses := <index-get-all> Use(uri, [])
+    <with(?Def(uri) | "Def expected")> -> <index-get-all> Use(uri, [])
      
   /**
    * Gets all Read or ReadWildcard entries that match the given template.
@@ -362,6 +355,169 @@ rules // index API primitives
         readwildcards' := <filter(index-readwildcard-substring(|prefix))> readwildcards
       else
         readwildcards' := []
+      end
+ 
+  /**
+   * Get all index entries that match the given template.
+   *
+   * Example:
+   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"]), ...]
+   */
+  index-get-all:
+    template -> <indexlib-get-all> template
+      with
+       if set := <ReadSet> then
+         uri := <index-uri>;
+         <iset-add(|Read(uri))> set
+       end
+       
+  /**
+   * Get all values of index entries that match the given template.
+   *
+   * @see index-value
+   *
+   * Example:
+   *   <index-get-all-values> DefData([Property(), "s"], Type(), ()) => [TYPE("String"), ...]
+   */
+  index-get-all-values:
+    template -> <map(index-value)> <index-get-all> template
+       
+  /**
+   * Get the first index entry that matches the given template, or fail.
+   *
+   * Example:
+   *   <index-get> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
+   */
+  index-get:
+    template -> <index-get-first> <index-get-all> template
+      
+  /**
+   * Get the value of first index entry that matches the given template, or fail.
+   *
+   * @see index-value
+   *
+   * Example:
+   *   <index-get-value> DefData([Entity(), "Bar"], Type(), ()) => TYPE("Bar")
+   */
+  index-get-value:
+    template -> <index-value> <index-get-first> <index-get-all> template
+ 
+  /**
+   * Gets the URI for given term.
+   */
+  index-uri:
+    Def(uri) -> uri
+    
+  /**
+   * Gets the URI for given term.
+   */
+  index-uri:
+    Use(uri, _) -> uri
+    
+  /**
+   * Gets the URI for given term.
+   */
+  index-uri:
+    Read(uri) -> uri
+ 
+  // TODO: Should second part of ReadWildcard be included in the URI, between namespace and path?
+  /**
+   * Gets the URI for given term.
+   */
+  index-uri:
+    ReadWildcard(uri, _) -> uri
+    
+  /**
+   * Gets the URI for given term.
+   */ 
+  index-uri:
+    term -> <?_#(<index-get-first>)> term
+    where 
+      not(<?Def(_) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)
+   
+  /**
+   * Gets the URI for given term.
+   */
+  index-uri:
+    x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
+   
+  /**
+   * Gets the namespace part of the URI for given term.
+   */
+  index-namespace:
+    x{[namespace | path]} -> <index-namespace-unwrap> namespace
+
+  /**
+   * Gets the path part of the URI for given term.
+   */
+  index-path:
+    x{[namespace | path]} -> path'
+    where
+      if !namespace => Unresolved(namespace) then
+        Def(path') := <index-lookup>
+      else
+        path' := path
+      end
+
+  /**
+   * Gets the value part for given term.
+   */ 
+  index-value:
+    Def(value) -> value
+    
+  /**
+   * Gets the value part for given term.
+   */ 
+  index-value:
+    Use(_, value) -> value
+    
+  /**
+   * Gets the value part for given term.
+   */ 
+  index-value:
+    Read(value) -> value
+    
+  /**
+   * Gets the value part for given term.
+   */ 
+  index-value:
+    ReadWildcard(_, value) -> value
+    
+  /**
+   * Gets the value part for given term.
+   */ 
+  index-value:
+    term -> <?_#(<index-get-second>)> term
+    where 
+      not(<?Def(_) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)  
+ 
+  /**
+   * Determines if a given AST node is a definition site,
+   * according to the syntax.
+   */
+  index-is-definition =
+    where(nam-get-definition-key)
+ 
+  /**
+   * Returns all children of a Def.
+   *
+   * @param namespace Only child Defs with this namespace are returned.
+   * @param prefix    Only Defs with a name that starts with this
+   *                  string are returned.
+   *
+   */
+  index-get-children(|namespace, prefix):
+    <with(?Def([parent-ns | path]) | "Def expected")> -> children'
+    with
+      with(not(!namespace => Def(_)) | "index-get-children interface changed");
+      prefix'   := <strip-annos> prefix;
+      template  := Def([namespace | path]);
+      children  := <prim("LANG_index_get_children", template)>;
+      children' := <filter(index-is-name-substring(|prefix'))> children;
+      store     := [namespace, prefix' | path];
+      // Store read in index.
+      if set := <ReadSet> then
+        <iset-add(|ReadWildcard([namespace | path], prefix'))> set
       end
       
   /**
@@ -429,107 +585,6 @@ rules // index API primitives
    *     [("fullpath/otherfile.ext", "othersubfile"), ...]
    */
   index-get-dependent-files = index-get-referenced-files(index-file-dependent-construct)
- 
-  /**
-   * Get all index entries that match the given template.
-   *
-   * Example:
-   *   <index-get-all> Def([Entity(), "Bar"]) => [Def([Entity(), "Bar"]), ...]
-   */
-  index-get-all:
-    template -> <indexlib-get-all> template
-      with
-       if set := <ReadSet> then
-         uri := <index-uri>;
-         <iset-add(|Read(uri))> set
-       end
-       
-  /**
-   * Get the first index entry that matches the given template, or fail.
-   *
-   * Example:
-   *   <index-get> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
-   */
-  index-get:
-    template -> <Fst> <index-get-all> template
- 
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    Def(uri) -> uri
-    
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    Use(uri, _) -> uri
-    
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    Read(uri) -> uri
- 
-  // TODO: Should second part of ReadWildcard be included in the URI, between namespace and path?
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    ReadWildcard(uri, _) -> uri
-   
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
-   
-  /**
-   * Gets the namespace part of the URI for given term.
-   */
-  index-namespace:
-    x{[namespace | path]} -> <index-namespace-unwrap> namespace
-
-  /**
-   * Gets the path part of the URI for given term.
-   */
-  index-path:
-    x{[namespace | path]} -> path'
-    where
-      if !namespace => Unresolved(namespace) then
-        Def(path') := <index-lookup>
-      else
-        path' := path
-      end
- 
-  /**
-   * Determines if a given AST node is a definition site,
-   * according to the syntax.
-   */
-  index-is-definition =
-    where(nam-get-definition-key)
- 
-  /**
-   * Returns all children of a Def.
-   *
-   * @param namespace Only child Defs with this namespace are returned.
-   * @param prefix    Only Defs with a name that starts with this
-   *                  string are returned.
-   *
-   */
-  index-get-children(|namespace, prefix):
-    <with(?Def([parent-ns | path]) | "Def expected")> -> children'
-    with
-      with(not(!namespace => Def(_)) | "index-get-children interface changed");
-      prefix'   := <strip-annos> prefix;
-      template  := Def([namespace | path]);
-      children  := <prim("LANG_index_get_children", template)>;
-      children' := <filter(index-is-name-substring(|prefix'))> children;
-      store     := [namespace, prefix' | path];
-      // Store read in index.
-      if set := <ReadSet> then
-        <iset-add(|ReadWildcard([namespace | path], prefix'))> set
-      end
      
 rules // index lookup rules (take into account adjust-index-lookup)
  
