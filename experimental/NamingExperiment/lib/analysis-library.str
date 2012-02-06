@@ -33,6 +33,8 @@ rules // extension points
   adjust-index-path(is-def |namespace, path) = fail
  
   // adjust-index-path-from-filesystem(|project-path, path)
+  
+  index-compile-file(|path, project-path) = fail
  
 rules // analysis traversals
   
@@ -88,12 +90,12 @@ rules // analysis traversals
         <index-clear-file> full-path
       end
     with
-      {| ReadSet, UnresolvedSet:
+      {| Index-ReadSet, Index-UnresolvedSet:
         readSet := <new-iset>;
         unresolvedSet := <new-iset>;
         
-        rules(ReadSet: _ -> readSet);
-        rules(UnresolvedSet: _ -> unresolvedSet);
+        rules(Index-ReadSet: _ -> readSet);
+        rules(Index-UnresolvedSet: _ -> unresolvedSet);
        
         // Add Unresolved annotations, record globals
         (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast); // HACK: force origin tracking with Some()... // TODO: still needed?
@@ -306,6 +308,42 @@ rules // analysis traversals
       appl'          := <all(\(a, _) -> a\)> appl;
       unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
  
+rules // compilation
+  
+  index-schedule-compilation = 
+    queue-strategy(|"index-compilation", "Compiling!"); !None()
+    
+  index-compilation:
+    (ast, _, _, path, project-path) -> <index-compilation(|path, project-path)> ast
+  
+  index-compilation(|path, project-path):
+    ast -> None()
+    with
+      // Init
+      full-path := $[[project-path]/[path]];
+      index-setup(|<index-origin-language> ast, [project-path])
+    with
+      {| Index-ReadSet:
+        readSet := <new-iset>;
+        rules(Index-ReadSet: _ -> readSet);
+        
+	      // Get all changes files by looking at the timestamps.
+	      changedFiles := <index-timestamp-get-updates(|"compile")>;
+	      
+	      // Determine the files to compile by looking at dependencies.
+	      allDependentFiles := <make-set> <mapconcat(index-get-dependent-files)> changedFiles;
+	      files := <make-set> <conc> (allDependentFiles, changedFiles);
+	      
+	      // Compile the files
+	      <map(index-compile-file(|path, project-path))> files;
+	      
+	      // Store compile-time reads.
+        <index-add-all(|full-path)> <iset-elements> readSet;
+        
+        // Update timestamps to current time.
+	      index-timestamp-set-updated(|"compile")
+      |}
+ 
 rules // index API primitives
  
   /**
@@ -366,7 +404,7 @@ rules // index API primitives
   index-get-all:
     template -> <indexlib-get-all> template
       with
-       if set := <ReadSet> then
+       if set := <Index-ReadSet> then
          uri := <index-uri>;
          <iset-add(|Read(uri))> set
        end
@@ -516,7 +554,7 @@ rules // index API primitives
       children' := <filter(index-is-name-substring(|prefix'))> children;
       store     := [namespace, prefix' | path];
       // Store read in index.
-      if set := <ReadSet> then
+      if set := <Index-ReadSet> then
         <iset-add(|ReadWildcard([namespace | path], prefix'))> set
       end
       
@@ -622,7 +660,7 @@ rules // index lookup rules (take into account adjust-index-lookup)
       def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix)> x
     <+
       [] := path;
-      <iset-add(|x)> <UnresolvedSet>
+      <iset-add(|x)> <Index-UnresolvedSet>
       
   /**
    * Given an annotated AST node, resolves it, returning all its Defs.
@@ -795,7 +833,7 @@ rules // Internal helpers
     ReadWildcard(_, name) -> <id>
     where <is-substring(!prefix)> name
       
-  index-is-unresolved(|x) = <iset-contains(|x)> <UnresolvedSet>
+  index-is-unresolved(|x) = <iset-contains(|x)> <Index-UnresolvedSet>
   
   index-file-dependent-construct: 
     Def(uri@[namespace | path]) -> [Read(uri), ReadWildcard([namespace | rest], firstElem), Use(uri, [])]
