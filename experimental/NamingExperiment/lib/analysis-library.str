@@ -124,7 +124,7 @@ rules // analysis traversals
           <index-add-all(|full-path)> uses
         end;
         
-        ast5         := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
+        ast5 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
        
         // Store reads into the index (if current language is not testing language)
         // TODO: Add phase information to reads?

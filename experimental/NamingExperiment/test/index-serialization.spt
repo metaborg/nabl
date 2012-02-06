@@ -17,8 +17,15 @@ test Init and reload
   <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
   index-commit;
   
-  prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-serialization2"]);  
+  prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-serialization2"]);
+  <index-get-all> Def([Def(), "newdef"]) => [];
+    
   prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-serialization"]);
-  
   <index-get-all> Def([Def(), "newdef"]) => [_]
 
+test Load, copy, load from disk (bypass in-memory cache)
+  <call> ("cp", ["-r", "/tmp/test-serialization", "/tmp/test-serialization-copy"]);
+  prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-serialization-copy"]); 
+  
+  <index-get-all> Def([Def(), "newdef"]) => [_]
+  
