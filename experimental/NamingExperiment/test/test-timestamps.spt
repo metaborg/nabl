@@ -5,11 +5,11 @@ language NamingExperiment
 test No changes after update
   prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-timestamps"]);
   
-  <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
+  <index-add-all(|"/foo")> [Def([Def(), "spanish enquisition"])];
   with(<call> ("sleep", ["1"]) | "System must provide sleep command");
   
   index-timestamp-set-updated(|"ServiceA");
-  index-timestamp-get-updates(|"ServiceA") => [_] // expect only timestamp
+  index-timestamp-get-updates(|"ServiceA") => [] // don't expect spanish enquisition
 
 test Changes after add
   prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-timestamps"]);
@@ -18,4 +18,4 @@ test Changes after add
   
   index-timestamp-set-updated(|"ServiceA");
   <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
-  index-timestamp-get-updates(|"ServiceA") => [_, _] // expect timestamp + file
+  index-timestamp-get-updates(|"ServiceA") => [_] // expect newdef
