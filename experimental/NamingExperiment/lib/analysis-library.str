@@ -35,7 +35,7 @@ rules // extension points
   // adjust-index-path-from-filesystem(|project-path, path)
   
   // Should compile given analysed ast.
-  index-compile-ast(|file, subfile, path, project-path) = fail
+  index-compile-ast(|file, subfile, project-path) = fail
  
 rules // analysis traversals
   
@@ -76,20 +76,21 @@ rules // analysis traversals
    *
    * @internal
    */
-  analyze-top-internal = analyze-top-internal(|Editor())
-  analyze-top-internal(|phase) = ?(ast, _, _); analyze-top-internal(|phase, <index-origin-language> ast)
-  analyze-top-internal(|phase, language):
+  analyze-top-internal = 
+    analyze-top-internal(|Editor())
+  analyze-top-internal(|phase) = 
+    ?(ast, path, project-path); analyze-top-internal(|phase, <index-origin-language> ast)
+  analyze-top-internal(|phase, language) = 
+    ?(_, path, project-path); analyze-top-internal(|phase, language, $[[project-path]/[path]])
+  analyze-top-internal(|phase, language, full-path):
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with
       // Init
-      full-path := $[[project-path]/[path]];
       index-setup(|language, [project-path])
     with
-      if Editor() := phase then
-      	// Store copy of defs for diff and clear file
-        olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
-        <index-clear-file> full-path
-      end
+    	// Store copy of defs for diff and clear file
+      olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
+      <index-clear-file> full-path
     with
       {| Index-ReadSet, Index-UnresolvedSet:
         readSet := <new-iset>;
@@ -100,35 +101,26 @@ rules // analysis traversals
        
         // Add Unresolved annotations, record globals
         (Some(ast2), defs) := <analyze-defs(|Anon(), Anon())> Some(ast); // HACK: force origin tracking with Some()... // TODO: still needed?
-        if Editor() := phase then
-          <index-add-all(|full-path)> defs
-        end;
+        <index-add-all(|full-path)> defs;
 
         // Find DefData
         ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
         data := <origin-track-forced(analyze-tree-data)> ast3;
-        if Editor() := phase then
-          <index-add-all(|full-path)> data
-        end;
+        <index-add-all(|full-path)> data;
 
         // Resolve an references in DefData (using what we just stored)
         (data', data-uses) := <analyze-uses> data;
-        if Editor() := phase then
-          <index-remove-all(|full-path)> data;
-          <index-add-all(|full-path)> data'
-        end;
+        <index-remove-all(|full-path)> data;
+        <index-add-all(|full-path)> data';
        
         // Resolve all unresolved references in the tree
         (ast4, uses) := <analyze-uses> ast3;
-        if Editor() := phase then
-          <index-add-all(|full-path)> uses
-        end;
+        <index-add-all(|full-path)> uses;
         
         ast5 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
        
         // Store reads into the index (if current language is not testing language)
-        // TODO: Add phase information to reads?
-        if Editor() := phase; not(<is-test-input(|language)> (ast, path)) then
+        if not(<is-test-input(|language)> (ast, path)) then
           <index-add-all(|full-path)> <iset-elements> readSet
         end
       |}
@@ -171,7 +163,7 @@ rules // analysis traversals
   analyze-all-changed-files(|added, removed, full-path):
     _ -> changed
     with
-    changed := <make-set> <remove-all(?full-path <+ is-test-file)> <concat> [
+    changed := <make-set> <remove-all(?full-path <+ is-test-file <+ index-is-fake-file)> <concat> [
 	    <analyze-changed(index-get-uses-all)> removed,
 	    <analyze-changed(index-get-reads-all)> removed,
 	    <analyze-changed(index-get-reads-all)> added
@@ -325,35 +317,54 @@ rules // compilation
       language  := <index-origin-language> ast;
       index-setup(|language, [project-path])
     with
+      // Get all changes files by looking at the timestamps.
+      changedFiles      := <index-timestamp-get-updates(|"compile")>;
+      
+      // Determine the files to compile by looking at dependencies.
+      allDependentFiles := <make-set> <mapconcat(index-get-dependent-files)> changedFiles;
+      files             := <make-set> <conc> (allDependentFiles, changedFiles);
+      
+      // Restore compile time reads.
+      <filter(index-compilation-restore-reads)> files;
+      
+      // Compile the files
+      <filter(index-compilation-file(|language, project-path))> files;
+      
+      // Update timestamps to current time.
+      index-timestamp-set-updated(|"compile")
+
+  index-compilation-file(|language, project-path):
+    (file, subfile) -> None()
+    where
+      not(<is-test-file <+ index-is-fake-file> file) // Don't try to compile testing language or 'fake' files.
+    with
+      // Parse and analyze ast.
+      ast                                 := <parse-file> file;
+      AnalysedResult(ast', _, _, _, _, _) := <analyze-top-internal(|Compile(), language, file)> (ast, file, project-path)
+    with
       {| Index-ReadSet:
         readSet := <new-iset>;
         rules(Index-ReadSet: _ -> readSet);
         
-	      // Get all changes files by looking at the timestamps.
-	      changedFiles := <index-timestamp-get-updates(|"compile")>;
-	      
-	      // Determine the files to compile by looking at dependencies.
-	      allDependentFiles := <make-set> <mapconcat(index-get-dependent-files)> changedFiles;
-	      files := <make-set> <conc> (allDependentFiles, changedFiles);
-	      
-	      // Compile the files
-	      <filter(index-compilation-file(|language, path, project-path))> files;
-	      
-	      // Store compile-time reads.
-        <index-add-all(|full-path)> <iset-elements> readSet;
+        // Compile file
+        <index-compile-ast(|file, subfile, project-path)> ast';
         
-        // Update timestamps to current time.
-	      index-timestamp-set-updated(|"compile")
+	      // Store compile-time reads.
+	      reads := <iset-elements> readSet;
+	      <index-add-all(|(file, subfile))> reads;
+	      <index-add-all(|<index-compilation-file-tuple> (file, subfile))> reads
       |}
-
-  index-compilation-file(|language, path, project-path):
+      
+  index-compilation-restore-reads:
     (file, subfile) -> None()
-    where
-      not(<is-test-file> file) // Don't try compile testing language files.
     with
-      ast := <parse-file> file;
-      ast' := <analyze-top(|Compile(), language)> (ast, path, project-path);
-      <index-compile-ast(|file, subfile, path, project-path)> ast'
+      compilationFiles := <index-compilation-file-tuple> (file, subfile);
+      reads := <index-get-all-in-file> compilationFiles;
+      <index-add-all(|(file, subfile))> reads;
+      <index-clear-file> compilationFiles
+      
+  index-compilation-file-tuple:
+    (file, subfile) -> ($[/.internal/reads/compile/[file]], subfile)
  
 rules // index API primitives
  

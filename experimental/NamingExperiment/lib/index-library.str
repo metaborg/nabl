@@ -179,6 +179,11 @@ rules // Index API
       files' := <remove-all(?(timestampName, _))> files
 
   /**
+   * Queries if given index file is a 'fake' file for storing internal data.
+   */
+  index-is-fake-file = string-starts-with(|"/.internal")
+
+  /**
    * Gets the URI for given term.
    */ 
   index-uri:
