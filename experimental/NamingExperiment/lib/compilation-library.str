@@ -1,0 +1,77 @@
+module lib/compilation-library
+
+imports
+  libstratego-lib
+  lib/editor-common.generated
+  lib/index-library
+  lib/analysis-library
+  
+rules // Extension points
+    
+  // Should compile given analysed ast.
+  index-compile-ast(|file, subfile, project-path) = fail
+  
+rules // Compilation
+  
+  index-schedule-compilation = 
+    queue-strategy(|"index-compilation", "Compiling!"); !None()
+    
+  index-compilation:
+    (ast, _, _, path, project-path) -> <index-compilation(|path, project-path)> ast
+  
+  index-compilation(|path, project-path):
+    ast -> None()
+    with
+      // Init
+      full-path := $[[project-path]/[path]];
+      language  := <index-origin-language> ast;
+      index-setup(|language, [project-path])
+    with
+      // Get all changes files by looking at the timestamps.
+      changedFiles      := <index-timestamp-get-updates(|"compile")>;
+      
+      // Determine the files to compile by looking at dependencies.
+      allDependentFiles := <make-set> <mapconcat(index-get-dependent-files)> changedFiles;
+      files             := <make-set> <conc> (allDependentFiles, changedFiles);
+      
+      // Restore compile time reads.
+      <filter(index-compilation-restore-reads)> files;
+      
+      // Compile the files
+      <filter(index-compilation-file(|language, project-path))> files;
+      
+      // Update timestamps to current time.
+      index-timestamp-set-updated(|"compile")
+
+  index-compilation-file(|language, project-path):
+    (file, subfile) -> None()
+    where
+      not(<is-test-file <+ index-is-fake-file> file) // Don't try to compile testing language or 'fake' files.
+    with
+      // Parse and analyze ast.
+      ast                                 := <parse-file> file;
+      AnalysedResult(ast', _, _, _, _, _) := <analyze-top-internal(|Compile(), language, file)> (ast, file, project-path)
+    with
+      {| Index-ReadSet:
+        readSet := <new-iset>;
+        rules(Index-ReadSet: _ -> readSet);
+        
+        // Compile file
+        <index-compile-ast(|file, subfile, project-path)> ast';
+        
+        // Store compile-time reads.
+        reads := <iset-elements> readSet;
+        <index-add-all(|(file, subfile))> reads;
+        <index-add-all(|<index-compilation-file-tuple> (file, subfile))> reads
+      |}
+      
+  index-compilation-restore-reads:
+    (file, subfile) -> None()
+    with
+      compilationFiles := <index-compilation-file-tuple> (file, subfile);
+      reads := <index-get-all-in-file> compilationFiles;
+      <index-add-all(|(file, subfile))> reads;
+      <index-clear-file> compilationFiles
+      
+  index-compilation-file-tuple:
+    (file, subfile) -> ($[/.internal/reads/compile/[file]], subfile)
