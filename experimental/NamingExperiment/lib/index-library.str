@@ -145,7 +145,7 @@ rules // Index API
    *   <indexlib-get> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
    */
   indexlib-get:
-    template -> <index-get-first> <indexlib-get-all> template
+    template -> <?[<id>|_]> <indexlib-get-all> template
    
   /**
    * Get the value of first index entry that matches the given template, or fail.
@@ -156,7 +156,7 @@ rules // Index API
    *   <indexlib-get-value> DefData([Entity(), "Bar"], Type(), ()) => TYPE("Bar")
    */
   indexlib-get-value:
-    template -> <index-value> <index-get-first> <indexlib-get-all> template
+    template -> <index-value> <?[<id>|_]> <indexlib-get-all> template
  
   /**
    * Updates the "last updated" timestamp for the given service name.
@@ -182,26 +182,34 @@ rules // Index API
    * Queries if given index file is a 'fake' file for storing internal data.
    */
   index-is-fake-file = string-starts-with(|"/.internal")
-
-  /**
-   * Gets the URI for given term.
-   */ 
-  index-uri:
-    DefData(uri, _, _) -> uri
     
   /**
-   * Gets the value part for given term.
+   * Gets the URI part for given term.
    */ 
-  index-value:
-    DefData(_, _, value) -> value
+  index-uri = index-uri-impl <+ index-uri-generic
+  
+  /**
+   * Gets the value part for given term.
+   */  
+  index-value = index-value-impl <+ index-value-generic
       
+/** @internal */
+rules // URI and value projections
+	
+  index-uri-impl:
+    DefData(uri, _, _) -> uri
+
+  index-uri-generic:
+    term -> <?_#(<?[<id>|_]>)> term
+  
+  index-value-impl:
+    DefData(_, _, value) -> value
+    
+  index-value-generic:
+    term -> <?_#(<?[_, <id>|_]> )> term
+     
+/** @internal */ 
 rules // Internal helpers
   
   index-namespace-unwrap =
     \Unresolved(n) -> n\ <+ id
-    
-  index-get-first:
-    [first|_] -> first
-    
-  index-get-second:
-    [_,second|_] -> second 

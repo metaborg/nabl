@@ -449,7 +449,7 @@ rules // index API primitives
    *   <index-get> Def([Entity(), "Bar"]) => Def([Entity(), "Bar"])
    */
   index-get:
-    template -> <index-get-first> <index-get-all> template
+    template -> <?[<id>|_]> <index-get-all> template
       
   /**
    * Get the value of first index entry that matches the given template, or fail.
@@ -460,46 +460,7 @@ rules // index API primitives
    *   <index-get-value> DefData([Entity(), "Bar"], Type(), ()) => TYPE("Bar")
    */
   index-get-value:
-    template -> <index-value> <index-get-first> <index-get-all> template
- 
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    Def(uri) -> uri
-    
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    Use(uri, _) -> uri
-    
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    Read(uri) -> uri
- 
-  // TODO: Should second part of ReadWildcard be included in the URI, between namespace and path?
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    ReadWildcard(uri, _) -> uri
-    
-  /**
-   * Gets the URI for given term.
-   */ 
-  index-uri:
-    term -> <?_#(<index-get-first>)> term
-    where 
-      not(<?Def(_) <+ ?DefData(_, _, _) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)
-   
-  /**
-   * Gets the URI for given term.
-   */
-  index-uri:
-    x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
+    template -> <index-value> <?[<id>|_]> <index-get-all> template
    
   /**
    * Gets the namespace part of the URI for given term.
@@ -518,39 +479,7 @@ rules // index API primitives
       else
         path' := path
       end
-
-  /**
-   * Gets the value part for given term.
-   */ 
-  index-value:
-    Def(value) -> value
     
-  /**
-   * Gets the value part for given term.
-   */ 
-  index-value:
-    Use(_, value) -> value
-    
-  /**
-   * Gets the value part for given term.
-   */ 
-  index-value:
-    Read(value) -> value
-    
-  /**
-   * Gets the value part for given term.
-   */ 
-  index-value:
-    ReadWildcard(_, value) -> value
-    
-  /**
-   * Gets the value part for given term.
-   */ 
-  index-value:
-    term -> <?_#(<index-get-second>)> term
-    where 
-      not(<?Def(_) <+ ?DefData(_, _, _) <+ ?Use(_, _) <+ ?Read(_) <+ ?ReadWildcard(_, _)> term)  
- 
   /**
    * Determines if a given AST node is a definition site,
    * according to the syntax.
@@ -838,7 +767,38 @@ rules // index lookup rules (take into account adjust-index-lookup)
       end
     <+
       defs := []
+       
+/** @internal */
+rules // URI and value projections
+       
+  index-uri-impl:
+    Def(uri) -> uri
+    
+  index-uri-impl:
+    Use(uri, _) -> uri
+    
+  index-uri-impl:
+    Read(uri) -> uri
+    
+  index-uri-impl:
+    x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
  
+  // TODO: Should second part of ReadWildcard be included in the URI, between namespace and path?
+  index-uri-impl:
+    ReadWildcard(uri, _) -> uri
+
+  index-value-impl:
+    Def(value) -> value
+
+  index-value-impl:
+    Use(_, value) -> value
+
+  index-value-impl:
+    Read(value) -> value
+    
+  index-value-impl:
+    ReadWildcard(_, value) -> value
+       
 /** @internal */
 rules // Internal helpers
        
