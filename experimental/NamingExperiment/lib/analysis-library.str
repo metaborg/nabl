@@ -81,6 +81,8 @@ rules // analysis traversals
     ?(_, path, project-path); analyze-top-internal(|phase, language, $[[project-path]/[path]])
   analyze-top-internal(|phase, language, full-path):
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
+    where
+      <file-exists> full-path
     with
       // Init
       index-setup(|language, [project-path])
@@ -132,6 +134,15 @@ rules // analysis traversals
 	    else
 	      (added, removed) := ([], [])
       end
+      
+  // If given file to analyze does not exist, remove it from the index.
+  analyze-top-internal(|phase, language, full-path):
+    (ast, path, project-path) -> None()
+    where
+      not(<file-exists> full-path)
+    with
+      index-setup(|language, [project-path]);
+      <index-clear-file> full-path
      
   analyze-diff:
     (defs1, defs2) -> (added, removed)

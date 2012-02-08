@@ -46,6 +46,8 @@ rules // Compilation
   index-compilation-file(|language, project-path):
     (file, subfile) -> None()
     where
+      <file-exists> file
+    where
       not(<is-test-file <+ index-is-fake-file> file) // Don't try to compile testing language or 'fake' files.
     with
       // Parse and analyze ast.
@@ -64,6 +66,13 @@ rules // Compilation
         <index-add-all(|(file, subfile))> reads;
         <index-add-all(|<index-compilation-file-tuple> (file, subfile))> reads
       |}
+      
+  index-compilation-file(|language, project-path):
+    (file, subfile) -> None()
+    where
+      not(<file-exists> file)
+    with
+      <index-clear-file> file
       
   index-compilation-restore-reads:
     (file, subfile) -> None()
