@@ -78,6 +78,8 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
   index-allfiles:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
+      language  := <index-origin-language> ast;
+      index-setup(|language, [project-path]);
       filename := <guarantee-extension(|"index.currentfile.aterm")> path;
       result   := <map(\filename -> FileEntries(filename, <index-get-all-in-file> filename)\)> <index-get-all-files>
   
