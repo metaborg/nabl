@@ -117,7 +117,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       x                 := <collect-one(?COMPLETION(_))> ast';
       COMPLETION(name)	:= x;
       (
-        proposals       := <index-lookup-all-levels(|name)> x 
+        proposals       := <index-lookup-all-levels(|name, [($[[project-path]/[path]], "")])>
       <+ 
         proposals 			:= []
       );
