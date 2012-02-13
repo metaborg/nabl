@@ -2,10 +2,11 @@ module refactorings
 
 imports
   namingexperiment
-  analysis-library
-  lib/refactor-common.generated
   include/NamingExperiment
+  lib/refactor-common.generated
   lib/editor-common.generated  
+  lib/index-library
+  lib/analysis-library
 
 strategies
  
