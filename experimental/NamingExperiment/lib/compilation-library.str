@@ -13,11 +13,13 @@ rules // Extension points
   
 rules // Compilation
   
-  index-schedule-compilation = 
-    queue-strategy(|"index-compilation", "Compiling!"); !None()
+  index-schedule-compilation:
+    <with(?(_, _, _, _, _) | "(selected, position, ast, path, project-path) tuple expected")> -> None()
+    with
+      queue-strategy(|"index-compilation", "Compiling!")
     
   index-compilation:
-    (ast, _, _, path, project-path) -> <index-compilation(|path, project-path)> ast
+    (_, _, ast, path, project-path) -> <index-compilation(|path, project-path)> ast
   
   index-compilation(|path, project-path):
     ast -> None()

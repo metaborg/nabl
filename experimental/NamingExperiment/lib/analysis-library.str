@@ -33,6 +33,29 @@ rules // extension points
   adjust-index-path(is-def |namespace, path) = fail
  
   // adjust-index-path-from-filesystem(|project-path, path)
+  
+  /**
+   * Should define constructors to check for difference during analysis. Defaults to Def constructs.
+   *
+   * Extension example:
+   *   index-diff-constructors = ?Type(_, _)
+   */
+  index-diff-constructors = ?Def(_)
+  
+  /**
+   * Should compare two index elements and fail if they are not equal.
+   *
+   * Extension example:
+	 *   index-diff-compare:
+   *     (Type(u1, v1), Type(u2, v2)) -> <id>
+   *     where
+   *       <index-uri-eq> (u1, u2);
+   *       <eq> (v1, v2)
+   */
+  index-diff-compare:
+    (Def(u1), Def(u2)) -> <id>
+    where
+       <index-uri-eq> (u1, u2)
  
 rules // analysis traversals
   
@@ -85,8 +108,8 @@ rules // analysis traversals
       // Init
       index-setup(|language, [project-path])
     with
-    	// Store copy of defs for diff and clear file
-      olddefs := <filter(?Def(_))> <index-get-all-in-file> full-path;
+    	// Store copy of elements for diff and clear file
+      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> full-path;
       <index-clear-file> full-path
     with
       {| Index-ReadSet, Index-UnresolvedSet:
@@ -125,8 +148,14 @@ rules // analysis traversals
       // Schedule re-analysis of dependent files (if current file is not testing language file)
       // HACK: Depends on file extension, could be other languages with .spt extension?
       if Editor() := phase; not(<is-test-file> path) then
+        newElems := <conc> (defs, <filter(index-diff-constructors)> data');
+        
 	      // Find removed and added definitions
-	      (added, removed) := <analyze-diff> (olddefs, defs);
+	      (addedElems, removedElems) := <analyze-diff> (oldElems, newElems);
+	      
+	      // Make sure all elements are defs.
+	      (added, removed) := (<map(analyze-to-def)> addedElems, <map(analyze-to-def)> removedElems);
+	      
 	      // Schedule re-analysis of files that have a Use or Read of a removed def and Read of an added def
 	      reanalyze-all(|added, removed, full-path)
 	    else
@@ -136,19 +165,11 @@ rules // analysis traversals
   analyze-diff:
     (defs1, defs2) -> (added, removed)
     with
-      added   := <diff(analyze-diff-eq)> (defs2, defs1);
-      removed := <diff(analyze-diff-eq)> (defs1, defs2)
- 
-  // Compensate for changing anonymous namespace names
-  analyze-diff-eq = ?(Def(u1), Def(u2)); (<eq> (u1, u2) <+ <eq> (<remove-all(?Anon(_))> u1, <remove-all(?Anon(_))> u2))
- 
-  // Tests if the current file is just a testing language input
-  is-test-file = string-ends-with(|".spt")
-  is-test-input(|language):
-    (ast, path) -> (ast, path)
-    where
-      <is-test-file> path;
-      not(!language => "Spoofax-Testing")
+      added   := <diff(index-diff-compare)> (defs2, defs1);
+      removed := <diff(index-diff-compare)> (defs1, defs2)
+      
+  analyze-to-def:
+    elem -> Def(<index-uri> elem)
      
   analyze-changed(get-all):
     defs -> filenames
@@ -160,11 +181,11 @@ rules // analysis traversals
   analyze-all-changed-files(|added, removed, full-path):
     _ -> changed
     with
-    changed := <make-set> <remove-all(?full-path <+ is-test-file <+ index-is-fake-file)> <concat> [
-	    <analyze-changed(index-get-uses-all)> removed,
-	    <analyze-changed(index-get-reads-all)> removed,
-	    <analyze-changed(index-get-reads-all)> added
-    ]
+	    changed := <make-set> <remove-all(?full-path <+ is-test-file <+ index-is-fake-file)> <concat> [
+		    <analyze-changed(index-get-uses-all)> removed,
+		    <analyze-changed(index-get-reads-all)> removed,
+		    <analyze-changed(index-get-reads-all)> added
+	    ]
          
   reanalyze-all(|added, removed, full-path) =
     analyze-all-changed-files(|added, removed, full-path);
@@ -746,6 +767,14 @@ rules // URI and value projections
 rules // Internal helpers
        
   index-origin-language = (origin-term <+ id); prim("SSL_EXT_origin_language", <id>)
+       
+  // Tests if the current file is just a testing language input
+  is-test-file = string-ends-with(|".spt")
+  is-test-input(|language):
+    (ast, path) -> (ast, path)
+    where
+      <is-test-file> path;
+      not(!language => "Spoofax-Testing")
        
   index-is-name-substring(|name):
     template -> <id>
