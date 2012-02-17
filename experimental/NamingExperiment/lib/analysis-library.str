@@ -18,10 +18,12 @@ signature constructors
   BadUse       : List(UriPart) -> Summary
   Read         : List(UriPart) -> Summary
   ReadWildcard : List(UriPart) * String -> Summary
- 
+  
+  StopLookup   : LookupAction
+  
 rules // extension points
  
-  // Should return list of Def(_) and/or [namespace | path]
+  // Should return list of Def(_) and/or [namespace | path] or StopLookup() to stop the lookup
   adjust-index-lookup(is-use |namespace, path, prefix, files) = fail
  
   // adjust-index-select(|namespace, path, use) = fail // (e.g., for imports)
@@ -471,7 +473,7 @@ rules // index API primitives
    * Example:
    *   <index-file-references(?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_, _))> "fullpath/file.ext" => 
    *     [("fullpath/otherfile.ext", "subfile"), ...]
-   *   <index-file-references(?Use(_, _)> ("fullpath/file.ext", "subfile") => 
+   *   <index-file-references(?Use(_, _))> ("fullpath/file.ext", "subfile") => 
    *     [("fullpath/otherfile.ext", "othersubfile"), ...]
    */
   index-get-file-references(entryFilter):
@@ -563,19 +565,26 @@ rules // index lookup rules (take into account adjust-index-lookup)
   index-lookup(is-adjust-lookup-enabled |namespace, path, prefix, files):
     x -> def
     where
-      index-is-unresolved(|x);
-      def := <fail>
-    <+
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
-      def        := <index-select(|namespace, path, x)>
-    <+
-      // TODO: optimize: try not to call do-adjust-index-lookup from here
-      [_ | path'] := path;
-      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix, files)> x
-    <+
-      [] := path;
-      index-add-unresolved(|x)
-      
+      if index-is-unresolved(|x, [namespace|path]) then
+        fail
+      else
+	      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+	      
+	      if <?StopLookup()> candidates then
+	        fail
+	      else
+	        def        := <index-select(|namespace, path, x)>
+	      <+
+		      // TODO: optimize: try not to call do-adjust-index-lookup from here
+		      [_ | path'] := path;
+		      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix, files)> x
+		    <+
+		      [] := path;
+		      index-add-unresolved(|x, [namespace|path]);
+		      fail
+	      end
+      end
+
   /**
    * Given an annotated AST node, resolves it, returning all its Defs.
    *
@@ -587,15 +596,23 @@ rules // index lookup rules (take into account adjust-index-lookup)
   index-lookup-all(is-adjust-lookup-enabled |namespace, path, prefix, files):
     x -> defs'
     where
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
-      defs       := <index-select-all(|namespace, path, x)>;
-      // TODO: optimize: try not to call do-adjust-index-lookup from here
-      if [_ | path'] := path then
-        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix, files)> x;
-        defs' := <conc> (defs, defs2)
+      if index-is-unresolved(|x, [namespace|path]) then
+        fail
       else
-        defs' := defs
-      end
+	      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+	      defs       := <index-select-all(|namespace, path, x)>;
+	      // TODO: optimize: try not to call do-adjust-index-lookup from here
+	      if [_ | path'] := path then
+	        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix, files)> x;
+	        defs' := <conc> (defs, defs2)
+	      else
+	        defs' := defs
+	      end
+	    <+
+	      [] := path;
+	      index-add-unresolved(|x, [namespace|path]);
+	      fail
+    end
  
   /**
    * Given an annotated AST node, returns the outermost Def with a corresponding URI.
@@ -644,14 +661,18 @@ rules // index lookup rules (take into account adjust-index-lookup)
     with
       is-adjusted-lookup-enabled;
       do-adjust-index-lookup(|namespace, path, x, prefix, files);
-      mapconcat(\d@Def(p) -> [d]\
+      if ?StopLookup() then
+        defs := StopLookup()
+      else
+        mapconcat(\d@Def(p) -> [d]\
           <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path', prefix, files)> x\
-          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
-      ?defs
+          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list Def(_) or [namespace | path] or StopLookup() to stop the lookup"));
+        ?defs
+      end
     <+
       get := Def([namespace | path]);
       defs := <concat> [<index-get-all> get, <index-get-children(|namespace, prefix)> get]
- 
+      
   /**
    * Given an annotated AST node, returns a Def with a common ancestor URI.
    *
@@ -674,7 +695,7 @@ rules // index lookup rules (take into account adjust-index-lookup)
       do-adjust-index-lookup(|namespace, path, x, prefix, files);
       mapconcat(\d@Def(p) -> [d]\
           <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', prefix, files)> x\
-          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a Def(_) or [namespace | path]"));
+          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list Def(_) or [namespace | path] or StopLookup() to stop the lookup"));
       ?all-defs
     <+
       one-level := <index-get-children(|namespace, prefix)> Def([namespace | path]);
@@ -787,8 +808,8 @@ rules // Internal helpers
     ReadWildcard(_, name) -> <id>
     where <is-substring(!prefix)> name
       
-  index-is-unresolved(|x) = Index-UnresolvedSet; (iset-contains(|x) <+ fail)
-  index-add-unresolved(|x) = (Index-UnresolvedSet; iset-add(|x)) <+ id
+  index-is-unresolved(|x, uri) = Index-UnresolvedSet; (iset-contains(|(x, uri)) <+ fail)
+  index-add-unresolved(|x, uri) = (Index-UnresolvedSet; iset-add(|(x, uri))) <+ id
   
   index-file-dependent-construct: 
     Def(uri@[namespace | path]) -> [Read(uri), ReadWildcard([namespace | rest], firstElem), Use(uri, [])]
@@ -799,7 +820,7 @@ rules // Internal helpers
     // UNDONE: try(origin-term);
     repeat-until(
       prim("SSL_EXT_get_parent", <id>)
-    , adjust-index-lookup(origin-equal(|use) |namespace, path, prefix, files)
+    , adjust-index-lookup(origin-equal(|use) |namespace, path, prefix, files) 
     )
  
   index-select(|namespace, path, use) =
