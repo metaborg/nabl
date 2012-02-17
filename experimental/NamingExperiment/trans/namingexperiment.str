@@ -15,6 +15,7 @@ imports
   refactorings
   analysis-manual
   analysis-generated
+  libstratego-xtc
 
 rules // Main editor interface (defined by editor/NamingExperiment-Builders and -References.esv)
   
@@ -87,13 +88,9 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
   editor-resolve:
     (node, position, ast, path, project-path) -> target
     where
-      if <is-test-file> path then
-        // HACK: Workaround for testing language selecting wrong node to resolve
-        !node => <collect-one(?subnode{[_|_]})>
-      else
-        !node => subnode
-      end;
-      def     := <index-lookup> subnode;
+      language  := <index-origin-language> ast;
+      index-setup(|language, [project-path]);
+      def     := <index-lookup> node;
       target  := def
 
   // Returns "hover help" information for a particular node in the editor.
@@ -102,6 +99,8 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (target, position, ast, path, project-path) -> $[[def-path'']]
     where
       // FIXME: this only works for definition paths
+      language  := <index-origin-language> ast;
+      index-setup(|language, [project-path]);
       def-term           := <nam-get-definition-key> target;
       _{[ns | def-path]} := def-term;
       def-path'  := <take-until(?Anon(_))> def-path;
