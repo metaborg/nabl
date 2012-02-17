@@ -565,24 +565,15 @@ rules // index lookup rules (take into account adjust-index-lookup)
   index-lookup(is-adjust-lookup-enabled |namespace, path, prefix, files):
     x -> def
     where
-      if index-is-unresolved(|x, [namespace|path]) then
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+      if <?StopLookup()> candidates then
         fail
       else
-	      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
-	      
-	      if <?StopLookup()> candidates then
-	        fail
-	      else
-	        def        := <index-select(|namespace, path, x)>
-	      <+
-		      // TODO: optimize: try not to call do-adjust-index-lookup from here
-		      [_ | path'] := path;
-		      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix, files)> x
-		    <+
-		      [] := path;
-		      index-add-unresolved(|x, [namespace|path]);
-		      fail
-	      end
+        def        := <index-select(|namespace, path, x)>
+      <+
+	      // TODO: optimize: try not to call do-adjust-index-lookup from here
+	      [_ | path'] := path;
+	      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix, files)> x
       end
 
   /**
@@ -596,23 +587,15 @@ rules // index lookup rules (take into account adjust-index-lookup)
   index-lookup-all(is-adjust-lookup-enabled |namespace, path, prefix, files):
     x -> defs'
     where
-      if index-is-unresolved(|x, [namespace|path]) then
-        fail
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+      defs       := <index-select-all(|namespace, path, x)>;
+      // TODO: optimize: try not to call do-adjust-index-lookup from here
+      if [_ | path'] := path then
+        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix, files)> x;
+        defs' := <conc> (defs, defs2)
       else
-	      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
-	      defs       := <index-select-all(|namespace, path, x)>;
-	      // TODO: optimize: try not to call do-adjust-index-lookup from here
-	      if [_ | path'] := path then
-	        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix, files)> x;
-	        defs' := <conc> (defs, defs2)
-	      else
-	        defs' := defs
-	      end
-	    <+
-	      [] := path;
-	      index-add-unresolved(|x, [namespace|path]);
-	      fail
-    end
+        defs' := defs
+      end
  
   /**
    * Given an annotated AST node, returns the outermost Def with a corresponding URI.
