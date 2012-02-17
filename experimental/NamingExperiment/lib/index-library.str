@@ -24,13 +24,17 @@ signature constructors
   
 rules // Index management
    
+  index-setup(|language, project-paths) =
+    obsolete(!"index-setup(|language, project-paths); use index-setup(|language, project-paths, current-file)");
+    index-setup(|language, project-paths, ".")
+    
   /**
    * Sets up the index library for given language and project paths.
    * Must be called once before doing anything with the library.
    */
-  index-setup(|language, project-paths) =
+  index-setup(|language, project-paths, current-file) =
     project-path;
-    prim("LANG_index_setup", language, project-paths)
+    prim("LANG_index_setup", language, project-paths, current-file)
 
   /**
    * Adds all given elements to the index with given file path and optionally subfile.
@@ -87,6 +91,9 @@ rules // Index API
    */   
   index-get-all-files =
     prim("LANG_index_all_files")
+  
+  index-get-current-file =
+    prim("LANG_index_current_file")
   
   /**
    * Gets all index entries for the given file path and optionally subfile.

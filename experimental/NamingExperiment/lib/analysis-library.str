@@ -634,10 +634,12 @@ rules // index lookup rules (take into account adjust-index-lookup)
     x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix, files)>
  
   /**
-   * Given an annotated AST node, returns a Def that has the same parent URI.
+   * Given an annotated AST node, resolves it, and
+   * returns all possibly matching Defs with a common ancestor URI. 
    *
-   * @param prefix    Only Defs with a name that starts with this
-   *                  string are returned.
+   * @param namespace Only Defs with this namespace are returned.
+   * @param prefix    Indicates that only Defs with a name that starts with this
+   *                  string are demanded.
    */
   index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path, prefix, files):
     x{_} -> defs
@@ -657,19 +659,22 @@ rules // index lookup rules (take into account adjust-index-lookup)
       defs := <concat> [<index-get-all> get, <index-get-children(|namespace, prefix)> get]
       
   /**
-   * Given an annotated AST node, returns a Def with a common ancestor URI.
+   * Given an annotated AST node, resolves it, and
+   * returns all possibly matching Defs with a common ancestor URI. 
    *
-   * @param prefix    Only Defs with a name that starts with this
-   *                  string are returned.
+   * @param namespace Only Defs with this namespace are returned.
+   * @param prefix    Indicates that only Defs with a name that starts with this
+   *                  string are demanded.
    */
   index-lookup-all-levels(|prefix, files):
     x{[namespace | path]} -> <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, prefix, files)>
  
   /**
-   * Given an annotated AST node, returns a Def with a common ancestor URI.
+   * Given an annotated AST node, resolves it, and
+   * returns all possibly matching Defs with a common ancestor URI. 
    *
-   * @param prefix    Only Defs with a name that starts with this
-   *                  string are returned.
+   * @param prefix    Indicates that only Defs with a name that starts with this
+   *                  string are demanded.
    */
   index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path, prefix, files):
     x{_} -> all-defs
@@ -690,10 +695,12 @@ rules // index lookup rules (take into account adjust-index-lookup)
  
   /** @Deprecated */
   index-lookup-contained(|namespace, prefix) =
+    obsolete(!"index-lookup-contained; use index-lookup-children");
     index-lookup-children(|namespace, prefix, [])
    
   /** @Deprecated */
   index-lookup-contained-all-levels(|namespace, name) =
+    obsolete(!"index-lookup-contained-all-levels; use index-lookup-descendants");
     index-lookup-descendants(|namespace, name, [])
  
   /**
@@ -704,7 +711,7 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Only child Defs with a name that starts with this
    *                  string are returned.
    */
-  index-lookup-children(|namespace, prefix, files):
+  index-lookup-children(|namespace, prefix, files): // TODO: how does this compare w/ index-lookup-one-level?
     x{[ns | path]} -> defs
     with
       if !ns => Unresolved(_) then

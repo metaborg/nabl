@@ -2,9 +2,13 @@ module test2
 
 language NamingExperiment
 
-test Resolve local variable [[
-  module M2t
+
+setup [[
   
+  module M
+]]
+
+test Resolve local variable [[
   entity B {
     f() {
       var [[a]] : B
