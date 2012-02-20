@@ -24,7 +24,7 @@ signature constructors
 rules // extension points
  
   // Should return list of Def(_) and/or [namespace | path] or StopLookup() to stop the lookup
-  adjust-index-lookup(is-use |namespace, path, prefix, files) = fail
+  adjust-index-lookup(is-use |namespace, path, prefix) = fail
  
   // adjust-index-select(|namespace, path, use) = fail // (e.g., for imports)
  
@@ -108,7 +108,7 @@ rules // analysis traversals
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with
       // Init
-      index-setup(|language, [project-path])
+      index-setup(|language, [project-path], full-path)
     with
     	// Store copy of elements for diff and clear file
       oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> full-path;
@@ -131,12 +131,12 @@ rules // analysis traversals
         <index-add-all(|full-path)> data;
 
         // Resolve an references in DefData (using what we just stored)
-        (data', data-uses) := <analyze-uses(|[(full-path, "")])> data;
+        (data', data-uses) := <analyze-uses> data;
         <index-remove-all(|full-path)> data;
         <index-add-all(|full-path)> data';
        
         // Resolve all unresolved references in the tree
-        (ast4, uses) := <analyze-uses(|[(full-path, "")])> ast3;
+        (ast4, uses) := <analyze-uses> ast3;
         <index-add-all(|full-path)> uses;
         
         ast5 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast4;
@@ -259,14 +259,14 @@ rules // analysis traversals
    * Analyze all uses, changing their preliminary
    * "Unresolve(_)" URI to a definite URI of their definition.
    */
-  analyze-uses(|files) = analyze-uses(|None(), files)
-  analyze-uses(|parent, files):
+  analyze-uses = analyze-uses(|None())
+  analyze-uses(|parent):
     ast -> (ast'', uses')
     with
-      analyzed     := <all(analyze-uses(|ast, files))> ast;
+      analyzed     := <all(analyze-uses(|ast))> ast;
       (ast', uses) := <unzip-analyzed> analyzed;
       if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
-        if Def(def-uri) := <index-lookup(id |namespace, path, <strip-annos> ast', files)> ast' then
+        if Def(def-uri) := <index-lookup(id |namespace, path, <strip-annos> ast')> ast' then
           ast'' := ast{def-uri};
           if key{keyUri} := <nam-get-definition-key> parent ; not(<eq>(key, ast')) then
             uses' := [Use(def-uri, keyUri) | uses]
@@ -536,23 +536,13 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * Given an annotated AST node, resolves it, returning its Def.
    */
   index-lookup:
-    x{[namespace | path]} -> <index-lookup(|files)> x
-    with
-      (<index-get-files-of> Def([namespace | path])) <+ [] => files
-      
-  index-lookup(|files):
-    x{[namespace | path]} -> <index-lookup(id |<index-namespace-unwrap> namespace, path, <strip-annos> x, files)>
+    x{[namespace | path]} -> <index-lookup(id |<index-namespace-unwrap> namespace, path, <strip-annos> x)>
  
   /**
    * Given an annotated AST node, resolves it, returning all its Defs.
    */
   index-lookup-all:
-    x{[namespace | path]} -> <index-lookup-all(|files)> x
-    with
-      (<index-get-files-of> Def([namespace | path])) <+ [] => files
-      
-  index-lookup-all(|files):
-    x{[namespace | path]} -> <index-lookup-all(id |<index-namespace-unwrap> namespace, path, <strip-annos> x, files)>
+    x{[namespace | path]} -> <index-lookup-all(id |<index-namespace-unwrap> namespace, path, <strip-annos> x)>
  
   /**
    * Given an annotated AST node, resolves it, returning all its Defs.
@@ -562,10 +552,10 @@ rules // index lookup rules (take into account adjust-index-lookup)
    *
    * @internal
    */
-  index-lookup(is-adjust-lookup-enabled |namespace, path, prefix, files):
+  index-lookup(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> def
     where
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix)>;
       if <?StopLookup()> candidates then
         fail
       else
@@ -573,7 +563,7 @@ rules // index lookup rules (take into account adjust-index-lookup)
       <+
 	      // TODO: optimize: try not to call do-adjust-index-lookup from here
 	      [_ | path'] := path;
-	      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix, files)> x
+	      def         := <index-lookup(is-adjust-lookup-enabled |namespace, path', prefix)> x
       end
 
   /**
@@ -584,14 +574,14 @@ rules // index lookup rules (take into account adjust-index-lookup)
    *
    * @internal
    */
-  index-lookup-all(is-adjust-lookup-enabled |namespace, path, prefix, files):
+  index-lookup-all(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> defs'
     where
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix)>;
       defs       := <index-select-all(|namespace, path, x)>;
       // TODO: optimize: try not to call do-adjust-index-lookup from here
       if [_ | path'] := path then
-        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix, files)> x;
+        defs2 := <index-lookup-all(is-adjust-lookup-enabled |namespace, path', prefix)> x;
         defs' := <conc> (defs, defs2)
       else
         defs' := defs
@@ -603,8 +593,8 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Only Defs with a name that starts with this
    *                  string are returned.
    */
-  index-lookup-outermost(|prefix, files):
-    x{[namespace | path]} -> <index-lookup-outermost(id |<index-namespace-unwrap> namespace, path, prefix, files)>
+  index-lookup-outermost(|prefix):
+    x{[namespace | path]} -> <index-lookup-outermost(id |<index-namespace-unwrap> namespace, path, prefix)>
  
   /**
    * Given an annotated AST node, returns the outermost Def with a corresponding URI.
@@ -614,14 +604,14 @@ rules // index lookup rules (take into account adjust-index-lookup)
    *
    * @internal
    */
-  index-lookup-outermost(is-adjust-lookup-enabled |namespace, path, prefix, files):
+  index-lookup-outermost(is-adjust-lookup-enabled |namespace, path, prefix):
     x -> def
     where
       // TODO: optimize: just like index-lookup
       [_ | path'] := path;
-      def         := <index-lookup-outermost(is-adjust-lookup-enabled |namespace, path', prefix, files)> x
+      def         := <index-lookup-outermost(is-adjust-lookup-enabled |namespace, path', prefix)> x
     <+
-      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix, files)>;
+      candidates := <index-lookup-one-level(is-adjust-lookup-enabled|namespace, path, prefix)>;
       def        := <index-select(|namespace, path, x)>
  
   /**
@@ -630,8 +620,8 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Only Defs with a name that starts with this
    *                  string are returned.
    */
-  index-lookup-one-level(|prefix, files):
-    x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix, files)>
+  index-lookup-one-level(|prefix):
+    x{[namespace | path]} -> <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix)>
  
   /**
    * Given an annotated AST node, resolves it, and
@@ -641,16 +631,16 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Indicates that only Defs with a name that starts with this
    *                  string are demanded.
    */
-  index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path, prefix, files):
+  index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path, prefix):
     x{_} -> defs
     with
       is-adjusted-lookup-enabled;
-      do-adjust-index-lookup(|namespace, path, x, prefix, files);
+      do-adjust-index-lookup(|namespace, path, x, prefix);
       if ?StopLookup() then
         defs := StopLookup()
       else
         mapconcat(\d@Def(p) -> [d]\
-          <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path', prefix, files)> x\
+          <+ \[namespace' | path'] -> <index-lookup-one-level(fail |namespace', path', prefix)> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list Def(_) or [namespace | path] or StopLookup() to stop the lookup"));
         ?defs
       end
@@ -666,8 +656,8 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Indicates that only Defs with a name that starts with this
    *                  string are demanded.
    */
-  index-lookup-all-levels(|prefix, files):
-    x{[namespace | path]} -> <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, prefix, files)>
+  index-lookup-all-levels(|prefix):
+    x{[namespace | path]} -> <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, prefix)>
  
   /**
    * Given an annotated AST node, resolves it, and
@@ -676,19 +666,19 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Indicates that only Defs with a name that starts with this
    *                  string are demanded.
    */
-  index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path, prefix, files):
+  index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path, prefix):
     x{_} -> all-defs
     with
       is-adjust-lookup-enabled;
-      do-adjust-index-lookup(|namespace, path, x, prefix, files);
+      do-adjust-index-lookup(|namespace, path, x, prefix);
       mapconcat(\d@Def(p) -> [d]\
-          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', prefix, files)> x\
+          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', prefix)> x\
           <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list Def(_) or [namespace | path] or StopLookup() to stop the lookup"));
       ?all-defs
     <+
       one-level := <index-get-children(|namespace, prefix)> Def([namespace | path]);
       if [_ | path'] := path then
-        all-defs := <concat> [one-level, <index-lookup-all-levels(fail |namespace, path', prefix, files)> x]
+        all-defs := <concat> [one-level, <index-lookup-all-levels(fail |namespace, path', prefix)> x]
       else
         all-defs := one-level
       end
@@ -696,12 +686,12 @@ rules // index lookup rules (take into account adjust-index-lookup)
   /** @Deprecated */
   index-lookup-contained(|namespace, prefix) =
     obsolete(!"index-lookup-contained; use index-lookup-children");
-    index-lookup-children(|namespace, prefix, [])
+    index-lookup-children(|namespace, prefix)
    
   /** @Deprecated */
   index-lookup-contained-all-levels(|namespace, name) =
     obsolete(!"index-lookup-contained-all-levels; use index-lookup-descendants");
-    index-lookup-descendants(|namespace, name, [])
+    index-lookup-descendants(|namespace, name)
  
   /**
    * Given an annotated AST node, resolves it,
@@ -711,14 +701,14 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Only child Defs with a name that starts with this
    *                  string are returned.
    */
-  index-lookup-children(|namespace, prefix, files): // TODO: how does this compare w/ index-lookup-one-level?
+  index-lookup-children(|namespace, prefix): // TODO: how does this compare w/ index-lookup-one-level?
     x{[ns | path]} -> defs
     with
       if !ns => Unresolved(_) then
-        Def([_ | def-path]) := <index-lookup(|files)>;
-        defs := <index-lookup-one-level(id|namespace, def-path, prefix, files)> x
+        Def([_ | def-path]) := <index-lookup>;
+        defs := <index-lookup-one-level(id|namespace, def-path, prefix)> x
       else
-        defs := <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix, files)>
+        defs := <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix)>
       end
     <+
       defs := []
@@ -731,14 +721,14 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param prefix    Only child Defs with a name that starts with this
    *                  string are returned.
    */
-  index-lookup-descendants(|namespace, name, files):
+  index-lookup-descendants(|namespace, name):
     x{[ns | path]} -> defs
     with
       if !ns => Unresolved(_) then
-        Def([_ | def-path]) := <index-lookup(|files)>;
-        defs := <index-lookup-all-levels(id|namespace, def-path, name, files)> x
+        Def([_ | def-path]) := <index-lookup>;
+        defs := <index-lookup-all-levels(id|namespace, def-path, name)> x
       else
-        defs := <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, name, files)>
+        defs := <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, name)>
       end
     <+
       defs := []
@@ -806,11 +796,11 @@ rules // Internal helpers
     where
       [firstElem | rest] := path
  
-  do-adjust-index-lookup(|namespace, path, use, prefix, files) =
+  do-adjust-index-lookup(|namespace, path, use, prefix) =
     // UNDONE: try(origin-term);
     repeat-until(
       prim("SSL_EXT_get_parent", <id>)
-    , adjust-index-lookup(origin-equal(|use) |namespace, path, prefix, files) 
+    , adjust-index-lookup(origin-equal(|use) |namespace, path, prefix) 
     )
  
   index-select(|namespace, path, use) =

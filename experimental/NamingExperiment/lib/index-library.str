@@ -84,6 +84,12 @@ rules // Index management
 rules // Index API
   
   /**
+   * Gets the file that the analysis is currently in.
+   */
+  index-get-current-file =
+    prim("LANG_index_get_current_file")
+  
+  /**
    * Gets a list of all files and subfile for current project.
    *
    * Example:
@@ -91,9 +97,6 @@ rules // Index API
    */   
   index-get-all-files =
     prim("LANG_index_all_files")
-  
-  index-get-current-file =
-    prim("LANG_index_current_file")
   
   /**
    * Gets all index entries for the given file path and optionally subfile.

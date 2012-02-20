@@ -80,7 +80,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       language  := <index-origin-language> ast;
-      index-setup(|language, [project-path]);
+      index-setup(|language, [project-path], $[[path]/[project-path]]);
       filename := <guarantee-extension(|"index.currentfile.aterm")> path;
       result   := <map(\filename -> FileEntries(filename, <index-get-all-in-file> filename)\)> <index-get-all-files>
   
@@ -89,7 +89,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (node, position, ast, path, project-path) -> target
     where
       language  := <index-origin-language> ast;
-      index-setup(|language, [project-path]);
+      index-setup(|language, [project-path], $[[path]/[project-path]]);
       def     := <index-lookup> node;
       target  := def
 
@@ -100,7 +100,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     where
       // FIXME: this only works for definition paths
       language  := <index-origin-language> ast;
-      index-setup(|language, [project-path]);
+      index-setup(|language, [project-path], $[[path]/[project-path]]);
       def-term           := <nam-get-definition-key> target;
       _{[ns | def-path]} := def-term;
       def-path'  := <take-until(?Anon(_))> def-path;
@@ -116,7 +116,7 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       x                 := <collect-one(?COMPLETION(_))> ast';
       COMPLETION(name)	:= x;
       (
-        proposals       := <index-lookup-all-levels(|name, [($[[project-path]/[path]], "")])>
+        proposals       := <index-lookup-all-levels(|name)> x
       <+ 
         proposals 			:= []
       );

@@ -27,7 +27,7 @@ rules // Compilation
       // Init
       full-path := $[[project-path]/[path]];
       language  := <index-origin-language> ast;
-      index-setup(|language, [project-path])
+      index-setup(|language, [project-path], full-path)
     with
       // Get all changes files by looking at the timestamps.
       changedFiles      := <index-timestamp-get-updates(|"compile")>;
