@@ -645,8 +645,7 @@ rules // index lookup rules (take into account adjust-index-lookup)
         ?defs
       end
     <+
-      get := Def([namespace | path]);
-      defs := <concat> [<index-get-all> get, <index-get-children(|namespace, prefix)> get]
+      defs := <index-get-children(|namespace, prefix)> Def([namespace | path])
       
   /**
    * Given an annotated AST node, resolves it, and
