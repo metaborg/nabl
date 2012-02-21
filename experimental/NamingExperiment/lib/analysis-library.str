@@ -670,10 +670,14 @@ rules // index lookup rules (take into account adjust-index-lookup)
     with
       is-adjust-lookup-enabled;
       do-adjust-index-lookup(|namespace, path, x, prefix);
-      mapconcat(\d@Def(p) -> [d]\
-          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', prefix)> x\
-          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list Def(_) or [namespace | path] or StopLookup() to stop the lookup"));
-      ?all-defs
+      if ?StopLookup() then
+        all-defs := []
+      else
+	      mapconcat(\d@Def(p) -> [d]\
+	          <+ \[namespace' | path'] -> <index-lookup-all-levels(fail |namespace', path', prefix)> x\
+	          <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list Def(_) or [namespace | path] or StopLookup() to stop the lookup"));
+	      ?all-defs
+      end
     <+
       one-level := <index-get-children(|namespace, prefix)> Def([namespace | path]);
       if [_ | path'] := path then
