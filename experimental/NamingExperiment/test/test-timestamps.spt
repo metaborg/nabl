@@ -3,7 +3,7 @@ module test-timestamps
 language NamingExperiment
 
 test No changes after update
-  prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-timestamps"]);
+  index-setup(|"NamingExperiment", ["/tmp/test-timestamps"], ".");
   
   <index-add-all(|"/foo")> [Def([Def(), "spanish enquisition"])];
   with(<call> ("sleep", ["1"]) | "System must provide sleep command");
@@ -12,7 +12,7 @@ test No changes after update
   index-timestamp-get-updates(|"ServiceA") => [] // don't expect spanish enquisition
 
 test Changes after add
-  prim("LANG_index_setup", "NamingExperiment", ["/tmp/test-timestamps"]);
+  index-setup(|"NamingExperiment", ["/tmp/test-timestamps"], ".");
   <index-get-all-in-file> "/foo";
   index-remove-all(|"/foo");
   
