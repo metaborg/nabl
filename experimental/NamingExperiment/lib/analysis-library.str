@@ -22,6 +22,7 @@ signature constructors
   
   // Namespaces
   Diff         : Namespace
+  ASTDiff      : Namespace
   
   // Adjust lookup actions
   StopLookup   : LookupAction
@@ -168,7 +169,7 @@ rules // analysis traversals
 	      reanalyze-all(|added, removed, full-path); // TODO: Change this to file (with subfile)
 	      
 	      // Store added and removed elements in the index.
-	      analyze-store-diff(|added, removed, file)
+	      analyze-store-diff(|added, removed, file, ast)
 	    else
 	      (added, removed) := ([], [])
       end
@@ -202,20 +203,26 @@ rules // analysis traversals
     analyze-all-changed-files(|added, removed, full-path);
     map(debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis"))
     
-  analyze-store-diff(|added, removed, file): 
+  analyze-store-diff(|added, removed, file, ast): 
     _ -> <id>
     with
       // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
       changedEntries  := <conc> (added, removed);
       changedFiles    := <mapconcat(index-get-files-of)> changedEntries;
       dependentFiles  := <index-get-dependent-files> changedEntries;
-      // Always add current file to diff because we cannot detect non definition changes like
-      // commenting out 'print x'.
-      files := <make-set> [file|<conc> (changedFiles, dependentFiles)];
+      files := <conc> (changedFiles, dependentFiles);
       
-      if not([] := files) then
+      if not(<analyze-astdiff(|ast)> file) then
+      	// Add current file if the AST has changed. Cannot use dependency tracking here because
+      	// the originating file of a removed definition is not in the index any more.
+      	files' := <make-set> [file|files] 
+    	else
+    		files' := <make-set> files
+  		end;
+      
+      if not([] := files') then
         storePath := <analyze-diff-path>;
-        <map(analyze-add-diff(|storePath))> files
+        <map(analyze-add-diff(|storePath))> files'
       end
       
   analyze-add-diff(|storePath):
@@ -227,9 +234,27 @@ rules // analysis traversals
   	_ -> diffs
   	with
   		diffs := <make-set> <index-get-all-values> Diff([Diff(), ".internal"], ())
+  		
+  // Fails if old ASTDiff is not found or if ASTDiff is different.
+  analyze-astdiff(|ast):
+    (file, subfile) -> <id>
+    where
+      storePath := <analyze-diff-path>;
+    	newChecksum := <checksum> ast;
+      if oldChecksum := <index-get-value> Diff([ASTDiff(), file, ".internal"], ()) then
+        <index-remove-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], ())];
+	      <index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
+        <eq> (oldChecksum, newChecksum)
+    	else
+    		<index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
+    		fail
+  		end
       
-  analyze-clean-diff = 
-    analyze-diff-path; index-clear-file
+  analyze-clean-diff:
+  	_ -> <id>
+  	with
+  		storePath := <analyze-diff-path>; 
+      <index-remove-all(|storePath)> [Diff([Diff(), ".internal"], ())]
   		
   analyze-diff-path = 
     !"/.internal/diff"
