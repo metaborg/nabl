@@ -16,7 +16,7 @@ rules // Compilation
   index-schedule-compilation:
     <with(?(_, _, _, _, _) | "(selected, position, ast, path, project-path) tuple expected")> -> None()
     with
-      queue-strategy(|"index-compilation", "Compiling!")
+      queue-strategy(|"index-compilation", "Compiling! ⚔⚔⚔")
     
   index-compilation:
     (_, _, ast, path, project-path) -> <index-compilation(|path, project-path)> ast
@@ -29,22 +29,19 @@ rules // Compilation
       language  := <index-origin-language> ast;
       index-setup(|language, [project-path], full-path)
     with
-      // Get all changes files by looking at the timestamps.
-      changedFiles      := <index-timestamp-get-updates(|"compile")>;
+      // Determine the files to compile by looking at changed files.
+      diffs         := <analyze-get-diffs>;
+      files         := <map(index-compilation-restore-read-file)> diffs;
+      filteredFiles := <make-set> <remove-all(index-compilation-filter-file)> files;
       
-      // Determine the files to compile by looking at dependencies.
-      allDependentFiles := <make-set> <mapconcat(index-get-dependent-files)> changedFiles;
-      files             := <make-set> <conc> (allDependentFiles, changedFiles);
-      filteredFiles     := <remove-all(index-compilation-filter-file)> files;
-      
-      // Restore compile time reads.
-      <filter(index-compilation-restore-reads)> filteredFiles;
+      // Clean compile time reads.
+      <filter(index-compilation-clean-reads)> filteredFiles;
       
       // Compile the files
       <filter(index-compilation-file(|language, project-path))> filteredFiles;
       
-      // Update timestamps to current time.
-      index-timestamp-set-updated(|"compile")
+      // Clean diffs
+      analyze-clean-diff
 
   index-compilation-file(|language, project-path):
     (file, subfile) -> None()
@@ -66,16 +63,22 @@ rules // Compilation
         <index-add-all(|<index-compilation-file-tuple> (file, subfile))> reads
       |}
 
-  index-compilation-restore-reads:
-    (file, subfile) -> None()
-    with
-      compilationFiles := <index-compilation-file-tuple> (file, subfile);
-      reads := <index-get-all-in-file> compilationFiles;
-      <index-add-all(|(file, subfile))> reads;
-      <index-clear-file> compilationFiles
-      
-  index-compilation-file-tuple:
-    (file, subfile) -> ($[/.internal/reads/compile/[file]], subfile)
-    
   index-compilation-filter-file = 
     ?(<id>, _); (is-test-file <+ index-is-fake-file <+ not(file-exists))
+
+rules // Compile time reads
+
+  index-compilation-restore-read-file:
+    (file, subfile) -> (file', subfile)
+    with
+      file' := <string-replace(|<index-compilation-read-path>, "")> file
+      
+  index-compilation-clean-reads = 
+    ?(file, subfile); index-compilation-file-tuple; index-clear-file
+      
+  index-compilation-file-tuple:
+    (file, subfile) -> ($[[<index-compilation-read-path>]/[file]], subfile)
+    
+  index-compilation-read-path =
+    !"/.internal/reads/compile"
+    
