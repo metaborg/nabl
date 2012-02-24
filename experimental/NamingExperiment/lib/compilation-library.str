@@ -59,7 +59,6 @@ rules // Compilation
         
         // Store compile-time reads.
         reads := <iset-elements> readSet;
-        <index-add-all(|(file, subfile))> reads;
         <index-add-all(|<index-compilation-file-tuple> (file, subfile))> reads
       |}
 
