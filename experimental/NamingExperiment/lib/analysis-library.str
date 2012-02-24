@@ -531,26 +531,26 @@ rules // index API primitives
       end
 
   /**
-   * Gets a set of all files that have a reference to the given definitions.
+   * Gets a set of all files that have a reference to the given index entries.
    *
-   * @param construct-from-def  Construction strategy that creates a list of reference constructs from all 
-   *                            given defs, such as Def(uri) -> [Read(uri), Use(uri, [])]
+   * @param construct-from-uri  Construction strategy that creates a list of reference constructs from all 
+   *                            given entries, such as \uri -> [Read(uri), Use(uri, [])]\
    *
    * Example:
-   *   <index-get-referenced-files(\Def(uri) -> [Read(uri), Use(uri, [])]\)> [Def([Entity(), "Bar"]), ...] => 
+   *   <index-get-referenced-files(\uri -> [Read(uri), Use(uri, [])]\)> [Def([Entity(), "Bar"]), ...] => 
    *     [("fullpath/otherfile.ext", "subfile"), ...]
    */
-  index-get-referenced-files(construct-from-def):
+  index-get-referenced-files(construct-from-uri):
     entries -> files
     where
-      defs        := <filter(?Def(_))> entries;
-      referenced  := <concat> <filter(construct-from-def)> defs;
+      defs        := <filter(index-uri)> entries;
+      referenced  := <concat> <filter(construct-from-uri)> defs;
       files       := <make-set> <mapconcat(index-get-files-of)> referenced
  
   /**
    * Convenience function for finding files with Read and Use dependencies to the given definitions.
    *
-   * @see index-get-referenced-files(construct-from-def)
+   * @see index-get-referenced-files(construct-from-uri)
    * @see index-file-dependent-construct
    *
    * Example:
@@ -824,7 +824,7 @@ rules // Internal helpers
   index-add-unresolved(|x, uri) = (Index-UnresolvedSet; iset-add(|(x, uri))) <+ id
   
   index-file-dependent-construct: 
-    Def(uri@[namespace | path]) -> [Read(uri), ReadWildcard([namespace | rest], firstElem), Use(uri, [])]
+    uri@[namespace | path] -> [Read(uri), ReadWildcard([namespace | rest], firstElem), Use(uri, [])]
     where
       [firstElem | rest] := path
       
