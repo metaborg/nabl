@@ -808,10 +808,11 @@ rules // Internal helpers
   index-add-unresolved(|x, uri) = (Index-UnresolvedSet; iset-add(|(x, uri))) <+ id
   
   index-file-dependent-construct: 
-    uri@[namespace | path] -> [Read(uri), ReadWildcard([namespace | rest], firstElem), Use(uri, [])]
-    where
-      [firstElem | rest] := path
-      
+    uri -> <conc> (uses, reads)
+    with
+    	uses := <index-get-uses-all> Def(uri);
+    	reads := <index-get-reads-all> Def(uri)
+    
   index-file-dependency-filter = ?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_, _)
  
   do-adjust-index-lookup(|namespace, path, use, prefix) =
