@@ -204,11 +204,27 @@ rules // Index API
    * Example:
    *   <index-uri-eq> ([Entity(), Anon("a"), "Bar"], [Entity(), Anon("b"), "Bar"]) => 
    *     ([Entity(), Anon("a"), "Bar"], [Entity(), Anon("b"), "Bar"])
+   *   <index-uri-eq> ([Entity(), "Foo"], [Entity(), "Bar"]) => fail
    */
   index-uri-eq:
   	(u1, u2) -> <id>
   	where
-      (<eq> (u1, u2) <+ <eq> (<remove-all(?Anon(_))> u1, <remove-all(?Anon(_))> u2))
+  	  u1' := <index-uri-unwrap> u1;
+  	  u2' := <index-uri-unwrap> u2;
+      (<eq> (u1', u2') <+ <eq> (<remove-all(?Anon(_))> u1', <remove-all(?Anon(_))> u2'))
+
+  /**
+   * Checks if given keys (term{uri} elements) are equal. Discards unresolved URI's.
+   *
+   * Example:
+   *   <index-key-eq> ("Bar"{[Entity(), "Bar"]}, "Bar"{[Unresolved(Entity()), "Bar"]}) => 
+   *     ("Bar"{[Entity(), "Bar"]}, "Bar"{[Unresolved(Entity()), "Bar"]})
+   *   <index-key-eq> ("Foo"{[Entity(), "Foo"]}, "Bar"{[Entity(), "Bar"]}) => fail
+   */      
+  index-key-eq:
+    (k1, k2) -> <id>
+    where
+      <eq> (<index-key-unwrap> k1, <index-key-unwrap> k2)
   
   /**
    * Gets the value part for given term.
@@ -243,3 +259,9 @@ rules // Internal helpers
   
   index-namespace-unwrap =
     \Unresolved(n) -> n\ <+ id
+    
+  index-uri-unwrap =
+    \[ns|xs] -> [<index-namespace-unwrap> ns|xs]\ <+ id
+    
+  index-key-unwrap = 
+    \key{uri} -> key{<index-uri-unwrap> uri}\ <+ id
