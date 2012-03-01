@@ -16,7 +16,7 @@ rules // Compilation
   index-schedule-compilation:
     <with(?(_, _, _, _, _) | "(selected, position, ast, path, project-path) tuple expected")> -> None()
     with
-      queue-strategy(|"index-compilation", "Compiling! ⚔⚔⚔")
+      queue-strategy(|"index-compilation", "Compiling!")
     
   index-compilation:
     (_, _, ast, path, project-path) -> <index-compilation(|path, project-path)> ast
