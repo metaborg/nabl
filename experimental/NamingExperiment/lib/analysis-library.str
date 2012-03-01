@@ -19,7 +19,7 @@ signature constructors
   Read         : List(UriPart) -> Summary
   ReadWildcard : List(UriPart) * String -> Summary
   Diff         : List(UriPart) * List(Summary) -> Summary
-  
+    
   // Namespaces
   Diff         : Namespace
   ASTDiff      : Namespace
@@ -64,6 +64,8 @@ rules // extension points
     (Def(u1), Def(u2)) -> <id>
     where
        <index-uri-eq> (u1, u2)
+       
+  post-analyze-top(|phase, language, full-path) = fail
  
 rules // analysis traversals
   
@@ -166,11 +168,14 @@ rules // analysis traversals
 	      // Schedule re-analysis of files that depend on added or removed elements
 	      <reanalyze-all(|full-path)> changed;
 	      
+	      // TODO: Move diff stuff to compilation-library somehow.
 	      // Store added and removed elements in the index
 	      analyze-store-diff(|changed, file, ast)
 	    else
 	      (added, removed) := ([], [])
       end
+    with
+      try(post-analyze-top(|phase, language, full-path))
 
   analyze-diff:
     (defs1, defs2) -> (added, removed)
