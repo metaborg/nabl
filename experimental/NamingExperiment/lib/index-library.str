@@ -33,7 +33,6 @@ rules // Index management
    * Must be called once before doing anything with the library.
    */
   index-setup(|language, project-paths, current-file) =
-    project-path;
     prim("LANG_index_setup", language, project-paths, current-file)
 
   /**
@@ -43,8 +42,8 @@ rules // Index management
    *   <index-add-all(|"fullpath/file.ext")> [Def([Entity(), "Bar"]), ...]
    *   <index-add-all(|("fullpath/file.ext", "subfile"))> [Def([Entity(), "Bar"]), ...]
    */
-  index-add-all(|files) =
-    list-loop(with(prim("LANG_index_add", <id>, files)))
+  index-add-all(|file) =
+    list-loop(with(prim("LANG_index_add", <id>, file)))
     
   /**
    * Removes all given elements from the index that are contained in given file path and optionally subfile.
@@ -101,7 +100,7 @@ rules // Index API
   /**
    * Gets all index entries for the given file path and optionally subfile.
    *
-   * Example:
+   * Examples:
    *   <index-get-all-in-file> "fullpath/file.ext" => [Def([Entity(), "Bar"]), ...]
    *   <index-get-all-in-file> ("fullpath/file.ext", "subfile") => [Def([Entity(), "Bar"]), ...]
    */  
@@ -109,6 +108,19 @@ rules // Index API
     filepath -> entries
     with
       entries := <prim("LANG_index_get_all_in_file", filepath)>
+   
+  /**
+   * Gets all index entries for the given file path and optionally subfile.
+   *
+   * Example:
+   *   <index-get-all-in-file(|Import())> "fullpath/file.ext" => [Def([Import(), "Bar"]), ...]
+   */  
+  index-get-all-in-file(|namespace):
+    filepath -> entries
+    with
+      // TODO: Optimize -- add an argument to LANG_index_get_all_in_file to do this filtering
+      entries := <prim("LANG_index_get_all_in_file", filepath)>;
+      filter(where(index-uri => [namespace | _]))
     
   /**
    * Gets the containing files and subfiles of index entry with given template.
@@ -126,6 +138,7 @@ rules // Index API
    *   <indexlib-get-all-elements> => [Def([Entity(), "Bar"]), ...]
    */
   indexlib-get-all-elements =
+    // TODO: is there a use case for this? doing this is *expensive*
     <mapconcat(index-get-all-in-file)> <index-get-all-files>
     
   /**
