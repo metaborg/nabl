@@ -516,7 +516,13 @@ rules // index API primitives
       store     := [namespace, prefix' | path];
       // Store read in index.
       if set := <Index-ReadSet> then
-        <iset-add(|ReadWildcard([namespace | path], prefix'))> set
+        if 1 := <length> children' then
+          // HACK: This solves the problem of ReadWildcards making too many files re-analyze, but this should
+          // be handled in the index primitives instead.
+          <iset-add(|Read([namespace, prefix' | path]))> set
+        else
+          <iset-add(|ReadWildcard([namespace | path], prefix'))> set
+        end
       end
 
   /**
@@ -532,8 +538,8 @@ rules // index API primitives
   index-get-referenced-files(construct-from-uri):
     entries -> files
     where
-      defs        := <filter(index-uri)> entries;
-      referenced  := <concat> <filter(construct-from-uri)> defs;
+      uris        := <filter(index-uri)> entries;
+      referenced  := <concat> <filter(construct-from-uri)> uris;
       files       := <make-set> <mapconcat(index-get-files-of)> referenced
  
   /**
