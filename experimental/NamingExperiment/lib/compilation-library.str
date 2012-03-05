@@ -29,21 +29,22 @@ rules // Compilation
       language  := <index-origin-language> ast;
       index-setup(|language, [project-path], full-path)
     with
-      // Determine the files to compile by looking at changed files.
-      diffs         := <analyze-get-diffs>;
+      // Determine the files to compile by looking at changed files
+      diffs         := <analyze-get-compilediffs>;
       files         := <map(index-compilation-restore-read-file)> diffs;
       filteredFiles := <make-set> <remove-all(index-compilation-filter-file)> files;
       
-      // Clean compile time reads.
+      // Clean compile diffs
+      analyze-clean-compilediffs;
+      
+      // Clean compile time reads
       <filter(index-compilation-clean-reads)> filteredFiles;
       
+      // Set total work units to number of files to compile for visual indication
       <set-total-work-units> <length> filteredFiles;
       
       // Compile the files
-      <filter(index-compilation-file(|language, project-path); complete-work-unit)> filteredFiles;
-      
-      // Clean diffs
-      analyze-clean-diff
+      <filter(index-compilation-file(|language, project-path); complete-work-unit)> filteredFiles
 
   index-compilation-file(|language, project-path):
     (file, subfile) -> None()
@@ -92,8 +93,6 @@ rules // On save handling
   
   commit-and-compile:
     (_, path, project-path) -> <id>
-    with
-      <debug(!"Commit and compile: ")> $[[project-path]/[path]]
     with
       index-commit
     with

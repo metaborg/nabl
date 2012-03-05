@@ -164,13 +164,12 @@ rules // analysis traversals
 	      // Find added and removed definitions
 	      (added, removed) := <analyze-diff> (oldElems, newElems);
 	      changed := <conc> (added, removed);
+	      
+         // Store files that have changed in the index
+        analyze-store-diff(|changed, file, ast);
 
 	      // Schedule re-analysis of files that depend on added or removed elements
-	      <reanalyze-all(|full-path)> changed;
-	      
-	      // TODO: Move diff stuff to compilation-library somehow.
-	      // Store added and removed elements in the index
-	      analyze-store-diff(|changed, file, ast)
+	      reanalyze-all(|file)
 	    else
 	      (added, removed) := ([], [])
       end
@@ -183,9 +182,14 @@ rules // analysis traversals
       added   := <diff(index-diff-compare)> (defs2, defs1);
       removed := <diff(index-diff-compare)> (defs1, defs2)
   
-  reanalyze-all(|file) =
-  	index-get-dependent-files; 
-  	filter(not(analyze-changed-filter-file(|file)); reanalyze-file)
+  reanalyze-all(|file):
+    _ -> <id>
+    with
+      if 0 := <analysis-count> then // Only reanalyze if all analyses have been completed.
+        diffs := <analyze-get-diffs>;
+        analyze-clean-diffs;
+        <filter(not(?(file, _)); reanalyze-file)> diffs // Don't reanalyze current file.
+      end
     
   analyze-changed-filter-file(|file) = 
     ?files@(<id>, _); (is-test-file <+ index-is-fake-file <+ ?file); !files
@@ -199,54 +203,70 @@ rules // analysis traversals
       // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
       changedFiles    := <mapconcat(index-get-files-of)> changedEntries;
       dependentFiles  := <index-get-dependent-files> changedEntries;
-      files := <conc> (changedFiles, dependentFiles);
+      files := <make-set> <conc> (changedFiles, dependentFiles);
       
       if not(<analyze-astdiff(|ast)> file) then
       	// Add current file if the AST has changed. Cannot use dependency tracking here because
       	// the originating file of a removed definition is not in the index any more.
-      	files' := <make-set> [file|files] 
+      	files' := [file|files] 
     	else
-    		files' := <make-set> files
+    		files' := files
   		end;
       
       if not([] := files') then
-        storePath := <analyze-diff-path>;
-        <map(analyze-add-diff(|storePath))> files'
+        <filter(analyze-add-diff)> <remove-all(analyze-changed-filter-file(|<Fst> file))> files; // Don't store own file as diff.
+        <map(analyze-add-compilediff)> files'
       end
       
-  analyze-add-diff(|storePath):
-    file -> <id>
-    with
-      <index-add-all(|storePath)> [Diff([Diff(), ".internal"], file)]
-      
-  analyze-get-diffs:
-  	_ -> diffs
-  	with
-  		diffs := <make-set> <index-get-all-values> Diff([Diff(), ".internal"], ())
-  		
   // Fails if old ASTDiff is not found or if ASTDiff is different.
   analyze-astdiff(|ast):
     (file, subfile) -> <id>
     where
-      storePath := <analyze-diff-path>;
-    	newChecksum := <checksum> ast;
+      storePath := <analyze-astdiff-path>;
+      newChecksum := <checksum> ast;
       if oldChecksum := <index-get-value> Diff([ASTDiff(), file, ".internal"], ()) then
         <index-remove-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], ())];
-	      <index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
+        <index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
         <eq> (oldChecksum, newChecksum)
-    	else
-    		<index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
-    		fail
-  		end
+      else
+        <index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
+        fail
+      end
       
-  analyze-clean-diff:
+  // TODO: Refactor diff strategies into something nicer?
+  analyze-add-diff:
+    file -> <id>
+    with
+      <index-add-all(|<analyze-diff-path>)> [Diff([Diff(), ".internal", "analyze"], file)]
+  analyze-add-compilediff:
+    file -> <id>
+    with
+      <index-add-all(|<analyze-compilediff-path>)> [Diff([Diff(), ".internal", "compile"], file)]
+      
+  analyze-get-diffs:
+  	_ -> diffs
+  	with
+  		diffs := <make-set> <index-get-all-values> Diff([Diff(), ".internal", "analyze"], ())
+  analyze-get-compilediffs:
+    _ -> diffs
+    with
+      diffs := <make-set> <index-get-all-values> Diff([Diff(), ".internal", "compile"], ())
+      
+  analyze-clean-diffs:
   	_ -> <id>
   	with
-  		storePath := <analyze-diff-path>; 
-      <index-remove-all(|storePath)> [Diff([Diff(), ".internal"], ())]
+      <index-remove-all(|<analyze-diff-path>)> [Diff([Diff(), ".internal", "analyze"], ())]
+  analyze-clean-compilediffs:
+    _ -> <id>
+    with
+      <index-remove-all(|<analyze-compilediff-path>)> [Diff([Diff(), ".internal", "compile"], ())]
   		
+  analyze-astdiff-path = 
+    !"/.internal/astdiff"
   analyze-diff-path = 
-    !"/.internal/diff"
+    !"/.internal/diff/analysis"
+  analyze-compilediff-path = 
+    !"/.internal/diff/compile"
  
   /**
    * Identifies all definitions in the tree
