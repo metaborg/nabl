@@ -123,9 +123,6 @@ rules // On save handling
         commit-and-compile
       end
       
-  analysis-count = 
-    prim("SSL_EXT_queue_analysis_count")
-      
   enable-commit-and-compile:
     _ -> <id>
     with
