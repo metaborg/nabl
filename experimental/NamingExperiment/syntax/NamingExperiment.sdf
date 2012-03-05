@@ -1,32 +1,80 @@
 module NamingExperiment
 
 imports Common 
- %% SPX
 
 exports
     
-context-free start-symbols
-
-  Start
-
-context-free syntax
-
-  
-    "module" ID Definition*     -> Start {cons("Module"), scope(Entity), scope(Module)}
-    "entity" ID "{" Member* "}" -> Definition {cons("Entity"), scope(Property)}
-    "import" STRING              -> Definition {cons("Import")}
+	context-free start-symbols
+	
+	  Start
+	
+	context-free syntax
+	
+    "module" Module@=ID Definition*     -> Start {"Module", scope(Entity, Module)}
+    "entity" Entity@=ID "{" Member* "}" -> Definition {"Entity", scope(Property, Function)}
+    "import" Module@STRING              -> Definition {"Import"}
     
-    ID ":" ID            -> Member {cons("Property")}
+    Property@=ID ":" Entity@ID          -> Member {"Property"}
 
 
-    ID "(" { Param "," }* ")" Stm -> Member {cons("Function"), scope(Var)}
-    ID ":" ID           -> Param {cons("Param")}
+    Function@=ID "(" { Param "," }* ")" Stm -> Member {"Function", scope(Var)}
+    Var@=ID ":" Entity@ID                   -> Param {"Param"}
     
-    ID "(" {Exp ","}* ")"     -> Exp {cons("Call")}
-    "var" ID ":" ID                 -> Stm {cons("VarDecl")}
-    "var" ID ":" ID "=" Exp            -> Stm {cons("VarDeclInit")}
-    ID "=" Exp                     -> Stm {cons("Assign")}
-    ID                             -> Exp {cons("Var")}         %% or, could be an Entity!
-    %% AMB: ID                  -> Exp {cons("EntityRef")
-    Exp "." ID                -> Exp {cons("PropAccess"), left}
-    "{" Stm* "}"                     -> Stm {cons("Block"), scope(Var)}
+    Function@ID "(" {Exp ","}* ")"      -> Exp {"Call"}
+    "var" Var@=ID ":" Entity@ID         -> Stm {"VarDecl"}
+    "var" Var@=ID ":" Entity@ID "=" Exp -> Stm {"VarDeclInit"}
+    Var@ID "=" Exp                      -> Stm {"Assign"}
+    Var@ID                              -> Exp {"Var"}         %% or, could be a Property!
+    Exp "." Property@ID                 -> Exp {"PropAccess"}
+    "{" Stm* "}"                        -> Stm {"Block", scope(Var)}
+
+%% notes
+%% attributes
+%%  
+%%  def PropAccess(e, p):
+%%    p.Property = e->Property
+%%  
+%%  def Import(i):
+%%    i.Entity += i->Property
+%%
+%% rules
+%%  
+%%  get-table-Property:
+%%    exp -> table
+%%  where
+%%    <type-of> exp => CLASS(t);
+%%    <get-table(|"Property")> t
+%%
+%% attributes
+%%
+%%  def PropAccess(e, p):
+%%    p.scope-Property := x
+%%      
+%% types
+%%
+%%  ================================
+%%  PropAccess(e, p) & e : ENTITY(x)
+%%
+%% possible warnings/errors:
+%%  - no scope for Function
+%%  - no definition site for Function
+%%  - no use sites for Function(?) 
+%%  - more than one def site defined (problem for naming scopes!)
+%%  - scope defined on injection
+%%  - ambiguous scope type (two prods with same syntactic lhs)
+%%  - inconsistent syntactic sort for definition (=tricky for composition...)
+%%
+%% scopes
+%%
+%%  @Var: //  ordered unique non-shadowing scope Var:
+%%    Function //(_, _)
+%%    Block //(_)
+%%    
+%%  @Entity: // unordered unique scope
+%%    Module //(_)
+%%    
+%%  @Property: // unordered unique scope
+%%    Entity //(_, _)
+%%    
+%%    unordered unique scope Function:
+%%      Module(_)

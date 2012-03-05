@@ -4,9 +4,9 @@ imports
   libstratego-lib
   include/NamingExperiment
   lib/editor-common.generated
+  lib/analysis-auto.generated
   lib/index-library
   lib/analysis-library
-  analysis-generated
   types
 
 rules

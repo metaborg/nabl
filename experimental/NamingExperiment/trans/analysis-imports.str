@@ -2,9 +2,9 @@ module analysis-imports
 
 imports
   include/NamingExperiment
+  lib/analysis-auto.generated
   lib/index-library
   lib/analysis-library
-  analysis-generated
 
 signature constructors
   
