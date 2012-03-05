@@ -124,3 +124,28 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
 
   def-to-name:
     Def([namespace, name | _]) -> name
+
+  create-quoted-libraries:
+    (_, _, _, path, project-path) -> None()
+    with
+      files := [$[[project-path]/lib/index-library], $[[project-path]/lib/analysis-library], $[[project-path]/lib/compilation-library]];
+      strings := <map(\file -> (file, <read-text-file> $[[file].str])\)> files;
+      <map(\(file, string) -> <write-lib> ($[[file].generated.str], string)\)> strings
+      
+  write-lib:
+  	(file, string) -> None()
+  	with
+      replaces := [
+        ("\\",                       "\\\\"                              ),
+        ("\"",                       "\\\""                              ),
+        ("lib/index-library",        "lib/index-library.generated"       ),
+        ("lib/analysis-library",     "lib/analysis-library.generated"    ),
+        ("lib/compilation-library",  "lib/compilation-library.generated" )
+      ];
+      string' := <list-string-replace> (string, replaces);
+      <fclose> <fputs> (string', <fopen> (file, "w"))
+  		
+  list-string-replace:
+    (string, replaces) -> string'
+    with
+  		string' := <foldl(\((r, w), str) -> <string-replace(|r, w)> str\)> (replaces, string)

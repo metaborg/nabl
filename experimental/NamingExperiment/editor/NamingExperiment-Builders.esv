@@ -19,7 +19,8 @@ builders
   builder  : "Show abstract syntax" = generate-aterm (openeditor) (realtime) (meta) (source)  
   builder  : "Show analyzed syntax" = generate-analyzed (openeditor) (realtime) (source)
   builder  : "Show index entries for current file" = index-currentfile (openeditor) (realtime) (source)   
-  builder  : "Show index entries for all files" = index-allfiles (openeditor) (realtime) (source)       
+  builder  : "Show index entries for all files" = index-allfiles (openeditor) (realtime) (source)
+  builder  : "Create quoted libraries" = create-quoted-libraries (meta)       
   
   // TODO: index-commit 'on exit'? or have Spoofax handle it internally?
   on save : index-commit                                                                                                     
