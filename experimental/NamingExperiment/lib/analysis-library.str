@@ -188,14 +188,11 @@ rules // analysis traversals
       if 0 := <analysis-count> then // Only reanalyze if all analyses have been completed.
         diffs := <analyze-get-diffs>;
         analyze-clean-diffs;
-        <filter(not(?(file, _)); reanalyze-file)> diffs // Don't reanalyze current file.
+        <queue-analysis> <filter(not(?(file, _)); Fst)> diffs // Don't reanalyze current file.
       end
     
   analyze-changed-filter-file(|file) = 
     ?files@(<id>, _); (is-test-file <+ index-is-fake-file <+ ?file); !files
-    
-  reanalyze-file = 
-    ?(<id>, _); debug(!"Re-analyzing "); prim("SSL_EXT_queue_analysis")
     
   analyze-store-diff(|changedEntries, file, ast): 
     _ -> <id>
