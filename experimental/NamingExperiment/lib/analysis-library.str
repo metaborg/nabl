@@ -14,7 +14,7 @@ signature constructors
  
   // Index elements
   Def          : List(UriPart) -> Summary
-  Use          : List(UriPart) * List(UriPart) -> Summary
+  Use          : List(UriPart) -> Summary
   BadUse       : List(UriPart) -> Summary
   Read         : List(UriPart) -> Summary
   ReadWildcard : List(UriPart) * String -> Summary
@@ -331,20 +331,15 @@ rules // analysis traversals
    * Analyze all uses, changing their preliminary
    * "Unresolve(_)" URI to a definite URI of their definition.
    */
-  analyze-uses = analyze-uses(|None())
-  analyze-uses(|parent):
+  analyze-uses:
     ast -> (ast'', uses')
     with
-      analyzed     := <all(analyze-uses(|ast))> ast;
+      analyzed     := <all(analyze-uses)> ast;
       (ast', uses) := <unzip-analyzed> analyzed;
       if !ast' => _{unresolved@[Unresolved(namespace), x | path]} then
         if Def(def-uri) := <index-lookup(id |namespace, path, <strip-annos> ast')> ast' then
           ast'' := ast{def-uri};
-          if key{keyUri} := <nam-get-definition-key> parent ; not(<eq>(key, ast')) then
-            uses' := [Use(def-uri, keyUri) | uses]
-          else
-            uses' := [Use(def-uri, [namespace | path]) | uses]
-          end
+          uses' := [Use(def-uri) | uses]
         else
           ast'' := ast';
           uses' := [BadUse([namespace, x]) | uses]
@@ -421,10 +416,10 @@ rules // index API primitives
    * Gets all Use entries that match the URI in given definition.
    *
    * Example:
-   *   <index-get-uses-all> Def([Entity(), "M", "Bar"]) => [Use([Entity(), "M", "Bar"], [Entity(), "M"]), ...]
+   *   <index-get-uses-all> Def([Entity(), "M", "Bar"]) => [Use([Entity(), "M", "Bar"]), ...]
    */
   index-get-uses-all:
-    <with(?Def(uri) | "Def expected")> -> <index-get-all> Use(uri, [])
+    <with(?Def(uri) | "Def expected")> -> <index-get-all> Use(uri)
      
   /**
    * Gets all Read or ReadWildcard entries that match the given template.
@@ -784,7 +779,7 @@ rules // URI and value projections
     Def(uri) -> uri
     
   index-uri-impl:
-    Use(uri, _) -> uri
+    Use(uri) -> uri
     
   index-uri-impl:
     Read(uri) -> uri
@@ -800,7 +795,7 @@ rules // URI and value projections
     Def(value) -> value
 
   index-value-impl:
-    Use(_, value) -> value
+    Use(value) -> value
 
   index-value-impl:
     Read(value) -> value
@@ -841,7 +836,7 @@ rules // Internal helpers
     	uses := <index-get-uses-all> Def(uri);
     	reads := <index-get-reads-all> Def(uri)
     
-  index-file-dependency-filter = ?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_, _)
+  index-file-dependency-filter = ?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_)
  
   do-adjust-index-lookup(|namespace, path, use, prefix) =
     // UNDONE: try(origin-term);
