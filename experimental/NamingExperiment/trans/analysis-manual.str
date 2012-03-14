@@ -15,13 +15,16 @@ rules
   // Adjust the lookup behavior for properties,
   // overriding the lookup with a list of property Defs
   adjust-index-lookup(target |namespace, path, prefix):
-    PropAccess(e, <target>) -> p*
-    with
-      if ENTITY(e-type) := <type-of> e then
-        p* := (<index-lookup-children(|Property(), prefix)> e-type)
-      else
-        p* := []
-      end
+    PropAccess(e, <target>) -> [[Property() | <index-path> ent]]
+    where
+    	<type-of> e => ENTITY(ent) 
+    // p*
+    // with
+    //   if ENTITY(e-type) := <type-of> e then
+    //     p* := (<index-lookup-children(|Property(), prefix)> e-type)
+    //   else
+    //     p* := []
+    //   end
 
   // Adjust the lookup behavior for variables,
   // overriding the lookup with a list of URIs
