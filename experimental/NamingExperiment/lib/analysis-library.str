@@ -722,16 +722,6 @@ rules // index lookup rules (take into account adjust-index-lookup)
         all-defs := one-level
       end
  
-  /** @Deprecated */
-  index-lookup-contained(|namespace, prefix) =
-    obsolete(!"index-lookup-contained; use index-lookup-children");
-    index-lookup-children(|namespace, prefix)
-   
-  /** @Deprecated */
-  index-lookup-contained-all-levels(|namespace, name) =
-    obsolete(!"index-lookup-contained-all-levels; use index-lookup-descendants");
-    index-lookup-descendants(|namespace, name)
- 
   /**
    * Given an annotated AST node, resolves it,
    * and returns all child Defs of its definition.
@@ -748,26 +738,6 @@ rules // index lookup rules (take into account adjust-index-lookup)
         defs := <index-lookup-one-level(id|namespace, def-path, prefix)> x
       else
         defs := <index-lookup-one-level(id|<index-namespace-unwrap> namespace, path, prefix)>
-      end
-    <+
-      defs := []
- 
-  /**
-   * Given an annotated AST node, resolves it,
-   * and returns all descendant Defs of its definition.
-   *
-   * @param namespace Only child Defs with this namespace are returned.
-   * @param prefix    Only child Defs with a name that starts with this
-   *                  string are returned.
-   */
-  index-lookup-descendants(|namespace, name):
-    x{[ns | path]} -> defs
-    with
-      if !ns => Unresolved(_) then
-        Def([_ | def-path]) := <index-lookup>;
-        defs := <index-lookup-all-levels(id|namespace, def-path, name)> x
-      else
-        defs := <index-lookup-all-levels(id|<index-namespace-unwrap> namespace, path, name)>
       end
     <+
       defs := []
