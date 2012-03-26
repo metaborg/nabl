@@ -117,6 +117,7 @@ rules // analysis traversals
     with
       // Init
       index-setup(|language, [project-path], full-path)
+      //prim("LANG_index_start_transaction")
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
     	// Store copy of elements for diff and clear file
@@ -137,11 +138,9 @@ rules // analysis traversals
         // Find DefData
         ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2;
         data := <origin-track-forced(analyze-tree-data)> ast3;
-        <index-add-all(|file)> data;
 
-        // Resolve an references in DefData (using what we just stored)
-        (data', data-uses) := <analyze-uses> data;
-        <index-remove-all(|file)> data;
+        // Resolve all references in DefData
+        (data', _) := <analyze-uses> data;
         <index-add-all(|file)> data';
        
         // Resolve all unresolved references in the tree
@@ -175,6 +174,8 @@ rules // analysis traversals
       end
     with
       try(post-analyze-top(|phase, language, full-path))
+    //with
+    //  prim("LANG_index_end_transaction")
 
   analyze-diff:
     (defs1, defs2) -> (added, removed)
