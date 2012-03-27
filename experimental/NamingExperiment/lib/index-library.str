@@ -79,6 +79,18 @@ rules // Index management
       prim("LANG_index_commit");
       index-timestamp-set-updated(|"LANG_index_commit")
     end
+    
+  /**
+   * Starts a transaction on the index for the current file. Additions to the index are not visible to other files 
+   * until index-end-transaction is called.
+   */
+  index-start-transaction = prim("LANG_index_start_transaction")
+  
+  /**
+   * Ends a transaction on the index for the current file. Additions made to the index during the transaction are
+   * added to the global index visible for other files.
+   */
+  index-end-transaction = prim("LANG_index_end_transaction")
   
 rules // Index API
   

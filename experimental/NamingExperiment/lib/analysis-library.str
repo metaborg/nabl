@@ -116,8 +116,8 @@ rules // analysis traversals
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with
       // Init
-      index-setup(|language, [project-path], full-path)
-      //prim("LANG_index_start_transaction")
+      index-setup(|language, [project-path], full-path);
+      index-start-transaction
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
     	// Store copy of elements for diff and clear file
@@ -155,6 +155,8 @@ rules // analysis traversals
         end
       |}
     with
+      index-end-transaction
+    with
       // Schedule re-analysis of dependent files (if current file is not testing language file)
       // HACK: Depends on file extension, could be other languages with .spt extension?
       if Editor() := phase; not(<is-test-file> path) then
@@ -174,8 +176,6 @@ rules // analysis traversals
       end
     with
       try(post-analyze-top(|phase, language, full-path))
-    //with
-    //  prim("LANG_index_end_transaction")
 
   analyze-diff:
     (defs1, defs2) -> (added, removed)
