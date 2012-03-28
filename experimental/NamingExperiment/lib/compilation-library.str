@@ -101,6 +101,8 @@ rules // On save handling
   index-on-save:
     (ast, _, _, path, project-path) -> None()
     with
+      language  := <index-origin-language> ast;
+      index-setup(|language, [project-path], $[[project-path]/[path]]);
       if 0 := <analysis-count> then
         disable-commit-and-compile;
         <commit-and-compile> (ast, path, project-path)
