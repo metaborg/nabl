@@ -120,9 +120,7 @@ rules // analysis traversals
       index-start-transaction
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
-    	// Store copy of elements for diff and clear file
-      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file;
-      <index-clear-file> file
+      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file
     with
       {| Index-ReadSet, Index-UnresolvedSet:
         readSet := <new-iset>;

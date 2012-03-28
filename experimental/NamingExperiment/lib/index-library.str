@@ -122,10 +122,13 @@ rules // Index API
       entries := <prim("LANG_index_get_all_in_file", filepath)>
    
   /**
-   * Gets all index entries for the given file path and optionally subfile.
+   * Gets index entries in some namespace for the given file path and optionally subfile.
+   *
+   * @param namespace Only index entries from this namespace are retrieved.
    *
    * Example:
    *   <index-get-all-in-file(|Import())> "fullpath/file.ext" => [Def([Import(), "Bar"]), ...]
+   *   <index-get-all-in-file(|Import())> ("fullpath/file.ext", "subfile") => [Def([Import(), "Bar"]), ...]
    */  
   index-get-all-in-file(|namespace):
     filepath -> entries
@@ -133,6 +136,16 @@ rules // Index API
       // TODO: Optimize -- add an argument to LANG_index_get_all_in_file to do this filtering
       entries := <prim("LANG_index_get_all_in_file", filepath)>;
       filter(where(index-uri => [namespace | _]))
+    
+  /**
+   * Gets the revision of a file and optionally subfile.
+   *
+   * Example:
+   *   <index-get-file-revision> "fullpath/file.ext" => 13
+   *   <index-get-file-revision> ("fullpath/file.ext", "subfile") => 37
+   */
+  index-get-file-revision:
+    file -> <prim("LANG_index_get_file_revision", file)>
     
   /**
    * Gets the containing files and subfiles of index entry with given template.
