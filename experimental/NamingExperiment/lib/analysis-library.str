@@ -116,11 +116,11 @@ rules // analysis traversals
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with
       // Init
-      index-setup(|language, [project-path], full-path);
-      index-start-transaction
+      index-setup(|language, [project-path], full-path)
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
-      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file
+      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file;
+      <index-clear-file> file
     with
       {| Index-ReadSet, Index-UnresolvedSet:
         readSet := <new-iset>;
@@ -152,8 +152,6 @@ rules // analysis traversals
           <index-add-all(|file)> <iset-elements> readSet
         end
       |}
-    with
-      index-end-transaction
     with
       // Schedule re-analysis of dependent files (if current file is not testing language file)
       // HACK: Depends on file extension, could be other languages with .spt extension?
