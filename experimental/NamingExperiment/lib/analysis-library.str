@@ -116,11 +116,11 @@ rules // analysis traversals
     (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
     with
       // Init
-      index-setup(|language, [project-path], full-path)
+      index-setup(|language, [project-path], full-path);
+      index-start-transaction
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
-      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file;
-      <index-clear-file> file
+      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file
     with
       {| Index-ReadSet, Index-UnresolvedSet:
         readSet := <new-iset>;
@@ -153,6 +153,8 @@ rules // analysis traversals
         end
       |}
     with
+      index-end-transaction
+    with
       // Schedule re-analysis of dependent files (if current file is not testing language file)
       // HACK: Depends on file extension, could be other languages with .spt extension?
       if Editor() := phase; not(<is-test-file> path) then
@@ -184,8 +186,8 @@ rules // analysis traversals
     with
       if 0 := <analysis-count> then // Only reanalyze if all analyses have been completed.
         diffs := <analyze-get-diffs>;
-        analyze-clean-diffs;
-        <queue-analysis> <filter(not(?(file, _)); Fst)> diffs // Don't reanalyze current file.
+        analyze-clean-diffs//;
+        //<queue-analysis> <debug(!"Queueing analysis for: ")> <filter(not(?(file, _)); Fst)> diffs // Don't reanalyze current file.
       end
     
   analyze-changed-filter-file(|file) = 
