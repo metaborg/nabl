@@ -186,8 +186,8 @@ rules // analysis traversals
     with
       if 0 := <analysis-count> then // Only reanalyze if all analyses have been completed.
         diffs := <analyze-get-diffs>;
-        analyze-clean-diffs//;
-        //<queue-analysis> <debug(!"Queueing analysis for: ")> <filter(not(?(file, _)); Fst)> diffs // Don't reanalyze current file.
+        analyze-clean-diffs;
+        <queue-analysis> <debug(!"Queueing analysis for: ")> <filter(not(?(file, _)); Fst)> diffs // Don't reanalyze current file.
       end
     
   analyze-changed-filter-file(|file) = 
