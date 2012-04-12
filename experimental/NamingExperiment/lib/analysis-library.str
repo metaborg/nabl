@@ -2,6 +2,7 @@ module lib/analysis-library
  
 imports
   libstratego-lib
+  libstratego-parallel
   lib/editor-common.generated
   lib/index-library
  
@@ -26,6 +27,9 @@ signature constructors
   
   // Adjust lookup actions
   StopLookup   : LookupAction
+  
+  // Parallel
+  ParallelResults : File * AST * AST * List(Error) * List(Warning) * List(Note) * List(ReAnalyzeFile) -> ParallelResults
   
 rules // extension points
  
@@ -295,7 +299,57 @@ rules // analysis traversals
     with
       appl'          := <all(\(a, _) -> a\)> appl;
       unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
- 
+
+rules // parallel analysis
+  
+  index-parallel-analyze-files(analyze|language):
+    files -> None()
+    with
+      not(is-tuple);
+      index-parallel-analyze(analyze|language);
+      filter(not(?ParallelResults(_, (), (),_ ,_ ,_ , _)); index-set-markers)
+  
+  index-parallel-analyze(analyze|language):
+    files -> allResults
+    with
+      map(index-parse);                                  // Parsing cannot be done in parallel.
+      map(\(ast, file) -> (ast, file, <project-path>)\);
+      parallel-unordered(all(index-analyze(analyze|language)));
+      ?results;
+      with(<eq> (<length> results, <length> files) | "Input size not equal to output size");
+      diffs := <make-set> <mapconcat(?ParallelResults(_, _, _, _, _, _, <id>))> results;
+      if not([] := diffs) then
+        allResults := <concat> [results, <index-parallel-analyze(analyze|language)> diffs]
+      else
+        allResults := results
+      end
+      
+  index-parse:
+    file -> (ast, file)
+    where
+      <file-exists> file
+    with
+      ast := <parse-file> file
+      
+  index-parse:
+    file -> (ast, file)
+    where
+      not(<file-exists> file)
+    with
+      ast := ()
+      
+  index-set-markers:
+    ParallelResults(file, ast, ast', errors, warnings, notes, diffs) -> <id>
+    with
+      <set-markers(|ast)> (ast', errors, warnings, notes)
+      
+  index-analyze(analyze|language):
+    (ast, path, project-path) -> ParallelResults(path, ast, ast'', errors, warnings, notes, diffs')
+    with
+      (ast', diffs)                    := <analyze-top(|Editor(), language)>;
+      (ast'', errors, warnings, notes) := <analyze> ast';
+      diffs'                           := <map(index-filepair-to-file)> diffs
+
 rules // diffs
   
   analyze-diff:
