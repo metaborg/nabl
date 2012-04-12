@@ -8,7 +8,7 @@ imports
 signature constructors
  
   // Analyze constructors
-  AnalysedResult : AST * List(Def) * List(Use) * List(DefData) * List(Def) * List(Def) -> AnalysedResult
+  AnalysedResult : AST * List(Def) * List(Use) * List(DefData) * List(Def) * List(Def) * List(File) -> AnalysedResult
   Editor      : AnalysisPhase
   Compile     : AnalysisPhase
  
@@ -97,9 +97,9 @@ rules // analysis traversals
    * @see analyze-top-internal(|phase, language)
    */
   analyze-top(|phase, language):
-    (ast, path, project-path) -> ast'
+    (ast, path, project-path) -> (ast', filesToAnalyze)
     with
-      AnalysedResult(ast', _, _, _, _, _) := <analyze-top-internal(|phase, language)> (ast, path, project-path)
+      AnalysedResult(ast', _, _, _, _, _, filesToAnalyze) := <analyze-top-internal(|phase, language)> (ast, path, project-path)
   
   /**
    * Analyses given AST and annotates definition and use sites found in the AST with URIs.
@@ -113,11 +113,11 @@ rules // analysis traversals
   analyze-top-internal(|phase, language) = 
     ?(_, path, project-path); analyze-top-internal(|phase, language, $[[project-path]/[path]])
   analyze-top-internal(|phase, language, full-path):
-    (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed)
+    (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed, filesToAnalyze)
     with
       // Init
       index-setup(|language, [project-path], full-path);
-      index-start-transaction
+      revision := <index-start-transaction>
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
       oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file
@@ -165,25 +165,14 @@ rules // analysis traversals
 	      changed := <conc> (added, removed);
 	      
          // Store files that have changed in the index
-        analyze-store-diff(|changed, file, ast);
-
-	      // Schedule re-analysis of files that depend on added or removed elements
-	      reanalyze-all(|file)
+        filesToAnalyze := <analyze-store-diff(|changed, file, ast, revision)>
 	    else
-	      (added, removed) := ([], [])
+	      (added, removed) := ([], []);
+	      filesToAnalyze := []
       end
     with
       try(post-analyze-top(|phase, language, full-path))
       
-  reanalyze-all(|file):
-    _ -> <id>
-    with
-      if 0 := <analysis-count> then // Only reanalyze if all analyses have been completed.
-        diffs := <analyze-get-diffs>;
-        analyze-clean-diffs;
-        <queue-analysis> <debug(!"Queueing analysis for: ")> <filter(not(?(file, _)); Fst)> diffs // Don't reanalyze current file.
-      end
- 
   /**
    * Identifies all definitions in the tree
    * and annotates them with their URI.
@@ -318,26 +307,25 @@ rules // diffs
   analyze-changed-filter-file(|file) = 
     ?files@(<id>, _); (is-test-file <+ index-is-fake-file <+ ?file); !files
     
-  analyze-store-diff(|changedEntries, file, ast): 
-    _ -> <id>
+  analyze-store-diff(|changedEntries, file, ast, revision): 
+    _ -> analyzeFiles
     with
       // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
       changedFiles    := <mapconcat(index-get-files-of)> changedEntries;
       dependentFiles  := <index-get-dependent-files> changedEntries;
-      files := <make-set> <conc> (changedFiles, dependentFiles);
+      newInfoFiles    := <filter(where(?f; index-get-file-revision; \r -> (r, revision)\; gt; !f))> dependentFiles;
+      
+      analyzeFiles := <make-set> <remove-all(analyze-changed-filter-file(|<Fst> file))> <conc> (dependentFiles, newInfoFiles);
       
       if not(<analyze-astdiff(|ast)> file) then
         // Add current file if the AST has changed. Cannot use dependency tracking here because
         // the originating file of a removed definition is not in the index any more.
-        files' := [file|files] 
+        compileFiles := <make-set> [file|<conc> (analyzeFiles, changedFiles)]
       else
-        files' := files
+        compileFiles := <make-set> <conc> (analyzeFiles, changedFiles)
       end;
-      
-      if not([] := files') then
-        <filter(analyze-add-diff)> <remove-all(analyze-changed-filter-file(|<Fst> file))> files; // Don't store own file as diff.
-        <map(analyze-add-compilediff)> files'
-      end
+
+      <map(analyze-add-compilediff)> compileFiles
       
   // Fails if old ASTDiff is not found or if ASTDiff is different.
   analyze-astdiff(|ast):
@@ -786,6 +774,8 @@ rules // Internal helpers
     where
       <is-test-file> path;
       not(!language => "Spoofax-Testing")
+      
+  index-filepair-to-file = Fst; string-replace(|$[[<project-path>]/], "")
        
   index-is-name-substring(|name):
     template -> <id>

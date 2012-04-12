@@ -50,8 +50,8 @@ rules // Compilation
     (file, subfile) -> None()
     with
       // Parse and analyze ast.
-      ast                                 := <parse-file> file;
-      AnalysedResult(ast', _, _, _, _, _) := <analyze-top-internal(|Compile(), language, file)> (ast, file, project-path)
+      ast                                    := <parse-file> file;
+      AnalysedResult(ast', _, _, _, _, _, _) := <analyze-top-internal(|Compile(), language, file)> (ast, file, project-path)
     with
       {| Index-ReadSet:
         readSet := <new-iset>;

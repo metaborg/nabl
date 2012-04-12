@@ -25,10 +25,11 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     (ast, path, project-path) -> (ast', errors, warnings, notes)
     with
       editor-init;
-      ast'     := <analyze-top>;
+      (ast', filesToAnalyze) := <analyze-top>;
       errors   := <collect-all(constraint-error, conc)> ast';
       warnings := <collect-all(constraint-warning, conc)> ast';
-      notes    := <collect-all(constraint-note, conc)> ast'
+      notes    := <collect-all(constraint-note, conc)> ast';
+      <queue-analysis> <map(index-filepair-to-file)> filesToAnalyze
   
   // Prints the abstract syntax ATerm of a selection.
   generate-aterm:
