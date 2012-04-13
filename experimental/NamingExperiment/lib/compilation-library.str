@@ -8,16 +8,23 @@ imports
   
 rules // Extension points
     
+  // Should desugar given ast.
+  index-desugar-ast = fail
+    
   // Should compile given analysed ast.
   index-compile-ast(|file, subfile, project-path) = fail
   
 rules // Compilation
   
+  /**
+   * Schedules compilation of all files that have changed since the last compilation.
+   */
   index-schedule-compilation:
     _ -> None()
     with
       queue-strategy(|"index-compilation", "Compiling files")
   
+  /** @internal */
   index-compilation:
     language -> None()
     with
@@ -39,12 +46,14 @@ rules // Compilation
       // Compile the files
       <filter(index-compilation-file(|language, project-path); complete-work-unit)> filteredFiles
 
+  /** @internal */
   index-compilation-file(|language, project-path):
     (file, subfile) -> None()
     with
       // Parse and analyze ast.
-      ast                             := <parse-file> file;
-      Results(ast', _, _, _, _, _, _) := <analyze-top-internal(|Compile(), language, file)> (ast, file, project-path)
+      ast                              := <parse-file> file;
+      ast'                             := <try(index-desugar-ast)> ast;
+      Results(ast'', _, _, _, _, _, _) := <analyze-top-internal(|Compile(), language, file)> (ast', file, project-path)
     with
       {| Index-ReadSet:
         readSet := <new-iset>;
@@ -58,9 +67,58 @@ rules // Compilation
         <index-add-all(|<index-compilation-file-tuple> (file, subfile))> reads
       |}
 
+  /** @internal */
   index-compilation-filter-file = 
     ?(<id>, _); (is-test-file <+ index-is-fake-file <+ not(file-exists))
+    
+rules // On save handling
+  
+  /**
+   * Commits the index to disk and schedules compilation.
+   *
+   * @see trigger-commit-and-compile
+   *
+   * @internal
+   */
+  commit-and-compile:
+    language -> None()
+    with
+      index-commit
+    with
+      index-schedule-compilation
 
+  /**
+   * Triggers commit and compilation, requires target language as current term.
+   * Compilation can be delayed by using disable-commit-and-compile. Compilation will be triggered when 
+   * enable-commit-and-compile is called.
+   */
+  trigger-commit-and-compile:
+    language -> <id>
+    with
+      if not(index-is-global-enabled(|"delay-compile")) then
+        commit-and-compile
+      else
+        index-enable-global(|"trigger-compile")
+      end
+  
+  /**
+   * Delays commit and compilation until enable-commit-and-compile is called.
+   */
+  disable-commit-and-compile = index-enable-global(|"delay-compile")
+  
+  /**
+   * Cancels the commit and compilation delay. If commit and compilation was triggered during the delay, it
+   * is triggered now.
+   */
+  enable-commit-and-compile:
+    language -> <id>
+    with
+      if index-is-global-enabled(|"trigger-compile") then
+        commit-and-compile
+      end;
+      index-disable-global(|"delay-compile")
+      
+/** @internal */
 rules // Compile time reads
 
   index-compilation-restore-read-file:
@@ -77,31 +135,3 @@ rules // Compile time reads
   index-compilation-read-path =
     !"/.internal/reads/compile"
     
-rules // On save handling
-  
-  commit-and-compile:
-    language -> None()
-    with
-      index-commit
-    with
-      index-schedule-compilation
-
-  trigger-commit-and-compile:
-    language -> <id>
-    with
-      if not(index-is-global-enabled(|"delay-compile")) then
-        commit-and-compile
-      else
-        index-enable-global(|"trigger-compile")
-      end
-  
-  enable-commit-and-compile:
-    language -> <id>
-    with
-      if index-is-global-enabled(|"trigger-compile") then
-        commit-and-compile
-      end;
-      index-disable-global(|"delay-compile")
-  
-  disable-commit-and-compile = index-enable-global(|"delay-compile")
-  

@@ -29,6 +29,12 @@ signature constructors
   
 rules // Index management
    
+  /**
+   * Sets up the index library for given language and project paths.
+   * Must be called once before doing anything with the library.
+   *
+   * @obsolete
+   */
   index-setup(|language, project-paths) =
     obsolete(!"index-setup(|language, project-paths); use index-setup(|language, project-paths, current-file)");
     index-setup(|language, project-paths, ".")

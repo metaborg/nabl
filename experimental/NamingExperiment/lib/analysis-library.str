@@ -36,8 +36,6 @@ rules // extension points
   // Should return list of Def(_) and/or [namespace | path] or StopLookup() to stop the lookup
   adjust-index-lookup(is-use |namespace, path, prefix) = fail
  
-  // adjust-index-select(|namespace, path, use) = fail // (e.g., for imports)
- 
   // Should call <store-results> on a (list of) DefData
   adjust-index-def-data(store-results |namespace, path) = fail
  
@@ -173,9 +171,10 @@ rules // analysis traversals
       end
       
   /**
-   * Identifies all definitions in the tree
-   * and annotates them with their URI.
+   * Identifies all definitions in the tree and annotates them with their URI.
    * Also annotates uses with a preliminary "Unresolved(_)" URI.
+   *
+   * @internal
    */
   analyze-defs(|head-scope, head-scope-ns):
     ast -> (ast', defs')
@@ -198,7 +197,8 @@ rules // analysis traversals
         (ast', defs) := <analyze-defs-recurse(|head-scope', head-scope-ns', def-path)> ast
       end;
       defs' := <![def | defs] <+ !defs>
- 
+      
+  /** @internal */
   analyze-defs-recurse(|head-scope, head-scope-ns, def-path):
     ast -> (ast'', defs)
     where
@@ -206,6 +206,7 @@ rules // analysis traversals
       (ast', defs)  := <unzip-analyzed> analyzed;
       ast''         := <try(nam-annotate-names(|def-path))> ast'
  
+  /** @internal */
   update-index-path(|head-scope, head-scope-ns, ast):
     scope-type -> scope-type
     where
@@ -235,8 +236,9 @@ rules // analysis traversals
   */
  
   /**
-   * Analyze all uses, changing their preliminary
-   * "Unresolve(_)" URI to a definite URI of their definition.
+   * Analyze all uses, changing their preliminary "Unresolved(_)" URI to a definite URI of their definition.
+   *
+   * @internal
    */
   analyze-uses:
     ast -> (ast'', uses')
@@ -257,7 +259,9 @@ rules // analysis traversals
       end
  
   /**
-   * Collects all index data (e.g., types of definitions).
+   * Collects all index data (e.g. types of definitions).
+   *
+   * @internal
    */
   analyze-tree-data:
     tree -> data
@@ -265,7 +269,8 @@ rules // analysis traversals
       set := <new-iset>;
       <topdown(analyze-tree-data-part(|set))> tree;
       data := <iset-elements> set
- 
+      
+  /** @internal */
   analyze-tree-data-part(|set):
     tree -> tree
     where
@@ -275,7 +280,8 @@ rules // analysis traversals
           <fatal-err(|"Unexpected result from adjust-index-def-data; should call <store-results>")> result
         end
       end
- 
+  
+  /** @internal */
   store-index-data-results(|set):
     t -> <fail>
     where
@@ -296,6 +302,7 @@ rules // parallel analysis
       index-parallel-analyze(analyze);
       filter(not(?ParallelResults((), (), _, _, _, _)); index-set-markers)
   
+  /** @internal */
   index-parallel-analyze(analyze):
     files -> allResults
     with
@@ -310,7 +317,8 @@ rules // parallel analysis
       else
         allResults := results
       end
-      
+  
+  /** @internal */   
   index-parse-file:
     file -> (ast, file)
     with
@@ -319,12 +327,14 @@ rules // parallel analysis
     else
       ast := ()
     end
-      
+   
+  /** @internal */   
   index-set-markers:
     ParallelResults(ast, ast', errors, warnings, notes, diffs) -> <id>
     with
       <set-markers(|ast)> (ast', errors, warnings, notes)
       
+  /** @internal */
   index-analyze(analyze):
     (ast, path, project-path) -> ParallelResults(ast, ast', errors, warnings, notes, filesToAnalyze)
     with
@@ -335,15 +345,18 @@ rules // parallel analysis
 
 rules // diffs
   
+  /** @internal */
   analyze-diff:
     (defs1, defs2) -> (added, removed)
     with
       added   := <diff(index-diff-compare)> (defs2, defs1);
       removed := <diff(index-diff-compare)> (defs1, defs2)
-    
+  
+  /** @internal */  
   analyze-changed-filter-file(|file) = 
     ?files@(<id>, _); (is-test-file <+ index-is-fake-file <+ ?file); !files
     
+  /** @internal */
   analyze-store-diff(|changedEntries, file, ast, revision): 
     _ -> analyzeFiles'
     with
@@ -373,7 +386,11 @@ rules // diffs
       // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
       <map(analyze-add-compilediff)> compileFiles'
       
-  // Fails if old ASTDiff is not found or if ASTDiff is different.
+  /** 
+   * Fails if old ASTDiff is not found or if ASTDiff is different.
+   *
+   * @internal
+   */
   analyze-astdiff(|ast):
     (file, subfile) -> <id>
     where
@@ -387,10 +404,18 @@ rules // diffs
         fail
       end
       
-  // Adds given file to the list of files to compile.
+  /** 
+   * Adds given file to the list of files to compile.
+   *
+   * @internal
+   */
   analyze-add-compilediff = index-add-global(|"compile-diff")
   
-  // Gets the list of files to compile, and then clear it.
+  /** 
+   * Gets the list of files to compile, and then clear it.
+   *
+   * @internal
+   */
   analyze-get-compilediffs = index-get-all-globals(|"compile-diff"); index-clear-global(|"compile-diff")
  
 rules // index API primitives
@@ -490,13 +515,19 @@ rules // index API primitives
     template -> <index-value> <?[<id>|_]> <index-get-all> template
    
   /**
-   * Gets the namespace part of the URI for given term.
+   * Gets the namespace part of the URI for given key (term{uri} element).
+   *
+   * Example:
+   *   <index-namespace> "Bar"{[Entity(), "Bar"]} => Entity() 
    */
   index-namespace:
     x{[namespace | path]} -> <index-namespace-unwrap> namespace
 
   /**
-   * Gets the path part of the URI for given term.
+   * Gets the path part of the URI for given key (term{uri} element).
+   *
+   * Example:
+   *   <index-path> "Bar"{[Entity(), "Bar"]} => ["Bar"]
    */
   index-path:
     x{[namespace | path]} -> path'
@@ -508,39 +539,71 @@ rules // index API primitives
       end
     
   /**
-   * Determines if a given AST node is a definition site,
-   * according to the syntax.
+   * Determines if a given AST node is a definition site, according to the syntax.
+   *
+   * TODO: Does not work?
    */
   index-is-definition =
     where(nam-get-definition-key)
- 
+
   /**
-   * Returns all children of a Def.
+   * Gets all Def children elements of an URI in a certain namespace.
+   * URI can be contained in a Def(uri), key (term{uri} element) or the uri itself.
    *
-   * @param namespace Only child Defs with this namespace are returned.
-   * @param prefix    Only Defs with a name that starts with this
-   *                  string are returned.
+   * @param namespace Only child Def elements in this namespace are returned.
    *
+   * Example:
+   *   <index-get-children(|Field())> Def([Entity(), "Baz"]) => [Def([Field(), "Bar"]), Def([Field(), "Foo"]), ...]
+   *   <index-get-children(|Field())> "Foo"{[Entity(), "Baz"]} => [Def([Field(), "Bar"]), Def([Field(), "Foo"]), ...]
+   *   <index-get-children(|Field())> [Entity(), "Baz"] => [Def([Field(), "Bar"]), Def([Field(), "Foo"]), ...]
    */
-  index-get-children(|namespace, prefix):
-    <with(?Def([parent-ns | path]) | "Def expected")> -> children'
+  index-get-children(|namespace) = index-get-children(\uri -> Def(uri)\|namespace)
+  
+  /**
+   * Gets all children elements of an URI in a certain namespace using custom templates.
+   * URI can be contained in a Def(uri), key (term{uri} element) or the uri itself.
+   *
+   * @param construct-template  Should create a template to match index entries with, given an URI.
+   * @param namespace           Only child elements in this namespace are returned.
+   */
+  index-get-children(construct-template|namespace):
+    <with(?Def([parent-ns | path]) <+ ?_{[parent-ns | path]} <+ ?[parent-ns | path] | "Def, key or uri expected")> -> children
     with
-      with(not(!namespace => Def(_)) | "index-get-children interface changed");
+      template  := <construct-template> [namespace | path];
+      children  := <prim("LANG_index_get_children", template)>;
+      <store-wildcard-read(|namespace, path, "")> children
+
+  /**
+   * Gets all Def children elements of an URI in a certain namespace where the name starts with a prefix.
+   * URI can be contained in a Def(uri), key (term{uri} element) or the uri itself.
+   *
+   * @param namespace Only child Def elements in this namespace are returned.
+   * @param prefix    Only child Def elements where the name starts with this prefix are returned.
+   *
+   * Example:
+   *   <index-get-children(|Field(), "fo")> Def([Entity(), "Baz"]) => [Def([Field(), "Foo"]), ...]
+   *   <index-get-children(|Field(), "ba")> "Foo"{[Entity(), "Baz"]} => [Def([Field(), "Bar"]), ...]
+   *   <index-get-children(|Field(), "ze")> [Entity(), "Baz"] => [...]
+   */
+  index-get-children(|namespace, prefix) = index-get-children(\uri -> Def(uri)\|namespace, prefix)
+  
+  /**
+   * Gets all children elements of an URI in a certain namespace where the name starts with a prefix
+   * using custom templates.
+   * URI can be contained in a Def(uri), key (term{uri} element) or the uri itself.
+   *
+   * @param construct-template  Should create a template to match index entries with, given an URI.
+   * @param namespace           Only child elements in this namespace are returned.
+   * @param prefix              Only child elements where the name starts with this prefix are returned.
+   */
+  index-get-children(construct-template|namespace, prefix):
+    <with(?Def([parent-ns | path]) <+ ?_{[parent-ns | path]} <+ ?[parent-ns | path] | "Def, key or uri expected")> -> children'
+    with
       prefix'   := <strip-annos> prefix;
-      template  := Def([namespace | path]);
+      template  := <construct-template> [namespace | path];
       children  := <prim("LANG_index_get_children", template)>;
       children' := <filter(index-is-name-substring(|prefix'))> children;
-      store     := [namespace, prefix' | path];
-      // Store read in index.
-      if set := <Index-ReadSet> then
-        if 1 := <length> children' then
-          // HACK: This solves the problem of ReadWildcards making too many files re-analyze, but this should
-          // be handled in the index primitives instead.
-          <iset-add(|Read([namespace, prefix' | path]))> set
-        else
-          <iset-add(|ReadWildcard([namespace | path], prefix'))> set
-        end
-      end
+      <store-wildcard-read(|namespace, path, prefix')> children'
 
   /**
    * Gets a set of all files that have a reference to the given index entries.
@@ -671,6 +734,8 @@ rules // index lookup rules (take into account adjust-index-lookup)
    * @param namespace Only Defs with this namespace are returned.
    * @param prefix    Indicates that only Defs with a name that starts with this
    *                  string are demanded.
+   *
+   * @internal
    */
   index-lookup-one-level(is-adjusted-lookup-enabled |namespace, path, prefix):
     x{_} -> defs
@@ -705,6 +770,8 @@ rules // index lookup rules (take into account adjust-index-lookup)
    *
    * @param prefix    Indicates that only Defs with a name that starts with this
    *                  string are demanded.
+   *
+   * @internal
    */
   index-lookup-all-levels(is-adjust-lookup-enabled |namespace, path, prefix):
     x{_} -> all-defs
@@ -813,6 +880,19 @@ rules // Internal helpers
   index-readwildcard-substring(|prefix):
     ReadWildcard(_, name) -> <id>
     where <is-substring(!prefix)> name
+    
+  store-wildcard-read(|namespace, path, prefix):
+    children -> <id>
+    with
+      if set := <Index-ReadSet> then
+        if 1 := <length> children then
+          // HACK: This solves the problem of ReadWildcards making too many files re-analyze, but this should
+          // be handled in the index primitives instead.
+          <iset-add(|Read([namespace | path]))> set
+        else
+          <iset-add(|ReadWildcard([namespace | path], prefix))> set
+        end
+      end
       
   index-is-unresolved(|x, uri) = Index-UnresolvedSet; (iset-contains(|(x, uri)) <+ fail)
   index-add-unresolved(|x, uri) = (Index-UnresolvedSet; iset-add(|(x, uri))) <+ id
@@ -858,7 +938,8 @@ rules // Internal helpers
     )
   
   external SRTS-EXT-eq-ignore-annos(|t)
- 
+
+/** @internal */
 rules // interface for generated code
  
   nam-get-def(|namespace):
