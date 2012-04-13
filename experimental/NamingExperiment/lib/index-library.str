@@ -188,16 +188,6 @@ rules // Index API
     template -> <prim("LANG_index_get_files_of", template)>
     
   /**
-   * Gets all index entries (of every file for current project).
-   *
-   * Example:
-   *   <indexlib-get-all-elements> => [Def([Entity(), "Bar"]), ...]
-   */
-  indexlib-get-all-elements =
-    // TODO: is there a use case for this? doing this is *expensive*
-    <mapconcat(index-get-all-in-file)> <index-get-all-files>
-    
-  /**
    * Get all index entries that match the given template.
    *
    * Example:
