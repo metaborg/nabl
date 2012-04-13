@@ -302,7 +302,6 @@ rules // analysis traversals
 
 rules // parallel analysis
   
-  
   index-parallel-analyze-files(analyze):
     files -> None()
     with
@@ -361,24 +360,33 @@ rules // diffs
     ?files@(<id>, _); (is-test-file <+ index-is-fake-file <+ ?file); !files
     
   analyze-store-diff(|changedEntries, file, ast, revision): 
-    _ -> analyzeFiles
+    _ -> analyzeFiles'
     with
-      // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
       changedFiles    := <mapconcat(index-get-files-of)> changedEntries;
       dependentFiles  := <index-get-dependent-files> changedEntries;
-      newInfoFiles    := <filter(where(?f; index-get-file-revision; \r -> (r, revision)\; gt; !f))> dependentFiles;
       
-      analyzeFiles := <make-set> <remove-all(analyze-changed-filter-file(|<Fst> file))> <conc> (dependentFiles, newInfoFiles);
+      // Files to analyze
+      analyzeFiles := <remove-all(analyze-changed-filter-file(|<Fst> file))> dependentFiles;
+      if <elem(index-get-file-revision; \r -> (r, revision)\; gt)> dependentFiles then
+        // Add current file if the current file has read information from another file with a higher revision.
+        // This indicates that potentially outdated information was read.
+        analyzeFiles' := <make-set> [file|analyzeFiles]
+      else
+        analyzeFiles' := <make-set> analyzeFiles
+      end;
       
+      // Files to compile
+      compileFiles := <conc> (analyzeFiles, changedFiles);
       if not(<analyze-astdiff(|ast)> file) then
         // Add current file if the AST has changed. Cannot use dependency tracking here because
         // the originating file of a removed definition is not in the index any more.
-        compileFiles := <make-set> [file|<conc> (analyzeFiles, changedFiles)]
+        // TODO: Is this still true?
+        compileFiles' := <make-set> [file|compileFiles]
       else
-        compileFiles := <make-set> <conc> (analyzeFiles, changedFiles)
+        compileFiles' := <make-set> compileFiles
       end;
-
-      <map(analyze-add-compilediff)> compileFiles
+      // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
+      <map(analyze-add-compilediff)> compileFiles'
       
   // Fails if old ASTDiff is not found or if ASTDiff is different.
   analyze-astdiff(|ast):
