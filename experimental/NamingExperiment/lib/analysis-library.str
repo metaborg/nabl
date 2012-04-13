@@ -9,7 +9,7 @@ imports
 signature constructors
  
   // Analyze constructors
-  AnalysedResult : AST * List(Def) * List(Use) * List(DefData) * List(Def) * List(Def) * List(File) -> AnalysedResult
+  Results     : AST * List(Def) * List(Use) * List(DefData) * List(Def) * List(Def) * List(File) -> Results
   Editor      : AnalysisPhase
   Compile     : AnalysisPhase
  
@@ -29,7 +29,7 @@ signature constructors
   StopLookup   : LookupAction
   
   // Parallel
-  ParallelResults : AST * AST * List(Error) * List(Warning) * List(Note) * List(ReAnalyzeFile) -> ParallelResults
+  ParallelResults : AST * AST * List(Error) * List(Warning) * List(Note) * List(File) -> ParallelResults
   
 rules // extension points
  
@@ -68,8 +68,6 @@ rules // extension points
     (Def(u1), Def(u2)) -> <id>
     where
        <index-uri-eq> (u1, u2)
-       
-  post-analyze-top(|phase, language, full-path) = fail
  
 rules // analysis traversals
   
@@ -92,10 +90,9 @@ rules // analysis traversals
   /**
    * Analyses given AST and annotates definition and use sites found in the AST with URIs.
    *
-   * @param phase     The type of analysis phase. There are currently 2 phases to choose from:
-   *                  - Editor():   All information is stored into the index and dependent files
-   *                                are automatically scheduled for re-analysis.
-   *                  - Compile():  No information is stored and no re-analysis is done.
+   * @param phase     The type of analysis phase. There are 2 phases to choose from:
+   *                  - Editor():   File dependencies are analysed and returned.
+   *                  - Compile():  File dependencies are not analysed and empty lists are returned.
    * @param language  The name of the language that is being analysed.
    *
    * @see analyze-top-internal(|phase, language)
@@ -103,7 +100,7 @@ rules // analysis traversals
   analyze-top(|phase, language):
     (ast, path, project-path) -> (ast', filesToAnalyze)
     with
-      AnalysedResult(ast', _, _, _, _, _, filesToAnalyze) := <analyze-top-internal(|phase, language)> (ast, path, project-path)
+      Results(ast', _, _, _, _, _, filesToAnalyze) := <analyze-top-internal(|phase, language)> (ast, path, project-path)
   
   /**
    * Analyses given AST and annotates definition and use sites found in the AST with URIs.
@@ -117,7 +114,7 @@ rules // analysis traversals
   analyze-top-internal(|phase, language) = 
     ?(_, path, project-path); analyze-top-internal(|phase, language, $[[project-path]/[path]])
   analyze-top-internal(|phase, language, full-path):
-    (ast, path, project-path) -> AnalysedResult(ast5, defs, uses, data', added, removed, filesToAnalyze)
+    (ast, path, project-path) -> Results(ast5, defs, uses, data', added, removed, filesToAnalyze)
     with
       // Init
       index-setup(|language, [project-path], full-path);
@@ -174,8 +171,6 @@ rules // analysis traversals
 	      (added, removed) := ([], []);
 	      filesToAnalyze := []
       end
-    with
-      try(post-analyze-top(|phase, language, full-path))
       
   /**
    * Identifies all definitions in the tree
@@ -289,17 +284,7 @@ rules // analysis traversals
       else
         <iset-add(|t)> set
       end
- 
-  /**
-   * Transforms a term C( (a1, [b1]), (a2, [b2, b3]) )
-   * to a tuple (C(a1, a2), [b1, b2, b3]).
-   */
-  unzip-analyzed:
-    appl -> (appl', unzipped-parts)
-    with
-      appl'          := <all(\(a, _) -> a\)> appl;
-      unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
-
+  
 rules // parallel analysis
   
   index-parallel-analyze-files(analyze):
@@ -392,51 +377,21 @@ rules // diffs
   analyze-astdiff(|ast):
     (file, subfile) -> <id>
     where
-      storePath := <analyze-astdiff-path>;
+      name := [subfile, file, "ast-diff"];
       newChecksum := <checksum> ast;
-      if oldChecksum := <index-get-value> Diff([ASTDiff(), file, ".internal"], ()) then
-        <index-remove-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], ())];
-        <index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
+      if oldChecksum := <index-get-global(|name)> then
+      	<index-set-global(|name)> newChecksum;
         <eq> (oldChecksum, newChecksum)
       else
-        <index-add-all(|storePath)> [Diff([ASTDiff(), file, ".internal"], newChecksum)];
+        <index-add-global(|name)> newChecksum;
         fail
       end
       
-  // TODO: Refactor diff strategies into something nicer?
-  analyze-add-diff:
-    file -> <id>
-    with
-      <index-add-all(|<analyze-diff-path>)> [Diff([Diff(), ".internal", "analyze"], file)]
-  analyze-add-compilediff:
-    file -> <id>
-    with
-      <index-add-all(|<analyze-compilediff-path>)> [Diff([Diff(), ".internal", "compile"], file)]
-      
-  analyze-get-diffs:
-    _ -> diffs
-    with
-      diffs := <make-set> <index-get-all-values> Diff([Diff(), ".internal", "analyze"], ())
-  analyze-get-compilediffs:
-    _ -> diffs
-    with
-      diffs := <make-set> <index-get-all-values> Diff([Diff(), ".internal", "compile"], ())
-      
-  analyze-clean-diffs:
-    _ -> <id>
-    with
-      <index-remove-all(|<analyze-diff-path>)> [Diff([Diff(), ".internal", "analyze"], ())]
-  analyze-clean-compilediffs:
-    _ -> <id>
-    with
-      <index-remove-all(|<analyze-compilediff-path>)> [Diff([Diff(), ".internal", "compile"], ())]
-      
-  analyze-astdiff-path = 
-    !"/.internal/astdiff"
-  analyze-diff-path = 
-    !"/.internal/diff/analysis"
-  analyze-compilediff-path = 
-    !"/.internal/diff/compile"
+  // Adds given file to the list of files to compile.
+  analyze-add-compilediff = index-add-global(|"compile-diff")
+  
+  // Gets the list of files to compile, and then clear it.
+  analyze-get-compilediffs = index-get-all-globals(|"compile-diff"); index-clear-global(|"compile-diff")
  
 rules // index API primitives
  
@@ -827,6 +782,16 @@ rules // URI and value projections
 rules // Internal helpers
        
   index-origin-language = (origin-term <+ id); prim("SSL_EXT_origin_language", <id>)
+       
+  /**
+   * Transforms a term C( (a1, [b1]), (a2, [b2, b3]) )
+   * to a tuple (C(a1, a2), [b1, b2, b3]).
+   */
+  unzip-analyzed:
+    appl -> (appl', unzipped-parts)
+    with
+      appl'          := <all(\(a, _) -> a\)> appl;
+      unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
        
   // Tests if the current file is just a testing language input
   is-test-file = string-ends-with(|".spt")

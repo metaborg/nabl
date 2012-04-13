@@ -2,7 +2,6 @@ module namingexperiment
 
 imports
   libstratego-lib
-  libstratego-gpp
   libstratego-aterm
   include/NamingExperiment
   lib/editor-common.generated
@@ -19,13 +18,16 @@ imports
 
 rules // Main editor interface (defined by editor/NamingExperiment-Builders and -References.esv)
   
+  // Defines the current language.
+  language = !"NamingExperiment"
+  
   // Analyzes the current program, returning a tuple with the analyzed AST, errors, warnings, notes and
   // files that should be re-analyzed.
   analyze:
     (ast, path, project-path) -> (ast'', errors, warnings, notes, filesToAnalyze')
     with
       ast'                    := <id> ast; // Optional AST desugaring
-      (ast'', filesToAnalyze) := <analyze-top(|Editor(), "NamingExperiment")> (ast', path, project-path);
+      (ast'', filesToAnalyze) := <analyze-top(|Editor(), <language>)> (ast', path, project-path);
       errors                  := <collect-all(constraint-error, conc)> ast'';
       warnings                := <collect-all(constraint-warning, conc)> ast'';
       notes                   := <collect-all(constraint-note, conc)> ast'';
@@ -37,14 +39,32 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       editor-init;
       (ast', errors, warnings, notes, filesToAnalyze) := <analyze>;
-      <editor-analyze> filesToAnalyze
+      <editor-queue-analysis> filesToAnalyze
       
   // Main entry point for analyzes, called when multiple (changed) files have changed. 
   editor-analyze:
     files -> None()
+    where
+      not(is-tuple)
     with
-      not(is-tuple);
-      queue-strategy(|"editor-parallel-analyze", "Analyzing files")
+      index-setup(|<language>, [<project-path>], ".");
+      disable-commit-and-compile
+    with
+      editor-queue-analysis
+    with
+      <enable-commit-and-compile> <language>;
+      <trigger-commit-and-compile> <language>
+      
+  // Called when current file is saved.
+  editor-save:
+    (ast, _, _, _, _) -> None()
+    with
+      language  := <index-origin-language> ast;
+      index-setup(|language, [<project-path>], ".");
+      <trigger-commit-and-compile> language
+      
+  // Queue parallel analysis for given list of files.
+  editor-queue-analysis = queue-strategy(|"editor-parallel-analyze", "Analyzing files")
       
   // Executes parallel analysis using the index library.
   editor-parallel-analyze:
@@ -72,14 +92,14 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      AnalysedResult(_, result, _, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
+      Results(_, result, _, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
   
   generate-uses:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      AnalysedResult(_, _, result, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
+      Results(_, _, result, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
   
   /*
   generate-reads:
