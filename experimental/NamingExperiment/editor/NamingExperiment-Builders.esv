@@ -14,7 +14,7 @@ builders
   provider : include/namingexperiment.ctree                                                                   
   provider : include/namingexperiment-java.jar                                                                
                                                                                                               
-  observer : editor-analyze                                                                                   
+  observer : editor-analyze (multifile)                                                                                  
                                                                                                               
   builder  : "Show abstract syntax" = generate-aterm (openeditor) (realtime) (meta) (source)  
   builder  : "Show analyzed syntax" = generate-analyzed (openeditor) (realtime) (source)

@@ -19,17 +19,38 @@ imports
 
 rules // Main editor interface (defined by editor/NamingExperiment-Builders and -References.esv)
   
-  // Analyzes the current program, returning a tuple with errors, warnings, and notes;
-  // each a list of (term, message) tuples or simply (message) terms.
+  // Analyzes the current program, returning a tuple with the analyzed AST, errors, warnings, notes and
+  // files that should be re-analyzed.
+  analyze:
+    (ast, path, project-path) -> (ast'', errors, warnings, notes, filesToAnalyze')
+    with
+      ast'                    := <id> ast; // Optional AST desugaring
+      (ast'', filesToAnalyze) := <analyze-top(|Editor(), "NamingExperiment")> (ast', path, project-path);
+      errors                  := <collect-all(constraint-error, conc)> ast'';
+      warnings                := <collect-all(constraint-warning, conc)> ast'';
+      notes                   := <collect-all(constraint-note, conc)> ast'';
+      filesToAnalyze'         := <map(index-filepair-to-file)> filesToAnalyze
+
+  // Main entry point for analyzes, called when a single file is opened in the editor.
   editor-analyze:
     (ast, path, project-path) -> (ast', errors, warnings, notes)
     with
       editor-init;
-      (ast', filesToAnalyze) := <analyze-top>;
-      errors   := <collect-all(constraint-error, conc)> ast';
-      warnings := <collect-all(constraint-warning, conc)> ast';
-      notes    := <collect-all(constraint-note, conc)> ast';
-      <queue-analysis> <map(index-filepair-to-file)> filesToAnalyze
+      (ast', errors, warnings, notes, filesToAnalyze) := <analyze>;
+      <editor-analyze> filesToAnalyze
+      
+  // Main entry point for analyzes, called when multiple (changed) files have changed. 
+  editor-analyze:
+    files -> None()
+    with
+      not(is-tuple);
+      queue-strategy(|"editor-parallel-analyze", "Analyzing files")
+      
+  // Executes parallel analysis using the index library.
+  editor-parallel-analyze:
+    files -> None()
+    with
+      index-parallel-analyze-files(analyze)
   
   // Prints the abstract syntax ATerm of a selection.
   generate-aterm:
@@ -51,14 +72,14 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      AnalysedResult(_, result, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
+      AnalysedResult(_, result, _, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
   
   generate-uses:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      AnalysedResult(_, _, result, _, _, _) := <analyze-top-internal> (selected, path, project-path)
+      AnalysedResult(_, _, result, _, _, _, _) := <analyze-top-internal> (selected, path, project-path)
   
   /*
   generate-reads:

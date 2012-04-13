@@ -29,7 +29,7 @@ signature constructors
   StopLookup   : LookupAction
   
   // Parallel
-  ParallelResults : File * AST * AST * List(Error) * List(Warning) * List(Note) * List(ReAnalyzeFile) -> ParallelResults
+  ParallelResults : AST * AST * List(Error) * List(Warning) * List(Note) * List(ReAnalyzeFile) -> ParallelResults
   
 rules // extension points
  
@@ -302,53 +302,52 @@ rules // analysis traversals
 
 rules // parallel analysis
   
-  index-parallel-analyze-files(analyze|language):
+  
+  index-parallel-analyze-files(analyze):
     files -> None()
     with
-      not(is-tuple);
-      index-parallel-analyze(analyze|language);
-      filter(not(?ParallelResults(_, (), (),_ ,_ ,_ , _)); index-set-markers)
+      length; 
+      set-total-work-units
+    with
+      index-parallel-analyze(analyze);
+      filter(not(?ParallelResults((), (), _, _, _, _)); index-set-markers)
   
-  index-parallel-analyze(analyze|language):
+  index-parallel-analyze(analyze):
     files -> allResults
     with
-      map(index-parse);                                  // Parsing cannot be done in parallel.
+      map(index-parse-file); // Parsing cannot be done in parallel.
       map(\(ast, file) -> (ast, file, <project-path>)\);
-      parallel-unordered(all(index-analyze(analyze|language)));
+      parallel-unordered(all(index-analyze(analyze)));
       ?results;
       with(<eq> (<length> results, <length> files) | "Input size not equal to output size");
-      diffs := <make-set> <mapconcat(?ParallelResults(_, _, _, _, _, _, <id>))> results;
-      if not([] := diffs) then
-        allResults := <concat> [results, <index-parallel-analyze(analyze|language)> diffs]
+      filesToAnalyze := <make-set> <mapconcat(?ParallelResults(_, _, _, _, _, <id>))> results;
+      if not([] := filesToAnalyze) then
+        allResults := <concat> [results, <index-parallel-analyze(analyze)> filesToAnalyze]
       else
         allResults := results
       end
       
-  index-parse:
+  index-parse-file:
     file -> (ast, file)
-    where
-      <file-exists> file
     with
+    if <file-exists> file then
       ast := <parse-file> file
-      
-  index-parse:
-    file -> (ast, file)
-    where
-      not(<file-exists> file)
-    with
+    else
       ast := ()
+    end
       
   index-set-markers:
-    ParallelResults(file, ast, ast', errors, warnings, notes, diffs) -> <id>
+    ParallelResults(ast, ast', errors, warnings, notes, diffs) -> <id>
     with
       <set-markers(|ast)> (ast', errors, warnings, notes)
       
-  index-analyze(analyze|language):
-    (ast, path, project-path) -> ParallelResults(path, ast, ast'', errors, warnings, notes, diffs')
+  index-analyze(analyze):
+    (ast, path, project-path) -> ParallelResults(ast, ast', errors, warnings, notes, filesToAnalyze)
     with
-      (ast', diffs)                    := <analyze-top(|Editor(), language)>;
-      (ast'', errors, warnings, notes) := <analyze> ast';
-      diffs'                           := <map(index-filepair-to-file)> diffs
+      (ast', errors, warnings, notes, filesToAnalyze) := <analyze>;
+      if [] := filesToAnalyze then
+        complete-work-unit
+      end
 
 rules // diffs
   
