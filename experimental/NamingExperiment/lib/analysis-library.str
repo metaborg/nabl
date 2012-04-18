@@ -119,7 +119,8 @@ rules // analysis traversals
       revision := <index-start-transaction>
     with
       file := (full-path, ""); // TODO: Get subfile or add subfile param.
-      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file
+      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> file;
+      <index-clear-file> file
     with
       {| Index-ReadSet, Index-UnresolvedSet:
         readSet := <new-iset>;
@@ -163,8 +164,10 @@ rules // analysis traversals
 	      (added, removed) := <analyze-diff> (oldElems, newElems);
 	      changed := <conc> (added, removed);
 	      
-         // Store files that have changed in the index
-        filesToAnalyze := <analyze-store-diff(|changed, file, ast, revision)>
+        // Store files that have changed in the index
+        index-start-transaction;
+        filesToAnalyze := <analyze-store-diff(|changed, file, ast, revision)>;
+        index-end-transaction
 	    else
 	      (added, removed) := ([], []);
 	      filesToAnalyze := []
@@ -364,17 +367,19 @@ rules // diffs
       dependentFiles  := <index-get-dependent-files> changedEntries;
       
       // Files to analyze
-      analyzeFiles := <remove-all(analyze-changed-filter-file(|<Fst> file))> dependentFiles;
-      if <elem(index-get-file-revision; \r -> (r, revision)\; gt)> dependentFiles then
+      analyzeFiles := <make-set> <remove-all(analyze-changed-filter-file(|<Fst> file))> dependentFiles;
+      analyzeFiles' := analyzeFiles;
+      // TODO: Is this extra check needed?
+      /*if <getfirst(index-get-file-revision; \r -> (r, revision)\; gt)> analyzeFiles then
         // Add current file if the current file has read information from another file with a higher revision.
         // This indicates that potentially outdated information was read.
-        analyzeFiles' := <make-set> [file|analyzeFiles]
+        analyzeFiles' := [file|analyzeFiles]
       else
-        analyzeFiles' := <make-set> analyzeFiles
-      end;
+        analyzeFiles' := analyzeFiles
+      end;*/
       
       // Files to compile
-      compileFiles := <conc> (analyzeFiles, changedFiles);
+      compileFiles := <conc> (analyzeFiles', changedFiles);
       if not(<analyze-astdiff(|ast)> file) then
         // Add current file if the AST has changed. Cannot use dependency tracking here because
         // the originating file of a removed definition is not in the index any more.
