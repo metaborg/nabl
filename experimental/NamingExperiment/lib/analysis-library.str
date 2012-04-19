@@ -625,7 +625,7 @@ rules // index API primitives
     where
       uris        := <filter(index-uri)> entries;
       referenced  := <concat> <filter(construct-from-uri)> uris;
-      files       := <make-set> <mapconcat(index-get-files-of)> referenced
+      files       := <iset-elements> <iset-addlist(|<mapconcat(index-get-files-of)> referenced)> <new-iset>
  
   /**
    * Convenience function for finding files with Read and Use dependencies to the given definitions.

@@ -28,9 +28,11 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
     with
       ast'                    := <id> ast; // Optional AST desugaring
       (ast'', filesToAnalyze) := <analyze-top(|Editor(), <language>)> (ast', path, project-path);
+      index-start-transaction;
       errors                  := <collect-all(constraint-error, conc)> ast'';
       warnings                := <collect-all(constraint-warning, conc)> ast'';
       notes                   := <collect-all(constraint-note, conc)> ast'';
+      index-end-transaction;
       filesToAnalyze'         := <map(index-filepair-to-file)> filesToAnalyze
 
   // Main entry point for analyzes, called when a single file is opened in the editor.
@@ -157,11 +159,13 @@ rules // Main editor interface (defined by editor/NamingExperiment-Builders and 
       ast'              := <analyze-top> (ast, path, project-path);
       x                 := <collect-one(?COMPLETION(_))> ast';
       COMPLETION(name)	:= x;
+      index-start-transaction;
       (
         proposals       := <index-lookup-all-levels(|name)> x
       <+ 
         proposals 			:= []
       );
+      index-end-transaction;
       proposals'        := <map(def-to-name)> proposals
 
   def-to-name:
