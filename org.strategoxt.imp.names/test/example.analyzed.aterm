@@ -1,0 +1,16 @@
+ND-Rule(
+  NoAnnoList(Op("Var", [Var("x")]))
+, [ ND-Ref(
+      NsRef("variable"{[Unresolved(Namespace()), "variable"]})
+    , Var("x")
+    , Type(Var("t"){[Unresolved(Type()), Var("t")]})
+    , None()
+    )
+  , ND-Ref(
+      NsRef("property"{[Unresolved(Namespace()), "property"]})
+    , Var("x")
+    , Type(Var("t"){[Unresolved(Type()), Var("t")]})
+    , None()
+    )
+  ]
+)

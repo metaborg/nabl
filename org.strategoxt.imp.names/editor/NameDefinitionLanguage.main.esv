@@ -1,0 +1,17 @@
+
+module NameDefinitionLanguage.main
+
+imports NameDefinitionLanguage-Builders NameDefinitionLanguage-Colorer NameDefinitionLanguage-Completions NameDefinitionLanguage-Folding NameDefinitionLanguage-Outliner NameDefinitionLanguage-References NameDefinitionLanguage-Syntax
+
+language General properties
+                  
+  name          : NameDefinitionLanguage
+  id            : org.strategoxt.imp.names
+  extends       : Root
+                  
+  description   : "Spoofax/IMP-generated editor for the NameDefinitionLanguage language"
+  url           : http://strategoxt.org
+                  
+  extensions    : nd
+  table         : include/NameDefinitionLanguage.tbl
+  start symbols : Start

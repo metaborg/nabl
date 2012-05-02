@@ -1,0 +1,60 @@
+%% Grammar for the NameDefinitionLanguage language
+module NameDefinitionLanguage
+
+imports
+	stratego/NDL-Layout
+	stratego/NDL-Identifiers
+	stratego/NDL-Terms
+	
+exports context-free start-symbols
+
+	Start
+
+context-free syntax
+
+	NamingDefinition -> Start
+	
+	"module" Module@=ModName Imports Namespaces NamingRules -> NamingDefinition {"Naming", scope(Namespace)}
+	
+	"imports" ModuleRef+	-> Imports   {bracket}
+							-> Imports   {ast("[]")}
+	Module@ModName 			-> ModuleRef {"Import"}
+	
+	"namespaces" Namespace* -> Namespaces   {bracket}
+							-> Namespaces   {ast("[]")}
+	Namespace@=Id			-> Namespace    {"Namespace"}
+	Namespace@Id 			-> NamespaceRef {"NsRef"}
+	
+	"rules" NamingRule* 	-> NamingRules {bracket}
+							-> NamingRules {ast("[]")}
+	Term ":" NamingPart+ 	-> NamingRule  {"ND-Rule"}
+	
+	"defines" UniquePart NamespaceRef Term TypePart DefScopePart	-> NamingPart {"ND-Def"}
+	"refers" "to" NamespaceRef Term TypePart RefScopePart			-> NamingPart {"ND-Ref"}
+	OrderedPart "scope" "for" NamespaceRef IncludingPart			-> NamingPart {"ND-Scope"}
+	"has" "type" Term												-> NamingPart {"ND-Type"}
+	"where" Term Condition											-> NamingPart {"ND-Condition"}
+	
+	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
+	"refers" "to" NamespaceRef Term TypePart RefScopePart 	-> Condition {"ReferenceCheck"}
+	
+	"unique"			-> UniquePart {"Unique"}
+						-> UniquePart {"Nonunique"}
+	
+	"of" "type" Term	-> TypePart {"TypeBinding"}
+						-> TypePart {"None"}
+	
+	"in" Term				-> DefScopePart {"DefScope"}
+						    -> DefScopePart {"None"}
+	"in" NamespaceRef Term	-> RefScopePart {"RefScope"}
+						    -> RefScopePart {"None"}
+						
+	"ordered"			-> OrderedPart {"Ordered"}
+	"unordered"			-> OrderedPart {"Unordered"}
+						-> OrderedPart {"Unordered"}
+						
+	"including" NamespaceRef "in" Term	-> IncludingPart {"Including"}
+	"overriding" NamespaceRef "in" Term	-> IncludingPart {"Overriding"}
+										-> IncludingPart {"None"}	
+	
+	
