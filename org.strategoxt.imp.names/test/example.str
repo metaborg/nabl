@@ -1,12 +1,14 @@
 module example
 
 imports
+  lib/index-library.generated
   lib/analysis-library.generated
   include/Entity
 
 
 signature
   constructors
+    Type     : DefDataKind
     entity   : Namespace
     property : Namespace
     variable : Namespace
@@ -21,6 +23,9 @@ rules
   nam-get-definition :
     Entity(name, _) -> <nam-get-def(|entity())> name
 
+  nam-annotate-names(|path) =
+    Entity(nam-annotate-def(|path), id)
+
   adjust-index-def-data(store|namespace, path):
     Entity(name, _) -> <store> DefData(path, Type(), name)
 
@@ -33,6 +38,13 @@ rules
   nam-get-definition :
     Entity(name, super, _) -> <nam-get-def(|entity())> name
 
+  nam-annotate-names(|path) =
+    Entity(
+      nam-annotate-def(|path)
+    , nam-annotate-use(|entity())
+    , id
+    )
+
   adjust-index-def-data(store|namespace, path):
     Entity(name, super, _) -> <store> DefData(path, Type(), name)
 
@@ -44,6 +56,9 @@ rules
 
   nam-get-definition :
     Property(x, t) -> <nam-get-def(|property())> x
+
+  nam-annotate-names(|path) =
+    Property(nam-annotate-def(|path), id)
 
   adjust-index-def-data(store|namespace, path):
     Property(x, t) -> <store> DefData(path, Type(), t)
@@ -63,6 +78,9 @@ rules
   nam-get-definition :
     VarDecl(x, t, e) -> <nam-get-def(|variable())> x
 
+  nam-annotate-names(|path) =
+    VarDecl(nam-annotate-def(|path), id, id)
+
   adjust-index-def-data(store|namespace, path):
     VarDecl(x, t, e) -> <store> DefData(path, Type(), t)
 
@@ -77,9 +95,18 @@ rules
     VarDecl(x, e) -> <nam-get-def(|variable())> x
     where t := <type-of> e
 
+  nam-annotate-names(|path) =
+    VarDecl(nam-annotate-def(|path), id)
+
   adjust-index-def-data(store|namespace, path):
     VarDecl(x, e) -> <store> DefData(path, Type(), t)
     where t := <type-of> e
+
+
+rules
+
+  nam-annotate-names(|path) =
+    Var(nam-annotate-use(|variable()))
 
 
 rules
@@ -91,6 +118,9 @@ rules
   nam-get-definition :
     Method(f, param*, t, _) -> <nam-get-def(|method())> m(f, t*)
     where t* := <type-of> param*
+
+  nam-annotate-names(|path) =
+    Method(id, id, id, id)
 
   adjust-index-def-data(store|namespace, path):
     Method(f, param*, t, _) -> <store> DefData(path, Type(), t)
@@ -104,6 +134,9 @@ rules
 
   nam-get-definition :
     Param(x, t) -> <nam-get-def(|variable())> x
+
+  nam-annotate-names(|path) =
+    Param(nam-annotate-def(|path), id)
 
   adjust-index-def-data(store|namespace, path):
     Param(x, t) -> <store> DefData(path, Type(), t)
