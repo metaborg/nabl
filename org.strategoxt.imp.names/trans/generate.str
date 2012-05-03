@@ -20,10 +20,19 @@ rules // Incremental code generation of project using compilation library.
 
 overlays
 	
-	ANALYSIS_LIB = Import("lib/analysis-library.generated")
-	INDEX_LIB    = Import("lib/index-library.generated")
+	TERM(o, args) = NoAnnoList(Op(o, args))
+	TERM(o)       = NoAnnoList(Op(o, []))
+	CALL(c)       = CallNoArgs(SVar(c))
+	CALL(c, t)    = CallT(SVar(c), [], [t])
+
+	RULE(n, lhs, rhs, clauses) = RDefNoArgs(n, Rule(lhs, rhs, clauses))
+		
+overlays
 	
-	TYPE_OP_DECL = OpDecl("Type", ConstType(SortNoArgs("DefDataKind")))
+	GEN_IMPORTS      = Imports([Import("lib/analysis-library.generated"), Import("lib/index-library.generated")])
+	GEN_CONSTRUCTORS = Constructors([CONS_DECL("Type", "DefDataKind")])
+		
+	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
 	
 	ADJUST_DATA(term, kind, data, clauses) = 
 		RDefT(
@@ -32,34 +41,39 @@ overlays
 			, [DefaultVarDec("namespace"), DefaultVarDec("path")]
 			, Rule(
 			  	  term
-			  	, App(
-					  CallNoArgs(SVar("store"))
-					, NoAnnoList(Op("DefData", [Var("path"), NoAnnoList(Op(kind, [])), data]))
-					)
+			  	, App(CALL("store"), TERM("DefData", [Var("path"), TERM(kind), data]))
 				, clauses
 				)
       		)
+
 rules
 	
 	to-analysis:
-		Naming(name, import*, namespace*, rule*) -> Module(name, [imports, sig | <filter(to-rules)> rule*])
-		where
-			imports := Imports([ INDEX_LIB, ANALYSIS_LIB | import*]) ;
-			sig     := Signature([Constructors([TYPE_OP_DECL|<map(to-opdecl)> namespace*])])
+		Naming(name, import*, namespace*, rule*) -> 
+		Module(
+			  name
+			, [ GEN_IMPORTS
+			  , Imports(import*)
+			  , Signature([GEN_CONSTRUCTORS, Constructors(<map(to-opdecl)> namespace*)])
+			  | <filter(to-rules)> rule*
+			  ]
+			)
 			
 	to-opdecl:
-		Namespace(ns) -> OpDecl(ns, ConstType(SortNoArgs("Namespace")))
+		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 		
 	to-rules:
-		ND-Rule(term, part*, cond*) -> Rules(<flatten-list ; not(?[])> [scope-rule*, definition-rule*, annotate-rule*, type-rule*])
+		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, annotate-rule*, type-rule*])
+		where
+			<debug> term 
 		where
 			clause1*         := <filter(to-clauses)> part* ;
 			clause2*         := <filter(to-clauses)> cond* ; 
 			clause*          := <conc> (clause1*, clause2*) ;
 			scope-rule*      := <to-scope-rules(|term, clause*)> part* ;
-			definition-rule* := <filter(to-definition-rules(|term, clause*))> part* ;
+			definition-rule* := <filter(to-definition-rules(|term, clause*)) ; concat> part* ;
 			annotate-rule*   := <to-annotate-rules(|term, clause*)> part* ;
-			type-rule*       := <filter(to-type-rules(|term, clause*))> part*
+			type-rule*       := <filter(to-type-rules(|term, clause*)) ; concat> part*
 
 rules
 				
@@ -68,17 +82,12 @@ rules
 		WhereClause(
 			Assign(
 				  NoAnnoList(List([type]))
-				, App(
-				  	  Seq(
-				  	  	  CallNoArgs(SVar("index-lookup"))
-				  		, CallT(SVar("index-get-data-all"), [], [NoAnnoList(Op("Type", []))])
-				  		)
-				  	, name)
+				, App(Seq(CALL("index-lookup"), CALL("index-get-data-all", TERM("Type"))), name)
 				)
 			)
 		
 	to-clauses:
-		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CallT(SVar("type-of"), [], []), term)))
+		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CALL("type-of"), term)))
 
 rules
 	
@@ -89,32 +98,18 @@ rules
 			if <?[]> scope* then
 				result := [] 
 			else
-				result := [RDefNoArgs("nam-get-scope-types", Rule(term, List(scope*), clause*))]
+				result := [RULE("nam-get-scope-types", term, List(scope*), clause*)]
 			end
 	
 	to-scope:
-		ND-Scope(_, NsRef(namespace), None()) -> NoAnnoList(Op(namespace, []))
+		ND-Scope(_, NsRef(namespace), _) -> TERM(namespace)
 			
 rules
 			
 	to-definition-rules(|term, clause*):
 		ND-Def(NsRef(namespace), name, _, None()) ->
-		[ RDefNoArgs(
-			  "nam-get-definition-key"
-			, Rule(term, name, clause*)
-			)
-		, RDefNoArgs(
-			  "nam-get-definition"
-			, Rule(
-				term
-				, App(
-					CallT(SVar("nam-get-def"), [], [NoAnnoList(Op(namespace, []))])
-					, name
-					)
-				, clause*
-				)
-			)
-		]
+		[ RULE("nam-get-definition-key", term, name, clause*)
+		, RULE("nam-get-definition", term, App(CALL("nam-get-def", TERM(namespace)), name), clause*) ]
 
 rules
 	
@@ -129,10 +124,10 @@ rules
 			end
 		
 	to-annotate-replacement:
-		ND-Def(_, name, _, None())-> (name, CallT(SVar("nam-annotate-def"), [], [Var("path")]))
+		ND-Def(_, name, _, None())-> (name, CALL("nam-annotate-def", Var("path")))
 			
 	to-annotate-replacement:
-		ND-Ref(NsRef(namespace), name, _, None()) -> (name, CallT(SVar("nam-annotate-use"), [], [NoAnnoList(Op(namespace, []))]))
+		ND-Ref(NsRef(namespace), name, _, None()) -> (name, CALL("nam-annotate-use", TERM(namespace)))
 			
 	replace(|replacement*): t1 -> t2 where <fetch-elem(?(t1, t2))> replacement*
 	
@@ -144,10 +139,10 @@ rules
 	to-type-rules(|term, clause*):
 		ND-Def(NsRef(namespace), name, TypeBinding(type), _) -> 
 		[ ADJUST_DATA(term, "Type", type, clause*)
-		, RDefNoArgs("type-of", Rule(term, type, clause*)) ]
+		, RULE("type-of", term, type, clause*) ]
 		
 	to-type-rules(|term, clause*):
-		ND-Type(type) -> RDefNoArgs("type-of", Rule(term, type, clause*))
+		ND-Type(type) -> [RULE("type-of", term, type, clause*)]
 	
 		
 	

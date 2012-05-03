@@ -1,14 +1,19 @@
 module example
 
 imports
-  lib/index-library.generated
   lib/analysis-library.generated
+  lib/index-library.generated
+
+
+imports
   include/Entity
 
 
 signature
   constructors
-    Type     : DefDataKind
+    Type : DefDataKind
+
+  constructors
     entity   : Namespace
     property : Namespace
     variable : Namespace
@@ -16,6 +21,9 @@ signature
 
 
 rules
+
+  nam-get-scope-types :
+    Entity(name, _) -> [property(), method()]
 
   nam-get-definition-key :
     Entity(name, _) -> name
@@ -34,6 +42,9 @@ rules
 
 
 rules
+
+  nam-get-scope-types :
+    Entity(name, super, _) -> [property(), method()]
 
   nam-get-definition-key :
     Entity(name, super, _) -> name
@@ -140,6 +151,10 @@ rules
 
 rules
 
+  nam-get-scope-types :
+    Method(f, param*, t, _) -> [variable()]
+    where t* := <type-of> param*
+
   nam-get-definition-key :
     Method(f, param*, t, _) -> m(f, t*)
     where t* := <type-of> param*
@@ -150,10 +165,6 @@ rules
 
   nam-annotate-names(|path) =
     Method(id, id, id, id)
-
-  nam-get-scope-types :
-    Method(f, param*, t, _) -> [variable()]
-    where t* := <type-of> param*
 
   adjust-index-def-data(store|namespace, path):
     Method(f, param*, t, _) -> <store> DefData(path, Type(), t)
