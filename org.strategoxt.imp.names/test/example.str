@@ -1,0 +1,76 @@
+module example
+
+imports
+  lib/analysis-library.generated
+  include/Entity
+
+
+signature
+  constructors
+    entity   : Namespace
+    property : Namespace
+    variable : Namespace
+    method   : Namespace
+
+
+rules
+
+  nam-get-definition-key :
+    Entity(name, _) -> name
+
+  nam-get-definition :
+    Entity(name, _) -> <nam-get-def(|entity())> name
+
+
+rules
+
+  nam-get-definition-key :
+    Entity(name, super, _) -> name
+
+  nam-get-definition :
+    Entity(name, super, _) -> <nam-get-def(|entity())> name
+
+
+rules
+
+  nam-get-definition-key :
+    Property(x, t) -> x
+
+  nam-get-definition :
+    Property(x, t) -> <nam-get-def(|property())> x
+
+
+rules
+
+  nam-get-definition-key :
+    VarDecl(x, t, e) -> x
+
+  nam-get-definition :
+    VarDecl(x, t, e) -> <nam-get-def(|variable())> x
+
+
+rules
+
+  nam-get-definition-key :
+    VarDecl(x, e) -> x
+
+  nam-get-definition :
+    VarDecl(x, e) -> <nam-get-def(|variable())> x
+
+
+rules
+
+  nam-get-definition-key :
+    Method(f, param*, t, _) -> m(f, t*)
+
+  nam-get-definition :
+    Method(f, param*, t, _) -> <nam-get-def(|method())> m(f, t*)
+
+
+rules
+
+  nam-get-definition-key :
+    Param(x, t) -> x
+
+  nam-get-definition :
+    Param(x, t) -> <nam-get-def(|variable())> x

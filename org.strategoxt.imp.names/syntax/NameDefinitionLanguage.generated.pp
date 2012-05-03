@@ -22,7 +22,7 @@
    NsRef                    -- _1,
    ND-Rule                  -- _1 KW[":"] _2,
    ND-Rule.2:iter           -- _1,
-   ND-Def                   -- KW["defines"] _1 _2 _3 _4 _5,
+   ND-Def                   -- KW["defines"] _1 _2 _3 _4,
    ND-Ref                   -- KW["refers"] KW["to"] _1 _2 _3 _4,
    ND-Scope                 -- _1 KW["scope"] KW["for"] _2 _3,
    ND-Type                  -- KW["has"] KW["type"] _1,

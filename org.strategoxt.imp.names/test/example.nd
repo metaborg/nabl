@@ -1,5 +1,8 @@
 module example
 
+imports
+	include/Entity
+	
 namespaces
 
 	entity
@@ -15,7 +18,7 @@ rules
 		scope for method overriding method in super
 		
 	Entity(name, super, _) :
-		defines entity name
+		defines entity name of type name
 		refers to entity super
 		scope for property overriding property in super
 		scope for method overriding method in super

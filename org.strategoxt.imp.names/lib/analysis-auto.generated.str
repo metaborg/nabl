@@ -4,9 +4,6 @@ signature
   constructors
     Module    : Namespace
     Namespace : Namespace
-    Module    : Namespace
-    Property  : Namespace
-    Type      : Namespace
 
 
 imports
@@ -31,61 +28,19 @@ rules
     Namespace(x) -> <nam-get-def(|Namespace())> x
 
   nam-annotate-names(|def-path):
-    Naming(i_37126, j_37126, k_37126, l_37126) -> Naming(i_37126{def-path}, j_37126, k_37126, l_37126)
+    Naming(p_83299, q_83299, r_83299, s_83299) -> Naming(p_83299{def-path}, q_83299, r_83299, s_83299)
 
   nam-annotate-names(|def-path):
-    Import(h_37126) -> Import(<nam-annotate-use(|Module())> h_37126)
+    Import(o_83299) -> Import(<nam-annotate-use(|Module())> o_83299)
 
   nam-annotate-names(|def-path):
-    Namespace(g_37126) -> Namespace(g_37126{def-path})
+    Namespace(n_83299) -> Namespace(n_83299{def-path})
 
   nam-annotate-names(|def-path):
-    NsRef(f_37126) -> NsRef(<nam-annotate-use(|Namespace())> f_37126)
+    NsRef(m_83299) -> NsRef(<nam-annotate-use(|Namespace())> m_83299)
 
   nam-get-scope-types :
     Naming(_, _, _, _) -> [Namespace()]
-
-  nam-get-scope-types :
-    Module(_, _) -> [Type()]
-
-  nam-get-scope-types :
-    Entity(_, _) -> [Property()]
-
-  nam-get-scope-types :
-    Module(_, _) -> [Type()]
-
-  nam-get-scope-types :
-    Entity(_, _) -> [Property()]
-
-  nam-get-definition-key :
-    Module(x, _) -> x
-
-  nam-get-definition :
-    Module(x, _) -> <nam-get-def(|Module())> x
-
-  nam-get-definition-key :
-    Entity(x, _) -> x
-
-  nam-get-definition :
-    Entity(x, _) -> <nam-get-def(|Type())> x
-
-  nam-get-definition-key :
-    Property(x, _) -> x
-
-  nam-get-definition :
-    Property(x, _) -> <nam-get-def(|Property())> x
-
-  nam-annotate-names(|def-path):
-    Module(j_25143, k_25143) -> Module(j_25143{def-path}, k_25143)
-
-  nam-annotate-names(|def-path):
-    Entity(h_25143, i_25143) -> Entity(h_25143{def-path}, i_25143)
-
-  nam-annotate-names(|def-path):
-    Property(f_25143, g_25143) -> Property(f_25143{def-path}, g_25143)
-
-  nam-annotate-names(|def-path):
-    Type(e_25143) -> Type(<nam-annotate-use(|Type())> e_25143)
 
   nam-get-def(|n) =
     fail

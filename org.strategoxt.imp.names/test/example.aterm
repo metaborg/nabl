@@ -1,0 +1,171 @@
+Naming(
+  "example"
+, [Import("include/Entity")]
+, [Namespace("entity"), Namespace("property"), Namespace("variable"), Namespace("method")]
+, [ ND-Rule(
+      NoAnnoList(Op("Entity", [Var("name"), Wld()]))
+    , [ ND-Def(
+          NsRef("entity")
+        , Var("name")
+        , TypeBinding(Var("name"))
+        , None()
+        )
+      , ND-Scope(
+          Unordered()
+        , NsRef("property")
+        , Overriding(NsRef("property"), Var("super"))
+        )
+      , ND-Scope(
+          Unordered()
+        , NsRef("method")
+        , Overriding(NsRef("method"), Var("super"))
+        )
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(
+        Op("Entity", [Var("name"), Var("super"), Wld()])
+      )
+    , [ ND-Def(
+          NsRef("entity")
+        , Var("name")
+        , TypeBinding(Var("name"))
+        , None()
+        )
+      , ND-Ref(NsRef("entity"), Var("super"), None(), None())
+      , ND-Scope(
+          Unordered()
+        , NsRef("property")
+        , Overriding(NsRef("property"), Var("super"))
+        )
+      , ND-Scope(
+          Unordered()
+        , NsRef("method")
+        , Overriding(NsRef("method"), Var("super"))
+        )
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(Op("Property", [Var("x"), Var("t")]))
+    , [ND-Def(
+         NsRef("property")
+       , Var("x")
+       , TypeBinding(Var("t"))
+       , None()
+       )]
+    )
+  , ND-Rule(
+      NoAnnoList(Op("PropertyAccess", [Var("exp"), Var("f")]))
+    , [ ND-Ref(
+          NsRef("property")
+        , Var("f")
+        , None()
+        , RefScope(NsRef("entity"), Var("e"))
+        )
+      , ND-Condition(Var("exp"), TypeCheck(Var("e")))
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(
+        Op(
+          "For"
+        , [ Var("x")
+          , Var("t")
+          , Var("e")
+          , Var("f")
+          , Var(ListVar("elem*"))
+          ]
+        )
+      )
+    , [ ND-Def(
+          NsRef("variable")
+        , Var("x")
+        , TypeBinding(Var("t"))
+        , DefScope(Var(ListVar("elem*")))
+        )
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(
+        Op(
+          "VarDecl"
+        , [Var("x"), Var("t"), Var("e")]
+        )
+      )
+    , [ND-Def(
+         NsRef("variable")
+       , Var("x")
+       , TypeBinding(Var("t"))
+       , None()
+       )]
+    )
+  , ND-Rule(
+      NoAnnoList(Op("VarDecl", [Var("x"), Var("e")]))
+    , [ ND-Def(
+          NsRef("variable")
+        , Var("x")
+        , TypeBinding(Var("t"))
+        , None()
+        )
+      , ND-Condition(Var("e"), TypeCheck(Var("t")))
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(Op("Var", [Var("x")]))
+    , [ ND-Ref(NsRef("variable"), Var("x"), None(), None())
+      , ND-Ref(NsRef("property"), Var("x"), None(), None())
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(Op("Block", [Var(ListVar("statement*"))]))
+    , [ND-Scope(Ordered(), NsRef("variable"), None())]
+    )
+  , ND-Rule(
+      NoAnnoList(
+        Op(
+          "Method"
+        , [Var("f"), Var(ListVar("param*")), Var("t"), Wld()]
+        )
+      )
+    , [ ND-Def(
+          NsRef("method")
+        , NoAnnoList(
+            Op("m", [Var("f"), Var(ListVar("t*"))])
+          )
+        , TypeBinding(Var("t"))
+        , None()
+        )
+      , ND-Scope(Ordered(), NsRef("variable"), None())
+      , ND-Condition(Var(ListVar("param*")), TypeCheck(Var(ListVar("t*"))))
+      ]
+    )
+  , ND-Rule(
+      NoAnnoList(Op("Param", [Var("x"), Var("t")]))
+    , [ND-Def(
+         NsRef("variable")
+       , Var("x")
+       , TypeBinding(Var("t"))
+       , None()
+       )]
+    )
+  , ND-Rule(
+      NoAnnoList(
+        Op(
+          "MethodCall"
+        , [Var("exp"), Var("f"), Var(ListVar("e*"))]
+        )
+      )
+    , [ ND-Ref(
+          NsRef("method")
+        , NoAnnoList(
+            Op("m", [Var("f"), Var(ListVar("t*"))])
+          )
+        , None()
+        , RefScope(NsRef("entity"), Var("e"))
+        )
+      , ND-Condition(Var("exp"), TypeCheck(Var("e")))
+      , ND-Condition(Var(ListVar("e*")), TypeCheck(Var(ListVar("t*"))))
+      ]
+    )
+  ]
+)

@@ -1,6 +1,7 @@
 module generate
 
 imports
+	libstrc
   libstratego-lib
   libstratego-gpp
   libstratego-aterm
@@ -10,53 +11,43 @@ imports
 
 rules // Incremental code generation of project using compilation library.
       
-  index-compile-ast(|file, subfile, project-path):
-    ast -> None()
-    with
-      java := <to-java> ast;
-      full-path := <dirname> file;
-      filename := <guarantee-extension(|"java")> <base-filename> file;
-      writePath := $[[full-path]/];
-      writeFile :=  $[[writePath][filename]];
-      try(<mkdir> writePath);
-      <fclose> <fputs> (java, <fopen> (writeFile, "w"));
-      <debug> $[Compiling to [writeFile]]
+	generate-name-analysis:
+		(selected, position, ast@Naming(name, _, _, _), path, project-path) -> (filename, result)
+		with
+			filename   := <guarantee-extension(|"str")> path ;
+			str-module := <to-analysis> ast ;
+			result     := <pp-stratego-string> str-module
 
-rules // Transformation to java strings.
-
-  to-java:
-    Module(x, d*) ->
-    $[ package [x];
-       
-       [d'*]
-     ]
-    with
-      d'* := <to-java> d*
-  
-  to-java:
-    Entity(x, p*) ->
-    $[ class [x] {
-           [p'*]
-       }
-     ]
-    with
-      p'* := <to-java> p*
-
-  to-java:
-    Property(x, Type(t)) -> $[
-      private [t] [x];
-      
-      public [t] get_[x] {
-          return [x];
-      }
-      
-      public void set_[x] ([t] [x]) {
-          this.[x] = [x];    
-      }
-  ]
-  
-  to-java:
-    Type(t) -> t
-
-  to-java:
-    t* -> <map(to-java)> t*
+rules
+	
+	to-analysis:
+		Naming(name, import*, namespace*, rule*) -> Module(name, [imports, sig | <filter(to-rules)> rule*])
+		where
+			imports := Imports([Import("lib/analysis-library.generated") | import*]) ;
+			sig     := Signature([Constructors(<map(to-opdecl)> namespace*)])
+			
+	to-opdecl:
+		Namespace(ns) -> OpDecl(ns, ConstType(SortNoArgs("Namespace")))
+		
+	to-rules:
+		ND-Rule(term, part*) -> Rules(<flatten-list ; not(?[])> [definition-rules])
+		where
+			definition-rules := <filter(to-definition-rules(|term))> part*
+			
+	to-definition-rules(|term):
+		ND-Def(NsRef(namespace), name, _, None()) ->
+		[ RDefNoArgs(
+			"nam-get-definition-key"
+			, RuleNoCond(term, name)
+			)
+		, RDefNoArgs(
+			"nam-get-definition"
+			, RuleNoCond(
+				term
+				, App(
+					CallT(SVar("nam-get-def"), [], [NoAnnoList(Op(namespace, []))])
+					, name
+					)
+				)
+			)
+		]

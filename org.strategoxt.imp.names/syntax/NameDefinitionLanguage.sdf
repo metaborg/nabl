@@ -16,7 +16,7 @@ context-free syntax
 	
 	"module" Module@=ModName Imports Namespaces NamingRules -> NamingDefinition {"Naming", scope(Namespace)}
 	
-	"imports" ModuleRef+	-> Imports   {bracket}
+	"imports" ModuleRef*	-> Imports   {bracket}
 							-> Imports   {ast("[]")}
 	Module@ModName 			-> ModuleRef {"Import"}
 	
@@ -29,11 +29,11 @@ context-free syntax
 							-> NamingRules {ast("[]")}
 	Term ":" NamingPart+ 	-> NamingRule  {"ND-Rule"}
 	
-	"defines" UniquePart NamespaceRef Term TypePart DefScopePart	-> NamingPart {"ND-Def"}
-	"refers" "to" NamespaceRef Term TypePart RefScopePart			-> NamingPart {"ND-Ref"}
-	OrderedPart "scope" "for" NamespaceRef IncludingPart			-> NamingPart {"ND-Scope"}
-	"has" "type" Term												-> NamingPart {"ND-Type"}
-	"where" Term Condition											-> NamingPart {"ND-Condition"}
+	"defines" NamespaceRef Term TypePart DefScopePart		-> NamingPart {"ND-Def"}
+	"refers" "to" NamespaceRef Term TypePart RefScopePart	-> NamingPart {"ND-Ref"}
+	OrderedPart "scope" "for" NamespaceRef IncludingPart	-> NamingPart {"ND-Scope"}
+	"has" "type" Term										-> NamingPart {"ND-Type"}
+	"where" Term Condition									-> NamingPart {"ND-Condition"}
 	
 	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart 	-> Condition {"ReferenceCheck"}
@@ -57,4 +57,7 @@ context-free syntax
 	"overriding" NamespaceRef "in" Term	-> IncludingPart {"Overriding"}
 										-> IncludingPart {"None"}	
 	
+lexical syntax
+	
+	"namespaces" -> ModName {reject}
 	

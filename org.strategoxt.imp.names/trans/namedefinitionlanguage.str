@@ -25,16 +25,9 @@ rules // Main editor interface (defined by editor/NameDefinitionLanguage-Builder
       editor-init;
       ast'     := <analyze-top>;
       errors   := <collect-all(constraint-error, conc)> ast';
-      warnings := <collect-all(constraint-warning, conc)> ast';
-      notes    := <collect-all(constraint-note, conc)> ast'
-  
-  // Transforms a selection to Java
-  generate-java:
-    (selected, position, ast, path, project-path) -> (filename, result)
-    with
-      filename := <guarantee-extension(|"java")> path;
-      result   := <to-java> selected
-  
+      warnings := <collect-all(fail, conc)> ast';
+      notes    := <collect-all(fail, conc)> ast'
+    
   // Prints the abstract syntax ATerm of a selection.
   generate-aterm:
     (selected, position, ast, path, project-path) -> (filename, result)
