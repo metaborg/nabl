@@ -1,9 +1,0 @@
-SDefT(
-  "foo"
-, []
-, [DefaultVarDec("path")]
-, Call(
-    SVar("Module")
-  , [Id(), CallT(SVar("nam-annotate-def"), [], [Var("path")])]
-  )
-)

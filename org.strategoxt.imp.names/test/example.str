@@ -29,6 +29,9 @@ rules
   adjust-index-def-data(store|namespace, path):
     Entity(name, _) -> <store> DefData(path, Type(), name)
 
+  type-of :
+    Entity(name, _) -> name
+
 
 rules
 
@@ -48,6 +51,9 @@ rules
   adjust-index-def-data(store|namespace, path):
     Entity(name, super, _) -> <store> DefData(path, Type(), name)
 
+  type-of :
+    Entity(name, super, _) -> name
+
 
 rules
 
@@ -63,11 +69,17 @@ rules
   adjust-index-def-data(store|namespace, path):
     Property(x, t) -> <store> DefData(path, Type(), t)
 
+  type-of :
+    Property(x, t) -> t
+
 
 rules
 
   adjust-index-def-data(store|namespace, path):
     For(x, t, e, f, elem*) -> <store> DefData(path, Type(), t)
+
+  type-of :
+    For(x, t, e, f, elem*) -> t
 
 
 rules
@@ -83,6 +95,9 @@ rules
 
   adjust-index-def-data(store|namespace, path):
     VarDecl(x, t, e) -> <store> DefData(path, Type(), t)
+
+  type-of :
+    VarDecl(x, t, e) -> t
 
 
 rules
@@ -102,11 +117,19 @@ rules
     VarDecl(x, e) -> <store> DefData(path, Type(), t)
     where t := <type-of> e
 
+  type-of :
+    VarDecl(x, e) -> t
+    where t := <type-of> e
+
 
 rules
 
   nam-annotate-names(|path) =
     Var(nam-annotate-use(|variable()))
+
+  type-of :
+    Var(x) -> t
+    where [t] := <index-lookup ; index-get-data-all(|Type())> x
 
 
 rules
@@ -126,6 +149,10 @@ rules
     Method(f, param*, t, _) -> <store> DefData(path, Type(), t)
     where t* := <type-of> param*
 
+  type-of :
+    Method(f, param*, t, _) -> t
+    where t* := <type-of> param*
+
 
 rules
 
@@ -140,3 +167,6 @@ rules
 
   adjust-index-def-data(store|namespace, path):
     Param(x, t) -> <store> DefData(path, Type(), t)
+
+  type-of :
+    Param(x, t) -> t

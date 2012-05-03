@@ -53,13 +53,30 @@ rules
 	to-rules:
 		ND-Rule(term, part*, cond*) -> Rules(<flatten-list ; not(?[])> [definition-rule*, annotate-rule*, type-rule*])
 		where
-			clause*          := <filter(to-clauses)> cond* ; 
+			clause1*         := <filter(to-clauses)> part* ;
+			clause2*         := <filter(to-clauses)> cond* ; 
+			clause*          := <conc> (clause1*, clause2*) ;
 			definition-rule* := <filter(to-definition-rules(|term, clause*))> part* ;
 			annotate-rule*   := <to-annotate-rules(|term, clause*) <+ ![]> part* ;
 			type-rule*       := <filter(to-type-rules(|term, clause*))> part*
 	
 	to-clauses:
+		ND-Ref(_, name, TypeBinding(type), _) -> 
+		WhereClause(
+			Assign(
+				  NoAnnoList(List([type]))
+				, App(
+				  	  Seq(
+				  	  	  CallNoArgs(SVar("index-lookup"))
+				  		, CallT(SVar("index-get-data-all"), [], [NoAnnoList(Op("Type", []))])
+				  		)
+				  	, name)
+				)
+			)
+		
+	to-clauses:
 		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CallT(SVar("type-of"), [], []), term)))
+		
 		
 	to-definition-rules(|term, clause*):
 		ND-Def(NsRef(namespace), name, _, None()) ->
@@ -102,8 +119,12 @@ rules
 	introduce-id: Var(_) -> Id()
 	
 	to-type-rules(|term, clause*):
-		ND-Def(NsRef(namespace), name, TypeBinding(type), _) -> ADJUST_DATA(term, "Type", type, clause*)
+		ND-Def(NsRef(namespace), name, TypeBinding(type), _) -> 
+		[ ADJUST_DATA(term, "Type", type, clause*)
+		, RDefNoArgs("type-of", Rule(term, type, clause*)) ]
 		
-
+	to-type-rules(|term, clause*):
+		ND-Type(type) -> RDefNoArgs("type-of", Rule(term, type, clause*))
+	
 		
 	

@@ -41,8 +41,8 @@ rules
 		where e has type t
 
 	Var(x) :
-		refers to variable x // implies has type t where x has type e
-		refers to property x 
+		refers to variable x of type t
+		has type t
 		
 	Block(statement*) : 
 		ordered scope for variable
