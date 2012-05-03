@@ -51,15 +51,18 @@ rules
 		Namespace(ns) -> OpDecl(ns, ConstType(SortNoArgs("Namespace")))
 		
 	to-rules:
-		ND-Rule(term, part*, cond*) -> Rules(<flatten-list ; not(?[])> [definition-rule*, annotate-rule*, type-rule*])
+		ND-Rule(term, part*, cond*) -> Rules(<flatten-list ; not(?[])> [scope-rule*, definition-rule*, annotate-rule*, type-rule*])
 		where
 			clause1*         := <filter(to-clauses)> part* ;
 			clause2*         := <filter(to-clauses)> cond* ; 
 			clause*          := <conc> (clause1*, clause2*) ;
+			scope-rule*      := <to-scope-rules(|term, clause*)> part* ;
 			definition-rule* := <filter(to-definition-rules(|term, clause*))> part* ;
-			annotate-rule*   := <to-annotate-rules(|term, clause*) <+ ![]> part* ;
+			annotate-rule*   := <to-annotate-rules(|term, clause*)> part* ;
 			type-rule*       := <filter(to-type-rules(|term, clause*))> part*
-	
+
+rules
+				
 	to-clauses:
 		ND-Ref(_, name, TypeBinding(type), _) -> 
 		WhereClause(
@@ -76,8 +79,24 @@ rules
 		
 	to-clauses:
 		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CallT(SVar("type-of"), [], []), term)))
-		
-		
+
+rules
+	
+	to-scope-rules(|term, clause*):
+		part* -> result
+			where
+			scope* := <filter(to-scope)> part* ;
+			if <?[]> scope* then
+				result := [] 
+			else
+				result := [RDefNoArgs("nam-get-scope-types", Rule(term, List(scope*), clause*))]
+			end
+	
+	to-scope:
+		ND-Scope(_, NsRef(namespace), None()) -> NoAnnoList(Op(namespace, []))
+			
+rules
+			
 	to-definition-rules(|term, clause*):
 		ND-Def(NsRef(namespace), name, _, None()) ->
 		[ RDefNoArgs(
@@ -97,6 +116,8 @@ rules
 			)
 		]
 
+rules
+	
 	to-annotate-rules(|term, clause*):
 		part* -> result
 		where
@@ -117,7 +138,9 @@ rules
 	
 	introduce-id: Wld()  -> Id()
 	introduce-id: Var(_) -> Id()
-	
+
+rules
+		
 	to-type-rules(|term, clause*):
 		ND-Def(NsRef(namespace), name, TypeBinding(type), _) -> 
 		[ ADJUST_DATA(term, "Type", type, clause*)

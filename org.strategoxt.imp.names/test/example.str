@@ -134,6 +134,12 @@ rules
 
 rules
 
+  nam-get-scope-types :
+    Block(statement*) -> [variable()]
+
+
+rules
+
   nam-get-definition-key :
     Method(f, param*, t, _) -> m(f, t*)
     where t* := <type-of> param*
@@ -144,6 +150,10 @@ rules
 
   nam-annotate-names(|path) =
     Method(id, id, id, id)
+
+  nam-get-scope-types :
+    Method(f, param*, t, _) -> [variable()]
+    where t* := <type-of> param*
 
   adjust-index-def-data(store|namespace, path):
     Method(f, param*, t, _) -> <store> DefData(path, Type(), t)
