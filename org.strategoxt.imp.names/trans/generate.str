@@ -18,36 +18,65 @@ rules // Incremental code generation of project using compilation library.
 			str-module := <to-analysis> ast ;
 			result     := <pp-stratego-string> str-module
 
+overlays
+	
+	TYPE_OP_DECL = OpDecl("Type", ConstType(SortNoArgs("DefDataKind")))
+	
 rules
 	
 	to-analysis:
 		Naming(name, import*, namespace*, rule*) -> Module(name, [imports, sig | <filter(to-rules)> rule*])
 		where
 			imports := Imports([Import("lib/analysis-library.generated") | import*]) ;
-			sig     := Signature([Constructors(<map(to-opdecl)> namespace*)])
+			sig     := Signature([Constructors([TYPE_OP_DECL|<map(to-opdecl)> namespace*])])
 			
 	to-opdecl:
 		Namespace(ns) -> OpDecl(ns, ConstType(SortNoArgs("Namespace")))
 		
 	to-rules:
-		ND-Rule(term, part*) -> Rules(<flatten-list ; not(?[])> [definition-rules])
+		ND-Rule(term, part*, cond*) -> Rules(<flatten-list ; not(?[])> [definition-rule*, type-rule*])
 		where
-			definition-rules := <filter(to-definition-rules(|term))> part*
-			
-	to-definition-rules(|term):
+			clause*          := <filter(to-clauses)> cond* ; 
+			definition-rule* := <filter(to-definition-rules(|term, clause*))> part* ;
+			type-rule*		 := <filter(to-type-rules(|term, clause*))> part*
+	
+	to-clauses:
+		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CallT(SVar("type-of"), [], []), term)))
+		
+	to-definition-rules(|term, clause*):
 		ND-Def(NsRef(namespace), name, _, None()) ->
 		[ RDefNoArgs(
-			"nam-get-definition-key"
-			, RuleNoCond(term, name)
+			  "nam-get-definition-key"
+			, Rule(term, name, clause*)
 			)
 		, RDefNoArgs(
-			"nam-get-definition"
-			, RuleNoCond(
+			  "nam-get-definition"
+			, Rule(
 				term
 				, App(
 					CallT(SVar("nam-get-def"), [], [NoAnnoList(Op(namespace, []))])
 					, name
 					)
+				, clause*
 				)
 			)
 		]
+		
+	to-type-rules(|term, clause*):
+		ND-Def(NsRef(namespace), name, TypeBinding(type), _) -> 
+		RDefT(
+			  "adjust-index-def-data"
+			, [DefaultVarDec("store")]
+			, [DefaultVarDec("namespace"), DefaultVarDec("path")]
+			, Rule(
+			  	  term
+			  	, App(
+					  CallNoArgs(SVar("store"))
+					, NoAnnoList(Op("DefData", [Var("path"), NoAnnoList(Op("Type", [])), type]))
+					)
+				, clause*
+				)
+      		)
+
+		
+	

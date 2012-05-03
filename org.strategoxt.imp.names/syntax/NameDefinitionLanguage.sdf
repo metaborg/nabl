@@ -25,16 +25,16 @@ context-free syntax
 	Namespace@=Id			-> Namespace    {"Namespace"}
 	Namespace@Id 			-> NamespaceRef {"NsRef"}
 	
-	"rules" NamingRule* 	-> NamingRules {bracket}
-							-> NamingRules {ast("[]")}
-	Term ":" NamingPart+ 	-> NamingRule  {"ND-Rule"}
+	"rules" NamingRule* 				-> NamingRules {bracket}
+										-> NamingRules {ast("[]")}
+	Term ":" NamingPart+ WhereClause*	-> NamingRule  {"ND-Rule"}
 	
 	"defines" NamespaceRef Term TypePart DefScopePart		-> NamingPart {"ND-Def"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart	-> NamingPart {"ND-Ref"}
 	OrderedPart "scope" "for" NamespaceRef IncludingPart	-> NamingPart {"ND-Scope"}
 	"has" "type" Term										-> NamingPart {"ND-Type"}
-	"where" Term Condition									-> NamingPart {"ND-Condition"}
 	
+	"where" Term Condition 									-> WhereClause {"Where"}
 	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart 	-> Condition {"ReferenceCheck"}
 	

@@ -21,6 +21,9 @@ rules
   nam-get-definition :
     Entity(name, _) -> <nam-get-def(|entity())> name
 
+  adjust-index-def-data(store|namespace, path):
+    Entity(name, _) -> <store> DefData(path, Type(), name)
+
 
 rules
 
@@ -29,6 +32,9 @@ rules
 
   nam-get-definition :
     Entity(name, super, _) -> <nam-get-def(|entity())> name
+
+  adjust-index-def-data(store|namespace, path):
+    Entity(name, super, _) -> <store> DefData(path, Type(), name)
 
 
 rules
@@ -39,6 +45,15 @@ rules
   nam-get-definition :
     Property(x, t) -> <nam-get-def(|property())> x
 
+  adjust-index-def-data(store|namespace, path):
+    Property(x, t) -> <store> DefData(path, Type(), t)
+
+
+rules
+
+  adjust-index-def-data(store|namespace, path):
+    For(x, t, e, f, elem*) -> <store> DefData(path, Type(), t)
+
 
 rules
 
@@ -48,23 +63,38 @@ rules
   nam-get-definition :
     VarDecl(x, t, e) -> <nam-get-def(|variable())> x
 
+  adjust-index-def-data(store|namespace, path):
+    VarDecl(x, t, e) -> <store> DefData(path, Type(), t)
+
 
 rules
 
   nam-get-definition-key :
     VarDecl(x, e) -> x
+    where t := <type-of> e
 
   nam-get-definition :
     VarDecl(x, e) -> <nam-get-def(|variable())> x
+    where t := <type-of> e
+
+  adjust-index-def-data(store|namespace, path):
+    VarDecl(x, e) -> <store> DefData(path, Type(), t)
+    where t := <type-of> e
 
 
 rules
 
   nam-get-definition-key :
     Method(f, param*, t, _) -> m(f, t*)
+    where t* := <type-of> param*
 
   nam-get-definition :
     Method(f, param*, t, _) -> <nam-get-def(|method())> m(f, t*)
+    where t* := <type-of> param*
+
+  adjust-index-def-data(store|namespace, path):
+    Method(f, param*, t, _) -> <store> DefData(path, Type(), t)
+    where t* := <type-of> param*
 
 
 rules
@@ -74,3 +104,6 @@ rules
 
   nam-get-definition :
     Param(x, t) -> <nam-get-def(|variable())> x
+
+  adjust-index-def-data(store|namespace, path):
+    Param(x, t) -> <store> DefData(path, Type(), t)
