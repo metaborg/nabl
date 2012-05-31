@@ -29,10 +29,11 @@ context-free syntax
 										-> NamingRules {ast("[]")}
 	Term ":" NamingPart+ WhereClause*	-> NamingRule  {"ND-Rule"}
 	
-	"defines" NamespaceRef Term TypePart DefScopePart		-> NamingPart {"ND-Def"}
-	"refers" "to" NamespaceRef Term TypePart RefScopePart	-> NamingPart {"ND-Ref"}
-	OrderedPart "scope" "for" NamespaceRef IncludingPart	-> NamingPart {"ND-Scope"}
-	"has" "type" Term										-> NamingPart {"ND-Type"}
+	"defines" NamespaceRef Term TypePart DefScopePart			-> NamingPart {"ND-Def"}
+	"refers" "to" NamespaceRef Term TypePart RefScopePart		-> NamingPart {"ND-Ref"}
+	OrderedPart "scope" Term "for" NamespaceRef IncludingPart	-> NamingPart {"ND-Scope"}
+	OrderedPart "scope" "for" NamespaceRef IncludingPart		-> NamingPart {"ND-Anon-Scope"}
+	"has" "type" Term											-> NamingPart {"ND-Type"}
 	
 	"where" Term Condition 									-> WhereClause {"Where"}
 	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
