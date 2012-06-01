@@ -20,9 +20,11 @@ rules
 	Entity(name, super, _) :
 		defines entity name of type name
 		refers to entity super 
-		scope for property overriding property in super
-		scope for method overriding method in super
-
+		scope for property
+		scope for method
+		imports property from entity super
+		imports method from entity super
+		
 	Property(x, t) :
 		defines property x of type t
 	
@@ -46,17 +48,17 @@ rules
 		has type t
 		
 	Block(statement*) : 
-		ordered scope for variable
+		scope for variable
 		
 	Method(f, param*, t, _) :
-		defines method m(f, t*) of type t
-		ordered scope for variable
+		defines method f of type MT(t*, t)
+		scope for variable
 		where param* has type t*
 
 	Param(x, t) :
 		defines variable x of type t
 
 	MethodCall(exp, f, e*) :
-		refers to method m(f, t*) in entity e
+		refers to method f of type MT(t*, t) in entity e
 		where exp has type e
 		where e* has type t*
