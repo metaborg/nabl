@@ -28,7 +28,7 @@ overlays
 
 	RULE(n, lhs, rhs, clauses) = RDefNoArgs(n, Rule(lhs, rhs, clauses))
 
-	ANON()        = TERM("Anon")
+	ANON          = TERM("Anon")
 			
 overlays
 	
@@ -55,6 +55,11 @@ overlays
 				)
       		)
 
+overlays 
+	
+    ANNOTATE_DEF     = CALL("nam-annotate-def", Var("path"))
+    ANNOTATE_USE(ns) = CALL("nam-annotate-use", TERM(ns))
+    ANNOTATE_SCOPE   = CALL("nam-annotate-scope", Var("path"))
 rules
 	
 	to-analysis:
@@ -68,7 +73,7 @@ rules
 			  ]
 			)
 			
-	to-opdecl:
+	to-opdecl: // generates constructors for namespaces
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 		
 	to-rules:
@@ -84,7 +89,7 @@ rules
 
 rules
 				
-	to-clauses:
+	to-clauses: //might not be the right solution, should be a filter on definition candidates
 		ND-Ref(_, name, TypeBinding(type), _) -> 
 		WhereClause(
 			Assign(
@@ -93,7 +98,7 @@ rules
 				)
 			)
 		
-	to-clauses:
+	to-clauses: 
 		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CALL("type-of"), term)))
 
 rules
@@ -130,18 +135,21 @@ rules
 	to-annotate-rules(|term, clause*):
 		part* -> result
 		where
-			replacement* := <filter(to-annotate-replacement)> part* ;
+			replacement* := <filter(to-annotate-replacement) ; concat ; debug> part* ;
 			if <?[]> replacement* then
 				result := [] 
 			else
-				result := [SDefNoArgs("nam-annotate-names", <alltd(replace(|replacement*) <+ introduce-id)> term)]
+				result := [SDefT("nam-annotate-names", [], [DefaultVarDec("path")], <alltd(replace(|replacement*) <+ introduce-id)> term)]
 			end
 		
 	to-annotate-replacement:
-		ND-Def(NsRef(namespace), name, _, None(), _)-> (name, CALL("nam-annotate-def", TERM(namespace)))
+		ND-Def(NsRef(namespace), name, _, DefScope(scope), _) -> [(name, ANNOTATE_DEF), (scope, ANNOTATE_SCOPE)]
+		
+	to-annotate-replacement:
+		ND-Def(NsRef(namespace), name, _, None(), _)-> [(name, ANNOTATE_DEF)]
 			
 	to-annotate-replacement:
-		ND-Ref(NsRef(namespace), name, _, None()) -> (name, CALL("nam-annotate-use", TERM(namespace)))
+		ND-Ref(NsRef(namespace), name, _, None()) -> [(name, ANNOTATE_USE(namespace))]
 			
 	replace(|replacement*): t1 -> t2 where <fetch-elem(?(t1, t2))> replacement*
 	
