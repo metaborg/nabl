@@ -50,9 +50,9 @@ context-free syntax
 	"in" NamespaceRef Term	-> RefScopePart {"RefScope"}
 						    -> RefScopePart {"None"}
 		
-	"(" {DefAnno ","}+ ")" 		-> DefAnnos {"Annos"}
+	"{" {DefAnno ","}+ "}" 		-> DefAnnos {"Annos"}
 								-> DefAnnos {ast("Annos([])")}
-	"(" {ImportAnno ","}+ ")" 	-> ImportAnnos {"Annos"}
+	"{" {ImportAnno ","}+ "}" 	-> ImportAnnos {"Annos"}
 								-> ImportAnnos {ast("Annos([])")}
 					
 	"non-unique"			-> DefAnno {"NonUnique"}
