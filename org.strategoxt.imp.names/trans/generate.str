@@ -109,10 +109,7 @@ rules
 			end
 	
 	to-scope:
-		ND-Scope(_, term, NsRef(namespace), _) -> TUPLE([TERM(namespace), term])
-	
-	to-scope:
-		ND-Anon-Scope(_, NsRef(namespace), _) -> TUPLE([TERM(namespace), ANON()])
+		ND-Scope(NsRef(namespace)) -> TERM(namespace)
 			
 rules
 			

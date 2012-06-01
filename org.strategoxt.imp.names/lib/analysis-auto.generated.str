@@ -7,14 +7,10 @@ signature
 
 
 imports
-  lib/editor-common.generated
   include/NameDefinitionLanguage
 
 
 rules
-
-  nam-get-scope-types :
-    Naming(_, _, _, _) -> [Namespace()]
 
   nam-get-scope-types :
     Naming(_, _, _, _) -> [Namespace()]
@@ -32,16 +28,16 @@ rules
     Namespace(x) -> <nam-get-def(|Namespace())> x
 
   nam-annotate-names(|def-path):
-    Naming(w_12612, x_12612, y_12612, z_12612) -> Naming(w_12612{def-path}, x_12612, y_12612, z_12612)
+    Naming(s_7629, t_7629, u_7629, v_7629) -> Naming(s_7629{def-path}, t_7629, u_7629, v_7629)
 
   nam-annotate-names(|def-path):
-    Import(v_12612) -> Import(<nam-annotate-use(|Module())> v_12612)
+    Import(r_7629) -> Import(<nam-annotate-use(|Module())> r_7629)
 
   nam-annotate-names(|def-path):
-    Namespace(u_12612) -> Namespace(u_12612{def-path})
+    Namespace(q_7629) -> Namespace(q_7629{def-path})
 
   nam-annotate-names(|def-path):
-    NsRef(t_12612) -> NsRef(<nam-annotate-use(|Namespace())> t_12612)
+    NsRef(p_7629) -> NsRef(<nam-annotate-use(|Namespace())> p_7629)
 
   nam-get-def(|n) =
     fail

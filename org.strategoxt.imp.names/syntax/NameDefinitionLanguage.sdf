@@ -29,35 +29,42 @@ context-free syntax
 										-> NamingRules {ast("[]")}
 	Term ":" NamingPart+ WhereClause*	-> NamingRule  {"ND-Rule"}
 	
-	"defines" NamespaceRef Term TypePart DefScopePart			-> NamingPart {"ND-Def"}
-	"refers" "to" NamespaceRef Term TypePart RefScopePart		-> NamingPart {"ND-Ref"}
-	OrderedPart "scope" Term "for" NamespaceRef IncludingPart	-> NamingPart {"ND-Scope"}
-	OrderedPart "scope" "for" NamespaceRef IncludingPart		-> NamingPart {"ND-Anon-Scope"}
-	"has" "type" Term											-> NamingPart {"ND-Type"}
+	%% "binds" NamespaceRef Term TypePart DefScopePart	DefAnnos					-> NamingPart {"ND-Def"}
+	"defines" NamespaceRef Term TypePart DefScopePart DefAnnos					-> NamingPart {"ND-Def"}
+	"imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos	-> NamingPart {"ND-Import"}
+	"refers" "to" NamespaceRef Term TypePart RefScopePart			-> NamingPart {"ND-Ref"}
+	"scope" "for" NamespaceRef 										-> NamingPart {"ND-Scope"}
+	"has" "type" Term												-> NamingPart {"ND-Type"}
 	
 	"where" Term Condition 									-> WhereClause {"Where"}
 	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart 	-> Condition {"ReferenceCheck"}
 	
-	"unique"			-> UniquePart {"Unique"}
-						-> UniquePart {"Nonunique"}
-	
 	"of" "type" Term	-> TypePart {"TypeBinding"}
 						-> TypePart {"None"}
 	
 	"in" Term				-> DefScopePart {"DefScope"}
+	"forward"				-> DefScopePart {"Forward"}
+	"backward"				-> DefScopePart {"Backward"}
 						    -> DefScopePart {"None"}
 	"in" NamespaceRef Term	-> RefScopePart {"RefScope"}
 						    -> RefScopePart {"None"}
-						
-	"ordered"			-> OrderedPart {"Ordered"}
-	"unordered"			-> OrderedPart {"Unordered"}
-						-> OrderedPart {"Unordered"}
-						
-	"including" NamespaceRef "in" Term	-> IncludingPart {"Including"}
-	"overriding" NamespaceRef "in" Term	-> IncludingPart {"Overriding"}
-										-> IncludingPart {"None"}	
+		
+	"(" {DefAnno ","}+ ")" 		-> DefAnnos {"Annos"}
+								-> DefAnnos {ast("Annos([])")}
+	"(" {ImportAnno ","}+ ")" 	-> ImportAnnos {"Annos"}
+								-> ImportAnnos {ast("Annos([])")}
+					
+	"non-unique"			-> DefAnno {"NonUnique"}
+	"unique"				-> DefAnno {"Unique"}
+	"ordered"				-> DefAnno {"Ordered"}
+	"unordered"				-> DefAnno {"NonOrdered"}
 	
+	"transitive"			-> ImportAnno {"Transitive"}
+	"current-file"			-> ImportAnno {"CurrentFile"}
+	"ordered"				-> ImportAnno {"Ordered"}
+	"unordered"				-> ImportAnno {"NonOrdered"}
+	 
 lexical syntax
 	
 	"namespaces" -> ModName {reject}
