@@ -7,5 +7,3 @@ imports
   lib/analysis-library.generated
 
 rules // Adjust lookup
-
- 

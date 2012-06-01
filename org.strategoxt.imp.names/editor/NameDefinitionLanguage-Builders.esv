@@ -13,7 +13,7 @@ builders
   provider : include/namedefinitionlanguage.ctree
   provider : include/namedefinitionlanguage-java.jar
 
-  observer : editor-analyze
+  observer : editor-analyze (multifile)
 
   builder  : "Generate name analysis" = generate-name-analysis (openeditor) (realtime)
   builder  : "Show abstract syntax" = generate-aterm (openeditor) (realtime) (meta) (source)

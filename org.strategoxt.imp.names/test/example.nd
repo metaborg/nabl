@@ -19,7 +19,7 @@ rules
 		
 	Entity(name, super, _) :
 		defines entity name of type name
-		refers to entity super
+		refers to entity super 
 		scope for property overriding property in super
 		scope for method overriding method in super
 
