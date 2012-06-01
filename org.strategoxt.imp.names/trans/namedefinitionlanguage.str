@@ -45,21 +45,14 @@ rules // Analysis
     where
       not(is-tuple)
     with
-      index-setup(|<language>, [<project-path>], ".");
-      disable-commit-and-compile // Disable compilation during analysis.
-    with
       editor-queue-analysis
-    with
-      // Enable and trigger compilation after all files have been analysed.
-      <enable-commit-and-compile> <language>;
-      <trigger-commit-and-compile> <language>
       
   // Called when current file is saved.
   editor-save:
-    (ast, _, _, _, _) -> None()
+    (ast, _, _, path, project-path) -> None()
     with
-      index-setup(|<language>, [<project-path>], ".");
-      <trigger-commit-and-compile> <language>
+      index-setup(|<language>, [project-path], $[[project-path]/[path]]);
+      index-commit
 
 rules // Editor services
   
