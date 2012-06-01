@@ -5,6 +5,7 @@ imports
   lib/editor-common.generated
   lib/index-library
   lib/analysis-library
+  lib/analysis-library-internal
   
 rules // Extension points
   

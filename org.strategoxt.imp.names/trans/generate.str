@@ -7,9 +7,8 @@ imports
   libstratego-aterm
   include/NameDefinitionLanguage
   lib/editor-common.generated
-  lib/compilation-library.generated
 
-rules // Incremental code generation of project using compilation library.
+rules
       
 	generate-name-analysis:
 		(selected, position, ast@Naming(name, _, _, _), path, project-path) -> (filename, result)
@@ -161,6 +160,4 @@ rules
 		
 	to-type-rules(|term, clause*):
 		ND-Type(type) -> [RULE("type-of", term, type, clause*)]
-	
 		
-	

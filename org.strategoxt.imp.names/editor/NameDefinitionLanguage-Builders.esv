@@ -9,14 +9,18 @@ builders
   // See the imported file for a brief introduction and examples.                  
 
 builders
-                                                                                                                          
-  provider : include/namedefinitionlanguage.ctree                                                                         
-  provider : include/namedefinitionlanguage-java.jar                                                                      
-                                                                                                                          
-  observer : editor-analyze                                                                                               
-                                                                                                                          
-  builder  : "Generate name analysis"            			 = generate-name-analysis (openeditor) (realtime)                      
-  builder  : "Show abstract syntax (for selection)"          = generate-aterm (openeditor) (realtime) (meta) (source)     
-  builder  : "Show analyzed abstract syntax (for selection)" = generate-analyzed (openeditor) (realtime) (meta) (source)  
-                                                                                                                         
-  on save : index-on-save
+
+  provider : include/namedefinitionlanguage.ctree
+  provider : include/namedefinitionlanguage-java.jar
+
+  observer : editor-analyze
+
+  builder  : "Generate name analysis" = generate-name-analysis (openeditor) (realtime)
+  builder  : "Show abstract syntax" = generate-aterm (openeditor) (realtime) (meta) (source)
+  builder  : "Show deffed syntax" = generate-deffed (openeditor) (realtime) (meta) (source)
+  builder  : "Show analyzed syntax" = generate-analyzed (openeditor) (realtime) (meta) (source)
+  builder  : "Show index entries for current file" = index-currentfile (openeditor) (realtime) (meta) (source)
+  builder  : "Show index entries for all files" = index-allfiles (openeditor) (realtime) (meta) (source)
+  builder  : "Clear index" = index-cleanall (meta) (source)                                                                                             
+
+  on save  : editor-save

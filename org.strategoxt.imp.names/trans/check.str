@@ -24,3 +24,8 @@ rules // Duplicates
       <is-unique-namespace> ns;
       definitions := <index-lookup-all> key;
       <gt> (<length> definitions, 1)
+
+rules // Other
+  
+  constraint-warning = fail
+  constraint-note = fail
