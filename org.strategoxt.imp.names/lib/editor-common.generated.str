@@ -33,7 +33,7 @@ strategies
                <import-term(include/NameDefinitionLanguage.pp.af)>]);
     box2text-string(|100)
     
-  language = !"Naming"
+  language = !"NameDefinitionLanguage"
 
 strategies
   
@@ -228,6 +228,9 @@ signature constructors
   Entity   : ID * List(Property) -> Entity
   Property : ID * Type           -> Property
   Type     : ID                  -> Type
+  
+  Type     : Namespace
+  Property : Namespace
 
 strategies
   

@@ -114,7 +114,7 @@ rules
 rules
 			
 	to-definition-parts:
-		ND-Def(NsRef(namespace), name, _, None()) -> (name, TUPLE([TERM(namespace), name]))
+		ND-Def(NsRef(namespace), name, _, None(), _) -> (name, TUPLE([TERM(namespace), name]))
 	
 	to-definition-rules(|term, clause*):
 		(key-part*, def-part*) ->
@@ -138,7 +138,7 @@ rules
 			end
 		
 	to-annotate-replacement:
-		ND-Def(NsRef(namespace), name, _, None())-> (name, CALL("nam-annotate-def", TERM(namespace)))
+		ND-Def(NsRef(namespace), name, _, None(), _)-> (name, CALL("nam-annotate-def", TERM(namespace)))
 			
 	to-annotate-replacement:
 		ND-Ref(NsRef(namespace), name, _, None()) -> (name, CALL("nam-annotate-use", TERM(namespace)))
@@ -151,7 +151,7 @@ rules
 rules
 		
 	to-type-rules(|term, clause*):
-		ND-Def(NsRef(namespace), name, TypeBinding(type), _) -> 
+		ND-Def(NsRef(namespace), name, TypeBinding(type), _, _) -> 
 		[ ADJUST_DATA(term, "Type", type, clause*)
 		, RULE("type-of", term, type, clause*) ]
 		
