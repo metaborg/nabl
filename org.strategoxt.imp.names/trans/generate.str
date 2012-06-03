@@ -30,7 +30,7 @@ overlays
 	RULE(n, lhs, rhs, clauses) 		 = RDefNoArgs(n, Rule(lhs, rhs, clauses))
 	RULE(n, args, lhs, rhs, clauses) = RDefT(n, [], args, Rule(lhs, rhs, clauses))
 
-	ANON          = TERM("Anon")
+	ANON          = TERM("Anon", [RootApp(CALL("new"))])
 			
 overlays
 	
@@ -94,7 +94,7 @@ rules
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 		
 	to-rules:
-		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, annotate-rule*, adjust-rule*, type-rule*])
+		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*])
 		where
 			clause1*         := <filter(to-clauses)> part* ;
 			clause2*         := <filter(to-clauses)> cond* ; 
@@ -103,7 +103,8 @@ rules
 			definition-rule* := <filter(to-definition-parts) ; unzip ; to-definition-rules(|term, clause*)> part* ;
 			annotate-rule*   := <to-annotate-rules(|term, clause*)> part* ;
 			adjust-rule*     := <to-adjust-rules(|term, clause*)> part* ;
-			type-rule*       := <filter(to-type-rules(|term, clause*)) ; concat> part*
+			type-rule*       := <filter(to-type-rules(|term, clause*)) ; concat> part* ;
+			check-rule*      := <filter(to-check-rules(|term, clause*))> part*
 
 rules
 				
@@ -140,7 +141,10 @@ rules
 rules
 			
 	to-definition-parts:
-		ND-Def(NsRef(namespace), name, _, None(), _) -> (name, TUPLE([TERM(namespace), name]))
+		ND-Def(NsRef(namespace), name, _, None(), _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+	
+	to-definition-parts:
+		ND-Def(NsRef(namespace), name, _, DefScope(_), _) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
 	
 	to-definition-rules(|term, clause*):
 		(key-part*, def-part*) ->
@@ -156,24 +160,30 @@ rules
 	to-annotate-rules(|term, clause*):
 		part* -> result
 		where
-			replacement* := <filter(to-annotate-replacement) ; concat> part* ;
-			if <?[]> replacement* then
-				result := [] 
+			replacement1* := <filter(to-name-replacement)> part* ;
+			if <?[]> replacement1* then
+				rule1 := [] 
 			else
-				result := [RULE("nam-annotate-names", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement*) <+ introduce-id)> term), clause*)]
+				rule1 := [RULE("nam-annotate-names", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement1*) <+ introduce-id)> term), clause*)]
+			end ;
+			replacement2* := <filter(to-scope-replacement) ; concat> part* ;
+			if <?[]> replacement2* then
+				result := rule1 
+			else
+				result := [RULE("nam-annotate-scopes", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement2*) <+ introduce-id)> term), clause*)|rule1]
 			end
-		
-	to-annotate-replacement:
-		ND-Def(NsRef(namespace), name, _, DefScope(scope), _) -> [(name, ANNOTATE_DEF()), (scope, ANNOTATE_SCOPE())]
-		
-	to-annotate-replacement:
-		ND-Def(NsRef(namespace), name, _, None(), _)-> [(name, ANNOTATE_DEF())]
 			
-	to-annotate-replacement:
-		ND-Ref(NsRef(namespace), name, _, None()) -> [(name, ANNOTATE_USE(namespace))]
+	to-scope-replacement:
+		ND-Def(NsRef(namespace), name, _, DefScope(scope*), _) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
+		
+	to-name-replacement:
+		ND-Def(NsRef(namespace), name, _, _, _)-> (name, ANNOTATE_DEF())
+			
+	to-name-replacement:
+		ND-Ref(NsRef(namespace), name, _, None()) -> (name, ANNOTATE_USE(namespace))
 	
-	to-annotate-replacement:
-		ND-Ref(NsRef(ns), name, _, RefScope(NsRef(ns2), name2)) -> [(name, ANNOTATE_USE(ns, ns2, name2))]
+	to-name-replacement:
+		ND-Ref(NsRef(ns), name, _, RefScope(NsRef(ns2), name2)) -> (name, ANNOTATE_USE(ns, ns2, name2))
 			
 	replace(|replacement*): t1 -> t2 where <fetch-elem(?(t1, t2))> replacement*
 	
@@ -206,4 +216,11 @@ rules
 		
 	to-type-rules(|term, clause*):
 		ND-Type(type) -> [RULE("type-of", term, type, clause*)]
+		
+rules
+	
+	to-check-rules(|term, clause*):
+		ND-Def(_, _, _, _, Annos(annos)) -> RULE("nam-unique", term, RootApp(Id()), clause*)
+		where
+			<not(fetch-elem(?NonUnique()))> annos 
 		

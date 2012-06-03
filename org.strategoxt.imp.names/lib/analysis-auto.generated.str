@@ -15,9 +15,6 @@ rules
   nam-get-scope-types :
     Naming(_, _, _, _) -> [Namespace()]
 
-  nam-get-scope-types :
-    Naming(_, _, _, _) -> [Namespace()]
-
   nam-get-definition-key :
     Naming(x, _, _, _) -> x
 
@@ -31,16 +28,19 @@ rules
     Namespace(x) -> <nam-get-def(|Namespace())> x
 
   nam-annotate-names(|def-path):
-    Naming(s_7697, t_7697, u_7697, v_7697) -> Naming(s_7697{def-path}, t_7697, u_7697, v_7697)
+    Naming(l_449163, m_449163, n_449163, o_449163) -> Naming(l_449163{def-path}, m_449163, n_449163, o_449163)
 
   nam-annotate-names(|def-path):
-    Import(r_7697) -> Import(<nam-annotate-use(|Module())> r_7697)
+    Import(k_449163) -> Import(<nam-annotate-use(|Module())> k_449163)
 
   nam-annotate-names(|def-path):
-    Namespace(q_7697) -> Namespace(q_7697{def-path})
+    Namespace(j_449163) -> Namespace(j_449163{def-path})
 
   nam-annotate-names(|def-path):
-    NsRef(p_7697) -> NsRef(<nam-annotate-use(|Namespace())> p_7697)
+    NsRef(i_449163) -> NsRef(<nam-annotate-use(|Namespace())> i_449163)
+
+  nam-get-scope-types :
+    Naming(_, _, _, _) -> [Namespace()]
 
   nam-get-def(|n) =
     fail

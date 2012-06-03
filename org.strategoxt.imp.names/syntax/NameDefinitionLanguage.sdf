@@ -43,7 +43,7 @@ context-free syntax
 	"of" "type" Term	-> TypePart {"TypeBinding"}
 						-> TypePart {"None"}
 	
-	"in" Term				-> DefScopePart {"DefScope"}
+	"in" {Term ","}+		-> DefScopePart {"DefScope"}
 	"forward"				-> DefScopePart {"Forward"}
 	"backward"				-> DefScopePart {"Backward"}
 						    -> DefScopePart {"None"}
