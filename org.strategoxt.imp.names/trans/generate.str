@@ -94,17 +94,19 @@ rules
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 		
 	to-rules:
-		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*])
+		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, reference-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*/*, import-rule**/])
 		where
 			clause1*         := <filter(to-clauses)> part* ;
 			clause2*         := <filter(to-clauses)> cond* ; 
 			clause*          := <conc> (clause1*, clause2*) ;
 			scope-rule*      := <to-scope-rules(|term, clause*)> part* ;
 			definition-rule* := <filter(to-definition-parts) ; unzip ; to-definition-rules(|term, clause*)> part* ;
+			reference-rule*  := <filter(to-reference-parts) ; unzip ; to-reference-rules(|term, clause*)> part* ;
 			annotate-rule*   := <to-annotate-rules(|term, clause*)> part* ;
 			adjust-rule*     := <to-adjust-rules(|term, clause*)> part* ;
 			type-rule*       := <filter(to-type-rules(|term, clause*)) ; concat> part* ;
-			check-rule*      := <filter(to-check-rules(|term, clause*))> part*
+			check-rule*      := <filter(to-check-rules(|term, clause*))> part* ;
+			import-rule*     := <filter(to-import-rules(|term, clause*))> part*
 
 rules
 				
@@ -155,6 +157,22 @@ rules
 
 	to-definition-rules(|term, clause*):
 		([], []) -> []
+		
+rules
+      
+  to-reference-parts:
+    ND-Ref(NsRef(namespace), name, _, _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+  
+  to-reference-rules(|term, clause*):
+    (key-part*, def-part*) ->
+    [ RULE("nam-get-uses-keys", term, LIST(<make-set> key-part*), clause*)
+    , RULE("nam-get-uses",      term, LIST(<make-set> def-part*), clause*) ]
+    where
+      <Hd> key-part* ; <Hd> def-part*
+
+  to-reference-rules(|term, clause*):
+    ([], []) -> []
+		
 rules
 	
 	to-annotate-rules(|term, clause*):
@@ -206,7 +224,6 @@ rules
 	to-adjust-path:
 		ND-Ref(NsRef(namespace), name, _, None()) -> LIST([TERM(namespace)], Var("path__"))	
 
-		
 rules
 		
 	to-type-rules(|term, clause*):
@@ -224,3 +241,9 @@ rules
 		where
 			<not(fetch-elem(?NonUnique()))> annos 
 		
+rules
+  
+  to-import-rules(|term, clause):
+    ND-Import(NsRef(importedNs), NsRef(fromNs), Var(sourceName), _, _) -> <id>
+    where
+      fail

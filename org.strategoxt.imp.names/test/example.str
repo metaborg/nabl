@@ -30,16 +30,19 @@ rules
     Entity(name, _) -> [name]
 
   nam-get-definitions :
-    Entity(name, _) -> [(entity(), name)]
+    Entity(name, _) -> [(entity(), [name])]
 
-  nam-annotate-names =
-    Entity(nam-annotate-def(|entity()), id)
+  nam-annotate-names(|path__):
+    Entity(name, _) -> <Entity(nam-annotate-def(|path__), id)>
 
-  adjust-index-def-data(store|namespace, path):
-    Entity(name, _) -> <store> DefData(path, Type(), name)
+  adjust-index-def-data(store__|namespace__, path__):
+    Entity(name, _) -> <store__> DefData(path__, Type(), name)
 
   type-of :
     Entity(name, _) -> name
+
+  nam-unique :
+    Entity(name, _) -> <id>
 
 
 rules
@@ -51,20 +54,29 @@ rules
     Entity(name, super, _) -> [name]
 
   nam-get-definitions :
-    Entity(name, super, _) -> [(entity(), name)]
+    Entity(name, super, _) -> [(entity(), [name])]
 
-  nam-annotate-names =
-    Entity(
-      nam-annotate-def(|entity())
-    , nam-annotate-use(|entity())
-    , id
-    )
+  nam-get-uses-keys :
+    Entity(name, super, _) -> [super]
 
-  adjust-index-def-data(store|namespace, path):
-    Entity(name, super, _) -> <store> DefData(path, Type(), name)
+  nam-get-uses :
+    Entity(name, super, _) -> [(entity(), [super])]
+
+  nam-annotate-names(|path__):
+    Entity(name, super, _) -> <Entity(
+                                 nam-annotate-def(|path__)
+                               , nam-annotate-use(|entity())
+                               , id
+                               )>
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Entity(name, super, _) -> <store__> DefData(path__, Type(), name)
 
   type-of :
     Entity(name, super, _) -> name
+
+  nam-unique :
+    Entity(name, super, _) -> <id>
 
 
 rules
@@ -73,19 +85,40 @@ rules
     Property(x, t) -> [x]
 
   nam-get-definitions :
-    Property(x, t) -> [(property(), x)]
+    Property(x, t) -> [(property(), [x])]
 
-  nam-annotate-names =
-    Property(nam-annotate-def(|property()), id)
+  nam-annotate-names(|path__):
+    Property(x, t) -> <Property(nam-annotate-def(|path__), id)>
 
-  adjust-index-def-data(store|namespace, path):
-    Property(x, t) -> <store> DefData(path, Type(), t)
+  adjust-index-def-data(store__|namespace__, path__):
+    Property(x, t) -> <store__> DefData(path__, Type(), t)
 
   type-of :
     Property(x, t) -> t
 
+  nam-unique :
+    Property(x, t) -> <id>
+
 
 rules
+
+  nam-get-uses-keys :
+    PropertyAccess(exp, f) -> [f]
+    where [t] := <index-lookup ; index-get-data-all(|Type())> f
+    where e := <type-of> exp
+
+  nam-get-uses :
+    PropertyAccess(exp, f) -> [(property(), [f])]
+    where [t] := <index-lookup ; index-get-data-all(|Type())> f
+    where e := <type-of> exp
+
+  nam-annotate-names(|path__):
+    PropertyAccess(exp, f) -> <PropertyAccess(
+                                 id
+                               , nam-annotate-use(|property(), entity(), e)
+                               )>
+    where [t] := <index-lookup ; index-get-data-all(|Type())> f
+    where e := <type-of> exp
 
   type-of :
     PropertyAccess(exp, f) -> t
@@ -95,20 +128,29 @@ rules
 
 rules
 
-  nam-annotate-names =
-    For(
-      nam-annotate-def(|variable())
-    , id
-    , id
-    , id
-    , nam-annotate-scope(|variable())
-    )
+  nam-get-definition-keys :
+    For(x, t, e, f, elem*) -> [x]
 
-  adjust-index-def-data(store|namespace, path):
-    For(x, t, e, f, elem*) -> <store> DefData(path, Type(), t)
+  nam-get-definitions :
+    For(x, t, e, f, elem*) -> [ ( variable()
+                                , [x, Anon(<new>)]
+                                )
+                              ]
+
+  nam-annotate-scopes(|path__):
+    For(x, t, e, f, elem*) -> <For(id, id, id, id, nam-annotate-scope(|path__))>
+
+  nam-annotate-names(|path__):
+    For(x, t, e, f, elem*) -> <For(nam-annotate-def(|path__), id, id, id, id)>
+
+  adjust-index-def-data(store__|namespace__, path__):
+    For(x, t, e, f, elem*) -> <store__> DefData(path__, Type(), t)
 
   type-of :
     For(x, t, e, f, elem*) -> t
+
+  nam-unique :
+    For(x, t, e, f, elem*) -> <id>
 
 
 rules
@@ -117,16 +159,19 @@ rules
     VarDecl(x, t, e) -> [x]
 
   nam-get-definitions :
-    VarDecl(x, t, e) -> [(variable(), x)]
+    VarDecl(x, t, e) -> [(variable(), [x])]
 
-  nam-annotate-names =
-    VarDecl(nam-annotate-def(|variable()), id, id)
+  nam-annotate-names(|path__):
+    VarDecl(x, t, e) -> <VarDecl(nam-annotate-def(|path__), id, id)>
 
-  adjust-index-def-data(store|namespace, path):
-    VarDecl(x, t, e) -> <store> DefData(path, Type(), t)
+  adjust-index-def-data(store__|namespace__, path__):
+    VarDecl(x, t, e) -> <store__> DefData(path__, Type(), t)
 
   type-of :
     VarDecl(x, t, e) -> t
+
+  nam-unique :
+    VarDecl(x, t, e) -> <id>
 
 
 rules
@@ -136,25 +181,39 @@ rules
     where t := <type-of> e
 
   nam-get-definitions :
-    VarDecl(x, e) -> [(variable(), x)]
+    VarDecl(x, e) -> [(variable(), [x])]
     where t := <type-of> e
 
-  nam-annotate-names =
-    VarDecl(nam-annotate-def(|variable()), id)
+  nam-annotate-names(|path__):
+    VarDecl(x, e) -> <VarDecl(nam-annotate-def(|path__), id)>
+    where t := <type-of> e
 
-  adjust-index-def-data(store|namespace, path):
-    VarDecl(x, e) -> <store> DefData(path, Type(), t)
+  adjust-index-def-data(store__|namespace__, path__):
+    VarDecl(x, e) -> <store__> DefData(path__, Type(), t)
     where t := <type-of> e
 
   type-of :
     VarDecl(x, e) -> t
     where t := <type-of> e
 
+  nam-unique :
+    VarDecl(x, e) -> <id>
+    where t := <type-of> e
+
 
 rules
 
-  nam-annotate-names =
-    Var(nam-annotate-use(|variable()))
+  nam-get-uses-keys :
+    Var(x) -> [x]
+    where [t] := <index-lookup ; index-get-data-all(|Type())> x
+
+  nam-get-uses :
+    Var(x) -> [(variable(), [x])]
+    where [t] := <index-lookup ; index-get-data-all(|Type())> x
+
+  nam-annotate-names(|path__):
+    Var(x) -> <Var(nam-annotate-use(|variable()))>
+    where [t] := <index-lookup ; index-get-data-all(|Type())> x
 
   type-of :
     Var(x) -> t
@@ -178,22 +237,27 @@ rules
     where t* := <type-of> param*
 
   nam-get-definitions :
-    Method(f, param*, t, _) -> [(method(), f)]
+    Method(f, param*, t, _) -> [(method(), [f])]
     where t* := <type-of> param*
 
-  nam-annotate-names =
-    Method(nam-annotate-def(|method()), id, id, id)
+  nam-annotate-names(|path__):
+    Method(f, param*, t, _) -> <Method(nam-annotate-def(|path__), id, id, id)>
+    where t* := <type-of> param*
 
-  adjust-index-def-data(store|namespace, path):
-    Method(f, param*, t, _) -> <store> DefData(
-                                         path
-                                       , Type()
-                                       , MT(t*, t)
-                                       )
+  adjust-index-def-data(store__|namespace__, path__):
+    Method(f, param*, t, _) -> <store__> DefData(
+                                           path__
+                                         , Type()
+                                         , MT(t*, t)
+                                         )
     where t* := <type-of> param*
 
   type-of :
     Method(f, param*, t, _) -> MT(t*, t)
+    where t* := <type-of> param*
+
+  nam-unique :
+    Method(f, param*, t, _) -> <id>
     where t* := <type-of> param*
 
 
@@ -203,13 +267,41 @@ rules
     Param(x, t) -> [x]
 
   nam-get-definitions :
-    Param(x, t) -> [(variable(), x)]
+    Param(x, t) -> [(variable(), [x])]
 
-  nam-annotate-names =
-    Param(nam-annotate-def(|variable()), id)
+  nam-annotate-names(|path__):
+    Param(x, t) -> <Param(nam-annotate-def(|path__), id)>
 
-  adjust-index-def-data(store|namespace, path):
-    Param(x, t) -> <store> DefData(path, Type(), t)
+  adjust-index-def-data(store__|namespace__, path__):
+    Param(x, t) -> <store__> DefData(path__, Type(), t)
 
   type-of :
     Param(x, t) -> t
+
+  nam-unique :
+    Param(x, t) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    MethodCall(exp, f, e*) -> [f]
+    where [MT(t*, t)] := <index-lookup ; index-get-data-all(|Type())> f
+    where e := <type-of> exp
+    where t* := <type-of> e*
+
+  nam-get-uses :
+    MethodCall(exp, f, e*) -> [(method(), [f])]
+    where [MT(t*, t)] := <index-lookup ; index-get-data-all(|Type())> f
+    where e := <type-of> exp
+    where t* := <type-of> e*
+
+  nam-annotate-names(|path__):
+    MethodCall(exp, f, e*) -> <MethodCall(
+                                 id
+                               , nam-annotate-use(|method(), entity(), e)
+                               , id
+                               )>
+    where [MT(t*, t)] := <index-lookup ; index-get-data-all(|Type())> f
+    where e := <type-of> exp
+    where t* := <type-of> e*
