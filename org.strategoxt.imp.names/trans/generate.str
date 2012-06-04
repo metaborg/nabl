@@ -57,7 +57,7 @@ overlays
 			, [DefaultVarDec("namespace__"), DefaultVarDec("path__")]
 			, Rule(
 			  	  term
-			  	, App(CALL("store__"), TERM("DefData", [Var("path__"), TERM(kind), data]))
+			  	, App(CALL("store__"), TERM("DefData", [LIST([Var("namespace__")], Var("path__")), TERM(kind), data]))
 				, clauses
 				)
       		)
