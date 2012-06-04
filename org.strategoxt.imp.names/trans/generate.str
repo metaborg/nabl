@@ -41,7 +41,12 @@ overlays
 			, Import("lib/index-library") 
 			]
 		)
-	GEN_CONSTRUCTORS = Constructors([CONS_DECL("Type", "DefDataKind")])
+	GEN_CONSTRUCTORS = 
+	  Constructors(
+		  [ CONS_DECL("Type", "DefDataKind")
+		  , CONS_DECL("Import", "DefDataKind")
+		  ]
+	  )
 		
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
 	
@@ -94,7 +99,7 @@ rules
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 		
 	to-rules:
-		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, reference-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*/*, import-rule**/])
+		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, reference-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*, import-rule*])
 		where
 			clause1*         := <filter(to-clauses)> part* ;
 			clause2*         := <filter(to-clauses)> cond* ; 
@@ -239,11 +244,10 @@ rules
 	to-check-rules(|term, clause*):
 		ND-Def(_, _, _, _, Annos(annos)) -> RULE("nam-unique", term, RootApp(Id()), clause*)
 		where
-			<not(fetch-elem(?NonUnique()))> annos 
+			<not(fetch-elem(?NonUnique()))> annos
 		
 rules
   
-  to-import-rules(|term, clause):
-    ND-Import(NsRef(importedNs), NsRef(fromNs), Var(sourceName), _, _) -> <id>
-    where
-      fail
+  to-import-rules(|term, clause*):
+    ND-Import(NsRef(namespace), _, source, _, _) ->
+    [ ADJUST_DATA(term, "Import", TUPLE([TERM(namespace), source]), clause*) ]

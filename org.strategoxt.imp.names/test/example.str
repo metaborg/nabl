@@ -12,7 +12,8 @@ imports
 
 signature
   constructors
-    Type : DefDataKind
+    Type   : DefDataKind
+    Import : DefDataKind
 
   constructors
     entity   : Namespace
@@ -77,6 +78,20 @@ rules
 
   nam-unique :
     Entity(name, super, _) -> <id>
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Entity(name, super, _) -> <store__> DefData(
+                                          path__
+                                        , Import()
+                                        , (property(), super)
+                                        )
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Entity(name, super, _) -> <store__> DefData(
+                                          path__
+                                        , Import()
+                                        , (method(), super)
+                                        )
 
 
 rules
