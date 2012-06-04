@@ -51,16 +51,19 @@ overlays
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
 	
 	ADJUST_DATA(term, kind, data, clauses) = 
-		RDefT(
-			  "adjust-index-def-data"
-			, [DefaultVarDec("store__")]
-			, [DefaultVarDec("namespace__"), DefaultVarDec("path__")]
-			, Rule(
-			  	  term
-			  	, App(CALL("store__"), TERM("DefData", [LIST([Var("namespace__")], Var("path__")), TERM(kind), data]))
-				, clauses
-				)
-      		)
+	  ADJUST_DATA(term, LIST([Var("namespace__")], Var("path__")), kind, data, clauses)
+  		
+  ADJUST_DATA(term, uri, kind, data, clauses) = 
+    RDefT(
+        "adjust-index-def-data"
+      , [DefaultVarDec("store__")]
+      , [DefaultVarDec("namespace__"), DefaultVarDec("path__")]
+      , Rule(
+            term
+          , App(CALL("store__"), TERM("DefData", [uri, TERM(kind), data]))
+        , clauses
+        )
+      )
 
 	ADJUST_LOOKUP(term, paths, clauses) = 
 		RDefT(
@@ -72,7 +75,7 @@ overlays
 			  	, LIST(paths)
 				, clauses
 				)
-      		)
+  		)
 
 overlays 
 	
@@ -250,4 +253,4 @@ rules
   
   to-import-rules(|term, clause*):
     ND-Import(NsRef(namespace), _, source, _, _) ->
-    [ ADJUST_DATA(term, "Import", TUPLE([TERM(namespace), source]), clause*) ]
+    [ ADJUST_DATA(term, LIST([TERM(namespace)], Var("path__")), "Import", source, clause*) ]
