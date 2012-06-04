@@ -80,8 +80,8 @@ overlays
 overlays 
 	
     ANNOTATE_DEF             = CALL("nam-annotate-def", [Var("path__")])
-    ANNOTATE_USE(ns)         = CALL("nam-annotate-use", [TERM(ns)])
-    ANNOTATE_USE(ns, ns2, n) = CALL("nam-annotate-use", [TERM(ns), TERM(ns2), n])
+    ANNOTATE_USE(ns)         = CALL("nam-annotate-use", [Var("paths__"), TERM(ns)])
+    ANNOTATE_USE(ns, ns2, n) = CALL("nam-annotate-use", [Var("paths__"), TERM(ns), TERM(ns2), n])
     ANNOTATE_SCOPE           = CALL("nam-annotate-scope", [Var("path__")])
     LOOKUP_TYPE              = ""
     	
@@ -190,7 +190,7 @@ rules
 			if <?[]> replacement1* then
 				rule1 := [] 
 			else
-				rule1 := [RULE("nam-annotate-names", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement1*) <+ introduce-id)> term), clause*)]
+				rule1 := [RULE("nam-annotate-names", [DefaultVarDec("paths__"), DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement1*) <+ introduce-id)> term), clause*)]
 			end ;
 			replacement2* := <filter(to-scope-replacement) ; concat> part* ;
 			if <?[]> replacement2* then
