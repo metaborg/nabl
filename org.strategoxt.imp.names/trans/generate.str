@@ -14,7 +14,9 @@ rules
 		(selected, position, ast@Naming(name, _, _, _), path, project-path) -> (filename, result)
 		with
 			filename   := <guarantee-extension(|"str")> path ;
-			str-module := <to-analysis> ast ;
+			str-module := <to-analysis ; alltd(\ListVar(x) -> x\)> ast ;
+			// use next line to debug which AST node cannot be handled by the pretty-printer
+			//<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
 			result     := <pp-stratego-string> str-module
 
 overlays
@@ -65,7 +67,7 @@ overlays
         )
       )
 
-	ADJUST_LOOKUP(term, paths, clauses) = 
+	ADJUST_LOOKUP(term, paths, defs, clauses) = 
 		RDefT(
 			  "adjust-index-lookup"
 			, [DefaultVarDec("target__")]
@@ -84,7 +86,8 @@ overlays
     ANNOTATE_USE(ns, ns2, n) = CALL("nam-annotate-use", [Var("paths__"), TERM(ns), TERM(ns2), n])
     ANNOTATE_SCOPE           = CALL("nam-annotate-scope", [Var("path__")])
     LOOKUP_TYPE              = ""
-    	
+    LOOKUP_CHILDREN(ns, n)   = App(CALL("index-lookup-children", [TERM(ns), Var("prefix__")]), n)
+    
 rules
 	
 	to-analysis:
@@ -147,7 +150,7 @@ rules
 			if <?[]> scope* then
 				result := ordered 
 			else
-				result := [RULE("nam-get-scope-types", term, List(scope*), clause*)|ordered]
+				result := [RULE("nam-get-scope-types", term, LIST(scope*), clause*)|ordered]
 			end
 			
 	
@@ -205,13 +208,13 @@ rules
 			if <?[]> replacement1* then
 				rule1 := [] 
 			else
-				rule1 := [RULE("nam-annotate-names", [DefaultVarDec("paths__"), DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement1*) <+ introduce-id)> term))]
+				rule1 := [RULE("nam-annotate-names", [DefaultVarDec("paths__"), DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement1*) <+ introduce-id)> term), [])]
 			end ;
 			replacement2* := <filter(to-scope-replacement) ; concat> part* ;
 			if <?[]> replacement2* then
 				result := rule1 
 			else
-				result := [RULE("nam-annotate-scopes", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement2*) <+ introduce-id)> term))|rule1]
+				result := [RULE("nam-annotate-scopes", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement2*) <+ introduce-id)> term), [])|rule1]
 			end
 			
 	to-scope-replacement:
@@ -234,9 +237,10 @@ rules
 		part* -> result
 		where
 			paths := <filter(to-adjust-path)> part* ;
-			if <?[_, _|_]> paths then
+			defs  := []; //<filter(to-adjust-defs)> part* ;
+			if <?[_, _|_]> paths <+ <Hd> defs then
 				name   := <fetch-elem(?ND-Ref(_, <id>, _, _))> part* ;
-				result := [ADJUST_LOOKUP(term, paths, [WhereClause(App(CALL("target__"), name))|clause*])]
+				result := [ADJUST_LOOKUP(term, paths, defs, [WhereClause(App(CALL("target__"), name))|clause*])]
 			else
 				result := []
 			end
@@ -245,7 +249,7 @@ rules
 		ND-Ref(NsRef(namespace), name, _, None()) -> LIST([TERM(namespace)], Var("path__"))	
 
 	// to-adjust-defs:
-	// 	ND-Ref(NsRef(namespace), name, _, Ns) -> LIST([TERM(namespace)], Var("path__"))	
+	//  	ND-Ref(NsRef(namespace), name, _, RefScope(namespace2, name2)) -> LOOKUP_CHILDREN(namespace, name2)	
 
 rules
 		
