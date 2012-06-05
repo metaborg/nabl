@@ -1,0 +1,252 @@
+Seq(
+  Assign(
+    Var("clause1*"{4967040})
+  , App(
+      CallT(
+        SVar("debug"{4962320})
+      , [Build(NoAnnoList(Int("1")))]
+      , []
+      )
+    , App(
+        CallT(
+          SVar("filter"{4962876})
+        , [CallT(SVar("to-clauses"{4966963}), [], [])]
+        , []
+        )
+      , App(
+          CallT(
+            SVar("debug"{4962320})
+          , [Build(NoAnnoList(Int("0")))]
+          , []
+          )
+        , Var("part*"{4967038})
+        )
+      )
+    )
+  )
+, Seq(
+    Assign(
+      Var("clause2*"{4967041})
+    , App(
+        CallT(
+          SVar("debug"{4962320})
+        , [Build(NoAnnoList(Int("2")))]
+        , []
+        )
+      , App(
+          CallT(
+            SVar("filter"{4962876})
+          , [CallT(SVar("to-clauses"{4966963}), [], [])]
+          , []
+          )
+        , Var("cond*"{4967039})
+        )
+      )
+    )
+  , Seq(
+      Assign(
+        Var("clause*"{4967042})
+      , App(
+          CallT(
+            SVar("debug"{4962320})
+          , [Build(NoAnnoList(Int("3")))]
+          , []
+          )
+        , App(
+            CallT(SVar("conc"{4962934}), [], [])
+          , NoAnnoList(Tuple([Var("clause1*"{4967040}), Var("clause2*"{4967041})]))
+          )
+        )
+      )
+    , Seq(
+        Assign(
+          Var("scope-rule*"{4967043})
+        , App(
+            CallT(
+              SVar("debug"{4962320})
+            , [Build(NoAnnoList(Int("4")))]
+            , []
+            )
+          , App(
+              CallT(
+                SVar("to-scope-rules"{4966964})
+              , []
+              , [Var("term"{4967037}), Var("clause*"{4967042})]
+              )
+            , Var("part*"{4967038})
+            )
+          )
+        )
+      , Seq(
+          Assign(
+            Var("definition-rule*"{4967044})
+          , App(
+              CallT(
+                SVar("debug"{4962320})
+              , [Build(NoAnnoList(Int("5")))]
+              , []
+              )
+            , App(
+                Seq(
+                  CallT(
+                    SVar("filter"{4962876})
+                  , [CallT(SVar("to-definition-parts"{4966968}), [], [])]
+                  , []
+                  )
+                , Seq(
+                    CallT(SVar("unzip"{4962776}), [], [])
+                  , CallT(
+                      SVar("to-definition-rules"{4966969})
+                    , []
+                    , [Var("term"{4967037}), Var("clause*"{4967042})]
+                    )
+                  )
+                )
+              , Var("part*"{4967038})
+              )
+            )
+          )
+        , Seq(
+            Assign(
+              Var("reference-rule*"{4967045})
+            , App(
+                CallT(
+                  SVar("debug"{4962320})
+                , [Build(NoAnnoList(Int("6")))]
+                , []
+                )
+              , App(
+                  Seq(
+                    CallT(
+                      SVar("filter"{4962876})
+                    , [CallT(SVar("to-reference-parts"{4966970}), [], [])]
+                    , []
+                    )
+                  , Seq(
+                      CallT(SVar("unzip"{4962776}), [], [])
+                    , CallT(
+                        SVar("to-reference-rules"{4966971})
+                      , []
+                      , [Var("term"{4967037}), Var("clause*"{4967042})]
+                      )
+                    )
+                  )
+                , Var("part*"{4967038})
+                )
+              )
+            )
+          , Seq(
+              Assign(
+                Var("annotate-rule*"{4967046})
+              , App(
+                  CallT(
+                    SVar("debug"{4962320})
+                  , [Build(NoAnnoList(Int("7")))]
+                  , []
+                  )
+                , App(
+                    CallT(SVar("to-annotate-rules"{4966972}), [], [Var("term"{4967037})])
+                  , Var("part*"{4967038})
+                  )
+                )
+              )
+            , Seq(
+                Assign(
+                  Var("adjust-rule*"{4967047})
+                , App(
+                    CallT(
+                      SVar("debug"{4962320})
+                    , [Build(NoAnnoList(Int("8")))]
+                    , []
+                    )
+                  , App(
+                      CallT(
+                        SVar("to-adjust-rules"{4966977})
+                      , []
+                      , [Var("term"{4967037}), Var("clause*"{4967042})]
+                      )
+                    , Var("part*"{4967038})
+                    )
+                  )
+                )
+              , Seq(
+                  Assign(
+                    Var("type-rule*"{4967048})
+                  , App(
+                      CallT(
+                        SVar("debug"{4962320})
+                      , [Build(NoAnnoList(Int("9")))]
+                      , []
+                      )
+                    , App(
+                        Seq(
+                          CallT(
+                            SVar("filter"{4962876})
+                          , [CallT(
+                               SVar("to-type-rules"{4966980})
+                             , []
+                             , [Var("term"{4967037}), Var("clause*"{4967042})]
+                             )]
+                          , []
+                          )
+                        , CallT(SVar("concat"{4962935}), [], [])
+                        )
+                      , Var("part*"{4967038})
+                      )
+                    )
+                  )
+                , Seq(
+                    Assign(
+                      Var("check-rule*"{4967049})
+                    , App(
+                        CallT(
+                          SVar("debug"{4962320})
+                        , [Build(NoAnnoList(Str("\"A\"")))]
+                        , []
+                        )
+                      , App(
+                          CallT(
+                            SVar("filter"{4962876})
+                          , [CallT(
+                               SVar("to-check-rules"{4966981})
+                             , []
+                             , [Var("term"{4967037}), Var("clause*"{4967042})]
+                             )]
+                          , []
+                          )
+                        , Var("part*"{4967038})
+                        )
+                      )
+                    )
+                  , Assign(
+                      Var("import-rule*"{4967050})
+                    , App(
+                        CallT(
+                          SVar("debug"{4962320})
+                        , [Build(NoAnnoList(Str("\"B\"")))]
+                        , []
+                        )
+                      , App(
+                          CallT(
+                            SVar("filter"{4962876})
+                          , [CallT(
+                               SVar("to-import-rules"{4966982})
+                             , []
+                             , [Var("term"{4967037}), Var("clause*"{4967042})]
+                             )]
+                          , []
+                          )
+                        , Var("part*"{4967038})
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+)
