@@ -137,14 +137,23 @@ rules
 	
 	to-scope-rules(|term, clause*):
 		part* -> result
-			where
+		where
+			if <fetch-elem(ordered-scope)> part* then
+				ordered := [RULE("nam-ordered-def", term, RootApp(Id()), clause*)]
+			else
+				ordered := []
+			end;
 			scope* := <filter(to-scope)> part* ;
 			if <?[]> scope* then
-				result := [] 
+				result := ordered 
 			else
-				result := [RULE("nam-get-scope-types", term, List(scope*), clause*)]
+				result := [RULE("nam-get-scope-types", term, List(scope*), clause*)|ordered]
 			end
+			
 	
+	ordered-scope:
+		ND-Def(_, _, _, OrderedScope(), _) -> <id>
+		
 	to-scope:
 		ND-Scope(NsRef(namespace)) -> TERM(namespace)
 			
@@ -155,6 +164,9 @@ rules
 	
 	to-definition-parts:
 		ND-Def(NsRef(namespace), name, _, DefScope(_), _) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
+	
+	to-definition-parts:
+		ND-Def(NsRef(namespace), name, _, OrderedScope(), _) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
 	
 	to-definition-rules(|term, clause*):
 		(key-part*, def-part*) ->
@@ -201,7 +213,7 @@ rules
 			
 	to-scope-replacement:
 		ND-Def(NsRef(namespace), name, _, DefScope(scope*), _) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
-		
+			
 	to-name-replacement:
 		ND-Def(NsRef(namespace), name, _, _, _)-> (name, ANNOTATE_DEF())
 			

@@ -43,12 +43,11 @@ context-free syntax
 	"of" "type" Term	-> TypePart {"TypeBinding"}
 						-> TypePart {"None"}
 	
-	"in" {Term ","}+		-> DefScopePart {"DefScope"}
-	"forward"				-> DefScopePart {"Forward"}
-	"backward"				-> DefScopePart {"Backward"}
-						    -> DefScopePart {"None"}
-	"in" NamespaceRef Term	-> RefScopePart {"RefScope"}
-						    -> RefScopePart {"None"}
+	"in" {Term ","}+			-> DefScopePart {"DefScope"}
+	"in" "subsequent" "scope"	-> DefScopePart {"OrderedScope"}
+						    	-> DefScopePart {"None"}
+	"in" NamespaceRef Term		-> RefScopePart {"RefScope"}
+						    	-> RefScopePart {"None"}
 		
 	"{" {DefAnno ","}+ "}" 		-> DefAnnos {"Annos"}
 								-> DefAnnos {ast("Annos([])")}
@@ -57,8 +56,6 @@ context-free syntax
 					
 	"non-unique"			-> DefAnno {"NonUnique"}
 	"unique"				-> DefAnno {"Unique"}
-	"ordered"				-> DefAnno {"Ordered"}
-	"unordered"				-> DefAnno {"NonOrdered"}
 	
 	"transitive"			-> ImportAnno {"Transitive"}
 	"current-file"			-> ImportAnno {"CurrentFile"}
