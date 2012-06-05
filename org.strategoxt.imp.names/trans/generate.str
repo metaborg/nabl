@@ -184,7 +184,7 @@ rules
 rules
       
   to-reference-parts:
-    ND-Ref(_, NsRef(namespace), name, _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+    ND-Ref(NsRef(namespace), name, _, _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
   
   to-reference-rules(|term, clause*):
     (key-part*, def-part*) ->
