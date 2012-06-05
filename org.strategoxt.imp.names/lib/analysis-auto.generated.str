@@ -28,16 +28,16 @@ rules
     Namespace(x) -> <nam-get-def(|Namespace())> x
 
   nam-annotate-names(|def-path):
-    Naming(b_72113, c_72113, d_72113, e_72113) -> Naming(b_72113{def-path}, c_72113, d_72113, e_72113)
+    Naming(z_86645, a_86646, b_86646, c_86646) -> Naming(z_86645{def-path}, a_86646, b_86646, c_86646)
 
   nam-annotate-names(|def-path):
-    Import(a_72113) -> Import(<nam-annotate-use(|Module())> a_72113)
+    Import(y_86645) -> Import(<nam-annotate-use(|Module())> y_86645)
 
   nam-annotate-names(|def-path):
-    Namespace(z_72112) -> Namespace(z_72112{def-path})
+    Namespace(x_86645) -> Namespace(x_86645{def-path})
 
   nam-annotate-names(|def-path):
-    NsRef(y_72112) -> NsRef(<nam-annotate-use(|Namespace())> y_72112)
+    NsRef(w_86645) -> NsRef(<nam-annotate-use(|Namespace())> w_86645)
 
   nam-get-scope-types :
     Naming(_, _, _, _) -> [Namespace()]

@@ -143,7 +143,7 @@ rules
 			else
 				ordered := []
 			end;
-			scope* := <filter(to-scope)> part* ;
+			scope* := <filter(to-scope) ; concat> part* ;
 			if <?[]> scope* then
 				result := ordered 
 			else
@@ -155,7 +155,10 @@ rules
 		ND-Def(_, _, _, _, OrderedScope()) -> <id>
 		
 	to-scope:
-		ND-Scope(NsRef(namespace)) -> TERM(namespace)
+		ND-Scope(scope*) -> <map(namespace-to-term)> scope*
+		
+	namespace-to-term:
+		NsRef(namespace) -> TERM(namespace)
 			
 rules
 			

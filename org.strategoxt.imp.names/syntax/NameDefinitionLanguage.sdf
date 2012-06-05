@@ -33,7 +33,7 @@ context-free syntax
 	"defines" UniquePart NamespaceRef Term TypePart DefScopePart					-> NamingPart {"ND-Def"}
 	"imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos	-> NamingPart {"ND-Import"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart			-> NamingPart {"ND-Ref"}
-	"scope" "for" NamespaceRef 										-> NamingPart {"ND-Scope"}
+	"scopes" {NamespaceRef ","}+									-> NamingPart {"ND-Scope"}
 	"has" "type" Term												-> NamingPart {"ND-Type"}
 	
 	"where" Term Condition 									-> WhereClause {"Where"}
