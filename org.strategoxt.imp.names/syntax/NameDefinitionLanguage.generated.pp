@@ -31,6 +31,9 @@
    Where                    -- KW["where"] _1 _2,
    TypeCheck                -- KW["has"] KW["type"] _1,
    ReferenceCheck           -- KW["refers"] KW["to"] _1 _2 _3 _4,
+   Unique                   -- ,
+   Unique                   -- KW["unique"],
+   NonUnique                -- KW["non-unique"],
    TypeBinding              -- KW["of"] KW["type"] _1,
    None                     -- ,
    DefScope                 -- V  [H  [KW["in"]] _1],
@@ -41,12 +44,6 @@
    None                     -- ,
    Annos                    -- KW["{"] _1 KW["}"],
    Annos.1:iter-sep         -- _1 KW[","],
-   Annos                    -- KW["{"] _1 KW["}"],
-   Annos.1:iter-sep         -- _1 KW[","],
-   NonUnique                -- KW["non-unique"],
-   Unique                   -- KW["unique"],
    Transitive               -- KW["transitive"],
-   CurrentFile              -- KW["current-file"],
-   Ordered                  -- KW["ordered"],
-   NonOrdered               -- KW["unordered"]
+   CurrentFile              -- KW["current-file"]
 ]

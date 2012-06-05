@@ -152,7 +152,7 @@ rules
 			
 	
 	ordered-scope:
-		ND-Def(_, _, _, OrderedScope(), _) -> <id>
+		ND-Def(_, _, _, _, OrderedScope()) -> <id>
 		
 	to-scope:
 		ND-Scope(NsRef(namespace)) -> TERM(namespace)
@@ -160,13 +160,13 @@ rules
 rules
 			
 	to-definition-parts:
-		ND-Def(NsRef(namespace), name, _, None(), _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+		ND-Def(_, NsRef(namespace), name, _, None()) -> (name, TUPLE([TERM(namespace), LIST([name])]))
 	
 	to-definition-parts:
-		ND-Def(NsRef(namespace), name, _, DefScope(_), _) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
+		ND-Def(_, NsRef(namespace), name, _, DefScope(_)) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
 	
 	to-definition-parts:
-		ND-Def(NsRef(namespace), name, _, OrderedScope(), _) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
+		ND-Def(_, NsRef(namespace), name, _, OrderedScope()) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
 	
 	to-definition-rules(|term, clause*):
 		(key-part*, def-part*) ->
@@ -181,7 +181,7 @@ rules
 rules
       
   to-reference-parts:
-    ND-Ref(NsRef(namespace), name, _, _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+    ND-Ref(_, NsRef(namespace), name, _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
   
   to-reference-rules(|term, clause*):
     (key-part*, def-part*) ->
@@ -212,10 +212,10 @@ rules
 			end
 			
 	to-scope-replacement:
-		ND-Def(NsRef(namespace), name, _, DefScope(scope*), _) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
+		ND-Def(_, NsRef(namespace), name, _, DefScope(scope*)) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
 			
 	to-name-replacement:
-		ND-Def(NsRef(namespace), name, _, _, _)-> (name, ANNOTATE_DEF())
+		ND-Def(_, NsRef(namespace), name, _, _)-> (name, ANNOTATE_DEF())
 			
 	to-name-replacement:
 		ND-Ref(NsRef(namespace), name, _, None()) -> (name, ANNOTATE_USE(namespace))
@@ -247,7 +247,7 @@ rules
 rules
 		
 	to-type-rules(|term, clause*):
-		ND-Def(NsRef(namespace), name, TypeBinding(type), _, _) -> 
+		ND-Def(_, NsRef(namespace), name, TypeBinding(type), _) -> 
 		[ ADJUST_DATA(term, "Type", type, clause*)
 		, RULE("type-of", term, type, clause*) ]
 		
@@ -257,9 +257,7 @@ rules
 rules
 	
 	to-check-rules(|term, clause*):
-		ND-Def(_, _, _, _, Annos(annos)) -> RULE("nam-unique", term, RootApp(Id()), clause*)
-		where
-			<not(fetch-elem(?NonUnique()))> annos
+		ND-Def(Unique(), _, _, _, _) -> RULE("nam-unique", term, RootApp(Id()), clause*)
 		
 rules
   

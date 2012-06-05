@@ -30,7 +30,7 @@ context-free syntax
 	Term ":" NamingPart+ WhereClause*	-> NamingRule  {"ND-Rule"}
 	
 	%% "binds" NamespaceRef Term TypePart DefScopePart	DefAnnos					-> NamingPart {"ND-Def"}
-	"defines" NamespaceRef Term TypePart DefScopePart DefAnnos					-> NamingPart {"ND-Def"}
+	"defines" UniquePart NamespaceRef Term TypePart DefScopePart					-> NamingPart {"ND-Def"}
 	"imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos	-> NamingPart {"ND-Import"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart			-> NamingPart {"ND-Ref"}
 	"scope" "for" NamespaceRef 										-> NamingPart {"ND-Scope"}
@@ -39,6 +39,10 @@ context-free syntax
 	"where" Term Condition 									-> WhereClause {"Where"}
 	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
 	"refers" "to" NamespaceRef Term TypePart RefScopePart 	-> Condition {"ReferenceCheck"}
+	
+	 				-> UniquePart {"Unique"}
+	"unique" 		-> UniquePart {"Unique"}
+	"non-unique" 	-> UniquePart {"NonUnique"}
 	
 	"of" "type" Term	-> TypePart {"TypeBinding"}
 						-> TypePart {"None"}
@@ -49,18 +53,11 @@ context-free syntax
 	"in" NamespaceRef Term		-> RefScopePart {"RefScope"}
 						    	-> RefScopePart {"None"}
 		
-	"{" {DefAnno ","}+ "}" 		-> DefAnnos {"Annos"}
-								-> DefAnnos {ast("Annos([])")}
 	"{" {ImportAnno ","}+ "}" 	-> ImportAnnos {"Annos"}
 								-> ImportAnnos {ast("Annos([])")}
 					
-	"non-unique"			-> DefAnno {"NonUnique"}
-	"unique"				-> DefAnno {"Unique"}
-	
 	"transitive"			-> ImportAnno {"Transitive"}
 	"current-file"			-> ImportAnno {"CurrentFile"}
-	"ordered"				-> ImportAnno {"Ordered"}
-	"unordered"				-> ImportAnno {"NonOrdered"}
 	 
 lexical syntax
 	
