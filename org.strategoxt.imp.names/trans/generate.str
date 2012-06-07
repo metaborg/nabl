@@ -48,7 +48,7 @@ overlays
 		  [ CONS_DECL("Type", "DefDataKind")
 		  , CONS_DECL("Import", "DefDataKind")
 		  , CONS_DECL("Transitive", "ImportAnno")
-		  , CONS_DECL("CurrentFile", "ImportAnno")
+	    , CONS_DECL("CurrentFile", "ImportAnno")
 		  ]
 	  )
 		
@@ -293,6 +293,19 @@ rules
 		
 rules
   
+  import-currentfile =
+    collect-one(?CurrentFile())
+  import-standard =
+    not(import-currentfile)
+  
   to-import-rules(|term, clause*):
     ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
     [ ADJUST_DATA(term, LIST([TERM(namespace)], Var("path__")), "Import", TUPLE([source, LIST(<map(to-stratego-term)> annos*)]), clause*) ]
+    where
+      <import-standard> annos*
+      
+  to-import-rules(|term, clause*):
+    ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
+    [ ADJUST_DATA(term, LIST([TERM(namespace)], LIST([App(CALL("index-file-to-string", []), RootApp(CALL("index-get-current-file", [])))])), "Import", TUPLE([source, LIST(<map(to-stratego-term)> annos*)]), clause*) ]
+    where
+      <import-currentfile> annos*
