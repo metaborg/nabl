@@ -23,9 +23,9 @@ overlays
 	
 	TERM(o, args) 		= NoAnnoList(Op(o, args))
 	TERM(o)       		= NoAnnoList(Op(o, []))
-	TUPLE(args)  		= NoAnnoList(Tuple(args))
+	TUPLE(args)  		  = NoAnnoList(Tuple(args))
 	LIST(elems)   		= NoAnnoList(List(elems))
-	LIST(elems, tail)   = NoAnnoList(ListTail(elems, tail))
+	LIST(elems, tail) = NoAnnoList(ListTail(elems, tail))
 	CALL(c)       		= CallNoArgs(SVar(c))
 	CALL(c, args)    	= CallT(SVar(c), [], args)
 
@@ -47,6 +47,8 @@ overlays
 	  Constructors(
 		  [ CONS_DECL("Type", "DefDataKind")
 		  , CONS_DECL("Import", "DefDataKind")
+		  , CONS_DECL("Transitive", "ImportAnno")
+		  , CONS_DECL("CurrentFile", "ImportAnno")
 		  ]
 	  )
 		
@@ -87,6 +89,11 @@ overlays
     ANNOTATE_SCOPE           = CALL("nam-annotate-scope", [Var("path__")])
     LOOKUP_TYPE              = ""
     LOOKUP_CHILDREN(ns, n)   = App(CALL("index-lookup-children", [TERM(ns), Var("prefix__")]), n)
+    
+rules
+	
+	to-stratego-term:
+		cons#(args) -> TERM(cons, args)
     
 rules
 	
@@ -287,5 +294,5 @@ rules
 rules
   
   to-import-rules(|term, clause*):
-    ND-Import(NsRef(namespace), _, source, _, _) ->
-    [ ADJUST_DATA(term, LIST([TERM(namespace)], Var("path__")), "Import", source, clause*) ]
+    ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
+    [ ADJUST_DATA(term, LIST([TERM(namespace)], Var("path__")), "Import", TUPLE([source, LIST(<map(to-stratego-term)> annos*)]), clause*) ]
