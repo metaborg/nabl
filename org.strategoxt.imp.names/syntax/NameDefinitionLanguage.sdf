@@ -1,65 +1,73 @@
-%% Grammar for the NameDefinitionLanguage language
 module NameDefinitionLanguage
 
 imports
-	stratego/NDL-Layout
-	stratego/NDL-Identifiers
-	stratego/NDL-Terms
-	
-exports context-free start-symbols
+  
+    stratego/NDL-Layout
+    stratego/NDL-Identifiers
+    stratego/NDL-Terms
+    
+exports 
+  
+  context-free start-symbols
 
-	Start
+    Start
 
-context-free syntax
+  context-free syntax
 
-	NamingDefinition -> Start
-	
-	"module" Module@=ModName Imports Namespaces NamingRules -> NamingDefinition {"Naming", scope(Namespace)}
-	
-	"imports" ModuleRef*	-> Imports   {bracket}
-							-> Imports   {ast("[]")}
-	Module@ModName 			-> ModuleRef {"Import"}
-	
-	"namespaces" Namespace* -> Namespaces   {bracket}
-							-> Namespaces   {ast("[]")}
-	Namespace@=Id			-> Namespace    {"Namespace"}
-	Namespace@Id 			-> NamespaceRef {"NsRef"}
-	
-	"rules" NamingRule* 				-> NamingRules {bracket}
-										-> NamingRules {ast("[]")}
-	Term ":" NamingPart+ WhereClause*	-> NamingRule  {"ND-Rule"}
-	
-	%% "binds" NamespaceRef Term TypePart DefScopePart	DefAnnos					-> NamingPart {"ND-Def"}
-	"defines" UniquePart NamespaceRef Term TypePart DefScopePart					-> NamingPart {"ND-Def"}
-	"imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos	-> NamingPart {"ND-Import"}
-	"refers" "to" NamespaceRef Term TypePart RefScopePart			-> NamingPart {"ND-Ref"}
-	"scopes" {NamespaceRef ","}+									-> NamingPart {"ND-Scope"}
-	"has" "type" Term												-> NamingPart {"ND-Type"}
-	
-	"where" Term Condition 									-> WhereClause {"Where"}
-	"has" "type" Term 								 	 	-> Condition {"TypeCheck"}
-	"refers" "to" NamespaceRef Term TypePart RefScopePart 	-> Condition {"ReferenceCheck"}
-	
-	 				-> UniquePart {"Unique"}
-	"unique" 		-> UniquePart {"Unique"}
-	"non-unique" 	-> UniquePart {"NonUnique"}
-	
-	"of" "type" Term	-> TypePart {"TypeBinding"}
-						-> TypePart {"None"}
-	
-	"in" {Term ","}+			-> DefScopePart {"DefScope"}
-	"in" "subsequent" "scope"	-> DefScopePart {"OrderedScope"}
-						    	-> DefScopePart {"None"}
-	"in" NamespaceRef Term		-> RefScopePart {"RefScope"}
-						    	-> RefScopePart {"None"}
-		
-	"{" {ImportAnno ","}+ "}" 	-> ImportAnnos {"Annos"}
-								-> ImportAnnos {ast("Annos([])")}
-					
-	"transitive"			-> ImportAnno {"Transitive"}
-	"current-file"			-> ImportAnno {"CurrentFile"}
-	 
+    NamingDefinition                                        -> Start
+    "module" Module@=ModName Imports Namespaces NamingRules -> NamingDefinition {"Naming", scope(Namespace)}
+    
+    %% Imports
+    "imports" ModuleRef* -> Imports   {bracket}
+                         -> Imports   {ast("[]")}
+    Module@ModName       -> ModuleRef {"Import"}
+    
+    %% Namespaces
+    "namespaces" Namespace* -> Namespaces   {bracket}
+                            -> Namespaces   {ast("[]")}
+    Namespace@=Id           -> Namespace    {"Namespace"}
+    Namespace@Id            -> NamespaceRef {"NsRef"}
+    
+    %% Rule
+    "rules" NamingRule*               -> NamingRules {bracket}
+                                      -> NamingRules {ast("[]")}
+    Term ":" NamingPart+ WhereClause* -> NamingRule  {"ND-Rule"}
+    
+    %% Rule parts
+    "defines" UniquePart NamespaceRef Term TypePart DefScopePart             -> NamingPart {"ND-Def"}
+    "imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos -> NamingPart {"ND-Import"}
+    "refers" "to" NamespaceRef Term TypePart RefScopePart                    -> NamingPart {"ND-Ref"}
+    "scopes" {NamespaceRef ","}+                                             -> NamingPart {"ND-Scope"}
+    "has" "type" Term                                                        -> NamingPart {"ND-Type"}
+    
+    %% Where
+    "where" Term Condition                                -> WhereClause {"Where"}
+    "has" "type" Term                                     -> Condition   {"TypeCheck"}
+    "refers" "to" NamespaceRef Term TypePart RefScopePart -> Condition   {"ReferenceCheck"}
+    
+    %% Definition prefixes
+                 -> UniquePart {"Unique"}
+    "unique"     -> UniquePart {"Unique"}
+    "non-unique" -> UniquePart {"NonUnique"}
+    
+    %% Type bindings
+    "of" "type" Term -> TypePart {"TypeBinding"}
+                     -> TypePart {"None"}
+    
+    %% Reference postfixes
+    "in" {Term ","}+          -> DefScopePart {"DefScope"}
+    "in" "subsequent" "scope" -> DefScopePart {"OrderedScope"}
+                              -> DefScopePart {"None"}
+    "in" NamespaceRef Term    -> RefScopePart {"RefScope"}
+                              -> RefScopePart {"None"}
+        
+    %% Import annotations
+    "{" {ImportAnno ","}+ "}" -> ImportAnnos {"Annos"}
+                              -> ImportAnnos {ast("Annos([])")}
+    "transitive"              -> ImportAnno  {"Transitive"}
+    "current-file"            -> ImportAnno  {"CurrentFile"}
+     
 lexical syntax
-	
-	"namespaces" -> ModName {reject}
-	
+    
+    "namespaces" -> ModName {reject}
+    

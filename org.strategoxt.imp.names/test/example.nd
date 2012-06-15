@@ -1,27 +1,22 @@
 module example
 
 imports
-	include/Entity
+	//include/Entity
 	
 namespaces
 
-	entity
-	property
-	variable
-	method
+	entity property variable method
 	
 rules
 
 	Entity(name, _) :
 		defines entity name of type name
-		scope for property
-		scope for method
+		scopes property, method
 		
 	Entity(name, super, _) :
 		defines entity name of type name
 		refers to entity super 
-		scope for property
-		scope for method
+		scopes property, method
 		imports property from entity super
 		imports method from entity super
 		
@@ -48,11 +43,11 @@ rules
 		has type t
 		
 	Block(statement*) : 
-		scope for variable
+		scopes variable
 		
 	Method(f, param*, t, _) :
 		defines method f of type MT(t*, t)
-		scope for variable
+		scopes variable
 		where param* has type t*
 
 	Param(x, t) :
