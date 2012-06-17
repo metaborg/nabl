@@ -37,7 +37,7 @@ exports
   context-free syntax
     Char 			 -> PreTerm {cons("Char")}
 
-    %%"(" {Term ","}* ")" 	 -> PreTerm {cons("Tuple")}
+    "(" {Term ","}* ")" 	 -> PreTerm {cons("Tuple")}
     "[" {Term ","}* "]" 	 -> PreTerm {cons("List")}
     "[" {Term ","}* "|" Term "]" -> PreTerm {cons("ListTail")}
 	

@@ -98,18 +98,21 @@ rules
 rules
 	
 	to-analysis:
-		Naming(name, import*, namespace*, rule*) -> 
+		Naming(name, import*, namespace*, rule-sec*) -> 
 		Module(
 			  name
 			, [ GEN_IMPORTS()
 			  , Imports(import*)
 			  , Signature([GEN_CONSTRUCTORS(), Constructors(<map(to-opdecl)> namespace*)])
-			  | <filter(to-rules)> rule*
+			  | <mapconcat(to-rules)> rule-sec*
 			  ]
 			)
 			
 	to-opdecl: // generates constructors for namespaces
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
+		
+	to-rules:
+		ND-Rules(rule*) -> <filter(to-rules)> rule*
 		
 	to-rules:
 		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, reference-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*, import-rule*])

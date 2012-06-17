@@ -14,8 +14,8 @@ exports
 
   context-free syntax
 
-    NamingDefinition                                        -> Start
-    "module" Module@=ModName Imports Namespaces NamingRules -> NamingDefinition {"Naming", scope(Namespace)}
+    NamingDefinition                                         -> Start
+    "module" Module@=ModName Imports Namespaces NamingRules* -> NamingDefinition {"Naming", scope(Namespace)}
     
     %% Imports
     "imports" ModuleRef* -> Imports   {bracket}
@@ -29,8 +29,7 @@ exports
     Namespace@Id            -> NamespaceRef {"NsRef"}
     
     %% Rule
-    "rules" NamingRule*               -> NamingRules {bracket}
-                                      -> NamingRules {ast("[]")}
+    "rules" NamingRule*               -> NamingRules {"ND-Rules"}
     Term ":" NamingPart+ WhereClause* -> NamingRule  {"ND-Rule"}
     
     %% Rule parts
