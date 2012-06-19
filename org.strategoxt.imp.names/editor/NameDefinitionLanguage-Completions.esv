@@ -3,29 +3,19 @@ module NameDefinitionLanguage-Completions
 imports NameDefinitionLanguage-Completions.generated
 
 completions
-                                                                   
-  // This file is used to define content completion.               
-  //                                                               
-  // See the imported file for a brief introduction and examples.  
-                                                                   
+
+  completion template: "defines " <ns> " " <x> (blank)
+  completion template: "defines " <ns> " " <x> " of type " <t> (blank)
+  completion template: "refers to " <ns> " " <x> (blank)
+  completion template: "refers to " <ns> " " <x> " in " <ns2> " " <e> (blank)
+  completion template: "refers to " <ns> " " <x> " of type " <t> (blank)
+  completion template: "refers to " <ns> " " <x> " of type " <t> " in " <ns2> " " <e> (blank)
+  completion template: "scopes " <ns> (blank)
+  completion template: "imports " <ns> " from " <ns2> " " <x> (blank)
+  completion template: "where " <x> " has type " <t> (blank)
+  completion template: "where " <x> " refers to " <y> (blank)
+  completion template: "has type " <t> (blank)
 
 completions
-                                             
-  // Syntax completion:                      
-                                             
-  completion template Start :
-    "module " <m> (blank)  
-                                             
-  completion template Definition :
-    "entity " <e> " {" (cursor) "}" (blank)  
-                                             
-  completion template Property : "property : Type" =
-    <x> " : " <T> (blank)  
-                                             
-
-completions
-  // Semantic (identifier) completion:   
-                                         
-  completion proposer                  : editor-complete
-                                         
-  completion trigger                   : ":"
+       
+  completion proposer : editor-complete

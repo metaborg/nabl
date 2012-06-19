@@ -20,7 +20,7 @@ exports
     %% Imports
     "imports" ModuleRef* -> Imports   {bracket}
                          -> Imports   {ast("[]")}
-    Module@ModName       -> ModuleRef {"Import"}
+    ModName              -> ModuleRef {"Import"}
     
     %% Namespaces
     "namespaces" Namespace* -> Namespaces   {bracket}

@@ -1,7 +1,7 @@
 module example
 
 imports
-	//include/Entity
+	include/Entity
 	
 namespaces
 
