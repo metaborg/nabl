@@ -165,25 +165,29 @@ rules
 			
 	
 	ordered-scope:
-		ND-Def(_, _, _, _, OrderedScope()) -> <id>
-		
+		ND-Def(_, _, _, _, OrderedScope(), _) -> <id>
+	
+	to-scope: 
+		ND-Def(_, ns, name, _, _, scope*) -> <map(scope-to-term(|ns', name))> scope*
+		where
+			ns' := <namespace-to-term> ns
+			
 	to-scope:
 		ND-Scope(scope*) -> <map(namespace-to-term)> scope*
-		
+	
+	scope-to-term(|ns, name):
+		scope -> TUPLE([ns, name, <namespace-to-term> scope])
+	
 	namespace-to-term:
 		NsRef(namespace) -> TERM(namespace)
-			
+		
 rules
 			
 	to-definition-parts:
-		ND-Def(_, NsRef(namespace), name, _, None()) -> (name, TUPLE([TERM(namespace), LIST([name])]))
-	
-	to-definition-parts:
-		ND-Def(_, NsRef(namespace), name, _, DefScope(_)) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
-	
-	to-definition-parts:
-		ND-Def(_, NsRef(namespace), name, _, OrderedScope()) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
-	
+		ND-Def(_, NsRef(namespace), name, _, scope, _) -> (name, TUPLE([TERM(namespace), LIST([name|anon])]))
+		where
+		  if None() := scope then anon := [] else anon := [ANON()] end
+		  
 	to-definition-rules(|term, clause*):
 		(key-part*, def-part*) ->
 		[ RULE("nam-get-definition-keys", term, LIST(<make-set> key-part*), clause*)
@@ -228,10 +232,10 @@ rules
 			end
 			
 	to-scope-replacement:
-		ND-Def(_, NsRef(namespace), name, _, DefScope(scope*)) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
+		ND-Def(_, NsRef(namespace), name, _, DefScope(scope*), _) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
 			
 	to-name-replacement:
-		ND-Def(_, NsRef(namespace), name, _, _)-> (name, ANNOTATE_DEF())
+		ND-Def(_, NsRef(namespace), name, _, _, _)-> (name, ANNOTATE_DEF())
 			
 	to-name-replacement:
 		ND-Ref(NsRef(namespace), name, _, _) -> (name, ANNOTATE_USE(namespace))
@@ -282,7 +286,7 @@ rules
 rules
 		
 	to-type-rules(|term, clause*):
-		ND-Def(_, NsRef(namespace), name, TypeBinding(type), _) -> 
+		ND-Def(_, NsRef(namespace), name, TypeBinding(type), _, _) -> 
 		[ ADJUST_DATA(term, "Type", type, clause*)
 		, RULE("type-of", term, type, clause*) ]
 		
@@ -292,7 +296,7 @@ rules
 rules
 	
 	to-check-rules(|term, clause*):
-		ND-Def(Unique(), _, _, _, _) -> RULE("nam-unique", term, RootApp(Id()), clause*)
+		ND-Def(Unique(), _, _, _, _, _) -> RULE("nam-unique", term, RootApp(Id()), clause*)
 		
 rules
   
