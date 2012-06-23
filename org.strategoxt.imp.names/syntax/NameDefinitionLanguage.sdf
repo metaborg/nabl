@@ -33,14 +33,11 @@ exports
     Term ":" NamingPart+ WhereClause* -> NamingRule  {"ND-Rule"}
     
     %% Rule parts
-    "defines" UniquePart NamespaceRef Term TypePart DefScopePart OptScopePart -> NamingPart {"ND-Def", prefer}
-    "imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos  -> NamingPart {"ND-Import"}
-    "refers" "to" NamespaceRef Term TypePart RefScopePart                     -> NamingPart {"ND-Ref"}
-    ScopePart                                                                 -> NamingPart {"ND-Scope"}
-    "has" "type" Term                                                         -> NamingPart {"ND-Type"}
-    "scopes" {NamespaceRef ","}+ -> ScopePart    {bracket}
-                                 -> OptScopePart {ast("[]")}
-    ScopePart                    -> OptScopePart
+    "defines" UniquePart NamespaceRef Term TypePart DefScopePart             -> NamingPart {"ND-Def"}
+    "imports" NamespaceRef "from" NamespaceRef Term DefScopePart ImportAnnos -> NamingPart {"ND-Import"}
+    "refers" "to" NamespaceRef Term TypePart RefScopePart                    -> NamingPart {"ND-Ref"}
+    "scopes" {NamespaceRef ","}+                                             -> NamingPart {"ND-Scope"}
+    "has" "type" Term                                                        -> NamingPart {"ND-Type"}
     
     %% Where
     "where" Term Condition                                -> WhereClause {"Where"}
