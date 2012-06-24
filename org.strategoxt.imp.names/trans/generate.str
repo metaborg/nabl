@@ -16,7 +16,7 @@ rules
 			filename   := <guarantee-extension(|"str")> path ;
 			str-module := <to-analysis ; alltd(\ListVar(x) -> x\)> ast ;
 			// use next line to debug which AST node cannot be handled by the pretty-printer
-			//<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
+			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
 			result     := <pp-stratego-string> str-module
 
 overlays
@@ -32,7 +32,9 @@ overlays
 	RULE(n, lhs, rhs, clauses) 		 = RDefNoArgs(n, Rule(lhs, rhs, clauses))
 	RULE(n, args, lhs, rhs, clauses) = RDefT(n, [], args, Rule(lhs, rhs, clauses))
 
-	ANON          = TERM("Anon", [RootApp(CALL("new"))])
+	ANON              = TERM("Anon", [RootApp(CALL("new"))])
+	
+	PRIMDEF(ns, name) = TERM("Def", [LIST([TERM(ns), name])])
 			
 overlays
 	
@@ -274,10 +276,13 @@ rules
 			end
 	
 	to-adjust-path:
-		ND-Ref(NsRef(namespace), name, _, None()) -> LIST([TERM(namespace)], Var("path__"))	
+		ND-Ref(NsRef(namespace), name@Var(_), _, None()) -> LIST([TERM(namespace)], Var("path__"))
 
 	to-adjust-defs:
-	  	ND-Ref(NsRef(namespace), name, _, RefScope(namespace2, name2)) -> LOOKUP_CHILDREN(namespace, name2)	
+  	ND-Ref(NsRef(namespace), name@Var(_), _, RefScope(namespace2, name2)) -> LOOKUP_CHILDREN(namespace, name2)
+      	  	
+	to-adjust-defs:
+	  ND-Ref(NsRef(namespace), name@NoAnnoList(Str(_)), _, None()) -> LIST([PRIMDEF(namespace, name)])
 
 rules
 		
