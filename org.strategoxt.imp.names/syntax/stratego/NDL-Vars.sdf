@@ -1,0 +1,21 @@
+module stratego/NDL-Vars
+
+imports
+	stratego/NDL-Identifiers
+	
+exports
+
+  sorts Wld Var VarRef
+  
+  context-free syntax
+  	
+    "_" -> Wld    {"Wld"}
+    Wld -> Var 
+    Id 	-> Var    {"Var"}
+    LId -> Var    {"ListVar"}
+  	
+    Id  -> VarRef {"VarRef"}
+    LId	-> VarRef {"ListVarRef"}
+
+  context-free restrictions
+    Wld -/- [a-zA-Z0-9\'\-\_]
