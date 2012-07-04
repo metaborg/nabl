@@ -37,7 +37,7 @@ rules
 	VarDecl(x, e) :
 		defines variable x of type t 
 		where e has type t
-
+		
 	Var(x) :
 		refers to variable x of type t
 		has type t

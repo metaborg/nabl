@@ -12,8 +12,10 @@ imports
 
 signature
   constructors
-    Type   : DefDataKind
-    Import : DefDataKind
+    Type        : DefDataKind
+    Import      : DefDataKind
+    Transitive  : ImportAnno
+    CurrentFile : ImportAnno
 
   constructors
     entity   : Namespace
@@ -33,11 +35,15 @@ rules
   nam-get-definitions :
     Entity(name, _) -> [(entity(), [name])]
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     Entity(name, _) -> <Entity(nam-annotate-def(|path__), id)>
 
   adjust-index-def-data(store__|namespace__, path__):
-    Entity(name, _) -> <store__> DefData(path__, Type(), name)
+    Entity(name, _) -> <store__> DefData(
+                                   [namespace__|path__]
+                                 , Type()
+                                 , name
+                                 )
 
   type-of :
     Entity(name, _) -> name
@@ -63,15 +69,19 @@ rules
   nam-get-uses :
     Entity(name, super, _) -> [(entity(), [super])]
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     Entity(name, super, _) -> <Entity(
                                  nam-annotate-def(|path__)
-                               , nam-annotate-use(|entity())
+                               , nam-annotate-use(|paths__, entity())
                                , id
                                )>
 
   adjust-index-def-data(store__|namespace__, path__):
-    Entity(name, super, _) -> <store__> DefData(path__, Type(), name)
+    Entity(name, super, _) -> <store__> DefData(
+                                          [namespace__|path__]
+                                        , Type()
+                                        , name
+                                        )
 
   type-of :
     Entity(name, super, _) -> name
@@ -81,16 +91,16 @@ rules
 
   adjust-index-def-data(store__|namespace__, path__):
     Entity(name, super, _) -> <store__> DefData(
-                                          path__
+                                          [property()|path__]
                                         , Import()
-                                        , (property(), super)
+                                        , (super, [])
                                         )
 
   adjust-index-def-data(store__|namespace__, path__):
     Entity(name, super, _) -> <store__> DefData(
-                                          path__
+                                          [method()|path__]
                                         , Import()
-                                        , (method(), super)
+                                        , (super, [])
                                         )
 
 
@@ -102,11 +112,15 @@ rules
   nam-get-definitions :
     Property(x, t) -> [(property(), [x])]
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     Property(x, t) -> <Property(nam-annotate-def(|path__), id)>
 
   adjust-index-def-data(store__|namespace__, path__):
-    Property(x, t) -> <store__> DefData(path__, Type(), t)
+    Property(x, t) -> <store__> DefData(
+                                  [namespace__|path__]
+                                , Type()
+                                , t
+                                )
 
   type-of :
     Property(x, t) -> t
@@ -127,11 +141,12 @@ rules
     where [t] := <index-lookup ; index-get-data-all(|Type())> f
     where e := <type-of> exp
 
-  nam-annotate-names(|path__):
-    PropertyAccess(exp, f) -> <PropertyAccess(
-                                 id
-                               , nam-annotate-use(|property(), entity(), e)
-                               )>
+  nam-annotate-names(|paths__, path__):
+    PropertyAccess(exp, f) -> <PropertyAccess(id, nam-annotate-use(|paths__, property()))>
+
+  adjust-index-lookup(target__|namespace__, path__, prefix__):
+    PropertyAccess(exp, f) -> <index-lookup-children(|property(), prefix__)> e
+    where <target__> f
     where [t] := <index-lookup ; index-get-data-all(|Type())> f
     where e := <type-of> exp
 
@@ -155,11 +170,15 @@ rules
   nam-annotate-scopes(|path__):
     For(x, t, e, f, elem*) -> <For(id, id, id, id, nam-annotate-scope(|path__))>
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     For(x, t, e, f, elem*) -> <For(nam-annotate-def(|path__), id, id, id, id)>
 
   adjust-index-def-data(store__|namespace__, path__):
-    For(x, t, e, f, elem*) -> <store__> DefData(path__, Type(), t)
+    For(x, t, e, f, elem*) -> <store__> DefData(
+                                          [namespace__|path__]
+                                        , Type()
+                                        , t
+                                        )
 
   type-of :
     For(x, t, e, f, elem*) -> t
@@ -176,11 +195,15 @@ rules
   nam-get-definitions :
     VarDecl(x, t, e) -> [(variable(), [x])]
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     VarDecl(x, t, e) -> <VarDecl(nam-annotate-def(|path__), id, id)>
 
   adjust-index-def-data(store__|namespace__, path__):
-    VarDecl(x, t, e) -> <store__> DefData(path__, Type(), t)
+    VarDecl(x, t, e) -> <store__> DefData(
+                                    [namespace__|path__]
+                                  , Type()
+                                  , t
+                                  )
 
   type-of :
     VarDecl(x, t, e) -> t
@@ -199,12 +222,15 @@ rules
     VarDecl(x, e) -> [(variable(), [x])]
     where t := <type-of> e
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     VarDecl(x, e) -> <VarDecl(nam-annotate-def(|path__), id)>
-    where t := <type-of> e
 
   adjust-index-def-data(store__|namespace__, path__):
-    VarDecl(x, e) -> <store__> DefData(path__, Type(), t)
+    VarDecl(x, e) -> <store__> DefData(
+                                 [namespace__|path__]
+                               , Type()
+                               , t
+                               )
     where t := <type-of> e
 
   type-of :
@@ -226,9 +252,8 @@ rules
     Var(x) -> [(variable(), [x])]
     where [t] := <index-lookup ; index-get-data-all(|Type())> x
 
-  nam-annotate-names(|path__):
-    Var(x) -> <Var(nam-annotate-use(|variable()))>
-    where [t] := <index-lookup ; index-get-data-all(|Type())> x
+  nam-annotate-names(|paths__, path__):
+    Var(x) -> <Var(nam-annotate-use(|paths__, variable()))>
 
   type-of :
     Var(x) -> t
@@ -255,13 +280,12 @@ rules
     Method(f, param*, t, _) -> [(method(), [f])]
     where t* := <type-of> param*
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     Method(f, param*, t, _) -> <Method(nam-annotate-def(|path__), id, id, id)>
-    where t* := <type-of> param*
 
   adjust-index-def-data(store__|namespace__, path__):
     Method(f, param*, t, _) -> <store__> DefData(
-                                           path__
+                                           [namespace__|path__]
                                          , Type()
                                          , MT(t*, t)
                                          )
@@ -284,11 +308,15 @@ rules
   nam-get-definitions :
     Param(x, t) -> [(variable(), [x])]
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     Param(x, t) -> <Param(nam-annotate-def(|path__), id)>
 
   adjust-index-def-data(store__|namespace__, path__):
-    Param(x, t) -> <store__> DefData(path__, Type(), t)
+    Param(x, t) -> <store__> DefData(
+                               [namespace__|path__]
+                             , Type()
+                             , t
+                             )
 
   type-of :
     Param(x, t) -> t
@@ -311,12 +339,16 @@ rules
     where e := <type-of> exp
     where t* := <type-of> e*
 
-  nam-annotate-names(|path__):
+  nam-annotate-names(|paths__, path__):
     MethodCall(exp, f, e*) -> <MethodCall(
                                  id
-                               , nam-annotate-use(|method(), entity(), e)
+                               , nam-annotate-use(|paths__, method())
                                , id
                                )>
+
+  adjust-index-lookup(target__|namespace__, path__, prefix__):
+    MethodCall(exp, f, e*) -> <index-lookup-children(|method(), prefix__)> e
+    where <target__> f
     where [MT(t*, t)] := <index-lookup ; index-get-data-all(|Type())> f
     where e := <type-of> exp
     where t* := <type-of> e*

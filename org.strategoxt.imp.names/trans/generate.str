@@ -8,12 +8,27 @@ imports
   include/NameDefinitionLanguage
   lib/editor-common.generated
 
+rules // Incremental code generation of project
+	
+  index-compile-ast(|file, subfile):
+    ast@Naming(name, _, _, _) -> None()
+    with
+    	str       := <generate-name-analysis-stratego> ast ;
+      full-path := <dirname> file ;
+      filename  := <guarantee-extension(|"str")> name ;
+      <fclose> <fputs> (str, <fopen> ($[[full-path]/[filename]], "w"))
+
 rules
       
 	generate-name-analysis:
-		(selected, position, ast@Naming(name, _, _, _), path, project-path) -> (filename, result)
+		(_, _, ast@Naming(name, _, _, _), path, project-path) -> (filename, result)
 		with
-			filename   := <guarantee-extension(|"str")> path ;
+			filename := <guarantee-extension(|"str")> path ;
+			result   := <generate-name-analysis-stratego> ast
+			
+	generate-name-analysis-stratego:
+		ast -> result
+		with
 			str-module := <to-analysis ; alltd(\ListVar(x) -> x\)> ast ;
 			// use next line to debug which AST node cannot be handled by the pretty-printer
 			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
