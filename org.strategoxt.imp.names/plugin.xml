@@ -3,7 +3,7 @@
 
 <plugin>
        <extension point="org.eclipse.imp.runtime.languageDescription">
-          <language extensions="names" description="NameDefinitionLanguage" language="NameDefinitionLanguage" derivedFrom="DynamicRoot" validator="org.strategoxt.imp.names.NameDefinitionLanguageValidator" validatorClass="org.strategoxt.imp.names.NameDefinitionLanguageValidator"></language>
+          <language extensions="nd" description="NameDefinitionLanguage" language="NameDefinitionLanguage" derivedFrom="DynamicRoot" validator="org.strategoxt.imp.names.NameDefinitionLanguageValidator" validatorClass="org.strategoxt.imp.names.NameDefinitionLanguageValidator"></language>
        </extension>
        <extension id="org.strategoxt.imp.names.parser" name="NameDefinitionLanguage Parser" point="org.eclipse.imp.runtime.parser">
           <parser class="org.strategoxt.imp.names.NameDefinitionLanguageParseController" language="NameDefinitionLanguage">
