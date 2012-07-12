@@ -74,7 +74,7 @@ exports
     "of" "type" RTerm -> TypePart  {"TypeBinding"}
                       -> TypePart  {"None"}
     "of" "type" BTerm -> BTypePart {"TypeBinding"}
-                      -> NTypePart {"None"}
+                      -> BTypePart {"None"}
     
     %% Reference postfixes
     "in" DefScopeCore       -> DefScopePart {bracket}
