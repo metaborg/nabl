@@ -60,6 +60,7 @@ overlays
 			, Import("lib/index-library") 
 			]
 		)
+		
 	GEN_CONSTRUCTORS = 
 	  Constructors(
 		  [ CONS_DECL("Type", "DefDataKind")
@@ -111,19 +112,29 @@ rules
 	
 	to-stratego-term:
 		cons#(args) -> TERM(cons, args)
-    
+		
+	is-generated-library = ?Import("lib/analysis-library.generated")
+	is-generated-library = ?Import("lib/analysis-library-internal.generated")
+  is-generated-library = ?Import("lib/index-library.generated")
+  	  
 rules
 	
 	to-analysis:
 		Naming(name, import*, namespace*, rule-sec*) -> 
 		Module(
 			  name
-			, [ GEN_IMPORTS()
+			, [ gen-imports
 			  , Imports(import*)
 			  , Signature([GEN_CONSTRUCTORS(), Constructors(<map(to-opdecl)> namespace*)])
 			  | <mapconcat(to-rules)> rule-sec*
 			  ]
 			)
+		with
+			if <fetch(is-generated-library)> import* then
+				gen-imports := Imports([])
+			else
+				gen-imports := GEN_IMPORTS()
+			end
 			
 	to-opdecl: // generates constructors for namespaces
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
