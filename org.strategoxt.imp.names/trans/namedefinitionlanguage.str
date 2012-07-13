@@ -30,7 +30,7 @@ rules // Analysis
         warnings              := <collect-all(constraint-warning, conc)> ast'';
         notes                 := <collect-all(constraint-note, conc)> ast''
       );
-      filesToAnalyze'         := <make-set> <map(index-filepair-to-file)> filesToAnalyze
+      filesToAnalyze'         := <index-filepairs-to-files> filesToAnalyze
 
   // Main entry point for analyzes, called when a single file is opened in the editor.
   editor-analyze:
@@ -38,7 +38,7 @@ rules // Analysis
     with
       editor-init;
       (ast', errors, warnings, notes, filesToAnalyze) := <analyze> (ast, path, project-path);
-      <try(editor-queue-analysis)> filesToAnalyze
+      <try(editor-queue-analysis)> <remove-all(?path)> filesToAnalyze
       
   // Main entry point for analyzes, called when multiple files have changed. 
   editor-analyze:
@@ -54,10 +54,10 @@ rules // Analysis
       // Enable and trigger compilation after all files have been analysed.
       <enable-commit-and-compile> <language>;
       <trigger-commit-and-compile> <language>
- 
+      
   // Called when current file is saved.
   editor-save:
-    (ast, _, _, _, _) -> None()
+    (_, _, _, _, _) -> None()
     with
       index-setup(|<language>, [<project-path>], ".");
       <trigger-commit-and-compile> <language>
@@ -89,37 +89,37 @@ rules // Editor services
       (ast', _) := <analyze-top(|<language>)> (ast, path, project-path);
       item@COMPLETION(name) := <collect-one(?COMPLETION(_))> ast';
       index-transaction(
-        (<index-lookup-all-levels(|name)> item <+ ![]) => proposals
+        (<index-lookup-all(|name)> item <+ ![]) => proposals
       );
-      proposals' := <map(index-uri-name)> proposals
+      proposals' := <map(index-uri; index-uri-name)> proposals
 
 rules // Debugging
   
   // Prints the abstract syntax ATerm of a selection.
-  generate-aterm:
+  debug-generate-aterm:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       filename := <guarantee-extension(|"aterm")> path;
       result   := selected
       
   // Prints the definition annotated abstract syntax ATerm of a selection.
-  generate-deffed:
+  debug-generate-deffed:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
       filename := <guarantee-extension(|"aterm")> path;
-      result   := <analyze-defs(|Anon(), Anon())> selected
-  
+      result   := <analyze-defs> selected
+      
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  generate-analyzed:
+  debug-generate-analyzed:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       editor-init;
       filename := <guarantee-extension(|"analyzed.aterm")> path;
-      result   := <analyze> (selected, path, project-path)
+      result   := <analyze-top(|<language>)> (selected, path, project-path)   
       
   // Prints the entries in the index of the current file.
-  index-currentfile:
+  debug-index-show-current-file:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
@@ -127,26 +127,40 @@ rules // Debugging
       result   := <index-get-all-in-file> path
       
   // Prints the entries in the index of all files.
-  index-allfiles:
+  debug-index-show-all-files:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
       filename := <guarantee-extension(|"index.allfiles.aterm")> path;
       result   := <map(\filename -> (filename, <index-get-all-in-file> filename)\)> <index-get-all-files>
+
+  // Cleans current file from the index.
+  debug-index-clear-current:
+    (selected, position, ast, path, project-path)  -> None()
+    with
+      index-setup(|<language>, [project-path], $[[project-path]/[path]]);
+      <index-clear-file> $[[project-path]/[path]]
       
   // Cleans all data from the index.
-  index-cleanall:
+  debug-index-clear:
     (selected, position, ast, path, project-path)  -> None()
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
       index-clear
       
+  // Cleans all data from the index and re-analyzes every file.
+  debug-index-reload:
+    (selected, position, ast, path, project-path)  -> None()
+    with
+      index-setup(|<language>, [project-path], $[[project-path]/[path]]);
+      index-reload
+    
 rules // Utility
   
   // Queue parallel analysis for given list of files.
   editor-queue-analysis = 
     not(?[]); queue-strategy(|"editor-parallel-analyze", "Analyzing files")
-  
+      
   // Executes parallel analysis using the index library.
   editor-parallel-analyze:
     files -> None()

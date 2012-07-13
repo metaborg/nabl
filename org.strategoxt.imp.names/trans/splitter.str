@@ -8,4 +8,4 @@ imports
 rules // Splitter configuration
  
   // Enable AST splitting by analyze-top for compilation of top level units.
-  index-split = id
+  //index-split = id
