@@ -1,0 +1,87 @@
+module names
+
+imports
+
+
+imports
+  include/NameDefinitionLanguage
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+  lib/index-library.generated
+
+
+signature
+  constructors
+    Type        : DefDataKind
+    Import      : DefDataKind
+    Transitive  : ImportAnno
+    CurrentFile : ImportAnno
+
+  constructors
+    Module    : Namespace
+    Import    : Namespace
+    Namespace : Namespace
+
+
+rules
+
+  nam-get-definition-keys :
+    Naming(m, _, _, _) -> [m]
+
+  nam-get-definitions :
+    Naming(m, _, _, _) -> [(Module(), [m])]
+
+  nam-annotate-names(|paths__, path__):
+    Naming(m, _, _, _) -> <Naming(nam-annotate-def(|path__), id, id, id)>
+
+  nam-unique :
+    Naming(m, _, _, _) -> <id>
+
+
+rules
+
+  nam-get-definition-keys :
+    Import(m) -> [m]
+
+  nam-get-definitions :
+    Import(m) -> [(Import(), [m])]
+
+  nam-annotate-names(|paths__, path__):
+    Import(m) -> <Import(nam-annotate-def(|path__))>
+
+  nam-unique :
+    Import(m) -> <id>
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Import(m) -> <store__> DefData(
+                             [Namespace()|path__]
+                           , Import()
+                           , (m, [])
+                           )
+
+
+rules
+
+  nam-get-definition-keys :
+    Namespace(ns) -> [ns]
+
+  nam-get-definitions :
+    Namespace(ns) -> [(Namespace(), [ns])]
+
+  nam-annotate-names(|paths__, path__):
+    Namespace(ns) -> <Namespace(nam-annotate-def(|path__))>
+
+  nam-unique :
+    Namespace(ns) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    NsRef(ns) -> [ns]
+
+  nam-get-uses :
+    NsRef(ns) -> [(Namespace(), [ns])]
+
+  nam-annotate-names(|paths__, path__):
+    NsRef(ns) -> <NsRef(nam-annotate-use(|paths__, Namespace()))>

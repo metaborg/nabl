@@ -4,26 +4,8 @@ imports
   libstratego-lib
   include/NameDefinitionLanguage
   lib/editor-common.generated
-  lib/analysis-auto.generated
   lib/index-library.generated
   lib/analysis-library.generated
-
-rules // Resolving
-  
-  constraint-error:
-    x{[Unresolved(t) | _]} -> (x, $[Unable to resolve.])
-    
-rules // Duplicates
-    
-  is-unique-namespace = fail
-  
-  constraint-error:
-    definition -> (definition, $[Duplicate definition])
-    where
-      key{[ns|_]} := <nam-get-definition-key> definition;
-      <is-unique-namespace> ns;
-      definitions := <index-lookup-all> key;
-      <gt> (<length> definitions, 1)
 
 rules // Other
   

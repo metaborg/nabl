@@ -1,0 +1,29 @@
+module names
+
+imports
+
+  include/NameDefinitionLanguage
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+  lib/index-library.generated
+
+namespaces
+
+  Module
+  Import
+  Namespace
+  
+rules
+
+  Naming(m, _, _, _): 
+    defines Module m 
+              
+	Import(m):
+	  defines Import m
+    imports Namespace from Module m
+	        
+	Namespace(ns):
+    defines Namespace ns
+	        
+	NsRef(ns):
+    refers to Namespace ns

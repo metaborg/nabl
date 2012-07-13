@@ -1,6 +1,7 @@
 module example
 
 imports
+
 	include/Entity
 	
 namespaces

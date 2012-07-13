@@ -2,8 +2,7 @@ module lib/analysis-auto.generated
 
 signature
   constructors
-    Module    : Namespace
-    Namespace : Namespace
+    
 
 
 imports
@@ -12,33 +11,6 @@ imports
 
 
 rules
-
-  nam-get-scope-types :
-    Naming(_, _, _, _) -> [Namespace()]
-
-  nam-get-definition-key :
-    Naming(x, _, _, _) -> x
-
-  nam-get-definition :
-    Naming(x, _, _, _) -> <nam-get-def(|Module())> x
-
-  nam-get-definition-key :
-    Namespace(x) -> x
-
-  nam-get-definition :
-    Namespace(x) -> <nam-get-def(|Namespace())> x
-
-  nam-annotate-names(|def-path):
-    Naming(d_14248, e_14248, f_14248, g_14248) -> Naming(d_14248{def-path}, e_14248, f_14248, g_14248)
-
-  nam-annotate-names(|def-path):
-    Namespace(b_14248) -> Namespace(b_14248{def-path})
-
-  nam-annotate-names(|def-path):
-    NsRef(a_14248) -> NsRef(<nam-annotate-use(|Namespace())> a_14248)
-
-  nam-get-scope-types :
-    Naming(_, _, _, _) -> [Namespace()]
 
   nam-get-def(|n) =
     fail

@@ -6,18 +6,17 @@ imports
   libstratego-aterm
   include/NameDefinitionLanguage
   lib/editor-common.generated
-  lib/analysis-auto.generated
   lib/index-library.generated
   lib/analysis-library.generated
   lib/analysis-library-internal.generated
   lib/compilation-library.generated
-  analysis-manual
+  lib/nbl-library.generated
   check
   generate
-  splitter
-
-rules // Analysis
+  names
   
+rules // Analysis
+
   // Analyzes the current program, returning a tuple with the analyzed AST, errors, warnings, notes and
   // files that should be re-analyzed.
   analyze:

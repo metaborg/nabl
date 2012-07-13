@@ -13,6 +13,7 @@ rules // Incremental code generation of project
   index-compile-ast(|file, subfile):
     ast@Naming(name, _, _, _) -> None()
     with
+      <debug> "test";
     	str       := <generate-name-analysis-stratego> ast ;
       full-path := <dirname> file ;
       filename  := <guarantee-extension(|"str")> name ;
