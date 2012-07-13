@@ -13,7 +13,7 @@ rules // Incremental code generation of project
   index-compile-ast(|file, subfile):
     ast@Naming(name, _, _, _) -> None()
     with
-      <debug> "test";
+      <debug> "Compiling";
     	str       := <generate-name-analysis-stratego> ast ;
       full-path := <dirname> file ;
       filename  := <guarantee-extension(|"str")> name ;
@@ -56,9 +56,9 @@ overlays
 	
 	GEN_IMPORTS = 
 		Imports(
-			[ Import("lib/analysis-library")
-			, Import("lib/analysis-library-internal")
-			, Import("lib/index-library") 
+			[ Import("lib/analysis-library.generated")
+			, Import("lib/analysis-library-internal.generated")
+			, Import("lib/index-library.generated") 
 			]
 		)
 		
@@ -114,9 +114,9 @@ rules
 	to-stratego-term:
 		cons#(args) -> TERM(cons, args)
 		
-	is-generated-library = ?Import("lib/analysis-library.generated")
-	is-generated-library = ?Import("lib/analysis-library-internal.generated")
-  is-generated-library = ?Import("lib/index-library.generated")
+	is-nongenerated-library = ?Import("lib/analysis-library")
+	is-nongenerated-library = ?Import("lib/analysis-library-internal")
+  is-nongenerated-library = ?Import("lib/index-library")
   	  
 rules
 	
@@ -131,7 +131,7 @@ rules
 			  ]
 			)
 		with
-			if <fetch(is-generated-library)> import* then
+			if <fetch(is-nongenerated-library)> import* then
 				gen-imports := Imports([])
 			else
 				gen-imports := GEN_IMPORTS()

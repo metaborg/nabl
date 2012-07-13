@@ -1,13 +1,13 @@
 module names
 
 imports
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+  lib/index-library.generated
 
 
 imports
   include/NameDefinitionLanguage
-  lib/analysis-library.generated
-  lib/analysis-library-internal.generated
-  lib/index-library.generated
 
 
 signature
@@ -24,6 +24,9 @@ signature
 
 
 rules
+
+  nam-get-scope-types :
+    Naming(m, _, _, _) -> [Namespace()]
 
   nam-get-definition-keys :
     Naming(m, _, _, _) -> [m]

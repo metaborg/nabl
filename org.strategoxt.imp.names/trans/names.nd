@@ -3,9 +3,6 @@ module names
 imports
 
   include/NameDefinitionLanguage
-  lib/analysis-library.generated
-  lib/analysis-library-internal.generated
-  lib/index-library.generated
 
 namespaces
 
@@ -16,8 +13,9 @@ namespaces
 rules
 
   Naming(m, _, _, _): 
-    defines Module m 
-              
+    defines Module m
+    scopes Import
+    
 	Import(m):
 	  defines Import m
     imports Namespace from Module m
