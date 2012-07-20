@@ -1,32 +1,28 @@
 module example
 
 imports
-
 	include/Entity
 	
 namespaces
 
 	entity property variable method
 	
-rules
+binding rules
 
 	Entity(name, _) :
 		defines entity name of type name
-		scopes property, method
+		scope for property, method
 		
 	Entity(name, super, _) :
 		defines entity name of type name
-		refers to entity super 
-		scopes property, method
-		imports property from entity super
-		imports method from entity super
+		scope for property, method
+		imports property, method from entity super
 		
 	Property(x, t) :
 		defines property x of type t
 	
 	PropertyAccess(exp, f) :
 		refers to property f of type t in entity e
-		has type t
 		where exp has type e
  
 	For(x, t, e, f, elem*) : 
@@ -38,17 +34,16 @@ rules
 	VarDecl(x, e) :
 		defines variable x of type t 
 		where e has type t
-		
+
 	Var(x) :
 		refers to variable x of type t
-		has type t
 		
 	Block(statement*) : 
-		scopes variable
+		anonymous scope for variable
 		
 	Method(f, param*, t, _) :
 		defines method f of type MT(t*, t)
-		scopes variable
+		scope for variable
 		where param* has type t*
 
 	Param(x, t) :

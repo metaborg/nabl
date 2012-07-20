@@ -1,0 +1,71 @@
+module semantics/stratego-names
+
+imports
+  lib/analysis-library
+  lib/analysis-library-internal
+  lib/index-library
+
+
+imports
+  include/NameDefinitionLanguage
+
+
+signature
+  constructors
+    Variable : Namespace
+
+
+rules
+
+  nam-get-definitions(|paths__, subsequent__):
+    Var(x) -> ( <Var(nam-annotate-def(|uri15))>
+              , [Def(uri15)]
+              , []
+              )
+    where uri15 := [Variable(), x|<lookup-index-path> (Variable(), paths__)]
+
+  nam-get-definition-keys :
+    Var(x) -> [x]
+
+
+rules
+
+  nam-get-definitions(|paths__, subsequent__):
+    ListVar(x) -> ( <ListVar(nam-annotate-def(|uri18))>
+                  , [Def(uri18)]
+                  , []
+                  )
+    where uri18 := [Variable(), x|<lookup-index-path> (Variable(), paths__)]
+
+  nam-get-definition-keys :
+    ListVar(x) -> [x]
+
+
+rules
+
+  nam-get-use-keys :
+    VarRef(x) -> [x]
+
+  nam-annotate-uses(|paths__):
+    VarRef(x) -> <VarRef(
+                    nam-annotate-use(|paths__, [Variable()])
+                  )>
+
+  nam-resolve(target__|):
+    VarRef(x) -> [Regular(Variable(), x)]
+    where <target__> x
+
+
+rules
+
+  nam-get-use-keys :
+    ListVarRef(x) -> [x]
+
+  nam-annotate-uses(|paths__):
+    ListVarRef(x) -> <ListVarRef(
+                        nam-annotate-use(|paths__, [Variable()])
+                      )>
+
+  nam-resolve(target__|):
+    ListVarRef(x) -> [Regular(Variable(), x)]
+    where <target__> x
