@@ -329,15 +329,13 @@ rules
 rules
   
   import-currentfile =
-    collect-one(?CurrentFile())
-  import-standard =
-    not(import-currentfile)
-  
+    one(?CurrentFile())
+
   to-import-rules(|term, clause*):
     ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
     [ ADJUST_DATA(term, LIST([TERM(namespace)], Var("path__")), "Import", TUPLE([source, LIST(<map(to-stratego-term)> annos*)]), clause*) ]
     where
-      <import-standard> annos*
+      not(<import-currentfile> annos*)
       
   to-import-rules(|term, clause*):
     ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
