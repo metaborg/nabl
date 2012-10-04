@@ -12,9 +12,6 @@ imports
 
 rules
 
-  nam-get-scope-types :
-    Naming(_, _, _, _) -> [Namespace()]
-
   nam-get-def(|n) =
     fail
 
