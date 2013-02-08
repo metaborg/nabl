@@ -10,11 +10,44 @@ setup Header [[
   }
 ]]
 
+test Defs [[
+  entity B {
+    
+  }
+]] build generate-defs to 
+   [Def(_), _, _, _]
+
 test Unknown type Q [[
   entity B {
     q : Q
   }
 ]] 1 error
+
+test Resolve entity reference [[
+  entity [[B]] {
+    b : [[B]]
+  }
+]] resolve #2 to #1
+
+test Resolve property access [[
+  entity B {
+    f(c : C) {
+      var v : C = c.[[c]]
+    }
+  }
+  entity C {
+    [[c]] : C
+  }
+]] resolve #1 to #2
+
+test Resolve local variable [[
+  entity B {
+    f() {
+      var [[a]] : A
+      var b : B = [[a]]
+    }
+  }
+]] resolve #2 to #1
 
 test Resolve local property access [[
   entity B {
@@ -35,7 +68,7 @@ test Resolve parameter access [[
   }
 ]] resolve #2 to #1
 
-test Resolve property access [[
+test Complete property access [[
   entity B {
     yyyyy : A
     f(a : A) {
@@ -48,7 +81,7 @@ test Resolve property access fails [[
   entity B {
     y : A
     f(a : A) {
-      var v : A = a.x.y.x.x
+      var v : A = a.x.y/*.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y.x.y*/.x.x
     }
   }
 ]] 1 error
@@ -77,15 +110,6 @@ test Def before use allowed [[
   entity C {}
 ]]
 
-test Def before use error [[
-  entity B {
-    f() {
-      var v : A = w
-      var w : A
-    }
-  }
-]] 1 error
-
 test Shadowing of property (allowed) [[
   entity B {
     a : A
@@ -94,6 +118,16 @@ test Shadowing of property (allowed) [[
     }
   }
 ]]
+
+/*
+test Def before use error [[
+  entity B {
+    f() {
+      var v : A = w
+      var w : A
+    }
+  }
+]] 1 error
 
 test Shadowing of var (not allowed) [[
   entity B {
@@ -111,19 +145,4 @@ test Duplicate entity [[
   entity B {}
 ]] 1 error
 
-
-/* TODO: following tests fail because of a limitation in the resolver interface...
-
-test Resolve local entity [[
-  entity B {
-    x : B 
-  }
-]] resolves B#2 to B#1
-
-// fails
-test Resolve setup entity [[
-  entity B {
-    x : A
-  }
-]] resolves A#2 to A#1
 */

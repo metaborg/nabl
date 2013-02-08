@@ -2,7 +2,8 @@ module types
 
 imports
   include/NamingExperiment
-  analysis-library
+  lib/index-library
+  lib/analysis-library
 
 signature constructors
 

@@ -1,0 +1,5 @@
+module multifile
+
+entity MultiFileEntity {
+  a : MultiFileEntity
+}

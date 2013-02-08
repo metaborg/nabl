@@ -1,0 +1,18 @@
+module test2
+
+language NamingExperiment
+
+
+setup [[
+  
+  module M
+]]
+
+test Resolve local variable [[
+  entity B {
+    f() {
+      var [[a]] : B
+      var b : B = [[a]]
+    }
+  }
+]] resolve #2 to #1

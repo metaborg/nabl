@@ -40,5 +40,25 @@
         <import file="build.generated.xml"/>
     
         <!-- Main target -->
-        <target name="all" depends="spoofaximp.default.ctree"/>
+        <target name="all" depends="link-lib-files, copy-lib-files, spoofaximp.default.ctree"/>
+      
+        <target name="os-detection">
+          <condition property="isWin">
+            <os family="windows"/>
+          </condition>  
+        </target>
+        
+        <target name="copy-lib-files" if="isWin" depends="os-detection">
+          <!-- Copy libraries from naming experiment, Ant is stupid and cannot link on Windows :( -->
+          <copy file="../../../../spoofax/trunk/spoofax/org.spoofax.interpreter.library.language/src/main/stratego/lib/index-library.str" tofile="lib/index-library.str"/>
+          <copy file="../../../../spoofax/trunk/spoofax/org.spoofax.interpreter.library.language/src/main/stratego/lib/analysis-library.str" tofile="lib/analysis-library.str"/>
+          <copy file="../../../../spoofax/trunk/spoofax/org.spoofax.interpreter.library.language/src/main/stratego/lib/compilation-library.str" tofile="lib/compilation-library.str"/>
+        </target>
+        
+        <target name="link-lib-files" unless="isWin" depends="os-detection">
+          <!-- Link libraries from naming experiment -->
+          <symlink resource="${basedir}/../../../../spoofax/trunk/spoofax/org.spoofax.interpreter.library.language/src/main/stratego/lib/index-library.str" link="${basedir}/lib/index-library.str" overwrite="true" />
+          <symlink resource="${basedir}/../../../../spoofax/trunk/spoofax/org.spoofax.interpreter.library.language/src/main/stratego/lib/analysis-library.str" link="${basedir}/lib/analysis-library.str" overwrite="true" />
+          <symlink resource="${basedir}/../../../../spoofax/trunk/spoofax/org.spoofax.interpreter.library.language/src/main/stratego/lib/compilation-library.str" link="${basedir}/lib/compilation-library.str" overwrite="true" />
+        </target>
     </project>

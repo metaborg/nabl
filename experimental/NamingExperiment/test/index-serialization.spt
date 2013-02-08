@@ -1,0 +1,30 @@
+module test-serialization 
+
+language NamingExperiment
+
+test Init
+  index-setup(|"NamingExperiment", ["/tmp/test-serialization"]);
+  index-clear;
+
+  <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
+  
+  <index-get-all> Def([Def(), "newdef"]) => [_]
+
+test Init and reload
+  index-setup(|"NamingExperiment", ["/tmp/test-serialization"]);
+  index-clear;
+
+  <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
+  index-commit;
+  
+  index-setup(|"NamingExperiment", ["/tmp/test-serialization2"]);
+  <index-get-all> Def([Def(), "newdef"]) => [];
+    
+  index-setup(|"NamingExperiment", ["/tmp/test-serialization"]);
+  <index-get-all> Def([Def(), "newdef"]) => [_]
+
+test Load, copy, load from disk (bypass in-memory cache)
+  <call> ("cp", ["-r", "/tmp/test-serialization/.cache", "/tmp/test-serialization-copy"]);
+  index-setup(|"NamingExperiment", ["/tmp/test-serialization-copy"]); 
+  <index-get-all> Def([Def(), "newdef"]) => [_]
+  

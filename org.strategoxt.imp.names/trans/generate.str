@@ -1,0 +1,344 @@
+module generate
+
+imports
+	libstrc
+  libstratego-lib
+  libstratego-gpp
+  libstratego-aterm
+  include/NameDefinitionLanguage
+  lib/editor-common.generated
+
+rules // Incremental code generation of project
+	
+  index-compile-ast(|file, subfile):
+    ast@Naming(name, _, _, _) -> None()
+    with
+      <debug> "Compiling";
+    	str       := <generate-name-analysis-stratego> ast ;
+      full-path := <dirname> file ;
+      filename  := <guarantee-extension(|"str")> name ;
+      <fclose> <fputs> (str, <fopen> ($[[full-path]/[filename]], "w"))
+
+rules
+      
+	generate-name-analysis:
+		(_, _, ast@Naming(name, _, _, _), path, project-path) -> (filename, result)
+		with
+			filename := <guarantee-extension(|"str")> path ;
+			result   := <generate-name-analysis-stratego> ast
+			
+	generate-name-analysis-stratego:
+		ast -> result
+		with
+			str-module := <to-analysis ; alltd(\ListVar(x) -> x\)> ast ;
+			// use next line to debug which AST node cannot be handled by the pretty-printer
+			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
+			result     := <pp-stratego-string> str-module
+
+overlays
+	
+	TERM(o, args) 		= NoAnnoList(Op(o, args))
+	TERM(o)       		= NoAnnoList(Op(o, []))
+	TUPLE(args)  		  = NoAnnoList(Tuple(args))
+	LIST(elems)   		= NoAnnoList(List(elems))
+	LIST(elems, tail) = NoAnnoList(ListTail(elems, tail))
+	CALL(c)       		= CallNoArgs(SVar(c))
+	CALL(c, args)    	= CallT(SVar(c), [], args)
+
+	RULE(n, lhs, rhs, clauses) 		 = RDefNoArgs(n, Rule(lhs, rhs, clauses))
+	RULE(n, args, lhs, rhs, clauses) = RDefT(n, [], args, Rule(lhs, rhs, clauses))
+
+	ANON              = TERM("Anon", [RootApp(CALL("new"))])
+	
+	PRIMDEF(ns, name) = TERM("Def", [LIST([TERM(ns), name])])
+			
+overlays
+	
+	GEN_IMPORTS = 
+		Imports(
+			[ Import("lib/analysis-library.generated")
+			, Import("lib/analysis-library-internal.generated")
+			, Import("lib/index-library.generated") 
+			]
+		)
+		
+	GEN_CONSTRUCTORS = 
+	  Constructors(
+		  [ CONS_DECL("Type", "DefDataKind")
+		  , CONS_DECL("Import", "DefDataKind")
+		  , CONS_DECL("Transitive", "ImportAnno")
+	    , CONS_DECL("CurrentFile", "ImportAnno")
+		  ]
+	  )
+		
+	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
+	
+	ADJUST_DATA(term, kind, data, clauses) = 
+	  ADJUST_DATA(term, LIST([Var("namespace__")], Var("path__")), kind, data, clauses)
+  		
+  ADJUST_DATA(term, uri, kind, data, clauses) = 
+    RDefT(
+        "adjust-index-def-data"
+      , [DefaultVarDec("store__")]
+      , [DefaultVarDec("namespace__"), DefaultVarDec("path__")]
+      , Rule(
+            term
+          , App(CALL("store__"), TERM("DefData", [uri, TERM(kind), data]))
+        , clauses
+        )
+      )
+
+	ADJUST_LOOKUP(term, adjusts, clauses) = 
+		RDefT(
+			  "adjust-index-lookup"
+			, [DefaultVarDec("target__")]
+			, [DefaultVarDec("namespace__"), DefaultVarDec("path__"), DefaultVarDec("prefix__")]
+			, Rule(
+			  	  term
+			  	, adjusts
+				, clauses
+				)
+  		)
+
+overlays 
+	
+    ANNOTATE_DEF             = CALL("nam-annotate-def", [Var("path__")])
+    ANNOTATE_USE(ns)         = CALL("nam-annotate-use", [Var("paths__"), TERM(ns)])
+    ANNOTATE_USE(ns, ns2, n) = CALL("nam-annotate-use", [Var("paths__"), TERM(ns), TERM(ns2), n])
+    ANNOTATE_SCOPE           = CALL("nam-annotate-scope", [Var("path__")])
+    LOOKUP_TYPE              = ""
+    LOOKUP_CHILDREN(ns, n)   = App(CALL("index-lookup-children", [TERM(ns), Var("prefix__")]), n)
+    
+rules
+	
+	to-stratego-term:
+		cons#(args) -> TERM(cons, args)
+		
+	is-nongenerated-library = ?Import("lib/analysis-library")
+	is-nongenerated-library = ?Import("lib/analysis-library-internal")
+  is-nongenerated-library = ?Import("lib/index-library")
+  	  
+rules
+	
+	to-analysis:
+		Naming(name, import*, namespace*, rule-sec*) -> 
+		Module(
+			  name
+			, [ gen-imports
+			  , Imports(import*)
+			  , Signature([GEN_CONSTRUCTORS(), Constructors(<map(to-opdecl)> namespace*)])
+			  | <mapconcat(to-rules)> rule-sec*
+			  ]
+			)
+		with
+			if <fetch(is-nongenerated-library)> import* then
+				gen-imports := Imports([])
+			else
+				gen-imports := GEN_IMPORTS()
+			end
+			
+	to-opdecl: // generates constructors for namespaces
+		Namespace(ns) -> CONS_DECL(ns, "Namespace")
+		
+	to-rules:
+		ND-Rules(rule*) -> <filter(to-rules)> rule*
+		
+	to-rules:
+		ND-Rule(term, part*, cond*) -> Rules(<not(?[])> [scope-rule*, definition-rule*, reference-rule*, annotate-rule*, adjust-rule*, type-rule*, check-rule*, import-rule*])
+		where
+			clause1*         := <filter(to-clauses)> part* ;
+			clause2*         := <filter(to-clauses)> cond* ; 
+			clause*          := <conc> (clause1*, clause2*) ;
+			scope-rule*      := <to-scope-rules(|term, clause*)> part* ;
+			definition-rule* := <filter(to-definition-parts) ; unzip ; to-definition-rules(|term, clause*)> part* ;
+			reference-rule*  := <filter(to-reference-parts) ; unzip ; to-reference-rules(|term, clause*)> part* ;
+			annotate-rule*   := <to-annotate-rules(|term)> part* ;
+			adjust-rule*     := <to-adjust-rules(|term, clause*)> part* ;
+			type-rule*       := <filter(to-type-rules(|term, clause*)) ; concat> part* ;
+			check-rule*      := <filter(to-check-rules(|term, clause*))> part* ;
+			import-rule*     := <filter(to-import-rules(|term, clause*))> part*
+
+rules
+				
+	to-clauses: //might not be the right solution, should be a filter on definition candidates
+		ND-Ref(_, name, TypeBinding(type), _) -> 
+		WhereClause(
+			Assign(
+				  NoAnnoList(List([type]))
+				, App(Seq(CALL("index-lookup"), CALL("index-get-data-all", [TERM("Type")])), name)
+				)
+			)
+		
+	to-clauses: 
+		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CALL("type-of"), term)))
+
+	to-clauses:
+		Where(term, ReferenceCheck(NsRef(ns), name, None(), None())) -> WhereClause(Assign(TERM("Def", [LIST([TERM(ns)], name)]), App(Seq(CALL("index-find-key"), CALL("index-lookup")), term)))
+
+rules
+	
+	to-scope-rules(|term, clause*):
+		part* -> result
+		where
+			if <fetch-elem(ordered-scope)> part* then
+				ordered := [RULE("nam-ordered-def", term, RootApp(Id()), clause*)]
+			else
+				ordered := []
+			end;
+			scope* := <filter(to-scope) ; concat> part* ;
+			if <?[]> scope* then
+				result := ordered 
+			else
+				result := [RULE("nam-get-scope-types", term, LIST(scope*), clause*)|ordered]
+			end
+			
+	
+	ordered-scope:
+		ND-Def(_, _, _, _, OrderedScope()) -> <id>
+		
+	to-scope:
+		ND-Scope(scope*) -> <map(namespace-to-term)> scope*
+		
+	namespace-to-term:
+		NsRef(namespace) -> TERM(namespace)
+			
+rules
+			
+	to-definition-parts:
+		ND-Def(_, NsRef(namespace), name, _, None()) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+	
+	to-definition-parts:
+		ND-Def(_, NsRef(namespace), name, _, DefScope(_)) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
+	
+	to-definition-parts:
+		ND-Def(_, NsRef(namespace), name, _, OrderedScope()) -> (name, TUPLE([TERM(namespace), LIST([name, ANON()])]))
+	
+	to-definition-rules(|term, clause*):
+		(key-part*, def-part*) ->
+		[ RULE("nam-get-definition-keys", term, LIST(<make-set> key-part*), clause*)
+		, RULE("nam-get-definitions",     term, LIST(<make-set> def-part*), clause*) ]
+		where
+			<Hd> key-part* ; <Hd> def-part*
+
+	to-definition-rules(|term, clause*):
+		([], []) -> []
+		
+rules
+      
+  to-reference-parts:
+    ND-Ref(NsRef(namespace), name, _, _) -> (name, TUPLE([TERM(namespace), LIST([name])]))
+  
+  to-reference-rules(|term, clause*):
+    (key-part*, def-part*) ->
+    [ RULE("nam-get-uses-keys", term, LIST(<make-set> key-part*), clause*)
+    , RULE("nam-get-uses",      term, LIST(<make-set> def-part*), clause*) ]
+    where
+      <Hd> key-part* ; <Hd> def-part*
+
+  to-reference-rules(|term, clause*):
+    ([], []) -> []
+		
+rules
+	
+	to-annotate-rules(|term):
+		part* -> result
+		where
+			replacement1* := <filter(to-name-replacement)> part* ;
+			if <?[]> replacement1* then
+				rule1 := [] 
+			else
+				rule1 := [RULE("nam-annotate-names", [DefaultVarDec("paths__"), DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement1*) <+ introduce-id)> term), [])]
+			end ;
+			replacement2* := <filter(to-scope-replacement) ; concat> part* ;
+			if <?[]> replacement2* then
+				result := rule1 
+			else
+				result := [RULE("nam-annotate-scopes", [DefaultVarDec("path__")], term, RootApp(<alltd(replace(|replacement2*) <+ introduce-id)> term), [])|rule1]
+			end
+			
+	to-scope-replacement:
+		ND-Def(_, NsRef(namespace), name, _, DefScope(scope*)) -> <map(!(<id>, ANNOTATE_SCOPE()))> scope*
+			
+	to-name-replacement:
+		ND-Def(_, NsRef(namespace), name, _, _)-> (name, ANNOTATE_DEF())
+			
+	to-name-replacement:
+		ND-Ref(NsRef(namespace), name, _, _) -> (name, ANNOTATE_USE(namespace))
+			
+	replace(|replacement*): t1 -> t2 where <fetch-elem(?(t1, t2))> replacement*
+	
+	introduce-id: Wld()  -> Id()
+	introduce-id: Var(_) -> Id()
+
+rules
+	
+	to-adjust-rules(|term, clause*):
+		part* -> result
+		where
+			if name  := <fetch-elem(?ND-Ref(_, <id>, _, _))> part* then
+				paths := <filter(to-adjust-path)> part* ;
+				defs  := <filter(to-adjust-defs)> part* ;
+				switch !(paths, defs)
+					case ?([_, _|_], []): 
+						// no defs
+						result := [ADJUST_LOOKUP(term, LIST(paths), [WhereClause(App(CALL("target__"), name))|clause*])]
+					
+					case ?([], [_]): 
+						// no paths, single def
+						result := [ADJUST_LOOKUP(term, defs, [WhereClause(App(CALL("target__"), name))|clause*])]
+					
+					case ?([], [_, _|_]): 
+						// no paths, multiple defs
+						result := [ADJUST_LOOKUP(term, App(CALL("concat"), LIST(defs)), [WhereClause(App(CALL("target__"), name))|clause*])]
+					
+					case ?([_|_], [_|_]): 
+						// paths and defs
+						result := [ADJUST_LOOKUP(term, App(CALL("concat"), LIST([LIST(paths)|defs])), [WhereClause(App(CALL("target__"), name))|clause*])]					
+					
+					otherwise: 
+						result := []
+				end
+			else 
+				result := [] 
+			end
+	
+	to-adjust-path:
+		ND-Ref(NsRef(namespace), name@Var(_), _, None()) -> LIST([TERM(namespace)], Var("path__"))
+
+	to-adjust-defs:
+  	ND-Ref(NsRef(namespace), name@Var(_), _, RefScope(namespace2, name2)) -> LOOKUP_CHILDREN(namespace, name2)
+      	  	
+	to-adjust-defs:
+	  ND-Ref(NsRef(namespace), name@NoAnnoList(Str(_)), _, None()) -> LIST([PRIMDEF(namespace, name)])
+
+rules
+		
+	to-type-rules(|term, clause*):
+		ND-Def(_, NsRef(namespace), name, TypeBinding(type), _) -> 
+		[ ADJUST_DATA(term, "Type", type, clause*)
+		, RULE("type-of", term, type, clause*) ]
+		
+	to-type-rules(|term, clause*):
+		ND-Type(type) -> [RULE("type-of", term, type, clause*)]
+		
+rules
+	
+	to-check-rules(|term, clause*):
+		ND-Def(Unique(), _, _, _, _) -> RULE("nam-unique", term, RootApp(Id()), clause*)
+		
+rules
+  
+  import-currentfile =
+    one(?CurrentFile())
+
+  to-import-rules(|term, clause*):
+    ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
+    [ ADJUST_DATA(term, LIST([TERM(namespace)], Var("path__")), "Import", TUPLE([source, LIST(<map(to-stratego-term)> annos*)]), clause*) ]
+    where
+      not(<import-currentfile> annos*)
+      
+  to-import-rules(|term, clause*):
+    ND-Import(NsRef(namespace), _, source, _, Annos(annos*)) ->
+    [ ADJUST_DATA(term, LIST([TERM(namespace)], LIST([App(CALL("index-file-to-string", []), RootApp(CALL("index-get-current-file", [])))])), "Import", TUPLE([source, LIST(<map(to-stratego-term)> annos*)]), clause*) ]
+    where
+      <import-currentfile> annos*

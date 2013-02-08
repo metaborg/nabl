@@ -1,0 +1,23 @@
+module multi-file 
+
+language NamingExperiment
+
+/*********************************************************************
+ * NOTE: these tests depend on the analysis of multi-file-helper.nam *
+ *********************************************************************/
+
+test [[
+  module multifile
+  
+  entity C {
+    m : MultiFileEntity
+  }
+]] 
+
+test [[
+  module multifile
+  
+  entity C {
+    m : [[M]]
+  }
+]] complete to "MultiFileEntity"

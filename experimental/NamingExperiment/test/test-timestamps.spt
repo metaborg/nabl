@@ -1,0 +1,21 @@
+module test-timestamps 
+
+language NamingExperiment
+
+test No changes after update
+  index-setup(|"NamingExperiment", ["/tmp/test-timestamps"], ".");
+  
+  <index-add-all(|"/foo")> [Def([Def(), "spanish enquisition"])];
+  with(<call> ("sleep", ["1"]) | "System must provide sleep command");
+  
+  index-timestamp-set-updated(|"ServiceA");
+  index-timestamp-get-updates(|"ServiceA") => [] // don't expect spanish enquisition
+
+test Changes after add
+  index-setup(|"NamingExperiment", ["/tmp/test-timestamps"], ".");
+  <index-get-all-in-file> "/foo";
+  index-remove-all(|"/foo");
+  
+  index-timestamp-set-updated(|"ServiceA");
+  <index-add-all(|"/foo")> [Def([Def(), "newdef"])];
+  index-timestamp-get-updates(|"ServiceA") => [_] // expect newdef

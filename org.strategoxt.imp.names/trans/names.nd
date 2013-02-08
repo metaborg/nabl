@@ -1,0 +1,27 @@
+module names
+
+imports
+
+  include/NameDefinitionLanguage
+
+namespaces
+
+  Module
+  Import
+  Namespace
+  
+rules
+
+  Naming(m, _, _, _): 
+    defines Module m
+    scopes Namespace
+    
+	Import(m):
+	  defines Import m
+    imports Namespace from Module m
+	        
+	Namespace(ns):
+    defines Namespace ns
+	        
+	NsRef(ns):
+    refers to Namespace ns

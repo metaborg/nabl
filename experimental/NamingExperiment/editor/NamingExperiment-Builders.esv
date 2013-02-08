@@ -14,18 +14,24 @@ builders
   provider : include/namingexperiment.ctree                                                                   
   provider : include/namingexperiment-java.jar                                                                
                                                                                                               
-  observer : editor-analyze                                                                                   
+  observer : editor-analyze (multifile)                                                                                  
                                                                                                               
-  builder  : "Show abstract syntax (for selection)" = generate-aterm (openeditor) (realtime) (meta) (source)  
-  builder  : "Show analyzed syntax (for selection)" = generate-analyzed (openeditor) (realtime) (source)                   
-                                                                                                              
+  builder  : "Show abstract syntax" = generate-aterm (openeditor) (realtime) (meta) (source)  
+  builder  : "Show analyzed syntax" = generate-analyzed (openeditor) (realtime) (source)
+  builder  : "Show index entries for current file" = index-currentfile (openeditor) (realtime) (source)   
+  builder  : "Show index entries for all files" = index-allfiles (openeditor) (realtime) (source)
+  builder  : "Create quoted libraries" = create-quoted-libraries (meta)       
+  
+  // TODO: index-commit 'on exit'? or have Spoofax handle it internally?
+  on save : index-commit                                                                                                     
 
 refactorings
                                                                                   
-  pp-table                  : get-pp-table                                        
-  pretty-print              : prettyprint                                         
-                                                                                  
-  refactoring ID            : "Rename Entity"  = rename-entity (source) (cursor)  
-  refactoring Property *    : "Extract Entity" = extract-entity (source)          
+  pretty-print              : prettyprint                                       
+
+  refactoring ID : "Rename" = rename-entity (source) (cursor)
+    shortcut : "org.eclipse.jdt.ui.edit.text.java.rename.element"
+    input
+      identifier : "new name" = ""    
                                                                                   
   // on save: generate-java                                                       

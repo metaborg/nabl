@@ -1,4 +1,4 @@
-module M
+module M1
 
 // Example "NamingExperiment" program (see syntax/NamingExperiment.sdf for the grammar)
 
@@ -9,7 +9,7 @@ entity A {
 entity B {
   y : A
   f(a : A) {
-      var v : A = a.x.y.x.x // bad: x
+      var v : A = a.x.y.x
       v = y
       v = f(v)
   }

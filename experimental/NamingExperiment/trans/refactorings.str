@@ -1,48 +1,73 @@
 module refactorings
 
 imports
-  lib/refactor-common.generated
+  namingexperiment
   include/NamingExperiment
+  lib/refactor-common.generated
   lib/editor-common.generated  
+  lib/index-library
+  lib/analysis-library
 
-strategies //renaming
+strategies
  
-rename-entity:
-  (selected, position, ast, path, project-path) -> (ast, new-ast)
-  with  	
-    old-name:=<get-selected-name(|position)> ast;
-    new-name:=<input-dialog>("rename", "Rename Entity:", ""); 
-    new-ast:=<topdown(try(rename-type(|old-name, new-name)))> ast
+  rename-entity:
+    (newname, selected-name, position, ast, path, project-path) -> ([(ast, new-ast)], errors, [], [])
+    with
+      (ast', old-defs, old-uses, _, _, _) := <analyze-top> (ast, path, project-path);
+      _{old-uri} := <collect-one(origin-equal(|selected-name))> ast';
+      new-uri    := <get-new-uri(|newname)> old-uri
+    with
+      if <index-get> Def(new-uri) then
+        errors := ["A definition with this name already exists"]
+      else
+        new-ast  := <topdown(try(rename(|old-uri, newname)))> ast';
+        (_, new-defs, new-uses, _, _, _) := <analyze-top> (<strip-annos> new-ast, path, project-path);
+        comparison := <zip> (<conc> (old-defs, old-uses), <conc> (new-defs, new-uses));
+        errors     := <filter(rename-error(|old-uri, new-uri))> comparison
+      end
 
-get-selected-name(|position):
-  ast -> name
-    where
-	  <term-at-position(|position); ?Type(name)> ast <+
-	  <parent-at-position(|position); ?Entity(name, _)> ast 
-
-rename-type(|old-name, new-name):
-  Entity(old-name, y) -> Entity(new-name, y)
-
-rename-type(|old-name, new-name):
-  Type(old-name) -> Type(new-name)
-	
+  rename(|before-uri, after-name):
+    a{before-uri} -> after-name
   
-strategies //extraction
+  get-new-uri(|new-name):
+    [namespace, name | ancestor] -> [namespace, new-name | ancestor]
 
-extract-entity:
-  (selected, position, ast, path, project-path) -> (ast, new-ast)
-  with
-    if <is-list> selected then
-  	  properties:= selected;
-  	  insert-position:=<init; at-last(map(inc))> position
-    else //single property selected
-  	  properties:=<![selected]>;
-  	  insert-position:=<init; init; at-last(map(inc))> position
-    end;
-    entity-name:=<input-dialog>("extract", "Extract Entity:", "<Entity Name>");
-    prop-name:=<lower-case> entity-name;
-    new-ast:=<
-      alltd(replace-sublist(?properties|[Property(prop-name, entity-name)]));
-      insert-elem(|insert-position, Entity(entity-name, properties))
-    > ast	
+  rename-error(|old-uri, new-uri):
+    (entry1, entry2) -> (entry1, error)
+    where
+      uri1 := <index-uri> entry1;
+      uri2 := <index-uri> entry2;
+      if <is-uri-descendant-of> (uri1, old-uri) then
+        not(
+          <is-uri-descendant-of> (uri2, new-uri);
+          <is-uri-descendant-same(|<length> old-uri)> (uri1, uri2)
+        );
+        error := "New name collides with existing name"
+      else
+        (not(!uri1 => uri2) <+ !uri2 => new-uri);
+        error := "Existing name collides with new name"
+      end
 
+  is-uri-descendant-of:
+    ([namespace-descendant | uri-descendant], [namespace-ancestor | uri-ancestor]) ->
+    <is-uri-descendant-of'> (uri-descendant, uri-ancestor)
+
+  is-uri-descendant-of':
+    (uri-descendant, uri-ancestor) -> <id>
+    where
+      eq
+    <+
+      <is-uri-descendant-of'> (<Tl> uri-descendant, uri-ancestor) 
+  
+  is-uri-descendant-same(|ancestor-length):
+    (uri1, uri2) -> <id>
+    where
+      <eq> (<length> uri1, <length> uri2);
+      (<length> uri1 => ancestor-length <+ <is-uri-descendant-same'(|ancestor-length)> (uri1, uri2))
+    
+  is-uri-descendant-same'(|ancestor-length):
+    ([a | a*], [a | b*]) -> <id>
+    where
+      <length> a* => ancestor-length
+    <+
+      <is-uri-descendant-same'(|ancestor-length)> (a*, b*)
