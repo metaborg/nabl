@@ -1,6 +1,6 @@
-module NameDefinitionLanguage-Colorer
+module NameBindingLanguage-Colorer
 
-imports NameDefinitionLanguage-Colorer.generated
+imports NameBindingLanguage-Colorer.generated
 
 colorer
                                                                       
@@ -8,8 +8,10 @@ colorer
   //                                                                  
   // See the imported file for a brief introduction and examples.     
   
-  Namespace._ 		: namespace
-  NamespaceRef._ 	: namespace
+  //keyword    : 0 0 0 bold      
   
-  namespace = 0 64 128 italic
+  NamespaceId._: 0 64 128 italic //bold
+  
+  PropertyId._ : 0 64 128 italic //bold
+  PropertyRef._: 0 64 128 italic bold
   

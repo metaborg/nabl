@@ -1,6 +1,6 @@
-module NameDefinitionLanguage-Syntax
+module NameBindingLanguage-Syntax
 
-imports NameDefinitionLanguage-Syntax.generated
+imports NameBindingLanguage-Syntax.generated
 
 language
                                                                    

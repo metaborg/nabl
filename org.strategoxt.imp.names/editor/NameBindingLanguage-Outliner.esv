@@ -1,6 +1,6 @@
-module NameDefinitionLanguage-Outliner
+module NameBindingLanguage-Outliner
 
-imports NameDefinitionLanguage-Outliner.generated
+imports NameBindingLanguage-Outliner.generated
 
 outliner
   

@@ -1,6 +1,6 @@
-module NameDefinitionLanguage-Folding
+module NameBindingLanguage-Folding
 
-imports NameDefinitionLanguage-Folding.generated
+imports NameBindingLanguage-Folding.generated
 
 folding
   

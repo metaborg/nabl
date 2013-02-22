@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: NBL Plug-in
-Bundle-SymbolicName: org.strategoxt.imp.names;singleton:=true
+Bundle-SymbolicName: org.metaborg.meta.lang.nabl;singleton:=true
 Bundle-Version: 0.1.0.qualifier
-Bundle-Activator: org.strategoxt.imp.names.Activator
+Bundle-Activator: org.metaborg.meta.lang.nabl.Activator
 Import-Package: org.osgi.framework;version="1.3.0"
 Require-Bundle: org.eclipse.core.runtime,
   org.eclipse.core.resources,
@@ -17,5 +17,5 @@ Require-Bundle: org.eclipse.core.runtime,
   org.spoofax.jsglr,
   org.strategoxt.strj
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Export-Package: org.strategoxt.imp.names
+Export-Package: org.metaborg.meta.lang.nabl
 Bundle-Vendor: Spoofax.org

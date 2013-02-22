@@ -1,6 +1,6 @@
-module NameDefinitionLanguage-References
+module NameBindingLanguage-References
 
-imports NameDefinitionLanguage-References.generated
+imports NameBindingLanguage-References.generated
 
 references
                                                                                                    

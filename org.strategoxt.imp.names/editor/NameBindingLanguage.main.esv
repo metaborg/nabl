@@ -1,0 +1,17 @@
+
+module NameBindingLanguage.main
+
+imports NameBindingLanguage-Builders NameBindingLanguage-Colorer NameBindingLanguage-Completions NameBindingLanguage-Folding NameBindingLanguage-Outliner NameBindingLanguage-References NameBindingLanguage-Syntax
+
+language General properties
+                  
+  name          : NameBindingLanguage
+  id            : org.metaborg.meta.lang.nabl
+  extends       : Root
+                  
+  description   : "Spoofax/IMP-generated editor for the NameBindingLanguage language"
+  url           : http://strategoxt.org
+                  
+  extensions    : nab
+  table         : include/NameBindingLanguage.tbl
+  start symbols : Start

@@ -1,6 +1,6 @@
-module NameDefinitionLanguage-Builders
+module NameBindingLanguage-Builders
 
-imports NameDefinitionLanguage-Builders.generated
+imports NameBindingLanguage-Builders.generated
 
 builders
                                                                                    
@@ -10,8 +10,8 @@ builders
 
 builders
 
-  provider : include/namedefinitionlanguage.ctree
-  provider : include/namedefinitionlanguage-java.jar
+  provider : include/NameBindingLanguage.ctree
+  provider : include/NameBindingLanguage-java.jar
 
   observer : editor-analyze (multifile)
 
