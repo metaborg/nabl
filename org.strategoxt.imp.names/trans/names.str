@@ -1,0 +1,195 @@
+module names
+
+imports
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+  lib/index-library.generated
+
+
+imports
+  include/NameBindingLanguage
+
+
+signature
+  constructors
+    Type        : DefDataKind
+    Import      : DefDataKind
+    Transitive  : ImportAnno
+    CurrentFile : ImportAnno
+
+  constructors
+    Module    : Namespace
+    Namespace : Namespace
+    Property  : Namespace
+    Variable  : Namespace
+
+
+rules
+
+  nam-get-scope-types :
+    Module(m, _) -> [Namespace(), Property()]
+
+  nam-get-definition-keys :
+    Module(m, _) -> [m]
+
+  nam-get-definitions :
+    Module(m, _) -> [(Module(), [m])]
+
+  nam-annotate-names(|paths__, path__):
+    Module(m, _) -> <Module(nam-annotate-def(|path__), id)>
+
+  nam-unique :
+    Module(m, _) -> <id>
+
+
+rules
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Import(m) -> <store__> DefData(
+                             [Namespace()|path__]
+                           , Import()
+                           , (m, [])
+                           )
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Import(m) -> <store__> DefData(
+                             [Property()|path__]
+                           , Import()
+                           , (m, [])
+                           )
+
+
+rules
+
+  nam-get-definition-keys :
+    Namespace(n) -> [n]
+
+  nam-get-definitions :
+    Namespace(n) -> [(Namespace(), [n])]
+
+  nam-annotate-names(|paths__, path__):
+    Namespace(n) -> <Namespace(nam-annotate-def(|path__))>
+
+  nam-unique :
+    Namespace(n) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    NamespaceRef(n) -> [n]
+
+  nam-get-uses :
+    NamespaceRef(n) -> [(Namespace(), [n])]
+
+  nam-annotate-names(|paths__, path__):
+    NamespaceRef(n) -> <NamespaceRef(nam-annotate-use(|paths__, Namespace()))>
+
+
+rules
+
+  nam-get-uses-keys :
+    ImportedNsRef(n) -> [n]
+
+  nam-get-uses :
+    ImportedNsRef(n) -> [(Namespace(), [n])]
+
+  nam-annotate-names(|paths__, path__):
+    ImportedNsRef(n) -> <ImportedNsRef(nam-annotate-use(|paths__, Namespace()))>
+
+
+rules
+
+  nam-get-definition-keys :
+    Property(p, ns, t) -> [p]
+
+  nam-get-definitions :
+    Property(p, ns, t) -> [(Property(), [p])]
+
+  nam-annotate-names(|paths__, path__):
+    Property(p, ns, t) -> <Property(nam-annotate-def(|path__), id, id)>
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Property(p, ns, t) -> <store__> DefData(
+                                      [namespace__|path__]
+                                    , Type()
+                                    , (ns, t)
+                                    )
+
+  type-of :
+    Property(p, ns, t) -> (ns, t)
+
+  nam-unique :
+    Property(p, ns, t) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    PropertyRef(p) -> [p]
+
+  nam-get-uses :
+    PropertyRef(p) -> [(Property(), [p])]
+
+  nam-annotate-names(|paths__, path__):
+    PropertyRef(p) -> <PropertyRef(nam-annotate-use(|paths__, Property()))>
+
+
+rules
+
+  nam-get-scope-types :
+    BindingRule(_, _) -> [Variable()]
+
+
+rules
+
+  nam-get-definition-keys :
+    Var(x) -> [x]
+
+  nam-get-definitions :
+    Var(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    Var(x) -> <Var(nam-annotate-def(|path__))>
+
+  nam-unique :
+    Var(x) -> <id>
+
+
+rules
+
+  nam-get-definition-keys :
+    ListVar(x) -> [x]
+
+  nam-get-definitions :
+    ListVar(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    ListVar(x) -> <ListVar(nam-annotate-def(|path__))>
+
+  nam-unique :
+    ListVar(x) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    VarRef(x) -> [x]
+
+  nam-get-uses :
+    VarRef(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    VarRef(x) -> <VarRef(nam-annotate-use(|paths__, Variable()))>
+
+
+rules
+
+  nam-get-uses-keys :
+    ListVarRef(x) -> [x]
+
+  nam-get-uses :
+    ListVarRef(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    ListVarRef(x) -> <ListVarRef(nam-annotate-use(|paths__, Variable()))>

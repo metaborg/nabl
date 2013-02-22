@@ -7,7 +7,7 @@ signature
 
 imports
   lib/editor-common.generated
-  include/NameDefinitionLanguage
+  include/NameBindingLanguage
 
 
 rules

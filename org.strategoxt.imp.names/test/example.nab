@@ -11,6 +11,7 @@ properties
 
   parent 		of Entity: ID
 	ancestors of Entity: List(ID)
+
 binding rules
 
 	Entity(name, _) :
@@ -26,6 +27,8 @@ binding rules
 			Entity name 
 			of type name
 			of parent super
+			of ancestors [super|as*]
+			where super has ancestors as*
 		imports 
 			Property, 
 			Method, 

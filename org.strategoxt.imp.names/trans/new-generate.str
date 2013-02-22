@@ -3,7 +3,7 @@ module new-generate
 imports 
 	
 	libstrc
-  include/NameDefinitionLanguage
+  include/NameBindingLanguage
 
 rules
 	

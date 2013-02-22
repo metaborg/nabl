@@ -1,7 +1,7 @@
 module semantics/names
 
 imports
-	include/NameDefinitionLanguage
+	include/NameBindingLanguage
 	semantics/stratego-names
 	
 namespaces

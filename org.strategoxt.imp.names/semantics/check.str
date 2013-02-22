@@ -7,7 +7,7 @@ imports
   lib/analysis-library-internal
   lib/index-library
 
-  include/NameDefinitionLanguage
+  include/NameBindingLanguage
   generate
   
 rules // generic constraints

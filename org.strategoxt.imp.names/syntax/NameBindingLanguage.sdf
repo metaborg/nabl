@@ -1,4 +1,4 @@
-module NameDefinitionLanguage
+module NameBindingLanguage
 
 imports
   
@@ -35,14 +35,14 @@ exports
 		NamespaceId																					-> Namespace			{"Namespace"}
 		NamespaceId																					-> NamespaceRef		{"NamespaceRef"}
 		NamespaceRef																				-> INamespaceRef
-		"imported" NamespaceRef															-> INamespaceRef	{"Imported"}
+		"imported" NamespaceId															-> INamespaceRef	{"ImportedNsRef"}
 		
 		%% Properties
 		"properties" PropertyDef*														-> ModSection			{"Properties"}
 		PropertyId "of" {NamespaceRef ","}+ ":" Sort				-> PropertyDef		{"Property"}
 		PropertyId																					-> PropertyRef		{"PropertyRef"}
 		
-		"type"																							-> PropertyRef {"Type"}
+		"type"																							-> PropertyRef 		{"TypeProp"}
 
 		"binding" "rules" NamingRule*												-> ModSection			{"BindingRules"}
 
@@ -112,8 +112,7 @@ exports
 		"surrounding"	-> NamespaceId	{reject}
 		"properties"	-> NamespaceId	{reject}
 
-		Id						-> PropertyId
-		
+		Id						-> PropertyId	
 		"type"				-> PropertyId 	{reject}
 		
 		

@@ -1,4 +1,52 @@
 module names
 
-imports include/NameDefinitionLanguage
+imports include/NameBindingLanguage
 
+namespaces Module Namespace Property Variable
+
+rules
+
+	Module(m, _): 
+		defines Module m
+		scopes Namespace, Property
+		
+	Import(m): 
+		imports Namespace from Module m
+		imports Property from Module m
+	
+rules
+
+	Namespace(n): 
+		defines Namespace n
+	
+	NamespaceRef(n): 
+		refers to Namespace n
+	
+	ImportedNsRef(n):
+		refers to Namespace n
+		
+rules
+
+	Property(p, ns, t): 
+		defines Property p of type (ns, t)
+	
+	PropertyRef(p): 
+		refers to Property p
+
+rules
+
+	BindingRule(_, _):
+		scopes Variable
+		
+	Var(x):
+		defines Variable x
+		
+	ListVar(x):
+		defines Variable x
+		
+	VarRef(x):
+		refers to Variable x
+		
+	ListVarRef(x):
+		refers to Variable x
+	

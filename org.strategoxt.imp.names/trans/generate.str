@@ -5,7 +5,7 @@ imports
   libstratego-lib
   libstratego-gpp
   libstratego-aterm
-  include/NameDefinitionLanguage
+  include/NameBindingLanguage
   lib/editor-common.generated
 
 rules

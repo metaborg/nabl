@@ -1,13 +1,14 @@
-module namedefinitionlanguage
+module namebindinglanguage
 
 imports
-  include/NameDefinitionLanguage
+  include/NameBindingLanguage
   lib/editor-common.generated
   lib/index-library.generated
   lib/analysis-library.generated
   lib/analysis-library-internal.generated
   lib/compilation-library.generated
-	constraints 
+	constraints
+	names
   //new-generate
 
 rules // Analysis
