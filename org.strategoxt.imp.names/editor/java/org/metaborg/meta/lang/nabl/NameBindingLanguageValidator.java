@@ -1,12 +1,12 @@
-package org.strategoxt.imp.names;
+package org.metaborg.meta.lang.nabl;
 
 import org.strategoxt.imp.runtime.dynamicloading.Descriptor;
 import org.strategoxt.imp.runtime.services.MetaFileLanguageValidator;
 
-public class NameDefinitionLanguage2Validator extends MetaFileLanguageValidator 
+public class NameBindingLanguageValidator extends MetaFileLanguageValidator 
 { 
   @Override public Descriptor getDescriptor()
   { 
-    return NameDefinitionLanguage2ParseController.getDescriptor();
+    return NameBindingLanguageParseController.getDescriptor();
   }
 }

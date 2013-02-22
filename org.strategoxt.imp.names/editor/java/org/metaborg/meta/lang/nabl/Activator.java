@@ -1,4 +1,4 @@
-package org.strategoxt.imp.names;
+package org.metaborg.meta.lang.nabl;
 
 import org.eclipse.imp.preferences.PreferencesService;
 import org.eclipse.imp.runtime.PluginBase;
@@ -6,9 +6,9 @@ import org.osgi.framework.BundleContext;
 
 public class Activator extends PluginBase 
 { 
-  public static final String kPluginID = "NameDefinitionLanguage2";
+  public static final String kPluginID = "NameBindingLanguage";
 
-  public static final String kLanguageName = "NameDefinitionLanguage2";
+  public static final String kLanguageName = "NameBindingLanguage";
 
   protected static Activator sPlugin;
 

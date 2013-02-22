@@ -1,4 +1,4 @@
-package org.strategoxt.imp.names;
+package org.metaborg.meta.lang.nabl;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -12,9 +12,9 @@ import org.strategoxt.imp.runtime.dynamicloading.Descriptor;
 import org.strategoxt.imp.runtime.dynamicloading.DescriptorFactory;
 import org.strategoxt.imp.runtime.dynamicloading.DynamicParseController;
 
-public class NameDefinitionLanguageParseControllerGenerated extends DynamicParseController 
+public class NameBindingLanguageParseControllerGenerated extends DynamicParseController 
 { 
-  public static final String LANGUAGE = new String("NameDefinitionLanguage");
+  public static final String LANGUAGE = new String("NameBindingLanguage");
 
   private static final String TABLE = "/include/" + LANGUAGE + ".tbl";
 
@@ -35,15 +35,15 @@ public class NameDefinitionLanguageParseControllerGenerated extends DynamicParse
 
   protected static synchronized void setDescriptor(Descriptor descriptor)
   { 
-    NameDefinitionLanguageParseControllerGenerated.descriptor = descriptor;
+    NameBindingLanguageParseControllerGenerated.descriptor = descriptor;
   }
 
   protected static void createDescriptor()
   { 
     try
     { 
-      InputStream descriptorStream = NameDefinitionLanguageParseControllerGenerated.class.getResourceAsStream(DESCRIPTOR);
-      InputStream table = NameDefinitionLanguageParseControllerGenerated.class.getResourceAsStream(TABLE);
+      InputStream descriptorStream = NameBindingLanguageParseControllerGenerated.class.getResourceAsStream(DESCRIPTOR);
+      InputStream table = NameBindingLanguageParseControllerGenerated.class.getResourceAsStream(TABLE);
       boolean filesystem = false;
       if(descriptorStream == null && new File("./" + DESCRIPTOR).exists())
       { 
@@ -60,7 +60,7 @@ public class NameDefinitionLanguageParseControllerGenerated extends DynamicParse
       if(table == null)
         throw new BadDescriptorException("Could not load parse table from " + TABLE + " (not found in plugin: " + getPluginLocation() + ")");
       descriptor = DescriptorFactory.load(descriptorStream, table, filesystem ? Path.fromPortableString("./") : null);
-      descriptor.setAttachmentProvider(NameDefinitionLanguageParseControllerGenerated.class);
+      descriptor.setAttachmentProvider(NameBindingLanguageParseControllerGenerated.class);
     }
     catch(BadDescriptorException exc)
     { 
@@ -78,7 +78,7 @@ public class NameDefinitionLanguageParseControllerGenerated extends DynamicParse
 
   private static String getPluginLocation()
   { 
-    return NameDefinitionLanguageParseController.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    return NameBindingLanguageParseController.class.getProtectionDomain().getCodeSource().getLocation().getFile();
   }
 
   @Override public IParseController getWrapped()
