@@ -1,18 +1,13 @@
 module namedefinitionlanguage
 
 imports
-  libstratego-lib
-  libstratego-gpp
-  libstratego-aterm
   include/NameDefinitionLanguage
   lib/editor-common.generated
   lib/index-library
   lib/analysis-library
   lib/analysis-library-internal
   lib/compilation-library
-  semantics/names
-  semantics/check
-  generate
+  //new-generate
 
 rules // Analysis
   
@@ -24,9 +19,9 @@ rules // Analysis
       ast'                    := <id> ast; // Optional AST desugaring
       (ast'', filesToAnalyze) := <analyze-top(|<language>)> (ast', path, project-path);
       index-transaction(
-        errors                := <collect-all(constraint-error, conc)> ast'';
-        warnings              := <collect-all(constraint-warning, conc)> ast'';
-        notes                 := <collect-all(constraint-note, conc)> ast''
+        errors                := <collect-all(fail, conc)> ast'';
+        warnings              := <collect-all(fail, conc)> ast'';
+        notes                 := <collect-all(fail, conc)> ast''
       );
       filesToAnalyze'         := <index-filepairs-to-files> filesToAnalyze
 

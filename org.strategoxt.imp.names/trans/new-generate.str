@@ -1,0 +1,103 @@
+module new-generate
+
+imports 
+	
+	libstrc
+  include/NameDefinitionLanguage
+
+rules
+	
+	to-str:
+		BindingRules(rule*) -> <mapconcat(to-str)> rule*
+		
+	to-str: 
+		BindingRule(pattern, part*) -> [DEF_RULE(n, Seq(Match(pattern), d))]
+		with
+			(d*, s*, i*, u*) := <split-parts> part*;
+			scoped*          := <map(to-str)> s*;
+			def*             := <map-with-index(to-str(|scoped*))> d*;
+			n                := <length> def*;
+			d                := <replace-all(|def*)> pattern
+		
+	split-parts:
+		[] -> ([], [], [], [])
+
+	split-parts:
+		[d@DefSite(_, _, _, _, _)|parts] -> ([d|d*], s*, i*, u*)
+		with
+			<split-parts> parts => (d*, s*, i*, u*)
+	
+	split-parts:
+		[Scopes(s1*)|parts] -> (d*, [s1*, s2*], i*, u*)
+		with
+			<split-parts> parts => (d*, s2*, i*, u*)
+		
+	split-parts:
+		[i@ImportSite(_, _, _)|parts] -> (d*, s*, [i|i*], u*)
+		with
+			<split-parts> parts => (d*, s*, i*, u*)
+	
+	split-parts:
+		[u@UseSite(_)|parts] -> (d*, s*, i*, [u|u*])
+		with
+			<split-parts> parts => (d*, s*, i*, u*)
+
+rules
+	
+	to-str: NamespaceRef(ns) -> NoAnnoList(Op(ns, []))
+			
+rules
+	
+	to-str(|scoped*):
+		(i, DefSite(u, NameBinding(ns, n), [], DefScopes(scope*), [])) -> (n, DEF_CALL(i, <to-str> u, <filter(to-str)> scope*, scoped*))
+		
+	to-str: Unique()    -> UNIQUE
+	to-str: NonUnique() -> NON_UNIQUE
+
+	to-str: Current()    -> CURRENT
+	to-str: Subsequent() -> SUBSEQUENT
+	
+overlays
+	
+	DEF_RULE(n, rhs) = 	
+		SDefT(
+  		"nbl-def-site"
+			, [CPATHS(n), SPATHS(n)]
+			, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), CPATHS(0), SPATHS(0), DefaultVarDec("paths")]
+			, rhs
+		)
+
+	DEF_CALL(i, unique, scopes, scoped-ns) =
+		CallT(
+		  SVar("nbl-def")
+		, [Match(CPATHS(i)), Match(SPATHS(i))]
+			, [ Var("lang")
+			, Var("elems")
+			, Var("tasks")
+			, CPATHS(<dec> i)
+			, SPATHS(<dec> i)
+			, Var("paths")
+			, NoAnnoList(Op("Module", []))
+			, unique
+			, NoAnnoList(List(scopes))
+			, NoAnnoList(List(scoped-ns))
+  		]
+		)
+		
+	UNIQUE     = RootApp(CallNoArgs(SVar("nbl-unique-qualifier")))
+	NON_UNIQUE = NoAnnoList(Op("NonUnique", []))
+	CURRENT    = NoAnnoList(Op("Current", []))
+	SUBSEQUENT = NoAnnoList(Op("Subsequent", []))
+	
+	CPATHS(i) = Var($[cpaths[i]])
+	SPATHS(i) = Var($[spaths[i]])
+	
+rules
+	
+	replace-all(|r*) = alltd(replace(|r*) <+ introduce-id)
+	
+	replace(|r*): t1 -> t2 where <fetch-elem(?(t1, t2))> r*
+	
+	introduce-id: Wld()      -> Id()
+	introduce-id: Var(_)     -> Id()
+	introduce-id: ListVar(_) -> Id()

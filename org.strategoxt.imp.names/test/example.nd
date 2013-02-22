@@ -5,51 +5,59 @@ imports
 	
 namespaces
 
-	entity property variable method
-	
+	Entity Property Variable Method
+		
 binding rules
 
 	Entity(name, _) :
-		defines entity name of type name
-		scope for property, method
-		
+		scopes Property, Method
+		defines Entity name of type name
+			
 	Entity(name, super, _) :
-		defines entity name of type name
-		scope for property, method
-		imports property, method from entity super
+		scopes Property, Method
+		defines 
+			Entity name 
+			of type name
+			of supertype super
+		imports 
+			Property, 
+			Method, 
+			imported Property, 
+			imported Method 
+			from Entity super
 		
 	Property(x, t) :
-		defines property x of type t
+		defines Property x of type t
 	
 	PropertyAccess(exp, f) :
-		refers to property f of type t in entity e
+		refers to Property f of type t in Entity e
 		where exp has type e
  
-	For(x, t, e, f, elem*) : 
-  	defines variable x of type t in elem*
+	For(x, t, e, cond, inc, elem*) : 
+  	defines Variable x of type t in cond, inc, elem*
 		
 	VarDecl(x, t, e) :
-		defines variable x of type t 
+		defines Variable x of type t 
 		
 	VarDecl(x, e) :
-		defines variable x of type t 
+		defines Variable x of type t in subsequent scope
 		where e has type t
 
 	Var(x) :
-		refers to variable x of type t
+		refers to Variable x of type t
 		
 	Block(statement*) : 
-		anonymous scope for variable
+		scopes Variable
 		
 	Method(f, param*, t, _) :
-		defines method f of type MT(t*, t)
-		scope for variable
-		where param* has type t*
+		scopes Variable
+		defines Method f of type MT(t*, t)
+			where param* has type t*
 
 	Param(x, t) :
-		defines variable x of type t
+		defines Variable x of type t
 
 	MethodCall(exp, f, e*) :
-		refers to method f of type MT(t*, t) in entity e
-		where exp has type e
-		where e* has type t*
+		refers to Method f of type MT(t*, t) in Entity e
+			where exp has type e
+			where e* has type t*

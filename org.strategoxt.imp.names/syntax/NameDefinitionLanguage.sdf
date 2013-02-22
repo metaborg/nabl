@@ -2,93 +2,115 @@ module NameDefinitionLanguage
 
 imports
   
-    stratego/NDL-Layout
-    stratego/NDL-Identifiers
-    stratego/NDL-Vars
-    stratego/NDL-Terms[Var]
-    stratego/NDL-Terms[VarRef]
-    
+	stratego/NDL-Layout
+	stratego/NDL-Identifiers
+	stratego/NDL-Vars
+	stratego/NDL-Signatures
+	stratego/NDL-Terms[Var]
+	stratego/NDL-Terms[VarRef]
+		
 exports 
   
-  context-free start-symbols
+	context-free start-symbols
 
-    Start
+		Start
 
-  context-free syntax
+	context-free syntax
   	
-  	Term[[Var]]    -> BTerm %% term binding variables
-  	Term[[VarRef]] -> RTerm %% term referencing variables
+		Term[[Var]]			-> BTerm %% term binding variables
+		Term[[VarRef]]	-> RTerm %% term referencing variables
   	
-  context-free syntax
+	context-free syntax
+		
+		"module" ModName ModSection*												-> Start 					{"Module"}
+		
+		
+	context-free syntax %% sections
+		
+		"imports" ModuleRef*																-> ModSection			{"Imports"}
+		ModName																							-> ModuleRef			{"Import"}
+		
+		%% Namespaces
+		"namespaces" Namespace*															-> ModSection			{"Namespaces"}
+		NamespaceId																					-> Namespace			{"Namespace"}
+		NamespaceId																					-> NamespaceRef		{"NamespaceRef"}
+		NamespaceRef																				-> INamespaceRef
+		"imported" NamespaceRef															-> INamespaceRef	{"Imported"}
+		
+		%% Properties
+		"properties" PropertyDef*														-> ModSection			{"Properties"}
+		PropertyId "of" {NamespaceRef ","}+ ":" Sort				-> PropertyDef		{"Property"}
+		PropertyId																					-> PropertyRef		{"PropertyRef"}
+		
+		"type"																							-> PropertyRef {"Type"}
 
-    NamingDefinition                        -> Start 
-    "module" ModName Imports NamingSection* -> NamingDefinition {"Naming"}
-    
-    %% Imports
-    "imports" ModuleRef*                    -> Imports   {bracket}
-                                            -> Imports   {ast("[]")}
-    ModName                                 -> ModuleRef {"Import"}
-    
-    %% Namespaces
-    "namespaces" Namespace*                 -> NamingSection {"ND-Namespaces"}
-    NamespaceId                             -> Namespace     {"Namespace"}
-    NamespaceId                             -> NamespaceRef  {"NsRef"}
-    NamespaceRef                            -> INamespaceRef {"NonTransitive"}
-    "imported" NamespaceRef                 -> INamespaceRef {"Transitive"}
-    
-    %% Rules
-    "binding" "rules" NamingRule*               -> NamingSection {"ND-Rules"}
-    BTerm ":" NamingPart+                       -> NamingRule    {"ND-Rule"}
-    "predefined" PreRule                        -> NamingRule    {bracket}
-    UniquePart NamespaceRef String InnerPreDefs -> PreRule       {"ND-PreDef"}
-    
-    %%"scoping" PreRule* "inside" -> InnerPreDefs  {bracket}
-                                -> InnerPreDefs {ast("[]")}
-    
-    %% Rule parts
-    "defines" DefPartCore                                                         -> NamingPart  {bracket}
-    "binds"   DefPartCore                                                         -> NamingPart  {bracket}
-    UniquePart NamespaceRef RTerm TypePart DefScopePart OptScopePart WhereClause* -> DefPartCore {"ND-Def"}
-    {RefClause "otherwise"}+                                                      -> NamingPart  {"ND-Refs"} 
-    "refers" "to" RefPartCore                                                     -> RefClause   {bracket}
-    "imports" {INamespaceRef ","}+ "from" RefPartCore IDefScopePart               -> NamingPart  {"ND-Import"}
-    NamespaceRef RTerm TypePart RefScopePart WhereClause*                         -> RefPartCore {"ND-Ref"}
-    "anonymous" ScopePart                                                         -> NamingPart  {"ND-Scope"}
-    "nameless" ScopePart                                                          -> NamingPart  {"ND-Scope"}
-    
-    "scope" "for" {NamespaceRef ","}+                                   -> ScopePart    {bracket}
-                                                                        -> OptScopePart {ast("[]")}
-    ScopePart                                                           -> OptScopePart 
-   
-    %% Where
-    "where" RTerm Condition                                             -> WhereClause {"Where"}
-    "has" "type" BTerm                                                  -> Condition   {"TypeCheck"}
-    "refers" "to" NamespaceRef BTerm BTypePart RefScopePart             -> Condition   {"ReferenceCheck"}
-    
-    %% Definition prefixes
-                 -> UniquePart {"Unique"}
-    "unique"     -> UniquePart {"Unique"}
-    "non-unique" -> UniquePart {"NonUnique"}
-    
-    %% Type bindings
-    "of" "type" RTerm -> TypePart  {"TypeBinding"}
-                      -> TypePart  {"None"}
-    "of" "type" BTerm -> BTypePart {"TypeBinding"}
-                      -> BTypePart {"None"}
-    
-    %% Reference postfixes
-    "in" DefScopeCore       -> DefScopePart {bracket}
-                            -> DefScopePart {"None"}
-    "into" DefScopeCore     -> IDefScopePart {bracket}
-                            -> IDefScopePart {"None"}
-    {RTerm ","}+            -> DefScopeCore {"DefScope"}
-    "subsequent" "scope"    -> DefScopeCore {"OrderedScope"}
-    "in" NamespaceRef RTerm -> RefScopePart {"RefScope"}
-                            -> RefScopePart {"None"}
-         
-lexical syntax
-    
-    "namespaces" -> ModName     {reject}
-    "binding"    -> NamespaceId {reject}
-    Id           -> NamespaceId
-    
+		"binding" "rules" NamingRule*												-> ModSection			{"BindingRules"}
+
+		BTerm ":" NamingRulePart+														-> NamingRule			{"BindingRule"}
+		
+	context-free syntax %% definition sites	
+		
+		"defines" Unique Binding Property* DefScopes Constraint* -> NamingRulePart {"DefSite"}
+		
+																												-> Unique					{"Unique"}
+		"unique"																						-> Unique					{"Unique"}
+		"non-unique"																				-> Unique					{"NonUnique"}
+		
+		NamespaceRef RTerm																	-> Binding			  {"NameBinding"}
+		NamespaceRef BTerm																	-> BBinding			  {"NameBinding"}
+		"of" PropertyRef RTerm															-> Property				{"PropertyBinding"}
+		
+																												-> DefScopes			{"Current"}
+		"in" "current" "scope"															-> DefScopes			{"Current"}
+		"in" {DefScope ","}+															  -> DefScopes			{"DefScopes"}
+		"subsequent" "scope"																-> DefScope		  	{"Subsequent"}
+		RTerm																								-> DefScope				{"DefScope"}
+		
+	context-free syntax
+		
+		"scopes" {NamespaceRef ","}+												-> NamingRulePart {"Scopes"}			
+		
+	context-free syntax %% use sites
+
+		{RefPart "otherwise"}+															-> NamingRulePart	{"UseSite"} 		
+		"refers" "to" RefPartCore 													-> RefPart				{bracket}
+		Binding Property* RefScope Constraint*							-> RefPartCore		{"Reference"}
+			
+		"in" Binding																				-> RefScope			 	{"RefScope"}
+		"in" "current" "scope"															-> RefScope				{"Current"}
+		"in" "surrounding" NamespaceRef											-> RefScope				{"Surrounding"}
+																												-> RefScope				{"Current"}
+	context-free syntax %% qualified names
+
+		{QualifiedPart "otherwise"}+												-> NamingRulePart	{"QualifiedName"} 		
+		"qualifies" Binding "in" Binding 										-> QualifiedPart	{bracket}
+		
+	context-free syntax %% imports
+		
+		"imports"{INamespaceRef ","}+ "from" RefPartCore IDefScopes	-> NamingRulePart {"ImportSite"}
+		
+																												-> IDefScopes			{"Current"}
+		"into" "current" "scope"														-> IDefScopes			{"Current"}
+		"into" {DefScope ","}+	 														-> IDefScopes			{"DefScopes"}
+		
+		%% Constraint
+		"where" RTerm Condition															-> Constraint 		{"Constraint"}
+		"has" PropertyRef BTerm															-> Condition			{"PropertyCond"}
+		"is" "of" PropertyRef BTerm													-> Condition			{"PropertyCond"}
+		"refers" "to" BBinding Property* RefScope						-> Condition			{"ReferenceCond"}
+		  
+	lexical syntax
+	
+		"namespaces"	-> ModName			{reject}
+		"properties"	-> ModName			{reject}
+
+		Id						-> NamespaceId
+		"binding"			-> NamespaceId	{reject}
+		"properties"	-> NamespaceId	{reject}
+
+		Id						-> PropertyId
+		
+		"type"				-> PropertyId 	{reject}
+		
+		
+ 

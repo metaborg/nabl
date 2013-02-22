@@ -11,10 +11,10 @@ imports
 rules
     
 	generate-name-analysis:
-		(selected, position, ast@Naming(name, _, _), path, project-path) -> (filename, result)
+		(selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
 		with
 			filename   := <guarantee-extension(|"str")> path ;
-			str-module := <to-ppable-str; to-analysis> ast ;
+			str-module := <to-ppable-str; nbl-to-str> ast ;
 			// use next line to debug which AST node cannot be handled by the pretty-printer
 			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
 			result     := <pp-stratego-string> str-module
@@ -31,22 +31,24 @@ overlays
 	TERM(o)       		= NoAnnoList(Op(o, []))
 	TUPLE(args)  	    = NoAnnoList(Tuple(args))
 	LIST(elems)   		= NoAnnoList(List(elems))
-	LIST(elems, tail)   = NoAnnoList(ListTail(elems, tail))
+	LIST(elems, tail) = NoAnnoList(ListTail(elems, tail))
 	CALL(c)       		= CallNoArgs(SVar(c))
 	CALL(c, args)    	= CallT(SVar(c), [], args)
 
-	RULE(n, lhs, rhs, clauses) 		 = RDefNoArgs(n, Rule(lhs, rhs, clauses))
+	RULE(n, lhs, rhs, clauses)			 = RDefNoArgs(n, Rule(lhs, rhs, clauses))
 	RULE(n, args, lhs, rhs, clauses) = RDefT(n, [], args, Rule(lhs, rhs, clauses))
 	
 overlays
 	
 	PATH        = DefaultVarDec("path__")	
-	PATHS       = DefaultVarDec("paths__")	
-	PATHS'      = DefaultVarDec("paths'__")	
+	PATHS       = DefaultVarDec("scopes__")	
+	PATHS'      = DefaultVarDec("scopes'__")	
 	SUBSEQUENT  = DefaultVarDec("subsequent__")
 	TARGET      = CALL("target__")
-	LOOKUP_PATH = CALL("lookup-index-path")
+	LOOKUP_PATH = CALL("lookup-scope")
 	
+	DEF(uri)									= TERM("Def", [uri])
+	DEF(ns, name, path) 			= TERM("Def", [ns, name, path])
 	DEF_DATA(uri, kind, data) = TERM("DefData", [uri, TERM(kind), data])
 	IMPORT(uri1, uri2)        = DEF_DATA(uri1, "Import", uri2)
 	TIMPORT(uri1, uri2)       = DEF_DATA(uri1, "TImport", uri2)
@@ -59,31 +61,33 @@ overlays
 	CHILD(ns, n, pns, p, t)     = TERM("Child", [ns, n, pns, p, t])
 	
 	ANON                        = TERM("Anon", [App(CALL("newname"), NoAnnoList(Str("anon")))])
-	LOOKUP_PATH(nsv, v, path)   = WhereClause(Assign(v, LIST(path, App(LOOKUP_PATH(), TUPLE([nsv, PATHS()])))))	
-    LOOKUP_PATH'(nsv, v, path)  = WhereClause(Assign(v, LIST(path, App(LOOKUP_PATH(), TUPLE([nsv, PATHS'()])))))	
-    ANNOTATE_DEF(v)             = CALL("nam-annotate-def", [v])
-    ANNOTATE_USE(nss)           = CALL("nam-annotate-use", [PATHS'(), LIST(nss)])
-    ANNOTATE_SCOPE(v)           = CALL("nam-annotate-scope", [v])
+	SCOPE                       = TERM("Anon", [App(CALL("newname"), NoAnnoList(Str("scope")))])
+	UNIQUE                      = TERM("Anon", [App(CALL("newname"), NoAnnoList(Str("unique")))])
+	
+	LOOKUP_PATH(nsv, paths) 	  = App(LOOKUP_PATH(), TUPLE([nsv, paths]))	
+  
+	LOOKUP_PATH(nsv, v, paths) 	= WhereClause(Assign(v, App(LOOKUP_PATH(), TUPLE([nsv, paths]))))	
+  ANNOTATE(v)             		= CALL("nam-annotate", [v])
+  ANNOTATE_USE(nss)           = CALL("nam-annotate-use", [PATHS'(), LIST(nss)])
+  ANNOTATE_SCOPE(v)           = CALL("nam-annotate-scope", [LIST([v])])
 	ANNOTATE_IMPORT(v)          = CALL("nam-annotate-use", [TERM("Unresolved", [v])])
 
-    DEF_KEY_RULE(t, ks)         = RULE("nam-get-definition-keys", t, LIST(ks), [])
-    USE_KEY_RULE(t, ks)         = RULE("nam-get-use-keys", t, LIST(ks), [])
-    DEF_RULE(t, t', ds, is, cs) = RULE("nam-get-definitions", [PATHS(), PATHS'(), SUBSEQUENT()], t, TUPLE([RootApp(t'), LIST(ds), LIST(is)]), cs) 
+  DEF_KEY_RULE(t, ks)         = RULE("nam-get-definition-keys", t, LIST(ks), [])
+  USE_KEY_RULE(t, ks)         = RULE("nam-get-use-keys", t, LIST(ks), [])
+  DEF_RULE(t, t', ds, is, cs) = RULE("nam-get-definitions", [PATHS(), PATHS'(), SUBSEQUENT()], t, TUPLE([RootApp(t'), LIST(ds), LIST(is)]), cs) 
 	USE_RULE(t, t')             = RULE("nam-annotate-uses", [PATHS()], t, RootApp(t'), [])
 	
 overlays
 	
-	GEN_IMPORTS = 
+	IMPORTS = 
 		Imports(
-			[ Import("lib/analysis-library")
-			, Import("lib/analysis-library-internal")
-			, Import("lib/index-library") 
-			]
+			[ Import("lib/nbl-prelim") ]
 		)
 			
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
 	
-	ADJUST_LOOKUP(term, name, adjusts, clauses) = 
+	VTARGET() = Var("reference__")
+	ADJUST_LOOKUP(term, adjusts, clauses) = 
 		RDefT(
 			  "nam-resolve"
 			, [DefaultVarDec("target__")]
@@ -91,7 +95,7 @@ overlays
 			, Rule(
 			  	  term
 			  	, LIST(adjusts)
-				, [WhereClause(App(TARGET(), name))|clauses]
+				, [WhereClause(App(TARGET(), VTARGET()))|clauses]
 				)
   		)
     
@@ -100,151 +104,266 @@ rules
 	to-stratego-term:
 		cons#(args) -> TERM(cons, args)
     
-    nonempty = where(Hd)
-rules
-	
-	to-analysis:
-		Naming(name, import*, rule-sec*) -> 
-		Module(
-			  name
-			, [ GEN_IMPORTS()
-			  , Imports(import*)
-			  | <mapconcat(to-rules)> rule-sec*
-			  ]
-			)
-			
-	to-opdecl: // generates constructors for namespaces
-		Namespace(ns) -> CONS_DECL(ns, "Namespace")
-	
-	to-rules:
-		ND-Namespaces(namespace*) -> [Signature([Constructors(<map(to-opdecl)> namespace*)])]
-	
-	to-rules:
-		ND-Rules(rule*) -> <filter(to-rules)> rule*
-		
-	to-rules:
-		ND-Rule(term, part*) -> Rules(<nonempty> [definition-rule*, scope-rule*, type-rule*])
-		with
-			definition-rule* := <to-definition-rules(|term)> part* ;
-			scope-rule*      := <to-scope-rules(|term)> part* ;
-			type-rule*       := <filter(to-type-rules(|term))> part* 
+  nonempty = where(Hd)
 
-rules
+rules // modules
+	
+	nbl-to-str:
+		Module(name, section*) -> Module(name, [IMPORTS()|<filter(nbl-to-str)> section*])
+		
+rules // namespace and property sections
 			
-	to-definition-rules(|term):
-		part* -> result
+	nbl-to-str:
+		Namespaces(namespace*) -> Signature([Constructors(<map(nbl-to-str)> namespace*)])
+		
+	nbl-to-str:
+		Properties(prop*) -> Signature([Constructors(<map(nbl-to-str)> prop*)])
+	
+	nbl-to-str: // generates constructors for namespaces
+		Namespace(ns) -> CONS_DECL(ns, "Namespace")
+		
+	nbl-to-str:
+		Property(prop, _, _) -> CONS_DECL(prop, "Property")	
+
+	nbl-to-str:
+		Imports(_) -> <id>
+		
+rules // binding section
+	
+	nbl-to-str:
+		BindingRules(rule*) -> Rules(<mapconcat(nbl-to-str); nonempty> rule*)
+
+	nbl-to-str:
+		rule@BindingRule(_, _) -> [vs-rule*, hs-rule*, def-rule*]
+		where
+			vs-rule*	:= <opt-rule(nbl-vertical-scope-rule)> rule;
+			hs-rule*	:= <opt-rule(nbl-horizontal-scope-rule)> rule;
+			def-rule* := <opt-rule(nbl-def-rule)> rule
+			
+	opt-rule(s) = s < MkSingleton + ![]		
+
+	nbl-vertical-scope-rule:
+		BindingRule(term, part*) -> RULE("nam-get-vscope", term, LIST(t*), [])
+		where
+			t* := <fetch-elem(nbl-vertical-scoped)> part*
+	
+	nbl-vertical-scoped:
+		Scopes(ns*) -> <map(ns-to-term)> ns*
+	
+	nbl-horizontal-scope-rule:
+		BindingRule(term, part*) -> RULE("nam-get-hscope", term, LIST(t*), [])
+		where
+			ns* := <collect(nbl-horizontal-scoped)> part*;
+			t*  := <nonempty; map(ns-to-term)>
+			
+	nbl-horizontal-scoped:
+		DefSite(_, NameBinding(ns, _), DefScopes(scope*), _, _) -> <ns-to-term> ns
+		where
+			<fetch-elem(?Subsequent())> scope*
+	
+	nbl-def-rule:
+		BindingRule(term, part*) -> RULE("nam-get-defs", [PATHS(), PATHS'()], TUPLE([term, Var("defs")]), TUPLE([RootApp(term'), LIST(def*, Var("defs"))]), clause*)
+		where
+			replace1*				:= <filter(nbl-in-scope)> part*;
+			(def*, clause*) := <filter(nbl-def); nonempty; unzip> part*;
+			replace2*				:= <map(def-to-anno)> def*;
+			term'						:= <replace-all(|[replace1*, replace2*])> term
+
+	nbl-def: 
+		DefSite(_, NameBinding(ns, name), _, DefScopes([Current()]), _) -> (DEF(nst, name, v), LOOKUP_PATH(nst, v, PATHS()))
+		where
+			v		:= Var(<newname> "scope");
+			nst := <ns-to-term> ns
+
+	nbl-def: 
+		DefSite(_, NameBinding(ns, name), _, _, _) -> (DEF(nst, name, v), LOOKUP_PATH(nst, v, PATHS'()))
+		where
+			nst := <nbl-horizontal-scoped>;
+			v		:= Var(<newname> "scope")
+
+	nbl-def: 
+		DefSite(_, NameBinding(ns, name), _, DefScopes(_), _) -> (DEF(nst, name, v), LOOKUP_PATH(nst, v, PATHS'()))
+		where
+			not(nbl-horizontal-scoped);
+			nst := <ns-to-term> ns;
+			v		:= Var(<newname> "scope")
+
+	nbl-in-scope:
+		DefScope(t) -> (t, ANNOTATE(t))
+		
+	nbl-use:
+		UseSite(ref*) -> <filter(nbl-use)> ref* 
+	
+	nbl-use:
+		Reference(NameBinding(ns, name), _, RefScope(Current()), _) -> LOOKUP_PATH(nst, v, PATHS())
+		where
+			v		:= Var(<newname> "path");
+			nst := <ns-to-term> ns
+	
+	def-to-anno:
+		d@DEF(_, name, _) -> (name, ANNOTATE(d))
+	
+	ns-to-term:
+		NamespaceRef(namespace) -> TERM(namespace)
+
+	replace-all(|replacement*) = alltd(replace(|replacement*) <+ introduce-id)
+	
+	replace(|replacement*): t1 -> t2 where <fetch-elem(?(t1, t2))> replacement*
+	
+	introduce-id: Wld()      -> Id()
+	introduce-id: Var(_)     -> Id()
+	introduce-id: ListVar(_) -> Id()
+
+/*
+			
+	nbl-def-clause(|replaces): 
+		ND-Def(_, Binding(ns, name), _, scope, _) -> LOOKUP_PATH(nsv, v, [name | path])
+		where
+			v			:= Var(<newname> "uri");
+			nsv   := <namespace-to-term> ns;
+			path  := <nbl-scope-path(|v, replaces)> scope;
+			<iset-add(|(name, ANNOTATE_DEF(v)))> replaces
+
+	nbl-scope-path(|v, replaces):
+		DefScope(scope*) -> [SCOPE()]
+		where
+			annos := <map(!(<id>, ANNOTATE_SCOPE(v)))> scope*;
+			<iset-addlist(|annos)> replaces
+	
+	nbl-scope-path(|v, replaces):
+		Current() -> []
+		
+rules 
+													
+	nbl-to-str-old:
+		ND-Rule(term, part*) -> rule5*
 		with
 			replaces := <new-iset> ;
-			(dkey*, def*, imp*, clause*) := <filter(to-definition-parts(|replaces)); unzip4> part*;
-			(ukey*, rule*)               := <filter(to-reference-parts(|term, replaces)); unzip> part*;
+			dkey*    := <collect(nbl-def-key)> part* ;
+			ukey*		 := <collect(nbl-use-key)> part* ;
+			(dkey*, ukey*, def*, imp*, clause*, rule*) := <map(nbl-to-intermediate(|term, replaces)); unzip4> part*;
 			if <nonempty> dkey* then
-				dkey-rule* := [DEF_KEY_RULE(term, dkey*)]
+				rule1* := [DEF_KEY_RULE(term, dkey*)|rule*]
 			else
-		    	dkey-rule* := []
-		    end;
-		    if <nonempty> ukey* then
-				ukey-rule* := [USE_KEY_RULE(term, ukey*), rule*]
+		    rule1* := rule*
+		  end;
+		  if <nonempty> ukey* then
+		  	ukey'* := <map(!Var(<newname> "key"))> ukey* ;
+		  	repl*  := <zip(\(k, k') -> (k, As(k', k))\)> (ukey*, ukey'*);
+		  	term'  := <alltd(replace(|repl*))> term ;
+				rule2* := [USE_KEY_RULE(term', ukey'*)|rule1*]
 			else
-		    	ukey-rule* := rule*
-		    end;
-		    if replace* := <iset-elements; nonempty> replaces then
-		    	term'  := <alltd(replace(|replace*) <+ introduce-id)> term;
-				result := [DEF_RULE(term, term', def*, imp*, clause*), dkey-rule*, ukey-rule*]
+		  	rule2* := rule1*
+		  end;
+		  if replace* := <iset-elements; nonempty> replaces then
+		  	term'' := <alltd(replace(|replace*) <+ introduce-id)> term;
+				rule3* := [DEF_RULE(term, term'', def*, imp*, clause*)|rule2*]
 			else
-				result := [dkey-rule*, ukey-rule*]
-			end
-				
-	to-definition-parts(|replaces):
-		ND-Def(_, ns, name, _, def-scope, _, _) -> ([name], [TERM("Def", [v])], [], [clause])
-		with
-			nsv := <namespace-to-term> ns;
-			v   := Var(<newname> "uri");
-			<iset-add(|<to-name-replacement(|v)> name)> replaces;
-			switch !def-scope
-			case ?None(): 
-				anon  := []
-			case ?DefScope(scope*):
-				anon  := [ANON()];
-				<iset-addlist(|<map(to-scope-replacement(|[v]))> scope*)> replaces
-			case ?OrderedScope():
-				anon  := [SUBSEQUENT()]
+				rule3* := rule2*
 			end;
-			clause := LOOKUP_PATH(nsv, v, [nsv, name|anon])
+			if ordered* := <filter(ordered-scope); concat; nonempty> part* then
+				rule4* := [RULE("nam-ordered-def", term, LIST(ordered*), [])|rule3*]
+			else
+				rule4* := rule3*
+			end;
+			var := Var(<newname> "anon");
+			if scope* := <filter(to-scope(|var)) ; concat; nonempty> part* then
+				rule5* := [RULE("nam-get-scope-types", term, LIST(scope*), [WhereClause(Assign(var, UNIQUE()))])|rule4*]
+			else
+				rule5* := rule4* 
+			end
+	
+	nbl-def-key: ND-Def(_, Binding(_, name), _, _, _) -> name
+	nbl-use-key: Reference(Binding(_, name), _, _, _) -> name
+	
+	nbl-def-clause(|replaces): 
+		ND-Def(_, Binding(ns, name), _, scope, _) -> LOOKUP_PATH(nsv, v, [name | path])
+		where
+			v			:= Var(<newname> "uri");
+			nsv   := <namespace-to-term> ns;
+			path  := <nbl-scope-path(|v, replaces)> scope;
+			<iset-add(|(name, ANNOTATE_DEF(v)))> replaces
 
-	to-definition-parts(|replaces):
-		ND-Import(ns*, ND-Ref(ns, name, _, _, _), def-scope) -> ([], [], term*, [clause|clause*])
+	nbl-scope-path(|v, replaces):
+		DefScope(scope*) -> [SCOPE()]
+		where
+			annos := <map(!(<id>, ANNOTATE_SCOPE(v)))> scope*;
+			<iset-addlist(|annos)> replaces
+	
+	nbl-scope-path(|v, replaces):
+		Current() -> []
+					
+	to-reference-part:
+		Reference(Binding(ns, name), [], Current(), clause*) -> (name, nst, REGULAR(nst, VTARGET()), clause'*)
 		with
-			v*     := <map(!Var(<newname> "uri"))> ns*;
-			nsv    := <namespace-to-term> ns;
+			nst      := <namespace-to-term> ns;
+			clause'* := <filter(to-type-clause)> clause*
+
+	// to-reference-part:
+	// 	Reference(Binding(ns, name), TypeBinding(t), None(), clause*) -> (name, nst, REGULAR(nst, VTARGET(), t), clause'*)
+	// 	with
+	// 		nst      := <namespace-to-term> ns;
+	// 		clause'* := <filter(to-type-clause)> clause*
+
+	to-reference-part:
+		Reference(Binding(ns, name), [], RefScope(Binding(pns, parent)), clause*) -> (name, nst, CHILD(nst, VTARGET(), pnst, parent), clause'*)
+		with
+			nst      := <namespace-to-term> ns;
+			pnst     := <namespace-to-term> pns;
+			clause'* := <filter(to-type-clause)> clause*
+			
+	// to-reference-part:
+	// 	Reference(Binding(ns, name), TypeBinding(t), RefScope(pns, parent), clause*) -> (name, nst, CHILD(nst, VTARGET(), pnst, parent, t), clause'*)
+	// 	with
+	// 		nst      := <namespace-to-term> ns;
+	// 		pnst     := <namespace-to-term> pns;
+	// 		clause'* := <filter(to-type-clause)> clause*
+			
+	nbl-to-intermediate(|term, replaces):
+		ND-Import(ns*, ref, scope) -> ([], [name], [], term*, [clause|clause*], [ADJUST_LOOKUP(rterm, [resolution], clause*)])
+		with
 			v      := Var(<newname> "import");
+			v*     := <map(!Var(<newname> "uri"))> ns*;
+			(name, ns, resolution, clause*) := <to-reference-part> ref;
+  	  rterm  := <alltd(replace(|[(name, As(VTARGET(), name))]))> term;
+			nsv    := <namespace-to-term> ns;
 			clause := WhereClause(Assign(v, App(ANNOTATE_USE([nsv]), name)));
 			<iset-add(|(name, Build(v)))> replaces;
-			switch !def-scope
-			case ?None(): 
-				anon := []
-			case ?DefScope(scope*):
-				anon := [ANON()];
+			if <?DefScope(scope*)> scope then
+			  (term*, clause*) := <zip(import-to-data(|nsv, v, [SCOPE()])); unzip> (ns*, v*);
 				<iset-addlist(|<map(to-scope-replacement(|v*))> scope*)> replaces
-			case ?OrderedScope():
-				anon := [SUBSEQUENT()]
-			end;
-			(term*, clause*) := <zip(import-to-data(|nsv, v, anon)); unzip> (ns*, v*)
+			else
+			  (term*, clause*) := <zip(import-to-data(|nsv, v, [])); unzip> (ns*, v*)
+			end	
 	
+	nbl-to-intermediate(|term, replaces):
+		ND-Ref(ref*) -> ([], [name], [], [], [], [ADJUST_LOOKUP(rterm, resolution*, clause*)])
+	  with
+	  	([name|_], ns*, resolution*, clause*) := <map(to-reference-part); unzip4'> ref*;
+	  	rterm := <alltd(replace(|[(name, As(VTARGET(), name))]))> term;
+			<iset-add(|(name, ANNOTATE_USE(ns*)))> replaces
+  	
+
 	import-to-data(|nsv, v, anon):
-		(Transitive(ns), v') -> (TIMPORT(v', v), LOOKUP_PATH'(nsv', v', [nsv'|anon]))
+		(TransitiveImport(ns), v') -> (TIMPORT(v', v), LOOKUP_PATH'(nsv', v', [nsv'|anon]))
 		where
 			nsv' := <namespace-to-term> ns
 			
 	import-to-data(|nsv, v, anon):
-		(NonTransitive(ns), v') -> (IMPORT(v', v), LOOKUP_PATH'(nsv', v', [nsv'|anon]))
+		(Import(ns), v') -> (IMPORT(v', v), LOOKUP_PATH'(nsv', v', [nsv'|anon]))
 		where
 			nsv' := <namespace-to-term> ns
 		
 	unzip4: [] -> ([], [], [], [])
 	unzip4: [(h1*, h2*, h3*, h4*)|t] -> ([h1*, t1*], [h2*, t2*], [h3*, t3*], [h4*, t4*]) where (t1*, t2*, t3*, t4*) := <unzip4> t
 	
-	to-name-replacement(|v):
-		name -> (name, ANNOTATE_DEF(v))
 	to-scope-replacement(|v):
-		scope -> (scope, ANNOTATE_SCOPE(LIST(v)))
+		scope -> (scope, ANNOTATE_SCOPE(v))
 
 rules
-      
-	to-reference-parts(|term, replaces):
-		ND-Refs(ref*) -> (name, ADJUST_LOOKUP(term, name, resolution*, []))
-  	    with
-  	    	([name|_], ns*, resolution*) := <map(to-reference-part); unzip3> ref*;
-  	    	<iset-add(|(name, ANNOTATE_USE(ns*)))> replaces
-  	
-  	to-reference-parts(|term, replaces):
-		ND-Import(_, ref, _) -> (name, ADJUST_LOOKUP(term, name, [resolution], []))
-		where
-			(name, ns, resolution) := <to-reference-part> ref
-      	
-  	to-reference-part:
-		ND-Ref(ns, name, None(), None(), _) -> (name, nst, REGULAR(nst, name))
-		with
-			nst := <namespace-to-term> ns
-
-	to-reference-part:
-		ND-Ref(ns, name, TypeBinding(t), None(), _) -> (name, nst, REGULAR(nst, name, t))
-		with
-			nst := <namespace-to-term> ns
-
-	to-reference-part:
-		ND-Ref(ns, name, None(), RefScope(pns, parent), _) -> (name, nst, CHILD(nst, name, pnst, parent))
-		with
-			nst  := <namespace-to-term> ns;
-			pnst := <namespace-to-term> pns
 			
-	to-reference-part:
-		ND-Ref(ns, name, TypeBinding(t), RefScope(pns, parent), _) -> (name, nst, CHILD(nst, name, pnst, parent, t))
-		with
-			nst  := <namespace-to-term> ns;
-			pnst := <namespace-to-term> pns
-			
-	unzip3: [] -> ([], [], [])
-	unzip3: [(h1, h2, h3)|t] -> ([h1|t1], [h2|t2], [h3|t3]) where (t1, t2, t3) := <unzip3> t
+	unzip4': [] -> ([], [], [], [])
+	unzip4': [(h1, h2, h3, h4*)|t] -> ([h1|t1], [h2|t2], [h3|t3], [h4*, t4*]) where (t1, t2, t3, t4*) := <unzip4'> t
 	
 rules
 		
@@ -255,30 +374,15 @@ rules
 	introduce-id: ListVar(_) -> Id()
 		        
 rules
-	
-	to-scope-rules(|term):
-		part* -> result
-		with
-			if ordered* := <filter(ordered-scope); concat; nonempty> part* then
-				ordered := [RULE("nam-ordered-def", term, LIST(ordered*), [])]
-			else
-				ordered := []
-			end;
-			var := Var(<newname> "anon");
-			if scope* := <filter(to-scope(|var)) ; concat; nonempty> part* then
-				result := [RULE("nam-get-scope-types", term, LIST(scope*), [WhereClause(Assign(var, ANON()))])|ordered]
-			else
-				result := ordered 
-			end
-				
+					
 	ordered-scope:
-		ND-Def(_, ns, _, _, OrderedScope(), _, _) -> [<namespace-to-term> ns]
+		ND-Def(_, Binding(ns, _), _, Subsequent(), _) -> [<namespace-to-term> ns]
 	
 	ordered-scope:
-		ND-Import(ns*, _, OrderedScope()) -> <map(inamespace-to-term)> ns*
+		ND-Import(ns*, _, Subsequent()) -> <map(inamespace-to-term)> ns*
 		
 	to-scope(|var): 
-		ND-Def(unique, ns, name, _, _, scope*, _) -> <map(scope-to-term(|anon, <namespace-to-term> ns, name))> scope*
+		ND-Def(unique, Binding(ns, name), _, scope*, _) -> <map(scope-to-term(|anon, <namespace-to-term> ns, name))> scope*
 		with
 			if Unique() := unique then
 				anon := var
@@ -288,7 +392,7 @@ rules
 			
 	to-scope(|var):
 		ND-Scope(scope*) -> <map(scope-to-term)> scope*
-		
+	
 	scope-to-term:
 		scope -> TUPLE([t, ANON(), t, TUPLE([])])
 		with 
@@ -298,24 +402,24 @@ rules
 		scope -> TUPLE([ns, name, <namespace-to-term> scope, unique])
 			
 	namespace-to-term:
-		NsRef(namespace) -> TERM(namespace)
+		NamespaceRef(namespace) -> TERM(namespace)
 
 	inamespace-to-term = 
-		(?Transitive(<id>) + ?NonTransitive(<id>));
+		(?TransitiveImport(<id>) + ?Import(<id>));
 		namespace-to-term
 		
 rules
 		
-	to-type-rules(|term):
-		ND-Def(_, ns, name, TypeBinding(type), _, _, clause*) -> RULE("nam-get-type", term, TUPLE([name, type]), clause'*)
-		with
-			clause'* := <filter(to-type-clauses)> clause*
+	// to-type-rules(|term):
+	// 	ND-Def(_, Binding(ns, name), TypeBinding(type), _, clause*) -> RULE("nam-get-type", term, TUPLE([name, type]), clause'*)
+	// 	with
+	// 		clause'* := <filter(to-type-clause)> clause*
 		
 rules
 					
-	to-type-clauses: 
-		Where(term, TypeCheck(type)) -> WhereClause(Assign(type, App(CALL("type-of"), term)))
+	to-type-clause: 
+	 	Constraint(term, Property("type", type)) -> WhereClause(Assign(type, App(CALL("type-of"), term)))
 
-	to-resolve-clauses:
-		Where(term, ReferenceCheck(NsRef(ns), name, None(), None())) -> WhereClause(Assign(TERM("Def", [LIST([TERM(ns)], name)]), App(Seq(CALL("index-find-key"), CALL("index-lookup")), term)))
-
+	to-resolve-clause:
+		Constraint(term, Reference(NamespaceRef(ns), name, None(), None())) -> WhereClause(Assign(TERM("Def", [LIST([TERM(ns)], name)]), App(Seq(CALL("index-find-key"), CALL("index-lookup")), term)))
+*/
