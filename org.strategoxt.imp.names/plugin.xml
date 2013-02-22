@@ -3,10 +3,10 @@
 
 <plugin>
        <extension point="org.eclipse.imp.runtime.languageDescription">
-          <language extensions="nd" description="NameDefinitionLanguage" language="NameDefinitionLanguage" derivedFrom="DynamicRoot" validator="org.strategoxt.imp.names.NameDefinitionLanguageValidator" validatorClass="org.strategoxt.imp.names.NameDefinitionLanguageValidator"></language>
+          <language extensions="nab" description="NameBindingLanguage" language="NameBindingLanguage" derivedFrom="DynamicRoot" validator="org.metaborg.meta.lang.nabl.NameBindingLanguageValidator" validatorClass="org.metaborg.meta.lang.nabl.NameBindingLanguageValidator"></language>
        </extension>
-       <extension id="org.strategoxt.imp.names.parser" name="NameDefinitionLanguage Parser" point="org.eclipse.imp.runtime.parser">
-          <parser class="org.strategoxt.imp.names.NameDefinitionLanguageParseController" language="NameDefinitionLanguage">
+       <extension id="org.metaborg.meta.lang.nabl.parser" name="NameBindingLanguage Parser" point="org.eclipse.imp.runtime.parser">
+          <parser class="org.metaborg.meta.lang.nabl.NameBindingLanguageParseController" language="NameBindingLanguage">
           </parser>
        </extension>    
     </plugin>

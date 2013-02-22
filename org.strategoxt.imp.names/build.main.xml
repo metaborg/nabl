@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<project name="NameDefinitionLanguage" default="all">
+<project name="NameBindingLanguage" default="all">
         
         <!-- Key input modules -->
-        <property name="sdfmodule" value="NameDefinitionLanguage"/>
-        <property name="metasdfmodule" value="Stratego-NameDefinitionLanguage"/>
-        <property name="esvmodule" value="NameDefinitionLanguage"/>
-        <property name="strmodule" value="namedefinitionlanguage"/>
+        <property name="sdfmodule" value="NameBindingLanguage"/>
+        <property name="metasdfmodule" value="Stratego-NameBindingLanguage"/>
+        <property name="esvmodule" value="NameBindingLanguage"/>
+        <property name="strmodule" value="namebindinglanguage"/>
     
         <!-- Project directories -->
         <property name="trans" location="trans"/>

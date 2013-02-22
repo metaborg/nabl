@@ -49,8 +49,8 @@
       sdf2imp.eclipse.load"/>
     
         <!-- Initialization -->
-        <available file="${src-gen}/org/strategoxt/imp/names/strategies/Main.java" property="java.jar.enabled"/>
-        <condition property="java.jar.import" value="-la org.strategoxt.imp.names.strategies" else="">
+        <available file="${src-gen}/org/metaborg/meta/lang/nabl/strategies/Main.java" property="java.jar.enabled"/>
+        <condition property="java.jar.import" value="-la org.metaborg.meta.lang.nabl.strategies" else="">
             <isset property="java.jar.enabled"/>
         </condition>
         <condition property="java.jar.classpath" value=":${include}/${strmodule}-java.jar" else="">

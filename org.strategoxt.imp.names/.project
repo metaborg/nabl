@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>org.strategoxt.imp.names</name>
+	<name>org.metaborg.meta.lang.nabl</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -16,7 +16,7 @@
 			<arguments>
 				<dictionary>
 					<key>LaunchConfigHandle</key>
-					<value>&lt;project&gt;/.externalToolBuilders/NameDefinitionLanguage build.main.xml.launch</value>
+					<value>&lt;project&gt;/.externalToolBuilders/NameBindingLanguage build.main.xml.launch</value>
 				</dictionary>
 			</arguments>
 		</buildCommand>
