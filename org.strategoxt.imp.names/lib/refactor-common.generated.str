@@ -63,5 +63,5 @@ input-dialog:
 strategies //pp-table
 	
 get-pp-table=
-  import-term(include/NameDefinitionLanguage.generated.pp.af)
+  import-term(include/NameDefinitionLanguage2.generated.pp.af)
 	

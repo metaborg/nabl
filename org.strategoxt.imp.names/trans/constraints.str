@@ -1,0 +1,5 @@
+module constraints
+
+rules
+	
+	type-of = fail

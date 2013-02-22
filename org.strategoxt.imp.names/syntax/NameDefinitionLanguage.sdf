@@ -89,7 +89,8 @@ exports
 		
 	context-free syntax %% imports
 		
-		"imports"{INamespaceRef ","}+ "from" RefPartCore IDefScopes	-> NamingRulePart {"ImportSite"}
+		"imports"{INamespaceRef ","}+ "from" RefPartCore IDefScopes	-> NamingRulePart {"ImportFromSite"}
+		"imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes	-> NamingRulePart {"ImportToSite"}
 		
 																												-> IDefScopes			{"Current"}
 		"into" "current" "scope"														-> IDefScopes			{"Current"}

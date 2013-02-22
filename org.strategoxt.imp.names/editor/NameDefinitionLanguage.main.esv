@@ -5,13 +5,13 @@ imports NameDefinitionLanguage-Builders NameDefinitionLanguage-Colorer NameDefin
 
 language General properties
                   
-  name          : NameDefinitionLanguage
+  name          : NameDefinitionLanguage2
   id            : org.strategoxt.imp.names
   extends       : Root
                   
   description   : "Spoofax/IMP-generated editor for the NameDefinitionLanguage language"
   url           : http://strategoxt.org
                   
-  extensions    : nd
+  extensions    : nab
   table         : include/NameDefinitionLanguage.tbl
   start symbols : Start

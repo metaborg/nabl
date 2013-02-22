@@ -9,7 +9,7 @@ namespaces
 	
 properties
 
-	parent 		of Entity: ID
+  parent 		of Entity: ID
 	ancestors of Entity: List(ID)
 binding rules
 

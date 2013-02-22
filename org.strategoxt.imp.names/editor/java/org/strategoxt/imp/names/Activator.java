@@ -6,9 +6,9 @@ import org.osgi.framework.BundleContext;
 
 public class Activator extends PluginBase 
 { 
-  public static final String kPluginID = "NameDefinitionLanguage";
+  public static final String kPluginID = "NameDefinitionLanguage2";
 
-  public static final String kLanguageName = "NameDefinitionLanguage";
+  public static final String kLanguageName = "NameDefinitionLanguage2";
 
   protected static Activator sPlugin;
 
