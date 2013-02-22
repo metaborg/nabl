@@ -6,19 +6,26 @@ imports
 namespaces
 
 	Entity Property Variable Method
-		
+	
+properties
+
+	parent 		of Entity: ID
+	ancestors of Entity: List(ID)
 binding rules
 
 	Entity(name, _) :
 		scopes Property, Method
-		defines Entity name of type name
+		defines 
+			Entity name 
+			of type name
+			of ancestors []
 			
 	Entity(name, super, _) :
 		scopes Property, Method
 		defines 
 			Entity name 
 			of type name
-			of supertype super
+			of parent super
 		imports 
 			Property, 
 			Method, 
@@ -44,7 +51,11 @@ binding rules
 		where e has type t
 
 	Var(x) :
-		refers to Variable x of type t
+		refers to 
+			Variable x of type t 
+		otherwise refers to 
+			imported Variable x of type t
+			in surrounding Class
 		
 	Block(statement*) : 
 		scopes Variable

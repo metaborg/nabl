@@ -57,6 +57,7 @@ exports
 		"non-unique"																				-> Unique					{"NonUnique"}
 		
 		NamespaceRef RTerm																	-> Binding			  {"NameBinding"}
+		INamespaceRef RTerm																	-> IBinding			  {"NameBinding"}
 		NamespaceRef BTerm																	-> BBinding			  {"NameBinding"}
 		"of" PropertyRef RTerm															-> Property				{"PropertyBinding"}
 		
@@ -74,12 +75,13 @@ exports
 
 		{RefPart "otherwise"}+															-> NamingRulePart	{"UseSite"} 		
 		"refers" "to" RefPartCore 													-> RefPart				{bracket}
-		Binding Property* RefScope Constraint*							-> RefPartCore		{"Reference"}
+		IBinding Property* RefScope Constraint*							-> RefPartCore		{"Reference"}
 			
 		"in" Binding																				-> RefScope			 	{"RefScope"}
 		"in" "current" "scope"															-> RefScope				{"Current"}
 		"in" "surrounding" NamespaceRef											-> RefScope				{"Surrounding"}
-																												-> RefScope				{"Current"}
+																												-> RefScope				{"All"}
+	
 	context-free syntax %% qualified names
 
 		{QualifiedPart "otherwise"}+												-> NamingRulePart	{"QualifiedName"} 		
@@ -106,6 +108,7 @@ exports
 
 		Id						-> NamespaceId
 		"binding"			-> NamespaceId	{reject}
+		"surrounding"	-> NamespaceId	{reject}
 		"properties"	-> NamespaceId	{reject}
 
 		Id						-> PropertyId
