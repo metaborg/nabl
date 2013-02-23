@@ -10,9 +10,8 @@ builders
 
 builders
 
-  provider : include/NameBindingLanguage.ctree
-  provider : include/NameBindingLanguage-java.jar
-
+  provider : include/namebindinglanguage.ctree
+  
   observer : editor-analyze (multifile)
 
   builder  : "Generate name analysis" = generate-name-analysis (openeditor) (realtime)
