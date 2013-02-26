@@ -9,7 +9,7 @@ imports
   lib/compilation-library.generated
 	constraints
 	names
-  //new-generate
+  new-generate
 
 rules // Analysis
   

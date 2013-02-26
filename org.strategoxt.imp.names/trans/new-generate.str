@@ -7,96 +7,137 @@ imports
 
 rules
 	
-	to-str:
-		BindingRules(rule*) -> <mapconcat(to-str)> rule*
-		
-	to-str: 
-		BindingRule(pattern, part*) -> [DEF_RULE(n, Seq(Match(pattern), d))]
+	generate-name-analysis:
+		(selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
 		with
-			(d*, s*, i*, u*) := <split-parts> part*;
-			scoped*          := <map(to-str)> s*;
-			def*             := <map-with-index(to-str(|scoped*))> d*;
-			n                := <length> def*;
-			d                := <replace-all(|def*)> pattern
-		
-	split-parts:
-		[] -> ([], [], [], [])
+			filename   := <guarantee-extension(|"str")> path ;
+			str-module := <nabl-to-str; to-ppable-str> ast ;
+			// use next line to debug which AST node cannot be handled by the pretty-printer
+			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
+			result     := <pp-stratego-string> str-module
 
-	split-parts:
-		[d@DefSite(_, _, _, _, _)|parts] -> ([d|d*], s*, i*, u*)
-		with
-			<split-parts> parts => (d*, s*, i*, u*)
-	
-	split-parts:
-		[Scopes(s1*)|parts] -> (d*, [s1*, s2*], i*, u*)
-		with
-			<split-parts> parts => (d*, s2*, i*, u*)
-		
-	split-parts:
-		[i@ImportSite(_, _, _)|parts] -> (d*, s*, [i|i*], u*)
-		with
-			<split-parts> parts => (d*, s*, i*, u*)
-	
-	split-parts:
-		[u@UseSite(_)|parts] -> (d*, s*, i*, [u|u*])
-		with
-			<split-parts> parts => (d*, s*, i*, u*)
+  to-ppable-str = alltd(MetaExplode); alltd(to-ppable-str-local)
+    
+	to-ppable-str-local: ListVar(x)    -> Var(x)
+	to-ppable-str-local: VarRef(x)     -> Var(x)
+	to-ppable-str-local: ListVarRef(x) -> Var(x)
 
-rules
+rules // modules
 	
-	to-str: NamespaceRef(ns) -> NoAnnoList(Op(ns, []))
+	nabl-to-str:
+		Module(name, sections) -> Module(name, <filter(nabl-to-str)> sections)
+		
+rules // namespaces 
 			
-rules
-	
-	to-str(|scoped*):
-		(i, DefSite(u, NameBinding(ns, n), [], DefScopes(scope*), [])) -> (n, DEF_CALL(i, <to-str> u, <filter(to-str)> scope*, scoped*))
+	nabl-to-str:
+		Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
 		
-	to-str: Unique()    -> UNIQUE
-	to-str: NonUnique() -> NON_UNIQUE
+	nabl-to-str: // generates constructors for namespaces
+		Namespace(ns) -> CONS_DECL(ns, "Namespace")
+	
+	nabl-to-str: NamespaceRef(ns) -> TERM(ns, [])
 
-	to-str: Current()    -> CURRENT
-	to-str: Subsequent() -> SUBSEQUENT
+rules // properties
+				
+	nabl-to-str:
+		Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
+	
+	nabl-to-str: // generate constructors for properties
+		Property(prop, _, _) -> CONS_DECL(prop, "Property")	
+
+	nabl-to-str: PropertyRef(p) -> TERM(p, [])
+	nabl-to-str: TypeProp()     -> TERM("Type", [])
+
+rules // imports
+		
+	nabl-to-str = Imports(id)
+		
+rules // binding rules
+
+	//TODO: replace filter by map	
+	nabl-to-str:
+		BindingRules(rs) -> Rules(<filter(nabl-to-str); concat; nonempty> rs)
+			
+rules // definition sites
+		
+	// TODO: support multiple definition sites
+	// TODO: support anonymous scopes
+	nabl-to-str: 
+		BindingRule(pattern, parts) -> dr*
+		where
+			scopes := <filter(\Scopes(scs)-> <map(nabl-to-str)> scs\); concat> parts;
+			dr*    := <fetch-elem(def-to-str(|pattern, scopes))> parts
+			
+	// TODO: support conditions 
+	// TODO: support def scopes
+	def-to-str(|pattern, scopes):
+		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr*, pr*]
+		where
+			<?Current() + ?DefScopes([Subsequent()])> ds
+		where
+			call := <replace-all(|[(<to-ppable-str> t, DEF_CALL(<nabl-to-str> ns, u, ds, scopes))])> pattern;
+			dr* := [DEF_RULE(pattern, call)] <+
+			dr* := []
+		where
+			pcall := <replace-all(|[(<to-ppable-str> t, PROP_CALL(<map(prop-to-str)> ps))])> pattern;
+			pr*   := [PROP_RULE(pattern, pcall)] <+
+			pr*   := []
+
+	prop-to-str:
+		PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)			
+	
+signature constructors
+	
+	ToMetaExpr : Term -> Term
 	
 overlays
-	
-	DEF_RULE(n, rhs) = 	
-		SDefT(
-  		"nbl-def-site"
-			, [CPATHS(n), SPATHS(n)]
-			, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), CPATHS(0), SPATHS(0), DefaultVarDec("paths")]
-			, rhs
-		)
 
-	DEF_CALL(i, unique, scopes, scoped-ns) =
-		CallT(
-		  SVar("nbl-def")
-		, [Match(CPATHS(i)), Match(SPATHS(i))]
-			, [ Var("lang")
-			, Var("elems")
-			, Var("tasks")
-			, CPATHS(<dec> i)
-			, SPATHS(<dec> i)
-			, Var("paths")
-			, NoAnnoList(Op("Module", []))
-			, unique
-			, NoAnnoList(List(scopes))
-			, NoAnnoList(List(scoped-ns))
+	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
+	TERM(o, args) 	= NoAnnoList(Op(o, args))
+	TUPLE(elems)    = NoAnnoList(Tuple(elems))
+	LIST(elems)   	= NoAnnoList(List(elems))
+	
+	DEF_RULE(pattern, call) =
+	SDefT(
+  	"nabl-def-site"
+		, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
+		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
+		, Seq(Match(pattern), call)
+  )
+  		
+	DEF_CALL(ns, u, ds, s) = 
+	CallT(
+		SVar("nabl-def")
+    , [CallNoArgs(SVar("cpaths")), CallNoArgs(SVar("spaths"))]
+    , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths")
+      , ns, ToMetaExpr(u), ToMetaExpr(ds), LIST(s)
   		]
-		)
-		
-	UNIQUE     = RootApp(CallNoArgs(SVar("nbl-unique-qualifier")))
-	NON_UNIQUE = NoAnnoList(Op("NonUnique", []))
-	CURRENT    = NoAnnoList(Op("Current", []))
-	SUBSEQUENT = NoAnnoList(Op("Subsequent", []))
+	)
+
+	PROP_RULE(pattern, call) =
+	SDefT(
+  	"nabl-prop-site"
+		, []
+		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks")]
+		, Seq(Match(pattern), call)
+  )
+  
+  PROP_CALL(ps) = 
+	CallT(
+		SVar("nabl-props")
+    , []
+    , [ Var("lang"), Var("elems"), Var("tasks"), LIST(ps)]
+	)
 	
-	CPATHS(i) = Var($[cpaths[i]])
-	SPATHS(i) = Var($[spaths[i]])
+	PROPERTY(p, v) = TERM("Prop", [p, v])
+
+rules // helper
 	
-rules
+	nonempty = where(Hd)
+
+	replace-all(|rs) = alltd(replace(|rs) <+ introduce-id)
 	
-	replace-all(|r*) = alltd(replace(|r*) <+ introduce-id)
-	
-	replace(|r*): t1 -> t2 where <fetch-elem(?(t1, t2))> r*
+	replace(|rs): t1 -> t2 where <fetch-elem(?(t1, t2))> rs
 	
 	introduce-id: Wld()      -> Id()
 	introduce-id: Var(_)     -> Id()

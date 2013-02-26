@@ -11,67 +11,13 @@ properties
 
   parent 		of Entity: ID
 	ancestors of Entity: List(ID)
-
+ 
 binding rules
 
 	Entity(name, _) :
 		scopes Property, Method
 		defines 
 			Entity name 
-			of type name
+			of type EntityType(name)
 			of ancestors []
-			
-	Entity(name, super, _) :
-		scopes Property, Method
-		defines 
-			Entity name 
-			of type name
-			of parent super
-			of ancestors [super|as*]
-			where super has ancestors as*
-		imports 
-			Property, 
-			Method, 
-			imported Property, 
-			imported Method 
-			from Entity super
-		
-	Property(x, t) :
-		defines Property x of type t
-	
-	PropertyAccess(exp, f) :
-		refers to Property f of type t in Entity e
-		where exp has type e
- 
-	For(x, t, e, cond, inc, elem*) : 
-  	defines Variable x of type t in cond, inc, elem*
-		
-	VarDecl(x, t, e) :
-		defines Variable x of type t 
-		
-	VarDecl(x, e) :
-		defines Variable x of type t in subsequent scope
-		where e has type t
-
-	Var(x) :
-		refers to 
-			Variable x of type t 
-		otherwise refers to 
-			imported Variable x of type t
-			in surrounding Class
-		
-	Block(statement*) : 
-		scopes Variable
-		
-	Method(f, param*, t, _) :
-		scopes Variable
-		defines Method f of type MT(t*, t)
-			where param* has type t*
-
-	Param(x, t) :
-		defines Variable x of type t
-
-	MethodCall(exp, f, e*) :
-		refers to Method f of type MT(t*, t) in Entity e
-			where exp has type e
-			where e* has type t*
+			in subsequent scope
