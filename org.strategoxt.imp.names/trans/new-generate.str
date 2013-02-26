@@ -16,7 +16,7 @@ rules
 			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
 			result     := <pp-stratego-string> str-module
 
-  to-ppable-str = meta-explode(fail); alltd(to-ppable-str-local)
+  to-ppable-str = alltd(to-ppable-str-local)
     
 	to-ppable-str-local: ListVar(x)    -> Var(x)
 	to-ppable-str-local: VarRef(x)     -> Var(x)
@@ -60,17 +60,15 @@ rules // binding rules
 rules // definition sites
 		
 	// TODO: support multiple definition sites
-	// TODO: support anonymous scopes
 	nabl-to-str: 
-		BindingRule(pattern, parts) -> <fetch-elem(def-to-str(|pattern, scopes))> parts
+		BindingRule(pattern, parts) -> result
 		where
-			scopes := <mapconcat(scopes-to-str)> parts
+			scopes := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
+		where
+			result := <fetch-elem(def-to-str(|pattern, scopes))> parts <+
+			result := [SCOPE_RULE(pattern, scopes)]
 			
-	scopes-to-str =
-		  ?Scopes(<id>) 
-		< map(nabl-to-str)
-		+ ![]
-		
+	
 	// TODO: support conditions 
 	def-to-str(|pattern, scopes):
 		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr, pr*]
@@ -88,7 +86,7 @@ rules // definition sites
 			pr*      := [PROP_RULE(pattern, <replace-all(|[preplace])> pattern)] <+
 			pr*      := []
 
-	nabl-to-str: Current()			-> ToMetaExpr(Current())
+	nabl-to-str: Current() -> TERM("Current")
 	nabl-to-str: 
 		DefScopes(ds)	-> LIST([sc1*, sc2*])
 		where
@@ -99,7 +97,7 @@ rules // definition sites
 			end
 		where
 			if fetch-elem(?Subsequent()) then
-				sc2* := [ToMetaExpr(Subsequent())]
+				sc2* := [TERM("Subsequent")]
 			else
 				sc2* := []
 			end
@@ -112,11 +110,7 @@ rules // definition sites
 	
 	def-scope-to-str:
 		DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())			
-		
-signature constructors
-	
-	ToMetaExpr  : Term -> Term
-	
+			
 overlays
 
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
@@ -129,28 +123,41 @@ overlays
 	DEF_RULE(pattern, sc, call) =
 	SDefT(
   	"nabl-def-site"
-		, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
-		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
-		, Seq(Match(pattern), Seq(sc, call))
+	, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
+	, Seq(Match(pattern), Seq(sc, call))
   )
   	
   DEF_RULE(pattern, call) =
 	SDefT(
   	"nabl-def-site"
-		, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
-		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
-		, Seq(Match(pattern), call)
-  )
+	, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
+	, Seq(Match(pattern), call)
+	)
   	
 	DEF_CALL(ns, u, ds, s) = 
 	CallT(
-		SVar("nabl-def")
-    , [CALL("cpaths"), CALL("spaths")]
-    , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths")
-      , ns, u, ds, LIST(s)
-  		]
+	  SVar("nabl-def")
+  , [CALL("cpaths"), CALL("spaths")]
+  , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths"), ns, u, ds, LIST(s)]
 	)
 
+	SCOPE_RULE(pattern, scopes) =
+	SDefT(
+	  "nabl-scope-site"
+	, [DefaultVarDec("cpaths")]
+	, [DefaultVarDec("lang"), DefaultVarDec("paths")]
+	, Seq(
+	  	Match(pattern)
+	  , CallT(
+				SVar("nabl-anonymous-scope")
+  		, [CALL("cpaths")]
+  		, [ Var("lang"), Var("paths"), LIST(scopes) ]
+		  )
+    )
+	)
+  	
 	SCOPE() = Var("scope")
 	
 	SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
@@ -159,16 +166,16 @@ overlays
 	PROP_RULE(pattern, call) =
 	SDefT(
   	"nabl-prop-site"
-		, []
-		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks")]
-		, Seq(Match(pattern), call)
+	, []
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks")]
+	, Seq(Match(pattern), call)
   )
   
   PROP_CALL(ps) = 
 	CallT(
 		SVar("nabl-props")
-    , []
-    , [ Var("lang"), Var("elems"), Var("tasks"), LIST(ps)]
+  , []
+  , [ Var("lang"), Var("elems"), Var("tasks"), LIST(ps)]
 	)
 	
 	PROPERTY(p, v) = TERM("Prop", [p, v])
