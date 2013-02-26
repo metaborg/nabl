@@ -57,7 +57,7 @@ rules // binding rules
 	nabl-to-str:
 		BindingRules(rs) -> Rules(<filter(nabl-to-str); concat; nonempty> rs)
 			
-rules // definition sites
+rules // definitions, scopes, properties
 		
 	// TODO: support multiple definition sites
 	nabl-to-str: 
@@ -66,9 +66,8 @@ rules // definition sites
 			scopes := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
 		where
 			result := <fetch-elem(def-to-str(|pattern, scopes))> parts <+
-			result := [SCOPE_RULE(pattern, scopes)]
-			
-	
+			result := [SCOPE_RULE(pattern, <nonempty> scopes)]
+
 	// TODO: support conditions 
 	def-to-str(|pattern, scopes):
 		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr, pr*]
