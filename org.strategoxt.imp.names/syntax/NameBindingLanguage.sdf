@@ -25,10 +25,17 @@ exports
 		"module" ModName ModSection*												-> Start 					{"Module"}
 		
 		
+	context-free syntax %% imports
+				
+		"imports" ImportModName* 														-> ModSection {"Imports"}
+    ModName																							-> ImportModName	{"Import"}
+
+  syntax
+
+		<ModName-CF> "/" "-" 																-> <ImportModName-CF> {"ImportWildcard"}
+    
+
 	context-free syntax %% sections
-		
-		"imports" ModuleRef*																-> ModSection			{"Imports"}
-		ModName																							-> ModuleRef			{"Import"}
 		
 		%% Namespaces
 		"namespaces" Namespace*															-> ModSection			{"Namespaces"}

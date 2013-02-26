@@ -14,7 +14,7 @@ rules
 		(selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
 		with
 			filename   := <guarantee-extension(|"str")> path ;
-			str-module := <to-ppable-str; nbl-to-str> ast ;
+			str-module := <to-ppable-str; nabl-to-str> ast ;
 			// use next line to debug which AST node cannot be handled by the pretty-printer
 			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
 			result     := <pp-stratego-string> str-module
@@ -81,7 +81,7 @@ overlays
 	
 	IMPORTS = 
 		Imports(
-			[ Import("lib/nbl-prelim") ]
+			[ Import("lib/nabl-prelim") ]
 		)
 			
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
@@ -108,93 +108,93 @@ rules
 
 rules // modules
 	
-	nbl-to-str:
-		Module(name, section*) -> Module(name, [IMPORTS()|<filter(nbl-to-str)> section*])
+	nabl-to-str:
+		Module(name, section*) -> Module(name, [IMPORTS()|<filter(nabl-to-str)> section*])
 		
 rules // namespace and property sections
 			
-	nbl-to-str:
-		Namespaces(namespace*) -> Signature([Constructors(<map(nbl-to-str)> namespace*)])
+	nabl-to-str:
+		Namespaces(namespace*) -> Signature([Constructors(<map(nabl-to-str)> namespace*)])
 		
-	nbl-to-str:
-		Properties(prop*) -> Signature([Constructors(<map(nbl-to-str)> prop*)])
+	nabl-to-str:
+		Properties(prop*) -> Signature([Constructors(<map(nabl-to-str)> prop*)])
 	
-	nbl-to-str: // generates constructors for namespaces
+	nabl-to-str: // generates constructors for namespaces
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 		
-	nbl-to-str:
+	nabl-to-str:
 		Property(prop, _, _) -> CONS_DECL(prop, "Property")	
 
-	nbl-to-str:
+	nabl-to-str:
 		Imports(_) -> <id>
 		
 rules // binding section
 	
-	nbl-to-str:
-		BindingRules(rule*) -> Rules(<mapconcat(nbl-to-str); nonempty> rule*)
+	nabl-to-str:
+		BindingRules(rule*) -> Rules(<mapconcat(nabl-to-str); nonempty> rule*)
 
-	nbl-to-str:
+	nabl-to-str:
 		rule@BindingRule(_, _) -> [vs-rule*, hs-rule*, def-rule*]
 		where
-			vs-rule*	:= <opt-rule(nbl-vertical-scope-rule)> rule;
-			hs-rule*	:= <opt-rule(nbl-horizontal-scope-rule)> rule;
-			def-rule* := <opt-rule(nbl-def-rule)> rule
+			vs-rule*	:= <opt-rule(nabl-vertical-scope-rule)> rule;
+			hs-rule*	:= <opt-rule(nabl-horizontal-scope-rule)> rule;
+			def-rule* := <opt-rule(nabl-def-rule)> rule
 			
 	opt-rule(s) = s < MkSingleton + ![]		
 
-	nbl-vertical-scope-rule:
+	nabl-vertical-scope-rule:
 		BindingRule(term, part*) -> RULE("nam-get-vscope", term, LIST(t*), [])
 		where
-			t* := <fetch-elem(nbl-vertical-scoped)> part*
+			t* := <fetch-elem(nabl-vertical-scoped)> part*
 	
-	nbl-vertical-scoped:
+	nabl-vertical-scoped:
 		Scopes(ns*) -> <map(ns-to-term)> ns*
 	
-	nbl-horizontal-scope-rule:
+	nabl-horizontal-scope-rule:
 		BindingRule(term, part*) -> RULE("nam-get-hscope", term, LIST(t*), [])
 		where
-			ns* := <collect(nbl-horizontal-scoped)> part*;
+			ns* := <collect(nabl-horizontal-scoped)> part*;
 			t*  := <nonempty; map(ns-to-term)>
 			
-	nbl-horizontal-scoped:
+	nabl-horizontal-scoped:
 		DefSite(_, NameBinding(ns, _), DefScopes(scope*), _, _) -> <ns-to-term> ns
 		where
 			<fetch-elem(?Subsequent())> scope*
 	
-	nbl-def-rule:
+	nabl-def-rule:
 		BindingRule(term, part*) -> RULE("nam-get-defs", [PATHS(), PATHS'()], TUPLE([term, Var("defs")]), TUPLE([RootApp(term'), LIST(def*, Var("defs"))]), clause*)
 		where
-			replace1*				:= <filter(nbl-in-scope)> part*;
-			(def*, clause*) := <filter(nbl-def); nonempty; unzip> part*;
+			replace1*				:= <filter(nabl-in-scope)> part*;
+			(def*, clause*) := <filter(nabl-def); nonempty; unzip> part*;
 			replace2*				:= <map(def-to-anno)> def*;
 			term'						:= <replace-all(|[replace1*, replace2*])> term
 
-	nbl-def: 
+	nabl-def: 
 		DefSite(_, NameBinding(ns, name), _, DefScopes([Current()]), _) -> (DEF(nst, name, v), LOOKUP_PATH(nst, v, PATHS()))
 		where
 			v		:= Var(<newname> "scope");
 			nst := <ns-to-term> ns
 
-	nbl-def: 
+	nabl-def: 
 		DefSite(_, NameBinding(ns, name), _, _, _) -> (DEF(nst, name, v), LOOKUP_PATH(nst, v, PATHS'()))
 		where
-			nst := <nbl-horizontal-scoped>;
+			nst := <nabl-horizontal-scoped>;
 			v		:= Var(<newname> "scope")
 
-	nbl-def: 
+	nabl-def: 
 		DefSite(_, NameBinding(ns, name), _, DefScopes(_), _) -> (DEF(nst, name, v), LOOKUP_PATH(nst, v, PATHS'()))
 		where
-			not(nbl-horizontal-scoped);
+			not(nabl-horizontal-scoped);
 			nst := <ns-to-term> ns;
 			v		:= Var(<newname> "scope")
 
-	nbl-in-scope:
+	nabl-in-scope:
 		DefScope(t) -> (t, ANNOTATE(t))
 		
-	nbl-use:
-		UseSite(ref*) -> <filter(nbl-use)> ref* 
+	nabl-use:
+		UseSite(ref*) -> <filter(nabl-use)> ref* 
 	
-	nbl-use:
+	nabl-use:
 		Reference(NameBinding(ns, name), _, RefScope(Current()), _) -> LOOKUP_PATH(nst, v, PATHS())
 		where
 			v		:= Var(<newname> "path");
@@ -216,32 +216,32 @@ rules // binding section
 
 /*
 			
-	nbl-def-clause(|replaces): 
+	nabl-def-clause(|replaces): 
 		ND-Def(_, Binding(ns, name), _, scope, _) -> LOOKUP_PATH(nsv, v, [name | path])
 		where
 			v			:= Var(<newname> "uri");
 			nsv   := <namespace-to-term> ns;
-			path  := <nbl-scope-path(|v, replaces)> scope;
+			path  := <nabl-scope-path(|v, replaces)> scope;
 			<iset-add(|(name, ANNOTATE_DEF(v)))> replaces
 
-	nbl-scope-path(|v, replaces):
+	nabl-scope-path(|v, replaces):
 		DefScope(scope*) -> [SCOPE()]
 		where
 			annos := <map(!(<id>, ANNOTATE_SCOPE(v)))> scope*;
 			<iset-addlist(|annos)> replaces
 	
-	nbl-scope-path(|v, replaces):
+	nabl-scope-path(|v, replaces):
 		Current() -> []
 		
 rules 
 													
-	nbl-to-str-old:
+	nabl-to-str-old:
 		ND-Rule(term, part*) -> rule5*
 		with
 			replaces := <new-iset> ;
-			dkey*    := <collect(nbl-def-key)> part* ;
-			ukey*		 := <collect(nbl-use-key)> part* ;
-			(dkey*, ukey*, def*, imp*, clause*, rule*) := <map(nbl-to-intermediate(|term, replaces)); unzip4> part*;
+			dkey*    := <collect(nabl-def-key)> part* ;
+			ukey*		 := <collect(nabl-use-key)> part* ;
+			(dkey*, ukey*, def*, imp*, clause*, rule*) := <map(nabl-to-intermediate(|term, replaces)); unzip4> part*;
 			if <nonempty> dkey* then
 				rule1* := [DEF_KEY_RULE(term, dkey*)|rule*]
 			else
@@ -273,24 +273,24 @@ rules
 				rule5* := rule4* 
 			end
 	
-	nbl-def-key: ND-Def(_, Binding(_, name), _, _, _) -> name
-	nbl-use-key: Reference(Binding(_, name), _, _, _) -> name
+	nabl-def-key: ND-Def(_, Binding(_, name), _, _, _) -> name
+	nabl-use-key: Reference(Binding(_, name), _, _, _) -> name
 	
-	nbl-def-clause(|replaces): 
+	nabl-def-clause(|replaces): 
 		ND-Def(_, Binding(ns, name), _, scope, _) -> LOOKUP_PATH(nsv, v, [name | path])
 		where
 			v			:= Var(<newname> "uri");
 			nsv   := <namespace-to-term> ns;
-			path  := <nbl-scope-path(|v, replaces)> scope;
+			path  := <nabl-scope-path(|v, replaces)> scope;
 			<iset-add(|(name, ANNOTATE_DEF(v)))> replaces
 
-	nbl-scope-path(|v, replaces):
+	nabl-scope-path(|v, replaces):
 		DefScope(scope*) -> [SCOPE()]
 		where
 			annos := <map(!(<id>, ANNOTATE_SCOPE(v)))> scope*;
 			<iset-addlist(|annos)> replaces
 	
-	nbl-scope-path(|v, replaces):
+	nabl-scope-path(|v, replaces):
 		Current() -> []
 					
 	to-reference-part:
@@ -319,7 +319,7 @@ rules
 	// 		pnst     := <namespace-to-term> pns;
 	// 		clause'* := <filter(to-type-clause)> clause*
 			
-	nbl-to-intermediate(|term, replaces):
+	nabl-to-intermediate(|term, replaces):
 		ND-Import(ns*, ref, scope) -> ([], [name], [], term*, [clause|clause*], [ADJUST_LOOKUP(rterm, [resolution], clause*)])
 		with
 			v      := Var(<newname> "import");
@@ -336,7 +336,7 @@ rules
 			  (term*, clause*) := <zip(import-to-data(|nsv, v, [])); unzip> (ns*, v*)
 			end	
 	
-	nbl-to-intermediate(|term, replaces):
+	nabl-to-intermediate(|term, replaces):
 		ND-Ref(ref*) -> ([], [name], [], [], [], [ADJUST_LOOKUP(rterm, resolution*, clause*)])
 	  with
 	  	([name|_], ns*, resolution*, clause*) := <map(to-reference-part); unzip4'> ref*;

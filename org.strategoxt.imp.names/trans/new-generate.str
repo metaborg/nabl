@@ -35,7 +35,7 @@ rules // namespaces
 	nabl-to-str: // generates constructors for namespaces
 		Namespace(ns) -> CONS_DECL(ns, "Namespace")
 	
-	nabl-to-str: NamespaceRef(ns) -> TERM(ns, [])
+	nabl-to-str: NamespaceRef(ns) -> TERM(ns)
 
 rules // properties
 				
@@ -45,8 +45,8 @@ rules // properties
 	nabl-to-str: // generate constructors for properties
 		Property(prop, _, _) -> CONS_DECL(prop, "Property")	
 
-	nabl-to-str: PropertyRef(p) -> TERM(p, [])
-	nabl-to-str: TypeProp()     -> TERM("Type", [])
+	nabl-to-str: PropertyRef(p) -> TERM(p)
+	nabl-to-str: TypeProp()     -> TERM("Type")
 
 rules // imports
 		
@@ -54,7 +54,6 @@ rules // imports
 		
 rules // binding rules
 
-	//TODO: replace filter by map	
 	nabl-to-str:
 		BindingRules(rs) -> Rules(<filter(nabl-to-str); concat; nonempty> rs)
 			
@@ -63,34 +62,38 @@ rules // definition sites
 	// TODO: support multiple definition sites
 	// TODO: support anonymous scopes
 	nabl-to-str: 
-		BindingRule(pattern, parts) -> dr*
+		BindingRule(pattern, parts) -> <fetch-elem(def-to-str(|pattern, scopes))> parts
 		where
-			scopes := <filter(\Scopes(scs)-> <map(nabl-to-str)> scs\); concat> parts;
-			dr*    := <fetch-elem(def-to-str(|pattern, scopes))> parts
+			scopes := <mapconcat(scopes-to-str)> parts
 			
+	scopes-to-str =
+		  ?Scopes(<id>) 
+		< map(nabl-to-str)
+		+ ![]
+		
 	// TODO: support conditions 
-	// TODO: support def scopes
 	def-to-str(|pattern, scopes):
-		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr*, pr*]
+		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr, pr*]
 		where
-			ds':= <?DefScopes(<id>); not(?[Subsequent()])> ds 
-				< ( ds'' := LIST([SCOPE()|<nabl-to-str> ds])
-			  ; replace* := <filter(def-scope-to-str)> ds'
-				; sc       := SCOPE_CALL(<nabl-to-str> ns) )
-				+ (ds'', replace*, sc) := (<nabl-to-str> ds, [], Id()) 
+			replace := ( <to-ppable-str> t 
+			           , DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes)
+			           )
 		where
-			replace2* := [(<to-ppable-str> t, DEF_CALL(<nabl-to-str> ns, u, ds'', scopes)), replace*];
-			call := <replace-all(|replace2*)> pattern;
-			dr* := [DEF_RULE(pattern, sc, call)] <+
-			dr* := []
+			replace* := <?DefScopes(<filter(def-scope-to-str)>); nonempty> ds;
+			sc       := SCOPE_CALL(<nabl-to-str> ns);
+			dr       := DEF_RULE(pattern, sc, <replace-all(|[replace, replace*])> pattern) <+
+			dr       := DEF_RULE(pattern, <replace-all(|[replace])> pattern)
 		where
-			pcall := <replace-all(|[(<to-ppable-str> t, PROP_CALL(<map(prop-to-str)> ps))])> pattern;
-			pr*   := [PROP_RULE(pattern, pcall)] <+
-			pr*   := []
+			preplace := (<to-ppable-str> t, PROP_CALL(<nonempty; map(prop-to-str)> ps));
+			pr*      := [PROP_RULE(pattern, <replace-all(|[preplace])> pattern)] <+
+			pr*      := []
 
-	nabl-to-str: Current()			-> ToMetaExpr(Current())
-	nabl-to-str: DefScopes(ds*)	-> <filter(nabl-to-str)> ds* 
-	nabl-to-str: Subsequent() 	-> ToMetaExpr(Subsequent())
+	nabl-to-str: Current()									-> ToMetaExpr(Current())
+	nabl-to-str: DefScopes([Subsequent()])	-> LIST([ToMetaExpr(Subsequent())])
+	nabl-to-str: DefScopes(ds@[_, _|_])			-> LIST([SCOPE()|<filter(!ToMetaExpr(<?Subsequent()>))> ds]) 
+	
+	nabl-to-str: NonUnique() -> TERM("NonUnique")
+	nabl-to-str: Unique()    -> RootApp(CALL("nabl-unique-qualifier"))
 	
 	prop-to-str:
 		PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)			
@@ -101,13 +104,15 @@ rules // definition sites
 signature constructors
 	
 	ToMetaExpr  : Term -> Term
-	FromMetaExpr: Term -> Term
+	
 overlays
 
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
 	TERM(o, args) 	= NoAnnoList(Op(o, args))
+	TERM(o) 	      = TERM(o, [])
 	TUPLE(elems)    = NoAnnoList(Tuple(elems))
 	LIST(elems)   	= NoAnnoList(List(elems))
+	CALL(s)         = CallNoArgs(SVar(s))
 	
 	DEF_RULE(pattern, sc, call) =
 	SDefT(
@@ -116,20 +121,28 @@ overlays
 		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
 		, Seq(Match(pattern), Seq(sc, call))
   )
-  		
+  	
+  DEF_RULE(pattern, call) =
+	SDefT(
+  	"nabl-def-site"
+		, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
+		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
+		, Seq(Match(pattern), call)
+  )
+  	
 	DEF_CALL(ns, u, ds, s) = 
 	CallT(
 		SVar("nabl-def")
-    , [CallNoArgs(SVar("cpaths")), CallNoArgs(SVar("spaths"))]
+    , [CALL("cpaths"), CALL("spaths")]
     , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths")
-      , ns, ToMetaExpr(u), ds, LIST(s)
+      , ns, u, ds, LIST(s)
   		]
 	)
 
 	SCOPE() = Var("scope")
 	
 	SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
-	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallNoArgs(SVar("nabl-def-scope")), LIST([ns]))))
+	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CALL("nabl-def-scope"), LIST([ns]))))
 		
 	PROP_RULE(pattern, call) =
 	SDefT(
