@@ -88,10 +88,22 @@ rules // definition sites
 			pr*      := [PROP_RULE(pattern, <replace-all(|[preplace])> pattern)] <+
 			pr*      := []
 
-	nabl-to-str: Current()									-> ToMetaExpr(Current())
-	nabl-to-str: DefScopes([Subsequent()])	-> LIST([ToMetaExpr(Subsequent())])
-	nabl-to-str: DefScopes(ds@[_, _|_])			-> LIST([SCOPE()|<filter(!ToMetaExpr(<?Subsequent()>))> ds]) 
-	
+	nabl-to-str: Current()			-> ToMetaExpr(Current())
+	nabl-to-str: 
+		DefScopes(ds)	-> LIST([sc1*, sc2*])
+		where
+			if fetch-elem(?DefScope(_)) then
+				sc1* := [SCOPE()]
+			else
+				sc1* := []
+			end
+		where
+			if fetch-elem(?Subsequent()) then
+				sc2* := [ToMetaExpr(Subsequent())]
+			else
+				sc2* := []
+			end
+	 	
 	nabl-to-str: NonUnique() -> TERM("NonUnique")
 	nabl-to-str: Unique()    -> RootApp(CALL("nabl-unique-qualifier"))
 	
