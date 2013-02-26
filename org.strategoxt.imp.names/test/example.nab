@@ -14,10 +14,10 @@ properties
  
 binding rules
 
-	Entity(name, _) :
+	Entity(name, x) :
 		scopes Property, Method
 		defines 
-			Entity name 
+			Entity name  
 			of type EntityType(name)
 			of ancestors []
-			in subsequent scope
+			//in subsequent scope, x

@@ -16,7 +16,7 @@ rules
 			<bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
 			result     := <pp-stratego-string> str-module
 
-  to-ppable-str = alltd(MetaExplode); alltd(to-ppable-str-local)
+  to-ppable-str = meta-explode(fail); alltd(to-ppable-str-local)
     
 	to-ppable-str-local: ListVar(x)    -> Var(x)
 	to-ppable-str-local: VarRef(x)     -> Var(x)
@@ -73,23 +73,35 @@ rules // definition sites
 	def-to-str(|pattern, scopes):
 		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr*, pr*]
 		where
-			<?Current() + ?DefScopes([Subsequent()])> ds
+			ds':= <?DefScopes(<id>); not(?[Subsequent()])> ds 
+				< ( ds'' := LIST([SCOPE()|<nabl-to-str> ds])
+			  ; replace* := <filter(def-scope-to-str)> ds'
+				; sc       := SCOPE_CALL(<nabl-to-str> ns) )
+				+ (ds'', replace*, sc) := (<nabl-to-str> ds, [], Id()) 
 		where
-			call := <replace-all(|[(<to-ppable-str> t, DEF_CALL(<nabl-to-str> ns, u, ds, scopes))])> pattern;
-			dr* := [DEF_RULE(pattern, call)] <+
+			replace2* := [(<to-ppable-str> t, DEF_CALL(<nabl-to-str> ns, u, ds'', scopes)), replace*];
+			call := <replace-all(|replace2*)> pattern;
+			dr* := [DEF_RULE(pattern, sc, call)] <+
 			dr* := []
 		where
 			pcall := <replace-all(|[(<to-ppable-str> t, PROP_CALL(<map(prop-to-str)> ps))])> pattern;
 			pr*   := [PROP_RULE(pattern, pcall)] <+
 			pr*   := []
 
+	nabl-to-str: Current()			-> ToMetaExpr(Current())
+	nabl-to-str: DefScopes(ds*)	-> <filter(nabl-to-str)> ds* 
+	nabl-to-str: Subsequent() 	-> ToMetaExpr(Subsequent())
+	
 	prop-to-str:
 		PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)			
 	
+	def-scope-to-str:
+		DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())			
+		
 signature constructors
 	
-	ToMetaExpr : Term -> Term
-	
+	ToMetaExpr  : Term -> Term
+	FromMetaExpr: Term -> Term
 overlays
 
 	CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
@@ -97,12 +109,12 @@ overlays
 	TUPLE(elems)    = NoAnnoList(Tuple(elems))
 	LIST(elems)   	= NoAnnoList(List(elems))
 	
-	DEF_RULE(pattern, call) =
+	DEF_RULE(pattern, sc, call) =
 	SDefT(
   	"nabl-def-site"
 		, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
 		, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
-		, Seq(Match(pattern), call)
+		, Seq(Match(pattern), Seq(sc, call))
   )
   		
 	DEF_CALL(ns, u, ds, s) = 
@@ -110,10 +122,15 @@ overlays
 		SVar("nabl-def")
     , [CallNoArgs(SVar("cpaths")), CallNoArgs(SVar("spaths"))]
     , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths")
-      , ns, ToMetaExpr(u), ToMetaExpr(ds), LIST(s)
+      , ns, ToMetaExpr(u), ds, LIST(s)
   		]
 	)
 
+	SCOPE() = Var("scope")
+	
+	SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
+	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallNoArgs(SVar("nabl-def-scope")), LIST([ns]))))
+		
 	PROP_RULE(pattern, call) =
 	SDefT(
   	"nabl-prop-site"
