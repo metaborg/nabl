@@ -98,16 +98,17 @@ rules // definitions, scopes, properties
 	use-to-str(|pattern):
 		ImportToSite(_, ref, _) -> <refs-to-str(|pattern)> [ref]
 	
-	// TODO: support multiple alternatives
 	// TODO: support properties
 	// TODO: support binding scopes
 	// TODO: support conditions
 	refs-to-str(|pattern):	
-	[Reference(NameBinding(ns, t), [], All(), [])] -> USE_RULE(pattern, call)
+		refs -> USE_RULE(pattern, <replace-all(|[replace])> pattern)
 		where
-			replace := (<to-ppable-str> t, USE_CALL([CANDIDATE(<nabl-to-str> ns)]));
-			call    := <replace-all(|[replace])> pattern
+			Hd => Reference(NameBinding(_, t), _, _, _);
+			replace := (<to-ppable-str> t, USE_CALL(<filter(ref-to-str); nonempty> refs))
 		 		
+	ref-to-str: Reference(NameBinding(ns, _), [], All(), []) -> CANDIDATE(<nabl-to-str> ns)
+	
 	nabl-to-str: Current() -> TERM("Current")
 	nabl-to-str: 
 		DefScopes(ds)	-> LIST([sc1*, sc2*])

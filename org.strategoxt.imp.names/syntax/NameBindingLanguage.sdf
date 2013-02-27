@@ -67,6 +67,7 @@ exports
 		INamespaceRef RTerm																	-> IBinding			  {"NameBinding"}
 		NamespaceRef BTerm																	-> BBinding			  {"NameBinding"}
 		"of" PropertyRef RTerm															-> Property				{"PropertyBinding"}
+		"of" PropertyRef BTerm															-> BProperty			{"PropertyBinding"}
 		
 																												-> DefScopes			{"Current"}
 		"in" "current" "scope"															-> DefScopes			{"Current"}
@@ -82,7 +83,7 @@ exports
 
 		{RefPart "otherwise"}+															-> NamingRulePart	{"UseSite"} 		
 		"refers" "to" RefPartCore 													-> RefPart				{bracket}
-		IBinding Property* RefScope Constraint*							-> RefPartCore		{"Reference"}
+		IBinding BProperty* RefScope Constraint*						-> RefPartCore		{"Reference"}
 			
 		"in" Binding																				-> RefScope			 	{"RefScope"}
 		"in" "current" "scope"															-> RefScope				{"Current"}

@@ -74,6 +74,7 @@
    NameBinding                                            -- _1 _2,
    NameBinding                                            -- _1 _2,
    PropertyBinding                                        -- KW["of"] _1 _2,
+   PropertyBinding                                        -- KW["of"] _1 _2,
    Current                                                -- ,
    Current                                                -- KW["in"] KW["current"] KW["scope"],
    DefScopes                                              -- V  [H  [KW["in"]] _1],
