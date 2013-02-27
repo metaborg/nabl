@@ -123,7 +123,7 @@ overlays
 	SDefT(
   	"nabl-def-site"
 	, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths"), DefaultVarDec("states")]
 	, Seq(Match(pattern), Seq(sc, call))
   )
   	
@@ -131,7 +131,7 @@ overlays
 	SDefT(
   	"nabl-def-site"
 	, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths")]
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths"), DefaultVarDec("states")]
 	, Seq(Match(pattern), call)
 	)
   	
@@ -146,7 +146,7 @@ overlays
 	SDefT(
 	  "nabl-scope-site"
 	, [DefaultVarDec("cpaths")]
-	, [DefaultVarDec("lang"), DefaultVarDec("paths")]
+	, [DefaultVarDec("lang"), DefaultVarDec("paths"), DefaultVarDec("states")]
 	, Seq(
 	  	Match(pattern)
 	  , CallT(
@@ -166,7 +166,7 @@ overlays
 	SDefT(
   	"nabl-prop-site"
 	, []
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks")]
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("states")]
 	, Seq(Match(pattern), call)
   )
   
