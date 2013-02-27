@@ -61,13 +61,16 @@ rules // definitions, scopes, properties
 		
 	// TODO: support multiple definition sites
 	nabl-to-str: 
-		BindingRule(pattern, parts) -> result
+		BindingRule(pattern, parts) -> [defscope*, use*]
 		where
 			scopes := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
 		where
-			result := <fetch-elem(def-to-str(|pattern, scopes))> parts <+
-			result := [SCOPE_RULE(pattern, <nonempty> scopes)]
-
+			defscope* := <fetch-elem(def-to-str(|pattern, scopes))> parts <+
+			defscope* := [SCOPE_RULE(pattern, <nonempty> scopes)] <+
+			defscope* := []
+		where
+			use* := <filter(use-to-str(|pattern))> parts
+			
 	// TODO: support conditions 
 	def-to-str(|pattern, scopes):
 		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr, pr*]
@@ -85,6 +88,26 @@ rules // definitions, scopes, properties
 			pr*      := [PROP_RULE(pattern, <replace-all(|[preplace])> pattern)] <+
 			pr*      := []
 
+	use-to-str(|pattern):
+		UseSite(refs) -> <refs-to-str(|pattern)> refs
+	
+	
+	use-to-str(|pattern):
+		ImportFromSite(_, ref, _) -> <refs-to-str(|pattern)> [ref]
+			
+	use-to-str(|pattern):
+		ImportToSite(_, ref, _) -> <refs-to-str(|pattern)> [ref]
+	
+	// TODO: support multiple alternatives
+	// TODO: support properties
+	// TODO: support binding scopes
+	// TODO: support conditions
+	refs-to-str(|pattern):	
+	[Reference(NameBinding(ns, t), [], All(), [])] -> USE_RULE(pattern, call)
+		where
+			replace := (<to-ppable-str> t, USE_CALL([CANDIDATE(<nabl-to-str> ns)]));
+			call    := <replace-all(|[replace])> pattern
+		 		
 	nabl-to-str: Current() -> TERM("Current")
 	nabl-to-str: 
 		DefScopes(ds)	-> LIST([sc1*, sc2*])
@@ -177,6 +200,24 @@ overlays
 	)
 	
 	PROPERTY(p, v) = TERM("Prop", [p, v])
+
+	USE_RULE(pattern, call) =
+	SDefT(
+	  "nabl-use-site"
+	, []
+	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths"), DefaultVarDec("deps"), DefaultVarDec("states")]
+	, Seq(Match(pattern), call)
+  )
+  
+  USE_CALL(candidates) =
+  CallT(
+  	SVar("nabl-use")
+  , []
+  , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths"), Var("deps"), LIST(candidates)]	
+  )
+  
+  CANDIDATE(ns) =
+  TERM("UseCandidate", [ns, LIST([]), TERM("Current"), TERM("All")])
 
 rules // helper
 	
