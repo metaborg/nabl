@@ -159,7 +159,7 @@ overlays
 	SCOPE() = Var("scope")
 	
 	SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
-	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CALL("nabl-def-scope"), LIST([ns]))))
+	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CALL("nabl-def-scope"), ns)))
 		
 	PROP_RULE(pattern, call) =
 	SDefT(
