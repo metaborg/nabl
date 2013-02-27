@@ -89,13 +89,12 @@ rules // definitions, scopes, properties
 	nabl-to-str: 
 		DefScopes(ds)	-> LIST([sc1*, sc2*])
 		where
-			if fetch-elem(?DefScope(_)) then
+			if <fetch-elem(?DefScope(_))> ds then
 				sc1* := [SCOPE()]
 			else
 				sc1* := []
-			end
-		where
-			if fetch-elem(?Subsequent()) then
+			end;
+			if <fetch-elem(?Subsequent())> ds then
 				sc2* := [TERM("Subsequent")]
 			else
 				sc2* := []
