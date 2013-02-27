@@ -99,7 +99,6 @@ rules // definitions, scopes, properties
 		ImportToSite(_, ref, _) -> <refs-to-str(|pattern)> [ref]
 	
 	// TODO: support properties
-	// TODO: support binding scopes
 	// TODO: support conditions
 	refs-to-str(|pattern):	
 		refs -> USE_RULE(pattern, <replace-all(|[replace])> pattern)
@@ -107,7 +106,12 @@ rules // definitions, scopes, properties
 			Hd => Reference(NameBinding(_, t), _, _, _);
 			replace := (<to-ppable-str> t, USE_CALL(<filter(ref-to-str); nonempty> refs))
 		 		
-	ref-to-str: Reference(NameBinding(ns, _), [], All(), []) -> CANDIDATE(<nabl-to-str> ns)
+	ref-to-str: 
+		Reference(NameBinding(ns, _), [], All(), []) -> CANDIDATE(<nabl-to-str> ns)
+	
+	ref-to-str: 
+		Reference(NameBinding(ns, _), [], RefScope(NameBinding(ns', t)), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
+	
 	
 	nabl-to-str: Current() -> TERM("Current")
 	nabl-to-str: 
@@ -219,6 +223,9 @@ overlays
   
   CANDIDATE(ns) =
   TERM("UseCandidate", [ns, LIST([]), TERM("Current"), TERM("All")])
+
+	CANDIDATE(ns1, ns2, n) =
+  TERM("UseCandidate", [ns1, LIST([]), TERM("Current"), TERM("Context", [n, ns2, LIST([]), TERM("All")])])
 
 rules // helper
 	

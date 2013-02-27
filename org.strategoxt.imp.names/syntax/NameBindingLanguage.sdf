@@ -85,6 +85,7 @@ exports
 		"refers" "to" RefPartCore 													-> RefPart				{bracket}
 		IBinding BProperty* RefScope Constraint*						-> RefPartCore		{"Reference"}
 			
+		%% TODO this should be RefPartCore, but without additional constraints
 		"in" Binding																				-> RefScope			 	{"RefScope"}
 		"in" "current" "scope"															-> RefScope				{"Current"}
 		"in" "surrounding" NamespaceRef											-> RefScope				{"Surrounding"}
