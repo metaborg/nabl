@@ -1,7 +1,8 @@
-module stratego/NDL-Vars
+module terms/Vars
 
 imports
-	stratego/NDL-Identifiers
+
+  terms/Identifiers
 	
 exports
 
@@ -16,6 +17,7 @@ exports
   	
     Id  -> VarRef {"VarRef"}
     LId	-> VarRef {"ListVarRef"}
-
+    
   context-free restrictions
+
     Wld -/- [a-zA-Z0-9\'\-\_]

@@ -1,7 +1,7 @@
 module documentation/Development
 
 imports 
-	stratego/NDL-Identifiers
+	terms/Identifiers
 	documentation/Documentation
 	documentation/Metadata
 
@@ -16,6 +16,6 @@ exports
 		"todo"    Assignee Text  -> Documentation {"Todo"}
 		"fixme"   Assignee Text  -> Documentation {"Fixme"}
 		"discuss" Assignee Text  -> Documentation {"Discuss", prefer}
-		"test" "suite" TestSuite -> ModMetaData {"TestSuite"}
+		"test" "suite" TestSuite -> ModMetaData   {"TestSuite"}
 		
-		{Name+ ","}+             -> Assignee {"AssignedTo"}										 		
+		{Name+ ","}*             -> Assignee {"AssignedTo"}										 		

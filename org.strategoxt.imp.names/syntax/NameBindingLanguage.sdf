@@ -2,12 +2,12 @@ module NameBindingLanguage
 
 imports
   
-	stratego/NDL-Layout
-	stratego/NDL-Identifiers
-	stratego/NDL-Vars
-	stratego/NDL-Signatures
-	stratego/NDL-Terms[Var]
-	stratego/NDL-Terms[VarRef]
+	terms/Layout
+	terms/Identifiers
+	terms/Vars
+	terms/Signatures
+	terms/Terms[Var]
+	terms/Terms[VarRef]
 	documentation/Metadata
 	documentation/Documentation
 	documentation/Development

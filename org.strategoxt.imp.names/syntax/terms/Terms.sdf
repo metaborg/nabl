@@ -1,12 +1,14 @@
-module stratego/NDL-Terms[Var]
+module terms/Terms[Var]
 
 imports
-	stratego/NDL-Constants
-	stratego/NDL-Identifiers
+
+	terms/Constants
+	terms/Identifiers
 	
 exports
 
-  sorts PreTerm[[Var]] Term
+  sorts PreTerm[[Var]] Term[[Var]]
+  
   context-free syntax
 
     Int                                        -> PreTerm[[Var]] {"Int"}
@@ -16,7 +18,7 @@ exports
     Id "(" {Term[[Var]] ","}* ")"              -> PreTerm[[Var]] {"Op"}
     String "(" {Term[[Var]] ","}* ")"          -> PreTerm[[Var]] {"OpQ"}
 
-	PreTerm[[Var]]                             -> Term[[Var]]    {"NoAnnoList"}
+    PreTerm[[Var]]                             -> Term[[Var]]    {"NoAnnoList"}
 
   context-free syntax
 

@@ -1,28 +1,39 @@
-module stratego/NDL-Identifiers
+module terms/Identifiers
+
 exports
+  
   sorts ModName ModNamePart
+  
   lexical syntax
-    {ModNamePart "/"}+ -> ModName
+  
+    {ModNamePart "/"}+                -> ModName
     [a-zA-Z\.\_] [a-zA-Z0-9\'\.\-\_]* -> ModNamePart
+  
   lexical restrictions
+  
     ModName -/- [a-zA-Z0-9\'\.\-\_]
+  
   lexical syntax
+  
     "imports" 		-> ModName {reject}
     "overlays" 		-> ModName {reject}
-    "rules" 		-> ModName {reject}
+    "rules"       -> ModName {reject}
     "signature" 	-> ModName {reject}
     "strategies" 	-> ModName {reject}
 
   sorts Id LId LCID UCID Wld
+  
   lexical syntax
+  
     [a-zA-Z\_] [a-zA-Z0-9\'\-\_]*     -> Id
     [a-zA-Z\_] [a-zA-Z0-9\'\-\_]* "*" -> LId
     [\'] [a-z]+                       -> Id
 
-    [a-z] [a-zA-Z0-9\'\-\_]*  -> LCID
-    [A-Z] [a-zA-Z0-9\'\-\_]*  -> UCID
+    [a-z] [a-zA-Z0-9\'\-\_]*          -> LCID
+    [A-Z] [a-zA-Z0-9\'\-\_]*          -> UCID
 
   lexical restrictions
+
     Id   -/- [a-zA-Z0-9\'\_\*]
     Id   -/- [\-].~[\>]
     LId  -/- [a-zA-Z0-9\'\-\_]
@@ -30,8 +41,9 @@ exports
     UCID -/- [a-zA-Z0-9\'\-\_]
 
   lexical syntax
-    "_"     -> Id {reject}
-    "'"     -> Id {reject}
+
+    "_"     -> Id   {reject}
+    "'"     -> Id   {reject}
 
     Keyword -> Id   {reject}
     Keyword -> LId  {reject}
@@ -73,25 +85,27 @@ exports
       -/- [a-zA-Z0-9\'\-\_]
   
   sorts Keyword
+
   lexical syntax
-    "all"               -> Keyword
-    "constructors" 	-> Keyword
-    "fail" 		-> Keyword
-    "id" 		-> Keyword
-    "in" 		-> Keyword
-    "let" 		-> Keyword
-    "module" 		-> Keyword
-    "not" 		-> Keyword
-    "one" 		-> Keyword
-    "overlays" 		-> Keyword
-    "prim" 		-> Keyword
-    "rules" 		-> Keyword
-    "script" 		-> Keyword
-    "signature" 	-> Keyword
-    "some" 		-> Keyword
-    "sorts" 		-> Keyword
-    "strategies" 	-> Keyword
-    "stratego" 		-> Keyword
-    "test" 		-> Keyword
-    "where" 		-> Keyword
-    "import-term"	-> Keyword
+
+    "all"           -> Keyword
+    "constructors"  -> Keyword
+    "fail"          -> Keyword
+    "id"            -> Keyword
+    "in"            -> Keyword
+    "let"           -> Keyword
+    "module"        -> Keyword
+    "not"           -> Keyword
+    "one"           -> Keyword
+    "overlays"      -> Keyword
+    "prim"          -> Keyword
+    "rules"         -> Keyword
+    "script"        -> Keyword
+    "signature"     -> Keyword
+    "some"          -> Keyword
+    "sorts"         -> Keyword
+    "strategies"    -> Keyword
+    "stratego"      -> Keyword
+    "test"          -> Keyword
+    "where"         -> Keyword
+    "import-term"   -> Keyword
