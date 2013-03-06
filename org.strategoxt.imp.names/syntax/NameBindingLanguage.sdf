@@ -27,7 +27,7 @@ exports
 		
 	context-free syntax %% imports
 				
-		"imports" ImportModName* 														-> ModSection {"Imports"}
+		"imports" ImportModName* 														-> ModSection 		{"Imports"}
     ModName																							-> ImportModName	{"Import"}
 
   syntax
@@ -83,10 +83,9 @@ exports
 
 		{RefPart "otherwise"}+															-> NamingRulePart	{"UseSite"} 		
 		"refers" "to" RefPartCore 													-> RefPart				{bracket}
-		IBinding BProperty* RefScope Constraint*						-> RefPartCore		{"Reference"}
+		IBinding Property* RefScope Constraint*							-> RefPartCore		{"Reference"}
 			
-		%% TODO this should be RefPartCore, but without additional constraints
-		"in" Binding																				-> RefScope			 	{"RefScope"}
+		"in" IBinding	Property* RefScope 										-> RefScope			 	{"RefScope"}
 		"in" "current" "scope"															-> RefScope				{"Current"}
 		"in" "surrounding" NamespaceRef											-> RefScope				{"Surrounding"}
 																												-> RefScope				{"All"}
@@ -94,12 +93,21 @@ exports
 	context-free syntax %% qualified names
 
 		{QualifiedPart "otherwise"}+												-> NamingRulePart	{"QualifiedName"} 		
-		"qualifies" Binding "in" Binding 										-> QualifiedPart	{bracket}
+		"qualifies" Binding "in" Binding Constraint*				-> QualifiedPart	{"Qualifier"}
+		
+		{NamedPart "otherwise"}+														-> NamingRulePart	{"OverlayName"} 		
+		"names" Binding									 										-> NamedPart			{"Overlay"}
 		
 	context-free syntax %% imports
 		
-		"imports"{INamespaceRef ","}+ "from" RefPartCore IDefScopes	-> NamingRulePart {"ImportFromSite"}
-		"imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes	-> NamingRulePart {"ImportToSite"}
+		{ImportPart "otherwise"}+														-> NamingRulePart	{"ImportSite"} 		
+		{INamespaceRef ","}+ "from" IRefScope IDefScopes		-> ImportPart			{bracket}
+		
+		"imports"	-> NamingRulePart {"ImportFromSite"}
+		%% "imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes	-> NamingRulePart {"ImportToSite"}
+		
+		RefPartCore																					-> IRefScope			
+		RTerm																								-> IRefScope			{"RefScope"}
 		
 																												-> IDefScopes			{"Current"}
 		"into" "current" "scope"														-> IDefScopes			{"Current"}
