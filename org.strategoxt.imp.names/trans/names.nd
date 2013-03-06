@@ -6,7 +6,7 @@ namespaces Module Namespace Property Variable
 
 rules
 
-	Module(m, _): 
+	Module(m, _, _): 
 		defines Module m
 		scopes Namespace, Property
 		
@@ -35,7 +35,7 @@ rules
 
 rules
 
-	BindingRule(_, _, _):
+	BindingRule(_, _):
 		scopes Variable
 		
 	Var(x):

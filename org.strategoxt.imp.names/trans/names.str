@@ -27,19 +27,19 @@ signature
 rules
 
   nam-get-scope-types :
-    Module(m, _) -> [Namespace(), Property()]
+    Module(m, _, _) -> [Namespace(), Property()]
 
   nam-get-definition-keys :
-    Module(m, _) -> [m]
+    Module(m, _, _) -> [m]
 
   nam-get-definitions :
-    Module(m, _) -> [(Module(), [m])]
+    Module(m, _, _) -> [(Module(), [m])]
 
   nam-annotate-names(|paths__, path__):
-    Module(m, _) -> <Module(nam-annotate-def(|path__), id)>
+    Module(m, _, _) -> <Module(nam-annotate-def(|path__), id, id)>
 
   nam-unique :
-    Module(m, _) -> <id>
+    Module(m, _, _) -> <id>
 
 
 rules
@@ -138,7 +138,7 @@ rules
 rules
 
   nam-get-scope-types :
-    BindingRule(_, _, _) -> [Variable()]
+    BindingRule(_, _) -> [Variable()]
 
 
 rules

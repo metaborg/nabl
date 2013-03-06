@@ -13,7 +13,8 @@ exports
     
     "binding" "rules" NamingRule*                       -> ModSection     {"BindingRules"}
 
-    Documentation* BTerm ":" NamingRulePart+            -> NamingRule     {"BindingRule"}
+    Documentation                                       -> NamingRule
+    BTerm ":" NamingRulePart+                           -> NamingRule     {"BindingRule"}
     
   context-free syntax %% definition sites 
     
