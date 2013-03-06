@@ -93,7 +93,7 @@ rules // definitions, scopes, properties
 	
 	
 	use-to-str(|pattern):
-		Import(_, ref, _) -> <refs-to-str(|pattern)> [ref]
+		Import(_, [], ref, _) -> <refs-to-str(|pattern)> [ref]
 			
 	// TODO: support properties
 	// TODO: support conditions

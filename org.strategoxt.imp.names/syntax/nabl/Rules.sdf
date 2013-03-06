@@ -25,10 +25,20 @@ exports
     "non-unique"                                        -> Unique         {"NonUnique"}
     
     NamespaceRef RTerm                                  -> Binding        {"NameBinding"}
-    INamespaceRef RTerm                                 -> IBinding       {"NameBinding"}
+    Disambiguator INamespaceRef RTerm                   -> IBinding       {"NameBinding"}
+    
+                                                        -> Disambiguator  {"All"}
+    "all"                                               -> Disambiguator  {"All"}
+    "first"                                             -> Disambiguator  {"First"}
+    "single"                                            -> Disambiguator  {"Single"}
+    "best"                                              -> Disambiguator  {"Best"}
+        
     NamespaceRef BTerm                                  -> BBinding       {"NameBinding"}
     "of" PropertyRef RTerm                              -> Property       {"PropertyBinding"}
-    "of" PropertyRef BTerm                              -> BProperty      {"PropertyBinding"}
+    "of" PropertyMatch PropertyRef BTerm                -> BProperty      {"PropertyBinding"}
+    
+                                                        -> PropertyMatch  {"Exact"}
+    "conformant"                                        -> PropertyMatch  {"Conformance"}
     
                                                         -> DefScopes      {"Current"}
     "in" "current" "scope"                              -> DefScopes      {"Current"}
@@ -54,20 +64,24 @@ exports
   context-free syntax %% qualified names
 
     {QualifiedPart "otherwise"}+                        -> NamingRulePart {"QualifiedName"}     
-    "qualifies" Binding "in" Binding Constraint*        -> QualifiedPart  {"Qualifier"}
+    "qualifies" RefPartCore                             -> QualifiedPart  {bracket}
     
     {NamedPart "otherwise"}+                            -> NamingRulePart {"OverlayName"}     
-    "names" Binding                                     -> NamedPart      {"Overlay"}
+    "identifies" RefPartCore                            -> NamedPart      {bracket}
     
   context-free syntax %% imports
     
-    {ImportPart "otherwise"}+                                  -> NamingRulePart  {"ImportSite"}    
-    "imports" {INamespaceRef ","}+ "from" IRefScope IDefScopes -> ImportPart      {"Import"}
+    {ImportPart "otherwise"}+                                 -> NamingRulePart  {"ImportSite"}    
+    "imports" {Imported ","}+ BProperty* IRefScope IDefScopes -> ImportPart      {"Import"}
 
+    INamespaceRef                                       -> Imported
+    IBinding                                            -> Imported
+     
     %% "imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes  -> NamingRulePart {"ImportToSite"}
     
-    RefPartCore                                         -> IRefScope      
-    RTerm                                               -> IRefScope      {"RefScope"}
+                                                        -> IRefScope      {"Current"}
+    "from" RefPartCore                                  -> IRefScope      {bracket}
+    "from" RTerm                                        -> IRefScope      {"RefScope"}
     
                                                         -> IDefScopes     {"Current"}
     "into" "current" "scope"                            -> IDefScopes     {"Current"}
