@@ -22,4 +22,4 @@ builders
   builder  : "Show index entries for all files" = index-allfiles (openeditor) (realtime) (meta) (source)
   builder  : "Clear index" = index-cleanall (meta) (source)                                                                                             
 
-  on save  : editor-save
+  on save  : generate-name-analysis
