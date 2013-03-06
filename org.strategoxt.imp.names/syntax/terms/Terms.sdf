@@ -3,7 +3,7 @@ module terms/Terms[Var]
 imports
 
 	terms/Constants
-	terms/Identifiers
+	common/Identifiers
 	
 exports
 

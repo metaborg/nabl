@@ -1,0 +1,79 @@
+module nabl/Rules
+
+imports
+
+  terms/Vars  
+  nabl/Namespaces
+  nabl/Properties
+  documentation/Documentation
+  
+exports 
+  
+  context-free syntax
+    
+    "binding" "rules" NamingRule*                       -> ModSection     {"BindingRules"}
+
+    Documentation* BTerm ":" NamingRulePart+            -> NamingRule     {"BindingRule"}
+    
+  context-free syntax %% definition sites 
+    
+    "defines" Unique Binding Property* DefScopes Constraint* -> NamingRulePart {"DefSite"}
+    
+                                                        -> Unique         {"Unique"}
+    "unique"                                            -> Unique         {"Unique"}
+    "non-unique"                                        -> Unique         {"NonUnique"}
+    
+    NamespaceRef RTerm                                  -> Binding        {"NameBinding"}
+    INamespaceRef RTerm                                 -> IBinding       {"NameBinding"}
+    NamespaceRef BTerm                                  -> BBinding       {"NameBinding"}
+    "of" PropertyRef RTerm                              -> Property       {"PropertyBinding"}
+    "of" PropertyRef BTerm                              -> BProperty      {"PropertyBinding"}
+    
+                                                        -> DefScopes      {"Current"}
+    "in" "current" "scope"                              -> DefScopes      {"Current"}
+    "in" {DefScope ","}+                                -> DefScopes      {"DefScopes"}
+    "subsequent" "scope"                                -> DefScope       {"Subsequent"}
+    RTerm                                               -> DefScope       {"DefScope"}
+    
+  context-free syntax
+    
+    "scopes" {NamespaceRef ","}+                        -> NamingRulePart {"Scopes"}      
+    
+  context-free syntax %% use sites
+
+    {RefPart "otherwise"}+                              -> NamingRulePart {"UseSite"}     
+    "refers" "to" RefPartCore                           -> RefPart        {bracket}
+    IBinding BProperty* RefScope Constraint*            -> RefPartCore    {"Reference"}
+      
+    "in" IBinding Property* RefScope                    -> RefScope       {"RefScope"}
+    "in" "current" "scope"                              -> RefScope       {"Current"}
+    "in" "surrounding" NamespaceRef                     -> RefScope       {"Surrounding"}
+                                                        -> RefScope       {"All"}
+  
+  context-free syntax %% qualified names
+
+    {QualifiedPart "otherwise"}+                        -> NamingRulePart {"QualifiedName"}     
+    "qualifies" Binding "in" Binding Constraint*        -> QualifiedPart  {"Qualifier"}
+    
+    {NamedPart "otherwise"}+                            -> NamingRulePart {"OverlayName"}     
+    "names" Binding                                     -> NamedPart      {"Overlay"}
+    
+  context-free syntax %% imports
+    
+    {ImportPart "otherwise"}+                                  -> NamingRulePart  {"ImportSite"}    
+    "imports" {INamespaceRef ","}+ "from" IRefScope IDefScopes -> ImportPart      {"Import"}
+
+    %% "imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes  -> NamingRulePart {"ImportToSite"}
+    
+    RefPartCore                                         -> IRefScope      
+    RTerm                                               -> IRefScope      {"RefScope"}
+    
+                                                        -> IDefScopes     {"Current"}
+    "into" "current" "scope"                            -> IDefScopes     {"Current"}
+    "into" {DefScope ","}+                              -> IDefScopes     {"DefScopes"}
+    
+    %% Constraint
+    "where" RTerm Condition                             -> Constraint     {"Constraint"}
+    "has" PropertyRef BTerm                             -> Condition      {"PropertyCond"}
+    "is" "of" PropertyRef BTerm                         -> Condition      {"PropertyCond"}
+    "refers" "to" BBinding Property* RefScope           -> Condition      {"ReferenceCond"}

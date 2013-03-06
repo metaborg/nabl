@@ -2,7 +2,7 @@ module terms/Signatures
 
 imports
 
-	terms/Identifiers
+	common/Identifiers
 	terms/Constants
 	terms/StringQuotations
 	

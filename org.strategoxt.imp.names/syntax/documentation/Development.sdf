@@ -1,7 +1,7 @@
 module documentation/Development
 
 imports 
-	terms/Identifiers
+	common/Identifiers
 	documentation/Documentation
 	documentation/Metadata
 

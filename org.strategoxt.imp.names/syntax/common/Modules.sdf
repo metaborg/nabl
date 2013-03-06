@@ -1,0 +1,24 @@
+module common/Modules
+
+imports
+  
+	common/Layout
+	common/Identifiers
+	documentation/Metadata
+	documentation/Documentation
+	documentation/Development
+	
+exports 
+  
+	context-free syntax
+		
+		"module" ModName ModMetaData* ModSection* -> Module        {"Module"}
+			
+	context-free syntax %% imports
+				
+		"imports" ImportModName*                  -> ModSection    {"Imports"}
+    ModName                                   -> ImportModName {"Import"}
+
+  syntax
+
+		<ModName-CF> "/" "-"                      -> <ImportModName-CF> {"ImportWildcard"}

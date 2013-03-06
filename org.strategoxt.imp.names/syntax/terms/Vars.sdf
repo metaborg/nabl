@@ -2,8 +2,10 @@ module terms/Vars
 
 imports
 
-  terms/Identifiers
-	
+  common/Identifiers
+  terms/Terms[Var]
+  terms/Terms[VarRef]
+
 exports
 
   sorts Wld Var VarRef
@@ -21,3 +23,8 @@ exports
   context-free restrictions
 
     Wld -/- [a-zA-Z0-9\'\-\_]
+
+  context-free syntax
+    
+    Term[[Var]]     -> BTerm %% term binding variables
+    Term[[VarRef]]  -> RTerm %% term referencing variables
