@@ -8,7 +8,10 @@ imports
 	stratego/NDL-Signatures
 	stratego/NDL-Terms[Var]
 	stratego/NDL-Terms[VarRef]
-		
+	documentation/Metadata
+	documentation/Documentation
+	documentation/Development
+	
 exports 
   
 	context-free start-symbols
@@ -22,7 +25,7 @@ exports
   	
 	context-free syntax
 		
-		"module" ModName ModSection*												-> Start 					{"Module"}
+		"module" ModName ModMetaData* ModSection*						-> Start 					{"Module"}
 		
 		
 	context-free syntax %% imports
@@ -34,7 +37,6 @@ exports
 
 		<ModName-CF> "/" "-" 																-> <ImportModName-CF> {"ImportWildcard"}
     
-
 	context-free syntax %% sections
 		
 		%% Namespaces
@@ -53,7 +55,7 @@ exports
 
 		"binding" "rules" NamingRule*												-> ModSection			{"BindingRules"}
 
-		BTerm ":" NamingRulePart+														-> NamingRule			{"BindingRule"}
+		Documentation* BTerm ":" NamingRulePart+						-> NamingRule			{"BindingRule"}
 		
 	context-free syntax %% definition sites	
 		
@@ -83,7 +85,7 @@ exports
 
 		{RefPart "otherwise"}+															-> NamingRulePart	{"UseSite"} 		
 		"refers" "to" RefPartCore 													-> RefPart				{bracket}
-		IBinding Property* RefScope Constraint*							-> RefPartCore		{"Reference"}
+		IBinding BProperty* RefScope Constraint*						-> RefPartCore		{"Reference"}
 			
 		"in" IBinding	Property* RefScope 										-> RefScope			 	{"RefScope"}
 		"in" "current" "scope"															-> RefScope				{"Current"}
@@ -100,10 +102,9 @@ exports
 		
 	context-free syntax %% imports
 		
-		{ImportPart "otherwise"}+														-> NamingRulePart	{"ImportSite"} 		
-		{INamespaceRef ","}+ "from" IRefScope IDefScopes		-> ImportPart			{bracket}
-		
-		"imports"	-> NamingRulePart {"ImportFromSite"}
+		{ImportPart "otherwise"}+														       -> NamingRulePart	{"ImportSite"} 		
+		"imports"	{INamespaceRef ","}+ "from" IRefScope IDefScopes -> ImportPart			{"Import"}
+
 		%% "imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes	-> NamingRulePart {"ImportToSite"}
 		
 		RefPartCore																					-> IRefScope			

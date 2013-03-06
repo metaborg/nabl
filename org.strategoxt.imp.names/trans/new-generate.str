@@ -61,7 +61,7 @@ rules // definitions, scopes, properties
 		
 	// TODO: support multiple definition sites
 	nabl-to-str: 
-		BindingRule(pattern, parts) -> [defscope*, use*]
+		BindingRule(_, pattern, parts) -> [defscope*, use*]
 		where
 			scopes := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
 		where
@@ -93,11 +93,8 @@ rules // definitions, scopes, properties
 	
 	
 	use-to-str(|pattern):
-		ImportFromSite(_, ref, _) -> <refs-to-str(|pattern)> [ref]
+		Import(_, ref, _) -> <refs-to-str(|pattern)> [ref]
 			
-	use-to-str(|pattern):
-		ImportToSite(_, ref, _) -> <refs-to-str(|pattern)> [ref]
-	
 	// TODO: support properties
 	// TODO: support conditions
 	refs-to-str(|pattern):	
@@ -110,7 +107,7 @@ rules // definitions, scopes, properties
 		Reference(NameBinding(ns, _), [], All(), []) -> CANDIDATE(<nabl-to-str> ns)
 	
 	ref-to-str: 
-		Reference(NameBinding(ns, _), [], RefScope(NameBinding(ns', t)), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
+		Reference(NameBinding(ns, _), [], RefScope(NameBinding(ns', t), _, _), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
 	
 	
 	nabl-to-str: Current() -> TERM("Current")
