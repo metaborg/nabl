@@ -126,7 +126,7 @@ rules // definitions, scopes, properties
 			end
 	 	
 	nabl-to-str: NonUnique() -> TERM("NonUnique")
-	nabl-to-str: Unique()    -> RootApp(CALL("nabl-unique-qualifier"))
+	nabl-to-str: Unique()    -> TERM("Unique")
 	
 	prop-to-str:
 		PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)			
@@ -146,37 +146,37 @@ overlays
 	DEF_RULE(pattern, sc, call) =
 	SDefT(
   	"nabl-def-site"
-	, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths"), DefaultVarDec("states")]
+	, [DefaultVarDec("child-uris"), DefaultVarDec("sibl-uris")]
+	, [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
 	, Seq(Match(pattern), Seq(sc, call))
   )
   	
   DEF_RULE(pattern, call) =
 	SDefT(
   	"nabl-def-site"
-	, [DefaultVarDec("cpaths"), DefaultVarDec("spaths")]
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths"), DefaultVarDec("states")]
+	, [DefaultVarDec("child-uris"), DefaultVarDec("sibl-uris")]
+  , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
 	, Seq(Match(pattern), call)
 	)
   	
 	DEF_CALL(ns, u, ds, s) = 
 	CallT(
 	  SVar("nabl-def")
-  , [CALL("cpaths"), CALL("spaths")]
-  , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths"), ns, u, ds, LIST(s)]
+  , [CALL("child-uris"), CALL("sibl-uris")]
+  , [ Var("context"), Var("uris"), ns, u, ds, LIST(s)]
 	)
 
 	SCOPE_RULE(pattern, scopes) =
 	SDefT(
 	  "nabl-anonymous-scope-site"
-	, [DefaultVarDec("cpaths")]
-	, [DefaultVarDec("lang"), DefaultVarDec("paths"), DefaultVarDec("states")]
+	, [DefaultVarDec("child-uris")]
+	, [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
 	, Seq(
 	  	Match(pattern)
 	  , CallT(
 				SVar("nabl-anonymous-scope")
-  		, [CALL("cpaths")]
-  		, [ Var("lang"), Var("paths"), LIST(scopes) ]
+  		, [CALL("child-uris")]
+  		, [ Var("context"), Var("uris"), LIST(scopes) ]
 		  )
     )
 	)
@@ -184,13 +184,13 @@ overlays
 	SCOPE() = Var("scope")
 	
 	SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
-	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CALL("nabl-def-scope"), ns)))
+	SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallT(SVar("nabl-def-scope"), [], [Var("context")]), ns)))
 		
 	PROP_RULE(pattern, call) =
 	SDefT(
   	"nabl-prop-site"
 	, []
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("states")]
+	, [DefaultVarDec("context"), DefaultVarDec("states")]
 	, Seq(Match(pattern), call)
   )
   
@@ -198,7 +198,7 @@ overlays
 	CallT(
 		SVar("nabl-props")
   , []
-  , [ Var("lang"), Var("elems"), Var("tasks"), LIST(ps)]
+  , [ Var("context"), LIST(ps)]
 	)
 	
 	PROPERTY(p, v) = TERM("Prop", [p, v])
@@ -207,7 +207,7 @@ overlays
 	SDefT(
 	  "nabl-use-site"
 	, []
-	, [DefaultVarDec("lang"), DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("paths"), DefaultVarDec("deps"), DefaultVarDec("states")]
+	, [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("deps"), DefaultVarDec("states")]
 	, Seq(Match(pattern), call)
   )
   
@@ -215,7 +215,7 @@ overlays
   CallT(
   	SVar("nabl-use")
   , []
-  , [ Var("lang"), Var("elems"), Var("tasks"), Var("paths"), Var("deps"), LIST(candidates)]	
+  , [ Var("context"), Var("uris"), Var("deps"), LIST(candidates)]	
   )
   
   CANDIDATE(ns) =
