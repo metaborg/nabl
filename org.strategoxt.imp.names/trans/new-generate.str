@@ -71,14 +71,12 @@ rules // definitions, scopes, properties
 		where
 			use* := <filter(use-to-str(|pattern))> parts
 			
-	// TODO: support conditions 
 	def-to-str(|pattern, scopes):
 		DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> [dr, pr*]
 		where  
 		  // replace name with callback to handle definition site
-			replace := ( <to-ppable-str> t 
-			           , DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes)
-			           )
+			t'      := <to-ppable-str> t ;
+			replace := ( t', DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes))
 		where 
 		  // when we have external scopes in a "defines ... in ..." clause, 
 		  // replace these external scopes with callbacks
@@ -91,24 +89,27 @@ rules // definitions, scopes, properties
 			// generate a rule handling this defintion site
 			dr       := DEF_RULE(pattern, <replace-all(|[replace])> pattern)
 		where
-		  // when this definition site defines properties, replace name with callback
-			preplace  := (<to-ppable-str> t, PROP_CALL(<nonempty; map(prop-to-str)> ps));
-			// create tasks for calculated properties
-			(preplace*, clause*) := <map-with-index(constraint-to-str); unzip> constr*;
-			// replace calculated properties with result variables
-			preplace' := <innermost(replace(|preplace*))> preplace;
-			last := <replace-all(|[preplace'])> pattern;
-			// sequential task creation
-			call := <foldl(!Seq(<Fst>, <Snd>))> (clause*, last);
-			// and generate a rule handling properties at this definition site
-			pr*       := [PROP_RULE(pattern, call)] <+
+		  // when this definition site defines properties,
+		  // construct a callback
+		  pcall := PROP_CALL(<nonempty; map(prop-to-str)> ps);
+		  // construct sequence of property calculatations and callback
+		  pbody := <constraints-to-str(|1, pcall, t', pattern)> constr*;
+		  // generate a rule handling properties at this definition site
+			pr*   := [PROP_RULE(pattern, pbody)] <+
 			// otherwise generate no rule
-			pr*       := []
+			pr*   := []
 
-  constraint-to-str:
-    (n, Constraint(t, PropertyCond(p, Var(v)))) -> ((Var(v), Var(r)), PROP_TASK(r, <nabl-to-str> p, t))
-    where
-    	r := $[result[n]]
+  constraints-to-str(|n, c, term, pattern):
+  	[] -> <replace-all(|(term, c))> pattern
+  
+  // TODO: support matches
+  constraints-to-str(|n, c, term, pattern):
+    [ Constraint(t, PropertyCond(p, Var(v))) | cs ] -> Seq(PROP_TASK(r, p', t), cont)
+  	where
+  		r         := Var($[result[n]]);
+  		p'        := <nabl-to-str> p;
+  		(cs', c') := <alltd(replace(|[(Var(v), r), (VarRef(v), r)]))> (cs, c);
+  		cont      := <constraints-to-str(|<inc> n, c', term, pattern)> cs'	   
     
 rules
 	  
@@ -230,7 +231,7 @@ overlays
   PROP_TASK(v, p, t) =
   Where(
     Assign(
-      Var(v)
+      v
     , App(
         CallT(
           SVar("new-task")
@@ -269,7 +270,7 @@ rules // helper
 
 	replace-all(|rs) = alltd(replace(|rs) <+ introduce-id)
 	
-	replace(|rs): t1 -> t2 where <fetch-elem(?(t1, t2))> rs
+	replace(|rs): t1 -> t2 where <?(t1, t2) <+ fetch-elem(?(t1, t2))> rs
 	
 	introduce-id: Wld()      -> Id()
 	introduce-id: Var(_)     -> Id()
