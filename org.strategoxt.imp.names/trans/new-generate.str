@@ -73,21 +73,45 @@ rules // definitions, scopes, properties
 			
 	// TODO: support conditions 
 	def-to-str(|pattern, scopes):
-		DefSite(u, NameBinding(ns, t), ps, ds, []) -> [dr, pr*]
-		where
+		DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> [dr, pr*]
+		where  
+		  // replace name with callback to handle definition site
 			replace := ( <to-ppable-str> t 
 			           , DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes)
 			           )
-		where
+		where 
+		  // when we have external scopes in a "defines ... in ..." clause, 
+		  // replace these external scopes with callbacks
 			replace* := <?DefScopes(<filter(def-scope-to-str)>); nonempty> ds;
+			// callback to determine external scope 
 			sc       := SCOPE_CALL(<nabl-to-str> ns);
+			// apply all replacements and generate a rule handling this definition site
 			dr       := DEF_RULE(pattern, sc, <replace-all(|[replace, replace*])> pattern) <+
+			// otherwise replace only the name and
+			// generate a rule handling this defintion site
 			dr       := DEF_RULE(pattern, <replace-all(|[replace])> pattern)
 		where
-			preplace := (<to-ppable-str> t, PROP_CALL(<nonempty; map(prop-to-str)> ps));
-			pr*      := [PROP_RULE(pattern, <replace-all(|[preplace])> pattern)] <+
-			pr*      := []
+		  // when this definition site defines properties, replace name with callback
+			preplace  := (<to-ppable-str> t, PROP_CALL(<nonempty; map(prop-to-str)> ps));
+			// create tasks for calculated properties
+			(preplace*, clause*) := <map-with-index(constraint-to-str); unzip> constr*;
+			// replace calculated properties with result variables
+			preplace' := <innermost(replace(|preplace*))> preplace;
+			last := <replace-all(|[preplace'])> pattern;
+			// sequential task creation
+			call := <foldl(!Seq(<Fst>, <Snd>))> (clause*, last);
+			// and generate a rule handling properties at this definition site
+			pr*       := [PROP_RULE(pattern, call)] <+
+			// otherwise generate no rule
+			pr*       := []
 
+  constraint-to-str:
+    (n, Constraint(t, PropertyCond(p, Var(v)))) -> ((Var(v), Var(r)), PROP_TASK(r, <nabl-to-str> p, t))
+    where
+    	r := $[result[n]]
+    
+rules
+	  
 	use-to-str(|pattern):
 		UseSite(refs) -> <refs-to-str(|pattern)> refs
 	
@@ -203,6 +227,21 @@ overlays
 	
 	PROPERTY(p, v) = TERM("Prop", [p, v])
 
+  PROP_TASK(v, p, t) =
+  Where(
+    Assign(
+      Var(v)
+    , App(
+        CallT(
+          SVar("new-task")
+        , []
+        , [App(CallNoArgs(SVar("task-in-context")), Var("context"))]
+        )
+      , TERM("PropCalc", [p, t])
+      )
+    )
+  )
+  
 	USE_RULE(pattern, call) =
 	SDefT(
 	  "nabl-use-site"
