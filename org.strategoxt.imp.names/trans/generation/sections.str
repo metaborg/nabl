@@ -10,7 +10,7 @@ imports
     
 rules // namespaces 
       
-  nabl-to-str:
+  nabl-to-str(|replace*, bound*, rule*):
     Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
     
   nabl-to-str: // generates constructors for namespaces
@@ -20,7 +20,7 @@ rules // namespaces
 
 rules // properties
         
-  nabl-to-str:
+  nabl-to-str(|replace*, bound*, rule*):
     Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
   
   nabl-to-str: // generate constructors for properties
@@ -31,22 +31,14 @@ rules // properties
 
 rules // imports
     
-  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task")|<id>])
+  nabl-to-str(|replace*, bound*, rule*) = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task")|<id>])
     
 rules // binding rules
 
-  nabl-to-str:
+  nabl-to-str(|replace*, bound*, rule*):
     BindingRules(rs) -> Rules(<nonempty> rs')
     where
-      new-hashtable => replace*;
-      new-iset      => bound*;
-      new-iset      => rule*;
-      
+      <iset-clear> rule*;
       <filter(nabl-to-str(|replace*, bound*, rule*))> rs;
-      rs' := <iset-elements> rule*;
-      
-      <hashtable-destroy> replace*;
-      <iset-destroy> bound*;
-      <iset-destroy> rule*
-      
-  
+      rs' := <iset-elements> rule*
+     

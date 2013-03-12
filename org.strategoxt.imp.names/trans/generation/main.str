@@ -21,5 +21,14 @@ rules
 rules // modules
   
   nabl-to-str:
-    Module(name, _, sections) -> Module(name, <filter(nabl-to-str)> sections)
-    
+    Module(name, _, sections) -> Module(name, sections')
+    where
+      new-hashtable => replace*;
+      new-iset      => bound*;
+      new-iset      => rule*;
+      
+      sections' := <filter(nabl-to-str(|replace*, bound*, rule*))> sections;
+      
+      <hashtable-destroy> replace*;
+      <iset-destroy> bound*;
+      <iset-destroy> rule*    

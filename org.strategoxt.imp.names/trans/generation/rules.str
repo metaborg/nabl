@@ -17,8 +17,7 @@ rules
     BindingRule(pattern, constr*, parts) -> <id>
     where
       <hashtable-clear> replace*;
-      <iset-clear> bound*;
-      <iset-clear> rule*
+      <iset-clear> bound*
     where
       pattern':= <to-ppable-str> pattern;
       <iset-addlist(|<collect-all(?Var(_))> pattern')> bound*;

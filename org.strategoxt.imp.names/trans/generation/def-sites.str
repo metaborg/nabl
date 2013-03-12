@@ -39,7 +39,7 @@ rules // definitions, scopes, properties
       pbody  := <foldr(!pcall', to-seq)> [task*, task'*] ;
       <iset-add(|PROP_RULE(Seq(Match(pattern), pbody)))> rule* 
     )
-
+    
   def-scope-to-str:
     DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())      
 
