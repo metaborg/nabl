@@ -14,7 +14,7 @@ exports
     "binding" "rules" NamingRule*                       -> ModSection     {"BindingRules"}
 
     Documentation                                       -> NamingRule
-    BTerm ":" NamingRulePart+                           -> NamingRule     {"BindingRule"}
+    BTerm Constraint* ":" NamingRulePart+               -> NamingRule     {"BindingRule"}
     
   context-free syntax %% definition sites 
     
@@ -41,8 +41,9 @@ exports
     "conformant"                                        -> PropertyMatch  {"Conformance"}
     
                                                         -> DefScopes      {"Current"}
-    "in" "current" "scope"                              -> DefScopes      {"Current"}
-    "in" {DefScope ","}+                                -> DefScopes      {"DefScopes"}
+    "in" DefScopesCore                                  -> DefScopes      {bracket}
+    "current" "scope"                                   -> DefScopesCore  {"Current"}
+    {DefScope ","}+                                     -> DefScopesCore  {"DefScopes"}
     "subsequent" "scope"                                -> DefScope       {"Subsequent"}
     RTerm                                               -> DefScope       {"DefScope"}
     
@@ -56,10 +57,11 @@ exports
     "refers" "to" RefPartCore                           -> RefPart        {bracket}
     IBinding BProperty* RefScope Constraint*            -> RefPartCore    {"Reference"}
       
-    "in" IBinding Property* RefScope                    -> RefScope       {"RefScope"}
-    "in" "current" "scope"                              -> RefScope       {"Current"}
-    "in" "surrounding" NamespaceRef                     -> RefScope       {"Surrounding"}
                                                         -> RefScope       {"All"}
+    "in" RefScopeCore                                   -> RefScope       {bracket}
+    "current" "scope"                                   -> RefScopeCore   {"Current"}
+    "surrounding" NamespaceRef                          -> RefScopeCore   {"Surrounding"}
+    IBinding Property* RefScope                         -> RefScopeCore   {"RefScope"}
   
   context-free syntax %% qualified names
 
@@ -71,21 +73,18 @@ exports
     
   context-free syntax %% imports
     
-    {ImportPart "otherwise"}+                                 -> NamingRulePart  {"ImportSite"}    
-    "imports" {Imported ","}+ BProperty* IRefScope IDefScopes -> ImportPart      {"Import"}
+    {ImportPart "otherwise"}+                                                  -> NamingRulePart  {"ImportSite"}    
+    "imports" IBinding BProperty* IRefScope IDefScopes Constraint*             -> ImportPart      {"SingleImport"}
+    "imports" {INamespaceRef ","}+ BProperty* IRefScope IDefScopes Constraint* -> ImportPart      {"WildcardImport"}
 
-    INamespaceRef                                       -> Imported
-    IBinding                                            -> Imported
-     
-    %% "imports"{INamespaceRef ","}+ "into" RefPartCore IDefScopes  -> NamingRulePart {"ImportToSite"}
-    
-                                                        -> IRefScope      {"Current"}
-    "from" RefPartCore                                  -> IRefScope      {bracket}
+    IBinding BProperty* RefScope Constraint*            -> RefPartCore    {"Reference"}
+      
+                                                        -> IRefScope      {"All"}
+    "from" RefScopeCore                                 -> IRefScope      {bracket}
     "from" RTerm                                        -> IRefScope      {"RefScope"}
     
                                                         -> IDefScopes     {"Current"}
-    "into" "current" "scope"                            -> IDefScopes     {"Current"}
-    "into" {DefScope ","}+                              -> IDefScopes     {"DefScopes"}
+    "into" DefScopesCore                                -> IDefScopes     {bracket}
     
     %% Constraint
     "where" RTerm Condition                             -> Constraint     {"Constraint"}

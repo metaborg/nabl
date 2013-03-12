@@ -1,0 +1,85 @@
+module generation/def-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/main
+  generation/constraints
+  
+rules // definitions, scopes, properties
+    
+  def-to-str(|bnd*, rep*, n, cont, pattern, scopes):
+    DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> [dr, pr*]
+    where  
+      // replace name with callback to handle definition site
+      t'      := <to-ppable-str> t ;
+      replace := ( t', DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes))
+    where 
+      // when we have external scopes in a "defines ... in ..." clause, 
+      // replace these external scopes with callbacks
+      replace* := <?DefScopes(<filter(def-scope-to-str)>); nonempty> ds;
+      // callback to determine external scope 
+      sc       := SCOPE_CALL(<nabl-to-str> ns);
+      // apply all replacements and generate a rule handling this definition site
+      dr       := DEF_RULE(Match(pattern), Seq(sc, <replace-all(|[replace, replace*])> pattern)) <+
+      // otherwise replace only the name and
+      // generate a rule handling this defintion site
+      dr       := DEF_RULE(Match(pattern), <replace-all(|[replace])> pattern)
+    where
+      // when this definition site defines properties,
+      // construct sequence of property calculatations
+      (_, rep2*, _, ccall2, rule*) := <constraints-to-str> (constr*, (bnd*, rep*, n, cont));
+      // and a callback
+      pcall  := <alltd(replace(|rep2*))> PROP_CALL(<nonempty; map(prop-to-str)> ps);
+      // generate a rule handling properties at this definition site
+      pbody := <replace-all(|[(t', pcall)])> pattern ;
+      pr*   := [PROP_RULE(ccall2, pbody), rule*] <+
+      // otherwise generate no rule
+      pr*   := []
+
+  def-scope-to-str:
+    DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())      
+
+  prop-to-str:
+    PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
+
+overlays
+  
+  DEF_RULE(match, call) =
+  SDefT(
+    "nabl-def-site"
+  , [DefaultVarDec("child-uris"), DefaultVarDec("sibl-uris")]
+  , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
+  , Seq(match, call)
+  )
+    
+  DEF_CALL(ns, u, ds, s) = 
+  CallT(
+    SVar("nabl-def")
+  , [CALL("child-uris"), CALL("sibl-uris")]
+  , [ Var("context"), Var("uris"), ns, u, ds, LIST(s)]
+  )
+
+  SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
+  SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallT(SVar("nabl-def-scope"), [], [Var("context")]), ns)))
+    
+  PROP_RULE(match, call) =
+  SDefT(
+    "nabl-prop-site"
+  , []
+  , [DefaultVarDec("context"), DefaultVarDec("states")]
+  , Seq(match, call)
+  )
+  
+  PROP_CALL(ps) = 
+  CallT(
+    SVar("nabl-props")
+  , []
+  , [ Var("context"), LIST(ps)]
+  )
+  
+  PROPERTY(p, v) = TERM("Prop", [p, v])
+

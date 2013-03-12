@@ -14,10 +14,9 @@ properties
  
 binding rules
 
-	Entity(name, x) :
-		scopes Property, Method
-		defines 
-			Entity name  
-			of type EntityType(name)
-			of ancestors []
-			//in subsequent scope, x
+	Foo(x, y)
+	  where x has type (t, _, t)
+	  where y has type t:
+	  defines Entity x of type t
+	  refers to Entity y
+	  

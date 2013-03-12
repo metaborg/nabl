@@ -1,0 +1,78 @@
+module generation/use-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/main
+  generation/constraints
+
+rules
+    
+  use-to-str(|pattern):
+    UseSite(refs) -> <refs-to-str(|pattern)> refs
+  
+  use-to-str(|pattern):
+    ImportSite(imports) -> <refs-to-str(|pattern)> imports
+      
+  // TODO: support properties
+  // TODO: support conditions
+  refs-to-str(|pattern):  
+    refs -> USE_RULE(pattern, <replace-all(|[replace])> pattern)
+    where
+      Hd => Reference(NameBinding(_, _, t), _, _, _) <+
+      Hd => SingleImport(NameBinding(_, _, t), _, _, _, _) <+
+      Hd => WildcardImport(_, _, RefScope(NameBinding(_, _, t)), _, _)
+    where
+      replace := (<to-ppable-str> t, USE_CALL(<filter(ref-to-str); nonempty> refs))
+      
+  ref-to-str: 
+    Reference(NameBinding(ns, _), [], All(), []) -> CANDIDATE(<nabl-to-str> ns)
+  
+  ref-to-str: 
+    Reference(NameBinding(ns, _), [], RefScope(NameBinding(ns', t), _, _), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
+  
+  //ref-to-str
+  
+  nabl-to-str: Current() -> TERM("Current")
+  nabl-to-str: 
+    DefScopes(ds) -> LIST([sc1*, sc2*])
+    where
+      if <fetch-elem(?DefScope(_))> ds then
+        sc1* := [SCOPE()]
+      else
+        sc1* := []
+      end;
+      if <fetch-elem(?Subsequent())> ds then
+        sc2* := [TERM("Subsequent")]
+      else
+        sc2* := []
+      end
+    
+  nabl-to-str: NonUnique() -> TERM("NonUnique")
+  nabl-to-str: Unique()    -> TERM("Unique")
+  
+overlays
+     
+  USE_RULE(pattern, call) =
+  SDefT(
+    "nabl-use-site"
+  , []
+  , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("deps"), DefaultVarDec("states")]
+  , Seq(Match(pattern), call)
+  )
+  
+  USE_CALL(candidates) =
+  CallT(
+    SVar("nabl-use")
+  , []
+  , [ Var("context"), Var("uris"), Var("deps"), LIST(candidates)] 
+  )
+  
+  CANDIDATE(ns) =
+  TERM("UseCandidate", [ns, LIST([]), TERM("Current"), TERM("All")])
+
+  CANDIDATE(ns1, ns2, n) =
+  TERM("UseCandidate", [ns1, LIST([]), TERM("Current"), TERM("Context", [n, ns2, LIST([]), TERM("All")])])

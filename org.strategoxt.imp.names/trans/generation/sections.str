@@ -1,0 +1,41 @@
+module generation/sections
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/rules
+    
+rules // namespaces 
+      
+  nabl-to-str:
+    Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
+    
+  nabl-to-str: // generates constructors for namespaces
+    Namespace(ns) -> CONS_DECL(ns, "Namespace")
+  
+  nabl-to-str: NamespaceRef(ns) -> TERM(ns)
+
+rules // properties
+        
+  nabl-to-str:
+    Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
+  
+  nabl-to-str: // generate constructors for properties
+    Property(prop, _, _) -> CONS_DECL(prop, "Property") 
+
+  nabl-to-str: PropertyRef(p) -> TERM(p)
+  nabl-to-str: TypeProp()     -> TERM("Type")
+
+rules // imports
+    
+  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task")|<id>])
+    
+rules // binding rules
+
+  nabl-to-str:
+    BindingRules(rs) -> Rules(<filter(nabl-to-str); concat; nonempty> rs)
+      
+  

@@ -138,7 +138,7 @@ rules
 rules
 
   nam-get-scope-types :
-    BindingRule(_, _) -> [Variable()]
+    BindingRule(_, _, _) -> [Variable()]
 
 
 rules

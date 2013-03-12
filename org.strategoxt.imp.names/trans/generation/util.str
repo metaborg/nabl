@@ -1,0 +1,37 @@
+module generation/util
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+rules 
+  
+  nonempty = where(Hd)
+
+  replace-all(|rs) = alltd(replace(|rs) <+ introduce-id)
+  
+  replace(|rs): t1 -> t2 where <?(t1, t2) <+ fetch-elem(?(t1, t2))> rs
+  
+  introduce-id: Wld()      -> Id()
+  introduce-id: Var(_)     -> Id()
+  introduce-id: ListVar(_) -> Id()
+    
+  to-ppable-str = alltd(to-ppable-str-local)
+    
+  to-ppable-str-local: ListVar(x)    -> Var(x)
+  to-ppable-str-local: VarRef(x)     -> Var(x)
+  to-ppable-str-local: ListVarRef(x) -> Var(x)
+
+overlays
+  
+  CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
+  TERM(o, args)   = NoAnnoList(Op(o, args))
+  TERM(o)         = TERM(o, [])
+  TUPLE(elems)    = NoAnnoList(Tuple(elems))
+  LIST(elems)     = NoAnnoList(List(elems))
+  CALL(s)         = CallNoArgs(SVar(s))
+
+  SCOPE() = Var("scope")
+  
+  

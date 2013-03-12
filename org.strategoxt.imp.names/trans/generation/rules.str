@@ -1,0 +1,46 @@
+module generation/rules
+  
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/constraints
+  generation/def-sites
+  generation/use-sites
+  
+rules
+  
+  // TODO: support multiple definition sites
+  nabl-to-str: 
+    BindingRule(pattern, constr*, parts) -> [defscope*, use*, rule*]
+    where
+      bound* := <collect-all(?Var(<id>))> pattern;
+      (bnd*, rep*, n, cont, rule*)  := <constraints-to-str> (constr*, (bound*, [], 1, Match(pattern)));
+      scope* := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
+    where
+      defscope* := <fetch-elem(def-to-str(|bnd*, rep*, n, cont, pattern, scope*))> parts <+
+      defscope* := [SCOPE_RULE(pattern, <nonempty> scope*)] <+
+      defscope* := []
+    where
+      use* := <filter(use-to-str(|pattern))> parts
+      
+overlays
+	
+	SCOPE_RULE(pattern, scopes) =
+  SDefT(
+    "nabl-anonymous-scope-site"
+  , [DefaultVarDec("child-uris")]
+  , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
+  , Seq(
+      Match(pattern)
+    , CallT(
+        SVar("nabl-anonymous-scope")
+      , [CALL("child-uris")]
+      , [ Var("context"), Var("uris"), LIST(scopes) ]
+      )
+    )
+  )
+    
+  
