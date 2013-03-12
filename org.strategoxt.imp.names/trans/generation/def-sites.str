@@ -11,34 +11,34 @@ imports
   
 rules // definitions, scopes, properties
     
-  def-to-str(|bnd*, rep*, n, cont, pattern, scopes):
-    DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> [dr, pr*]
+  def-to-str(|replace*, bound*, rule*, task*, pattern, scopes):
+    DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> <id>
     where  
       // replace name with callback to handle definition site
-      t'      := <to-ppable-str> t ;
-      replace := ( t', DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes))
+      r := ( t, DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes) )
     where 
       // when we have external scopes in a "defines ... in ..." clause, 
       // replace these external scopes with callbacks
-      replace* := <?DefScopes(<filter(def-scope-to-str)>); nonempty> ds;
+      r* := <?DefScopes(<filter(def-scope-to-str)>); nonempty> ds;
       // callback to determine external scope 
-      sc       := SCOPE_CALL(<nabl-to-str> ns);
+      sc := SCOPE_CALL(<nabl-to-str> ns);
       // apply all replacements and generate a rule handling this definition site
-      dr       := DEF_RULE(Match(pattern), Seq(sc, <replace-all(|[replace, replace*])> pattern)) <+
+      <iset-add(|DEF_RULE(Match(pattern), Seq(sc, <replace-all(|[r, r*])> pattern)))> rule* <+
       // otherwise replace only the name and
       // generate a rule handling this defintion site
-      dr       := DEF_RULE(Match(pattern), <replace-all(|[replace])> pattern)
+      <iset-add(|DEF_RULE(Match(pattern), <replace-all(|[r])> pattern))> rule*
     where
       // when this definition site defines properties,
       // construct sequence of property calculatations
-      (_, rep2*, _, ccall2, rule*) := <constraints-to-str> (constr*, (bnd*, rep*, n, cont));
       // and a callback
-      pcall  := <alltd(replace(|rep2*))> PROP_CALL(<nonempty; map(prop-to-str)> ps);
+      task'* := <constraints-to-str(|replace*, bound*, rule*, <length> task*)> constr*;
+      pcall  := <alltd(replace(|replace*))> PROP_CALL(<nonempty; map(prop-to-str)> ps);
+      pcall' := <replace-all(|[(t, pcall)])> pattern;
       // generate a rule handling properties at this definition site
-      pbody := <replace-all(|[(t', pcall)])> pattern ;
-      pr*   := [PROP_RULE(ccall2, pbody), rule*] <+
+      pbody  := <foldr(!pcall', to-seq)> [task*, task'*] ;
+      <iset-add(|PROP_RULE(Seq(Match(pattern), pbody)))> rule* <+
       // otherwise generate no rule
-      pr*   := []
+      id
 
   def-scope-to-str:
     DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())      
@@ -46,6 +46,23 @@ rules // definitions, scopes, properties
   prop-to-str:
     PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
 
+  nabl-to-str: Current() -> TERM("Current")
+  nabl-to-str: 
+    DefScopes(ds) -> LIST([sc1*, sc2*])
+    where
+      if <fetch-elem(?DefScope(_))> ds then
+        sc1* := [SCOPE()]
+      else
+        sc1* := []
+      end;
+      if <fetch-elem(?Subsequent())> ds then
+        sc2* := [TERM("Subsequent")]
+      else
+        sc2* := []
+      end
+    
+  nabl-to-str: NonUnique() -> TERM("NonUnique")
+  nabl-to-str: Unique()    -> TERM("Unique")
 overlays
   
   DEF_RULE(match, call) =
@@ -66,12 +83,12 @@ overlays
   SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
   SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallT(SVar("nabl-def-scope"), [], [Var("context")]), ns)))
     
-  PROP_RULE(match, call) =
+  PROP_RULE(body) =
   SDefT(
     "nabl-prop-site"
   , []
   , [DefaultVarDec("context"), DefaultVarDec("states")]
-  , Seq(match, call)
+  , body
   )
   
   PROP_CALL(ps) = 

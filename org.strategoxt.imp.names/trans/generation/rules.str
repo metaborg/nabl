@@ -13,18 +13,22 @@ imports
 rules
   
   // TODO: support multiple definition sites
-  nabl-to-str: 
-    BindingRule(pattern, constr*, parts) -> [defscope*, use*, rule*]
+  nabl-to-str(|replace*, bound*, rule*): 
+    BindingRule(pattern, constr*, parts) -> <id>
     where
-      bound* := <collect-all(?Var(<id>))> pattern;
-      (bnd*, rep*, n, cont, rule*)  := <constraints-to-str> (constr*, (bound*, [], 1, Match(pattern)));
+      <hashtable-clear> replace*;
+      <iset-clear> bound*;
+      <iset-clear> rule*
+    where
+      <iset-addlist(|<collect-all(?Var(_))> pattern)> bound*;
+      task* := <constraints-to-str(|replace*, bound*, rule*, 0)> constr*;
       scope* := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
     where
-      defscope* := <fetch-elem(def-to-str(|bnd*, rep*, n, cont, pattern, scope*))> parts <+
-      defscope* := [SCOPE_RULE(pattern, <nonempty> scope*)] <+
-      defscope* := []
-    where
-      use* := <filter(use-to-str(|pattern))> parts
+      <fetch-elem(def-to-str(|replace*, bound*, rule*, task*, pattern, scope*))> parts <+
+      <iset-add(|SCOPE_RULE(pattern, <nonempty> scope*))> rule* <+
+      id
+    // where
+    //   use* := <uses-to-str(|bnd*, rep*, n, cont, pattern)> parts
       
 overlays
 	

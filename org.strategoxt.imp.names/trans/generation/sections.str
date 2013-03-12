@@ -36,6 +36,17 @@ rules // imports
 rules // binding rules
 
   nabl-to-str:
-    BindingRules(rs) -> Rules(<filter(nabl-to-str); concat; nonempty> rs)
+    BindingRules(rs) -> Rules(<nonempty> rs')
+    where
+      new-hashtable => replace*;
+      new-iset      => bound*;
+      new-iset      => rule*;
+      
+      <filter(nabl-to-str(|replace*, bound*, rule*))> rs;
+      rs' := <iset-elements> rule*;
+      
+      <hashtable-destroy> replace*;
+      <iset-destroy> bound*;
+      <iset-destroy> rule*
       
   

@@ -5,13 +5,18 @@ imports
   libstrc
   include/NameBindingLanguage
   
+rules
+  
+  to-seq: (c1, c2) -> Seq(c1, c2)
+  
 rules 
   
   nonempty = where(Hd)
 
   replace-all(|rs) = alltd(replace(|rs) <+ introduce-id)
   
-  replace(|rs): t1 -> t2 where <?(t1, t2) <+ fetch-elem(?(t1, t2))> rs
+  replace(|rs): t  -> <hashtable-get(|t)> rs
+  replace(|rs): t1 -> t2 where <fetch-elem(?(t1, t2))> rs
   
   introduce-id: Wld()      -> Id()
   introduce-id: Var(_)     -> Id()

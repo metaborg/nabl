@@ -10,58 +10,55 @@ imports
   generation/constraints
 
 rules
+  
+  uses-to-str(|bnd*, rep*, n, cont, pattern) =
+    filter(?UseSite(_) + ?ImportSite);
+    if nonempty then
+       (_, _, _, call, r*) := <uses-to-str> (<id>, bnd*, rep*, n, Match(pattern));
+      ![USE_RULE(call), r*]
+    else
+      ![]
+    end
     
-  use-to-str(|pattern):
-    UseSite(refs) -> <refs-to-str(|pattern)> refs
+  uses-to-str:
+    ([], bnd*, rep*, n, str) -> (bnd*, rep*, n, str, [])
   
-  use-to-str(|pattern):
-    ImportSite(imports) -> <refs-to-str(|pattern)> imports
-      
-  // TODO: support properties
-  // TODO: support conditions
-  refs-to-str(|pattern):  
-    refs -> USE_RULE(pattern, <replace-all(|[replace])> pattern)
-    where
-      Hd => Reference(NameBinding(_, _, t), _, _, _) <+
-      Hd => SingleImport(NameBinding(_, _, t), _, _, _, _) <+
-      Hd => WildcardImport(_, _, RefScope(NameBinding(_, _, t)), _, _)
-    where
-      replace := (<to-ppable-str> t, USE_CALL(<filter(ref-to-str); nonempty> refs))
-      
-  ref-to-str: 
-    Reference(NameBinding(ns, _), [], All(), []) -> CANDIDATE(<nabl-to-str> ns)
-  
-  ref-to-str: 
-    Reference(NameBinding(ns, _), [], RefScope(NameBinding(ns', t), _, _), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
-  
-  //ref-to-str
-  
-  nabl-to-str: Current() -> TERM("Current")
-  nabl-to-str: 
-    DefScopes(ds) -> LIST([sc1*, sc2*])
-    where
-      if <fetch-elem(?DefScope(_))> ds then
-        sc1* := [SCOPE()]
-      else
-        sc1* := []
-      end;
-      if <fetch-elem(?Subsequent())> ds then
-        sc2* := [TERM("Subsequent")]
-      else
-        sc2* := []
-      end
+  // uses-to-str: 
+  //   ([u | us ], bnd*, rep*, n, prev) -> (bnd3*, rep3*, n3, cont, [r1*, r2*])
+  //   where
+  //     (bnd2*, rep2*, n2, curr, r1*) := <use-to-str(|bnd*, rep*, n, prev)> u;
+  //     (bnd3*, rep3*, n3, cont, r2*) := <uses-to-str> (us, bnd2*, rep2*, n2, curr)    
+
+rules
     
-  nabl-to-str: NonUnique() -> TERM("NonUnique")
-  nabl-to-str: Unique()    -> TERM("Unique")
+  // use-to-str(|bnd*, rep*, n, prev) =   
+  //   (
+  //     ?UseSite(<id>) 
+  //   + ?ImportSite(<id>)
+  //   ) ;
+  //   where (
+  //     ?[Reference(NameBinding(_, _, t), _, _, _)|_] <+
+  //     ?[SingleImport(NameBinding(_, _, t), _, _, _, _)|_] <+
+  //     ?[WildcardImport(_, _, RefScope(NameBinding(_, _, t)), _, _)|_]
+  //   );
+  //   !(<to-ppable-str> t, USE_CALL(<refs-to-str>))
+  //     
+  // ref-to-str(|bnd*, rep*, n, prev): 
+  //   Reference(NameBinding(_, ns, _), [], All(), constr*) -> CANDIDATE(<nabl-to-str> ns)
+  //   where
+  //     <constraints-to-str> (constr*, (bnd*, rep*, n, prev))
+  //     
+  // ref-to-str: 
+  //   Reference(NameBinding(_, ns, _), [], RefScope(NameBinding(_, ns', t), _, _), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
   
 overlays
      
-  USE_RULE(pattern, call) =
+  USE_RULE(call) =
   SDefT(
     "nabl-use-site"
   , []
   , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("deps"), DefaultVarDec("states")]
-  , Seq(Match(pattern), call)
+  , call
   )
   
   USE_CALL(candidates) =

@@ -9,54 +9,40 @@ imports
   
 rules
   
-  constraints-to-str: 
-    ([], (bnd*, rep*, n, str)) -> (bnd*, rep*, n, str, [])
+  constraints-to-str(|replace*, bound*, rule*, n) = 
+    map-with-index(constraint-to-str(|replace*, bound*, rule*, n));
+    concat
   
-  constraints-to-str: 
-    ([c | cs ], (bnd*, rep*, n, prev)) -> (bnd3*, rep3*, n3, Seq(prev, cont), [r1*, r2*])
-    where
-      (bnd2*, rep2*, n2, curr, r1*) := <constraint-to-str(|bnd*, rep*, n)> c;
-      (bnd3*, rep3*, n3, cont, r2*) := <constraints-to-str> (cs, (bnd2*, rep2*, n2, curr))    
-
-  constraint-to-str(|bnd*, rep*, n):  
-    Constraint(t1, PropertyCond(p, t2)) -> result
+  constraint-to-str(|replace*, bound*, rule*, i):  
+    (j, Constraint(t1, PropertyCond(p, t2))) -> [PROP_TASK(r, <nabl-to-str> p, <alltd(replace(|replace*))> t1), match*]
     where
       // create new task for property calculation
-      r  := Var($[r[n]]);
-      p' := <nabl-to-str> p;
-      t3 := <alltd(replace(|rep*))> t1;
-      pt := PROP_TASK(r, p', t3);
+      n := <addi> (i, j);
+      r := Var($[pr[n]]);
       if 
         Var(v) := t2;
-        <not(elem)> (v, bnd*) 
+        <not(iset-contains(|t2))> bound* 
      then // single unbound variable is replaced with result
-        result := ( [v, bnd*]
-                  , [(Var(v), r), (VarRef(v), r), rep*]
-                  , <inc> n
-                  , pt
-                  , []
-                  )
+        <hashtable-put(|Var(v), r)> replace*;
+        <hashtable-put(|VarRef(v), r)> replace*;
+        <iset-add(|Var(v))> bound*;
+        match* := []
       else
-      	var*   := <collect-all(?Var(<id>))> t2;
-      	bvar*  := <isect; map(!Var(<id>))> (var*, bnd*);
-      	result := <matches-to-str(|t2, r, bvar*)> (var*, bnd*, rep*, <inc> n, pt)
+      	var*   := <collect-all(?Var(_))> t2;
+      	bvar*  := <isect> (var*, <iset-elements> bound*);
+      	match* := <map-with-index(match-to-str(|replace*, bound*, rule*, t2, r, bvar*, n))> var*
       end
   
-  matches-to-str(|term, res, bvar*):
-  	([], bnd*, rep*, n, pt) -> (bnd*, rep*, n, pt, [])
- 
-  matches-to-str(|term, res, bvar*):
-  	([v|vs], bnd*, rep*, n, prev) -> (bnd3*, rep3*, n3, Seq(prev, cont), [mr, r*])
+   match-to-str(|replace*, bound*, rule*, term, res, bvar*, i):
+  	(j, Var(v)) -> MATCH_TASK(r, mn, bvar'*, res)
     where
-    	mn    := NoAnnoList(Str(<newname; double-quote> "match"));
-    	r     := Var($[r[n]]);
-    	bvar2*:= <alltd(replace(|rep*))> bvar*;
-    	mt    := MATCH_TASK(r, mn, bvar2*, res);
-    	mr    := MATCH_RULE(mn, term, bvar*, Var(v));
-    	bnd2* := [v, bnd*];
-    	rep2* := [(Var(v), r), (VarRef(v), r), rep*];
-    	n2    := <inc> n;
-    	(bnd3*, rep3*, n3, cont, r*) := <matches-to-str(|term, res, bvar*)> (vs, bnd2*, rep2*, n2, mt)
+    	mn     := NoAnnoList(Str(<newname; double-quote> "match"));
+    	r      := Var($[mr[i]_[j]]);
+    	bvar'* := <alltd(replace(|replace*))> bvar*;
+    	<hashtable-put(|Var(v), r)> replace*;
+      <hashtable-put(|VarRef(v), r)> replace*;
+    	<iset-add(|Var(v))> bound*;
+    	<iset-add(|MATCH_RULE(mn, term, bvar*, Var(v)))> rule*
       
 overlays
     
