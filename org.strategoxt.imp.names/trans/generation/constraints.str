@@ -10,8 +10,8 @@ imports
 rules
   
   constraints-to-str(|replace*, bound*, rule*, n) = 
-    map-with-index(constraint-to-str(|replace*, bound*, rule*, n));
-    concat
+    map-with-index(to-ppable-str; constraint-to-str(|replace*, bound*, rule*, n));
+    concat <+ []
   
   constraint-to-str(|replace*, bound*, rule*, i):  
     (j, Constraint(t1, PropertyCond(p, t2))) -> [PROP_TASK(r, <nabl-to-str> p, <alltd(replace(|replace*))> t1), match*]
@@ -24,7 +24,6 @@ rules
         <not(iset-contains(|t2))> bound* 
      then // single unbound variable is replaced with result
         <hashtable-put(|Var(v), r)> replace*;
-        <hashtable-put(|VarRef(v), r)> replace*;
         <iset-add(|Var(v))> bound*;
         match* := []
       else
@@ -40,7 +39,6 @@ rules
     	r      := Var($[mr[i]_[j]]);
     	bvar'* := <alltd(replace(|replace*))> bvar*;
     	<hashtable-put(|Var(v), r)> replace*;
-      <hashtable-put(|VarRef(v), r)> replace*;
     	<iset-add(|Var(v))> bound*;
     	<iset-add(|MATCH_RULE(mn, term, bvar*, Var(v)))> rule*
       

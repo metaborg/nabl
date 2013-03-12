@@ -15,7 +15,8 @@ rules // definitions, scopes, properties
     DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> <id>
     where  
       // replace name with callback to handle definition site
-      r := ( t, DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes) )
+      t' := <to-ppable-str> t;
+      r  := ( t', DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes) )
     where 
       // when we have external scopes in a "defines ... in ..." clause, 
       // replace these external scopes with callbacks
@@ -27,18 +28,17 @@ rules // definitions, scopes, properties
       // otherwise replace only the name and
       // generate a rule handling this defintion site
       <iset-add(|DEF_RULE(Match(pattern), <replace-all(|[r])> pattern))> rule*
-    where
+    where try(
       // when this definition site defines properties,
       // construct sequence of property calculatations
       // and a callback
       task'* := <constraints-to-str(|replace*, bound*, rule*, <length> task*)> constr*;
       pcall  := <alltd(replace(|replace*))> PROP_CALL(<nonempty; map(prop-to-str)> ps);
-      pcall' := <replace-all(|[(t, pcall)])> pattern;
+      pcall' := <replace-all(|[(t', pcall)])> pattern;
       // generate a rule handling properties at this definition site
       pbody  := <foldr(!pcall', to-seq)> [task*, task'*] ;
-      <iset-add(|PROP_RULE(Seq(Match(pattern), pbody)))> rule* <+
-      // otherwise generate no rule
-      id
+      <iset-add(|PROP_RULE(Seq(Match(pattern), pbody)))> rule* 
+    )
 
   def-scope-to-str:
     DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())      

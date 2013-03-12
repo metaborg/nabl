@@ -15,8 +15,8 @@ rules
 
   replace-all(|rs) = alltd(replace(|rs) <+ introduce-id)
   
-  replace(|rs): t  -> <hashtable-get(|t)> rs
-  replace(|rs): t1 -> t2 where <fetch-elem(?(t1, t2))> rs
+  replace(|rs): t -> <hashtable-get(|t)> rs
+  replace(|rs): t -> <lookup'> (t, rs)
   
   introduce-id: Wld()      -> Id()
   introduce-id: Var(_)     -> Id()

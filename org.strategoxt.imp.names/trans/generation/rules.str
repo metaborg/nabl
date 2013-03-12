@@ -20,12 +20,13 @@ rules
       <iset-clear> bound*;
       <iset-clear> rule*
     where
-      <iset-addlist(|<collect-all(?Var(_))> pattern)> bound*;
-      task* := <constraints-to-str(|replace*, bound*, rule*, 0)> constr*;
+      pattern':= <to-ppable-str> pattern;
+      <iset-addlist(|<collect-all(?Var(_))> pattern')> bound*;
+      task*  := <constraints-to-str(|replace*, bound*, rule*, 0)> constr*;
       scope* := <filter(?Scopes(<id>)); concat; map(nabl-to-str)> parts
     where
-      <fetch-elem(def-to-str(|replace*, bound*, rule*, task*, pattern, scope*))> parts <+
-      <iset-add(|SCOPE_RULE(pattern, <nonempty> scope*))> rule* <+
+      <fetch-elem(def-to-str(|replace*, bound*, rule*, task*, pattern', scope*))> parts <+
+      <iset-add(|SCOPE_RULE(pattern', <nonempty> scope*))> rule* <+
       id
     // where
     //   use* := <uses-to-str(|bnd*, rep*, n, cont, pattern)> parts
