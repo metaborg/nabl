@@ -13,7 +13,7 @@ imports
 rules
   
   uses-to-str(|replace*, bound*, rule*, task*, pattern) =
-    where (uses-to-name-rule(|rule*, pattern));
+    where (try(uses-to-name-rule(|rule*, pattern)));
     filter(?UseSite(<id>) + ?ImportSite(<id>));
     if nonempty then
       (rep*, task'*) := <foldl(use-to-str(|replace*, bound*, rule*))> (<id>, ([], task*));
