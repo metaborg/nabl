@@ -25,13 +25,18 @@ rules
     where 
       < ?[Reference(NameBinding(_, _, t), _, _, _)|_] 
       + ?[SingleImport(NameBinding(_, _, t), _, _, _, _)|_] 
-      + ?[WildcardImport(_, _, RefScope(NameBinding(_, _, t)), _, _)|_]
+      + ?[WildcardImport(_, _, RefScope(NameBinding(_, _, t), _, _), _, _)|_]
       > u;
       t'           := <to-ppable-str> t;
       (c*, task'*) := <foldl(to-ppable-str; (ref-to-str(|replace*, bound*, rule*) <+ Snd))> (u, ([], task*))
     
   ref-to-str(|replace*, bound*, rule*): 
-    (Reference(NameBinding(_, ns, _), prop*, All(), constr*), (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, prop'*)], task'*)
+    (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, prop'*)], task'*)
+    where
+      < ?Reference(NameBinding(_, ns, _), prop*, All(), constr*)
+      + ?SingleImport(NameBinding(_, ns, _), prop*, All(), _, constr*)
+      + ?WildcardImport(_, _, RefScope(NameBinding(_, ns, _), prop*, All()), _, constr*)
+      > c
     where
       replace2* := <hashtable-copy> replace*;
       bound2*   := <iset-copy> bound*;
