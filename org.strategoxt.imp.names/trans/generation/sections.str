@@ -14,20 +14,24 @@ rules // namespaces
     Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
     
   nabl-to-str: // generates constructors for namespaces
-    Namespace(ns) -> CONS_DECL($[NablNs[ns]], "Namespace")
+    Namespace(ns) -> CONS_DECL(<ns-name-to-str> ns, "Namespace")
   
-  nabl-to-str: NamespaceRef(ns) -> TERM($[NablNs[ns]])
+  nabl-to-str: NamespaceRef(ns) -> TERM(<ns-name-to-str> ns)
 
+  ns-name-to-str: ns -> $[NablNs[ns]]
+  
 rules // properties
         
   nabl-to-str(|replace*, bound*, rule*):
     Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
   
   nabl-to-str: // generate constructors for properties
-    Property(prop, _, _) -> CONS_DECL($[NablProp_[prop]], "Property") 
+    Property(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
 
-  nabl-to-str: PropertyRef(p) -> TERM($[NablProp_[p]])
+  nabl-to-str: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
   nabl-to-str: TypeProp()     -> TERM("Type")
+
+  ns-prop-name-to-str: p -> $[NablProp_[p]]
 
 rules // imports
     
@@ -40,4 +44,4 @@ rules // binding rules
     where
       <iset-clear> rule*;
       <filter(nabl-to-str(|replace*, bound*, rule*))> rs
-     
+  
