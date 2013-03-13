@@ -27,6 +27,8 @@ rules // definitions, scopes, properties
       // otherwise replace only the name and
       // generate a rule handling this defintion site
       <iset-add(|DEF_RULE(Match(pattern), <replace-all(|[r])> pattern))> rule*
+    where
+    	<iset-add(|NAME_RULE(pattern, t'))> rule*
     where try(
       // when this definition site defines properties,
       // construct sequence of property calculatations
@@ -62,6 +64,7 @@ rules // definitions, scopes, properties
     
   nabl-to-str: NonUnique() -> TERM("NonUnique")
   nabl-to-str: Unique()    -> TERM("Unique")
+  
 overlays
   
   DEF_RULE(match, call) =
@@ -71,7 +74,9 @@ overlays
   , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
   , Seq(match, call)
   )
-    
+  
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+	
   DEF_CALL(ns, u, ds, s) = 
   CallT(
     SVar("nabl-def")

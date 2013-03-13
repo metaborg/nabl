@@ -12,7 +12,7 @@ imports
   
 rules
   
-  // TODO: support multiple definition sites
+  // TODO: support multiple definition sites?
   nabl-to-str(|replace*, bound*, rule*): 
     BindingRule(pattern, constr*, clause*) -> <id>
     where
