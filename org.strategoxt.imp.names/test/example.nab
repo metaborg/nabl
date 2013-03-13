@@ -14,9 +14,23 @@ properties
  
 binding rules
 
-	Foo(x, y)
+  Bar(x)
+    where x has type (t, t):
+    defines Entity x of type z
+      where t has type (t, z)
+      
+  Bar(x):
+    refers to Entity x
+  
+  FooBar(x, y):
+    refers to Entity x of type y
+    
+	Foo(x, y, z)
 	  where x has type (t, _, t)
 	  where y has type t:
-	  defines Entity x of type t
-	  refers to Entity y
-	  
+	  refers to Entity x of type t
+      where z has type y
+	  otherwise refers to Entity y of type y
+	  refers to Entity y 
+    refers to Entity z
+     

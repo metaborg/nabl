@@ -28,6 +28,8 @@ rules
   to-ppable-str-local: VarRef(x)     -> Var(x)
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
+  iset-copy = iset-elements => elem*; new-iset ; iset-addlist(|elem*)
+  
 overlays
   
   CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))

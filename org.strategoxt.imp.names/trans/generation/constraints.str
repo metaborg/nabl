@@ -9,16 +9,17 @@ imports
   
 rules
   
-  constraints-to-str(|replace*, bound*, rule*, n) = 
-    map-with-index(to-ppable-str; constraint-to-str(|replace*, bound*, rule*, n));
-    concat <+ []
-  
-  constraint-to-str(|replace*, bound*, rule*, i):  
-    (j, Constraint(t1, PropertyCond(p, t2))) -> [PROP_TASK(r, <nabl-to-str> p, <alltd(replace(|replace*))> t1), match*]
+  constraints-to-str(|replace*, bound*, rule*, task*) = 
+    !(<id>, task*);
+    foldl(to-ppable-str; constraint-to-str(|replace*, bound*, rule*))
+    
+  constraint-to-str(|replace*, bound*, rule*):  
+    (Constraint(t1, PropertyCond(p, t2)), cs*) -> [cs*, PROP_TASK(r, <nabl-to-str> p, t1'), match*]
     where
+      t1' := <alltd(replace(|replace*))> t1;
       // create new task for property calculation
-      n := <addi> (i, j);
-      r := Var($[pr[n]]);
+      n   := <length> cs*;
+      r   := Var($[r[n]]);
       if 
         Var(v) := t2;
         <not(iset-contains(|t2))> bound* 
@@ -29,15 +30,16 @@ rules
       else
       	var*   := <collect-all(?Var(_))> t2;
       	bvar*  := <isect> (var*, <iset-elements> bound*);
-      	match* := <map-with-index(match-to-str(|replace*, bound*, rule*, t2, r, bvar*, n))> var*
+      	bvar'* := <alltd(replace(|replace*))> bvar*;
+      	match* := <map-with-index(match-to-str(|replace*, bound*, rule*, t2, r, bvar*, bvar'*, n))> var*
       end
   
-   match-to-str(|replace*, bound*, rule*, term, res, bvar*, i):
-  	(j, Var(v)) -> MATCH_TASK(r, mn, bvar'*, res)
+   match-to-str(|replace*, bound*, rule*, term, res, bvar*, bvar'*, n):
+  	(i, Var(v)) -> MATCH_TASK(r, mn, bvar'*, res)
     where
     	mn     := NoAnnoList(Str(<newname; double-quote> "match"));
-    	r      := Var($[mr[i]_[j]]);
-    	bvar'* := <alltd(replace(|replace*))> bvar*;
+    	n'     := <addi> (n, i);
+    	r      := Var($[r[n']]);
     	<hashtable-put(|Var(v), r)> replace*;
     	<iset-add(|Var(v))> bound*;
     	<iset-add(|MATCH_RULE(mn, term, bvar*, Var(v)))> rule*

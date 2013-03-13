@@ -10,7 +10,6 @@ imports
   generation/constraints
   
 rules // definitions, scopes, properties
-    
   def-to-str(|replace*, bound*, rule*, task*, pattern, scopes):
     DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> <id>
     where  
@@ -32,11 +31,11 @@ rules // definitions, scopes, properties
       // when this definition site defines properties,
       // construct sequence of property calculatations
       // and a callback
-      task'* := <constraints-to-str(|replace*, bound*, rule*, <length> task*)> constr*;
+      task'* := <constraints-to-str(|replace*, bound*, rule*, task*)> constr*;
       pcall  := <alltd(replace(|replace*))> PROP_CALL(<nonempty; map(prop-to-str)> ps);
       pcall' := <replace-all(|[(t', pcall)])> pattern;
       // generate a rule handling properties at this definition site
-      pbody  := <foldr(!pcall', to-seq)> [task*, task'*] ;
+      pbody  := <foldr(!pcall', to-seq)> task'* ;
       <iset-add(|PROP_RULE(Seq(Match(pattern), pbody)))> rule* 
     )
     

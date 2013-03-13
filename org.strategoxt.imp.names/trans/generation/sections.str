@@ -36,9 +36,8 @@ rules // imports
 rules // binding rules
 
   nabl-to-str(|replace*, bound*, rule*):
-    BindingRules(rs) -> Rules(<nonempty> rs')
+    BindingRules(rs) -> Rules(<iset-elements; nonempty> rule*)
     where
       <iset-clear> rule*;
-      <filter(nabl-to-str(|replace*, bound*, rule*))> rs;
-      rs' := <iset-elements> rule*
+      <filter(nabl-to-str(|replace*, bound*, rule*))> rs
      

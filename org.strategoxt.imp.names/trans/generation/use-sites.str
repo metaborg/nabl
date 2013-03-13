@@ -8,49 +8,44 @@ imports
   generation/util
   generation/main
   generation/constraints
-
+  generation/def-sites
+  
 rules
   
-  uses-to-str(|bnd*, rep*, n, cont, pattern) =
-    filter(?UseSite(_) + ?ImportSite);
+  uses-to-str(|replace*, bound*, rule*, task*, pattern) =
+    filter(?UseSite(<id>) + ?ImportSite(<id>));
     if nonempty then
-       (_, _, _, call, r*) := <uses-to-str> (<id>, bnd*, rep*, n, Match(pattern));
-      ![USE_RULE(call), r*]
-    else
-      ![]
+      (rep*, task'*) := <foldl(use-to-str(|replace*, bound*, rule*))> (<id>, ([], task*));
+      ubody  := <foldr(<replace-all(|rep*)> pattern, to-seq)> task'* ;
+      <iset-add(|USE_RULE(Seq(Match(pattern), ubody)))> rule*
     end
     
-  uses-to-str:
-    ([], bnd*, rep*, n, str) -> (bnd*, rep*, n, str, [])
-  
-  // uses-to-str: 
-  //   ([u | us ], bnd*, rep*, n, prev) -> (bnd3*, rep3*, n3, cont, [r1*, r2*])
-  //   where
-  //     (bnd2*, rep2*, n2, curr, r1*) := <use-to-str(|bnd*, rep*, n, prev)> u;
-  //     (bnd3*, rep3*, n3, cont, r2*) := <uses-to-str> (us, bnd2*, rep2*, n2, curr)    
-
-rules
+  use-to-str(|replace*, bound*, rule*):
+    (u, (r*, task*)) -> ([(t', USE_CALL(c*)), r*], task'*)
+    where 
+      < ?[Reference(NameBinding(_, _, t), _, _, _)|_] 
+      + ?[SingleImport(NameBinding(_, _, t), _, _, _, _)|_] 
+      + ?[WildcardImport(_, _, RefScope(NameBinding(_, _, t)), _, _)|_]
+      > u;
+      t'           := <to-ppable-str> t;
+      (c*, task'*) := <foldl(to-ppable-str; (ref-to-str(|replace*, bound*, rule*) <+ Snd))> (u, ([], task*))
     
-  // use-to-str(|bnd*, rep*, n, prev) =   
-  //   (
-  //     ?UseSite(<id>) 
-  //   + ?ImportSite(<id>)
-  //   ) ;
-  //   where (
-  //     ?[Reference(NameBinding(_, _, t), _, _, _)|_] <+
-  //     ?[SingleImport(NameBinding(_, _, t), _, _, _, _)|_] <+
-  //     ?[WildcardImport(_, _, RefScope(NameBinding(_, _, t)), _, _)|_]
-  //   );
-  //   !(<to-ppable-str> t, USE_CALL(<refs-to-str>))
-  //     
-  // ref-to-str(|bnd*, rep*, n, prev): 
-  //   Reference(NameBinding(_, ns, _), [], All(), constr*) -> CANDIDATE(<nabl-to-str> ns)
-  //   where
-  //     <constraints-to-str> (constr*, (bnd*, rep*, n, prev))
-  //     
-  // ref-to-str: 
+  ref-to-str(|replace*, bound*, rule*): 
+    (Reference(NameBinding(_, ns, _), prop*, All(), constr*), (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, prop'*)], task'*)
+    where
+      replace2* := <hashtable-copy> replace*;
+      bound2*   := <iset-copy> bound*;
+      task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
+      prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
+      <hashtable-destroy> replace2*;
+      <iset-destroy> bound2*
+      
+  // ref-to-str(|replace*, bound*, rule*, n): 
   //   Reference(NameBinding(_, ns, _), [], RefScope(NameBinding(_, ns', t), _, _), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
   
+  prop-to-str:
+    PropertyBinding(_, p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
+
 overlays
      
   USE_RULE(call) =
@@ -68,8 +63,8 @@ overlays
   , [ Var("context"), Var("uris"), Var("deps"), LIST(candidates)] 
   )
   
-  CANDIDATE(ns) =
-  TERM("UseCandidate", [ns, LIST([]), TERM("Current"), TERM("All")])
+  CANDIDATE(ns, ps) =
+  TERM("UseCandidate", [ns, LIST(ps), TERM("Current"), TERM("All")])
 
   CANDIDATE(ns1, ns2, n) =
   TERM("UseCandidate", [ns1, LIST([]), TERM("Current"), TERM("Context", [n, ns2, LIST([]), TERM("All")])])
