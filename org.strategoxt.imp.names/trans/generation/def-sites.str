@@ -71,7 +71,12 @@ overlays
   SDefT(
     "nabl-def-site"
   , [DefaultVarDec("child-uris"), DefaultVarDec("sibl-uris")]
-  , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("states")]
+  , [ DefaultVarDec("lang")
+    , DefaultVarDec("partition")
+    , DefaultVarDec("uniques")
+    , DefaultVarDec("elems")
+    , DefaultVarDec("uris")
+    , DefaultVarDec("states")]
   , Seq(match, call)
   )
   
@@ -81,17 +86,22 @@ overlays
   CallT(
     SVar("nabl-def")
   , [CALL("child-uris"), CALL("sibl-uris")]
-  , [ Var("context"), Var("uris"), ns, u, ds, LIST(s)]
+  , [ Var("lang")
+    , Var("partition")
+    , Var("uniques")
+    , Var("elems")
+    , Var("uris")
+    , ns, u, ds, LIST(s)]
   )
 
   SCOPE_CALL()   = CallT(SVar("nabl-def-scope"), [], [SCOPE()])
-  SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallT(SVar("nabl-def-scope"), [], [Var("context")]), ns)))
+  SCOPE_CALL(ns) = Where(Assign(SCOPE(), App(CallT(SVar("nabl-construct-def-scope"), [], [Var("lang"), Var("partition"), Var("uniques")]), ns)))
     
   PROP_RULE(body) =
   SDefT(
     "nabl-prop-site"
   , []
-  , [DefaultVarDec("context"), DefaultVarDec("states")]
+  , [ DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("states")]
   , body
   )
   
@@ -99,7 +109,7 @@ overlays
   CallT(
     SVar("nabl-props")
   , []
-  , [ Var("context"), LIST(ps)]
+  , [ Var("elems"), LIST(ps)]
   )
   
   PROPERTY(p, v) = TERM("Prop", [p, v])

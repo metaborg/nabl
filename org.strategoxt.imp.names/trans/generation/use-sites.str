@@ -54,9 +54,19 @@ rules
       <hashtable-destroy> replace2*;
       <iset-destroy> bound2*
       
-  // ref-to-str(|replace*, bound*, rule*, n): 
-  //   Reference(NameBinding(_, ns, _), [], RefScope(NameBinding(_, ns', t), _, _), []) -> CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', <to-ppable-str> t)
-  
+  ref-to-str(|replace*, bound*, rule*): 
+    (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', t', prop'*)], task'*)
+    where
+      <?Reference(NameBinding(_, ns, _), prop*, RefScope(NameBinding(_, ns', t), _, _), constr*)> c
+    where
+      replace2* := <hashtable-copy> replace*;
+      bound2*   := <iset-copy> bound*;
+      task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
+      prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
+      t'        := <to-ppable-str; alltd(replace(|replace2*))> t;
+      <hashtable-destroy> replace2*;
+      <iset-destroy> bound2*
+     
   prop-to-str:
     PropertyBinding(_, p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
 
@@ -66,7 +76,12 @@ overlays
   SDefT(
     "nabl-use-site"
   , []
-  , [DefaultVarDec("context"), DefaultVarDec("uris"), DefaultVarDec("deps"), DefaultVarDec("states")]
+  , [ DefaultVarDec("lang")
+    , DefaultVarDec("elems")
+    , DefaultVarDec("tasks")
+    , DefaultVarDec("uris")
+    , DefaultVarDec("states") 
+    ]
   , call
   )
   
@@ -74,11 +89,17 @@ overlays
   CallT(
     SVar("nabl-use")
   , []
-  , [ Var("context"), Var("uris"), Var("deps"), LIST(candidates)] 
+  , [ Var("lang")
+    , Var("elems")
+    , Var("tasks")
+    , Var("uris")
+    , LIST(candidates)
+    ] 
   )
   
   CANDIDATE(ns, ps) =
   TERM("UseCandidate", [ns, LIST(ps), TERM("Current"), TERM("All")])
 
-  CANDIDATE(ns1, ns2, n) =
-  TERM("UseCandidate", [ns1, LIST([]), TERM("Current"), TERM("Context", [n, ns2, LIST([]), TERM("All")])])
+  CANDIDATE(ns1, ns2, n, ps) =
+  TERM("UseCandidate", [ns1, LIST(ps), LIST([n]), TERM("One")])
+  

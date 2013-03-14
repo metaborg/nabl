@@ -55,6 +55,6 @@ overlays
   
   NEW_TASK(t) =
   App(
-    CallT(SVar("new-task"), [], [App(CallNoArgs(SVar("task-in-context")), Var("context"))])
+    CallT(SVar("new-task"), [], [Var("tasks")])
   , t
   )
