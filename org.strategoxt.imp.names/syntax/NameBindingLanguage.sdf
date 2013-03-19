@@ -2,8 +2,15 @@ module NameBindingLanguage
 
 imports
   
-	common/Modules
-	nabl/Rules
+  common/Layout
+  common/Identifiers
+  terms/Vars
+  terms/Signatures
+  documentation/Metadata
+  documentation/Documentation
+  documentation/Development
+  Modulesgenerated
+	NaBLgenerated
 	
 exports
 	

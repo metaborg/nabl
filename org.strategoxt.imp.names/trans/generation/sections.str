@@ -14,7 +14,7 @@ rules // namespaces
     Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
     
   nabl-to-str: // generates constructors for namespaces
-    Namespace(ns) -> CONS_DECL(<ns-name-to-str> ns, "Namespace")
+    NamespaceDef(ns) -> CONS_DECL(<ns-name-to-str> ns, "Namespace")
   
   nabl-to-str: NamespaceRef(ns) -> TERM(<ns-name-to-str> ns)
 
@@ -26,7 +26,7 @@ rules // properties
     Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
   
   nabl-to-str: // generate constructors for properties
-    Property(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
+    PropertyDef(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
 
   nabl-to-str: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
   nabl-to-str: TypeProp()     -> TERM("Type")

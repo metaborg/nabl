@@ -11,7 +11,7 @@ imports
   
 rules // definitions, scopes, properties
   def-to-str(|replace*, bound*, rule*, task*, pattern, scopes):
-    DefSite(u, NameBinding(ns, t), ps, ds, constr*) -> <id>
+    DefClause(k, u, ns, t, ps, ds, constr*) -> <id>
     where  
       // replace name with callback to handle definition site
       t' := <to-ppable-str> t;
@@ -42,16 +42,16 @@ rules // definitions, scopes, properties
     )
     
   def-scope-to-str:
-    DefScope(x) -> (<to-ppable-str> x, SCOPE_CALL())      
+    Context(x) -> (<to-ppable-str> x, SCOPE_CALL())      
 
   prop-to-str:
-    PropertyBinding(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
+    PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
 
   nabl-to-str: Current() -> TERM("Current")
   nabl-to-str: 
     DefScopes(ds) -> LIST([sc1*, sc2*])
     where
-      if <fetch-elem(?DefScope(_))> ds then
+      if <fetch-elem(?Context(_))> ds then
         sc1* := [SCOPE()]
       else
         sc1* := []

@@ -14,7 +14,7 @@ rules
     foldl(to-ppable-str; constraint-to-str(|replace*, bound*, rule*))
     
   constraint-to-str(|replace*, bound*, rule*):  
-    (Constraint(t1, PropertyCond(p, t2)), cs*) -> [cs*, PROP_TASK(r, <nabl-to-str> p, t1'), match*]
+    (PropertyConstraint(t1, p, t2), cs*) -> [cs*, PROP_TASK(r, <nabl-to-str> p, t1'), match*]
     where
       t1' := <alltd(replace(|replace*))> t1;
       // create new task for property calculation

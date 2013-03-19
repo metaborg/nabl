@@ -1,13 +1,14 @@
 module common/Layout
 exports
 
-  sorts Ws ShortCom LongCom CommChar Asterisk Eof 
+  sorts LongCom CommChar Asterisk Eof 
 
   lexical syntax
 
-    [\t\ \n\r]                -> Ws
+    [\t\ \n\r]                -> LAYOUT
+    "//" ~[\n]* ([\n] | Eof)	-> LAYOUT
 
-    "//" ~[\n]* ([\n] | Eof)	-> ShortCom
+    
     "/*" CommChar* "*/"       -> LongCom
                               -> Eof  
 
@@ -23,10 +24,8 @@ exports
 
   lexical syntax
 
-    ShortCom  -> LAYOUT
     LongCom   -> LAYOUT
-    Ws 		    -> LAYOUT
-
+    
   context-free restrictions
 
     LAYOUT? -/- [\ \t\n\r]

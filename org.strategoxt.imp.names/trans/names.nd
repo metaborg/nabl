@@ -16,18 +16,15 @@ rules
 	
 rules
 
-	Namespace(n): 
+	NamespaceDef(n): 
 		defines Namespace n
 	
 	NamespaceRef(n): 
 		refers to Namespace n
-	
-	ImportedNsRef(n):
-		refers to Namespace n
 		
 rules
 
-	Property(p, ns, t): 
+	PropertyDef(p, ns, t): 
 		defines Property p of type (ns, t)
 	
 	PropertyRef(p): 

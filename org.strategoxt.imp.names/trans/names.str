@@ -62,16 +62,16 @@ rules
 rules
 
   nam-get-definition-keys :
-    Namespace(n) -> [n]
+    NamespaceDef(n) -> [n]
 
   nam-get-definitions :
-    Namespace(n) -> [(Namespace(), [n])]
+    NamespaceDef(n) -> [(Namespace(), [n])]
 
   nam-annotate-names(|paths__, path__):
-    Namespace(n) -> <Namespace(nam-annotate-def(|path__))>
+    NamespaceDef(n) -> <NamespaceDef(nam-annotate-def(|path__))>
 
   nam-unique :
-    Namespace(n) -> <id>
+    NamespaceDef(n) -> <id>
 
 
 rules
@@ -88,39 +88,27 @@ rules
 
 rules
 
-  nam-get-uses-keys :
-    ImportedNsRef(n) -> [n]
-
-  nam-get-uses :
-    ImportedNsRef(n) -> [(Namespace(), [n])]
-
-  nam-annotate-names(|paths__, path__):
-    ImportedNsRef(n) -> <ImportedNsRef(nam-annotate-use(|paths__, Namespace()))>
-
-
-rules
-
   nam-get-definition-keys :
-    Property(p, ns, t) -> [p]
+    PropertyDef(p, ns, t) -> [p]
 
   nam-get-definitions :
-    Property(p, ns, t) -> [(Property(), [p])]
+    PropertyDef(p, ns, t) -> [(Property(), [p])]
 
   nam-annotate-names(|paths__, path__):
-    Property(p, ns, t) -> <Property(nam-annotate-def(|path__), id, id)>
+    PropertyDef(p, ns, t) -> <PropertyDef(nam-annotate-def(|path__), id, id)>
 
   adjust-index-def-data(store__|namespace__, path__):
-    Property(p, ns, t) -> <store__> DefData(
-                                      [namespace__|path__]
-                                    , Type()
-                                    , (ns, t)
-                                    )
+    PropertyDef(p, ns, t) -> <store__> DefData(
+                                         [namespace__|path__]
+                                       , Type()
+                                       , (ns, t)
+                                       )
 
   type-of :
-    Property(p, ns, t) -> (ns, t)
+    PropertyDef(p, ns, t) -> (ns, t)
 
   nam-unique :
-    Property(p, ns, t) -> <id>
+    PropertyDef(p, ns, t) -> <id>
 
 
 rules

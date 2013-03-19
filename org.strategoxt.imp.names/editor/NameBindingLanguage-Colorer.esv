@@ -10,10 +10,10 @@ colorer
   
   //keyword    : 0 0 0 bold      
   
-  NamespaceId._: 0 64 128 italic //bold
+  NamespaceID._       : 0 64 128 italic //bold
   
-  PropertyId._ : 0 64 128 italic //bold
-  PropertyRef._: 0 64 128 italic bold
+  PropertyID._        : 0 64 128 italic //bold
+  PropertyRef.TypeProp: 0 64 128 italic bold
   
 colorer documentation
 

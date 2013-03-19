@@ -14,7 +14,7 @@ rules
   
   uses-to-str(|replace*, bound*, rule*, task*, pattern) =
     where (try(uses-to-name-rule(|rule*, pattern)));
-    filter(?UseSite(<id>) + ?ImportSite(<id>));
+    filter(?RefClause(<id>) + ?ImportClause(<id>));
     if nonempty then
       (rep*, task'*) := <foldl(use-to-str(|replace*, bound*, rule*))> (<id>, ([], task*));
       ubody  := <foldr(<replace-all(|rep*)> pattern, to-seq)> task'* ;
@@ -22,14 +22,14 @@ rules
     end
   
   uses-to-name-rule(|rule*, pattern) =
-  	?[UseSite(<use-to-name>)]  => t;
+  	?[RefClause(<use-to-name>)]  => t;
   	<iset-add(|NAME_RULE(pattern, t))> rule*
   
   use-to-name =
   	Hd;  
-  	( ?Reference(NameBinding(_, _, t), _, _, _)
-    + ?SingleImport(NameBinding(_, _, t), _, _, _, _)
-    + ?WildcardImport(_, _, RefScope(NameBinding(_, _, t), _, _), _, _)
+  	( ?RefClausePart(_, _, t, _, _, _)
+    + ?SingleImport(_, _, t, _, _, _, _, _)
+    + ?WildcardImport(_, _, Context(_, _, t, _, _), _, _)
     );
     <to-ppable-str> t
     
@@ -42,9 +42,9 @@ rules
   ref-to-str(|replace*, bound*, rule*): 
     (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, prop'*)], task'*)
     where
-      < ?Reference(NameBinding(_, ns, _), prop*, All(), constr*)
-      + ?SingleImport(NameBinding(_, ns, _), prop*, All(), _, constr*)
-      + ?WildcardImport(_, _, RefScope(NameBinding(_, ns, _), prop*, All()), _, constr*)
+      < ?RefClausePart(_, ns, _, prop*, Current(), constr*)
+      + ?SingleImport(_, ns, _, prop*, Current(), _, _, constr*)
+      + ?WildcardImport(_, _, Context(_, ns, _, prop*, Current()), _, constr*)
       > c
     where
       replace2* := <hashtable-copy> replace*;
@@ -57,7 +57,7 @@ rules
   ref-to-str(|replace*, bound*, rule*): 
     (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', t', prop'*)], task'*)
     where
-      <?Reference(NameBinding(_, ns, _), prop*, RefScope(NameBinding(_, ns', t), _, _), constr*)> c
+      <?RefClausePart(_, ns, _, prop*, Context(_, ns', t, _, _), constr*)> c
     where
       replace2* := <hashtable-copy> replace*;
       bound2*   := <iset-copy> bound*;
@@ -68,7 +68,7 @@ rules
       <iset-destroy> bound2*
      
   prop-to-str:
-    PropertyBinding(_, p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
+    PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)
 
 overlays
      

@@ -27,5 +27,5 @@ exports
 
   context-free syntax
     
-    Term[[Var]]     -> BTerm %% term binding variables
-    Term[[VarRef]]  -> RTerm %% term referencing variables
+    Term[[Var]]     -> Pattern %% term binding variables
+    Term[[VarRef]]  -> Term    %% term referencing variables
