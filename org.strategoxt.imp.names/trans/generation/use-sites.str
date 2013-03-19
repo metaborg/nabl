@@ -63,12 +63,12 @@ rules
       bound2*   := <iset-copy> bound*;
       task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
       prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
-      t'        := <to-ppable-str; alltd(replace(|replace2*))> t;
+      t'        := <alltd(replace(|replace2*))> t;
       <hashtable-destroy> replace2*;
       <iset-destroy> bound2*
      
   prop-to-str:
-    PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)
+    PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, t)
 
 overlays
      

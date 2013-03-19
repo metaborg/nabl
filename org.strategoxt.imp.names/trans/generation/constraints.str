@@ -11,7 +11,7 @@ rules
   
   constraints-to-str(|replace*, bound*, rule*, task*) = 
     !(<id>, task*);
-    foldl(to-ppable-str; constraint-to-str(|replace*, bound*, rule*))
+    foldl(constraint-to-str(|replace*, bound*, rule*))
     
   constraint-to-str(|replace*, bound*, rule*):  
     (PropertyConstraint(t1, p, t2), cs*) -> [cs*, PROP_TASK(r, <nabl-to-str> p, t1'), match*]

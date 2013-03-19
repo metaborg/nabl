@@ -14,8 +14,7 @@ rules // definitions, scopes, properties
     DefClause(k, u, ns, t, ps, ds, constr*) -> <id>
     where  
       // replace name with callback to handle definition site
-      t' := <to-ppable-str> t;
-      r  := ( t', DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes) )
+      r  := ( t, DEF_CALL(<nabl-to-str> ns, <nabl-to-str> u, <nabl-to-str> ds, scopes) )
     where 
       // when we have external scopes in a "defines ... in ..." clause, 
       // replace these external scopes with callbacks
@@ -28,24 +27,24 @@ rules // definitions, scopes, properties
       // generate a rule handling this defintion site
       <iset-add(|DEF_RULE(Match(pattern), <replace-all(|[r])> pattern))> rule*
     where
-    	<iset-add(|NAME_RULE(pattern, t'))> rule*
+    	<iset-add(|NAME_RULE(pattern, t))> rule*
     where try(
       // when this definition site defines properties,
       // construct sequence of property calculatations
       // and a callback
       task'* := <constraints-to-str(|replace*, bound*, rule*, task*)> constr*;
       pcall  := <alltd(replace(|replace*))> PROP_CALL(<nonempty; map(prop-to-str)> ps);
-      pcall' := <replace-all(|[(t', pcall)])> pattern;
+      pcall' := <replace-all(|[(t, pcall)])> pattern;
       // generate a rule handling properties at this definition site
       pbody  := <foldr(!pcall', to-seq)> task'* ;
       <iset-add(|PROP_RULE(Seq(Match(pattern), pbody)))> rule* 
     )
     
   def-scope-to-str:
-    Context(x) -> (<to-ppable-str> x, SCOPE_CALL())      
+    Context(x) -> (x, SCOPE_CALL())      
 
   prop-to-str:
-    PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, <to-ppable-str> t)     
+    PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t)     
 
   nabl-to-str: Current() -> TERM("Current")
   nabl-to-str: 

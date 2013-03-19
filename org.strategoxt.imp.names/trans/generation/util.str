@@ -22,12 +22,6 @@ rules
   introduce-id: Var(_)     -> Id()
   introduce-id: ListVar(_) -> Id()
     
-  to-ppable-str = alltd(to-ppable-str-local)
-    
-  to-ppable-str-local: ListVar(x)    -> Var(x)
-  to-ppable-str-local: VarRef(x)     -> Var(x)
-  to-ppable-str-local: ListVarRef(x) -> Var(x)
-
   iset-copy = iset-elements => elem*; new-iset ; iset-addlist(|elem*)
   
 overlays

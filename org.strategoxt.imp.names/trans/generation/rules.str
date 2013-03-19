@@ -19,16 +19,15 @@ rules
       <hashtable-clear> replace*;
       <iset-clear> bound*
     where
-      pattern':= <to-ppable-str> pattern;
-      <iset-addlist(|<collect-all(?Var(_))> pattern')> bound*;
+      <iset-addlist(|<collect-all(?Var(_))> pattern)> bound*;
       task*  := <constraints-to-str(|replace*, bound*, rule*, [])> constr*;
       scope* := <filter(?ScopeClause(<id>)); concat; map(nabl-to-str)> clause*
     where try (   
-       <fetch-elem(def-to-str(|replace*, bound*, rule*, task*, pattern', scope*))> clause* 
-    <+ <iset-add(|SCOPE_RULE(pattern', <nonempty> scope*))> rule*
+       <fetch-elem(def-to-str(|replace*, bound*, rule*, task*, pattern, scope*))> clause* 
+    <+ <iset-add(|SCOPE_RULE(pattern, <nonempty> scope*))> rule*
     )
     where
-      <uses-to-str(|replace*, bound*, rule*, task*, pattern')> clause*
+      <uses-to-str(|replace*, bound*, rule*, task*, pattern)> clause*
       
 overlays
 	
