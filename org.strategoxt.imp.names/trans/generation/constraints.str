@@ -46,7 +46,7 @@ rules
       
 overlays
     
-  MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("nabl-match", RuleNoCond(TUPLE([n, lhs, LIST(bnd)]), rhs))
+  MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("task-match", RuleNoCond(TUPLE([n, lhs, LIST(bnd)]), rhs))
 
   PROP_TASK(v, p, t)     = NEW_TASK(v, TERM("PropCalc", [p, t]))
   MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Match", [n, LIST(b), t]))
@@ -55,6 +55,6 @@ overlays
   
   NEW_TASK(t) =
   App(
-    CallT(SVar("new-task"), [], [Var("tasks")])
+    CallT(SVar("new-task"), [], [Var("partition")])
   , t
   )

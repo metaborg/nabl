@@ -100,7 +100,10 @@ overlays
   SDefT(
     "nabl-prop-site"
   , []
-  , [ DefaultVarDec("elems"), DefaultVarDec("tasks"), DefaultVarDec("states")]
+  , [ DefaultVarDec("lang")
+    , DefaultVarDec("partition")
+    , DefaultVarDec("elems")
+    , DefaultVarDec("states")]
   , body
   )
   
@@ -108,7 +111,7 @@ overlays
   CallT(
     SVar("nabl-props")
   , []
-  , [ Var("elems"), LIST(ps)]
+  , [ Var("lang"), Var("partition"), Var("elems"), LIST(ps)]
   )
   
   PROPERTY(p, v) = TERM("Prop", [p, v])

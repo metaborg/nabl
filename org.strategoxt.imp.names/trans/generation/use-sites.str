@@ -77,8 +77,8 @@ overlays
     "nabl-use-site"
   , []
   , [ DefaultVarDec("lang")
+    , DefaultVarDec("partition")
     , DefaultVarDec("elems")
-    , DefaultVarDec("tasks")
     , DefaultVarDec("uris")
     , DefaultVarDec("states") 
     ]
@@ -90,8 +90,8 @@ overlays
     SVar("nabl-use")
   , []
   , [ Var("lang")
+		, Var("partition")
     , Var("elems")
-    , Var("tasks")
     , Var("uris")
     , LIST(candidates)
     ] 
