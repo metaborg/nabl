@@ -1,0 +1,134 @@
+module generation2/def-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/main
+  generation2/scopes
+  generation2/constraints
+
+rules
+  
+  def-to-name = ?DefClause(Explicit(), _, _, <id>, _, _, _)
+    
+rules
+  
+ //  clause-to-pre-str(|pattern, scopes, n):
+ //    DefClause(Explicit(), u, ns, t, ps, ds, constr*) -> ([sc*, dcall], m)
+ //    where
+ //      ns'   := <nabl-to-str> ns
+ //    ; (r*, sc*, ds', m) := <scope-to-str(|ns', n)> ds
+ //    ; r     := (t,  DEF_CALL(ns', <nabl-to-str> u, ds', scopes))
+ //    ; dcall := <replace-all(|[r, r*])> pattern
+ //  
+ //  clause-to-post-str(|pattern, repl*, bound*, n):
+ //    DefClause(Explicit(), u, ns, t, ps, ds, constr*) -> (rule*, [pr*, pcall], m)
+ //    where
+ //      b2*   := <collect-all(?Var(_))> t
+ //    ; (r2*, _, rule*, pr*, m) := <constraints-to-str(|repl*, [bound*, b2*], n)> constr*
+ //    ; r2    := (t, PROP_CALL(<alltd(replace(|r2*)); map(prop-to-str)> ps))
+ //    ; pcall := <replace-all(|[r2, r2*])> pattern
+ //  
+ //  clause-to-pre-str(|pattern, scopes, n):
+ //    DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> ([sc*, dcall], m)
+ //    where
+ //      ns' := <nabl-to-str> ns
+ //    ; (r*, sc*, _, m) := <scope-to-str(|ns', n)> ds
+ //    ; dcall := <replace-all(|r*)> pattern
+ //     
+ //  clause-to-post-str(|pattern, repl*, bound*, n):
+ //    DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [pr*, app], m)
+ //    where
+ //      ns' := <nabl-to-str> ns
+ //    ; b*    := <collect-all(?Var(_))> t
+ //    ; (r2*, b3*, rule*, pr*, m) := <constraints-to-str(|repl*, [bound*, b*], n)> constr*
+ //    ; ps' := <map(prop-to-str); alltd(replace(|r2*))> ps
+ //    ; app := DEF_APPLY(ns', <nabl-to-str> u, ds', t, ps')
+ // 
+  clause-to-str(|pattern, scopes, repl*, bound*, n):
+    DefClause(Explicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, pcall], k)
+    where
+      ns'   := <nabl-to-str> ns
+    ; (r*, sc*, ds', m) := <scope-to-str(|ns', n)> ds
+    ; r     := (t,  DEF_CALL(ns', <nabl-to-str> u, ds', scopes))
+    ; dcall := <replace-all(|[r, r*])> pattern
+    ; b2*   := <collect-all(?Var(_))> t
+    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b2*], m)> constr*
+    ; r2    := (t, PROP_CALL(<alltd(replace(|r2*)); map(prop-to-str)> ps))
+    ; pcall := <replace-all(|[r2, r2*])> pattern
+    
+  clause-to-str(|pattern, scopes, repl*, bound*, n):
+    DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, app], k)
+    where
+      ns' := <nabl-to-str> ns
+    ; (r*, sc*, ds', m) := <scope-to-str(|ns', n)> ds
+    ; dcall := <replace-all(|r*)> pattern
+    ; b*    := <collect-all(?Var(_))> t
+    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b*], m)> constr*
+    ; ps' := <map(prop-to-str); alltd(replace(|r2*))> ps
+    ; app := DEF_APPLY(ns', <nabl-to-str> u, ds', t, ps')
+
+rules
+         
+  prop-to-str: PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t)     
+
+  nabl-to-str: NonUnique() -> TERM("NonUnique")
+  nabl-to-str: Unique()    -> TERM("Unique")
+  
+overlays
+  
+  NAME_RULE(call) =
+  SDefT(
+    "nabl-name-site"
+  , [DefaultVarDec("child-uris__"), DefaultVarDec("sibl-uris__")]
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("elems__")
+    , DefaultVarDec("tasks__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__")]
+  , call
+  )
+  
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+	
+  DEF_CALL(ns, u, ds, s) = 
+  CallT(
+    SVar("nabl-def")
+  , [Match(Var("child-uris__")), CALL("sibl-uris__")]
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uniques__")
+    , Var("elems__")
+    , Var("uris__")
+    , ns, u, ds, LIST(s)]
+  )
+  
+  IMP_DEF_CALL(ns, u, ds, s) = 
+  CallT(
+    SVar("nabl-def")
+  , []
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uniques__")
+    , Var("elems__")
+    , Var("uris__")
+    , ns, u, ds, LIST(s)]
+  )
+  
+  DEF_APPLY(ns, u, ds, t, ps) = 
+  Where(App(Seq(IMP_DEF_CALL(ns, u, ds, []), PROP_CALL(ps)), t))
+  
+  PROP_CALL(ps) = 
+  CallT(
+    SVar("nabl-props")
+  , []
+  , [ Var("elems__"), LIST(ps)]
+  )
+  
+  PROPERTY(p, v) = TERM("Prop", [p, v])
+

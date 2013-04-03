@@ -1,0 +1,121 @@
+module generation2/use-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/main
+  generation2/constraints
+  generation2/rules
+  generation2/scopes
+  
+rules
+  
+  use-to-name = 
+    ?RefClause(<fetch-elem(use-to-name)>)
+  + ?RefClausePart(_, _, <id>, _, _, _)
+  + ?SingleImport(_, _, <id>, _, _, _, _, _)
+  + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
+    
+  clause-to-str(|pattern, scopes, repl*, bound*, n):
+    ImportClause(import*) -> <clauses-to-str(|pattern, scopes, repl*, bound*, n)> import*
+    
+  clause-to-str(|pattern, scopes, repl*, bound*, n):
+    SingleImport(_, ns, t, ps, fsc, alias, isc, constr*) -> (r*, [sc*, dcall], pr*, k)
+    where
+      ns' := <nabl-to-str> ns
+    ; (r*, sc*, isc', m) := <scope-to-str(|ns', n)> isc
+    ; dcall := <replace-all(|r*)> pattern
+    ; b*    := <collect-all(?Var(_))> t
+    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b*], m)> constr*
+  
+  clause-to-str(|pattern, scopes, repl*, bound*, n):
+    WildcardImport(ns, ps, fsc, isc, constr*) -> (r*, [sc*, dcall], pr*, k)
+    where
+      ns' := <nabl-to-str> ns
+    ; (r*, sc*, isc', m) := <scope-to-str(|ns', n)> isc
+    ; dcall := <replace-all(|r*)> pattern
+    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, bound*, m)> constr*
+    
+// rules
+//   
+//   uses-to-str(|replace*, bound*, rule*, task*, pattern) =
+//     filter(?RefClause(<id>) + ?ImportClause(<id>));
+//     if nonempty then
+//       (rep*, task'*) := <foldl(use-to-str(|replace*, bound*, rule*))> (<id>, ([], task*));
+//       ubody  := <foldr(<replace-all(|rep*)> pattern, to-seq)> task'* ;
+//       <iset-add(|USE_RULE(Seq(Match(pattern), ubody)))> rule*
+//     end
+//   
+//   use-to-str(|replace*, bound*, rule*):
+//     (u, (r*, task*)) -> ([(t, USE_CALL(c*)), r*], task'*)
+//     where 
+//       t            := <use-to-name> u;
+//       (c*, task'*) := <foldl(id; (ref-to-str(|replace*, bound*, rule*) <+ Snd))> (u, ([], task*))
+//     
+//   ref-to-str(|replace*, bound*, rule*): 
+//     (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, prop'*)], task'*)
+//     where
+//       < ?RefClausePart(_, ns, _, prop*, Current(), constr*)
+//       + ?SingleImport(_, ns, _, prop*, Current(), _, _, constr*)
+//       + ?WildcardImport(_, _, Context(_, ns, _, prop*, Current()), _, constr*)
+//       > c
+//     where
+//       replace2* := <hashtable-copy> replace*;
+//       bound2*   := <iset-copy> bound*;
+//       task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
+//       prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
+//       <hashtable-destroy> replace2*;
+//       <iset-destroy> bound2*
+//       
+//   ref-to-str(|replace*, bound*, rule*): 
+//     (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', t', prop'*)], task'*)
+//     where
+//       <?RefClausePart(_, ns, _, prop*, Context(_, ns', t, _, _), constr*)> c
+//     where
+//       replace2* := <hashtable-copy> replace*;
+//       bound2*   := <iset-copy> bound*;
+//       task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
+//       prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
+//       t'        := <alltd(replace(|replace2*))> t;
+//       <hashtable-destroy> replace2*;
+//       <iset-destroy> bound2*
+//      
+//   prop-to-str:
+//     PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, t)
+
+overlays
+     
+  USE_RULE(call) =
+  SDefT(
+    "nabl-use-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("elems__")
+    , DefaultVarDec("tasks__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__") 
+    ]
+  , call
+  )
+  
+  USE_CALL(candidates) =
+  CallT(
+    SVar("nabl-use")
+  , []
+  , [ Var("lang__")
+    , Var("elems__")
+    , Var("tasks__")
+    , Var("uris__")
+    , LIST(candidates)
+    ] 
+  )
+  
+  CANDIDATE(ns, ps) =
+  TERM("UseCandidate", [ns, LIST(ps), TERM("Current"), TERM("All")])
+
+  CANDIDATE(ns1, ns2, n, ps) =
+  TERM("UseCandidate", [ns1, LIST(ps), LIST([n]), TERM("One")])
+  

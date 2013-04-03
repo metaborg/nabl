@@ -1,0 +1,50 @@
+module generation2/scopes
+
+imports
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  
+rules
+  
+  scope-to-str(|ns, n): 
+    Current() -> ([], [], TERM("Current"), n)
+  
+  scope-to-str(|ns, n): 
+    DefScopes(ds*) -> (r*, ct*, LIST([ss*, v]), m) 
+    where 
+      if <fetch-elem(?Subsequent())> ds* then
+        ss* := [TERM("Subsequent")] 
+      else
+        ss* := []
+      end
+    ; if x := <fetch-elem(?Context(<id>))> ds* then 
+        v   := Var($[scope[n]__])
+      ; ct* := [SCOPE_CALL(v, ns)] 
+      ; m   := <inc> n
+      else 
+        ct* := []
+      ; m   := n
+      end
+    ; r*  := <filter(?Context(<id>); !(<id>, SCOPE_CALL(v)))> ds*
+       
+overlays
+  
+  SCOPE_CALL(v) = CallT(SVar("nabl-def-scope"), [], [v])
+  SCOPE_CALL(v, ns) = 
+  Where(
+    Assign(
+      v
+    , App(
+        CallT(
+          SVar("nabl-construct-def-scope")
+        , []
+        , [Var("lang__"), Var("partition__"), Var("uniques__")]
+        )
+      , ns
+      )
+    )
+  )
+ 
+     

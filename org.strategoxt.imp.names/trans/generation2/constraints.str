@@ -1,0 +1,73 @@
+module generation2/constraints
+
+imports 
+  
+  libstrc
+  include/NameBindingLanguage
+  generation2/util
+  generation2/main
+  
+rules
+  
+  constraints-to-str(|repl*, b*, n):
+  	[] -> (repl*, b*, [], [], n)
+  
+  constraints-to-str(|repl*, b*, n):
+  	[c|cs] -> (r2*, b2*, [rule1*, rule2*], [task1*, task2*], k)
+  	where
+    	(r1*, b1*, rule1*, task1*, m) := <constraint-to-str(|repl*, b*, n)> c;
+      (r2*, b2*, rule2*, task2*, k) := <constraints-to-str(|r1*, b1*, m)> cs
+  		
+  constraint-to-str(|repl*, b*, n):  
+    PropertyConstraint(t1, p, t2) -> ([r1*, repl*], [b1*, b*], rule*, [task, match*], m)
+    where
+      t1' := <alltd(replace(|repl*))> t1;
+      // create new task for property calculation
+      r   := Var($[r[n]__]);
+      task := PROP_TASK(r, <nabl-to-str> p, t1');
+      if 
+        Var(v) := t2;
+        <not(elem)> (t2, b*) 
+     then // single unbound variable is replaced with result
+        r1* := [(Var(v), r)];
+        b1*    := [Var(v)];
+        match* := [];
+        rule*  := []
+      else
+      	var*   := <collect-all(?Var(_))> t2;
+      	bvar*  := <isect> (var*, b*);
+      	bvar'* := <alltd(replace(|repl*))> bvar*;
+      	(r1*, b1*, match*, rule*, m) := <matches-to-str(|t2, r, bvar*, bvar'*, <inc> n)> var*
+      end
+  
+   matches-to-str(|term, res, bvar*, bvar'*, n):
+     [] -> ([], [], [], [], n)
+   
+   matches-to-str(|term, res, bvar*, bvar'*, n):
+     [c|cs] -> ([r, r*], [b, b*], [rule, rule*], [t, t*], m)
+     where
+       (r, b, t, rule)        := <match-to-str(|term, res, bvar*, bvar'*, n)> c;
+       (r*, b*, t*, rule*, m) := <matches-to-str(|term, res, bvar*, bvar'*, <inc> n)> cs
+       
+   match-to-str(|term, res, bvar*, bvar'*, n):
+  	t@Var(v) -> ((t, r), t, rule, task)
+    where
+    	r    := Var($[r[n]__]);
+    	mn   := NoAnnoList(Str(<newname; double-quote> "match"));
+    	task := MATCH_TASK(r, mn, bvar'*, res);
+    	rule := MATCH_RULE(mn, term, bvar*, Var(v))
+      
+overlays
+    
+  MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("nabl-match", RuleNoCond(TUPLE([n, lhs, LIST(bnd)]), rhs))
+
+  PROP_TASK(v, p, t)     = NEW_TASK(v, TERM("PropCalc", [p, t]))
+  MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Match", [n, LIST(b), t]))
+  
+  NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))
+  
+  NEW_TASK(t) =
+  App(
+    CallT(SVar("new-task"), [], [Var("tasks__")])
+  , t
+  )
