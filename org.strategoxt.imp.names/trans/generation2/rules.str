@@ -30,14 +30,14 @@ rules
       // collect horizontal scopes
     ; scope*   := <filter(?ScopeClause(<id>)); concat; map(nabl-to-str)> clause*
       // filter def clauses   
-    ; [dclause|_] := <filter(?DefClause(Explicit(), _, _, _, _, _, _))> clause* 
+    ; dclause* := <filter(?DefClause(Explicit(), _, _, _, _, _, _))> clause* 
       // filter ref and import clauses
     ; uclause* := <filter(?ImportClause(<id>))> clause*
     where
       // translate constraints
       (repl*, bound2*, crule*, ctask*, n) := <constraints-to-str(|[], bound*, 1)> constr*
       // translate def clauses
-    ; rule*  := <clause-to-rules(?m|pattern, scope*, repl*, bound2*, ctask*, n)> dclause
+    ; rule*  := <clause-to-rules(?m|pattern, scope*, repl*, bound2*, ctask*, n)> dclause*
     <+ rule* := []
     // ; (drule*, c1*, c2*, m) := <clauses-to-str(|pattern, scope*, repl*, bound2*, n)> dclause*
     //   // translate ref and import clauses

@@ -16,14 +16,15 @@ rules
     
 rules
   
-  clause-to-def-rule(counter|pattern, scope*, n):
-    DefClause(Explicit(), unique, ns, term, _, defscope, constr*) -> DEF_RULE(Match(pattern), seq) 
+  clause-to-def-rule(|pattern, scope*):
+    (o, DefClause(Explicit(), unique, ns, term, _, defscope, constr*)) -> [scope-clause*, congruence] 
     where
       ns-term := <nabl-to-str> ns
-    ; (replacement*, scope-clause*, defscope-var, <counter>) := <scope-to-str(|ns-term, n)> defscope
-    ; replacement := (term, DEF_CALL(ns-term, <nabl-to-str> unique, defscope-var, scope*))
+    ; i := <dec> o
+    ; (replacement*, scope-clause*, defscope-var, _) := <scope-to-str(|ns-term, i, 1)> defscope
+    ; replacement := (term, DEF_CALL(ns-term, <nabl-to-str> unique, defscope-var, scope*, $[child-uri__[i]], $[sibl-uri__[i]], $[child-uri__[o]], $[sibl-uri__[o]]))
     ; congruence := <replace-all(|[replacement, replacement*])> pattern
-    ; seq := <to-seq> [scope-clause*, congruence]
+   
     
   clause-to-prop-rule(counter|pattern, glob-replacement*, glob-bound*, glob-task*, n):
     DefClause(Explicit(), _, ns, term, prop*, _, constr*) -> [PROP_RULE(Match(pattern), seq), match-rule*]
@@ -36,11 +37,14 @@ rules
     ; seq := <to-seq> [glob-task*, loc-task*, congruence]
       
   clause-to-rules(counter|pattern, scope*, repl*, bound*, glob-task*, n):
-    def-clause -> [COORD_RULE(Match(pattern)), def-rule, prop-rule*]
+    def-clause* -> [COORD_RULE(Match(pattern)), DEF_RULE(Match(pattern), seq)]//, prop-rule*]
     where
-      clause-to-def-rule(?m|pattern, scope*, n) => def-rule
-    where
-      clause-to-prop-rule(counter|pattern, repl*, bound*, glob-task*, m) => prop-rule*
+      map-with-index(clause-to-def-rule(|pattern, scope*)); concat => clause*
+    ; m := <length> def-clause*
+    ; <to-seq> [clause*, App(CALL("child-uris__"), Var($[child-uri__[m]])), App(CALL("sibl-uris__"), Var($[sibl-uri__[m]]))] => seq
+    
+    //where
+      //clause-to-prop-rule(counter|pattern, repl*, bound*, glob-task*, n) => prop-rule*
      
   clause-to-str(|pattern, scopes, repl*, bound*, n):
     DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, app], k)
@@ -74,20 +78,22 @@ overlays
     , DefaultVarDec("partition__")
     , DefaultVarDec("uniques__")
     , DefaultVarDec("elems__")
-    , DefaultVarDec("uris__")
+    , DefaultVarDec("child-uri__0")
+    , DefaultVarDec("sibl-uri__0")
     , DefaultVarDec("states__")]
   , Seq(match, call)
   )  
 	
-  DEF_CALL(ns, u, ds, s) = 
+  DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
   CallT(
     SVar("nabl-def")
-  , [Match(Var("child-uris__")), CALL("sibl-uris__")]
+  , [Match(Var(out-child-uris)), Match(Var(out-sibl-uris))]
   , [ Var("lang__")
     , Var("partition__")
     , Var("uniques__")
     , Var("elems__")
-    , Var("uris__")
+    , Var(in-child-uris)
+    , Var(in-sibl-uris)
     , ns, u, ds, LIST(s)]
   )
   

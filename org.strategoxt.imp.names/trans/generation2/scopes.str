@@ -8,10 +8,12 @@ imports
   
 rules
   
-  scope-to-str(|ns, n): 
+  scope-to-str(|ns, n) = scope-to-str(|ns, 0, n)
+  
+  scope-to-str(|ns, i, n): 
     Current() -> ([], [], TERM("Current"), n)
   
-  scope-to-str(|ns, n): 
+  scope-to-str(|ns, i, n): 
     DefScopes(ds*) -> (r*, ct*, LIST([ss*, v]), m) 
     where 
       if <fetch-elem(?Subsequent())> ds* then
@@ -20,7 +22,7 @@ rules
         ss* := []
       end
     ; if x := <fetch-elem(?Context(<id>))> ds* then 
-        v   := Var($[scope[n]__])
+        v   := Var($[scope[i]_[n]__])
       ; ct* := [SCOPE_CALL(v, ns)] 
       ; m   := <inc> n
       else 
