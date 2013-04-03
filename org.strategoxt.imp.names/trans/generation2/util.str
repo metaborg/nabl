@@ -35,6 +35,7 @@ overlays
   TUPLE(elems)    = NoAnnoList(Tuple(elems))
   LIST(elems)     = NoAnnoList(List(elems))
   CALL(s)         = CallNoArgs(SVar(s))
+  CALL(s, ss, ts) = CallT(SVar(s), ss, ts)
 
   
   
