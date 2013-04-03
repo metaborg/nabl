@@ -30,33 +30,35 @@ rules
       // collect horizontal scopes
     ; scope*   := <filter(?ScopeClause(<id>)); concat; map(nabl-to-str)> clause*
       // filter def clauses   
-    ; dclause* := <filter(?DefClause(_, _, _, _, _, _, _))> clause* 
+    ; [dclause|_] := <filter(?DefClause(Explicit(), _, _, _, _, _, _))> clause* 
       // filter ref and import clauses
     ; uclause* := <filter(?ImportClause(<id>))> clause*
     where
       // translate constraints
       (repl*, bound2*, crule*, ctask*, n) := <constraints-to-str(|[], bound*, 1)> constr*
       // translate def clauses
-    ; (drule*, c1*, c2*, m) := <clauses-to-str(|pattern, scope*, repl*, bound2*, n)> dclause*
-      // translate ref and import clauses
-    ; (urule*, c3*, c4*, _) := <clauses-to-str(|pattern, scope*, repl*, bound2*, m)> uclause*
-    where // combine rules
-      if 
-        <not(fetch-elem(def-to-name))> dclause* // no explicit def
-      ; <nonempty> scope*                       // anonymous scope
-      then
-        dcall1* := [Scope(var*, <to-seq> [Match(pattern), c1*, c3*, ANONYMOUS_CALL(scope*)])]
-      else 
-        dcall1* := <scope-seq(|var*, pattern)> [c1*, c3*]
-      end
-    ; dcall2* := <scope-seq(|var*, pattern)> ctask*
-    ; dcall3* := <scope-seq(|var*, pattern)> c4*
-    ; dcall4* := <scope-seq(|var*, pattern)> c2*
-    ; if <nonempty> [dcall1*, dcall2*, dcall3*, dcall4*] then
-        rule* := [NAME_RULE(<to-seq> [dcall1*, RECURSION(), dcall2*, dcall3*, dcall4*]), drule*]
-      else
-        rule* := []
-      end
+    ; rule*  := <clause-to-rules(?m|pattern, scope*, repl*, bound2*, ctask*, n)> dclause
+    <+ rule* := []
+    // ; (drule*, c1*, c2*, m) := <clauses-to-str(|pattern, scope*, repl*, bound2*, n)> dclause*
+    //   // translate ref and import clauses
+    // ; (urule*, c3*, c4*, _) := <clauses-to-str(|pattern, scope*, repl*, bound2*, m)> uclause*
+    // where // combine rules
+    //   if 
+    //     <not(fetch-elem(def-to-name))> dclause* // no explicit def
+    //   ; <nonempty> scope*                       // anonymous scope
+    //   then
+    //     dcall1* := [Scope(var*, <to-seq> [Match(pattern), c1*, c3*, ANONYMOUS_CALL(scope*)])]
+    //   else 
+    //     dcall1* := <scope-seq(|var*, pattern)> [c1*, c3*]
+    //   end
+    // ; dcall2* := <scope-seq(|var*, pattern)> ctask*
+    // ; dcall3* := <scope-seq(|var*, pattern)> c4*
+    // ; dcall4* := <scope-seq(|var*, pattern)> c2*
+    // ; if <nonempty> [dcall1*, dcall2*, dcall3*, dcall4*] then
+    //     rule* := [NAME_RULE(<to-seq> [dcall1*, RECURSION(), dcall2*, dcall3*, dcall4*]), drule*]
+    //   else
+    //     rule* := []
+    //   end
 
   scope-seq(|var*, pattern) = ?[] <+ ![Scope(var*, <to-seq> [Match(pattern)|<id>])]
 
@@ -86,15 +88,5 @@ overlays
     , LIST(scopes) ]
   )
   
-  RECURSION =
-  CallT(
-    SVar("nabl-children")
-  , []
-  , [ Var("lang__")
-    , Var("partition__")
-    , Var("uniques__")
-    , Var("elems__")
-    , Var("tasks__")
-    , Var("child-uris__")]
-  )
+  
   	

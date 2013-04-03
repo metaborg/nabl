@@ -16,50 +16,32 @@ rules
     
 rules
   
- //  clause-to-pre-str(|pattern, scopes, n):
- //    DefClause(Explicit(), u, ns, t, ps, ds, constr*) -> ([sc*, dcall], m)
- //    where
- //      ns'   := <nabl-to-str> ns
- //    ; (r*, sc*, ds', m) := <scope-to-str(|ns', n)> ds
- //    ; r     := (t,  DEF_CALL(ns', <nabl-to-str> u, ds', scopes))
- //    ; dcall := <replace-all(|[r, r*])> pattern
- //  
- //  clause-to-post-str(|pattern, repl*, bound*, n):
- //    DefClause(Explicit(), u, ns, t, ps, ds, constr*) -> (rule*, [pr*, pcall], m)
- //    where
- //      b2*   := <collect-all(?Var(_))> t
- //    ; (r2*, _, rule*, pr*, m) := <constraints-to-str(|repl*, [bound*, b2*], n)> constr*
- //    ; r2    := (t, PROP_CALL(<alltd(replace(|r2*)); map(prop-to-str)> ps))
- //    ; pcall := <replace-all(|[r2, r2*])> pattern
- //  
- //  clause-to-pre-str(|pattern, scopes, n):
- //    DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> ([sc*, dcall], m)
- //    where
- //      ns' := <nabl-to-str> ns
- //    ; (r*, sc*, _, m) := <scope-to-str(|ns', n)> ds
- //    ; dcall := <replace-all(|r*)> pattern
- //     
- //  clause-to-post-str(|pattern, repl*, bound*, n):
- //    DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [pr*, app], m)
- //    where
- //      ns' := <nabl-to-str> ns
- //    ; b*    := <collect-all(?Var(_))> t
- //    ; (r2*, b3*, rule*, pr*, m) := <constraints-to-str(|repl*, [bound*, b*], n)> constr*
- //    ; ps' := <map(prop-to-str); alltd(replace(|r2*))> ps
- //    ; app := DEF_APPLY(ns', <nabl-to-str> u, ds', t, ps')
- // 
-  clause-to-str(|pattern, scopes, repl*, bound*, n):
-    DefClause(Explicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, pcall], k)
+  clause-to-def-rule(counter|pattern, scope*, n):
+    DefClause(Explicit(), unique, ns, term, _, defscope, constr*) -> DEF_RULE(Match(pattern), seq) 
     where
-      ns'   := <nabl-to-str> ns
-    ; (r*, sc*, ds', m) := <scope-to-str(|ns', n)> ds
-    ; r     := (t,  DEF_CALL(ns', <nabl-to-str> u, ds', scopes))
-    ; dcall := <replace-all(|[r, r*])> pattern
-    ; b2*   := <collect-all(?Var(_))> t
-    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b2*], m)> constr*
-    ; r2    := (t, PROP_CALL(<alltd(replace(|r2*)); map(prop-to-str)> ps))
-    ; pcall := <replace-all(|[r2, r2*])> pattern
+      ns-term := <nabl-to-str> ns
+    ; (replacement*, scope-clause*, defscope-var, <counter>) := <scope-to-str(|ns-term, n)> defscope
+    ; replacement := (term, DEF_CALL(ns-term, <nabl-to-str> unique, defscope-var, scope*))
+    ; congruence := <replace-all(|[replacement, replacement*])> pattern
+    ; seq := <to-seq> [scope-clause*, congruence]
     
+  clause-to-prop-rule(counter|pattern, glob-replacement*, glob-bound*, glob-task*, n):
+    DefClause(Explicit(), _, ns, term, prop*, _, constr*) -> [PROP_RULE(Match(pattern), seq), match-rule*]
+    where
+      ns-term     := <nabl-to-str> ns
+    ; patt-bound* := <collect-all(?Var(_))> term
+    ; (loc-replacement*, loc-bound*, match-rule*, loc-task*, <counter>) := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], n)> constr*
+    ; replacement := (term, PROP_CALL(<alltd(replace(|loc-replacement*)); map(prop-to-str)> prop*))
+    ; congruence  := <replace-all(|[replacement])> pattern
+    ; seq := <to-seq> [glob-task*, loc-task*, congruence]
+      
+  clause-to-rules(counter|pattern, scope*, repl*, bound*, glob-task*, n):
+    def-clause -> [COORD_RULE(Match(pattern)), def-rule, prop-rule*]
+    where
+      clause-to-def-rule(?m|pattern, scope*, n) => def-rule
+    where
+      clause-to-prop-rule(counter|pattern, repl*, bound*, glob-task*, m) => prop-rule*
+     
   clause-to-str(|pattern, scopes, repl*, bound*, n):
     DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, app], k)
     where
@@ -80,21 +62,22 @@ rules
   
 overlays
   
-  NAME_RULE(call) =
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+
+overlays
+  	
+	DEF_RULE(match, call) =
   SDefT(
-    "nabl-name-site"
+    "nabl-def-site"
   , [DefaultVarDec("child-uris__"), DefaultVarDec("sibl-uris__")]
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
     , DefaultVarDec("uniques__")
     , DefaultVarDec("elems__")
-    , DefaultVarDec("tasks__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__")]
-  , call
-  )
-  
-  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+  , Seq(match, call)
+  )  
 	
   DEF_CALL(ns, u, ds, s) = 
   CallT(
@@ -107,6 +90,94 @@ overlays
     , Var("uris__")
     , ns, u, ds, LIST(s)]
   )
+  
+overlays
+  
+	PROP_RULE(match, call)  =
+  SDefT(
+    "nabl-prop-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("elems__")
+    , DefaultVarDec("tasks__")
+    , DefaultVarDec("states__")]
+  , Seq(match, call)
+  )
+
+  PROP_CALL(ps) = 
+  CallT(
+    SVar("nabl-props")
+  , []
+  , [ Var("elems__"), LIST(ps)]
+  )
+  
+  PROPERTY(p, v) = TERM("Prop", [p, v])
+
+overlays
+    
+  COORD_RULE(match) =
+  SDefT(
+    "nabl-name-site"
+  , [DefaultVarDec("child-uris__"), DefaultVarDec("sibl-uris__")]
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("elems__")
+    , DefaultVarDec("tasks__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__")]
+  , Seq(
+      match
+    , Seq(
+        DEF_SITE_CALL()
+      , Seq (
+          RECURSION()
+        , PROP_SITE_CALL()
+        )
+      )
+    )
+  )
+  
+  DEF_SITE_CALL = 
+  CallT(
+    SVar("nabl-def-site")
+  , [Match(Var("child-uris__")), CALL("sibl-uris__")]
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uniques__")
+    , Var("elems__")
+    , Var("uris__")
+    , Var("states__")
+    ]
+  ) 
+
+  RECURSION =
+  CallT(
+    SVar("nabl-children")
+  , []
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uniques__")
+    , Var("elems__")
+    , Var("tasks__")
+    , Var("child-uris__")]
+  )
+  
+  PROP_SITE_CALL = 
+  CallT(
+    SVar("nabl-prop-site")
+  , []
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("elems__")
+    , Var("tasks__")
+    , Var("states__")
+    ]
+  ) 
+
+
+overlays
   
   IMP_DEF_CALL(ns, u, ds, s) = 
   CallT(
@@ -123,12 +194,4 @@ overlays
   DEF_APPLY(ns, u, ds, t, ps) = 
   Where(App(Seq(IMP_DEF_CALL(ns, u, ds, []), PROP_CALL(ps)), t))
   
-  PROP_CALL(ps) = 
-  CallT(
-    SVar("nabl-props")
-  , []
-  , [ Var("elems__"), LIST(ps)]
-  )
-  
-  PROPERTY(p, v) = TERM("Prop", [p, v])
 
