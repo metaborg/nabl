@@ -26,25 +26,25 @@ rules
     ; congruence := <replace-all(|[replacement, replacement*])> pattern
    
     
-  clause-to-prop-rule(counter|pattern, glob-replacement*, glob-bound*, glob-task*, n):
-    DefClause(Explicit(), _, ns, term, prop*, _, constr*) -> [PROP_RULE(Match(pattern), seq), match-rule*]
+  clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*):
+    (o, DefClause(Explicit(), _, ns, term, prop*, _, constr*)) -> (match-rule*, [loc-task*, congruence])
     where
       ns-term     := <nabl-to-str> ns
+    ; i := <dec> o
     ; patt-bound* := <collect-all(?Var(_))> term
-    ; (loc-replacement*, loc-bound*, match-rule*, loc-task*, <counter>) := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], n)> constr*
+    ; (loc-replacement*, loc-bound*, match-rule*, loc-task*, _) := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], i, 1)> constr*
     ; replacement := (term, PROP_CALL(<alltd(replace(|loc-replacement*)); map(prop-to-str)> prop*))
     ; congruence  := <replace-all(|[replacement])> pattern
-    ; seq := <to-seq> [glob-task*, loc-task*, congruence]
       
-  clause-to-rules(counter|pattern, scope*, repl*, bound*, glob-task*, n):
-    def-clause* -> [COORD_RULE(Match(pattern)), DEF_RULE(Match(pattern), seq)]//, prop-rule*]
+  clause-to-rules(counter|pattern, scope*, glob-replacement*, glob-bound*, glob-task*, n):
+    def-clause* -> [COORD_RULE(Match(pattern)), DEF_RULE(Match(pattern), def-seq), rule*,  PROP_RULE(Match(pattern), prop-seq)]//, prop-rule*]
     where
       map-with-index(clause-to-def-rule(|pattern, scope*)); concat => clause*
     ; m := <length> def-clause*
-    ; <to-seq> [clause*, App(CALL("child-uris__"), Var($[child-uri__[m]])), App(CALL("sibl-uris__"), Var($[sibl-uri__[m]]))] => seq
-    
-    //where
-      //clause-to-prop-rule(counter|pattern, repl*, bound*, glob-task*, n) => prop-rule*
+    ; def-seq := <to-seq> [clause*, App(CALL("child-uris__"), Var($[child-uri__[m]])), App(CALL("sibl-uris__"), Var($[sibl-uri__[m]]))] 
+    where
+      map-with-index(clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*)); unzip; (concat, concat) => (rule*, prop-clause*)
+    ; prop-seq := <to-seq> [glob-task*, prop-clause*, Id()]
      
   clause-to-str(|pattern, scopes, repl*, bound*, n):
     DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, app], k)

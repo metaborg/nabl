@@ -9,21 +9,22 @@ imports
   
 rules
   
-  constraints-to-str(|repl*, b*, n):
+  constraints-to-str(|repl*, b*, n) =  constraints-to-str(|repl*, b*, 0, n)
+  constraints-to-str(|repl*, b*, i, n):
   	[] -> (repl*, b*, [], [], n)
   
-  constraints-to-str(|repl*, b*, n):
+  constraints-to-str(|repl*, b*, i, n):
   	[c|cs] -> (r2*, b2*, [rule1*, rule2*], [task1*, task2*], k)
   	where
-    	(r1*, b1*, rule1*, task1*, m) := <constraint-to-str(|repl*, b*, n)> c;
-      (r2*, b2*, rule2*, task2*, k) := <constraints-to-str(|r1*, b1*, m)> cs
+    	(r1*, b1*, rule1*, task1*, m) := <constraint-to-str(|repl*, b*, i, n)> c;
+      (r2*, b2*, rule2*, task2*, k) := <constraints-to-str(|r1*, b1*, i, m)> cs
   		
-  constraint-to-str(|repl*, b*, n):  
+  constraint-to-str(|repl*, b*, i, n):  
     PropertyConstraint(t1, p, t2) -> ([r1*, repl*], [b1*, b*], rule*, [task, match*], m)
     where
       t1' := <alltd(replace(|repl*))> t1;
       // create new task for property calculation
-      r   := Var($[r[n]__]);
+      r   := Var($[r[i]_[n]__]);
       task := PROP_TASK(r, <nabl-to-str> p, t1');
       if 
         Var(v) := t2;
@@ -37,22 +38,22 @@ rules
       	var*   := <collect-all(?Var(_))> t2;
       	bvar*  := <isect> (var*, b*);
       	bvar'* := <alltd(replace(|repl*))> bvar*;
-      	(r1*, b1*, match*, rule*, m) := <matches-to-str(|t2, r, bvar*, bvar'*, <inc> n)> var*
+      	(r1*, b1*, match*, rule*, m) := <matches-to-str(|t2, r, bvar*, bvar'*, i, <inc> n)> var*
       end
   
-   matches-to-str(|term, res, bvar*, bvar'*, n):
+   matches-to-str(|term, res, bvar*, bvar'*, i, n):
      [] -> ([], [], [], [], n)
    
-   matches-to-str(|term, res, bvar*, bvar'*, n):
+   matches-to-str(|term, res, bvar*, bvar'*, i, n):
      [c|cs] -> ([r, r*], [b, b*], [rule, rule*], [t, t*], m)
      where
-       (r, b, t, rule)        := <match-to-str(|term, res, bvar*, bvar'*, n)> c;
-       (r*, b*, t*, rule*, m) := <matches-to-str(|term, res, bvar*, bvar'*, <inc> n)> cs
+       (r, b, t, rule)        := <match-to-str(|term, res, bvar*, bvar'*, i, n)> c;
+       (r*, b*, t*, rule*, m) := <matches-to-str(|term, res, bvar*, bvar'*, i, <inc> n)> cs
        
-   match-to-str(|term, res, bvar*, bvar'*, n):
+   match-to-str(|term, res, bvar*, bvar'*, i, n):
   	t@Var(v) -> ((t, r), t, rule, task)
     where
-    	r    := Var($[r[n]__]);
+    	r    := Var($[r[i]_[n]__]);
     	mn   := NoAnnoList(Str(<newname; double-quote> "match"));
     	task := MATCH_TASK(r, mn, bvar'*, res);
     	rule := MATCH_RULE(mn, term, bvar*, Var(v))
