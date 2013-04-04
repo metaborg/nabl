@@ -30,7 +30,7 @@ rules
       // collect horizontal scopes
     ; scope*   := <filter(?ScopeClause(<id>)); concat; map(nabl-to-str)> clause*
       // filter def clauses   
-    ; dclause* := <filter(?DefClause(Explicit(), _, _, _, _, _, _))> clause* 
+    ; dclause* := <filter(?DefClause(_, _, _, _, _, _, _))> clause* 
       // filter ref and import clauses
     ; uclause* := <filter(?ImportClause(<id>))> clause*
     where

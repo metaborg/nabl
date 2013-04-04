@@ -17,47 +17,47 @@ rules
 rules
   
   clause-to-def-rule(|pattern, scope*):
-    (o, DefClause(Explicit(), unique, ns, term, _, defscope, constr*)) -> [scope-clause*, congruence] 
+    (o, DefClause(kind, unique, ns, term, _, defscope, constr*)) -> ([scope-clause*, def-clause*], impl-var*)
     where
       ns-term := <nabl-to-str> ns
+    ; unique-term := <nabl-to-str> unique
     ; i := <dec> o
-    ; (replacement*, scope-clause*, defscope-var, _) := <scope-to-str(|ns-term, i, 1)> defscope
-    ; replacement := (term, DEF_CALL(ns-term, <nabl-to-str> unique, defscope-var, scope*, $[child-uri__[i]], $[sibl-uri__[i]], $[child-uri__[o]], $[sibl-uri__[o]]))
-    ; congruence := <replace-all(|[replacement, replacement*])> pattern
+    ; (replacement*, scope-clause*, defscope-term, _) := <scope-to-str(|ns-term, i, 1)> defscope
+    ; scope'* := <?Explicit() < !scope* + ![]> kind
+    ; def-call := DEF_CALL(ns-term, unique-term, defscope-term, scope'*, $[child-uri__[i]], $[sibl-uri__[i]], $[child-uri__[o]], $[sibl-uri__[o]])
+    ; if Explicit() := kind then
+        def-clause* := [<replace-all(|[(term, def-call), replacement*])> pattern]
+      ; impl-var*   := []
+      else
+        impl-var    := Var($[i[i]__])
+      ; def-clause* := [<replace-all(|replacement*)> pattern, Where(Assign(impl-var, App(def-call, term)))]
+      ; impl-var*   := [impl-var]
+      end
    
-    
   clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*):
-    (o, DefClause(Explicit(), _, ns, term, prop*, _, constr*)) -> (match-rule*, [loc-task*, congruence])
+    (o, DefClause(kind, _, ns, term, prop*, _, constr*)) -> (match-rule*, [loc-task*, call])
     where
       ns-term     := <nabl-to-str> ns
     ; i := <dec> o
     ; patt-bound* := <collect-all(?Var(_))> term
     ; (loc-replacement*, loc-bound*, match-rule*, loc-task*, _) := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], i, 1)> constr*
-    ; replacement := (term, PROP_CALL(<alltd(replace(|loc-replacement*)); map(prop-to-str)> prop*))
-    ; congruence  := <replace-all(|[replacement])> pattern
-      
+    ; prop-call := PROP_CALL(<alltd(replace(|loc-replacement*)); map(prop-to-str)> prop*)
+    ; if Explicit() := kind then
+        call := <replace-all(|[(term, prop-call)])> pattern
+      else
+        call := Where(App(prop-call, Var($[i[i]__])))
+      end
        
   clause-to-rules(counter|pattern, scope*, glob-replacement*, glob-bound*, glob-task*, n):
     def-clause* -> [COORD_RULE(Match(pattern)), DEF_RULE(Match(pattern), def-seq), rule*,  PROP_RULE(Match(pattern), prop-seq)]//, prop-rule*]
     where
-      map-with-index(clause-to-def-rule(|pattern, scope*)); concat => clause*
+      map-with-index(clause-to-def-rule(|pattern, scope*)); unzip; (concat, concat) => (clause*, implicit*)
     ; m := <length> def-clause*
-    ; def-seq := <to-seq> [clause*, CALL("match", [CALL("child-uris__")], [Var($[child-uri__[m]])]), CALL("match", [CALL("sibl-uris__")], [Var($[sibl-uri__[m]])])] 
+    ; def-seq := <to-seq> [clause*, MATCH(CALL("child-uris__"), Var($[child-uri__[m]])), MATCH(CALL("sibl-uris__"), Var($[sibl-uri__[m]])), MATCH(CALL("implicits__"), LIST(implicit*))] 
     where
       map-with-index(clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*)); unzip; (concat, concat) => (rule*, prop-clause*)
-    ; prop-seq := <to-seq> [glob-task*, prop-clause*, Id()]
-     
-  clause-to-str(|pattern, scopes, repl*, bound*, n):
-    DefClause(Implicit(), u, ns, t, ps, ds, constr*) -> (rule*, [sc*, dcall], [pr*, app], k)
-    where
-      ns' := <nabl-to-str> ns
-    ; (r*, sc*, ds', m) := <scope-to-str(|ns', n)> ds
-    ; dcall := <replace-all(|r*)> pattern
-    ; b*    := <collect-all(?Var(_))> t
-    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b*], m)> constr*
-    ; ps' := <map(prop-to-str); alltd(replace(|r2*))> ps
-    ; app := DEF_APPLY(ns', <nabl-to-str> u, ds', t, ps')
-
+    ; prop-seq := <to-seq> [Assign(LIST(implicit*), Var("implicits__")), glob-task*, prop-clause*, Id()]
+  
 rules
          
   prop-to-str: PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t)     
@@ -195,19 +195,5 @@ overlays
 
 overlays
   
-  IMP_DEF_CALL(ns, u, ds, s) = 
-  CallT(
-    SVar("nabl-def")
-  , []
-  , [ Var("lang__")
-    , Var("partition__")
-    , Var("uniques__")
-    , Var("elems__")
-    , Var("uris__")
-    , ns, u, ds, LIST(s)]
-  )
-  
-  DEF_APPLY(ns, u, ds, t, ps) = 
-  Where(App(Seq(IMP_DEF_CALL(ns, u, ds, []), PROP_CALL(ps)), t))
-  
-
+  MATCH(s, v) =
+  CALL("match", [s], [v])
