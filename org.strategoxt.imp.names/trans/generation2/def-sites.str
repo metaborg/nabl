@@ -56,7 +56,8 @@ rules
     ; def-seq := <to-seq> [clause*, MATCH(CALL("child-uris__"), Var($[child-uri__[m]])), MATCH(CALL("sibl-uris__"), Var($[sibl-uri__[m]])), MATCH(CALL("implicits__"), LIST(implicit*))] 
     where
       map-with-index(clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*)); unzip; (concat, concat) => (rule*, prop-clause*)
-    ; prop-seq := <to-seq> [Assign(LIST(implicit*), Var("implicits__")), glob-task*, prop-clause*, Id()]
+    ; match* := <nonempty < ![Assign(LIST(implicit*), Var("implicits__"))] + ![]> implicit*
+    ; prop-seq := <to-seq> [match*, glob-task*, prop-clause*, Id()]
   
 rules
          
