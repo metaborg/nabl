@@ -40,5 +40,5 @@ rules // imports
 rules // binding rules
 
   nabl-to-str:
-    BindingRules(rs) -> Rules(<filter(nabl-to-str); concat; nonempty> rs)
+    BindingRules(rs) -> Rules(<filter-with-index(nabl-to-str); concat; nonempty> rs)
     

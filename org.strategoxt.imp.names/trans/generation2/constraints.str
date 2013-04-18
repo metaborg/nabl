@@ -9,61 +9,71 @@ imports
   
 rules
   
-  constraints-to-str(|repl*, b*, n) =  constraints-to-str(|repl*, b*, 0, n)
-  constraints-to-str(|repl*, b*, i, n):
-  	[] -> (repl*, b*, [], [], n)
+  cdebug(s) = debug(s)
   
-  constraints-to-str(|repl*, b*, i, n):
-  	[c|cs] -> (r2*, b2*, [rule1*, rule2*], [task1*, task2*], k)
+  constraints-to-str(|repl*, b*, i) =  constraints-to-str(|repl*, b*, 0, i)
+  constraints-to-str(|repl*, b*, i, j):
+  	[] -> (repl*, b*, [], [])
+  
+  constraints-to-str(|repl*, b*, i, j):
+  	[c|cs] -> (r2*, b2*, [rule1*, rule2*], [task1*, task2*])
   	where
-    	(r1*, b1*, rule1*, task1*, m) := <constraint-to-str(|repl*, b*, i, n)> c;
-      (r2*, b2*, rule2*, task2*, k) := <constraints-to-str(|r1*, b1*, i, m)> cs
+    	(r1*, b1*, rule1*, task1*) := <constraint-to-str(|repl*, b*, i, j)> c;
+      (r2*, b2*, rule2*, task2*) := <constraints-to-str(|r1*, b1*, i, <inc> j)> cs
   		
-  constraint-to-str(|repl*, b*, i, n):  
-    PropertyConstraint(t1, p, t2) -> ([r1*, repl*], [b1*, b*], rule*, [task, match*], m)
+  constraint-to-str(|repl*, bound*, i, j):  
+    PropertyConstraint(term, kind, prop) -> ([match-repl*, repl*], <union> (bound*, prop-bound*), match-rule*, [task, match-assign*])
     where
-      t1' := <alltd(replace(|repl*))> t1;
+      <map(cdebug(!"repl: "))> repl*
+    ; <map(cdebug(!"bound: "))>bound*
+    ; <cdebug(!"term: ")> term
+    ; <cdebug(!"kind: ")> kind
+    ; <cdebug(!"prop: ")> prop
+    where
       // create new task for property calculation
-      r   := Var($[r[i]_[n]__]);
-      task := PROP_TASK(r, <nabl-to-str> p, t1');
+      result      := <extend-index(|i); result-var> j;
+      task        := PROP_TASK(result, <nabl-to-str> kind, <replace-all(|repl*)> term);
+      prop-bound* := <bound-vars> prop;
+      prev-bound* := <isect> (prop-bound*, bound*);
+      <cdebug(!"task: ")> task;
+      <map(cdebug(!"prop-bound: "))> prop-bound*;
+      <map(cdebug(!"prev-bound: "))> prev-bound*;
       if 
-        Var(v) := t2;
-        <not(elem)> (t2, b*) 
-     then // single unbound variable is replaced with result
-        r1* := [(Var(v), r)];
-        b1*    := [Var(v)];
-        match* := [];
-        rule*  := []
+        Var(_) := prop;
+        []     := prev-bound* 
+      then // single unbound variable is replaced with result
+        cdebug(!"SINGLE ")
+      ; match-repl*   := [(prop, result)]
+      ; match-assign* := []
+      ; match-rule*   := []
       else
-      	var*   := <collect-all(?Var(_))> t2;
-      	bvar*  := <isect> (var*, b*);
-      	bvar'* := <alltd(replace(|repl*))> bvar*;
-      	(r1*, b1*, match*, rule*, m) := <matches-to-str(|t2, r, bvar*, bvar'*, i, <inc> n)> var*
+        cdebug(!"MATCH ")
+      ; k := $[[i]-[j]]
+      ; match-repl*   := <map-with-index(match-replace(|k))> prop-bound*
+      ; match-assign* := <map-with-index(match-task(|k, <replace-all(|repl*)> result, <replace-all(|repl*)> prev-bound*))> match-repl*
+      ; match-rule*   := <map-with-index(match-rule(|k, prop, prev-bound*))> prop-bound*
       end
-  
-   matches-to-str(|term, res, bvar*, bvar'*, i, n):
-     [] -> ([], [], [], [], n)
-   
-   matches-to-str(|term, res, bvar*, bvar'*, i, n):
-     [c|cs] -> ([r, r*], [b, b*], [rule, rule*], [t, t*], m)
-     where
-       (r, b, t, rule)        := <match-to-str(|term, res, bvar*, bvar'*, i, n)> c;
-       (r*, b*, t*, rule*, m) := <matches-to-str(|term, res, bvar*, bvar'*, i, <inc> n)> cs
-       
-   match-to-str(|term, res, bvar*, bvar'*, i, n):
-  	t@Var(v) -> ((t, r), t, rule, task)
-    where
-    	r    := Var($[r[i]_[n]__]);
-    	mn   := NoAnnoList(Str(<newname; double-quote> "match"));
-    	task := MATCH_TASK(r, mn, bvar'*, res);
-    	rule := MATCH_RULE(mn, term, bvar*, Var(v))
+      ; <map(cdebug(!"m-repl: "))> match-repl*
       
+  var-to-match-task: (i, Var(v)) -> <id>
+  
+  match-replace(|i)           : (j, t)      -> (t, <extend-index(|i); result-var> j)
+  match-task(|i, term, bound*): (j, (_, r)) -> MATCH_TASK(r, <extend-index(|i); match-name> j, bound*, term)
+  match-rule(|i, term, bound*): (j, t)      -> MATCH_RULE(<extend-index(|i); match-name> j, term, bound*, t)
+    
+  result-var: i-> Var($[r[i]__])
+  match-name: i -> $["match[i]"]
+  
+  extend-index(|i): j -> $[[i]-[j]]
+
+  nabl-match: ("m", Var(x), [y,z]) -> x
+  
 overlays
     
-  MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("nabl-match", RuleNoCond(TUPLE([n, lhs, LIST(bnd)]), rhs))
+  MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("nabl-match", RuleNoCond(TUPLE([NoAnnoList(Str(n)), lhs, LIST(bnd)]), rhs))
 
   PROP_TASK(v, p, t)     = NEW_TASK(v, TERM("PropCalc", [p, t]))
-  MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Match", [n, LIST(b), t]))
+  MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Match", [NoAnnoList(Str(n)), LIST(b), t]))
   
   NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))
   

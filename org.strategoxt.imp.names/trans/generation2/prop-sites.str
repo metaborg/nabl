@@ -1,0 +1,83 @@
+module generation2/prop-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/main
+  generation2/scopes
+  generation2/constraints
+  generation2/def-sites
+  
+rules
+
+  pdebug(s) = id
+  
+  clauses-to-prop-rules(|pattern, glob-replacement*, glob-bound*, glob-task*, implicit*, i):
+    def-clause* -> result
+    where 
+       (rule*, prop-clause*) := <filter-with-index(clause-to-prop-clauses(|pattern, glob-replacement*, glob-bound*, i)); unzip; (concat, concat)>
+    ;  match*   := <![Assign(LIST(<nonempty>), Var("implicits__"))] <+ ![]> implicit*
+    ;  prop-seq := <to-seq> [match*, glob-task*, prop-clause*]
+    ;  result   := [rule*,  PROP_RULE(Seq(Match(pattern), prop-seq))]
+    <+ result   := []
+    
+  clause-to-prop-clauses(|pattern, glob-replacement*, glob-bound*, i):
+    (o, DefClause(kind, _, ns, term, prop*, _, constr*)) -> (match-rule*, [loc-task*, call])
+    where 
+      <map(pdebug(!"PROP: "))> prop*
+    ; <map(pdebug(!"glob-repl: "))> glob-replacement*
+    ; <map(pdebug(!"glob-bound: "))> glob-bound*
+    ; <map(pdebug(!"constr: "))> constr*
+    where
+      <nonempty> prop*
+    where
+      ns-term     := <nabl-to-str> ns
+    ; patt-bound* := <bound-vars; pdebug(!"bound: ")> term
+    ; (loc-replacement*, loc-bound*, match-rule*, loc-task*) 
+                  := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], <extend-index(|o)> i, 1)> constr*
+    ; <map(pdebug(!"loc-repl: "))> loc-replacement*
+    ; <map(pdebug(!"loc-bound: "))> loc-bound*
+    ; <map(pdebug(!"loc-task: "))> loc-task*
+    ; prop-call   := PROP_CALL(<replace-all(|loc-replacement*); map(prop-to-str)> prop*)
+    ; <pdebug(!"DONE: ")> prop-call
+    ; if impl-var := <implicit-def-var(|o)> kind then
+        call := Where(App(prop-call, impl-var))
+      else
+        call := <replace-all-id(|[(term, prop-call)])> pattern
+      end
+       
+rules
+         
+  prop-to-str: PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t)     
+
+  nabl-to-str: NonUnique() -> TERM("NonUnique")
+  nabl-to-str: Unique()    -> TERM("Unique")
+  
+overlays
+  
+  PROP_RULE(body)  =
+  SDefT(
+    "nabl-prop-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("elems__")
+    , DefaultVarDec("tasks__")
+    , DefaultVarDec("states__")
+    , DefaultVarDec("implicits__")
+    ]
+  , body
+  )
+
+  PROP_CALL(ps) = 
+  CallT(
+    SVar("nabl-props")
+  , []
+  , [Var("partition__"), Var("elems__"), LIST(ps)]
+  )
+  
+  PROPERTY(p, v) = TERM("Prop", [p, v])
+

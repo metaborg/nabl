@@ -15,7 +15,7 @@ rules
       filename   := <guarantee-extension(|"str")> path ;
       str-module := <to-ppable-str; nabl-to-str> ast ;
       // use next line to debug which AST node cannot be handled by the pretty-printer
-      <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
+      // <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
       result     := <pp-stratego-string> str-module
 
 rules // modules

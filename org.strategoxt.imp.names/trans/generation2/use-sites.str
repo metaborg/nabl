@@ -19,26 +19,26 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
     
-  clause-to-str(|pattern, scopes, repl*, bound*, n):
-    ImportClause(import*) -> <clauses-to-str(|pattern, scopes, repl*, bound*, n)> import*
-    
-  clause-to-str(|pattern, scopes, repl*, bound*, n):
-    SingleImport(_, ns, t, ps, fsc, alias, isc, constr*) -> (r*, [sc*, dcall], pr*, k)
-    where
-      ns' := <nabl-to-str> ns
-    ; (r*, sc*, isc', m) := <scope-to-str(|ns', n)> isc
-    ; dcall := <replace-all(|r*)> pattern
-    ; b*    := <collect-all(?Var(_))> t
-    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b*], m)> constr*
-  
-  clause-to-str(|pattern, scopes, repl*, bound*, n):
-    WildcardImport(ns, ps, fsc, isc, constr*) -> (r*, [sc*, dcall], pr*, k)
-    where
-      ns' := <nabl-to-str> ns
-    ; (r*, sc*, isc', m) := <scope-to-str(|ns', n)> isc
-    ; dcall := <replace-all(|r*)> pattern
-    ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, bound*, m)> constr*
-    
+  // clause-to-str(|pattern, scopes, repl*, bound*, n):
+  //   ImportClause(import*) -> <clauses-to-str(|pattern, scopes, repl*, bound*, n)> import*
+  //   
+  // clause-to-str(|pattern, scopes, repl*, bound*, n):
+  //   SingleImport(_, ns, t, ps, fsc, alias, isc, constr*) -> (r*, [sc*, dcall], pr*, k)
+  //   where
+  //     ns' := <nabl-to-str> ns
+  //   ; (r*, sc*, isc', m) := <scope-to-str(|ns', n)> isc
+  //   ; dcall := <replace-all-id(|r*)> pattern
+  //   ; b*    := <collect-all(?Var(_))> t
+  //   ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, [bound*, b*], m)> constr*
+  // 
+  // clause-to-str(|pattern, scopes, repl*, bound*, n):
+  //   WildcardImport(ns, ps, fsc, isc, constr*) -> (r*, [sc*, dcall], pr*, k)
+  //   where
+  //     ns' := <nabl-to-str> ns
+  //   ; (r*, sc*, isc', m) := <scope-to-str(|ns', n)> isc
+  //   ; dcall := <replace-all-id(|r*)> pattern
+  //   ; (r2*, b3*, rule*, pr*, k) := <constraints-to-str(|repl*, bound*, m)> constr*
+  //   
 // rules
 //   
 //   uses-to-str(|replace*, bound*, rule*, task*, pattern) =

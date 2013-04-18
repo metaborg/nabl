@@ -8,73 +8,31 @@ imports
   generation2/util
   generation2/constraints
   generation2/def-sites
+  generation2/prop-sites
   generation2/use-sites
   
 rules
   
-  a = 
-    {x: id};
-    id
-    
   nabl-to-str: 
-    BindingRule(pattern, constr*, clause*) -> [nrule*, crule*, rule*]
+    (i, BindingRule(pattern, constr*, clause*)) -> [name-rule*, crule*, def-rule*, prop-rule*]
     where 
-       <filter(def-to-name <+ use-to-name)> clause* => [t];
-       nrule* := [NAME_RULE(pattern, t)]
-    <+ nrule* := []
+       [t]        := <filter(def-to-name <+ use-to-name)> clause*
+    ;  name-rule* := [NAME_RULE(pattern, t)]
+    <+ name-rule* := []
     where
       // collect bound variables
-      bound*   := <collect-all(?Var(_))> pattern
-      // collect names of bound variables
-    ; var*     := <map(?Var(<id>))> bound*
-      // collect horizontal scopes
-    ; scope*   := <filter(?ScopeClause(<id>)); concat; map(nabl-to-str)> clause*
-      // filter def clauses   
-    ; dclause* := <filter(?DefClause(_, _, _, _, _, _, _))> clause* 
-      // filter ref and import clauses
-    ; uclause* := <filter(?ImportClause(<id>))> clause*
+      bound*      := <bound-vars> pattern
+      // collect vertical scopes
+    ; scope*      := <filter(?ScopeClause(<nabl-to-str>)); concat> clause*
+    ; def-clause* := <filter(?DefClause(_, _, _, _, _, _, _))> clause*
     where
       // translate constraints
-      (repl*, bound2*, crule*, ctask*, n) := <constraints-to-str(|[], bound*, 1)> constr*
+      (repl*, bound2*, crule*, task*) := <constraints-to-str(|[], bound*, i, 1)> constr*
       // translate def clauses
-    ; rule*  := <clause-to-rules(?m|pattern, scope*, repl*, bound2*, ctask*, n)> dclause*
-    <+ rule* := []
-    // ; (drule*, c1*, c2*, m) := <clauses-to-str(|pattern, scope*, repl*, bound2*, n)> dclause*
-    //   // translate ref and import clauses
-    // ; (urule*, c3*, c4*, _) := <clauses-to-str(|pattern, scope*, repl*, bound2*, m)> uclause*
-    // where // combine rules
-    //   if 
-    //     <not(fetch-elem(def-to-name))> dclause* // no explicit def
-    //   ; <nonempty> scope*                       // anonymous scope
-    //   then
-    //     dcall1* := [Scope(var*, <to-seq> [Match(pattern), c1*, c3*, ANONYMOUS_CALL(scope*)])]
-    //   else 
-    //     dcall1* := <scope-seq(|var*, pattern)> [c1*, c3*]
-    //   end
-    // ; dcall2* := <scope-seq(|var*, pattern)> ctask*
-    // ; dcall3* := <scope-seq(|var*, pattern)> c4*
-    // ; dcall4* := <scope-seq(|var*, pattern)> c2*
-    // ; if <nonempty> [dcall1*, dcall2*, dcall3*, dcall4*] then
-    //     rule* := [NAME_RULE(<to-seq> [dcall1*, RECURSION(), dcall2*, dcall3*, dcall4*]), drule*]
-    //   else
-    //     rule* := []
-    //   end
-
-  scope-seq(|var*, pattern) = ?[] <+ ![Scope(var*, <to-seq> [Match(pattern)|<id>])]
-
-rules  
-  
-  clauses-to-str(|pattern, scopes, rep1*, b*, n):
-    [] -> ([], [], [], n)
-  
-  clauses-to-str(|pattern, scopes, rep*, b*, n):
-    [e|e*] -> ([r1*, r2*], [sc*, cl*], [a1*, a2*], k)
-    where
-       (r1*, sc*, a1*, m) := <clause-to-str(|pattern, scopes, rep*, b*, n)> e
-    <+ (r1*, sc*, a1*, m) := ([], [], [], n)
-    where
-       (r2*, cl*, a2*, k) := <clauses-to-str(|pattern, scopes, rep*, b*, m)> e*
-       
+    ; implicit*  := <implicit-def-vars> def-clause*
+    ; def-rule*  := <clauses-to-def-rules(|pattern, scope*, implicit*)> def-clause*
+    ; prop-rule* := <clauses-to-prop-rules(|pattern, repl*, bound2*, task*, implicit*, i)> def-clause*
+             
 overlays
 	
 	ANONYMOUS_CALL(scopes) =

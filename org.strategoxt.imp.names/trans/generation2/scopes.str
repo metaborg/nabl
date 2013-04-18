@@ -8,29 +8,39 @@ imports
   
 rules
   
-  scope-to-str(|ns, n) = scope-to-str(|ns, 0, n)
+  scope-to-term(|i): 
+    Current() -> TERM("Current")
   
-  scope-to-str(|ns, i, n): 
-    Current() -> ([], [], TERM("Current"), n)
-  
-  scope-to-str(|ns, i, n): 
-    DefScopes(ds*) -> (r*, ct*, LIST([ss*, v]), m) 
-    where 
+  scope-to-term(|i): 
+    DefScopes(ds*) -> LIST([ss*, ctx*])
+    where
       if <fetch-elem(?Subsequent())> ds* then
         ss* := [TERM("Subsequent")] 
       else
         ss* := []
       end
     ; if x := <fetch-elem(?Context(<id>))> ds* then 
-        v   := Var($[scope[i]_[n]__])
-      ; ct* := [SCOPE_CALL(v, ns)] 
-      ; m   := <inc> n
-      else 
-        ct* := []
-      ; m   := n
+        ctx* := [<scope-var> i]
+      else
+        ctx* := []
       end
-    ; r*  := <filter(?Context(<id>); !(<id>, SCOPE_CALL(v)))> ds*
-       
+   
+  scope-to-assignments(|ns, i) =
+    if DefScopes(fetch-elem(Context(id))) then
+      ![SCOPE_CALL(<scope-var> i, ns)]
+    else
+      ![]
+    end
+    
+  scope-to-replacement(|i):
+    DefScopes(ds*) -> <filter(context-to-replace(|r))> ds*
+    where
+      r  := SCOPE_CALL(<scope-var> i)
+      
+  context-to-replace(|r): Context(c) -> (c, r)
+  
+  scope-var: i -> Var($[scope[i]__])
+
 overlays
   
   SCOPE_CALL(v) = CallT(SVar("nabl-def-scope"), [], [v])

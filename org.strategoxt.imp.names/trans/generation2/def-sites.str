@@ -8,7 +8,7 @@ imports
   generation2/util
   generation2/main
   generation2/scopes
-  generation2/constraints
+  generation2/prop-sites
 
 rules
   
@@ -16,55 +16,66 @@ rules
     
 rules
   
-  clause-to-def-rule(|pattern, scope*):
-    (o, DefClause(kind, unique, ns, term, _, defscope, constr*)) -> ([scope-clause*, def-clause*], impl-var*)
-    where
-      ns-term := <nabl-to-str> ns
-    ; unique-term := <nabl-to-str> unique
-    ; i := <dec> o
-    ; (replacement*, scope-clause*, defscope-term, _) := <scope-to-str(|ns-term, i, 1)> defscope
-    ; scope'* := <?Explicit() < !scope* + ![]> kind
-    ; def-call := DEF_CALL(ns-term, unique-term, defscope-term, scope'*, $[child-uri__[i]], $[sibl-uri__[i]], $[child-uri__[o]], $[sibl-uri__[o]])
-    ; if Explicit() := kind then
-        def-clause* := [<replace-all(|[(term, def-call), replacement*])> pattern]
-      ; impl-var*   := []
-      else
-        impl-var    := Var($[i[i]__])
-      ; def-clause* := [<replace-all(|replacement*)> pattern, Where(Assign(impl-var, App(def-call, term)))]
-      ; impl-var*   := [impl-var]
-      end
-   
-  clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*):
-    (o, DefClause(kind, _, ns, term, prop*, _, constr*)) -> (match-rule*, [loc-task*, call])
-    where
-      ns-term     := <nabl-to-str> ns
-    ; i := <dec> o
-    ; patt-bound* := <collect-all(?Var(_))> term
-    ; (loc-replacement*, loc-bound*, match-rule*, loc-task*, _) := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], i, 1)> constr*
-    ; prop-call := PROP_CALL(<alltd(replace(|loc-replacement*)); map(prop-to-str)> prop*)
-    ; if Explicit() := kind then
-        call := <replace-all(|[(term, prop-call)])> pattern
-      else
-        call := Where(App(prop-call, Var($[i[i]__])))
-      end
-       
-  clause-to-rules(counter|pattern, scope*, glob-replacement*, glob-bound*, glob-task*, n):
-    def-clause* -> [COORD_RULE(Match(pattern)), DEF_RULE(Match(pattern), def-seq), rule*,  PROP_RULE(Match(pattern), prop-seq)]//, prop-rule*]
-    where
-      map-with-index(clause-to-def-rule(|pattern, scope*)); unzip; (concat, concat) => (clause*, implicit*)
-    ; m := <length> def-clause*
-    ; def-seq := <to-seq> [clause*, MATCH(CALL("child-uris__"), Var($[child-uri__[m]])), MATCH(CALL("sibl-uris__"), Var($[sibl-uri__[m]])), MATCH(CALL("implicits__"), LIST(implicit*))] 
-    where
-      map-with-index(clause-to-prop-rule(|pattern, glob-replacement*, glob-bound*)); unzip; (concat, concat) => (rule*, prop-clause*)
-    ; match* := <nonempty < ![Assign(LIST(implicit*), Var("implicits__"))] + ![]> implicit*
-    ; prop-seq := <to-seq> [match*, glob-task*, prop-clause*, Id()]
+  implicit-def-vars = filter-with-index(implicit-def-var)
+    
+  implicit-def-var:
+    (i, DefClause(kind, _, _, _, _, _, _)) -> <implicit-def-var(|i)> kind
   
-rules
-         
-  prop-to-str: PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t)     
-
-  nabl-to-str: NonUnique() -> TERM("NonUnique")
-  nabl-to-str: Unique()    -> TERM("Unique")
+  implicit-def-var(|i): Implicit() -> Var($[i[i]__])
+  
+  def-scope(|scope*): Implicit() -> []
+  def-scope(|scope*): Explicit() -> scope*
+  
+  clauses-to-def-rules(|pattern, scope*, implicit*):
+    def-clause* -> result
+    where
+       clause*  := <filter-with-index(clause-to-def-seq(|pattern, scope*)); concat; nonempty> def-clause*
+    ;  m        := <length> def-clause*
+    ;  uri-cvar := <uri-child-var> m
+    ;  uri-svar := <uri-sibl-var> m
+    ;  def-seq  := <to-seq> [ Match(pattern)
+       	                    , clause*
+                            , MATCH(CALL("child-uris__"), uri-cvar)
+                            , MATCH(CALL("sibl-uris__"), uri-svar)
+                            , MATCH(CALL("implicits__"), LIST(implicit*))
+                            ] 
+    ;  result   := [DEF_RULE(def-seq)]
+    <+ result   := []
+ 
+  clause-to-def-seq(|pattern, scope*):
+    (o, DefClause(kind, unique, ns, term, _, scope, constr*)) -> [scope-assign*, def-cong*]
+    where
+      ns-term       := <nabl-to-str> ns
+    ; scope-assign* := <scope-to-assignments(|ns-term, o)> scope
+    ; scope-term    := <scope-to-term(|o)> scope
+    ; scope-repl*   := <scope-to-replacement(|o) <+ ![]> scope 
+    where
+      unique-term := <nabl-to-str> unique
+    ; i           := <dec> o
+    ; uri-cvar1   := <uri-child-var> i
+    ; uri-cvar2   := <uri-child-var> o
+    ; uri-svar1   := <uri-sibl-var> i
+    ; uri-svar2   := <uri-sibl-var> o
+    ; scope'*     := <def-scope(|scope*)> kind
+    ; def-call    := DEF_CALL(ns-term, unique-term, scope-term, scope'*, uri-cvar1, uri-svar1, uri-cvar2, uri-svar2)
+    ; if impl-var := <implicit-def-var(|o)> kind then
+        if <nonempty> scope-repl* then
+          scope-cong* := [<replace-all-id(|[scope-repl*])> pattern]
+        else
+          scope-cong* := []
+      end
+    ; def-cong* := [scope-cong*, Where(Assign(impl-var, App(def-call, term)))]
+      else
+        def-cong* := [<replace-all-id(|[scope-repl*, (term, def-call)])> pattern]
+      end
+    
+rules 
+  
+  uri-var(|kind): 0 -> Var($[uri__])
+  uri-var(|kind): i -> Var($[[kind]-uri[i]__]) where not(?0)
+   
+  uri-child-var = uri-var(|"c")
+  uri-sibl-var  = uri-var(|"s")
   
 overlays
   
@@ -72,7 +83,7 @@ overlays
 
 overlays
   	
-	DEF_RULE(match, call) =
+	DEF_RULE(body) =
   SDefT(
     "nabl-def-site"
   , [ DefaultVarDec("child-uris__")
@@ -83,73 +94,22 @@ overlays
     , DefaultVarDec("partition__")
     , DefaultVarDec("uniques__")
     , DefaultVarDec("elems__")
-    , DefaultVarDec("child-uri__0")
-    , DefaultVarDec("sibl-uri__0")
+    , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
-  , Seq(match, call)
+  , body
   )  
 	
   DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
   CallT(
     SVar("nabl-def")
-  , [Match(Var(out-child-uris)), Match(Var(out-sibl-uris))]
+  , [Match(out-child-uris), Match(out-sibl-uris)]
   , [ Var("lang__")
     , Var("partition__")
     , Var("uniques__")
     , Var("elems__")
-    , Var(in-child-uris)
-    , Var(in-sibl-uris)
+    , in-child-uris
+    , in-sibl-uris
     , ns, u, ds, LIST(s)]
-  )
-  
-overlays
-  
-	PROP_RULE(match, call)  =
-  SDefT(
-    "nabl-prop-site"
-  , []
-  , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
-    , DefaultVarDec("elems__")
-    , DefaultVarDec("tasks__")
-    , DefaultVarDec("states__")
-    , DefaultVarDec("implicits__")
-    ]
-  , Seq(match, call)
-  )
-
-  PROP_CALL(ps) = 
-  CallT(
-    SVar("nabl-props")
-  , []
-  , [ Var("elems__"), LIST(ps)]
-  )
-  
-  PROPERTY(p, v) = TERM("Prop", [p, v])
-
-overlays
-    
-  COORD_RULE(match) =
-  SDefT(
-    "nabl-name-site"
-  , [DefaultVarDec("child-uris__"), DefaultVarDec("sibl-uris__")]
-  , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
-    , DefaultVarDec("uniques__")
-    , DefaultVarDec("elems__")
-    , DefaultVarDec("tasks__")
-    , DefaultVarDec("uris__")
-    , DefaultVarDec("states__")]
-  , Seq(
-      match
-    , Seq(
-        DEF_SITE_CALL()
-      , Seq (
-          RECURSION()
-        , PROP_SITE_CALL()
-        )
-      )
-    )
   )
   
   DEF_SITE_CALL = 
@@ -168,33 +128,6 @@ overlays
     , Var("states__")
     ]
   ) 
-
-  RECURSION =
-  CallT(
-    SVar("nabl-children")
-  , []
-  , [ Var("lang__")
-    , Var("partition__")
-    , Var("uniques__")
-    , Var("elems__")
-    , Var("tasks__")
-    , Var("child-uris__")]
-  )
-  
-  PROP_SITE_CALL = 
-  CallT(
-    SVar("nabl-prop-site")
-  , []
-  , [ Var("lang__")
-    , Var("partition__")
-    , Var("elems__")
-    , Var("tasks__")
-    , Var("states__")
-    , Var("implicits__")
-    ]
-  ) 
-
-overlays
   
   MATCH(s, v) =
   CALL("match", [s], [v])
