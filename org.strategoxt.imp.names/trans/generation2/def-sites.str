@@ -8,8 +8,9 @@ imports
   generation2/util
   generation2/main
   generation2/scopes
-  generation2/prop-sites
-
+  generation2/use-sites
+  generation2/sections
+  
 rules
   
   def-to-name = ?DefClause(Explicit(), _, _, <id>, _, _, _)
@@ -43,9 +44,9 @@ rules
     <+ result   := []
  
   clause-to-def-seq(|pattern, scope*):
-    (o, DefClause(kind, unique, ns, term, _, scope, constr*)) -> [scope-assign*, def-cong*]
+    (o, DefClause(kind, unique, ns, term, _, scope, _)) -> [scope-assign*, def-cong*]
     where
-      ns-term       := <nabl-to-str> ns
+      ns-term       := <ns-to-term> ns
     ; scope-assign* := <scope-to-assignments(|ns-term, o)> scope
     ; scope-term    := <scope-to-term(|o)> scope
     ; scope-repl*   := <scope-to-replacement(|o) <+ ![]> scope 
@@ -63,8 +64,8 @@ rules
           scope-cong* := [<replace-all-id(|[scope-repl*])> pattern]
         else
           scope-cong* := []
-      end
-    ; def-cong* := [scope-cong*, Where(Assign(impl-var, App(def-call, term)))]
+        end
+        ; def-cong* := [scope-cong*, Where(Assign(impl-var, App(def-call, term)))]
       else
         def-cong* := [<replace-all-id(|[scope-repl*, (term, def-call)])> pattern]
       end
@@ -111,23 +112,6 @@ overlays
     , in-sibl-uris
     , ns, u, ds, LIST(s)]
   )
-  
-  DEF_SITE_CALL = 
-  CallT(
-    SVar("nabl-def-site")
-  , [ Match(Var("child-uris__"))
-    , CALL("sibl-uris__")
-    , Match(Var("implicits__"))
-    ]
-  , [ Var("lang__")
-    , Var("partition__")
-    , Var("uniques__")
-    , Var("elems__")
-    , Var("uris__")
-    , Var("uris__")
-    , Var("states__")
-    ]
-  ) 
   
   MATCH(s, v) =
   CALL("match", [s], [v])

@@ -10,11 +10,12 @@ imports
   generation2/def-sites
   generation2/prop-sites
   generation2/use-sites
+  generation2/sections
   
 rules
   
   nabl-to-str: 
-    (i, BindingRule(pattern, constr*, clause*)) -> [name-rule*, crule*, def-rule*, prop-rule*]
+    (i, BindingRule(pattern, constr*, clause*)) -> [name-rule*, def-rule*, prop-rule*]
     where 
        [t]        := <filter(def-to-name <+ use-to-name)> clause*
     ;  name-rule* := [NAME_RULE(pattern, t)]
@@ -23,15 +24,13 @@ rules
       // collect bound variables
       bound*      := <bound-vars> pattern
       // collect vertical scopes
-    ; scope*      := <filter(?ScopeClause(<nabl-to-str>)); concat> clause*
+    ; scope*      := <filter(?ScopeClause(<map(ns-to-term)>)); concat> clause*
     ; def-clause* := <filter(?DefClause(_, _, _, _, _, _, _))> clause*
     where
-      // translate constraints
-      (repl*, bound2*, crule*, task*) := <constraints-to-str(|[], bound*, i, 1)> constr*
-      // translate def clauses
-    ; implicit*  := <implicit-def-vars> def-clause*
+    // translate def clauses
+      implicit*  := <implicit-def-vars> def-clause*
     ; def-rule*  := <clauses-to-def-rules(|pattern, scope*, implicit*)> def-clause*
-    ; prop-rule* := <clauses-to-prop-rules(|pattern, repl*, bound2*, task*, implicit*, i)> def-clause*
+    ; prop-rule* := <clauses-to-prop-rules(|pattern, constr*, implicit*, i)> def-clause*
              
 overlays
 	

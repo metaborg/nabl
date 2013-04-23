@@ -10,44 +10,36 @@ imports
   generation2/scopes
   generation2/constraints
   generation2/def-sites
+  generation2/sections
   
 rules
 
   pdebug(s) = id
   
-  clauses-to-prop-rules(|pattern, glob-replacement*, glob-bound*, glob-task*, implicit*, i):
+  clauses-to-prop-rules(|pattern, constr*, implicit*, i):
     def-clause* -> result
     where 
-       (rule*, prop-clause*) := <filter-with-index(clause-to-prop-clauses(|pattern, glob-replacement*, glob-bound*, i)); unzip; (concat, concat)>
+       (rule*, prop-clause*) := <filter-with-index(clause-to-prop-clauses(|pattern, constr*, i)); unzip; (concat, concat)>
     ;  match*   := <![Assign(LIST(<nonempty>), Var("implicits__"))] <+ ![]> implicit*
-    ;  prop-seq := <to-seq> [match*, glob-task*, prop-clause*]
+    ;  prop-seq := <to-seq> [match*, prop-clause*]
     ;  result   := [rule*,  PROP_RULE(Seq(Match(pattern), prop-seq))]
     <+ result   := []
     
-  clause-to-prop-clauses(|pattern, glob-replacement*, glob-bound*, i):
-    (o, DefClause(kind, _, ns, term, prop*, _, constr*)) -> (match-rule*, [loc-task*, call])
-    where 
-      <map(pdebug(!"PROP: "))> prop*
-    ; <map(pdebug(!"glob-repl: "))> glob-replacement*
-    ; <map(pdebug(!"glob-bound: "))> glob-bound*
-    ; <map(pdebug(!"constr: "))> constr*
+  clause-to-prop-clauses(|pattern, glob-constr*, i):
+    (o, DefClause(kind, _, ns, term, prop*, _, constr*)) -> (match-rule*, [task*, cong])
     where
       <nonempty> prop*
-    where
-      ns-term     := <nabl-to-str> ns
-    ; patt-bound* := <bound-vars; pdebug(!"bound: ")> term
-    ; (loc-replacement*, loc-bound*, match-rule*, loc-task*) 
-                  := <constraints-to-str(|glob-replacement*, [glob-bound*, patt-bound*], <extend-index(|o)> i, 1)> constr*
-    ; <map(pdebug(!"loc-repl: "))> loc-replacement*
-    ; <map(pdebug(!"loc-bound: "))> loc-bound*
-    ; <map(pdebug(!"loc-task: "))> loc-task*
+    ; ns-term     := <ns-to-term> ns
+    ; patt-bound* := <bound-vars> pattern
+    ; (task*, loc-replacement*) 
+                  := <constraints-to-tasks(|patt-bound*, <extend-index(|o)> i, 1)> ([glob-constr*, constr*], [])
     ; prop-call   := PROP_CALL(<replace-all(|loc-replacement*); map(prop-to-str)> prop*)
-    ; <pdebug(!"DONE: ")> prop-call
     ; if impl-var := <implicit-def-var(|o)> kind then
-        call := Where(App(prop-call, impl-var))
+        cong := Where(App(prop-call, impl-var))
       else
-        call := <replace-all-id(|[(term, prop-call)])> pattern
+        cong := <replace-all-id(|[(term, prop-call)])> pattern
       end
+    ; match-rule* := <constraints-to-match-rules(|patt-bound*, <extend-index(|o)> i, 1)> [glob-constr*, constr*]
        
 rules
          

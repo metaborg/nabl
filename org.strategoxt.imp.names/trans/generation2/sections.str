@@ -11,14 +11,14 @@ imports
 rules // namespaces 
       
   nabl-to-str:
-    Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
+    Namespaces(namespaces) -> Signature([Constructors(<map(ns-to-constructor)> namespaces)])
     
-  nabl-to-str: // generates constructors for namespaces
-    NamespaceDef(ns) -> CONS_DECL(<ns-name-to-str> ns, "Namespace")
+  ns-to-constructor: // generates constructors for namespaces
+    NamespaceDef(ns) -> CONS_DECL(<ns-name> ns, "Namespace")
   
-  nabl-to-str: NamespaceRef(ns) -> TERM(<ns-name-to-str> ns)
+  ns-to-term: NamespaceRef(ns) -> TERM(<ns-name> ns)
 
-  ns-name-to-str: ns -> $[NablNs[ns]]
+  ns-name: ns -> $[NablNs[ns]]
   
 rules // properties
         

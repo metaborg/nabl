@@ -9,52 +9,51 @@ imports
   
 rules
   
-  cdebug(s) = debug(s)
-  
-  constraints-to-str(|repl*, b*, i) =  constraints-to-str(|repl*, b*, 0, i)
-  constraints-to-str(|repl*, b*, i, j):
-  	[] -> (repl*, b*, [], [])
-  
-  constraints-to-str(|repl*, b*, i, j):
-  	[c|cs] -> (r2*, b2*, [rule1*, rule2*], [task1*, task2*])
-  	where
-    	(r1*, b1*, rule1*, task1*) := <constraint-to-str(|repl*, b*, i, j)> c;
-      (r2*, b2*, rule2*, task2*) := <constraints-to-str(|r1*, b1*, i, <inc> j)> cs
-  		
-  constraint-to-str(|repl*, bound*, i, j):  
-    PropertyConstraint(term, kind, prop) -> ([match-repl*, repl*], <union> (bound*, prop-bound*), match-rule*, [task, match-assign*])
+  constraints-to-tasks(|bound*, i, j):
+    ([], repl*) -> ([], repl*)
+   	  
+  constraints-to-tasks(|bound*, i, j):
+    ([c@PropertyConstraint(term, kind, prop)|cs], repl*) -> ([task, match-task*, task*], r*)
     where
-      <map(cdebug(!"repl: "))> repl*
-    ; <map(cdebug(!"bound: "))>bound*
-    ; <cdebug(!"term: ")> term
-    ; <cdebug(!"kind: ")> kind
-    ; <cdebug(!"prop: ")> prop
-    where
-      // create new task for property calculation
-      result      := <extend-index(|i); result-var> j;
-      task        := PROP_TASK(result, <nabl-to-str> kind, <replace-all(|repl*)> term);
-      prop-bound* := <bound-vars> prop;
-      prev-bound* := <isect> (prop-bound*, bound*);
-      <cdebug(!"task: ")> task;
-      <map(cdebug(!"prop-bound: "))> prop-bound*;
-      <map(cdebug(!"prev-bound: "))> prev-bound*;
-      if 
-        Var(_) := prop;
-        []     := prev-bound* 
-      then // single unbound variable is replaced with result
-        cdebug(!"SINGLE ")
-      ; match-repl*   := [(prop, result)]
-      ; match-assign* := []
-      ; match-rule*   := []
-      else
-        cdebug(!"MATCH ")
-      ; k := $[[i]-[j]]
-      ; match-repl*   := <map-with-index(match-replace(|k))> prop-bound*
-      ; match-assign* := <map-with-index(match-task(|k, <replace-all(|repl*)> result, <replace-all(|repl*)> prev-bound*))> match-repl*
-      ; match-rule*   := <map-with-index(match-rule(|k, prop, prev-bound*))> prop-bound*
-      end
-      ; <map(cdebug(!"m-repl: "))> match-repl*
+      k           := <extend-index(|i)> j
+    ; result      := <result-var> k
+    ; task        := PROP_TASK(result, <nabl-to-str> kind, <replace-all(|repl*)> term)
+
+    ; bind*       := <bound-vars> prop
+    ; match*      := <isect; replace-all(|repl*)> (bind*, bound*)
+    ; match-repl* := <map-with-index(match-replace(|k))> bind*
       
+    ; match-task* := <
+        if <unbound-var(|bound*)> prop then
+          ![]
+        else
+          <map-with-index(match-task(|k, result, match*))> match-repl*
+        end>
+    ; (task*, r*) := <constraints-to-tasks(|<union> (bound*, bind*), i, <inc> j)> (cs, [match-repl*, repl*])
+            
+  unbound-var(|bound*) =
+  	?Var(v); 
+  	where(
+  		<not(elem)> (Var(v), bound*)
+    )
+  
+  constraints-to-match-rules(|bound*, i, j):
+  	[] -> []
+  
+  constraints-to-match-rules(|bound*, i, j):
+    [c@PropertyConstraint(term, kind, prop)|cs] -> <constraints-to-match-rules(|bound*, i, <inc> j)> cs
+    where 
+    	<unbound-var(|bound*)> prop
+    
+  constraints-to-match-rules(|bound*, i, j):
+  	[c@PropertyConstraint(term, kind, prop)|cs] -> [rule1*, rule2*]
+  	where
+    	k      := <extend-index(|i)> j
+    ; bind*  := <bound-vars> prop
+    ; match* := <isect> (bind*, bound*)
+    ; rule1* := <map-with-index(match-rule(|k, prop, match*))> bind*
+	  ; rule2* := <constraints-to-match-rules(|<union> (bound*, bind*), i, <inc> j)> cs
+
   var-to-match-task: (i, Var(v)) -> <id>
   
   match-replace(|i)           : (j, t)      -> (t, <extend-index(|i); result-var> j)
@@ -69,7 +68,7 @@ rules
   nabl-match: ("m", Var(x), [y,z]) -> x
   
 overlays
-    
+  
   MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("nabl-match", RuleNoCond(TUPLE([NoAnnoList(Str(n)), lhs, LIST(bnd)]), rhs))
 
   PROP_TASK(v, p, t)     = NEW_TASK(v, TERM("PropCalc", [p, t]))
