@@ -80,10 +80,10 @@ templates // clauses
   > 
   
   ImportClausePart.SingleImport = <
-  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromScope> <Alias> <IntoScopes> <Constraint*>>             
+  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraint*>>             
 
   ImportClausePart.WildcardImport = <
-  imports <ImportRef+; separator=", "> <PropertyPattern*> <FromScope> <IntoScopes> <Constraint*>> 
+  imports <ImportRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraint*>> 
   
   Alias.None  = <>
   Alias.Alias = <<Term>>
@@ -93,22 +93,22 @@ templates // clauses
    
 templates // scopes
 
-  InDefScopes.Current = <>
-  InDefScopes         = <in <DefScopes>>   {bracket}
+  InDefScopes.Current   = <>
+  InDefScopes           = <in <DefScopes>>   {bracket}
   
-  InRefScope.Current  = <>
-  InRefScope          = <in <RefScope>>    {bracket}
-  
-  FromScope.Current   = <>
-  FromScope           = <from <RefScope>>  {bracket}
-  
-  IntoScopes.Current  = <>
-  IntoScopes          = <into <DefScopes>> {bracket}
+  IntoDefScopes.Current = <>
+  IntoDefScopes         = <into <DefScopes>> {bracket}
+
+  DefScopes.Current     = <current scope>
+  DefScopes.DefScopes   = <<DefScope+; separator=", ">> 
+  DefScope.Subsequent   = <subsequent scope>
+  DefScope.Context      = <<Term>>
  
-  DefScopes.Current   = <current scope>
-  DefScopes.DefScopes = <<DefScope+; separator=", ">> 
-  DefScope.Subsequent = <subsequent scope>
-  DefScope.Context    = <<Term>>
+  InRefScope.Current    = <>
+  InRefScope            = <in <RefScope>>    {bracket}
+  
+  FromRefScope.Current  = <>
+  FromRefScope          = <from <RefScope>>  {bracket}
   
   RefScope.Current    = <current scope>
   RefScope.Enclosing  = <enclosing <NamespaceRef>>
@@ -121,4 +121,8 @@ templates // constraints
 
   Constraint.Reference = <
     where <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
+  
+context-free syntax
+
+  Id = "into" {reject}
   

@@ -13,22 +13,20 @@ rules
     ([], repl*) -> ([], repl*)
    	  
   constraints-to-tasks(|bound*, i, j):
-    ([c@PropertyConstraint(term, kind, prop)|cs], repl*) -> ([task, match-task*, task*], r*)
+    ([PropertyConstraint(term, kind, prop)|cs], repl*) -> ([task, match-task*, task*], r*)
     where
       k           := <extend-index(|i)> j
     ; result      := <result-var> k
     ; task        := PROP_TASK(result, <nabl-to-str> kind, <replace-all(|repl*)> term)
-
     ; bind*       := <bound-vars> prop
     ; match*      := <isect; replace-all(|repl*)> (bind*, bound*)
-    ; match-repl* := <map-with-index(match-replace(|k))> bind*
-      
-    ; match-task* := <
-        if <unbound-var(|bound*)> prop then
-          ![]
-        else
-          <map-with-index(match-task(|k, result, match*))> match-repl*
-        end>
+    ; if <unbound-var(|bound*)> prop then
+        match-repl* := [(prop, result)]
+      ; match-task* := [] 
+      else
+        match-repl* := <map-with-index(match-replace(|k))> bind*
+      ; match-task* := <map-with-index(match-task(|k, result, match*))> match-repl*
+      end
     ; (task*, r*) := <constraints-to-tasks(|<union> (bound*, bind*), i, <inc> j)> (cs, [match-repl*, repl*])
             
   unbound-var(|bound*) =

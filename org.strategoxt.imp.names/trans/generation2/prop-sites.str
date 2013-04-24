@@ -16,30 +16,35 @@ rules
 
   pdebug(s) = id
   
-  clauses-to-prop-rules(|pattern, constr*, implicit*, i):
+  clauses-to-prop-rules(|pattern, bound*, repl*, task*, implicit*, i):
     def-clause* -> result
     where 
-       (rule*, prop-clause*) := <filter-with-index(clause-to-prop-clauses(|pattern, constr*, i)); unzip; (concat, concat)>
-    ;  match*   := <![Assign(LIST(<nonempty>), Var("implicits__"))] <+ ![]> implicit*
-    ;  prop-seq := <to-seq> [match*, prop-clause*]
-    ;  result   := [rule*,  PROP_RULE(Seq(Match(pattern), prop-seq))]
-    <+ result   := []
+       prop-clause* := <filter-with-index(clause-to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
+    ;  match*       := <![Assign(LIST(<nonempty>), Var("implicits__"))] <+ ![]> implicit*
+    ;  prop-seq     := <to-seq> [match*, task*, prop-clause*]
+    ;  result       := [PROP_RULE(Seq(Match(pattern), prop-seq))]
+    <+ result       := []
     
-  clause-to-prop-clauses(|pattern, glob-constr*, i):
-    (o, DefClause(kind, _, ns, term, prop*, _, constr*)) -> (match-rule*, [task*, cong])
+  clause-to-prop-clauses(|pattern, bound*, glob-repl*, i):
+    (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> [task*, cong]
     where
       <nonempty> prop*
-    ; ns-term     := <ns-to-term> ns
-    ; patt-bound* := <bound-vars> pattern
-    ; (task*, loc-replacement*) 
-                  := <constraints-to-tasks(|patt-bound*, <extend-index(|o)> i, 1)> ([glob-constr*, constr*], [])
-    ; prop-call   := PROP_CALL(<replace-all(|loc-replacement*); map(prop-to-str)> prop*)
-    ; if impl-var := <implicit-def-var(|o)> kind then
+    ; ns-term        := <ns-to-term> ns
+    ; k              := <extend-index(|i)> j
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; prop-call      := PROP_CALL(<replace-all(|repl*); map(prop-to-str)> prop*)
+    ; if impl-var := <implicit-def-var(|j)> kind then
         cong := Where(App(prop-call, impl-var))
       else
         cong := <replace-all-id(|[(term, prop-call)])> pattern
       end
-    ; match-rule* := <constraints-to-match-rules(|patt-bound*, <extend-index(|o)> i, 1)> [glob-constr*, constr*]
+   
+  clause-to-match-rules(|bound*, i):
+    (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> rule*
+    where
+      <nonempty> prop*
+    ; k      := <extend-index(|i)> j
+    ; rule*  := <constraints-to-match-rules(|bound*, k, 1)> constr*
        
 rules
          

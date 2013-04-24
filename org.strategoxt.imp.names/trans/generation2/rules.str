@@ -15,35 +15,21 @@ imports
 rules
   
   nabl-to-str: 
-    (i, BindingRule(pattern, constr*, clause*)) -> [name-rule*, def-rule*, prop-rule*]
+    (i, BindingRule(pattern, constr*, clause*)) -> [name-rule*, def-rule*, prop-rule*, use-rule*, match-rule*]
     where 
        [t]        := <filter(def-to-name <+ use-to-name)> clause*
     ;  name-rule* := [NAME_RULE(pattern, t)]
     <+ name-rule* := []
     where
-      // collect bound variables
       bound*      := <bound-vars> pattern
-      // collect vertical scopes
     ; scope*      := <filter(?ScopeClause(<map(ns-to-term)>)); concat> clause*
     ; def-clause* := <filter(?DefClause(_, _, _, _, _, _, _))> clause*
+    ; implicit*   := <implicit-def-vars> def-clause*
     where
-    // translate def clauses
-      implicit*  := <implicit-def-vars> def-clause*
-    ; def-rule*  := <clauses-to-def-rules(|pattern, scope*, implicit*)> def-clause*
-    ; prop-rule* := <clauses-to-prop-rules(|pattern, constr*, implicit*, i)> def-clause*
-             
-overlays
+      def-rule*      := <clauses-to-def-rules(|pattern, scope*, implicit*)> def-clause*
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, i, 0)> (constr*, [])
+    ; prop-rule*     := <clauses-to-prop-rules(|pattern, bound*, repl*, task*, implicit*, i)> def-clause*
+    ; use-rule*      := <clauses-to-use-rules(|pattern, bound*, repl*, task*, i)> clause*
+    ; match-rule*    := <filter-with-index(clause-to-match-rules(|bound*, i)); concat> clause*
+    
 	
-	ANONYMOUS_CALL(scopes) =
-  CallT(
-    SVar("nabl-anonymous-scope")
-  , [Match(Var("child-uris__"))]
-  , [ Var("lang__")
-    , Var("partition__")
-    , Var("uniques__")
-    , Var("uris__")
-    , LIST(scopes) ]
-  )
-  
-  
-  	
