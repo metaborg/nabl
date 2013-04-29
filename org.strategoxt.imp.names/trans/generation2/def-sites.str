@@ -94,7 +94,6 @@ overlays
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
     , DefaultVarDec("uniques__")
-    , DefaultVarDec("elems__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
   , body
@@ -107,7 +106,6 @@ overlays
   , [ Var("lang__")
     , Var("partition__")
     , Var("uniques__")
-    , Var("elems__")
     , in-child-uris
     , in-sibl-uris
     , ns, u, ds, LIST(s)]

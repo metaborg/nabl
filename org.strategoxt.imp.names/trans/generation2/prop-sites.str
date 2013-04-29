@@ -61,8 +61,6 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
-    , DefaultVarDec("elems__")
-    , DefaultVarDec("tasks__")
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
     ]
@@ -73,7 +71,7 @@ overlays
   CallT(
     SVar("nabl-props")
   , []
-  , [Var("partition__"), Var("elems__"), LIST(ps)]
+  , [Var("partition__"), LIST(ps)]
   )
   
   PROPERTY(p, v) = TERM("Prop", [p, v])
