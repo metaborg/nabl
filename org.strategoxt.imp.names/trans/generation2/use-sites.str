@@ -52,13 +52,13 @@ rules
     Enclosing(ns) -> TERM("Enclosing", [<ns-to-term> ns])
     
   context-to-term(|repl*):
-    Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, prop-term*, ctx-term])
+    Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, name-term, LIST(prop-term*), ctx-term])
     where
       ns-term        := <ns-to-term> ns
     ; prop-term*     := <map(prop-to-str; replace-all(|repl*))> prop*
+    ; name-term      := <replace-all(|repl*)> term
     ; ctx-term       := <context-to-term(|repl*)> ctx
     
-      
   clause-to-match-rules(|bound*, i):
     (j, RefClause(part*)) -> rule*
     where
@@ -70,7 +70,6 @@ rules
     where
       k     := <extend-index(|i)> j
     ; rule* := <constraints-to-match-rules(|bound*, k, 1)> constr*
-      
 
 overlays
      
