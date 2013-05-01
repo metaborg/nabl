@@ -32,7 +32,8 @@ rules
     ; ns-term        := <ns-to-term> ns
     ; k              := <extend-index(|i)> j
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; prop-call      := PROP_CALL(<replace-all(|repl*); map(prop-to-str)> prop*)
+    ; dep*           := <map(Snd)> repl*
+    ; prop-call      := PROP_CALL(<replace-all(|repl*); map(prop-to-str(|dep*))> prop*)
     ; if impl-var := <implicit-def-var(|j)> kind then
         cong := Where(App(prop-call, impl-var))
       else
@@ -48,7 +49,7 @@ rules
        
 rules
          
-  prop-to-str: PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t)     
+  prop-to-str(|dependencies): PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies)     
 
   nabl-to-str: NonUnique() -> TERM("NonUnique")
   nabl-to-str: Unique()    -> TERM("Unique")
@@ -74,5 +75,5 @@ overlays
   , [Var("partition__"), LIST(ps)]
   )
   
-  PROPERTY(p, v) = TERM("Prop", [p, v])
+  PROPERTY(kind, value, dependencies) = TERM("Prop", [kind, value, LIST(dependencies)])
 
