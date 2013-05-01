@@ -42,7 +42,7 @@ rules
       ns-term        := <ns-to-term> ns
     ; k              := <extend-index(|i)> j
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; prop-term*     := <map(prop-to-str; replace-all(|repl*))> prop*
+    ; prop-term*     := <map(prop-to-str(|[]); replace-all(|repl*))> prop*
     ; ctx-term       := <context-to-term(|repl*)> ctx
   
   context-to-term(|repl*):
@@ -55,7 +55,7 @@ rules
     Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, name-term, LIST(prop-term*), ctx-term])
     where
       ns-term        := <ns-to-term> ns
-    ; prop-term*     := <map(prop-to-str; replace-all(|repl*))> prop*
+    ; prop-term*     := <map(prop-to-str(|[]); replace-all(|repl*))> prop*
     ; name-term      := <replace-all(|repl*)> term
     ; ctx-term       := <context-to-term(|repl*)> ctx
     

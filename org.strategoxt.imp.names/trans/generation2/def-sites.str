@@ -41,6 +41,7 @@ rules
                             , MATCH(CALL("implicits__"), LIST(implicit*))
                             ] 
     ;  result   := [DEF_RULE(def-seq)]
+    <+ result   := [SCOPE_RULE(pattern, <nonempty> scope*)]
     <+ result   := []
  
   clause-to-def-seq(|pattern, scope*):
@@ -83,7 +84,30 @@ overlays
   NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
 
 overlays
-  	
+  
+  SCOPE_RULE(pattern, scopes) =
+  SDefT(
+    "nabl-anonymous-scope-site"
+  , [DefaultVarDec("child-uris__")]
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__") ]
+  , Seq(
+      Match(pattern)
+    , CallT(
+        SVar("nabl-anonymous-scope")
+      , [CALL("child-uris__")]
+      , [ Var("lang__")
+        , Var("partition__")
+        , Var("uniques__")
+        , Var("uris__")
+        , LIST(scopes) ]
+      )
+    )
+  )
+  
 	DEF_RULE(body) =
   SDefT(
     "nabl-def-site"
