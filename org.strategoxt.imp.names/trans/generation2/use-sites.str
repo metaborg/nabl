@@ -14,6 +14,7 @@ rules
   
   use-to-name = 
     ?RefClause(<fetch-elem(use-to-name)>)
+  + ?ImportClause(<fetch-elem(use-to-name)>)
   + ?RefClausePart(_, _, <id>, _, _, _)
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
@@ -27,14 +28,30 @@ rules
     <+ result  := []
     
   clause-to-use-clauses(|pattern, bound*, repl*, i):
-    (j, RefClause(part*)) -> [clause*, cong]
+    (j, clause) -> [clause*, cong]
+    where
+    	RefClause(part*)    := clause
+    + ImportClause(part*) := clause	
     where
       k        := <extend-index(|i)> j
     ; (clause*, candidate*) 
                := <filter-with-index(part-to-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
-    ; term     := <fetch-elem(?RefClausePart(_, _, <id>, _, _, _))> part*
+    ; term     := <use-to-name> clause*
     ; use-call := USE_CALL(candidate*)
     ; cong     := <replace-all-id(|[(term, use-call)])> pattern
+  
+  part-to-candidate(|pattern, bound*, glob-repl*, i):
+    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term))
+    where
+    	RefClausePart(disamb, ns, term, prop*, ctx, constr*) := part
+    + SingleImport(disamb, ns, term, prop*, ctx, _, _, constr*) := part
+    + WildcardImport(_, Context(disamb, ns, term, prop*, ctx), _, _, constr*) := part
+    where
+      ns-term        := <ns-to-term> ns
+    ; k              := <extend-index(|i)> j
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; prop-term*     := <map(prop-to-str(|[]); replace-all(|repl*))> prop*
+    ; ctx-term       := <context-to-term(|repl*)> ctx
   
   part-to-candidate(|pattern, bound*, glob-repl*, i):
     (j, RefClausePart(disamb, ns, term, prop*, ctx, constr*)) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term))
