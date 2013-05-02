@@ -1,0 +1,80 @@
+module generation2/import-sites
+
+imports
+	
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/sections
+  generation2/prop-sites
+  generation2/constraints
+  
+rules
+	
+  import-to-name = 
+    ?RefClause(<fetch-elem(import-to-name)>)
+  + ?ImportClause(<fetch-elem(import-to-name)>)
+  + ?SingleImport(_, _, <id>, _, _, _, _, _)
+  + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
+	
+  clauses-to-import-rules(|pattern, bound*, repl*, task*, i):
+    import-clause* -> result
+    where
+       clause* := <filter-with-index(clause-to-import-rule(|pattern, bound*, repl*, i)); debug(!"Clauses: "); concat; nonempty> import-clause*
+    ;  use-seq := <to-seq> [Match(pattern), task*, clause*]
+    ;  result  := [IMPORT_RULE(use-seq)]
+    <+ result  := []
+    
+  clause-to-import-rule(|pattern, bound*, repl*, i):
+    (j, clause@ImportClause(part*)) -> [cong]
+    where
+    	debug(!"1: ")
+    ; term     := <import-to-name> clause
+    ; debug(!"2: ")
+    ; import*  := <filter-with-index(part-to-imports); concat> part*
+    ; debug(!"3: ")
+    ; import-call := IMPORT_CALL(import*)
+    ; debug(!"4: ")
+    ; cong     := <replace-all-id(|[(term, import-call)])> pattern
+    ; debug(!"5: ")
+    
+	part-to-imports:
+		(j, WildcardImport(import-part*, _, _, _, _)) -> <filter(part-to-import)> import-part*
+
+	part-to-import:
+		Direct(ns) -> IMPORT_DIRECT(<ns-to-term> ns)
+		
+	part-to-import:
+		Transitive(ns) -> IMPORT_TRANSITIVE(<ns-to-term> ns)	
+    
+overlays
+     
+  IMPORT_RULE(call) =
+  SDefT(
+    "nabl-import-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__") 
+    ]
+  , call
+  )
+  
+  IMPORT_CALL(imports) =
+  CallT(
+    SVar("nabl-import")
+  , []
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uris__")
+    , LIST(imports)
+    ] 
+  )
+  
+  IMPORT_DIRECT(ns) =
+  TERM("Import", [Var("lang__"), ns])
+  
+  IMPORT_TRANSITIVE(ns) =
+  TERM("Import", [Var("lang__"), TERM("Imported", [ns])])
