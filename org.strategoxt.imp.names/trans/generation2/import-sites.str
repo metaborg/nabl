@@ -21,7 +21,7 @@ rules
   clauses-to-import-rules(|pattern, bound*, repl*, task*, i):
     import-clause* -> result
     where
-       clause* := <filter-with-index(clause-to-import-rule(|pattern, bound*, repl*, i)); debug(!"Clauses: "); concat; nonempty> import-clause*
+       clause* := <filter-with-index(clause-to-import-rule(|pattern, bound*, repl*, i)); concat; nonempty> import-clause*
     ;  use-seq := <to-seq> [Match(pattern), task*, clause*]
     ;  result  := [IMPORT_RULE(use-seq)]
     <+ result  := []
@@ -29,15 +29,10 @@ rules
   clause-to-import-rule(|pattern, bound*, repl*, i):
     (j, clause@ImportClause(part*)) -> [cong]
     where
-    	debug(!"1: ")
-    ; term     := <import-to-name> clause
-    ; debug(!"2: ")
+      term     := <import-to-name> clause
     ; import*  := <filter-with-index(part-to-imports); concat> part*
-    ; debug(!"3: ")
     ; import-call := IMPORT_CALL(import*)
-    ; debug(!"4: ")
     ; cong     := <replace-all-id(|[(term, import-call)])> pattern
-    ; debug(!"5: ")
     
 	part-to-imports:
 		(j, WildcardImport(import-part*, _, _, _, _)) -> <filter(part-to-import)> import-part*
