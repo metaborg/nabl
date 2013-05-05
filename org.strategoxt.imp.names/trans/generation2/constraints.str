@@ -61,8 +61,6 @@ rules
   result-var: i-> Var($[r[i]__])
   match-name: i -> $["match[i]"]
   
-  extend-index(|i): j -> $[[i]-[j]]
-
   nabl-match: ("m", Var(x), [y,z]) -> x
   
 overlays

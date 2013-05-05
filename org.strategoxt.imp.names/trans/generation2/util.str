@@ -8,6 +8,8 @@ imports
 rules
 
   bound-vars = collect-all(?Var(_))  
+
+  extend-index(|i): j -> $[[i]-[j]]
  
   to-seq: [c]           -> c
   to-seq: [c1, c2 | c*] -> Seq(c1, <to-seq> [c2|c*])
@@ -38,6 +40,13 @@ rules
      in nfilter(apply | 1)
     end
 
+  add-values(|val*):
+    (key, map) -> [(key, new*)|map]
+    where
+      old* := <lookup <+ ![]> (key, map)
+    ; new* := <union> (old*, val*) 
+             
+  
 overlays
   
   CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
