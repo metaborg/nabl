@@ -7,9 +7,8 @@ imports
   
   generation2/util
   generation2/main
-  generation2/scopes
-  generation2/use-sites
   generation2/sections
+  generation2/scoping-sites
   
 rules
   
@@ -17,61 +16,63 @@ rules
     
 rules
   
-  implicit-def-vars = filter-with-index(implicit-def-var)
-    
-  implicit-def-var:
-    (i, DefClause(kind, _, _, _, _, _, _)) -> <implicit-def-var(|i)> kind
-  
-  implicit-def-var(|i): Implicit() -> Var($[i[i]__])
-  
-  def-scope(|scope*): Implicit() -> []
-  def-scope(|scope*): Explicit() -> scope*
-  
-  clauses-to-def-rules(|pattern, scope*, implicit*):
-    def-clause* -> result
+  binding-to-def-rule:
+    BindingRule(pattern, constr*, clause*) -> DEF_RULE(pattern, seq)
     where
-       clause*  := <filter-with-index(clause-to-def-seq(|pattern, scope*)); concat; nonempty> def-clause*
-    ;  m        := <length> def-clause*
-    ;  uri-cvar := <uri-child-var> m
-    ;  uri-svar := <uri-sibl-var> m
-    ;  def-seq  := <to-seq> [ Match(pattern)
-       	                    , clause*
-                            , MATCH(CALL("child-uris__"), uri-cvar)
-                            , MATCH(CALL("sibl-uris__"), uri-svar)
-                            , MATCH(CALL("implicits__"), LIST(implicit*))
-                            ] 
-    ;  result   := [DEF_RULE(def-seq)]
-    <+ result   := [SCOPE_RULE(pattern, <nonempty> scope*)]
-    <+ result   := []
- 
-  clause-to-def-seq(|pattern, scope*):
-    (o, DefClause(kind, unique, ns, term, _, scope, _)) -> [scope-assign*, def-cong*]
+      def-clause* := <filter-def-clauses; nonempty> clause*
+    ; implicit*   := <implicit-def-vars> def-clause*
+    ; ns-term*    := <filter(?ScopeClause(<map(ns-to-term)>)); concat> clause*    
+    ; cong*       := <filter-with-index(to-def-cong(|pattern, ns-term*))> def-clause*
+    ; m           := <length> def-clause*
+    ; uri-cvar    := <uri-child-var> m
+    ; uri-svar    := <uri-sibl-var> m
+    ; seq         := <to-seq> [ cong*
+                              , MATCH(CALL("child-uris__"), uri-cvar)
+                              , MATCH(CALL("sibl-uris__"), uri-svar)
+                              , MATCH(CALL("implicits__"), LIST(implicit*))
+                              ] 
+                                   
+  to-def-cong(|pattern, scope*):
+    (o, clause) -> def-cong
     where
-      ns-term       := <ns-to-term> ns
-    ; scope-assign* := <scope-to-assignments(|ns-term, o)> scope
-    ; scope-term    := <scope-to-term(|o)> scope
-    ; scope-repl*   := <scope-to-replacement(|o) <+ ![]> scope 
+      DefClause(Explicit(), unique, ns, term, _, scope, _) := clause
+    ; scope'* := scope*
+    + DefClause(Implicit(), unique, ns, term, _, scope, _) := clause
+    ; scope'* := []
+    ; impl-var := <implicit-def-var> o 
+    + SingleImport(_, ns, _, _, _, Alias(term), scope, _)  := clause
+    ; unique := Unique()
     where
-      unique-term := <nabl-to-str> unique
+      ns-term     := <ns-to-term> ns
+    ; scope-term  := <scope-to-term> scope
+    ; unique-term := <nabl-to-str> unique
     ; i           := <dec> o
     ; uri-cvar1   := <uri-child-var> i
     ; uri-cvar2   := <uri-child-var> o
     ; uri-svar1   := <uri-sibl-var> i
     ; uri-svar2   := <uri-sibl-var> o
-    ; scope'*     := <def-scope(|scope*)> kind
     ; def-call    := DEF_CALL(ns-term, unique-term, scope-term, scope'*, uri-cvar1, uri-svar1, uri-cvar2, uri-svar2)
-    ; if impl-var := <implicit-def-var(|o)> kind then
-        if <nonempty> scope-repl* then
-          scope-cong* := [<replace-all-id(|[scope-repl*])> pattern]
-        else
-          scope-cong* := []
-        end
-        ; def-cong* := [scope-cong*, Where(Assign(impl-var, App(def-call, term)))]
-      else
-        def-cong* := [<replace-all-id(|[scope-repl*, (term, def-call)])> pattern]
-      end
+    where
+       def-cong := Where(Assign(impl-var, App(def-call, term)))
+    <+ def-cong := <replace-all-id(|[(term, def-call)])> pattern
+  
+rules
+  
+  filter-def-clauses =
+    filter(
+      ?DefClause(_, _, _, _, _, _, _) 
+    + ?Import(<fetch-elem(?SingleImport(_, _, _, _, _, Alias(_), _, _))>)
+    )
+      
+  implicit-def-vars = 
+    filter-with-index(
+      ?(<implicit-def-var>, DefClause(Implicit(), _, _, _, _, _, _))
+    )
     
-rules 
+  implicit-def-var = !Var($[i-[<id>]__])
+  
+  nabl-to-str: NonUnique() -> TERM("NonUnique")
+  nabl-to-str: Unique()    -> TERM("Unique")
   
   uri-var(|kind): 0 -> Var($[uri__])
   uri-var(|kind): i -> Var($[[kind]-uri[i]__]) where not(?0)
@@ -85,30 +86,7 @@ overlays
 
 overlays
   
-  SCOPE_RULE(pattern, scopes) =
-  SDefT(
-    "nabl-anonymous-scope-site"
-  , [DefaultVarDec("child-uris__")]
-  , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
-    , DefaultVarDec("uniques__")
-    , DefaultVarDec("uris__")
-    , DefaultVarDec("states__") ]
-  , Seq(
-      Match(pattern)
-    , CallT(
-        SVar("nabl-anonymous-scope")
-      , [CALL("child-uris__")]
-      , [ Var("lang__")
-        , Var("partition__")
-        , Var("uniques__")
-        , Var("uris__")
-        , LIST(scopes) ]
-      )
-    )
-  )
-  
-	DEF_RULE(body) =
+	DEF_RULE(pattern, body) =
   SDefT(
     "nabl-def-site"
   , [ DefaultVarDec("child-uris__")
@@ -120,7 +98,7 @@ overlays
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
-  , body
+  , Seq(Match(pattern), body)
   )  
 	
   DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
