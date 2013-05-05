@@ -10,6 +10,7 @@ imports
   generation2/def-sites
   generation2/prop-sites
   generation2/use-sites
+  generation2/import-sites
   generation2/constraints
     
 rules // namespaces 
@@ -47,7 +48,7 @@ rules // binding rules
     BindingRules(rs) -> Rules(<filter-with-index(to-rules); concat; nonempty> rs)
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, m1*, m2*]
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, i*, m1*, m2*]
     where 
        b* := [<binding-to-scope-rule> rule] 
     <+ b* := [] 
@@ -63,6 +64,9 @@ rules // binding rules
     where 
        u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
     <+ u* := []
+    where 
+       i* := [<binding-to-import-rule(|bound*, task*, repl*)>]
+    <+ i* := []
     where
        m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
      ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*

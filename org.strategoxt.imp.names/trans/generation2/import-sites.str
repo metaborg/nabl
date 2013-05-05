@@ -11,28 +11,27 @@ imports
   generation2/constraints
   
 rules
+                     
 	
   import-to-name = 
     ?RefClause(<fetch-elem(import-to-name)>)
   + ?ImportClause(<fetch-elem(import-to-name)>)
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
-	
-  clauses-to-import-rules(|pattern, bound*, repl*, task*, i):
-    import-clause* -> result
+	    
+  binding-to-import-rule(|bound*, task*, repl*):
+    (i, BindingRule(pattern, constr*, clause*)) -> IMPORT_RULE(pattern, seq)
+    where 
+      cong* := <filter-with-index(to-import-cong(|pattern, bound*, repl*, i)); nonempty> clause*
+    ; seq   := <to-seq> [task*, cong*]
+  
+  to-import-cong(|pattern, bound*, repl*, i):
+    (j, clause@ImportClause(part*)) -> cong
     where
-       clause* := <filter-with-index(clause-to-import-rule(|pattern, bound*, repl*, i)); concat; nonempty> import-clause*
-    ;  use-seq := <to-seq> [Match(pattern), task*, clause*]
-    ;  result  := [IMPORT_RULE(use-seq)]
-    <+ result  := []
-    
-  clause-to-import-rule(|pattern, bound*, repl*, i):
-    (j, clause@ImportClause(part*)) -> [cong]
-    where
-      term     := <import-to-name> clause
-    ; import*  := <filter-with-index(part-to-imports); concat> part*
-    ; import-call := IMPORT_CALL(import*)
-    ; cong     := <replace-all-id(|[(term, import-call)])> pattern
+      term    := <import-to-name> clause
+    ; import* := <filter-with-index(part-to-imports); concat> part*
+    ; call    := IMPORT_CALL(import*)
+    ; cong    := <replace-all-id(|[(term, call)])> pattern
     
 	part-to-imports:
 		(j, WildcardImport(import-part*, _, _, _, _)) -> <filter(part-to-import)> import-part*
@@ -45,7 +44,7 @@ rules
     
 overlays
      
-  IMPORT_RULE(call) =
+  IMPORT_RULE(pattern, body) =
   SDefT(
     "nabl-import-site"
   , []
@@ -54,7 +53,7 @@ overlays
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
     ]
-  , call
+  , Seq(Match(pattern), body)
   )
   
   IMPORT_CALL(imports) =
