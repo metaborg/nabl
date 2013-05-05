@@ -1,0 +1,101 @@
+module generation2/scoping-sites
+
+imports
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/sections
+  generation2/prop-sites
+  
+rules 
+  
+  binding-to-scope-rule:
+    BindingRule(pattern, constr*, clause*) -> SCOPE_RULE(pattern, seq)
+    where
+      cong* := <filter(to-scope-cong(|pattern)); concat> clause*
+    where
+       ns-term* := <filter(?ScopeClause(<map(ns-to-term)>)); concat; nonempty> clause*
+     ; <not(fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _)))> clause*
+     ; anon* := [SCOPE_CALL(ns-term*)]
+    <+ anon* := []
+    where
+      seq := <nonempty; to-seq> [cong*, anon*] 
+    
+  to-scope-cong(|pattern):
+    clause -> <filter(to-scope-cong(|pattern)); concat; nonempty> part*
+    where
+      RefClause(part*)    := clause
+    + ImportClause(part*) := clause
+    
+  to-scope-cong(|pattern):
+    part -> [cong1*, cong2*]
+    where
+       DefClause(_, _, ns, term, _, into, _) := part
+     ; ns* := [ns]
+    <+ RefClausePart(_, ns, _, _, from, _) := part
+     ; ns* := [ns]
+    <+ SingleImport(_, ns, _, _, from, _, into, _) := part
+     ; ns* := [ns]
+    <+ WildcardImport(import*, _, from, into, _) := part
+     ; ns* := <map(?Direct(<id>) + ?Transitive(<id>)); make-set> import*
+    where
+       ns-term* := <map(ns-to-term)> ns*
+    where
+       repl   := (<collect-one(?RefScope(<id>))> from, SCOPE_CALL(ns-term*))
+     ; cong1* := [<replace-all-id(|[repl])> pattern]
+    <+ cong1* := []
+    where
+    	 scope* := <?DefScopes(<filter(?DefScope(<id>))>); nonempty> into
+     ; repl*  := <map(!(<id>, SCOPE_CALL(ns-term*)))> scope*
+     ; cong2* := [<replace-all-id(|repl*)> pattern]
+    <+ cong2* := []
+ 
+ /**
+  * scope-to-term transforms NaBL scope definition into a Stratego term for consumption by the NaBL runtime
+  *
+  * NaBL input     : defines   ... in current scope
+  * NaBL input     : refers to ... in current scope
+  * Stratego output: Current()
+  * 
+  * NaBL input      : defines ... in subsequent scope
+  * Stratego output : [Subsequent()]
+  *
+  * NaBL input      : defines ... in ctx1, ..., ctxn
+  * Stratego output : [DefScope(ctx1), ..., DefScope(ctxn)]
+  *
+  * NaBL input      : defines ... in subsequent scope, ctx1, ..., ctxn
+  * Stratego output : [Subsequent(), DefScope(ctx1), ..., DefScope(ctxn)]
+  *
+  * NaBL input      : refers to ... in enclosing Namespace
+  * Stratego output : Enclosing(NablNsNamespace())
+  *
+  * NaBL input      : refers to ... in ctx
+  * Stratego output : scope-i
+  *
+  */
+
+  scope-to-term: Current()      -> TERM("Current")
+  scope-to-term: DefScopes(ds*) -> LIST(<map(scope-to-term)> ds*)
+  scope-to-term: Subsequent()   -> TERM("Subsequent")
+  scope-to-term: DefScope(term) -> TERM("DefScope", [term])
+   
+  scope-to-term:
+    Enclosing(ns)  -> TERM("Enclosing", [<ns-to-term> ns])
+
+  scope-to-term:
+    RefScope(term) -> TERM("RefScope", [term])
+    
+  scope-to-term:
+    Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, term, LIST(prop-term*), ctx-term])
+    where
+      ns-term    := <ns-to-term> ns
+    ; prop-term* := <map(prop-to-str(|[]))> prop*
+    ; ctx-term   := <scope-to-term> ctx
+  
+overlays
+  
+  SCOPE_RULE(pattern, body) = SDefNoArgs("nabl-scoping-site", Seq(Match(pattern), body))
+  SCOPE_CALL(ns)            = CallT(SVar("nabl-scope"), [], [LIST(ns)])
+ 
+   
