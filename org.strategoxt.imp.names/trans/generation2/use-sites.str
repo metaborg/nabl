@@ -7,6 +7,7 @@ imports
   
   generation2/util
   generation2/sections
+  generation2/scoping-sites
   generation2/prop-sites
   generation2/constraints
   
@@ -19,15 +20,13 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
     
-  clauses-to-use-rules(|pattern, bound*, repl*, task*, i):
-    use-clause* -> result
+  binding-to-use-rule(|bound*, task*, repl*):
+    (i, BindingRule(pattern, constr*, clause*)) -> USE_RULE(pattern, seq)
     where 
-       clause* := <filter-with-index(clause-to-use-clauses(|pattern, bound*, repl*, i)); concat; nonempty> use-clause*
-    ;  use-seq := <to-seq> [Match(pattern), task*, clause*]
-    ;  result  := [USE_RULE(use-seq)]
-    <+ result  := []
-    
-  clause-to-use-clauses(|pattern, bound*, repl*, i):
+      use-clause* := <filter-with-index(to-use-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
+    ; seq         := <to-seq> [task*, use-clause*]
+      
+  to-use-clauses(|pattern, bound*, repl*, i):
     (j, clause) -> [clause*, cong]
     where
       RefClause(part*)    := clause
@@ -35,45 +34,32 @@ rules
     where
       k        := <extend-index(|i)> j
     ; (clause*, candidate*) 
-               := <filter-with-index(part-to-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
+               := <filter-with-index(to-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
     ; term     := <use-to-name> clause
     ; use-call := USE_CALL(candidate*)
     ; cong     := <replace-all-id(|[(term, use-call)])> pattern
   
-  part-to-candidate(|pattern, bound*, glob-repl*, i):
-    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term))
+  to-candidate(|pattern, bound*, glob-repl*, i):
+    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, dep*))
     where
       RefClausePart(disamb, ns, term, prop*, ctx, constr*)                    := part
-    + SingleImport(disamb, ns, term, prop*, ctx, _, _, constr*)               := part
+    + SingleImport(disamb, ns, term, prop*, ctx, alias, _, constr*)           := part
     + WildcardImport(_, _, Context(disamb, ns, term, prop*, ctx), _, constr*) := part
     where
       ns-term        := <ns-to-term> ns
     ; k              := <extend-index(|i)> j
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; prop-term*     := <map(prop-pattern-to-str(|[]); replace-all(|repl*))> prop*
-    ; ctx-term       := <context-to-term(|repl*)> ctx
-  
-   context-to-term(|repl*):
-  	Current() -> TERM("Current")
-  	
-  context-to-term(|repl*):
-    Enclosing(ns) -> TERM("Enclosing", [<ns-to-term> ns])
-    
-  context-to-term(|repl*):
-    Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, name-term, LIST(prop-term*), ctx-term])
-    where
-      ns-term        := <ns-to-term> ns
-    ; prop-term*     := <map(prop-to-str(|[]); replace-all(|repl*))> prop*
-    ; name-term      := <replace-all(|repl*)> term
-    ; ctx-term       := <context-to-term(|repl*)> ctx
-    
-  clause-to-match-rules(|bound*, i):
+    ; ctx-term       := <scope-to-term; replace-all(|repl*)> ctx
+    ; dep*           := <map(Snd)> repl*
+       
+  to-match-rules(|bound*, i):
     (j, RefClause(part*)) -> rule*
     where
       k      := <extend-index(|i)> j
-    ; rule*  := <map-with-index(part-to-match-rules(|bound*, k)); concat> part*
+    ; rule*  := <map-with-index(to-match-rules(|bound*, k)); concat> part*
   
-  part-to-match-rules(|bound*, i):
+  to-match-rules(|bound*, i):
     (j, RefClausePart(disamb, ns, term, prop*, scope, constr*)) -> rule*
     where
       k     := <extend-index(|i)> j
@@ -83,7 +69,7 @@ rules
 
 overlays
      
-  USE_RULE(call) =
+  USE_RULE(pattern, body) =
   SDefT(
     "nabl-use-site"
   , []
@@ -92,7 +78,7 @@ overlays
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
     ]
-  , call
+  , Seq(Match(pattern), body)
   )
   
   USE_CALL(candidates) =
@@ -106,6 +92,6 @@ overlays
     ] 
   )
   
-  CANDIDATE(ns, ps, ctx) =
-  TERM("UseCandidate", [ns, LIST(ps), ctx])
+  CANDIDATE(ns, ps, ctx, deps) =
+  TERM("UseCandidate", [ns, LIST(ps), ctx, LIST(deps)])
   
