@@ -6,26 +6,27 @@ imports
   include/NameBindingLanguage
   
   generation2/util
-  generation2/main
-  generation2/scopes
-  generation2/constraints
-  generation2/def-sites
   generation2/sections
+  generation2/def-sites
+  generation2/constraints
   
 rules
 
   pdebug(s) = id
   
-  clauses-to-prop-rules(|pattern, bound*, repl*, task*, implicit*, i):
-    def-clause* -> result
-    where 
-       prop-clause* := <filter-with-index(clause-to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
-    ;  match*       := <![Assign(LIST(<nonempty>), Var("implicits__"))] <+ ![]> implicit*
-    ;  prop-seq     := <to-seq> [match*, task*, prop-clause*]
-    ;  result       := [PROP_RULE(Seq(Match(pattern), prop-seq))]
-    <+ result       := []
+   binding-to-prop-rule(|bound*, task*, repl*):
+    (i, BindingRule(pattern, constr*, clause*)) -> PROP_RULE(pattern, seq)
+    where
+      def-clause*    := <filter-def-clauses; nonempty> clause*
+    ; implicit*      := <implicit-def-vars> def-clause*
+    ; prop-clause*   := <filter-with-index(to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
+    where
+       match* := [Assign(LIST(<nonempty> implicit*), Var("implicits__"))] 
+    <+ match* := []
+    where
+      seq := <to-seq> [match*, task*, prop-clause*]
     
-  clause-to-prop-clauses(|pattern, bound*, glob-repl*, i):
+  to-prop-clauses(|pattern, bound*, glob-repl*, i):
     (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> [task*, cong]
     where
       <nonempty> prop*
@@ -34,13 +35,12 @@ rules
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; dep*           := <map(Snd)> repl*
     ; prop-call      := PROP_CALL(<replace-all(|repl*); map(prop-to-str(|dep*))> prop*)
-    ; if impl-var := <implicit-def-var(|j)> kind then
-        cong := Where(App(prop-call, impl-var))
-      else
-        cong := <replace-all-id(|[(term, prop-call)])> pattern
-      end
-   
-  clause-to-match-rules(|bound*, i):
+    with
+       Implicit() := kind
+     ; cong := Where(App(prop-call, <implicit-def-var> j))
+    <+ cong := <replace-all-id(|[(term, prop-call)])> pattern
+     
+  to-match-rules(|bound*, i):
     (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> rule*
     where
       <nonempty> prop*
@@ -49,14 +49,12 @@ rules
        
 rules
          
-  prop-to-str(|dependencies): PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies)     
+  prop-to-str(|dependencies): PropertyTerm(p, t)       -> PROPERTY(<nabl-to-str> p, t, dependencies)     
+  prop-to-str(|dependencies): PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies) 
 
-  nabl-to-str: NonUnique() -> TERM("NonUnique")
-  nabl-to-str: Unique()    -> TERM("Unique")
-  
 overlays
   
-  PROP_RULE(body)  =
+  PROP_RULE(pattern, body)  =
   SDefT(
     "nabl-prop-site"
   , []
@@ -65,7 +63,7 @@ overlays
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
     ]
-  , body
+  , Seq(Match(pattern), body)
   )
 
   PROP_CALL(ps) = 
