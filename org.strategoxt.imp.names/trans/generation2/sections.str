@@ -6,7 +6,11 @@ imports
   include/NameBindingLanguage
   
   generation2/util
-  generation2/rules
+  generation2/scoping-sites
+  generation2/def-sites
+  generation2/prop-sites
+  generation2/use-sites
+  generation2/constraints
     
 rules // namespaces 
       
@@ -40,5 +44,26 @@ rules // imports
 rules // binding rules
 
   nabl-to-str:
-    BindingRules(rs) -> Rules(<filter-with-index(nabl-to-str); concat; nonempty> rs)
+    BindingRules(rs) -> Rules(<filter-with-index(to-rules); concat; nonempty> rs)
+    
+  to-rules:
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, m1*, m2*]
+    where 
+       b* := [<binding-to-scope-rule> rule] 
+    <+ b* := [] 
+    where 
+       d* := [<binding-to-def-rule> rule] 
+    <+ d* := [] 
+    where
+       bound*         := <bound-vars> pattern
+     ; (task*, repl*) := <constraints-to-tasks(|bound*, i, 0)> (constr*, [])
+    where 
+       p* := [<binding-to-prop-rule(|bound*, task*, repl*)>]
+    <+ p* := []
+    where 
+       u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
+    <+ u* := []
+    where
+       m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
+     ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*
     
