@@ -34,12 +34,12 @@ rules
     where
       k        := <extend-index(|i)> j
     ; (clause*, candidate*) 
-               := <filter-with-index(to-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
+               := <filter-with-index(to-use-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
     ; term     := <use-to-name> clause
     ; use-call := USE_CALL(candidate*)
     ; cong     := <replace-all-id(|[(term, use-call)])> pattern
   
-  to-candidate(|pattern, bound*, glob-repl*, i):
+  to-use-candidate(|pattern, bound*, glob-repl*, i):
     (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, dep*))
     where
       RefClausePart(disamb, ns, term, prop*, ctx, constr*)                    := part

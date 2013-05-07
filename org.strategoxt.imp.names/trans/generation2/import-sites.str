@@ -7,7 +7,7 @@ imports
   
   generation2/util
   generation2/sections
-  generation2/prop-sites
+  generation2/scoping-sites
   generation2/constraints
   
 rules
@@ -22,25 +22,46 @@ rules
   binding-to-import-rule(|bound*, task*, repl*):
     (i, BindingRule(pattern, constr*, clause*)) -> IMPORT_RULE(pattern, seq)
     where 
-      cong* := <filter-with-index(to-import-cong(|pattern, bound*, repl*, i)); nonempty> clause*
+      cong* := <filter-with-index(to-import-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
     ; seq   := <to-seq> [task*, cong*]
   
-  to-import-cong(|pattern, bound*, repl*, i):
-    (j, clause@ImportClause(part*)) -> cong
+  to-import-clauses(|pattern, bound*, repl*, i):
+    (j, DefClause(_, _, _, term, _, DefScopes(ds*), _)) -> [IMPORT_CALL([SINGLE(term, scope, [])])]
     where
-      term    := <import-to-name> clause
-    ; import* := <filter-with-index(part-to-imports); concat> part*
-    ; call    := IMPORT_CALL(import*)
-    ; cong    := <replace-all-id(|[(term, call)])> pattern
+      ds'*  := <filter(?DefScope(_)); nonempty> ds*
+    ; scope := <scope-to-term> DefScopes(ds'*)
     
-	part-to-imports:
-		(j, WildcardImport(import-part*, _, _, _, _)) -> <filter(part-to-import)> import-part*
-
-	part-to-import:
-		Direct(ns) -> IMPORT_DIRECT(<ns-to-term> ns)
-		
-	part-to-import:
-		Transitive(ns) -> IMPORT_TRANSITIVE(<ns-to-term> ns)	
+  to-import-clauses(|pattern, bound*, repl*, i):
+    (j, clause@ImportClause(part*)) -> [clause*, IMPORT_CALL(import*)]
+    where
+      k       := <extend-index(|i)> j
+    ; (clause*, import*) 
+              := <filter-with-index(to-import-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
+    
+  to-import-candidate(|pattern, bound*, glob-repl*, i):
+    (j, SingleImport(_, _, term, _, _, alias, into, constr*)) -> result
+    where
+      into-term      := <scope-to-term> into
+    ; k              := <extend-index(|i)> j
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; dep*           := <map(Snd)> repl*
+    where
+       Alias(a) := alias
+     ; result   := (task*, ALIAS(term, a, []))
+    <+ result   := (task*, SINGLE(term, into-term, dep*))
+       
+	to-import-candidate(|pattern, bound*, glob-repl*, i):
+		(j, WildcardImport(ns*, _, from, into, constr*)) -> (task*, WILDCARD(ns-term*, from-term, into-term, dep*))
+    where
+      ns-term*  := <map(ns-to-term)> ns*
+    ; from-term := <scope-to-term> from
+    ; into-term := <scope-to-term> into
+    ; k              := <extend-index(|i)> j
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; dep*           := <map(Snd)> repl*
+      
+	ns-to-term: Direct(ns)     -> DIRECT(<ns-to-term> ns)
+	ns-to-term: Transitive(ns) -> TRANSITIVE(<ns-to-term> ns)	
     
 overlays
      
@@ -67,8 +88,9 @@ overlays
     ] 
   )
   
-  IMPORT_DIRECT(ns) =
-  TERM("Import", [Var("lang__"), ns])
-  
-  IMPORT_TRANSITIVE(ns) =
-  TERM("Import", [Var("lang__"), TERM("Imported", [ns])])
+  SINGLE(term, scope, deps)      = TERM("Single", [term, scope, LIST(deps)])
+  ALIAS(term, alias, deps)       = TERM("Alias", [term, alias, LIST(deps)])
+  WILDCARD(ns, from, into, deps) = TERM("Wildcard", [LIST(ns), from, into, LIST(deps)])
+
+  DIRECT(ns)     = TERM("Import", [Var("lang__"), ns])
+  TRANSITIVE(ns) = TERM("Import", [Var("lang__"), TERM("Imported", [ns])])
