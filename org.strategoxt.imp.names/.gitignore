@@ -1,0 +1,8 @@
+/.cache
+/bin
+/include
+/lib
+/lib-refactoring
+/editor/*.generated.*
+/syntax/*generated*
+/trans/*generated*

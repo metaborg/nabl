@@ -12,6 +12,6 @@ language General properties
   description   : "Spoofax/IMP-generated editor for the NameBindingLanguage language"
   url           : http://strategoxt.org
                   
-  extensions    : nab
+  extensions    : nab, nd
   table         : include/NameBindingLanguage.tbl
   start symbols : Start
