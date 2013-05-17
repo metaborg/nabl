@@ -1,0 +1,111 @@
+module generation2/use-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/sections
+  generation2/prop-sites
+  generation2/constraints
+  
+rules
+  
+  use-to-name = 
+    ?RefClause(<fetch-elem(use-to-name)>)
+  + ?ImportClause(<fetch-elem(use-to-name)>)
+  + ?RefClausePart(_, _, <id>, _, _, _)
+  + ?SingleImport(_, _, <id>, _, _, _, _, _)
+  + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
+    
+  clauses-to-use-rules(|pattern, bound*, repl*, task*, i):
+    use-clause* -> result
+    where 
+       clause* := <filter-with-index(clause-to-use-clauses(|pattern, bound*, repl*, i)); concat; nonempty> use-clause*
+    ;  use-seq := <to-seq> [Match(pattern), task*, clause*]
+    ;  result  := [USE_RULE(use-seq)]
+    <+ result  := []
+    
+  clause-to-use-clauses(|pattern, bound*, repl*, i):
+    (j, clause) -> [clause*, cong]
+    where
+      RefClause(part*)    := clause
+    + ImportClause(part*) := clause
+    where
+      k        := <extend-index(|i)> j
+    ; (clause*, candidate*) 
+               := <filter-with-index(part-to-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
+    ; term     := <use-to-name> clause
+    ; use-call := USE_CALL(candidate*)
+    ; cong     := <replace-all-id(|[(term, use-call)])> pattern
+  
+  part-to-candidate(|pattern, bound*, glob-repl*, i):
+    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term))
+    where
+      RefClausePart(disamb, ns, term, prop*, ctx, constr*)                    := part
+    + SingleImport(disamb, ns, term, prop*, ctx, _, _, constr*)               := part
+    + WildcardImport(_, _, Context(disamb, ns, term, prop*, ctx), _, constr*) := part
+    where
+      ns-term        := <ns-to-term> ns
+    ; k              := <extend-index(|i)> j
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; prop-term*     := <map(prop-pattern-to-str(|[]); replace-all(|repl*))> prop*
+    ; ctx-term       := <context-to-term(|repl*)> ctx
+  
+   context-to-term(|repl*):
+  	Current() -> TERM("Current")
+  	
+  context-to-term(|repl*):
+    Enclosing(ns) -> TERM("Enclosing", [<ns-to-term> ns])
+    
+  context-to-term(|repl*):
+    Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, name-term, LIST(prop-term*), ctx-term])
+    where
+      ns-term        := <ns-to-term> ns
+    ; prop-term*     := <map(prop-to-str(|[]); replace-all(|repl*))> prop*
+    ; name-term      := <replace-all(|repl*)> term
+    ; ctx-term       := <context-to-term(|repl*)> ctx
+    
+  clause-to-match-rules(|bound*, i):
+    (j, RefClause(part*)) -> rule*
+    where
+      k      := <extend-index(|i)> j
+    ; rule*  := <map-with-index(part-to-match-rules(|bound*, k)); concat> part*
+  
+  part-to-match-rules(|bound*, i):
+    (j, RefClausePart(disamb, ns, term, prop*, scope, constr*)) -> rule*
+    where
+      k     := <extend-index(|i)> j
+    ; rule* := <constraints-to-match-rules(|bound*, k, 1)> constr*
+
+	prop-pattern-to-str(|dependencies): PropertyPattern(type, p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies) 
+
+overlays
+     
+  USE_RULE(call) =
+  SDefT(
+    "nabl-use-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__") 
+    ]
+  , call
+  )
+  
+  USE_CALL(candidates) =
+  CallT(
+    SVar("nabl-use")
+  , []
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uris__")
+    , LIST(candidates)
+    ] 
+  )
+  
+  CANDIDATE(ns, ps, ctx) =
+  TERM("UseCandidate", [ns, LIST(ps), ctx])
+  

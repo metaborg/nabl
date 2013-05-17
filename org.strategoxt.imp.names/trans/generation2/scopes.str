@@ -1,0 +1,111 @@
+module generation2/scopes
+
+imports
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  
+rules 
+  
+  /*
+  * scope-to-term transforms NaBL scope definition into a Stratego term for consumption by the NaBL runtime
+  *
+  * NaBL input     : ... in current scope
+  * Stratego output: Current()
+  */
+  scope-to-term(|i): 
+    Current() -> TERM("Current")
+  
+  /*
+  * scope-to-term transforms NaBL scope definition into a Stratego term for consumption by the NaBL runtime
+  *
+  * NaBL input      : ... in subsequent scope
+  * Stratego output : [Subsequent()]
+  *
+  * NaBL input      : ... in ctx1, ..., ctxn
+  * Stratego output : [scope_i]
+  *
+  * NaBL input      : ... in subsequent scope, ctx1, ..., ctxn
+  * Stratego output : [Subsequent(), scope_i]
+  *
+  * Note that the list contains only a single scope variable for ctx1, ..., ctxn. 
+  * The scope variable is shared by all definition contexts of a definition clause
+  *
+  */
+  scope-to-term(|i): 
+    DefScopes(ds*) -> LIST([ss*, ctx*])
+    where
+      // handle "in subsequent scope"
+      if <fetch-elem(?Subsequent())> ds* then
+        ss* := [TERM("Subsequent")] 
+      else
+        ss* := []
+      end
+      // handle "in ctx"
+    ; if x := <fetch-elem(?Context(<id>))> ds* then 
+        ctx* := [<scope-var> i]
+      else
+        ctx* := []
+      end
+   
+rules 
+  
+  /** 
+  * transforms NaBL scope definitions into assignments for scope variables
+  *  
+  * NaBL input     : ... in ctx1, ..., ctxn
+  * NaBL input     : ... in subsequent scope, ctx1, ..., ctxn
+  * Stratego output: where( scope_i := <nabl-construct-def-scope(|...)> NS ) 
+  * 
+  * Note that only a single assignment is generated. 
+  * The scope variable is shared by all definition contexts of a definition clause
+  */
+  scope-to-assignments(|ns, i) =
+    if DefScopes(fetch-elem(Context(id))) then
+      ![SCOPE_CALL(<scope-var> i, ns)]
+    else
+      ![]
+    end
+    
+  /**
+  * transforms NaBL scope definitions into a list of replacements
+  * a replacement consists of a term to replace and a strategy call which should replace it
+  *
+  * NaBL input  : ... in current scope
+  * NaBL input  : ... in subsequent scope
+  * no replacements
+  *
+  * NaBL input  : ... in ctx1, ..., ctxn
+  * NaBL input  : ... in subsequent scope, ctx1, ..., ctxn
+  * replacements: ctx1 replaced by nabl-scope-def(|scope_i), ..., ctxn replaced by nabl-scope-def(|scope_i)
+  */
+  scope-to-replacement(|i):
+    DefScopes(ds*) -> <filter(context-to-replace(|SCOPE_CALL(<scope-var> i)))> ds*
+      
+  context-to-replace(|r): Context(c) -> (c, r)
+  
+  /**
+  * helper strategy to produce unique scope variables
+  */
+  scope-var: i -> Var($[scope[i]__])
+
+overlays
+  
+  SCOPE_CALL(v) = CallT(SVar("nabl-def-scope"), [], [v])
+  SCOPE_CALL(v, ns) = 
+  Where(
+    Assign(
+      v
+    , App(
+        CallT(
+          SVar("nabl-construct-def-scope")
+        , []
+        , [Var("lang__"), Var("partition__"), Var("uniques__")]
+        )
+      , ns
+      )
+    )
+  )
+ 
+     

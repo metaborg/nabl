@@ -7,33 +7,33 @@ imports
 
 strategies
 
-  parse-file = parse-namedefinitionlanguage-file
-  parse-namedefinitionlanguage-file =
+  parse-file = parse-namebindinglanguage-file
+  parse-namebindinglanguage-file =
     parse-file(
       strsglr-perror, strsglr-report-parse-error
-    | <import-term(include/NameDefinitionLanguage.tbl)>
+    | <import-term(include/NameBindingLanguage.tbl)>
     )
 
-  parse-string = parse-namedefinitionlanguage-string
-  parse-namedefinitionlanguage-string =
+  parse-string = parse-namebindinglanguage-string
+  parse-namebindinglanguage-string =
     parse-string(
       strsglr-report-parse-error
-    | <import-term(include/NameDefinitionLanguage.tbl)>
+    | <import-term(include/NameBindingLanguage.tbl)>
     )
   
-  parse-stream = parse-namedefinitionlanguage-stream
-  parse-namedefinitionlanguage-stream =
+  parse-stream = parse-namebindinglanguage-stream
+  parse-namebindinglanguage-stream =
     parse-stream(
       strsglr-report-parse-error
-    | <import-term(include/NameDefinitionLanguage.tbl)>
+    | <import-term(include/NameBindingLanguage.tbl)>
     )
 
-  pp-namedefinitionlanguage-string =
-    ast2abox(|[<import-term(include/NameDefinitionLanguage.generated.pp.af)>,
-               <import-term(include/NameDefinitionLanguage.pp.af)>]);
+  pp-namebindinglanguage-string =
+    ast2abox(|[<import-term(include/NameBindingLanguage.generated.pp.af)>,
+               <import-term(include/NameBindingLanguage.pp.af)>]);
     box2text-string(|100)
     
-  language = !"NameDefinitionLanguage"
+  language = !"NameBindingLanguage"
 
 strategies
   
@@ -135,11 +135,16 @@ strategies
   origin-strip     = prim("SSL_EXT_origin_strip", <id>)
   origin-equal(|t) = prim("SSL_EXT_origin_equal", <id>, t)
 
+  origin-language-description =
+    prim("SSL_EXT_languagedescription", <id>)
+
   origin-language =
-    prim("SSL_EXT_origin_language", <id>)
+    origin-file; 
+    origin-language-description;
+    Fst
   
   origin-surrounding-comments =
-    prim("SSL_EXT_origin_surrounding_comments", "NameDefinitionLanguage", <id>)
+    prim("SSL_EXT_origin_surrounding_comments", "NameBindingLanguage", <id>)
     
   origin-documentation-comment =
     origin-surrounding-comments;
@@ -152,6 +157,13 @@ strategies
   origin-track-forced(s) =
     ![<id>]; all(s); ?[<id>]
 
+  origin-relative-path:
+    trm -> rel-path
+    where
+      full-path := <origin-file> trm;
+      len-project-prefix := <project-path; string-length; inc>;
+      rel-path := <string-as-chars(drop(|len-project-prefix))> full-path
+      
 strategies
 
   desugar-position(desugar|ast):
@@ -219,8 +231,8 @@ signature constructors
   True       : Term
 
   // Below are copies of the signatures of the terms used in example
-  // trans/namedefinitionlanguage.str file. These definitions should also be automatically 
-  // generated in the imported include/NameDefinitionLanguage.str module. However,
+  // trans/namebindinglanguage.str file. These definitions should also be automatically 
+  // generated in the imported include/NameBindingLanguage.str module. However,
   // to ensure that the example transformation doesn't break when the
   // syntax is changed, we also hard-coded them here.
           

@@ -1,0 +1,47 @@
+module generation/sections
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/rules
+    
+rules // namespaces 
+      
+  nabl-to-str(|replace*, bound*, rule*):
+    Namespaces(namespaces) -> Signature([Constructors(<map(nabl-to-str)> namespaces)])
+    
+  nabl-to-str: // generates constructors for namespaces
+    NamespaceDef(ns) -> CONS_DECL(<ns-name-to-str> ns, "Namespace")
+  
+  nabl-to-str: NamespaceRef(ns) -> TERM(<ns-name-to-str> ns)
+
+  ns-name-to-str: ns -> $[NablNs[ns]]
+  
+rules // properties
+        
+  nabl-to-str(|replace*, bound*, rule*):
+    Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
+  
+  nabl-to-str: // generate constructors for properties
+    PropertyDef(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
+
+  nabl-to-str: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
+  nabl-to-str: TypeProp()     -> TERM("Type")
+
+  ns-prop-name-to-str: p -> $[NablProp_[p]]
+
+rules // imports
+    
+  nabl-to-str(|replace*, bound*, rule*) = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task")|<id>])
+    
+rules // binding rules
+
+  nabl-to-str(|replace*, bound*, rule*):
+    BindingRules(rs) -> Rules(<iset-elements; nonempty> rule*)
+    where
+      <iset-clear> rule*;
+      <filter(nabl-to-str(|replace*, bound*, rule*))> rs
+  

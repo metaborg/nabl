@@ -1,0 +1,105 @@
+module generation/use-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/main
+  generation/constraints
+  generation/def-sites
+  
+rules
+  
+  uses-to-str(|replace*, bound*, rule*, task*, pattern) =
+    where (try(uses-to-name-rule(|rule*, pattern)));
+    filter(?RefClause(<id>) + ?ImportClause(<id>));
+    if nonempty then
+      (rep*, task'*) := <foldl(use-to-str(|replace*, bound*, rule*))> (<id>, ([], task*));
+      ubody  := <foldr(<replace-all(|rep*)> pattern, to-seq)> task'* ;
+      <iset-add(|USE_RULE(Seq(Match(pattern), ubody)))> rule*
+    end
+  
+  uses-to-name-rule(|rule*, pattern) =
+  	?[RefClause(<use-to-name>)]  => t;
+  	<iset-add(|NAME_RULE(pattern, t))> rule*
+  
+  use-to-name =
+  	Hd;  
+  	( ?RefClausePart(_, _, t, _, _, _)
+    + ?SingleImport(_, _, t, _, _, _, _, _)
+    + ?WildcardImport(_, _, Context(_, _, t, _, _), _, _)
+    );
+    <to-ppable-str> t
+    
+  use-to-str(|replace*, bound*, rule*):
+    (u, (r*, task*)) -> ([(t', USE_CALL(c*)), r*], task'*)
+    where 
+      t'           := <use-to-name> u;
+      (c*, task'*) := <foldl(to-ppable-str; (ref-to-str(|replace*, bound*, rule*) <+ Snd))> (u, ([], task*))
+    
+  ref-to-str(|replace*, bound*, rule*): 
+    (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, prop'*)], task'*)
+    where
+      < ?RefClausePart(_, ns, _, prop*, Current(), constr*)
+      + ?SingleImport(_, ns, _, prop*, Current(), _, _, constr*)
+      + ?WildcardImport(_, _, Context(_, ns, _, prop*, Current()), _, constr*)
+      > c
+    where
+      replace2* := <hashtable-copy> replace*;
+      bound2*   := <iset-copy> bound*;
+      task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
+      prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
+      <hashtable-destroy> replace2*;
+      <iset-destroy> bound2*
+      
+  ref-to-str(|replace*, bound*, rule*): 
+    (c, (c*, task*)) -> ([c*, CANDIDATE(<nabl-to-str> ns, <nabl-to-str> ns', t', prop'*)], task'*)
+    where
+      <?RefClausePart(_, ns, _, prop*, Context(_, ns', t, _, _), constr*)> c
+    where
+      replace2* := <hashtable-copy> replace*;
+      bound2*   := <iset-copy> bound*;
+      task'*    := <constraints-to-str(|replace2*, bound2*, rule*, task*)> constr*;
+      prop'*    := <map(prop-to-str); alltd(replace(|replace2*))> prop*;
+      t'        := <alltd(replace(|replace2*))> t;
+      <hashtable-destroy> replace2*;
+      <iset-destroy> bound2*
+     
+  prop-to-str:
+    PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, t)
+
+overlays
+     
+  USE_RULE(call) =
+  SDefT(
+    "nabl-use-site"
+  , []
+  , [ DefaultVarDec("lang")
+    , DefaultVarDec("partition")
+    , DefaultVarDec("elems")
+    , DefaultVarDec("uris")
+    , DefaultVarDec("states") 
+    ]
+  , call
+  )
+  
+  USE_CALL(candidates) =
+  CallT(
+    SVar("nabl-use")
+  , []
+  , [ Var("lang")
+		, Var("partition")
+    , Var("elems")
+    , Var("uris")
+    , LIST(candidates)
+    ] 
+  )
+  
+  CANDIDATE(ns, ps) =
+  TERM("UseCandidate", [ns, LIST(ps), TERM("Current"), TERM("All")])
+
+  CANDIDATE(ns1, ns2, n, ps) =
+  TERM("UseCandidate", [ns1, LIST(ps), LIST([n]), TERM("One")])
+  

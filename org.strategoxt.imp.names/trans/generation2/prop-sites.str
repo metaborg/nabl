@@ -1,0 +1,79 @@
+module generation2/prop-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/main
+  generation2/scopes
+  generation2/constraints
+  generation2/def-sites
+  generation2/sections
+  
+rules
+
+  pdebug(s) = id
+  
+  clauses-to-prop-rules(|pattern, bound*, repl*, task*, implicit*, i):
+    def-clause* -> result
+    where 
+       prop-clause* := <filter-with-index(clause-to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
+    ;  match*       := <![Assign(LIST(<nonempty>), Var("implicits__"))] <+ ![]> implicit*
+    ;  prop-seq     := <to-seq> [match*, task*, prop-clause*]
+    ;  result       := [PROP_RULE(Seq(Match(pattern), prop-seq))]
+    <+ result       := []
+    
+  clause-to-prop-clauses(|pattern, bound*, glob-repl*, i):
+    (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> [task*, cong]
+    where
+      <nonempty> prop*
+    ; ns-term        := <ns-to-term> ns
+    ; k              := <extend-index(|i)> j
+    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; dep*           := <map(Snd)> repl*
+    ; prop-call      := PROP_CALL(<replace-all(|repl*); map(prop-to-str(|dep*))> prop*)
+    ; if impl-var := <implicit-def-var(|j)> kind then
+        cong := Where(App(prop-call, impl-var))
+      else
+        cong := <replace-all-id(|[(term, prop-call)])> pattern
+      end
+   
+  clause-to-match-rules(|bound*, i):
+    (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> rule*
+    where
+      <nonempty> prop*
+    ; k      := <extend-index(|i)> j
+    ; rule*  := <constraints-to-match-rules(|bound*, k, 1)> constr*
+       
+rules
+         
+  prop-to-str(|dependencies): PropertyTerm(p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies)     
+
+  nabl-to-str: NonUnique() -> TERM("NonUnique")
+  nabl-to-str: Unique()    -> TERM("Unique")
+  
+overlays
+  
+  PROP_RULE(body)  =
+  SDefT(
+    "nabl-prop-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("states__")
+    , DefaultVarDec("implicits__")
+    ]
+  , body
+  )
+
+  PROP_CALL(ps) = 
+  CallT(
+    SVar("nabl-props")
+  , []
+  , [Var("partition__"), LIST(ps)]
+  )
+  
+  PROPERTY(kind, value, dependencies) = TERM("Prop", [kind, value, LIST(dependencies)])
+

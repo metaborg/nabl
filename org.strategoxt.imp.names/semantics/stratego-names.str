@@ -7,7 +7,7 @@ imports
 
 
 imports
-  include/NameDefinitionLanguage
+  include/NameBindingLanguage
 
 
 signature

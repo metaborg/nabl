@@ -1,0 +1,81 @@
+module generation2/constraints
+
+imports 
+  
+  libstrc
+  include/NameBindingLanguage
+  generation2/util
+  generation2/main
+  
+rules
+  
+  constraints-to-tasks(|bound*, i, j):
+    ([], repl*) -> ([], repl*)
+   	  
+  constraints-to-tasks(|bound*, i, j):
+    ([PropertyConstraint(term, kind, prop)|cs], repl*) -> ([task, match-task*, task*], r*)
+    where
+      k           := <extend-index(|i)> j
+    ; result      := <result-var> k
+    ; task        := PROP_TASK(result, <nabl-to-str> kind, <replace-all(|repl*)> term)
+    ; bind*       := <bound-vars> prop
+    ; match*      := <isect; replace-all(|repl*)> (bind*, bound*)
+    ; if <unbound-var(|bound*)> prop then
+        match-repl* := [(prop, result)]
+      ; match-task* := [] 
+      else
+        match-repl* := <map-with-index(match-replace(|k))> bind*
+      ; match-task* := <map-with-index(match-task(|k, result, match*))> match-repl*
+      end
+    ; (task*, r*) := <constraints-to-tasks(|<union> (bound*, bind*), i, <inc> j)> (cs, [match-repl*, repl*])
+            
+  unbound-var(|bound*) =
+  	?Var(v); 
+  	where(
+  		<not(elem)> (Var(v), bound*)
+    )
+  
+  constraints-to-match-rules(|bound*, i, j):
+  	[] -> []
+  
+  constraints-to-match-rules(|bound*, i, j):
+    [c@PropertyConstraint(term, kind, prop)|cs] -> <constraints-to-match-rules(|bound*, i, <inc> j)> cs
+    where 
+    	<unbound-var(|bound*)> prop
+    
+  constraints-to-match-rules(|bound*, i, j):
+  	[c@PropertyConstraint(term, kind, prop)|cs] -> [rule1*, rule2*]
+  	where
+    	k      := <extend-index(|i)> j
+    ; bind*  := <bound-vars> prop
+    ; match* := <isect> (bind*, bound*)
+    ; rule1* := <map-with-index(match-rule(|k, prop, match*))> bind*
+	  ; rule2* := <constraints-to-match-rules(|<union> (bound*, bind*), i, <inc> j)> cs
+
+  var-to-match-task: (i, Var(v)) -> <id>
+  
+  match-replace(|i)           : (j, t)      -> (t, <extend-index(|i); result-var> j)
+  match-task(|i, term, bound*): (j, (_, r)) -> MATCH_TASK(r, <extend-index(|i); match-name> j, bound*, term)
+  match-rule(|i, term, bound*): (j, t)      -> MATCH_RULE(<extend-index(|i); match-name> j, term, bound*, t)
+    
+  result-var: i-> Var($[r[i]__])
+  match-name: i -> $["match[i]"]
+  
+  extend-index(|i): j -> $[[i]-[j]]
+
+  nabl-match: ("m", Var(x), [y,z]) -> x
+  
+overlays
+  
+  MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("task-match", RuleNoCond(TUPLE([NoAnnoList(Str(n)), lhs, LIST(bnd)]), rhs))
+
+  PROP_TASK(v, p, t)     = NEW_TASK(v, TERM("PropCalc", [p, t]))
+  MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Match", [NoAnnoList(Str(n)), LIST(b), t]))
+  
+  NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))
+  
+  NEW_TASK(t) =
+  App(
+    CallT(SVar("new-task"), [], [Var("partition__")])
+  , t
+  )

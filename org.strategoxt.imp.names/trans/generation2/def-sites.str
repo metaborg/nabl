@@ -1,0 +1,139 @@
+module generation2/def-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation2/util
+  generation2/main
+  generation2/scopes
+  generation2/use-sites
+  generation2/sections
+  
+rules
+  
+  def-to-name = ?DefClause(Explicit(), _, _, <id>, _, _, _)
+    
+rules
+  
+  implicit-def-vars = filter-with-index(implicit-def-var)
+    
+  implicit-def-var:
+    (i, DefClause(kind, _, _, _, _, _, _)) -> <implicit-def-var(|i)> kind
+  
+  implicit-def-var(|i): Implicit() -> Var($[i[i]__])
+  
+  def-scope(|scope*): Implicit() -> []
+  def-scope(|scope*): Explicit() -> scope*
+  
+  clauses-to-def-rules(|pattern, scope*, implicit*):
+    def-clause* -> result
+    where
+       clause*  := <filter-with-index(clause-to-def-seq(|pattern, scope*)); concat; nonempty> def-clause*
+    ;  m        := <length> def-clause*
+    ;  uri-cvar := <uri-child-var> m
+    ;  uri-svar := <uri-sibl-var> m
+    ;  def-seq  := <to-seq> [ Match(pattern)
+       	                    , clause*
+                            , MATCH(CALL("child-uris__"), uri-cvar)
+                            , MATCH(CALL("sibl-uris__"), uri-svar)
+                            , MATCH(CALL("implicits__"), LIST(implicit*))
+                            ] 
+    ;  result   := [DEF_RULE(def-seq)]
+    <+ result   := [SCOPE_RULE(pattern, <nonempty> scope*)]
+    <+ result   := []
+ 
+  clause-to-def-seq(|pattern, scope*):
+    (o, DefClause(kind, unique, ns, term, _, scope, _)) -> [scope-assign*, def-cong*]
+    where
+      ns-term       := <ns-to-term> ns
+    ; scope-assign* := <scope-to-assignments(|ns-term, o)> scope
+    ; scope-term    := <scope-to-term(|o)> scope
+    ; scope-repl*   := <scope-to-replacement(|o) <+ ![]> scope 
+    where
+      unique-term := <nabl-to-str> unique
+    ; i           := <dec> o
+    ; uri-cvar1   := <uri-child-var> i
+    ; uri-cvar2   := <uri-child-var> o
+    ; uri-svar1   := <uri-sibl-var> i
+    ; uri-svar2   := <uri-sibl-var> o
+    ; scope'*     := <def-scope(|scope*)> kind
+    ; def-call    := DEF_CALL(ns-term, unique-term, scope-term, scope'*, uri-cvar1, uri-svar1, uri-cvar2, uri-svar2)
+    ; if impl-var := <implicit-def-var(|o)> kind then
+        if <nonempty> scope-repl* then
+          scope-cong* := [<replace-all-id(|[scope-repl*])> pattern]
+        else
+          scope-cong* := []
+        end
+        ; def-cong* := [scope-cong*, Where(Assign(impl-var, App(def-call, term)))]
+      else
+        def-cong* := [<replace-all-id(|[scope-repl*, (term, def-call)])> pattern]
+      end
+    
+rules 
+  
+  uri-var(|kind): 0 -> Var($[uri__])
+  uri-var(|kind): i -> Var($[[kind]-uri[i]__]) where not(?0)
+   
+  uri-child-var = uri-var(|"c")
+  uri-sibl-var  = uri-var(|"s")
+  
+overlays
+  
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+
+overlays
+  
+  SCOPE_RULE(pattern, scopes) =
+  SDefT(
+    "nabl-anonymous-scope-site"
+  , [DefaultVarDec("child-uris__")]
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__") ]
+  , Seq(
+      Match(pattern)
+    , CallT(
+        SVar("nabl-anonymous-scope")
+      , [CALL("child-uris__")]
+      , [ Var("lang__")
+        , Var("partition__")
+        , Var("uniques__")
+        , Var("uris__")
+        , LIST(scopes) ]
+      )
+    )
+  )
+  
+	DEF_RULE(body) =
+  SDefT(
+    "nabl-def-site"
+  , [ DefaultVarDec("child-uris__")
+    , DefaultVarDec("sibl-uris__")
+    , DefaultVarDec("implicits__")
+    ]
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uri__")
+    , DefaultVarDec("states__")]
+  , body
+  )  
+	
+  DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
+  CallT(
+    SVar("nabl-def")
+  , [Match(out-child-uris), Match(out-sibl-uris)]
+  , [ Var("lang__")
+    , Var("partition__")
+    , Var("uniques__")
+    , in-child-uris
+    , in-sibl-uris
+    , ns, u, ds, LIST(s)]
+  )
+  
+  MATCH(s, v) =
+  CALL("match", [s], [v])

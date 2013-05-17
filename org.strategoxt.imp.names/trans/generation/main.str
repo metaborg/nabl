@@ -1,0 +1,40 @@
+module generation/main
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  generation/util
+  generation/sections
+  
+rules
+  
+  generate-name-analysis:
+    (selected, position, ast@Module(name, _, _), path, project-path) -> (filename, result)
+    with
+      filename   := <guarantee-extension(|"str")> path ;
+      str-module := <to-ppable-str; nabl-to-str> ast ;
+      // use next line to debug which AST node cannot be handled by the pretty-printer
+      <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module ;
+      result     := <pp-stratego-string> str-module
+
+rules // modules
+  
+  to-ppable-str = alltd(to-ppable-str-local)
+    
+  to-ppable-str-local: ListVar(x)    -> Var(x)
+  to-ppable-str-local: VarRef(x)     -> Var(x)
+  to-ppable-str-local: ListVarRef(x) -> Var(x)
+
+  nabl-to-str:
+    Module(name, _, sections) -> Module(name, sections')
+    where
+      new-hashtable => replace*;
+      new-iset      => bound*;
+      new-iset      => rule*;
+      
+      sections' := <filter(nabl-to-str(|replace*, bound*, rule*))> sections;
+      
+      <hashtable-destroy> replace*;
+      <iset-destroy> bound*;
+      <iset-destroy> rule*    

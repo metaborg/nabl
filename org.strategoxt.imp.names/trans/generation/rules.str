@@ -1,0 +1,57 @@
+module generation/rules
+  
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/util
+  generation/constraints
+  generation/def-sites
+  generation/use-sites
+  
+rules
+  
+  // TODO: support multiple definition sites?
+  nabl-to-str(|replace*, bound*, rule*): 
+    BindingRule(pattern, constr*, clause*) -> <id>
+    where
+      <hashtable-clear> replace*;
+      <iset-clear> bound*
+    where
+      <iset-addlist(|<collect-all(?Var(_))> pattern)> bound*;
+      task*  := <constraints-to-str(|replace*, bound*, rule*, [])> constr*;
+      scope* := <filter(?ScopeClause(<id>)); concat; map(nabl-to-str)> clause*
+    where try (   
+       <fetch-elem(def-to-str(|replace*, bound*, rule*, task*, pattern, scope*))> clause* 
+    <+ <iset-add(|SCOPE_RULE(pattern, <nonempty> scope*))> rule*
+    )
+    where
+      <uses-to-str(|replace*, bound*, rule*, task*, pattern)> clause*
+      
+overlays
+	
+	SCOPE_RULE(pattern, scopes) =
+  SDefT(
+    "nabl-anonymous-scope-site"
+  , [DefaultVarDec("child-uris")]
+  , [ DefaultVarDec("lang")
+    , DefaultVarDec("partition")
+    , DefaultVarDec("uniques")
+    , DefaultVarDec("uris")
+    , DefaultVarDec("states") ]
+  , Seq(
+      Match(pattern)
+    , CallT(
+        SVar("nabl-anonymous-scope")
+      , [CALL("child-uris")]
+      , [ Var("lang")
+        , Var("partition")
+        , Var("uniques")
+        , Var("uris")
+        , LIST(scopes) ]
+      )
+    )
+  )
+    
+  
