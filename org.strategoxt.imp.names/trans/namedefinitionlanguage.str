@@ -6,17 +6,16 @@ imports
   libstratego-aterm
   include/NameDefinitionLanguage
   lib/editor-common.generated
-  lib/index-library.generated
-  lib/analysis-library.generated
-  lib/analysis-library-internal.generated
-  lib/compilation-library.generated
-  lib/nbl-library.generated
-  check
+  lib/index-library
+  lib/analysis-library
+  lib/analysis-library-internal
+  lib/compilation-library
+  semantics/names
+  semantics/check
   generate
-  names
-  
-rules // Analysis
 
+rules // Analysis
+  
   // Analyzes the current program, returning a tuple with the analyzed AST, errors, warnings, notes and
   // files that should be re-analyzed.
   analyze:
@@ -44,23 +43,23 @@ rules // Analysis
     files -> None()
     where
       not(is-tuple)
-    with
+    /*with
       index-setup(|<language>, [<project-path>], ".");
-      disable-commit-and-compile // Disable compilation during analysis.
+      disable-commit-and-compile // Disable compilation during analysis.*/
     with
       editor-queue-analysis
-    with
+    /*with
       // Enable and trigger compilation after all files have been analysed.
       <enable-commit-and-compile> <language>;
-      <trigger-commit-and-compile> <language>
-      
+      <trigger-commit-and-compile> <language>*/
+ 
   // Called when current file is saved.
   editor-save:
-    (_, _, _, _, _) -> None()
-    with
+    (ast, _, _, _, _) -> None()
+    /*with
       index-setup(|<language>, [<project-path>], ".");
-      <trigger-commit-and-compile> <language>
-
+      <trigger-commit-and-compile> <language>*/
+      
 rules // Editor services
   
   // Resolves a reference when the user control-clicks or presses F3 in the editor.
@@ -75,9 +74,9 @@ rules // Editor services
   // Returns "hover help" information for a particular node in the editor.
   // For references, this rule is invoked using the resolved term.
   editor-hover:
-    (target, position, ast, path, project-path) -> $[[uriString]]
+    (target, position, ast, path, project-path) -> $[[name]]
     where
-      uriString := <index-uri-to-string> <index-uri> <index-find-key> target
+      Type(name) := <type-of> target
 
   // Completes an identifier when the user presses control-space
   // (the completion identifier in the AST provides additional context information)
@@ -90,35 +89,35 @@ rules // Editor services
       index-transaction(
         (<index-lookup-all(|name)> item <+ ![]) => proposals
       );
-      proposals' := <map(index-uri; index-uri-name)> proposals
-
+      proposals' := <map(index-uri-name)> proposals
+      
 rules // Debugging
   
   // Prints the abstract syntax ATerm of a selection.
-  debug-generate-aterm:
+  generate-aterm:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       filename := <guarantee-extension(|"aterm")> path;
       result   := selected
+  
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  generate-analyzed:
+    (selected, position, ast, path, project-path) -> (filename, result)
+    with
+      editor-init;
+      filename := <guarantee-extension(|"analyzed.aterm")> path;
+      result   := <analyze> (selected, path, project-path)   
       
   // Prints the definition annotated abstract syntax ATerm of a selection.
-  debug-generate-deffed:
+  generate-deffed:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
       filename := <guarantee-extension(|"aterm")> path;
       result   := <analyze-defs> selected
       
-  // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  debug-generate-analyzed:
-    (selected, position, ast, path, project-path) -> (filename, result)
-    with
-      editor-init;
-      filename := <guarantee-extension(|"analyzed.aterm")> path;
-      result   := <analyze-top(|<language>)> (selected, path, project-path)   
-      
   // Prints the entries in the index of the current file.
-  debug-index-show-current-file:
+  index-currentfile:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
@@ -126,36 +125,22 @@ rules // Debugging
       result   := <index-get-all-in-file> path
       
   // Prints the entries in the index of all files.
-  debug-index-show-all-files:
+  index-allfiles:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
       filename := <guarantee-extension(|"index.allfiles.aterm")> path;
       result   := <map(\filename -> (filename, <index-get-all-in-file> filename)\)> <index-get-all-files>
-
-  // Cleans current file from the index.
-  debug-index-clear-current:
-    (selected, position, ast, path, project-path)  -> None()
-    with
-      index-setup(|<language>, [project-path], $[[project-path]/[path]]);
-      <index-clear-file> $[[project-path]/[path]]
       
   // Cleans all data from the index.
-  debug-index-clear:
+  index-cleanall:
     (selected, position, ast, path, project-path)  -> None()
     with
       index-setup(|<language>, [project-path], $[[project-path]/[path]]);
       index-clear
       
-  // Cleans all data from the index and re-analyzes every file.
-  debug-index-reload:
-    (selected, position, ast, path, project-path)  -> None()
-    with
-      index-setup(|<language>, [project-path], $[[project-path]/[path]]);
-      index-reload
-    
 rules // Utility
-  
+	
   // Queue parallel analysis for given list of files.
   editor-queue-analysis = 
     not(?[]); queue-strategy(|"editor-parallel-analyze", "Analyzing files")

@@ -1,0 +1,22 @@
+module semantics/stratego-names
+
+imports
+	include/NameDefinitionLanguage
+	
+namespaces
+
+	Variable
+	
+binding rules
+
+	Var(x):
+		defines non-unique Variable x
+
+	ListVar(x): 
+		defines non-unique Variable x
+	
+	VarRef(x):
+		refers to Variable x
+		
+	ListVarRef(x):
+		refers to Variable x

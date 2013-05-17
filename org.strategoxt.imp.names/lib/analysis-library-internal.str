@@ -1,0 +1,943 @@
+module lib/analysis-library-internal
+ 
+imports
+  libstratego-lib
+  libstratego-parallel
+  lib/editor-common.generated
+  lib/analysis-library
+  lib/index-library
+
+signature
+
+  constructors // data kinds stored in the index
+
+    Type   : DefDataKind
+    Import : DefDataKind
+    Unique : DefDataKind
+  
+  constructors // resolution kinds for use sites
+
+  	Regular : Namespace * Name                           -> ResolutionKind
+  	Regular : Namespace * Name * Type                    -> ResolutionKind
+  	Child   : Namespace * Name * Namespace * Name        -> ResolutionKind
+  	Child   : Namespace * Name * Namespace * Name * Type -> ResolutionKind
+  	
+  constructors // annotations used in analysis
+
+    Scope: Term -> Anno
+  
+  constructors
+  
+  // Analysis
+  Results         : AST * List(Def) * List(Use) * List(DefData) * List(Def) * List(Def) * List(File) -> Results
+  ParallelResults : AST * AST * List(Error) * List(Warning) * List(Note) * List(File) -> ParallelResults
+  
+  // Namespaces
+  Diff            : Namespace
+  ASTDiff         : Namespace
+  
+rules // Analysis traversals
+  
+  /**
+   * Analyses given AST and annotates definition and use sites found in the AST with URIs.
+   *
+   * @internal
+   * @type List((ast, (file, subfile))) -> Results(List(ast), List(def), List(use), List(data), List(addedElem), 
+   *                                       List(removedElem), List(fileToAnalyze@(file, subfile))))
+   */
+  analyze-top-internal(|phase, language, project-path, full-path):
+    astFilePairs -> Results(asts, defs, uses, data, added, removed, filesToAnalyze)
+    with
+      // Init
+      index-setup(|language, [project-path], full-path);
+      revision := <index-start-transaction>
+    with
+      // Store old elements
+      oldElems := <filter(index-diff-constructors)> <index-get-all-in-file> full-path;
+      <index-clear-file> full-path
+    with
+      {| Index-UnresolvedSet:
+        unresolvedSet := <new-iset>;
+        rules(Index-UnresolvedSet: _ -> unresolvedSet);
+        
+        (astFilePairs2, defsList) := <map(analyze-top-defs); unzip> astFilePairs;
+        defs := <concat> defsList;
+        (astFilePairs3, dataList) := <map(analyze-top-data(|language, full-path)); unzip> astFilePairs2;
+        data := <concat> dataList;
+        (astFilePairs4, usesList) := <map(analyze-top-uses(|language, full-path)); unzip> astFilePairs3;
+        uses := <concat> usesList;
+        (asts, _) := <unzip> astFilePairs4
+      |}
+    with
+      index-end-transaction
+    with
+      // Schedule re-analysis of dependent files (if current file is not testing language file)
+      // HACK: Depends on file extension, could be other languages with .spt extension?
+      if Editor() := phase; not(<is-test-file> full-path) then
+        newElems := <conc> (defs, <filter(index-diff-constructors)> data);
+        
+        // Find added and removed definitions
+        (added, removed) := <analyze-diff> (oldElems, newElems);
+        changed := <conc> (added, removed);
+        
+        // Store files that have changed in the index
+        index-transaction(
+          filesToAnalyze := <analyze-store-diff(|changed, revision)> astFilePairs4
+        )
+      else
+        (added, removed) := ([], []);
+        filesToAnalyze := []
+      end
+    with
+      <list-loop(analyze-top-store-ast)> astFilePairs4
+
+rules  // Phase 1: scope analysis
+
+  /**
+   * Add URI annotations to each definition and unresolved annotations to each use site.
+   *
+   * @internal
+   */
+  analyze-top-defs:
+    (ast, file) -> ((ast2, file), defs)
+    with
+      <index-set-current-file> file;
+      (ast2, defs, data) := <analyze-defs> ast; 
+      <index-add-all(|file)> defs;
+      (data2, _) := <analyze-uses> data;
+      <index-add-all(|file)> data2
+  
+  /**
+   * Identifies all definitions in the tree and annotates them with their URI.
+   * Also annotates uses with a preliminary "Unresolved(pathes)" annotation, 
+   * where "pathes" maps relevant namespaces to their pathes.
+   *
+   * @internal
+   */
+  analyze-defs:
+  	ast -> (ast', defs, data) 
+  	with 
+  		def-set  := <new-iset>; 
+  		data-set := <new-iset>;
+  		ast'     := <analyze-defs(|[], Anon(<new>), def-set, data-set)> ast;
+  		defs     := <iset-elements; map(try(Snd))> def-set;
+  		data     := <iset-elements> data-set
+  	 
+  /**
+   * Special case for tree nodes which are defined as scopes at parent nodes. 
+   *
+   * @internal 
+   */
+  analyze-defs(|paths, subsequent, defs, data):
+    ast{a*} -> ast'
+    where
+  	  a'* := <split-fetch(?Scope(uri*)) ; conc> a*
+    with
+      updates := <map(!(<Hd>, <Tl;Tl>))> uri* ;
+      paths'  := <update-index-paths(|updates)> paths ;
+      ast'    := <analyze-defs(|paths', subsequent, defs, data)> ast{a'*}
+       
+  /**
+   * Default case for all other tree nodes. 
+   *
+   * Uses the following rules generated from a NBL definition:
+   *
+   * nam-get-definitions: definition sites of the current node
+   * nam-get-scope-types: namespaces scoped by the current node
+   * nam-annotate-use   : use sites of the current node
+   *
+   * @internal 
+   */
+  analyze-defs(|paths, subsequent, defs, data):
+    ast{a*} -> ast2{a*}
+    where 
+      not(<fetch(?Scope(_))> a*)
+    with
+      // check wether the current AST node defines names
+      // ast1 : AST node with annotated definition sites and scopes
+      // def* : list of definition entries
+      // imp* : list of import entries
+      //
+      // definitions are paired with unique identifier to keep duplicates
+      if (ast1, def*, imp*) := <nam-get-definitions(|paths, subsequent)> ast then
+      	<iset-addlist(|<map(!(<new>, <id>))> def*)> defs;
+      	<iset-addlist(|imp*)> data
+      else
+        ast1 := ast 
+      end;
+      // check wether the current AST node scopes other definitions
+      // scope*: list of scope information
+      //
+      // updates the pathes for scoped namespaces
+      if scope* := <nam-get-scope-types> ast then
+      	update* := <map(construct-index-path(|paths, defs, ast))> scope*;
+        paths'  := <update-index-paths(|update*)> paths
+      else
+      	paths'  := paths
+      end;
+      // analyze children and annotate use sites afterwards
+      f#(children) := ast1;
+      children'    := <origin-track-forced(analyze-child-defs(|paths', defs, data))> children;
+      ast2         := <try(nam-annotate-uses(|paths'))> f#(children')
+      
+  /** @internal */
+  analyze-child-defs(|paths, defs, data):
+  	[] -> []
+  	
+  /** @internal */
+  analyze-child-defs(|paths, defs, data):
+  	[d|ds] -> [d'|ds']
+  	with
+      subsequent := Anon(<new>);
+  	  d'         := <analyze-defs(|paths, subsequent, defs, data)> d ;
+  	  if scopes := <nam-ordered-def> d then
+  	  	updates := <map(\scope -> (scope, [scope, subsequent|<lookup-index-path> (scope, paths)])\)> scopes ; 
+        paths'  := <update-index-paths(|updates)> paths 
+  	  else
+  	    paths' := paths
+  	  end;
+  	  ds'  := <analyze-child-defs(|paths', defs, data)> ds
+
+rules // helper for phase 1
+	 
+  /** @internal */
+  construct-index-path(|paths, defs, ast):
+    (ns, name, scope-type, unique) -> (scope-type, path'')
+    with
+      path  := <lookup-index-path> (ns, paths);
+      path' := <index-do-adjust-path(|scope-type, path, name)> ast;
+      if () := unique then
+      	path'' := path'
+      else
+      	path'' := <index-do-adjust-path(|scope-type, path', unique)> ast;
+      	<iset-add(|DefData([scope-type| path'], Unique(), path''))> defs
+      end
+  
+  update-import(|source, paths):
+  	namespace -> DefData([namespace | path], Import(), source)
+  	with
+  	  path := <lookup-index-path> (namespace, paths)
+  	  
+  /** @internal */
+  update-index-paths(|updates) = 
+    remove-all(where(Fst => key; <fetch-elem(Fst => key)> updates)); at-end(!updates)
+  
+  /** @internal */
+  lookup-index-path = 
+    lookup' <+ ![]
+ 
+  /** 
+   * Kept for backward compatibility.
+   *
+   * @internal 
+   */
+  index-do-adjust-path(|namespace, path, scope) =
+    adjust-index-path(origin-equal(|scope)|namespace, path) <+ ![scope|path]
+
+rules // interface to NBL generator for phase 1
+	
+  /** @internal */
+  nam-get-definitions(|paths, subsequent) 
+    = fail
+
+  /** 
+   * Callback for nam-get-definitions
+   *
+   * @internal */ 
+  nam-annotate-def(|uris):
+    t{a*} -> t{uris, a*}
+  
+  /** @internal */ 
+  nam-get-scope-types 
+     = fail
+  
+  /** @internal */
+  nam-annotate-uses(|paths) 
+     = fail
+  
+  /**
+   * Callback for nam-get-definitions (imports) and nam-annotate-uses
+   * 
+   * @internal 
+   */ 
+  nam-annotate-use(|paths, namespace*):
+    t{a*} -> t{Unresolved(<filter(nam-is-relevant(|namespace*))> paths), a*}
+    
+  nam-is-relevant(|namespace*):
+  	(ns, _) -> <id> where <fetch-elem(?ns)> namespace*
+ 
+  /** @internal */ 
+  nam-ordered-def 
+     = fail
+
+rules // Phase 2: type analysis of definition sites     
+
+  /**
+   * Gathers all data for each definition.
+   *
+   * @internal
+   */
+  analyze-top-data(|language, full-path):
+    (ast, file) -> ((ast2, file), data2)
+    with
+      <index-set-current-file> file;
+      {| Index-ReadSet:
+        readSet := <new-iset>;
+        rules(Index-ReadSet: _ -> readSet);
+        
+        // Gather all data for each definition.
+        ast2 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast; // Parent pointers needed.
+        data := <origin-track-forced(analyze-data)> ast2;
+        
+				// Resolve all references in gathered data.
+				(data2, _) := <analyze-uses> data;
+				<index-add-all(|file)> data2;		
+        // Store reads into the index (if not testing language)
+        if not(is-test-input(|language, full-path)) then
+          <index-add-all(|file)> <iset-elements> readSet
+        end
+      |}
+
+ /**
+   * Collects all index data (e.g. types of definitions).
+   *
+   * @internal
+   */
+  analyze-data:
+    ast -> types
+    with
+      set := <new-iset>;
+      <topdown(try(analyze-type(|set)); analyze-data-part(|set))> ast;
+      types := <iset-elements> set
+      
+  /** @internal */
+  analyze-type(|set):
+    ast -> ast
+    where
+      (_{uri}, type) := <nam-get-type> ast;
+      <iset-add(|DefData(uri, Type(), type))> set
+      
+  /** @internal */
+  analyze-data-part(|set):
+    ast -> ast
+    where
+      if keys := <nam-get-definition-keys> then
+      	<list-loop(do-adjust-index-def-data(|set, ast))> keys
+      end
+
+rules // helper for phase 2
+	 
+  /**
+   * Kept for backward compability and possibly additional data.
+   * 
+   * @internal 
+   */
+  do-adjust-index-def-data(|set, ast):
+  	key -> key
+  	where
+      if 
+        _{[ns|path]} := key; 
+        result       := <adjust-index-def-data(store-index-data-results(|set) |ns, path)> ast 
+      then
+         <fatal-err(|"Unexpected result from adjust-index-def-data; should call <store-results>")> result
+      end
+  
+  /** @internal */
+  store-index-data-results(|set):
+    t -> <fail>
+    where
+      if is-list then
+        <iset-addlist(|t)> set
+      else
+        <iset-add(|t)> set
+      end
+
+rules // interface to NBL generator for phase 2
+	
+  /** @internal */
+  nam-get-definition-keys
+    = fail
+
+  /** @internal */
+  nam-get-type
+    = fail
+
+rules // Phase 3: resolution of use sites     
+
+  /**
+   * Resolves all unresolved references for each use site.
+   *
+   * @internal
+   */
+  analyze-top-uses(|language, full-path):
+    (ast, file) -> ((ast3, file), uses)
+    with
+      <index-set-current-file> file;
+      {| Index-ReadSet:
+        readSet := <new-iset>;
+        rules(Index-ReadSet: _ -> readSet);
+        
+        // Resolve all unresolved references for each use site.
+        (ast2, uses) := <analyze-uses> ast;
+        <index-add-all(|file)> uses;
+        
+        ast3 := <prim("SSL_EXT_clone_and_set_parents", <id>)> ast2; // AST changed, reset parent pointers.
+        
+        // Store reads into the index (if not testing language)
+        if not(is-test-input(|language, full-path)) then
+          <index-add-all(|file)> <iset-elements> readSet
+        end
+      |}
+
+  /**
+   * Analyze all uses, changing their preliminary "Unresolved(_)" annotation 
+   * to an URI of their definition.
+   *
+   * @internal
+   */
+  analyze-uses:
+    ast -> (ast', uses)
+    with
+    	use-set := <new-iset>;
+    	ast'    := <bottomup(analyze-use(|use-set))> ast;
+    	uses    := <iset-elements ; map(Snd)> use-set
+  
+  analyze-use(|uses):
+  	ast -> ast'
+    with
+      if 
+        _{Unresolved(paths)} := ast;
+        origin               := <origin-term> ast;
+        resolution*          := <repeat-until(prim("SSL_EXT_get_parent", <id>), nam-resolve(origin-equal(|ast)))> origin
+      then
+        resolved := <index-resolve(|paths, ast)> resolution* ;
+        if Def(def-uri) := resolved then
+          ast' := ast{def-uri};
+          <iset-add(|(<new>, Use(def-uri)))> uses
+        else
+          // HACK to establish compatability with old styles. Should stay the complete candidate list
+          !resolved => [Unresolved(namespace), name|_];
+          ast' := ast{resolved};
+          <iset-add(|(<new>, BadUse([namespace, name])))> uses
+        end
+      else
+        ast' := ast
+      end
+
+rules // resolution rules for phase 3
+	
+  // TODO should become the standard resolution for unresolved elements
+  index-resolve(|paths, target):
+  	[Regular(ns, name)|resolutions] -> definition
+  	with
+  	  name' := <strip-annos> name;
+  	  path  := <lookup-index-path> (ns, paths);
+  	  if not(definition := <index-lookup-internal(index-compare-name-equal(|name')|ns, path, name')> target) then
+  	    if Def(def-uri) := <index-resolve(|paths, target)> resolutions then
+  		  definition := Def(def-uri)
+  	    else
+  	      definition := [Unresolved(ns), name' | path]
+  	    end
+      end
+
+  // TODO take type into account
+  index-resolve(|paths, target):
+  	[Regular(ns, name, t)|resolutions] -> definition
+  	with
+  	  name' := <strip-annos> name;
+  	  path  := <lookup-index-path> (ns, paths);
+  	  if not(definition := <index-lookup-internal(index-compare-name-equal(|name')|ns, path, name')> target) then
+  	    if Def(def-uri) := <index-resolve(|paths, target)> resolutions then
+  		  definition := Def(def-uri)
+  	    else
+  	      definition := [Unresolved(ns), name' | path]
+  	    end
+      end
+
+  index-resolve(|paths, target):
+  	[Child(ns, name, pns, parent)|resolutions] -> definition
+  	with
+  	  name' := <strip-annos> name;
+  	  if not (
+  	  	parent-def := <index-resolve(|paths, parent)> [Regular(pns, parent)];
+  	    definition := <index-get-children(\uri -> Def(uri)\, index-compare-name-equal(|name')|ns)> parent-def 
+  	  ) then
+  	    if Def(def-uri) := <index-resolve(|paths, target)> resolutions then
+  		  definition := Def(def-uri)
+  	    else
+  	      definition := [Unresolved(ns), name' | <lookup-index-path> (ns, paths)]
+  	    end
+      end
+
+  // TODO take type into account
+  index-resolve(|paths, target):
+  	[Child(ns, name, pns, parent)|resolutions] -> definition
+  	with
+  	  name' := <strip-annos> name;
+  	  if not (
+  	  	parent-def := <index-resolve(|paths, parent)> [Regular(pns, parent)];
+  	    definition := <index-get-children(\uri -> Def(uri)\, index-compare-name-equal(|name')|ns)> parent-def 
+  	  ) then
+  	    if Def(def-uri) := <index-resolve(|paths, target)> resolutions then
+  		  definition := Def(def-uri)
+  	    else
+  	      definition := [Unresolved(ns), name' | <lookup-index-path> (ns, paths)]
+  	    end
+      end
+
+rules // interface to NBL generator for phase 3
+	
+  /** @internal */
+  nam-get-uses 
+    = fail
+  
+  /** @internal */
+  nam-resolve(target) 
+    = fail
+
+rules // Final: storing analyzed AST
+	     
+  /**
+   * Stores AST from file to the index.
+   *
+   * @internal
+   */   
+  analyze-top-store-ast:
+    (ast, file) -> <id>
+    with
+      <index-set-global(|<conc> (<index-file-to-uri> file, ["ast"]))> ast
+        		      
+rules // Parallel analysis
+  
+  /** @internal */
+  index-parallel-analyze(analyze):
+    files -> allResults
+    with
+      map(index-parse-file); // Parsing cannot be done in parallel.
+      map(\(ast, file) -> (ast, file, <project-path>)\);
+      parallel-unordered(all(index-analyze(analyze)));
+      ?results;
+      with(<eq> (<length> results, <length> files) | "Input size not equal to output size");
+      filesToAnalyze := <make-set> <mapconcat(?ParallelResults(_, _, _, _, _, <id>))> results;
+      if not([] := filesToAnalyze) then
+        allResults := <concat> [results, <index-parallel-analyze(analyze)> filesToAnalyze]
+      else
+        allResults := results
+      end
+  
+  /** @internal */   
+  index-parse-file:
+    file -> (ast, file)
+    with
+    if <file-exists> file then
+      ast := <parse-file> file
+    else
+      ast := ()
+    end
+   
+  /** @internal */   
+  index-set-markers:
+    ParallelResults(ast, ast', errors, warnings, notes, diffs) -> <id>
+    with
+      <set-markers(|ast)> (ast', errors, warnings, notes)
+      
+  /** @internal */
+  index-analyze(analyze):
+    (ast, path, project-path) -> ParallelResults(ast, ast', errors, warnings, notes, filesToAnalyze)
+    with
+      (ast', errors, warnings, notes, filesToAnalyze) := <analyze>;
+      if [] := filesToAnalyze then
+        complete-work-unit
+      end
+      
+/** @internal */
+rules // Splitter
+  
+  /** @internal */
+  index-split = fail
+  /** @internal */
+  index-is-toplevel = fail
+  /** @internal */
+  index-is-qualifier = fail
+  /** @internal */
+  index-qualifier-subelements = fail
+  /** @internal */
+  index-create-qualifier(|qualifier) = fail
+  
+  /** @internal */
+  index-toplevel-split:
+    ast -> asts'
+    with
+      (ast', _) := <analyze-defs> ast;
+      asts      := <index-toplevel-split-internal> ast';
+      asts'     := <strip-annos> asts
+      
+  /** @internal */
+  index-toplevel-split-internal:
+    node -> units
+    with
+      switch id
+        case ?():
+          units := [((), [])]
+        case index-is-qualifier:
+          elems := <mapconcat(index-toplevel-split-internal)> <index-qualifier-subelements> node;
+          units := <map(index-transform-qualifier(|node))> elems
+        case index-is-toplevel:
+          units := [(node, <index-uri> <nam-get-definition-keys; Hd> node)]
+        otherwise:
+          units := [(node, [])]
+      end
+      
+  /** @internal */
+  index-transform-qualifier(|node):
+    (elem, subfileName) -> (qualifier, subfileName)
+    with
+      qualifier := <index-create-qualifier(|node)> elem
+
+/** @internal */
+rules // Diffs
+  
+  /** @internal */
+  analyze-diff:
+    (defs1, defs2) -> (added, removed)
+    with
+      added   := <diff(index-diff-compare)> (defs2, defs1);
+      removed := <diff(index-diff-compare)> (defs1, defs2)
+    
+  /** @internal */
+  analyze-store-diff(|changedEntries, revision): 
+    astFilePairs -> analyzeFiles'
+    with
+      changedFiles    := <mapconcat(index-get-files-of)> changedEntries;
+      dependentFiles  := <index-get-dependent-files> changedEntries;
+      
+      // Files to analyze
+      analyzeFiles := <make-set> <remove-all(fake-file)> dependentFiles;
+      analyzeFiles' := analyzeFiles;
+      // TODO: Is this extra check needed?
+      /*if <getfirst(index-get-file-revision; \r -> (r, revision)\; gt)> analyzeFiles then
+        // Add current file if the current file has read information from another file with a higher revision.
+        // This indicates that potentially outdated information was read.
+        analyzeFiles' := [file|analyzeFiles]
+      else
+        analyzeFiles' := analyzeFiles
+      end;*/
+      
+      // Files to compile
+      changedAstFiles := <filter(analyze-astdiff)> astFilePairs;
+      compileFiles := <make-set> <concat> [analyzeFiles', changedFiles, changedAstFiles];
+      // TODO: Optimize so that there are no duplicate files stored in the index, use iset?
+      <map(analyze-add-compilediff)> compileFiles
+      
+  /** 
+   * Checks if ast for given file has changed. Succeeds if old ASTDiff is not found or if ASTDiff is different.
+   *
+   * @internal
+   */
+  analyze-astdiff:
+    (ast, file) -> file
+    where
+      name := <conc> (<index-file-to-uri> file, ["ast-checksum"]);
+      newChecksum := <checksum> ast;
+      if oldChecksum := <index-get-global(|name)> then
+        <index-set-global(|name)> newChecksum;
+        not(<eq> (oldChecksum, newChecksum))
+      else
+        <index-set-global(|name)> newChecksum
+      end
+      
+  /** 
+   * Adds given file to the list of files to compile.
+   *
+   * @internal
+   */
+  analyze-add-compilediff = index-add-global(|"compile-diff")
+  
+  /** 
+   * Gets the list of files to compile, and then clear it.
+   *
+   * @internal
+   */
+  analyze-get-compilediffs = index-get-all-globals(|"compile-diff"); index-clear-global(|"compile-diff")
+  
+rules // Index lookup rules (that take into account adjust-index-lookup)
+  
+  /**
+   * Given a term x, namespace n, path s and prefix p, looks for a definition in the 
+   * scope of s and outer scopes in namespace n that start with prefix p, returning the first 
+   * found definition.
+   *
+   * @param namespace Only definitions with this namespace are returned.
+   * @param path      Only definitions with this path or part of this path are returned.
+   * @param prefix    Only definitions with a name that starts with this string are returned.
+   *
+   * @type term -> ?Def(uri')
+   *
+   * @internal
+   */
+  index-lookup-internal(adjust-import, adjust-lookup, name-compare|namespace, path, prefix):
+    x -> definition
+    where
+      defs := <index-lookup-all-scoped-internal(adjust-import, adjust-lookup, name-compare|namespace, path, prefix)> x;
+      
+      if StopLookup() := defs then
+        fail
+      end;
+      
+      if not(definition := <Hd> defs) then
+        [_|path']  := path;
+        definition := <index-lookup-internal(adjust-import, adjust-lookup, name-compare|namespace, path', prefix)> x
+      end
+      
+  /** @internal */
+  index-lookup-internal(name-compare|namespace, path, prefix) = 
+    index-lookup-internal(id, id, name-compare|namespace, path, prefix)
+
+  /**
+   * Given a term x, namespace n, path s and prefix p, looks for definitions in the scope of s 
+   * and outer scopes in namespace n that start with prefix p, returning all found definition.
+   *
+   * @param namespace Only definitions with this namespace are returned.
+   * @param path      Only definitions with this path or part of this path are returned.
+   * @param prefix    Only definitions with a name that starts with this string are returned.
+   * @type "name"{uri} -> List(Def(uri'))
+   *
+   * @internal
+   */
+  index-lookup-all-internal(adjust-import, adjust-lookup, name-compare|namespace, path, prefix):
+    x -> defs'
+    where
+      defs := <index-lookup-all-scoped-internal(adjust-import, adjust-lookup, name-compare|namespace, path, prefix)> x;
+      
+      if [_|path'] := path then
+        defs2 := <index-lookup-all-internal(adjust-import, adjust-lookup, name-compare|namespace, path', prefix)> x;
+        defs' := <union> (defs, defs2)
+      else
+        defs' := defs
+      end
+
+  /** @internal */
+  index-lookup-all-internal(name-compare|namespace, path, prefix) = 
+    index-lookup-all-internal(id, id, name-compare|namespace, path, prefix)
+      
+  /**
+   * Given a term x, namespace n, path s and prefix p, looks for a definition in the 
+   * scope of s in namespace n that start with prefix p, returning the first found definition.
+   *
+   * @param namespace Only definitions with this namespace are returned.
+   * @param path      Only definitions with this path are returned.
+   * @param prefix    Only definitions with a name that starts with this string are returned.
+   * @type term -> List(Def(uri))
+   *
+   * @internal
+   */
+  index-lookup-all-scoped-internal(adjust-import, adjust-lookup, name-compare|namespace, path, prefix):
+    x -> [def*, impdef*]
+    with
+      if adjust-import then
+        import* := <indexlib-get-all-values> DefData([namespace|path], Import(), ());
+        impdef* := <filter(index-get-import(adjust-lookup, name-compare| namespace, x, prefix)); concat> import*
+      else
+      	impdef* := []
+      end;
+      if adjust-lookup ; adjusted := <index-do-adjust-lookup(|namespace, path, x, prefix)> x then
+        def*     := <index-get-adjust-lookup-results(adjust-import, name-compare|adjusted, prefix)> x
+      else
+        def*     := <index-get-children(\uri -> Def(uri)\, name-compare|namespace, prefix)> [namespace | path]
+      end
+      
+  /** @internal */
+  index-lookup-all-scoped-internal(name-compare|namespace, path, prefix) = 
+    index-lookup-all-scoped-internal(id, id, name-compare|namespace, path, prefix)
+  
+  /** @internal */
+  index-get-import(adjust-lookup, name-compare|namespace, x, prefix):
+  	import{[_|path]} -> <index-get-children(\uri -> Def(uri)\, name-compare|namespace, prefix)> [namespace | path]
+  	  
+  /** @internal */
+  index-do-adjust-lookup(|namespace, path, use, prefix) =
+    repeat-until(
+      prim("SSL_EXT_get_parent", <id>)
+    , adjust-index-lookup(origin-equal(|use)|namespace, path, prefix) 
+    )
+    
+  /** @internal */  
+  index-get-adjust-lookup-results(adjust-import, name-compare|adjusted, prefix):
+    x -> defs'
+    with
+      if StopLookup() := adjusted then
+        defs' := StopLookup()
+      else
+        defs := 
+          <mapconcat(
+               \d@Def(p) -> [d]\
+            <+ \[namespace'|path'] -> <index-lookup-all-scoped-internal(adjust-import, fail, name-compare|namespace', path', prefix)> x\
+            <+ fatal-err(|"Unexpected result from adjust-index-lookup, should be a list of Def(uri) or [namespace | path], or StopLookup() to stop the lookup.")
+          )> adjusted;
+          defs' := <filter(name-compare)> defs
+      end
+      
+rules // Name comparisons
+  
+  /**
+   * Compares given element (with an URI) to given prefix using substring comparison.
+   * 
+   * @internal 
+   */     
+  index-compare-name-substring(|prefix):
+    element -> <id>
+    where
+      uri := <index-uri> element;
+      <is-substring(!prefix)> <index-uri-name> uri
+      
+  /**
+   * Compares given element (with an URI) to given prefix using substring comparison and given namespace.
+   * 
+   * @internal 
+   */      
+  index-compare-name-substring(|prefix, namespace):
+    element -> <id>
+    where
+      uri := <index-uri> element;
+      <eq> (namespace, <index-uri-namespace> uri);
+      <is-substring(!prefix)> <index-uri-name> uri
+  
+  /**
+   * Compares given element (with an URI) to given name using string equality comparison.
+   * 
+   * @internal 
+   */     
+  index-compare-name-equal(|name):
+    element -> <id>
+    where
+      uri := <index-uri> element;
+      <SRTS-EXT-eq-ignore-annos(|name)> <index-uri-name> uri
+      
+rules // URI and value projections
+       
+  /** @internal */
+  index-uri-impl:
+    Def(uri) -> uri
+    
+  /** @internal */  
+  index-uri-impl:
+    Use(uri) -> uri
+    
+  /** @internal */  
+  index-uri-impl:
+    Read(uri) -> uri
+    
+  /** @internal */  
+  index-uri-impl:
+    x{[namespace | path]} -> [<index-namespace-unwrap> namespace | path]
+ 
+  /**
+   * TODO: Should second part of ReadWildcard be included in the URI, between namespace and path?
+   * 
+   * @internal 
+   */
+  index-uri-impl:
+    ReadWildcard(uri, _) -> uri
+
+  /** @internal */
+  index-value-impl:
+    Def(value) -> value
+
+  /** @internal */
+  index-value-impl:
+    Use(value) -> value
+
+  /** @internal */
+  index-value-impl:
+    Read(value) -> value
+  
+  /** @internal */
+  index-value-impl:
+    ReadWildcard(_, value) -> value
+    
+rules // Internal helpers
+
+  /**
+   * Transforms a term C( (a1, [b1]), (a2, [b2, b3]) ) to a tuple (C(a1, a2), [b1, b2, b3]).
+   *
+   * @internal
+   */
+  unzip-analyzed:
+    appl -> (appl', unzipped-parts)
+    with
+      appl'          := <all(\(a, _) -> a\)> appl;
+      unzipped-parts := <concat> <get-appl-arguments(\(_, b) -> b\) <+ map(\(_, b) -> b\) <+ ![]> appl
+       
+  /**
+   * Tests if the current file is just a testing language input
+   *
+   * @internal
+   */
+  is-test-file = 
+    string-ends-with(|".spt")
+  /** @internal */
+  is-test-language = 
+    ?"Spoofax-Testing"
+  /** @internal */
+  is-test-input(|language, path) = 
+    <is-test-language> language <+ <is-test-file> path
+      
+  /** @internal */
+  fake-file = 
+    is-test-file <+ index-is-fake-file
+  
+  /** @internal */
+  ast-uri-to-ast-file(|full-path):
+    (ast, uri) -> (ast, (full-path, uri))
+   
+  /** @internal */    
+  index-readwildcard-substring(|prefix):
+    ReadWildcard(_, name) -> <id>
+    where <is-substring(!prefix)> name
+  
+  /** @internal */  
+  store-wildcard-read(|namespace, path, prefix):
+    children -> <id>
+    with
+      if set := <Index-ReadSet> then
+        if 1 := <length> children then
+          // HACK: This solves the problem of ReadWildcards making too many files re-analyze, but this should
+          // be handled in the index primitives instead.
+          <iset-add(|Read([namespace, prefix|path]))> set
+        else
+          <iset-add(|ReadWildcard([namespace|path], prefix))> set
+        end
+      end
+  
+  /** @internal */    
+  index-is-unresolved(|x, uri) = 
+    Index-UnresolvedSet; (iset-contains(|(x, uri)) <+ fail)
+  /** @internal */
+  index-add-unresolved(|x, uri) = 
+    (Index-UnresolvedSet; iset-add(|(x, uri))) <+ id
+  
+  /** @internal */
+  index-file-dependent-construct: 
+    uri -> <conc> (uses, reads)
+    with
+      uses := <index-get-uses-all> Def(uri);
+      reads := <index-get-reads-all> Def(uri)
+  
+  /** @internal */  
+  index-file-dependency-filter = 
+    ?Read(_) <+ ?ReadWildcard(_, _) <+ ?Use(_)
+ 
+  /** @internal */
+  index-eq(|namespace, expected) =
+    where(
+      ?Def([_, name | _]);
+      <SRTS-EXT-eq-ignore-annos(|expected)> name
+    )
+  
+  /** @internal */
+  external SRTS-EXT-eq-ignore-annos(|t)
+  
+  /** @internal */
+  index-key-unwrap = 
+    \key{uri} -> key{<index-uri-unwrap> uri}\ <+ id
+    
