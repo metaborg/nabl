@@ -1,17 +1,17 @@
-module generation2/sections
+module generation/sections
 
 imports
   
   libstrc
   include/NameBindingLanguage
   
-  generation2/util
-  generation2/scoping-sites
-  generation2/def-sites
-  generation2/prop-sites
-  generation2/use-sites
-  generation2/import-sites
-  generation2/constraints
+  generation/util
+  generation/scoping-sites
+  generation/def-sites
+  generation/prop-sites
+  generation/use-sites
+  generation/import-sites
+  generation/constraints
     
 rules // namespaces 
       

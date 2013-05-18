@@ -1,11 +1,11 @@
-module generation2/constraints
+module generation/constraints
 
 imports 
   
   libstrc
   include/NameBindingLanguage
-  generation2/util
-  generation2/main
+  generation/util
+  generation/main
   
 rules
   

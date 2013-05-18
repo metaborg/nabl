@@ -4,8 +4,8 @@ imports
   
   libstrc
   include/NameBindingLanguage
-  generation2/util
-  generation2/sections
+  generation/util
+  generation/sections
   
 rules
   

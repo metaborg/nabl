@@ -1,15 +1,15 @@
-module generation2/use-sites
+module generation/use-sites
 
 imports
   
   libstrc
   include/NameBindingLanguage
   
-  generation2/util
-  generation2/sections
-  generation2/scoping-sites
-  generation2/prop-sites
-  generation2/constraints
+  generation/util
+  generation/sections
+  generation/scoping-sites
+  generation/prop-sites
+  generation/constraints
   
 rules
   
