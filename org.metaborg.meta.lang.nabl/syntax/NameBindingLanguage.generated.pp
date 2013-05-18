@@ -56,7 +56,7 @@
    WildcardImport.2:iter-star                             -- _1,
    WildcardImport.5:iter-star                             -- _1,
    None                                                   -- ,
-   Alias                                                  -- _1,
+   Alias                                                  -- KW["as"] _1,
    Direct                                                 -- _1,
    Transitive                                             -- KW["imported"] _1,
    COMPLETION-DefKind                                     -- _1,
