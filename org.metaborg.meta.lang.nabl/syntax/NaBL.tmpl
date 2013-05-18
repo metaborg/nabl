@@ -86,7 +86,7 @@ templates // clauses
   imports <ImportRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraint*>> 
   
   Alias.None  = <>
-  Alias.Alias = <<Term>>
+  Alias.Alias = <as <Term>>
  
   ImportRef.Direct     = <<NamespaceRef>>
   ImportRef.Transitive = <imported <NamespaceRef>>
