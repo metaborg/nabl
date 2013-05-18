@@ -6,3 +6,4 @@
 /lib-refactoring
 syntax/*generated.sdf
 syntax/*.generated.pp
+trans/*.generated.str
