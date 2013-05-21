@@ -9,7 +9,7 @@ imports
   lib/compilation-library.generated
 	constraints
 	names
-  generation2/-
+  generation/-
 
 rules // Analysis
   
