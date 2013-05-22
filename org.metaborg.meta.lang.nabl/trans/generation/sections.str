@@ -40,7 +40,7 @@ rules // properties
 
 rules // imports
     
-  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task")|<id>])
+  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|<id>])
     
 rules // binding rules
 

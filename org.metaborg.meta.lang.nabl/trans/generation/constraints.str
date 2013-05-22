@@ -67,7 +67,7 @@ overlays
   
   MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("task-match", RuleNoCond(TUPLE([NoAnnoList(Str(n)), lhs, LIST(bnd)]), rhs))
 
-  PROP_TASK(v, p, t)     = App(CallT(SVar("property-task"), [], [p, Var("partition__")]), t)
+  PROP_TASK(v, p, t)     = Where(Assign(v, App(CallT(SVar("property-task"), [], [p, Var("partition__")]), t)))
   MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Match", [NoAnnoList(Str(n)), LIST(b), t]))
   
   NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))
