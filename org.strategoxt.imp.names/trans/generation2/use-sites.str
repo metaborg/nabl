@@ -41,7 +41,7 @@ rules
     ; cong     := <replace-all-id(|[(term, use-call)])> pattern
   
   part-to-candidate(|pattern, bound*, glob-repl*, i):
-    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term))
+    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, wci))
     where
       RefClausePart(disamb, ns, term, prop*, ctx, constr*)                    := part
     + SingleImport(disamb, ns, term, prop*, ctx, _, _, constr*)               := part
@@ -52,6 +52,7 @@ rules
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; prop-term*     := <map(prop-pattern-to-str(|[]); replace-all(|repl*))> prop*
     ; ctx-term       := <context-to-term(|repl*)> ctx
+    ; wci            := <part-to-wildcardimport> part
   
    context-to-term(|repl*):
   	Current() -> TERM("Current")
@@ -66,6 +67,15 @@ rules
     ; prop-term*     := <map(prop-to-str(|[]); replace-all(|repl*))> prop*
     ; name-term      := <replace-all(|repl*)> term
     ; ctx-term       := <context-to-term(|repl*)> ctx
+      
+  part-to-wildcardimport:
+    RefClausePart(_, _, _, _, _, _) -> TERM("True")
+
+  part-to-wildcardimport:
+    SingleImport(_, _, _, _, _, _, _, _) -> TERM("True")
+    
+  part-to-wildcardimport:
+    WildcardImport(_, _, _, _, _) -> TERM("False")
     
   clause-to-match-rules(|bound*, i):
     (j, RefClause(part*)) -> rule*
@@ -106,6 +116,6 @@ overlays
     ] 
   )
   
-  CANDIDATE(ns, ps, ctx) =
-  TERM("UseCandidate", [ns, LIST(ps), ctx])
+  CANDIDATE(ns, ps, ctx, wci) =
+  TERM("UseCandidate", [ns, LIST(ps), ctx, wci])
   
