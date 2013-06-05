@@ -21,7 +21,7 @@ rules
     ; implicit*      := <implicit-def-vars> def-clause*
     ; prop-clause*   := <filter-with-index(to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
     where
-       match* := [Assign(LIST(<nonempty> implicit*), Var("implicits__"))] 
+       match* := [Where(Assign(LIST(<nonempty> implicit*), Var("implicits__")))] 
     <+ match* := []
     where
       seq := <to-seq> [match*, task*, prop-clause*]
