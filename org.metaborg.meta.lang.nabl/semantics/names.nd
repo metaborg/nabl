@@ -1,0 +1,29 @@
+module semantics/names
+
+imports
+	include/NameBindingLanguage
+	semantics/stratego-names
+	
+namespaces
+
+	Module
+	Namespace
+		
+binding rules
+
+	Naming(m, _, _): 
+		defines Module m 
+		
+	Import(m): 
+		imports 
+			Namespace
+		from Module m
+		
+	Namespace(ns):
+		defines Namespace ns
+		
+	NsRef(ns):
+		refers to Namespace ns
+		
+	ND-Rule(_, _):
+	 	anonymous scope for Variable

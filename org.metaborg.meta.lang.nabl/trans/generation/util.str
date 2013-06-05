@@ -1,0 +1,60 @@
+module generation/util
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+rules
+
+  bound-vars = collect-all(?Var(_))  
+
+  extend-index(|i): j -> $[[i]-[j]]
+ 
+  to-seq: [c]           -> c
+  to-seq: [c1, c2 | c*] -> Seq(c1, <to-seq> [c2|c*])
+
+rules 
+  
+  nonempty = where(Hd)
+
+  replace-all(|rs)    = alltd(replace(|rs))
+  replace-all-id(|rs) = alltd(replace(|rs) <+ introduce-id)
+  
+  replace(|rs): t -> <hashtable-get(|t)> rs
+  replace(|rs): t -> <lookup'> (t, rs)
+  
+  introduce-id: Wld()      -> Id()
+  introduce-id: Var(_)     -> Id()
+  introduce-id: ListVar(_) -> Id()
+    
+  iset-copy = iset-elements => elem*; new-iset ; iset-addlist(|elem*)
+  
+  nfilter(s : Int * a -> b | i) = 
+     [] 
+  <+ [s(|i) | nfilter(s | <inc> i)] 
+  <+ Tl; nfilter(s | <inc> i)
+    
+  filter-with-index(s) =
+    let apply(|i) = <s> (i, <id>)
+     in nfilter(apply | 1)
+    end
+
+  add-values(|val*):
+    (key, map) -> [(key, new*)|map]
+    where
+      old* := <lookup <+ ![]> (key, map)
+    ; new* := <union> (old*, val*) 
+             
+  
+overlays
+  
+  CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
+  TERM(o, args)   = NoAnnoList(Op(o, args))
+  TERM(o)         = TERM(o, [])
+  TUPLE(elems)    = NoAnnoList(Tuple(elems))
+  LIST(elems)     = NoAnnoList(List(elems))
+  CALL(s)         = CallNoArgs(SVar(s))
+  CALL(s, ss, ts) = CallT(SVar(s), ss, ts)
+
+  

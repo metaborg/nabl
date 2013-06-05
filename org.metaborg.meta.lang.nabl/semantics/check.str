@@ -1,0 +1,52 @@
+module semantics/check
+
+imports
+  libstrc
+
+  lib/analysis-library
+  lib/analysis-library-internal
+  lib/index-library
+
+  include/NameBindingLanguage
+  generate
+  
+rules // generic constraints
+  
+  constraint-error:
+    x{[Unresolved(t) | _]} -> (x, $[Unable to resolve.])
+    
+  constraint-error = nam-get-definition-keys ; filter(duplicate-error)
+  
+  duplicate-error:
+    key{[ns|_]} -> (key, $[Duplicate definition])
+    where
+      definitions := <index-lookup-all> key;
+      <gt> (<length> definitions, 1)
+
+  constraint-warning = fail
+  constraint-note = fail
+
+rules // specific constraints  
+  
+  constraint-error:
+  	ND-Rule(_, part*) -> [def-err*, ref-err*, scope-err*]
+  	where
+  	  def*       := <filter(?ND-Def(_, _, <id>, _, _, _, _))> part*;
+  	  ref*       := <filter(collect-one(?ND-Ref(_, <id>, _, _, _)))> part*;
+  	  scope*     := <filter(?ND-Def(_, _, _, _, _, <id>, _) + ?ND-Scope(<id>)); concat; map(?NsRef(<id>))> part*;
+  	  dup-def*   := <filter(where({n: ?n; <filter(?n); ?[_, _|_]> def*}))> def*;
+  	  dup-ref*   := <filter(where({n: ?n; <filter(?n); ?[_, _|_]> ref*}))> ref*;
+  	  dup-scope* := <filter(where({n: ?n; <filter(?n); ?[_, _|_]> scope*}))> scope*;
+  	  def-err*   := <map(\n -> (n, $[Multiple definitions with the same name [<pp-str> n].])\)> dup-def*;
+  	  ref-err*   := <map(\n -> (n, $[Multiple references with the same name [<pp-str> n].] )\)> dup-ref*;
+  	  scope-err* := <map(\n -> (n, $[Different scopes for the same namespace [n].])\)> dup-scope*
+  	   
+  constraint-error:
+  	ND-Refs(part*) -> error*
+  	where
+  	  [name|name*] := <filter(?ND-Ref(_, <id>, _, _, _)); make-set> part*;
+  	  error*       := <map(\n -> (n, $[Alternative references need to share name [<pp-str> name].])\)> name*
+  
+rules // helper
+		  
+  pp-str = to-ppable-str ; pp-stratego-string

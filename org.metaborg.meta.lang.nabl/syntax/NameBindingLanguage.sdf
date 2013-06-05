@@ -1,0 +1,27 @@
+module NameBindingLanguage
+
+imports
+  
+  common/Layout
+  common/Identifiers
+  terms/Vars
+  terms/Signatures
+  documentation/Metadata
+  documentation/Documentation
+  documentation/Development
+  Modulesgenerated
+	NaBLgenerated
+	
+exports
+	
+  context-free start-symbols
+
+    Start
+
+  context-free syntax
+  	
+  	Module -> Start
+	
+		
+		
+ 

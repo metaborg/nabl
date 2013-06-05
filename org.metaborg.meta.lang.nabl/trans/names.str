@@ -1,0 +1,183 @@
+module names
+
+imports
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+  lib/index-library.generated
+
+
+imports
+  include/NameBindingLanguage
+
+
+signature
+  constructors
+    Type        : DefDataKind
+    Import      : DefDataKind
+    Transitive  : ImportAnno
+    CurrentFile : ImportAnno
+
+  constructors
+    Module    : Namespace
+    Namespace : Namespace
+    Property  : Namespace
+    Variable  : Namespace
+
+
+rules
+
+  nam-get-scope-types :
+    Module(m, _, _) -> [Namespace(), Property()]
+
+  nam-get-definition-keys :
+    Module(m, _, _) -> [m]
+
+  nam-get-definitions :
+    Module(m, _, _) -> [(Module(), [m])]
+
+  nam-annotate-names(|paths__, path__):
+    Module(m, _, _) -> <Module(nam-annotate-def(|path__), id, id)>
+
+  nam-unique :
+    Module(m, _, _) -> <id>
+
+
+rules
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Import(m) -> <store__> DefData(
+                             [Namespace()|path__]
+                           , Import()
+                           , (m, [])
+                           )
+
+  adjust-index-def-data(store__|namespace__, path__):
+    Import(m) -> <store__> DefData(
+                             [Property()|path__]
+                           , Import()
+                           , (m, [])
+                           )
+
+
+rules
+
+  nam-get-definition-keys :
+    NamespaceDef(n) -> [n]
+
+  nam-get-definitions :
+    NamespaceDef(n) -> [(Namespace(), [n])]
+
+  nam-annotate-names(|paths__, path__):
+    NamespaceDef(n) -> <NamespaceDef(nam-annotate-def(|path__))>
+
+  nam-unique :
+    NamespaceDef(n) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    NamespaceRef(n) -> [n]
+
+  nam-get-uses :
+    NamespaceRef(n) -> [(Namespace(), [n])]
+
+  nam-annotate-names(|paths__, path__):
+    NamespaceRef(n) -> <NamespaceRef(nam-annotate-use(|paths__, Namespace()))>
+
+
+rules
+
+  nam-get-definition-keys :
+    PropertyDef(p, ns, t) -> [p]
+
+  nam-get-definitions :
+    PropertyDef(p, ns, t) -> [(Property(), [p])]
+
+  nam-annotate-names(|paths__, path__):
+    PropertyDef(p, ns, t) -> <PropertyDef(nam-annotate-def(|path__), id, id)>
+
+  adjust-index-def-data(store__|namespace__, path__):
+    PropertyDef(p, ns, t) -> <store__> DefData(
+                                         [namespace__|path__]
+                                       , Type()
+                                       , (ns, t)
+                                       )
+
+  type-of :
+    PropertyDef(p, ns, t) -> (ns, t)
+
+  nam-unique :
+    PropertyDef(p, ns, t) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    PropertyRef(p) -> [p]
+
+  nam-get-uses :
+    PropertyRef(p) -> [(Property(), [p])]
+
+  nam-annotate-names(|paths__, path__):
+    PropertyRef(p) -> <PropertyRef(nam-annotate-use(|paths__, Property()))>
+
+
+rules
+
+  nam-get-scope-types :
+    BindingRule(_, _, _) -> [Variable()]
+
+
+rules
+
+  nam-get-definition-keys :
+    Var(x) -> [x]
+
+  nam-get-definitions :
+    Var(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    Var(x) -> <Var(nam-annotate-def(|path__))>
+
+  nam-unique :
+    Var(x) -> <id>
+
+
+rules
+
+  nam-get-definition-keys :
+    ListVar(x) -> [x]
+
+  nam-get-definitions :
+    ListVar(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    ListVar(x) -> <ListVar(nam-annotate-def(|path__))>
+
+  nam-unique :
+    ListVar(x) -> <id>
+
+
+rules
+
+  nam-get-uses-keys :
+    VarRef(x) -> [x]
+
+  nam-get-uses :
+    VarRef(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    VarRef(x) -> <VarRef(nam-annotate-use(|paths__, Variable()))>
+
+
+rules
+
+  nam-get-uses-keys :
+    ListVarRef(x) -> [x]
+
+  nam-get-uses :
+    ListVarRef(x) -> [(Variable(), [x])]
+
+  nam-annotate-names(|paths__, path__):
+    ListVarRef(x) -> <ListVarRef(nam-annotate-use(|paths__, Variable()))>

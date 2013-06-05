@@ -1,0 +1,99 @@
+/** 
+* This module contains functions to detect name binding violations 
+* caused by the (refactoring) transformation.
+* REMARK: Only use this module in case semantic correctness preservation is not checked.
+* Otherwise, use behavior-preservation.generated.str
+*/
+module lib-refactoring/namebinding-preservation.generated
+
+imports
+  lib-refactoring/analysis-multifile.generated
+  lib/index-library.generated
+  lib-refactoring/binding-violations.generated
+
+strategies
+
+  /**
+   * Returns name collision errors by comparing the expected binding structure with the actual binding structure
+   * in the ASTs after the transformation.
+   * The ASTs after the transformation (asts-expected-bindings) contain name binding annotations that express the EXPECTED binding structure
+   * (typically obtained by preserving annos during transformation and setting annos for new inserted definitions) 
+   * The ASTs are later (re)analyzed by @see multifile-analyze-asts 
+   *
+   * @type  t -> List(errors)
+   */
+  name-binding-violation-errors:
+    asts-expected-bindings -> <name-binding-violation-errors(id)>
+
+  /**
+   * @see name-binding-violation-errors
+   * Improves the performance of name binding checks by only considering endangered names.
+   *
+   * @type  t -> List(errors)
+   * @param endangered-names  List(String)
+   */
+  name-binding-violation-errors(|endangered-names):
+    asts-expected-bindings -> <name-binding-violation-errors(is-in-list(|endangered-names'), multifile-analyze-asts)>
+    where
+      endangered-names' := <map(strip-annos)> endangered-names
+
+  /**
+   * @see name-binding-violation-errors
+   * Improves the performance of name binding checks by only considering endangered names.
+   *
+   * @type  t -> List(errors)
+   * @param is-endangered-name  String -> String
+   */
+  name-binding-violation-errors(is-endangered-name):
+    asts-expected-bindings -> <name-binding-violation-errors(is-endangered-name, multifile-analyze-asts)>
+
+  /**
+   * @see name-binding-violation-errors(is-endangered-name)
+   *
+   * @param analyze-multifile sets the correct name annotations 
+   * and preserves the structure of the ASTs.
+   *
+   * @type  t -> List(errors)
+   * @param is-endangered-name  String -> String
+   * @param analyze-multifile   List(ast) -> List(ast) stores semantic info in ASTs and name index
+   */
+  name-binding-violation-errors(is-endangered-name, analyze-multifile):
+    asts-expected-bindings -> binding-violation-errors
+    where
+      asts-actual-bindings := <analyze-multifile> asts-expected-bindings;
+      binding-violation-errors := 
+        <name-binding-violation-errors-on-trees(is-endangered-name)> (asts-expected-bindings, asts-actual-bindings)
+
+  /**
+   * Returns name collision errors by comparing the expected binding structure with the actual binding structure.
+   *
+   * @type  (t,t) -> List(errors)
+   */
+  name-binding-violation-errors-on-trees(is-endangered-name):
+    (asts-expected-bindings, asts-actual-bindings)  -> binding-violation-errors
+    where
+      binding-violation-errors := <
+        binding-violation-terms(is-endangered-name);
+        filter(not(?_{[Unresolved(_)|_], [Unresolved(_)|_]}));
+        map(to-namebinding-error)
+      > (asts-expected-bindings, asts-actual-bindings)
+
+  is-broken-binding =
+    ?_{nb1, [Unresolved(_)|_]};
+    where(<not(?[Unresolved(_)|_])> nb1) 
+  
+rules //report name binding violation to end user
+
+  to-namebinding-error =
+    to-namebinding-error-broken <+
+    to-namebinding-error-created <+
+    to-namebinding-error-changed
+  
+  to-namebinding-error-broken:
+    <is-broken-binding> -> (<strip-annos>, $[Variable becomes unbound '[<strip-annos>]'])
+  
+  to-namebinding-error-created:
+    <is-created-binding> -> (<strip-annos>, $[Unbound variabele becomes bound '[<strip-annos>]'])
+
+  to-namebinding-error-changed:
+    t{nb1, nb2} -> (<strip-annos>, $[Name collision with name '[<strip-annos>]'])

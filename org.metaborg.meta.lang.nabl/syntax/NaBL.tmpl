@@ -1,0 +1,129 @@
+templates // namespaces
+
+  ModuleSection.Namespaces  = <
+  namespaces   
+    <NamespaceDef*>
+  > 
+  
+  NamespaceDef.NamespaceDef = 
+		<<NamespaceID>
+		>
+  
+  NamespaceRef.NamespaceRef = <<NamespaceID>>
+
+lexical syntax
+
+  NamespaceID = Id
+                
+templates // properties
+
+  ModuleSection.Properties = <
+  properties
+    <PropertyDef*>
+  >  
+    
+  PropertyDef.PropertyDef = <
+  <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
+  
+  PropertyRef.TypeProp    = <type>  
+  PropertyRef.PropertyRef = <<PropertyID>>
+
+  PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
+  PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Pattern>>
+
+  PropFilter.Equal      = <>
+  PropFilter.Conformant = <conformant>
+  
+  Constraint.PropertyConstraint = <where <Term> has <PropertyRef> <Pattern>>
+    
+lexical syntax
+
+  PropertyID = Id
+  PropertyID = "type" {reject}
+  
+templates // binding rules
+    
+  ModuleSection.BindingRules = <
+  binding rules
+    <BindingRule*>
+  >
+  
+  BindingRule.BindingRule = <
+  <Pattern> <Constraint*> : <BindingClause+>> 
+
+templates // clauses
+
+  BindingClause.DefClause = <
+    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraint*>
+  > 
+  
+  DefKind.Explicit = <>
+  DefKind.Implicit = <implicitly>
+  
+  Unique.Unique    = <>
+  Unique.Unique    = <unique>
+  Unique.NonUnique = <non-unique>
+    
+  BindingClause.ScopeClause = <
+    scopes <NamespaceRef+; separator=", ">
+  > 
+  
+  BindingClause.RefClause     = <
+    <RefClausePart+; separator="otherwise">
+  >
+    
+  RefClausePart.RefClausePart = <
+  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraint*>>
+  
+  BindingClause.ImportClause = <
+    <ImportClausePart+; separator="otherwise\n">
+  > 
+  
+  ImportClausePart.SingleImport = <
+  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraint*>>             
+
+  ImportClausePart.WildcardImport = <
+  imports <ImportRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraint*>> 
+  
+  Alias.None  = <>
+  Alias.Alias = <as <Term>>
+ 
+  ImportRef.Direct     = <<NamespaceRef>>
+  ImportRef.Transitive = <imported <NamespaceRef>>
+   
+templates // scopes
+
+  InDefScopes.Current   = <>
+  InDefScopes           = <in <DefScopes>>   {bracket}
+  
+  IntoDefScopes.Current = <>
+  IntoDefScopes         = <into <DefScopes>> {bracket}
+
+  DefScopes.Current     = <current scope>
+  DefScopes.DefScopes   = <<DefScope+; separator=", ">> 
+  DefScope.Subsequent   = <subsequent scope>
+  DefScope.DefScope     = <<Term>>
+ 
+  InRefScope.Current    = <>
+  InRefScope            = <in <RefScope>>    {bracket}
+  
+  FromRefScope.Current   = <>
+  FromRefScope           = <from <RefScope>>  {bracket}
+  
+  RefScope.Current    = <current scope>
+  RefScope.Enclosing  = <enclosing <NamespaceRef>>
+  RefScope.Context    = <<Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope>>
+  RefScope.RefScope   = <<Term>>
+  
+  Disambiguator.All   = <>
+  Disambiguator.Best  = <best>
+  
+templates // constraints
+
+  Constraint.Reference = <
+    where <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
+  
+context-free syntax
+
+  Id = "into" {reject}
+  

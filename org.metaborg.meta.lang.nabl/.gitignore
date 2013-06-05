@@ -1,0 +1,10 @@
+/.cache
+/bin
+/include
+/editor/*.generated.esv
+/lib
+/lib-refactoring
+syntax/*generated.sdf
+syntax/*.generated.pp
+trans/*.generated.str
+test/*.str
