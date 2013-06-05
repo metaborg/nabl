@@ -39,8 +39,17 @@ rules
     ; use-call := USE_CALL(candidate*)
     ; cong     := <replace-all-id(|[(term, use-call)])> pattern
   
+  part-to-wildcardimport:
+    RefClausePart(_, _, _, _, _, _) -> TERM("True")
+
+  part-to-wildcardimport:
+    SingleImport(_, _, _, _, _, _, _, _) -> TERM("True")
+    
+  part-to-wildcardimport:
+    WildcardImport(_, _, _, _, _) -> TERM("False")
+
   to-use-candidate(|pattern, bound*, glob-repl*, i):
-    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, dep*))
+    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, wci, dep*))
     where
       RefClausePart(disamb, ns, term, prop*, ctx, constr*)                    := part
     + SingleImport(disamb, ns, term, prop*, ctx, alias, _, constr*)           := part
@@ -52,6 +61,7 @@ rules
     ; prop-term*     := <map(prop-pattern-to-str(|[]); replace-all(|repl*))> prop*
     ; ctx-term       := <scope-to-term; replace-all(|repl*)> ctx
     ; dep*           := <map(Snd)> repl*
+    ; wci            := <part-to-wildcardimport> part
        
   to-match-rules(|bound*, i):
     (j, RefClause(part*)) -> rule*
@@ -92,6 +102,6 @@ overlays
     ] 
   )
   
-  CANDIDATE(ns, ps, ctx, deps) =
-  TERM("UseCandidate", [ns, LIST(ps), ctx, LIST(deps)])
+  CANDIDATE(ns, ps, ctx, wci, deps) =
+  TERM("UseCandidate", [ns, LIST(ps), ctx, wci, LIST(deps)])
   
