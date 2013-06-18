@@ -6,7 +6,7 @@ editor/*.generated.esv
 lib
 lib-refactoring
 utils
-syntax/*generated.sdf
+#syntax/*generated.sdf
 syntax/*.generated.pp
 trans/*.generated.str
 test/*.str
