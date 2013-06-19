@@ -10,8 +10,7 @@ builders
 
 builders
 
-  provider : include/namebindinglanguage.jar
-  provider : include/namebindinglanguage-java.jar
+  provider : include/namebindinglanguage.ctree
   
   observer : editor-analyze (multifile)
 
