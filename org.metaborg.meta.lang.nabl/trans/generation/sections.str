@@ -16,7 +16,7 @@ imports
 rules // namespaces 
       
   nabl-to-str:
-    Namespaces(namespaces) -> Signature([Constructors(<map(ns-to-constructor)> namespaces)])
+    Namespaces(namespaces) -> [Signature([Constructors(<map(ns-to-constructor)> namespaces)])]
     
   ns-to-constructor: // generates constructors for namespaces
     NamespaceDef(ns) -> CONS_DECL(<ns-name> ns, "Namespace")
@@ -28,7 +28,11 @@ rules // namespaces
 rules // properties
         
   nabl-to-str:
-    Properties(props) -> Signature([Constructors(<map(nabl-to-str)> props)])
+    Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
+    where
+    	cons* := <map(nabl-to-str)> prop*
+    ; rule  := SDefNoArgs("custom-properties", Build(LIST(<map(ns-prop-name-to-str)> prop*)))
+    ; rule* := <mapconcat(prop-to-rules)> prop*
   
   nabl-to-str: // generate constructors for properties
     PropertyDef(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
@@ -38,14 +42,126 @@ rules // properties
 
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
+  prop-to-rules:
+  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-check], $[[p]-lookup], $[[p]-match], $[[p]-of])
+  	
+overlays
+	
+	PROP_RULES(p, pt, p-is, p-check, p-lookup, p-match, p-of) =
+	[ SDefT(
+	    p-is
+	  , []
+	  , [DefaultVarDec("task*")]
+	  , CallT(
+	      SVar("prop-calc")
+	    , []
+	    , [Var("task*"), NoAnnoList(List([]))]
+	    )
+	  )
+	, SDefT(
+	    p-is
+	  , []
+	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+	  , CallT(
+	      SVar("prop-calc")
+	    , []
+	    , [Var("task*"), Var("dep*")]
+	    )
+	  )
+	, SDefT(
+	    p-check
+	  , []
+	  , [DefaultVarDec("task*")]
+	  , CallT(
+	      SVar("prop-check")
+	    , []
+	    , [ pt
+	      , Var("task*")
+	      , NoAnnoList(List([]))
+	      ]
+	    )
+	  )
+	, SDefT(
+	    p-check
+	  , []
+	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+	  , CallT(
+	      SVar("prop-check")
+	    , []
+	    , [ pt
+	      , Var("task*")
+	      , Var("dep*")
+	      ]
+	    )
+	  )
+	, SDefT(
+	    p-lookup
+	  , []
+	  , [DefaultVarDec("task*")]
+	  , CallT(
+	      SVar("prop-lookup")
+	    , []
+	    , [ pt
+	      , Var("task*")
+	      , NoAnnoList(List([]))
+	      ]
+	    )
+	  )
+	, SDefT(
+	    p-lookup
+	  , []
+	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+	  , CallT(
+	      SVar("prop-lookup")
+	    , []
+	    , [ pt
+	      , Var("task*")
+	      , Var("dep*")
+	      ]
+	    )
+	  )
+	, SDefT(
+	    p-match
+	  , []
+	  , [DefaultVarDec("task*"), DefaultVarDec("relation")]
+	  , CallT(
+	      SVar("prop-match")
+	    , []
+	    , [Var("task*"), Var("relation")]
+	    )
+	  )
+	, SDefNoArgs(
+	    p-of
+	  , CallT(
+	      SVar("property-of")
+	    , []
+	    , [pt]
+	    )
+	  )
+	, RDefT(
+		  "new-property-task"
+		, []
+		, [DefaultVarDec(ListVar("task*"))]
+		, RuleNoCond(
+		    NoAnnoList(
+		      Tuple([pt, Var("term")])
+		    )
+		  , App(
+		      CallT(SVar(p-of), [], [Var(ListVar("task*"))])
+		    , Var("term")
+		    )
+		  )
+	  )
+	]
+
 rules // imports
     
-  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|<id>])
+  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|<id>]); MkSingleton
     
 rules // binding rules
 
   nabl-to-str:
-    BindingRules(rs) -> Rules(<filter-with-index(to-rules); concat; nonempty> rs)
+    BindingRules(rs) -> [Rules(<filter-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
     (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, i*, m1*, m2*]

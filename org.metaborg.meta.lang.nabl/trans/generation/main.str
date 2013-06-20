@@ -30,4 +30,4 @@ rules // modules
   nabl-to-str:
     Module(name, _, sections) -> Module(name, sections')
     where 
-      sections' := <filter(nabl-to-str)> sections 
+      sections' := <filterconcat(nabl-to-str)> sections 
