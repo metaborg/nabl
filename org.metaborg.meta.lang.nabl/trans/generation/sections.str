@@ -31,7 +31,7 @@ rules // properties
     Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
     where
     	cons* := <map(nabl-to-str)> prop*
-    ; rule  := SDefNoArgs("custom-properties", Build(LIST(<map(ns-prop-name-to-str)> prop*)))
+    ; rule  := SDefNoArgs("custom-properties", Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)))
     ; rule* := <mapconcat(prop-to-rules)> prop*
   
   nabl-to-str: // generate constructors for properties
@@ -121,16 +121,22 @@ overlays
 	    )
 	  )
 	, SDefT(
-	    p-match
-	  , []
-	  , [DefaultVarDec("task*"), DefaultVarDec("relation")]
-	  , CallT(
-	      SVar("prop-match")
-	    , []
-	    , [Var("task*"), Var("relation")]
-	    )
-	  )
-	, SDefNoArgs(
+      p-match
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("relation")]
+    , CallT(
+        SVar("prop-match")
+      , []
+      , [Var("task*"), Var("relation")]
+      )
+    )
+  , SDefT(
+      p-of
+    , []
+    , [DefaultVarDec("task*")]
+    , Fail()
+    )
+  , SDefNoArgs(
 	    p-of
 	  , CallT(
 	      SVar("property-of")
