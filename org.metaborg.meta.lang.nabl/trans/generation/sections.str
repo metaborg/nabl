@@ -4,6 +4,7 @@ imports
   
   libstrc
   include/NameBindingLanguage
+  lib/editor-common.generated
   
   generation/util
   generation/scoping-sites
@@ -40,7 +41,18 @@ rules // properties
 
 rules // imports
     
-  nabl-to-str = Imports(![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|<id>])
+  nabl-to-str:
+  	Imports(import*) -> Imports(import'*)
+  	with
+		if nabl-uses-custom-library(|<project-path>) then
+			![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|import*]
+		else
+			![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types")|import*]
+		end => import'*
+    
+    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nbl/collect.str]
+    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/task/core.str]
+    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/analysis/core.str]
     
 rules // binding rules
 
