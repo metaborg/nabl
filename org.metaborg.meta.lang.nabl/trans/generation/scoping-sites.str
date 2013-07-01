@@ -13,9 +13,9 @@ rules
   binding-to-scope-rule:
     BindingRule(pattern, constr*, clause*) -> SCOPE_RULE(pattern, seq)
     where
-      cong* := <filter(to-scope-cong(|pattern)); concat> clause*
+      cong* := <filterconcat(to-scope-cong(|pattern))> clause*
     where
-       ns-term* := <filter(?ScopeClause(<map(ns-to-term)>)); concat; nonempty> clause*
+       ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
      ; <not(fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _)))> clause*
      ; anon* := [SCOPE_CALL(ns-term*)]
     <+ anon* := []
@@ -23,21 +23,21 @@ rules
       seq := <nonempty; to-seq> [cong*, anon*] 
     
   to-scope-cong(|pattern):
-    clause -> <filter(to-scope-cong(|pattern)); concat; nonempty> part*
+    _ -> <filterconcat(to-scope-cong(|pattern))> part*
     where
-      RefClause(part*)    := clause
-    + ImportClause(part*) := clause
+      ?RefClause(part*)
+    + ?ImportClause(part*)
     
   to-scope-cong(|pattern):
-    part -> [cong1*, cong2*]
+    _ -> [cong1*, cong2*]
     where
-       DefClause(_, _, ns, term, _, into, _) := part
+       ?DefClause(_, _, ns, term, _, into, _)
      ; ns* := [ns]
-    <+ RefClausePart(_, ns, _, _, from, _) := part
+    <+ ?RefClausePart(_, ns, _, _, from, _)
      ; ns* := [ns]
-    <+ SingleImport(_, ns, _, _, from, _, into, _) := part
+    <+ ?SingleImport(_, ns, _, _, from, _, into, _)
      ; ns* := [ns]
-    <+ WildcardImport(import*, _, from, into, _) := part
+    <+ ?WildcardImport(import*, _, from, into, _)
      ; ns* := <map(?Direct(<id>) + ?Transitive(<id>)); make-set> import*
     where
        ns-term* := <map(ns-to-term)> ns*
@@ -76,15 +76,11 @@ rules
   */
 
   scope-to-term: Current()      -> TERM("Current")
-  scope-to-term: DefScopes(ds*) -> LIST(<map(scope-to-term)> ds*)
   scope-to-term: Subsequent()   -> TERM("Subsequent")
+  scope-to-term: DefScopes(ds*) -> LIST(<map(scope-to-term)> ds*)
   scope-to-term: DefScope(term) -> TERM("DefScope", [term])
-   
-  scope-to-term:
-    Enclosing(ns)  -> TERM("Enclosing", [<ns-to-term> ns])
-
-  scope-to-term:
-    RefScope(term) -> TERM("RefScope", [term])
+  scope-to-term: Enclosing(ns)  -> TERM("Enclosing", [<ns-to-term> ns])
+  scope-to-term: RefScope(term) -> TERM("RefScope", [term])
     
   scope-to-term:
     Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, term, LIST(prop-term*), ctx-term])

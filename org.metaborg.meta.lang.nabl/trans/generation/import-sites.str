@@ -25,13 +25,6 @@ rules
       cong* := <filter-with-index(to-import-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
     ; seq   := <to-seq> [task*, cong*]
   
-  // should be handled at def-site instead
-  // to-import-clauses(|pattern, bound*, repl*, i):
-  //   (j, DefClause(_, _, _, term, _, DefScopes(ds*), _)) -> [IMPORT_CALL([SINGLE(term, scope, [])])]
-  //   where
-  //     ds'*  := <filter(?DefScope(_)); nonempty> ds*
-  //   ; scope := <scope-to-term> DefScopes(ds'*)
-    
   to-import-clauses(|pattern, bound*, repl*, i):
     (j, clause@ImportClause(part*)) -> [clause*, IMPORT_CALL(import*)]
     where
