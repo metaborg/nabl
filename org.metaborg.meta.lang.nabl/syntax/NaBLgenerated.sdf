@@ -103,7 +103,7 @@ exports
     CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
 
   context-free syntax
-    "where" Term "refers" "to" NamespaceRef PropertyPattern* InRefScope -> Constraint {cons("ReferenceConstraint")}
+    "where" Term "refers" "to" NamespaceRef Term PropertyPattern* InRefScope -> Constraint {cons("ReferenceConstraint")}
 
   context-free syntax
     CONTENTCOMPLETE -> Constraint {cons("COMPLETION-Constraint")}

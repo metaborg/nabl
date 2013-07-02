@@ -44,17 +44,17 @@ rules // properties
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
   prop-to-rules:
-  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-check], $[[p]-lookup], $[[p]-match], $[[p]-of])
+  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-lookup], $[[p]-match], $[[p]-of])
   	
 overlays
 	
-	PROP_RULES(p, pt, p-is, p-check, p-lookup, p-match, p-of) =
+	PROP_RULES(p, pt, p-is, p-lookup, p-match, p-of) =
 	[ SDefT(
 	    p-is
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("prop-calc")
+	      SVar("nabl-prop-calc")
 	    , []
 	    , [Var("task*"), NoAnnoList(List([]))]
 	    )
@@ -64,43 +64,17 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
 	  , CallT(
-	      SVar("prop-calc")
+	      SVar("nabl-prop-calc")
 	    , []
 	    , [Var("task*"), Var("dep*")]
 	    )
 	  )
 	, SDefT(
-	    p-check
-	  , []
-	  , [DefaultVarDec("task*")]
-	  , CallT(
-	      SVar("prop-check")
-	    , []
-	    , [ pt
-	      , Var("task*")
-	      , NoAnnoList(List([]))
-	      ]
-	    )
-	  )
-	, SDefT(
-	    p-check
-	  , []
-	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-	  , CallT(
-	      SVar("prop-check")
-	    , []
-	    , [ pt
-	      , Var("task*")
-	      , Var("dep*")
-	      ]
-	    )
-	  )
-	, SDefT(
 	    p-lookup
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("prop-lookup")
+	      SVar("nabl-prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -113,7 +87,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
 	  , CallT(
-	      SVar("prop-lookup")
+	      SVar("nabl-prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -124,11 +98,11 @@ overlays
 	, SDefT(
       p-match
     , []
-    , [DefaultVarDec("task*"), DefaultVarDec("relation")]
+    , [DefaultVarDec("task*"), DefaultVarDec("relation"), DefaultVarDec("expected")]
     , CallT(
-        SVar("prop-match")
+        SVar("nabl-prop-match")
       , []
-      , [Var("task*"), Var("relation")]
+      , [pt, Var("task*"), Var("relation"), Var("expected")]
       )
     )
   , SDefT(
@@ -140,7 +114,7 @@ overlays
   , SDefNoArgs(
 	    p-of
 	  , CallT(
-	      SVar("property-of")
+	      SVar("nabl-get-property")
 	    , []
 	    , [pt]
 	    )
@@ -167,9 +141,19 @@ rules // imports
   	Imports(import*) -> <MkSingleton> Imports(import'*)
   	with
 			if nabl-uses-custom-library(|<project-path>) then
-				![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|import*]
+				![ ImportWildcard("lib/nabl")
+				 , ImportWildcard("lib/properties")
+				 , ImportWildcard("lib/task")
+				 , ImportWildcard("lib/types")
+				 | import*
+				 ]
 			else
-				![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types")|import*]
+				![ ImportWildcard("lib/runtime/nabl")
+				 , ImportWildcard("lib/runtime/properties")
+         , ImportWildcard("lib/runtime/task")
+         , ImportWildcard("lib/runtime/types")
+				 | import*
+				 ]
 			end => import'*
     
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nbl/collect.str]

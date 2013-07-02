@@ -81,7 +81,7 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
-    , DefaultVarDec("uris__")
+    , DefaultVarDec("uri__")
     , DefaultVarDec("states__") 
     ]
   , Seq(Match(pattern), body)
@@ -93,7 +93,7 @@ overlays
   , []
   , [ Var("lang__")
     , Var("partition__")
-    , Var("uris__")
+    , Var("uri__")
     , LIST(candidates)
     ] 
   )
