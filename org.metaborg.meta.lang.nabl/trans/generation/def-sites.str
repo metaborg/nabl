@@ -5,10 +5,7 @@ imports
   libstrc
   include/NameBindingLanguage
   
-  generation/util
-  generation/main
-  generation/sections
-  generation/scoping-sites
+  generation/-
   
 rules
   
@@ -16,6 +13,11 @@ rules
     
 rules
   
+  binding-to-name-rule: 
+    BindingRule(pattern, constr*, clause*) -> NAME_RULE(pattern, name)
+    where
+      [name] := <filter(def-to-name + use-to-name)> clause*
+      
   binding-to-def-rule:
     BindingRule(pattern, constr*, clause*) -> DEF_RULE(pattern, seq)
     where
