@@ -85,7 +85,7 @@ rules
   
 overlays
   
-  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, App(CallNoArgs(SVar("strip-annos")), rhs)))
 
 overlays
   
