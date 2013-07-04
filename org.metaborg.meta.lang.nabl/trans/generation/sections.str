@@ -44,11 +44,11 @@ rules // properties
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
   prop-to-rules:
-  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-lookup], $[[p]-match], $[[p]-of])
+  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-list], $[[p]-lookup], $[[p]-match], $[[p]-of])
   	
 overlays
 	
-	PROP_RULES(p, pt, p-is, p-lookup, p-match, p-of) =
+	PROP_RULES(p, pt, p-is, p-list, p-lookup, p-match, p-of) =
 	[ SDefT(
 	    p-is
 	  , []
@@ -60,16 +60,36 @@ overlays
 	    )
 	  )
 	, SDefT(
-	    p-is
-	  , []
-	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-	  , CallT(
-	      SVar("nabl-prop-calc")
-	    , []
-	    , [Var("task*"), Var("dep*")]
-	    )
-	  )
-	, SDefT(
+      p-is
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+    , CallT(
+        SVar("nabl-prop-calc")
+      , []
+      , [Var("task*"), Var("dep*")]
+      )
+    )
+  , SDefT(
+      p-list
+    , []
+    , [DefaultVarDec("task*")]
+    , CallT(
+        SVar("nabl-prop-list")
+      , []
+      , [Var("task*"), NoAnnoList(List([]))]
+      )
+    )
+  , SDefT(
+      p-list
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+    , CallT(
+        SVar("nabl-prop-list")
+      , []
+      , [Var("task*"), Var("dep*")]
+      )
+    )
+  , SDefT(
 	    p-lookup
 	  , []
 	  , [DefaultVarDec("task*")]
