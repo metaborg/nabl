@@ -120,7 +120,7 @@ overlays
 	    )
 	  )
 	, RDefT(
-		  "new-property-task"
+		  "nabl-new-property"
 		, []
 		, [DefaultVarDec(ListVar("task*"))]
 		, RuleNoCond(
