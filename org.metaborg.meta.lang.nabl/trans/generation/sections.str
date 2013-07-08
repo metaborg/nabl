@@ -32,7 +32,7 @@ rules // properties
     Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
     where
     	cons* := <map(nabl-to-str)> prop*
-    ; rule  := SDefNoArgs("nabl-custom-properties", Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)))
+    ; rule  := SDefNoArgs("custom-properties", Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)))
     ; rule* := <mapconcat(prop-to-rules)> prop*
   
   nabl-to-str: // generate constructors for properties
@@ -44,17 +44,17 @@ rules // properties
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
   prop-to-rules:
-  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-lookup], $[[p]-match], $[[p]-of])
+  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-check], $[[p]-lookup], $[[p]-match], $[[p]-of])
   	
 overlays
 	
-	PROP_RULES(p, pt, p-is, p-lookup, p-match, p-of) =
+	PROP_RULES(p, pt, p-is, p-check, p-lookup, p-match, p-of) =
 	[ SDefT(
 	    p-is
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("nabl-prop-calc")
+	      SVar("prop-calc")
 	    , []
 	    , [Var("task*"), NoAnnoList(List([]))]
 	    )
@@ -64,9 +64,35 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
 	  , CallT(
-	      SVar("nabl-prop-calc")
+	      SVar("prop-calc")
 	    , []
 	    , [Var("task*"), Var("dep*")]
+	    )
+	  )
+	, SDefT(
+	    p-check
+	  , []
+	  , [DefaultVarDec("task*")]
+	  , CallT(
+	      SVar("prop-check")
+	    , []
+	    , [ pt
+	      , Var("task*")
+	      , NoAnnoList(List([]))
+	      ]
+	    )
+	  )
+	, SDefT(
+	    p-check
+	  , []
+	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+	  , CallT(
+	      SVar("prop-check")
+	    , []
+	    , [ pt
+	      , Var("task*")
+	      , Var("dep*")
+	      ]
 	    )
 	  )
 	, SDefT(
@@ -74,7 +100,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("nabl-prop-lookup")
+	      SVar("prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -87,7 +113,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
 	  , CallT(
-	      SVar("nabl-prop-lookup")
+	      SVar("prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -98,11 +124,11 @@ overlays
 	, SDefT(
       p-match
     , []
-    , [DefaultVarDec("task*"), DefaultVarDec("relation"), DefaultVarDec("expected")]
+    , [DefaultVarDec("task*"), DefaultVarDec("relation")]
     , CallT(
-        SVar("nabl-prop-match")
+        SVar("prop-match")
       , []
-      , [pt, Var("task*"), Var("relation"), Var("expected")]
+      , [Var("task*"), Var("relation")]
       )
     )
   , SDefT(
@@ -114,13 +140,13 @@ overlays
   , SDefNoArgs(
 	    p-of
 	  , CallT(
-	      SVar("nabl-get-property")
+	      SVar("property-of")
 	    , []
 	    , [pt]
 	    )
 	  )
 	, RDefT(
-		  "nabl-new-property"
+		  "new-property-task"
 		, []
 		, [DefaultVarDec(ListVar("task*"))]
 		, RuleNoCond(
@@ -141,19 +167,9 @@ rules // imports
   	Imports(import*) -> <MkSingleton> Imports(import'*)
   	with
 			if nabl-uses-custom-library(|<project-path>) then
-				![ ImportWildcard("lib/nabl")
-				 , ImportWildcard("lib/properties")
-				 , ImportWildcard("lib/task")
-				 , ImportWildcard("lib/types")
-				 | import*
-				 ]
+				![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|import*]
 			else
-				![ ImportWildcard("lib/runtime/nabl")
-				 , ImportWildcard("lib/runtime/properties")
-         , ImportWildcard("lib/runtime/task")
-         , ImportWildcard("lib/runtime/types")
-				 | import*
-				 ]
+				![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types")|import*]
 			end => import'*
     
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nbl/collect.str]
@@ -166,13 +182,10 @@ rules // binding rules
     BindingRules(rs) -> [Rules(<filter-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*]
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, i*, m1*, m2*]
     where 
        b* := [<binding-to-scope-rule> rule] 
     <+ b* := [] 
-    where 
-       n* := [<binding-to-name-rule> rule] 
-    <+ n* := [] 
     where 
        d* := [<binding-to-def-rule> rule] 
     <+ d* := [] 
