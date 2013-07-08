@@ -49,12 +49,12 @@ rules
   
 overlays
   
-  CONS_DECL(c, t) = OpDecl(c, ConstType(SortNoArgs(t)))
-  TERM(o, args)   = NoAnnoList(Op(o, args))
-  TERM(o)         = TERM(o, [])
-  TUPLE(elems)    = NoAnnoList(Tuple(elems))
-  LIST(elems)     = NoAnnoList(List(elems))
-  CALL(s)         = CallNoArgs(SVar(s))
-  CALL(s, ss, ts) = CallT(SVar(s), ss, ts)
-
+  CONS_DECL(c, t)   = OpDecl(c, ConstType(SortNoArgs(t)))
+  TERM(o, args)     = NoAnnoList(Op(o, args))
+  TERM(o)           = TERM(o, [])
+  TUPLE(elems)      = NoAnnoList(Tuple(elems))
+  LIST(elems)       = NoAnnoList(List(elems))
+  CALL(s)           = CallNoArgs(SVar(s))
+  CALL(s, ss, ts)   = CallT(SVar(s), ss, ts)
+	FORCE_ORIGINS(ss) = CALL("origin-track-forced", [ss], [])
   

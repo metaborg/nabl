@@ -167,9 +167,9 @@ rules // imports
   	Imports(import*) -> <MkSingleton> Imports(import'*)
   	with
 			if nabl-uses-custom-library(|<project-path>) then
-				![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types")|import*]
+				![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types"), ImportWildcard("lib/editor")|import*]
 			else
-				![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types")|import*]
+				![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types"), ImportWildcard("lib/runtime/editor")|import*]
 			end => import'*
     
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nbl/collect.str]

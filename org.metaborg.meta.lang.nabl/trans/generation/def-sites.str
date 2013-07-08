@@ -98,7 +98,7 @@ overlays
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
-  , Seq(Match(pattern), body)
+  , Seq(Match(pattern), FORCE_ORIGINS(body))
   )  
 	
   DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 

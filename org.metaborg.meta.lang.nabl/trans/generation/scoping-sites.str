@@ -95,7 +95,7 @@ rules
   
 overlays
   
-  SCOPE_RULE(pattern, body) = SDefNoArgs("nabl-scoping-site", Seq(Match(pattern), body))
+  SCOPE_RULE(pattern, body) = SDefNoArgs("nabl-scoping-site", Seq(Match(pattern), FORCE_ORIGINS(body)))
   SCOPE_CALL(ns)            = CallT(SVar("nabl-scope"), [], [LIST(ns)])
  
    
