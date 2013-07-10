@@ -85,6 +85,7 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
+		, DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
     ]
@@ -97,6 +98,7 @@ overlays
   , []
   , [ Var("lang__")
     , Var("partition__")
+		, Var("uniques__")
     , Var("uris__")
     , LIST(candidates)
     ] 
