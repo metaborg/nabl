@@ -1,20 +1,6 @@
 module NameBindingLanguage-Completions
 
-imports NameBindingLanguage-Completions.generated
-
-completions
-
-  completion template: "defines " <ns> " " <x> (blank)
-  completion template: "defines " <ns> " " <x> " of type " <t> (blank)
-  completion template: "refers to " <ns> " " <x> (blank)
-  completion template: "refers to " <ns> " " <x> " in " <ns2> " " <e> (blank)
-  completion template: "refers to " <ns> " " <x> " of type " <t> (blank)
-  completion template: "refers to " <ns> " " <x> " of type " <t> " in " <ns2> " " <e> (blank)
-  completion template: "scopes " <ns> (blank)
-  completion template: "imports " <ns> " from " <ns2> " " <x> (blank)
-  completion template: "where " <x> " has type " <t> (blank)
-  completion template: "where " <x> " refers to " <y> (blank)
-  completion template: "has type " <t> (blank)
+imports NameBindingLanguage-Completions.generated Modules.generated NaBL.generated
 
 completions
        

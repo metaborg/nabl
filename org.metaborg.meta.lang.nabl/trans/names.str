@@ -1,183 +1,313 @@
 module names
 
 imports
-  lib/analysis-library.generated
-  lib/analysis-library-internal.generated
-  lib/index-library.generated
-
-
-imports
+  lib/runtime/nbl/-
+  lib/runtime/task/-
+  lib/runtime/types/-
+  lib/runtime/editor/-
   include/NameBindingLanguage
 
 
 signature
   constructors
-    Type        : DefDataKind
-    Import      : DefDataKind
-    Transitive  : ImportAnno
-    CurrentFile : ImportAnno
-
-  constructors
-    Module    : Namespace
-    Namespace : Namespace
-    Property  : Namespace
-    Variable  : Namespace
+    NablNsModule    : Namespace
+    NablNsNamespace : Namespace
+    NablNsProperty  : Namespace
+    NablNsVariable  : Namespace
 
 
 rules
 
-  nam-get-scope-types :
-    Module(m, _, _) -> [Namespace(), Property()]
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
+    ?Module(m, _, _)
+    ; origin-track-forced(
+        Module(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , partition__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsModule()
+          , Unique()
+          , Current()
+          , [NablNsNamespace(), NablNsProperty()]
+          )
+        , id
+        , id
+        )
+        ; match(child-uris__|c-uri1__)
+        ; match(sibl-uris__|s-uri1__)
+        ; match(implicits__|[])
+      |
+      )
 
-  nam-get-definition-keys :
-    Module(m, _, _) -> [m]
+  nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
+    ?Import(m)
+    ; origin-track-forced(
+        Import(
+          nabl-use(
+          | lang__
+          , partition__
+          , uniques__
+          , uris__
+          , [ UseCandidate(
+                NablNsModule()
+              , []
+              , Current()
+              , False()
+              , []
+              )
+            ]
+          )
+        )
+      |
+      )
 
-  nam-get-definitions :
-    Module(m, _, _) -> [(Module(), [m])]
-
-  nam-annotate-names(|paths__, path__):
-    Module(m, _, _) -> <Module(nam-annotate-def(|path__), id, id)>
-
-  nam-unique :
-    Module(m, _, _) -> <id>
-
-
-rules
-
-  adjust-index-def-data(store__|namespace__, path__):
-    Import(m) -> <store__> DefData(
-                             [Namespace()|path__]
-                           , Import()
-                           , (m, [])
-                           )
-
-  adjust-index-def-data(store__|namespace__, path__):
-    Import(m) -> <store__> DefData(
-                             [Property()|path__]
-                           , Import()
-                           , (m, [])
-                           )
-
-
-rules
-
-  nam-get-definition-keys :
-    NamespaceDef(n) -> [n]
-
-  nam-get-definitions :
-    NamespaceDef(n) -> [(Namespace(), [n])]
-
-  nam-annotate-names(|paths__, path__):
-    NamespaceDef(n) -> <NamespaceDef(nam-annotate-def(|path__))>
-
-  nam-unique :
-    NamespaceDef(n) -> <id>
-
-
-rules
-
-  nam-get-uses-keys :
-    NamespaceRef(n) -> [n]
-
-  nam-get-uses :
-    NamespaceRef(n) -> [(Namespace(), [n])]
-
-  nam-annotate-names(|paths__, path__):
-    NamespaceRef(n) -> <NamespaceRef(nam-annotate-use(|paths__, Namespace()))>
-
-
-rules
-
-  nam-get-definition-keys :
-    PropertyDef(p, ns, t) -> [p]
-
-  nam-get-definitions :
-    PropertyDef(p, ns, t) -> [(Property(), [p])]
-
-  nam-annotate-names(|paths__, path__):
-    PropertyDef(p, ns, t) -> <PropertyDef(nam-annotate-def(|path__), id, id)>
-
-  adjust-index-def-data(store__|namespace__, path__):
-    PropertyDef(p, ns, t) -> <store__> DefData(
-                                         [namespace__|path__]
-                                       , Type()
-                                       , (ns, t)
-                                       )
-
-  type-of :
-    PropertyDef(p, ns, t) -> (ns, t)
-
-  nam-unique :
-    PropertyDef(p, ns, t) -> <id>
+  nabl-import-site(|lang__, partition__, uris__, states__) =
+    ?Import(m)
+    ; origin-track-forced(
+        nabl-import(
+        | lang__
+        , partition__
+        , uris__
+        , [ Wildcard(
+              [ Import(lang__, NablNsNamespace())
+              , Import(lang__, NablNsProperty())
+              ]
+            , Context(
+                NablNsModule()
+              , m
+              , []
+              , Current()
+              )
+            , Current()
+            , []
+            )
+          ]
+        )
+      |
+      )
 
 
 rules
 
-  nam-get-uses-keys :
-    PropertyRef(p) -> [p]
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
+    ?NamespaceDef(n)
+    ; origin-track-forced(
+        NamespaceDef(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , partition__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsNamespace()
+          , Unique()
+          , Current()
+          , []
+          )
+        )
+        ; match(child-uris__|c-uri1__)
+        ; match(sibl-uris__|s-uri1__)
+        ; match(implicits__|[])
+      |
+      )
 
-  nam-get-uses :
-    PropertyRef(p) -> [(Property(), [p])]
-
-  nam-annotate-names(|paths__, path__):
-    PropertyRef(p) -> <PropertyRef(nam-annotate-use(|paths__, Property()))>
-
-
-rules
-
-  nam-get-scope-types :
-    BindingRule(_, _, _) -> [Variable()]
-
-
-rules
-
-  nam-get-definition-keys :
-    Var(x) -> [x]
-
-  nam-get-definitions :
-    Var(x) -> [(Variable(), [x])]
-
-  nam-annotate-names(|paths__, path__):
-    Var(x) -> <Var(nam-annotate-def(|path__))>
-
-  nam-unique :
-    Var(x) -> <id>
-
-
-rules
-
-  nam-get-definition-keys :
-    ListVar(x) -> [x]
-
-  nam-get-definitions :
-    ListVar(x) -> [(Variable(), [x])]
-
-  nam-annotate-names(|paths__, path__):
-    ListVar(x) -> <ListVar(nam-annotate-def(|path__))>
-
-  nam-unique :
-    ListVar(x) -> <id>
-
-
-rules
-
-  nam-get-uses-keys :
-    VarRef(x) -> [x]
-
-  nam-get-uses :
-    VarRef(x) -> [(Variable(), [x])]
-
-  nam-annotate-names(|paths__, path__):
-    VarRef(x) -> <VarRef(nam-annotate-use(|paths__, Variable()))>
+  nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
+    ?NamespaceRef(n)
+    ; origin-track-forced(
+        NamespaceRef(
+          nabl-use(
+          | lang__
+          , partition__
+          , uniques__
+          , uris__
+          , [ UseCandidate(
+                NablNsNamespace()
+              , []
+              , Current()
+              , True()
+              , []
+              )
+            ]
+          )
+        )
+      |
+      )
 
 
 rules
 
-  nam-get-uses-keys :
-    ListVarRef(x) -> [x]
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
+    ?PropertyDef(p, ns, t)
+    ; origin-track-forced(
+        PropertyDef(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , partition__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsProperty()
+          , Unique()
+          , Current()
+          , []
+          )
+        , id
+        , id
+        )
+        ; match(child-uris__|c-uri1__)
+        ; match(sibl-uris__|s-uri1__)
+        ; match(implicits__|[])
+      |
+      )
 
-  nam-get-uses :
-    ListVarRef(x) -> [(Variable(), [x])]
+  nabl-prop-site(|lang__, partition__, states__, implicits__) =
+    ?PropertyDef(p, ns, t)
+    ; origin-track-forced(
+        PropertyDef(
+          nabl-props(
+          | partition__
+          , [ Prop(
+                Type()
+              , (ns, t)
+              , []
+              )
+            ]
+          )
+        , id
+        , id
+        )
+      |
+      )
 
-  nam-annotate-names(|paths__, path__):
-    ListVarRef(x) -> <ListVarRef(nam-annotate-use(|paths__, Variable()))>
+  nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
+    ?PropertyRef(p)
+    ; origin-track-forced(
+        PropertyRef(
+          nabl-use(
+          | lang__
+          , partition__
+          , uniques__
+          , uris__
+          , [ UseCandidate(
+                NablNsProperty()
+              , []
+              , Current()
+              , True()
+              , []
+              )
+            ]
+          )
+        )
+      |
+      )
+
+
+rules
+
+  nabl-scoping-site =
+    ?BindingRule(_, _, _)
+    ; origin-track-forced(
+        nabl-scope(|[NablNsVariable()])
+      |
+      )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
+    ?Var(x)
+    ; origin-track-forced(
+        Var(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , partition__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsVariable()
+          , Unique()
+          , Current()
+          , []
+          )
+        )
+        ; match(child-uris__|c-uri1__)
+        ; match(sibl-uris__|s-uri1__)
+        ; match(implicits__|[])
+      |
+      )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
+    ?ListVar(x)
+    ; origin-track-forced(
+        ListVar(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , partition__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsVariable()
+          , Unique()
+          , Current()
+          , []
+          )
+        )
+        ; match(child-uris__|c-uri1__)
+        ; match(sibl-uris__|s-uri1__)
+        ; match(implicits__|[])
+      |
+      )
+
+  nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
+    ?VarRef(x)
+    ; origin-track-forced(
+        VarRef(
+          nabl-use(
+          | lang__
+          , partition__
+          , uniques__
+          , uris__
+          , [ UseCandidate(
+                NablNsVariable()
+              , []
+              , Current()
+              , True()
+              , []
+              )
+            ]
+          )
+        )
+      |
+      )
+
+  nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
+    ?ListVarRef(x)
+    ; origin-track-forced(
+        ListVarRef(
+          nabl-use(
+          | lang__
+          , partition__
+          , uniques__
+          , uris__
+          , [ UseCandidate(
+                NablNsVariable()
+              , []
+              , Current()
+              , True()
+              , []
+              )
+            ]
+          )
+        )
+      |
+      )
