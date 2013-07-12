@@ -15,15 +15,15 @@ binding rules
 
 	Module(m, _, _): 
 		defines Module m
-		scopes Namespace, Property
+		//scopes Namespace, Property
 		
-	Import(m): 
-		imports Namespace, Property from Module m
+	//Import(m): 
+	//	imports Namespace, Property from Module m
 	
 binding rules
 
 	NamespaceDef(n): 
-		defines Namespace n
+		defines non-unique Namespace n
 	
 	NamespaceRef(n): 
 		refers to Namespace n
@@ -31,7 +31,7 @@ binding rules
 binding rules
 
 	PropertyDef(p, ns, t): 
-		defines Property p of type (ns, t)
+		defines non-unique Property p of type (ns, t)
 	
 	PropertyRef(p): 
 		refers to Property p
@@ -39,6 +39,9 @@ binding rules
 binding rules
 
 	BindingRule(_, _, _):
+		scopes Variable
+		
+	RefClausePart(_, _, _, _, _, _):
 		scopes Variable
 		
 	Var(x):
