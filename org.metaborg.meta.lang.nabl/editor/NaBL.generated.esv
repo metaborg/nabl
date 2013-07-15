@@ -1,0 +1,82 @@
+module NaBL.generated
+
+completions
+  completion template ModuleSection : "namespaces " =
+    "namespaces\n\t" (cursor) (blank)  
+
+completions
+  completion template ModuleSection : "properties " =
+    "properties\n\t" (cursor) (blank)  
+  completion template PropertyDef : "PropertyID of NamespaceID : Sort" =
+    <PropertyID:PropertyID> " of " <NamespaceID:NamespaceRef> " : " <Sort:Sort> (blank)  
+  completion template PropertyRef : "type" =
+    "type"                                  
+  completion template PropertyTerm : "of type Term" =
+    "of " <type:PropertyRef> " " <Term:Term>  
+  completion template PropertyPattern : "of type Term" =
+    "of " <:PropFilter> " " <type:PropertyRef> " " <Term:Term>  
+  completion template PropFilter : "conformant" =
+    "conformant"                       
+  completion template Constraint : "where Term has type Pattern" =
+    "where " <Term:Term> " has " <type:PropertyRef> " " <Pattern:Pattern>  
+
+completions
+  completion template ModuleSection : "binding rules " =
+    "binding rules\n\t" (cursor) (blank)  
+  completion template BindingRule : "Pattern : BindingClause" =
+    <Pattern:Pattern> " " <:Constraint> " : " <BindingClause:BindingClause> (blank)  
+
+completions
+  completion template BindingClause : " defines NamespaceID Term " =
+    <:DefKind> " defines " <:Unique> " " <NamespaceID:NamespaceRef> " " <Term:Term> " " <:PropertyTerm> " " <:InDefScopes> " " <:Constraint> (blank)  
+  completion template DefKind : "implicitly" =
+    "implicitly"                                                                                                                        
+  completion template Unique : "unique" =
+    "unique"                                                                                                                                 
+  completion template Unique : "non-unique" =
+    "non-unique"                                                                                                                         
+  completion template BindingClause : "scopes NamespaceID" =
+    "scopes " <NamespaceID:NamespaceRef> (blank)                                                                          
+  completion template BindingClause : "refers to NamespaceID Term " =
+    "refers to " <:Disambiguator> " " <NamespaceID:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <:InRefScope> " " <:Constraint> (blank)  
+  completion template RefClausePart : "refers to NamespaceID Term " =
+    "refers to " <:Disambiguator> " " <NamespaceID:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <:InRefScope> " " <:Constraint> (blank)  
+  completion template BindingClause : "imports NamespaceID " =
+    "imports " <NamespaceID:ImportRef> " " <:PropertyPattern> " " <:FromRefScope> " " <:IntoDefScopes> " " <:Constraint> (blank)  
+  completion template ImportClausePart : "imports NamespaceID Term " =
+    "imports " <:Disambiguator> " " <NamespaceID:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <:FromRefScope> " " <:Alias> " " <:IntoDefScopes> " " <:Constraint> (blank)  
+  completion template ImportClausePart : "imports NamespaceID " =
+    "imports " <NamespaceID:ImportRef> " " <:PropertyPattern> " " <:FromRefScope> " " <:IntoDefScopes> " " <:Constraint> (blank)  
+  completion template Alias : "as Term" =
+    "as " <Term:Term>                                                                                                                        
+  completion template ImportRef : "imported NamespaceID" =
+    "imported " <NamespaceID:NamespaceRef>                                                                                  
+
+completions
+  completion template InDefScopes : "in Term" =
+    "in " <Term:DefScopes>                                    
+  completion template IntoDefScopes : "into Term" =
+    "into " <Term:DefScopes>                              
+  completion template DefScopes : "current scope" =
+    "current scope"                                       
+  completion template DefScope : "subsequent scope" =
+    "subsequent scope"                                  
+  completion template InRefScope : "in Term" =
+    "in " <Term:RefScope>                                      
+  completion template FromRefScope : "from Term" =
+    "from " <Term:RefScope>                                
+  completion template RefScope : "current scope" =
+    "current scope"                                        
+  completion template RefScope : "enclosing NamespaceID" =
+    "enclosing " <NamespaceID:NamespaceRef>        
+  completion template RefScope : " NamespaceID Term " =
+    <:Disambiguator> " " <NamespaceID:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <:InRefScope>  
+  completion template Disambiguator : "best" =
+    "best"                                                     
+
+completions
+  completion template Constraint : "where Term refers to NamespaceID Pattern " =
+    "where " <Term:Term> " refers to " <NamespaceID:NamespaceRef> " " <Pattern:Pattern> " " <:PropertyPattern> " " <:InRefScope> (blank)  
+
+completions
+  
