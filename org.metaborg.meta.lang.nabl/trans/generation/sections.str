@@ -187,7 +187,7 @@ rules // binding rules
        b* := [<binding-to-scope-rule> rule] 
     <+ b* := [] 
     where 
-       d* := [<binding-to-def-rule> rule] 
+       d* := <binding-to-def-rules> rule 
     <+ d* := [] 
     where
        bound*         := <bound-vars> pattern
