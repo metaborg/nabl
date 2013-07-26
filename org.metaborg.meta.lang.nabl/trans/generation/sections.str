@@ -54,7 +54,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("prop-calc")
+	      SVar("nabl-prop-calc")
 	    , []
 	    , [Var("task*"), NoAnnoList(List([]))]
 	    )
@@ -94,7 +94,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("prop-lookup")
+	      SVar("nabl-prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -107,7 +107,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
 	  , CallT(
-	      SVar("prop-lookup")
+	      SVar("nabl-prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -118,11 +118,21 @@ overlays
 	, SDefT(
       p-match
     , []
-    , [DefaultVarDec("task*"), DefaultVarDec("relation")]
+    , [DefaultVarDec("task*"), DefaultVarDec("expected")]
     , CallT(
-        SVar("prop-match")
+        SVar("nabl-prop-match")
       , []
-      , [Var("task*"), Var("relation")]
+      , [pt, Var("task*"), TERM("Eq"), Var("expected")]
+      )
+    )
+  , SDefT(
+      p-match
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("relation"), DefaultVarDec("expected")]
+    , CallT(
+        SVar("nabl-prop-match")
+      , []
+      , [pt, Var("task*"), Var("relation"), Var("expected")]
       )
     )
   , SDefT(
@@ -134,7 +144,7 @@ overlays
   , SDefNoArgs(
 	    p-of
 	  , CallT(
-	      SVar("property-of")
+	      SVar("nabl-get-property")
 	    , []
 	    , [pt]
 	    )
@@ -161,12 +171,12 @@ rules // imports
   	Imports(import*) -> <MkSingleton> Imports(import'*)
   	with
 			if nabl-uses-custom-library(|<project-path>) then
-				![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types"), ImportWildcard("lib/editor")|import*]
+				![ImportWildcard("lib/nabl"), ImportWildcard("lib/task"), ImportWildcard("lib/properties"), ImportWildcard("lib/types"), ImportWildcard("lib/editor")|import*]
 			else
-				![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types"), ImportWildcard("lib/runtime/editor")|import*]
+				![ImportWildcard("lib/runtime/nabl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/properties"), ImportWildcard("lib/runtime/types"), ImportWildcard("lib/runtime/editor")|import*]
 			end => import'*
     
-    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nbl/collect.str]
+    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nabl/collect.str]
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/task/core.str]
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/analysis/core.str]
     
