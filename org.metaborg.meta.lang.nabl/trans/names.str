@@ -1,10 +1,11 @@
 module names
 
 imports
-  lib/runtime/nbl/-
-  lib/runtime/task/-
-  lib/runtime/types/-
-  lib/runtime/editor/-
+  lib/nabl/-
+  lib/task/-
+  lib/properties/-
+  lib/types/-
+  lib/editor/-
   include/NameBindingLanguage
 
 
