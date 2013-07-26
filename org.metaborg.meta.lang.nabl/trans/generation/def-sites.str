@@ -5,7 +5,10 @@ imports
   libstrc
   include/NameBindingLanguage
   
-  generation/-
+  generation/util
+  generation/main
+  generation/sections
+  generation/scoping-sites
   
 rules
   
@@ -13,17 +16,12 @@ rules
     
 rules
   
-  binding-to-name-rule: 
-    BindingRule(pattern, constr*, clause*) -> NAME_RULE(pattern, name)
-    where
-      [name] := <filter(def-to-name + use-to-name)> clause*
-      
-  binding-to-def-rule:
-    BindingRule(pattern, constr*, clause*) -> DEF_RULE(pattern, seq)
+  binding-to-def-rules:
+    BindingRule(pattern, constr*, clause*) -> [DEF_RULE(pattern, seq), ext*]
     where
       def-clause* := <filter-def-clauses; nonempty> clause*
     ; implicit*   := <implicit-def-vars> def-clause*
-    ; ns-term*    := <filterconcat(?ScopeClause(<map(ns-to-term)>))> clause*    
+    ; ns-term*    := <filter(?ScopeClause(<map(ns-to-term)>)); concat> clause*    
     ; cong*       := <filter-with-index(to-def-cong(|pattern, ns-term*))> def-clause*
     ; m           := <length> def-clause*
     ; uri-cvar    := <uri-child-var> m
@@ -33,22 +31,28 @@ rules
                               , MATCH(CALL("sibl-uris__"), uri-svar)
                               , MATCH(CALL("implicits__"), LIST(implicit*))
                               ] 
-                                   
+    ; ext*        := <filter(to-external-rule(|pattern))> def-clause*  
+                             
+  to-external-rule(|pattern):
+  	DefClause(_, _, _, term, _, DefScopes(scope*), _) -> EXTERNAL_DEF_RULE(pattern, cong)
+  	where
+  		repl* := <filter(?DefScope(<!(<id>, ALIAS_CALL)>)); nonempty> scope*
+    ; cong  := <replace-all-id(|[(term, EXTERNAL_DEF_CALL), repl*])> pattern
+  
   to-def-cong(|pattern, scope*):
     (o, clause) -> def-cong
     where
       DefClause(Explicit(), unique, ns, term, _, scope, _) := clause
     ; scope'* := scope*
     + DefClause(Implicit(), unique, ns, term, _, scope, _) := clause
-    ; scope'*  := []
+    ; scope'* := []
     ; impl-var := <implicit-def-var> o 
     + SingleImport(_, ns, _, _, _, Alias(term), scope, _)  := clause
-    ; unique  := Unique()
-    ; scope'* := [] // TODO is this correct?
+    ; unique := Unique()
     where
       ns-term     := <ns-to-term> ns
-    ; unique-term := <nabl-to-str> unique
     ; scope-term  := <scope-to-term> scope
+    ; unique-term := <nabl-to-str> unique
     ; i           := <dec> o
     ; uri-cvar1   := <uri-child-var> i
     ; uri-cvar2   := <uri-child-var> o
@@ -85,7 +89,7 @@ rules
   
 overlays
   
-  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, App(CallNoArgs(SVar("strip-annos")), rhs)))
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
 
 overlays
   
@@ -101,9 +105,17 @@ overlays
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
-  , Seq(Match(pattern), body)
+  , Seq(Match(pattern), FORCE_ORIGINS(body))
   )  
 	
+	EXTERNAL_DEF_RULE(pattern, body) =
+  SDefT(
+    "nabl-external-def-site"
+  , []
+  , [ DefaultVarDec("partition__") ]
+  , Seq(Match(pattern), FORCE_ORIGINS(body))
+  ) 
+  
   DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
   CallT(
     SVar("nabl-def")
@@ -116,5 +128,17 @@ overlays
     , ns, u, ds, LIST(s)]
   )
   
+  ALIAS_CALL() = 
+  CallT(
+    SVar("nabl-def-alias")
+  , []
+  , [ Var("partition__")
+    , Var("uri__")
+    ]
+  )
+  
+  EXTERNAL_DEF_CALL() = 
+	Where(Assign(Var("uri__"), RootApp(CallNoArgs(SVar("nabl-uri")))))
+  	
   MATCH(s, v) =
   CALL("match", [s], [v])

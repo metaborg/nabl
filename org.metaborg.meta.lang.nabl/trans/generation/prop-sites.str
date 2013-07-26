@@ -60,11 +60,10 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
-    , DefaultVarDec("uri__")
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
     ]
-  , Seq(Match(pattern), body)
+  , Seq(Match(pattern), FORCE_ORIGINS(body))
   )
 
   PROP_CALL(ps) = 

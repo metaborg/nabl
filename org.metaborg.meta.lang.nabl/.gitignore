@@ -6,8 +6,14 @@ editor/*.generated.esv
 lib
 lib-refactoring
 utils
-#syntax/*generated.sdf
+syntax/*generated.sdf
 syntax/*.generated.pp
 trans/*.generated.str
 test/*.str
 *.aterm
+
+# Required for build because SDF3 is not available during build.
+!editor/NaBL.generated.esv
+!editor/Modules.generated.esv
+!syntax/Modulesgenerated.sf
+!syntax/NaBLgenerated.sf

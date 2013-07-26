@@ -29,7 +29,7 @@ templates // properties
   PropertyRef.PropertyRef = <<PropertyID>>
 
   PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
-  PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Pattern>>
+  PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Term>>
 
   PropFilter.Equal      = <>
   PropFilter.Conformant = <conformant>
@@ -120,8 +120,8 @@ templates // scopes
   
 templates // constraints
 
-  Constraint.ReferenceConstraint = <
-    where <Term> refers to <NamespaceRef> <Term> <PropertyPattern*> <InRefScope>> 
+  Constraint.Reference = <
+    where <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
   
 context-free syntax
 

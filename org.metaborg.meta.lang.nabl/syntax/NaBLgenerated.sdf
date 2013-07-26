@@ -19,7 +19,7 @@ exports
     "type"                                       -> PropertyRef     {cons("TypeProp")}
     PropertyID                                   -> PropertyRef     {cons("PropertyRef")}
     "of" PropertyRef Term                        -> PropertyTerm    {cons("PropertyTerm")}
-    "of" PropFilter PropertyRef Pattern          -> PropertyPattern {cons("PropertyPattern")}
+    "of" PropFilter PropertyRef Term             -> PropertyPattern {cons("PropertyPattern")}
                                                  -> PropFilter      {cons("Equal")}
     "conformant"                                 -> PropFilter      {cons("Conformant")}
     "where" Term "has" PropertyRef Pattern       -> Constraint      {cons("PropertyConstraint")}
@@ -103,7 +103,7 @@ exports
     CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
 
   context-free syntax
-    "where" Term "refers" "to" NamespaceRef Term PropertyPattern* InRefScope -> Constraint {cons("ReferenceConstraint")}
+    "where" Term "refers" "to" NamespaceRef Pattern PropertyPattern* InRefScope -> Constraint {cons("Reference")}
 
   context-free syntax
     CONTENTCOMPLETE -> Constraint {cons("COMPLETION-Constraint")}
