@@ -1,0 +1,21 @@
+module Stratego
+
+imports 
+
+  include/NameBindingLanguage
+  names
+  
+namespaces
+ 
+  Strategy
+  
+binding rules
+
+  Rewrite(_, n, _):
+    defines non-unique Strategy n
+    
+  Body(_, _, _):
+    scopes Variable
+    
+  ApplMatch(_, n, _, _): 
+  	refers to Strategy n

@@ -110,3 +110,29 @@ exports
 
   context-free syntax
     "into" -> Id {reject}
+
+  context-free syntax
+    "rewrite" "rules" RewriteRule*       -> ModuleSection {cons("RewriteRules")}
+    Explain Id ":" RewriteBody           -> RewriteRule   {cons("Rewrite")}
+    Pattern "->" Term WhereClause        -> RewriteBody   {cons("Body")}
+                                         -> WhereClause   {cons("None")}
+    "where" {StrClause ";"}*             -> WhereClause   {cons("Where")}
+    Explain "<" Id ">" Term "=>" Pattern -> StrClause     {cons("ApplMatch")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> RewriteRule   {cons("COMPLETION-RewriteRule")}
+    CONTENTCOMPLETE -> RewriteBody   {cons("COMPLETION-RewriteBody")}
+    CONTENTCOMPLETE -> WhereClause   {cons("COMPLETION-WhereClause")}
+    CONTENTCOMPLETE -> StrClause     {cons("COMPLETION-StrClause")}
+
+  context-free syntax
+    "explain" StrClause    -> ModuleSection {cons("Explanation")}
+                           -> Explain       {cons("None")}
+    "[matching" "failure]" -> Explain       {cons("MatchFail")}
+    "[rewrite" "failure]"  -> Explain       {cons("RewriteFail")}
+    "[success]"            -> Explain       {cons("Success")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> Explain       {cons("COMPLETION-Explain")}

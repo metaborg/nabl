@@ -26,6 +26,6 @@ exports
     Wld -/- [a-zA-Z0-9\'\-\_]
 
   context-free syntax
-    
+
     Term[[Var]]     -> Pattern %% term binding variables
     Term[[VarRef]]  -> Term    %% term referencing variables

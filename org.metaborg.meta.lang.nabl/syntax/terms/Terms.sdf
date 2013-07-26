@@ -28,6 +28,8 @@ exports
     "[" {Term[[Var]] ","}* "]" 	               -> PreTerm[[Var]] {"List"}
     "[" {Term[[Var]] ","}* "|" Term[[Var]] "]" -> PreTerm[[Var]] {"ListTail"}
 
+    PreTerm[[Var]]"@"PreTerm[[Var]] -> PreTerm[[Var]] {"Appl"}
+    
   context-free syntax
   	
   	Var -> PreTerm[[Var]] 

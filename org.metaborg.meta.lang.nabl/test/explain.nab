@@ -1,0 +1,57 @@
+module example
+
+explain
+
+  <eval> 
+    Add(
+    	IntLiteral("21")
+    , Add(
+    	  IntLiteral("14")
+      , IntLiteral("7")
+      )
+    ) => IntLiteral("42")
+
+rewrite rules
+
+  [matching failure] 
+  eval : IntLiteral(i) -> IntLiteral(i)
+  
+  [matching failure]  
+  eval : True()  -> True()
+
+	[matching failure] 
+  eval : False() -> False()
+
+  [rewrite failure] 
+  eval : 
+    Add(e1, e2) -> i
+    where
+      [success]
+      <eval> e1 => IntLiteral(i1)
+    ; [matching failure]
+      <eval> e2@Add(IntLiteral("14"), IntLiteral("7")) => IntLiteral(i2)@"21"
+    ; <addS> (i1, i2) => i
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  addS : f -> f

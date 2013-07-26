@@ -1,0 +1,75 @@
+module Stratego
+
+imports
+  lib/runtime/nbl/-
+  lib/runtime/task/-
+  lib/runtime/types/-
+  lib/runtime/editor/-
+  include/NameBindingLanguage
+  names
+
+
+signature
+  constructors
+    NablNsStrategy : Namespace
+
+
+rules
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
+    ?Rewrite(_, n, _)
+    ; origin-track-forced(
+        Rewrite(
+          id
+        , nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , partition__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsStrategy()
+          , NonUnique()
+          , Current()
+          , []
+          )
+        , id
+        )
+        ; match(child-uris__|c-uri1__)
+        ; match(sibl-uris__|s-uri1__)
+        ; match(implicits__|[])
+      |
+      )
+
+  nabl-scoping-site =
+    ?Body(_, _, _)
+    ; origin-track-forced(
+        nabl-scope(|[NablNsVariable()])
+      |
+      )
+
+  nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
+    ?ApplMatch(_, n, _, _)
+    ; origin-track-forced(
+        ApplMatch(
+          id
+        , nabl-use(
+          | lang__
+          , partition__
+          , uniques__
+          , uris__
+          , [ UseCandidate(
+                NablNsStrategy()
+              , []
+              , Current()
+              , True()
+              , []
+              )
+            ]
+          )
+        , id
+        , id
+        )
+      |
+      )

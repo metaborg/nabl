@@ -80,3 +80,25 @@ completions
 
 completions
   
+
+completions
+  completion template ModuleSection : "rewrite rules " =
+    "rewrite rules\n\t" (cursor) (blank)  
+  completion template RewriteRule : " Id:RewriteBody" =
+    <:Explain> " " <Id:Id> ":" <RewriteBody:RewriteBody> (blank)  
+  completion template RewriteBody : "Pattern -> Term" =
+    <Pattern:Pattern> " -> " <Term:Term> (blank)  
+  completion template WhereClause : "where " =
+    "where\n\t" (cursor) (blank)  
+  completion template StrClause : " <Id> Term => Pattern" =
+    <:Explain> " <" <Id:Id> "> " <Term:Term> " => " <Pattern:Pattern> (blank)  
+
+completions
+  completion template ModuleSection : "explain StrClause" =
+    "explain " <StrClause:StrClause> (blank)  
+  completion template Explain : "[matching failure]" =
+    "[matching failure]"  
+  completion template Explain : "[rewrite failure]" =
+    "[rewrite failure]"  
+  completion template Explain : "[success]" =
+    "[success]"  

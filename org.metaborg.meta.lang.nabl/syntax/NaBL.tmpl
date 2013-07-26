@@ -127,3 +127,40 @@ context-free syntax
 
   Id = "into" {reject}
   
+templates
+
+  ModuleSection.RewriteRules = <
+  rewrite rules
+    <RewriteRule*>
+  >
+  
+  RewriteRule.Rewrite = <
+  <Explain> <Id>:<RewriteBody>
+  >
+  
+  RewriteBody.Body = [
+  [Pattern] -> [Term]
+    [WhereClause]
+  ]
+  
+  WhereClause.None  = <>
+  WhereClause.Where = <
+  where
+    <StrClause*; separator = "\n\t; ">
+  >
+  
+  StrClause.ApplMatch = [
+  [Explain] <[Id]> [Term] => [Pattern]  
+  ]
+
+templates
+
+  ModuleSection.Explanation = <
+  explain <StrClause> 
+  >
+  
+  Explain.None        = <>
+  Explain.MatchFail   = <[matching failure]>
+  Explain.RewriteFail = <[rewrite failure]>
+  Explain.Success     = <[success]>
+  

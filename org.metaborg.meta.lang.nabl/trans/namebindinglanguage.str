@@ -13,7 +13,8 @@ imports
 	constraints
 	names
   generation/-
-
+  Stratego
+  
 rules // Analysis
   
   editor-analyze = analysis-default-editor // analysis-default-cmd

@@ -1,0 +1,40 @@
+module example2
+
+rewrite rules
+
+  eval : IntLiteral(i) -> IntLiteral(i)
+  
+  eval : True()  -> True()
+
+  eval : False() -> False()
+
+  eval : 
+    Add(e1, e2) -> i
+    where
+      <eval> e1 => IntLiteral(i1)
+    ; <eval> e2 => IntLiteral(i2)
+    ; <addS> (i1, i2) => i
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  addS : f -> f
