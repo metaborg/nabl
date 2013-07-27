@@ -186,11 +186,14 @@ rules // binding rules
     BindingRules(rs) -> [Rules(<filter-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, i*, m1*, m2*]
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*]
     where 
        b* := [<binding-to-scope-rule> rule] 
     <+ b* := [] 
     where 
+       n* := [<binding-to-name-rule> rule] 
+    <+ n* := [] 
+    where
        d* := <binding-to-def-rules> rule 
     <+ d* := [] 
     where
