@@ -19,6 +19,9 @@ signature
 
 rules
 
+  nabl-get-name :
+    Module(m, _, _) -> <strip-annos> m
+
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
     ?Module(m, _, _)
     ; origin-track-forced(
@@ -48,6 +51,9 @@ rules
 
 rules
 
+  nabl-get-name :
+    NamespaceDef(n) -> <strip-annos> n
+
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
     ?NamespaceDef(n)
     ; origin-track-forced(
@@ -71,6 +77,9 @@ rules
         ; match(implicits__|[])
       |
       )
+
+  nabl-get-name :
+    NamespaceRef(n) -> <strip-annos> n
 
   nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
     ?NamespaceRef(n)
@@ -96,6 +105,9 @@ rules
 
 
 rules
+
+  nabl-get-name :
+    PropertyDef(p, ns, t) -> <strip-annos> p
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
     ?PropertyDef(p, ns, t)
@@ -123,7 +135,7 @@ rules
       |
       )
 
-  nabl-prop-site(|lang__, partition__, states__, implicits__) =
+  nabl-prop-site(|lang__, partition__, uris__, states__, implicits__) =
     ?PropertyDef(p, ns, t)
     ; origin-track-forced(
         PropertyDef(
@@ -141,6 +153,9 @@ rules
         )
       |
       )
+
+  nabl-get-name :
+    PropertyRef(p) -> <strip-annos> p
 
   nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
     ?PropertyRef(p)
@@ -181,6 +196,9 @@ rules
       |
       )
 
+  nabl-get-name :
+    Var(x) -> <strip-annos> x
+
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
     ?Var(x)
     ; origin-track-forced(
@@ -204,6 +222,9 @@ rules
         ; match(implicits__|[])
       |
       )
+
+  nabl-get-name :
+    ListVar(x) -> <strip-annos> x
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
     ?ListVar(x)
@@ -229,6 +250,9 @@ rules
       |
       )
 
+  nabl-get-name :
+    VarRef(x) -> <strip-annos> x
+
   nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
     ?VarRef(x)
     ; origin-track-forced(
@@ -250,6 +274,9 @@ rules
         )
       |
       )
+
+  nabl-get-name :
+    ListVarRef(x) -> <strip-annos> x
 
   nabl-use-site(|lang__, partition__, uniques__, uris__, states__) =
     ?ListVarRef(x)

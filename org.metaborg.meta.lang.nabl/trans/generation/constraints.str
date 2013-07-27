@@ -2,10 +2,10 @@ module generation/constraints
 
 imports 
   
-  libstrc
   include/NameBindingLanguage
-  generation/util
-  generation/main
+  libstrc
+  
+  generation/-
   
 rules
   
@@ -28,6 +28,15 @@ rules
       ; match-task* := <map-with-index(match-task(|k, result, match*))> match-repl*
       end
     ; (task*, r*) := <constraints-to-tasks(|<union> (bound*, bind*), i, <inc> j)> (cs, [match-repl*, repl*])
+  
+  constraints-to-tasks(|bound*, i, j):
+    ([ReferenceConstraint(term, ns, term', prop*, ctx)|cs], repl*) -> ([task, task*], r*)
+    where 
+      k           := <extend-index(|i)> j
+    ; result      := <result-var> k
+    ; cand        := <to-use-candidate(|bound*, repl*, k); Snd> (k, RefClausePart(All(), ns, term', prop*, ctx, []))
+    ; task        := REF_TASK(result, term, term', cand)
+    ; (task*, r*) := <constraints-to-tasks(|bound*, i, <inc> j)> (cs, repl*)
             
   unbound-var(|bound*) =
   	?Var(v); 
