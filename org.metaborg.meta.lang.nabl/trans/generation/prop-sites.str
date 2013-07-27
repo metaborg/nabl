@@ -60,6 +60,7 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
+    , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
     ]
