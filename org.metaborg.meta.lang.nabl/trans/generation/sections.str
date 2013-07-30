@@ -152,13 +152,13 @@ overlays
 	, RDefT(
 		  "nabl-new-property"
 		, []
-		, [DefaultVarDec(ListVar("task*"))]
+		, [DefaultVarDec("lang"), DefaultVarDec("partition"), DefaultVarDec("uri*")]
 		, RuleNoCond(
 		    NoAnnoList(
 		      Tuple([pt, Var("term")])
 		    )
 		  , App(
-		      CallT(SVar(p-of), [], [Var(ListVar("task*"))])
+		      CallT(SVar(p-of), [], [Var(ListVar("partition"))])
 		    , Var("term")
 		    )
 		  )
