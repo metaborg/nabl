@@ -3,6 +3,7 @@ bin
 include
 editor/java/trans
 editor/*.generated.esv
+editor/*.generated.str
 lib
 lib-refactoring
 utils
