@@ -32,7 +32,7 @@ rules // properties
     Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
     where
     	cons* := <map(nabl-to-str)> prop*
-    ; rule  := SDefNoArgs("nabl-custom-properties", Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)))
+    ; rule  := SDef("nabl-custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)), CallNoArgs(SVar("add-properties"))))
     ; rule* := <mapconcat(prop-to-rules)> prop*
   
   nabl-to-str: // generate constructors for properties

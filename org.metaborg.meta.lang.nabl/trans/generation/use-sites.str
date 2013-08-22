@@ -38,9 +38,9 @@ rules
   to-use-candidate(|bound*, glob-repl*, i):
     (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, wci, dep*))
     where
-      RefClausePart(disamb, ns, term, prop*, ctx, constr*)                    := part
-    + SingleImport(disamb, ns, term, prop*, ctx, alias, _, constr*)           := part
-    + WildcardImport(_, _, Context(disamb, ns, term, prop*, ctx), _, constr*) := part
+      (RefClausePart(disamb, ns, term, prop*, ctx, constr*)                            := part; import-ns* := [])
+    + (SingleImport(disamb, ns, term, prop*, ctx, alias, _, constr*)                   := part; import-ns* := [])
+    + WildcardImport(import-ns*, _, Context(disamb, ns, term, prop*, ctx), _, constr*) := part
     where
       ns-term        := <ns-to-term> ns
     ; k              := <extend-index(|i)> j
@@ -48,18 +48,25 @@ rules
     ; prop-term*     := <map(prop-pattern-to-str(|[]); replace-all(|repl*))> prop*
     ; ctx-term       := <scope-to-term; replace-all(|repl*)> ctx
     ; dep*           := <map(Snd)> repl*
-    ; wci            := <part-to-wildcardimport> part
+    ; wci            := <part-to-wildcardimport(|import-ns*)> part
   
   prop-pattern-to-str(|dependencies): PropertyPattern(type, p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies) 
 
-  part-to-wildcardimport:
+  part-to-wildcardimport(|import-ns*):
     RefClausePart(_, _, _, _, _, _) -> TERM("True")
 
-  part-to-wildcardimport:
+  part-to-wildcardimport(|import-ns*):
     SingleImport(_, _, _, _, _, _, _, _) -> TERM("True")
     
-  part-to-wildcardimport:
-    WildcardImport(_, _, _, _, _) -> TERM("False")
+  part-to-wildcardimport(|import-ns*):
+    WildcardImport(_, _, Context(_, ns, _, _, _), _, _) -> TERM("False")
+    where
+      <collect-one(?ns)> import-ns*
+      
+  part-to-wildcardimport(|import-ns*):
+    WildcardImport(_, _, Context(_, ns, _, _, _), _, _) -> TERM("True")
+    where
+      not(<collect-one(?ns)> import-ns*)
 
   to-match-rules(|bound*, i):
     (j, RefClause(part*)) -> rule*
