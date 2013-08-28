@@ -10,6 +10,7 @@ imports
   lib/runtime/tmpl/-
   lib/runtime/types/-
   lib/runtime/editor/-
+  editor/NameBindingLanguage-Outliner
 	constraints
 	names
   generation/-
