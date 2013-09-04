@@ -200,7 +200,7 @@ rules // binding rules
   to-rules:
     (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*]
     where 
-       b* := [<binding-to-scope-rule> rule] 
+       b* := <binding-to-scope-rules> rule 
     <+ b* := [] 
     where 
        n* := [<binding-to-name-rule> rule] 

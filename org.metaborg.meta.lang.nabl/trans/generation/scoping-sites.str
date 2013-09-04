@@ -10,8 +10,8 @@ imports
   
 rules 
   
-  binding-to-scope-rule:
-    BindingRule(pattern, constr*, clause*) -> SCOPE_RULE(pattern, seq)
+  binding-to-scope-rules:
+    BindingRule(pattern, constr*, clause*) -> [SCOPE_RULE(pattern, seq), QUERY_SCOPE_RULE(pattern, ns-term*)]
     where
       cong* := <filterconcat(to-scope-cong(|pattern))> clause*
     where
@@ -21,6 +21,14 @@ rules
     <+ anon* := []
     where
       seq := <nonempty; to-seq> [cong*, anon*] 
+  
+  binding-to-scope-rules:
+    BindingRule(pattern, constr*, clause*) -> [QUERY_SCOPE_RULE(pattern, ns-term*)]
+    where
+      cong* := <filterconcat(to-scope-cong(|pattern))> clause*
+    where
+       ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
+     ; <fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _))> clause*
     
   to-scope-cong(|pattern):
     _ -> <filterconcat(to-scope-cong(|pattern)); nonempty> part*
@@ -90,6 +98,8 @@ rules
     ; ctx-term   := <scope-to-term> ctx
   
 overlays
+  
+  QUERY_SCOPE_RULE(pattern, ns) = SDefNoArgs("nabl-get-scope", Seq(Match(pattern), Build(LIST(ns))))
   
   SCOPE_RULE(pattern, body) = SDefNoArgs("nabl-scoping-site", Seq(Match(pattern), FORCE_ORIGINS(body)))
   SCOPE_CALL(ns)            = CallT(SVar("nabl-scope"), [], [LIST(ns)])
