@@ -189,12 +189,20 @@ rules
       |
       )
 
+  nabl-get-scope =
+    ?BindingRule(_, _, _)
+    ; ![NablNsVariable()]
+
   nabl-scoping-site =
     ?RefClausePart(_, _, _, _, _, _)
     ; origin-track-forced(
         nabl-scope(|[NablNsVariable()])
       |
       )
+
+  nabl-get-scope =
+    ?RefClausePart(_, _, _, _, _, _)
+    ; ![NablNsVariable()]
 
   nabl-get-name :
     Var(x) -> <strip-annos> x
