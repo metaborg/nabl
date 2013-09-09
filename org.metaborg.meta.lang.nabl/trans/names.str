@@ -139,7 +139,7 @@ rules
     ?PropertyDef(p, ns, t)
     ; origin-track-forced(
         PropertyDef(
-          nabl-props(
+          nabl-store-props(
           | partition__
           , [ Prop(
                 Type()

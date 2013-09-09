@@ -12,7 +12,7 @@ imports
   lib/runtime/editor/-
   editor/NameBindingLanguage-Outliner
 	constraints
-	names
+	//names
   generation/-
 
 rules // Analysis

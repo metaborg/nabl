@@ -69,7 +69,7 @@ overlays
 
   PROP_CALL(ps) = 
   CallT(
-    SVar("nabl-props")
+    SVar("nabl-store-props")
   , []
   , [Var("partition__"), LIST(ps)]
   )
