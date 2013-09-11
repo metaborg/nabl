@@ -127,3 +127,15 @@ context-free syntax
 
   Id = "into" {reject}
   
+templates // messages
+
+  BindingClause.MessageClause = <
+  <MessageKind> <Term> on <Term> 
+  <Constraint*> 
+  >
+  
+  MessageKind.Note    = <note>
+  MessageKind.Warning = <warning>
+  MessageKind.Error   = <error>
+  
+

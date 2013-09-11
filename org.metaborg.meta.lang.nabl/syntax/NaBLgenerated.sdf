@@ -110,3 +110,13 @@ exports
 
   context-free syntax
     "into" -> Id {reject}
+
+  context-free syntax
+    MessageKind Term "on" Term Constraint* -> BindingClause {cons("MessageClause")}
+    "note"                                 -> MessageKind   {cons("Note")}
+    "warning"                              -> MessageKind   {cons("Warning")}
+    "error"                                -> MessageKind   {cons("Error")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}
+    CONTENTCOMPLETE -> MessageKind   {cons("COMPLETION-MessageKind")}

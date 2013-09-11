@@ -6,13 +6,7 @@ imports
   include/NameBindingLanguage
   lib/editor-common.generated
   
-  generation/util
-  generation/scoping-sites
-  generation/def-sites
-  generation/prop-sites
-  generation/use-sites
-  generation/import-sites
-  generation/constraints
+  generation/-
     
 rules // namespaces 
       
@@ -210,7 +204,7 @@ rules // binding rules
     BindingRules(rs) -> [Rules(<filter-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*]
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*, msg*]
     where 
        b* := <binding-to-scope-rules> rule 
     <+ b* := [] 
@@ -235,4 +229,7 @@ rules // binding rules
     where
        m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
      ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*
+    where 
+       msg* := [<binding-to-msg-rule(|bound*, task*, repl*)>]
+    <+ msg* := []
     

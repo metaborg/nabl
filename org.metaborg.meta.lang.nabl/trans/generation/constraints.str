@@ -35,8 +35,12 @@ rules
       k           := <extend-index(|i)> j
     ; result      := <result-var> k
     ; cand        := <to-use-candidate(|bound*, repl*, k); Snd> (k, RefClausePart(All(), ns, term', prop*, ctx, []))
-    ; task        := REF_TASK(result, term, term', cand)
-    ; (task*, r*) := <constraints-to-tasks(|bound*, i, <inc> j)> (cs, repl*)
+    ; if <eq> (term, term') then
+        task := REF_TASK(result, term, cand)
+      else
+        task := REF_TASK(result, term, term', cand)
+      end
+    ; (task*, r*) := <constraints-to-tasks(|bound*, i, <inc> j)> (cs, [(term', result), repl*])
             
   unbound-var(|bound*) =
   	?Var(v); 
@@ -78,6 +82,10 @@ overlays
 
   PROP_TASK(v, p, t)     = Where(Assign(v, App(CallT(SVar("nabl-get-property-task"), [], [Var("partition__"), p]), t)))
   MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Rewrite", [NoAnnoList(Str(n)), TUPLE([t, LIST(b)])]))
+  REF_TASK(v, t, c)  = 
+    Where(
+      Assign(v, App(CallT(SVar("nabl-use-candidate"), [], [Var("lang__"), Var("partition__"), Var("uri__"), t]), c))
+    )
   REF_TASK(v, t, t', c)  = 
     Where(Seq(
       Assign(t', App(CallNoArgs(SVar("nabl-get-name")), t))

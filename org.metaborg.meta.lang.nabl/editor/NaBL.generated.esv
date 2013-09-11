@@ -1,3 +1,4 @@
+
 module NaBL.generated
 
 completions
@@ -76,3 +77,13 @@ completions
 
 completions
   
+
+completions
+  completion template BindingClause : "MessageKind Term on Term " =
+    <MessageKind:MessageKind> " " <Term:Term> " on " <Term:Term> "\n" (cursor) (blank)  
+  completion template MessageKind : "note" =
+    "note"                                 
+  completion template MessageKind : "warning" =
+    "warning"                           
+  completion template MessageKind : "error" =
+    "error"                               
