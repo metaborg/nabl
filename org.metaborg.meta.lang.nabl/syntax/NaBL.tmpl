@@ -11,6 +11,11 @@ templates // namespaces
   
   NamespaceRef.NamespaceRef = <<NamespaceID>>
 
+  RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
+  
+  Restriction.Imported = <imported>
+  Restriction.Multiple = <multiple>
+  
 lexical syntax
 
   NamespaceID = Id
@@ -34,8 +39,6 @@ templates // properties
   PropFilter.Equal      = <>
   PropFilter.Conformant = <conformant>
   
-  Constraint.PropertyConstraint = <where <Term> has <PropertyRef> <Pattern>>
-    
 lexical syntax
 
   PropertyID = Id
@@ -49,12 +52,12 @@ templates // binding rules
   >
   
   BindingRule.BindingRule = <
-  <Pattern> <Constraint*> : <BindingClause+>> 
+  <Pattern> <Constraints> : <BindingClause+>> 
 
 templates // clauses
 
   BindingClause.DefClause = <
-    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraint*>
+    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
   > 
   
   DefKind.Explicit = <>
@@ -73,24 +76,21 @@ templates // clauses
   >
     
   RefClausePart.RefClausePart = <
-  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraint*>>
+  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraints>>
   
   BindingClause.ImportClause = <
     <ImportClausePart+; separator="otherwise\n">
   > 
   
   ImportClausePart.SingleImport = <
-  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraint*>>             
+  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraints>>             
 
   ImportClausePart.WildcardImport = <
-  imports <ImportRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraint*>> 
+  imports <RestrictedNamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
   
   Alias.None  = <>
   Alias.Alias = <as <Term>>
- 
-  ImportRef.Direct     = <<NamespaceRef>>
-  ImportRef.Transitive = <imported <NamespaceRef>>
-   
+
 templates // scopes
 
   InDefScopes.Current   = <>
@@ -120,8 +120,23 @@ templates // scopes
   
 templates // constraints
 
+  Constraints = <> 
+  Constraints = <
+    where
+      <Constraint+; separator="\n and">
+  > {bracket}
+  
+  Conditions = <>
+  Conditions = <
+    when
+      <Constraint+; separator="\n and">
+  > {bracket}
+  
+  Constraint.PropertyConstraint = <
+    <Term> has <PropertyRef> <Pattern>>
+   
   Constraint.ReferenceConstraint = <
-    where <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
+    <Term> refers to <RestrictedNamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
   
 context-free syntax
 
@@ -131,7 +146,7 @@ templates // messages
 
   BindingClause.MessageClause = <
   <MessageKind> <Term> on <Term> 
-  <Constraint*> 
+  <Conditions> 
   >
   
   MessageKind.Note    = <note>

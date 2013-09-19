@@ -46,7 +46,7 @@ rules
     <+ ?SingleImport(_, ns, _, _, from, _, into, _)
      ; ns* := [ns]
     <+ ?WildcardImport(import*, _, from, into, _)
-     ; ns* := <map(?Direct(<id>) + ?Transitive(<id>)); make-set> import*
+     ; ns* := <map(?Restricted(_, <id>)); make-set> import*
     where
        ns-term* := <map(ns-to-term)> ns*
     where
