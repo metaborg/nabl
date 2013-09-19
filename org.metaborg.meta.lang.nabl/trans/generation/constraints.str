@@ -57,12 +57,12 @@ rules
   	[] -> []
   
   constraints-to-match-rules(|bound*, i, j):
-    [c@PropertyConstraint(term, kind, prop)|cs] -> <constraints-to-match-rules(|bound*, i, <inc> j)> cs
+    [PropertyConstraint(term, kind, prop)|cs] -> <constraints-to-match-rules(|bound*, i, <inc> j)> cs
     where 
     	<unbound-var(|bound*)> prop
     
   constraints-to-match-rules(|bound*, i, j):
-  	[c@PropertyConstraint(term, kind, prop)|cs] -> [rule1*, rule2*]
+  	[PropertyConstraint(term, kind, prop)|cs] -> [rule1*, rule2*]
   	where
     	k      := <extend-index(|i)> j
     ; bind*  := <bound-vars> prop
@@ -70,6 +70,9 @@ rules
     ; rule1* := <map-with-index(match-rule(|k, prop, match*))> bind*
 	  ; rule2* := <constraints-to-match-rules(|<union> (bound*, bind*), i, <inc> j)> cs
 
+  constraints-to-match-rules(|bound*, i, j):
+    [ReferenceConstraint(t, ns, n, p*, s)|cs] -> <constraints-to-match-rules(|bound*, i, <inc> j)> cs
+    
   var-to-match-task: (i, Var(v)) -> <id>
   
   match-replace(|i)           : (j, t)      -> (t, <extend-index(|i); result-var> j)
