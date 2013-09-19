@@ -120,13 +120,13 @@ templates // scopes
   
 templates // constraints
 
-  Constraints = <> 
+  Constraints = <> {ast("[]")}
   Constraints = <
     where
       <Constraint+; separator="\n and">
   > {bracket}
   
-  Conditions = <>
+  Conditions = <> {ast("[]")}
   Conditions = <
     when
       <Constraint+; separator="\n and">

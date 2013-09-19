@@ -103,9 +103,9 @@ exports
     CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
 
   context-free syntax
-                                                                                  -> Constraints 
+                                                                                  -> Constraints {ast("[]")}
     "where" {Constraint "and"}+                                                   -> Constraints {bracket}
-                                                                                  -> Conditions  
+                                                                                  -> Conditions  {ast("[]")}
     "when" {Constraint "and"}+                                                    -> Conditions  {bracket}
     Term "has" PropertyRef Pattern                                                -> Constraint  {cons("PropertyConstraint")}
     Term "refers" "to" RestrictedNamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
