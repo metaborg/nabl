@@ -138,7 +138,7 @@ overlays
   , SDefNoArgs(
 	    p-of
 	  , CallT(
-	      SVar("nabl-get-property")
+	      SVar("get-property")
 	    , []
 	    , [pt]
 	    )
@@ -156,9 +156,9 @@ overlays
 		  )
 		)
   , RDefT(
-		  "nabl-collect-property"
+		  "create-property-task"
 		, []
-		, [DefaultVarDec("lang"), DefaultVarDec("partition"), DefaultVarDec("uri*")]
+		, [DefaultVarDec("partition")]
 		, RuleNoCond(
 		    NoAnnoList(
 		      Tuple([pt, Var("term")])
