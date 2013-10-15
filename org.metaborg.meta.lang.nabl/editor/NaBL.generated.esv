@@ -1,8 +1,15 @@
+
 module NaBL.generated
 
 completions
   completion template ModuleSection : "namespaces " =
     "namespaces\n\t" (cursor) (blank)  
+  completion template RestrictedNamespaceRef : " NamespaceRef" =
+    <:Restriction> " " <NamespaceRef:NamespaceRef>  
+  completion template Restriction : "imported" =
+    "imported"  
+  completion template Restriction : "multiple" =
+    "multiple"  
 
 completions
   completion template ModuleSection : "properties " =
@@ -17,36 +24,32 @@ completions
     "of " <PropFilter:PropFilter> " " <PropertyRef:PropertyRef> " " <Term:Term>  
   completion template PropFilter : "conformant" =
     "conformant"                        
-  completion template Constraint : "where Term has PropertyRef Pattern" =
-    "where " <Term:Term> " has " <PropertyRef:PropertyRef> " " <Pattern:Pattern>  
 
 completions
   completion template ModuleSection : "binding rules " =
     "binding rules\n\t" (cursor) (blank)  
-  completion template BindingRule : "Pattern : BindingClause" =
-    <Pattern:Pattern> " " <:Constraint> " : " <BindingClause:BindingClause> (blank)  
+  completion template BindingRule : "Pattern Constraints : BindingClause" =
+    <Pattern:Pattern> " " <Constraints:Constraints> " : " <BindingClause:BindingClause> (blank)  
 
 completions
-  completion template BindingClause : "DefKind defines Unique NamespaceRef Term InDefScopes " =
-    <DefKind:DefKind> " defines " <Unique:Unique> " " <NamespaceRef:NamespaceRef> " " <Term:Term> " " <:PropertyTerm> " " <InDefScopes:InDefScopes> " " <:Constraint> (blank)  
+  completion template BindingClause : "DefKind defines Unique NamespaceRef Term InDefScopes Constraints" =
+    <DefKind:DefKind> " defines " <Unique:Unique> " " <NamespaceRef:NamespaceRef> " " <Term:Term> " " <:PropertyTerm> " " <InDefScopes:InDefScopes> " " <Constraints:Constraints> (blank)  
   completion template DefKind : "implicitly" =
-    "implicitly"                                                                                                                                                                    
+    "implicitly"                                                                                                                                                                                
   completion template Unique : "unique" =
-    "unique"                                                                                                                                                                             
+    "unique"                                                                                                                                                                                         
   completion template Unique : "non-unique" =
-    "non-unique"                                                                                                                                                                     
+    "non-unique"                                                                                                                                                                                 
   completion template BindingClause : "scopes NamespaceRef" =
-    "scopes " <NamespaceRef:NamespaceRef> (blank)                                                                                                                    
-  completion template RefClausePart : "refers to Disambiguator NamespaceRef Term InRefScope " =
-    "refers to " <Disambiguator:Disambiguator> " " <NamespaceRef:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <InRefScope:InRefScope> " " <:Constraint> (blank)  
-  completion template ImportClausePart : "imports Disambiguator NamespaceRef Term FromRefScope Alias IntoDefScopes " =
-    "imports " <Disambiguator:Disambiguator> " " <NamespaceRef:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <FromRefScope:FromRefScope> " " <Alias:Alias> " " <IntoDefScopes:IntoDefScopes> " " <:Constraint> (blank)  
-  completion template ImportClausePart : "imports ImportRef FromRefScope IntoDefScopes " =
-    "imports " <ImportRef:ImportRef> " " <:PropertyPattern> " " <FromRefScope:FromRefScope> " " <IntoDefScopes:IntoDefScopes> " " <:Constraint> (blank)  
+    "scopes " <NamespaceRef:NamespaceRef> (blank)                                                                                                                                
+  completion template RefClausePart : "refers to Disambiguator NamespaceRef Term InRefScope Constraints" =
+    "refers to " <Disambiguator:Disambiguator> " " <NamespaceRef:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <InRefScope:InRefScope> " " <Constraints:Constraints> (blank)  
+  completion template ImportClausePart : "imports Disambiguator NamespaceRef Term FromRefScope Alias IntoDefScopes Constraints" =
+    "imports " <Disambiguator:Disambiguator> " " <NamespaceRef:NamespaceRef> " " <Term:Term> " " <:PropertyPattern> " " <FromRefScope:FromRefScope> " " <Alias:Alias> " " <IntoDefScopes:IntoDefScopes> " " <Constraints:Constraints> (blank)  
+  completion template ImportClausePart : "imports RestrictedNamespaceRef FromRefScope IntoDefScopes Constraints" =
+    "imports " <RestrictedNamespaceRef:RestrictedNamespaceRef> " " <:PropertyPattern> " " <FromRefScope:FromRefScope> " " <IntoDefScopes:IntoDefScopes> " " <Constraints:Constraints> (blank)  
   completion template Alias : "as Term" =
-    "as " <Term:Term>                                                                                                                                                                    
-  completion template ImportRef : "imported NamespaceRef" =
-    "imported " <NamespaceRef:NamespaceRef>                                                                                                                            
+    "as " <Term:Term>                                                                                                                                                                                
 
 completions
   completion template InDefScopes : "in DefScopes" =
@@ -71,8 +74,24 @@ completions
     "best"                                                                             
 
 completions
-  completion template Constraint : "where Term refers to NamespaceRef Pattern InRefScope" =
-    "where " <Term:Term> " refers to " <NamespaceRef:NamespaceRef> " " <Pattern:Pattern> " " <:PropertyPattern> " " <InRefScope:InRefScope> (blank)  
+  completion template Constraints : "where Constraint" =
+    "where\n\t" <Constraint:Constraint> (blank)                                                        
+  completion template Conditions : "when Constraint" =
+    "when\n\t" <Constraint:Constraint> (blank)                                                           
+  completion template Constraint : "Term has PropertyRef Pattern" =
+    <Term:Term> " has " <PropertyRef:PropertyRef> " " <Pattern:Pattern> (blank)             
+  completion template Constraint : "Term refers to RestrictedNamespaceRef Pattern InRefScope" =
+    <Term:Term> " refers to " <RestrictedNamespaceRef:RestrictedNamespaceRef> " " <Pattern:Pattern> " " <:PropertyPattern> " " <InRefScope:InRefScope> (blank)  
 
 completions
   
+
+completions
+  completion template BindingClause : "MessageKind Term on Term Conditions" =
+    <MessageKind:MessageKind> " " <Term:Term> " on " <Term:Term> "\n" <Conditions:Conditions> (blank)  
+  completion template MessageKind : "note" =
+    "note"                                                
+  completion template MessageKind : "warning" =
+    "warning"                                          
+  completion template MessageKind : "error" =
+    "error"                                              

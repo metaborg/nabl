@@ -12,16 +12,13 @@ imports
   
 rules
 
-  pdebug(s) = id
-  
-   binding-to-prop-rule(|bound*, task*, repl*):
+  binding-to-prop-rule(|bound*, task*, repl*):
     (i, BindingRule(pattern, constr*, clause*)) -> PROP_RULE(pattern, seq)
     where
-      def-clause*    := <filter-def-clauses; nonempty> clause*
-    ; implicit*      := <implicit-def-vars> def-clause*
-    ; prop-clause*   := <filter-with-index(to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
+      def-clause*  := <filter-def-clauses; nonempty> clause*
+    ; prop-clause* := <filter-with-index(to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
     where
-       match* := [Where(Assign(LIST(<nonempty> implicit*), Var("implicits__")))] 
+       match* := [Where(Assign(LIST(<implicit-def-vars; nonempty> def-clause*), Var("implicits__")))] 
     <+ match* := []
     where
       seq := <to-seq> [match*, task*, prop-clause*]
@@ -30,7 +27,8 @@ rules
     (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> [task*, cong]
     where
       <nonempty> prop*
-    ; ns-term        := <ns-to-term> ns
+    with
+      ns-term        := <ns-to-term> ns
     ; k              := <extend-index(|i)> j
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; dep*           := <map(Snd)> repl*
@@ -44,7 +42,8 @@ rules
     (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> rule*
     where
       <nonempty> prop*
-    ; k      := <extend-index(|i)> j
+    with
+      k      := <extend-index(|i)> j
     ; rule*  := <constraints-to-match-rules(|bound*, k, 1)> constr*
        
 rules
@@ -60,6 +59,7 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
+    , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
     ]
@@ -68,7 +68,7 @@ overlays
 
   PROP_CALL(ps) = 
   CallT(
-    SVar("nabl-props")
+    SVar("nabl-store-props")
   , []
   , [Var("partition__"), LIST(ps)]
   )

@@ -5,10 +5,7 @@ imports
   libstrc
   include/NameBindingLanguage
   
-  generation/util
-  generation/main
-  generation/sections
-  generation/scoping-sites
+  generation/-
   
 rules
   
@@ -16,12 +13,17 @@ rules
     
 rules
   
+  binding-to-name-rule: 
+    BindingRule(pattern, constr*, clause*) -> NAME_RULE(pattern, name)
+    where
+      [name] := <filter(def-to-name + use-to-name)> clause*
+      
   binding-to-def-rules:
     BindingRule(pattern, constr*, clause*) -> [DEF_RULE(pattern, seq), ext*]
     where
       def-clause* := <filter-def-clauses; nonempty> clause*
     ; implicit*   := <implicit-def-vars> def-clause*
-    ; ns-term*    := <filter(?ScopeClause(<map(ns-to-term)>)); concat> clause*    
+    ; ns-term*    := <filterconcat(?ScopeClause(<map(ns-to-term)>))> clause*    
     ; cong*       := <filter-with-index(to-def-cong(|pattern, ns-term*))> def-clause*
     ; m           := <length> def-clause*
     ; uri-cvar    := <uri-child-var> m
@@ -45,14 +47,15 @@ rules
       DefClause(Explicit(), unique, ns, term, _, scope, _) := clause
     ; scope'* := scope*
     + DefClause(Implicit(), unique, ns, term, _, scope, _) := clause
-    ; scope'* := []
+    ; scope'*  := []
     ; impl-var := <implicit-def-var> o 
     + SingleImport(_, ns, _, _, _, Alias(term), scope, _)  := clause
-    ; unique := Unique()
+    ; unique  := Unique()
+    ; scope'* := [] // TODO is this correct?
     where
       ns-term     := <ns-to-term> ns
-    ; scope-term  := <scope-to-term> scope
     ; unique-term := <nabl-to-str> unique
+    ; scope-term  := <scope-to-term> scope
     ; i           := <dec> o
     ; uri-cvar1   := <uri-child-var> i
     ; uri-cvar2   := <uri-child-var> o
@@ -89,7 +92,7 @@ rules
   
 overlays
   
-  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
+  NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, App(CallNoArgs(SVar("strip-annos")), rhs)))
 
 overlays
   

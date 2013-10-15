@@ -6,13 +6,7 @@ imports
   include/NameBindingLanguage
   lib/editor-common.generated
   
-  generation/util
-  generation/scoping-sites
-  generation/def-sites
-  generation/prop-sites
-  generation/use-sites
-  generation/import-sites
-  generation/constraints
+  generation/-
     
 rules // namespaces 
       
@@ -32,7 +26,7 @@ rules // properties
     Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
     where
     	cons* := <map(nabl-to-str)> prop*
-    ; rule  := SDef("custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)), CallNoArgs(SVar("add-properties"))))
+    ; rule  := SDef("nabl-custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)), CallNoArgs(SVar("add-properties"))))
     ; rule* := <mapconcat(prop-to-rules)> prop*
   
   nabl-to-str: // generate constructors for properties
@@ -44,63 +38,57 @@ rules // properties
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
   prop-to-rules:
-  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-check], $[[p]-lookup], $[[p]-match], $[[p]-of])
+  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-list], $[[p]-lookup], $[[p]-match], $[[p]-of], $[store-[p]])
   	
 overlays
 	
-	PROP_RULES(p, pt, p-is, p-check, p-lookup, p-match, p-of) =
+	PROP_RULES(p, pt, p-is, p-list, p-lookup, p-match, p-of, store-p) =
 	[ SDefT(
 	    p-is
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("prop-calc")
+	      SVar("nabl-prop-calc")
 	    , []
 	    , [Var("task*"), NoAnnoList(List([]))]
 	    )
 	  )
 	, SDefT(
-	    p-is
-	  , []
-	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-	  , CallT(
-	      SVar("prop-calc")
-	    , []
-	    , [Var("task*"), Var("dep*")]
-	    )
-	  )
-	, SDefT(
-	    p-check
-	  , []
-	  , [DefaultVarDec("task*")]
-	  , CallT(
-	      SVar("prop-check")
-	    , []
-	    , [ pt
-	      , Var("task*")
-	      , NoAnnoList(List([]))
-	      ]
-	    )
-	  )
-	, SDefT(
-	    p-check
-	  , []
-	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-	  , CallT(
-	      SVar("prop-check")
-	    , []
-	    , [ pt
-	      , Var("task*")
-	      , Var("dep*")
-	      ]
-	    )
-	  )
-	, SDefT(
+      p-is
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+    , CallT(
+        SVar("nabl-prop-calc")
+      , []
+      , [Var("task*"), Var("dep*")]
+      )
+    )
+  , SDefT(
+      p-list
+    , []
+    , [DefaultVarDec("task*")]
+    , CallT(
+        SVar("nabl-prop-list")
+      , []
+      , [Var("task*"), NoAnnoList(List([]))]
+      )
+    )
+  , SDefT(
+      p-list
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
+    , CallT(
+        SVar("nabl-prop-list")
+      , []
+      , [Var("task*"), Var("dep*")]
+      )
+    )
+  , SDefT(
 	    p-lookup
 	  , []
 	  , [DefaultVarDec("task*")]
 	  , CallT(
-	      SVar("prop-lookup")
+	      SVar("nabl-prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -113,7 +101,7 @@ overlays
 	  , []
 	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
 	  , CallT(
-	      SVar("prop-lookup")
+	      SVar("nabl-prop-lookup")
 	    , []
 	    , [ pt
 	      , Var("task*")
@@ -124,11 +112,21 @@ overlays
 	, SDefT(
       p-match
     , []
-    , [DefaultVarDec("task*"), DefaultVarDec("relation")]
+    , [DefaultVarDec("task*"), DefaultVarDec("expected")]
     , CallT(
-        SVar("prop-match")
+        SVar("nabl-prop-match")
       , []
-      , [Var("task*"), Var("relation")]
+      , [pt, Var("task*"), TERM("Eq"), Var("expected")]
+      )
+    )
+  , SDefT(
+      p-match
+    , []
+    , [DefaultVarDec("task*"), DefaultVarDec("relation"), DefaultVarDec("expected")]
+    , CallT(
+        SVar("nabl-prop-match")
+      , []
+      , [pt, Var("task*"), Var("relation"), Var("expected")]
       )
     )
   , SDefT(
@@ -140,21 +138,33 @@ overlays
   , SDefNoArgs(
 	    p-of
 	  , CallT(
-	      SVar("property-of")
+	      SVar("get-property")
 	    , []
 	    , [pt]
 	    )
 	  )
-	, RDefT(
-		  "new-property-task"
+	, SDefT(
+		  store-p
 		, []
-		, [DefaultVarDec(ListVar("task*"))]
+		, [DefaultVarDec("partition"), DefaultVarDec("prop")]
+		, CallT(
+		    SVar("nabl-store-prop")
+		  , []
+		  , [ Var("partition")
+		    , TERM("Prop", [pt, Var("prop"), LIST([])])
+		    ]
+		  )
+		)
+  , RDefT(
+		  "create-property-task"
+		, []
+		, [DefaultVarDec("partition")]
 		, RuleNoCond(
 		    NoAnnoList(
 		      Tuple([pt, Var("term")])
 		    )
 		  , App(
-		      CallT(SVar(p-of), [], [Var(ListVar("task*"))])
+		      CallT(SVar(p-of), [], [Var(ListVar("partition"))])
 		    , Var("term")
 		    )
 		  )
@@ -167,41 +177,59 @@ rules // imports
   	Imports(import*) -> <MkSingleton> Imports(import'*)
   	with
 			if nabl-uses-custom-library(|<project-path>) then
-				![ImportWildcard("lib/nbl"), ImportWildcard("lib/task"), ImportWildcard("lib/types"), ImportWildcard("lib/editor")|import*]
+				![ ImportWildcard("lib/nabl")
+				 , ImportWildcard("lib/task")
+				 , ImportWildcard("lib/properties")
+				 , ImportWildcard("lib/types")
+				 , ImportWildcard("lib/editor")
+				 | import*
+				 ]
 			else
-				![ImportWildcard("lib/runtime/nbl"), ImportWildcard("lib/runtime/task"), ImportWildcard("lib/runtime/types"), ImportWildcard("lib/runtime/editor")|import*]
+				![ ImportWildcard("lib/runtime/nabl")
+				 , ImportWildcard("lib/runtime/task")
+				 , ImportWildcard("lib/runtime/properties")
+				 , ImportWildcard("lib/runtime/types")
+				 , ImportWildcard("lib/runtime/editor")
+				 | import*
+				 ]
 			end => import'*
     
-    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nbl/collect.str]
+    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nabl/collect.str]
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/task/core.str]
     nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/analysis/core.str]
     
 rules // binding rules
 
   nabl-to-str:
-    BindingRules(rs) -> [Rules(<filter-with-index(to-rules); concat; nonempty> rs)]
+    BindingRules(rs) -> [Rules(<map-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, d*, p*, u*, i*, m1*, m2*]
-    where 
-       b* := [<binding-to-scope-rule> rule] 
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*, msg*]
+    with 
+       b* := <binding-to-scope-rules> rule 
     <+ b* := [] 
-    where 
+    with 
+       n* := [<binding-to-name-rule> rule] 
+    <+ n* := [] 
+    with
        d* := <binding-to-def-rules> rule 
     <+ d* := [] 
-    where
+    with
        bound*         := <bound-vars> pattern
      ; (task*, repl*) := <constraints-to-tasks(|bound*, i, 0)> (constr*, [])
-    where 
+    with 
        p* := [<binding-to-prop-rule(|bound*, task*, repl*)>]
     <+ p* := []
-    where 
+    with 
        u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
     <+ u* := []
-    where 
+    with 
        i* := [<binding-to-import-rule(|bound*, task*, repl*)>]
     <+ i* := []
-    where
+    with
        m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
      ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*
+    with 
+       msg* := [<binding-to-msg-rule(|bound*, task*, repl*)>]
+    <+ msg* := []
     

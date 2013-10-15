@@ -1,14 +1,19 @@
 module NaBLgenerated
 exports
   context-free syntax
-    "namespaces" NamespaceDef* -> ModuleSection {cons("Namespaces")}
-    NamespaceID                -> NamespaceDef  {cons("NamespaceDef")}
-    NamespaceID                -> NamespaceRef  {cons("NamespaceRef")}
+    "namespaces" NamespaceDef* -> ModuleSection          {cons("Namespaces")}
+    NamespaceID                -> NamespaceDef           {cons("NamespaceDef")}
+    NamespaceID                -> NamespaceRef           {cons("NamespaceRef")}
+    Restriction* NamespaceRef  -> RestrictedNamespaceRef {cons("Restricted")}
+    "imported"                 -> Restriction            {cons("Imported")}
+    "multiple"                 -> Restriction            {cons("Multiple")}
 
   context-free syntax
-    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
-    CONTENTCOMPLETE -> NamespaceDef  {cons("COMPLETION-NamespaceDef")}
-    CONTENTCOMPLETE -> NamespaceRef  {cons("COMPLETION-NamespaceRef")}
+    CONTENTCOMPLETE -> ModuleSection          {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> NamespaceDef           {cons("COMPLETION-NamespaceDef")}
+    CONTENTCOMPLETE -> NamespaceRef           {cons("COMPLETION-NamespaceRef")}
+    CONTENTCOMPLETE -> RestrictedNamespaceRef {cons("COMPLETION-RestrictedNamespaceRef")}
+    CONTENTCOMPLETE -> Restriction            {cons("COMPLETION-Restriction")}
 
   lexical syntax
     Id -> NamespaceID 
@@ -22,7 +27,6 @@ exports
     "of" PropFilter PropertyRef Term             -> PropertyPattern {cons("PropertyPattern")}
                                                  -> PropFilter      {cons("Equal")}
     "conformant"                                 -> PropFilter      {cons("Conformant")}
-    "where" Term "has" PropertyRef Pattern       -> Constraint      {cons("PropertyConstraint")}
 
   context-free syntax
     CONTENTCOMPLETE -> ModuleSection   {cons("COMPLETION-ModuleSection")}
@@ -31,7 +35,6 @@ exports
     CONTENTCOMPLETE -> PropertyTerm    {cons("COMPLETION-PropertyTerm")}
     CONTENTCOMPLETE -> PropertyPattern {cons("COMPLETION-PropertyPattern")}
     CONTENTCOMPLETE -> PropFilter      {cons("COMPLETION-PropFilter")}
-    CONTENTCOMPLETE -> Constraint      {cons("COMPLETION-Constraint")}
 
   lexical syntax
     Id     -> PropertyID 
@@ -39,14 +42,14 @@ exports
 
   context-free syntax
     "binding" "rules" BindingRule*         -> ModuleSection {cons("BindingRules")}
-    Pattern Constraint* ":" BindingClause+ -> BindingRule   {cons("BindingRule")}
+    Pattern Constraints ":" BindingClause+ -> BindingRule   {cons("BindingRule")}
 
   context-free syntax
     CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
     CONTENTCOMPLETE -> BindingRule   {cons("COMPLETION-BindingRule")}
 
   context-free syntax
-    DefKind "defines" Unique NamespaceRef Term PropertyTerm* InDefScopes Constraint*                        -> BindingClause    {cons("DefClause")}
+    DefKind "defines" Unique NamespaceRef Term PropertyTerm* InDefScopes Constraints                        -> BindingClause    {cons("DefClause")}
                                                                                                             -> DefKind          {cons("Explicit")}
     "implicitly"                                                                                            -> DefKind          {cons("Implicit")}
                                                                                                             -> Unique           {cons("Unique")}
@@ -54,14 +57,12 @@ exports
     "non-unique"                                                                                            -> Unique           {cons("NonUnique")}
     "scopes" {NamespaceRef ","}+                                                                            -> BindingClause    {cons("ScopeClause")}
     {RefClausePart "otherwise"}+                                                                            -> BindingClause    {cons("RefClause")}
-    "refers" "to" Disambiguator NamespaceRef Term PropertyPattern* InRefScope Constraint*                   -> RefClausePart    {cons("RefClausePart")}
+    "refers" "to" Disambiguator NamespaceRef Term PropertyPattern* InRefScope Constraints                   -> RefClausePart    {cons("RefClausePart")}
     {ImportClausePart "otherwise"}+                                                                         -> BindingClause    {cons("ImportClause")}
-    "imports" Disambiguator NamespaceRef Term PropertyPattern* FromRefScope Alias IntoDefScopes Constraint* -> ImportClausePart {cons("SingleImport")}
-    "imports" {ImportRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraint*                      -> ImportClausePart {cons("WildcardImport")}
+    "imports" Disambiguator NamespaceRef Term PropertyPattern* FromRefScope Alias IntoDefScopes Constraints -> ImportClausePart {cons("SingleImport")}
+    "imports" {RestrictedNamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints         -> ImportClausePart {cons("WildcardImport")}
                                                                                                             -> Alias            {cons("None")}
     "as" Term                                                                                               -> Alias            {cons("Alias")}
-    NamespaceRef                                                                                            -> ImportRef        {cons("Direct")}
-    "imported" NamespaceRef                                                                                 -> ImportRef        {cons("Transitive")}
 
   context-free syntax
     CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
@@ -70,7 +71,6 @@ exports
     CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
     CONTENTCOMPLETE -> ImportClausePart {cons("COMPLETION-ImportClausePart")}
     CONTENTCOMPLETE -> Alias            {cons("COMPLETION-Alias")}
-    CONTENTCOMPLETE -> ImportRef        {cons("COMPLETION-ImportRef")}
 
   context-free syntax
                                                                 -> InDefScopes   {cons("Current")}
@@ -103,10 +103,27 @@ exports
     CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
 
   context-free syntax
-    "where" Term "refers" "to" NamespaceRef Pattern PropertyPattern* InRefScope -> Constraint {cons("Reference")}
+                                                                                  -> Constraints {ast("[]")}
+    "where" {Constraint "and"}+                                                   -> Constraints {bracket}
+                                                                                  -> Conditions  {ast("[]")}
+    "when" {Constraint "and"}+                                                    -> Conditions  {bracket}
+    Term "has" PropertyRef Pattern                                                -> Constraint  {cons("PropertyConstraint")}
+    Term "refers" "to" RestrictedNamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
 
   context-free syntax
-    CONTENTCOMPLETE -> Constraint {cons("COMPLETION-Constraint")}
+    CONTENTCOMPLETE -> Constraints {cons("COMPLETION-Constraints")}
+    CONTENTCOMPLETE -> Conditions  {cons("COMPLETION-Conditions")}
+    CONTENTCOMPLETE -> Constraint  {cons("COMPLETION-Constraint")}
 
   context-free syntax
     "into" -> Id {reject}
+
+  context-free syntax
+    MessageKind Term "on" Term Conditions -> BindingClause {cons("MessageClause")}
+    "note"                                -> MessageKind   {cons("Note")}
+    "warning"                             -> MessageKind   {cons("Warning")}
+    "error"                               -> MessageKind   {cons("Error")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}
+    CONTENTCOMPLETE -> MessageKind   {cons("COMPLETION-MessageKind")}

@@ -25,13 +25,6 @@ rules
       cong* := <filter-with-index(to-import-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
     ; seq   := <to-seq> [task*, cong*]
   
-  // should be handled at def-site instead
-  // to-import-clauses(|pattern, bound*, repl*, i):
-  //   (j, DefClause(_, _, _, term, _, DefScopes(ds*), _)) -> [IMPORT_CALL([SINGLE(term, scope, [])])]
-  //   where
-  //     ds'*  := <filter(?DefScope(_)); nonempty> ds*
-  //   ; scope := <scope-to-term> DefScopes(ds'*)
-    
   to-import-clauses(|pattern, bound*, repl*, i):
     (j, clause@ImportClause(part*)) -> [clause*, IMPORT_CALL(import*)]
     where
@@ -61,8 +54,8 @@ rules
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; dep*           := <map(Snd)> repl*
       
-	ns-to-term: Direct(ns)     -> DIRECT(<ns-to-term> ns)
-	ns-to-term: Transitive(ns) -> TRANSITIVE(<ns-to-term> ns)	
+	ns-to-term: Restricted([], ns)           -> DIRECT(<ns-to-term> ns)
+	ns-to-term: Restricted([Imported()], ns) -> TRANSITIVE(<ns-to-term> ns)	
     
 overlays
      
