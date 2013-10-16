@@ -38,11 +38,11 @@ rules // properties
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
   prop-to-rules:
-  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-list], $[[p]-lookup], $[[p]-match], $[[p]-of], $[store-[p]])
+  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-is], $[[p]-list], $[[p]-lookup], $[[p]-match], $[create-[p]-task], $[get-[p]], $[store-[p]])
   	
 overlays
 	
-	PROP_RULES(p, pt, p-is, p-list, p-lookup, p-match, p-of, store-p) =
+	PROP_RULES(p, pt, p-is, p-list, p-lookup, p-match, create-p, get-p, store-p) =
 	[ SDefT(
 	    p-is
 	  , []
@@ -130,13 +130,13 @@ overlays
       )
     )
   , SDefT(
-      p-of
+      create-p
     , []
     , [DefaultVarDec("task*")]
     , Fail()
     )
   , SDefNoArgs(
-	    p-of
+	    get-p
 	  , CallT(
 	      SVar("get-property")
 	    , []
@@ -164,7 +164,7 @@ overlays
 		      Tuple([pt, Var("term")])
 		    )
 		  , App(
-		      CallT(SVar(p-of), [], [Var(ListVar("partition"))])
+		      CallT(SVar(create-p), [], [Var(ListVar("partition"))])
 		    , Var("term")
 		    )
 		  )
