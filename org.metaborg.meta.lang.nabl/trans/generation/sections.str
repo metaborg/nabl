@@ -158,15 +158,16 @@ overlays
   , RDefT(
 		  "create-property-task"
 		, []
-		, [DefaultVarDec("partition")]
-		, RuleNoCond(
+		, [DefaultVarDec("partition"), DefaultVarDec("kind")]
+		, Rule(
 		    NoAnnoList(
-		      Tuple([pt, Var("term")])
+		      Var("term")
 		    )
 		  , App(
 		      CallT(SVar(create-p), [], [Var(ListVar("partition"))])
 		    , Var("term")
 		    )
+		  , Assign(pt, Var("kind"))
 		  )
 	  )
 	]
