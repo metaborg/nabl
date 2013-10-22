@@ -4,16 +4,20 @@ sorts Int Real String StrChar
 
 lexical syntax
 
-  [\-]? [0-9]+              -> Int
-  [\-]? [0-9]+ [\.] [0-9]+ 	-> Real
-  "\"" StrChar* "\""        -> String
-  ~[\"\\]                   -> StrChar
-  [\\] [\"tnr\\]            -> StrChar
+  Int     = [\-]? [0-9]+
+  Real    = [\-]? [0-9]+ [\.] [0-9]+
+  String  = "\"" StrChar* "\""
+  StrChar = ~[\"\\]
+  StrChar = [\\] [\"tnr\\]
 
 sorts Char CharChar
 
 lexical syntax
-  "'" CharChar "'"          -> Char
-  ~[\']                     -> CharChar
-  [\\] [\'ntr\ ]            -> CharChar
-  Char                      -> Id {reject}
+  
+  Char     = "'" CharChar "'"
+  CharChar = ~[\']
+  CharChar = [\\] [\'ntr\ ]
+  
+lexical syntax
+
+  Id = Char {reject}

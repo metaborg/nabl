@@ -9,27 +9,26 @@ sorts Sort
 
 context-free syntax
 	
-	LCID                     -> Sort       {"SortVar"}
-	UCID                     -> Sort       {"SortNoArgs"}
-	Id "(" {Sort ","}* ")"   -> Sort       {"Sort"}
+	Sort.SortVar    = LCID
+	Sort.SortNoArgs = UCID
+	Sort.Sort       = Id "(" {Sort ","}* ")"
 
 sorts TypeDecl PPTerm
 
 context-free syntax
 
-  Id     TypeParams PPTerm -> TypeDecl   {"TypeDecl"}
-  String TypeParams PPTerm -> TypeDecl   {"TypeDeclQ"}
-
-  String                   -> PPTerm     {"Str"}
-	
+  TypeDecl.TypeDecl  = Id     TypeParams PPTerm
+  TypeDecl.TypeDeclQ = String TypeParams PPTerm
+  PPTerm.Str         = String
+  
 sorts TypeParams TypeParam 
 
 context-free syntax
 	
-                           -> TypeParams {"NoTypeParams"}
-  "(" {TypeParam ","}+ ")" -> TypeParams {"TypeParams"}
-  Id ":" Sort              -> TypeParam  {"TypeParam"}
-
+  TypeParams.NoTypeParams =
+  TypeParams.TypeParams   = "(" {TypeParam ","}+ ")"
+  TypeParam.TypeParam     = Id ":" Sort
+  
 %%%
 %% Restriction is required for the Sort* in Sdecl: List(a) is
 %% ambiguous.

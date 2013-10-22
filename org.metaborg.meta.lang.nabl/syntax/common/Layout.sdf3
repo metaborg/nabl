@@ -4,27 +4,22 @@ sorts LongCom CommChar Asterisk Eof
 
 lexical syntax
 
-  [\t\ \n\r]                -> LAYOUT
-  "//" ~[\n]* ([\n] | Eof)	-> LAYOUT
+  LAYOUT   = [\t\ \n\r] 
 
+  LAYOUT   ="//" ~[\n]* ([\n] | Eof)
+  Eof      = 
+ 
+  LAYOUT   = LongCom
+  LongCom  = "/*" CommChar* "*/"
+  CommChar = ~[\*]
+  CommChar = Asterisk
+  Asterisk = "*"
   
-  "/*" CommChar* "*/"       -> LongCom
-                            -> Eof  
-
-  ~[\*]                     -> CommChar
-
-  "*"                       -> Asterisk
-  Asterisk                  -> CommChar
-
 lexical restrictions
 
   Asterisk -/- [\/]
   Eof      -/- ~[]
 
-lexical syntax
-
-  LongCom   -> LAYOUT
-  
 context-free restrictions
 
   LAYOUT? -/- [\ \t\n\r]

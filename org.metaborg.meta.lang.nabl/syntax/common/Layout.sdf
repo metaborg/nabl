@@ -5,18 +5,16 @@ exports
   lexical syntax
     [\t\ \n\r]             -> LAYOUT   
     "//" ~[\n]* [\n] | Eof -> LAYOUT   
-    "/*" CommChar* "*/"    -> LongCom  
                            -> Eof      
+    LongCom                -> LAYOUT   
+    "/*" CommChar* "*/"    -> LongCom  
     ~[\*]                  -> CommChar 
-    "*"                    -> Asterisk 
     Asterisk               -> CommChar 
+    "*"                    -> Asterisk 
 
   lexical restrictions
     Asterisk -/- [\/]
     Eof -/- ~[]
-
-  lexical syntax
-    LongCom -> LAYOUT 
 
   context-free restrictions
     LAYOUT? -/- [\ \t\n\r]

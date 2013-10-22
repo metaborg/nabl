@@ -3,16 +3,15 @@ imports common/Identifiers terms/Terms[Var] terms/Terms[VarRef]
         terms/StringQuotations[VarRef]
 
 exports
-  sorts Wld Var VarRef
+  sorts Wld Var VarRef Term Pattern
 
   context-free syntax
-    "_"   -> Wld    {"Wld"}
-    "..." -> Var    {"ListWld"}
-    Wld   -> Var    
-    Id    -> Var    {"Var"}
-    LId   -> Var    {"ListVar"}
-    Id    -> VarRef {"VarRef"}
-    LId   -> VarRef {"ListVarRef"}
+    "_" -> Wld    {cons("Wld")}
+    Wld -> Var    
+    Id  -> Var    {cons("Var")}
+    LId -> Var    {cons("ListVar")}
+    Id  -> VarRef {cons("VarRef")}
+    LId -> VarRef {cons("ListVarRef")}
 
   context-free restrictions
     Wld -/- [a-zA-Z0-9\'\-\_]

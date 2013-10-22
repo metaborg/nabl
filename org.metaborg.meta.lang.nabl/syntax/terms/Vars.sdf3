@@ -7,18 +7,17 @@ imports
   terms/Terms[VarRef]
   terms/StringQuotations[VarRef]
   
-  sorts Wld Var VarRef
+  sorts Wld Var VarRef Term Pattern
   
   context-free syntax
-  	
-    "_"   -> Wld    {"Wld"}
-    "..." -> Var    {"ListWld"}
-    Wld   -> Var 
-    Id 	  -> Var    {"Var"}
-    LId   -> Var    {"ListVar"}
-  	
-    Id    -> VarRef {"VarRef"}
-    LId	  -> VarRef {"ListVarRef"}
+
+    Wld.Wld     = "_"  
+    Var         = Wld  
+    Var.Var     = Id
+    Var.ListVar = LId
+    
+    VarRef.VarRef     = Id
+    VarRef.ListVarRef = LId
     
   context-free restrictions
 

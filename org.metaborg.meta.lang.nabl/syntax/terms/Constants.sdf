@@ -15,4 +15,6 @@ exports
     "'" CharChar "'" -> Char     
     ~[\']            -> CharChar 
     [\\] [\'ntr\ ]   -> CharChar 
-    Char             -> Id       {reject}
+
+  lexical syntax
+    Char -> Id {reject}
