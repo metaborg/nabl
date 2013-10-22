@@ -13,7 +13,7 @@ namespaces
 
 binding rules
 
-	Module(m, _, _): 
+	Module(m, _): 
 		defines Module m
 		//scopes Namespace, Property
 		

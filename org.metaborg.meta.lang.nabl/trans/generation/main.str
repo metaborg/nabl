@@ -10,7 +10,7 @@ imports
 rules
   
   generate-name-analysis:
-    (selected, position, ast@Module(name, _, _), path, project-path) -> (filename, result)
+    (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
       filename   := <guarantee-extension(|"str")> path
     ; str-module := <strip-annos; to-ppable-str; nabl-to-str> ast
@@ -28,6 +28,6 @@ rules // modules
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
   nabl-to-str:
-    Module(name, _, sections) -> Module(name, sections')
+    Module(name, sections) -> Module(name, sections')
     where 
       sections' := <filterconcat(nabl-to-str)> sections 

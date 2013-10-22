@@ -1,3 +1,21 @@
+module NameBindingLanguage
+
+imports
+  
+  common/Layout
+  common/Identifiers
+  terms/Signatures
+  terms/Vars
+  Modules
+
+context-free start-symbols
+
+  Start
+
+context-free syntax
+  
+  Start = Module
+  
 templates // namespaces
 
   ModuleSection.Namespaces  = <
@@ -6,8 +24,8 @@ templates // namespaces
   > 
   
   NamespaceDef.NamespaceDef = 
-		<<NamespaceID>
-		>
+    <<NamespaceID>
+    >
   
   NamespaceRef.NamespaceRef = <<NamespaceID>>
 
@@ -154,3 +172,6 @@ templates // messages
   MessageKind.Error   = <error>
   
 
+  
+    
+ 

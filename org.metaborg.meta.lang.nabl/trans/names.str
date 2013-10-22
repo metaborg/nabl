@@ -20,10 +20,10 @@ signature
 rules
 
   nabl-get-name :
-    Module(m, _, _) -> m
+    Module(m, _) -> m
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, partition__, uniques__, uri__, states__) =
-    ?Module(m, _, _)
+    ?Module(m, _)
     ; origin-track-forced(
         Module(
           nabl-def(
@@ -39,7 +39,6 @@ rules
           , Current()
           , []
           )
-        , id
         , id
         )
         ; match(child-uris__|c-uri1__)

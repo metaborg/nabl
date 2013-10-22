@@ -1,10 +1,10 @@
-module Modulesgenerated
+module Modules
 exports
   context-free syntax
-    "module" ModuleID ModMetaData* ModuleSection* -> Module        {cons("Module")}
-    "imports" ImportModule*                       -> ModuleSection {cons("Imports")}
-    ModuleID "/-"                                 -> ImportModule  {cons("ImportWildcard")}
-    ModuleID                                      -> ImportModule  {cons("Import")}
+    "module" ModuleID ModuleSection* -> Module        {cons("Module")}
+    "imports" ImportModule*          -> ModuleSection {cons("Imports")}
+    ModuleID "/-"                    -> ImportModule  {cons("ImportWildcard")}
+    ModuleID                         -> ImportModule  {cons("Import")}
 
   context-free syntax
     CONTENTCOMPLETE -> Module        {cons("COMPLETION-Module")}

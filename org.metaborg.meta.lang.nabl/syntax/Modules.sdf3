@@ -1,9 +1,10 @@
+module Modules
+
 templates
     
   Module.Module = 
   	<module <ModuleID> 
     
-    <ModMetaData*> 
     <ModuleSection*>>
     
   ModuleSection.Imports = <
