@@ -116,6 +116,7 @@ exports
                                                                                   -> Conditions  {ast("[]")}
     "when" {Constraint "and"}+                                                    -> Conditions  {bracket}
     Term "has" PropertyRef Pattern                                                -> Constraint  {cons("PropertyConstraint")}
+    NamespaceRef Term "has" PropertyRef Pattern                                   -> Constraint  {cons("RefPropertyConstraint")}
     Term "refers" "to" RestrictedNamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
 
   context-free syntax

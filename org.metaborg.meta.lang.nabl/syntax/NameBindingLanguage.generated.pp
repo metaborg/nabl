@@ -141,6 +141,7 @@
    COMPLETION-RefScope                                    -- _1,
    COMPLETION-Disambiguator                               -- _1,
    PropertyConstraint                                     -- _1 KW["has"] _2 _3,
+   RefPropertyConstraint                                  -- _1 _2 KW["has"] _3 _4,
    ReferenceConstraint                                    -- _1 KW["refers"] KW["to"] _2 _3 _4 _5,
    ReferenceConstraint.4:iter-star                        -- _1,
    COMPLETION-Constraints                                 -- _1,
