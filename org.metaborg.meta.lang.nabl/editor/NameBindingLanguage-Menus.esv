@@ -1,0 +1,32 @@
+module NameBindingLanguage-Menus
+
+imports NameBindingLanguage-Menus.generated
+
+menus
+  
+  menu: "Actions"
+    
+    action: "Generate name analysis" = generate-name-analysis (openeditor) (realtime)
+    
+    action: "Show abstract syntax" = debug-show-aterm (openeditor) (realtime) (meta) (source)
+    action: "Show analyzed syntax" = debug-show-analyzed (openeditor) (meta)
+    
+    separator
+    
+    submenu: "Show index"
+      action: "Project"            = debug-index-project (openeditor) (meta)
+      action: "Partition"          = debug-index-partition (openeditor) (meta)
+    end
+    
+    submenu: "Show tasks"
+      action: "Project"            = debug-task-project (openeditor) (meta)
+      action: "Partition"          = debug-task-partition (openeditor) (meta)
+      action: "Selection"          = debug-task-selection (openeditor) (meta)
+    end
+    
+    submenu: "Show analysis"
+      action: "Project"            = debug-project (openeditor) (meta)
+      action: "Partition"          = debug-partition (openeditor) (meta)
+    end
+    
+    action: "Reset and reanalyze"  = debug-reanalyze (meta)   

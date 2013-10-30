@@ -1,6 +1,10 @@
 module namebindinglanguage
 
 imports
+	
+	libstratego-lib
+	libstratego-gpp
+	libstratego-aterm
   include/NameBindingLanguage
   lib/editor-common.generated
   lib/runtime/analysis/-
@@ -36,7 +40,7 @@ rules // Editor services
     	definition := <analysis-resolve(|<language>, project-path, path)> node
 
   editor-hover:
-    (selected, position, ast, path, project-path) -> selected
+    (selected, position, ast, path, project-path) -> <fail>
   
   editor-complete:
     (node, position, ast, path, project-path) -> proposals

@@ -1,7 +1,7 @@
 
 module NameBindingLanguage.main
 
-imports NameBindingLanguage-Builders NameBindingLanguage-Colorer NameBindingLanguage-Completions NameBindingLanguage-Folding NameBindingLanguage-Outliner NameBindingLanguage-References NameBindingLanguage-Syntax
+imports NameBindingLanguage-Menus NameBindingLanguage-Colorer NameBindingLanguage-Completions NameBindingLanguage-Folding NameBindingLanguage-Outliner NameBindingLanguage-References NameBindingLanguage-Syntax
 
 language General properties
                   
@@ -15,3 +15,8 @@ language General properties
   extensions    : nab
   table         : include/NameBindingLanguage.tbl
   start symbols : Start
+
+  provider : include/namebindinglanguage.ctree
+  // provider : include/namebindinglanguage-java.jar
+  
+  observer : editor-analyze (multifile)
