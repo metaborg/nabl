@@ -205,13 +205,16 @@ rules // binding rules
     BindingRules(rs) -> [Rules(<map-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, d*, p*, u*, i*, m1*, m2*, msg*]
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, a*, d*, p*, u*, i*, m1*, m2*, msg*]
     with 
        b* := <binding-to-scope-rules> rule 
     <+ b* := [] 
     with 
        n* := [<binding-to-name-rule> rule] 
-    <+ n* := [] 
+    <+ n* := []
+    with 
+       a* := [<binding-to-apply-rule> rule] 
+    <+ a* := [] 
     with
        d* := <binding-to-def-rules> rule 
     <+ d* := [] 

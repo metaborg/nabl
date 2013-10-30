@@ -18,6 +18,21 @@ rules
     where
       [name] := <filter(def-to-name + use-to-name)> clause*
       
+  binding-to-apply-rule:
+  	BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
+  	where
+      [name]          := <filter(def-to-name + use-to-name)> clause*;
+  		Var(inner-name) := name;
+  		body            := <op-to-call(|inner-name)> pattern
+  		
+	op-to-call(|name) =
+		switch id
+		  case ?NoAnnoList(ops)                 : <op-to-call(|name)> ops
+		  case ?Op(aname, args)                 : !Call(SVar(aname), <map(op-to-call(|name))> args)
+		  case ?Var(name) + ?Var(ListVar(name)) : !CallNoArgs(SVar("s"))
+		  otherwise                             : !Id()
+		end
+      
   binding-to-def-rules:
     BindingRule(pattern, constr*, clause*) -> [DEF_RULE(pattern, seq), ext*]
     where
@@ -89,11 +104,14 @@ rules
    
   uri-child-var = uri-var(|"c")
   uri-sibl-var  = uri-var(|"s")
-  
+
+			  
 overlays
   
   NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
-
+  
+  APPLY_RULE(body) = SDef("nabl-name-apply", [DefaultVarDec("s")], body)
+  
 overlays
   
 	DEF_RULE(pattern, body) =
