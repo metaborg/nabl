@@ -30,7 +30,7 @@ rules // Analysis
   analysis-multiple-default-interface = 
   	analysis-multiple-default(parse-file <+ !(), id, id, id|<language>, <project-path>)
   
-  editor-save = analysis-save-default(|<language>); generate-name-analysis
+  editor-save = where(analysis-save-default(|<language>)); generate-name-analysis
       
 rules // Editor services
 

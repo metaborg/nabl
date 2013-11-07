@@ -20,3 +20,4 @@ language General properties
   // provider : include/namebindinglanguage-java.jar
   
   observer : editor-analyze (multifile)
+  on save  : generate-name-analysis
