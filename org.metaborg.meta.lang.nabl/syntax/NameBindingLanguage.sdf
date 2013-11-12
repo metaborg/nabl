@@ -64,6 +64,7 @@ exports
     "unique"                                                                                                -> Unique           {cons("Unique")}
     "non-unique"                                                                                            -> Unique           {cons("NonUnique")}
     "scopes" {NamespaceRef ","}+                                                                            -> BindingClause    {cons("ScopeClause")}
+    "non-transitively" "scopes" {NamespaceRef ","}+                                                         -> BindingClause    {cons("NonTransitiveScopeClause")}
     {RefClausePart "otherwise"}+                                                                            -> BindingClause    {cons("RefClause")}
     "refers" "to" Disambiguator NamespaceRef Term PropertyPattern* InRefScope Constraints                   -> RefClausePart    {cons("RefClausePart")}
     {ImportClausePart "otherwise"}+                                                                         -> BindingClause    {cons("ImportClause")}
@@ -111,13 +112,13 @@ exports
     CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
 
   context-free syntax
-                                                                                  -> Constraints {ast("[]")}
-    "where" {Constraint "and"}+                                                   -> Constraints {bracket}
-                                                                                  -> Conditions  {ast("[]")}
-    "when" {Constraint "and"}+                                                    -> Conditions  {bracket}
-    Term "has" PropertyRef Pattern                                                -> Constraint  {cons("PropertyConstraint")}
-    NamespaceRef Term "has" PropertyRef Pattern                                   -> Constraint  {cons("RefPropertyConstraint")}
-    Term "refers" "to" RestrictedNamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
+                                                                        -> Constraints {ast("[]")}
+    "where" {Constraint "and"}+                                         -> Constraints {bracket}
+                                                                        -> Conditions  {ast("[]")}
+    "when" {Constraint "and"}+                                          -> Conditions  {bracket}
+    Term "has" PropertyRef Pattern                                      -> Constraint  {cons("PropertyConstraint")}
+    NamespaceRef Term "has" PropertyRef Pattern                         -> Constraint  {cons("RefPropertyConstraint")}
+    Term "refers" "to" NamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
 
   context-free syntax
     CONTENTCOMPLETE -> Constraints {cons("COMPLETION-Constraints")}

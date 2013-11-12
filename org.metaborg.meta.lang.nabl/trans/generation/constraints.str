@@ -35,16 +35,11 @@ rules
     ; (task*, r*) := <constraints-to-tasks(|<union> (bound*, bind*), i, <inc> j)> (cs, [match-repl*, repl*])
   
   constraints-to-tasks(|bound*, i, j):
-    ([ReferenceConstraint(term, ns, term', prop*, ctx)|cs], repl*) -> ([task, task*], r*)
+    ([ReferenceConstraint(name, ns, term', prop*, ctx)|cs], repl*) -> ([task, task*], r*)
     where 
       k           := <extend-index(|i)> j
     ; result      := <result-var> k
-    ; cand        := <to-use-candidate(|bound*, repl*, k); Snd> (k, RefClausePart(All(), ns, term', prop*, ctx, []))
-    ; if <eq> (term, term') then
-        task := REF_TASK(result, term, cand)
-      else
-        task := REF_TASK(result, term, term', cand)
-      end
+    ; task        := REF_TASK(result, <ns-to-term> ns, name)
     ; (task*, r*) := <constraints-to-tasks(|bound*, i, <inc> j)> (cs, [(term', result), repl*])
             
   constraints-to-tasks(|bound*, i, j):
@@ -135,15 +130,10 @@ overlays
       )
     )
   MATCH_TASK(v, n, b, t) = NEW_TASK(v, TERM("Rewrite", [NoAnnoList(Str(n)), TUPLE([t, LIST(b)])]))
-  REF_TASK(v, t, c)  = 
+  REF_TASK(v, ns, n)  = 
     Where(
-      Assign(v, App(CallT(SVar("nabl-use-candidate"), [], [Var("lang__"), Var("partition__"), Var("uris__"), t]), c))
+      Assign(v, App(CallT(SVar("nabl-use-check-tasks"), [], [Var("partition__"), ns]), n))
     )
-  REF_TASK(v, t, t', c)  = 
-    Where(Seq(
-      Assign(t', App(CallNoArgs(SVar("nabl-get-name")), t))
-    , Assign(v, App(CallT(SVar("nabl-use-candidate"), [], [Var("lang__"), Var("partition__"), Var("uris__"), t]), c))
-    ))
   
   PROP_EQ_TASK(v, k, t, e)  = Where(Assign(v, App(CallT(SVar("nabl-prop-match"), [], [k, Var("partition__"), TERM("Eq"), e]), t))) 
   NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))

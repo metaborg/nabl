@@ -87,8 +87,12 @@ templates // clauses
     
   BindingClause.ScopeClause = <
     scopes <NamespaceRef+; separator=", ">
+  >
+   
+  BindingClause.NonTransitiveScopeClause = <
+    non-transitively scopes <NamespaceRef+; separator=", ">
   > 
-  
+    
   BindingClause.RefClause     = <
     <RefClausePart+; separator="otherwise">
   >
@@ -157,7 +161,7 @@ templates // constraints
     <NamespaceRef> <Term> has <PropertyRef> <Pattern>>
    
   Constraint.ReferenceConstraint = <
-    <Term> refers to <RestrictedNamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
+    <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
   
 context-free syntax
 

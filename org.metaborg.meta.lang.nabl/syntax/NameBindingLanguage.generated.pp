@@ -97,6 +97,8 @@
    NonUnique                                              -- KW["non-unique"],
    ScopeClause                                            -- V  [H  [KW["scopes"]] _1],
    ScopeClause.1:iter-sep                                 -- _1 KW[","],
+   NonTransitiveScopeClause                               -- V  [H  [KW["non-transitively"] KW["scopes"]] _1],
+   NonTransitiveScopeClause.1:iter-sep                    -- _1 KW[","],
    RefClause                                              -- _1,
    RefClause.1:iter-sep                                   -- _1 KW["otherwise"],
    RefClausePart                                          -- KW["refers"] KW["to"] _1 _2 _3 _4 _5 _6,

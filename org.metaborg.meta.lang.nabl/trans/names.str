@@ -41,6 +41,7 @@ rules
           , Unique()
           , Current()
           , []
+          , []
           )
         , id
         )
@@ -74,6 +75,7 @@ rules
           , NablNsNamespace()
           , NonUnique()
           , Current()
+          , []
           , []
           )
         )
@@ -135,6 +137,7 @@ rules
           , NablNsProperty()
           , NonUnique()
           , Current()
+          , []
           , []
           )
         , id
@@ -240,6 +243,7 @@ rules
           , Unique()
           , Current()
           , []
+          , []
           )
         )
         ; match(child-uris__|c-uri1__)
@@ -269,6 +273,7 @@ rules
           , NablNsVariable()
           , Unique()
           , Current()
+          , []
           , []
           )
         )
