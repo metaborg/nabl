@@ -33,7 +33,7 @@ rules
               := <filter-with-index(to-import-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
     
   to-import-candidate(|pattern, bound*, glob-repl*, i):
-    (j, SingleImport(_, _, term, _, _, alias, into, constr*)) -> result
+    (j, SingleImport(_, ns, term, _, _, alias, into, constr*)) -> result
     where
       into-term      := <scope-to-term> into
     ; k              := <extend-index(|i)> j
@@ -42,7 +42,7 @@ rules
     where
        Alias(a) := alias
      ; result   := (task*, ALIAS(term, a, []))
-    <+ result   := (task*, SINGLE(term, into-term, dep*))
+    <+ result   := (task*, SINGLE(<ns-to-term> ns, term, into-term, dep*))
        
 	to-import-candidate(|pattern, bound*, glob-repl*, i):
 		(j, WildcardImport(ns*, _, from, into, constr*)) -> (task*, WILDCARD(ns-term*, from-term, into-term, dep*))
@@ -65,6 +65,7 @@ overlays
   , []
   , [ DefaultVarDec("lang__")
     , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
     ]
@@ -77,12 +78,13 @@ overlays
   , []
   , [ Var("lang__")
     , Var("partition__")
+    , Var("uniques__")
     , Var("uris__")
     , LIST(imports)
     ] 
   )
   
-  SINGLE(term, scope, deps)      = TERM("Single", [term, scope, LIST(deps)])
+  SINGLE(ns, term, scope, deps)      = TERM("Single", [ns, term, scope, LIST(deps)])
   ALIAS(term, alias, deps)       = TERM("Alias", [term, alias, LIST(deps)])
   WILDCARD(ns, from, into, deps) = TERM("Wildcard", [LIST(ns), from, into, LIST(deps)])
 
