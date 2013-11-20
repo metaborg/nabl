@@ -1,0 +1,35 @@
+module nabl/core/Modules
+
+imports
+  
+  lexical/Layout
+  lexical/Identifiers
+  nabl/core/Namespaces
+  
+context-free start-symbols
+
+  Start
+
+templates
+    
+  Start.Module = 
+    <module <ModuleID> 
+    
+    <ImportSection*>
+    
+    <ModuleSection*>
+    >
+    
+  ImportSection.Imports = <
+    imports <ImportModule*; separator=" ">>
+
+  ImportModule.ImportWildcard=
+    <<ModuleID>/->
+                
+  ImportModule.Import = <<ModuleID>>
+ 
+lexical syntax
+ 
+  Keyword = "module"
+  Keyword = "imports"
+  

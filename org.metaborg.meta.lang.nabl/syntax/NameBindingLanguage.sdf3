@@ -8,36 +8,13 @@ imports
   terms/Vars
   Modules
 
-context-free start-symbols
-
-  Start
-
-context-free syntax
-  
-  Start = Module
-  
 templates // namespaces
-
-  ModuleSection.Namespaces  = <
-  namespaces   
-    <NamespaceDef*>
-  > 
-  
-  NamespaceDef.NamespaceDef = 
-    <<NamespaceID>
-    >
-  
-  NamespaceRef.NamespaceRef = <<NamespaceID>>
 
   RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
   
   Restriction.Imported = <imported>
   Restriction.Multiple = <multiple>
   
-lexical syntax
-
-  NamespaceID = Id
-                
 templates // properties
 
   ModuleSection.Properties = <
@@ -76,17 +53,6 @@ templates // clauses
 
   BindingClause.DefClause = <
     <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
-  > 
-  
-  DefKind.Explicit = <>
-  DefKind.Implicit = <implicitly>
-  
-  Unique.Unique    = <>
-  Unique.Unique    = <unique>
-  Unique.NonUnique = <non-unique>
-    
-  BindingClause.ScopeClause = <
-    scopes <NamespaceRef+; separator=", ">
   > 
   
   BindingClause.RefClause     = <

@@ -17,5 +17,6 @@ exports
     Wld -/- [a-zA-Z0-9\'\-\_]
 
   context-free syntax
-    Term[[Var]]    -> Pattern 
-    Term[[VarRef]] -> Term    
+    Term[[Var]]     -> Pattern 
+    Term[[VarRef]]  -> Term    
+    Var "@" Pattern -> Pattern {cons("As")}

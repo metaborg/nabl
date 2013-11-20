@@ -1,0 +1,27 @@
+module nabl/core/Namespaces
+
+imports
+
+  lexical/Identifiers
+
+lexical syntax
+
+  NamespaceID = Id
+  NamespaceID = "name" {reject}
+  
+  Keyword = "namespaces"
+  
+templates // namespaces
+
+  ModuleSection.Namespaces  = <
+  namespaces   
+    <NamespaceDef*>
+  > 
+  
+  NamespaceDef.NamespaceDef = 
+    <<NamespaceID>
+    >
+  
+  NamespaceRef.NamespaceRef = <<NamespaceID>>
+  NamespaceRef.Name = <name> {prefer}
+

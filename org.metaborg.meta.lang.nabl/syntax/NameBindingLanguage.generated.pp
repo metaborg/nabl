@@ -42,6 +42,7 @@
    ListVar                                                -- _1,
    VarRef                                                 -- _1,
    ListVarRef                                             -- _1,
+   As                                                     -- _1 KW["@"] _2,
    SortVar                                                -- _1,
    SortNoArgs                                             -- _1,
    Sort                                                   -- _1 KW["("] _2 KW[")"],

@@ -19,7 +19,7 @@ rules
   nonempty = where(Hd)
 
   replace-all(|rs)    = alltd(replace(|rs))
-  replace-all-id(|rs) = alltd(replace(|rs) <+ introduce-id)
+  replace-all-id(|rs) = alltd(?As(_, <replace-all-id(|rs)>) <+ replace(|rs) <+ introduce-id)
   
   replace(|rs): t -> <hashtable-get(|t)> rs
   replace(|rs): t -> <lookup'> (t, rs)

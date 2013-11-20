@@ -1,4 +1,4 @@
-module common/Layout
+module lexical/Layout
 
 sorts LongCom CommChar Asterisk Eof 
 
