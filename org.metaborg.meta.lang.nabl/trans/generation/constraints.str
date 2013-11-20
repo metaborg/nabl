@@ -115,7 +115,7 @@ overlays
   
   MATCH_RULE(n, lhs, bnd, rhs) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([NoAnnoList(Str(n)), TUPLE([lhs, LIST(bnd)])]), rhs))
 
-  PROP_TASK(v, p, t)     = Where(Assign(v, App(CallT(SVar("get-property-task"), [], [p]), t)))
+  PROP_TASK(v, p, t)     = Where(Assign(v, App(CallT(SVar("get-or-create-property-task"), [], [Var("partition__"), p]), t)))
   REF_PROP_TASK(v, t, c, p) = 
     Where(
       Assign
