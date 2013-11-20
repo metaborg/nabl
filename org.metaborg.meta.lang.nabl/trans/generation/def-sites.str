@@ -17,6 +17,8 @@ rules
     BindingRule(pattern, constr*, clause*) -> NAME_RULE(pattern, name)
     where
       [name] := <filter(def-to-name + use-to-name)> clause*
+    where
+      <not(eq)> (name, pattern)
       
   binding-to-apply-rule:
   	BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
