@@ -63,7 +63,7 @@ overlays
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
     ]
-  , Seq(Match(pattern), FORCE_ORIGINS(body))
+  , Seq(Match(pattern), Seq(body, Fail()))
   )
 
   PROP_CALL(ps) = 

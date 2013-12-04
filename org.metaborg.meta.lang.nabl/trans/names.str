@@ -1,11 +1,11 @@
 module names
 
 imports
-  lib/runtime/nabl/-
-  lib/runtime/task/-
-  lib/runtime/properties/-
-  lib/runtime/types/-
-  lib/runtime/editor/-
+  lib/nabl/-
+  lib/task/-
+  lib/properties/-
+  lib/types/-
+  lib/editor/-
   include/NameBindingLanguage
 
 
@@ -151,22 +151,20 @@ rules
 
   nabl-prop-site(|lang__, partition__, uris__, states__, implicits__) =
     ?PropertyDef(p, ns, t)
-    ; origin-track-forced(
-        PropertyDef(
-          nabl-store-props(
-          | partition__
-          , [ Prop(
-                Type()
-              , (ns, t)
-              , []
-              )
-            ]
-          )
-        , id
-        , id
+    ; PropertyDef(
+        nabl-store-props(
+        | partition__
+        , [ Prop(
+              Type()
+            , (ns, t)
+            , []
+            )
+          ]
         )
-      |
+      , id
+      , id
       )
+    ; fail
 
   nabl-get-name :
     PropertyRef(p) -> p
