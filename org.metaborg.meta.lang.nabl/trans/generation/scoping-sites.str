@@ -10,25 +10,33 @@ imports
   
 rules 
   
+  // anonymous scope
   binding-to-scope-rules:
-    BindingRule(pattern, constr*, clause*) -> [SCOPE_RULE(pattern, seq), QUERY_SCOPE_RULE(pattern, ns-term*)]
+    BindingRule(pattern, constr*, clause*) -> [SCOPE_RULE(pattern, seq), q*]
     where
       cong* := <filterconcat(to-scope-cong(|pattern))> clause*
     where
+       // scopes at least one namespace
        ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
+       // but does not define any explicit name
      ; <not(fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _)))> clause*
      ; anon* := [SCOPE_CALL(ns-term*)]
+     ; q*    := [QUERY_SCOPE_RULE(pattern, ns-term*)]
     <+ anon* := []
+     ; q*    := []
     where
       seq := <nonempty; to-seq> [cong*, anon*] 
   
+  // named scope
   binding-to-scope-rules:
     BindingRule(pattern, constr*, clause*) -> [QUERY_SCOPE_RULE(pattern, ns-term*)]
     where
       cong* := <filterconcat(to-scope-cong(|pattern))> clause*
     where
-       ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
-     ; <fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _))> clause*
+      // scopes at least one namespace 
+      ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
+      // does define an explicit name
+    ; <fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _))> clause*
     
   to-scope-cong(|pattern):
     _ -> <filterconcat(to-scope-cong(|pattern)); nonempty> part*
