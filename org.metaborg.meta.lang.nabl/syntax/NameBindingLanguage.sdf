@@ -29,6 +29,7 @@ exports
   context-free syntax
     "properties" PropertyDef*                    -> ModuleSection   {cons("Properties")}
     PropertyID "of" {NamespaceRef ","}+ ":" Sort -> PropertyDef     {cons("PropertyDef")}
+    PropertyID "of" {NamespaceRef ","}+          -> PropertyDef     {cons("QualityDef")}
     "type"                                       -> PropertyRef     {cons("TypeProp")}
     PropertyID                                   -> PropertyRef     {cons("PropertyRef")}
     "of" PropertyRef Term                        -> PropertyTerm    {cons("PropertyTerm")}
@@ -57,7 +58,8 @@ exports
     CONTENTCOMPLETE -> BindingRule   {cons("COMPLETION-BindingRule")}
 
   context-free syntax
-    DefKind "defines" Unique NamespaceRef Term PropertyTerm* InDefScopes Constraints                        -> BindingClause    {cons("DefClause")}
+    DefKind "defines" Unique {QualityRef ","}* NamespaceRef Term PropertyTerm* InDefScopes Constraints      -> BindingClause    {cons("DefClause")}
+    PropertyID                                                                                              -> QualityRef       {cons("QualityRef")}
                                                                                                             -> DefKind          {cons("Explicit")}
     "implicitly"                                                                                            -> DefKind          {cons("Implicit")}
                                                                                                             -> Unique           {cons("Unique")}
@@ -74,6 +76,7 @@ exports
     "as" Term                                                                                               -> Alias            {cons("Alias")}
 
   context-free syntax
+    CONTENTCOMPLETE -> QualityRef       {cons("COMPLETION-QualityRef")}
     CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
     CONTENTCOMPLETE -> Unique           {cons("COMPLETION-Unique")}
     CONTENTCOMPLETE -> RefClausePart    {cons("COMPLETION-RefClausePart")}
