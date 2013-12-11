@@ -158,7 +158,7 @@ templates // constraints
     <Term> has <PropertyRef> <Pattern>>
   
   Constraint.RefPropertyConstraint = <
-    <NamespaceRef> <Term> has <PropertyRef> <Pattern>>
+    <NamespaceRef> <Term> has <PropertyRef> <Pattern>> {avoid}
    
   Constraint.ReferenceConstraint = <
     <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
