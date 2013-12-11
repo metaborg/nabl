@@ -18,11 +18,21 @@ rules
   
   nonempty = where(Hd)
 
-  replace-all(|rs)    = alltd(replace(|rs))
-  replace-all-id(|rs) = alltd(replace(|rs) <+ introduce-id)
+  replace-all(|rs)    = alltd(replace-as(|rs) <+ replace(|rs))
+  replace-all-id(|rs) = alltd(replace-as-id(|rs) <+ replace(|rs) <+ introduce-id)
   
   replace(|rs): t -> <hashtable-get(|t)> rs
   replace(|rs): t -> <lookup'> (t, rs)
+  
+  replace-as(|rs): As(t1, t2) -> t
+  where
+     t := <replace(|rs)> t1 
+  <+ t := <replace-all(|rs)> t2
+  
+  replace-as-id(|rs): As(t1, t2) -> Seq(t, <replace-all-id(|rs)> t2)
+  where
+     t := <replace(|rs)> t1 
+  <+ t := Id()
   
   introduce-id: Wld()      -> Id()
   introduce-id: Var(_)     -> Id()

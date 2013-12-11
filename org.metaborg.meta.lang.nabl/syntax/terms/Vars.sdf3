@@ -27,3 +27,7 @@ imports
     
     Term[[Var]]     -> Pattern %% term binding variables
     Term[[VarRef]]  -> Term    %% term referencing variables
+
+    Var "@" Term[[Var]]    -> Term[[Var]]    {"As", prefer}
+    Var "@" PreTerm[[Var]] -> PreTerm[[Var]] {"As"}
+

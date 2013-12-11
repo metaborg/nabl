@@ -17,5 +17,7 @@ exports
     Wld -/- [a-zA-Z0-9\'\-\_]
 
   context-free syntax
-    Term[[Var]]    -> Pattern 
-    Term[[VarRef]] -> Term    
+    Term[[Var]]            -> Pattern        
+    Term[[VarRef]]         -> Term           
+    Var "@" Term[[Var]]    -> Term[[Var]]    {"As", prefer}
+    Var "@" PreTerm[[Var]] -> PreTerm[[Var]] {"As"}
