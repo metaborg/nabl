@@ -4,20 +4,21 @@ imports
   
   include/NameBindingLanguage
   
-signature constructors
-  
-  DefClause: DefKind * Unique * NamespaceRef * Term * List(PropertyTerm) * InDefScopes * Constraints -> BindingClause
-    
 rules
   
   desugar-all = alltd(nabl-desugar)
   
   nabl-desugar: QualityDef(q, ns*) -> PropertyDef(q, ns*, SortNoArgs("Quality"))
+        
+  nabl-desugar:
+    QualityTerm(QualityRef(q)) -> PropertyTerm(PropertyRef(q), NoAnnoList(Op("True", [])))
+    
+  nabl-desugar:
+    QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropertyRef(q), NoAnnoList(Op("True", [])))
+    
+  nabl-desugar:
+    QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
+    
+  nabl-desugar:
+    RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))
   
-  nabl-desugar: 
-    DefClause(k, u, q*,ns, n, p*, sc*, c*) -> DefClause(k, u, ns, n, [p*, p'*], sc*, c*)
-    where
-      p'* := <map(qref-to-pterm)> q*
-      
-  qref-to-pterm:
-    QualityRef(q) -> PropertyTerm(PropertyRef(q), NoAnnoList(Op("True", [])))

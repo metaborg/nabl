@@ -32,8 +32,11 @@ exports
     PropertyID "of" {NamespaceRef ","}+          -> PropertyDef     {cons("QualityDef")}
     "type"                                       -> PropertyRef     {cons("TypeProp")}
     PropertyID                                   -> PropertyRef     {cons("PropertyRef")}
+    PropertyID                                   -> QualityRef      {cons("QualityRef")}
     "of" PropertyRef Term                        -> PropertyTerm    {cons("PropertyTerm")}
+    "of" "quality" QualityRef                    -> PropertyTerm    {cons("QualityTerm")}
     "of" PropFilter PropertyRef Term             -> PropertyPattern {cons("PropertyPattern")}
+    "of" "quality" QualityRef                    -> PropertyPattern {cons("QualityPattern")}
                                                  -> PropFilter      {cons("Equal")}
     "conformant"                                 -> PropFilter      {cons("Conformant")}
 
@@ -41,13 +44,15 @@ exports
     CONTENTCOMPLETE -> ModuleSection   {cons("COMPLETION-ModuleSection")}
     CONTENTCOMPLETE -> PropertyDef     {cons("COMPLETION-PropertyDef")}
     CONTENTCOMPLETE -> PropertyRef     {cons("COMPLETION-PropertyRef")}
+    CONTENTCOMPLETE -> QualityRef      {cons("COMPLETION-QualityRef")}
     CONTENTCOMPLETE -> PropertyTerm    {cons("COMPLETION-PropertyTerm")}
     CONTENTCOMPLETE -> PropertyPattern {cons("COMPLETION-PropertyPattern")}
     CONTENTCOMPLETE -> PropFilter      {cons("COMPLETION-PropFilter")}
 
   lexical syntax
-    Id     -> PropertyID 
-    "type" -> PropertyID {reject}
+    Id        -> PropertyID 
+    "type"    -> PropertyID {reject}
+    "quality" -> PropertyID {reject}
 
   context-free syntax
     "binding" "rules" BindingRule*         -> ModuleSection {cons("BindingRules")}
@@ -58,8 +63,7 @@ exports
     CONTENTCOMPLETE -> BindingRule   {cons("COMPLETION-BindingRule")}
 
   context-free syntax
-    DefKind "defines" Unique {QualityRef ","}* NamespaceRef Term PropertyTerm* InDefScopes Constraints      -> BindingClause    {cons("DefClause")}
-    PropertyID                                                                                              -> QualityRef       {cons("QualityRef")}
+    DefKind "defines" Unique NamespaceRef Term PropertyTerm* InDefScopes Constraints                        -> BindingClause    {cons("DefClause")}
                                                                                                             -> DefKind          {cons("Explicit")}
     "implicitly"                                                                                            -> DefKind          {cons("Implicit")}
                                                                                                             -> Unique           {cons("Unique")}
@@ -76,7 +80,6 @@ exports
     "as" Term                                                                                               -> Alias            {cons("Alias")}
 
   context-free syntax
-    CONTENTCOMPLETE -> QualityRef       {cons("COMPLETION-QualityRef")}
     CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
     CONTENTCOMPLETE -> Unique           {cons("COMPLETION-Unique")}
     CONTENTCOMPLETE -> RefClausePart    {cons("COMPLETION-RefClausePart")}
@@ -120,7 +123,9 @@ exports
                                                                         -> Conditions  {ast("[]")}
     "when" {Constraint "and"}+                                          -> Conditions  {bracket}
     Term "has" PropertyRef Pattern                                      -> Constraint  {cons("PropertyConstraint")}
+    Term "is" QualityRef                                                -> Constraint  {cons("QualityConstraint")}
     NamespaceRef Term "has" PropertyRef Pattern                         -> Constraint  {cons("RefPropertyConstraint"), avoid}
+    NamespaceRef Term "is" QualityRef                                   -> Constraint  {cons("RefQualityConstraint"), avoid}
     Term "refers" "to" NamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
 
   context-free syntax

@@ -54,8 +54,12 @@ templates // properties
   PropertyRef.TypeProp    = <type>  
   PropertyRef.PropertyRef = <<PropertyID>>
 
+  QualityRef.QualityRef = <<PropertyID>>
+
   PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
+  PropertyTerm.QualityTerm        = <of quality <QualityRef>>
   PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Term>>
+  PropertyPattern.QualityPattern  = <of quality <QualityRef>>
 
   PropFilter.Equal      = <>
   PropFilter.Conformant = <conformant>
@@ -63,7 +67,8 @@ templates // properties
 lexical syntax
 
   PropertyID = Id
-  PropertyID = "type" {reject}
+  PropertyID = "type"    {reject}
+  PropertyID = "quality" {reject}
   
 templates // binding rules
     
@@ -78,11 +83,9 @@ templates // binding rules
 templates // clauses
 
   BindingClause.DefClause = <
-    <DefKind> defines <Unique> <QualityRef*; separator=", "> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
+    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
   > 
   
-  QualityRef.QualityRef = <<PropertyID>>
-
   DefKind.Explicit = <>
   DefKind.Implicit = <implicitly>
   
@@ -162,8 +165,14 @@ templates // constraints
   Constraint.PropertyConstraint = <
     <Term> has <PropertyRef> <Pattern>>
   
+  Constraint.QualityConstraint = <
+    <Term> is <QualityRef>>
+  
   Constraint.RefPropertyConstraint = <
     <NamespaceRef> <Term> has <PropertyRef> <Pattern>> {avoid}
+   
+  Constraint.RefQualityConstraint = <
+    <NamespaceRef> <Term> is <QualityRef>> {avoid}
    
   Constraint.ReferenceConstraint = <
     <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
