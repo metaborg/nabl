@@ -48,6 +48,9 @@ templates // properties
   PropertyDef.PropertyDef = <
   <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
   
+  PropertyDef.QualityDef = <
+  <PropertyID> of <NamespaceRef+; separator=", ">>
+  
   PropertyRef.TypeProp    = <type>  
   PropertyRef.PropertyRef = <<PropertyID>>
 
@@ -75,9 +78,11 @@ templates // binding rules
 templates // clauses
 
   BindingClause.DefClause = <
-    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
+    <DefKind> defines <Unique> <QualityRef*; separator=", "> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
   > 
   
+  QualityRef.QualityRef = <<PropertyID>>
+
   DefKind.Explicit = <>
   DefKind.Implicit = <implicitly>
   
