@@ -139,8 +139,12 @@ overlays
   SDefT(
     "nabl-external-def-site"
   , []
-  , [ DefaultVarDec("partition__") ]
-  , Seq(Match(pattern), FORCE_ORIGINS(body))
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uri__")
+    , DefaultVarDec("states__")]
+  , Seq(Match(pattern), body)
   ) 
   
   DEF_CALL(ns, u, ds, s, nt-s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
