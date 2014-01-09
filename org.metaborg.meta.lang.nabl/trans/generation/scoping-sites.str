@@ -59,12 +59,12 @@ rules
        ns-term* := <map(ns-to-term)> ns*
     where
        repl   := (<collect-one(?RefScope(<id>))> from, SCOPE_CALL(ns-term*))
-     ; cong1* := [<replace-all-id(|[repl])> pattern]
+     ; cong1* := [<add-force-origins; replace-all-id(|[repl])> pattern]
     <+ cong1* := []
     where
     	 scope* := <?DefScopes(<filter(?DefScope(<id>))>); nonempty> into
      ; repl*  := <map(!(<id>, SCOPE_CALL(ns-term*)))> scope*
-     ; cong2* := [<replace-all-id(|repl*)> pattern]
+     ; cong2* := [<add-force-origins; replace-all-id(|repl*)> pattern]
     <+ cong2* := []
  
  /**
@@ -109,7 +109,7 @@ overlays
   
   QUERY_SCOPE_RULE(pattern, ns) = SDefNoArgs("nabl-get-scope", Seq(Match(pattern), Build(LIST(ns))))
   
-  SCOPE_RULE(pattern, body) = SDefNoArgs("nabl-scoping-site", Seq(Match(pattern), FORCE_ORIGINS(body)))
+  SCOPE_RULE(pattern, body) = SDefNoArgs("nabl-scoping-site", Seq(Match(pattern), body))
   SCOPE_CALL(ns)            = CallT(SVar("nabl-scope"), [], [LIST(ns)])
  
    

@@ -57,7 +57,7 @@ rules
   	DefClause(_, _, _, term, _, DefScopes(scope*), _) -> EXTERNAL_DEF_RULE(pattern, cong)
   	where
   		repl* := <filter(?DefScope(<!(<id>, ALIAS_CALL)>)); nonempty> scope*
-    ; cong  := <replace-all-id(|[(term, EXTERNAL_DEF_CALL), repl*])> pattern
+    ; cong  := <add-force-origins; replace-all-id(|[(term, EXTERNAL_DEF_CALL), repl*])> pattern
   
   to-def-cong(|pattern, scope*, nt-scope*):
     (o, clause) -> def-cong
@@ -85,7 +85,7 @@ rules
     ; def-call    := DEF_CALL(ns-term, unique-term, scope-term, scope'*, nt-scope'*, uri-cvar1, uri-svar1, uri-cvar2, uri-svar2)
     where
        def-cong := Where(Assign(impl-var, App(def-call, term)))
-    <+ def-cong := <replace-all-id(|[(term, def-call)])> pattern
+    <+ def-cong := <add-force-origins; replace-all-id(|[(term, def-call)])> pattern
   
 rules
   
@@ -132,7 +132,7 @@ overlays
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
-  , Seq(Match(pattern), FORCE_ORIGINS(body))
+  , Seq(Match(pattern), body)
   )  
 	
 	EXTERNAL_DEF_RULE(pattern, body) =

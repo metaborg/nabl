@@ -33,7 +33,7 @@ rules
                := <filter-with-index(to-use-candidate(|bound*, repl*, k)); unzip; (concat, id)> part*
     ; term     := <use-to-name> clause
     ; use-call := USE_CALL(candidate*)
-    ; cong     := <replace-all-id(|[(term, use-call)])> pattern
+    ; cong     := <add-force-origins; replace-all-id(|[(term, use-call)])> pattern
   
   to-use-candidate(|bound*, glob-repl*, i):
     (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, wci, dep*))
@@ -92,7 +92,7 @@ overlays
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
     ]
-  , Seq(Match(pattern), FORCE_ORIGINS(body))
+  , Seq(Match(pattern), body)
   )
   
   USE_CALL(candidates) =
