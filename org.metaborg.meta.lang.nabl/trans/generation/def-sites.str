@@ -51,14 +51,22 @@ rules
                               , MATCH(CALL("sibl-uris__"), uri-svar)
                               , MATCH(CALL("implicits__"), LIST(implicit*))
                               ] 
-    ; ext*        := <filter(to-external-rule(|pattern))> def-clause*  
+    ; ext*        := <filter-with-index(to-external-rule(|pattern, implicit*))> def-clause*  
                              
-  to-external-rule(|pattern):
-  	DefClause(_, _, _, term, _, DefScopes(scope*), _) -> EXTERNAL_DEF_RULE(pattern, cong)
+  to-external-rule(|pattern, implicit*):
+  	(i, DefClause(kind, _, _, term, _, DefScopes(scope*), _)) -> EXTERNAL_DEF_RULE(pattern, seq)
   	where
   		repl* := <filter(?DefScope(<!(<id>, ALIAS_CALL)>)); nonempty> scope*
-    ; cong  := <add-force-origins; replace-all-id(|[(term, EXTERNAL_DEF_CALL), repl*])> pattern
-  
+    ; cong  := <replace-all-id(|repl*)> pattern
+    where
+       Implicit() := kind
+     ; match* := [ Where(Assign(LIST(implicit*), Var("implicits__"))) ]
+     ; named  := <implicit-def-var> i        
+    <+ match* := []
+     ; named  := term 
+    where
+      seq := <to-seq> [match*, EXTERNAL_DEF_CALL(named), cong, Fail()]
+      
   to-def-cong(|pattern, scope*, nt-scope*):
     (o, clause) -> def-cong
     where
@@ -169,8 +177,8 @@ overlays
     ]
   )
   
-  EXTERNAL_DEF_CALL() = 
-	Where(Assign(Var("def-uri__"), RootApp(CallNoArgs(SVar("nabl-uri")))))
-  	
+  EXTERNAL_DEF_CALL(named) = 
+	Where(Assign(Var("def-uri__"), App(CallNoArgs(SVar("nabl-uri")), named)))
+	
   MATCH(s, v) =
   CALL("match", [s], [v])
