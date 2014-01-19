@@ -23,6 +23,9 @@ exports
     CONTENTCOMPLETE -> RestrictedNamespaceRef {cons("COMPLETION-RestrictedNamespaceRef")}
     CONTENTCOMPLETE -> Restriction            {cons("COMPLETION-Restriction")}
 
+  lexical restrictions
+    "namespaces" "imported" "multiple" -/- [a-zA-z]
+
   lexical syntax
     Id -> NamespaceID 
 
@@ -49,6 +52,9 @@ exports
     CONTENTCOMPLETE -> PropertyPattern {cons("COMPLETION-PropertyPattern")}
     CONTENTCOMPLETE -> PropFilter      {cons("COMPLETION-PropFilter")}
 
+  lexical restrictions
+    "properties" "type" "of" "quality" "conformant" -/- [a-zA-z]
+
   lexical syntax
     Id        -> PropertyID 
     "type"    -> PropertyID {reject}
@@ -61,6 +67,9 @@ exports
   context-free syntax
     CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
     CONTENTCOMPLETE -> BindingRule   {cons("COMPLETION-BindingRule")}
+
+  lexical restrictions
+    "binding" "rules" -/- [a-zA-z]
 
   context-free syntax
     DefKind "defines" Unique NamespaceRef Term PropertyTerm* InDefScopes Constraints                        -> BindingClause    {cons("DefClause")}
@@ -86,6 +95,10 @@ exports
     CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
     CONTENTCOMPLETE -> ImportClausePart {cons("COMPLETION-ImportClausePart")}
     CONTENTCOMPLETE -> Alias            {cons("COMPLETION-Alias")}
+
+  lexical restrictions
+    "defines" "implicitly" "unique" "non-unique" "non-transitively" "scopes"
+    "refers" "to" "imports" "as" -/- [a-zA-z]
 
   context-free syntax
                                                                 -> InDefScopes   {cons("Current")}
@@ -117,6 +130,10 @@ exports
     CONTENTCOMPLETE -> RefScope      {cons("COMPLETION-RefScope")}
     CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
 
+  lexical restrictions
+    "into" "subsequent" "in" "from" "current" "scope" "enclosing" "best"
+    -/- [a-zA-z]
+
   context-free syntax
                                                                         -> Constraints {ast("[]")}
     "where" {Constraint "and"}+                                         -> Constraints {bracket}
@@ -133,6 +150,9 @@ exports
     CONTENTCOMPLETE -> Conditions  {cons("COMPLETION-Conditions")}
     CONTENTCOMPLETE -> Constraint  {cons("COMPLETION-Constraint")}
 
+  lexical restrictions
+    "where" "when" "has" "is" "refers" "to" -/- [a-zA-z]
+
   context-free syntax
     "into" -> Id {reject}
 
@@ -145,3 +165,6 @@ exports
   context-free syntax
     CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}
     CONTENTCOMPLETE -> MessageKind   {cons("COMPLETION-MessageKind")}
+
+  lexical restrictions
+    "on" "note" "warning" "error" -/- [a-zA-z]

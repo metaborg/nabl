@@ -180,7 +180,7 @@ templates // constraints
 context-free syntax
 
   Id = "into" {reject}
-  
+
 templates // messages
 
   BindingClause.MessageClause = <
@@ -192,7 +192,8 @@ templates // messages
   MessageKind.Warning = <warning>
   MessageKind.Error   = <error>
   
+template options
 
-  
+  keyword -/- [a-zA-z]
     
  
