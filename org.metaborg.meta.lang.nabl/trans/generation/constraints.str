@@ -39,7 +39,7 @@ rules
     where 
       k           := <extend-index(|i)> j
     ; result      := <result-var> k
-    ; task        := REF_TASK(result, <ns-to-term> ns, name)
+    ; task        := REF_TASK(result, <ns-to-term> ns, <replace-all(|repl*)> name)
     ; (task*, r*) := <constraints-to-tasks(|bound*, i, <inc> j)> (cs, [(term', result), repl*])
             
   constraints-to-tasks(|bound*, i, j):
