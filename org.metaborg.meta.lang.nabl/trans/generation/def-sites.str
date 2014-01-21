@@ -21,19 +21,19 @@ rules
       <not(eq)> (name, pattern)
       
   binding-to-apply-rule:
-  	BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
-  	where
+    BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
+    where
       [name]          := <filter(def-to-name + use-to-name)> clause*;
-  		Var(inner-name) := name;
-  		body            := <op-to-call(|inner-name)> pattern
-  		
-	op-to-call(|name) =
-		switch id
-		  case ?NoAnnoList(ops)                 : <op-to-call(|name)> ops
-		  case ?Op(aname, args)                 : !Call(SVar(aname), <map(op-to-call(|name))> args)
-		  case ?Var(name) + ?Var(ListVar(name)) : !CallNoArgs(SVar("s"))
-		  otherwise                             : !Id()
-		end
+      Var(inner-name) := name;
+      body            := <op-to-call(|inner-name)> pattern
+      
+  op-to-call(|name) =
+    switch id
+      case ?NoAnnoList(ops)                 : <op-to-call(|name)> ops
+      case ?Op(aname, args)                 : !Call(SVar(aname), <map(op-to-call(|name))> args)
+      case ?Var(name) + ?Var(ListVar(name)) : !CallNoArgs(SVar("s"))
+      otherwise                             : !Id()
+    end
       
   binding-to-def-rules:
     BindingRule(pattern, constr*, clause*) -> [DEF_RULE(pattern, seq), ext*]
@@ -52,31 +52,25 @@ rules
                               , MATCH(CALL("implicits__"), LIST(implicit*))
                               ] 
     where
-       extseq := <filter-with-index(clause-to-assigns(|pattern, implicit*)); concat; nonempty; to-seq> def-clause*  
+       extseq := <filter-with-index(clause-to-aliases(|pattern, implicit*)); concat; nonempty; at-end(![Fail()]); to-seq> def-clause*  
      ; ext*   := [EXTERNAL_DEF_RULE(pattern, extseq)]
     <+ ext*   := []
                                
-  clause-to-assigns(|pattern, implicit*):
-  	(i, DefClause(kind, _, _, term, _, DefScopes(scope*), _)) -> [match*, EXTERNAL_URI_CALL(u, named), assign*, cong]
-  	where
-  		u := <uri-var> i
-    ; (alias*, assign*) := <filter-with-index(scope-to-assign(|u, i)); nonempty; unzip> scope*
-    ; anno := EXTERNAL_ALIAS_CALL(LIST(alias*))
+  clause-to-aliases(|pattern, implicit*):
+    (i, DefClause(kind, _, _, term, _, DefScopes(scope*), _)) -> [match*, EXTERNAL_URI_CALL(u, named), alias*]
+    where
+      u := <uri-var> i
+    ; alias* := <filter(scope-to-alias(|u)); nonempty> scope*
     where
        Implicit() := kind
      ; match*     := [ Where(Assign(LIST(implicit*), Var("implicits__"))) ]
      ; named      := <implicit-def-var> i        
-     ; cong       := Where(App(anno, named))
     <+ match* := []
      ; named  := term
-     ; cong := <add-force-origins; replace-all-id(|[(term, anno)])> pattern
       
-  scope-to-assign(|uri, i):
-    (j, DefScope(scope)) -> (a, ASSIGN_ALIAS(a, uri, scope))
-    where
-      k := <extend-index(|i)> j
-    ; a := <alias-var> k
-    
+  scope-to-alias(|uri):
+    DefScope(scope) -> EXTERNAL_ALIAS_CALL(uri, scope)
+     
   uri-var: i-> Var($[uri[i]__])
   alias-var: i-> Var($[alias[i]__])
   
@@ -132,7 +126,7 @@ rules
   uri-child-var = uri-var(|"c")
   uri-sibl-var  = uri-var(|"s")
 
-			  
+        
 overlays
   
   NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
@@ -141,7 +135,7 @@ overlays
   
 overlays
   
-	DEF_RULE(pattern, body) =
+  DEF_RULE(pattern, body) =
   SDefT(
     "nabl-def-site"
   , [ DefaultVarDec("child-uris__")
@@ -155,7 +149,7 @@ overlays
     , DefaultVarDec("states__")]
   , Seq(Match(pattern), body)
   )  
-	
+  
   DEF_CALL(ns, u, ds, s, nt-s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
   CallT(
     SVar("nabl-def")
@@ -185,28 +179,17 @@ overlays
   ) 
   
   EXTERNAL_URI_CALL(v, named) = 
-  Where(Assign(v, App(CallNoArgs(SVar("nabl-uri")), named)))
+  Assign(v, App(CallNoArgs(SVar("nabl-uri")), named))
   
-  ASSIGN_ALIAS(v, uri, scope) = 
-  Where(
-    Assign(
-      v
-	  , App(
-		    CallT(
-			    SVar("nabl-def-alias")
-			  , []
-			  , [ Var("partition__")
-			    , uri
-			    ]
-			  )
-	    , scope
-	    )
-	  )
-	)
-
-  EXTERNAL_ALIAS_CALL(alias) =
+  EXTERNAL_ALIAS_CALL(uri, scope) = 
+  App(
     CallT(
-    SVar("nabl-external-def")
-  , []
-  , [alias]
+      SVar("nabl-def-alias")
+    , []
+    , [ Var("partition__")
+      , uri
+      ]
+    )
+  , scope
   )
+  
