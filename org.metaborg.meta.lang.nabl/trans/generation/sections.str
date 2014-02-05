@@ -187,14 +187,8 @@ rules // imports
   nabl-to-str:
   	Imports(import*) -> <MkSingleton> Imports(import'*)
   	with
-			if nabl-uses-custom-library(|<project-path>) then
-				![ ImportWildcard("lib/nabl")
-				 , ImportWildcard("lib/task")
-				 , ImportWildcard("lib/properties")
-				 , ImportWildcard("lib/types")
-				 , ImportWildcard("lib/editor")
-				 | import*
-				 ]
+			if <fetch-elem(?ImportWildcard(<string-ends-with(|"/nabl")>))> import* then
+				!import*
 			else
 				![ ImportWildcard("lib/runtime/nabl")
 				 , ImportWildcard("lib/runtime/task")

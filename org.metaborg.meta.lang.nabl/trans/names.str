@@ -45,11 +45,11 @@ rules
           )
         , id
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
 
 rules
@@ -79,11 +79,11 @@ rules
           , []
           )
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-get-name :
     NamespaceRef(n) -> n
@@ -143,11 +143,11 @@ rules
         , id
         , id
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-prop-site(|lang__, partition__, uris__, states__, implicits__) =
     ?PropertyDef(p, ns, t)
@@ -199,10 +199,7 @@ rules
 
   nabl-scoping-site =
     ?BindingRule(_, _, _)
-    ; origin-track-forced(
-        nabl-scope(|[NablNsVariable()])
-      |
-      )
+    ; nabl-scope(|[NablNsVariable()])
 
   nabl-get-scope =
     ?BindingRule(_, _, _)
@@ -210,10 +207,7 @@ rules
 
   nabl-scoping-site =
     ?RefClausePart(_, _, _, _, _, _)
-    ; origin-track-forced(
-        nabl-scope(|[NablNsVariable()])
-      |
-      )
+    ; nabl-scope(|[NablNsVariable()])
 
   nabl-get-scope =
     ?RefClausePart(_, _, _, _, _, _)
@@ -244,11 +238,11 @@ rules
           , []
           )
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-get-name :
     ListVar(x) -> x
@@ -275,11 +269,11 @@ rules
           , []
           )
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-get-name :
     VarRef(x) -> x
