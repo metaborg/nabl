@@ -10,7 +10,7 @@ imports
     
 rules // namespaces 
       
-  nabl-to-str:
+  section-to-str:
     Namespaces(namespaces) -> [Signature([Constructors(<map(ns-to-constructor)> namespaces)])]
     
   ns-to-constructor: // generates constructors for namespaces
@@ -22,14 +22,14 @@ rules // namespaces
   
 rules // properties
         
-  nabl-to-str:
+  section-to-str:
     Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
     where
-    	cons* := <map(nabl-to-str)> prop*
+    	cons* := <map(propdef-to-str)> prop*
     ; rule  := SDef("nabl-custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)), CallNoArgs(SVar("add-properties"))))
     ; rule* := <mapconcat(prop-to-rules)> prop*
   
-  nabl-to-str: // generate constructors for properties
+  propdef-to-str: // generate constructors for properties
     PropertyDef(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
 
   nabl-to-str: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
@@ -184,28 +184,12 @@ overlays
 
 rules // imports
     
-  nabl-to-str:
-  	Imports(import*) -> <MkSingleton> Imports(import'*)
-  	with
-			if <fetch-elem(?ImportWildcard(<string-ends-with(|"/nabl")>))> import* then
-				!import*
-			else
-				![ ImportWildcard("lib/runtime/nabl")
-				 , ImportWildcard("lib/runtime/task")
-				 , ImportWildcard("lib/runtime/properties")
-				 , ImportWildcard("lib/runtime/types")
-				 , ImportWildcard("lib/runtime/editor")
-				 | import*
-				 ]
-			end => import'*
-    
-    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/nabl/collect.str]
-    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/task/core.str]
-    nabl-uses-custom-library(|project-path) = <file-exists> $[[project-path]/lib/analysis/core.str]
-    
+  section-to-str:
+  	Imports(import*) -> <MkSingleton> Imports(import*)
+  	
 rules // binding rules
 
-  nabl-to-str:
+  section-to-str:
     BindingRules(rs) -> [Rules(<map-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:

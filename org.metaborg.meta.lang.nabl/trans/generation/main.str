@@ -13,7 +13,7 @@ rules
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
       filename   := <guarantee-extension(|"str")> path
-    ; str-module := <strip-annos; to-ppable-str; nabl-to-str> ast
+    ; str-module := <strip-annos; to-ppable-str; module-to-str> ast
     with
        result := <pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
@@ -27,7 +27,22 @@ rules // modules
   to-ppable-str-local: VarRef(x)     -> Var(x)
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
-  nabl-to-str:
-    Module(name, sections) -> Module(name, sections')
+  module-to-str:
+    Module(name, section*) -> Module(name, [import*, section'*])
     where 
-      sections' := <filterconcat(nabl-to-str)> sections 
+      section'* := <filterconcat(section-to-str)> section* 
+    ; if <collect-all(?ImportWildcard(<string-ends-with(|"/nabl")>))> section* => [] then
+        import* := [ Imports(
+                       [ ImportWildcard("lib/runtime/nabl")
+                       , ImportWildcard("lib/runtime/task")
+                       , ImportWildcard("lib/runtime/properties")
+                       , ImportWildcard("lib/runtime/types")
+                       , ImportWildcard("lib/runtime/editor")
+                       ]
+                     )
+                   ]
+      else
+      	import* := []
+      end 
+      
+    

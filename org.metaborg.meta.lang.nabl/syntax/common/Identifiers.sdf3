@@ -37,4 +37,5 @@ lexical syntax
   "rules"         -> Keyword
   "namespaces"    -> Keyword
   "properties"    -> Keyword
-    
+  "imports"       -> Keyword
+   
