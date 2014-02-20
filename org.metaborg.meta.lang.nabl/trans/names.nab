@@ -43,7 +43,10 @@ binding rules
 		
 	RefClausePart(_, _, _, _, _, _):
 		scopes Variable
-		
+	
+	Filters(_):
+	  scopes Variable
+	  
 	Var(x):
 		defines Variable x
 		

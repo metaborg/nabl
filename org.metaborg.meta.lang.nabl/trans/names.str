@@ -216,6 +216,13 @@ rules
     ?RefClausePart(_, _, _, _, _, _)
     ; ![NablNsVariable()]
 
+  nabl-scoping-site =
+    ?Filters(_)
+    ; nabl-scope(|[NablNsVariable()])
+
+  nabl-get-scope =
+    ?Filters(_) ; ![NablNsVariable()]
+
   nabl-get-name :
     Var(x) -> x
 

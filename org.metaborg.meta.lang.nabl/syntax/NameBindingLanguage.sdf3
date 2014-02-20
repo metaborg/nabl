@@ -121,6 +121,24 @@ templates // clauses
   Alias.None  = <>
   Alias.Alias = <as <Term>>
 
+  BindingClause.FilterClause = <
+    filter <NamespaceRef> <Term> 
+      <Filters>
+      <Constraints>
+  > 
+
+  BindingClause.DisambiguateClause = <
+    disambiguate <NamespaceRef> <Term>
+      by <Disambiguator> 
+      <Constraints>
+   >
+  
+  Disambiguator.MinimalDistance = <
+    minimal distance <Term> <Relation> <Term>
+  >
+  
+  Relation = [<:]
+  
 templates // scopes
 
   InDefScopes.Current   = <>
@@ -161,6 +179,11 @@ templates // constraints
     when
       <Constraint+; separator="\n and">
   > {bracket}
+  
+  Filters.Filters = <
+    with 
+      <Constraint+; separator="\n and">
+  >
   
   Constraint.PropertyConstraint = <
     <Term> has <PropertyRef> <Pattern>>

@@ -87,18 +87,25 @@ exports
     "imports" {RestrictedNamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints         -> ImportClausePart {cons("WildcardImport")}
                                                                                                             -> Alias            {cons("None")}
     "as" Term                                                                                               -> Alias            {cons("Alias")}
+    "filter" NamespaceRef Term Filters Constraints                                                          -> BindingClause    {cons("FilterClause")}
+    "disambiguate" NamespaceRef Term "by" Disambiguator Constraints                                         -> BindingClause    {cons("DisambiguateClause")}
+    "minimal" "distance" Term Relation Term                                                                 -> Disambiguator    {cons("MinimalDistance")}
+    "<:"                                                                                                    -> Relation         
 
   context-free syntax
     CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
     CONTENTCOMPLETE -> Unique           {cons("COMPLETION-Unique")}
     CONTENTCOMPLETE -> RefClausePart    {cons("COMPLETION-RefClausePart")}
-    CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
     CONTENTCOMPLETE -> ImportClausePart {cons("COMPLETION-ImportClausePart")}
     CONTENTCOMPLETE -> Alias            {cons("COMPLETION-Alias")}
+    CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
+    CONTENTCOMPLETE -> Disambiguator    {cons("COMPLETION-Disambiguator")}
+    CONTENTCOMPLETE -> Relation         {cons("COMPLETION-Relation")}
 
   lexical restrictions
     "defines" "implicitly" "unique" "non-unique" "non-transitively" "scopes"
-    "refers" "to" "imports" "as" -/- [a-zA-z]
+    "refers" "to" "imports" "as" "filter" "disambiguate" "by" "minimal"
+    "distance" -/- [a-zA-z]
 
   context-free syntax
                                                                 -> InDefScopes   {cons("Current")}
@@ -139,6 +146,7 @@ exports
     "where" {Constraint "and"}+                                         -> Constraints {bracket}
                                                                         -> Conditions  {ast("[]")}
     "when" {Constraint "and"}+                                          -> Conditions  {bracket}
+    "with" {Constraint "and"}+                                          -> Filters     {cons("Filters")}
     Term "has" PropertyRef Pattern                                      -> Constraint  {cons("PropertyConstraint")}
     Term "is" QualityRef                                                -> Constraint  {cons("QualityConstraint")}
     NamespaceRef Term "has" PropertyRef Pattern                         -> Constraint  {cons("RefPropertyConstraint"), avoid}
@@ -148,10 +156,11 @@ exports
   context-free syntax
     CONTENTCOMPLETE -> Constraints {cons("COMPLETION-Constraints")}
     CONTENTCOMPLETE -> Conditions  {cons("COMPLETION-Conditions")}
+    CONTENTCOMPLETE -> Filters     {cons("COMPLETION-Filters")}
     CONTENTCOMPLETE -> Constraint  {cons("COMPLETION-Constraint")}
 
   lexical restrictions
-    "where" "when" "has" "is" "refers" "to" -/- [a-zA-z]
+    "where" "when" "with" "has" "is" "refers" "to" -/- [a-zA-z]
 
   context-free syntax
     "into" -> Id {reject}
