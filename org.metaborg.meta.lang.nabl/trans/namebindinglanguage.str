@@ -20,6 +20,7 @@ imports
 	names
   generation/-
   analysis/-
+  coq-semantics/-
   
 rules // Analysis
   

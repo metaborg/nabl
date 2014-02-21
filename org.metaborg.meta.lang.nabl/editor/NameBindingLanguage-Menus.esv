@@ -30,3 +30,5 @@ menus
     end
     
     action: "Reset and reanalyze"  = debug-reanalyze (meta)   
+
+    action: "Convert to Coq"       = generate-coq-semantics (openeditor) (realtime)
