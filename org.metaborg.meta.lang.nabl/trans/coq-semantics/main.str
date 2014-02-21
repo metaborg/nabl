@@ -1,2 +1,90 @@
 module coq-semantics/main
 
+imports
+  include/NameBindingLanguage
+  generation/util
+  coq-semantics/Coq
+  coq-semantics/Vernacular.pp.generated
+  
+rules
+  
+  generate-coq-semantics:
+    (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"v")> path
+    ; coq-file := <strip-annos; module-to-coq> ast
+    with
+       result := <prettyprint-CoqFile> coq-file
+    // <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
+    // ;  result := ""
+ 
+rules
+  
+  module-to-coq:
+    Module(name, section*) -> <fail>
+    
+rules // namespaces
+  
+  section-to-coq:
+  	Namespaces(ns*) -> [Ind([Induc("ID_NS", [], Ref("Set"), cdec*)]), Def("NS", [], None(), Ref("ID_NS"))]
+  	with
+  	  cdec* := <map(namespace-to-coq)> ns*
+  	  
+  namespace-to-coq:
+  	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
+  
+rules // 
+  	
+  section-to-coq:
+    BindingRules(r*) -> <fail>
+    with
+      scope-cdec* := <collect-all(scope-to-coq); concat> r* 
+  
+  scope-to-coq =
+    ?BindingRule(pattern, [], <filter(scope-to-coq(|pattern))>)
+      
+  scope-to-coq(|pattern):
+    ScopeClause([NamespaceRef(ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, Type(Apply(Apply(Ref("scopesR"), term), Ref($[[ns]NS]))))
+    with
+      c       := <pattern-to-cons> pattern
+    ; (term, binder*) := <pattern-to-term(|0)> pattern
+     
+    // Foo(Bar(x), y)
+    
+rules
+  
+  pattern-to-cons =
+  	?NoAnnoList(Op(<id>, _))
+
+  patterns-to-term(|i): [] -> (Ref("Nop"), [])
+  
+  patterns-to-term(|i):
+  	[c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*])
+    with
+    	(ct, cbind*) := <pattern-to-term(|i)> c
+    ; (cts, csbind*) := <patterns-to-term(|<inc> i)> cs
+  
+  
+  pattern-to-term(|i):
+  	NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*)
+  	with
+  		k := $[k[i]]
+  	; (child*, cbinder*) := <patterns-to-term(|<inc> i)> term*
+  	; binder* := [cbinder*, Bind(k)]
+  		
+  pattern-to-term(|i):
+  	Var(n) -> (Ref(n), [Bind(n)])
+
+  pattern-to-term(|i):
+  	Wld() -> (Ref(n), [Bind(n)])
+	  with
+	  	n := $[wld[i]]
+  	
+rules
+  	
+  clause-to-coq(|pattern):
+  	DefClause(Explicit(), Unique(), ns, term, [], Current(), []) -> <fail>
+  	
+    
+  clause-to-coq(|pattern):
+    RefClause([RefClausePart(All(), ns, term, [], Current(), [])]) -> <fail>
