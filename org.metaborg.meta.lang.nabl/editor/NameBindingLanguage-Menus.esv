@@ -7,7 +7,10 @@ menus
   menu: "Actions"
     
     action: "Generate name analysis" = generate-name-analysis (openeditor) (realtime)
-    
+
+    action: "Convert to Coq"       = generate-coq-semantics (openeditor) (realtime)
+    separator
+        
     action: "Show abstract syntax" = debug-show-aterm (openeditor) (realtime) (meta) (source)
     action: "Show analyzed syntax" = debug-show-analyzed (openeditor) (meta)
     
@@ -30,5 +33,3 @@ menus
     end
     
     action: "Reset and reanalyze"  = debug-reanalyze (meta)   
-
-    action: "Convert to Coq"       = generate-coq-semantics (openeditor) (realtime)
