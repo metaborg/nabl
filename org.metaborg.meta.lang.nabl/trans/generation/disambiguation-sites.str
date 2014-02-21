@@ -1,0 +1,115 @@
+module disambiguation-sites
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  
+  generation/-
+  
+rules
+  
+    
+  binding-to-filter-rules(|bound*, task*, repl*):
+    (i, BindingRule(pattern, constr*, clause*)) -> [filter-rule*, create-rule*]
+    with 
+       filter-clause* := <filter-with-index(to-filter-clauses(|pattern, bound*, repl*, i)); nonempty; concat> clause*
+     ; filter-rule*   := [FILTER_RULE(pattern, <to-seq> [task*, filter-clause*])]
+    <+ filter-rule*   := []
+    with
+       create-rule* := <filter-with-index(to-filter-create-rule(|pattern, bound*, repl*, i)); nonempty> clause*
+    <+ create-rule* := []
+    // 1. use task
+    // 2. constraint tasks
+    // 3. higher order task
+    // 4. create rule for higher-order task
+    // 5. clauses for filter rule
+    
+  to-filter-clauses(|pattern, bound*, glob-repl*, i):
+    (j, FilterClause(ns, term, _, constr*)) -> [ASSIGN_USE_TASK(task, term), task*, cong]
+    with
+      k                      := <extend-index(|i)> j
+    ; task                   := <use-var> j
+    ; (task*, repl*)         := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; dep*                   := <map(Snd)> repl*
+    ; filter-call            := FILTER_CALL(Str($["filter[k]"]), task, dep*)
+    ; cong := <replace-all-id(|[(term, filter-call)])> pattern
+
+  to-filter-create-rule(|pattern, bound*, glob-repl*, i):
+    (j, FilterClause(ns, term, Filters(f*), constr*)) -> <fail> //CREATE_FILTER_RULE(Str($["filter[k]"]), dep*, term, seq)
+    with
+      k                      := <extend-index(|i)> j
+    ; (task*, repl*)         := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
+    ; dep*                   := <map(Snd)> repl*
+    ; (filter-task*, _)      := <constraints-to-tasks(|bound*, $[f[k]], 1)> (f*, repl*) 
+    ; seq                    := <to-seq> filter-task*
+    
+ //  binding-to-disambiguation-rule(|bound*, task*, repl*):
+ //    (i, BindingRule(pattern, constr*, clause*)) -> DISAMBIG_RULE(pattern, seq)
+ //    where 
+ //      disambig-clause* := <filter-with-index(to-disambiguation-clauses(|pattern, bound*, repl*, i)); concat> clause*
+ //    ; seq              := <to-seq> [task*, disambig-clause*]
+ // 
+ //  to-disambiguation-clauses(|pattern, bound*, glob-repl*, i):
+ //    (j, DisambiguateClause(ns, term, d, constr*)) -> [ASSIGN_USE_TASK(task, term), task*, filter-task*, cong]
+ //    with
+ //      ns-term           := <ns-to-term> ns
+ //    ; k                 := <extend-index(|i)> j
+ //    ; task              := <use-var> j
+ //    ; (task*, repl*)    := <constraints-to-tasks(|bound*, k, 1)> (constr*, [(term, task), glob-repl*])
+ //    ; l                 := <extend-index(|$[f[i]])> j
+ //    ; (filter-task*, _) := <constraints-to-tasks(|bound*, l, 1)> (f*, repl*)
+ //    ; filter-call       := FILTER_CALL([])
+ //    // ; dep*              := <map(Snd)> repl*
+ //    ; cong := <replace-all-id(|[(term, filter-call)])> pattern
+
+  use-var: i-> Var($[use[i]__])
+  
+overlays
+   
+  ASSIGN_USE_TASK(task, term) =
+  Assign(
+    task
+  , App(CallNoArgs(SVar("get-use-task")), term)
+  )
+
+  FILTER_RULE(pattern, body)  =
+  SDefT(
+    "nabl-filtering-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__")
+    ]
+  , Seq(Match(pattern), body)
+  )
+
+  FILTER_CALL(ho-name, use, ts) = 
+  CallT(
+    SVar("nabl-filter")
+  , []
+  , [Var("lang__"), Var("partition__"), Var("uris__"), ho-name, use, LIST(ts)]
+  )
+
+  DISAMBIG_RULE(pattern, body)  =
+  SDefT(
+    "nabl-disambiguation-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__")
+    ]
+  , Seq(Match(pattern), body)
+  )
+
+  DISAMBIG_CALL(ts) = 
+  CallT(
+    SVar("nabl-disambiguate")
+  , []
+  , [Var("lang__"), Var("partition__"), Var("uris__"), LIST(ts)]
+  )
+

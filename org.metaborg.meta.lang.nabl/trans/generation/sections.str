@@ -193,7 +193,7 @@ rules // binding rules
     BindingRules(rs) -> [Rules(<map-with-index(to-rules); concat; nonempty> rs)]
     
   to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, a*, d*, p*, u*, i*, m1*, m2*, msg*]
+    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, a*, d*, p*, u*, f*, i*, m1*, m2*, msg*]
     with 
        b* := <binding-to-scope-rules> rule 
     <+ b* := [] 
@@ -215,6 +215,8 @@ rules // binding rules
     with 
        u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
     <+ u* := []
+    with 
+       f* := <binding-to-filter-rules(|bound*, task*, repl*)>
     with 
        i* := [<binding-to-import-rule(|bound*, task*, repl*)>]
     <+ i* := []
