@@ -1,4 +1,4 @@
-module generation2/main
+module generation/main
 
 imports
   
