@@ -19,8 +19,8 @@ rules
     ; coq-file := <strip-annos; module-to-coq> ast
     with
        result := <prettyprint-CoqFile> coq-file
-    // <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
-    // ;  result := ""
+    <+ <bottomup(try(not(is-string) ; not(is-list) ; not(prettyprint-example) ; debug(!"cannot pp ")))> coq-file
+    ;  result := ""
  
 rules
   
