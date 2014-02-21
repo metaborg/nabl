@@ -10,27 +10,28 @@ rules
   pattern-to-cons =
     ?NoAnnoList(Op(<id>, _))
 
-  patterns-to-term(|i): [] -> (Ref("Nop"), [])
+  patterns-to-term(|i): [] -> (Ref("Nop"), [], i)
   
   patterns-to-term(|i):
-    [c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*])
+    [c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*], k)
     with
-      (ct, cbind*) := <pattern-to-term(|i)> c
-    ; (cts, csbind*) := <patterns-to-term(|<inc> i)> cs
+      (ct, cbind*, j) := <pattern-to-term(|i)> c
+    ; (cts, csbind*, k) := <patterns-to-term(|<inc> j)> cs
   
   
+  // (Co cC [c1; c2; c3] k)
   pattern-to-term(|i):
-    NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*)
+    NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*, j)
     with
       k := $[k[i]]
-    ; (child*, cbinder*) := <patterns-to-term(|<inc> i)> term*
+    ; (child*, cbinder*, j) := <patterns-to-term(|<inc> i)> term*
     ; binder* := [cbinder*, Bind(k)]
       
   pattern-to-term(|i):
-    Var(n) -> (Ref(n), [Bind(n)])
+    Var(n) -> (Ref(n), [Bind(n)], i)
 
   pattern-to-term(|i):
-    Wld() -> (Ref(n), [Bind(n)])
+    Wld() -> (Ref(n), [Bind(n)], <inc> i)
     with
       n := $[wld[i]]
     

@@ -8,13 +8,13 @@ imports
 
 rules
 
-  scope-to-coq =
-    ?BindingRule(pattern, [], <filter(scope-to-coq(|pattern))>)
-      
-  scope-to-coq(|pattern):
-    ScopeClause([NamespaceRef(ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, Type(Apply(Apply(Ref("scopesR"), term), Ref($[[ns]NS]))))
+  scope-to-coq:
+    BindingRule(pattern, [], clause*) -> <filter(scope-to-coq(|c, term, binder*))> clause*
     with
-      c       := <pattern-to-cons> pattern
-    ; (term, binder*) := <pattern-to-term(|0)> pattern
+      c                  := <pattern-to-cons> pattern
+    ; (term, binder*, _) := <pattern-to-term(|0)> pattern
+    
+  scope-to-coq(|c, term, binder*):
+    ScopeClause([NamespaceRef(ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, Type(Apply(Apply(Ref("scopesR"), term), Ref($[[ns]NS]))))
      
     
