@@ -122,13 +122,13 @@ templates // clauses
   Alias.Alias = <as <Term>>
 
   BindingClause.FilterClause = <
-    filter <NamespaceRef> <Term> 
+    filters <NamespaceRef> <Term> 
       <Filters>
       <Constraints>
   > 
 
   BindingClause.DisambiguateClause = <
-    disambiguate <NamespaceRef> <Term>
+    disambiguates <NamespaceRef> <Term>
       by <Disambiguator> 
       <Constraints>
    >
@@ -137,7 +137,9 @@ templates // clauses
     minimal distance <Term> <Relation> <Term>
   >
   
-  Relation = [<:]
+lexical syntax
+
+  Relation = "<:"
   
 templates // scopes
 

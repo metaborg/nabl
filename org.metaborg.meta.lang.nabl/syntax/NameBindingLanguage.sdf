@@ -87,10 +87,9 @@ exports
     "imports" {RestrictedNamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints         -> ImportClausePart {cons("WildcardImport")}
                                                                                                             -> Alias            {cons("None")}
     "as" Term                                                                                               -> Alias            {cons("Alias")}
-    "filter" NamespaceRef Term Filters Constraints                                                          -> BindingClause    {cons("FilterClause")}
-    "disambiguate" NamespaceRef Term "by" Disambiguator Constraints                                         -> BindingClause    {cons("DisambiguateClause")}
+    "filters" NamespaceRef Term Filters Constraints                                                         -> BindingClause    {cons("FilterClause")}
+    "disambiguates" NamespaceRef Term "by" Disambiguator Constraints                                        -> BindingClause    {cons("DisambiguateClause")}
     "minimal" "distance" Term Relation Term                                                                 -> Disambiguator    {cons("MinimalDistance")}
-    "<:"                                                                                                    -> Relation         
 
   context-free syntax
     CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
@@ -100,12 +99,14 @@ exports
     CONTENTCOMPLETE -> Alias            {cons("COMPLETION-Alias")}
     CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
     CONTENTCOMPLETE -> Disambiguator    {cons("COMPLETION-Disambiguator")}
-    CONTENTCOMPLETE -> Relation         {cons("COMPLETION-Relation")}
 
   lexical restrictions
     "defines" "implicitly" "unique" "non-unique" "non-transitively" "scopes"
-    "refers" "to" "imports" "as" "filter" "disambiguate" "by" "minimal"
+    "refers" "to" "imports" "as" "filters" "disambiguates" "by" "minimal"
     "distance" -/- [a-zA-z]
+
+  lexical syntax
+    "<:" -> Relation 
 
   context-free syntax
                                                                 -> InDefScopes   {cons("Current")}
