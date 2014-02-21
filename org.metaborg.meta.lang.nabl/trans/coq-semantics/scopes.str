@@ -1,0 +1,20 @@
+module coq-semantics/scopes
+
+imports
+  include/NameBindingLanguage
+  generation/util
+  coq-semantics/Coq
+  coq-semantics/patterns
+
+rules
+
+  scope-to-coq =
+    ?BindingRule(pattern, [], <filter(scope-to-coq(|pattern))>)
+      
+  scope-to-coq(|pattern):
+    ScopeClause([NamespaceRef(ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, Type(Apply(Apply(Ref("scopesR"), term), Ref($[[ns]NS]))))
+    with
+      c       := <pattern-to-cons> pattern
+    ; (term, binder*) := <pattern-to-term(|0)> pattern
+     
+    
