@@ -35,3 +35,39 @@ rules
     with
       n := $[wld[i]]
     
+rules
+  definition-pattern-to-cons =
+    ?NoAnnoList(Op(<id>, _))
+
+  definition-patterns-to-term(|i, x): [] -> (Ref("Nop"), [], i, None())
+  
+  definition-patterns-to-term(|i, x):
+    [c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*], k, ret)
+    with
+      (ct, cbind*, j, hd) := <definition-pattern-to-term(|i, x)> c
+    ; (cts, csbind*, k, tl) := <definition-patterns-to-term(|<inc> j, x)> cs
+    ; ret := <?Some(_) <+ !tl> hd
+
+  // (Co cC [c1; c2; c3] k)
+  definition-pattern-to-term(|i, x):
+    NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*, j, maybe)
+    with
+      k := $[k[i]]
+    ; (child*, cbinder*, j, maybe) := <definition-patterns-to-term(|<inc> i, x)> term*
+    ; binder* := [cbinder*, Bind(k)]
+      
+  definition-pattern-to-term(|i, x):
+    Var(n) -> (Ref(n), [Bind(n)], i, None())
+    where not(<equal(|x)> n)
+  
+  definition-pattern-to-term(|i, x):
+    Var(n) -> (Apply(Apply(Ref("Id"), Ref(n)), Ref(k)), [Bind(k)], <inc> i, Some(k))
+    where
+      <equal(|x)> n
+    ; k := $[k[i]]  
+
+  definition-pattern-to-term(|i, x):
+    Wld() -> (Ref(n), [Bind(n)], <inc> i, None())
+    with
+      n := $[wld[i]]
+    

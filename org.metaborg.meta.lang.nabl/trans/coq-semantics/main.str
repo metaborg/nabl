@@ -6,6 +6,9 @@ imports
   coq-semantics/Coq
   coq-semantics/Vernacular.pp.generated
   coq-semantics/scopes
+  coq-semantics/patterns
+  coq-semantics/defines
+  coq-semantics/refersto
   
 rules
   
@@ -27,7 +30,7 @@ rules
 rules // namespaces
   
   section-to-coq:
-  	Namespaces(ns*) -> [Ind([Induc("ID_NS", [], Ref("Set"), cdec*)]), Def("NS", [], None(), Ref("ID_NS"))]
+  	Namespaces(ns*) -> [Ind([Induc("ID_NS", [], Set(), cdec*)]), Def("NS", [], None(), Ref("ID_NS"))]
   	with
   	  cdec* := <map(namespace-to-coq)> ns*
   	  
@@ -37,15 +40,18 @@ rules // namespaces
 rules // 
   	
   section-to-coq:
-    BindingRules(r*) -> <fail>
+    BindingRules(r*) ->
+     [Ind([Induc("scopesR", [], Product(Ref("term"), Product(Ref("NS"), Prop())), scope-cdec*)]),
+      Def("scopes_R", [], None(), Ref("scopesR")),
+      Ind([Induc("definesR", [], Product(Ref("term"), Product(Ref("Ident"), Product(Ref("NS"), Product(Ref("key"), Prop())))), define-cdec*)]),
+      Def("defines_R", [], None(), Ref("definesR")),
+      Ind([Induc("refers_toR", [], Product(Ref("term"), Product(Ref("Ident"), Product(Ref("NS"), Product(Ref("key"), Prop())))), refers-to-cdec*)]),
+      Def("refers_to_R", [], None(), Ref("refers_toR"))]
     with
-      scope-cdec* := <collect-all(scope-to-coq); concat> r* 
+      scope-cdec* := <collect-all(scope-to-coq); concat> r*
+    ; define-cdec* := <collect-all(defines-to-coq); concat> r*
+    ; refers-to-cdec* := <collect-all(refers-to-to-coq); concat> r*
   
-rules
-  	
-  clause-to-coq(|pattern):
-  	DefClause(Explicit(), Unique(), ns, term, [], Current(), []) -> <fail>
-  	
-    
-  clause-to-coq(|pattern):
-    RefClause([RefClausePart(All(), ns, term, [], Current(), [])]) -> <fail>
+rules // Helper function
+  
+  apply-apply = foldl(\(x,y) -> Apply(x,y)\)
