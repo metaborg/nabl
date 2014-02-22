@@ -8,8 +8,7 @@ imports
   generation/-
   
 rules
-  
-    
+      
   binding-to-filter-rules(|bound*, task*, repl*):
     (i, BindingRule(pattern, constr*, clause*)) -> [filter-rule*, create-rule*]
     with 
@@ -26,23 +25,22 @@ rules
     // 5. clauses for filter rule
     
   to-filter-clauses(|pattern, bound*, glob-repl*, i):
-    (j, FilterClause(ns, term, _, constr*)) -> [ASSIGN_USE_TASK(task, term), task*, cong]
+    (j, FilterClause(ns, term, _, constr*)) -> [task*, cong]
     with
       k                      := <extend-index(|i)> j
-    ; task                   := <use-var> j
     ; (task*, repl*)         := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; dep*                   := <map(Snd)> repl*
-    ; filter-call            := FILTER_CALL(Str($["filter[k]"]), task, dep*)
+    ; filter-call            := FILTER_CALL(Str($["filter[k]"]), dep*)
     ; cong := <replace-all-id(|[(term, filter-call)])> pattern
 
   to-filter-create-rule(|pattern, bound*, glob-repl*, i):
-    (j, FilterClause(ns, term, Filters(f*), constr*)) -> <fail> //CREATE_FILTER_RULE(Str($["filter[k]"]), dep*, term, seq)
+    (j, FilterClause(ns, term, Filters(f*), constr*)) -> CREATE_FILTER_RULE(Str($["filter[k]"]), dep*, term, seq)
     with
       k                      := <extend-index(|i)> j
     ; (task*, repl*)         := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; dep*                   := <map(Snd)> repl*
     ; (filter-task*, _)      := <constraints-to-tasks(|bound*, $[f[k]], 1)> (f*, repl*) 
-    ; seq                    := <to-seq> filter-task*
+    ; seq                    := <to-seq> [filter-task*, Build(TUPLE([term, App(CALL("task-create-sequence", [], [Var("partition__")]), LIST(dep*))]))]
     
  //  binding-to-disambiguation-rule(|bound*, task*, repl*):
  //    (i, BindingRule(pattern, constr*, clause*)) -> DISAMBIG_RULE(pattern, seq)
@@ -66,12 +64,6 @@ rules
   use-var: i-> Var($[use[i]__])
   
 overlays
-   
-  ASSIGN_USE_TASK(task, term) =
-  Assign(
-    task
-  , App(CallNoArgs(SVar("get-use-task")), term)
-  )
 
   FILTER_RULE(pattern, body)  =
   SDefT(
@@ -86,13 +78,33 @@ overlays
   , Seq(Match(pattern), body)
   )
 
-  FILTER_CALL(ho-name, use, ts) = 
+  FILTER_CALL(ho-name, ts) = 
   CallT(
     SVar("nabl-filter")
   , []
-  , [Var("lang__"), Var("partition__"), Var("uris__"), ho-name, use, LIST(ts)]
+  , [Var("lang__"), Var("partition__"), Var("uris__"), ho-name, LIST(ts)]
   )
 
+  CREATE_FILTER_RULE(string, deps, name, body) = 
+  SDefT(
+    "nabl-filter-def"
+  , []
+  , [ DefaultVarDec("partition__")
+    , DefaultVarDec("ctx-terms__")
+    , DefaultVarDec("ctx-string__")
+    ]
+  , Seq(
+      Match(name)
+    , Seq(
+	      Where(Assign(string, Var("ctx-string__")))
+	    , Seq(
+	        Where(Assign(LIST(deps), Var("ctx-terms__")))
+	      , body
+	      )
+	    )
+	  )
+  ) 
+  
   DISAMBIG_RULE(pattern, body)  =
   SDefT(
     "nabl-disambiguation-site"

@@ -151,8 +151,8 @@ overlays
   )  
   
   DEF_CALL(ns, u, ds, s, nt-s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
-  CallT(
-    SVar("nabl-def")
+  CALL(
+    "nabl-def"
   , [Match(out-child-uris), Match(out-sibl-uris)]
   , [ Var("lang__")
     , Var("partition__")
@@ -183,8 +183,8 @@ overlays
   
   EXTERNAL_ALIAS_CALL(uri, scope) = 
   App(
-    CallT(
-      SVar("nabl-def-alias")
+    CALL(
+      "nabl-def-alias"
     , []
     , [ Var("partition__")
       , uri
