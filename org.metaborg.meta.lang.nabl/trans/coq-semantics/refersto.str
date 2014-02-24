@@ -12,7 +12,7 @@ rules
   
   refers-to-to-coq(|c, pattern):
     RefClause([RefClausePart(All(), NamespaceRef(ns), VarRef(x), [], Current(), [])]) ->
-      ConsDecl($[[c]_refers_to_[ns]], [x, binder*], coq-term-type)
+      ConsDecl($[[c]_refers_to_[ns]], [Bind(x), binder*], coq-term-type)
     where
       (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
     with

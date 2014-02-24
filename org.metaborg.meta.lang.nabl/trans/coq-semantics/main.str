@@ -9,6 +9,7 @@ imports
   coq-semantics/patterns
   coq-semantics/defines
   coq-semantics/refersto
+  coq-semantics/Coq-parenthesize
   
 rules
   
@@ -18,7 +19,7 @@ rules
       filename := <guarantee-extension(|"v")> path
     ; coq-file := <strip-annos; module-to-coq> ast
     with
-       result := <prettyprint-CoqFile> coq-file
+       result := <parenthesize-Coq; prettyprint-CoqFile; box2text-string(|100)> coq-file
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(prettyprint-example) ; debug(!"cannot pp ")))> coq-file
     ;  result := ""
  
