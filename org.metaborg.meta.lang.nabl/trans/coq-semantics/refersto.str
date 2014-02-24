@@ -9,14 +9,26 @@ imports
   coq-semantics/main
   
 rules
-
-  refers-to-to-coq:
-    BindingRule(pattern, [], clause*) -> <filter(refers-to-to-coq(|c, pattern))> clause*
-    with
-      c := <definition-pattern-to-cons> pattern
-    
+  
   refers-to-to-coq(|c, pattern):
     RefClause([RefClausePart(All(), NamespaceRef(ns), VarRef(x), [], Current(), [])]) ->
-      ConsDecl($[[c]_refers_to_[ns]], [x, binder*], Type(<apply-apply> [Ref("refers_toR"), coqterm, Ref(x), Ref($[[ns]NS]), k]))
+      ConsDecl($[[c]_refers_to_[ns]], [x, binder*], coq-term-type)
     where
-      (coqterm, binder*, _, Some(k)) := <definition-pattern-to-term(|0, x)> pattern
+      (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+    with
+      coq-term-type :=
+		  Type(
+		    Apply(
+		      Apply(
+		        Apply(
+		          Apply(
+		            Ref("refers_toR")
+		          , coqterm
+		          )
+		        , Ref(x)
+		        )
+		      , Ref($[[ns]NS])
+		      )
+		    , k
+		    )
+      )

@@ -36,22 +36,40 @@ rules // namespaces
   	  
   namespace-to-coq:
   	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
+
+rules // binding rules
   
-rules // 
-  	
   section-to-coq:
-    BindingRules(r*) ->
-     [Ind([Induc("scopesR", [], Product(Ref("term"), Product(Ref("NS"), Prop())), scope-cdec*)]),
-      Def("scopes_R", [], None(), Ref("scopesR")),
-      Ind([Induc("definesR", [], Product(Ref("term"), Product(Ref("Ident"), Product(Ref("NS"), Product(Ref("key"), Prop())))), define-cdec*)]),
-      Def("defines_R", [], None(), Ref("definesR")),
-      Ind([Induc("refers_toR", [], Product(Ref("term"), Product(Ref("Ident"), Product(Ref("NS"), Product(Ref("key"), Prop())))), refers-to-cdec*)]),
-      Def("refers_to_R", [], None(), Ref("refers_toR"))]
+    BindingRules(r*) -> [scopes*, defines*, refers*]
     with
-      scope-cdec* := <collect-all(scope-to-coq); concat> r*
-    ; define-cdec* := <collect-all(defines-to-coq); concat> r*
-    ; refers-to-cdec* := <collect-all(refers-to-to-coq); concat> r*
+      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Product(Ref("term"), Product(Ref("NS"), Prop())))> r*
+    ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*
+    ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
   
-rules // Helper function
+  binding-rules-to-coq(binding-to-coq|name, type):
+    r* -> [Ind([Induc($[[name]R], [], type, cdec*)]),
+      Def($[[name]_R], [], None(), Ref($[[name]R]))]
+    with
+      cdec* := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*
+    
+  binding-rule-to-coq(clause-to-coq|):
+    BindingRule(pattern, [], clause*) -> <filter(clause-to-coq(|c, pattern))> clause*
+    with
+      c := <pattern-to-cons> pattern
+
+overlays
   
-  apply-apply = foldl(\(x,y) -> Apply(x,y)\)
+  TERM_IDENT_NS_KEY_PROP =
+  Product(
+    Ref("term")
+  , Product(
+      Ref("Ident")
+    , Product(
+        Ref("NS")
+      , Product(
+          Ref("key")
+        , Prop()
+        )
+      )
+    )
+  )

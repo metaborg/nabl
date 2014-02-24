@@ -10,63 +10,34 @@ rules
   pattern-to-cons =
     ?NoAnnoList(Op(<id>, _))
 
-  patterns-to-term(|i): [] -> (Ref("Nop"), [], i)
+  patterns-to-term(|i, x): [] -> (Ref("Nop"), [], i, None())
   
-  patterns-to-term(|i):
-    [c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*], k)
-    with
-      (ct, cbind*, j) := <pattern-to-term(|i)> c
-    ; (cts, csbind*, k) := <patterns-to-term(|<inc> j)> cs
-  
-  
-  // (Co cC [c1; c2; c3] k)
-  pattern-to-term(|i):
-    NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*, j)
-    with
-      k := $[k[i]]
-    ; (child*, cbinder*, j) := <patterns-to-term(|<inc> i)> term*
-    ; binder* := [cbinder*, Bind(k)]
-      
-  pattern-to-term(|i):
-    Var(n) -> (Ref(n), [Bind(n)], i)
-
-  pattern-to-term(|i):
-    Wld() -> (Ref(n), [Bind(n)], <inc> i)
-    with
-      n := $[wld[i]]
-    
-rules
-  definition-pattern-to-cons =
-    ?NoAnnoList(Op(<id>, _))
-
-  definition-patterns-to-term(|i, x): [] -> (Ref("Nop"), [], i, None())
-  
-  definition-patterns-to-term(|i, x):
+  patterns-to-term(|i, x):
     [c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*], k, ret)
     with
-      (ct, cbind*, j, hd) := <definition-pattern-to-term(|i, x)> c
-    ; (cts, csbind*, k, tl) := <definition-patterns-to-term(|<inc> j, x)> cs
+      (ct, cbind*, j, hd) := <pattern-to-term(|i, x)> c
+    ; (cts, csbind*, k, tl) := <patterns-to-term(|<inc> j, x)> cs
     ; ret := <?Some(_) <+ !tl> hd
 
   // (Co cC [c1; c2; c3] k)
-  definition-pattern-to-term(|i, x):
+  pattern-to-term(|i, x):
     NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*, j, maybe)
     with
       k := $[k[i]]
-    ; (child*, cbinder*, j, maybe) := <definition-patterns-to-term(|<inc> i, x)> term*
+    ; (child*, cbinder*, j, maybe) := <patterns-to-term(|<inc> i, x)> term*
     ; binder* := [cbinder*, Bind(k)]
       
-  definition-pattern-to-term(|i, x):
+  pattern-to-term(|i, x):
     Var(n) -> (Ref(n), [Bind(n)], i, None())
-    where not(<equal(|x)> n)
+    where not(<eq> (x,Some(n)))
   
-  definition-pattern-to-term(|i, x):
+  pattern-to-term(|i, x):
     Var(n) -> (Apply(Apply(Ref("Id"), Ref(n)), Ref(k)), [Bind(k)], <inc> i, Some(k))
     where
-      <equal(|x)> n
+      <eq> (x,n)
     ; k := $[k[i]]  
 
-  definition-pattern-to-term(|i, x):
+  pattern-to-term(|i, x):
     Wld() -> (Ref(n), [Bind(n)], <inc> i, None())
     with
       n := $[wld[i]]

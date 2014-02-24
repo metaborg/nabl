@@ -8,15 +8,26 @@ imports
   coq-semantics/patterns
 
 rules
-
-  defines-to-coq:
-    BindingRule(pattern, [], clause*) -> <filter(defines-to-coq(|c, pattern))> clause*
-    with
-      c := <definition-pattern-to-cons> pattern
-    
+  
   defines-to-coq(|c, pattern):
     DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), [], Current(), []) ->
-      ConsDecl($[[c]_defines_[ns]], [x, binder*], Type(<apply-apply> [Ref("definesR"), coqterm, Ref(x), Ref($[[ns]NS]), k]))
+      ConsDecl($[[c]_defines_[ns]], [x, binder*], coq-term-type)
     where
-      (coqterm, binder*, _, Some(k)) := <definition-pattern-to-term(|0, x)> pattern
-  
+      (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+    with
+      coq-term-type := 
+		  Type(
+		    Apply(
+		      Apply(
+		        Apply(
+		          Apply(
+		            Ref("definesR")
+		          , coqterm
+		          )
+		        , Ref(x)
+		        )
+		      , Ref($[[ns]NS])
+		      )
+		    , k
+		    )
+		  )
