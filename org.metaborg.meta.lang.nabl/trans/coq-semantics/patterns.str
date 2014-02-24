@@ -34,11 +34,10 @@ rules
   pattern-to-term(|i, x):
     Var(n) -> (Apply(Apply(Ref("Id"), Ref(n)), Ref(k)), [Bind(k)], <inc> i, Some(k))
     where
-      <eq> (x,n)
+      <eq> (x,Some(n))
     ; k := $[k[i]]  
 
   pattern-to-term(|i, x):
     Wld() -> (Ref(n), [Bind(n)], <inc> i, None())
     with
       n := $[wld[i]]
-    

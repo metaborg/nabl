@@ -30,7 +30,7 @@ rules
 rules // namespaces
   
   section-to-coq:
-  	Namespaces(ns*) -> [Ind([Induc("ID_NS", [], Set(), cdec*)]), Def("NS", [], None(), Ref("ID_NS"))]
+  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Sort(Set()), ListDecl(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
   	with
   	  cdec* := <map(namespace-to-coq)> ns*
   	  
@@ -42,13 +42,13 @@ rules // binding rules
   section-to-coq:
     BindingRules(r*) -> [scopes*, defines*, refers*]
     with
-      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Product(Ref("term"), Product(Ref("NS"), Prop())))> r*
+      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Product(Ref("term"), Product(Ref("NS"), Sort(Prop()))))> r*
     ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*
     ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
   
   binding-rules-to-coq(binding-to-coq|name, type):
-    r* -> [Ind([Induc($[[name]R], [], type, cdec*)]),
-      Def($[[name]_R], [], None(), Ref($[[name]R]))]
+    r* -> [Inductive(Ind([Induc($[[name]R], [], type, ListDecl(cdec*))])),
+      Definition(Def($[[name]_R], [], None(), Ref($[[name]R])))]
     with
       cdec* := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*
     
@@ -68,7 +68,7 @@ overlays
         Ref("NS")
       , Product(
           Ref("key")
-        , Prop()
+        , Sort(Prop())
         )
       )
     )

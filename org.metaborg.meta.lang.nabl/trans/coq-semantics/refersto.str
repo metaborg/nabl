@@ -29,6 +29,6 @@ rules
 		        )
 		      , Ref($[[ns]NS])
 		      )
-		    , k
+		    , Ref(k)
 		    )
       )
