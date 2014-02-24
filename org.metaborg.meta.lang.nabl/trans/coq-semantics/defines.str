@@ -3,9 +3,9 @@ module coq-semantics/defines
 imports
   include/NameBindingLanguage
   generation/util
-  coq-semantics/main
   coq-semantics/Coq
   coq-semantics/patterns
+  coq-semantics/main
 
 rules
   
@@ -15,19 +15,4 @@ rules
     where
       (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
     with
-      coq-term-type := 
-		  Type(
-		    Apply(
-		      Apply(
-		        Apply(
-		          Apply(
-		            Ref("definesR")
-		          , coqterm
-		          )
-		        , Ref(x)
-		        )
-		      , Ref($[[ns]NS])
-		      )
-		    , Ref(k)
-		    )
-		  )
+      coq-term-type := COQ_TERM_TYPE("definesR", coqterm, x, $[[ns]NS], k)

@@ -74,3 +74,20 @@ overlays
       )
     )
   )
+
+  COQ_TERM_TYPE(name, coqterm, x, ns, k) = 
+  Type(
+    Apply(
+      Apply(
+        Apply(
+          Apply(
+            Ref(name)
+          , coqterm
+          )
+        , Ref(x)
+        )
+      , Ref(ns)
+      )
+    , Ref(k)
+    )
+  )

@@ -4,7 +4,6 @@ imports
   include/NameBindingLanguage
   generation/util
   coq-semantics/Coq
-  coq-semantics/defines
   coq-semantics/patterns
   coq-semantics/main
   
@@ -16,19 +15,4 @@ rules
     where
       (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
     with
-      coq-term-type :=
-		  Type(
-		    Apply(
-		      Apply(
-		        Apply(
-		          Apply(
-		            Ref("refers_toR")
-		          , coqterm
-		          )
-		        , Ref(x)
-		        )
-		      , Ref($[[ns]NS])
-		      )
-		    , Ref(k)
-		    )
-      )
+      coq-term-type := COQ_TERM_TYPE("refers_toR", coqterm, x, $[[ns]NS], k)
