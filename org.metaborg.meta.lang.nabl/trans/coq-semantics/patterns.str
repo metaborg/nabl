@@ -38,7 +38,9 @@ rules
     ; k := $[k[i]]  
 
   pattern-to-term(|i, x):
-    ListVar(n) -> (Ref(n), [Bind(n)], i, None())
+    ListVar(n) -> (Ref(n'), [Bind(n')], i, None())
+    where
+      n' := <string-as-chars(filter(not(equal(|'*'))))> n
 
   pattern-to-term(|i, x):
     Wld() -> (Ref(n), [Bind(n)], <inc> i, None())
