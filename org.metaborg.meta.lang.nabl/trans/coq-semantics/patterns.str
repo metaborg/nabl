@@ -38,6 +38,9 @@ rules
     ; k := $[k[i]]  
 
   pattern-to-term(|i, x):
+    ListVar(n) -> (Ref(n), [Bind(n)], i, None())
+
+  pattern-to-term(|i, x):
     Wld() -> (Ref(n), [Bind(n)], <inc> i, None())
     with
       n := $[wld[i]]
