@@ -3,6 +3,7 @@ module coq-semantics/main
 imports
   include/NameBindingLanguage
   generation/util
+  libstratego-gpp
   coq-semantics/Coq
   coq-semantics/Vernacular.pp.generated
   coq-semantics/scopes
