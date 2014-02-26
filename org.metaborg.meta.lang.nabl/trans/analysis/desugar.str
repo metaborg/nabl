@@ -23,8 +23,12 @@ rules
     RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))
     
   nabl-desugar:
-    Module(name, section*) -> Module(name, [binding, other*])
+    Module(name, section*) -> Module(name, <concat> [import, property, namespace, binding])
     where
-      (binding*, other*) := <partition(?BindingRules(_))> section*
-    ; rules*  := <mapconcat(?BindingRules(<id>))> binding*
-    ; binding := BindingRules(rules*)
+      (bind*, nonbind*) := <partition(?BindingRules(<id>))> section*
+    ; (ns*, nonns*) := <partition(?Namespaces(<id>))> nonbind*
+    ; (prop*, imp*) := <partition(?Properties(<id>), ?Imports(<id>))> nonns*
+    ; binding := <?[] <+ ![BindingRules(<concat>)]> bind*
+    ; namespace := <?[] <+ ![Namespaces(<concat>)]> ns*
+    ; property := <?[] <+ ![Properties(<concat>)]> prop*
+    ; import := <?[] <+ ![Imports(<concat>)]> imp*
