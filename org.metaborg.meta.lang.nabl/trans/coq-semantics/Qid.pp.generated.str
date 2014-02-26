@@ -12,19 +12,19 @@ strategies
   prettyprint-QualId :
     a -> [ H(
              [SOpt(HS(), "0")]
-           , [a164]
+           , [a1743]
            )
          ]
-    where a164 := <pp-one-Z(prettyprint-Ident)> a
+    where a1743 := <pp-one-Z(prettyprint-Ident)> a
 
   prettyprint-QualId :
     QId(a, b) -> [ H(
                      [SOpt(HS(), "0")]
-                   , [a165, S("."), b85]
+                   , [a1744, S("."), b843]
                    )
                  ]
-    where a165 := <pp-one-Z(prettyprint-QualId)> a
-    where b85 := <pp-one-Z(prettyprint-Ident)> b
+    where a1744 := <pp-one-Z(prettyprint-QualId)> a
+    where b843 := <pp-one-Z(prettyprint-Ident)> b
 
   prettyprint-example =
     prettyprint-QualId

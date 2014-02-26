@@ -32,7 +32,7 @@ rules
 rules // namespaces
   
   section-to-coq:
-  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Sort(Set()), ListDecl(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
+  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Sort(Set()), ListDeclBar(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
   	with
   	  cdec* := <map(namespace-to-coq)> ns*
   	  
@@ -49,7 +49,7 @@ rules // binding rules
     ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
   
   binding-rules-to-coq(binding-to-coq|name, type):
-    r* -> [Inductive(Ind([Induc($[[name]R], [], type, ListDecl(cdec*))])),
+    r* -> [Inductive(Ind([Induc($[[name]R], [], type, ListDeclBar(cdec*))])),
       Definition(Def($[[name]_R], [], None(), Ref($[[name]R])))]
     with
       cdec* := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*
