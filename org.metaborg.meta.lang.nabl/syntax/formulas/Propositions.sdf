@@ -1,0 +1,40 @@
+
+module formulas/Propositions
+imports terms/Terms common/Identifiers
+
+exports
+  context-free syntax
+    "definition" "of" Term -> Term {cons("DefOf")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
+
+  context-free syntax
+    "type"     -> PropertyRef {cons("TypeProp")}
+    PropertyID -> PropertyRef {cons("PropertyRef")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> PropertyRef {cons("COMPLETION-PropertyRef")}
+
+  lexical syntax
+    Id     -> PropertyID 
+    "type" -> PropertyID {reject}
+
+  context-free syntax
+    "true"                         -> Proposition {cons("True")}
+    "false"                        -> Proposition {cons("False")}
+    Term ":" Pattern               -> Proposition {cons("HasType")}
+    Term "has" PropertyRef Pattern -> Proposition {cons("HasProperty")}
+    Term "==" Term                 -> Proposition {cons("Eq")}
+    Term "=>" Pattern              -> Proposition {cons("Match")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}
+
+  context-free syntax
+    Pattern ":" Term               -> PropositionPattern {cons("HasTypePat")}
+    Pattern "has" PropertyRef Term -> PropositionPattern {cons("HasPropertyPat")}
+    Pattern ":-"                   -> PropositionPattern {cons("IsWF")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> PropositionPattern {cons("COMPLETION-PropositionPattern")}

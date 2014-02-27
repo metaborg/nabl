@@ -1,0 +1,36 @@
+module formulas/Propositions
+
+imports 
+  terms/Terms
+  common/Identifiers
+
+templates // term operators
+
+  Term.DefOf = <definition of <Term>>
+  
+templates // properties
+
+  PropertyRef.TypeProp    = <type>  
+  PropertyRef.PropertyRef = <<PropertyID>>
+
+lexical syntax
+
+  PropertyID = Id
+  PropertyID = "type" {reject}
+
+templates // propositions
+  
+  Proposition.True        = <true>
+  Proposition.False       = <false>
+  Proposition.HasType     = <<Term> : <Pattern>>
+  Proposition.HasProperty = <<Term> has <PropertyRef> <Pattern>>  
+  Proposition.Eq          = [[Term] == [Term]] 
+  Proposition.Match       = [[Term] => [Pattern]]
+  //  Prop.SubType = [[Term] [SubTypeOp] [Term]]  
+  
+templates // proposition patterns
+   
+  PropositionPattern.HasTypePat     = <<Pattern> : <Term>>
+  PropositionPattern.HasPropertyPat = <<Pattern> has <PropertyRef> <Term>>
+  PropositionPattern.IsWF           = <<Pattern> :->
+  // PropositionPattern.SubTypePat = [[Pattern] [SubTypeOp] [Pattern]]
