@@ -32,7 +32,7 @@ rules
 rules // namespaces
   
   section-to-coq:
-  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Sort(Set()), ListDeclBar(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
+  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Type(Sort(Set())), ListDeclBar(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
   	with
   	  cdec* := <map(namespace-to-coq)> ns*
   	  
@@ -44,7 +44,7 @@ rules // binding rules
   section-to-coq:
     BindingRules(r*) -> [scopes*, defines*, refers*]
     with
-      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Product(Ref("term"), Product(Ref("NS"), Sort(Prop()))))> r*
+      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Type(Product(Ref("term"), Product(Ref("NS"), Sort(Prop())))))> r*
     ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*
     ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
   
@@ -62,18 +62,20 @@ rules // binding rules
 overlays
   
   TERM_IDENT_NS_KEY_PROP =
-  Product(
-    Ref("term")
-  , Product(
-      Ref("Ident")
-    , Product(
-        Ref("NS")
-      , Product(
-          Ref("key")
-        , Sort(Prop())
-        )
-      )
-    )
+  Type(
+	  Product(
+	    Ref("term")
+	  , Product(
+	      Ref("Ident")
+	    , Product(
+	        Ref("NS")
+	      , Product(
+	          Ref("key")
+	        , Sort(Prop())
+	        )
+	      )
+	    )
+	  )
   )
 
   COQ_TERM_TYPE(name, coqterm, x, ns, k) = 
