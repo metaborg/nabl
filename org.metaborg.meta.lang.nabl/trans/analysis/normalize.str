@@ -1,0 +1,55 @@
+module analysis/normalize
+
+imports
+  include/NameBindingLanguage
+  generation/util
+  
+strategies
+   
+  normalize-all = innermost(normalize)
+  
+rules
+  
+  normalize: 
+    Match(t1, t2) -> Eq(t1, t2)
+    where
+      <topdown(not(?Var(_) + ?ListVar(_) + ?Wld()))> t2
+    
+rules
+
+  normalize: And(True(), e)  -> e
+  normalize: And(e, True())  -> e
+  normalize: And(False(), _) -> False()
+  normalize: And(_, False()) -> False()
+  normalize: Or(False(), e)  -> e
+  normalize: Or(e, False())  -> e
+  normalize: Or(True(), e)   -> True()
+  normalize: Or(e, True())   -> True()
+
+rules
+  
+  normalize: Else(True(), _)      -> True()
+  normalize: Else(False(), m)     -> m
+  normalize: Else(And(e1, e2), m) -> And(e1, Else(e2, m))
+  normalize: Else(Or(e1, e2), m)  -> Or(e1, Else(e2, m))
+  
+rules
+  
+  normalize: And(e1, And(e2, e3)) -> And(And(e1, e2), e3)
+  normalize: Or(e1, Or(e2, e3))   -> Or(Or(e1, e2), e3)
+  
+rules
+  
+  normalize: Not(True())      -> False()
+  normalize: Not(False())     -> True()
+  normalize: Not(Not(e))      -> e
+  normalize: Not(And(e1, e2)) -> Or(Not(e1), Not(e2))
+  normalize: Not(Or(e1, e2))  -> And(Not(e1), Not(e2))
+  
+// rules
+//   
+//   normalize: Not(Message(_, _, _))           -> False()
+//   normalize: And(Not(e), m@Message(_, _, _)) -> Else(e, m)
+//   normalize: Or(e, m@Message(_, _, _))       -> Else(e, m)
+//   normalize: Or(m@Message(_, _, _), e)       -> And(m, e)
+    
