@@ -5,9 +5,11 @@ imports
   common/Layout
   common/Identifiers
   terms/Signatures
-  terms/Vars
-  Modules
-
+  terms/Terms
+  formulas/Formulas
+  core/Modules
+  core/Namespaces
+  
 context-free start-symbols
 
   Start
@@ -18,26 +20,10 @@ context-free syntax
   
 templates // namespaces
 
-  ModuleSection.Namespaces  = <
-  namespaces   
-    <NamespaceDef*>
-  > 
-  
-  NamespaceDef.NamespaceDef = 
-    <<NamespaceID>
-    >
-  
-  NamespaceRef.NamespaceRef = <<NamespaceID>>
-
   RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
   
   Restriction.Imported = <imported>
-  Restriction.Multiple = <multiple>
   
-lexical syntax
-
-  NamespaceID = Id
-                
 templates // properties
 
   ModuleSection.Properties = <
@@ -170,52 +156,18 @@ templates // scopes
   
 templates // constraints
 
-  Constraints = <> {ast("[]")}
-  Constraints = <
-    where
-      <Constraint+; separator="\n and">
+  Constraints.NoWhere = <>
+  Constraints.Where   = <
+    where <Formula>
   > {bracket}
   
-  Conditions = <> {ast("[]")}
-  Conditions = <
-    when
-      <Constraint+; separator="\n and">
-  > {bracket}
-  
-  Filters.Filters = <
-    with 
-      <Constraint+; separator="\n and">
+  Filters.Filter = <
+    with <Formula>
   >
-  
-  Constraint.PropertyConstraint = <
-    <Term> has <PropertyRef> <Pattern>>
-  
-  Constraint.QualityConstraint = <
-    <Term> is <QualityRef>>
-  
-  Constraint.RefPropertyConstraint = <
-    <NamespaceRef> <Term> has <PropertyRef> <Pattern>> {avoid}
-   
-  Constraint.RefQualityConstraint = <
-    <NamespaceRef> <Term> is <QualityRef>> {avoid}
-   
-  Constraint.ReferenceConstraint = <
-    <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
   
 context-free syntax
 
   Id = "into" {reject}
-
-templates // messages
-
-  BindingClause.MessageClause = <
-  <MessageKind> <Term> on <Term> 
-  <Conditions> 
-  >
-  
-  MessageKind.Note    = <note>
-  MessageKind.Warning = <warning>
-  MessageKind.Error   = <error>
   
 template options
 

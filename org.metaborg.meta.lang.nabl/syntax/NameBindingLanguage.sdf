@@ -1,5 +1,6 @@
 module NameBindingLanguage
-imports common/Layout common/Identifiers terms/Signatures terms/Vars Modules
+imports common/Layout common/Identifiers terms/Signatures terms/Terms
+        formulas/Formulas core/Modules core/Namespaces
 
 exports
   context-free start-symbols
@@ -9,25 +10,15 @@ exports
     Module -> Start 
 
   context-free syntax
-    "namespaces" NamespaceDef* -> ModuleSection          {cons("Namespaces")}
-    NamespaceID                -> NamespaceDef           {cons("NamespaceDef")}
-    NamespaceID                -> NamespaceRef           {cons("NamespaceRef")}
-    Restriction* NamespaceRef  -> RestrictedNamespaceRef {cons("Restricted")}
-    "imported"                 -> Restriction            {cons("Imported")}
-    "multiple"                 -> Restriction            {cons("Multiple")}
+    Restriction* NamespaceRef -> RestrictedNamespaceRef {cons("Restricted")}
+    "imported"                -> Restriction            {cons("Imported")}
 
   context-free syntax
-    CONTENTCOMPLETE -> ModuleSection          {cons("COMPLETION-ModuleSection")}
-    CONTENTCOMPLETE -> NamespaceDef           {cons("COMPLETION-NamespaceDef")}
-    CONTENTCOMPLETE -> NamespaceRef           {cons("COMPLETION-NamespaceRef")}
     CONTENTCOMPLETE -> RestrictedNamespaceRef {cons("COMPLETION-RestrictedNamespaceRef")}
     CONTENTCOMPLETE -> Restriction            {cons("COMPLETION-Restriction")}
 
   lexical restrictions
-    "namespaces" "imported" "multiple" -/- [a-zA-z]
-
-  lexical syntax
-    Id -> NamespaceID 
+    "imported" -/- [a-zA-z]
 
   context-free syntax
     "properties" PropertyDef*                    -> ModuleSection   {cons("Properties")}
@@ -143,38 +134,16 @@ exports
     -/- [a-zA-z]
 
   context-free syntax
-                                                                        -> Constraints {ast("[]")}
-    "where" {Constraint "and"}+                                         -> Constraints {bracket}
-                                                                        -> Conditions  {ast("[]")}
-    "when" {Constraint "and"}+                                          -> Conditions  {bracket}
-    "with" {Constraint "and"}+                                          -> Filters     {cons("Filters")}
-    Term "has" PropertyRef Pattern                                      -> Constraint  {cons("PropertyConstraint")}
-    Term "is" QualityRef                                                -> Constraint  {cons("QualityConstraint")}
-    NamespaceRef Term "has" PropertyRef Pattern                         -> Constraint  {cons("RefPropertyConstraint"), avoid}
-    NamespaceRef Term "is" QualityRef                                   -> Constraint  {cons("RefQualityConstraint"), avoid}
-    Term "refers" "to" NamespaceRef Pattern PropertyPattern* InRefScope -> Constraint  {cons("ReferenceConstraint")}
+                    -> Constraints {cons("NoWhere")}
+    "where" Formula -> Constraints {cons("Where"), bracket}
+    "with" Formula  -> Filters     {cons("Filter")}
 
   context-free syntax
     CONTENTCOMPLETE -> Constraints {cons("COMPLETION-Constraints")}
-    CONTENTCOMPLETE -> Conditions  {cons("COMPLETION-Conditions")}
     CONTENTCOMPLETE -> Filters     {cons("COMPLETION-Filters")}
-    CONTENTCOMPLETE -> Constraint  {cons("COMPLETION-Constraint")}
 
   lexical restrictions
-    "where" "when" "with" "has" "is" "refers" "to" -/- [a-zA-z]
+    "where" "with" -/- [a-zA-z]
 
   context-free syntax
     "into" -> Id {reject}
-
-  context-free syntax
-    MessageKind Term "on" Term Conditions -> BindingClause {cons("MessageClause")}
-    "note"                                -> MessageKind   {cons("Note")}
-    "warning"                             -> MessageKind   {cons("Warning")}
-    "error"                               -> MessageKind   {cons("Error")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}
-    CONTENTCOMPLETE -> MessageKind   {cons("COMPLETION-MessageKind")}
-
-  lexical restrictions
-    "on" "note" "warning" "error" -/- [a-zA-z]

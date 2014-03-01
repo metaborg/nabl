@@ -13,7 +13,7 @@ templates // formulas
 
   Formula.Else = <
     <Formula> 
-    else <Formula>
+    else <Message>
   > {left} 
   
   Formula.Not = <

@@ -1,0 +1,25 @@
+module core/Namespaces
+
+imports
+  
+  common/Identifiers
+  core/Modules
+
+lexical syntax
+
+  ModuleID    = "namespaces" {reject}
+  NamespaceID = Id
+               
+templates
+
+  ModuleSection.Namespaces  = <
+  namespaces   
+    <NamespaceDef*>
+  > 
+  
+  NamespaceDef.NamespaceDef = 
+    <<NamespaceID>
+    >
+  
+  NamespaceRef.NamespaceRef = <<NamespaceID>>
+ 

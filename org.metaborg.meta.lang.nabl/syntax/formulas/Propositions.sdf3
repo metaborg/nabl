@@ -2,35 +2,22 @@ module formulas/Propositions
 
 imports 
   terms/Terms
+  terms/Vars
   common/Identifiers
-
-templates // term operators
-
-  Term.DefOf = <definition of <Term>>
+  core/Namespaces
+  NameBindingLanguage
   
-templates // properties
+templates 
 
-  PropertyRef.TypeProp    = <type>  
-  PropertyRef.PropertyRef = <<PropertyID>>
-
-lexical syntax
-
-  PropertyID = Id
-  PropertyID = "type" {reject}
-
+  Term.Def = <definition of <Term>>
+  
 templates // propositions
   
-  Proposition.True        = <true>
-  Proposition.False       = <false>
-  Proposition.HasType     = <<Term> : <Pattern>>
-  Proposition.HasProperty = <<Term> has <PropertyRef> <Pattern>>  
-  Proposition.Eq          = [[Term] == [Term]] 
-  Proposition.Match       = [[Term] => [Pattern]]
+  Proposition.True     = <true>
+  Proposition.False    = <false>
+  Proposition.RefersTo = <<Term> refers to <NamespaceRef>>
+  Proposition.Property = <<Term> has <PropertyRef> <Pattern>>  
+  Proposition.Eq       = [[Term] == [Term]] 
+  Proposition.Match    = [[Term] => [Pattern]]
   //  Prop.SubType = [[Term] [SubTypeOp] [Term]]  
   
-templates // proposition patterns
-   
-  PropositionPattern.HasTypePat     = <<Pattern> : <Term>>
-  PropositionPattern.HasPropertyPat = <<Pattern> has <PropertyRef> <Term>>
-  PropositionPattern.IsWF           = <<Pattern> :->
-  // PropositionPattern.SubTypePat = [[Pattern] [SubTypeOp] [Pattern]]
