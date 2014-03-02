@@ -3,6 +3,7 @@ module analysis/desugar
 imports
   
   include/NameBindingLanguage
+  libstrc
   
 rules
   
