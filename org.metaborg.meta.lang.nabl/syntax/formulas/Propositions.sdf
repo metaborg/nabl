@@ -4,18 +4,13 @@ imports terms/Terms terms/Vars common/Identifiers core/Namespaces
 
 exports
   context-free syntax
-    "definition" "of" Term -> Term {cons("Def")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
-
-  context-free syntax
-    "true"                          -> Proposition {cons("True")}
-    "false"                         -> Proposition {cons("False")}
-    Term "refers" "to" NamespaceRef -> Proposition {cons("RefersTo")}
-    Term "has" PropertyRef Pattern  -> Proposition {cons("Property")}
-    Term "==" Term                  -> Proposition {cons("Eq")}
-    Term "=>" Pattern               -> Proposition {cons("Match")}
+    "true"                            -> Proposition {cons("True")}
+    "false"                           -> Proposition {cons("False")}
+    VarRef "==" Term                  -> Proposition {cons("Eq")}
+    VarRef "=>" Pattern               -> Proposition {cons("Match")}
+    "definition" "of" VarRef "=>" Var -> Proposition {cons("DefOf")}
+    VarRef "refers" "to" NamespaceRef -> Proposition {cons("RefersTo")}
+    VarRef "has" PropertyRef Var      -> Proposition {cons("Property")}
 
   context-free syntax
     CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}

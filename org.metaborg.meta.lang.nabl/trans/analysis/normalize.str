@@ -11,45 +11,38 @@ strategies
 rules
   
   normalize: 
-    Match(t1, t2) -> Eq(t1, t2)
+    Match(v, t) -> Eq(v, t)
     where
-      <topdown(not(?Var(_) + ?ListVar(_) + ?Wld()))> t2
+      <topdown(not(?Var(_) + ?ListVar(_) + ?Wld()))> t
     
 rules
 
-  normalize: And(True(), e)  -> e
-  normalize: And(e, True())  -> e
-  normalize: And(False(), _) -> False()
-  normalize: And(_, False()) -> False()
-  normalize: Or(False(), e)  -> e
-  normalize: Or(e, False())  -> e
-  normalize: Or(True(), e)   -> True()
-  normalize: Or(e, True())   -> True()
+  normalize: And(True(), e)   -> e
+  normalize: And(e, True())   -> e
+  normalize: And(False(), _)  -> False()
+  normalize: And(_, False())  -> False()
+  normalize: Else(False(), e) -> e
+  normalize: Else(e, False()) -> e
+  normalize: Else(True(), _)  -> True()
+  normalize: Else(_, True())  -> True()
 
 rules
   
-  normalize: Else(True(), _)      -> True()
-  normalize: Else(False(), m)     -> m
-  normalize: Else(And(e1, e2), m) -> And(e1, Else(e2, m))
-  normalize: Else(Or(e1, e2), m)  -> Or(e1, Else(e2, m))
+  normalize: And(e1, And(e2, e3))   -> And(And(e1, e2), e3)
+  normalize: Else(e1, Else(e2, e3)) -> Else(Else(e1, e2), e3)
+  normalize: And(e1, Else(e2, e3))  -> Else(And(e1, e2), e3) 
   
 rules
   
-  normalize: And(e1, And(e2, e3)) -> And(And(e1, e2), e3)
-  normalize: Or(e1, Or(e2, e3))   -> Or(Or(e1, e2), e3)
+  normalize: Not(True())       -> False()
+  normalize: Not(False())      -> True()
+  normalize: Not(Not(e))       -> e
+  normalize: Not(And(e1, e2))  -> Else(Not(e1), Not(e2))
+  normalize: Not(Else(e1, e2)) -> And(Not(e1), Not(e2))
   
 rules
   
-  normalize: Not(True())      -> False()
-  normalize: Not(False())     -> True()
-  normalize: Not(Not(e))      -> e
-  normalize: Not(And(e1, e2)) -> Or(Not(e1), Not(e2))
-  normalize: Not(Or(e1, e2))  -> And(Not(e1), Not(e2))
-  
-// rules
-//   
-//   normalize: Not(Message(_, _, _))           -> False()
-//   normalize: And(Not(e), m@Message(_, _, _)) -> Else(e, m)
-//   normalize: Or(e, m@Message(_, _, _))       -> Else(e, m)
-//   normalize: Or(m@Message(_, _, _), e)       -> And(m, e)
+  normalize: Not(Message(_, _, _))           -> False()
+  normalize: And(Not(e), m@Message(_, _, _)) -> Else(e, m)
+  normalize: Else(m@Message(_, _, _), e)     -> m
     

@@ -7,17 +7,16 @@ imports
   core/Namespaces
   NameBindingLanguage
   
-templates 
-
-  Term.Def = <definition of <Term>>
-  
 templates // propositions
   
   Proposition.True     = <true>
   Proposition.False    = <false>
-  Proposition.RefersTo = <<Term> refers to <NamespaceRef>>
-  Proposition.Property = <<Term> has <PropertyRef> <Pattern>>  
-  Proposition.Eq       = [[Term] == [Term]] 
-  Proposition.Match    = [[Term] => [Pattern]]
+  
+  Proposition.Eq       = [[VarRef] == [Term]] 
+  Proposition.Match    = [[VarRef] => [Pattern]]
+  Proposition.DefOf    = [definition of [VarRef] => [Var]]
+  
+  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef>>
+  Proposition.Property = <<VarRef> has <PropertyRef> <Var>>  
   //  Prop.SubType = [[Term] [SubTypeOp] [Term]]  
   

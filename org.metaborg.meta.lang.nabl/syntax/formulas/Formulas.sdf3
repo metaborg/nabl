@@ -11,28 +11,23 @@ templates // formulas
   Formula = <<Proposition>>
   Formula = <<Message>>
 
-  Formula.Else = <
-    <Formula> 
-    else <Message>
-  > {left} 
-  
   Formula.Not = <
     not <Formula>
   >
     
-  Formula.Or = <
-    <Formula> 
-    or <Formula>
-  > {left}
-   
   Formula.And = <
     <Formula> 
     and <Formula>
   > {left}
   
+  Formula.Else = <
+    <Formula> 
+    else <Formula>
+  > {left} 
+  
   Formula = <(<Formula>)> {bracket}
   
 context-free priorities
 
-   Formula.Not > Formula.Else > Formula.And > Formula.Or
+   Formula.Not > Formula.And > Formula.Else
    
