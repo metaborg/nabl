@@ -7,7 +7,7 @@ imports
   
 rules
 
-  bound-vars = collect-all(?Var(_))  
+  bound-vars = collect-all(?Var(_) + ?ListVar(_))  
 
   extend-index(|i): j -> $[[i]-[j]]
  
@@ -67,6 +67,9 @@ overlays
   TUPLE(elems)      = NoAnnoList(Tuple(elems))
   LIST(elems)       = NoAnnoList(List(elems))
   CALL(s)           = CallNoArgs(SVar(s))
+  CALL(s, ts)       = CallT(SVar(s), [], ts)
   CALL(s, ss, ts)   = CallT(SVar(s), ss, ts)
-	FORCE_ORIGINS(ss) = CALL("origin-track-forced", [ss], [])
+  FORCE_ORIGINS(ss) = CALL("origin-track-forced", [ss], [])
+  
+  CTX() = Var("partition__")
   

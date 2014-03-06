@@ -1,0 +1,32 @@
+module core/Definitions
+
+imports
+  terms/Vars
+  core/Namespaces
+  core/Scopes
+  
+templates
+
+  DefinesClause.DefinesClause = <
+    defines <Unique> <NamespaceRef> <VarRef> 
+         in <Scope>
+  >
+  
+  Unique.Unique    = <unique>
+  Unique.NonUnique = <non-unique>
+  
+templates
+
+  DefinesClause.AliasClause = <
+    imports <NamespaceRef> <VarRef>
+         as <VarRef>
+       into <Scope>
+  >
+  
+  DefinesClause.WildcardClause = <
+    imports <NamespaceRef>
+       from <Scope>
+       into <Scope>
+  >
+
+  

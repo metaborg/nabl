@@ -1,0 +1,29 @@
+module generation/formulas
+
+imports 
+  
+  include/NameBindingLanguage
+  libstrc
+  
+  generation/-
+
+rules
+  
+  formula-to-tasks(|rule*, key):
+    Not(f) -> TASK("create-not", t)
+    with
+      t := <formula-to-tasks(|rule*, key); topdown(try(?Assign(_, <id>)))> f
+     
+  formula-to-tasks(|rule*, key):
+    And(f1, f2) -> TASK("create-seq", LIST([t1, t2]))
+    with
+      t1 := <formula-to-tasks(|rule*, key)> f1
+    ; t2 := <formula-to-tasks(|rule*, key)> f2
+  
+  formula-to-tasks(|rule*, key):
+    Else(f1, f2) -> TASK("create-choice", LIST([t1, t2]))
+    with
+      t1 := <formula-to-tasks(|rule*, key)> f1
+    ; t2 := <formula-to-tasks(|rule*, key)> f2
+    
+  

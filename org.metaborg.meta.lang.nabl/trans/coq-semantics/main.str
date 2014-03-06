@@ -17,7 +17,7 @@ rules
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
       filename := <guarantee-extension(|"v")> path
-    ; coq-file := <strip-annos; module-to-coq> ast
+    ; coq-file := <strip-annos; module-to-coq; debug(!"here it is ")> ast
     with
        result := <parenthesize-Coq; prettyprint-CoqFile; box2text-string(|100)> coq-file
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(prettyprint-example) ; debug(!"cannot pp ")))> coq-file

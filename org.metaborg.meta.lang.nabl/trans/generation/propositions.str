@@ -1,0 +1,62 @@
+module generation/propositions
+
+imports 
+  
+  include/NameBindingLanguage
+  libstrc
+  
+  generation/-
+
+rules
+  
+  formula-to-tasks(|rule*, key) = formula-to-tasks
+  
+  formula-to-tasks: 
+    True()  -> TASK("task-create-id", TUPLE([]))
+  
+  formula-to-tasks: 
+    False() -> TASK("task-create-fail", TUPLE([]))
+   
+  formula-to-tasks: 
+    Eq(v, t) -> TASK("task-create-eq", [t], v) 
+  
+  formula-to-tasks(|rule*, key):
+    Match(v, p) -> t
+    with 
+	     <collect(?Var(_) + ?ListVar(_))> p
+	   ; map(var-to-match-task(|rule*, key, v, p))
+	   ; to-seq => t
+	  <+ key' := NoAnnoList(Str(key))
+	   ; <iset-add(|rule*)> MATCH_RULE(key', p)
+	   ; t := TASK("task-create-rewrite", [key'], v)
+  
+  var-to-match-task(|rule*, key, v, p) = 
+    with (
+    	key' := <var-to-key(|key)>
+    ; <iset-add(|rule*)> MATCH_RULE(key', p, <id>)
+    )
+  ; !Assign(<id>, TASK("task-create-rewrite", [key'], v))
+    
+  var-to-key(|key): Var(v)     -> NoAnnoList(Str($[[key]-[v]]))
+  var-to-key(|key): ListVar(v) -> NoAnnoList(Str($[[key]-[<explode-string; at-last(\ 42 -> 95 \); implode-string> v]]))
+  
+  formula-to-tasks:
+    DefOf(v, d) -> Assign(d, TASK("nabl-create-collectdefs", v))
+      
+  formula-to-tasks:
+    RefersTo(v, ns) -> TASK("nabl-use-check-tasks", [ns'], v)
+    with
+      ns' := <ns-to-term> ns
+      
+  formula-to-tasks:
+    Property(v1, p, v2) -> Assign(v2, TASK("get-or-create-property-task", [p'], v1))
+    with
+    	p':= <prop-to-term> p
+    
+overlays
+	
+	TASK(s, t)     = TASK(s, [], t)
+  TASK(s, ts, t) = App(CALL(s, [CTX()|ts]), t)
+  
+  MATCH_RULE(key, lhs)      = SDefNoArgs("task-rewrite", Match(TUPLE([key, TUPLE([lhs, LIST([])])])))
+  MATCH_RULE(key, lhs, rhs) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([key, TUPLE([lhs, LIST([])])]), rhs))

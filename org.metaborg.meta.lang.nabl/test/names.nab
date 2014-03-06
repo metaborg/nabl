@@ -1,0 +1,28 @@
+module names
+
+namespaces Method Type Package
+
+properties
+
+modifiers of Method: List(Modifier)
+parameter-types of Method: List(Type)
+
+binding rules
+
+Invoke(Method(m), _):
+  filters Method m
+     with mod == Public()
+     else mod == Private() and mt == ct
+     else mod == Default() and mp == cp
+     else mod == Protected() and ( mp == cp else ct <: mt )
+    where m has modifiers mod
+      and enclosing Type of Method m => mt
+      and enclosing Package of Method m => mp
+      and enclosing Type of current Method scope => ct
+      and enclosing Package of current Method scope => cp      
+ 
+ Invoke(Method(m), a*):
+  disambiguates Method m
+    by minimal distance at* <: pt* 
+    where a* has type at*
+      and m has parameter-types pt*

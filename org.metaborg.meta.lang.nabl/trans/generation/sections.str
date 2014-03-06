@@ -32,8 +32,8 @@ rules // properties
   propdef-to-str: // generate constructors for properties
     PropertyDef(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
 
-  nabl-to-str: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
-  nabl-to-str: TypeProp()     -> TERM("Type")
+  prop-to-term: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
+  prop-to-term: TypeProp()     -> TERM("Type")
 
   ns-prop-name-to-str: p -> $[NablProp_[p]]
 
@@ -224,6 +224,6 @@ rules // binding rules
        m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
      ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*
     with 
-       msg* := [<binding-to-msg-rule(|bound*, task*, repl*)>]
+    fail//   msg* := [<binding-to-msg-rule(|bound*, task*, repl*)>]
     <+ msg* := []
     
