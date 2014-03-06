@@ -1,4 +1,4 @@
-module Modules
+module core/Modules
 exports
   context-free syntax
     "module" ModuleID ModuleSection* -> Module        {cons("Module")}

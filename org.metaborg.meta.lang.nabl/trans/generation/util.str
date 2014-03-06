@@ -18,8 +18,10 @@ rules
   
   nonempty = where(Hd)
 
-  replace-all(|rs)    = alltd(replace(|rs))
-  replace-all-id(|rs) = alltd(?As(_, <replace-all-id(|rs)>) <+ replace(|rs) <+ introduce-id)
+  add-force-origins = bottomup(try(?NoAnnoList(Op(_, _)); !FORCE_ORIGINS(<id>)))
+
+  replace-all(|rs)    = alltd(replace-as(|rs) <+ replace(|rs))
+  replace-all-id(|rs) = alltd(replace-as-id(|rs) <+ replace(|rs) <+ introduce-id)
   
   replace(|rs): t -> <hashtable-get(|t)> rs
   replace(|rs): t -> <lookup'> (t, rs)

@@ -5,9 +5,11 @@ imports
   common/Layout
   common/Identifiers
   terms/Signatures
-  terms/Vars
-  Modules
-
+  terms/Terms
+  formulas/Formulas
+  core/Modules
+  core/Namespaces
+  
 context-free start-symbols
 
   Start
@@ -18,26 +20,10 @@ context-free syntax
   
 templates // namespaces
 
-  ModuleSection.Namespaces  = <
-  namespaces   
-    <NamespaceDef*>
-  > 
-  
-  NamespaceDef.NamespaceDef = 
-    <<NamespaceID>
-    >
-  
-  NamespaceRef.NamespaceRef = <<NamespaceID>>
-
   RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
   
   Restriction.Imported = <imported>
-  Restriction.Multiple = <multiple>
   
-lexical syntax
-
-  NamespaceID = Id
-                
 templates // properties
 
   ModuleSection.Properties = <
@@ -48,11 +34,18 @@ templates // properties
   PropertyDef.PropertyDef = <
   <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
   
+  PropertyDef.QualityDef = <
+  <PropertyID> of <NamespaceRef+; separator=", ">>
+  
   PropertyRef.TypeProp    = <type>  
   PropertyRef.PropertyRef = <<PropertyID>>
 
+  QualityRef.QualityRef = <<PropertyID>>
+
   PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
+  PropertyTerm.QualityTerm        = <of quality <QualityRef>>
   PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Term>>
+  PropertyPattern.QualityPattern  = <of quality <QualityRef>>
 
   PropFilter.Equal      = <>
   PropFilter.Conformant = <conformant>
@@ -60,7 +53,8 @@ templates // properties
 lexical syntax
 
   PropertyID = Id
-  PropertyID = "type" {reject}
+  PropertyID = "type"    {reject}
+  PropertyID = "quality" {reject}
   
 templates // binding rules
     
@@ -87,8 +81,12 @@ templates // clauses
     
   BindingClause.ScopeClause = <
     scopes <NamespaceRef+; separator=", ">
+  >
+   
+  BindingClause.NonTransitiveScopeClause = <
+    non-transitively scopes <NamespaceRef+; separator=", ">
   > 
-  
+    
   BindingClause.RefClause     = <
     <RefClausePart+; separator="otherwise">
   >
@@ -109,6 +107,26 @@ templates // clauses
   Alias.None  = <>
   Alias.Alias = <as <Term>>
 
+  BindingClause.FilterClause = <
+    filters <NamespaceRef> <Term> 
+      <Filters>
+      <Constraints>
+  > 
+
+  BindingClause.DisambiguateClause = <
+    disambiguates <NamespaceRef> <Term>
+      by <Disambiguator> 
+      <Constraints>
+   >
+  
+  Disambiguator.MinimalDistance = <
+    minimal distance <Term> <Relation> <Term>
+  >
+  
+lexical syntax
+
+  Relation = "<:"
+  
 templates // scopes
 
   InDefScopes.Current   = <>
@@ -138,43 +156,21 @@ templates // scopes
   
 templates // constraints
 
-  Constraints = <> {ast("[]")}
-  Constraints = <
-    where
-      <Constraint+; separator="\n and">
+  Constraints.NoWhere = <>
+  Constraints.Where   = <
+    where <Formula>
   > {bracket}
   
-  Conditions = <> {ast("[]")}
-  Conditions = <
-    when
-      <Constraint+; separator="\n and">
-  > {bracket}
-  
-  Constraint.PropertyConstraint = <
-    <Term> has <PropertyRef> <Pattern>>
-  
-  Constraint.RefPropertyConstraint = <
-    <NamespaceRef> <Term> has <PropertyRef> <Pattern>>
-   
-  Constraint.ReferenceConstraint = <
-    <Term> refers to <RestrictedNamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
+  Filters.Filter = <
+    with <Formula>
+  >
   
 context-free syntax
 
   Id = "into" {reject}
   
-templates // messages
+template options
 
-  BindingClause.MessageClause = <
-  <MessageKind> <Term> on <Term> 
-  <Conditions> 
-  >
-  
-  MessageKind.Note    = <note>
-  MessageKind.Warning = <warning>
-  MessageKind.Error   = <error>
-  
-
-  
+  keyword -/- [a-zA-z]
     
  

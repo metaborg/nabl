@@ -3,11 +3,9 @@ module terms/Vars
 imports
 
   common/Identifiers
-  terms/Terms[Var]
-  terms/Terms[VarRef]
-  terms/StringQuotations[VarRef]
+  terms/Terms
   
-  sorts Wld Var VarRef Term Pattern
+  sorts Wld Var VarRef
   
   context-free syntax
 
@@ -23,7 +21,4 @@ imports
 
     Wld -/- [a-zA-Z0-9\'\-\_]
 
-  context-free syntax
-    
-    Term[[Var]]     -> Pattern %% term binding variables
-    Term[[VarRef]]  -> Term    %% term referencing variables
+ 
