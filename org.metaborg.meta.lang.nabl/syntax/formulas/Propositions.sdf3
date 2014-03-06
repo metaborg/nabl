@@ -1,0 +1,29 @@
+module formulas/Propositions
+
+imports 
+  terms/Terms
+  terms/Vars
+  common/Identifiers
+  core/Namespaces
+  core/Scopes
+  NameBindingLanguage
+  
+templates // propositions
+  
+  Proposition.True     = <true>
+  Proposition.False    = <false>
+  
+  Proposition.Eq       = [[VarRef] == [Term]] 
+  Proposition.Match    = [[VarRef] => [Pattern]]
+  Proposition.DefOf    = [definition of [VarRef] => [Var]]
+  Proposition.ScopeOf  = [[Scope] => [Var]]
+  
+  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef>>
+  Proposition.Property = <<VarRef> has <PropertyRef> <Var>>  
+  
+  Proposition.SubType = [[Term] [SubTypeOp] [Term]]  
+  
+lexical syntax
+
+  SubTypeOp = "<:" 
+ 

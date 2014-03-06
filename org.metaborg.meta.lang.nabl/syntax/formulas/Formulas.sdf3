@@ -1,0 +1,38 @@
+module formulas/Formulas
+
+imports 
+  terms/Terms
+  formulas/Propositions
+  formulas/Messages
+  common/Identifiers
+
+templates // formulas
+
+  Formula = <<Proposition>>
+  Formula = <<Message>>
+
+  Formula.Not = <
+    not <Formula>
+  >
+    
+  Formula.And = <
+    <Formula> 
+    and <Formula>
+  > {left}
+  
+  Formula.Else = <
+    <Formula> 
+    else <Formula>
+  > {left} 
+  
+  Formula.Else = <
+    <Formula> 
+    or <Formula>
+  > {left} 
+  
+  Formula = <(<Formula>)> {bracket}
+  
+context-free priorities
+
+   Formula.Not > Formula.And > Formula.Else
+   

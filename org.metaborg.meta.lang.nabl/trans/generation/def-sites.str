@@ -17,29 +17,32 @@ rules
     BindingRule(pattern, constr*, clause*) -> NAME_RULE(pattern, name)
     where
       [name] := <filter(def-to-name + use-to-name)> clause*
+    where
+      <not(eq)> (name, pattern)
       
   binding-to-apply-rule:
-  	BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
-  	where
+    BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
+    where
       [name]          := <filter(def-to-name + use-to-name)> clause*;
-  		Var(inner-name) := name;
-  		body            := <op-to-call(|inner-name)> pattern
-  		
-	op-to-call(|name) =
-		switch id
-		  case ?NoAnnoList(ops)                 : <op-to-call(|name)> ops
-		  case ?Op(aname, args)                 : !Call(SVar(aname), <map(op-to-call(|name))> args)
-		  case ?Var(name) + ?Var(ListVar(name)) : !CallNoArgs(SVar("s"))
-		  otherwise                             : !Id()
-		end
+      Var(inner-name) := name;
+      body            := <op-to-call(|inner-name)> pattern
+      
+  op-to-call(|name) =
+    switch id
+      case ?NoAnnoList(ops)                 : <op-to-call(|name)> ops
+      case ?Op(aname, args)                 : !Call(SVar(aname), <map(op-to-call(|name))> args)
+      case ?Var(name) + ?Var(ListVar(name)) : !CallNoArgs(SVar("s"))
+      otherwise                             : !Id()
+    end
       
   binding-to-def-rules:
     BindingRule(pattern, constr*, clause*) -> [DEF_RULE(pattern, seq), ext*]
     where
       def-clause* := <filter-def-clauses; nonempty> clause*
     ; implicit*   := <implicit-def-vars> def-clause*
-    ; ns-term*    := <filterconcat(?ScopeClause(<map(ns-to-term)>))> clause*    
-    ; cong*       := <filter-with-index(to-def-cong(|pattern, ns-term*))> def-clause*
+    ; ns-term*    := <filterconcat(?ScopeClause(<map(ns-to-term)>))> clause*
+    ; nt-ns-term* := <filterconcat(?NonTransitiveScopeClause(<map(ns-to-term)>))> clause*    
+    ; cong*       := <filter-with-index(to-def-cong(|pattern, ns-term*, nt-ns-term*))> def-clause*
     ; m           := <length> def-clause*
     ; uri-cvar    := <uri-child-var> m
     ; uri-svar    := <uri-sibl-var> m
@@ -48,25 +51,43 @@ rules
                               , MATCH(CALL("sibl-uris__"), uri-svar)
                               , MATCH(CALL("implicits__"), LIST(implicit*))
                               ] 
-    ; ext*        := <filter(to-external-rule(|pattern))> def-clause*  
-                             
-  to-external-rule(|pattern):
-  	DefClause(_, _, _, term, _, DefScopes(scope*), _) -> EXTERNAL_DEF_RULE(pattern, cong)
-  	where
-  		repl* := <filter(?DefScope(<!(<id>, ALIAS_CALL)>)); nonempty> scope*
-    ; cong  := <replace-all-id(|[(term, EXTERNAL_DEF_CALL), repl*])> pattern
+    where
+       extseq := <filter-with-index(clause-to-aliases(|pattern, implicit*)); concat; nonempty; at-end(![Fail()]); to-seq> def-clause*  
+     ; ext*   := [EXTERNAL_DEF_RULE(pattern, extseq)]
+    <+ ext*   := []
+                               
+  clause-to-aliases(|pattern, implicit*):
+    (i, DefClause(kind, _, _, term, _, DefScopes(scope*), _)) -> [match*, EXTERNAL_URI_CALL(u, named), alias*]
+    where
+      u := <uri-var> i
+    ; alias* := <filter(scope-to-alias(|u)); nonempty> scope*
+    where
+       Implicit() := kind
+     ; match*     := [ Where(Assign(LIST(implicit*), Var("implicits__"))) ]
+     ; named      := <implicit-def-var> i        
+    <+ match* := []
+     ; named  := term
+      
+  scope-to-alias(|uri):
+    DefScope(scope) -> EXTERNAL_ALIAS_CALL(uri, scope)
+     
+  uri-var: i-> Var($[uri[i]__])
+  alias-var: i-> Var($[alias[i]__])
   
-  to-def-cong(|pattern, scope*):
+  to-def-cong(|pattern, scope*, nt-scope*):
     (o, clause) -> def-cong
     where
       DefClause(Explicit(), unique, ns, term, _, scope, _) := clause
-    ; scope'* := scope*
+    ; scope'*    := scope*
+    ; nt-scope'* := nt-scope*
     + DefClause(Implicit(), unique, ns, term, _, scope, _) := clause
-    ; scope'*  := []
-    ; impl-var := <implicit-def-var> o 
+    ; scope'*     := []
+    ; nt-scope'*  := []
+    ; impl-var    := <implicit-def-var> o 
     + SingleImport(_, ns, _, _, _, Alias(term), scope, _)  := clause
-    ; unique  := Unique()
-    ; scope'* := [] // TODO is this correct?
+    ; unique     := Unique()
+    ; scope'*    := [] // TODO is this correct?
+    ; nt-scope'* := [] // TODO is this correct?
     where
       ns-term     := <ns-to-term> ns
     ; unique-term := <nabl-to-str> unique
@@ -76,10 +97,10 @@ rules
     ; uri-cvar2   := <uri-child-var> o
     ; uri-svar1   := <uri-sibl-var> i
     ; uri-svar2   := <uri-sibl-var> o
-    ; def-call    := DEF_CALL(ns-term, unique-term, scope-term, scope'*, uri-cvar1, uri-svar1, uri-cvar2, uri-svar2)
+    ; def-call    := DEF_CALL(ns-term, unique-term, scope-term, scope'*, nt-scope'*, uri-cvar1, uri-svar1, uri-cvar2, uri-svar2)
     where
        def-cong := Where(Assign(impl-var, App(def-call, term)))
-    <+ def-cong := <replace-all-id(|[(term, def-call)])> pattern
+    <+ def-cong := <add-force-origins; replace-all-id(|[(term, def-call)])> pattern
   
 rules
   
@@ -105,7 +126,7 @@ rules
   uri-child-var = uri-var(|"c")
   uri-sibl-var  = uri-var(|"s")
 
-			  
+        
 overlays
   
   NAME_RULE(lhs, rhs) = RDefNoArgs("nabl-get-name", RuleNoCond(lhs, rhs))
@@ -114,7 +135,7 @@ overlays
   
 overlays
   
-	DEF_RULE(pattern, body) =
+  DEF_RULE(pattern, body) =
   SDefT(
     "nabl-def-site"
   , [ DefaultVarDec("child-uris__")
@@ -126,40 +147,49 @@ overlays
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
-  , Seq(Match(pattern), FORCE_ORIGINS(body))
+  , Seq(Match(pattern), body)
   )  
-	
-	EXTERNAL_DEF_RULE(pattern, body) =
-  SDefT(
-    "nabl-external-def-site"
-  , []
-  , [ DefaultVarDec("partition__") ]
-  , Seq(Match(pattern), FORCE_ORIGINS(body))
-  ) 
   
-  DEF_CALL(ns, u, ds, s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
-  CallT(
-    SVar("nabl-def")
+  DEF_CALL(ns, u, ds, s, nt-s, in-child-uris, in-sibl-uris, out-child-uris, out-sibl-uris) = 
+  CALL(
+    "nabl-def"
   , [Match(out-child-uris), Match(out-sibl-uris)]
   , [ Var("lang__")
     , Var("partition__")
     , Var("uniques__")
     , in-child-uris
     , in-sibl-uris
-    , ns, u, ds, LIST(s)]
+    , ns, u, ds, LIST(s), LIST(nt-s)]
   )
   
-  ALIAS_CALL() = 
-  CallT(
-    SVar("nabl-def-alias")
-  , []
-  , [ Var("partition__")
-    , Var("uri__")
-    ]
-  )
-  
-  EXTERNAL_DEF_CALL() = 
-	Where(Assign(Var("uri__"), RootApp(CallNoArgs(SVar("nabl-uri")))))
-  	
   MATCH(s, v) =
   CALL("match", [s], [v])
+
+  EXTERNAL_DEF_RULE(pattern, body) =
+  SDefT(
+    "nabl-external-def-site"
+  , []
+  , [ DefaultVarDec("lang__")
+    , DefaultVarDec("partition__")
+    , DefaultVarDec("uniques__")
+    , DefaultVarDec("uri__")
+    , DefaultVarDec("states__")
+    , DefaultVarDec("implicits__")]
+  , Seq(Match(pattern), body)
+  ) 
+  
+  EXTERNAL_URI_CALL(v, named) = 
+  Assign(v, App(CallNoArgs(SVar("nabl-uri")), named))
+  
+  EXTERNAL_ALIAS_CALL(uri, scope) = 
+  App(
+    CALL(
+      "nabl-def-alias"
+    , []
+    , [ Var("partition__")
+      , uri
+      ]
+    )
+  , scope
+  )
+  

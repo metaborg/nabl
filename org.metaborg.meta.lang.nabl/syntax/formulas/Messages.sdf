@@ -1,0 +1,13 @@
+module formulas/Messages
+imports terms/Terms
+
+exports
+  context-free syntax
+    MessageKind Term "on" Term -> Message     {cons("Message")}
+    "error"                    -> MessageKind {cons("Error")}
+    "warning"                  -> MessageKind {cons("Warning")}
+    "note"                     -> MessageKind {cons("Note")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Message     {cons("COMPLETION-Message")}
+    CONTENTCOMPLETE -> MessageKind {cons("COMPLETION-MessageKind")}

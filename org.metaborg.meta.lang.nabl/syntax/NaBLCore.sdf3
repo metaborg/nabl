@@ -1,4 +1,4 @@
-module NameBindingLanguage
+module NaBLCore
 
 imports
   
@@ -6,7 +6,7 @@ imports
   common/Identifiers
   terms/Signatures
   terms/Vars
-  Modules
+  core/Modules
 
 context-free start-symbols
 
@@ -16,28 +16,6 @@ context-free syntax
   
   Start = Module
   
-templates // namespaces
-
-  ModuleSection.Namespaces  = <
-  namespaces   
-    <NamespaceDef*>
-  > 
-  
-  NamespaceDef.NamespaceDef = 
-    <<NamespaceID>
-    >
-  
-  NamespaceRef.NamespaceRef = <<NamespaceID>>
-
-  RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
-  
-  Restriction.Imported = <imported>
-  Restriction.Multiple = <multiple>
-  
-lexical syntax
-
-  NamespaceID = Id
-                
 templates // properties
 
   ModuleSection.Properties = <
@@ -60,7 +38,7 @@ templates // properties
 lexical syntax
 
   PropertyID = Id
-  PropertyID = "type" {reject}
+  PropertyID = "type"    {reject}
   
 templates // binding rules
     
@@ -70,31 +48,34 @@ templates // binding rules
   >
   
   BindingRule.BindingRule = <
-  <Pattern> <Constraints> : <BindingClause+>> 
+  <Pattern> <Constraints> : <BindingClause>> 
 
 templates // clauses
 
   BindingClause.DefClause = <
-    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
+    <DefKind> defines <Unique> <NamespaceRef> <Term> in <DefScopes>
   > 
   
   DefKind.Explicit = <>
   DefKind.Implicit = <implicitly>
   
-  Unique.Unique    = <>
   Unique.Unique    = <unique>
   Unique.NonUnique = <non-unique>
     
   BindingClause.ScopeClause = <
-    scopes <NamespaceRef+; separator=", ">
+    scopes <NamespaceRef>
+  >
+   
+  BindingClause.NonTransitiveScopeClause = <
+    non-transitively scopes <NamespaceRef; separator=", ">
   > 
-  
+    
   BindingClause.RefClause     = <
     <RefClausePart+; separator="otherwise">
   >
     
   RefClausePart.RefClausePart = <
-  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraints>>
+  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope>>
   
   BindingClause.ImportClause = <
     <ImportClausePart+; separator="otherwise\n">
@@ -111,10 +92,6 @@ templates // clauses
 
 templates // scopes
 
-  InDefScopes.Current   = <>
-  InDefScopes           = <in <DefScopes>>   {bracket}
-  
-  IntoDefScopes.Current = <>
   IntoDefScopes         = <into <DefScopes>> {bracket}
 
   DefScopes.Current     = <current scope>
@@ -138,31 +115,31 @@ templates // scopes
   
 templates // constraints
 
-  Constraints = <> {ast("[]")}
   Constraints = <
     where
       <Constraint+; separator="\n and">
   > {bracket}
   
-  Conditions = <> {ast("[]")}
   Conditions = <
     when
       <Constraint+; separator="\n and">
   > {bracket}
-  
+
+  Constraint.True = <true>
+    
   Constraint.PropertyConstraint = <
     <Term> has <PropertyRef> <Pattern>>
   
   Constraint.RefPropertyConstraint = <
-    <NamespaceRef> <Term> has <PropertyRef> <Pattern>>
+    <NamespaceRef> <Term> has <PropertyRef> <Pattern>> {avoid}
    
   Constraint.ReferenceConstraint = <
-    <Term> refers to <RestrictedNamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
+    <Term> refers to <NamespaceRef> <Pattern> <PropertyPattern*> <InRefScope>> 
   
 context-free syntax
 
   Id = "into" {reject}
-  
+
 templates // messages
 
   BindingClause.MessageClause = <
@@ -174,7 +151,8 @@ templates // messages
   MessageKind.Warning = <warning>
   MessageKind.Error   = <error>
   
+template options
 
-  
+  keyword -/- [a-zA-z]
     
  

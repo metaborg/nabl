@@ -9,9 +9,13 @@ menus
   
   menu: "Actions"
     
-    action: "Generate Java"        = generate-java (openeditor) (realtime)
-    action: "Show Abstract Syntax" = debug-show-aterm (openeditor) (realtime) (meta) (source)
-    action: "Show Analyzed Syntax" = debug-show-analyzed (openeditor) (meta)
+    action: "Generate name analysis" = generate-name-analysis (openeditor) (realtime)
+
+    action: "Convert to Coq"       = generate-coq-semantics (openeditor) (realtime)
+    separator
+        
+    action: "Show abstract syntax" = debug-show-aterm (openeditor) (realtime) (meta) (source)
+    action: "Show analyzed syntax" = debug-show-analyzed (openeditor) (meta)
     
     separator
     

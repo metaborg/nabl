@@ -1,0 +1,19 @@
+module core/Definitions
+imports terms/Vars core/Namespaces core/Scopes
+
+exports
+  context-free syntax
+    "defines" Unique NamespaceRef VarRef "in" Scope -> DefinesClause {cons("DefinesClause")}
+    "unique"                                        -> Unique        {cons("Unique")}
+    "non-unique"                                    -> Unique        {cons("NonUnique")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> DefinesClause {cons("COMPLETION-DefinesClause")}
+    CONTENTCOMPLETE -> Unique        {cons("COMPLETION-Unique")}
+
+  context-free syntax
+    "imports" NamespaceRef VarRef "as" VarRef "into" Scope -> DefinesClause {cons("AliasClause")}
+    "imports" NamespaceRef "from" Scope "into" Scope       -> DefinesClause {cons("WildcardClause")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> DefinesClause {cons("COMPLETION-DefinesClause")}

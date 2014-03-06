@@ -1,4 +1,4 @@
-module names
+module analysis/names
 
 imports
   lib/runtime/nabl/-
@@ -6,6 +6,9 @@ imports
   lib/runtime/properties/-
   lib/runtime/types/-
   lib/runtime/editor/-
+
+
+imports
   include/NameBindingLanguage
 
 
@@ -41,14 +44,15 @@ rules
           , Unique()
           , Current()
           , []
+          , []
           )
         , id
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
 
 rules
@@ -75,13 +79,14 @@ rules
           , NonUnique()
           , Current()
           , []
+          , []
           )
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-get-name :
     NamespaceRef(n) -> n
@@ -136,34 +141,33 @@ rules
           , NonUnique()
           , Current()
           , []
+          , []
           )
         , id
         , id
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-prop-site(|lang__, partition__, uris__, states__, implicits__) =
     ?PropertyDef(p, ns, t)
-    ; origin-track-forced(
-        PropertyDef(
-          nabl-store-props(
-          | partition__
-          , [ Prop(
-                Type()
-              , (ns, t)
-              , []
-              )
-            ]
-          )
-        , id
-        , id
+    ; PropertyDef(
+        nabl-store-props(
+        | partition__
+        , [ Prop(
+              Type()
+            , (ns, t)
+            , []
+            )
+          ]
         )
-      |
+      , id
+      , id
       )
+    ; fail
 
   nabl-get-name :
     PropertyRef(p) -> p
@@ -198,10 +202,7 @@ rules
 
   nabl-scoping-site =
     ?BindingRule(_, _, _)
-    ; origin-track-forced(
-        nabl-scope(|[NablNsVariable()])
-      |
-      )
+    ; nabl-scope(|[NablNsVariable()])
 
   nabl-get-scope =
     ?BindingRule(_, _, _)
@@ -209,14 +210,18 @@ rules
 
   nabl-scoping-site =
     ?RefClausePart(_, _, _, _, _, _)
-    ; origin-track-forced(
-        nabl-scope(|[NablNsVariable()])
-      |
-      )
+    ; nabl-scope(|[NablNsVariable()])
 
   nabl-get-scope =
     ?RefClausePart(_, _, _, _, _, _)
     ; ![NablNsVariable()]
+
+  nabl-scoping-site =
+    ?Filter(_)
+    ; nabl-scope(|[NablNsVariable()])
+
+  nabl-get-scope =
+    ?Filter(_) ; ![NablNsVariable()]
 
   nabl-get-name :
     Var(x) -> x
@@ -240,13 +245,14 @@ rules
           , Unique()
           , Current()
           , []
+          , []
           )
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-get-name :
     ListVar(x) -> x
@@ -270,13 +276,14 @@ rules
           , Unique()
           , Current()
           , []
+          , []
           )
         )
-        ; match(child-uris__|c-uri1__)
-        ; match(sibl-uris__|s-uri1__)
-        ; match(implicits__|[])
       |
       )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
 
   nabl-get-name :
     VarRef(x) -> x

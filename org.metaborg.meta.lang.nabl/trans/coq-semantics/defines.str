@@ -1,0 +1,18 @@
+module coq-semantics/defines
+
+imports
+  include/NameBindingLanguage
+  generation/util
+  coq-semantics/Coq
+  coq-semantics/patterns
+  coq-semantics/main
+
+rules
+  
+  defines-to-coq(|c, pattern):
+    DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), [], Current(), []) ->
+      ConsDecl($[[c]_defines_[ns]], [Bind(x), binder*], coq-term-type)
+    where
+      (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+    with
+      coq-term-type := COQ_TERM_TYPE("definesR", coqterm, x, $[[ns]NS], k)

@@ -1,0 +1,13 @@
+module constraints
+
+imports
+  include/NameBindingLanguage
+  lib/runtime/task/messages
+  lib/runtime/task/tasks
+  
+rules
+  
+  nabl-constraint(|ctx) =
+    where(?ImportWildcard(<string-ends-with(|"/nabl")>))
+  ; task-create-warning(|ctx, "Generated runtime libraries will not be imported. Make sure to rely only on your local runtime libraries.")
+   

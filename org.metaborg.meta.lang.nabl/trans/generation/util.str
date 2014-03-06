@@ -7,7 +7,7 @@ imports
   
 rules
 
-  bound-vars = collect-all(?Var(_))  
+  bound-vars = collect-all(?Var(_) + ?ListVar(_))  
 
   extend-index(|i): j -> $[[i]-[j]]
  
@@ -23,6 +23,16 @@ rules
   
   replace(|rs): t -> <hashtable-get(|t)> rs
   replace(|rs): t -> <lookup'> (t, rs)
+  
+  replace-as(|rs): As(t1, t2) -> t
+  where
+     t := <replace(|rs)> t1 
+  <+ t := <replace-all(|rs)> t2
+  
+  replace-as-id(|rs): As(t1, t2) -> Seq(t, <replace-all-id(|rs)> t2)
+  where
+     t := <replace(|rs)> t1 
+  <+ t := Id()
   
   introduce-id: Wld()      -> Id()
   introduce-id: Var(_)     -> Id()
@@ -55,6 +65,9 @@ overlays
   TUPLE(elems)      = NoAnnoList(Tuple(elems))
   LIST(elems)       = NoAnnoList(List(elems))
   CALL(s)           = CallNoArgs(SVar(s))
+  CALL(s, ts)       = CallT(SVar(s), [], ts)
   CALL(s, ss, ts)   = CallT(SVar(s), ss, ts)
-	FORCE_ORIGINS(ss) = CALL("origin-track-forced", [ss], [])
+  FORCE_ORIGINS(ss) = CALL("origin-track-forced", [ss], [])
+  
+  CTX() = Var("partition__")
   
