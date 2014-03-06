@@ -25,6 +25,11 @@ templates // formulas
     else <Formula>
   > {left} 
   
+  Formula.Else = <
+    <Formula> 
+    or <Formula>
+  > {left} 
+  
   Formula = <(<Formula>)> {bracket}
   
 context-free priorities

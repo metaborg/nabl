@@ -5,6 +5,7 @@ imports
   terms/Vars
   common/Identifiers
   core/Namespaces
+  core/Scopes
   NameBindingLanguage
   
 templates // propositions
@@ -15,8 +16,14 @@ templates // propositions
   Proposition.Eq       = [[VarRef] == [Term]] 
   Proposition.Match    = [[VarRef] => [Pattern]]
   Proposition.DefOf    = [definition of [VarRef] => [Var]]
+  Proposition.ScopeOf  = [[Scope] => [Var]]
   
   Proposition.RefersTo = <<VarRef> refers to <NamespaceRef>>
   Proposition.Property = <<VarRef> has <PropertyRef> <Var>>  
-  //  Prop.SubType = [[Term] [SubTypeOp] [Term]]  
   
+  Proposition.SubType = [[Term] [SubTypeOp] [Term]]  
+  
+lexical syntax
+
+  SubTypeOp = "<:" 
+ 

@@ -1,5 +1,5 @@
 module formulas/Propositions
-imports terms/Terms terms/Vars common/Identifiers core/Namespaces
+imports terms/Terms terms/Vars common/Identifiers core/Namespaces core/Scopes
         NameBindingLanguage
 
 exports
@@ -9,8 +9,13 @@ exports
     VarRef "==" Term                  -> Proposition {cons("Eq")}
     VarRef "=>" Pattern               -> Proposition {cons("Match")}
     "definition" "of" VarRef "=>" Var -> Proposition {cons("DefOf")}
+    Scope "=>" Var                    -> Proposition {cons("ScopeOf")}
     VarRef "refers" "to" NamespaceRef -> Proposition {cons("RefersTo")}
     VarRef "has" PropertyRef Var      -> Proposition {cons("Property")}
+    Term SubTypeOp Term               -> Proposition {cons("SubType")}
 
   context-free syntax
     CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}
+
+  lexical syntax
+    "<:" -> SubTypeOp 
