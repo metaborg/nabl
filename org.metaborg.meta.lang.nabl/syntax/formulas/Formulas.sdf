@@ -8,7 +8,6 @@ exports
     "not" Formula          -> Formula {cons("Not")}
     Formula "and" Formula  -> Formula {cons("And"), left}
     Formula "else" Formula -> Formula {cons("Else"), left}
-    Formula "or" Formula   -> Formula {cons("Else"), left}
     "(" Formula ")"        -> Formula {bracket}
 
   context-free syntax
@@ -17,4 +16,4 @@ exports
   context-free priorities
     "not" Formula -> Formula >
     Formula "and" Formula -> Formula >
-    Formula "or" Formula -> Formula
+    Formula "else" Formula -> Formula
