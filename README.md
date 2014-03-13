@@ -8,3 +8,7 @@ Name binding is specified in terms of
   bound instances (name references),
   scopes and
   imports.
+
+## Documentation
+
+We maintain the NaBL documentation in [our documentation repository](https://github.com/metaborg/doc/tree/master/meta-languages/nabl). 
