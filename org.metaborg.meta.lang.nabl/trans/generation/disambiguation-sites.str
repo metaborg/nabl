@@ -35,7 +35,7 @@ rules
     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
     ; dep*           := <map(Snd)> repl*
     ; (ftask*, _)    := <constraints-to-tasks(|bound*, $[f[k]], 1)> (f*, repl*) 
-    ; seq            := <to-seq> [ftask*, Build(TUPLE([term, App(CALL("task-create-sequence", [], [Var("partition__")]), LIST(dep*))]))]
+    ; seq            := <to-seq> [ftask*, Build(TUPLE([term, App(CALL("task-create-sequence", [], [CTX()]), LIST(dep*))]))]
 
 rules
       
@@ -79,7 +79,7 @@ overlays
     "nabl-filtering-site"
   , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
@@ -91,14 +91,14 @@ overlays
   CallT(
     SVar("nabl-filter")
   , []
-  , [Var("lang__"), Var("partition__"), Var("uris__"), ho-name, LIST(ts)]
+  , [Var("lang__"), CTX(), Var("uris__"), ho-name, LIST(ts)]
   )
 
   CREATE_FILTER_RULE(string, deps, name, body) = 
   SDefT(
     "nabl-filter-def"
   , []
-  , [ DefaultVarDec("partition__")
+  , [ CTX_DEC()
     , DefaultVarDec("ctx-terms__")
     , DefaultVarDec("ctx-string__")
     ]
@@ -119,7 +119,7 @@ overlays
     "nabl-disambiguation-site"
   , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
@@ -128,17 +128,12 @@ overlays
   )
   
   DISAMBIGUATION_CALL(ho-name, ts) = 
-  CallT(
-    SVar("nabl-disambiguate")
-  , []
-  , [Var("lang__"), Var("partition__"), Var("uris__"), ho-name, LIST(ts)]
-  )
+  CALL("nabl-disambiguate", [Var("lang__"), CTX(), Var("uris__"), ho-name, LIST(ts)])
   
   CREATE_DISAMBIGUATION_RULE(string, deps, name, disamb) = 
-  SDefT(
+  STRATEGY(
     "nabl-filter-def"
-  , []
-  , [ DefaultVarDec("partition__")
+  , [ CTX_DEC()
     , DefaultVarDec("ctx-terms__")
     , DefaultVarDec("ctx-string__")
     ]

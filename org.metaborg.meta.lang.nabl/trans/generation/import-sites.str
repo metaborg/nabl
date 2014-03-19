@@ -64,7 +64,7 @@ overlays
     "nabl-import-site"
   , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
@@ -77,7 +77,7 @@ overlays
     SVar("nabl-import")
   , []
   , [ Var("lang__")
-    , Var("partition__")
+    , CTX()
     , Var("uniques__")
     , Var("uris__")
     , LIST(imports)

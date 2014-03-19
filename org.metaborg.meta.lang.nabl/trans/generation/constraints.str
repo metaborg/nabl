@@ -136,10 +136,10 @@ overlays
     )
   
   PROP_EQ_TASK(v, k, t, e)  = Where(Assign(v, App(CallT(SVar("nabl-prop-match"), [], [k, Var("partition__"), TERM("Eq"), e]), t))) 
-  NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))
+  // NEW_TASK(v, t) = Where(Assign(v, NEW_TASK(t)))
   
-  NEW_TASK(t) =
-  App(
-    CallT(SVar("new-task"), [], [Var("partition__")])
-  , t
-  )
+  // NEW_TASK(t) =
+  // App(
+  //   CallT(SVar("new-task"), [], [Var("partition__")])
+  // , t
+  // )
