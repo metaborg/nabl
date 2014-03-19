@@ -1,0 +1,65 @@
+module generation/properties
+
+imports
+  include/NameBindingLanguage
+  libstrc
+  generation/util
+  
+rules // properties
+        
+  properties-to-sig:
+    Properties(p*) -> Signature([Constructors(c*)])
+    with
+      c* := <map(propdef-to-sig)> p*
+  
+  propdef-to-sig:
+    PropertyDef(p, _, _) -> CONS_DECL(<prop-name> p, "Property") 
+
+rules
+   
+  properties-to-strategies:
+    Properties(p*) -> Rules([r, r*])
+    with
+      r  := SDef("nabl-custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(prop-to-term)> p*)), CALL("add-properties")))
+    ; r* := <mapconcat(prop-to-rules)> p*
+  
+  prop-to-term: PropertyDef(p, _, _) -> TERM(<prop-name> p)
+  prop-to-term: PropertyRef(p)       -> TERM(<prop-name> p)
+  prop-to-term: TypeProp()           -> TERM("Type")
+
+  prop-name: p -> $[NablProp_[p]]
+
+  prop-to-rules =
+    ?PropertyDef(p, _, _)
+  ; prop-to-term => pt 
+  ; ![ STRATEGY($[[p]-is],     [CTX_DEC()],            CALL("nabl-prop-calc", [CTX(), LIST()]))
+	   , STRATEGY($[[p]-is],     [CTX_DEC(), DEP_DEC()], CALL("nabl-prop-calc", [CTX(), DEP()]))
+	   , STRATEGY($[[p]-task],   [CTX_DEC()],            CALL("get-or-create-property-task", [CTX(), pt]))
+	   , STRATEGY($[[p]-list],   [CTX_DEC()],            CALL("nabl-prop-list", [CTX(), LIST()]))
+	   , STRATEGY($[[p]-list],   [CTX_DEC(), DEP_DEC()], CALL("nabl-prop-list", [CTX(), DEP()]))
+	   , STRATEGY($[[p]-lookup], [CTX_DEC()],            CALL("nabl-prop-lookup", [pt, CTX(), LIST()]))
+	   , STRATEGY($[[p]-lookup], [CTX_DEC(), DEP_DEC()], CALL("nabl-prop-lookup", [pt, CTX(), DEP()]))
+	   , STRATEGY($[[p]-match],  [CTX_DEC(), EXP_DEC()], CALL("nabl-prop-match", [pt, CTX(), TERM("Eq"), EXP()]))
+	   , STRATEGY($[[p]-match],  [CTX_DEC(), REL_DEC(), EXP_DEC()], CALL("nabl-prop-match", [pt, CTX(), REL(), EXP()]))
+	   , STRATEGY($[create-[p]-task], [CTX_DEC()],            Fail())
+	   , STRATEGY($[get-[p]],                            CALL("get-property", [pt]))
+	   , STRATEGY($[store-[p]], [CTX_DEC(), DefaultVarDec("prop")], CALL("nabl-store-prop", [CTX(), PROPERTY(pt, Var("prop"), [])]))
+	   , RDefT(
+	       "create-property-task"
+	     , []
+	     , [CTX_DEC(), DefaultVarDec("kind")]
+	     , Rule(
+	         NoAnnoList(
+             Var("term")
+           )
+	       , App(CALL($[create-[p]-task], [CTX()]), Var("term"))
+	       , Assign(pt, Var("kind"))
+	       )
+	     )
+     ]
+    
+overlays
+   
+  PROPERTY(kind, value)               = TERM("Prop", [kind, value, LIST()])
+  PROPERTY(kind, value, dependencies) = TERM("Prop", [kind, value, LIST(dependencies)])
+
