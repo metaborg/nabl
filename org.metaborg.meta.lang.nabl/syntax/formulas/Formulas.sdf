@@ -3,12 +3,11 @@ imports terms/Terms formulas/Propositions formulas/Messages common/Identifiers
 
 exports
   context-free syntax
-    Proposition            -> Formula 
-    Message                -> Formula 
-    "not" Formula          -> Formula {cons("Not")}
-    Formula "and" Formula  -> Formula {cons("And"), left}
-    Formula "else" Formula -> Formula {cons("Else"), left}
-    "(" Formula ")"        -> Formula {bracket}
+    Proposition           -> Formula 
+    "not" Formula         -> Formula {cons("Not")}
+    Formula "and" Formula -> Formula {cons("And"), left}
+    Formula "or" Formula  -> Formula {cons("Or"), left}
+    "(" Formula ")"       -> Formula {bracket}
 
   context-free syntax
     CONTENTCOMPLETE -> Formula {cons("COMPLETION-Formula")}
@@ -16,4 +15,4 @@ exports
   context-free priorities
     "not" Formula -> Formula >
     Formula "and" Formula -> Formula >
-    Formula "else" Formula -> Formula
+    Formula "or" Formula -> Formula

@@ -9,7 +9,6 @@ imports
 templates // formulas
 
   Formula = <<Proposition>>
-  Formula = <<Message>>
 
   Formula.Not = <
     not <Formula>
@@ -20,14 +19,14 @@ templates // formulas
     and <Formula>
   > {left}
   
-  Formula.Else = <
+  Formula.Or = <
     <Formula> 
-    else <Formula>
+    or <Formula>
   > {left} 
   
   Formula = <(<Formula>)> {bracket}
   
 context-free priorities
 
-   Formula.Not > Formula.And > Formula.Else
+   Formula.Not > Formula.And > Formula.Or
    
