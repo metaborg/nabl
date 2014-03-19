@@ -54,21 +54,20 @@ rules
 	  ; <s> [v*, var*]
 	  with
 	     result := <nonempty; map(var-to-match-task(|var*, dep, r, v, p)); to-seq> v*
-	  <+ <new-key(?key|"match")> r
+	  <+ key := <new-key(|"match")> r
 	   ; <iset-add(|MATCH_RULE(key, p, var*))> r
 	   ; result := NEW_TASK(dep, TERM("Rewrite", [key, v]))
   
   var-to-match-task(|var*, dep, r, t, p):
   	v -> Assign(v, NEW_TASK(dep, TERM("Rewrite", [key, t])))
     with
-      <new-key(?key|"match")> r
+      key := <new-key(|"match")> r
     ; <iset-add(|MATCH_RULE(key, p, v, var*))> r
       
-  new-key(key|base) =
+  new-key(|base) =
     iset-elements
   ; length
   ; <conc-strings> (base, <int-to-string>)
-  ; where(key)
    
 overlays
 	

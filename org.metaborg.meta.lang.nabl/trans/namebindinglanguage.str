@@ -29,7 +29,7 @@ rules // Analysis
   	analysis-single-default(desugar-all; normalize-all, id, id|<language>)
   	
   analysis-multiple-default-interface = 
-  	analysis-multiple-default(parse-file <+ !(), desugar-all, id, id|<language>, <project-path>)
+  	analysis-multiple-default(parse-file <+ !(), desugar-all; normalize-all, id, id|<language>, <project-path>)
   
   editor-save = where(analysis-save-default(|<language>)); generate-name-analysis
       

@@ -14,7 +14,7 @@ rules // binding rules
     BindingRules(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
   to-str-rules:
-  rule@BindingRule(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, r*]
+  rule@BindingRule(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, b*, r*]
     with 
       s* := <binding-to-scope-rules <+ ![]> rule
     ; n* := <binding-to-name-rules <+ ![]> rule
@@ -25,4 +25,5 @@ rules // binding rules
     ; u* := <binding-to-use-rule(|v*, r); MkSingleton <+ ![]> rule
     ; i* := <binding-to-import-rule(|v*, r); MkSingleton <+ ![]> rule
     ; f* := <binding-to-filter-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; b* := <binding-to-disambiguation-rule(|v*, r); MkSingleton <+ ![]> rule
     ; r* := <iset-elements> r

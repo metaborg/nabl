@@ -17,47 +17,33 @@ rules
   to-filter-clauses(|var*, r, pattern):
     FilterClause(ns, term, Filter(ff), f) -> [task, cong]
     with
-      task  := <formula-to-tasks(?dep*|var*, [], pattern)> f
+      task  := <formula-to-tasks(?fvar*|var*, [], pattern)> f
+    ; tvar* := <collect-all(?Var(_) + ?ListVar(_))> term
+    ; dep*  := <diff> (fvar*, tvar*)
     ; ftask := <formula-to-tasks(|dep*, [], r)> ff
     ; fseq  := Seq(ftask, Build(TUPLE([term, RootApp(Id())])))
-    ; <new-key(?key|"filter")> r
+    ; key := <new-key(|"filter")> r
     ; <iset-add(|CREATE_FILTER_RULE(key, dep*, term, fseq))> r   
     ; cong := <replace-all-id(|[(term, FILTER_CALL(key, dep*))])> pattern
     
 rules
       
-//   binding-to-disambiguation-rules(|bound*, task*, repl*):
-//     (i, BindingRule(pattern, constr*, clause*)) -> [drule*, crule*]
-//     with 
-//        dclause* := <filter-with-index(to-disambiguation-clauses(|pattern, bound*, repl*, i)); nonempty; concat> clause*
-//      ; drule*   := [DISAMBIGUATION_RULE(pattern, <to-seq> [task*, dclause*])]
-//     <+ drule*   := []
-//     with
-//        crule* := <filter-with-index(to-disambiguation-create-rule(|pattern, bound*, repl*, i)); nonempty> clause*
-//     <+ crule* := []
-// 
-//   to-disambiguation-clauses(|pattern, bound*, glob-repl*, i):
-//     (j, DisambiguateClause(ns, term, _, constr*)) -> [task*, cong]
-//     with
-//       k              := <extend-index(|i)> j
-//     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-//     ; dep*           := <map(Snd)> repl*
-//     ; dcall          := DISAMBIGUATION_CALL(Str($["disamb[k]"]), dep*)
-//     ; cong           := <replace-all-id(|[(term, dcall)])> pattern
-// 
-//   to-disambiguation-create-rule(|pattern, bound*, glob-repl*, i):
-//     (j, DisambiguateClause(ns, term, d, constr*)) -> CREATE_DISAMBIGUATION_RULE(Str($["disamb[k]"]), dep*, term, dtask)
-//     with
-//       k              := <extend-index(|i)> j
-//     ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-//     ; dep*           := <map(Snd)> repl*
-//     ; dtask          := <disambiguator-to-task(|term, repl*)> d
-//     
-//   disambiguator-to-task(|term, repl*):
-//     MinimalDistance(t1, rel, t2) -> Build(TUPLE([term, disamb]))
-//     with
-//     	lookup := 
-//       disamb := App(CALL("task-create-sequence", [], [Var("partition__")]), LIST(dep*))]))
+  binding-to-disambiguation-rule(|var*, r):
+    BindingRule(pattern, constr*, clause*) -> DISAMBIGUATION_RULE(pattern, <to-seq> dclause*)
+    where 
+       dclause* := <filter(to-disambiguation-clauses(|var*, r, pattern)); nonempty; concat> clause*
+     
+  to-disambiguation-clauses(|var*, r, pattern):
+    DisambiguateClause(ns, term, d, f) -> [task, cong]
+    with
+      task  := <formula-to-tasks(?dep*|var*, [], r)> f
+    ; dtask := <disambiguator-to-task(|term)> d
+    ; key   := <new-key(|"disamb")> r
+    ; <iset-add(|CREATE_DISAMBIGUATION_RULE(key, dep*, term, dtask))> r
+    ; cong  := <replace-all-id(|[(term, DISAMBIGUATION_CALL(key, dep*))])> pattern
+  
+  disambiguator-to-task(|term):
+    MinimalDistance(t1, rel, t2) -> NEW_TASK([], TERM("RelationDistance", [Str(rel), t1, t2]))
     
 overlays
 
@@ -107,12 +93,12 @@ overlays
   , Seq(Match(pattern), body)
   )
   
-  DISAMBIGUATION_CALL(ho-name, ts) = 
-  CALL("nabl-disambiguate", [Var("lang__"), CTX(), Var("uris__"), ho-name, LIST(ts)])
+  DISAMBIGUATION_CALL(string, ts) = 
+  CALL("nabl-disambiguate", [Var("lang__"), CTX(), Var("uris__"), Str(string), LIST(ts)])
   
   CREATE_DISAMBIGUATION_RULE(string, deps, name, disamb) = 
   STRATEGY(
-    "nabl-filter-def"
+    "nabl-disambiguation-def"
   , [ CTX_DEC()
     , DefaultVarDec("ctx-terms__")
     , DefaultVarDec("ctx-string__")
@@ -120,10 +106,10 @@ overlays
   , Seq(
       Match(name)
     , Seq(
-        Where(Assign(string, Var("ctx-string__")))
+        Where(Assign(Str(string), Var("ctx-string__")))
       , Seq(
           Where(Assign(LIST(deps), Var("ctx-terms__")))
-        , disamb
+        , Build(TUPLE([name, disamb]))
         )
       )
     )
