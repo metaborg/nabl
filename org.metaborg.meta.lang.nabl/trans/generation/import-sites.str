@@ -5,10 +5,7 @@ imports
   libstrc
   include/NameBindingLanguage
   
-  generation/util
-  generation/sections
-  generation/scoping-sites
-  generation/constraints
+  generation/-
   
 rules
                      
@@ -19,40 +16,34 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
 	    
-  binding-to-import-rule(|bound*, task*, repl*):
-    (i, BindingRule(pattern, constr*, clause*)) -> IMPORT_RULE(pattern, seq)
+  binding-to-import-rule(|r):
+    BindingRule(pattern, constr*, clause*) -> IMPORT_RULE(pattern, seq)
     where 
-      cong* := <filter-with-index(to-import-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
-    ; seq   := <to-seq> [task*, cong*]
+      cong* := <filter(to-import-clauses(|r, pattern)); concat; nonempty> clause*
+    ; seq   := <to-seq> cong*
   
-  to-import-clauses(|pattern, bound*, repl*, i):
-    (j, clause@ImportClause(part*)) -> [clause*, IMPORT_CALL(import*)]
-    where
-      k       := <extend-index(|i)> j
-    ; (clause*, import*) 
-              := <filter-with-index(to-import-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
+  to-import-clauses(|r, pattern):
+    ImportClause(part*) -> [task*, IMPORT_CALL(cand*)]
+    with
+      (task*, cand*) := <filter(to-import-candidate(|r, pattern)); unzip> part*
     
-  to-import-candidate(|pattern, bound*, glob-repl*, i):
-    (j, SingleImport(_, ns, term, _, _, alias, into, constr*)) -> result
-    where
+  to-import-candidate(|r, pattern):
+    SingleImport(_, ns, term, _, _, alias, into, f) -> (task, cand)
+    with
       into-term      := <scope-to-term> into
-    ; k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
-    where
+    ; task      := <formula-to-tasks(|[], r)> f
+    with
        Alias(a) := alias
-     ; result   := (task*, ALIAS(term, a, []))
-    <+ result   := (task*, SINGLE(<ns-to-term> ns, term, into-term, dep*))
+     ; cand     := ALIAS(term, a, [])
+    <+ cand     := SINGLE(<ns-to-term> ns, term, into-term, [])
        
-	to-import-candidate(|pattern, bound*, glob-repl*, i):
-		(j, WildcardImport(ns*, _, from, into, constr*)) -> (task*, WILDCARD(ns-term*, from-term, into-term, dep*))
-    where
+	to-import-candidate(|r, pattern):
+		WildcardImport(ns*, _, from, into, f) -> (task, WILDCARD(ns-term*, from-term, into-term, []))
+    with
       ns-term*  := <map(ns-to-term)> ns*
     ; from-term := <scope-to-term> from
     ; into-term := <scope-to-term> into
-    ; k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
+    ; task      := <formula-to-tasks(|[], r)> f
       
 	ns-to-term: Restricted([], ns)           -> DIRECT(<ns-to-term> ns)
 	ns-to-term: Restricted([Imported()], ns) -> TRANSITIVE(<ns-to-term> ns)	

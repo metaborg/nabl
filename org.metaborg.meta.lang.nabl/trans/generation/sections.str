@@ -14,23 +14,17 @@ rules // binding rules
     BindingRules(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
   to-str-rules:
-  BindingRule(pattern, f, clause*) -> [s*, n*, d*, p*, u*] //, f*, i*, m1*, m2*]
+  rule -> [s*, n*, d*, p*, u*, i*] //, f*, m1*, m2*]
     with 
-       s* := <binding-to-scope-rules <+ ![]> 
-    with 
-       n* := <binding-to-name-rules <+ ![]>
-    with
-       d* := <binding-to-def-rules <+ ![]> 
-    with 
-      r  := <new-iset>
-    ; p* := <binding-to-prop-rule(|r); MkSingleton <+ ![]>
-    with 
-       u* := <binding-to-use-rule(|r); MkSingleton <+ ![]>
+      s* := <binding-to-scope-rules <+ ![]> rule
+    ; n* := <binding-to-name-rules <+ ![]> rule
+    ; d* := <binding-to-def-rules <+ ![]> rule
+    ; r  := <new-iset>
+    ; p* := <binding-to-prop-rule(|r); MkSingleton <+ ![]> rule
+    ; u* := <binding-to-use-rule(|r); MkSingleton <+ ![]> rule
+    ; i* := <binding-to-import-rule(|r); MkSingleton <+ ![]> rule
     // with 
     //    f* := <binding-to-filter-rules(|bound*, task*, repl*)>
-    // with 
-    //    i* := [<binding-to-import-rule(|bound*, task*, repl*)>]
-    // <+ i* := []
     // with
     //    m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
     //  ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*

@@ -64,17 +64,17 @@ rules
     where
       not(<collect-one(?ns)> import-ns*)
 
-  to-match-rules(|bound*, i):
-    (j, RefClause(part*)) -> rule*
-    where
-      k      := <extend-index(|i)> j
-    ; rule*  := <map-with-index(to-match-rules(|bound*, k)); concat> part*
-  
-  to-match-rules(|bound*, i):
-    (j, RefClausePart(disamb, ns, term, prop*, scope, constr*)) -> rule*
-    where
-      k     := <extend-index(|i)> j
-    ; rule* := <constraints-to-match-rules(|bound*, k, 1)> constr*
+  // to-match-rules(|bound*, i):
+  //   (j, RefClause(part*)) -> rule*
+  //   where
+  //     k      := <extend-index(|i)> j
+  //   ; rule*  := <map-with-index(to-match-rules(|bound*, k)); concat> part*
+  // 
+  // to-match-rules(|bound*, i):
+  //   (j, RefClausePart(disamb, ns, term, prop*, scope, constr*)) -> rule*
+  //   where
+  //     k     := <extend-index(|i)> j
+  //   ; rule* := <constraints-to-match-rules(|bound*, k, 1)> constr*
 
 overlays
      
