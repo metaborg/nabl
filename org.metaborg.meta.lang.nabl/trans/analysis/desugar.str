@@ -22,10 +22,3 @@ rules
   //   
   // nabl-desugar:
   //   RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))
-    
-  nabl-desugar:
-    Module(name, section*) -> Module(name, [binding, other*])
-    where
-      (binding*, other*) := <partition(?BindingRules(_))> section*
-    ; rules*  := <mapconcat(?BindingRules(<id>))> binding*
-    ; binding := BindingRules(rules*)
