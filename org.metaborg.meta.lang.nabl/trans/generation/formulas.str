@@ -13,31 +13,31 @@ overlays
 	
 rules
   
-  formula-to-tasks(|dep, r) =
-    ?Where(<formula-to-tasks(|dep, r)>)
+  formula-to-tasks(s|var*, dep, r) =
+    ?Where(<formula-to-tasks(s|var*, dep, r)>)
   
-  formula-to-tasks(|dep, r):
+  formula-to-tasks(|dep):
     NoWhere() -> Id()
     
-  formula-to-tasks(|dep, r):
+  formula-to-tasks(|var*, dep, r):
     Not(f) -> TASK("create-not", t)
     with
-      t := <formula-to-tasks(|dep, r); topdown(try(?Assign(_, <id>)))> f
+      t := <formula-to-tasks(id|var*, dep, r); topdown(try(?Assign(_, <id>)))> f
      
-  formula-to-tasks(|dep, r):
+  formula-to-tasks(s|var*, dep, r):
     And(f1, f2) -> Seq(t1, t2)
     with
-      t1 := <formula-to-tasks(|dep, r)> f1
-    ; t2 := <formula-to-tasks(|PREV(), r)> f2
+      t1 := <formula-to-tasks(?var'*|var*, dep, r)> f1
+    ; t2 := <formula-to-tasks(s|var'*, PREV(), r)> f2
     
-  formula-to-tasks(|dep, r):
+  formula-to-tasks(s|var*, dep, r):
     Or(f1, f2) -> Scope(["l__", "r__"], Seq(Seq(w1, w2), ch))
     with
-      t1 := <formula-to-tasks(|dep, r)> f1
-    ; t2 := <formula-to-tasks(|dep, r)> f2
+      t1 := <formula-to-tasks(?var'*|var*, dep, r)> f1
+    ; t2 := <formula-to-tasks(s|var'*, dep, r)> f2
     ; w1 := Where(Seq(t1, Match(Var("l__"))))
     ; w2 := Where(Seq(t2, Match(Var("r__"))))
-    ; ch := NEW_TASK(dep, TERM("Choice", [Var("l__"), Var("r__")]))
+    ; ch := NEW_TASK(dep, TERM("Choice", [LIST([Var("l__"), Var("r__")])]))
     
   // formula-to-tasks(|dep, r):
   //   Message(kind, msg, t) -> Where(TASK(<kind-to-strategy> kind, [LIST(dep), msg], t))

@@ -16,34 +16,34 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
 	    
-  binding-to-import-rule(|r):
+  binding-to-import-rule(|var*, r):
     BindingRule(pattern, constr*, clause*) -> IMPORT_RULE(pattern, seq)
     where 
-      cong* := <filter(to-import-clauses(|r, pattern)); concat; nonempty> clause*
+      cong* := <filter(to-import-clauses(|var*, r, pattern)); concat; nonempty> clause*
     ; seq   := <to-seq> cong*
   
-  to-import-clauses(|r, pattern):
+  to-import-clauses(|var*, r, pattern):
     ImportClause(part*) -> [task*, IMPORT_CALL(cand*)]
     with
-      (task*, cand*) := <filter(to-import-candidate(|r, pattern)); unzip> part*
+      (task*, cand*) := <filter(to-import-candidate(|var*, r, pattern)); unzip> part*
     
-  to-import-candidate(|r, pattern):
+  to-import-candidate(|var*, r, pattern):
     SingleImport(_, ns, term, _, _, alias, into, f) -> (task, cand)
     with
       into-term      := <scope-to-term> into
-    ; task      := <formula-to-tasks(|[], r)> f
+    ; task      := <formula-to-tasks(|var*, [], r)> f
     with
        Alias(a) := alias
      ; cand     := ALIAS(term, a, [])
     <+ cand     := SINGLE(<ns-to-term> ns, term, into-term, [])
        
-	to-import-candidate(|r, pattern):
+	to-import-candidate(|var*, r, pattern):
 		WildcardImport(ns*, _, from, into, f) -> (task, WILDCARD(ns-term*, from-term, into-term, []))
     with
       ns-term*  := <map(ns-to-term)> ns*
     ; from-term := <scope-to-term> from
     ; into-term := <scope-to-term> into
-    ; task      := <formula-to-tasks(|[], r)> f
+    ; task      := <formula-to-tasks(|var*, [], r)> f
       
 	ns-to-term: Restricted([], ns)           -> DIRECT(<ns-to-term> ns)
 	ns-to-term: Restricted([Imported()], ns) -> TRANSITIVE(<ns-to-term> ns)	

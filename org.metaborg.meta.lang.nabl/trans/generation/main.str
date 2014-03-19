@@ -43,6 +43,7 @@ rules // modules
                , ImportWildcard("lib/runtime/task")
                , ImportWildcard("lib/runtime/properties")
                , ImportWildcard("lib/runtime/types")
+               , ImportWildcard("lib/runtime/relations")
                , ImportWildcard("lib/runtime/editor")
                ]
       

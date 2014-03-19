@@ -14,18 +14,15 @@ rules // binding rules
     BindingRules(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
   to-str-rules:
-  rule -> [s*, n*, d*, p*, u*, i*] //, f*, m1*, m2*]
+  rule@BindingRule(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, r*]
     with 
       s* := <binding-to-scope-rules <+ ![]> rule
     ; n* := <binding-to-name-rules <+ ![]> rule
     ; d* := <binding-to-def-rules <+ ![]> rule
+    ; v* := <collect-all(?Var(_) + ?ListVar(_))> pattern
     ; r  := <new-iset>
-    ; p* := <binding-to-prop-rule(|r); MkSingleton <+ ![]> rule
-    ; u* := <binding-to-use-rule(|r); MkSingleton <+ ![]> rule
-    ; i* := <binding-to-import-rule(|r); MkSingleton <+ ![]> rule
-    // with 
-    //    f* := <binding-to-filter-rules(|bound*, task*, repl*)>
-    // with
-    //    m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
-    //  ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*
-    
+    ; p* := <binding-to-prop-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; u* := <binding-to-use-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; i* := <binding-to-import-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; f* := <binding-to-filter-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; r* := <iset-elements> r

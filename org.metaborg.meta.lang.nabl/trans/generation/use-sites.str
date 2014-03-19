@@ -16,24 +16,24 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
     
-  binding-to-use-rule(|r):
+  binding-to-use-rule(|var*, r):
     BindingRule(pattern, _, clause*) -> USE_RULE(pattern, seq)
     where 
-      use-clause* := <filter(to-use-clauses(|r, pattern)); concat; nonempty> clause*
+      use-clause* := <filter(to-use-clauses(|var*, r, pattern)); concat; nonempty> clause*
     ; seq         := <to-seq> use-clause*
       
-  to-use-clauses(|r, pattern):
+  to-use-clauses(|var*, r, pattern):
     clause -> [task*, cong]
     where
       RefClause(part*)    := clause
     + ImportClause(part*) := clause
     with
-      (task*, c*) := <filter(to-use-candidate(|r)); unzip> part*
+      (task*, c*) := <filter(to-use-candidate(|var*, r)); unzip> part*
     ; term        := <use-to-name> clause
     ; use-call    := USE_CALL(c*)
     ; cong        := <add-force-origins; replace-all-id(|[(term, use-call)])> pattern
   
-  to-use-candidate(|r):
+  to-use-candidate(|var*, r):
     part -> (task, CANDIDATE(ns-term, prop-term*, ctx-term, wci, []))
     where
       (RefClausePart(disamb, ns, term, prop*, ctx, f)                            := part; import-ns* := [])
@@ -41,7 +41,7 @@ rules
     + WildcardImport(import-ns*, _, Context(disamb, ns, term, prop*, ctx), _, f) := part
     with
       ns-term    := <ns-to-term> ns
-    ; task       := <formula-to-tasks(|[], r)> f
+    ; task       := <formula-to-tasks(|var*, [], r)> f
     ; prop-term* := <map(prop-pattern-to-str(|[]))> prop*
     ; ctx-term   := <scope-to-term> ctx
     ; wci        := <part-to-wildcardimport(|import-ns*)> part
@@ -79,9 +79,8 @@ rules
 overlays
      
   USE_RULE(pattern, body) =
-  SDefT(
+  STRATEGY(
     "nabl-use-site"
-  , []
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
 		, DefaultVarDec("uniques__")

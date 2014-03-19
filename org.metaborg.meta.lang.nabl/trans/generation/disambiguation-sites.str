@@ -9,34 +9,21 @@ imports
   
 rules
       
-  binding-to-filter-rules(|bound*, task*, repl*):
-    (i, BindingRule(pattern, constr*, clause*)) -> [frule*, crule*]
-    with 
-       cclause* := <filter-with-index(to-filter-clauses(|pattern, bound*, repl*, i)); nonempty; concat> clause*
-     ; frule*   := [FILTER_RULE(pattern, <to-seq> [task*, cclause*])]
-    <+ frule*   := []
+  binding-to-filter-rule(|var*, r):
+    BindingRule(pattern, _, clause*) -> FILTER_RULE(pattern, <to-seq> cclause*)
+    where 
+      cclause* := <filterconcat(to-filter-clauses(|var*, r, pattern)); nonempty> clause*
+     
+  to-filter-clauses(|var*, r, pattern):
+    FilterClause(ns, term, Filter(ff), f) -> [task, cong]
     with
-       crule* := <filter-with-index(to-filter-create-rule(|pattern, bound*, repl*, i)); nonempty> clause*
-    <+ crule* := []
+      task  := <formula-to-tasks(?dep*|var*, [], pattern)> f
+    ; ftask := <formula-to-tasks(|dep*, [], r)> ff
+    ; fseq  := Seq(ftask, Build(TUPLE([term, RootApp(Id())])))
+    ; <new-key(?key|"filter")> r
+    ; <iset-add(|CREATE_FILTER_RULE(key, dep*, term, fseq))> r   
+    ; cong := <replace-all-id(|[(term, FILTER_CALL(key, dep*))])> pattern
     
-  to-filter-clauses(|pattern, bound*, glob-repl*, i):
-    (j, FilterClause(ns, term, _, constr*)) -> [task*, cong]
-    with
-      k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
-    ; filter-call    := FILTER_CALL(Str($["filter[k]"]), dep*)
-    ; cong           := <replace-all-id(|[(term, filter-call)])> pattern
-
-  to-filter-create-rule(|pattern, bound*, glob-repl*, i):
-    (j, FilterClause(ns, term, Filter(f*), constr*)) -> CREATE_FILTER_RULE(Str($["filter[k]"]), dep*, term, seq)
-    with
-      k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
-    ; (ftask*, _)    := <constraints-to-tasks(|bound*, $[f[k]], 1)> (f*, repl*) 
-    ; seq            := <to-seq> [ftask*, Build(TUPLE([term, App(CALL("task-create-sequence", [], [CTX()]), LIST(dep*))]))]
-
 rules
       
 //   binding-to-disambiguation-rules(|bound*, task*, repl*):
@@ -75,9 +62,8 @@ rules
 overlays
 
   FILTER_RULE(pattern, body)  =
-  SDefT(
+  STRATEGY(
     "nabl-filtering-site"
-  , []
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
     , DefaultVarDec("uniques__")
@@ -87,17 +73,12 @@ overlays
   , Seq(Match(pattern), body)
   )
 
-  FILTER_CALL(ho-name, ts) = 
-  CallT(
-    SVar("nabl-filter")
-  , []
-  , [Var("lang__"), CTX(), Var("uris__"), ho-name, LIST(ts)]
-  )
+  FILTER_CALL(string, ts) = 
+  CALL("nabl-filter", [Var("lang__"), CTX(), Var("uris__"), Str(string), LIST(ts)])
 
   CREATE_FILTER_RULE(string, deps, name, body) = 
-  SDefT(
+  STRATEGY(
     "nabl-filter-def"
-  , []
   , [ CTX_DEC()
     , DefaultVarDec("ctx-terms__")
     , DefaultVarDec("ctx-string__")
@@ -105,7 +86,7 @@ overlays
   , Seq(
       Match(name)
     , Seq(
-	      Where(Assign(string, Var("ctx-string__")))
+	      Where(Assign(Str(string), Var("ctx-string__")))
 	    , Seq(
 	        Where(Assign(LIST(deps), Var("ctx-terms__")))
 	      , body
@@ -115,9 +96,8 @@ overlays
   ) 
   
   DISAMBIGUATION_RULE(pattern, body)  =
-  SDefT(
+  STRATEGY(
     "nabl-disambiguation-site"
-  , []
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
     , DefaultVarDec("uniques__")
