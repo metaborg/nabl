@@ -9,54 +9,61 @@ imports
 
 rules
   
-  formula-to-tasks(|rule*, key) = formula-to-tasks
+  formula-to-tasks(|dep, r) = formula-to-tasks(|dep)
   
-  formula-to-tasks: 
-    True()  -> TASK("task-create-id", TUPLE([]))
+  formula-to-tasks(|dep): 
+    True()  -> NEW_TASK(dep, TERM("Id", [TUPLE([])]))
   
-  formula-to-tasks: 
-    False() -> TASK("task-create-fail", TUPLE([]))
+  formula-to-tasks(|dep): 
+    False() -> NEW_TASK(dep, TERM("Fail", []))
    
-  formula-to-tasks: 
-    Eq(v, t) -> TASK("task-create-eq", [t], v) 
-  
-  formula-to-tasks(|rule*, key):
-    Match(v, p) -> t
-    with 
-	     <collect(?Var(_) + ?ListVar(_))> p
-	   ; map(var-to-match-task(|rule*, key, v, p))
-	   ; to-seq => t
-	  <+ key' := NoAnnoList(Str(key))
-	   ; <iset-add(|rule*)> MATCH_RULE(key', p)
-	   ; t := TASK("task-create-rewrite", [key'], v)
-  
-  var-to-match-task(|rule*, key, v, p) = 
-    with (
-    	key' := <var-to-key(|key)>
-    ; <iset-add(|rule*)> MATCH_RULE(key', p, <id>)
-    )
-  ; !Assign(<id>, TASK("task-create-rewrite", [key'], v))
+  formula-to-tasks(|dep): 
+    Eq(v, t) -> NEW_TASK(dep, TERM("Eq", [t, v]))
+	
+	formula-to-tasks(|dep):
+    DefOf(v, d) -> Assign(d, NEW_TASK(dep, TERM("CollectDefs", [v])))
     
-  var-to-key(|key): Var(v)     -> NoAnnoList(Str($[[key]-[v]]))
-  var-to-key(|key): ListVar(v) -> NoAnnoList(Str($[[key]-[<explode-string; at-last(\ 42 -> 95 \); implode-string> v]]))
-  
-  formula-to-tasks:
-    DefOf(v, d) -> Assign(d, TASK("nabl-create-collectdefs", v))
-      
-  formula-to-tasks:
-    RefersTo(v, ns) -> TASK("nabl-use-check-tasks", [ns'], v)
+  formula-to-tasks(|dep):
+    RefersTo(v, ns) -> NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), v)]))
     with
       ns' := <ns-to-term> ns
       
-  formula-to-tasks:
-    Property(v1, p, v2) -> Assign(v2, TASK("get-or-create-property-task", [p'], v1))
+  formula-to-tasks(|dep):
+    Property(v1, p, v2) -> Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)])))
     with
-    	p':= <prop-to-term> p
+      p':= <prop-to-term> p
+      
+rules
+	
+	formula-to-tasks(|dep, r):
+    Match(v, p) -> result 
+    with 
+	     v*     := <collect(?Var(_) + ?ListVar(_))> p
+	   ; result := <not(?[]); map(var-to-match-task(|dep, r, v, p)); to-seq> v*
+	  <+ <add-rule(?key|p)> r
+	   ; result := NEW_TASK(dep, TERM("Rewrite", [key, v]))
+  
+  var-to-match-task(|dep, r, t, p):
+  	v -> Assign(v, NEW_TASK(dep, TERM("Rewrite", [key, t])))
+    with
+    	r' := <add-rule(?key|p, v)> r
     
+  add-rule(key|p):
+    r -> <iset-add(|MATCH_RULE(key, p))> r
+    with 
+      key := $[match[<iset-elements; length> r]]
+  
+  add-rule(key|p, v):
+    r -> <iset-add(|MATCH_RULE(key, p, v))> r
+    with 
+      key := $[match[<iset-elements; length> r]]
+   
 overlays
 	
-	TASK(s, t)     = TASK(s, [], t)
-  TASK(s, ts, t) = App(CALL(s, [CTX()|ts]), t)
-  
+	TASK(s, t)      = TASK(s, [], t)
+  TASK(s, ts, t)  = App(CALL(s, [CTX()|ts]), t)
+  NEW_TASK(dep, task) = App(CALL("new-task", [CTX(), LIST(dep)]), task)
+  COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))])
+	
   MATCH_RULE(key, lhs)      = SDefNoArgs("task-rewrite", Match(TUPLE([key, TUPLE([lhs, LIST([])])])))
   MATCH_RULE(key, lhs, rhs) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([key, TUPLE([lhs, LIST([])])]), rhs))

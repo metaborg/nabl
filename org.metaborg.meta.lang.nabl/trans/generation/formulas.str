@@ -7,23 +7,41 @@ imports
   
   generation/-
 
+overlays
+	
+	PREV() = [RootApp(Id())]
+	
 rules
   
-  formula-to-tasks(|rule*, key):
+  formula-to-tasks(|dep, r) =
+    ?Where(<formula-to-tasks(|dep, r)>)
+  
+  formula-to-tasks(|dep, r):
+    NoWhere() -> Id()
+    
+  formula-to-tasks(|dep, r):
     Not(f) -> TASK("create-not", t)
     with
-      t := <formula-to-tasks(|rule*, key); topdown(try(?Assign(_, <id>)))> f
+      t := <formula-to-tasks(|dep, r); topdown(try(?Assign(_, <id>)))> f
      
-  formula-to-tasks(|rule*, key):
-    And(f1, f2) -> TASK("create-seq", LIST([t1, t2]))
+  formula-to-tasks(|dep, r):
+    And(f1, f2) -> Seq(t1, t2)
     with
-      t1 := <formula-to-tasks(|rule*, key)> f1
-    ; t2 := <formula-to-tasks(|rule*, key)> f2
-  
-  formula-to-tasks(|rule*, key):
-    Else(f1, f2) -> TASK("create-choice", LIST([t1, t2]))
-    with
-      t1 := <formula-to-tasks(|rule*, key)> f1
-    ; t2 := <formula-to-tasks(|rule*, key)> f2
+      t1 := <formula-to-tasks(|dep, r)> f1
+    ; t2 := <formula-to-tasks(|PREV(), r)> f2
     
-  
+  formula-to-tasks(|dep, r):
+    Or(f1, f2) -> Scope(["l__", "r__"], Seq(Seq(w1, w2), ch))
+    with
+      t1 := <formula-to-tasks(|dep, r)> f1
+    ; t2 := <formula-to-tasks(|dep, r)> f2
+    ; w1 := Where(Seq(t1, Match(Var("l__"))))
+    ; w2 := Where(Seq(t2, Match(Var("r__"))))
+    ; ch := NEW_TASK(dep, TERM("Choice", [Var("l__"), Var("r__")]))
+    
+  // formula-to-tasks(|dep, r):
+  //   Message(kind, msg, t) -> Where(TASK(<kind-to-strategy> kind, [LIST(dep), msg], t))
+  //   
+  // kind-to-strategy: Note()    -> "task-create-note-on-triggers"
+  // kind-to-strategy: Warning() -> "task-create-warning-on-triggers"
+  // kind-to-strategy: Error()   -> "task-create-error-on-triggers"
