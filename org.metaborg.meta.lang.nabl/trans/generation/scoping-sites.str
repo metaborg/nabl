@@ -84,7 +84,7 @@ rules
     Context(disamb, ns, term, prop*, ctx) -> TERM("Context", [ns-term, term, LIST(prop-term*), ctx-term])
     where
       ns-term    := <ns-to-term> ns
-    ; prop-term* := <map(prop-to-str(|[]))> prop*
+    ; prop-term* := <map(prop-to-str)> prop*
     ; ctx-term   := <scope-to-term> ctx
   
 overlays

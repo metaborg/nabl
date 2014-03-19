@@ -5,60 +5,47 @@ imports
   libstrc
   include/NameBindingLanguage
   
-  generation/util
-  generation/sections
-  generation/def-sites
-  generation/constraints
+  generation/-
+  analysis/normalize
   
 rules
 
-  binding-to-prop-rule(|bound*, task*, repl*):
-    (i, BindingRule(pattern, constr*, clause*)) -> PROP_RULE(pattern, seq)
+  binding-to-prop-rule:
+    BindingRule(pattern, f, clause*) -> PROP_RULE(pattern, seq)
     where
       def-clause*  := <filter-def-clauses; nonempty> clause*
-    ; prop-clause* := <filter-with-index(to-prop-clauses(|pattern, bound*, repl*, i)); concat> def-clause*
+    ; prop-clause* := <filter-with-index(to-prop-clauses(|pattern, f)); concat> def-clause*
     where
        match* := [Where(Assign(LIST(<implicit-def-vars; nonempty> def-clause*), Var("implicits__")))] 
     <+ match* := []
-    where
-      seq := <to-seq> [match*, task*, prop-clause*]
+    with
+      seq := <to-seq> [match*, prop-clause*]
     
-  to-prop-clauses(|pattern, bound*, glob-repl*, i):
-    (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> [task*, cong]
+  to-prop-clauses(|pattern, f1):
+    (j, DefClause(kind, _, ns, term, prop*, _, f2)) -> [task, cong]
     where
       <nonempty> prop*
     with
       ns-term        := <ns-to-term> ns
-    ; k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
-    ; prop-call      := PROP_CALL(<replace-all(|repl*); map(prop-to-str(|dep*))> prop*)
+    ; task           := <formula-to-tasks(|[], <new-iset>)> f2
+    ; prop-call      := PROP_CALL(<map(prop-to-str)> prop*)
     with
        Implicit() := kind
      ; cong := Where(App(prop-call, <implicit-def-var> j))
     <+ cong := <replace-all-id(|[(term, prop-call)])> pattern
-     
-  to-match-rules(|bound*, i):
-    (j, DefClause(kind, _, ns, term, prop*, _, constr*)) -> rule*
-    where
-      <nonempty> prop*
-    with
-      k      := <extend-index(|i)> j
-    ; rule*  := <constraints-to-match-rules(|bound*, k, 1)> constr*
-       
+            
 rules
          
-  prop-to-str(|dependencies): PropertyTerm(p, t)       -> PROPERTY(<nabl-to-str> p, t, dependencies)     
-  prop-to-str(|dependencies): PropertyPattern(_, p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies) 
+  prop-to-str: PropertyTerm(p, t)       -> PROPERTY(<prop-to-term> p, t)     
+  prop-to-str: PropertyPattern(_, p, t) -> PROPERTY(<prop-to-term> p, t) 
 
 overlays
   
   PROP_RULE(pattern, body)  =
-  SDefT(
+  STRATEGY(
     "nabl-prop-site"
-  , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
     , DefaultVarDec("implicits__")
@@ -66,12 +53,7 @@ overlays
   , Seq(Match(pattern), Seq(body, Fail()))
   )
 
-  PROP_CALL(ps) = 
-  CallT(
-    SVar("nabl-store-props")
-  , []
-  , [Var("partition__"), LIST(ps)]
-  )
+  PROP_CALL(ps) = CALL("nabl-store-props", [CTX(), LIST(ps)])
   
-  PROPERTY(kind, value, dependencies) = TERM("Prop", [kind, value, LIST(dependencies)])
+  PROPERTY(kind, value) = TERM("Prop", [kind, value, LIST([])])
 
