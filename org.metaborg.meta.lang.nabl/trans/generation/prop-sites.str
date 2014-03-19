@@ -10,24 +10,24 @@ imports
   
 rules
 
-  binding-to-prop-rule:
+  binding-to-prop-rule(|r):
     BindingRule(pattern, f, clause*) -> PROP_RULE(pattern, seq)
     where
       def-clause*  := <filter-def-clauses; nonempty> clause*
-    ; prop-clause* := <filter-with-index(to-prop-clauses(|pattern, f)); concat> def-clause*
+    ; prop-clause* := <filter-with-index(to-prop-clauses(|r, pattern)); concat> def-clause*
     where
        match* := [Where(Assign(LIST(<implicit-def-vars; nonempty> def-clause*), Var("implicits__")))] 
     <+ match* := []
     with
       seq := <to-seq> [match*, prop-clause*]
     
-  to-prop-clauses(|pattern, f1):
-    (j, DefClause(kind, _, ns, term, prop*, _, f2)) -> [task, cong]
+  to-prop-clauses(|r, pattern):
+    (j, DefClause(kind, _, ns, term, prop*, _, f)) -> [task, cong]
     where
       <nonempty> prop*
     with
       ns-term        := <ns-to-term> ns
-    ; task           := <formula-to-tasks(|[], <new-iset>)> f2
+    ; task           := <formula-to-tasks(|[], r)> f
     ; prop-call      := PROP_CALL(<map(prop-to-str)> prop*)
     with
        Implicit() := kind

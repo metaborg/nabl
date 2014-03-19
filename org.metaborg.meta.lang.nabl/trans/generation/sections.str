@@ -22,7 +22,8 @@ rules // binding rules
     with
        d* := <binding-to-def-rules <+ ![]> 
     with 
-      p* := <binding-to-prop-rule; MkSingleton <+ ![]>
+      r  := <new-iset>
+    ; p* := <binding-to-prop-rule(|r); MkSingleton <+ ![]>
     // with 
     //    u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
     // <+ u* := []
