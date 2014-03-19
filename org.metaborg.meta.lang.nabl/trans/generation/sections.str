@@ -14,7 +14,7 @@ rules // binding rules
     BindingRules(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
   to-str-rules:
-  BindingRule(pattern, f, clause*) -> [s*, n*, d*, p*] //, u*, f*, i*, m1*, m2*]
+  BindingRule(pattern, f, clause*) -> [s*, n*, d*, p*, u*] //, f*, i*, m1*, m2*]
     with 
        s* := <binding-to-scope-rules <+ ![]> 
     with 
@@ -24,9 +24,8 @@ rules // binding rules
     with 
       r  := <new-iset>
     ; p* := <binding-to-prop-rule(|r); MkSingleton <+ ![]>
-    // with 
-    //    u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
-    // <+ u* := []
+    with 
+       u* := <binding-to-use-rule(|r); MkSingleton <+ ![]>
     // with 
     //    f* := <binding-to-filter-rules(|bound*, task*, repl*)>
     // with 
