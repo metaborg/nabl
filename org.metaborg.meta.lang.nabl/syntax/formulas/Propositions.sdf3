@@ -21,9 +21,11 @@ templates // propositions
   Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>
   Proposition.Property = <<VarRef> has <PropertyRef> <Var>>  
   
+  Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
+  
   Proposition.SubType = [[Term] [SubTypeOp] [Term]]  
   
 lexical syntax
 
-  SubTypeOp = "<:" 
+  SubTypeOp = "<" [A-Za-z\-]* ":" 
  

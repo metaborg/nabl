@@ -12,10 +12,11 @@ exports
     Scope "=>" Var                        -> Proposition {cons("ScopeOf")}
     VarRef "refers" "to" NamespaceRef Var -> Proposition {cons("RefersTo")}
     VarRef "has" PropertyRef Var          -> Proposition {cons("Property")}
+    VarRef "has" PropertyRef Pattern      -> Proposition {cons("PropertyPattern"), avoid}
     Term SubTypeOp Term                   -> Proposition {cons("SubType")}
 
   context-free syntax
     CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}
 
   lexical syntax
-    "<:" -> SubTypeOp 
+    "<" [A-Za-z\-]* ":" -> SubTypeOp 

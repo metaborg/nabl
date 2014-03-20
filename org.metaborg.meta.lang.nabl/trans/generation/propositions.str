@@ -41,6 +41,11 @@ rules
     with
       p':= <prop-to-term> p
     ; <s> [v2, var*]
+  
+  formula-to-tasks(s|var*, dep, r):
+    PropertyPattern(v, prop, p) -> Scope(["p__"], t)
+    with
+      t := <formula-to-tasks(s|var*, dep, r)> And(Property(v, prop, Var("p__")), Match(Var("p__"), p))
      
   formula-to-tasks(|dep):
     SubType(t1, rel, t2) -> NEW_TASK(dep, TERM("RelationMatch", [Str(rel), t1, t2]))
@@ -56,10 +61,10 @@ rules
 	     result := <nonempty; map(var-to-match-task(|var*, dep, r, v, p)); to-seq> v*
 	  <+ key := <new-key(|"match")> r
 	   ; <iset-add(|MATCH_RULE(key, p, var*))> r
-	   ; result := NEW_TASK(dep, TERM("Rewrite", [key, v]))
+	   ; result := NEW_TASK(dep, TERM("Rewrite", [Str(key), v]))
   
   var-to-match-task(|var*, dep, r, t, p):
-  	v -> Assign(v, NEW_TASK(dep, TERM("Rewrite", [key, t])))
+  	v -> Assign(v, NEW_TASK(dep, TERM("Rewrite", [Str(key), t])))
     with
       key := <new-key(|"match")> r
     ; <iset-add(|MATCH_RULE(key, p, v, var*))> r
@@ -76,5 +81,5 @@ overlays
   NEW_TASK(dep, task) = App(CALL("new-task", [CTX(), LIST(dep)]), task)
   COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))])
 	
-  MATCH_RULE(key, lhs, dep)      = SDefNoArgs("task-rewrite", Match(TUPLE([key, TUPLE([lhs, LIST(dep)])])))
-  MATCH_RULE(key, lhs, rhs, dep) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([key, TUPLE([lhs, LIST(dep)])]), rhs))
+  MATCH_RULE(key, lhs, dep)      = SDefNoArgs("task-rewrite", Match(TUPLE([Str(key), TUPLE([lhs, LIST(dep)])])))
+  MATCH_RULE(key, lhs, rhs, dep) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([Str(key), TUPLE([lhs, LIST(dep)])]), rhs))
