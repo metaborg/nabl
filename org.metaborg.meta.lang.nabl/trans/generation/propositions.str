@@ -31,10 +31,11 @@ rules
     with
       <s> [v, var*]
     
-  formula-to-tasks(|dep):
+  formula-to-tasks(s|var*, dep, r):
     RefersTo(t, ns, v) -> Assign(v, NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), t)])))
     with
       ns' := <ns-to-term> ns
+    ; <s> [v, var*]
       
   formula-to-tasks(s|var*, dep, r):
     Property(v1, p, v2) -> Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)])))
