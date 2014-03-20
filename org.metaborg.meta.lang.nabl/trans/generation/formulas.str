@@ -31,7 +31,7 @@ rules
     ; t2 := <formula-to-tasks(s|var'*, PREV(), r)> f2
     
   formula-to-tasks(s|var*, dep, r):
-    Or(f1, f2) -> Scope(["l__", "r__"], Seq(Seq(w1, w2), ch))
+    Or(f1, f2) -> Scope(["l__", "r__"], Seq(w1, Seq(w2, ch)))
     with
       t1 := <formula-to-tasks(?var'*|var*, dep, r)> f1
     ; t2 := <formula-to-tasks(s|var'*, dep, r)> f2

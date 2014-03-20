@@ -79,7 +79,7 @@ overlays
 	TASK(s, t)      = TASK(s, [], t)
   TASK(s, ts, t)  = App(CALL(s, [CTX()|ts]), t)
   NEW_TASK(dep, task) = App(CALL("new-task", [CTX(), LIST(dep)]), task)
-  COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))])
+  COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))], [])
 	
   MATCH_RULE(key, lhs, dep)      = SDefNoArgs("task-rewrite", Match(TUPLE([Str(key), TUPLE([lhs, LIST(dep)])])))
   MATCH_RULE(key, lhs, rhs, dep) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([Str(key), TUPLE([lhs, LIST(dep)])]), rhs))
