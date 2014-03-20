@@ -32,7 +32,7 @@ rules
       <s> [v, var*]
     
   formula-to-tasks(|dep):
-    RefersTo(v, ns) -> NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), v)]))
+    RefersTo(v, ns, v') -> Assign(v', NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), v)])))
     with
       ns' := <ns-to-term> ns
       
