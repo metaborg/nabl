@@ -4,16 +4,16 @@ imports terms/Terms terms/Vars common/Identifiers core/Namespaces core/Scopes
 
 exports
   context-free syntax
-    "true"                                -> Proposition {cons("True")}
-    "false"                               -> Proposition {cons("False")}
-    VarRef "==" Term                      -> Proposition {cons("Eq")}
-    VarRef "=>" Pattern                   -> Proposition {cons("Match")}
-    "definition" "of" VarRef "=>" Var     -> Proposition {cons("DefOf")}
-    Scope "=>" Var                        -> Proposition {cons("ScopeOf")}
-    VarRef "refers" "to" NamespaceRef Var -> Proposition {cons("RefersTo")}
-    VarRef "has" PropertyRef Var          -> Proposition {cons("Property")}
-    VarRef "has" PropertyRef Pattern      -> Proposition {cons("PropertyPattern"), avoid}
-    Term Relation Term                    -> Proposition {cons("SubType")}
+    "true"                              -> Proposition {cons("True")}
+    "false"                             -> Proposition {cons("False")}
+    VarRef "==" Term                    -> Proposition {cons("Eq")}
+    VarRef "=>" Pattern                 -> Proposition {cons("Match")}
+    "definition" "of" VarRef "=>" Var   -> Proposition {cons("DefOf")}
+    Scope "=>" Var                      -> Proposition {cons("ScopeOf")}
+    Term "refers" "to" NamespaceRef Var -> Proposition {cons("RefersTo")}
+    VarRef "has" PropertyRef Var        -> Proposition {cons("Property")}
+    VarRef "has" PropertyRef Pattern    -> Proposition {cons("PropertyPattern"), avoid}
+    Term Relation Term                  -> Proposition {cons("SubType")}
 
   context-free syntax
     CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}

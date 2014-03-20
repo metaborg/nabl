@@ -18,7 +18,7 @@ templates // propositions
   Proposition.DefOf    = [definition of [VarRef] => [Var]]
   Proposition.ScopeOf  = [[Scope] => [Var]]
   
-  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>
+  Proposition.RefersTo = <<Term> refers to <NamespaceRef> <Var>>
   Proposition.Property = <<VarRef> has <PropertyRef> <Var>>  
   
   Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
