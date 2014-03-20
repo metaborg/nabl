@@ -13,10 +13,10 @@ exports
     VarRef "refers" "to" NamespaceRef Var -> Proposition {cons("RefersTo")}
     VarRef "has" PropertyRef Var          -> Proposition {cons("Property")}
     VarRef "has" PropertyRef Pattern      -> Proposition {cons("PropertyPattern"), avoid}
-    Term SubTypeOp Term                   -> Proposition {cons("SubType")}
+    Term Relation Term                    -> Proposition {cons("SubType")}
 
   context-free syntax
     CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}
 
   lexical syntax
-    "<" [A-Za-z\-]* ":" -> SubTypeOp 
+    "<" [A-Za-z\-]* ":" -> Relation 

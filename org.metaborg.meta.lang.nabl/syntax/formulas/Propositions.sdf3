@@ -23,9 +23,9 @@ templates // propositions
   
   Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
   
-  Proposition.SubType = [[Term] [SubTypeOp] [Term]]  
+  Proposition.SubType = [[Term] [Relation] [Term]]  
   
 lexical syntax
 
-  SubTypeOp = "<" [A-Za-z\-]* ":" 
+  Relation = "<" [A-Za-z\-]* ":" 
  

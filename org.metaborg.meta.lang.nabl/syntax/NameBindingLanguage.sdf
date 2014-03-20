@@ -1,6 +1,6 @@
 module NameBindingLanguage
 imports common/Layout common/Identifiers terms/Signatures terms/Terms
-        formulas/Formulas core/Modules core/Namespaces
+        formulas/Formulas formulas/Propositions core/Modules core/Namespaces
 
 exports
   context-free start-symbols
@@ -95,9 +95,6 @@ exports
     "defines" "implicitly" "unique" "non-unique" "non-transitively" "scopes"
     "refers" "to" "imports" "as" "filters" "disambiguates" "by" "minimal"
     "distance" -/- [a-zA-z]
-
-  lexical syntax
-    "<:" -> Relation 
 
   context-free syntax
                                                                 -> InDefScopes   {cons("Current")}
