@@ -16,7 +16,7 @@ rules
     NamedScope(_, n) -> n
      
   scope-to-str(|dep):
-  	Enclosing(ns, s) -> NEW_TASK(PREV(), TERM("SubURI", [ns', s']))
+  	Enclosing(ns, s) -> NEW_TASK([PREV()], TERM("SubURI", [ns', s']))
   	with
   		ns' := <ns-to-term> ns
   	; s'  := <scope-to-str(|dep)> s

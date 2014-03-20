@@ -46,7 +46,7 @@ rules
     ; cong  := <replace-all-id(|[(term, DISAMBIGUATION_CALL(key, dep*))])> pattern
   
   disambiguator-to-task(|term):
-    MinimalDistance(t1, rel, t2) -> NEW_TASK(PREV(), TERM("RelationDistance", [Str(rel), t1, t2]))
+    MinimalDistance(t1, rel, t2) -> NEW_TASK([PREV()], TERM("RelationDistance", [Str(rel), t1, t2]))
     
 overlays
 

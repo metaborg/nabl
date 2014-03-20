@@ -9,7 +9,7 @@ imports
 
 overlays
 	
-	PREV() = [RootApp(Id())]
+	PREV() = Var("prev__")
 	
 rules
   
@@ -25,10 +25,10 @@ rules
       t := <formula-to-tasks(id|var*, dep, r); topdown(try(?Assign(_, <id>)))> f
      
   formula-to-tasks(s|var*, dep, r):
-    And(f1, f2) -> Seq(t1, t2)
+    And(f1, f2) -> Seq(t1, Scope(["prev__"], Seq(Match(PREV()), t2)))
     with
       t1 := <formula-to-tasks(?var'*|var*, dep, r)> f1
-    ; t2 := <formula-to-tasks(s|var'*, PREV(), r)> f2
+    ; t2 := <formula-to-tasks(s|var'*, [PREV()], r)> f2
     
   formula-to-tasks(s|var*, dep, r):
     Or(f1, f2) -> Scope(["l__", "r__"], Seq(w1, Seq(w2, ch)))
