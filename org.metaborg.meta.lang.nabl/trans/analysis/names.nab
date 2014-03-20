@@ -43,7 +43,13 @@ binding rules
 		
 	RefClausePart(_, _, _, _, _, _):
 		scopes Variable
-		
+	
+	WildcardImport(_, _, _, _, _):
+	  scopes Variable
+	
+	SingleImport(_, _, _, _, _, _, _, _):
+	  scopes Variable
+	  
 	Var(x):
 		defines Variable x
 		

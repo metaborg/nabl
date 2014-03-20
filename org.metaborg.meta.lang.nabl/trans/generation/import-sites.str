@@ -19,31 +19,33 @@ rules
   binding-to-import-rule(|var*, r):
     BindingRule(pattern, constr*, clause*) -> IMPORT_RULE(pattern, seq)
     where 
-      cong* := <filter(to-import-clauses(|var*, r, pattern)); concat; nonempty> clause*
+      cong* := <filter(to-import-clauses(|var*, r, pattern)); nonempty> clause*
     ; seq   := <to-seq> cong*
   
   to-import-clauses(|var*, r, pattern):
-    ImportClause(part*) -> [task*, IMPORT_CALL(cand*)]
+    ImportClause(part*) -> IMPORT_CALL(cand*)
     with
-      (task*, cand*) := <filter(to-import-candidate(|var*, r, pattern)); unzip> part*
+      cand* := <filter(to-import-candidate(|var*, r, pattern)); nonempty> part*
     
   to-import-candidate(|var*, r, pattern):
-    SingleImport(_, ns, term, _, _, alias, into, f) -> (task, cand)
+    SingleImport(_, ns, term, _, _, alias, into, f) -> cand
     with
-      into-term      := <scope-to-term> into
-    ; task      := <formula-to-tasks(|var*, [], r)> f
+      into-term := <scope-to-term> into
+    ; task      := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; dep*      := <diff; map(?Var(<id>))> (fvar*, var*)
     with
        Alias(a) := alias
-     ; cand     := ALIAS(term, a, [])
-    <+ cand     := SINGLE(<ns-to-term> ns, term, into-term, [])
+     ; cand     := ALIAS(dep*, task, term, a, [])
+    <+ cand     := SINGLE(dep*, task, <ns-to-term> ns, term, into-term, [])
        
 	to-import-candidate(|var*, r, pattern):
-		WildcardImport(ns*, _, from, into, f) -> (task, WILDCARD(ns-term*, from-term, into-term, []))
+		WildcardImport(ns*, _, from, into, f) -> WILDCARD(dep*, task, ns-term*, from-term, into-term, [])
     with
       ns-term*  := <map(ns-to-term)> ns*
     ; from-term := <scope-to-term> from
     ; into-term := <scope-to-term> into
-    ; task      := <formula-to-tasks(|var*, [], r)> f
+    ; task      := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; dep*      := <diff; map(?Var(<id>))> (fvar*, var*)
       
 	ns-to-term: Restricted([], ns)           -> DIRECT(<ns-to-term> ns)
 	ns-to-term: Restricted([Imported()], ns) -> TRANSITIVE(<ns-to-term> ns)	
@@ -75,9 +77,14 @@ overlays
     ] 
   )
   
-  SINGLE(ns, term, scope, deps)      = TERM("Single", [ns, term, scope, LIST(deps)])
-  ALIAS(term, alias, deps)       = TERM("Alias", [term, alias, LIST(deps)])
-  WILDCARD(ns, from, into, deps) = TERM("Wildcard", [LIST(ns), from, into, LIST(deps)])
+  SINGLE(vs, task, ns, term, scope, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("Single", [ns, term, scope, LIST(deps)])))))
+    
+  ALIAS(vs, task, term, alias, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("Alias", [term, alias, LIST(deps)])))))
+    
+  WILDCARD(vs, task, ns, from, into, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("Wildcard", [LIST(ns), from, into, LIST(deps)])))))
 
   DIRECT(ns)     = TERM("Import", [Var("lang__"), ns])
   TRANSITIVE(ns) = TERM("Import", [Var("lang__"), TERM("Imported", [ns])])
