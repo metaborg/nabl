@@ -14,7 +14,7 @@ rules
     BindingRule(pattern, f, clause*) -> PROP_RULE(pattern, seq)
     where
       def-clause*  := <filter-def-clauses; nonempty> clause*
-    ; prop-clause* := <filter-with-index(to-prop-clauses(|var*, r, pattern)); concat> def-clause*
+    ; prop-clause* := <filter-with-index(to-prop-clauses(|var*, r, pattern)); concat; nonempty> def-clause*
     where
        match* := [Where(Assign(LIST(<implicit-def-vars; nonempty> def-clause*), Var("implicits__")))] 
     <+ match* := []
