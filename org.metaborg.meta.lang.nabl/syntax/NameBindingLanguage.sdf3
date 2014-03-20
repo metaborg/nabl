@@ -115,6 +115,7 @@ templates // clauses
 
   BindingClause.DisambiguateClause = <
     disambiguates <NamespaceRef> <Term>
+      <Filters>
       by <Disambiguator> 
       <Constraints>
    >

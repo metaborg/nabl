@@ -34,16 +34,19 @@ rules
        dclause* := <filter(to-disambiguation-clauses(|var*, r, pattern)); nonempty; concat> clause*
      
   to-disambiguation-clauses(|var*, r, pattern):
-    DisambiguateClause(ns, term, d, f) -> [task, cong]
+    DisambiguateClause(ns, term, Filter(ff), d, f) -> [task, cong]
     with
-      task  := <formula-to-tasks(?dep*|var*, [], r)> f
+      task  := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; ftask := <formula-to-tasks(|fvar*, [], r)> ff
     ; dtask := <disambiguator-to-task(|term)> d
+    ; tvar* := <collect-all(?Var(_) + ?ListVar(_))> term
+    ; dep*  := <diff> (fvar*, tvar*)
     ; key   := <new-key(|"disamb")> r
-    ; <iset-add(|CREATE_DISAMBIGUATION_RULE(key, dep*, term, dtask))> r
+    ; <iset-add(|CREATE_DISAMBIGUATION_RULE(key, dep*, term, ftask, dtask))> r
     ; cong  := <replace-all-id(|[(term, DISAMBIGUATION_CALL(key, dep*))])> pattern
   
   disambiguator-to-task(|term):
-    MinimalDistance(t1, rel, t2) -> NEW_TASK([], TERM("RelationDistance", [Str(rel), t1, t2]))
+    MinimalDistance(t1, rel, t2) -> NEW_TASK(PREV(), TERM("RelationDistance", [Str(rel), t1, t2]))
     
 overlays
 
@@ -96,7 +99,7 @@ overlays
   DISAMBIGUATION_CALL(string, ts) = 
   CALL("nabl-disambiguate", [Var("lang__"), CTX(), Var("uris__"), Str(string), LIST(ts)])
   
-  CREATE_DISAMBIGUATION_RULE(string, deps, name, disamb) = 
+  CREATE_DISAMBIGUATION_RULE(string, deps, name, ftask, disamb) = 
   STRATEGY(
     "nabl-disambiguation-def"
   , [ CTX_DEC()
@@ -109,7 +112,10 @@ overlays
         Where(Assign(Str(string), Var("ctx-string__")))
       , Seq(
           Where(Assign(LIST(deps), Var("ctx-terms__")))
-        , Build(TUPLE([name, disamb]))
+        , Seq(
+            ftask
+          , Build(TUPLE([name, disamb]))
+          )
         )
       )
     )

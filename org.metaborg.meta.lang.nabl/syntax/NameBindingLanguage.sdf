@@ -79,7 +79,7 @@ exports
                                                                                                             -> Alias            {cons("None")}
     "as" Term                                                                                               -> Alias            {cons("Alias")}
     "filters" NamespaceRef Term Filters Constraints                                                         -> BindingClause    {cons("FilterClause")}
-    "disambiguates" NamespaceRef Term "by" Disambiguator Constraints                                        -> BindingClause    {cons("DisambiguateClause")}
+    "disambiguates" NamespaceRef Term Filters "by" Disambiguator Constraints                                -> BindingClause    {cons("DisambiguateClause")}
     "minimal" "distance" Term Relation Term                                                                 -> Disambiguator    {cons("MinimalDistance")}
 
   context-free syntax
