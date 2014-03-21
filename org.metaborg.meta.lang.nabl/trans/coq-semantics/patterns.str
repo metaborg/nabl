@@ -3,7 +3,7 @@ module coq-semantics/patterns
 imports
   include/NameBindingLanguage
   generation/util
-  coq-semantics/Coq
+  coq-semantics/-
 
 rules
   
@@ -13,7 +13,7 @@ rules
   patterns-to-term(|i, x): [] -> (Ref("Nop"), [], i, None())
   
   patterns-to-term(|i, x):
-    [c|cs] -> (Apply(Apply(Ref("Consp"), ct), cts), [cbind*, csbind*], k, ret)
+    [c|cs] -> (APPLY2(Ref("Consp"), ct, cts), [cbind*, csbind*], k, ret)
     with
       (ct, cbind*, j, hd) := <pattern-to-term(|i, x)> c
     ; (cts, csbind*, k, tl) := <patterns-to-term(|<inc> j, x)> cs
@@ -21,7 +21,7 @@ rules
 
   // (Co cC [c1; c2; c3] k)
   pattern-to-term(|i, x):
-    NoAnnoList(Op(c, term*)) -> (Apply(Apply(Apply(Ref("Co"), Ref($[[c]C])), child*), Ref(k)), binder*, j, maybe)
+    NoAnnoList(Op(c, term*)) -> (APPLY2(Apply(Ref("Co"), Ref($[[c]C])), child*, Ref(k)), binder*, j, maybe)
     with
       k := $[k[i]]
     ; (child*, cbinder*, j, maybe) := <patterns-to-term(|<inc> i, x)> term*
@@ -32,7 +32,7 @@ rules
     where not(<eq> (x,Some(n)))
   
   pattern-to-term(|i, x):
-    Var(n) -> (Apply(Apply(Ref("Id"), Ref(n)), Ref(k)), [Bind(k)], <inc> i, Some(k))
+    Var(n) -> (APPLY2(Ref("Id"), Ref(n), Ref(k)), [Bind(k)], <inc> i, Some(k))
     where
       <eq> (x,Some(n))
     ; k := $[k[i]]  

@@ -3,8 +3,7 @@ module coq-semantics/scopes
 imports
   include/NameBindingLanguage
   generation/util
-  coq-semantics/Coq
-  coq-semantics/patterns
+  coq-semantics/-
 
 rules
     
@@ -13,13 +12,16 @@ rules
     where
       (term, binder*, _, _) := <pattern-to-term(|0, None())> pattern
     with
-      type :=
-      Type(
-        Apply(
-	        Apply(
-	          Ref("scopesR")
-	        , term
-	        )
-	      , Ref($[[ns]NS])
-	      )
-	    )
+      type := SCOPES(term, $[[ns]NS])
+
+  // scope-to-coq(|c, pattern):
+	 //    DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), _, DefScopes(_), []) ->
+  //     ConsDecl($[[c]_scopes_[ns]], binder*, type)
+  //   where
+  //     (term, binder*, _, _) := <pattern-to-term(|0, None())> pattern
+  //   with
+  //     type := SCOPES(term, $[[ns]NS])
+      
+overlays
+  
+  SCOPES(t, ns) = Type(APPLY2(Ref("scopesR"), t, Ref(ns)))
