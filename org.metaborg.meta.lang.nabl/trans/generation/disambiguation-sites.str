@@ -114,7 +114,7 @@ overlays
           Where(Assign(LIST(deps), Var("ctx-terms__")))
         , Seq(
             ftask
-          , Build(TUPLE([name, disamb]))
+          , Seq(Match(PREV()), Build(TUPLE([name, disamb])))
           )
         )
       )
