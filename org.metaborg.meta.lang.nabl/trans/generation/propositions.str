@@ -22,23 +22,23 @@ rules
     Eq(v, t) -> NEW_TASK(dep, TERM("Eq", [t, v]))
 	
 	formula-to-tasks(s|var*, dep, r):
-    DefOf(v, d) -> Assign(d, NEW_TASK(dep, TERM("CollectDefs", [v])))
+    DefOf(v, d) -> Where(Assign(d, NEW_TASK(dep, TERM("CollectDefs", [v]))))
     with
       <s> [d, var*]
       
   formula-to-tasks(s|var*, dep, r):
-    ScopeOf(s, v) -> Assign(v, <scope-to-str(|dep)> s)
+    ScopeOf(s, v) -> Where(Assign(v, <scope-to-str(|dep)> s))
     with
       <s> [v, var*]
     
   formula-to-tasks(s|var*, dep, r):
-    RefersTo(t, ns, v) -> Assign(v, NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), t)])))
+    RefersTo(t, ns, v) -> Where(Assign(v, NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), t)]))))
     with
       ns' := <ns-to-term> ns
     ; <s> [v, var*]
       
   formula-to-tasks(s|var*, dep, r):
-    Property(v1, p, v2) -> Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)])))
+    Property(v1, p, v2) -> Where(Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)]))))
     with
       p':= <prop-to-term> p
     ; <s> [v2, var*]
