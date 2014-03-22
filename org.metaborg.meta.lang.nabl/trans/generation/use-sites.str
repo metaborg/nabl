@@ -27,7 +27,7 @@ rules
     where
       RefClause(part*)    := clause
     + ImportClause(part*) := clause
-    with
+    where // might fail if an import clause has no name in it
       c*       := <filter(to-use-candidate(|var*, r))> part*
     ; term     := <use-to-name> clause
     ; use-call := USE_CALL(c*)
@@ -46,7 +46,7 @@ rules
     ; prop-term* := <map(prop-pattern-to-str(|[]))> prop*
     ; ctx-term   := <scope-to-term> ctx
     ; wci        := <part-to-wildcardimport(|import-ns*)> part
-  
+    
   prop-pattern-to-str(|dependencies): PropertyPattern(type, p, t) -> PROPERTY(<prop-to-term> p, t, dependencies) 
   
   part-to-wildcardimport(|import-ns*):
