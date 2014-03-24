@@ -10,10 +10,10 @@ rules
   pattern-to-cons =
     ?NoAnnoList(Op(<id>, _))
 
-  patterns-to-term(|i, x): [] -> (Ref("Nop"), [], i, None())
+  patterns-to-term(|i, x): [] -> (Ref("nil"), [], i, None())
   
   patterns-to-term(|i, x):
-    [c|cs] -> (APPLY2(Ref("Consp"), ct, cts), [cbind*, csbind*], k, ret)
+    [c|cs] -> (APPLY2(Ref("cons"), ct, cts), [cbind*, csbind*], k, ret)
     with
       (ct, cbind*, j, hd) := <pattern-to-term(|i, x)> c
     ; (cts, csbind*, k, tl) := <patterns-to-term(|<inc> j, x)> cs
