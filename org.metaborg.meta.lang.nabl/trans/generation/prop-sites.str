@@ -22,7 +22,7 @@ rules
       seq := <to-seq> [match*, prop-clause*]
     
   to-prop-clauses(|var*, r, pattern):
-    (j, DefClause(kind, _, ns, term, prop*, _, f)) -> [task, cong]
+    (j, DefClause(kind, _, ns, term, prop*, _, f)) -> [Where(task), cong]
     where
       <nonempty> prop*
     with
