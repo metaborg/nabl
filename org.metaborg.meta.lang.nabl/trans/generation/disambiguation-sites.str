@@ -103,6 +103,7 @@ overlays
   STRATEGY(
     "nabl-disambiguation-def"
   , [ CTX_DEC()
+    , DefaultVarDec("uris__")
     , DefaultVarDec("ctx-terms__")
     , DefaultVarDec("ctx-string__")
     ]
