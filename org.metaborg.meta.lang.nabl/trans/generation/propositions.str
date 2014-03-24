@@ -38,7 +38,7 @@ rules
     ; <s> [v, var*]
       
   formula-to-tasks(s|var*, dep, r):
-    Property(v1, p, v2) -> Where(Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [CTX(), p', Var("uris__"), Var("uris__")], v1)]))))
+    Property(v1, p, v2) -> Where(Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p', Var("uris__"), Var("uris__")], v1)]))))
     with
       p':= <prop-to-term> p
     ; <s> [v2, var*]
