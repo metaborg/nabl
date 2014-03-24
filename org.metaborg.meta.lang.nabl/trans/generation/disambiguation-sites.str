@@ -101,7 +101,7 @@ overlays
   
   CREATE_DISAMBIGUATION_RULE(string, deps, name, ftask, disamb) = 
   STRATEGY(
-    "nabl-disambiguation-def"
+    "nabl-disambiguate-def"
   , [ CTX_DEC()
     , DefaultVarDec("uris__")
     , DefaultVarDec("ctx-terms__")
