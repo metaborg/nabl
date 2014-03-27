@@ -36,11 +36,12 @@ rules // namespaces
 rules // binding rules
   
   section-to-coq:
-    BindingRules(r*) -> [scopes*, defines*, refers*]
+    BindingRules(r*) -> [scopes*, defines*, refers*, ty-def*]
     with
       scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Type(PROD2(Ref("term"), Ref("NS"), Sort(Prop()))) )> r*
     ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*
     ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
+    ; ty-def*  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", TERM_IDENT_NS_TERM_KEY_PROP())> r*
   
   binding-rules-to-coq(binding-to-coq|name, type):
     r* -> [Inductive(Ind([Induc($[[name]R], [], type, ListDeclBar(cdec*))])),
@@ -56,10 +57,14 @@ rules // binding rules
 overlays
   
   TERM_IDENT_NS_KEY_PROP = Type(PROD4(Ref("term"), Ref("Ident"), Ref("NS"), Ref("key"), Sort(Prop())))
+  TERM_IDENT_NS_TERM_KEY_PROP = Type(PROD5(Ref("term"), Ref("Ident"), Ref("NS"), Ref("term"), Ref("key"), Sort(Prop())))
 
   COQ_TERM_TYPE(name, coqterm, x, ns, k) = Type(APPLY4(Ref(name), coqterm, Ref(x), Ref(ns), Ref(k)))
+  COQ_TERM_TYPED_DEFINE(name, coqterm, x, ns, type, k) = Type(APPLY5(Ref(name), coqterm, Ref(x), Ref(ns), Ref(type), Ref(k)))
     
   APPLY2(op, e1, e2) = Apply(Apply(op, e1), e2)
   APPLY4(op, e1, e2, e3, e4) = APPLY2(APPLY2(op, e1, e2), e3, e4)
+  APPLY5(op, e1, e2, e3, e4, e5) = Apply(APPLY4(op, e1, e2, e3, e4), e5)
   PROD2(e1, e2, e3) = Product(e1, Product(e2, e3))
   PROD4(e1, e2, e3, e4, e5) = Product(e1, Product(e2, PROD2(e3, e4, e5)))
+  PROD5(e1, e2, e3, e4, e5, e6) = Product(e1, PROD4(e2, e3, e4, e5, e6))

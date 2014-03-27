@@ -16,3 +16,14 @@ rules
       (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
     with
       coq-term-type := COQ_TERM_TYPE("definesR", coqterm, x, $[[ns]NS], k)
+
+rules
+  
+  typed-defines-to-coq(|c, pattern):
+    DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), type, Current(), []) ->
+      ConsDecl($[[c]_typed_defines_[ns]], [Bind(x), Bind(type'), binder*], coq-term-type)
+    where
+      [PropertyTerm(TypeProp(), VarRef(type'))] := type
+    ; (coqterm, binder*, _, Some(k))            := <pattern-to-term(|0, Some(x))> pattern
+    with
+      coq-term-type := COQ_TERM_TYPED_DEFINE("typed_definesR", coqterm, x, $[[ns]NS], type', k)
