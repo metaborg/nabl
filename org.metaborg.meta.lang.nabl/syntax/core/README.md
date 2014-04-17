@@ -36,7 +36,7 @@ Scopes determine the visibility of names. In NaBL, scopes can be nested and can 
       <Pattern>
         <Scope> scopes <Namespace> at subsequent nodes 
 
-Such as `defines` and `refers` clauses, `scope` clauses refer to existing or new scopes. Existing scopes are:
+All `defines`, `refers to`, and `scope` clauses refer to existing or new scopes. Existing scopes are:
 
 * the global scope 
 
@@ -54,7 +54,7 @@ Such as `defines` and `refers` clauses, `scope` clauses refer to existing or new
 
         enclosing <Namespace> of <Scope>
 
-There are three kinds of defining new scopes. First, every binding instance defines a new named scope inside the scope it is visible. These scopes are referred to by namespace and name of the binding instance.
+There are three ways to specify new scopes. First, every binding instance defines a new named scope inside the scope it is visible. These scopes are referred to by namespace and name of the binding instance.
 
     <Namespace> <Variable>
 
@@ -62,7 +62,7 @@ Second, new anonymous scopes can be defined inside an existing scope.
  
     new scope in <Scope>
 
-Finally, new scopes can be specified as a requirement for subnodes.
+Finally, new anonymous scopes can be specified as a requirement for subnodes.
 
     <RuleID>:
       <Pattern> 
