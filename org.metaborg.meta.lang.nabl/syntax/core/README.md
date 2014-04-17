@@ -8,7 +8,12 @@ In NaBL, binding and bound instances are specified in rules. These rules consist
 
     <RuleID>: 
       <Pattern> 
-        defines <Namespace> <Variable> 
+        defines unique <Namespace> <Variable> 
+        in <Scope>
+    
+    <RuleID>: 
+      <Pattern> 
+        defines non-unique <Namespace> <Variable> 
         in <Scope>
 
 While `defines` clauses are unconditional, `refers` clauses specify additional conditions in a `where` clause (`Formula`). 
@@ -41,7 +46,7 @@ Such as `defines` and `refers` clauses, `scope` clauses refer to existing or new
 
         current <Namespace> scope
 
-* scope for a namespace at a submode, bound to a variable in the pattern
+* scope for a namespace at a subnode, bound to a variable in the pattern
 
         <Namespace> scope at <Variable>
 
@@ -49,20 +54,87 @@ Such as `defines` and `refers` clauses, `scope` clauses refer to existing or new
 
         enclosing <Namespace> of <Scope>
 
-There are two kinds of defining new scopes. First, every binding instance defines a new named scope inside the scope it is visible. These scopes are referred to by namespace and name of the binding instance.
+There are three kinds of defining new scopes. First, every binding instance defines a new named scope inside the scope it is visible. These scopes are referred to by namespace and name of the binding instance.
 
     <Namespace> <Variable>
 
-Second, new anonymous scopes can be defined inside an existing scope:
+Second, new anonymous scopes can be defined inside an existing scope.
  
     new scope in <Scope>
 
+Finally, new scopes can be specified as a requirement for subnodes.
+
+    <RuleID>:
+      <Pattern> 
+        requires <Namespace> scope 
+        at <Variable>
+
+## Properties
+
+In NaBL and TS, properties associate information with tree nodes and names. Properties associated tree nodes are specified in TS. Properties associated with names are specified in an NaBL rule with a `defines … has` clause.
+
+   <RuleID>: 
+      <Pattern> 
+        defines <Variable> has <Property> <Term>
+        where <Formula>
+
+NaBL and TS provide a single built-in property `type`.
+
+## Formulas
+
+Formulas can either specify derived information needed in `refers to` and `has` clauses or restrict these clauses to apply only if a formula holds. Formulas compose atomic formulas by applying boolean operators `not`, `and`, `or`. These atomic formulas are:
+
+* boolean literals
+
+        true
+        false
+
+* equality check
+
+        <Variable> == <Term>
+
+* relational check (relations are provided by TS)
+
+        <Term> <Relation> <Term>
+
+* pattern matching
+
+        <Variable> => <Pattern>
+
+* binding a variable to the binding instance of a bound instance
+
+        definition of <Variable> => <Variable>
+
+* binding a variable to a scope
+
+        <Scope> => <Variable>
+
+* binding a variable to a property of another variable (bound to a binding instance or a term)
+
+        <Variable> has <Property> <Variable>
+
 ## Disambiguation
 
-A name might be bound to different binding instances by competing name binding rules with overlapping patterns. NaBL allows to disambiguate such ambiguous binding rules by precedence:
+A name might be bound to different binding instances by different name binding rules with overlapping patterns. NaBL allows to disambiguate such ambiguous binding rules by specifying precedence of rules:
 
     <RuleID> > <RuleID> 
+
+Disambiguation based on (partial) orders …
+
+    <RuleID>:
+      <Pattern>
+        disambiguates <Variable>
+        with <Formula>
+        by <Selector> <Variable> wrt <Relation>
+        where <Formula>
  
-## Formulas
+Selectors …
+
+    minimum 
+    maximum
+    supremum
+    infimium
+    
+
 
 
