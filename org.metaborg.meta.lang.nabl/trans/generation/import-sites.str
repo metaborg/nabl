@@ -17,10 +17,11 @@ rules
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
 	    
   binding-to-import-rule(|var*, r):
-    BindingRule(pattern, constr*, clause*) -> IMPORT_RULE(pattern, seq)
+    BindingRule(pattern, constr*, clause*) -> IMPORT_RULE(pattern, $[[cons-name]-import-site], seq)
     where 
-      cong* := <filter(to-import-clauses(|var*, r, pattern)); nonempty> clause*
-    ; seq   := <to-seq> cong*
+    	cons-name := <pattern-cons-name> pattern
+    ; cong*     := <filter(to-import-clauses(|var*, r, pattern)); nonempty> clause*
+    ; seq       := <to-seq> cong*
   
   to-import-clauses(|var*, r, pattern):
     ImportClause(part*) -> IMPORT_CALL(cand*)
@@ -52,9 +53,9 @@ rules
     
 overlays
      
-  IMPORT_RULE(pattern, body) =
+  IMPORT_RULE(pattern, rule-name, body) =
   SDefT(
-    "nabl-import-site"
+    rule-name
   , []
   , [ DefaultVarDec("lang__")
     , CTX_DEC()

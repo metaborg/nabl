@@ -21,7 +21,9 @@ rules
     ; body   := <replace-all-id(|[(name, CALL("s"))])> pattern
       
   binding-to-def-rules:
-    BindingRule(pattern, _, clause*) -> [DEF_RULE(pattern, seq), ext*]
+    BindingRule(pattern, _, clause*) -> [DEF_RULE(pattern, $[[cons-name]-def-site], seq), ext*]
+    where
+    	cons-name := <pattern-cons-name> pattern
     where
       def-clause* := <filter-def-clauses; nonempty> clause*
     ; implicit*   := <implicit-def-vars> def-clause*
@@ -38,7 +40,7 @@ rules
                               ] 
     where
        extseq := <filter-with-index(clause-to-aliases(|pattern, implicit*)); concat; nonempty; at-end(![Fail()]); to-seq> def-clause*  
-     ; ext*   := [EXTERNAL_DEF_RULE(pattern, extseq)]
+     ; ext*   := [EXTERNAL_DEF_RULE(pattern, $[[cons-name]-external-def-site], extseq)]
     <+ ext*   := []
                                
   clause-to-aliases(|pattern, implicit*):
@@ -120,9 +122,9 @@ overlays
   
 overlays
   
-  DEF_RULE(pattern, body) =
+  DEF_RULE(pattern, rule-name, body) =
   SDefT(
-    "nabl-def-site"
+    rule-name
   , [ DefaultVarDec("child-uris__")
     , DefaultVarDec("sibl-uris__")
     , DefaultVarDec("implicits__")
@@ -150,9 +152,9 @@ overlays
   MATCH(s, v) =
   CALL("match", [s], [v])
 
-  EXTERNAL_DEF_RULE(pattern, body) =
+  EXTERNAL_DEF_RULE(pattern, rule-name, body) =
   SDefT(
-    "nabl-external-def-site"
+    rule-name
   , []
   , [ DefaultVarDec("lang__")
     , CTX_DEC()

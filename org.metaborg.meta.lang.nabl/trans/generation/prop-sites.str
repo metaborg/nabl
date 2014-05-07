@@ -11,7 +11,9 @@ imports
 rules
 
   binding-to-prop-rule(|var*, r):
-    BindingRule(pattern, f, clause*) -> PROP_RULE(pattern, seq)
+    BindingRule(pattern, f, clause*) -> PROP_RULE(pattern, $[[cons-name]-prop-site], seq)
+    where
+    	cons-name := <pattern-cons-name> pattern
     where
       def-clause*  := <filter-def-clauses; nonempty> clause*
     ; prop-clause* := <filter-with-index(to-prop-clauses(|var*, r, pattern)); concat; nonempty> def-clause*
@@ -41,9 +43,9 @@ rules
 
 overlays
   
-  PROP_RULE(pattern, body)  =
+  PROP_RULE(pattern, rule-name, body)  =
   STRATEGY(
-    "nabl-prop-site"
+    rule-name
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
     , DefaultVarDec("uris__")

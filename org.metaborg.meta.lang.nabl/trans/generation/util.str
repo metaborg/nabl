@@ -58,6 +58,8 @@ rules
       old* := <lookup <+ ![]> (key, map)
     ; new* := <union> (old*, val*) 
              
+  pattern-cons-name:
+  	Op(cons-name, arg*) -> $[[cons-name]-[<length> arg*]]
   
 overlays
   

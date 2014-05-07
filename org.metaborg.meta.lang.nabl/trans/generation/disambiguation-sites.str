@@ -10,9 +10,10 @@ imports
 rules
       
   binding-to-filter-rule(|var*, r):
-    BindingRule(pattern, _, clause*) -> FILTER_RULE(pattern, <to-seq> cclause*)
+    BindingRule(pattern, _, clause*) -> FILTER_RULE(pattern, $[[cons-name]-filtering-site], <to-seq> cclause*)
     where 
-      cclause* := <filterconcat(to-filter-clauses(|var*, r, pattern)); nonempty> clause*
+    	cons-name := <pattern-cons-name> pattern
+    ; cclause*  := <filterconcat(to-filter-clauses(|var*, r, pattern)); nonempty> clause*
      
   to-filter-clauses(|var*, r, pattern):
     FilterClause(ns, term, Filter(ff), f) -> [task, cong]
@@ -29,9 +30,10 @@ rules
 rules
       
   binding-to-disambiguation-rule(|var*, r):
-    BindingRule(pattern, constr*, clause*) -> DISAMBIGUATION_RULE(pattern, <to-seq> dclause*)
+    BindingRule(pattern, constr*, clause*) -> DISAMBIGUATION_RULE(pattern, $[[cons-name]-disambiguation-site], <to-seq> dclause*)
     where 
-       dclause* := <filter(to-disambiguation-clauses(|var*, r, pattern)); nonempty; concat> clause*
+    	cons-name := <pattern-cons-name> pattern
+    ; dclause*  := <filter(to-disambiguation-clauses(|var*, r, pattern)); nonempty; concat> clause*
      
   to-disambiguation-clauses(|var*, r, pattern):
     DisambiguateClause(ns, term, Filter(ff), d, f) -> [task, cong]
@@ -50,9 +52,9 @@ rules
     
 overlays
 
-  FILTER_RULE(pattern, body)  =
+  FILTER_RULE(pattern, rule-name, body)  =
   STRATEGY(
-    "nabl-filtering-site"
+    rule-name
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
     , DefaultVarDec("uniques__")
@@ -84,9 +86,9 @@ overlays
 	  )
   ) 
   
-  DISAMBIGUATION_RULE(pattern, body)  =
+  DISAMBIGUATION_RULE(pattern, rule-name, body)  =
   STRATEGY(
-    "nabl-disambiguation-site"
+    rule-name
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
     , DefaultVarDec("uniques__")

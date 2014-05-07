@@ -17,9 +17,10 @@ rules
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
     
   binding-to-use-rule(|var*, r):
-    BindingRule(pattern, _, clause*) -> USE_RULE(pattern, seq)
-    where 
-      use-clause* := <filter(to-use-clauses(|var*, r, pattern)); nonempty> clause*
+    BindingRule(pattern, _, clause*) -> USE_RULE(pattern, $[[cons-name]-use-site], seq)
+    where
+    	cons-name   := <pattern-cons-name> pattern
+    ; use-clause* := <filter(to-use-clauses(|var*, r, pattern)); nonempty> clause*
     ; seq         := <to-seq> use-clause*
       
   to-use-clauses(|var*, r, pattern):
@@ -79,9 +80,9 @@ rules
 
 overlays
      
-  USE_RULE(pattern, body) =
+  USE_RULE(pattern, rule-name, body) =
   STRATEGY(
-    "nabl-use-site"
+    rule-name
   , [ DefaultVarDec("lang__")
     , CTX_DEC()
 		, DefaultVarDec("uniques__")
