@@ -1,7 +1,5 @@
 module NameBindingLanguage-Menus
 
-imports NameBindingLanguage-Menus.generated
-
 menus
   
   menu: "Actions"

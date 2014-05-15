@@ -9,8 +9,6 @@ imports
 
 rules
   
-  outline-expand-to-level = !3
-  
   outline = simple-label-outline(to-outline-label)
   
   to-outline-label:
