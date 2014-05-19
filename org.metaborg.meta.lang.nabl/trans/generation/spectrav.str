@@ -1,0 +1,248 @@
+module generation/spectrav
+
+imports
+	
+  libstrc
+  include/NameBindingLanguage
+  lib/editor-common.generated
+  lib/runtime/nabl/utils
+  
+  generation/-
+	
+rules
+	
+	rule-to-spectrav:
+		rule@BindingRule(pattern, _, _) -> [up-trav, down-trav]
+		where
+			cons-name := <pattern-cons-name> pattern;
+			down-trav := STRATEGY(
+				$[[cons-name]-down], 
+				[
+					DefaultVarDec("sibling-uris"),
+					DefaultVarDec("state-up"),
+					DefaultVarDec("implicit-up")
+				],
+				[
+					DefaultVarDec("lang"),
+					DefaultVarDec("partition"),
+					DefaultVarDec("unique*"),
+					DefaultVarDec("uri*")
+				],
+				<spectrav-seq> [
+					<spectrav-down-pop-state>,
+					<spectrav-down-scoping-site(|cons-name)> rule,
+					<spectrav-down-scope-site>,
+					<spectrav-down-def-site(|cons-name)> rule
+				]
+			);
+			up-trav := STRATEGY(
+				$[[cons-name]-up], 
+				[
+					DefaultVarDec("lang"),
+					DefaultVarDec("partition"),
+					DefaultVarDec("unique*"),
+					DefaultVarDec("implicit*"),
+					DefaultVarDec("uri*"),
+					DefaultVarDec("uri'*"),
+					DefaultVarDec("child-uri*"),
+					DefaultVarDec("state*")
+				], 
+				<spectrav-seq> [
+					<spectrav-up-external-def-site(|cons-name)> rule,
+					<spectrav-up-use-site(|cons-name)> rule,
+					<spectrav-up-import-site(|cons-name)> rule,
+					<spectrav-up-filtering-site(|cons-name)> rule,
+					<spectrav-up-disambiguation-site(|cons-name)> rule,
+					<spectrav-up-prop-site(|cons-name)> rule,
+					<spectrav-up-use-site(|cons-name)> rule,
+					<spectrav-up-annotate-props>
+				]
+			)
+	
+rules
+
+	spectrav-down-pop-state =
+		<to-seq> [
+			CALL("nabl-state-pop", [Match(Var(ListVar("state*")))], []),
+			MATCH(Var("state-up"), Var("state*"))
+		]
+
+	spectrav-down-scoping-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+        <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*;
+			  <not(fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _)))> clause*
+			then
+				result := CALL($[[cons-name]-scoping-site])
+			else
+				result := Fail()
+			end
+			
+	spectrav-down-scope-site = 
+		!LChoice(
+			CALL(
+				"nabl-scope-site",
+			  [Match(Var("uri'*"))], 
+			  <spectrav-term-args> ["lang", "partition", "unique*", "uri*"]
+			), 
+			  LChoice(
+			  	CALL(
+			  		"nabl-new-scope-site",
+			  		[Match(Var("uri'*"))],
+			  		<spectrav-term-args> ["lang", "partition", "unique*", "uri*"]
+			  	),
+			    MATCH(Match(Var("uri'*")), Var("uri*"))
+			  )
+			)
+	
+	// TODO: if there is no def site: don't use match, but change the variables later on?
+	spectrav-down-def-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+			  def-clause* := <filter-def-clauses; nonempty> clause*;
+			  implicit*   := <implicit-def-vars> def-clause*;
+			  not(<filter-with-index(clause-to-aliases(|pattern, implicit*)); concat; nonempty; at-end(![Fail()]); to-seq> def-clause*)
+			then
+				result := <to-seq> [
+					CALL(
+					  $[[cons-name]-def-site],
+					  [Match(Var("child-uri*")), Var("sibling-uris"), Match(Var("implicit*"))], 
+					  <spectrav-term-args> ["lang", "partition", "unique*", "uri'*", "state*"]
+				  ),
+				  MATCH(Var("implicit-up"), Var("implicit*"))
+				]
+			else
+				result := <to-seq> [MATCH(Var("sibling-uris"), Var("uri*")), MATCH(Match(Var("child-uri*")), Var("uri'*"))]
+			end
+			
+	spectrav-up-external-def-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+			  def-clause* := <filter-def-clauses; nonempty> clause*;
+			  implicit*   := <implicit-def-vars> def-clause*;
+			  <filter-with-index(clause-to-aliases(|pattern, implicit*)); concat; nonempty; at-end(![Fail()]); to-seq> def-clause*
+			then
+				result := CALL(
+					$[[cons-name]-external-def-site], 
+					<spectrav-term-args> ["lang", "partition", "unique*", "uri'*", "state*", "implicit*"]
+				)
+			else
+				result := Fail()
+			end
+
+	spectrav-up-use-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+		    var* := <collect-all(?Var(_) + ?ListVar(_))> pattern;
+			  <filter(to-use-clauses(|var*, <new-iset>, pattern)); nonempty> clause*
+			then
+				result := CALL(
+					$[[cons-name]-use-site],
+					<spectrav-term-args> ["lang", "partition", "unique*", "uri'*", "state*"]
+				)
+			else
+				result := Fail()
+			end
+
+	spectrav-up-import-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if
+			  var* := <collect-all(?Var(_) + ?ListVar(_))> pattern;
+			  <filter(to-import-clauses(|var*, <new-iset>, pattern)); nonempty> clause*
+			then
+				result := CALL(
+					$[[cons-name]-import-site],
+					<spectrav-term-args> ["lang", "partition", "unique*", "child-uri*", "state*"]
+				)
+			else
+				result := Fail()
+			end
+
+	spectrav-up-filtering-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+			  var* := <collect-all(?Var(_) + ?ListVar(_))> pattern;
+			  <filterconcat(to-filter-clauses(|var*, <new-iset>, pattern)); nonempty> clause*
+			then
+				result := CALL(
+					$[[cons-name]-filtering-site],
+					<spectrav-term-args> ["lang", "partition", "unique*", "uri'*", "state*"]
+				)
+			else
+				result := Fail()
+			end
+			
+	spectrav-up-disambiguation-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+			  var* := <collect-all(?Var(_) + ?ListVar(_))> pattern;
+			  <filter(to-disambiguation-clauses(|var*, <new-iset>, pattern)); nonempty> clause*
+			then
+				result := CALL(
+					$[[cons-name]-disambiguation-site],
+					<spectrav-term-args> ["lang", "partition", "unique*", "uri'*", "state*"]
+			  )
+			else
+				result := Fail()
+			end
+			
+	spectrav-up-prop-site(|cons-name):
+		BindingRule(pattern, _, clause*) -> result
+		where
+			if 
+			  var*        := <collect-all(?Var(_) + ?ListVar(_))> pattern;
+        def-clause* := <filter-def-clauses; nonempty> clause*;
+        <filter-with-index(to-prop-clauses(|var*, <new-iset>, pattern)); concat; nonempty> def-clause*
+			then
+				result := CALL(
+					$[[cons-name]-prop-site],
+					<spectrav-term-args> ["lang", "partition", "uri*", "state*", "implicit*"]
+				)
+			else
+				result := Fail()
+			end
+			
+	// TODO: make this language-specific as well
+	spectrav-up-annotate-props = 
+		!CALL(
+			"nabl-annotate-properties",
+			<spectrav-term-args> ["lang", "partition", "uri*", "uri'*"]
+		)
+
+rules
+
+	spectrav-seq:
+	  list -> <foldr(!Fail(), spectrav-create-seq)> list
+	  
+	spectrav-create-seq:
+		(Fail(), Fail()) -> Fail()
+		
+	spectrav-create-seq:
+		(Fail(), c) -> c
+		where 
+			<not(?Fail())> c
+		
+	spectrav-create-seq:
+		(c, Fail()) -> c
+		where 
+			<not(?Fail())> c
+			
+	spectrav-create-seq:
+		(c1, c2) -> Seq(c1, c2)
+		where 
+			<not(?Fail())> c1;
+			<not(?Fail())> c2
+
+rules
+	
+	spectrav-term-args:
+		names -> <map(!Var(<id>))> names
+		
+			

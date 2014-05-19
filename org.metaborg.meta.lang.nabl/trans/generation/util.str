@@ -71,8 +71,9 @@ overlays
   LIST(elems)        = NoAnnoList(List(elems))
   LIST()             = NoAnnoList(List([]))
   
-  STRATEGY(s, b)     = SDefT(s, [], [], b)
-  STRATEGY(s, ts, b) = SDefT(s, [], ts, b)
+  STRATEGY(s, b)         = SDefT(s, [], [], b)
+  STRATEGY(s, tp, b)     = SDefT(s, [], tp, b)
+  STRATEGY(s, sp, tp, b) = SDefT(s, sp, tp, b)
   
   CALL(s)            = CallNoArgs(SVar(s))
   CALL(s, ts)        = CallT(SVar(s), [], ts)
