@@ -55,8 +55,7 @@ rules
 					<spectrav-up-import-site(|cons-name)> rule,
 					<spectrav-up-filtering-site(|cons-name)> rule,
 					<spectrav-up-disambiguation-site(|cons-name)> rule,
-					<spectrav-up-prop-site(|cons-name)> rule,
-					<spectrav-up-annotate-props>
+					<spectrav-up-prop-site(|cons-name)> rule
 				]
 			)
 	
@@ -220,13 +219,6 @@ rules // Bottomup traversal
 			else
 				result := Fail()
 			end
-			
-	// TODO: make this language-specific as well
-	spectrav-up-annotate-props = 
-		!CALL(
-			"nabl-annotate-properties",
-			<spectrav-term-args> ["lang", "partition", "uri*", "uri'*"]
-		)
 
 rules // Stratego sequence creation, removing all fail strategies
 
