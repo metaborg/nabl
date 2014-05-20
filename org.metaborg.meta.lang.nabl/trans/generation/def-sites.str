@@ -13,30 +13,15 @@ rules
     
 rules
   
-  binding-to-name-rule: 
-    BindingRule(pattern, constr*, clause*) -> NAME_RULE(pattern, name)
+  binding-to-name-rules: 
+    BindingRule(pattern, _, clause*) -> [NAME_RULE(pattern, name), APPLY_RULE(body)]
     where
       [name] := <filter(def-to-name + use-to-name)> clause*
-    where
-      <not(eq)> (name, pattern)
-      
-  binding-to-apply-rule:
-    BindingRule(pattern, constr*, clause*) -> APPLY_RULE(body)
-    where
-      [name]          := <filter(def-to-name + use-to-name)> clause*;
-      Var(inner-name) := name;
-      body            := <op-to-call(|inner-name)> pattern
-      
-  op-to-call(|name) =
-    switch id
-      case ?NoAnnoList(ops)                 : <op-to-call(|name)> ops
-      case ?Op(aname, args)                 : !Call(SVar(aname), <map(op-to-call(|name))> args)
-      case ?Var(name) + ?Var(ListVar(name)) : !CallNoArgs(SVar("s"))
-      otherwise                             : !Id()
-    end
+    ; <not(eq)> (name, pattern)
+    ; body   := <replace-all-id(|[(name, CALL("s"))])> pattern
       
   binding-to-def-rules:
-    BindingRule(pattern, constr*, clause*) -> [DEF_RULE(pattern, seq), ext*]
+    BindingRule(pattern, _, clause*) -> [DEF_RULE(pattern, seq), ext*]
     where
       def-clause* := <filter-def-clauses; nonempty> clause*
     ; implicit*   := <implicit-def-vars> def-clause*
@@ -143,7 +128,7 @@ overlays
     , DefaultVarDec("implicits__")
     ]
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")]
@@ -155,7 +140,7 @@ overlays
     "nabl-def"
   , [Match(out-child-uris), Match(out-sibl-uris)]
   , [ Var("lang__")
-    , Var("partition__")
+    , CTX()
     , Var("uniques__")
     , in-child-uris
     , in-sibl-uris
@@ -170,7 +155,7 @@ overlays
     "nabl-external-def-site"
   , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uri__")
     , DefaultVarDec("states__")
@@ -179,17 +164,8 @@ overlays
   ) 
   
   EXTERNAL_URI_CALL(v, named) = 
-  Assign(v, App(CallNoArgs(SVar("nabl-uri")), named))
+  Assign(v, App(CALL("nabl-uri"), named))
   
   EXTERNAL_ALIAS_CALL(uri, scope) = 
-  App(
-    CALL(
-      "nabl-def-alias"
-    , []
-    , [ Var("partition__")
-      , uri
-      ]
-    )
-  , scope
-  )
+  App(CALL("nabl-def-alias", [CTX(), uri]), scope)
   

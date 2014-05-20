@@ -5,6 +5,8 @@ imports
   libstrc
   include/NameBindingLanguage
   generation/util
+  generation/namespaces
+  generation/properties
   generation/sections
   
 rules
@@ -28,21 +30,21 @@ rules // modules
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
   module-to-str:
-    Module(name, section*) -> Module(name, [import*, section'*])
-    where 
-      section'* := <filterconcat(section-to-str)> section* 
-    ; if <collect-all(?ImportWildcard(<string-ends-with(|"/nabl")>))> section* => [] then
-        import* := [ Imports(
-                       [ ImportWildcard("lib/runtime/nabl")
-                       , ImportWildcard("lib/runtime/task")
-                       , ImportWildcard("lib/runtime/properties")
-                       , ImportWildcard("lib/runtime/types")
-                       , ImportWildcard("lib/runtime/editor")
-                       ]
-                     )
-                   ]
-      else
-      	import* := []
-      end 
+    Module(n, [ Imports(i*), ns, p, r ]) -> Module(n, [ Imports([lib*, i*]), ns', p-sig, p-str, r'])
+    with
+      ns'   := <namespaces-to-str> ns
+    ; p-sig := <properties-to-sig> p
+    ; p-str := <properties-to-strategies> p
+    ; r'    := <rules-to-str> r
+    with
+       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
+     ; lib* := []
+    <+ lib* := [ ImportWildcard("lib/runtime/nabl")
+               , ImportWildcard("lib/runtime/task")
+               , ImportWildcard("lib/runtime/properties")
+               , ImportWildcard("lib/runtime/types")
+               , ImportWildcard("lib/runtime/relations")
+               , ImportWildcard("lib/runtime/editor")
+               ]
       
     

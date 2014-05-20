@@ -7,7 +7,7 @@ imports
   
 rules
 
-  bound-vars = collect-all(?Var(_))  
+  bound-vars = collect-all(?Var(_) + ?ListVar(_))  
 
   extend-index(|i): j -> $[[i]-[j]]
  
@@ -61,12 +61,30 @@ rules
   
 overlays
   
-  CONS_DECL(c, t)   = OpDecl(c, ConstType(SortNoArgs(t)))
-  TERM(o, args)     = NoAnnoList(Op(o, args))
-  TERM(o)           = TERM(o, [])
-  TUPLE(elems)      = NoAnnoList(Tuple(elems))
-  LIST(elems)       = NoAnnoList(List(elems))
-  CALL(s)           = CallNoArgs(SVar(s))
-  CALL(s, ss, ts)   = CallT(SVar(s), ss, ts)
-	FORCE_ORIGINS(ss) = CALL("origin-track-forced", [ss], [])
+  CONS_DECL(c, t)    = OpDecl(c, ConstType(SortNoArgs(t)))
+  
+  TERM(o, args)      = NoAnnoList(Op(o, args))
+  TERM(o)            = TERM(o, [])
+  TUPLE(elems)       = NoAnnoList(Tuple(elems))
+  LIST(elems)        = NoAnnoList(List(elems))
+  LIST()             = NoAnnoList(List([]))
+  
+  STRATEGY(s, b)     = SDefT(s, [], [], b)
+  STRATEGY(s, ts, b) = SDefT(s, [], ts, b)
+  
+  CALL(s)            = CallNoArgs(SVar(s))
+  CALL(s, ts)        = CallT(SVar(s), [], ts)
+  CALL(s, ss, ts)    = CallT(SVar(s), ss, ts)
+  
+  FORCE_ORIGINS(ss)  = CALL("origin-track-forced", [ss], [])
+  
+  CTX_DEC() = DefaultVarDec("ctx__")
+  CTX()     = Var("ctx__")
+  DEP_DEC() = DefaultVarDec("dep*")
+  DEP()     = Var("dep*")
+  EXP_DEC() = DefaultVarDec("expected")
+  EXP()     = Var("expected")
+  REL_DEC() = DefaultVarDec("relation")
+  REL()     = Var("relation")
+  
   

@@ -1,0 +1,30 @@
+module formulas/Formulas
+
+imports 
+  terms/Terms
+  formulas/Propositions
+
+templates // formulas
+
+  Formula = <<Proposition>>
+
+  Formula.Not = <
+    not <Formula>
+  >
+    
+  Formula.And = <
+    <Formula> 
+    and <Formula>
+  > {left}
+  
+  Formula.Or = <
+    <Formula> 
+    or <Formula>
+  > {left} 
+  
+  Formula = <(<Formula>)> {bracket}
+  
+context-free priorities
+
+   Formula.Not > Formula.And > Formula.Or
+   

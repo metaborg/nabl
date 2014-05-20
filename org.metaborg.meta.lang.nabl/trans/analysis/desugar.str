@@ -3,6 +3,7 @@ module analysis/desugar
 imports
   
   include/NameBindingLanguage
+  libstrc
   
 rules
   
@@ -16,15 +17,8 @@ rules
   nabl-desugar:
     QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropertyRef(q), NoAnnoList(Op("True", [])))
     
-  nabl-desugar:
-    QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
-    
-  nabl-desugar:
-    RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))
-    
-  nabl-desugar:
-    Module(name, section*) -> Module(name, [binding, other*])
-    where
-      (binding*, other*) := <partition(?BindingRules(_))> section*
-    ; rules*  := <mapconcat(?BindingRules(<id>))> binding*
-    ; binding := BindingRules(rules*)
+  // nabl-desugar:
+  //   QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
+  //   
+  // nabl-desugar:
+  //   RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))

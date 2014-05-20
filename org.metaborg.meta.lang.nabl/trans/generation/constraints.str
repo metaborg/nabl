@@ -11,7 +11,7 @@ rules
   
   constraints-to-tasks(|bound*, i, j):
     ([], repl*) -> ([], repl*)
-   	  
+      
   constraints-to-tasks(|bound*, i, j):
     ([PropertyConstraint(term, kind, prop)|cs], repl*) -> ([task, match-task*, task*], r*)
     where
@@ -66,27 +66,27 @@ rules
     ; (task*, r*) := <constraints-to-tasks(|<union> (bound*, bind*), i, <inc> j)> (cs, [match-repl*, repl*])
             
   unbound-var(|bound*) =
-  	?Var(v); 
-  	where(
-  		<not(elem)> (Var(v), bound*)
+    ?Var(v); 
+    where(
+      <not(elem)> (Var(v), bound*)
     )
   
   constraints-to-match-rules(|bound*, i, j):
-  	[] -> []
+    [] -> []
   
   constraints-to-match-rules(|bound*, i, j):
     [PropertyConstraint(term, kind, prop)|cs] -> <constraints-to-match-rules(|bound*, i, <inc> j)> cs
     where 
-    	<unbound-var(|bound*)> prop
+      <unbound-var(|bound*)> prop
     
   constraints-to-match-rules(|bound*, i, j):
-  	[PropertyConstraint(term, kind, prop)|cs] -> [rule1*, rule2*]
-  	where
-    	k      := <extend-index(|i)> j
+    [PropertyConstraint(term, kind, prop)|cs] -> [rule1*, rule2*]
+    where
+      k      := <extend-index(|i)> j
     ; bind*  := <bound-vars> prop
     ; match* := <isect> (bind*, bound*)
     ; rule1* := <map-with-index(match-rule(|k, prop, match*))> bind*
-	  ; rule2* := <constraints-to-match-rules(|<union> (bound*, bind*), i, <inc> j)> cs
+    ; rule2* := <constraints-to-match-rules(|<union> (bound*, bind*), i, <inc> j)> cs
 
   constraints-to-match-rules(|bound*, i, j):
     [RefPropertyConstraint(ns, term, kind, prop)|cs] -> [rule1*, rule2*]

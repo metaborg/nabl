@@ -1,5 +1,10 @@
 module NameBindingLanguage-Menus
 
+imports NameBindingLanguage-Menus.generated
+
+  // This file can be used to specify toolbar menus.
+  // See the imported file for a brief introduction and examples.
+
 menus
   
   menu: "Actions"
@@ -14,18 +19,18 @@ menus
     
     separator
     
-    submenu: "Show index"
+    submenu: "Show Index"
       action: "Project"            = debug-index-project (openeditor) (meta)
       action: "Partition"          = debug-index-partition (openeditor) (meta)
     end
     
-    submenu: "Show tasks"
+    submenu: "Show Tasks"
       action: "Project"            = debug-task-project (openeditor) (meta)
       action: "Partition"          = debug-task-partition (openeditor) (meta)
       action: "Selection"          = debug-task-selection (openeditor) (meta)
     end
     
-    submenu: "Show analysis"
+    submenu: "Show Analysis"
       action: "Project"            = debug-project (openeditor) (meta)
       action: "Partition"          = debug-partition (openeditor) (meta)
     end

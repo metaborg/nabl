@@ -16,42 +16,39 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
     
-  binding-to-use-rule(|bound*, task*, repl*):
-    (i, BindingRule(pattern, constr*, clause*)) -> USE_RULE(pattern, seq)
+  binding-to-use-rule(|var*, r):
+    BindingRule(pattern, _, clause*) -> USE_RULE(pattern, seq)
     where 
-      use-clause* := <filter-with-index(to-use-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
-    ; seq         := <to-seq> [task*, use-clause*]
+      use-clause* := <filter(to-use-clauses(|var*, r, pattern)); nonempty> clause*
+    ; seq         := <to-seq> use-clause*
       
-  to-use-clauses(|pattern, bound*, repl*, i):
-    (j, clause) -> [clause*, cong]
+  to-use-clauses(|var*, r, pattern):
+    clause -> cong
     where
       RefClause(part*)    := clause
     + ImportClause(part*) := clause
-    where
-      k        := <extend-index(|i)> j
-    ; (clause*, candidate*) 
-               := <filter-with-index(to-use-candidate(|bound*, repl*, k)); unzip; (concat, id)> part*
+    where // might fail if an import clause has no name in it
+      c*       := <filter(to-use-candidate(|var*, r))> part*
     ; term     := <use-to-name> clause
-    ; use-call := USE_CALL(candidate*)
+    ; use-call := USE_CALL(c*)
     ; cong     := <add-force-origins; replace-all-id(|[(term, use-call)])> pattern
   
-  to-use-candidate(|bound*, glob-repl*, i):
-    (j, part) -> (task*, CANDIDATE(ns-term, prop-term*, ctx-term, wci, dep*))
+  to-use-candidate(|var*, r):
+    part -> CANDIDATE(dep*, task, ns-term, prop-term*, ctx-term, wci, [])
     where
-      (RefClausePart(disamb, ns, term, prop*, ctx, constr*)                            := part; import-ns* := [])
-    + (SingleImport(disamb, ns, term, prop*, ctx, alias, _, constr*)                   := part; import-ns* := [])
-    + WildcardImport(import-ns*, _, Context(disamb, ns, term, prop*, ctx), _, constr*) := part
-    where
-      ns-term        := <ns-to-term> ns
-    ; k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; prop-term*     := <map(prop-pattern-to-str(|[]); replace-all(|repl*))> prop*
-    ; ctx-term       := <scope-to-term; replace-all(|repl*)> ctx
-    ; dep*           := <map(Snd)> repl*
-    ; wci            := <part-to-wildcardimport(|import-ns*)> part
+      (RefClausePart(disamb, ns, term, prop*, ctx, f)                            := part; import-ns* := [])
+    + (SingleImport(disamb, ns, term, prop*, ctx, alias, _, f)                   := part; import-ns* := [])
+    + WildcardImport(import-ns*, _, Context(disamb, ns, term, prop*, ctx), _, f) := part
+    with
+      ns-term    := <ns-to-term> ns
+    ; task       := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; dep*       := <diff; map(?Var(<id>))> (fvar*, var*)
+    ; prop-term* := <map(prop-pattern-to-str(|[]))> prop*
+    ; ctx-term   := <scope-to-term> ctx
+    ; wci        := <part-to-wildcardimport(|import-ns*)> part
+    
+  prop-pattern-to-str(|dependencies): PropertyPattern(type, p, t) -> PROPERTY(<prop-to-term> p, t, dependencies) 
   
-  prop-pattern-to-str(|dependencies): PropertyPattern(type, p, t) -> PROPERTY(<nabl-to-str> p, t, dependencies) 
-
   part-to-wildcardimport(|import-ns*):
     RefClausePart(_, _, _, _, _, _) -> TERM("True")
 
@@ -68,26 +65,25 @@ rules
     where
       not(<collect-one(?ns)> import-ns*)
 
-  to-match-rules(|bound*, i):
-    (j, RefClause(part*)) -> rule*
-    where
-      k      := <extend-index(|i)> j
-    ; rule*  := <map-with-index(to-match-rules(|bound*, k)); concat> part*
-  
-  to-match-rules(|bound*, i):
-    (j, RefClausePart(disamb, ns, term, prop*, scope, constr*)) -> rule*
-    where
-      k     := <extend-index(|i)> j
-    ; rule* := <constraints-to-match-rules(|bound*, k, 1)> constr*
+  // to-match-rules(|bound*, i):
+  //   (j, RefClause(part*)) -> rule*
+  //   where
+  //     k      := <extend-index(|i)> j
+  //   ; rule*  := <map-with-index(to-match-rules(|bound*, k)); concat> part*
+  // 
+  // to-match-rules(|bound*, i):
+  //   (j, RefClausePart(disamb, ns, term, prop*, scope, constr*)) -> rule*
+  //   where
+  //     k     := <extend-index(|i)> j
+  //   ; rule* := <constraints-to-match-rules(|bound*, k, 1)> constr*
 
 overlays
      
   USE_RULE(pattern, body) =
-  SDefT(
+  STRATEGY(
     "nabl-use-site"
-  , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
 		, DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
@@ -96,17 +92,16 @@ overlays
   )
   
   USE_CALL(candidates) =
-  CallT(
-    SVar("nabl-use")
-  , []
+  CALL(
+    "nabl-use"
   , [ Var("lang__")
-    , Var("partition__")
+    , CTX()
 		, Var("uniques__")
     , Var("uris__")
     , LIST(candidates)
     ] 
   )
   
-  CANDIDATE(ns, ps, ctx, wci, deps) =
-  TERM("UseCandidate", [ns, LIST(ps), ctx, wci, LIST(deps)])
+  CANDIDATE(vs, task, ns, ps, ctx, wci, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("UseCandidate", [ns, LIST(ps), ctx, wci, LIST(deps)])))))
   

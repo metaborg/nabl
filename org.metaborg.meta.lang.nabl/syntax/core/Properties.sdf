@@ -1,0 +1,20 @@
+module core/Properties
+imports common/Identifiers terms/Vars terms/Terms formulas/Formulas
+        core/Bindings
+
+exports
+  lexical syntax
+    Id                  -> PropertyID 
+    "<" [A-Za-z\-]* ":" -> Relation   
+
+  context-free syntax
+    "properties" PropertyDef* PropertyRule*                                      -> ModuleSection {cons("Properties")}
+    RuleID ":" Pattern "defines" VarRef "has" PropertyRef VarRef "where" Formula -> PropertyRule  {cons("Property")}
+    Pattern "defines" Term Relation Term "where" Formula                         -> RelationRule  {cons("Property")}
+    PropertyID                                                                   -> PropertyRef   {cons("PropRef")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> PropertyRule  {cons("COMPLETION-PropertyRule")}
+    CONTENTCOMPLETE -> RelationRule  {cons("COMPLETION-RelationRule")}
+    CONTENTCOMPLETE -> PropertyRef   {cons("COMPLETION-PropertyRef")}

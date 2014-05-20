@@ -1,0 +1,337 @@
+module names
+
+imports
+  lib/runtime/nabl/-
+  lib/runtime/task/-
+  lib/runtime/properties/-
+  lib/runtime/types/-
+  lib/runtime/relations/-
+  lib/runtime/editor/-
+  include/NameBindingLanguage
+
+
+signature
+  constructors
+    NablNsModule    : Namespace
+    NablNsNamespace : Namespace
+    NablNsProperty  : Namespace
+    NablNsVariable  : Namespace
+
+
+signature
+  constructors
+    
+
+
+rules
+
+  nabl-custom-properties(add-properties) =
+    ![] ; add-properties
+
+
+rules
+
+  nabl-get-name :
+    Module(m, _) -> m
+
+  nabl-name-apply(s) =
+    Module(s, id)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Module(m, _)
+    ; Module(
+        nabl-def(
+          ?c-uri1__
+        , ?s-uri1__
+        | lang__
+        , ctx__
+        , uniques__
+        , uri__
+        , uri__
+        , NablNsModule()
+        , Unique()
+        , Current()
+        , []
+        , []
+        )
+      , id
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-get-name :
+    NamespaceDef(n) -> n
+
+  nabl-name-apply(s) =
+    NamespaceDef(s)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?NamespaceDef(n)
+    ; NamespaceDef(
+        nabl-def(
+          ?c-uri1__
+        , ?s-uri1__
+        | lang__
+        , ctx__
+        , uniques__
+        , uri__
+        , uri__
+        , NablNsNamespace()
+        , NonUnique()
+        , Current()
+        , []
+        , []
+        )
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-get-name :
+    NamespaceRef(n) -> n
+
+  nabl-name-apply(s) =
+    NamespaceRef(s)
+
+  nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?NamespaceRef(n)
+    ; NamespaceRef(
+        nabl-use(
+        | lang__
+        , ctx__
+        , uniques__
+        , uris__
+        , [ <{:
+               id
+               ; !UseCandidate(
+                    NablNsNamespace()
+                  , []
+                  , Current()
+                  , True()
+                  , []
+                  )
+             }>
+          ]
+        )
+      )
+
+  nabl-get-name :
+    PropertyDef(p, ns, t) -> p
+
+  nabl-name-apply(s) =
+    PropertyDef(s, id, id)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?PropertyDef(p, ns, t)
+    ; PropertyDef(
+        nabl-def(
+          ?c-uri1__
+        , ?s-uri1__
+        | lang__
+        , ctx__
+        , uniques__
+        , uri__
+        , uri__
+        , NablNsProperty()
+        , NonUnique()
+        , Current()
+        , []
+        , []
+        )
+      , id
+      , id
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-prop-site(|lang__, ctx__, uris__, states__, implicits__) =
+    ?PropertyDef(p, ns, t)
+    ; (id
+       ; PropertyDef(
+           nabl-store-props(
+           | ctx__
+           , [ Prop(
+                 Type()
+               , (ns, t)
+               , []
+               )
+             ]
+           )
+         , id
+         , id
+         ))
+    ; fail
+
+  nabl-get-name :
+    PropertyRef(p) -> p
+
+  nabl-name-apply(s) =
+    PropertyRef(s)
+
+  nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?PropertyRef(p)
+    ; PropertyRef(
+        nabl-use(
+        | lang__
+        , ctx__
+        , uniques__
+        , uris__
+        , [ <{:
+               id
+               ; !UseCandidate(
+                    NablNsProperty()
+                  , []
+                  , Current()
+                  , True()
+                  , []
+                  )
+             }>
+          ]
+        )
+      )
+
+  nabl-scoping-site =
+    ?BindingRule(_, _, _)
+    ; nabl-scope(|[NablNsVariable()])
+
+  nabl-get-scope =
+    ?BindingRule(_, _, _)
+    ; ![NablNsVariable()]
+
+  nabl-scoping-site =
+    ?RefClausePart(_, _, _, _, _, _)
+    ; nabl-scope(|[NablNsVariable()])
+
+  nabl-get-scope =
+    ?RefClausePart(_, _, _, _, _, _)
+    ; ![NablNsVariable()]
+
+  nabl-scoping-site =
+    ?WildcardImport(_, _, _, _, _)
+    ; nabl-scope(|[NablNsVariable()])
+
+  nabl-get-scope =
+    ?WildcardImport(_, _, _, _, _)
+    ; ![NablNsVariable()]
+
+  nabl-scoping-site =
+    ?SingleImport(_, _, _, _, _, _, _, _)
+    ; nabl-scope(|[NablNsVariable()])
+
+  nabl-get-scope =
+    ?SingleImport(_, _, _, _, _, _, _, _)
+    ; ![NablNsVariable()]
+
+  nabl-get-name :
+    Var(x) -> x
+
+  nabl-name-apply(s) =
+    Var(s)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Var(x)
+    ; Var(
+        nabl-def(
+          ?c-uri1__
+        , ?s-uri1__
+        | lang__
+        , ctx__
+        , uniques__
+        , uri__
+        , uri__
+        , NablNsVariable()
+        , Unique()
+        , Current()
+        , []
+        , []
+        )
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-get-name :
+    ListVar(x) -> x
+
+  nabl-name-apply(s) =
+    ListVar(s)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?ListVar(x)
+    ; ListVar(
+        nabl-def(
+          ?c-uri1__
+        , ?s-uri1__
+        | lang__
+        , ctx__
+        , uniques__
+        , uri__
+        , uri__
+        , NablNsVariable()
+        , Unique()
+        , Current()
+        , []
+        , []
+        )
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-get-name :
+    VarRef(x) -> x
+
+  nabl-name-apply(s) =
+    VarRef(s)
+
+  nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?VarRef(x)
+    ; VarRef(
+        nabl-use(
+        | lang__
+        , ctx__
+        , uniques__
+        , uris__
+        , [ <{:
+               id
+               ; !UseCandidate(
+                    NablNsVariable()
+                  , []
+                  , Current()
+                  , True()
+                  , []
+                  )
+             }>
+          ]
+        )
+      )
+
+  nabl-get-name :
+    ListVarRef(x) -> x
+
+  nabl-name-apply(s) =
+    ListVarRef(s)
+
+  nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?ListVarRef(x)
+    ; ListVarRef(
+        nabl-use(
+        | lang__
+        , ctx__
+        , uniques__
+        , uris__
+        , [ <{:
+               id
+               ; !UseCandidate(
+                    NablNsVariable()
+                  , []
+                  , Current()
+                  , True()
+                  , []
+                  )
+             }>
+          ]
+        )
+      )

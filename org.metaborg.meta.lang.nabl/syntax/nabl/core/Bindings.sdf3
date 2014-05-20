@@ -1,0 +1,94 @@
+module Bindings
+
+imports 
+
+  terms/Terms
+  nabl/core/Namespaces
+  
+lexical syntax 
+
+  Keyword = "binding"
+  Keyword = "rules"
+  
+templates 
+    
+  ModuleSection.BindingRules = <
+  binding rules
+    <BindingRule*>
+  >
+  
+  BindingRule.BindingRule = <
+  <Pattern> <BindingClause>> 
+
+templates 
+
+  BindingClause.DefClause = <
+    <DefKind> defines <Unique> <NamespaceRef> <Term> <InDefScopes>
+  > 
+  
+  DefKind.Explicit = <explicitly>
+  DefKind.Implicit = <implicitly>
+  
+  Unique.Unique    = <unique>
+  Unique.NonUnique = <non-unique>
+
+  InDefScopes.Current   = <in current scope>
+  InDefScopes           = <in <DefScopes>>   {bracket}
+  
+  DefScopes.DefScopes   = <<DefScope+; separator=", ">> 
+  DefScope.Subsequent   = <subsequent scope>
+  DefScope.DefScope     = <term <Term>>
+ 
+templates 
+    
+  BindingClause.NamedScopeClause = <
+    <NamespaceRef> <Term> scopes <NamespaceRef>
+  > 
+  
+  BindingClause.AnonymousScopeClause = <
+    anonymously scopes <NamespaceRef>
+  > 
+
+templates 
+  
+  BindingClause.RefClause     = <
+    <RefClausePart+; separator="otherwise">
+  >
+    
+  RefClausePart.RefClausePart = <
+  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraints>>
+  
+  InRefScope.Current    = <in current scope>
+  InRefScope            = <in <RefScope>>    {bracket}
+
+  RefScope.Enclosing  = <enclosing <NamespaceRef>>
+  RefScope.Context    = <<Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope>>
+  RefScope.RefScope   = <<Term>>
+  
+  Disambiguator.All   = <>
+  Disambiguator.Best  = <best>
+
+templates
+
+  BindingClause.ImportClause = <
+    <ImportClausePart+; separator="otherwise\n">
+  > 
+  
+  ImportClausePart.SingleImport = <
+  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraints>>             
+
+  ImportClausePart.WildcardImport = <
+  imports <NamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
+  
+  Alias.None  = <>
+  Alias.Alias = <as <Term>>
+
+templates // scopes
+
+  IntoDefScopes.Current = <>
+  IntoDefScopes         = <into <DefScopes>> {bracket}
+
+  
+  FromRefScope.Current   = <>
+  FromRefScope           = <from <RefScope>>  {bracket}
+  

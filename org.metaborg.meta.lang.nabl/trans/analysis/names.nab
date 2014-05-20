@@ -2,7 +2,7 @@ module names
 
 imports 
 
-  include/NameBindingLanguage
+	include/NameBindingLanguage
 
 namespaces
  
@@ -44,7 +44,10 @@ binding rules
 	RefClausePart(_, _, _, _, _, _):
 		scopes Variable
 	
-	Filters(_):
+	WildcardImport(_, _, _, _, _):
+	  scopes Variable
+	
+	SingleImport(_, _, _, _, _, _, _, _):
 	  scopes Variable
 	  
 	Var(x):

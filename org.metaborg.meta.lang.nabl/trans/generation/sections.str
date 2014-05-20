@@ -7,223 +7,23 @@ imports
   lib/editor-common.generated
   
   generation/-
-    
-rules // namespaces 
-      
-  section-to-str:
-    Namespaces(namespaces) -> [Signature([Constructors(<map(ns-to-constructor)> namespaces)])]
-    
-  ns-to-constructor: // generates constructors for namespaces
-    NamespaceDef(ns) -> CONS_DECL(<ns-name> ns, "Namespace")
-  
-  ns-to-term: NamespaceRef(ns) -> TERM(<ns-name> ns)
-
-  ns-name: ns -> $[NablNs[ns]]
-  
-rules // properties
-        
-  section-to-str:
-    Properties(prop*) -> [Signature([Constructors(cons*)]), Rules([rule, rule*])]
-    where
-    	cons* := <map(propdef-to-str)> prop*
-    ; rule  := SDef("nabl-custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(?PropertyDef(<id>, _, _); ns-prop-name-to-str; !TERM(<id>))> prop*)), CallNoArgs(SVar("add-properties"))))
-    ; rule* := <mapconcat(prop-to-rules)> prop*
-  
-  propdef-to-str: // generate constructors for properties
-    PropertyDef(p, _, _) -> CONS_DECL(<ns-prop-name-to-str> p, "Property") 
-
-  nabl-to-str: PropertyRef(p) -> TERM(<ns-prop-name-to-str> p)
-  nabl-to-str: TypeProp()     -> TERM("Type")
-
-  ns-prop-name-to-str: p -> $[NablProp_[p]]
-
-  prop-to-rules:
-  	PropertyDef(p, _, _) -> PROP_RULES(p, TERM(<ns-prop-name-to-str> p), $[[p]-task], $[[p]-is], $[[p]-list], $[[p]-lookup], $[[p]-match], $[create-[p]-task], $[get-[p]], $[store-[p]])
-  	
-overlays
-	
-	PROP_RULES(p, pt, p-task, p-is, p-list, p-lookup, p-match, create-p, get-p, store-p) =
-	[ SDefT(
-	    p-is
-	  , []
-	  , [DefaultVarDec("task*")]
-	  , CallT(
-	      SVar("nabl-prop-calc")
-	    , []
-	    , [Var("task*"), NoAnnoList(List([]))]
-	    )
-	  )
-	, SDefT(
-      p-task
-    , []
-    , [DefaultVarDec("task*")]
-    , CallT(
-        SVar("get-or-create-property-task")
-      , []
-      , [Var("task*"), pt]
-      )
-    )
-  , SDefT(
-      p-is
-    , []
-    , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-    , CallT(
-        SVar("nabl-prop-calc")
-      , []
-      , [Var("task*"), Var("dep*")]
-      )
-    )
-  , SDefT(
-      p-list
-    , []
-    , [DefaultVarDec("task*")]
-    , CallT(
-        SVar("nabl-prop-list")
-      , []
-      , [Var("task*"), NoAnnoList(List([]))]
-      )
-    )
-  , SDefT(
-      p-list
-    , []
-    , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-    , CallT(
-        SVar("nabl-prop-list")
-      , []
-      , [Var("task*"), Var("dep*")]
-      )
-    )
-  , SDefT(
-	    p-lookup
-	  , []
-	  , [DefaultVarDec("task*")]
-	  , CallT(
-	      SVar("nabl-prop-lookup")
-	    , []
-	    , [ pt
-	      , Var("task*")
-	      , NoAnnoList(List([]))
-	      ]
-	    )
-	  )
-	, SDefT(
-	    p-lookup
-	  , []
-	  , [DefaultVarDec("task*"), DefaultVarDec("dep*")]
-	  , CallT(
-	      SVar("nabl-prop-lookup")
-	    , []
-	    , [ pt
-	      , Var("task*")
-	      , Var("dep*")
-	      ]
-	    )
-	  )
-	, SDefT(
-      p-match
-    , []
-    , [DefaultVarDec("task*"), DefaultVarDec("expected")]
-    , CallT(
-        SVar("nabl-prop-match")
-      , []
-      , [pt, Var("task*"), TERM("Eq"), Var("expected")]
-      )
-    )
-  , SDefT(
-      p-match
-    , []
-    , [DefaultVarDec("task*"), DefaultVarDec("relation"), DefaultVarDec("expected")]
-    , CallT(
-        SVar("nabl-prop-match")
-      , []
-      , [pt, Var("task*"), Var("relation"), Var("expected")]
-      )
-    )
-  , SDefT(
-      create-p
-    , []
-    , [DefaultVarDec("task*")]
-    , Fail()
-    )
-  , SDefNoArgs(
-	    get-p
-	  , CallT(
-	      SVar("get-property")
-	    , []
-	    , [pt]
-	    )
-	  )
-	, SDefT(
-		  store-p
-		, []
-		, [DefaultVarDec("partition"), DefaultVarDec("prop")]
-		, CallT(
-		    SVar("nabl-store-prop")
-		  , []
-		  , [ Var("partition")
-		    , TERM("Prop", [pt, Var("prop"), LIST([])])
-		    ]
-		  )
-		)
-  , RDefT(
-		  "create-property-task"
-		, []
-		, [DefaultVarDec("partition"), DefaultVarDec("kind")]
-		, Rule(
-		    NoAnnoList(
-		      Var("term")
-		    )
-		  , App(
-		      CallT(SVar(create-p), [], [Var(ListVar("partition"))])
-		    , Var("term")
-		    )
-		  , Assign(pt, Var("kind"))
-		  )
-	  )
-	]
-
-rules // imports
-    
-  section-to-str:
-  	Imports(import*) -> <MkSingleton> Imports(import*)
-  	
+        	
 rules // binding rules
 
-  section-to-str:
-    BindingRules(rs) -> [Rules(<map-with-index(to-rules); concat; nonempty> rs)]
+  rules-to-str:
+    BindingRules(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
-  to-rules:
-    (i, rule@BindingRule(pattern, constr*, clause*)) -> [b*, n*, a*, d*, p*, u*, f*, i*, m1*, m2*, msg*]
+  to-str-rules:
+  rule@BindingRule(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, b*, r*]
     with 
-       b* := <binding-to-scope-rules> rule 
-    <+ b* := [] 
-    with 
-       n* := [<binding-to-name-rule> rule] 
-    <+ n* := []
-    with 
-       a* := [<binding-to-apply-rule> rule] 
-    <+ a* := [] 
-    with
-       d* := <binding-to-def-rules> rule 
-    <+ d* := [] 
-    with
-       bound*         := <bound-vars> pattern
-     ; (task*, repl*) := <constraints-to-tasks(|bound*, i, 0)> (constr*, [])
-    with 
-       p* := [<binding-to-prop-rule(|bound*, task*, repl*)>]
-    <+ p* := []
-    with 
-       u* := [<binding-to-use-rule(|bound*, task*, repl*)>]
-    <+ u* := []
-    with 
-       f* := <binding-to-filter-rules(|bound*, task*, repl*)>
-    with 
-       i* := [<binding-to-import-rule(|bound*, task*, repl*)>]
-    <+ i* := []
-    with
-       m1* := <constraints-to-match-rules(|bound*, i, 0)> constr*
-     ; m2* := <filter-with-index(to-match-rules(|bound*, i)); concat> clause*
-    with 
-       msg* := [<binding-to-msg-rule(|bound*, task*, repl*)>]
-    <+ msg* := []
-    
+      s* := <binding-to-scope-rules <+ ![]> rule
+    ; n* := <binding-to-name-rules <+ ![]> rule
+    ; d* := <binding-to-def-rules <+ ![]> rule
+    ; v* := <collect-all(?Var(_) + ?ListVar(_))> pattern
+    ; r  := <new-iset>
+    ; p* := <binding-to-prop-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; u* := <binding-to-use-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; i* := <binding-to-import-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; f* := <binding-to-filter-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; b* := <binding-to-disambiguation-rule(|v*, r); MkSingleton <+ ![]> rule
+    ; r* := <iset-elements> r

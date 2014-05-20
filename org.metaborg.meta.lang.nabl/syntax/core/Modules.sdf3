@@ -1,4 +1,4 @@
-module Modules
+module core/Modules
 
 templates
     
@@ -6,7 +6,7 @@ templates
   	<module <ModuleID> 
     
     <ModuleSection*>>
-    
+
   ModuleSection.Imports = <
     imports <ImportModule*>>
 
@@ -27,4 +27,3 @@ lexical syntax
 lexical restrictions
   
   ModuleID -/- [a-zA-Z0-9\'\.\-\_]
-  

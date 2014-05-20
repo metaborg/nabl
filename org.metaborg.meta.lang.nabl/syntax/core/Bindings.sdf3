@@ -1,0 +1,51 @@
+module core/Bindings
+
+imports 
+  common/Identifiers
+  terms/Terms
+  terms/Vars
+  core/Namespaces
+  core/Scopes
+  formulas/Formulas
+  
+lexical syntax
+
+  RuleID = Id
+  
+templates
+
+  ModuleSection.Bindings = <
+	  binding rules
+	    <BindingRule*>
+	  >
+  
+  BindingRule.Binding = <
+	  <RuleID>:
+	    <Pattern>
+	      <BindingClause>
+	  >
+  
+  BindingClause.Defines = <
+    defines <Unique> <NamespaceRef> <VarRef> 
+         in <Scope>
+    >
+  
+  Unique.Unique    = <unique>
+  Unique.NonUnique = <non-unique>
+
+  BindingClause.RefersTo = <
+    refers to <NamespaceRef> <VarRef> 
+           in <Scope>
+        where <Formula>
+    >
+
+  BindingClause.Alias = <
+    imports <VarRef>
+         as <VarRef>
+    >
+  
+  BindingClause.Wildcard = <
+    imports <NamespaceRef>
+       from <Scope>
+       into <Scope>
+    >

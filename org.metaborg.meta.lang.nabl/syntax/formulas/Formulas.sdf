@@ -1,0 +1,18 @@
+module formulas/Formulas
+imports terms/Terms formulas/Propositions
+
+exports
+  context-free syntax
+    Proposition           -> Formula 
+    "not" Formula         -> Formula {cons("Not")}
+    Formula "and" Formula -> Formula {cons("And"), left}
+    Formula "or" Formula  -> Formula {cons("Or"), left}
+    "(" Formula ")"       -> Formula {bracket}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Formula {cons("COMPLETION-Formula")}
+
+  context-free priorities
+    "not" Formula -> Formula >
+    Formula "and" Formula -> Formula >
+    Formula "or" Formula -> Formula

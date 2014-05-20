@@ -1,0 +1,13 @@
+module formulas/Messages
+
+imports
+  terms/Terms
+  
+templates
+  
+  Message.Message     = <<MessageKind> <Term> on <Term>>
+ 
+  MessageKind.Error   = <error>
+  MessageKind.Warning = <warning>
+  MessageKind.Note    = <note>
+  
