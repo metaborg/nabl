@@ -11,7 +11,7 @@ imports
 rules // binding rules
 
   rules-to-str:
-    BindingRules(rs) -> Rules(<mapconcat(to-str-rules)> rs)
+    Bindings(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
   to-str-rules:
   rule@BindingRule(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, b*, r*]

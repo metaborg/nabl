@@ -24,7 +24,7 @@ rules
     ; r* := <mapconcat(prop-to-rules)> p*
   
   prop-to-term: PropertyDef(p, _, _) -> TERM(<prop-name> p)
-  prop-to-term: PropertyRef(p)       -> TERM(<prop-name> p)
+  prop-to-term: PropRef(p)           -> TERM(<prop-name> p)
   prop-to-term: TypeProp()           -> TERM("Type")
 
   prop-name: p -> $[NablProp_[p]]

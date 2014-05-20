@@ -11,12 +11,12 @@ strategies
 rules
   
   normalize:
-    Module(name, section*) -> Module(name, [Imports(i*), Namespaces(ns*), Properties(p*), BindingRules(r*)])
+    Module(name, section*) -> Module(name, [Imports(i*), Namespaces(ns*), Properties(p*), Bindings(r*)])
     with
       i*  := <filterconcat(?Imports(<id>))> section*
     ; ns* := <filterconcat(?Namespaces(<id>))> section*
     ; p*  := <filterconcat(?Properties(<id>))> section*
-    ; r*  := <filterconcat(?BindingRules(<id>))> section*
+    ; r*  := <filterconcat(?Bindings(<id>))> section*
     
     
 rules
