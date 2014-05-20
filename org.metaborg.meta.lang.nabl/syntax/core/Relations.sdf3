@@ -1,0 +1,36 @@
+module core/Relations
+
+imports
+  common/Identifiers
+
+  terms/Terms
+  terms/Signatures
+    
+  core/Namespaces
+  // extends sort SectionKeyword from core/Modules
+  // extends sort BindingClause from core/Bindings
+
+  formulas/Formulas
+
+lexical syntax
+
+  SectionKeyword = "relations"
+
+  Relation       = "<" [A-Za-z\-]* ":" 
+ 
+templates
+
+  ModuleSection.Relations = <
+  relations   
+    <RelationDef*>
+  > 
+  
+  RelationDef.RelationDef = <
+    <Sort> <Relation> <Sort>
+  >
+    
+  BindingClause.Relation = [
+       => [Term] [Relation] [Term]
+    where [Formula]  
+  ]
+ 

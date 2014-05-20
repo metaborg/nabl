@@ -1,0 +1,18 @@
+module core/Relations
+imports common/Identifiers terms/Terms terms/Signatures core/Namespaces
+        formulas/Formulas
+
+exports
+  lexical syntax
+    "relations"         -> SectionKeyword 
+    "<" [A-Za-z\-]* ":" -> Relation       
+
+  context-free syntax
+    "relations" RelationDef*                -> ModuleSection {cons("Relations")}
+    Sort Relation Sort                      -> RelationDef   {cons("RelationDef")}
+    "=>" Term Relation Term "where" Formula -> BindingClause {cons("Relation")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> RelationDef   {cons("COMPLETION-RelationDef")}
+    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}
