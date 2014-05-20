@@ -2,15 +2,22 @@ module core/Bindings
 
 imports 
   common/Identifiers
+
   terms/Terms
   terms/Vars
+  terms/Constants
+
   core/Namespaces
   core/Scopes
+  // extends sort SectionKeyword from core/Modules
+
   formulas/Formulas
   
 lexical syntax
 
-  RuleID = Id
+  RuleID         = Id
+  
+  SectionKeyword = "binding" {reject}
   
 templates
 
@@ -25,8 +32,13 @@ templates
 	      <BindingClause>
 	  >
   
-  BindingClause.Defines = <
+  BindingClause.VarDefines = <
     defines <Unique> <NamespaceRef> <VarRef> 
+         in <Scope>
+    >
+  
+  BindingClause.StringDefines = <
+    defines <Unique> <NamespaceRef> <String>
          in <Scope>
     >
   

@@ -2,36 +2,41 @@ module core/Properties
 
 imports
   common/Identifiers
+
   terms/Vars
-  terms/Terms
+  terms/Signatures
+    
+  core/Namespaces
+  // extends sort SectionKeyword from core/Modules
+  // extends sort BindingClause from core/Bindings
+
   formulas/Formulas
-  core/Bindings
-  
+
 lexical syntax
 
-  PropertyID = Id
-  Relation   = "<" [A-Za-z\-]* ":" 
- 
+  PropertyID     = Id
+  PropertyID     = "type" {reject}
+  
+  SectionKeyword = "properties"
+
 templates
 
   ModuleSection.Properties  = <
   properties   
     <PropertyDef*>
-    <PropertyRule*>
   > 
   
-  PropertyRule.Property = <
-    <RuleID> :
-      <Pattern>
-      defines <VarRef> has <PropertyRef> <VarRef>
-        where <Formula>  
-  >
+  PropertyDef.PropertyDef = <
+  <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
   
-  RelationRule.Property = <
-    <Pattern> 
-      defines <Term> <Relation> <Term>
-        where <Formula>  
-  >
+  PropertyRef.TypeProp    = <type>  
+  PropertyRef.PropertyRef = <<PropertyID>>
+
+templates
+
+  BindingClause.Property = [
+       => [NamespaceRef] [VarRef] has [PropertyRef] [VarRef]
+    where [Formula]
+  ]
   
-  PropertyRef.PropRef = <<PropertyID>>
   

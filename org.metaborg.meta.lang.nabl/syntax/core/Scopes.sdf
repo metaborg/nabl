@@ -1,5 +1,5 @@
 module core/Scopes
-imports common/Identifiers core/Namespaces terms/Vars
+imports common/Identifiers terms/Vars core/Namespaces
 
 exports
   lexical syntax
@@ -19,9 +19,9 @@ exports
     CONTENTCOMPLETE -> Scope      {cons("COMPLETION-Scope")}
 
   context-free syntax
-    Scope "scopes" NamespaceRef "at" "child" "nodes"      -> Clause {cons("ChildScope")}
-    Scope "scopes" NamespaceRef "at" "subsequent" "nodes" -> Clause {cons("SubsequentScope")}
-    "requires" NamespaceRef "scope" "at" VarRef           -> Clause {cons("NodeScope")}
+    Scope "scopes" NamespaceRef "at" "child" "nodes"      -> BindingClause {cons("ChildScope")}
+    Scope "scopes" NamespaceRef "at" "subsequent" "nodes" -> BindingClause {cons("SubsequentScope")}
+    "requires" NamespaceRef "scope" "at" VarRef           -> BindingClause {cons("NodeScope")}
 
   context-free syntax
-    CONTENTCOMPLETE -> Clause {cons("COMPLETION-Clause")}
+    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}

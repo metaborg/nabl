@@ -17,12 +17,11 @@ templates
 
 lexical syntax
 
-  ModuleID     = {ModuleIDPart "/"}+ 
+  ModuleID       = {ModuleIDPart "/"}+ 
+  ModuleID       = SectionKeyword {reject}
+  SectionKeyword = "imports"
+
   ModuleIDPart = [a-zA-Z\.\_] [a-zA-Z0-9\'\.\-\_]* 
-    
-  ModuleID = "rules"      {reject}
-  ModuleID = "namespaces" {reject}
-  ModuleID = "properties" {reject}
 
 lexical restrictions
   
