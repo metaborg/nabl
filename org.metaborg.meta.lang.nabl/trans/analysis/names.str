@@ -89,14 +89,14 @@ rules
     ; match(implicits__|[])
 
   nabl-get-name :
-    NamespaceRef(n) -> n
+    NamespaceRef(CurrentLanguage(), n) -> n
 
   nabl-name-apply(s) =
-    NamespaceRef(s)
+    NamespaceRef(CurrentLanguage(), s)
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
-    ?NamespaceRef(n)
-    ; NamespaceRef(
+    ?NamespaceRef(CurrentLanguage(), n)
+    ; NamespaceRef(CurrentLanguage(),
         nabl-use(
         | lang__
         , ctx__

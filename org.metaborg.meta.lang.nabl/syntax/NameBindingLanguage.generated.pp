@@ -2,7 +2,6 @@
    Namespaces                          -- V  [H  [KW["namespaces"]] _1],
    Namespaces.1:iter-star              -- _1,
    NamespaceDef                        -- _1,
-   NamespaceRef                        -- _1,
    NamespaceRef                        -- _1 _2,
    CurrentLanguage                     -- ,
    LanguageRef                         -- _1 KW["."],

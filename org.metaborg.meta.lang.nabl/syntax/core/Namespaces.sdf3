@@ -20,7 +20,6 @@ templates
     <<NamespaceID>
     >
   
-  NamespaceRef.NamespaceRef = <<NamespaceID>> // should be removed from core
   NamespaceRef.NamespaceRef = <<LanguageRef><NamespaceID>>
   
   LanguageRef.CurrentLanguage = <>
