@@ -96,8 +96,9 @@ rules
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
     ?NamespaceRef(CurrentLanguage(), n)
-    ; NamespaceRef(CurrentLanguage(),
-        nabl-use(
+    ; NamespaceRef(
+        CurrentLanguage()
+      , nabl-use(
         | lang__
         , ctx__
         , uniques__
@@ -148,7 +149,7 @@ rules
 
   nabl-prop-site(|lang__, ctx__, uris__, states__, implicits__) =
     ?PropertyDef(p, ns, t)
-    ; (id
+    ; (where(id)
        ; PropertyDef(
            nabl-store-props(
            | ctx__
