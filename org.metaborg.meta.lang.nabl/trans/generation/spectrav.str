@@ -119,7 +119,12 @@ rules // Topdown traversal
 				  MATCH(Var("child-uris-up"), Var("child-uri*"))
 				]
 			else
-				result := <to-seq> [MATCH(Var("sibling-uris"), Var("uri*")), MATCH(Match(Var("child-uri*")), Var("uri'*"))]
+				result := <to-seq> [
+					MATCH(Var("sibling-uris"), Var("uri*")), 
+					MATCH(Match(Var("child-uri*")), Var("uri'*")),
+					MATCH(Var("child-uris-up"), Var("child-uri*")),
+					MATCH(Var("implicits-up"), NoAnnoList(List([])))
+				]
 			end
 
 rules // Bottomup traversal
