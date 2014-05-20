@@ -89,15 +89,16 @@ rules
     ; match(implicits__|[])
 
   nabl-get-name :
-    NamespaceRef(n) -> n
+    NamespaceRef(CurrentLanguage(), n) -> n
 
   nabl-name-apply(s) =
-    NamespaceRef(s)
+    NamespaceRef(CurrentLanguage(), s)
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
-    ?NamespaceRef(n)
+    ?NamespaceRef(CurrentLanguage(), n)
     ; NamespaceRef(
-        nabl-use(
+        CurrentLanguage()
+      , nabl-use(
         | lang__
         , ctx__
         , uniques__
@@ -148,7 +149,7 @@ rules
 
   nabl-prop-site(|lang__, ctx__, uris__, states__, implicits__) =
     ?PropertyDef(p, ns, t)
-    ; (id
+    ; (where(id)
        ; PropertyDef(
            nabl-store-props(
            | ctx__
@@ -165,14 +166,14 @@ rules
     ; fail
 
   nabl-get-name :
-    PropertyRef(p) -> p
+    PropRef(p) -> p
 
   nabl-name-apply(s) =
-    PropertyRef(s)
+    PropRef(s)
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
-    ?PropertyRef(p)
-    ; PropertyRef(
+    ?PropRef(p)
+    ; PropRef(
         nabl-use(
         | lang__
         , ctx__

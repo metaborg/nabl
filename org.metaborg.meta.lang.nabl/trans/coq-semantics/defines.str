@@ -10,7 +10,7 @@ imports
 rules
   
   defines-to-coq(|c, pattern):
-    DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), [], Current(), []) ->
+    DefClause(Explicit(), Unique(), NamespaceRef(CurrentLanguage(), ns), VarRef(x), [], Current(), []) ->
       ConsDecl($[[c]_defines_[ns]], [Bind(x), binder*], coq-term-type)
     where
       (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern

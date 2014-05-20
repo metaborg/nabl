@@ -41,7 +41,7 @@ rules // namespaces
 rules // binding rules
   
   section-to-coq:
-    BindingRules(r*) -> [scopes*, defines*, refers*]
+    Bindings(r*) -> [scopes*, defines*, refers*]
     with
       scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Product(Ref("term"), Product(Ref("NS"), Sort(Prop()))))> r*
     ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*

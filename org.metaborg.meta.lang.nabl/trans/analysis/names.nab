@@ -25,7 +25,7 @@ binding rules
 	NamespaceDef(n): 
 		defines non-unique Namespace n
 	
-	NamespaceRef(n): 
+	NamespaceRef(CurrentLanguage(), n): 
 		refers to Namespace n
 		
 binding rules
@@ -33,7 +33,7 @@ binding rules
 	PropertyDef(p, ns, t): 
 		defines non-unique Property p of type (ns, t)
 	
-	PropertyRef(p): 
+	PropRef(p): 
 		refers to Property p
 
 binding rules

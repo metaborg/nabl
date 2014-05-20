@@ -9,8 +9,6 @@ imports
 
 rules
   
-  outline-expand-to-level = !3
-  
   outline = simple-label-outline(to-outline-label)
   
   to-outline-label:
@@ -23,7 +21,7 @@ rules
   // 	Properties(_) -> "properties"
   	
   to-outline-label:
-  	r@BindingRules(_) -> "binding rules"
+  	r@Bindings(_) -> "binding rules"
   	
   to-outline-label:
   	BindingRule(pattern, _, _) -> <alltd(\ListVar(n) -> Var(n)\); pp-stratego-string> pattern
