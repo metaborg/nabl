@@ -166,14 +166,14 @@ rules
     ; fail
 
   nabl-get-name :
-    PropRef(p) -> p
+    PropertyRef(p) -> p
 
   nabl-name-apply(s) =
-    PropRef(s)
+    PropertyRef(s)
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
-    ?PropRef(p)
-    ; PropRef(
+    ?PropertyRef(p)
+    ; PropertyRef(
         nabl-use(
         | lang__
         , ctx__

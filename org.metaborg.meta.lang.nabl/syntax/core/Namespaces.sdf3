@@ -7,7 +7,9 @@ imports
 
 lexical syntax
 
-  NamespaceID = Id
+  NamespaceID    = Id
+  NamespaceID    = SectionKeyword {reject}
+  SectionKeyword = "namespaces"
                
 templates
 

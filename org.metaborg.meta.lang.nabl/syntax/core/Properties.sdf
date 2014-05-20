@@ -1,20 +1,30 @@
 module core/Properties
-imports common/Identifiers terms/Vars terms/Terms formulas/Formulas
-        core/Bindings
+imports common/Identifiers terms/Signatures terms/Vars terms/Terms
+        formulas/Formulas core/Bindings core/Namespaces
 
 exports
   lexical syntax
-    Id                  -> PropertyID 
-    "<" [A-Za-z\-]* ":" -> Relation   
+    Id                  -> PropertyID     
+    "type"              -> PropertyID     {reject}
+    SectionKeyword      -> PropertyID     {reject}
+    "properties"        -> SectionKeyword 
+    "<" [A-Za-z\-]* ":" -> Relation       
 
   context-free syntax
-    "properties" PropertyDef* PropertyRule*                                      -> ModuleSection {cons("Properties")}
-    RuleID ":" Pattern "defines" VarRef "has" PropertyRef VarRef "where" Formula -> PropertyRule  {cons("Property")}
-    Pattern "defines" Term Relation Term "where" Formula                         -> RelationRule  {cons("Property")}
-    PropertyID                                                                   -> PropertyRef   {cons("PropRef")}
+    "properties" PropertyDef*                    -> ModuleSection {cons("Properties")}
+    PropertyID "of" {NamespaceRef ","}+ ":" Sort -> PropertyDef   {cons("PropertyDef")}
+    "type"                                       -> PropertyRef   {cons("TypeProp")}
+    PropertyID                                   -> PropertyRef   {cons("PropertyRef")}
 
   context-free syntax
     CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
-    CONTENTCOMPLETE -> PropertyRule  {cons("COMPLETION-PropertyRule")}
-    CONTENTCOMPLETE -> RelationRule  {cons("COMPLETION-RelationRule")}
+    CONTENTCOMPLETE -> PropertyDef   {cons("COMPLETION-PropertyDef")}
     CONTENTCOMPLETE -> PropertyRef   {cons("COMPLETION-PropertyRef")}
+
+  context-free syntax
+    RuleID ":" Pattern "defines" VarRef "has" PropertyRef VarRef "where" Formula -> PropertyRule {cons("Property")}
+    Pattern "defines" Term Relation Term "where" Formula                         -> RelationRule {cons("Property")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> PropertyRule {cons("COMPLETION-PropertyRule")}
+    CONTENTCOMPLETE -> RelationRule {cons("COMPLETION-RelationRule")}

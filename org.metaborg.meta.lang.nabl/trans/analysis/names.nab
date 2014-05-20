@@ -33,7 +33,7 @@ binding rules
 	PropertyDef(p, ns, t): 
 		defines non-unique Property p of type (ns, t)
 	
-	PropRef(p): 
+	PropertyRef(p): 
 		refers to Property p
 
 binding rules

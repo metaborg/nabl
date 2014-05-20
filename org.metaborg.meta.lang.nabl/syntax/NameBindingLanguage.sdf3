@@ -10,6 +10,7 @@ imports
   formulas/Propositions
   core/Modules
   core/Namespaces
+  core/Properties
   
 context-free start-symbols
 
@@ -27,20 +28,9 @@ templates // namespaces
   
 templates // properties
 
-  ModuleSection.Properties = <
-  properties
-    <PropertyDef*>
-  >  
-    
-  PropertyDef.PropertyDef = <
-  <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
-  
   PropertyDef.QualityDef = <
   <PropertyID> of <NamespaceRef+; separator=", ">>
   
-  PropertyRef.TypeProp    = <type>  
-  PropertyRef.PropertyRef = <<PropertyID>>
-
   QualityRef.QualityRef = <<PropertyID>>
 
   PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
@@ -53,9 +43,8 @@ templates // properties
   
 lexical syntax
 
-  PropertyID = Id
-  PropertyID = "type"    {reject}
-  PropertyID = "quality" {reject}
+  PropertyID     = "quality" {reject}
+  SectionKeyword = "binding"
   
 templates // binding rules
     

@@ -3,7 +3,9 @@ imports common/Identifiers core/Modules
 
 exports
   lexical syntax
-    Id -> NamespaceID 
+    Id             -> NamespaceID    
+    SectionKeyword -> NamespaceID    {reject}
+    "namespaces"   -> SectionKeyword 
 
   context-free syntax
     "namespaces" NamespaceDef* -> ModuleSection {cons("Namespaces")}

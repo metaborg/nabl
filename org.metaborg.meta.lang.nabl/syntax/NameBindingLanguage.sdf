@@ -1,6 +1,7 @@
 module NameBindingLanguage
 imports common/Layout common/Identifiers terms/Signatures terms/Terms
         formulas/Formulas formulas/Propositions core/Modules core/Namespaces
+        core/Properties
 
 exports
   context-free start-symbols
@@ -21,35 +22,28 @@ exports
     "imported" -/- [a-zA-z]
 
   context-free syntax
-    "properties" PropertyDef*                    -> ModuleSection   {cons("Properties")}
-    PropertyID "of" {NamespaceRef ","}+ ":" Sort -> PropertyDef     {cons("PropertyDef")}
-    PropertyID "of" {NamespaceRef ","}+          -> PropertyDef     {cons("QualityDef")}
-    "type"                                       -> PropertyRef     {cons("TypeProp")}
-    PropertyID                                   -> PropertyRef     {cons("PropertyRef")}
-    PropertyID                                   -> QualityRef      {cons("QualityRef")}
-    "of" PropertyRef Term                        -> PropertyTerm    {cons("PropertyTerm")}
-    "of" "quality" QualityRef                    -> PropertyTerm    {cons("QualityTerm")}
-    "of" PropFilter PropertyRef Term             -> PropertyPattern {cons("PropertyPattern")}
-    "of" "quality" QualityRef                    -> PropertyPattern {cons("QualityPattern")}
-                                                 -> PropFilter      {cons("Equal")}
-    "conformant"                                 -> PropFilter      {cons("Conformant")}
+    PropertyID "of" {NamespaceRef ","}+ -> PropertyDef     {cons("QualityDef")}
+    PropertyID                          -> QualityRef      {cons("QualityRef")}
+    "of" PropertyRef Term               -> PropertyTerm    {cons("PropertyTerm")}
+    "of" "quality" QualityRef           -> PropertyTerm    {cons("QualityTerm")}
+    "of" PropFilter PropertyRef Term    -> PropertyPattern {cons("PropertyPattern")}
+    "of" "quality" QualityRef           -> PropertyPattern {cons("QualityPattern")}
+                                        -> PropFilter      {cons("Equal")}
+    "conformant"                        -> PropFilter      {cons("Conformant")}
 
   context-free syntax
-    CONTENTCOMPLETE -> ModuleSection   {cons("COMPLETION-ModuleSection")}
     CONTENTCOMPLETE -> PropertyDef     {cons("COMPLETION-PropertyDef")}
-    CONTENTCOMPLETE -> PropertyRef     {cons("COMPLETION-PropertyRef")}
     CONTENTCOMPLETE -> QualityRef      {cons("COMPLETION-QualityRef")}
     CONTENTCOMPLETE -> PropertyTerm    {cons("COMPLETION-PropertyTerm")}
     CONTENTCOMPLETE -> PropertyPattern {cons("COMPLETION-PropertyPattern")}
     CONTENTCOMPLETE -> PropFilter      {cons("COMPLETION-PropFilter")}
 
   lexical restrictions
-    "properties" "type" "of" "quality" "conformant" -/- [a-zA-z]
+    "of" "quality" "conformant" -/- [a-zA-z]
 
   lexical syntax
-    Id        -> PropertyID 
-    "type"    -> PropertyID {reject}
-    "quality" -> PropertyID {reject}
+    "quality" -> PropertyID     {reject}
+    "binding" -> SectionKeyword 
 
   context-free syntax
     "binding" "rules" BindingRule*         -> ModuleSection {cons("BindingRules")}

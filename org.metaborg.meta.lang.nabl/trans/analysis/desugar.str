@@ -12,10 +12,10 @@ rules
   nabl-desugar: QualityDef(q, ns*) -> PropertyDef(q, ns*, SortNoArgs("Quality"))
         
   nabl-desugar:
-    QualityTerm(QualityRef(q)) -> PropertyTerm(PropRef(q), NoAnnoList(Op("True", [])))
+    QualityTerm(QualityRef(q)) -> PropertyTerm(PropertyRef(q), NoAnnoList(Op("True", [])))
     
   nabl-desugar:
-    QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropRef(q), NoAnnoList(Op("True", [])))
+    QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropertyRef(q), NoAnnoList(Op("True", [])))
     
   // nabl-desugar:
   //   QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
