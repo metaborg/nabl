@@ -1,6 +1,6 @@
 module NaBLCore
-imports common/Layout common/Identifiers terms/Signatures terms/Vars
-        core/Modules
+imports common/Layout common/Identifiers terms/Terms core/Modules
+        core/Namespaces core/Bindings
 
 exports
   context-free start-symbols
@@ -46,62 +46,22 @@ exports
     "binding" "rules" -/- [a-zA-z]
 
   context-free syntax
-    DefKind "defines" Unique NamespaceRef Term "in" DefScopes                                               -> BindingClause    {cons("DefClause")}
-                                                                                                            -> DefKind          {cons("Explicit")}
-    "implicitly"                                                                                            -> DefKind          {cons("Implicit")}
-    "unique"                                                                                                -> Unique           {cons("Unique")}
-    "non-unique"                                                                                            -> Unique           {cons("NonUnique")}
-    "scopes" NamespaceRef                                                                                   -> BindingClause    {cons("ScopeClause")}
-    "non-transitively" "scopes" NamespaceRef                                                                -> BindingClause    {cons("NonTransitiveScopeClause")}
-    {RefClausePart "otherwise"}+                                                                            -> BindingClause    {cons("RefClause")}
-    "refers" "to" Disambiguator NamespaceRef Term PropertyPattern* InRefScope                               -> RefClausePart    {cons("RefClausePart")}
-    {ImportClausePart "otherwise"}+                                                                         -> BindingClause    {cons("ImportClause")}
-    "imports" Disambiguator NamespaceRef Term PropertyPattern* FromRefScope Alias IntoDefScopes Constraints -> ImportClausePart {cons("SingleImport")}
-    "imports" {RestrictedNamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints         -> ImportClausePart {cons("WildcardImport")}
-                                                                                                            -> Alias            {cons("None")}
-    "as" Term                                                                                               -> Alias            {cons("Alias")}
+    DefKind "defines" Unique NamespaceRef Term "in" DefScopes -> BindingClause {cons("DefClause")}
+                                                              -> DefKind       {cons("Explicit")}
+    "implicitly"                                              -> DefKind       {cons("Implicit")}
+    "unique"                                                  -> Unique        {cons("Unique")}
+    "non-unique"                                              -> Unique        {cons("NonUnique")}
+    "scopes" NamespaceRef                                     -> BindingClause {cons("ScopeClause")}
+    "non-transitively" "scopes" NamespaceRef                  -> BindingClause {cons("NonTransitiveScopeClause")}
 
   context-free syntax
-    CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
-    CONTENTCOMPLETE -> Unique           {cons("COMPLETION-Unique")}
-    CONTENTCOMPLETE -> RefClausePart    {cons("COMPLETION-RefClausePart")}
-    CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
-    CONTENTCOMPLETE -> ImportClausePart {cons("COMPLETION-ImportClausePart")}
-    CONTENTCOMPLETE -> Alias            {cons("COMPLETION-Alias")}
+    CONTENTCOMPLETE -> DefKind       {cons("COMPLETION-DefKind")}
+    CONTENTCOMPLETE -> Unique        {cons("COMPLETION-Unique")}
+    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}
 
   lexical restrictions
     "defines" "in" "implicitly" "unique" "non-unique" "non-transitively"
-    "scopes" "refers" "to" "imports" "as" -/- [a-zA-z]
-
-  context-free syntax
-    "into" DefScopes                                            -> IntoDefScopes {bracket}
-    "current" "scope"                                           -> DefScopes     {cons("Current")}
-    {DefScope ","}+                                             -> DefScopes     {cons("DefScopes")}
-    "subsequent" "scope"                                        -> DefScope      {cons("Subsequent")}
-    Term                                                        -> DefScope      {cons("DefScope")}
-                                                                -> InRefScope    {cons("Current")}
-    "in" RefScope                                               -> InRefScope    {bracket}
-                                                                -> FromRefScope  {cons("Current")}
-    "from" RefScope                                             -> FromRefScope  {bracket}
-    "current" "scope"                                           -> RefScope      {cons("Current")}
-    "enclosing" NamespaceRef                                    -> RefScope      {cons("Enclosing")}
-    Disambiguator NamespaceRef Term PropertyPattern* InRefScope -> RefScope      {cons("Context")}
-    Term                                                        -> RefScope      {cons("RefScope")}
-                                                                -> Disambiguator {cons("All")}
-    "best"                                                      -> Disambiguator {cons("Best")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> IntoDefScopes {cons("COMPLETION-IntoDefScopes")}
-    CONTENTCOMPLETE -> DefScopes     {cons("COMPLETION-DefScopes")}
-    CONTENTCOMPLETE -> DefScope      {cons("COMPLETION-DefScope")}
-    CONTENTCOMPLETE -> InRefScope    {cons("COMPLETION-InRefScope")}
-    CONTENTCOMPLETE -> FromRefScope  {cons("COMPLETION-FromRefScope")}
-    CONTENTCOMPLETE -> RefScope      {cons("COMPLETION-RefScope")}
-    CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
-
-  lexical restrictions
-    "into" "subsequent" "in" "from" "current" "scope" "enclosing" "best"
-    -/- [a-zA-z]
+    "scopes" -/- [a-zA-z]
 
   context-free syntax
     "where" {Constraint "and"}+                                         -> Constraints {bracket}

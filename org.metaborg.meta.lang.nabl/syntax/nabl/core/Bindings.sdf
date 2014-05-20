@@ -1,5 +1,5 @@
 module Bindings
-imports terms/Vars nabl/core/Namespaces
+imports terms/Terms nabl/core/Namespaces
 
 exports
   lexical syntax
@@ -62,7 +62,7 @@ exports
   context-free syntax
     {ImportClausePart "otherwise"}+                                                                         -> BindingClause    {cons("ImportClause")}
     "imports" Disambiguator NamespaceRef Term PropertyPattern* FromRefScope Alias IntoDefScopes Constraints -> ImportClausePart {cons("SingleImport")}
-    "imports" {RestrictedNamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints         -> ImportClausePart {cons("WildcardImport")}
+    "imports" {NamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints                   -> ImportClausePart {cons("WildcardImport")}
                                                                                                             -> Alias            {cons("None")}
     "as" Term                                                                                               -> Alias            {cons("Alias")}
 

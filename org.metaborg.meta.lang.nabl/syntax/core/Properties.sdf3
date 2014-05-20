@@ -1,0 +1,37 @@
+module core/Properties
+
+imports
+  common/Identifiers
+  terms/Vars
+  terms/Terms
+  formulas/Formulas
+  core/Bindings
+  
+lexical syntax
+
+  PropertyID = Id
+  Relation   = "<" [A-Za-z\-]* ":" 
+ 
+templates
+
+  ModuleSection.Properties  = <
+  properties   
+    <PropertyDef*>
+    <PropertyRule*>
+  > 
+  
+  PropertyRule.Property = <
+    <RuleID> :
+      <Pattern>
+      defines <VarRef> has <PropertyRef> <VarRef>
+        where <Formula>  
+  >
+  
+  RelationRule.Property = <
+    <Pattern> 
+      defines <Term> <Relation> <Term>
+        where <Formula>  
+  >
+  
+  PropertyRef.PropRef = <<PropertyID>>
+  

@@ -1,5 +1,5 @@
 module terms/Terms
-imports terms/Constants common/Identifiers terms/Terms
+imports terms/Constants common/Identifiers terms/Vars
 
 exports
   sorts Pattern

@@ -1,5 +1,5 @@
 module formulas/Formulas
-imports terms/Terms formulas/Propositions formulas/Messages common/Identifiers
+imports terms/Terms formulas/Propositions
 
 exports
   context-free syntax

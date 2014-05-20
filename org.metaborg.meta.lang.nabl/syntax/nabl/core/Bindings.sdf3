@@ -2,7 +2,7 @@ module Bindings
 
 imports 
 
-  terms/Vars
+  terms/Terms
   nabl/core/Namespaces
   
 lexical syntax 
@@ -78,7 +78,7 @@ templates
   imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraints>>             
 
   ImportClausePart.WildcardImport = <
-  imports <RestrictedNamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
+  imports <NamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
   
   Alias.None  = <>
   Alias.Alias = <as <Term>>

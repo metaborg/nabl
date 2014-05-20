@@ -23,18 +23,18 @@ templates // access current and future scopes
 
 templates // scope clause
 
-  ScopeClause.CurrentScopeClause = <
-    <Scope> scopes 
-      <Scoped+; separator="\n"> 
+  Clause.ChildScope = <
+    <Scope> scopes <NamespaceRef> at child nodes
   >
   
-  ScopeClause.ExtendsScopeClause = <
-    extends <NamespaceRef> scope
-         at <VarRef>
+  Clause.SubsequentScope = <
+    <Scope> scopes <NamespaceRef> at subsequent nodes
   >
   
-  Scoped.Children   = <<NamespaceRef> at child nodes>
-  Scoped.Subsequent = <<NamespaceRef> at subsequent nodes>
+  Clause.NodeScope = <
+    requires <NamespaceRef> scope at <VarRef>
+  >
+  
     
   
   

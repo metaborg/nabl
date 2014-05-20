@@ -19,11 +19,9 @@ exports
     CONTENTCOMPLETE -> Scope      {cons("COMPLETION-Scope")}
 
   context-free syntax
-    Scope "scopes" Scoped+                     -> ScopeClause {cons("CurrentScopeClause")}
-    "extends" NamespaceRef "scope" "at" VarRef -> ScopeClause {cons("ExtendsScopeClause")}
-    NamespaceRef "at" "child" "nodes"          -> Scoped      {cons("Children")}
-    NamespaceRef "at" "subsequent" "nodes"     -> Scoped      {cons("Subsequent")}
+    Scope "scopes" NamespaceRef "at" "child" "nodes"      -> Clause {cons("ChildScope")}
+    Scope "scopes" NamespaceRef "at" "subsequent" "nodes" -> Clause {cons("SubsequentScope")}
+    "requires" NamespaceRef "scope" "at" VarRef           -> Clause {cons("NodeScope")}
 
   context-free syntax
-    CONTENTCOMPLETE -> ScopeClause {cons("COMPLETION-ScopeClause")}
-    CONTENTCOMPLETE -> Scoped      {cons("COMPLETION-Scoped")}
+    CONTENTCOMPLETE -> Clause {cons("COMPLETION-Clause")}

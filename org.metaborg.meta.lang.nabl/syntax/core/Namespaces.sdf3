@@ -7,7 +7,6 @@ imports
 
 lexical syntax
 
-  ModuleID    = "namespaces" {reject}
   NamespaceID = Id
                
 templates
@@ -21,5 +20,7 @@ templates
     <<NamespaceID>
     >
   
-  NamespaceRef.NamespaceRef = <<NamespaceID>>
- 
+  NamespaceRef.NamespaceRef = <<LanguageRef><NamespaceID>>
+  
+  LanguageRef.CurrentLanguage = <>
+  LanguageRef.LanguageRef     = <<Id>.>

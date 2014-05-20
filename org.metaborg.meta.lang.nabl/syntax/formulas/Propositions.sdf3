@@ -3,11 +3,10 @@ module formulas/Propositions
 imports 
   terms/Terms
   terms/Vars
-  common/Identifiers
   core/Namespaces
   core/Scopes
-  NameBindingLanguage
-  
+  core/Properties
+    
 templates // propositions
   
   Proposition.True     = <true>
@@ -17,15 +16,7 @@ templates // propositions
   Proposition.Match    = [[VarRef] => [Pattern]]
   Proposition.DefOf    = [definition of [VarRef] => [Var]]
   Proposition.ScopeOf  = [[Scope] => [Var]]
-  
-  Proposition.RefersTo = <<Term> refers to <NamespaceRef> <Var>>
-  Proposition.Property = <<VarRef> has <PropertyRef> <Var>>  
-  
-  Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
-  
-  Proposition.SubType = [[Term] [Relation] [Term]]  
-  
-lexical syntax
+  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>
 
-  Relation = "<" [A-Za-z\-]* ":" 
- 
+  Proposition.HasProperty = <<VarRef> has <PropertyRef> <Var>>
+  Proposition.InRelation  = [[Term] [Relation] [Term]]
