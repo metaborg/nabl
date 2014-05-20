@@ -56,12 +56,11 @@ rules
 					<spectrav-up-filtering-site(|cons-name)> rule,
 					<spectrav-up-disambiguation-site(|cons-name)> rule,
 					<spectrav-up-prop-site(|cons-name)> rule,
-					<spectrav-up-use-site(|cons-name)> rule,
 					<spectrav-up-annotate-props>
 				]
 			)
 	
-rules
+rules // Topdown traversal
 
 	spectrav-down-pop-state =
 		<to-seq> [
@@ -122,6 +121,8 @@ rules
 			else
 				result := <to-seq> [MATCH(Var("sibling-uris"), Var("uri*")), MATCH(Match(Var("child-uri*")), Var("uri'*"))]
 			end
+
+rules // Bottomup traversal
 			
 	spectrav-up-external-def-site(|cons-name):
 		BindingRule(pattern, _, clause*) -> result
@@ -222,7 +223,7 @@ rules
 			<spectrav-term-args> ["lang", "partition", "uri*", "uri'*"]
 		)
 
-rules
+rules // Stratego sequence creation, removing all fail strategies
 
 	spectrav-seq:
 	  list -> <foldr(!Fail(), spectrav-create-seq)> list
@@ -246,9 +247,7 @@ rules
 			<not(?Fail())> c1;
 			<not(?Fail())> c2
 
-rules
+rules // Map names to variable references in Stratego
 	
 	spectrav-term-args:
 		names -> <map(!Var(<id>))> names
-		
-			
