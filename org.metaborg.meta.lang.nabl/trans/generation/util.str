@@ -76,6 +76,8 @@ overlays
   CALL(s, ts)        = CallT(SVar(s), [], ts)
   CALL(s, ss, ts)    = CallT(SVar(s), ss, ts)
   
+  APP(s, term)      = App(s, term)
+  
   FORCE_ORIGINS(ss)  = CALL("origin-track-forced", [ss], [])
   
   CTX_DEC() = DefaultVarDec("ctx__")
