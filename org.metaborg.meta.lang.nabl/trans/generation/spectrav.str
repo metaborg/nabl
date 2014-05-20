@@ -12,15 +12,17 @@ imports
 rules
 	
 	rule-to-spectrav:
-		rule@BindingRule(pattern, _, _) -> [up-trav, down-trav]
+		rule@BindingRule(pattern, _, _) -> [down-trav, up-trav]
 		where
 			cons-name := <pattern-cons-name> pattern;
 			down-trav := STRATEGY(
 				$[[cons-name]-down], 
 				[
 					DefaultVarDec("sibling-uris"),
-					DefaultVarDec("state-up"),
-					DefaultVarDec("implicit-up")
+					DefaultVarDec("implicits-up"),
+					DefaultVarDec("uris-up"),
+					DefaultVarDec("child-uris-up"),
+					DefaultVarDec("states-up")
 				],
 				[
 					DefaultVarDec("lang"),
@@ -64,7 +66,7 @@ rules
 	spectrav-down-pop-state =
 		<to-seq> [
 			CALL("nabl-state-pop", [Match(Var(ListVar("state*")))], []),
-			MATCH(Var("state-up"), Var("state*"))
+			MATCH(Var("states-up"), Var("state*"))
 		]
 
 	spectrav-down-scoping-site(|cons-name):
@@ -80,21 +82,24 @@ rules
 			end
 			
 	spectrav-down-scope-site = 
-		!LChoice(
-			CALL(
-				"nabl-scope-site",
-			  [Match(Var("uri'*"))], 
-			  <spectrav-term-args> ["lang", "partition", "unique*", "uri*"]
-			), 
-			  LChoice(
-			  	CALL(
-			  		"nabl-new-scope-site",
-			  		[Match(Var("uri'*"))],
-			  		<spectrav-term-args> ["lang", "partition", "unique*", "uri*"]
-			  	),
-			    MATCH(Match(Var("uri'*")), Var("uri*"))
-			  )
-			)
+		<to-seq> [
+			LChoice(
+				CALL(
+					"nabl-scope-site",
+				  [Match(Var("uri'*"))], 
+				  <spectrav-term-args> ["lang", "partition", "unique*", "uri*"]
+				), 
+				  LChoice(
+				  	CALL(
+				  		"nabl-new-scope-site",
+				  		[Match(Var("uri'*"))],
+				  		<spectrav-term-args> ["lang", "partition", "unique*", "uri*"]
+				  	),
+				    MATCH(Match(Var("uri'*")), Var("uri*"))
+				  )
+				),
+				MATCH(Var("uris-up"), Var("uri'*"))
+			]
 	
 	// TODO: if there is no def site: don't use match, but change the variables later on?
 	spectrav-down-def-site(|cons-name):
@@ -111,7 +116,8 @@ rules
 					  [Match(Var("child-uri*")), Var("sibling-uris"), Match(Var("implicit*"))], 
 					  <spectrav-term-args> ["lang", "partition", "unique*", "uri'*", "state*"]
 				  ),
-				  MATCH(Var("implicit-up"), Var("implicit*"))
+				  MATCH(Var("implicits-up"), Var("implicit*")),
+				  MATCH(Var("child-uris-up"), Var("child-uri*"))
 				]
 			else
 				result := <to-seq> [MATCH(Var("sibling-uris"), Var("uri*")), MATCH(Match(Var("child-uri*")), Var("uri'*"))]
