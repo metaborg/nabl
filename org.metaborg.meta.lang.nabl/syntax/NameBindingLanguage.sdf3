@@ -30,8 +30,8 @@ templates // properties
 
   PropertyDef.QualityDef = <
   <PropertyID> of <NamespaceRef+; separator=", ">>
-  
-  QualityRef.QualityRef = <<PropertyID>>
+
+QualityRef.QualityRef = <<PropertyID>>
 
   PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
   PropertyTerm.QualityTerm        = <of quality <QualityRef>>
@@ -48,7 +48,7 @@ lexical syntax
   
 templates // binding rules
     
-  ModuleSection.BindingRules = <
+  ModuleSection.Bindings = <
   binding rules
     <BindingRule*>
   >

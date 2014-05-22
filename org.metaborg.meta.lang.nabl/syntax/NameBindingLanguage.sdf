@@ -46,7 +46,7 @@ exports
     "binding" -> SectionKeyword 
 
   context-free syntax
-    "binding" "rules" BindingRule*         -> ModuleSection {cons("BindingRules")}
+    "binding" "rules" BindingRule*         -> ModuleSection {cons("Bindings")}
     Pattern Constraints ":" BindingClause+ -> BindingRule   {cons("BindingRule")}
 
   context-free syntax

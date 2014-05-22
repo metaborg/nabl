@@ -6,7 +6,6 @@ imports
   terms/Vars
   terms/Terms
   formulas/Formulas
-  core/Bindings
   core/Namespaces
   
 lexical syntax
@@ -25,27 +24,11 @@ templates
     <PropertyDef*>
   > 
   
-  // <PropertyRule*>
-  
   PropertyDef.PropertyDef = <
     <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
   
   PropertyRef.TypeProp    = <type>  
   PropertyRef.PropertyRef = <<PropertyID>>
   
-templates
-
-  PropertyRule.Property = <
-    <RuleID> :
-      <Pattern>
-      defines <VarRef> has <PropertyRef> <VarRef>
-        where <Formula>  
-  >
-  
-  RelationRule.Property = <
-    <Pattern> 
-      defines <Term> <Relation> <Term>
-        where <Formula>  
-  >
-  
+ 
   

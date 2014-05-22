@@ -1,6 +1,6 @@
 module core/Properties
 imports common/Identifiers terms/Signatures terms/Vars terms/Terms
-        formulas/Formulas core/Bindings core/Namespaces
+        formulas/Formulas core/Namespaces
 
 exports
   lexical syntax
@@ -20,11 +20,3 @@ exports
     CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
     CONTENTCOMPLETE -> PropertyDef   {cons("COMPLETION-PropertyDef")}
     CONTENTCOMPLETE -> PropertyRef   {cons("COMPLETION-PropertyRef")}
-
-  context-free syntax
-    RuleID ":" Pattern "defines" VarRef "has" PropertyRef VarRef "where" Formula -> PropertyRule {cons("Property")}
-    Pattern "defines" Term Relation Term "where" Formula                         -> RelationRule {cons("Property")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> PropertyRule {cons("COMPLETION-PropertyRule")}
-    CONTENTCOMPLETE -> RelationRule {cons("COMPLETION-RelationRule")}
