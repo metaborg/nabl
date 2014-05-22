@@ -1,7 +1,7 @@
 module NameBindingLanguage
 imports common/Layout common/Identifiers terms/Signatures terms/Terms
         formulas/Formulas formulas/Propositions core/Modules core/Namespaces
-        core/Properties
+        core/Properties terms/Vars
 
 exports
   context-free start-symbols
@@ -125,16 +125,18 @@ exports
     -/- [a-zA-z]
 
   context-free syntax
-                    -> Constraints {cons("NoWhere")}
-    "where" Formula -> Constraints {cons("Where"), bracket}
-    "with" Formula  -> Filters     {cons("Filter")}
+                                     -> Constraints {cons("NoWhere")}
+    "where" Formula                  -> Constraints {cons("Where"), bracket}
+    "with" Formula                   -> Filters     {cons("Filter")}
+    VarRef "has" PropertyRef Pattern -> Proposition {cons("PropertyPattern"), avoid}
 
   context-free syntax
     CONTENTCOMPLETE -> Constraints {cons("COMPLETION-Constraints")}
     CONTENTCOMPLETE -> Filters     {cons("COMPLETION-Filters")}
+    CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}
 
   lexical restrictions
-    "where" "with" -/- [a-zA-z]
+    "where" "with" "has" -/- [a-zA-z]
 
   context-free syntax
     "into" -> Id {reject}

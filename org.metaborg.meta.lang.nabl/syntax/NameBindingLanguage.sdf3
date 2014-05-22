@@ -11,6 +11,7 @@ imports
   core/Modules
   core/Namespaces
   core/Properties
+  terms/Vars
   
 context-free start-symbols
 
@@ -151,6 +152,8 @@ templates // constraints
   Filters.Filter = <
     with <Formula>
   >
+  
+  Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
   
 context-free syntax
 

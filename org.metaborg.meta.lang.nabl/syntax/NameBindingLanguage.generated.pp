@@ -1,4 +1,9 @@
 [
+   Wld                                 -- KW["_"],
+   Var                                 -- _1,
+   ListVar                             -- _1,
+   VarRef                              -- _1,
+   ListVarRef                          -- _1,
    Properties                          -- V  [H  [KW["properties"]] _1],
    Properties.1:iter-star              -- _1,
    PropertyDef                         -- _1 KW["of"] _2 KW[":"] _3,
@@ -53,11 +58,6 @@
    And                                 -- _1 KW["and"] _2,
    Or                                  -- _1 KW["or"] _2,
    COMPLETION-Formula                  -- _1,
-   Wld                                 -- KW["_"],
-   Var                                 -- _1,
-   ListVar                             -- _1,
-   VarRef                              -- _1,
-   ListVarRef                          -- _1,
    Int                                 -- _1,
    Real                                -- _1,
    Str                                 -- _1,
@@ -186,6 +186,8 @@
    NoWhere                             -- ,
    Where                               -- KW["where"] _1,
    Filter                              -- KW["with"] _1,
+   PropertyPattern                     -- _1 KW["has"] _2 _3,
    COMPLETION-Constraints              -- _1,
-   COMPLETION-Filters                  -- _1
+   COMPLETION-Filters                  -- _1,
+   COMPLETION-Proposition              -- _1
 ]
