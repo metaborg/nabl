@@ -155,10 +155,11 @@ templates // constraints
   
   Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
   
-context-free syntax
+lexical syntax
 
-  Id = "into" {reject}
-  
+  Id = "into"      {reject}
+  Id = "enclosing" {reject} 
+
 template options
 
   keyword -/- [a-zA-z]

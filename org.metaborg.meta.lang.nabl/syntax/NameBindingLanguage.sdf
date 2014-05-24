@@ -138,5 +138,6 @@ exports
   lexical restrictions
     "where" "with" "has" -/- [a-zA-z]
 
-  context-free syntax
-    "into" -> Id {reject}
+  lexical syntax
+    "into"      -> Id {reject}
+    "enclosing" -> Id {reject}
