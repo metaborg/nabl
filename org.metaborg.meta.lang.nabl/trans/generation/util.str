@@ -18,7 +18,7 @@ rules
   
   nonempty = where(Hd)
 
-  add-force-origins = bottomup(try(?NoAnnoList(Op(_, _)); !FORCE_ORIGINS(<id>)))
+  add-force-origins = bottomup(try(?Op(_, _); !FORCE_ORIGINS(<id>)))
 
   replace-all(|rs)    = alltd(replace-as(|rs) <+ replace(|rs))
   replace-all-id(|rs) = alltd(replace-as-id(|rs) <+ replace(|rs) <+ introduce-id)
