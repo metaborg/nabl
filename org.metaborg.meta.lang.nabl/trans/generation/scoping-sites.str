@@ -9,17 +9,19 @@ imports
 rules 
   
   binding-to-scope-rules:
-    BindingRule(pattern, _, clause*) -> result
-    where
-       cong*    := <filterconcat(to-scope-cong(|pattern))> clause*
-     ; ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
-    where
-       <fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _))> clause*
-     ; result := [QUERY_SCOPE_RULE(pattern, ns-term*)]
-    <+ result := [SCOPE_RULE(pattern, <to-seq> [SCOPE_CALL(ns-term*), cong*]), QUERY_SCOPE_RULE(pattern, ns-term*)]
-    <+ result := [SCOPE_RULE(pattern, <nonempty; to-seq> cong*)]
-    <+ result := []
-     
+    BindingRule(pattern, _, clause*) -> [qrule*, srule*]
+    where // scoped namespaces from scope clauses
+       ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
+     ; qrule*   := [QUERY_SCOPE_RULE(pattern, ns-term*)]
+    <+ qrule*   := [] 
+    where // congruences from defines ... in x, refers to ... in x, imports ... from x, imports ... into x  
+      cong* := <filterconcat(to-scope-cong(|pattern))> clause*
+    where // named scopes (defines and scopes clause)
+    	 <fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _))> clause*
+	   ; srule* := [SCOPE_RULE(pattern, <to-seq> [SCOPE_CALL(ns-term*), cong*])] // scope clauses      	
+    <+ srule* := [SCOPE_RULE(pattern, <nonempty; to-seq> cong*)] // no scope clauses but congruences
+    <+ srule* := [] // neither scope clauses nor congruences
+       
   to-scope-cong(|pattern):
     _ -> <filterconcat(to-scope-cong(|pattern)); nonempty> part*
     where
@@ -37,13 +39,13 @@ rules
      ; ns* := [ns]
     <+ ?WildcardImport(import*, _, from, into, _)
      ; ns* := <map(?Restricted(_, <id>)); make-set> import*
-    where
+    with
        ns-term* := <map(ns-to-term)> ns*
-    where
+    with
        repl   := (<collect-one(?RefScope(<id>))> from, SCOPE_CALL(ns-term*))
      ; cong1* := [<add-force-origins; replace-all-id(|[repl])> pattern]
     <+ cong1* := []
-    where
+    with
     	 scope* := <?DefScopes(<filter(?DefScope(<id>))>); nonempty> into
      ; repl*  := <map(!(<id>, SCOPE_CALL(ns-term*)))> scope*
      ; cong2* := [<add-force-origins; replace-all-id(|repl*)> pattern]
