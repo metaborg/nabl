@@ -39,22 +39,25 @@ rules
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
     ?Module(m, _)
-    ; Module(
-        nabl-def(
-          ?c-uri1__
-        , ?s-uri1__
-        | lang__
-        , ctx__
-        , uniques__
-        , uri__
-        , uri__
-        , NablNsModule()
-        , Unique()
-        , Current()
-        , []
-        , []
+    ; origin-track-forced(
+        Module(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , ctx__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsModule()
+          , Unique()
+          , Current()
+          , []
+          , []
+          )
+        , id
         )
-      , id
+      |
       )
     ; match(child-uris__|c-uri1__)
     ; match(sibl-uris__|s-uri1__)
@@ -68,21 +71,24 @@ rules
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
     ?NamespaceDef(n)
-    ; NamespaceDef(
-        nabl-def(
-          ?c-uri1__
-        , ?s-uri1__
-        | lang__
-        , ctx__
-        , uniques__
-        , uri__
-        , uri__
-        , NablNsNamespace()
-        , NonUnique()
-        , Current()
-        , []
-        , []
+    ; origin-track-forced(
+        NamespaceDef(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , ctx__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsNamespace()
+          , NonUnique()
+          , Current()
+          , []
+          , []
+          )
         )
+      |
       )
     ; match(child-uris__|c-uri1__)
     ; match(sibl-uris__|s-uri1__)
@@ -96,25 +102,28 @@ rules
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
     ?NamespaceRef(CurrentLanguage(), n)
-    ; NamespaceRef(
-        CurrentLanguage()
-      , nabl-use(
-        | lang__
-        , ctx__
-        , uniques__
-        , uris__
-        , [ <{:
-               id
-               ; !UseCandidate(
-                    NablNsNamespace()
-                  , []
-                  , Current()
-                  , True()
-                  , []
-                  )
-             }>
-          ]
+    ; origin-track-forced(
+        NamespaceRef(
+          origin-track-forced(CurrentLanguage()|)
+        , nabl-use(
+          | lang__
+          , ctx__
+          , uniques__
+          , uris__
+          , [ <{:
+                 id
+                 ; !UseCandidate(
+                      NablNsNamespace()
+                    , []
+                    , Current()
+                    , True()
+                    , []
+                    )
+               }>
+            ]
+          )
         )
+      |
       )
 
   nabl-get-name :
@@ -125,23 +134,26 @@ rules
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
     ?PropertyDef(p, ns, t)
-    ; PropertyDef(
-        nabl-def(
-          ?c-uri1__
-        , ?s-uri1__
-        | lang__
-        , ctx__
-        , uniques__
-        , uri__
-        , uri__
-        , NablNsProperty()
-        , NonUnique()
-        , Current()
-        , []
-        , []
+    ; origin-track-forced(
+        PropertyDef(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , ctx__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsProperty()
+          , NonUnique()
+          , Current()
+          , []
+          , []
+          )
+        , id
+        , id
         )
-      , id
-      , id
+      |
       )
     ; match(child-uris__|c-uri1__)
     ; match(sibl-uris__|s-uri1__)
@@ -173,24 +185,27 @@ rules
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
     ?PropertyRef(p)
-    ; PropertyRef(
-        nabl-use(
-        | lang__
-        , ctx__
-        , uniques__
-        , uris__
-        , [ <{:
-               id
-               ; !UseCandidate(
-                    NablNsProperty()
-                  , []
-                  , Current()
-                  , True()
-                  , []
-                  )
-             }>
-          ]
+    ; origin-track-forced(
+        PropertyRef(
+          nabl-use(
+          | lang__
+          , ctx__
+          , uniques__
+          , uris__
+          , [ <{:
+                 id
+                 ; !UseCandidate(
+                      NablNsProperty()
+                    , []
+                    , Current()
+                    , True()
+                    , []
+                    )
+               }>
+            ]
+          )
         )
+      |
       )
 
   nabl-scoping-site =
@@ -233,21 +248,24 @@ rules
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
     ?Var(x)
-    ; Var(
-        nabl-def(
-          ?c-uri1__
-        , ?s-uri1__
-        | lang__
-        , ctx__
-        , uniques__
-        , uri__
-        , uri__
-        , NablNsVariable()
-        , Unique()
-        , Current()
-        , []
-        , []
+    ; origin-track-forced(
+        Var(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , ctx__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsVariable()
+          , Unique()
+          , Current()
+          , []
+          , []
+          )
         )
+      |
       )
     ; match(child-uris__|c-uri1__)
     ; match(sibl-uris__|s-uri1__)
@@ -261,21 +279,24 @@ rules
 
   nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
     ?ListVar(x)
-    ; ListVar(
-        nabl-def(
-          ?c-uri1__
-        , ?s-uri1__
-        | lang__
-        , ctx__
-        , uniques__
-        , uri__
-        , uri__
-        , NablNsVariable()
-        , Unique()
-        , Current()
-        , []
-        , []
+    ; origin-track-forced(
+        ListVar(
+          nabl-def(
+            ?c-uri1__
+          , ?s-uri1__
+          | lang__
+          , ctx__
+          , uniques__
+          , uri__
+          , uri__
+          , NablNsVariable()
+          , Unique()
+          , Current()
+          , []
+          , []
+          )
         )
+      |
       )
     ; match(child-uris__|c-uri1__)
     ; match(sibl-uris__|s-uri1__)
@@ -289,24 +310,27 @@ rules
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
     ?VarRef(x)
-    ; VarRef(
-        nabl-use(
-        | lang__
-        , ctx__
-        , uniques__
-        , uris__
-        , [ <{:
-               id
-               ; !UseCandidate(
-                    NablNsVariable()
-                  , []
-                  , Current()
-                  , True()
-                  , []
-                  )
-             }>
-          ]
+    ; origin-track-forced(
+        VarRef(
+          nabl-use(
+          | lang__
+          , ctx__
+          , uniques__
+          , uris__
+          , [ <{:
+                 id
+                 ; !UseCandidate(
+                      NablNsVariable()
+                    , []
+                    , Current()
+                    , True()
+                    , []
+                    )
+               }>
+            ]
+          )
         )
+      |
       )
 
   nabl-get-name :
@@ -317,22 +341,25 @@ rules
 
   nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
     ?ListVarRef(x)
-    ; ListVarRef(
-        nabl-use(
-        | lang__
-        , ctx__
-        , uniques__
-        , uris__
-        , [ <{:
-               id
-               ; !UseCandidate(
-                    NablNsVariable()
-                  , []
-                  , Current()
-                  , True()
-                  , []
-                  )
-             }>
-          ]
+    ; origin-track-forced(
+        ListVarRef(
+          nabl-use(
+          | lang__
+          , ctx__
+          , uniques__
+          , uris__
+          , [ <{:
+                 id
+                 ; !UseCandidate(
+                      NablNsVariable()
+                    , []
+                    , Current()
+                    , True()
+                    , []
+                    )
+               }>
+            ]
+          )
         )
+      |
       )
