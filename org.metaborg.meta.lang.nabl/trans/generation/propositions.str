@@ -55,7 +55,7 @@ rules
       t := <formula-to-tasks(s|var*, dep, r)> And(HasProperty(v, prop, Var("p__")), Match(Var("p__"), p))
      
   formula-to-tasks(|dep):
-    InRelation(t1, rel, t2) -> NEW_TASK(dep, TERM("RelationMatch", [Str(rel), t1, t2]))
+    InRelation(t1, rel, t2) -> APP(CALL("relation-create-match", [CTX(), Str(rel), t1, LIST(dep)]), t2)
        
 rules
 
