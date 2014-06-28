@@ -15,7 +15,8 @@
                 class="org.metaborg.meta.lang.nabl.wizards.NaBLNewWizard"
                 icon="icons/nabl.png"
                 id="org.metaborg.meta.lang.nabl.wizards.NaBLNewWizard"
-                name="Name Binding Specification">
+                name="Name Binding Module">
+                <description>Create a name binding module</description>
           </wizard>
        </extension>    
     </plugin>

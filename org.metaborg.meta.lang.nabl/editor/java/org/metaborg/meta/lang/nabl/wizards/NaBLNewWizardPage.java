@@ -40,8 +40,8 @@ public class NaBLNewWizardPage extends WizardPage {
 	 */
 	public NaBLNewWizardPage(ISelection selection) {
 		super("wizardPage");
-		setTitle("New Name Binding Specification");
-		setDescription("This wizard creates a new name binding specification.");
+		setTitle("New Name Binding Module");
+		setDescription("Create a new name binding module.");
 		this.selection = selection;
 	}
 
@@ -139,16 +139,16 @@ public class NaBLNewWizardPage extends WizardPage {
 		final String moduleName = getModuleName();
 		final String fileName = moduleName + ".nab";
 		if (getContainerName().length() == 0) {
-			updateStatus("Project must be specified");
+			updateStatus("Project or directory must be specified");
 			return;
 		}
 		if (container == null
 				|| (container.getType() & (IResource.PROJECT | IResource.FOLDER)) == 0) {
-			updateStatus("Project must exist");
+			updateStatus("Directory must exist");
 			return;
 		}
 		if (!container.isAccessible()) {
-			updateStatus("Project must be writable");
+			updateStatus("Directory must be writable");
 			return;
 		}
 		if (moduleName.length() == 0) {
@@ -156,7 +156,7 @@ public class NaBLNewWizardPage extends WizardPage {
 			return;
 		}
 		if (container.getFile(new Path(fileName)).exists()) {
-			updateStatus("File already exists");
+			updateStatus("Another module of this name already exists");
 		}
 		updateStatus(null);
 	}
