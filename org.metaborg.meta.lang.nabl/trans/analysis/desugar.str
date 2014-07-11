@@ -9,13 +9,14 @@ rules
   
   desugar-all = alltd(nabl-desugar)
   
-  nabl-desugar: QualityDef(q, ns*) -> PropertyDef(q, ns*, SortNoArgs("Quality"))
-        
-  nabl-desugar:
-    QualityTerm(QualityRef(q)) -> PropertyTerm(PropRef(q), NoAnnoList(Op("True", [])))
-    
-  nabl-desugar:
-    QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropRef(q), NoAnnoList(Op("True", [])))
+  nabl-desugar = fail
+  // nabl-desugar: QualityDef(q, ns*) -> PropertyDef(q, ns*, SortNoArgs("Quality"))
+  //       
+  // nabl-desugar:
+  //   QualityTerm(QualityRef(q)) -> PropertyTerm(PropRef(q), NoAnnoList(Op("True", [])))
+  //   
+  // nabl-desugar:
+  //   QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropRef(q), NoAnnoList(Op("True", [])))
     
   // nabl-desugar:
   //   QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
