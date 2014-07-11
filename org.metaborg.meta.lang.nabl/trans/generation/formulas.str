@@ -2,8 +2,12 @@ module generation/formulas
 
 imports 
   
-  include/NameBindingLanguage
-  libstrc
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+libstrc
   
   generation/-
 
@@ -15,10 +19,7 @@ rules
   
   formula-to-tasks(s|var*, dep, r) =
     ?Where(<formula-to-tasks(s|var*, dep, r)>)
-  
-  formula-to-tasks(|dep):
-    NoWhere() -> Id()
-    
+      
   formula-to-tasks(|var*, dep, r):
     Not(f) -> TASK("create-not", t)
     with

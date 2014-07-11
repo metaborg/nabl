@@ -1,7 +1,11 @@
 module generation/scope
 
 imports
-  include/NameBindingLanguage
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
   generation/-
   libstrc
   

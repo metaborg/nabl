@@ -3,7 +3,6 @@ module generation/util
 imports
   
   libstrc
-  include/NameBindingLanguage
   
 rules
 

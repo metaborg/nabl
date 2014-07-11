@@ -2,14 +2,18 @@ module generation/scoping-sites
 
 imports
   libstrc
-  include/NameBindingLanguage
-  
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+
   generation/-
   
 rules 
   
   binding-to-scope-rules:
-    BindingRule(pattern, _, clause*) -> result
+    Binding(pattern, _, clause*) -> result
     where
        cong*    := <filterconcat(to-scope-cong(|pattern))> clause*
      ; ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*

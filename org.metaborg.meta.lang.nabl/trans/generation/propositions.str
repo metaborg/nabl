@@ -2,7 +2,11 @@ module generation/propositions
 
 imports 
   
-  include/NameBindingLanguage
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
   libstrc
   
   generation/-
@@ -43,10 +47,10 @@ rules
       p':= <prop-to-term> p
     ; <s> [v2, var*]
   
-  formula-to-tasks(s|var*, dep, r):
-    PropertyPattern(v, prop, p) -> Scope(["p__"], t)
-    with
-      t := <formula-to-tasks(s|var*, dep, r)> And(HasProperty(v, prop, Var("p__")), Match(Var("p__"), p))
+  // formula-to-tasks(s|var*, dep, r):
+  //   PropertyPattern(v, prop, p) -> Scope(["p__"], t)
+  //   with
+  //     t := <formula-to-tasks(s|var*, dep, r)> And(HasProperty(v, prop, Var("p__")), Match(Var("p__"), p))
      
   formula-to-tasks(|dep):
     InRelation(t1, rel, t2) -> NEW_TASK(dep, TERM("RelationMatch", [Str(rel), t1, t2]))
