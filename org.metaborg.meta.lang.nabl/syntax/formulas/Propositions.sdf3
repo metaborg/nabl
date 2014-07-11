@@ -6,8 +6,9 @@ imports
   core/Namespaces
   core/Scopes
   core/Properties
-    
-templates // propositions
+  core/Relations
+  
+context-free syntax // propositions
   
   Proposition.True     = <true>
   Proposition.False    = <false>

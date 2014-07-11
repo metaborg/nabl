@@ -7,8 +7,6 @@ imports
   terms/Signatures
     
   core/Namespaces
-  // extends sort SectionKeyword from core/Modules
-  // extends sort BindingClause from core/Bindings
 
   formulas/Formulas
 
@@ -18,7 +16,7 @@ lexical syntax
 
   Relation       = "<" [A-Za-z\-]* ":" 
  
-templates
+context-free syntax
 
   ModuleSection.Relations = <
   relations   

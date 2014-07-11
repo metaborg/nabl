@@ -1,40 +1,39 @@
 module terms/Terms
 
   imports 
-	  terms/Constants
-	  common/Identifiers 
-	  terms/Vars 
+    common/Identifiers 
+    terms/Constants
+    terms/Vars
+    terms/StringQuotations
 
   sorts Pattern // term binding variables  
-  templates 
+  
+  context-free syntax
+   
     Pattern          = <<Var>>
     Pattern.Int      = <<Int>>
     Pattern.Real     = <<Real>>
     Pattern.Str      = <<String>>   
-    Pattern.Op       = <<Id>(<Pattern*; separator=", ">)>
-    Pattern.OpQ      = <<String>(<Pattern*; separator=", ">)>
+    Pattern.Op       = <<Id>(<{Pattern ", "}*>)>
+    Pattern.OpQ      = <<String>(<{Pattern ", "}*>)>
     Pattern.Char     = <<Char>>
-    Pattern.Tuple    = <(<Pattern*; separator=", ">)>
-    Pattern.List     = <[<Pattern*; separator=", ">]>
-    Pattern.ListTail = <[<Pattern*; separator=", "> | <Pattern>]>
+    Pattern.Tuple    = <(<{Pattern ", "}*>)>
+    Pattern.List     = <[<{Pattern ", "}*>]>
+    Pattern.ListTail = <[<{Pattern ", "}*> | <Pattern>]>
     Pattern.As       = <<Var>@<Pattern>>
     
   sorts Term // term referencing variables
-  templates 
-    Term          = <<VarRef>>
-    Term.Int      = <<Int>>
-    Term.Real     = <<Real>>
-    Term.Str      = <<String>>   
-    Term.Op       = <<Id>(<Term*; separator=", ">)>
-    Term.OpQ      = <<String>(<Term*; separator=", ">)>
-    Term.Char     = <<Char>>
-    Term.Tuple    = <(<Term*; separator=", ">)>
-    Term.List     = <[<Term*; separator=", ">]>
-    Term.ListTail = <[<Term*; separator=", "> | <Term>]>
-        
-
   
-
-     
-
-    
+  context-free syntax
+   
+    Term           = <<VarRef>>
+    Term.Int       = <<Int>>
+    Term.Real      = <<Real>>
+    Term.Str       = <<String>>   
+    Term.Op        = <<Id>(<{Term ", "}*>)>
+    Term.OpQ       = <<String>(<{Term ", "}*>)>
+    Term.Char      = <<Char>>
+    Term.Tuple     = <(<{Term ", "}*>)>
+    Term.List      = <[<{Term ", "}*>]>
+    Term.ListTail  = <[<{Term ", "}*> | <Term>]>
+    Term.StrInterp = <<PPTerm>>

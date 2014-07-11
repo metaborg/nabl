@@ -19,7 +19,7 @@ lexical syntax
   
   SectionKeyword = "properties"
 
-templates
+context-free syntax
 
   ModuleSection.Properties  = <
   properties   
@@ -27,12 +27,12 @@ templates
   > 
   
   PropertyDef.PropertyDef = <
-  <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
+  <PropertyID> of <{NamespaceRef ", "}+> : <Sort>>
   
   PropertyRef.TypeProp    = <type>  
   PropertyRef.PropertyRef = <<PropertyID>>
 
-templates
+context-free syntax
 
   BindingClause.Property = [
        => [NamespaceRef] [VarRef] has [PropertyRef] [VarRef]

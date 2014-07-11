@@ -11,7 +11,7 @@ lexical syntax
   NamespaceID    = SectionKeyword {reject}
   SectionKeyword = "namespaces"
              
-templates
+context-free syntax
 
   ModuleSection.Namespaces  = <
   namespaces   

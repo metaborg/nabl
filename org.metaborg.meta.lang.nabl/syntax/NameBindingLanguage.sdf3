@@ -10,7 +10,7 @@ imports
   formulas/Formulas
   formulas/Propositions
   
-  core/Modules
+  common/Modules
   core/Namespaces
   
 context-free start-symbols

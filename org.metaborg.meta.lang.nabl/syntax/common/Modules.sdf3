@@ -1,18 +1,19 @@
-module core/Modules
+module common/Modules
 
-templates
+context-free syntax 
+     
+  Module.Module = <
+    module <ModuleID> 
+        
+    <{ModuleSection "\n\n"}*>
+    >
     
-  Module.Module = 
-  	<module <ModuleID> 
-    
-    <ModuleSection*>>
-
   ModuleSection.Imports = <
     imports <ImportModule*>>
 
   ImportModule.ImportWildcard=
-  	<<ModuleID>/->
-  	            
+    <<ModuleID>/->
+                
   ImportModule.Import = <<ModuleID>>
 
 lexical syntax

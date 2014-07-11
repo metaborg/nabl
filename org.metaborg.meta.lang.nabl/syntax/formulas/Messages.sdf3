@@ -3,7 +3,7 @@ module formulas/Messages
 imports
   terms/Terms
   
-templates
+context-free syntax
   
   Message.Message     = <<MessageKind> <Term> on <Term>>
  

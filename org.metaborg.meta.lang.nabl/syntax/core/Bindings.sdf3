@@ -19,7 +19,7 @@ lexical syntax
   
   SectionKeyword = "binding" {reject}
   
-templates
+context-free syntax
 
   ModuleSection.Bindings = <
 	  binding rules
