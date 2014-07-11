@@ -2,7 +2,11 @@ module names
 
 imports 
 
-	include/NameBindingLanguage
+	src-gen/signatures/-
+	src-gen/signatures/common/-
+	src-gen/signatures/core/-
+	src-gen/signatures/formulas/-
+	src-gen/signatures/terms/-
 
 namespaces
  
@@ -33,22 +37,22 @@ binding rules
 	PropertyDef(p, ns, t): 
 		defines non-unique Property p of type (ns, t)
 	
-	PropRef(p): 
+	PropertyRef(p): 
 		refers to Property p
 
 binding rules
 
-	BindingRule(_, _, _):
+	Binding(_, _, _):
 		scopes Variable
 		
-	RefClausePart(_, _, _, _, _, _):
-		scopes Variable
-	
-	WildcardImport(_, _, _, _, _):
-	  scopes Variable
-	
-	SingleImport(_, _, _, _, _, _, _, _):
-	  scopes Variable
+	// RefClausePart(_, _, _, _, _, _):
+	// 	scopes Variable
+	// 
+	// WildcardImport(_, _, _, _, _):
+	//   scopes Variable
+	// 
+	// SingleImport(_, _, _, _, _, _, _, _):
+	//   scopes Variable
 	  
 	Var(x):
 		defines Variable x
