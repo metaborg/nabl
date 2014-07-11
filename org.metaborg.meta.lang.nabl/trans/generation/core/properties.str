@@ -1,4 +1,4 @@
-module generation/properties
+module generation/core/properties
 
 imports
   src-gen/signatures/-

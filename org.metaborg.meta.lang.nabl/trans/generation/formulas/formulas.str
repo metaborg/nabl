@@ -1,4 +1,4 @@
-module generation/formulas
+module generation/formulas/formulas
 
 imports 
   
@@ -7,10 +7,10 @@ imports
   src-gen/signatures/core/-
   src-gen/signatures/formulas/-
   src-gen/signatures/terms/-
-libstrc
+  libstrc
   
-  generation/-
-
+  generation/util
+  
 overlays
 	
 	PREV() = Var("prev__")

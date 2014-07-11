@@ -1,4 +1,4 @@
-module generation/scope
+module generation/core/scope
 
 imports
   src-gen/signatures/-
@@ -6,7 +6,8 @@ imports
   src-gen/signatures/core/-
   src-gen/signatures/formulas/-
   src-gen/signatures/terms/-
-  generation/-
+  generation/util
+  generation/core/-
   libstrc
   
 rules

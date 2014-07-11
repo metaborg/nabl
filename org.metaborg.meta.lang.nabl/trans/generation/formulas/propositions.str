@@ -1,4 +1,4 @@
-module generation/propositions
+module generation/formulas/propositions
 
 imports 
   
@@ -9,8 +9,9 @@ imports
   src-gen/signatures/terms/-
   libstrc
   
-  generation/-
-
+  generation/util
+  generation/core/-
+  
 rules
   
   formula-to-tasks(|var*, dep, r)  = formula-to-tasks(id|var*, dep, r)
@@ -81,10 +82,7 @@ rules
    
 overlays
 	
-	TASK(s, t)      = TASK(s, [], t)
-  TASK(s, ts, t)  = App(CALL(s, [CTX()|ts]), t)
-  NEW_TASK(dep, task) = App(CALL("new-task-fixdeps", [CTX(), LIST(dep)]), task)
-  COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))], [])
+	COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))], [])
 	
   MATCH_RULE(key, lhs, dep)      = SDefNoArgs("task-rewrite", Match(TUPLE([Str(key), lhs])))
   MATCH_RULE(key, lhs, rhs, dep) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([Str(key), lhs]), rhs))

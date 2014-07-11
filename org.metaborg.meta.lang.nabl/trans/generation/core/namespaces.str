@@ -1,4 +1,4 @@
-module generation/namespaces
+module generation/core/namespaces
 
 imports
   libstrc
@@ -7,6 +7,7 @@ imports
   src-gen/signatures/core/-
   src-gen/signatures/formulas/-
   src-gen/signatures/terms/-
+  
   generation/util
   
 rules // namespaces 

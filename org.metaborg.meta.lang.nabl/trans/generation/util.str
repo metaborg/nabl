@@ -88,4 +88,8 @@ overlays
   REL_DEC() = DefaultVarDec("relation")
   REL()     = Var("relation")
   
+  TASK(s, t)      = TASK(s, [], t)
+  TASK(s, ts, t)  = App(CALL(s, [CTX()|ts]), t)
+  NEW_TASK(dep, task) = App(CALL("new-task-fixdeps", [CTX(), LIST(dep)]), task)
+  
   
