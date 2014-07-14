@@ -8,10 +8,11 @@ imports
   src-gen/signatures/core/-
   src-gen/signatures/formulas/-
   src-gen/signatures/terms/-
-generation/util
-  generation/namespaces
-  generation/properties
-  generation/sections
+  generation/util
+  generation/core/namespaces
+  generation/core/properties
+  generation/formulas/-
+  // generation/sections
   
 rules
   
@@ -39,7 +40,7 @@ rules // modules
       ns'   := <namespaces-to-str> ns
     ; p-sig := <properties-to-sig> p
     ; p-str := <properties-to-strategies> p
-    ; r'    := <rules-to-str> r
+    ; r'    := [] //<rules-to-str> r
     with
        <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
      ; lib* := []
