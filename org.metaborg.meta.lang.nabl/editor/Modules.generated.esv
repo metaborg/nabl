@@ -1,9 +1,0 @@
-module Modules.generated
-
-completions
-  completion template Start : "module ModuleID " =
-    "module " <ModuleID:ModuleID> "\n\n\t\t" (cursor) "\n" (blank)  
-  completion template ImportSection : "imports " =
-    "imports " <:ImportModule> (blank)  
-  completion template ImportModule : "ModuleID/-" =
-    <ModuleID:ModuleID> "/-"  
