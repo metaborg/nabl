@@ -16,10 +16,14 @@ context-free syntax // access current and future scopes
 
   LocalScope.NamedScope   = <<NamespaceRef> <VarRef>>
   LocalScope.CurrentScope = <current <NamespaceRef> scope>
-  LocalScope.TermScope    = <<NamespaceRef> scope  at <VarRef>>
+  LocalScope.TermScope    = <<NamespaceRef> scope  at <ScopePosition>>
   LocalScope.Enclosing    = <enclosing <NamespaceRef> of <LocalScope>>
   
-  Scope.GlobalScope       = <global scope>
+  ScopePosition                 = VarRef
+  ScopePosition.ChildScope      = <child nodes>
+  ScopePosition.SubsequentScope = <subsequent nodes>
+  
+  Scope.GlobalScope       = <global scope> {prefer}
   Scope                   = <<LocalScope>>
   Scope.Anonymous         = <new scope in <Scope>>
 
