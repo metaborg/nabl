@@ -3,7 +3,11 @@ module editor/NameBindingLanguage-Outliner
 imports
 	
 	libstrc
-  include/NameBindingLanguage
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
   lib/runtime/editor/outline-library
   lib/runtime/editor/origins
 
@@ -24,4 +28,4 @@ rules
   	r@Bindings(_) -> "binding rules"
   	
   to-outline-label:
-  	BindingRule(pattern, _, _) -> <alltd(\ListVar(n) -> Var(n)\); pp-stratego-string> pattern
+  	Binding(pattern, _, _) -> <alltd(\ListVar(n) -> Var(n)\); pp-stratego-string> pattern

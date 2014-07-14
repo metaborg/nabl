@@ -12,6 +12,7 @@ imports
   
   common/Modules
   core/Namespaces
+  core/Bindings
   
 context-free start-symbols
 
