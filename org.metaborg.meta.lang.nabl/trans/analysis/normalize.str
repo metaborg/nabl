@@ -21,7 +21,7 @@ rules
     
 rules
   
-  normalize-formula: Where(True()) -> NoWhere()
+  // normalize-formula: Where(True()) -> NoWhere()
   
   normalize-formula: 
     Match(v, t) -> Eq(v, t)
