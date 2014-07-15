@@ -1,0 +1,16 @@
+.cache
+bin
+include
+editor/java/trans
+editor/*.generated.esv
+editor/*.generated.str
+lib
+lib-refactoring
+utils
+syntax/*generated.sdf
+syntax/*.generated.pp
+trans/*.generated.str
+test/*.str
+*.aterm
+
+/src-gen/

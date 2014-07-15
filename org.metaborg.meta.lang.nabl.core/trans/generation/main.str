@@ -12,7 +12,6 @@ imports
   generation/core/namespaces
   generation/core/properties
   generation/formulas/-
-  // generation/sections
   
 rules
   

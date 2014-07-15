@@ -1,0 +1,31 @@
+module NaBLCore.main
+
+imports
+  NaBLCore-Colorer
+  NaBLCore-Completions
+  NaBLCore-Folding
+  NaBLCore-Menus
+  NaBLCore-Refactorings
+  NaBLCore-References
+  NaBLCore-Syntax
+  NaBLCore-Views
+
+language General properties
+  
+  name:          NaBLCore
+  id:            org.metaborg.meta.lang.nabl.core
+  extends:       Root
+  
+  description:   "Spoofax-generated editor for the NaBLCore language"
+  url:           http://strategoxt.org
+  
+  extensions:    nabc
+  table:         include/NaBLCore.tbl
+  start symbols: Start
+  
+  provider:      include/nablcore.ctree
+  provider:      include/nablcore-java.jar
+  
+  observer:      editor-analyze (multifile)
+  
+  on save:       editor-save

@@ -1,0 +1,23 @@
+module NaBLCore
+
+imports
+  
+  common/Layout
+  common/Identifiers
+  
+  terms/Signatures
+  terms/Terms
+  formulas/Formulas
+  formulas/Propositions
+  
+  common/Modules
+  core/Namespaces
+  core/Bindings
+  
+context-free start-symbols
+
+  Start
+
+context-free syntax
+  
+  Start = Module

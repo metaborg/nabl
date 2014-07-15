@@ -1,4 +1,4 @@
-module editor/NameBindingLanguage-Outliner
+module editor/NaBLCore-Outliner
 
 imports
 	

@@ -1,7 +1,12 @@
 module constraints
 
 imports
-  include/NameBindingLanguage
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+  
   lib/runtime/task/messages
   lib/runtime/task/tasks
   
