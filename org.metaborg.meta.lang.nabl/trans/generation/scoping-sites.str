@@ -9,18 +9,19 @@ imports
 rules 
   
   binding-to-scope-rules:
-    BindingRule(pattern, _, clause*) -> [qrule*, srule*]
+    BindingRule(pattern, _, clause*) -> [srule*, qrule*]
     where // scoped namespaces from scope clauses
        ns-term* := <filterconcat(?ScopeClause(<map(ns-to-term)>)); nonempty> clause*
      ; qrule*   := [QUERY_SCOPE_RULE(pattern, ns-term*)]
+     ; scall*   := [SCOPE_CALL(ns-term*)]
     <+ qrule*   := [] 
-    where // congruences from defines ... in x, refers to ... in x, imports ... from x, imports ... into x  
-      cong* := <filterconcat(to-scope-cong(|pattern))> clause*
-    where // named scopes (defines and scopes clause)
-    	 <fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _))> clause*
-	   ; srule* := [SCOPE_RULE(pattern, <to-seq> [SCOPE_CALL(ns-term*), cong*])] // scope clauses      	
-    <+ srule* := [SCOPE_RULE(pattern, <nonempty; to-seq> cong*)] // no scope clauses but congruences
-    <+ srule* := [] // neither scope clauses nor congruences
+     ; scall*   := []
+    where // only for anonymous scopes
+       <not(fetch-elem(?DefClause(Explicit(), _, _, _, _, _, _)))> clause*
+     // congruences from defines ... in x, refers to ... in x, imports ... from x, imports ... into x 
+     ; cong*  := <filterconcat(to-scope-cong(|pattern))> clause*
+     ; srule* := [SCOPE_RULE(pattern, <nonempty; to-seq> [scall*, cong*])]
+    <+ srule* := []
        
   to-scope-cong(|pattern):
     _ -> <filterconcat(to-scope-cong(|pattern)); nonempty> part*
