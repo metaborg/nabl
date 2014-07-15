@@ -19,10 +19,10 @@ binding rules
 
 	Module(m, _): 
 		defines Module m
-		//scopes Namespace, Property
+		scopes Namespace, Property
 		
-	//Import(m): 
-	//	imports Namespace, Property from Module m
+	Import(m): 
+    imports Namespace, Property from Module m
 	
 binding rules
 

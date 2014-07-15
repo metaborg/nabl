@@ -35,6 +35,16 @@ rules
 
 rules
 
+  nabl-get-scope =
+    ?Module(m, _)
+    ; ![NablNsNamespace(), NablNsProperty()]
+
+  nabl-scoping-site =
+    ?Module(m, _)
+    ; nabl-scope(
+      | [NablNsNamespace(), NablNsProperty()]
+      )
+
   nabl-get-name :
     Module(m, _) -> m
 
@@ -56,7 +66,7 @@ rules
           , NablNsModule()
           , Unique()
           , Current()
-          , []
+          , [NablNsNamespace(), NablNsProperty()]
           , []
           )
         , id
@@ -66,6 +76,66 @@ rules
     ; match(child-uris__|c-uri1__)
     ; match(sibl-uris__|s-uri1__)
     ; match(implicits__|[])
+
+  nabl-get-name :
+    Import(m) -> m
+
+  nabl-name-apply(s) =
+    Import(s)
+
+  nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?Import(m)
+    ; origin-track-forced(
+        Import(
+          nabl-use(
+          | lang__
+          , ctx__
+          , uniques__
+          , uris__
+          , [ <{:
+                 id
+                 ; !UseCandidate(
+                      NablNsModule()
+                    , []
+                    , Current()
+                    , True()
+                    , []
+                    )
+               }>
+            ]
+          )
+        )
+      |
+      )
+
+  nabl-import-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?Import(m)
+    ; origin-track-forced(
+        nabl-import(
+        | lang__
+        , ctx__
+        , uniques__
+        , uris__
+        , [ <{:
+               id
+               ; !Wildcard(
+                    [ Import(lang__, NablNsNamespace())
+                    , Import(lang__, NablNsProperty())
+                    ]
+                  , Context(
+                      NablNsModule()
+                    , m
+                    , []
+                    , Current()
+                    )
+                  , Current()
+                  , []
+                  )
+             }>
+          ]
+        )
+      |
+      )
 
   nabl-get-name :
     NamespaceDef(n) -> n
