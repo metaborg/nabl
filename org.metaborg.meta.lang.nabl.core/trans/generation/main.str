@@ -13,13 +13,21 @@ imports
   generation/core/properties
   generation/formulas/-
   
+  lib/runtime/nabl/-
+  lib/runtime/task/-
+  lib/runtime/index/-
+  editor-common.generated
+  
 rules
   
   generate-name-analysis:
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
-      filename   := <guarantee-extension(|"str")> path
-    ; str-module := <strip-annos; to-ppable-str; module-to-str> ast
+      task-setup(|project-path);
+      index-setup(|<language>, project-path)
+    with
+      filename   := <guarantee-extension(|"str")> $[src-gen/[name]]
+    ; str-module := <module-to-str> ast
     with
        result := <pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
@@ -34,9 +42,10 @@ rules // modules
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
   module-to-str:
-    Module(n, [ Imports(i*), ns, p, r ]) -> Module(n, [ Imports([lib*, i*]), ns', p-sig, p-str, r'])
+    Module(n, [ Imports(i*), ns, p, r ]) -> Module($[src-gen/[n]], [ Imports([lib*, i'*]), ns', p-sig, p-str, r'])
     with
-      ns'   := <namespaces-to-str> ns
+      i'*   := <map(try(import-to-str))> i*
+    ; ns'   := <namespaces-to-str> ns
     ; p-sig := <properties-to-sig> p
     ; p-str := <properties-to-strategies> p
     ; r'    := [] //<rules-to-str> r
@@ -51,4 +60,7 @@ rules // modules
                , ImportWildcard("lib/runtime/editor")
                ]
       
-    
+  import-to-str: 
+    Import(i) -> Import($[src-gen/[i]]) 
+    where <nabl-collect-use-task; not(task-has-failed)> i
+      
