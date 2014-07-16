@@ -40,7 +40,10 @@ context-free syntax // scope clause
   BindingClause.NodeScope = <
     requires <NamespaceRef> scope at <VarRef>
   >
-  
+
+context-free syntax
+
+  Proposition.ScopeOf  = [[Scope] => [Var]]
     
   
   

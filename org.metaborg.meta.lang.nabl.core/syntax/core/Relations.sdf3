@@ -26,9 +26,14 @@ context-free syntax
   RelationDef.RelationDef = <
     <Sort> <Relation> <Sort>
   >
-    
+  
+context-free syntax
+  
   BindingClause.Relation = [
        => [Term] [Relation] [Term]
     where [Formula]  
   ]
  
+context-free syntax
+
+  Proposition.InRelation = [[Term] [Relation] [Term]]

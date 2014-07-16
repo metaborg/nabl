@@ -15,9 +15,3 @@ context-free syntax // propositions
   
   Proposition.Eq       = [[VarRef] == [Term]] 
   Proposition.Match    = [[VarRef] => [Pattern]]
-  Proposition.DefOf    = [definition of [VarRef] => [Var]]
-  Proposition.ScopeOf  = [[Scope] => [Var]]
-  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>
-
-  Proposition.HasProperty = <<VarRef> has <PropertyRef> <Var>>
-  Proposition.InRelation  = [[Term] [Relation] [Term]]

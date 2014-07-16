@@ -59,3 +59,8 @@ context-free syntax
        from <Scope>
        into <Scope>
     >
+
+context-free syntax
+
+  Proposition.DefOf    = [definition of [VarRef] => [Var]]
+  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>

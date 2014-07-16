@@ -39,4 +39,7 @@ context-free syntax
     where [Formula]
   ]
   
-  
+context-free syntax
+
+  Proposition.HasProperty = <<VarRef> has <PropertyRef> <Var>>
+ 
