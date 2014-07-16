@@ -12,17 +12,40 @@ imports
   
 rules
 
-  scope-to-str(|dep): 
-  	CurrentScope(ns) -> NEW_TASK(dep, TERM("Id", [App(CALL("lookup-uri", [Var("uris__")]), ns')]))
-  	with
-  		ns' := <ns-to-term> ns
+  scope-to-str:
+    CurrentScope(ns) -> LOOKUP(CURRENT(), <ns-to-term> ns)
+  
+  scope-to-str:
+  	TermScope(ns, ChildScope()) -> LOOKUP(CHILD(), <ns-to-term> ns)
+  	
+  scope-to-str:
+    TermScope(ns, SubsequentScope()) -> LOOKUP(SUBSEQ(), <ns-to-term> ns)
+  
+rules
+	
+  scope-to-task(|dep): 
+  	CurrentScope(_) -> NEW_TASK(dep, TERM("Id", [scope']))
+  	with scope' := <scope-to-str>
+  
+  scope-to-task(|dep): 
+    TermScope(_, _) -> NEW_TASK(dep, TERM("Id", [scope']))
+    with scope' := <scope-to-str>
     
-  scope-to-str(|dep):
+  scope-to-task(|dep):
     NamedScope(_, n) -> n
      
-  scope-to-str(|dep):
+  scope-to-task(|dep):
   	Enclosing(ns, s) -> NEW_TASK(dep, TERM("SubURI", [ns', s']))
   	with
   		ns' := <ns-to-term> ns
-  	; s'  := <scope-to-str(|dep)> s
-  	
+  	; s'  := <scope-to-task(|dep)> s
+
+overlays
+	
+  CURRENT()   = Var("current__")
+  CHILD()     = Var("child__")
+  SUBSEQ()    = Var("subsequent__")
+
+  SCOPEVARS() = [CURRENT, CHILD, SUBSEQ]
+
+  LOOKUP(ns, v) = App(CALL("lookup-uri", [v]), ns)

@@ -32,7 +32,7 @@ rules
       <s> [d, var*]
       
   formula-to-tasks(s|var*, dep, r):
-    ScopeOf(s, v) -> Assign(v, <scope-to-str(|dep)> s)
+    ScopeOf(s, v) -> Assign(v, <scope-to-task(|dep)> s)
     with
       <s> [v, var*]
     
