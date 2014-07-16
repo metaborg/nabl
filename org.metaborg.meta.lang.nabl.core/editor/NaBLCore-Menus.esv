@@ -29,7 +29,7 @@ menus
       action: "Selection"          = debug-task-selection
     end
   
-  menu: "Generation"                 (openeditor) (realtime)
+  menu: "Generation"                 (openeditor)
     
-    action: "Generate Java"        = generate-java
+    action: "Generate name analysis" = generate-name-analysis
 

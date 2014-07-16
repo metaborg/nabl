@@ -4,6 +4,6 @@ imports NaBLCore-Colorer.generated
 
 colorer
                                                                       
-  // This file can be used for custom colorer rules.                  
-  //                                                                  
-  // See the imported file for a brief introduction and examples.     
+  NamespaceID._       : 0 64 128 italic //bold
+  PropertyID._        : 0 64 128 italic //bold
+  PropertyRef.TypeProp: 0 64 128 italic bold
