@@ -1,0 +1,61 @@
+module analysis/normalize
+
+imports
+  include/NameBindingLanguage
+  libstrc
+  
+strategies
+   
+  normalize-all = innermost(normalize-formula); alltd(normalize)
+  
+rules
+  
+  normalize:
+    Module(name, section*) -> Module(name, [Imports(i*), Namespaces(ns*), Properties(p*), Bindings(r*)])
+    with
+      i*  := <filterconcat(?Imports(<id>))> section*
+    ; ns* := <filterconcat(?Namespaces(<id>))> section*
+    ; p*  := <filterconcat(?Properties(<id>))> section*
+    ; r*  := <filterconcat(?Bindings(<id>))> section*
+    
+    
+rules
+  
+  normalize-formula: Where(True()) -> NoWhere()
+  
+  normalize-formula: 
+    Match(v, t) -> Eq(v, t)
+    where
+      <topdown(not(?Var(_) + ?ListVar(_) + ?Wld()))> t
+    
+rules
+
+  normalize-formula: And(True(), e)  -> e
+  normalize-formula: And(e, True())  -> e
+  normalize-formula: And(False(), _) -> False()
+  normalize-formula: Or(False(), e)  -> e
+  normalize-formula: Or(e, False())  -> e
+  normalize-formula: Or(True(), _)   -> True()
+  // normalize: And(_, False())  -> False()
+  // normalize: Or(_, True())  -> True()
+
+rules
+  
+  normalize-formula: And(e1, And(e2, e3)) -> And(And(e1, e2), e3)
+  normalize-formula: Or(e1, Or(e2, e3))   -> Or(Or(e1, e2), e3)
+  // normalize: And(e1, Or(e2, e3))  -> Or(And(e1, e2), e3) 
+  
+rules
+  
+  normalize-formula: Not(True())      -> False()
+  normalize-formula: Not(False())     -> True()
+  normalize-formula: Not(Not(e))      -> e
+  normalize-formula: Not(And(e1, e2)) -> Or(Not(e1), Not(e2))
+  normalize-formula: Not(Or(e1, e2))  -> And(Not(e1), Not(e2))
+  
+rules
+  
+  // normalize: Not(Message(_, _, _))           -> False()
+  // normalize: And(Not(e), m@Message(_, _, _)) -> Or(e, m)
+  // normalize: Or(m@Message(_, _, _), e)       -> m
+    

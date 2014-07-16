@@ -1,0 +1,180 @@
+module src-gen/pp/core/Scopes-pp
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  src-gen/signatures/core/Scopes-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Vars-sig
+  src-gen/signatures/core/Namespaces-sig
+
+
+imports
+  src-gen/pp/common/Identifiers-pp
+  src-gen/pp/terms/Vars-pp
+  src-gen/pp/core/Namespaces-pp
+
+
+strategies
+  prettyprint-ScopeID =
+    ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-ScopeID
+
+
+strategies
+  prettyprint-example =
+    prettyprint-LocalScope
+
+  prettyprint-example =
+    prettyprint-ScopePosition
+
+  prettyprint-example =
+    prettyprint-Scope
+
+  prettyprint-LocalScope :
+    NamedScope(t0__, t1__) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S(" ")]
+                                )
+                              ]
+
+  is-LocalScope =
+    ?NamedScope(_, _)
+
+  prettyprint-LocalScope :
+    CurrentScope(t0__) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("current "), S(" scope")]
+                            )
+                          ]
+
+  is-LocalScope =
+    ?CurrentScope(_)
+
+  prettyprint-LocalScope :
+    TermScope(t0__, t1__) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S(" scope  at ")]
+                               )
+                             ]
+
+  is-LocalScope =
+    ?TermScope(_, _)
+
+  prettyprint-LocalScope :
+    Enclosing(t0__, t1__) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("enclosing "), S(" of ")]
+                               )
+                             ]
+
+  is-LocalScope =
+    ?Enclosing(_, _)
+
+  prettyprint-ScopePosition :
+    t0__ -> [ H(
+                [SOpt(HS(), "0")]
+              , []
+              )
+            ]
+    where not(is-ScopePosition)
+
+  prettyprint-ScopePosition :
+    ChildScope() -> [ H(
+                        [SOpt(HS(), "0")]
+                      , [S("child nodes")]
+                      )
+                    ]
+
+  is-ScopePosition =
+    ?ChildScope()
+
+  prettyprint-ScopePosition :
+    SubsequentScope() -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [S("subsequent nodes")]
+                           )
+                         ]
+
+  is-ScopePosition =
+    ?SubsequentScope()
+
+  prettyprint-Scope :
+    GlobalScope() -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [S("global scope")]
+                       )
+                     ]
+
+  is-Scope =
+    ?GlobalScope()
+
+  prettyprint-Scope :
+    t0__ -> [ H(
+                [SOpt(HS(), "0")]
+              , []
+              )
+            ]
+    where not(is-Scope)
+
+  prettyprint-Scope :
+    Anonymous(t0__) -> [ H(
+                           [SOpt(HS(), "0")]
+                         , [S("new scope in ")]
+                         )
+                       ]
+
+  is-Scope =
+    ?Anonymous(_)
+
+  is-LocalScope =
+    fail
+
+  is-ScopePosition =
+    fail
+
+  is-Scope =
+    fail
+
+
+strategies
+  prettyprint-example =
+    prettyprint-BindingClause
+
+  prettyprint-BindingClause :
+    ChildScope(t0__, t1__) -> [ H(
+                                  [SOpt(HS(), "0")]
+                                , [S(" scopes "), S(" at child nodes")]
+                                )
+                              ]
+
+  is-BindingClause =
+    ?ChildScope(_, _)
+
+  prettyprint-BindingClause :
+    SubsequentScope(t0__, t1__) -> [ H(
+                                       [SOpt(HS(), "0")]
+                                     , [S(" scopes "), S(" at subsequent nodes")]
+                                     )
+                                   ]
+
+  is-BindingClause =
+    ?SubsequentScope(_, _)
+
+  prettyprint-BindingClause :
+    NodeScope(t0__, t1__) -> [ H(
+                                 [SOpt(HS(), "0")]
+                               , [S("requires "), S(" scope at ")]
+                               )
+                             ]
+
+  is-BindingClause =
+    ?NodeScope(_, _)
+
+  is-BindingClause =
+    fail

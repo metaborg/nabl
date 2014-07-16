@@ -3,12 +3,8 @@ module generation/use-sites
 imports
   
   libstrc
-  src-gen/signatures/-
-  src-gen/signatures/common/-
-  src-gen/signatures/core/-
-  src-gen/signatures/formulas/-
-  src-gen/signatures/terms/-
-
+  include/NameBindingLanguage
+  
   generation/-
   
 rules

@@ -3,11 +3,7 @@ module generation/sections
 imports
   
   libstrc
-  src-gen/signatures/-
-  src-gen/signatures/common/-
-  src-gen/signatures/core/-
-  src-gen/signatures/formulas/-
-  src-gen/signatures/terms/-
+  include/NameBindingLanguage
   lib/editor-common.generated
   
   generation/-
@@ -18,7 +14,7 @@ rules // binding rules
     Bindings(rs) -> Rules(<mapconcat(to-str-rules)> rs)
     
   to-str-rules:
-  rule@Binding(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, b*, r*]
+  rule@BindingRule(pattern, _, _) -> [s*, n*, d*, p*, u*, i*, f*, b*, r*]
     with 
       s* := <binding-to-scope-rules <+ ![]> rule
     ; n* := <binding-to-name-rules <+ ![]> rule

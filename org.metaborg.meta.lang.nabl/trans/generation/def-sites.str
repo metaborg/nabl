@@ -3,12 +3,8 @@ module generation/def-sites
 imports
   
   libstrc
-  src-gen/signatures/-
-  src-gen/signatures/common/-
-  src-gen/signatures/core/-
-  src-gen/signatures/formulas/-
-  src-gen/signatures/terms/-
-
+  include/NameBindingLanguage
+  
   generation/-
   
 rules
@@ -18,14 +14,14 @@ rules
 rules
   
   binding-to-name-rules: 
-    Binding(pattern, _, clause*) -> [NAME_RULE(pattern, name), APPLY_RULE(body)]
+    BindingRule(pattern, _, clause*) -> [NAME_RULE(pattern, name), APPLY_RULE(body)]
     where
       [name] := <filter(def-to-name + use-to-name)> clause*
     ; <not(eq)> (name, pattern)
     ; body   := <replace-all-id(|[(name, CALL("s"))])> pattern
       
   binding-to-def-rules:
-    Binding(pattern, _, clause*) -> [DEF_RULE(pattern, seq), ext*]
+    BindingRule(pattern, _, clause*) -> [DEF_RULE(pattern, seq), ext*]
     where
       def-clause* := <filter-def-clauses; nonempty> clause*
     ; implicit*   := <implicit-def-vars> def-clause*

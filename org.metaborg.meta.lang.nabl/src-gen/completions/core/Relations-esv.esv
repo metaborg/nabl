@@ -1,0 +1,8 @@
+module src-gen/completion/core/Relations-esv
+
+imports
+  src-gen/completion/common/Identifiers-esv
+  src-gen/completion/terms/Terms-esv
+  src-gen/completion/terms/Signatures-esv
+  src-gen/completion/core/Namespaces-esv
+  src-gen/completion/formulas/Formulas-esv

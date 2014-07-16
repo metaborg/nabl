@@ -1,0 +1,28 @@
+module src-gen/signatures/core/Scopes-sig
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Vars-sig
+  src-gen/signatures/core/Namespaces-sig
+
+
+signature
+  constructors
+     : String -> ScopeID
+
+  constructors
+    NamedScope      : NamespaceRef * VarRef -> LocalScope
+    CurrentScope    : NamespaceRef -> LocalScope
+    TermScope       : NamespaceRef * ScopePosition -> LocalScope
+    Enclosing       : NamespaceRef * LocalScope -> LocalScope
+                    : VarRef -> ScopePosition
+    ChildScope      : ScopePosition
+    SubsequentScope : ScopePosition
+    GlobalScope     : Scope
+                    : LocalScope -> Scope
+    Anonymous       : Scope -> Scope
+
+  constructors
+    ChildScope      : Scope * NamespaceRef -> BindingClause
+    SubsequentScope : Scope * NamespaceRef -> BindingClause
+    NodeScope       : NamespaceRef * VarRef -> BindingClause

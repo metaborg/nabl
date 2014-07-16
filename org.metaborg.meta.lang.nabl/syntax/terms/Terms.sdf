@@ -1,0 +1,38 @@
+module terms/Terms
+imports terms/Constants common/Identifiers terms/Vars
+
+exports
+  sorts Pattern
+
+  context-free syntax
+    Var                                -> Pattern 
+    Int                                -> Pattern {cons("Int")}
+    Real                               -> Pattern {cons("Real")}
+    String                             -> Pattern {cons("Str")}
+    Id "(" {Pattern ","}* ")"          -> Pattern {cons("Op")}
+    String "(" {Pattern ","}* ")"      -> Pattern {cons("OpQ")}
+    Char                               -> Pattern {cons("Char")}
+    "(" {Pattern ","}* ")"             -> Pattern {cons("Tuple")}
+    "[" {Pattern ","}* "]"             -> Pattern {cons("List")}
+    "[" {Pattern ","}* "|" Pattern "]" -> Pattern {cons("ListTail")}
+    Var "@" Pattern                    -> Pattern {cons("As")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Pattern {cons("COMPLETION-Pattern")}
+
+  sorts Term
+
+  context-free syntax
+    VarRef                       -> Term 
+    Int                          -> Term {cons("Int")}
+    Real                         -> Term {cons("Real")}
+    String                       -> Term {cons("Str")}
+    Id "(" {Term ","}* ")"       -> Term {cons("Op")}
+    String "(" {Term ","}* ")"   -> Term {cons("OpQ")}
+    Char                         -> Term {cons("Char")}
+    "(" {Term ","}* ")"          -> Term {cons("Tuple")}
+    "[" {Term ","}* "]"          -> Term {cons("List")}
+    "[" {Term ","}* "|" Term "]" -> Term {cons("ListTail")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}

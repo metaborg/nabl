@@ -1,0 +1,40 @@
+module terms/Terms
+
+  imports 
+	  terms/Constants
+	  common/Identifiers 
+	  terms/Vars 
+
+  sorts Pattern // term binding variables  
+  templates 
+    Pattern          = <<Var>>
+    Pattern.Int      = <<Int>>
+    Pattern.Real     = <<Real>>
+    Pattern.Str      = <<String>>   
+    Pattern.Op       = <<Id>(<Pattern*; separator=", ">)>
+    Pattern.OpQ      = <<String>(<Pattern*; separator=", ">)>
+    Pattern.Char     = <<Char>>
+    Pattern.Tuple    = <(<Pattern*; separator=", ">)>
+    Pattern.List     = <[<Pattern*; separator=", ">]>
+    Pattern.ListTail = <[<Pattern*; separator=", "> | <Pattern>]>
+    Pattern.As       = <<Var>@<Pattern>>
+    
+  sorts Term // term referencing variables
+  templates 
+    Term          = <<VarRef>>
+    Term.Int      = <<Int>>
+    Term.Real     = <<Real>>
+    Term.Str      = <<String>>   
+    Term.Op       = <<Id>(<Term*; separator=", ">)>
+    Term.OpQ      = <<String>(<Term*; separator=", ">)>
+    Term.Char     = <<Char>>
+    Term.Tuple    = <(<Term*; separator=", ">)>
+    Term.List     = <[<Term*; separator=", ">]>
+    Term.ListTail = <[<Term*; separator=", "> | <Term>]>
+        
+
+  
+
+     
+
+    

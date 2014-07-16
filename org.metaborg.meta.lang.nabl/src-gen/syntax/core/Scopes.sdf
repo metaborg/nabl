@@ -1,0 +1,31 @@
+module core/Scopes
+imports common/Identifiers terms/Vars core/Namespaces
+
+exports
+  lexical syntax
+    Id -> ScopeID 
+
+  context-free syntax
+    NamespaceRef VarRef                      -> LocalScope    {cons("NamedScope")}
+    "current" NamespaceRef "scope"           -> LocalScope    {cons("CurrentScope")}
+    NamespaceRef "scope" "at" ScopePosition  -> LocalScope    {cons("TermScope")}
+    "enclosing" NamespaceRef "of" LocalScope -> LocalScope    {cons("Enclosing")}
+    VarRef                                   -> ScopePosition 
+    "child" "nodes"                          -> ScopePosition {cons("ChildScope")}
+    "subsequent" "nodes"                     -> ScopePosition {cons("SubsequentScope")}
+    "global" "scope"                         -> Scope         {cons("GlobalScope"), prefer}
+    LocalScope                               -> Scope         
+    "new" "scope" "in" Scope                 -> Scope         {cons("Anonymous")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> LocalScope    {cons("COMPLETION-LocalScope")}
+    CONTENTCOMPLETE -> ScopePosition {cons("COMPLETION-ScopePosition")}
+    CONTENTCOMPLETE -> Scope         {cons("COMPLETION-Scope")}
+
+  context-free syntax
+    Scope "scopes" NamespaceRef "at" "child" "nodes"      -> BindingClause {cons("ChildScope")}
+    Scope "scopes" NamespaceRef "at" "subsequent" "nodes" -> BindingClause {cons("SubsequentScope")}
+    "requires" NamespaceRef "scope" "at" VarRef           -> BindingClause {cons("NodeScope")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> BindingClause {cons("COMPLETION-BindingClause")}

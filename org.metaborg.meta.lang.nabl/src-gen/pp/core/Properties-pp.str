@@ -1,0 +1,120 @@
+module src-gen/pp/core/Properties-pp
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  src-gen/signatures/core/Properties-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Vars-sig
+  src-gen/signatures/terms/Signatures-sig
+  src-gen/signatures/core/Namespaces-sig
+  src-gen/signatures/formulas/Formulas-sig
+
+
+imports
+  src-gen/pp/common/Identifiers-pp
+  src-gen/pp/terms/Vars-pp
+  src-gen/pp/terms/Signatures-pp
+  src-gen/pp/core/Namespaces-pp
+  src-gen/pp/formulas/Formulas-pp
+
+
+strategies
+  prettyprint-PropertyID =
+    ![S(<is-string>)]
+
+  prettyprint-SectionKeyword =
+    ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-PropertyID
+
+  prettyprint-example =
+    prettyprint-SectionKeyword
+
+
+strategies
+  prettyprint-example =
+    prettyprint-ModuleSection
+
+  prettyprint-example =
+    prettyprint-PropertyDef
+
+  prettyprint-example =
+    prettyprint-PropertyRef
+
+  prettyprint-ModuleSection :
+    Properties(t0__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [S("properties")]
+                          )
+                        , <pp-indent(|"2")> []
+                        ]
+
+  is-ModuleSection =
+    ?Properties(_)
+
+  prettyprint-PropertyDef :
+    PropertyDef(t0__, t1__, t2__) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , [S(" of "), S(" : ")]
+                                       )
+                                     ]
+
+  is-PropertyDef =
+    ?PropertyDef(_, _, _)
+
+  prettyprint-PropertyRef :
+    TypeProp() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("type")]
+                    )
+                  ]
+
+  is-PropertyRef =
+    ?TypeProp()
+
+  prettyprint-PropertyRef :
+    PropertyRef(t0__) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , []
+                           )
+                         ]
+
+  is-PropertyRef =
+    ?PropertyRef(_)
+
+  is-ModuleSection =
+    fail
+
+  is-PropertyDef =
+    fail
+
+  is-PropertyRef =
+    fail
+
+
+strategies
+  prettyprint-example =
+    prettyprint-BindingClause
+
+  prettyprint-BindingClause :
+    Property(t0__, t1__, t2__, t3__, t4__) -> [ <pp-indent(|"3")> [ S("=> ")
+                                                                  , S(" ")
+                                                                  , S(" has ")
+                                                                  , S(" ")
+                                                                  ]
+                                              , H(
+                                                  [SOpt(HS(), "0")]
+                                                , [S("where ")]
+                                                )
+                                              ]
+
+  is-BindingClause =
+    ?Property(_, _, _, _, _)
+
+  is-BindingClause =
+    fail

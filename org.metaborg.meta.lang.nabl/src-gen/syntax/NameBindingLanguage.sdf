@@ -1,0 +1,11 @@
+module NameBindingLanguage
+imports common/Layout common/Identifiers terms/Signatures terms/Terms
+        formulas/Formulas formulas/Propositions common/Modules core/Namespaces
+        core/Bindings
+
+exports
+  context-free start-symbols
+    Start
+
+  context-free syntax
+    Module -> Start 

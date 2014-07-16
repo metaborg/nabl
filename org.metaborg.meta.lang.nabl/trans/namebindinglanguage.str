@@ -18,8 +18,8 @@ imports
   editor/NameBindingLanguage-Outliner
 
   analysis/-
-	generation/main
-  // coq-semantics/-
+	generation/-
+  coq-semantics/-
   
 rules // Analysis
   

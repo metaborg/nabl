@@ -1,0 +1,8 @@
+module src-gen/completion/formulas/Propositions-esv
+
+imports
+  src-gen/completion/terms/Terms-esv
+  src-gen/completion/terms/Vars-esv
+  src-gen/completion/core/Namespaces-esv
+  src-gen/completion/core/Scopes-esv
+  src-gen/completion/core/Properties-esv

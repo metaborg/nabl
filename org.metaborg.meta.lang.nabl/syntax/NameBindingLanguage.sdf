@@ -1,0 +1,143 @@
+module NameBindingLanguage
+imports common/Layout common/Identifiers terms/Signatures terms/Terms
+        formulas/Formulas formulas/Propositions core/Modules core/Namespaces
+        core/Properties terms/Vars
+
+exports
+  context-free start-symbols
+    Start
+
+  context-free syntax
+    Module -> Start 
+
+  context-free syntax
+    Restriction* NamespaceRef -> RestrictedNamespaceRef {cons("Restricted")}
+    "imported"                -> Restriction            {cons("Imported")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> RestrictedNamespaceRef {cons("COMPLETION-RestrictedNamespaceRef")}
+    CONTENTCOMPLETE -> Restriction            {cons("COMPLETION-Restriction")}
+
+  lexical restrictions
+    "imported" -/- [a-zA-z]
+
+  context-free syntax
+    PropertyID "of" {NamespaceRef ","}+ -> PropertyDef     {cons("QualityDef")}
+    PropertyID                          -> QualityRef      {cons("QualityRef")}
+    "of" PropertyRef Term               -> PropertyTerm    {cons("PropertyTerm")}
+    "of" "quality" QualityRef           -> PropertyTerm    {cons("QualityTerm")}
+    "of" PropFilter PropertyRef Term    -> PropertyPattern {cons("PropertyPattern")}
+    "of" "quality" QualityRef           -> PropertyPattern {cons("QualityPattern")}
+                                        -> PropFilter      {cons("Equal")}
+    "conformant"                        -> PropFilter      {cons("Conformant")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> PropertyDef     {cons("COMPLETION-PropertyDef")}
+    CONTENTCOMPLETE -> QualityRef      {cons("COMPLETION-QualityRef")}
+    CONTENTCOMPLETE -> PropertyTerm    {cons("COMPLETION-PropertyTerm")}
+    CONTENTCOMPLETE -> PropertyPattern {cons("COMPLETION-PropertyPattern")}
+    CONTENTCOMPLETE -> PropFilter      {cons("COMPLETION-PropFilter")}
+
+  lexical restrictions
+    "of" "quality" "conformant" -/- [a-zA-z]
+
+  lexical syntax
+    "quality" -> PropertyID     {reject}
+    "binding" -> SectionKeyword 
+
+  context-free syntax
+    "binding" "rules" BindingRule*         -> ModuleSection {cons("Bindings")}
+    Pattern Constraints ":" BindingClause+ -> BindingRule   {cons("BindingRule")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> BindingRule   {cons("COMPLETION-BindingRule")}
+
+  lexical restrictions
+    "binding" "rules" -/- [a-zA-z]
+
+  context-free syntax
+    DefKind "defines" Unique NamespaceRef Term PropertyTerm* InDefScopes Constraints                        -> BindingClause    {cons("DefClause")}
+                                                                                                            -> DefKind          {cons("Explicit")}
+    "implicitly"                                                                                            -> DefKind          {cons("Implicit")}
+                                                                                                            -> Unique           {cons("Unique")}
+    "unique"                                                                                                -> Unique           {cons("Unique")}
+    "non-unique"                                                                                            -> Unique           {cons("NonUnique")}
+    "scopes" {NamespaceRef ","}+                                                                            -> BindingClause    {cons("ScopeClause")}
+    "non-transitively" "scopes" {NamespaceRef ","}+                                                         -> BindingClause    {cons("NonTransitiveScopeClause")}
+    {RefClausePart "otherwise"}+                                                                            -> BindingClause    {cons("RefClause")}
+    "refers" "to" Disambiguator NamespaceRef Term PropertyPattern* InRefScope Constraints                   -> RefClausePart    {cons("RefClausePart")}
+    {ImportClausePart "otherwise"}+                                                                         -> BindingClause    {cons("ImportClause")}
+    "imports" Disambiguator NamespaceRef Term PropertyPattern* FromRefScope Alias IntoDefScopes Constraints -> ImportClausePart {cons("SingleImport")}
+    "imports" {RestrictedNamespaceRef ","}+ PropertyPattern* FromRefScope IntoDefScopes Constraints         -> ImportClausePart {cons("WildcardImport")}
+                                                                                                            -> Alias            {cons("None")}
+    "as" Term                                                                                               -> Alias            {cons("Alias")}
+    "filters" NamespaceRef Term Filters Constraints                                                         -> BindingClause    {cons("FilterClause")}
+    "disambiguates" NamespaceRef Term Filters "by" Disambiguator Constraints                                -> BindingClause    {cons("DisambiguateClause")}
+    "minimal" "distance" Term Relation Term                                                                 -> Disambiguator    {cons("MinimalDistance")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> DefKind          {cons("COMPLETION-DefKind")}
+    CONTENTCOMPLETE -> Unique           {cons("COMPLETION-Unique")}
+    CONTENTCOMPLETE -> RefClausePart    {cons("COMPLETION-RefClausePart")}
+    CONTENTCOMPLETE -> ImportClausePart {cons("COMPLETION-ImportClausePart")}
+    CONTENTCOMPLETE -> Alias            {cons("COMPLETION-Alias")}
+    CONTENTCOMPLETE -> BindingClause    {cons("COMPLETION-BindingClause")}
+    CONTENTCOMPLETE -> Disambiguator    {cons("COMPLETION-Disambiguator")}
+
+  lexical restrictions
+    "defines" "implicitly" "unique" "non-unique" "non-transitively" "scopes"
+    "refers" "to" "imports" "as" "filters" "disambiguates" "by" "minimal"
+    "distance" -/- [a-zA-z]
+
+  context-free syntax
+                                                                -> InDefScopes   {cons("Current")}
+    "in" DefScopes                                              -> InDefScopes   {bracket}
+                                                                -> IntoDefScopes {cons("Current")}
+    "into" DefScopes                                            -> IntoDefScopes {bracket}
+    "current" "scope"                                           -> DefScopes     {cons("Current")}
+    {DefScope ","}+                                             -> DefScopes     {cons("DefScopes")}
+    "subsequent" "scope"                                        -> DefScope      {cons("Subsequent")}
+    Term                                                        -> DefScope      {cons("DefScope")}
+                                                                -> InRefScope    {cons("Current")}
+    "in" RefScope                                               -> InRefScope    {bracket}
+                                                                -> FromRefScope  {cons("Current")}
+    "from" RefScope                                             -> FromRefScope  {bracket}
+    "current" "scope"                                           -> RefScope      {cons("Current")}
+    "enclosing" NamespaceRef                                    -> RefScope      {cons("Enclosing")}
+    Disambiguator NamespaceRef Term PropertyPattern* InRefScope -> RefScope      {cons("Context")}
+    Term                                                        -> RefScope      {cons("RefScope")}
+                                                                -> Disambiguator {cons("All")}
+    "best"                                                      -> Disambiguator {cons("Best")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> InDefScopes   {cons("COMPLETION-InDefScopes")}
+    CONTENTCOMPLETE -> IntoDefScopes {cons("COMPLETION-IntoDefScopes")}
+    CONTENTCOMPLETE -> DefScopes     {cons("COMPLETION-DefScopes")}
+    CONTENTCOMPLETE -> DefScope      {cons("COMPLETION-DefScope")}
+    CONTENTCOMPLETE -> InRefScope    {cons("COMPLETION-InRefScope")}
+    CONTENTCOMPLETE -> FromRefScope  {cons("COMPLETION-FromRefScope")}
+    CONTENTCOMPLETE -> RefScope      {cons("COMPLETION-RefScope")}
+    CONTENTCOMPLETE -> Disambiguator {cons("COMPLETION-Disambiguator")}
+
+  lexical restrictions
+    "into" "subsequent" "in" "from" "current" "scope" "enclosing" "best"
+    -/- [a-zA-z]
+
+  context-free syntax
+                                     -> Constraints {cons("NoWhere")}
+    "where" Formula                  -> Constraints {cons("Where"), bracket}
+    "with" Formula                   -> Filters     {cons("Filter")}
+    VarRef "has" PropertyRef Pattern -> Proposition {cons("PropertyPattern"), avoid}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Constraints {cons("COMPLETION-Constraints")}
+    CONTENTCOMPLETE -> Filters     {cons("COMPLETION-Filters")}
+    CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}
+
+  lexical restrictions
+    "where" "with" "has" -/- [a-zA-z]
+
+  lexical syntax
+    "into"      -> Id {reject}
+    "enclosing" -> Id {reject}

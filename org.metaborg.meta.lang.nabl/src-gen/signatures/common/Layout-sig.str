@@ -1,0 +1,5 @@
+module src-gen/signatures/common/Layout-sig
+
+signature
+  sorts
+    LongCom CommChar Asterisk Eof

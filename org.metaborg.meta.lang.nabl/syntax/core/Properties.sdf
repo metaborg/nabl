@@ -1,0 +1,22 @@
+module core/Properties
+imports common/Identifiers terms/Signatures terms/Vars terms/Terms
+        formulas/Formulas core/Namespaces
+
+exports
+  lexical syntax
+    Id                  -> PropertyID     
+    "type"              -> PropertyID     {reject}
+    SectionKeyword      -> PropertyID     {reject}
+    "properties"        -> SectionKeyword 
+    "<" [A-Za-z\-]* ":" -> Relation       
+
+  context-free syntax
+    "properties" PropertyDef*                    -> ModuleSection {cons("Properties")}
+    PropertyID "of" {NamespaceRef ","}+ ":" Sort -> PropertyDef   {cons("PropertyDef")}
+    "type"                                       -> PropertyRef   {cons("TypeProp")}
+    PropertyID                                   -> PropertyRef   {cons("PropertyRef")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> PropertyDef   {cons("COMPLETION-PropertyDef")}
+    CONTENTCOMPLETE -> PropertyRef   {cons("COMPLETION-PropertyRef")}

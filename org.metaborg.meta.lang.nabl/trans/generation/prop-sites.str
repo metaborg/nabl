@@ -3,19 +3,15 @@ module generation/prop-sites
 imports
   
   libstrc
-  src-gen/signatures/-
-  src-gen/signatures/common/-
-  src-gen/signatures/core/-
-  src-gen/signatures/formulas/-
-  src-gen/signatures/terms/-
-
+  include/NameBindingLanguage
+  
   generation/-
   analysis/normalize
   
 rules
 
   binding-to-prop-rule(|var*, r):
-    Binding(pattern, f, clause*) -> PROP_RULE(pattern, seq)
+    BindingRule(pattern, f, clause*) -> PROP_RULE(pattern, seq)
     where
       def-clause*  := <filter-def-clauses; nonempty> clause*
     ; prop-clause* := <filter-with-index(to-prop-clauses(|var*, r, pattern)); concat; nonempty> def-clause*

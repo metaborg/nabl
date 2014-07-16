@@ -1,0 +1,50 @@
+module generation/main
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  generation/util
+  generation/namespaces
+  generation/properties
+  generation/sections
+  
+rules
+  
+  generate-name-analysis:
+    (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
+    with
+      filename   := <guarantee-extension(|"str")> path
+    ; str-module := <strip-annos; to-ppable-str; module-to-str> ast
+    with
+       result := <pp-stratego-string> str-module
+    <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
+    ;  result := ""
+      
+rules // modules
+  
+  to-ppable-str = alltd(to-ppable-str-local)
+    
+  to-ppable-str-local: ListVar(x)    -> Var(x)
+  to-ppable-str-local: VarRef(x)     -> Var(x)
+  to-ppable-str-local: ListVarRef(x) -> Var(x)
+
+  module-to-str:
+    Module(n, [ Imports(i*), ns, p, r ]) -> Module(n, [ Imports([lib*, i*]), ns', p-sig, p-str, r'])
+    with
+      ns'   := <namespaces-to-str> ns
+    ; p-sig := <properties-to-sig> p
+    ; p-str := <properties-to-strategies> p
+    ; r'    := <rules-to-str> r
+    with
+       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
+     ; lib* := []
+    <+ lib* := [ ImportWildcard("lib/runtime/nabl")
+               , ImportWildcard("lib/runtime/task")
+               , ImportWildcard("lib/runtime/properties")
+               , ImportWildcard("lib/runtime/types")
+               , ImportWildcard("lib/runtime/relations")
+               , ImportWildcard("lib/runtime/editor")
+               ]
+      
+    

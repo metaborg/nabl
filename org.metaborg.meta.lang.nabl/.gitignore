@@ -18,4 +18,3 @@ test/*.str
 !editor/Modules.generated.esv
 !syntax/Modulesgenerated.sf
 !syntax/NaBLgenerated.sf
-/src-gen/

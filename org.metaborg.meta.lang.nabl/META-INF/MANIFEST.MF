@@ -16,7 +16,8 @@ Require-Bundle: org.eclipse.core.runtime,
  org.strategoxt.imp.runtime,
  org.strategoxt.imp.metatooling,
  org.spoofax.jsglr,
- org.strategoxt.strj
+ org.strategoxt.strj,
+ org.eclipse.ui.ide
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: org.metaborg.meta.lang.nabl
 Bundle-Vendor: Spoofax.org

@@ -1,0 +1,21 @@
+module core/Namespaces
+imports common/Identifiers core/Modules
+
+exports
+  lexical syntax
+    Id             -> NamespaceID    
+    SectionKeyword -> NamespaceID    {reject}
+    "namespaces"   -> SectionKeyword 
+
+  context-free syntax
+    "namespaces" NamespaceDef* -> ModuleSection {cons("Namespaces")}
+    NamespaceID                -> NamespaceDef  {cons("NamespaceDef")}
+    LanguageRef NamespaceID    -> NamespaceRef  {cons("NamespaceRef")}
+                               -> LanguageRef   {cons("CurrentLanguage")}
+    Id "."                     -> LanguageRef   {cons("LanguageRef")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> NamespaceDef  {cons("COMPLETION-NamespaceDef")}
+    CONTENTCOMPLETE -> NamespaceRef  {cons("COMPLETION-NamespaceRef")}
+    CONTENTCOMPLETE -> LanguageRef   {cons("COMPLETION-LanguageRef")}

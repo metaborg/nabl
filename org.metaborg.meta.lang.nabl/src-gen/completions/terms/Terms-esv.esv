@@ -1,0 +1,6 @@
+module src-gen/completion/terms/Terms-esv
+
+imports
+  src-gen/completion/terms/Constants-esv
+  src-gen/completion/common/Identifiers-esv
+  src-gen/completion/terms/Vars-esv

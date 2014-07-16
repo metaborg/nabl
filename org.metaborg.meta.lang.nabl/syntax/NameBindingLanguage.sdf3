@@ -4,15 +4,14 @@ imports
   
   common/Layout
   common/Identifiers
-  
   terms/Signatures
   terms/Terms
   formulas/Formulas
   formulas/Propositions
-  
-  common/Modules
+  core/Modules
   core/Namespaces
-  core/Bindings
+  core/Properties
+  terms/Vars
   
 context-free start-symbols
 
@@ -22,156 +21,147 @@ context-free syntax
   
   Start = Module
   
-// templates // namespaces
-// 
-//   RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
-//   
-//   Restriction.Imported = <imported>
-//   
-// templates // properties
-// 
-//   ModuleSection.Properties = <
-//   properties
-//     <PropertyDef*>
-//   >  
-//     
-//   PropertyDef.PropertyDef = <
-//   <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
-//   
-//   PropertyDef.QualityDef = <
-//   <PropertyID> of <NamespaceRef+; separator=", ">>
-//   
-//   PropertyRef.TypeProp    = <type>  
-//   PropertyRef.PropertyRef = <<PropertyID>>
-// 
-//   QualityRef.QualityRef = <<PropertyID>>
-// 
-//   PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
-//   PropertyTerm.QualityTerm        = <of quality <QualityRef>>
-//   PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Term>>
-//   PropertyPattern.QualityPattern  = <of quality <QualityRef>>
-// 
-//   PropFilter.Equal      = <>
-//   PropFilter.Conformant = <conformant>
-//   
-// lexical syntax
-// 
-//   PropertyID = Id
-//   PropertyID = "type"    {reject}
-//   PropertyID = "quality" {reject}
-//   
-// templates // binding rules
-//     
-//   ModuleSection.BindingRules = <
-//   binding rules
-//     <BindingRule*>
-//   >
-//   
-//   BindingRule.BindingRule = <
-//   <Pattern> <Constraints> : <BindingClause+>> 
-// 
-// templates // clauses
-// 
-//   BindingClause.DefClause = <
-//     <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
-//   > 
-//   
-//   DefKind.Explicit = <>
-//   DefKind.Implicit = <implicitly>
-//   
-//   Unique.Unique    = <>
-//   Unique.Unique    = <unique>
-//   Unique.NonUnique = <non-unique>
-//     
-//   BindingClause.ScopeClause = <
-//     scopes <NamespaceRef+; separator=", ">
-//   >
-//    
-//   BindingClause.NonTransitiveScopeClause = <
-//     non-transitively scopes <NamespaceRef+; separator=", ">
-//   > 
-//     
-//   BindingClause.RefClause     = <
-//     <RefClausePart+; separator="otherwise">
-//   >
-//     
-//   RefClausePart.RefClausePart = <
-//   refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraints>>
-//   
-//   BindingClause.ImportClause = <
-//     <ImportClausePart+; separator="otherwise\n">
-//   > 
-//   
-//   ImportClausePart.SingleImport = <
-//   imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraints>>             
-// 
-//   ImportClausePart.WildcardImport = <
-//   imports <RestrictedNamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
-//   
-//   Alias.None  = <>
-//   Alias.Alias = <as <Term>>
-// 
-//   BindingClause.FilterClause = <
-//     filters <NamespaceRef> <Term> 
-//       <Filters>
-//       <Constraints>
-//   > 
-// 
-//   BindingClause.DisambiguateClause = <
-//     disambiguates <NamespaceRef> <Term>
-//       <Filters>
-//       by <Disambiguator> 
-//       <Constraints>
-//    >
-//   
-//   Disambiguator.MinimalDistance = <
-//     minimal distance <Term> <Relation> <Term>
-//   >
-//   
-// templates // scopes
-// 
-//   InDefScopes.Current   = <>
-//   InDefScopes           = <in <DefScopes>>   {bracket}
-//   
-//   IntoDefScopes.Current = <>
-//   IntoDefScopes         = <into <DefScopes>> {bracket}
-// 
-//   DefScopes.Current     = <current scope>
-//   DefScopes.DefScopes   = <<DefScope+; separator=", ">> 
-//   DefScope.Subsequent   = <subsequent scope>
-//   DefScope.DefScope     = <<Term>>
-//  
-//   InRefScope.Current    = <>
-//   InRefScope            = <in <RefScope>>    {bracket}
-//   
-//   FromRefScope.Current   = <>
-//   FromRefScope           = <from <RefScope>>  {bracket}
-//   
-//   RefScope.Current    = <current scope>
-//   RefScope.Enclosing  = <enclosing <NamespaceRef>>
-//   RefScope.Context    = <<Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope>>
-//   RefScope.RefScope   = <<Term>>
-//   
-//   Disambiguator.All   = <>
-//   Disambiguator.Best  = <best>
-//   
-// templates // constraints
-// 
-//   Constraints.NoWhere = <>
-//   Constraints.Where   = <
-//     where <Formula>
-//   > {bracket}
-//   
-//   Filters.Filter = <
-//     with <Formula>
-//   >
-//   
-// context-free syntax
-// 
-//   Id = "into" {reject}
-//   
-// template options
-// 
-//   keyword -/- [a-zA-z]
-//     
+templates // namespaces
+
+  RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
+  
+  Restriction.Imported = <imported>
+  
+templates // properties
+
+  PropertyDef.QualityDef = <
+  <PropertyID> of <NamespaceRef+; separator=", ">>
+
+QualityRef.QualityRef = <<PropertyID>>
+
+  PropertyTerm.PropertyTerm       = <of <PropertyRef> <Term>>
+  PropertyTerm.QualityTerm        = <of quality <QualityRef>>
+  PropertyPattern.PropertyPattern = <of <PropFilter> <PropertyRef> <Term>>
+  PropertyPattern.QualityPattern  = <of quality <QualityRef>>
+
+  PropFilter.Equal      = <>
+  PropFilter.Conformant = <conformant>
+  
+lexical syntax
+
+  PropertyID     = "quality" {reject}
+  SectionKeyword = "binding"
+  
+templates // binding rules
+    
+  ModuleSection.Bindings = <
+  binding rules
+    <BindingRule*>
+  >
+  
+  BindingRule.BindingRule = <
+  <Pattern> <Constraints> : <BindingClause+>> 
+
+templates // clauses
+
+  BindingClause.DefClause = <
+    <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
+  > 
+  
+  DefKind.Explicit = <>
+  DefKind.Implicit = <implicitly>
+  
+  Unique.Unique    = <>
+  Unique.Unique    = <unique>
+  Unique.NonUnique = <non-unique>
+    
+  BindingClause.ScopeClause = <
+    scopes <NamespaceRef+; separator=", ">
+  >
+   
+  BindingClause.NonTransitiveScopeClause = <
+    non-transitively scopes <NamespaceRef+; separator=", ">
+  > 
+    
+  BindingClause.RefClause     = <
+    <RefClausePart+; separator="otherwise">
+  >
+    
+  RefClausePart.RefClausePart = <
+  refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraints>>
+  
+  BindingClause.ImportClause = <
+    <ImportClausePart+; separator="otherwise\n">
+  > 
+  
+  ImportClausePart.SingleImport = <
+  imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraints>>             
+
+  ImportClausePart.WildcardImport = <
+  imports <RestrictedNamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
+  
+  Alias.None  = <>
+  Alias.Alias = <as <Term>>
+
+  BindingClause.FilterClause = <
+    filters <NamespaceRef> <Term> 
+      <Filters>
+      <Constraints>
+  > 
+
+  BindingClause.DisambiguateClause = <
+    disambiguates <NamespaceRef> <Term>
+      <Filters>
+      by <Disambiguator> 
+      <Constraints>
+   >
+  
+  Disambiguator.MinimalDistance = <
+    minimal distance <Term> <Relation> <Term>
+  >
+  
+templates // scopes
+
+  InDefScopes.Current   = <>
+  InDefScopes           = <in <DefScopes>>   {bracket}
+  
+  IntoDefScopes.Current = <>
+  IntoDefScopes         = <into <DefScopes>> {bracket}
+
+  DefScopes.Current     = <current scope>
+  DefScopes.DefScopes   = <<DefScope+; separator=", ">> 
+  DefScope.Subsequent   = <subsequent scope>
+  DefScope.DefScope     = <<Term>>
+ 
+  InRefScope.Current    = <>
+  InRefScope            = <in <RefScope>>    {bracket}
+  
+  FromRefScope.Current   = <>
+  FromRefScope           = <from <RefScope>>  {bracket}
+  
+  RefScope.Current    = <current scope>
+  RefScope.Enclosing  = <enclosing <NamespaceRef>>
+  RefScope.Context    = <<Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope>>
+  RefScope.RefScope   = <<Term>>
+  
+  Disambiguator.All   = <>
+  Disambiguator.Best  = <best>
+  
+templates // constraints
+
+  Constraints.NoWhere = <>
+  Constraints.Where   = <
+    where <Formula>
+  > {bracket}
+  
+  Filters.Filter = <
+    with <Formula>
+  >
+  
+  Proposition.PropertyPattern = <<VarRef> has <PropertyRef> <Pattern>> {avoid}
+  
+lexical syntax
+
+  Id = "into"      {reject}
+  Id = "enclosing" {reject} 
+
+template options
+
+  keyword -/- [a-zA-z]
+    
  

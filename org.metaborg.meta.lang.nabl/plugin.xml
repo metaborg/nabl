@@ -8,5 +8,15 @@
        <extension id="org.metaborg.meta.lang.nabl.parser" name="NameBindingLanguage Parser" point="org.eclipse.imp.runtime.parser">
           <parser class="org.metaborg.meta.lang.nabl.NameBindingLanguageParseController" language="NameBindingLanguage">
           </parser>
+       </extension>
+       <extension
+             point="org.eclipse.ui.newWizards">
+          <wizard
+                class="org.metaborg.meta.lang.nabl.wizards.NaBLNewWizard"
+                icon="icons/nabl.png"
+                id="org.metaborg.meta.lang.nabl.wizards.NaBLNewWizard"
+                name="Name Binding Module">
+                <description>Create a name binding module</description>
+          </wizard>
        </extension>    
     </plugin>

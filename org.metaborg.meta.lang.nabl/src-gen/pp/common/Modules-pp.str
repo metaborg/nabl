@@ -1,0 +1,94 @@
+module src-gen/pp/common/Modules-pp
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  src-gen/signatures/common/Modules-sig
+
+
+strategies
+  prettyprint-example =
+    prettyprint-Module
+
+  prettyprint-example =
+    prettyprint-ModuleSection
+
+  prettyprint-example =
+    prettyprint-ImportModule
+
+  prettyprint-Module :
+    Module(t0__, t1__) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [S("module ")]
+                            )
+                          , H(
+                              []
+                            , [S("")]
+                            )
+                          , H(
+                              [SOpt(HS(), "0")]
+                            , []
+                            )
+                          ]
+
+  is-Module =
+    ?Module(_, _)
+
+  prettyprint-ModuleSection :
+    Imports(t0__) -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [S("imports ")]
+                       )
+                     ]
+
+  is-ModuleSection =
+    ?Imports(_)
+
+  prettyprint-ImportModule :
+    ImportWildcard(t0__) -> [ H(
+                                [SOpt(HS(), "0")]
+                              , [S("/-")]
+                              )
+                            ]
+
+  is-ImportModule =
+    ?ImportWildcard(_)
+
+  prettyprint-ImportModule :
+    Import(t0__) -> [ H(
+                        [SOpt(HS(), "0")]
+                      , []
+                      )
+                    ]
+
+  is-ImportModule =
+    ?Import(_)
+
+  is-Module =
+    fail
+
+  is-ModuleSection =
+    fail
+
+  is-ImportModule =
+    fail
+
+
+strategies
+  prettyprint-ModuleID =
+    ![S(<is-string>)]
+
+  prettyprint-SectionKeyword =
+    ![S(<is-string>)]
+
+  prettyprint-ModuleIDPart =
+    ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-ModuleID
+
+  prettyprint-example =
+    prettyprint-SectionKeyword
+
+  prettyprint-example =
+    prettyprint-ModuleIDPart
