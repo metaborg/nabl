@@ -62,5 +62,5 @@ context-free syntax
 
 context-free syntax
 
-  Proposition.DefOf    = [definition of [VarRef] => [Var]]
-  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>
+  Proposition.DefOf      = [definition of [VarRef] => [Var]]
+  Proposition.ResolvesTo = <<VarRef> resolves to <NamespaceRef> <Var> in <VarRef>>
