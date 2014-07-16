@@ -39,12 +39,6 @@ rules
     ?Module(m, _)
     ; ![NablNsNamespace(), NablNsProperty()]
 
-  nabl-scoping-site =
-    ?Module(m, _)
-    ; nabl-scope(
-      | [NablNsNamespace(), NablNsProperty()]
-      )
-
   nabl-get-name :
     Module(m, _) -> m
 
@@ -281,6 +275,10 @@ rules
         )
       |
       )
+
+  nabl-scoping-site =
+    ?Binding(_, _, _)
+    ; nabl-scope(|[NablNsVariable()])
 
   nabl-get-scope =
     ?Binding(_, _, _)
