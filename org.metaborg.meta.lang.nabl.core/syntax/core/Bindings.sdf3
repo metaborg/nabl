@@ -32,22 +32,20 @@ context-free syntax
 	      <BindingClause>
 	  >
   
-  BindingClause.VarDefines = <
-    defines <Unique> <NamespaceRef> <VarRef> 
+  BindingClause.Defines = <
+    defines <Unique> <NamespaceRef> <BindingName> 
          in <Scope>
     >
   
-  BindingClause.StringDefines = <
-    defines <Unique> <NamespaceRef> <String>
-         in <Scope>
-    >
-  
+  BindingName     = VarRef
+  BindingName.Str = String
+   
   Unique.Unique    = <unique>
   Unique.NonUnique = <non-unique>
 
   BindingClause.RefersTo = <
-    refers to <NamespaceRef> <VarRef> 
-           in <Scope>
+    refers to <NamespaceRef> <BindingName> 
+           in <VarRef>
         where <Formula>
     >
 
