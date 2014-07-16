@@ -9,6 +9,7 @@ imports
   src-gen/signatures/formulas/-
   src-gen/signatures/terms/-
   generation/util
+  generation/core/bindings
   generation/core/namespaces
   generation/core/properties
   generation/formulas/-
@@ -27,7 +28,7 @@ rules
       index-setup(|<language>, project-path)
     with
       filename   := <guarantee-extension(|"str")> $[src-gen/[name]]
-    ; str-module := <module-to-str> ast
+    ; str-module := <to-ppable-str; module-to-str> ast
     with
        result := <pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
@@ -48,7 +49,7 @@ rules // modules
     ; ns'   := <namespaces-to-str> ns
     ; p-sig := <properties-to-sig> p
     ; p-str := <properties-to-strategies> p
-    ; r'    := [] //<rules-to-str> r
+    ; r'    := <bindings-to-str> r
     with
        <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
      ; lib* := []
