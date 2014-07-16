@@ -22,7 +22,7 @@ context-free syntax
     <<NamespaceID>
     >
   
-  NamespaceRef.DefaultNamespace = <>
+  NamespaceRef.DefaultNamespace = <name> {avoid}
   NamespaceRef.NamespaceRef     = <<LanguageRef><NamespaceID>>
   
   LanguageRef.CurrentLanguage   = <>
