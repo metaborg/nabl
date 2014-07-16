@@ -23,17 +23,19 @@ strategies
   prettyprint-Formula :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-Formula)
+    where t0__' := <pp-one-Z(prettyprint-Proposition)> t0__
 
   prettyprint-Formula :
     Not(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , [S("not ")]
+                   , [S("not "), t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-Formula)> t0__
 
   is-Formula =
     ?Not(_)
@@ -41,13 +43,15 @@ strategies
   prettyprint-Formula :
     And(t0__, t1__) -> [ H(
                            [SOpt(HS(), "0")]
-                         , []
+                         , [t0__']
                          )
                        , H(
                            [SOpt(HS(), "0")]
-                         , [S("and ")]
+                         , [S("and "), t1__']
                          )
                        ]
+    with t0__' := <pp-one-Z(prettyprint-Formula)> t0__
+    with t1__' := <pp-one-Z(prettyprint-Formula)> t1__
 
   is-Formula =
     ?And(_, _)
@@ -55,13 +59,15 @@ strategies
   prettyprint-Formula :
     Or(t0__, t1__) -> [ H(
                           [SOpt(HS(), "0")]
-                        , []
+                        , [t0__']
                         )
                       , H(
                           [SOpt(HS(), "0")]
-                        , [S("or ")]
+                        , [S("or "), t1__']
                         )
                       ]
+    with t0__' := <pp-one-Z(prettyprint-Formula)> t0__
+    with t1__' := <pp-one-Z(prettyprint-Formula)> t1__
 
   is-Formula =
     ?Or(_, _)
@@ -69,9 +75,13 @@ strategies
   prettyprint-Formula :
     Parenthetical(t0__) -> [ H(
                                [SOpt(HS(), "0")]
-                             , [S("("), S(")")]
+                             , [ S("(")
+                               , t0__'
+                               , S(")")
+                               ]
                              )
                            ]
+    with t0__' := <pp-one-Z(prettyprint-Formula)> t0__
 
   is-Formula =
     fail

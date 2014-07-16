@@ -1,3 +1,4 @@
+
 module src-gen/completion/core/Properties-esv
 
 imports
@@ -7,3 +8,11 @@ imports
   src-gen/completion/terms/Terms-esv
   src-gen/completion/formulas/Formulas-esv
   src-gen/completion/core/Namespaces-esv
+
+completions
+  completion template ModuleSection : "properties " =
+    "properties\n\t" (cursor) (blank)  
+  completion template PropertyDef : "PropertyID of NamespaceRef : Sort" =
+    <PropertyID:PropertyID> " of " <NamespaceRef:NamespaceRef> " : " <Sort:Sort> (blank)  
+  completion template PropertyRef : "type" =
+    "type"                                   

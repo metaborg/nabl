@@ -7,7 +7,7 @@ imports
   core/Scopes
   core/Properties
     
-templates // propositions
+context-free syntax // propositions
   
   Proposition.True     = <true>
   Proposition.False    = <false>

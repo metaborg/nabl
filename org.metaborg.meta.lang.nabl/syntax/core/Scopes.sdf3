@@ -10,7 +10,7 @@ lexical syntax
 
   ScopeID = Id
   
-templates // access current and future scopes
+context-free syntax // access current and future scopes
 
   LocalScope.NamedScope   = <<NamespaceRef> <VarRef>>
   LocalScope.CurrentScope = <current <NamespaceRef> scope>
@@ -21,7 +21,7 @@ templates // access current and future scopes
   Scope                   = <<LocalScope>>
   Scope.Anonymous         = <new scope in <Scope>>
 
-templates // scope clause
+context-free syntax // scope clause
 
   Clause.ChildScope = <
     <Scope> scopes <NamespaceRef> at child nodes

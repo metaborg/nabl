@@ -19,14 +19,19 @@ strategies
   prettyprint-Module :
     Module(t0__, t1__) -> [ H(
                               [SOpt(HS(), "0")]
-                            , [S("module ")]
+                            , [S("module "), t0__']
                             )
                           , H(
                               []
                             , [S("")]
                             )
-                          , <pp-indent(|"4")> []
+                          , H(
+                              [SOpt(HS(), "0")]
+                            , [t1__']
+                            )
                           ]
+    with t0__' := <pp-one-Z(prettyprint-ModuleID)> t0__
+    with t1__' := <pp-V-list(prettyprint-ModuleSection|"")> t1__
 
   is-Module =
     ?Module(_, _)
@@ -34,9 +39,10 @@ strategies
   prettyprint-ModuleSection :
     Imports(t0__) -> [ H(
                          [SOpt(HS(), "0")]
-                       , [S("imports ")]
+                       , [S("imports "), t0__']
                        )
                      ]
+    with t0__' := <pp-H-list(prettyprint-ImportModule)> t0__
 
   is-ModuleSection =
     ?Imports(_)
@@ -44,9 +50,10 @@ strategies
   prettyprint-ImportModule :
     ImportWildcard(t0__) -> [ H(
                                 [SOpt(HS(), "0")]
-                              , [S("/-")]
+                              , [t0__', S("/-")]
                               )
                             ]
+    with t0__' := <pp-one-Z(prettyprint-ModuleID)> t0__
 
   is-ImportModule =
     ?ImportWildcard(_)
@@ -54,9 +61,10 @@ strategies
   prettyprint-ImportModule :
     Import(t0__) -> [ H(
                         [SOpt(HS(), "0")]
-                      , []
+                      , [t0__']
                       )
                     ]
+    with t0__' := <pp-one-Z(prettyprint-ModuleID)> t0__
 
   is-ImportModule =
     ?Import(_)
@@ -75,17 +83,17 @@ strategies
   prettyprint-ModuleID =
     ![S(<is-string>)]
 
-  prettyprint-ModuleIDPart =
+  prettyprint-SectionKeyword =
     ![S(<is-string>)]
 
-  prettyprint-SectionKeyword =
+  prettyprint-ModuleIDPart =
     ![S(<is-string>)]
 
   prettyprint-example =
     prettyprint-ModuleID
 
   prettyprint-example =
-    prettyprint-ModuleIDPart
+    prettyprint-SectionKeyword
 
   prettyprint-example =
-    prettyprint-SectionKeyword
+    prettyprint-ModuleIDPart

@@ -6,7 +6,6 @@ imports
   src-gen/signatures/core/Namespaces-sig
   src-gen/signatures/core/Scopes-sig
   src-gen/signatures/core/Properties-sig
-  src-gen/signatures/core/Relations-sig
 
 
 signature
@@ -16,7 +15,8 @@ signature
     Eq          : VarRef * Term -> Proposition
     Match       : VarRef * Pattern -> Proposition
     DefOf       : VarRef * Var -> Proposition
+    DefOf       : NamespaceRef * VarRef * Var -> Proposition
     ScopeOf     : Scope * Var -> Proposition
-    RefersTo    : VarRef * NamespaceRef * Var -> Proposition
+    ResolvesTo  : Term * NamespaceRef * Var -> Proposition
     HasProperty : VarRef * PropertyRef * Var -> Proposition
     InRelation  : Term * Relation * Term -> Proposition

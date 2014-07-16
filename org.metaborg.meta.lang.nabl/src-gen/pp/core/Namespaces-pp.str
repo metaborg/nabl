@@ -48,8 +48,9 @@ strategies
                             [SOpt(HS(), "0")]
                           , [S("namespaces")]
                           )
-                        , <pp-indent(|"2")> []
+                        , t0__'
                         ]
+    with t0__' := <pp-indent(|"2")> [<pp-H-list(prettyprint-NamespaceDef)> t0__]
 
   is-ModuleSection =
     ?Namespaces(_)
@@ -57,9 +58,10 @@ strategies
   prettyprint-NamespaceDef :
     NamespaceDef(t0__) -> [ H(
                               [SOpt(HS(), "0")]
-                            , []
+                            , [t0__']
                             )
                           ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceID)> t0__
 
   is-NamespaceDef =
     ?NamespaceDef(_)
@@ -67,9 +69,11 @@ strategies
   prettyprint-NamespaceRef :
     NamespaceRef(t0__, t1__) -> [ H(
                                     [SOpt(HS(), "0")]
-                                  , []
+                                  , [t0__', t1__']
                                   )
                                 ]
+    with t0__' := <pp-one-Z(prettyprint-LanguageRef)> t0__
+    with t1__' := <pp-one-Z(prettyprint-NamespaceID)> t1__
 
   is-NamespaceRef =
     ?NamespaceRef(_, _)
@@ -87,9 +91,10 @@ strategies
   prettyprint-LanguageRef :
     LanguageRef(t0__) -> [ H(
                              [SOpt(HS(), "0")]
-                           , [S(".")]
+                           , [t0__', S(".")]
                            )
                          ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
 
   is-LanguageRef =
     ?LanguageRef(_)

@@ -1,38 +1,38 @@
 module terms/Signatures
 
-imports
+  imports
+	  common/Identifiers
+	  terms/Constants
+	  terms/StringQuotations
 
-	common/Identifiers
-	terms/Constants
+	sorts Sort
 	
-sorts Sort
-
-context-free syntax
+	context-free syntax
+		
+		Sort.SortVar    = LCID
+    Sort.SortNoArgs = UCID
+    Sort.Sort       = <<Id>(<{Sort ","}*>)>
 	
-	Sort.SortVar    = LCID
-	Sort.SortNoArgs = UCID
-	Sort.Sort       = Id "(" {Sort ","}* ")"
+	sorts TypeDecl PPTerm
+	
+	context-free syntax
 
-sorts TypeDecl PPTerm
-
-context-free syntax
-
-  TypeDecl.TypeDecl  = Id     TypeParams PPTerm
-  TypeDecl.TypeDeclQ = String TypeParams PPTerm
-  PPTerm.Str         = String
+    TypeDecl.TypeDecl  = Id     TypeParams PPTerm
+    TypeDecl.TypeDeclQ = String TypeParams PPTerm
+    PPTerm.Str         = String
+    
+	sorts TypeParams TypeParam 
+	
+	context-free syntax
+		
+    TypeParams.NoTypeParams =
+    TypeParams.TypeParams   = <(<{TypeParam ","}+>)>
+    TypeParam.TypeParam     = <<Id>: <Sort>>
   
-sorts TypeParams TypeParam 
+  %%%
+  %% Restriction is required for the Sort* in Sdecl: List(a) is
+  %% ambiguous.
+  %%%
+	context-free restrictions
 
-context-free syntax
-	
-  TypeParams.NoTypeParams =
-  TypeParams.TypeParams   = "(" {TypeParam ","}+ ")"
-  TypeParam.TypeParam     = Id ":" Sort
-  
-%%%
-%% Restriction is required for the Sort* in Sdecl: List(a) is
-%% ambiguous.
-%%%
-context-free restrictions
-
-	Sort -/- [\(]
+		Sort -/- [\(]

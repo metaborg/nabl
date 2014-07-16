@@ -3,3 +3,13 @@ module src-gen/completion/formulas/Formulas-esv
 imports
   src-gen/completion/terms/Terms-esv
   src-gen/completion/formulas/Propositions-esv
+
+completions
+  completion template Formula : "not Formula" =
+    "not " <Formula:Formula> (blank)  
+  completion template Formula : "Formula and Formula" =
+    <Formula:Formula> "\nand " <Formula:Formula> (blank)  
+  completion template Formula : "Formula or Formula" =
+    <Formula:Formula> "\nor " <Formula:Formula> (blank)  
+  completion template Formula : "(Formula)" =
+    "(" <Formula:Formula> ")"  

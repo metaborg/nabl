@@ -8,18 +8,20 @@ imports
 
 imports
   src-gen/signatures/common/Identifiers-sig
-  src-gen/signatures/terms/Vars-sig
   src-gen/signatures/terms/Signatures-sig
-  src-gen/signatures/core/Namespaces-sig
+  src-gen/signatures/terms/Vars-sig
+  src-gen/signatures/terms/Terms-sig
   src-gen/signatures/formulas/Formulas-sig
+  src-gen/signatures/core/Namespaces-sig
 
 
 imports
   src-gen/pp/common/Identifiers-pp
-  src-gen/pp/terms/Vars-pp
   src-gen/pp/terms/Signatures-pp
-  src-gen/pp/core/Namespaces-pp
+  src-gen/pp/terms/Vars-pp
+  src-gen/pp/terms/Terms-pp
   src-gen/pp/formulas/Formulas-pp
+  src-gen/pp/core/Namespaces-pp
 
 
 strategies
@@ -29,11 +31,17 @@ strategies
   prettyprint-SectionKeyword =
     ![S(<is-string>)]
 
+  prettyprint-Relation =
+    ![S(<is-string>)]
+
   prettyprint-example =
     prettyprint-PropertyID
 
   prettyprint-example =
     prettyprint-SectionKeyword
+
+  prettyprint-example =
+    prettyprint-Relation
 
 
 strategies
@@ -51,8 +59,9 @@ strategies
                             [SOpt(HS(), "0")]
                           , [S("properties")]
                           )
-                        , <pp-indent(|"2")> []
+                        , t0__'
                         ]
+    with t0__' := <pp-indent(|"2")> [<pp-H-list(prettyprint-PropertyDef)> t0__]
 
   is-ModuleSection =
     ?Properties(_)
@@ -60,9 +69,17 @@ strategies
   prettyprint-PropertyDef :
     PropertyDef(t0__, t1__, t2__) -> [ H(
                                          [SOpt(HS(), "0")]
-                                       , [S(" of "), S(" : ")]
+                                       , [ t0__'
+                                         , S(" of ")
+                                         , t1__'
+                                         , S(" : ")
+                                         , t2__'
+                                         ]
                                        )
                                      ]
+    with t0__' := <pp-one-Z(prettyprint-PropertyID)> t0__
+    with t1__' := <pp-H-list(prettyprint-NamespaceRef|", ")> t1__
+    with t2__' := <pp-one-Z(prettyprint-Sort)> t2__
 
   is-PropertyDef =
     ?PropertyDef(_, _, _)
@@ -80,9 +97,10 @@ strategies
   prettyprint-PropertyRef :
     PropertyRef(t0__) -> [ H(
                              [SOpt(HS(), "0")]
-                           , []
+                           , [t0__']
                            )
                          ]
+    with t0__' := <pp-one-Z(prettyprint-PropertyID)> t0__
 
   is-PropertyRef =
     ?PropertyRef(_)
@@ -94,27 +112,4 @@ strategies
     fail
 
   is-PropertyRef =
-    fail
-
-
-strategies
-  prettyprint-example =
-    prettyprint-BindingClause
-
-  prettyprint-BindingClause :
-    Property(t0__, t1__, t2__, t3__, t4__) -> [ <pp-indent(|"3")> [ S("=> ")
-                                                                  , S(" ")
-                                                                  , S(" has ")
-                                                                  , S(" ")
-                                                                  ]
-                                              , H(
-                                                  [SOpt(HS(), "0")]
-                                                , [S("where ")]
-                                                )
-                                              ]
-
-  is-BindingClause =
-    ?Property(_, _, _, _, _)
-
-  is-BindingClause =
     fail

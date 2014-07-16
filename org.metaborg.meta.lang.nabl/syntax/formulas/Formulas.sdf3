@@ -4,7 +4,7 @@ imports
   terms/Terms
   formulas/Propositions
 
-templates // formulas
+context-free syntax // formulas
 
   Formula = <<Proposition>>
 

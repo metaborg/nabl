@@ -1,3 +1,4 @@
+
 module src-gen/completion/formulas/Propositions-esv
 
 imports
@@ -6,3 +7,25 @@ imports
   src-gen/completion/core/Namespaces-esv
   src-gen/completion/core/Scopes-esv
   src-gen/completion/core/Properties-esv
+
+completions
+  completion template Proposition : "true" =
+    "true"                                
+  completion template Proposition : "false" =
+    "false"                              
+  completion template Proposition : "VarRef == Term" =
+    <VarRef:VarRef> " == " <Term:Term>  
+  completion template Proposition : "VarRef => Pattern" =
+    <VarRef:VarRef> " => " <Pattern:Pattern>  
+  completion template Proposition : "definition of VarRef => Var" =
+    "definition of " <VarRef:VarRef> " => " <Var:Var>  
+  completion template Proposition : "definition of NamespaceRef VarRef => Var" =
+    "definition of " <NamespaceRef:NamespaceRef> " " <VarRef:VarRef> " => " <Var:Var>  
+  completion template Proposition : "Scope => Var" =
+    <Scope:Scope> " => " <Var:Var>  
+  completion template Proposition : "Term resolves to NamespaceRef Var" =
+    <Term:Term> " resolves to " <NamespaceRef:NamespaceRef> " " <Var:Var>  
+  completion template Proposition : "VarRef has PropertyRef Var" =
+    <VarRef:VarRef> " has " <PropertyRef:PropertyRef> " " <Var:Var>  
+  completion template Proposition : "Term Relation Term" =
+    <Term:Term> " " <Relation:Relation> " " <Term:Term>  

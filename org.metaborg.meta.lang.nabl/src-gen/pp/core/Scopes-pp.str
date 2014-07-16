@@ -8,14 +8,14 @@ imports
 
 imports
   src-gen/signatures/common/Identifiers-sig
-  src-gen/signatures/terms/Vars-sig
   src-gen/signatures/core/Namespaces-sig
+  src-gen/signatures/terms/Vars-sig
 
 
 imports
   src-gen/pp/common/Identifiers-pp
-  src-gen/pp/terms/Vars-pp
   src-gen/pp/core/Namespaces-pp
+  src-gen/pp/terms/Vars-pp
 
 
 strategies
@@ -31,17 +31,16 @@ strategies
     prettyprint-LocalScope
 
   prettyprint-example =
-    prettyprint-ScopePosition
-
-  prettyprint-example =
     prettyprint-Scope
 
   prettyprint-LocalScope :
     NamedScope(t0__, t1__) -> [ H(
                                   [SOpt(HS(), "0")]
-                                , [S(" ")]
+                                , [t0__', S(" "), t1__']
                                 )
                               ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceRef)> t0__
+    with t1__' := <pp-one-Z(prettyprint-VarRef)> t1__
 
   is-LocalScope =
     ?NamedScope(_, _)
@@ -49,9 +48,13 @@ strategies
   prettyprint-LocalScope :
     CurrentScope(t0__) -> [ H(
                               [SOpt(HS(), "0")]
-                            , [S("current "), S(" scope")]
+                            , [ S("current ")
+                              , t0__'
+                              , S(" scope")
+                              ]
                             )
                           ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceRef)> t0__
 
   is-LocalScope =
     ?CurrentScope(_)
@@ -59,9 +62,11 @@ strategies
   prettyprint-LocalScope :
     TermScope(t0__, t1__) -> [ H(
                                  [SOpt(HS(), "0")]
-                               , [S(" scope  at ")]
+                               , [t0__', S(" scope  at "), t1__']
                                )
                              ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceRef)> t0__
+    with t1__' := <pp-one-Z(prettyprint-VarRef)> t1__
 
   is-LocalScope =
     ?TermScope(_, _)
@@ -69,40 +74,18 @@ strategies
   prettyprint-LocalScope :
     Enclosing(t0__, t1__) -> [ H(
                                  [SOpt(HS(), "0")]
-                               , [S("enclosing "), S(" of ")]
+                               , [ S("enclosing ")
+                                 , t0__'
+                                 , S(" of ")
+                                 , t1__'
+                                 ]
                                )
                              ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceRef)> t0__
+    with t1__' := <pp-one-Z(prettyprint-LocalScope)> t1__
 
   is-LocalScope =
     ?Enclosing(_, _)
-
-  prettyprint-ScopePosition :
-    t0__ -> [ H(
-                [SOpt(HS(), "0")]
-              , []
-              )
-            ]
-    where not(is-ScopePosition)
-
-  prettyprint-ScopePosition :
-    ChildScope() -> [ H(
-                        [SOpt(HS(), "0")]
-                      , [S("child nodes")]
-                      )
-                    ]
-
-  is-ScopePosition =
-    ?ChildScope()
-
-  prettyprint-ScopePosition :
-    SubsequentScope() -> [ H(
-                             [SOpt(HS(), "0")]
-                           , [S("subsequent nodes")]
-                           )
-                         ]
-
-  is-ScopePosition =
-    ?SubsequentScope()
 
   prettyprint-Scope :
     GlobalScope() -> [ H(
@@ -117,25 +100,24 @@ strategies
   prettyprint-Scope :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-Scope)
+    where t0__' := <pp-one-Z(prettyprint-LocalScope)> t0__
 
   prettyprint-Scope :
     Anonymous(t0__) -> [ H(
                            [SOpt(HS(), "0")]
-                         , [S("new scope in ")]
+                         , [S("new scope in "), t0__']
                          )
                        ]
+    with t0__' := <pp-one-Z(prettyprint-Scope)> t0__
 
   is-Scope =
     ?Anonymous(_)
 
   is-LocalScope =
-    fail
-
-  is-ScopePosition =
     fail
 
   is-Scope =
@@ -144,37 +126,55 @@ strategies
 
 strategies
   prettyprint-example =
-    prettyprint-BindingClause
+    prettyprint-Clause
 
-  prettyprint-BindingClause :
+  prettyprint-Clause :
     ChildScope(t0__, t1__) -> [ H(
                                   [SOpt(HS(), "0")]
-                                , [S(" scopes "), S(" at child nodes")]
+                                , [ t0__'
+                                  , S(" scopes ")
+                                  , t1__'
+                                  , S(" at child nodes")
+                                  ]
                                 )
                               ]
+    with t0__' := <pp-one-Z(prettyprint-Scope)> t0__
+    with t1__' := <pp-one-Z(prettyprint-NamespaceRef)> t1__
 
-  is-BindingClause =
+  is-Clause =
     ?ChildScope(_, _)
 
-  prettyprint-BindingClause :
+  prettyprint-Clause :
     SubsequentScope(t0__, t1__) -> [ H(
                                        [SOpt(HS(), "0")]
-                                     , [S(" scopes "), S(" at subsequent nodes")]
+                                     , [ t0__'
+                                       , S(" scopes ")
+                                       , t1__'
+                                       , S(" at subsequent nodes")
+                                       ]
                                      )
                                    ]
+    with t0__' := <pp-one-Z(prettyprint-Scope)> t0__
+    with t1__' := <pp-one-Z(prettyprint-NamespaceRef)> t1__
 
-  is-BindingClause =
+  is-Clause =
     ?SubsequentScope(_, _)
 
-  prettyprint-BindingClause :
+  prettyprint-Clause :
     NodeScope(t0__, t1__) -> [ H(
                                  [SOpt(HS(), "0")]
-                               , [S("requires "), S(" scope at ")]
+                               , [ S("requires ")
+                                 , t0__'
+                                 , S(" scope at ")
+                                 , t1__'
+                                 ]
                                )
                              ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceRef)> t0__
+    with t1__' := <pp-one-Z(prettyprint-VarRef)> t1__
 
-  is-BindingClause =
+  is-Clause =
     ?NodeScope(_, _)
 
-  is-BindingClause =
+  is-Clause =
     fail

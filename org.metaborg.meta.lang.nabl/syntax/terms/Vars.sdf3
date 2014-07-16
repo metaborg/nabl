@@ -1,24 +1,20 @@
 module terms/Vars
 
-imports
-
-  common/Identifiers
-  terms/Terms
-  
+  imports
+    common/Identifiers
+ 
   sorts Wld Var VarRef
   
   context-free syntax
-
-    Wld.Wld     = "_"  
-    Var         = Wld  
-    Var.Var     = Id
-    Var.ListVar = LId
-    
-    VarRef.VarRef     = Id
-    VarRef.ListVarRef = LId
-    
+  
+    Wld.Wld           = <_>
+    Var.ListWld       = <...>
+    Var               = <<Wld>>
+    Var.Var           = <<Id>>
+    Var.ListVar       = <<LId>>
+    VarRef.VarRef     = <<Id>>
+    VarRef.ListVarRef = <<LId>>
+  
   context-free restrictions
 
     Wld -/- [a-zA-Z0-9\'\-\_]
-
- 

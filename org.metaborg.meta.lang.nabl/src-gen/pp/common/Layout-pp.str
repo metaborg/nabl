@@ -7,6 +7,9 @@ imports
 
 
 strategies
+  prettyprint-Eol =
+    ![S(<is-string>)]
+
   prettyprint-Eof =
     ![S(<is-string>)]
 
@@ -18,6 +21,9 @@ strategies
 
   prettyprint-Asterisk =
     ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-Eol
 
   prettyprint-example =
     prettyprint-Eof

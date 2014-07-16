@@ -21,16 +21,16 @@ context-free syntax
   
   Start = Module
   
-templates // namespaces
+context-free syntax // namespaces
 
   RestrictedNamespaceRef.Restricted = <<Restriction*> <NamespaceRef>>
   
   Restriction.Imported = <imported>
   
-templates // properties
+context-free syntax // properties
 
   PropertyDef.QualityDef = <
-  <PropertyID> of <NamespaceRef+; separator=", ">>
+  <PropertyID> of <{NamespaceRef ", "}+>>
 
 QualityRef.QualityRef = <<PropertyID>>
 
@@ -47,7 +47,7 @@ lexical syntax
   PropertyID     = "quality" {reject}
   SectionKeyword = "binding"
   
-templates // binding rules
+context-free syntax // binding rules
     
   ModuleSection.Bindings = <
   binding rules
@@ -57,7 +57,7 @@ templates // binding rules
   BindingRule.BindingRule = <
   <Pattern> <Constraints> : <BindingClause+>> 
 
-templates // clauses
+context-free syntax // clauses
 
   BindingClause.DefClause = <
     <DefKind> defines <Unique> <NamespaceRef> <Term> <PropertyTerm*> <InDefScopes> <Constraints>
@@ -71,29 +71,29 @@ templates // clauses
   Unique.NonUnique = <non-unique>
     
   BindingClause.ScopeClause = <
-    scopes <NamespaceRef+; separator=", ">
+    scopes <{NamespaceRef ", "}+>
   >
    
   BindingClause.NonTransitiveScopeClause = <
-    non-transitively scopes <NamespaceRef+; separator=", ">
+    non-transitively scopes <{NamespaceRef ", "}+>
   > 
     
   BindingClause.RefClause     = <
-    <RefClausePart+; separator="otherwise">
+    <{RefClausePart "otherwise\n"}+>
   >
     
   RefClausePart.RefClausePart = <
   refers to <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <InRefScope> <Constraints>>
   
   BindingClause.ImportClause = <
-    <ImportClausePart+; separator="otherwise\n">
+    <{ImportClausePart "otherwise\n"}+>
   > 
   
   ImportClausePart.SingleImport = <
   imports <Disambiguator> <NamespaceRef> <Term> <PropertyPattern*> <FromRefScope> <Alias> <IntoDefScopes> <Constraints>>             
 
   ImportClausePart.WildcardImport = <
-  imports <RestrictedNamespaceRef+; separator=", "> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
+  imports <{RestrictedNamespaceRef ", "}+> <PropertyPattern*> <FromRefScope> <IntoDefScopes> <Constraints>> 
   
   Alias.None  = <>
   Alias.Alias = <as <Term>>
@@ -115,7 +115,7 @@ templates // clauses
     minimal distance <Term> <Relation> <Term>
   >
   
-templates // scopes
+context-free syntax // scopes
 
   InDefScopes.Current   = <>
   InDefScopes           = <in <DefScopes>>   {bracket}
@@ -124,7 +124,7 @@ templates // scopes
   IntoDefScopes         = <into <DefScopes>> {bracket}
 
   DefScopes.Current     = <current scope>
-  DefScopes.DefScopes   = <<DefScope+; separator=", ">> 
+  DefScopes.DefScopes   = <<{DefScope ", "}+>> 
   DefScope.Subsequent   = <subsequent scope>
   DefScope.DefScope     = <<Term>>
  
@@ -142,7 +142,7 @@ templates // scopes
   Disambiguator.All   = <>
   Disambiguator.Best  = <best>
   
-templates // constraints
+context-free syntax // constraints
 
   Constraints.NoWhere = <>
   Constraints.Where   = <

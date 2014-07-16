@@ -11,13 +11,13 @@ imports
 lexical syntax
 
   PropertyID     = Id
-  PropertyID = "type"    {reject}
+  PropertyID     = "type"    {reject}
   PropertyID     = SectionKeyword {reject}
   SectionKeyword = "properties"
  
   Relation       = "<" [A-Za-z\-]* ":" 
 
-templates
+context-free syntax
 
   ModuleSection.Properties  = <
   properties   
@@ -25,7 +25,7 @@ templates
   > 
   
   PropertyDef.PropertyDef = <
-    <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
+    <PropertyID> of <{NamespaceRef ", "}+> : <Sort>>
   
   PropertyRef.TypeProp    = <type>  
   PropertyRef.PropertyRef = <<PropertyID>>

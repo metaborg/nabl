@@ -24,9 +24,17 @@ strategies
   prettyprint-Message :
     Message(t0__, t1__, t2__) -> [ H(
                                      [SOpt(HS(), "0")]
-                                   , [S(" "), S(" on ")]
+                                   , [ t0__'
+                                     , S(" ")
+                                     , t1__'
+                                     , S(" on ")
+                                     , t2__'
+                                     ]
                                    )
                                  ]
+    with t0__' := <pp-one-Z(prettyprint-MessageKind)> t0__
+    with t1__' := <pp-one-Z(prettyprint-Term)> t1__
+    with t2__' := <pp-one-Z(prettyprint-Term)> t2__
 
   is-Message =
     ?Message(_, _, _)
