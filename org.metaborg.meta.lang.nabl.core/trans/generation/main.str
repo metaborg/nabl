@@ -45,19 +45,21 @@ rules // modules
 
   module-to-str:
     Module(n, s*) -> 
-    Module(
-    	$[src-gen/[n]]
-    , [ Imports([lib*, i*])
-      , Signature([Constructors(c*)])
-      , Rules(r*)
-      ]
+    Module(	$[src-gen/[n]], [ im*, sc*, rs* ]
     )
     with
-      i* := <filterconcat(section-to-imports)> s*
-    ; c* := <filterconcat(section-to-constructors)> s*
-    ; r* := <filterconcat(section-to-rules)> s*
+       c*  := <filterconcat(section-to-constructors)> s*
+     ; sc* := [Signature([Constructors(<nonempty> c*)])]
+    <+ sc* := []
     with
-       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
+       rs  := <new-iset> 
+     ; r*  := <filterconcat(section-to-rules(|rs))> s*
+     ; mr* := <iset-elements> rs
+     ; rs* := [Rules(<nonempty> [r*, mr*])]
+    <+ rs* := []
+    with
+       i*   := <filterconcat(section-to-imports)> s*
+     ; <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
      ; lib* := []
     <+ lib* := [ ImportWildcard("lib/runtime/nabl")
                , ImportWildcard("lib/runtime/task")
@@ -66,12 +68,17 @@ rules // modules
                , ImportWildcard("lib/runtime/relations")
                , ImportWildcard("lib/runtime/editor")
                ]
-  
+    with
+       im* := [ Imports(<nonempty> [lib*, i*]) ]
+    <+ im* := []
+      
   section-to-imports:
-  	Import(i*) -> i'*
+  	Imports(i*) -> i'*
   	with i'* := <map(try(import-to-str))> i*
   	    
   import-to-str: 
     Import(i) -> Import($[src-gen/[i]]) 
     where <nabl-collect-use-task; not(task-has-failed)> i
-      
+  
+  section-to-rules(|rs) = section-to-rules
+    

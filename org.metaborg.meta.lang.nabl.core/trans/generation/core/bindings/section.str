@@ -7,7 +7,9 @@ imports
 
 rules
   
- section-to-rules: 
+  section-to-rules(|rs): 
     Bindings(b*) -> r*
-    with r* := <filter(binding-to-str)> b*
+    with r* := <filter(binding-to-rule(|rs))> b*
     
+  binding-to-rule(|rs) = binding-to-rule
+  

@@ -20,7 +20,7 @@ lexical syntax
 
 context-free syntax
 
-  ModuleSection.Properties  = <
+  ModuleSection.Properties = <
   properties   
     <PropertyDef*>
   > 

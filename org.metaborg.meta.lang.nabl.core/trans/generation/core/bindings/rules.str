@@ -15,7 +15,7 @@ imports
   
 rules
   
-  binding-to-str:
+  binding-to-rule:
     Binding(rid, p, Defines(u, ns, name, scope)) ->
     RULE(rid, SCOPEVARS(), p, p', ASSIGNDEF(name, ns', scope'))
     where
@@ -23,18 +23,18 @@ rules
     ; ns'    := <ns-to-term> ns
     ; scope' := <scope-to-str> scope
     
-  binding-to-str:
+  binding-to-rule(|rs):
     Binding(rid, p, RefersTo(ns, name, scope, formula)) -> 
     RULE(rid, [CTX()|SCOPEVARS()], p, p', ASSIGNREF(name, ns', scope, tasks))
     where
       p'    := <strip-annos; replace-all(|[(<strip-annos> name, REFVAR())])> p
     ; ns'   := <ns-to-term> ns
-    ; tasks := <formula-to-tasks(|[], [], <new-iset>)> formula
+    ; tasks := <formula-to-tasks(|[], [], rs)> formula
       
-  binding-to-str:
+  binding-to-rule:
     Binding(rid, p, Alias(var1, var2)) -> <fail>
   
-  binding-to-str:
+  binding-to-rule:
     Binding(rid, p, Wildcard(ns, from-scope, to-scope, formula)) -> <fail>
 
 overlays
