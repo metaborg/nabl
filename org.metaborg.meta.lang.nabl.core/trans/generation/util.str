@@ -68,6 +68,8 @@ overlays
   LIST(elems)        = NoAnnoList(List(elems))
   LIST()             = NoAnnoList(List([]))
   
+  RULE(rid, ts, lhs, rhs, w) = RDefT(rid, [], ts, Rule(lhs, rhs, w))
+
   STRATEGY(s, b)     = SDefT(s, [], [], b)
   STRATEGY(s, ts, b) = SDefT(s, [], ts, b)
   

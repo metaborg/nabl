@@ -1,0 +1,26 @@
+module generation/core/bindings/propositions
+
+imports
+  libstrc
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+  
+  generation/util
+  generation/core/namespaces/-
+  
+rules
+  
+  formula-to-tasks(s|var*, dep, r):
+    DefOf(v, d) -> Assign(d, NEW_TASK(dep, TERM("CollectDefs", [v])))
+    with
+      <s> [d, var*]
+      
+  formula-to-tasks(s|var*, dep, r):
+    DefOf(ns, n, s, v) -> 
+    Assign(v, NEW_TASK(dep, <fail>))
+    with
+      ns' := <ns-to-term> ns
+    ; <s> [v, var*]

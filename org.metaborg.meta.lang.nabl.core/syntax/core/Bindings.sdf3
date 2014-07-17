@@ -56,11 +56,13 @@ context-free syntax
   
   BindingClause.Wildcard = <
     imports <NamespaceRef>
-       from <Scope>
+       from <VarRef>
        into <Scope>
+      where <Formula>
     >
 
 context-free syntax
 
-  Proposition.DefOf      = [definition of [VarRef] => [Var]]
-  Proposition.ResolvesTo = <<VarRef> resolves to <NamespaceRef> <Var> in <VarRef>>
+  Proposition.DefOf = [definition of [VarRef] => [Var]]
+  Proposition.DefOf = [definition of [NamespaceRef] [BindingName] in [VarRef] => [Var]]
+  

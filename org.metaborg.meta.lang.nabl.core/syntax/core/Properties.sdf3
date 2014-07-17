@@ -7,8 +7,7 @@ imports
   terms/Signatures
     
   core/Namespaces
-  // extends sort SectionKeyword from core/Modules
-  // extends sort BindingClause from core/Bindings
+  core/Bindings
 
   formulas/Formulas
 
@@ -35,7 +34,7 @@ context-free syntax
 context-free syntax
 
   BindingClause.Property = [
-       => [NamespaceRef] [VarRef] has [PropertyRef] [VarRef]
+       => definition of [NamespaceRef] [BindingName] has [PropertyRef] [VarRef]
     where [Formula]
   ]
   

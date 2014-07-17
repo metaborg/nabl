@@ -6,7 +6,7 @@ imports
   terms/Vars
   
   core/Namespaces
-  // extends sorts BindingClause from core/Bindings
+  core/Bindings
   
 lexical syntax
 
@@ -14,19 +14,17 @@ lexical syntax
   
 context-free syntax // access current and future scopes
 
-  LocalScope.NamedScope   = <<NamespaceRef> <VarRef>>
-  LocalScope.CurrentScope = <current <NamespaceRef> scope>
-  LocalScope.TermScope    = <<NamespaceRef> scope  at <ScopePosition>>
-  LocalScope.Enclosing    = <enclosing <NamespaceRef> of <LocalScope>>
   
   ScopePosition                 = VarRef
   ScopePosition.ChildScope      = <child nodes>
   ScopePosition.SubsequentScope = <subsequent nodes>
   
-  Scope.GlobalScope       = <global scope> {prefer}
-  Scope                   = <<LocalScope>>
-  Scope.Anonymous         = <new scope in <Scope>>
-
+  Scope.GlobalScope  = <global scope> {prefer}
+  Scope.CurrentScope = <current <NamespaceRef> scope>
+  Scope.ScopeAt      = <<NamespaceRef> scope at <ScopePosition>>
+  Scope.NamedScope   = <scope of <NamespaceRef> <VarRef>>
+  Scope.NewScope     = <new scope in <Scope>>
+  
 context-free syntax // scope clause
 
   BindingClause.ChildScope = <
@@ -43,7 +41,8 @@ context-free syntax // scope clause
 
 context-free syntax
 
-  Proposition.ScopeOf  = [[Scope] => [Var]]
+  Proposition.Scope    = [[Scope] => [Var]]
+  Proposition.ScopeOf  = [scope of [VarRef] => [Var]]
     
   
   

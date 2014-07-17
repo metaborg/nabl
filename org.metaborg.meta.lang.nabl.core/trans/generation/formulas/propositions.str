@@ -11,7 +11,21 @@ imports
   
   generation/util
   generation/core/-
+
+rules
   
+  formula-to-str:
+    True() -> Build(TUPLE([])) 
+    
+  formula-to-str:
+    False() -> Fail()
+    
+  formula-to-str:
+    Eq(v, t) -> APP("eq", TUPLE([v, t]))
+    
+  formula-to-str:
+    Match(v, t) -> AM(Build(v), t)
+    
 rules
   
   formula-to-tasks(|var*, dep, r)  = formula-to-tasks(id|var*, dep, r)
@@ -26,38 +40,6 @@ rules
   formula-to-tasks(|dep): 
     Eq(v, t) -> NEW_TASK(dep, TERM("Eq", [t, v]))
 	
-	formula-to-tasks(s|var*, dep, r):
-    DefOf(v, d) -> Assign(d, NEW_TASK(dep, TERM("CollectDefs", [v])))
-    with
-      <s> [d, var*]
-      
-  formula-to-tasks(s|var*, dep, r):
-    ScopeOf(s, v) -> Assign(v, <scope-to-task(|dep)> s)
-    with
-      <s> [v, var*]
-    
-  formula-to-tasks(s|var*, dep, r):
-    RefersTo(t, ns, v) -> Assign(v, NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), t)])))
-    with
-      ns' := <ns-to-term> ns
-    ; <s> [v, var*]
-      
-  formula-to-tasks(s|var*, dep, r):
-    HasProperty(v1, p, v2) -> Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)])))
-    with
-      p':= <prop-to-term> p
-    ; <s> [v2, var*]
-  
-  // formula-to-tasks(s|var*, dep, r):
-  //   PropertyPattern(v, prop, p) -> Scope(["p__"], t)
-  //   with
-  //     t := <formula-to-tasks(s|var*, dep, r)> And(HasProperty(v, prop, Var("p__")), Match(Var("p__"), p))
-     
-  formula-to-tasks(|dep):
-    InRelation(t1, rel, t2) -> NEW_TASK(dep, TERM("RelationMatch", [Str(rel), t1, t2]))
-       
-rules
-
 	formula-to-tasks(s|var*, dep, r):
     Match(v, p) -> result 
     with 

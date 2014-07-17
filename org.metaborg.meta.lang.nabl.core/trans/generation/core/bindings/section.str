@@ -1,0 +1,13 @@
+module generation/core/bindings/section
+
+imports
+  libstrc
+  src-gen/signatures/core/-
+  generation/core/bindings/rules
+
+rules
+  
+ section-to-rules: 
+    Bindings(b*) -> r*
+    with r* := <filter(binding-to-str)> b*
+    

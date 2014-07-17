@@ -10,16 +10,20 @@ imports
   libstrc
   
   generation/util
-  
-overlays
-	
-	PREV() = Var("prev__")
-	
+
 rules
   
-  formula-to-tasks(s|var*, dep, r) =
-    ?Where(<formula-to-tasks(s|var*, dep, r)>)
-      
+  formula-to-str:
+    Not(f) -> Not(<formula-to-str> f)
+
+  formula-to-str:
+    And(f1, f2) -> Seq(<formula-to-str> f1, <formula-to-str> f2)
+    
+  formula-to-str:
+    Or(f1, f2) -> Choice(<formula-to-str> f1, <formula-to-str> f2)
+  
+rules
+  
   formula-to-tasks(|var*, dep, r):
     Not(f) -> TASK("create-not", t)
     with
@@ -46,3 +50,8 @@ rules
   // kind-to-strategy: Note()    -> "task-create-note-on-triggers"
   // kind-to-strategy: Warning() -> "task-create-warning-on-triggers"
   // kind-to-strategy: Error()   -> "task-create-error-on-triggers"
+
+overlays
+  
+  PREV() = Var("prev__")
+  

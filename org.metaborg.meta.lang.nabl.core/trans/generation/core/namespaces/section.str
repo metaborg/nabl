@@ -1,4 +1,4 @@
-module generation/core/namespaces
+module generation/core/namespaces/section
 
 imports
   libstrc
@@ -12,8 +12,9 @@ imports
   
 rules // namespaces 
       
-  namespaces-to-str:
-    Namespaces(namespaces) -> Signature([Constructors(<map(ns-to-constructor)> namespaces)])
+  section-to-constructors:
+    Namespaces(ns*) -> c*
+    with c* := <map(ns-to-constructor)> ns*
     
   ns-to-constructor:
     NamespaceDef(ns) -> CONS_DECL(<ns-name> ns, "Namespace")

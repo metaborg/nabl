@@ -1,4 +1,4 @@
-module generation/core/bindings
+module generation/core/bindings/rules
 
 imports
   libstrc
@@ -9,20 +9,17 @@ imports
   src-gen/signatures/terms/-
   
   generation/util
-  generation/core/-
+  generation/core/namespaces/-
+  generation/core/scope/-
   generation/formulas/-
   
 rules
   
-  bindings-to-str: 
-    Bindings(b*) -> Rules(r*)
-    with r* := <filter(binding-to-str)> b*
-    
   binding-to-str:
     Binding(rid, p, Defines(u, ns, name, scope)) ->
     RULE(rid, SCOPEVARS(), p, p', ASSIGNDEF(name, ns', scope'))
     where
-    	p'     := <strip-annos; replace-all(|[(<strip-annos> name, DEFVAR())])> p
+      p'     := <strip-annos; replace-all(|[(<strip-annos> name, DEFVAR())])> p
     ; ns'    := <ns-to-term> ns
     ; scope' := <scope-to-str> scope
     
@@ -33,26 +30,20 @@ rules
       p'    := <strip-annos; replace-all(|[(<strip-annos> name, REFVAR())])> p
     ; ns'   := <ns-to-term> ns
     ; tasks := <formula-to-tasks(|[], [], <new-iset>)> formula
-    	
+      
   binding-to-str:
     Binding(rid, p, Alias(var1, var2)) -> <fail>
   
   binding-to-str:
-    Binding(rid, p, Wildcard(ns, from-scope, to-scope)) -> <fail>
-  
+    Binding(rid, p, Wildcard(ns, from-scope, to-scope, formula)) -> <fail>
+
 overlays
-	
- 	DEFVAR() = Var("def__")
+  
+  DEFVAR() = Var("def__")
   REFVAR() = Var("ref__")
 
   ASSIGNDEF(n, ns, s) = 
-  	Assign(DEFVAR(), App(CALL("nablc-def", [ns, s]), n))
+    Assign(DEFVAR(), App(CALL("nablc-def", [ns, s]), n))
 
   ASSIGNREF(n, ns, s, ts) = 
     Seq(ts, Assign(REFVAR(), App(CALL("nablc-ref", [ns, s]), n)))
-
-	RULE(rid, ts, lhs, rhs, w) =
-		RDefT(rid, [], ts, Rule(lhs, rhs, w))
-		
-
-	

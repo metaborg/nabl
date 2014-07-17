@@ -9,9 +9,10 @@ imports
   src-gen/signatures/formulas/-
   src-gen/signatures/terms/-
   generation/util
-  generation/core/bindings
-  generation/core/namespaces
-  generation/core/properties
+  generation/core/bindings/-
+  generation/core/namespaces/-
+  generation/core/properties/-
+  generation/core/scope/-
   generation/formulas/-
   
   lib/runtime/nabl/-
@@ -43,13 +44,18 @@ rules // modules
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
   module-to-str:
-    Module(n, [ Imports(i*), ns, p, r ]) -> Module($[src-gen/[n]], [ Imports([lib*, i'*]), ns', p-sig, p-str, r'])
+    Module(n, s*) -> 
+    Module(
+    	$[src-gen/[n]]
+    , [ Imports([lib*, i*])
+      , Signature([Constructors(c*)])
+      , Rules(r*)
+      ]
+    )
     with
-      i'*   := <map(try(import-to-str))> i*
-    ; ns'   := <namespaces-to-str> ns
-    ; p-sig := <properties-to-sig> p
-    ; p-str := <properties-to-strategies> p
-    ; r'    := <bindings-to-str> r
+      i* := <filterconcat(section-to-imports)> s*
+    ; c* := <filterconcat(section-to-constructors)> s*
+    ; r* := <filterconcat(section-to-rules)> s*
     with
        <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
      ; lib* := []
@@ -60,7 +66,11 @@ rules // modules
                , ImportWildcard("lib/runtime/relations")
                , ImportWildcard("lib/runtime/editor")
                ]
-      
+  
+  section-to-imports:
+  	Import(i*) -> i'*
+  	with i'* := <map(try(import-to-str))> i*
+  	    
   import-to-str: 
     Import(i) -> Import($[src-gen/[i]]) 
     where <nabl-collect-use-task; not(task-has-failed)> i

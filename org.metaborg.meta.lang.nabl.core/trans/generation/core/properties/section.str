@@ -1,29 +1,24 @@
-module generation/core/properties
+module generation/core/properties/section
 
 imports
-  src-gen/signatures/-
-  src-gen/signatures/common/-
   src-gen/signatures/core/-
-  src-gen/signatures/formulas/-
-  src-gen/signatures/terms/-
   
   libstrc
   generation/util
   
 rules // properties
         
-  properties-to-sig:
-    Properties(p*) -> Signature([Constructors(c*)])
-    with
-      c* := <map(propdef-to-sig)> p*
+  section-to-constructors:
+    Properties(p*) -> c*
+    with c* := <map(propdef-to-sig)> p*
   
   propdef-to-sig:
     PropertyDef(p, _, _) -> CONS_DECL(<prop-name> p, "Property") 
 
 rules
    
-  properties-to-strategies:
-    Properties(p*) -> Rules([r, r*])
+  section-to-rules:
+    Properties(p*) -> [r, r*]
     with
       r  := SDef("nabl-custom-properties", [DefaultVarDec("add-properties")], Seq(Build(LIST(<map(prop-to-term)> p*)), CALL("add-properties")))
     ; r* := <mapconcat(prop-to-rules)> p*
@@ -62,7 +57,7 @@ rules
 	       )
 	     )
      ]
-    
+  
 overlays
    
   PROPERTY(kind, value)               = TERM("Prop", [kind, value, LIST()])
