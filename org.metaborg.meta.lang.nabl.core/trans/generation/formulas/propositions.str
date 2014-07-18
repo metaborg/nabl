@@ -15,7 +15,7 @@ imports
 rules
   
   formula-to-str:
-    True() -> Build(TUPLE([])) 
+    True() -> Id()
     
   formula-to-str:
     False() -> Fail()
@@ -32,10 +32,10 @@ rules
   formula-to-tasks(s|var*, dep, r) = formula-to-tasks(|dep); where(<s> var*)
   
   formula-to-tasks(|dep): 
-    True()  -> NEW_TASK(dep, TERM("Id", [TUPLE([])]))
+    True()  -> NEW_TASK([], TERM("Id", [TUPLE([])]))
   
   formula-to-tasks(|dep): 
-    False() -> NEW_TASK(dep, TERM("Fail", []))
+    False() -> NEW_TASK([], TERM("Fail", []))
    
   formula-to-tasks(|dep): 
     Eq(v, t) -> NEW_TASK(dep, TERM("Eq", [t, v]))
