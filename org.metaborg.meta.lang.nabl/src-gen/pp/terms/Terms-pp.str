@@ -27,17 +27,19 @@ strategies
   prettyprint-Pattern :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-Pattern)
+    where t0__' := <pp-one-Z(prettyprint-Var)> t0__
 
   prettyprint-Pattern :
     Int(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , []
+                   , [t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-Int)> t0__
 
   is-Pattern =
     ?Int(_)
@@ -45,9 +47,10 @@ strategies
   prettyprint-Pattern :
     Real(t0__) -> [ H(
                       [SOpt(HS(), "0")]
-                    , []
+                    , [t0__']
                     )
                   ]
+    with t0__' := <pp-one-Z(prettyprint-Real)> t0__
 
   is-Pattern =
     ?Real(_)
@@ -55,9 +58,10 @@ strategies
   prettyprint-Pattern :
     Str(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , []
+                   , [t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-String)> t0__
 
   is-Pattern =
     ?Str(_)
@@ -65,9 +69,15 @@ strategies
   prettyprint-Pattern :
     Op(t0__, t1__) -> [ H(
                           [SOpt(HS(), "0")]
-                        , [S("("), S(")")]
+                        , [ t0__'
+                          , S("(")
+                          , t1__'
+                          , S(")")
+                          ]
                         )
                       ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+    with t1__' := <pp-H-list(prettyprint-Pattern|", ")> t1__
 
   is-Pattern =
     ?Op(_, _)
@@ -75,9 +85,15 @@ strategies
   prettyprint-Pattern :
     OpQ(t0__, t1__) -> [ H(
                            [SOpt(HS(), "0")]
-                         , [S("("), S(")")]
+                         , [ t0__'
+                           , S("(")
+                           , t1__'
+                           , S(")")
+                           ]
                          )
                        ]
+    with t0__' := <pp-one-Z(prettyprint-String)> t0__
+    with t1__' := <pp-H-list(prettyprint-Pattern|", ")> t1__
 
   is-Pattern =
     ?OpQ(_, _)
@@ -85,9 +101,10 @@ strategies
   prettyprint-Pattern :
     Char(t0__) -> [ H(
                       [SOpt(HS(), "0")]
-                    , []
+                    , [t0__']
                     )
                   ]
+    with t0__' := <pp-one-Z(prettyprint-Char)> t0__
 
   is-Pattern =
     ?Char(_)
@@ -95,9 +112,13 @@ strategies
   prettyprint-Pattern :
     Tuple(t0__) -> [ H(
                        [SOpt(HS(), "0")]
-                     , [S("("), S(")")]
+                     , [ S("(")
+                       , t0__'
+                       , S(")")
+                       ]
                      )
                    ]
+    with t0__' := <pp-H-list(prettyprint-Pattern|", ")> t0__
 
   is-Pattern =
     ?Tuple(_)
@@ -105,9 +126,13 @@ strategies
   prettyprint-Pattern :
     List(t0__) -> [ H(
                       [SOpt(HS(), "0")]
-                    , [S("["), S("]")]
+                    , [ S("[")
+                      , t0__'
+                      , S("]")
+                      ]
                     )
                   ]
+    with t0__' := <pp-H-list(prettyprint-Pattern|", ")> t0__
 
   is-Pattern =
     ?List(_)
@@ -116,11 +141,15 @@ strategies
     ListTail(t0__, t1__) -> [ H(
                                 [SOpt(HS(), "0")]
                               , [ S("[")
+                                , t0__'
                                 , S(" | ")
+                                , t1__'
                                 , S("]")
                                 ]
                               )
                             ]
+    with t0__' := <pp-H-list(prettyprint-Pattern|", ")> t0__
+    with t1__' := <pp-one-Z(prettyprint-Pattern)> t1__
 
   is-Pattern =
     ?ListTail(_, _)
@@ -128,9 +157,11 @@ strategies
   prettyprint-Pattern :
     As(t0__, t1__) -> [ H(
                           [SOpt(HS(), "0")]
-                        , [S("@")]
+                        , [t0__', S("@"), t1__']
                         )
                       ]
+    with t0__' := <pp-one-Z(prettyprint-Var)> t0__
+    with t1__' := <pp-one-Z(prettyprint-Pattern)> t1__
 
   is-Pattern =
     ?As(_, _)
@@ -146,17 +177,19 @@ strategies
   prettyprint-Term :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-Term)
+    where t0__' := <pp-one-Z(prettyprint-VarRef)> t0__
 
   prettyprint-Term :
     Int(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , []
+                   , [t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-Int)> t0__
 
   is-Term =
     ?Int(_)
@@ -164,9 +197,10 @@ strategies
   prettyprint-Term :
     Real(t0__) -> [ H(
                       [SOpt(HS(), "0")]
-                    , []
+                    , [t0__']
                     )
                   ]
+    with t0__' := <pp-one-Z(prettyprint-Real)> t0__
 
   is-Term =
     ?Real(_)
@@ -174,9 +208,10 @@ strategies
   prettyprint-Term :
     Str(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , []
+                   , [t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-String)> t0__
 
   is-Term =
     ?Str(_)
@@ -184,9 +219,15 @@ strategies
   prettyprint-Term :
     Op(t0__, t1__) -> [ H(
                           [SOpt(HS(), "0")]
-                        , [S("("), S(")")]
+                        , [ t0__'
+                          , S("(")
+                          , t1__'
+                          , S(")")
+                          ]
                         )
                       ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+    with t1__' := <pp-H-list(prettyprint-Term|", ")> t1__
 
   is-Term =
     ?Op(_, _)
@@ -194,9 +235,15 @@ strategies
   prettyprint-Term :
     OpQ(t0__, t1__) -> [ H(
                            [SOpt(HS(), "0")]
-                         , [S("("), S(")")]
+                         , [ t0__'
+                           , S("(")
+                           , t1__'
+                           , S(")")
+                           ]
                          )
                        ]
+    with t0__' := <pp-one-Z(prettyprint-String)> t0__
+    with t1__' := <pp-H-list(prettyprint-Term|", ")> t1__
 
   is-Term =
     ?OpQ(_, _)
@@ -204,9 +251,10 @@ strategies
   prettyprint-Term :
     Char(t0__) -> [ H(
                       [SOpt(HS(), "0")]
-                    , []
+                    , [t0__']
                     )
                   ]
+    with t0__' := <pp-one-Z(prettyprint-Char)> t0__
 
   is-Term =
     ?Char(_)
@@ -214,9 +262,13 @@ strategies
   prettyprint-Term :
     Tuple(t0__) -> [ H(
                        [SOpt(HS(), "0")]
-                     , [S("("), S(")")]
+                     , [ S("(")
+                       , t0__'
+                       , S(")")
+                       ]
                      )
                    ]
+    with t0__' := <pp-H-list(prettyprint-Term|", ")> t0__
 
   is-Term =
     ?Tuple(_)
@@ -224,9 +276,13 @@ strategies
   prettyprint-Term :
     List(t0__) -> [ H(
                       [SOpt(HS(), "0")]
-                    , [S("["), S("]")]
+                    , [ S("[")
+                      , t0__'
+                      , S("]")
+                      ]
                     )
                   ]
+    with t0__' := <pp-H-list(prettyprint-Term|", ")> t0__
 
   is-Term =
     ?List(_)
@@ -235,11 +291,15 @@ strategies
     ListTail(t0__, t1__) -> [ H(
                                 [SOpt(HS(), "0")]
                               , [ S("[")
+                                , t0__'
                                 , S(" | ")
+                                , t1__'
                                 , S("]")
                                 ]
                               )
                             ]
+    with t0__' := <pp-H-list(prettyprint-Term|", ")> t0__
+    with t1__' := <pp-one-Z(prettyprint-Term)> t1__
 
   is-Term =
     ?ListTail(_, _)
@@ -247,9 +307,10 @@ strategies
   prettyprint-Term :
     StrInterp(t0__) -> [ H(
                            [SOpt(HS(), "0")]
-                         , []
+                         , [t0__']
                          )
                        ]
+    with t0__' := <pp-one-Z(prettyprint-PPTerm)> t0__
 
   is-Term =
     ?StrInterp(_)

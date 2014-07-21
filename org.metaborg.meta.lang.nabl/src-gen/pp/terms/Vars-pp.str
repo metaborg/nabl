@@ -8,12 +8,10 @@ imports
 
 imports
   src-gen/signatures/common/Identifiers-sig
-  src-gen/signatures/terms/Terms-sig
 
 
 imports
   src-gen/pp/common/Identifiers-pp
-  src-gen/pp/terms/Terms-pp
 
 
 strategies
@@ -37,19 +35,31 @@ strategies
     ?Wld()
 
   prettyprint-Var :
+    ListWld() -> [ H(
+                     [SOpt(HS(), "0")]
+                   , [S("...")]
+                   )
+                 ]
+
+  is-Var =
+    ?ListWld()
+
+  prettyprint-Var :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-Var)
+    where t0__' := <pp-one-Z(prettyprint-Wld)> t0__
 
   prettyprint-Var :
     Var(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , []
+                   , [t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
 
   is-Var =
     ?Var(_)
@@ -57,9 +67,10 @@ strategies
   prettyprint-Var :
     ListVar(t0__) -> [ H(
                          [SOpt(HS(), "0")]
-                       , []
+                       , [t0__']
                        )
                      ]
+    with t0__' := <pp-one-Z(prettyprint-LId)> t0__
 
   is-Var =
     ?ListVar(_)
@@ -67,9 +78,10 @@ strategies
   prettyprint-VarRef :
     VarRef(t0__) -> [ H(
                         [SOpt(HS(), "0")]
-                      , []
+                      , [t0__']
                       )
                     ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
 
   is-VarRef =
     ?VarRef(_)
@@ -77,9 +89,10 @@ strategies
   prettyprint-VarRef :
     ListVarRef(t0__) -> [ H(
                             [SOpt(HS(), "0")]
-                          , []
+                          , [t0__']
                           )
                         ]
+    with t0__' := <pp-one-Z(prettyprint-LId)> t0__
 
   is-VarRef =
     ?ListVarRef(_)

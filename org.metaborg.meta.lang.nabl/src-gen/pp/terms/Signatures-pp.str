@@ -9,11 +9,13 @@ imports
 imports
   src-gen/signatures/common/Identifiers-sig
   src-gen/signatures/terms/Constants-sig
+  src-gen/signatures/terms/StringQuotations-sig
 
 
 imports
   src-gen/pp/common/Identifiers-pp
   src-gen/pp/terms/Constants-pp
+  src-gen/pp/terms/StringQuotations-pp
 
 
 strategies
@@ -23,9 +25,10 @@ strategies
   prettyprint-Sort :
     SortVar(t0__) -> [ H(
                          [SOpt(HS(), "0")]
-                       , []
+                       , [t0__']
                        )
                      ]
+    with t0__' := <pp-one-Z(prettyprint-LCID)> t0__
 
   is-Sort =
     ?SortVar(_)
@@ -33,9 +36,10 @@ strategies
   prettyprint-Sort :
     SortNoArgs(t0__) -> [ H(
                             [SOpt(HS(), "0")]
-                          , []
+                          , [t0__']
                           )
                         ]
+    with t0__' := <pp-one-Z(prettyprint-UCID)> t0__
 
   is-Sort =
     ?SortNoArgs(_)
@@ -43,9 +47,15 @@ strategies
   prettyprint-Sort :
     Sort(t0__, t1__) -> [ H(
                             [SOpt(HS(), "0")]
-                          , [S(" ( "), S(" )")]
+                          , [ t0__'
+                            , S("(")
+                            , t1__'
+                            , S(")")
+                            ]
                           )
                         ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+    with t1__' := <pp-H-list(prettyprint-Sort|",")> t1__
 
   is-Sort =
     ?Sort(_, _)
@@ -64,9 +74,17 @@ strategies
   prettyprint-TypeDecl :
     TypeDecl(t0__, t1__, t2__) -> [ H(
                                       [SOpt(HS(), "0")]
-                                    , [S(" "), S(" ")]
+                                    , [ t0__'
+                                      , S(" ")
+                                      , t1__'
+                                      , S(" ")
+                                      , t2__'
+                                      ]
                                     )
                                   ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+    with t1__' := <pp-one-Z(prettyprint-TypeParams)> t1__
+    with t2__' := <pp-one-Z(prettyprint-PPTerm)> t2__
 
   is-TypeDecl =
     ?TypeDecl(_, _, _)
@@ -74,9 +92,17 @@ strategies
   prettyprint-TypeDecl :
     TypeDeclQ(t0__, t1__, t2__) -> [ H(
                                        [SOpt(HS(), "0")]
-                                     , [S(" "), S(" ")]
+                                     , [ t0__'
+                                       , S(" ")
+                                       , t1__'
+                                       , S(" ")
+                                       , t2__'
+                                       ]
                                      )
                                    ]
+    with t0__' := <pp-one-Z(prettyprint-String)> t0__
+    with t1__' := <pp-one-Z(prettyprint-TypeParams)> t1__
+    with t2__' := <pp-one-Z(prettyprint-PPTerm)> t2__
 
   is-TypeDecl =
     ?TypeDeclQ(_, _, _)
@@ -84,9 +110,10 @@ strategies
   prettyprint-PPTerm :
     Str(t0__) -> [ H(
                      [SOpt(HS(), "0")]
-                   , []
+                   , [t0__']
                    )
                  ]
+    with t0__' := <pp-one-Z(prettyprint-String)> t0__
 
   is-PPTerm =
     ?Str(_)
@@ -118,9 +145,13 @@ strategies
   prettyprint-TypeParams :
     TypeParams(t0__) -> [ H(
                             [SOpt(HS(), "0")]
-                          , [S("( "), S(" )")]
+                          , [ S("(")
+                            , t0__'
+                            , S(")")
+                            ]
                           )
                         ]
+    with t0__' := <pp-H-list(prettyprint-TypeParam|",")> t0__
 
   is-TypeParams =
     ?TypeParams(_)
@@ -128,9 +159,11 @@ strategies
   prettyprint-TypeParam :
     TypeParam(t0__, t1__) -> [ H(
                                  [SOpt(HS(), "0")]
-                               , [S(" : ")]
+                               , [t0__', S(": "), t1__']
                                )
                              ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+    with t1__' := <pp-one-Z(prettyprint-Sort)> t1__
 
   is-TypeParam =
     ?TypeParam(_, _)

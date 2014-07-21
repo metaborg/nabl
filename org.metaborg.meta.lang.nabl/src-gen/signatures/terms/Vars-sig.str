@@ -2,7 +2,6 @@ module src-gen/signatures/terms/Vars-sig
 
 imports
   src-gen/signatures/common/Identifiers-sig
-  src-gen/signatures/terms/Terms-sig
 
 
 signature
@@ -11,6 +10,7 @@ signature
 
   constructors
     Wld        : Wld
+    ListWld    : Var
                : Wld -> Var
     Var        : Id -> Var
     ListVar    : LId -> Var

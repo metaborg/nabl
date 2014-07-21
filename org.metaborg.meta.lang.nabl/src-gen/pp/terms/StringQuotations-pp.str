@@ -21,10 +21,11 @@ strategies
   prettyprint-PPTerm :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-PPTerm)
+    where t0__' := <pp-one-Z(prettyprint-StringQuotation)> t0__
 
   is-PPTerm =
     fail
@@ -37,10 +38,11 @@ strategies
   prettyprint-PPTerm :
     t0__ -> [ H(
                 [SOpt(HS(), "0")]
-              , []
+              , [t0__']
               )
             ]
     where not(is-PPTerm)
+    where t0__' := <pp-one-Z(prettyprint-StringQuotation)> t0__
 
   is-PPTerm =
     fail
