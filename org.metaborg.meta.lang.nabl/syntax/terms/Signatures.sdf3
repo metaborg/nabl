@@ -19,7 +19,7 @@ module terms/Signatures
 
     TypeDecl.TypeDecl  = Id     TypeParams PPTerm
     TypeDecl.TypeDeclQ = String TypeParams PPTerm
-    PPTerm.Str         = String
+    PPTerm.Str         = String {avoid}
     
 	sorts TypeParams TypeParam 
 	
