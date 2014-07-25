@@ -1,0 +1,13 @@
+module src-gen/completion/core/Namespaces-esv
+
+imports
+  src-gen/completion/common/Identifiers-esv
+  src-gen/completion/core/Modules-esv
+
+completions
+  completion template ModuleSection : "namespaces " =
+    "namespaces\n\t" (cursor) (blank)  
+  completion template NamespaceRef : "LanguageRefNamespaceID" =
+    <LanguageRef:LanguageRef> <NamespaceID:NamespaceID>  
+  completion template LanguageRef : "Id." =
+    <Id:Id> "."  

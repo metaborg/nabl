@@ -8,7 +8,7 @@ imports
 rules
     
   scope-to-coq(|c, pattern):
-    ScopeClause([NamespaceRef(ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, type)
+    ScopeClause([NamespaceRef(CurrentLanguage(), ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, type)
     where
       (term, binder*, _, _) := <pattern-to-term(|0, None())> pattern
     with

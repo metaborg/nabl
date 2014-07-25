@@ -1,0 +1,27 @@
+module lexical/Identifiers
+
+sorts Id LId LCID UCID ModuleID
+
+lexical syntax
+
+  Id  = [a-zA-Z\_] [a-zA-Z0-9\'\-\_]*    
+  Id  = "_" {reject}
+  Id  = [\'] [a-z]+
+  LId = [a-zA-Z\_] [a-zA-Z0-9\'\-\_]* "*"
+
+  LCID = [a-z] [a-zA-Z0-9\'\-\_]*
+  UCID = [A-Z] [a-zA-Z0-9\'\-\_]*
+
+  ModuleID     = {ModuleIDPart "/"}+ 
+  ModuleIDPart = [a-zA-Z\.\_] [a-zA-Z0-9\'\.\-\_]* 
+    
+lexical restrictions
+
+  Id       -/- [a-zA-Z0-9\'\_\*]
+  Id       -/- [\-].~[\>]
+  LId      -/- [a-zA-Z0-9\'\-\_]
+  LCID     -/- [a-zA-Z0-9\'\-\_]
+  UCID     -/- [a-zA-Z0-9\'\-\_]
+  ModuleID -/- [a-zA-Z0-9\'\.\-\_]
+
+    

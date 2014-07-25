@@ -1,0 +1,32 @@
+module src-gen/completion/terms/Terms-esv
+
+imports
+  src-gen/completion/terms/Constants-esv
+  src-gen/completion/common/Identifiers-esv
+  src-gen/completion/terms/Vars-esv
+
+completions
+  completion template Pattern : "Id()" =
+    <Id:Id> "(" <:Pattern> ")"  
+  completion template Pattern : "String()" =
+    <String:String> "(" <:Pattern> ")"  
+  completion template Pattern : "()" =
+    "(" <:Pattern> ")"  
+  completion template Pattern : "[]" =
+    "[" <:Pattern> "]"  
+  completion template Pattern : "[ | Pattern]" =
+    "[" <:Pattern> " | " <Pattern:Pattern> "]"  
+  completion template Pattern : "Var@Pattern" =
+    <Var:Var> "@" <Pattern:Pattern>  
+
+completions
+  completion template Term : "Id()" =
+    <Id:Id> "(" <:Term> ")"  
+  completion template Term : "String()" =
+    <String:String> "(" <:Term> ")"  
+  completion template Term : "()" =
+    "(" <:Term> ")"  
+  completion template Term : "[]" =
+    "[" <:Term> "]"  
+  completion template Term : "[ | Term]" =
+    "[" <:Term> " | " <Term:Term> "]"  

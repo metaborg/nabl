@@ -1,0 +1,14 @@
+module src-gen/completion/formulas/Messages-esv
+
+imports
+  src-gen/completion/terms/Terms-esv
+
+completions
+  completion template Message : "MessageKind Term on Term" =
+    <MessageKind:MessageKind> " " <Term:Term> " on " <Term:Term>  
+  completion template MessageKind : "error" =
+    "error"         
+  completion template MessageKind : "warning" =
+    "warning"     
+  completion template MessageKind : "note" =
+    "note"           

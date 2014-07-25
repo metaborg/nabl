@@ -1,0 +1,23 @@
+module generation/scope
+
+imports
+  include/NameBindingLanguage
+  generation/-
+  libstrc
+  
+rules
+
+  scope-to-str(|dep): 
+  	CurrentScope(ns) -> NEW_TASK(dep, TERM("Id", [App(CALL("lookup-uri", [Var("uris__")]), ns')]))
+  	with
+  		ns' := <ns-to-term> ns
+    
+  scope-to-str(|dep):
+    NamedScope(_, n) -> n
+     
+  scope-to-str(|dep):
+  	Enclosing(ns, s) -> NEW_TASK(dep, TERM("SubURI", [ns', s']))
+  	with
+  		ns' := <ns-to-term> ns
+  	; s'  := <scope-to-str(|dep)> s
+  	

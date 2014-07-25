@@ -9,68 +9,52 @@ imports
   
 rules
       
-  binding-to-filter-rules(|bound*, task*, repl*):
-    (i, BindingRule(pattern, constr*, clause*)) -> [filter-rule*, create-rule*]
-    with 
-       filter-clause* := <filter-with-index(to-filter-clauses(|pattern, bound*, repl*, i)); nonempty; concat> clause*
-     ; filter-rule*   := [FILTER_RULE(pattern, <to-seq> [task*, filter-clause*])]
-    <+ filter-rule*   := []
+  binding-to-filter-rule(|var*, r):
+    BindingRule(pattern, _, clause*) -> FILTER_RULE(pattern, <to-seq> cclause*)
+    where 
+      cclause* := <filterconcat(to-filter-clauses(|var*, r, pattern)); nonempty> clause*
+     
+  to-filter-clauses(|var*, r, pattern):
+    FilterClause(ns, term, Filter(ff), f) -> [task, cong]
     with
-       create-rule* := <filter-with-index(to-filter-create-rule(|pattern, bound*, repl*, i)); nonempty> clause*
-    <+ create-rule* := []
-    // 1. use task
-    // 2. constraint tasks
-    // 3. higher order task
-    // 4. create rule for higher-order task
-    // 5. clauses for filter rule
+      task  := <formula-to-tasks(?fvar*|var*, [], pattern)> f
+    ; tvar* := <collect-all(?Var(_) + ?ListVar(_))> term
+    ; dep*  := <diff> (fvar*, tvar*)
+    ; ftask := <formula-to-tasks(|dep*, [], r)> ff
+    ; fseq  := Seq(ftask, Build(TUPLE([term, RootApp(Id())])))
+    ; key := <new-key(|"filter")> r
+    ; <iset-add(|CREATE_FILTER_RULE(key, dep*, term, fseq))> r   
+    ; cong := <replace-all-id(|[(term, FILTER_CALL(key, dep*))])> pattern
     
-  to-filter-clauses(|pattern, bound*, glob-repl*, i):
-    (j, FilterClause(ns, term, _, constr*)) -> [task*, cong]
+rules
+      
+  binding-to-disambiguation-rule(|var*, r):
+    BindingRule(pattern, constr*, clause*) -> DISAMBIGUATION_RULE(pattern, <to-seq> dclause*)
+    where 
+       dclause* := <filter(to-disambiguation-clauses(|var*, r, pattern)); nonempty; concat> clause*
+     
+  to-disambiguation-clauses(|var*, r, pattern):
+    DisambiguateClause(ns, term, Filter(ff), d, f) -> [task, cong]
     with
-      k                      := <extend-index(|i)> j
-    ; (task*, repl*)         := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*                   := <map(Snd)> repl*
-    ; filter-call            := FILTER_CALL(Str($["filter[k]"]), dep*)
-    ; cong := <replace-all-id(|[(term, filter-call)])> pattern
-
-  to-filter-create-rule(|pattern, bound*, glob-repl*, i):
-    (j, FilterClause(ns, term, Filters(f*), constr*)) -> CREATE_FILTER_RULE(Str($["filter[k]"]), dep*, term, seq)
-    with
-      k                      := <extend-index(|i)> j
-    ; (task*, repl*)         := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*                   := <map(Snd)> repl*
-    ; (filter-task*, _)      := <constraints-to-tasks(|bound*, $[f[k]], 1)> (f*, repl*) 
-    ; seq                    := <to-seq> [filter-task*, Build(TUPLE([term, App(CALL("task-create-sequence", [], [Var("partition__")]), LIST(dep*))]))]
-    
- //  binding-to-disambiguation-rule(|bound*, task*, repl*):
- //    (i, BindingRule(pattern, constr*, clause*)) -> DISAMBIG_RULE(pattern, seq)
- //    where 
- //      disambig-clause* := <filter-with-index(to-disambiguation-clauses(|pattern, bound*, repl*, i)); concat> clause*
- //    ; seq              := <to-seq> [task*, disambig-clause*]
- // 
- //  to-disambiguation-clauses(|pattern, bound*, glob-repl*, i):
- //    (j, DisambiguateClause(ns, term, d, constr*)) -> [ASSIGN_USE_TASK(task, term), task*, filter-task*, cong]
- //    with
- //      ns-term           := <ns-to-term> ns
- //    ; k                 := <extend-index(|i)> j
- //    ; task              := <use-var> j
- //    ; (task*, repl*)    := <constraints-to-tasks(|bound*, k, 1)> (constr*, [(term, task), glob-repl*])
- //    ; l                 := <extend-index(|$[f[i]])> j
- //    ; (filter-task*, _) := <constraints-to-tasks(|bound*, l, 1)> (f*, repl*)
- //    ; filter-call       := FILTER_CALL([])
- //    // ; dep*              := <map(Snd)> repl*
- //    ; cong := <replace-all-id(|[(term, filter-call)])> pattern
-
-  use-var: i-> Var($[use[i]__])
+      task  := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; ftask := <formula-to-tasks(|fvar*, [], r)> ff
+    ; dtask := <disambiguator-to-task(|term)> d
+    ; tvar* := <collect-all(?Var(_) + ?ListVar(_))> term
+    ; dep*  := <diff> (fvar*, tvar*)
+    ; key   := <new-key(|"disamb")> r
+    ; <iset-add(|CREATE_DISAMBIGUATION_RULE(key, dep*, term, ftask, dtask))> r
+    ; cong  := <replace-all-id(|[(term, DISAMBIGUATION_CALL(key, dep*))])> pattern
   
+  disambiguator-to-task(|term):
+    MinimalDistance(t1, rel, t2) -> NEW_TASK([PREV()], TERM("RelationDistance", [Str(rel), t1, t2]))
+    
 overlays
 
   FILTER_RULE(pattern, body)  =
-  SDefT(
+  STRATEGY(
     "nabl-filtering-site"
-  , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
@@ -78,25 +62,20 @@ overlays
   , Seq(Match(pattern), body)
   )
 
-  FILTER_CALL(ho-name, ts) = 
-  CallT(
-    SVar("nabl-filter")
-  , []
-  , [Var("lang__"), Var("partition__"), Var("uris__"), ho-name, LIST(ts)]
-  )
+  FILTER_CALL(string, ts) = 
+  CALL("nabl-filter", [Var("lang__"), CTX(), Var("uris__"), Str(string), LIST(ts)])
 
   CREATE_FILTER_RULE(string, deps, name, body) = 
-  SDefT(
+  STRATEGY(
     "nabl-filter-def"
-  , []
-  , [ DefaultVarDec("partition__")
+  , [ CTX_DEC()
     , DefaultVarDec("ctx-terms__")
     , DefaultVarDec("ctx-string__")
     ]
   , Seq(
       Match(name)
     , Seq(
-	      Where(Assign(string, Var("ctx-string__")))
+	      Where(Assign(Str(string), Var("ctx-string__")))
 	    , Seq(
 	        Where(Assign(LIST(deps), Var("ctx-terms__")))
 	      , body
@@ -105,23 +84,41 @@ overlays
 	  )
   ) 
   
-  DISAMBIG_RULE(pattern, body)  =
-  SDefT(
+  DISAMBIGUATION_RULE(pattern, body)  =
+  STRATEGY(
     "nabl-disambiguation-site"
-  , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__")
     ]
   , Seq(Match(pattern), body)
   )
-
-  DISAMBIG_CALL(ts) = 
-  CallT(
-    SVar("nabl-disambiguate")
-  , []
-  , [Var("lang__"), Var("partition__"), Var("uris__"), LIST(ts)]
-  )
+  
+  DISAMBIGUATION_CALL(string, ts) = 
+  CALL("nabl-disambiguate", [Var("lang__"), CTX(), Var("uris__"), Str(string), LIST(ts)])
+  
+  CREATE_DISAMBIGUATION_RULE(string, deps, name, ftask, disamb) = 
+  STRATEGY(
+    "nabl-disambiguate-def"
+  , [ CTX_DEC()
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("ctx-terms__")
+    , DefaultVarDec("ctx-string__")
+    ]
+  , Seq(
+      Match(name)
+    , Seq(
+        Where(Assign(Str(string), Var("ctx-string__")))
+      , Seq(
+          Where(Assign(LIST(deps), Var("ctx-terms__")))
+        , Seq(
+            ftask
+          , Seq(Match(PREV()), Build(TUPLE([name, disamb])))
+          )
+        )
+      )
+    )
+  ) 
 

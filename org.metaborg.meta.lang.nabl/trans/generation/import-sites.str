@@ -5,10 +5,7 @@ imports
   libstrc
   include/NameBindingLanguage
   
-  generation/util
-  generation/sections
-  generation/scoping-sites
-  generation/constraints
+  generation/-
   
 rules
                      
@@ -19,40 +16,36 @@ rules
   + ?SingleImport(_, _, <id>, _, _, _, _, _)
   + ?WildcardImport(_, _, Context(_, _, <id>, _, _), _, _)
 	    
-  binding-to-import-rule(|bound*, task*, repl*):
-    (i, BindingRule(pattern, constr*, clause*)) -> IMPORT_RULE(pattern, seq)
+  binding-to-import-rule(|var*, r):
+    BindingRule(pattern, constr*, clause*) -> IMPORT_RULE(pattern, seq)
     where 
-      cong* := <filter-with-index(to-import-clauses(|pattern, bound*, repl*, i)); concat; nonempty> clause*
-    ; seq   := <to-seq> [task*, cong*]
+      cong* := <filter(to-import-clauses(|var*, r, pattern)); nonempty> clause*
+    ; seq   := <to-seq> cong*
   
-  to-import-clauses(|pattern, bound*, repl*, i):
-    (j, clause@ImportClause(part*)) -> [clause*, IMPORT_CALL(import*)]
-    where
-      k       := <extend-index(|i)> j
-    ; (clause*, import*) 
-              := <filter-with-index(to-import-candidate(|pattern, bound*, repl*, k)); unzip; (concat, id)> part*
+  to-import-clauses(|var*, r, pattern):
+    ImportClause(part*) -> IMPORT_CALL(cand*)
+    with
+      cand* := <filter(to-import-candidate(|var*, r, pattern)); nonempty> part*
     
-  to-import-candidate(|pattern, bound*, glob-repl*, i):
-    (j, SingleImport(_, ns, term, _, _, alias, into, constr*)) -> result
-    where
-      into-term      := <scope-to-term> into
-    ; k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
-    where
+  to-import-candidate(|var*, r, pattern):
+    SingleImport(_, ns, term, _, _, alias, into, f) -> cand
+    with
+      into-term := <scope-to-term> into
+    ; task      := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; dep*      := <diff; map(?Var(<id>))> (fvar*, var*)
+    with
        Alias(a) := alias
-     ; result   := (task*, ALIAS(term, a, []))
-    <+ result   := (task*, SINGLE(<ns-to-term> ns, term, into-term, dep*))
+     ; cand     := ALIAS(dep*, task, term, a, [])
+    <+ cand     := SINGLE(dep*, task, <ns-to-term> ns, term, into-term, [])
        
-	to-import-candidate(|pattern, bound*, glob-repl*, i):
-		(j, WildcardImport(ns*, _, from, into, constr*)) -> (task*, WILDCARD(ns-term*, from-term, into-term, dep*))
-    where
+	to-import-candidate(|var*, r, pattern):
+		WildcardImport(ns*, _, from, into, f) -> WILDCARD(dep*, task, ns-term*, from-term, into-term, [])
+    with
       ns-term*  := <map(ns-to-term)> ns*
     ; from-term := <scope-to-term> from
     ; into-term := <scope-to-term> into
-    ; k              := <extend-index(|i)> j
-    ; (task*, repl*) := <constraints-to-tasks(|bound*, k, 1)> (constr*, glob-repl*)
-    ; dep*           := <map(Snd)> repl*
+    ; task      := <formula-to-tasks(?fvar*|var*, [], r)> f
+    ; dep*      := <diff; map(?Var(<id>))> (fvar*, var*)
       
 	ns-to-term: Restricted([], ns)           -> DIRECT(<ns-to-term> ns)
 	ns-to-term: Restricted([Imported()], ns) -> TRANSITIVE(<ns-to-term> ns)	
@@ -64,7 +57,7 @@ overlays
     "nabl-import-site"
   , []
   , [ DefaultVarDec("lang__")
-    , DefaultVarDec("partition__")
+    , CTX_DEC()
     , DefaultVarDec("uniques__")
     , DefaultVarDec("uris__")
     , DefaultVarDec("states__") 
@@ -77,16 +70,21 @@ overlays
     SVar("nabl-import")
   , []
   , [ Var("lang__")
-    , Var("partition__")
+    , CTX()
     , Var("uniques__")
     , Var("uris__")
     , LIST(imports)
     ] 
   )
   
-  SINGLE(ns, term, scope, deps)      = TERM("Single", [ns, term, scope, LIST(deps)])
-  ALIAS(term, alias, deps)       = TERM("Alias", [term, alias, LIST(deps)])
-  WILDCARD(ns, from, into, deps) = TERM("Wildcard", [LIST(ns), from, into, LIST(deps)])
+  SINGLE(vs, task, ns, term, scope, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("Single", [ns, term, scope, LIST(deps)])))))
+    
+  ALIAS(vs, task, term, alias, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("Alias", [term, alias, LIST(deps)])))))
+    
+  WILDCARD(vs, task, ns, from, into, deps) = 
+    RootApp(Scope(vs, Seq(task, Build(TERM("Wildcard", [LIST(ns), from, into, LIST(deps)])))))
 
   DIRECT(ns)     = TERM("Import", [Var("lang__"), ns])
   TRANSITIVE(ns) = TERM("Import", [Var("lang__"), TERM("Imported", [ns])])

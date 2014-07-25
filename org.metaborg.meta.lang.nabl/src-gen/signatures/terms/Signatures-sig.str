@@ -1,0 +1,16 @@
+module src-gen/signatures/terms/Signatures-sig
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Constants-sig
+
+
+signature
+  sorts
+    Sort
+
+  sorts
+    TypeDecl PPTerm
+
+  sorts
+    TypeParams TypeParam

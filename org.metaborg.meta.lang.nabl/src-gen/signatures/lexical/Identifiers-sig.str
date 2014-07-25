@@ -1,0 +1,5 @@
+module src-gen/signatures/lexical/Identifiers-sig
+
+signature
+  sorts
+    Id LId LCID UCID ModuleID
