@@ -20,7 +20,7 @@ rules
 rules
   
   typed-defines-to-coq(|c, pattern):
-    DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), type, Current(), []) ->
+    DefClause(Explicit(), Unique(), NamespaceRef(_,ns), VarRef(x), type, Current(), []) ->
       ConsDecl($[[c]_typed_defines_[ns]], [Bind(x), Bind(type'), binder*], coq-term-type)
     where
       [PropertyTerm(TypeProp(), VarRef(type'))] := type

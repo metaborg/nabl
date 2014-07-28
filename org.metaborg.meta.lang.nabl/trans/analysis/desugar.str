@@ -17,19 +17,20 @@ rules
   nabl-desugar:
     QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropertyRef(q), NoAnnoList(Op("True", [])))
     
-  nabl-desugar:
-    QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
-    
-  nabl-desugar:
-    RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))
+  // Here be dead code:
+  // nabl-desugar:
+  //   QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
+  //   
+  // nabl-desugar:
+  //   RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))
     
   nabl-desugar:
     Module(name, section*) -> Module(name, <concat> [import, property, namespace, binding])
     where
-      (bind*, nonbind*) := <partition(?BindingRules(<id>))> section*
+      (bind*, nonbind*) := <partition(?Bindings(<id>))> section*
     ; (ns*, nonns*) := <partition(?Namespaces(<id>))> nonbind*
     ; (prop*, imp*) := <partition(?Properties(<id>), ?Imports(<id>))> nonns*
-    ; binding := <?[] <+ ![BindingRules(<concat>)]> bind*
+    ; binding := <?[] <+ ![Bindings(<concat>)]> bind*
     ; namespace := <?[] <+ ![Namespaces(<concat>)]> ns*
     ; property := <?[] <+ ![Properties(<concat>)]> prop*
     ; import := <?[] <+ ![Imports(<concat>)]> imp*
