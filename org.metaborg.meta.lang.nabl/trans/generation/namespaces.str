@@ -1,0 +1,18 @@
+module generation/namespaces
+
+imports
+  libstrc
+  include/NameBindingLanguage
+  generation/util
+  
+rules // namespaces 
+      
+  namespaces-to-str:
+    Namespaces(namespaces) -> Signature([Constructors(<map(ns-to-constructor)> namespaces)])
+    
+  ns-to-constructor:
+    NamespaceDef(ns) -> CONS_DECL(<ns-name> ns, "Namespace")
+  
+  ns-to-term: NamespaceRef(CurrentLanguage(), ns) -> TERM(<ns-name> ns)
+
+  ns-name: ns -> $[NablNs[ns]]

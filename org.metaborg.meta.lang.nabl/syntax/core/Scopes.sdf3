@@ -1,0 +1,42 @@
+module core/Scopes
+
+imports
+
+  common/Identifiers
+  core/Namespaces
+  terms/Vars
+  
+lexical syntax
+
+  ScopeID = Id
+  
+templates // access current and future scopes
+
+  LocalScope.NamedScope   = <<NamespaceRef> <VarRef>>
+  LocalScope.CurrentScope = <current <NamespaceRef> scope>
+  LocalScope.TermScope    = <<NamespaceRef> scope  at <VarRef>>
+  LocalScope.Enclosing    = <enclosing <NamespaceRef> of <LocalScope>>
+  
+  Scope.GlobalScope       = <global scope>
+  Scope                   = <<LocalScope>>
+  Scope.Anonymous         = <new scope in <Scope>>
+
+templates // scope clause
+
+  Clause.ChildScope = <
+    <Scope> scopes <NamespaceRef> at child nodes
+  >
+  
+  Clause.SubsequentScope = <
+    <Scope> scopes <NamespaceRef> at subsequent nodes
+  >
+  
+  Clause.NodeScope = <
+    requires <NamespaceRef> scope at <VarRef>
+  >
+  
+    
+  
+  
+  	
+  

@@ -1,0 +1,93 @@
+module coq-semantics/main
+
+imports
+  include/NameBindingLanguage
+  generation/util
+  coq-semantics/Coq
+  coq-semantics/Vernacular.pp.generated
+  coq-semantics/scopes
+  coq-semantics/patterns
+  coq-semantics/defines
+  coq-semantics/refersto
+  coq-semantics/Coq-parenthesize
+  
+rules
+  
+  generate-coq-semantics:
+    (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"v")> path
+    ; coq-file := <strip-annos; module-to-coq; debug(!"here it is ")> ast
+    with
+       result := <parenthesize-Coq; prettyprint-CoqFile; box2text-string(|100)> coq-file
+    <+ <bottomup(try(not(is-string) ; not(is-list) ; not(prettyprint-example) ; debug(!"cannot pp ")))> coq-file
+    ;  result := ""
+ 
+rules
+  
+  module-to-coq:
+    Module(name, section*) -> Sent(<filter(section-to-coq); concat> section*)
+    
+rules // namespaces
+  
+  section-to-coq:
+  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Sort(Set()), ListDecl(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
+  	with
+  	  cdec* := <map(namespace-to-coq)> ns*
+  	  
+  namespace-to-coq:
+  	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
+
+rules // binding rules
+  
+  section-to-coq:
+    Bindings(r*) -> [scopes*, defines*, refers*]
+    with
+      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Product(Ref("term"), Product(Ref("NS"), Sort(Prop()))))> r*
+    ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*
+    ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
+  
+  binding-rules-to-coq(binding-to-coq|name, type):
+    r* -> [Inductive(Ind([Induc($[[name]R], [], type, ListDecl(cdec*))])),
+      Definition(Def($[[name]_R], [], None(), Ref($[[name]R])))]
+    with
+      cdec* := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*
+    
+  binding-rule-to-coq(clause-to-coq|):
+    BindingRule(pattern, [], clause*) -> <filter(clause-to-coq(|c, pattern))> clause*
+    with
+      c := <pattern-to-cons> pattern
+
+overlays
+  
+  TERM_IDENT_NS_KEY_PROP =
+  Product(
+    Ref("term")
+  , Product(
+      Ref("Ident")
+    , Product(
+        Ref("NS")
+      , Product(
+          Ref("key")
+        , Sort(Prop())
+        )
+      )
+    )
+  )
+
+  COQ_TERM_TYPE(name, coqterm, x, ns, k) = 
+  Type(
+    Apply(
+      Apply(
+        Apply(
+          Apply(
+            Ref(name)
+          , coqterm
+          )
+        , Ref(x)
+        )
+      , Ref(ns)
+      )
+    , Ref(k)
+    )
+  )

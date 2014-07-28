@@ -1,0 +1,20 @@
+.cache
+bin
+include
+editor/java/trans
+editor/*.generated.esv
+editor/*.generated.str
+lib
+lib-refactoring
+utils
+syntax/*generated.sdf
+syntax/*.generated.pp
+trans/*.generated.str
+test/*.str
+*.aterm
+
+# Required for build because SDF3 is not available during build.
+!editor/NaBL.generated.esv
+!editor/Modules.generated.esv
+!syntax/Modulesgenerated.sf
+!syntax/NaBLgenerated.sf

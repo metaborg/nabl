@@ -1,0 +1,64 @@
+module names
+
+imports 
+
+	include/NameBindingLanguage
+
+namespaces
+ 
+	Module
+	Namespace
+	Property
+	Variable
+
+binding rules
+
+	Module(m, _): 
+		defines Module m
+		//scopes Namespace, Property
+		
+	//Import(m): 
+	//	imports Namespace, Property from Module m
+	
+binding rules
+
+	NamespaceDef(n): 
+		defines non-unique Namespace n
+	
+	NamespaceRef(CurrentLanguage(), n): 
+		refers to Namespace n
+		
+binding rules
+
+	PropertyDef(p, ns, t): 
+		defines non-unique Property p of type (ns, t)
+	
+	PropertyRef(p): 
+		refers to Property p
+
+binding rules
+
+	BindingRule(_, _, _):
+		scopes Variable
+		
+	RefClausePart(_, _, _, _, _, _):
+		scopes Variable
+	
+	WildcardImport(_, _, _, _, _):
+	  scopes Variable
+	
+	SingleImport(_, _, _, _, _, _, _, _):
+	  scopes Variable
+	  
+	Var(x):
+		defines Variable x
+		
+	ListVar(x):
+		defines Variable x
+		
+	VarRef(x):
+		refers to Variable x
+		
+	ListVarRef(x):
+		refers to Variable x
+	

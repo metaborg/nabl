@@ -1,0 +1,18 @@
+module formulas/Propositions
+imports terms/Terms terms/Vars core/Namespaces core/Scopes core/Properties
+
+exports
+  context-free syntax
+    "true"                                         -> Proposition {cons("True")}
+    "false"                                        -> Proposition {cons("False")}
+    VarRef "==" Term                               -> Proposition {cons("Eq")}
+    VarRef "=>" Pattern                            -> Proposition {cons("Match")}
+    "definition" "of" VarRef "=>" Var              -> Proposition {cons("DefOf")}
+    "definition" "of" NamespaceRef VarRef "=>" Var -> Proposition {cons("DefOf")}
+    Scope "=>" Var                                 -> Proposition {cons("ScopeOf")}
+    Term "resolves" "to" NamespaceRef Var          -> Proposition {cons("ResolvesTo")}
+    VarRef "has" PropertyRef Var                   -> Proposition {cons("HasProperty")}
+    Term Relation Term                             -> Proposition {cons("InRelation")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Proposition {cons("COMPLETION-Proposition")}

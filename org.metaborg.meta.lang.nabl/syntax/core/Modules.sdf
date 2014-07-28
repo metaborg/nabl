@@ -1,0 +1,21 @@
+module core/Modules
+exports
+  context-free syntax
+    "module" ModuleID ModuleSection* -> Module        {cons("Module")}
+    "imports" ImportModule*          -> ModuleSection {cons("Imports")}
+    ModuleID "/-"                    -> ImportModule  {cons("ImportWildcard")}
+    ModuleID                         -> ImportModule  {cons("Import")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Module        {cons("COMPLETION-Module")}
+    CONTENTCOMPLETE -> ModuleSection {cons("COMPLETION-ModuleSection")}
+    CONTENTCOMPLETE -> ImportModule  {cons("COMPLETION-ImportModule")}
+
+  lexical syntax
+    {ModuleIDPart "/"}+               -> ModuleID       
+    [a-zA-Z\.\_] [a-zA-Z0-9\'\.\-\_]* -> ModuleIDPart   
+    SectionKeyword                    -> ModuleID       {reject}
+    "imports"                         -> SectionKeyword 
+
+  lexical restrictions
+    ModuleID -/- [a-zA-Z0-9\'\.\-\_]

@@ -1,0 +1,7 @@
+module NameBindingLanguage-Completions
+
+imports NameBindingLanguage-Completions.generated Modules.generated NaBL.generated
+
+completions
+       
+  completion proposer : editor-complete
