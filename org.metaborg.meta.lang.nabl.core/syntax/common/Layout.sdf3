@@ -1,0 +1,28 @@
+module common/Layout
+
+  sorts CommChar Asterisk Eof Eol
+
+  lexical syntax
+
+    LAYOUT   = [\t\ \n\r]
+
+    LAYOUT   = "//" ~[\n]* Eol
+    Eol      = [\n]
+    Eol      = Eof  
+    Eof      =  
+
+    LAYOUT   = "/*" CommChar* "*/"
+    CommChar = ~[\*]
+    Asterisk = "*"
+    CommChar = Asterisk
+    
+  lexical restrictions
+
+    Asterisk -/- [\/]
+    Eof      -/- ~[]
+    
+  context-free restrictions
+
+    LAYOUT? -/- [\ \t\n\r]
+    LAYOUT? -/- [\/].[\*]
+    LAYOUT? -/- [\/].[\/]

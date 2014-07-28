@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+   <extension
+         point="org.eclipse.imp.runtime.languageDescription">
+      <language
+            extensions="nabc"
+            description="NaBLCore"
+            language="NaBLCore"
+            derivedFrom="DynamicRoot"
+            validator="org.metaborg.meta.lang.nabl.core.NaBLCoreValidator"
+            validatorClass="org.metaborg.meta.lang.nabl.core.NaBLCoreValidator"
+      ></language>
+   </extension>
+   <extension
+         id="org.metaborg.meta.lang.nabl.core.parser"
+         name="NaBLCore Parser"
+         point="org.eclipse.imp.runtime.parser">
+      <parser
+            class="org.metaborg.meta.lang.nabl.core.NaBLCoreParseController"
+            language="NaBLCore">
+      </parser>
+   </extension>    
+</plugin>

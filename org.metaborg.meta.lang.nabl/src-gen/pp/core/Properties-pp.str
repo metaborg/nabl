@@ -1,0 +1,115 @@
+module src-gen/pp/core/Properties-pp
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  src-gen/signatures/core/Properties-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Signatures-sig
+  src-gen/signatures/terms/Vars-sig
+  src-gen/signatures/terms/Terms-sig
+  src-gen/signatures/formulas/Formulas-sig
+  src-gen/signatures/core/Namespaces-sig
+
+
+imports
+  src-gen/pp/common/Identifiers-pp
+  src-gen/pp/terms/Signatures-pp
+  src-gen/pp/terms/Vars-pp
+  src-gen/pp/terms/Terms-pp
+  src-gen/pp/formulas/Formulas-pp
+  src-gen/pp/core/Namespaces-pp
+
+
+strategies
+  prettyprint-PropertyID =
+    ![S(<is-string>)]
+
+  prettyprint-SectionKeyword =
+    ![S(<is-string>)]
+
+  prettyprint-Relation =
+    ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-PropertyID
+
+  prettyprint-example =
+    prettyprint-SectionKeyword
+
+  prettyprint-example =
+    prettyprint-Relation
+
+
+strategies
+  prettyprint-example =
+    prettyprint-ModuleSection
+
+  prettyprint-example =
+    prettyprint-PropertyDef
+
+  prettyprint-example =
+    prettyprint-PropertyRef
+
+  prettyprint-ModuleSection :
+    Properties(t0__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [S("properties")]
+                          )
+                        , t0__'
+                        ]
+    with t0__' := <pp-indent(|"2")> [<pp-H-list(prettyprint-PropertyDef)> t0__]
+
+  is-ModuleSection =
+    ?Properties(_)
+
+  prettyprint-PropertyDef :
+    PropertyDef(t0__, t1__, t2__) -> [ H(
+                                         [SOpt(HS(), "0")]
+                                       , [ t0__'
+                                         , S(" of ")
+                                         , t1__'
+                                         , S(" : ")
+                                         , t2__'
+                                         ]
+                                       )
+                                     ]
+    with t0__' := <pp-one-Z(prettyprint-PropertyID)> t0__
+    with t1__' := <pp-H-list(prettyprint-NamespaceRef|", ")> t1__
+    with t2__' := <pp-one-Z(prettyprint-Sort)> t2__
+
+  is-PropertyDef =
+    ?PropertyDef(_, _, _)
+
+  prettyprint-PropertyRef :
+    TypeProp() -> [ H(
+                      [SOpt(HS(), "0")]
+                    , [S("type")]
+                    )
+                  ]
+
+  is-PropertyRef =
+    ?TypeProp()
+
+  prettyprint-PropertyRef :
+    PropertyRef(t0__) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [t0__']
+                           )
+                         ]
+    with t0__' := <pp-one-Z(prettyprint-PropertyID)> t0__
+
+  is-PropertyRef =
+    ?PropertyRef(_)
+
+  is-ModuleSection =
+    fail
+
+  is-PropertyDef =
+    fail
+
+  is-PropertyRef =
+    fail

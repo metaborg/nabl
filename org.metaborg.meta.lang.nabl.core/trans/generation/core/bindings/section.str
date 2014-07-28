@@ -1,0 +1,15 @@
+module generation/core/bindings/section
+
+imports
+  libstrc
+  src-gen/signatures/core/-
+  generation/core/bindings/rules
+
+rules
+  
+  section-to-rules(|rs): 
+    Bindings(b*) -> r*
+    with r* := <filter(binding-to-rule(|rs))> b*
+    
+  binding-to-rule(|rs) = binding-to-rule
+  

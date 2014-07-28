@@ -25,10 +25,13 @@ strategies
                               []
                             , [S("")]
                             )
-                          , t1__'
+                          , H(
+                              [SOpt(HS(), "0")]
+                            , [t1__']
+                            )
                           ]
     with t0__' := <pp-one-Z(prettyprint-ModuleID)> t0__
-    with t1__' := <pp-indent(|"4")> [<pp-H-list(prettyprint-ModuleSection)> t1__]
+    with t1__' := <pp-V-list(prettyprint-ModuleSection|"")> t1__
 
   is-Module =
     ?Module(_, _)
@@ -80,17 +83,17 @@ strategies
   prettyprint-ModuleID =
     ![S(<is-string>)]
 
-  prettyprint-ModuleIDPart =
+  prettyprint-SectionKeyword =
     ![S(<is-string>)]
 
-  prettyprint-SectionKeyword =
+  prettyprint-ModuleIDPart =
     ![S(<is-string>)]
 
   prettyprint-example =
     prettyprint-ModuleID
 
   prettyprint-example =
-    prettyprint-ModuleIDPart
+    prettyprint-SectionKeyword
 
   prettyprint-example =
-    prettyprint-SectionKeyword
+    prettyprint-ModuleIDPart

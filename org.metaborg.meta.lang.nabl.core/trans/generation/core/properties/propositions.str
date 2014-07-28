@@ -1,0 +1,24 @@
+module generation/core/properties/propositions
+
+imports
+  
+  src-gen/signatures/core/-
+  
+  libstrc
+  generation/util
+  generation/core/properties/section
+  
+rules
+  
+    formula-to-tasks(s|var*, dep, r):
+    HasProperty(v1, p, v2) -> Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)])))
+    with
+      p':= <prop-to-term> p
+    ; <s> [v2, var*]
+  
+  // formula-to-tasks(s|var*, dep, r):
+  //   PropertyPattern(v, prop, p) -> Scope(["p__"], t)
+  //   with
+  //     t := <formula-to-tasks(s|var*, dep, r)> And(HasProperty(v, prop, Var("p__")), Match(Var("p__"), p))
+     
+ 

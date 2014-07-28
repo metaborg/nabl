@@ -1,0 +1,30 @@
+module analysis/desugar
+
+imports
+  
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+
+  libstrc
+  
+rules
+  
+  desugar-all = alltd(nabl-desugar)
+  
+  nabl-desugar = fail
+  // nabl-desugar: QualityDef(q, ns*) -> PropertyDef(q, ns*, SortNoArgs("Quality"))
+  //       
+  // nabl-desugar:
+  //   QualityTerm(QualityRef(q)) -> PropertyTerm(PropRef(q), NoAnnoList(Op("True", [])))
+  //   
+  // nabl-desugar:
+  //   QualityPattern(QualityRef(q)) -> PropertyPattern(Equal(), PropRef(q), NoAnnoList(Op("True", [])))
+    
+  // nabl-desugar:
+  //   QualityConstraint(t, QualityRef(q)) -> PropertyConstraint(t, PropertyRef(q), NoAnnoList(Op("True", [])))
+  //   
+  // nabl-desugar:
+  //   RefQualityConstraint(ns, t, QualityRef(q)) -> RefPropertyConstraint(ns, t, PropertyRef(q), NoAnnoList(Op("True", [])))

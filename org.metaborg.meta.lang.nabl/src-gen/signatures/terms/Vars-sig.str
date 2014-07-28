@@ -1,0 +1,18 @@
+module src-gen/signatures/terms/Vars-sig
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+
+
+signature
+  sorts
+    Wld Var VarRef
+
+  constructors
+    Wld        : Wld
+    ListWld    : Var
+               : Wld -> Var
+    Var        : Id -> Var
+    ListVar    : LId -> Var
+    VarRef     : Id -> VarRef
+    ListVarRef : LId -> VarRef

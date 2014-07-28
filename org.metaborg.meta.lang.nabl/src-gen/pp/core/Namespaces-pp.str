@@ -1,0 +1,112 @@
+module src-gen/pp/core/Namespaces-pp
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  src-gen/signatures/core/Namespaces-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/core/Modules-sig
+
+
+imports
+  src-gen/pp/common/Identifiers-pp
+  src-gen/pp/core/Modules-pp
+
+
+strategies
+  prettyprint-NamespaceID =
+    ![S(<is-string>)]
+
+  prettyprint-SectionKeyword =
+    ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-NamespaceID
+
+  prettyprint-example =
+    prettyprint-SectionKeyword
+
+
+strategies
+  prettyprint-example =
+    prettyprint-ModuleSection
+
+  prettyprint-example =
+    prettyprint-NamespaceDef
+
+  prettyprint-example =
+    prettyprint-NamespaceRef
+
+  prettyprint-example =
+    prettyprint-LanguageRef
+
+  prettyprint-ModuleSection :
+    Namespaces(t0__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [S("namespaces")]
+                          )
+                        , t0__'
+                        ]
+    with t0__' := <pp-indent(|"2")> [<pp-H-list(prettyprint-NamespaceDef)> t0__]
+
+  is-ModuleSection =
+    ?Namespaces(_)
+
+  prettyprint-NamespaceDef :
+    NamespaceDef(t0__) -> [ H(
+                              [SOpt(HS(), "0")]
+                            , [t0__']
+                            )
+                          ]
+    with t0__' := <pp-one-Z(prettyprint-NamespaceID)> t0__
+
+  is-NamespaceDef =
+    ?NamespaceDef(_)
+
+  prettyprint-NamespaceRef :
+    NamespaceRef(t0__, t1__) -> [ H(
+                                    [SOpt(HS(), "0")]
+                                  , [t0__', t1__']
+                                  )
+                                ]
+    with t0__' := <pp-one-Z(prettyprint-LanguageRef)> t0__
+    with t1__' := <pp-one-Z(prettyprint-NamespaceID)> t1__
+
+  is-NamespaceRef =
+    ?NamespaceRef(_, _)
+
+  prettyprint-LanguageRef :
+    CurrentLanguage() -> [ H(
+                             []
+                           , [S("")]
+                           )
+                         ]
+
+  is-LanguageRef =
+    ?CurrentLanguage()
+
+  prettyprint-LanguageRef :
+    LanguageRef(t0__) -> [ H(
+                             [SOpt(HS(), "0")]
+                           , [t0__', S(".")]
+                           )
+                         ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+
+  is-LanguageRef =
+    ?LanguageRef(_)
+
+  is-ModuleSection =
+    fail
+
+  is-NamespaceDef =
+    fail
+
+  is-NamespaceRef =
+    fail
+
+  is-LanguageRef =
+    fail

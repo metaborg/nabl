@@ -1,0 +1,52 @@
+module generation/core/scope/propositions
+
+imports
+  
+  src-gen/signatures/core/-
+  generation/core/namespaces/section
+  generation/util
+  libstrc
+  
+rules
+
+  scope-to-str:
+    GlobalScope()    -> GLOBAL()
+    
+  scope-to-str:
+    CurrentScope(ns) -> LOOKUP(CURRENT(), <ns-to-term> ns)
+  
+  scope-to-str:
+  	ScopeAt(ns, ChildScope()) -> LOOKUP(CHILD(), <ns-to-term> ns)
+  	
+  scope-to-str:
+    ScopeAt(ns, SubsequentScope()) -> LOOKUP(SUBSEQ(), <ns-to-term> ns)
+  
+rules
+	
+	scope-to-task(|dep):
+	  scope -> NEW_TASK(dep, TERM("Id", [<scope-to-str> scope]))
+     
+  // scope-to-task(|dep):
+  //   NamedScope(_, n) -> n
+  //    
+  // scope-to-task(|dep):
+  // 	Enclosing(ns, s) -> NEW_TASK(dep, TERM("SubURI", [ns', s']))
+  // 	with
+  // 		ns' := <ns-to-term> ns
+  // 	; s'  := <scope-to-task(|dep)> s
+
+  formula-to-tasks(s|var*, dep, r):
+    Scope(s, v) -> Assign(v, <scope-to-task(|dep)> s)
+    with
+      <s> [v, var*]
+    
+overlays
+
+  GLOBAL()    = Var("global__")	
+  CURRENT()   = Var("current__")
+  CHILD()     = Var("child__")
+  SUBSEQ()    = Var("subsequent__")
+
+  SCOPEVARS() = [CURRENT(), CHILD(), SUBSEQ()]
+
+  LOOKUP(ns, v) = App(CALL("lookup-uri", [v]), ns)

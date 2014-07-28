@@ -4,7 +4,9 @@ exports
 
   lexical syntax
     [\t\ \n\r]          -> LAYOUT   
-                        -> LAYOUT   
+    "//" ~[\n]* Eol     -> LAYOUT   
+    [\n]                -> Eol      
+    Eof                 -> Eol      
                         -> Eof      
     LongCom             -> LAYOUT   
     "/*" CommChar* "*/" -> LongCom  

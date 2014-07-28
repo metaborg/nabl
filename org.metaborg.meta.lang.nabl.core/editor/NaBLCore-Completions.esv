@@ -1,0 +1,5 @@
+module NaBLCore-Completions
+
+completions
+
+  completion proposer                  : editor-complete

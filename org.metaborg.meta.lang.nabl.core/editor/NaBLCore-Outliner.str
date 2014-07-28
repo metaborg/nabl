@@ -1,0 +1,31 @@
+module editor/NaBLCore-Outliner
+
+imports
+	
+	libstrc
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+  lib/runtime/editor/outline-library
+  lib/runtime/editor/origins
+
+rules
+  
+  outline = simple-label-outline(to-outline-label)
+  
+  to-outline-label:
+  	Module(name, _) -> name
+  	
+  // to-outline-label:
+  // 	Imports(_) -> "imports"
+  	
+  // to-outline-label:
+  // 	Properties(_) -> "properties"
+  	
+  to-outline-label:
+  	r@Bindings(_) -> "binding rules"
+  	
+  to-outline-label:
+  	Binding(pattern, _, _) -> <alltd(\ListVar(n) -> Var(n)\); pp-stratego-string> pattern

@@ -1,0 +1,29 @@
+module core/Namespaces
+
+imports
+  
+  common/Identifiers
+  // extends sort SectionKeyword from core/Modules
+
+lexical syntax
+
+  NamespaceID    = Id
+  NamespaceID    = SectionKeyword {reject}
+  SectionKeyword = "namespaces"
+             
+context-free syntax
+
+  ModuleSection.Namespaces  = <
+  namespaces   
+    <NamespaceDef*>
+  > 
+  
+  NamespaceDef.NamespaceDef = 
+    <<NamespaceID>
+    >
+  
+  NamespaceRef.DefaultNamespace = <name> {avoid}
+  NamespaceRef.NamespaceRef     = <<LanguageRef><NamespaceID>>
+  
+  LanguageRef.CurrentLanguage   = <>
+  LanguageRef.LanguageRef       = <<Id>.>

@@ -1,0 +1,70 @@
+module generation/formulas/propositions
+
+imports 
+  
+  src-gen/signatures/-
+  src-gen/signatures/common/-
+  src-gen/signatures/core/-
+  src-gen/signatures/formulas/-
+  src-gen/signatures/terms/-
+  libstrc
+  
+  generation/util
+  generation/core/-
+
+rules
+  
+  formula-to-str:
+    True() -> Id()
+    
+  formula-to-str:
+    False() -> Fail()
+    
+  formula-to-str:
+    Eq(v, t) -> APP("eq", TUPLE([v, t]))
+    
+  formula-to-str:
+    Match(v, t) -> AM(Build(v), t)
+    
+rules
+  
+  formula-to-tasks(|var*, dep, r)  = formula-to-tasks(id|var*, dep, r)
+  formula-to-tasks(s|var*, dep, r) = formula-to-tasks(|dep); where(<s> var*)
+  
+  formula-to-tasks(|dep): 
+    True()  -> NEW_TASK([], TERM("Id", [TUPLE([])]))
+  
+  formula-to-tasks(|dep): 
+    False() -> NEW_TASK([], TERM("Fail", []))
+   
+  formula-to-tasks(|dep): 
+    Eq(v, t) -> NEW_TASK(dep, TERM("Eq", [t, v]))
+	
+	formula-to-tasks(s|var*, dep, r):
+    Match(v, p) -> result 
+    with 
+	    v* := <collect(?Var(_) + ?ListVar(_))> p
+	  ; <s> [v*, var*]
+	  with
+	     result := <nonempty; map(var-to-match-task(|var*, dep, r, v, p)); to-seq> v*
+	  <+ key := <new-key(|"match")> r
+	   ; <iset-add(|MATCH_RULE(key, p, var*))> r
+	   ; result := NEW_TASK(dep, TERM("Rewrite", [Str(key), v]))
+  
+  var-to-match-task(|var*, dep, r, t, p):
+  	v -> Assign(v, NEW_TASK(dep, TERM("Rewrite", [Str(key), t])))
+    with
+      key := <new-key(|"match")> r
+    ; <iset-add(|MATCH_RULE(key, p, v, var*))> r
+      
+  new-key(|base) =
+    iset-elements
+  ; length
+  ; <conc-strings> (base, <int-to-string>)
+   
+overlays
+	
+	COLLECT_USE = CALL("try", [ Seq(CALL("nabl-collect-use"), Match(TERM("Use", [RootApp(Id())])))], [])
+	
+  MATCH_RULE(key, lhs, dep)      = SDefNoArgs("task-rewrite", Match(TUPLE([Str(key), lhs])))
+  MATCH_RULE(key, lhs, rhs, dep) = RDefNoArgs("task-rewrite", RuleNoCond(TUPLE([Str(key), lhs]), rhs))

@@ -1,0 +1,17 @@
+module formulas/Propositions
+
+imports 
+  terms/Terms
+  terms/Vars
+  core/Namespaces
+  core/Scopes
+  core/Properties
+  core/Relations
+  
+context-free syntax // propositions
+  
+  Proposition.True     = <true>
+  Proposition.False    = <false>
+  
+  Proposition.Eq       = [[VarRef] == [Term]] 
+  Proposition.Match    = [[VarRef] => [Pattern]]

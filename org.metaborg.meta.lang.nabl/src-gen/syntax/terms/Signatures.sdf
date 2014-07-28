@@ -1,0 +1,34 @@
+module terms/Signatures
+imports common/Identifiers terms/Constants terms/StringQuotations
+
+exports
+  sorts Sort
+
+  context-free syntax
+    LCID                   -> Sort {cons("SortVar")}
+    UCID                   -> Sort {cons("SortNoArgs")}
+    Id "(" {Sort ","}* ")" -> Sort {cons("Sort")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Sort {cons("COMPLETION-Sort")}
+
+  sorts TypeDecl PPTerm
+
+  context-free syntax
+    Id TypeParams PPTerm     -> TypeDecl {cons("TypeDecl")}
+    String TypeParams PPTerm -> TypeDecl {cons("TypeDeclQ")}
+    String                   -> PPTerm   {cons("Str"), avoid}
+
+  sorts TypeParams TypeParam
+
+  context-free syntax
+                             -> TypeParams {cons("NoTypeParams")}
+    "(" {TypeParam ","}+ ")" -> TypeParams {cons("TypeParams")}
+    Id ":" Sort              -> TypeParam  {cons("TypeParam")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> TypeParams {cons("COMPLETION-TypeParams")}
+    CONTENTCOMPLETE -> TypeParam  {cons("COMPLETION-TypeParam")}
+
+  context-free restrictions
+    Sort -/- [\(]

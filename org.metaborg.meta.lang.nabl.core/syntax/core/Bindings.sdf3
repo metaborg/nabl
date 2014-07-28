@@ -1,0 +1,68 @@
+module core/Bindings
+
+imports 
+  common/Identifiers
+
+  terms/Terms
+  terms/Vars
+  terms/Constants
+
+  core/Namespaces
+  core/Scopes
+  // extends sort SectionKeyword from core/Modules
+
+  formulas/Formulas
+  
+lexical syntax
+
+  RuleID         = Id
+  
+  SectionKeyword = "binding" {reject}
+  
+context-free syntax
+
+  ModuleSection.Bindings = <
+	  binding rules
+	    <BindingRule*>
+	  >
+  
+  BindingRule.Binding = <
+	  <RuleID>:
+	    <Pattern>
+	      <BindingClause>
+	  >
+  
+  BindingClause.Defines = <
+    defines <Unique> <NamespaceRef> <BindingName> 
+         in <Scope>
+    >
+  
+  BindingName     = VarRef
+  BindingName.Str = String
+   
+  Unique.Unique    = <unique>
+  Unique.NonUnique = <non-unique>
+
+  BindingClause.RefersTo = <
+    refers to <NamespaceRef> <BindingName> 
+           in <VarRef>
+        where <Formula>
+    >
+
+  BindingClause.Alias = <
+    imports <VarRef>
+         as <VarRef>
+    >
+  
+  BindingClause.Wildcard = <
+    imports <NamespaceRef>
+       from <VarRef>
+       into <Scope>
+      where <Formula>
+    >
+
+context-free syntax
+
+  Proposition.DefOf = [definition of [VarRef] => [Var]]
+  Proposition.DefOf = [definition of [NamespaceRef] [BindingName] in [VarRef] => [Var]]
+  

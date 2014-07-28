@@ -1,0 +1,44 @@
+module core/Properties
+
+imports
+  common/Identifiers
+
+  terms/Vars
+  terms/Signatures
+    
+  core/Namespaces
+  core/Bindings
+
+  formulas/Formulas
+
+lexical syntax
+
+  PropertyID     = Id
+  PropertyID     = "type" {reject}
+  
+  SectionKeyword = "properties"
+
+context-free syntax
+
+  ModuleSection.Properties = <
+  properties   
+    <PropertyDef*>
+  > 
+  
+  PropertyDef.PropertyDef = <
+  <PropertyID> of <{NamespaceRef ", "}+> : <Sort>>
+  
+  PropertyRef.TypeProp    = <type>  
+  PropertyRef.PropertyRef = <<PropertyID>>
+
+context-free syntax
+
+  BindingClause.Property = [
+       => definition of [NamespaceRef] [BindingName] has [PropertyRef] [VarRef]
+    where [Formula]
+  ]
+  
+context-free syntax
+
+  Proposition.HasProperty = <<VarRef> has <PropertyRef> <Var>>
+ 

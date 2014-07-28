@@ -12,7 +12,3 @@ signature
 
   sorts
     Char CharChar
-
-  constructors
-     : String -> Char
-     : String -> CharChar

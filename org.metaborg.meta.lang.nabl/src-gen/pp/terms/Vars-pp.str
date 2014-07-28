@@ -1,0 +1,107 @@
+module src-gen/pp/terms/Vars-pp
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  src-gen/signatures/terms/Vars-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+
+
+imports
+  src-gen/pp/common/Identifiers-pp
+
+
+strategies
+  prettyprint-example =
+    prettyprint-Wld
+
+  prettyprint-example =
+    prettyprint-Var
+
+  prettyprint-example =
+    prettyprint-VarRef
+
+  prettyprint-Wld :
+    Wld() -> [ H(
+                 [SOpt(HS(), "0")]
+               , [S("_")]
+               )
+             ]
+
+  is-Wld =
+    ?Wld()
+
+  prettyprint-Var :
+    ListWld() -> [ H(
+                     [SOpt(HS(), "0")]
+                   , [S("...")]
+                   )
+                 ]
+
+  is-Var =
+    ?ListWld()
+
+  prettyprint-Var :
+    t0__ -> [ H(
+                [SOpt(HS(), "0")]
+              , [t0__']
+              )
+            ]
+    where not(is-Var)
+    where t0__' := <pp-one-Z(prettyprint-Wld)> t0__
+
+  prettyprint-Var :
+    Var(t0__) -> [ H(
+                     [SOpt(HS(), "0")]
+                   , [t0__']
+                   )
+                 ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+
+  is-Var =
+    ?Var(_)
+
+  prettyprint-Var :
+    ListVar(t0__) -> [ H(
+                         [SOpt(HS(), "0")]
+                       , [t0__']
+                       )
+                     ]
+    with t0__' := <pp-one-Z(prettyprint-LId)> t0__
+
+  is-Var =
+    ?ListVar(_)
+
+  prettyprint-VarRef :
+    VarRef(t0__) -> [ H(
+                        [SOpt(HS(), "0")]
+                      , [t0__']
+                      )
+                    ]
+    with t0__' := <pp-one-Z(prettyprint-Id)> t0__
+
+  is-VarRef =
+    ?VarRef(_)
+
+  prettyprint-VarRef :
+    ListVarRef(t0__) -> [ H(
+                            [SOpt(HS(), "0")]
+                          , [t0__']
+                          )
+                        ]
+    with t0__' := <pp-one-Z(prettyprint-LId)> t0__
+
+  is-VarRef =
+    ?ListVarRef(_)
+
+  is-Wld =
+    fail
+
+  is-Var =
+    fail
+
+  is-VarRef =
+    fail

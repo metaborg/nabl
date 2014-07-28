@@ -1,0 +1,39 @@
+module core/Relations
+
+imports
+  common/Identifiers
+
+  terms/Terms
+  terms/Signatures
+    
+  core/Namespaces
+
+  formulas/Formulas
+
+lexical syntax
+
+  SectionKeyword = "relations"
+
+  Relation       = "<" [A-Za-z\-]* ":" 
+ 
+context-free syntax
+
+  ModuleSection.Relations = <
+  relations   
+    <RelationDef*>
+  > 
+  
+  RelationDef.RelationDef = <
+    <Sort> <Relation> <Sort>
+  >
+  
+context-free syntax
+  
+  BindingClause.Relation = [
+       => [Term] [Relation] [Term]
+    where [Formula]  
+  ]
+ 
+context-free syntax
+
+  Proposition.InRelation = [[Term] [Relation] [Term]]

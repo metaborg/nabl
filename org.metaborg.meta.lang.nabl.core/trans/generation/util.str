@@ -1,0 +1,97 @@
+module generation/util
+
+imports
+  
+  libstrc
+  
+rules
+
+  bound-vars = collect-all(?Var(_) + ?ListVar(_))  
+
+  extend-index(|i): j -> $[[i]-[j]]
+ 
+  to-seq: [c]           -> c
+  to-seq: [c1, c2 | c*] -> Seq(c1, <to-seq> [c2|c*])
+
+rules 
+  
+  nonempty = where(Hd)
+
+  add-force-origins = bottomup(try(?NoAnnoList(Op(_, _)); !FORCE_ORIGINS(<id>)))
+
+  replace-all(|rs)    = alltd(replace-as(|rs) <+ replace(|rs))
+  replace-all-id(|rs) = alltd(replace-as-id(|rs) <+ replace(|rs) <+ introduce-id)
+  
+  replace(|rs): t -> <hashtable-get(|t)> rs
+  replace(|rs): t -> <lookup'> (t, rs)
+  
+  replace-as(|rs): As(t1, t2) -> t
+  where
+     t := <replace(|rs)> t1 
+  <+ t := <replace-all(|rs)> t2
+  
+  replace-as-id(|rs): As(t1, t2) -> Seq(t, <replace-all-id(|rs)> t2)
+  where
+     t := <replace(|rs)> t1 
+  <+ t := Id()
+  
+  introduce-id: Wld()      -> Id()
+  introduce-id: Var(_)     -> Id()
+  introduce-id: ListVar(_) -> Id()
+    
+  iset-copy = iset-elements => elem*; new-iset ; iset-addlist(|elem*)
+  
+  nfilter(s : Int * a -> b | i) = 
+     [] 
+  <+ [s(|i) | nfilter(s | <inc> i)] 
+  <+ Tl; nfilter(s | <inc> i)
+    
+  filter-with-index(s) =
+    let apply(|i) = <s> (i, <id>)
+     in nfilter(apply | 1)
+    end
+
+  add-values(|val*):
+    (key, map) -> [(key, new*)|map]
+    where
+      old* := <lookup <+ ![]> (key, map)
+    ; new* := <union> (old*, val*) 
+             
+  
+overlays
+  
+  CONS_DECL(c, t)    = OpDecl(c, ConstType(SortNoArgs(t)))
+  
+  TERM(o, args)      = NoAnnoList(Op(o, args))
+  TERM(o)            = TERM(o, [])
+  TUPLE(elems)       = NoAnnoList(Tuple(elems))
+  LIST(elems)        = NoAnnoList(List(elems))
+  LIST()             = NoAnnoList(List([]))
+  
+  RULE(rid, ts, lhs, rhs, w) = RDefT(rid, [], ts, Rule(lhs, rhs, w))
+
+  STRATEGY(s, b)     = SDefT(s, [], [], b)
+  STRATEGY(s, ts, b) = SDefT(s, [], ts, b)
+  
+  CALL(s)            = CallNoArgs(SVar(s))
+  CALL(s, ts)        = CallT(SVar(s), [], ts)
+  CALL(s, ss, ts)    = CallT(SVar(s), ss, ts)
+  
+  APP(s, term)      = App(s, term)
+  
+  FORCE_ORIGINS(ss)  = CALL("origin-track-forced", [ss], [])
+  
+  CTX_DEC() = DefaultVarDec("ctx__")
+  CTX()     = Var("ctx__")
+  DEP_DEC() = DefaultVarDec("dep*")
+  DEP()     = Var("dep*")
+  EXP_DEC() = DefaultVarDec("expected")
+  EXP()     = Var("expected")
+  REL_DEC() = DefaultVarDec("relation")
+  REL()     = Var("relation")
+  
+  TASK(s, t)      = TASK(s, [], t)
+  TASK(s, ts, t)  = App(CALL(s, [CTX()|ts]), t)
+  NEW_TASK(dep, task) = App(CALL("new-task-fixdeps", [CTX(), LIST(dep)]), task)
+  
+  

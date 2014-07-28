@@ -3,10 +3,11 @@ module src-gen/completion/terms/Signatures-esv
 imports
   src-gen/completion/common/Identifiers-esv
   src-gen/completion/terms/Constants-esv
+  src-gen/completion/terms/StringQuotations-esv
 
 completions
-  completion template Sort : "Id ( )" =
-    <Id:Id> " ( " <:Sort> " )"  
+  completion template Sort : "Id()" =
+    <Id:Id> "(" <:Sort> ")"  
 
 completions
   completion template TypeDecl : "Id TypeParams PPTerm" =
@@ -15,7 +16,7 @@ completions
     <String:String> " " <TypeParams:TypeParams> " " <PPTerm:PPTerm>  
 
 completions
-  completion template TypeParams : "( TypeParam )" =
-    "( " <TypeParam:TypeParam> " )"  
-  completion template TypeParam : "Id : Sort" =
-    <Id:Id> " : " <Sort:Sort>  
+  completion template TypeParams : "(TypeParam)" =
+    "(" <TypeParam:TypeParam> ")"  
+  completion template TypeParam : "Id: Sort" =
+    <Id:Id> ": " <Sort:Sort>  

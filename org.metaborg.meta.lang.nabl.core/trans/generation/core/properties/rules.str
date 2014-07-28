@@ -1,0 +1,41 @@
+module generation/core/properties/rules
+
+imports
+  
+  src-gen/signatures/core/-
+  
+  libstrc
+  generation/util
+  generation/core/namespaces/-
+  generation/core/properties/section
+  generation/formulas/-
+  
+rules
+  
+  binding-to-rule(|rs):
+  	Binding(rid, pattern, Property(ns, name, prop, val, formula)) ->
+  	PROP_RULE(pattern, Seq(task, App(call, name)))
+  where 
+    ns'  := <ns-to-term> ns
+  ; call := PROP_CALL(<prop-to-term> prop, val)
+  ;	task := <formula-to-tasks(|[], [], rs)> formula 
+  
+overlays
+  
+  PROP_RULE(pattern, body)  =
+  RULE(
+    "nabl-prop-site"
+  , [ DefaultVarDec("lang__")
+    , CTX_DEC()
+    , DefaultVarDec("uris__")
+    , DefaultVarDec("states__")
+    , DefaultVarDec("implicits__")
+    ]
+  , pattern
+  , RootApp(Fail())
+  , body
+  )
+
+  PROP_CALL(prop, val) = CALL("nabl-store-props", [CTX(), LIST([PROPERTY(prop, val)])])
+
+  PROPERTY(prop, val)  = TERM("Prop", [prop, val, LIST([])])

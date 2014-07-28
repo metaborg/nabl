@@ -1,0 +1,50 @@
+module core/Scopes
+
+imports
+
+  common/Identifiers
+  terms/Vars
+  
+  core/Namespaces
+  core/Bindings
+  
+lexical syntax
+
+  ScopeID = Id
+  
+context-free syntax // access current and future scopes
+
+  
+  ScopePosition                 = VarRef
+  ScopePosition.ChildScope      = <child nodes>
+  ScopePosition.SubsequentScope = <subsequent nodes>
+  
+  Scope.GlobalScope  = <global scope> {prefer}
+  Scope.CurrentScope = <current <NamespaceRef> scope>
+  Scope.ScopeAt      = <<NamespaceRef> scope at <ScopePosition>>
+  Scope.NamedScope   = <scope of <NamespaceRef> <VarRef>>
+  Scope.NewScope     = <new scope in <Scope>>
+  
+context-free syntax // scope clause
+
+  BindingClause.ChildScope = <
+    <Scope> scopes <NamespaceRef> at child nodes
+  >
+  
+  BindingClause.SubsequentScope = <
+    <Scope> scopes <NamespaceRef> at subsequent nodes
+  >
+  
+  BindingClause.NodeScope = <
+    requires <NamespaceRef> scope at <VarRef>
+  >
+
+context-free syntax
+
+  Proposition.Scope    = [[Scope] => [Var]]
+  Proposition.ScopeOf  = [scope of [VarRef] => [Var]]
+    
+  
+  
+  	
+  

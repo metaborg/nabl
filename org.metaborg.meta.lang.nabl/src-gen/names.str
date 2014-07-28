@@ -1,4 +1,4 @@
-module names
+module src-gen/names
 
 imports
   lib/runtime/nabl/-
