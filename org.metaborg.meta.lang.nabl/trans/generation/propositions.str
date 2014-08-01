@@ -32,11 +32,17 @@ rules
       <s> [v, var*]
     
   formula-to-tasks(s|var*, dep, r):
-    RefersTo(t, ns, v) -> Assign(v, NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), t)])))
+    DefOf(t, ns, v) -> Assign(v, NEW_TASK(dep, TERM("CheckDefs", [ns', App(COLLECT_USE(), t)])))
     with
       ns' := <ns-to-term> ns
     ; <s> [v, var*]
-      
+  
+  formula-to-tasks(s|var*, dep, r):
+  	ResolvesTo(t, ns, v) -> Assign(v, App(CALL("nabl-use-candidate", [ Var("lang__"), CTX(), Var("uris__"), App(CALL("nabl-fix-name"), t)]), candidate))
+  	where
+  	  candidate := CANDIDATE(dep, Id(), <ns-to-term> ns, [], TERM("Current"), TERM("True"), [])
+  	; <s> [v, var*]
+  	  
   formula-to-tasks(s|var*, dep, r):
     HasProperty(v1, p, v2) -> Assign(v2, NEW_TASK(dep, TERM("Id", [TASK("get-or-create-property-task", [p'], v1)])))
     with
@@ -49,7 +55,7 @@ rules
       t := <formula-to-tasks(s|var*, dep, r)> And(HasProperty(v, prop, Var("p__")), Match(Var("p__"), p))
      
   formula-to-tasks(|dep):
-    InRelation(t1, rel, t2) -> NEW_TASK(dep, TERM("RelationMatch", [Str(rel), t1, t2]))
+    InRelation(t1, rel, t2) -> APP(CALL("relation-create-match", [CTX(), Str(rel), t1, LIST(dep)]), t2)
        
 rules
 

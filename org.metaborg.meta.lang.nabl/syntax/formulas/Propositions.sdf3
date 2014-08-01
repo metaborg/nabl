@@ -12,11 +12,12 @@ templates // propositions
   Proposition.True     = <true>
   Proposition.False    = <false>
   
-  Proposition.Eq       = [[VarRef] == [Term]] 
-  Proposition.Match    = [[VarRef] => [Pattern]]
-  Proposition.DefOf    = [definition of [VarRef] => [Var]]
-  Proposition.ScopeOf  = [[Scope] => [Var]]
-  Proposition.RefersTo = <<VarRef> refers to <NamespaceRef> <Var>>
-
+  Proposition.Eq          = [[VarRef] == [Term]] 
+  Proposition.Match       = [[VarRef] => [Pattern]]
+  Proposition.DefOf       = [definition of [VarRef] => [Var]]
+  Proposition.DefOf       = [definition of [NamespaceRef] [VarRef] => [Var]]
+  Proposition.ScopeOf     = [[Scope] => [Var]]
+  Proposition.ResolvesTo  = <<Term> resolves to <NamespaceRef> <Var>> // TODO: add resolution scope
+ 
   Proposition.HasProperty = <<VarRef> has <PropertyRef> <Var>>
   Proposition.InRelation  = [[Term] [Relation] [Term]]
