@@ -18,6 +18,7 @@ imports
   editor/NameBindingLanguage-Outliner
 
   analysis/-
+	src-gen/names
 	generation/-
   coq-semantics/-
   
