@@ -3,7 +3,7 @@ module coq-semantics/defines
 imports
   include/NameBindingLanguage
   generation/util
-  coq-semantics/Coq
+  include/Coq-pp
   coq-semantics/patterns
   coq-semantics/main
 

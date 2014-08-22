@@ -4,6 +4,7 @@ imports
   include/NameBindingLanguage
   generation/util
   coq-semantics/-
+  include/Coq-pp
 
 rules
     
@@ -24,4 +25,4 @@ rules
       
 overlays
   
-  SCOPES(t, ns) = Type(APPLY2(Ref("scopesR"), t, Ref(ns)))
+  SCOPES(t, ns) = APPLY2(Ref("scopesR"), t, Ref(ns))
