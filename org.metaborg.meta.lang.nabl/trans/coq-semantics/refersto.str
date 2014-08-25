@@ -13,6 +13,7 @@ rules
     RefClause([RefClausePart(All(), NamespaceRef(CurrentLanguage(), ns), VarRef(x), [], Current(), [])]) ->
       ConsDecl($[[c]_refers_to_[ns]], [Bind(x), binder*], coq-term-type)
     where
-      (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+      (t, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
     with
-      coq-term-type := COQ_TERM_TYPE("refers_toR", coqterm, x, $[[ns]NS], k)
+      ns' := $[[ns]NS]
+    ; coq-term-type := T|[refers_toR t x ns' k]|

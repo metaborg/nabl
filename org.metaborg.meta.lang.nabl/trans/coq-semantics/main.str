@@ -22,14 +22,21 @@ rules
 rules
   
   module-to-coq:
-    Module(name, section*) -> Sent(<filter(section-to-coq); concat> section*)
+    Module(name, section*) -> T|[ sents ]|
+    where
+      sents := <filter(section-to-coq); concat> section*
     
 rules // namespaces
   
   section-to-coq:
-  	Namespaces(ns*) -> [Inductive(Ind([Induc("ID_NS", [], Type(Sort(Set())), ListDeclBar(cdec*))])), Definition(Def("NS", [], None(), Ref("ID_NS")))]
+  	Namespaces(ns*) -> C|[
+  	  Inductive ID_NS : Set :=
+  	    | decls
+  	    .
+  	  Definition NS := ID_NS.
+  	]|
   	with
-  	  cdec* := <map(namespace-to-coq)> ns*
+  	  decls := <map(namespace-to-coq)> ns*
   	  
   namespace-to-coq:
   	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
@@ -39,33 +46,24 @@ rules // binding rules
   section-to-coq:
     Bindings(r*) -> [scopes*, defines*, refers*, ty-def*]
     with
-      scopes*  := <binding-rules-to-coq(scope-to-coq|"scopes", Type(PROD2(Ref("term"), Ref("NS"), (Prop()))) )> r*
-    ; defines* := <binding-rules-to-coq(defines-to-coq|"defines", TERM_IDENT_NS_KEY_PROP())> r*
-    ; refers*  := <binding-rules-to-coq(refers-to-to-coq|"refers_to", TERM_IDENT_NS_KEY_PROP())> r*
-    ; ty-def*  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", TERM_IDENT_NS_TERM_KEY_PROP())> r*
+      scopes*  := <binding-rules-to-coq(scope-to-coq        |"scopes",        T|[term -> NS -> Prop]|)> r*
+    ; defines* := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> r*
+    ; refers*  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> r*
+    ; ty-def*  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> r*
   
-  binding-rules-to-coq(binding-to-coq|name, type):
-    r* -> [Inductive(Ind([Induc($[[name]R], [], type, ListDeclBar(cdec*))])),
-      Definition(Def($[[name]_R], [], None(), Ref($[[name]R])))]
+  binding-rules-to-coq(binding-to-coq|name, ty):
+    r* -> C|[
+      Inductive ident : ty :=
+        | decls
+        .
+      Definition ident1 := ident.
+      ]|
     with
-      cdec* := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*
+      decls  := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*;
+      ident  := $[[name]R];
+      ident1 := $[[name]_R]
     
   binding-rule-to-coq(clause-to-coq|):
     BindingRule(pattern, [], clause*) -> <filter(clause-to-coq(|c, pattern))> clause*
     with
       c := <pattern-to-cons> pattern
-
-overlays
-  
-  TERM_IDENT_NS_KEY_PROP = (PROD4(Ref("term"), Ref("Ident"), Ref("NS"), Ref("key"), (Prop())))
-  TERM_IDENT_NS_TERM_KEY_PROP = (PROD5(Ref("term"), Ref("Ident"), Ref("NS"), Ref("term"), Ref("key"), (Prop())))
-
-  COQ_TERM_TYPE(name, coqterm, x, ns, k) = (APPLY4(Ref(name), coqterm, Ref(x), Ref(ns), Ref(k)))
-  COQ_TERM_TYPED_DEFINE(name, coqterm, x, ns, type, k) = (APPLY5(Ref(name), coqterm, Ref(x), Ref(ns), Ref(type), Ref(k)))
-    
-  APPLY2(op, e1, e2) = Apply(Apply(op, e1), e2)
-  APPLY4(op, e1, e2, e3, e4) = APPLY2(APPLY2(op, e1, e2), e3, e4)
-  APPLY5(op, e1, e2, e3, e4, e5) = Apply(APPLY4(op, e1, e2, e3, e4), e5)
-  PROD2(e1, e2, e3) = Prod(e1, Prod(e2, e3))
-  PROD4(e1, e2, e3, e4, e5) = Prod(e1, Prod(e2, PROD2(e3, e4, e5)))
-  PROD5(e1, e2, e3, e4, e5, e6) = Prod(e1, PROD4(e2, e3, e4, e5, e6))

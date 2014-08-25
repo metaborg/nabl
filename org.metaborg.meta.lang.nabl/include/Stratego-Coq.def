@@ -823,20 +823,24 @@ variables
 
   T                 -> Term      {prefer}
   D                 -> ConsDecls {prefer}
-  "decl" [0-9]* "*" -> ConsDecl* {prefer}
+  S                 -> Sent*     {prefer}
+  Str               -> String    {prefer}
   
 lexical syntax
 	
-  ("x"|"y"|"t") [0-9]* "'"* -> T
+  ("x"|"y"|"t"|"ns"|"k"|"ty") [0-9]* "'"* -> T
   "env" [0-9]* "'"*         -> T
-  "k" [0-9]* "'"*           -> T
+  "ident" [0-9]*            -> Str
   
   "decls" [0-9]* -> D
+  "sents" [0-9]* -> S
   
 lexical restrictions
 	
 	T -/- [a-zA-Z0-9\_\']
 	D -/- [a-zA-Z0-9\_\']
+  S -/- [a-zA-Z0-9\_\']
+  Str -/- [a-zA-Z0-9\_\']
 
 module Stratego-Sugar-Overlays
 imports

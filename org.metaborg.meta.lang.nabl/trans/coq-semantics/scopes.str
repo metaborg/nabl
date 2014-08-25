@@ -11,9 +11,10 @@ rules
   scope-to-coq(|c, pattern):
     ScopeClause([NamespaceRef(CurrentLanguage(), ns)]) -> ConsDecl($[[c]_scopes_[ns]], binder*, type)
     where
-      (term, binder*, _, _) := <pattern-to-term(|0, None())> pattern
+      (t, binder*, _, _) := <pattern-to-term(|0, None())> pattern
     with
-      type := SCOPES(term, $[[ns]NS])
+      ns'  := $[[ns]NS]
+    ; type := T|[scopesR t ns']|
 
   // scope-to-coq(|c, pattern):
 	 //    DefClause(Explicit(), Unique(), NamespaceRef(ns), VarRef(x), _, DefScopes(_), []) ->
@@ -22,7 +23,3 @@ rules
   //     (term, binder*, _, _) := <pattern-to-term(|0, None())> pattern
   //   with
   //     type := SCOPES(term, $[[ns]NS])
-      
-overlays
-  
-  SCOPES(t, ns) = APPLY2(Ref("scopesR"), t, Ref(ns))

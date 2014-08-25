@@ -13,17 +13,19 @@ rules
     DefClause(Explicit(), Unique(), NamespaceRef(CurrentLanguage(), ns), VarRef(x), [], Current(), []) ->
       ConsDecl($[[c]_defines_[ns]], [Bind(x), binder*], coq-term-type)
     where
-      (coqterm, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+      (t, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
     with
-      coq-term-type := COQ_TERM_TYPE("definesR", coqterm, x, $[[ns]NS], k)
+      ns' := $[[ns]NS]
+    ; coq-term-type := T|[definesR t x ns k]|
 
 rules
   
   typed-defines-to-coq(|c, pattern):
     DefClause(Explicit(), Unique(), NamespaceRef(_,ns), VarRef(x), type, Current(), []) ->
-      ConsDecl($[[c]_typed_defines_[ns]], [Bind(x), Bind(type'), binder*], coq-term-type)
+      ConsDecl($[[c]_typed_defines_[ns]], [Bind(x), Bind(ty'), binder*], coq-term-type)
     where
-      [PropertyTerm(TypeProp(), VarRef(type'))] := type
-    ; (coqterm, binder*, _, Some(k))            := <pattern-to-term(|0, Some(x))> pattern
+      [PropertyTerm(TypeProp(), VarRef(ty'))] := type
+    ; (t, binder*, _, Some(k))                := <pattern-to-term(|0, Some(x))> pattern
     with
-      coq-term-type := COQ_TERM_TYPED_DEFINE("typed_definesR", coqterm, x, $[[ns]NS], type', k)
+      ns' := $[[ns]NS]
+    ; coq-term-type := T|[typed_definesR t x ns' ty' k]|
