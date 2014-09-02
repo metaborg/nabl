@@ -3,8 +3,9 @@ module coq-semantics/scopes
 imports
   include/NameBindingLanguage
   generation/util
+  include/Coq/pp/-
+  include/Coq/signatures/-
   coq-semantics/-
-  include/Coq-pp
 
 rules
     

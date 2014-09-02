@@ -18,7 +18,7 @@ language General properties
 
   provider : include/namebindinglanguage.ctree
   // provider : include/namebindinglanguage-java.jar
-  provider : include/Coq-pp.jar
+  // provider : include/Coq-pp.jar
   
   observer : editor-analyze (multifile)
   on save  : generate-name-analysis

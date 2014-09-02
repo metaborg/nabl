@@ -5,7 +5,9 @@ imports
   generation/util
   libstratego-gpp
   coq-semantics/-
-  include/Coq-pp
+  include/Coq/pp/-
+  include/Coq/signatures/-
+  include/Coq/Coq-parenthesize
   
 rules
   

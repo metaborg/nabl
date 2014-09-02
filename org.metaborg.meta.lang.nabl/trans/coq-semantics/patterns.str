@@ -2,8 +2,9 @@ module coq-semantics/patterns
 
 imports
   include/NameBindingLanguage
-  include/Coq-pp
   generation/util
+  include/Coq/pp/-
+  include/Coq/signatures/-
   coq-semantics/-
 
 rules
