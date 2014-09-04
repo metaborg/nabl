@@ -1,4 +1,314 @@
 definition
+module extensions/Coercion
+imports Qid Gallina
+
+exports
+  context-free syntax
+    "Coercion" QualId ":" Class ">->" Class "." -> Sentence {cons("Coercion")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
+
+  lexical syntax
+    "Coercion" -> Reserved 
+
+  context-free syntax
+    Term -> Class 
+
+  context-free syntax
+    CONTENTCOMPLETE -> Class {cons("COMPLETION-Class")}
+
+module extensions/Record
+imports Lexical Gallina Options Qid
+
+exports
+  context-free syntax
+    "Record"      -> RecordKeyword {cons("RecordRecord")}
+    "Structure"   -> RecordKeyword {cons("RecordStructure")}
+    "Inductive"   -> RecordKeyword {cons("RecordInductive")}
+    "CoInductive" -> RecordKeyword {cons("RecordCoInductive")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> RecordKeyword {cons("COMPLETION-RecordKeyword")}
+
+  context-free syntax
+    Record -> Sentence 
+
+  context-free syntax
+    CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
+
+  context-free syntax
+    RecordKeyword Ident OptBinders OptSort ":=" OptIdents "{" {RecordField ";"}* "}" "." -> Record {cons("Record")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Record {cons("COMPLETION-Record")}
+
+  context-free syntax
+    Ident OptBinders ":" Type OptWhereNotation -> RecordField {cons("RecFld")}
+    Ident OptBinders OptType ":=" Term         -> RecordField {cons("RecExplicitFld")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> RecordField {cons("COMPLETION-RecordField")}
+
+  context-free syntax
+    Term ".(" QualId ")"        -> Term {cons("Projection")}
+    Term ".(" QualId Arg+ ")"   -> Term {cons("ProjArgs")}
+    Term ".(@" QualId Term+ ")" -> Term {cons("ProjQualArgs")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
+
+module Vernacular
+imports Lexical Gallina Options extensions/Record extensions/Section
+        extensions/Module extensions/Coercion tactic/Toplevel
+
+exports
+  context-free syntax
+    "Axiom"      -> AssumptionKeyword {cons("AssumptionAxiom")}
+    "Conjecture" -> AssumptionKeyword {cons("AssumptionConjecture")}
+    "Parameter"  -> AssumptionKeyword {cons("AssumptionParameter")}
+    "Parameters" -> AssumptionKeyword {cons("AssumptionParameters")}
+    "Variable"   -> AssumptionKeyword {cons("AssumptionVariable")}
+    "Variables"  -> AssumptionKeyword {cons("AssumptionVariables")}
+    "Hypothesis" -> AssumptionKeyword {cons("AssumptionHypothesis")}
+    "Hypotheses" -> AssumptionKeyword {cons("AssumptionHypotheses")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> AssumptionKeyword {cons("COMPLETION-AssumptionKeyword")}
+
+  context-free syntax
+    "Theorem"     -> AssertionKeyword {cons("AssertionTheorem")}
+    "Lemma"       -> AssertionKeyword {cons("AssertionLemma")}
+    "Remark"      -> AssertionKeyword {cons("AssertionRemark")}
+    "Fact"        -> AssertionKeyword {cons("AssertionFact")}
+    "Corollary"   -> AssertionKeyword {cons("AssertionCorollary")}
+    "Proposition" -> AssertionKeyword {cons("AssertionProposition")}
+    "Definition"  -> AssertionKeyword {cons("AssertionDefinition")}
+    "Example"     -> AssertionKeyword {cons("AssertionExample")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> AssertionKeyword {cons("COMPLETION-AssertionKeyword")}
+
+  lexical syntax
+    AssumptionKeyword -> Reserved 
+    AssertionKeyword  -> Reserved 
+
+  context-free syntax
+    Assumption      -> Sentence 
+    Definition      -> Sentence 
+    Inductive       -> Sentence 
+    Fixpoint        -> Sentence 
+    Assertion Proof -> Sentence {cons("AssertionProof")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
+
+  context-free syntax
+    AssumptionKeyword Assums "." -> Assumption {cons("Assumption")}
+    Ident+ ":" Term              -> Assums     {cons("Term")}
+    AssumsPar+                   -> Assums     {cons("Terms")}
+    "(" Ident+ ":" Term ")"      -> AssumsPar  {cons("Pars")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Assumption {cons("COMPLETION-Assumption")}
+    CONTENTCOMPLETE -> Assums     {cons("COMPLETION-Assums")}
+    CONTENTCOMPLETE -> AssumsPar  {cons("COMPLETION-AssumsPar")}
+
+  context-free syntax
+    "Definition" Ident OptBinders OptType ":=" Term "." -> Definition {cons("Definition")}
+    "Let" Ident OptBinders OptType ":=" Term "."        -> Definition {cons("Let")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Definition {cons("COMPLETION-Definition")}
+
+  context-free syntax
+    "Inductive" {IndBody "with"}+ "."        -> Inductive {cons("Inductive")}
+    "CoInductive" {IndBody "with"}+ "."      -> Inductive {cons("CoInductive")}
+    Ident OptBinders ":" Term ":=" ConsDecls -> IndBody   {cons("Induc")}
+    "|" {ConsDecl "|"}+                      -> ConsDecls {cons("ListDeclBar")}
+    {ConsDecl "|"}+                          -> ConsDecls {cons("ListDecl")}
+    Ident OptBinders OptType                 -> ConsDecl  {cons("ConsDecl")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Inductive {cons("COMPLETION-Inductive")}
+    CONTENTCOMPLETE -> IndBody   {cons("COMPLETION-IndBody")}
+    CONTENTCOMPLETE -> ConsDecls {cons("COMPLETION-ConsDecls")}
+    CONTENTCOMPLETE -> ConsDecl  {cons("COMPLETION-ConsDecl")}
+
+  context-free syntax
+    "Fixpoint" {FixBody "with"}+ "."     -> Fixpoint {cons("Fixpoint")}
+    "CoFixpoint" {CoFixBody "with"}+ "." -> Fixpoint {cons("CoFixpoint")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Fixpoint {cons("COMPLETION-Fixpoint")}
+
+  context-free syntax
+    AssertionKeyword Ident OptBinders ":" Term "." -> Assertion {cons("Assertion")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Assertion {cons("COMPLETION-Assertion")}
+
+  context-free syntax
+    "Proof" "." Tactic+ "Qed" "."      -> Proof {cons("Qed")}
+    "Proof" "." Tactic+ "Defined" "."  -> Proof {cons("Defined")}
+    "Proof" "." Tactic+ "Admitted" "." -> Proof {cons("Admitted")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Proof {cons("COMPLETION-Proof")}
+
+module extensions/Function
+imports Gallina Options Lexical
+
+exports
+  context-free syntax
+    "Function" Ident Binder+ OptDecreaseAnnot ":" Type Term -> Term {cons("Function")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
+
+  context-free syntax
+                          -> OptDecreaseAnnot {cons("None")}
+    "{" DecreaseAnnot "}" -> OptDecreaseAnnot {cons("DecreaseAnnot")}
+    "struct" Ident        -> DecreaseAnnot    {cons("DecreaseStruct")}
+    "measure" Term Ident  -> DecreaseAnnot    {cons("DecreaseMeasure")}
+    "wf" Term Ident       -> DecreaseAnnot    {cons("DecreaseWF")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> OptDecreaseAnnot {cons("COMPLETION-OptDecreaseAnnot")}
+    CONTENTCOMPLETE -> DecreaseAnnot    {cons("COMPLETION-DecreaseAnnot")}
+
+module Gallina
+imports Lexical Qid Options extensions/Function
+
+exports
+  context-free syntax
+    "forall" Binder+ "," Term                                             -> Term {cons("ForAll")}
+    "fun" Binder+ "=>" Term                                               -> Term {cons("Fun")}
+    "fix" FixBodies                                                       -> Term {cons("Fix")}
+    "cofix" CoFixBodies                                                   -> Term {cons("CoFix")}
+    "let" Ident OptBinders OptType ":=" Term "in" Term                    -> Term {cons("Let")}
+    "let" "fix" FixBody "in" Term                                         -> Term {cons("LetFix")}
+    "let" "fix" CoFixBody "in" Term                                       -> Term {cons("LetCoFix")}
+    "let" "(" {Name ","}* ")" OptDepRetType ":=" Term "in" Term           -> Term {cons("LetTuple")}
+    "let" SingleQuote Pattern OptInTerm ":=" Term OptReturnType "in" Term -> Term {cons("LetPat")}
+    "if" Term OptDepRetType "then" Term "else" Term                       -> Term {cons("If")}
+    Term ":" Term                                                         -> Term {cons("Cast"), non-assoc}
+    Term "<:" Term                                                        -> Term {cons("Check"), non-assoc}
+    Term ":>"                                                             -> Term {cons("Coerce"), non-assoc}
+    Term "->" Term                                                        -> Term {cons("Arrow"), right}
+    Term Term                                                             -> Term {cons("Apply"), left, prefer}
+    Term Arg                                                              -> Term {cons("ApplyImplicit")}
+    "@" QualId OptTerms                                                   -> Term {cons("UnHide")}
+    Term "%" Ident                                                        -> Term {cons("ScopeRef")}
+    "match" {MatchItem ","}+ OptReturnType "with" Equations "end"         -> Term {cons("Match")}
+    QualId                                                                -> Term {cons("Ref")}
+    Sort                                                                  -> Term 
+    Num                                                                   -> Term 
+    "_"                                                                   -> Term {cons("WldTerm")}
+    "(" Term ")"                                                          -> Term {bracket}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
+
+  context-free syntax
+    "(" Ident ":=" Term ")" -> Arg {cons("ImplicitArg")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Arg {cons("COMPLETION-Arg")}
+
+  context-free syntax
+    Name                           -> Binder {cons("Bind")}
+    "(" Name+ ":" Term ")"         -> Binder {cons("Binds")}
+    "(" Name OptType ":=" Term ")" -> Binder {cons("Assign")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Binder {cons("COMPLETION-Binder")}
+
+  context-free syntax
+    Ident -> Name 
+    "_"   -> Name {cons("WldName")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Name {cons("COMPLETION-Name")}
+
+  context-free syntax
+    "Prop" -> Sort {cons("Prop")}
+    "Set"  -> Sort {cons("Set")}
+    "Type" -> Sort {cons("Type")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Sort {cons("COMPLETION-Sort")}
+
+  context-free syntax
+    "|" {Equation "|"}+ -> Equations {cons("ListEqBar")}
+    {Equation "|"}+     -> Equations {cons("ListEq")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Equations {cons("COMPLETION-Equations")}
+
+  context-free syntax
+    FixBody                                          -> FixBodies   
+    FixBody "with" {FixBody "with"}+ "for" Ident     -> FixBodies   {cons("With")}
+    Ident Binder+ OptAnnotation OptType ":=" Term    -> FixBody     {cons("FixBody")}
+    CoFixBody                                        -> CoFixBodies 
+    CoFixBody "with" {CoFixBody "with"}+ "for" Ident -> CoFixBodies {cons("With")}
+    Ident OptBinders OptType ":=" Term               -> CoFixBody   {cons("CoFixBody")}
+    Term OptAlias OptInTerm                          -> MatchItem   {cons("MatchItem")}
+    "return" Term                                    -> ReturnType  {cons("Return")}
+    {MultPattern "|"}+ "=>" Term                     -> Equation    {cons("Eq")}
+    {Pattern ","}+                                   -> MultPattern 
+    QualId Pattern+                                  -> Pattern     {cons("QidPattern")}
+    Pattern "as" Ident                               -> Pattern     {cons("AsPattern")}
+    Pattern "%" Ident                                -> Pattern     {cons("XPattern")}
+    QualId                                           -> Pattern     
+    "_"                                              -> Pattern     {cons("Wld")}
+    Num                                              -> Pattern     
+    "(" {OrPattern ","}+ ")"                         -> Pattern     {cons("OrPattern")}
+    {Pattern "|"}+                                   -> OrPattern   
+
+  context-free syntax
+    CONTENTCOMPLETE -> FixBodies   {cons("COMPLETION-FixBodies")}
+    CONTENTCOMPLETE -> FixBody     {cons("COMPLETION-FixBody")}
+    CONTENTCOMPLETE -> CoFixBodies {cons("COMPLETION-CoFixBodies")}
+    CONTENTCOMPLETE -> CoFixBody   {cons("COMPLETION-CoFixBody")}
+    CONTENTCOMPLETE -> MatchItem   {cons("COMPLETION-MatchItem")}
+    CONTENTCOMPLETE -> ReturnType  {cons("COMPLETION-ReturnType")}
+    CONTENTCOMPLETE -> Equation    {cons("COMPLETION-Equation")}
+    CONTENTCOMPLETE -> MultPattern {cons("COMPLETION-MultPattern")}
+    CONTENTCOMPLETE -> Pattern     {cons("COMPLETION-Pattern")}
+    CONTENTCOMPLETE -> OrPattern   {cons("COMPLETION-OrPattern")}
+
+  context-free syntax
+    "[" {Term ";"}* "]"          -> Term {cons("List")}
+    "(" Term "," {Term ","}+ ")" -> Term {cons("Tuple")}
+    Term "*" Term                -> Term {cons("Prod"), left}
+    Term "=" Term                -> Term {cons("Eq"), non-assoc}
+    Term "<>" Term               -> Term {cons("NotE"), non-assoc}
+    Term "/\\" Term              -> Term {cons("And")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
+
+  context-free priorities
+    "forall" Binder+ "," Term -> Term >
+    Term Term -> Term >
+    Term "->" Term -> Term >
+    Term "*" Term -> Term >
+    {non-assoc:
+      Term "<:" Term -> Term
+      Term ":" Term -> Term
+      Term ":>" -> Term
+      Term "=" Term -> Term
+      Term "<>" Term -> Term
+    } >
+    Term "/\\" Term -> Term
+
+  context-free syntax
+    Term -> Type 
+
+  context-free syntax
+    CONTENTCOMPLETE -> Type {cons("COMPLETION-Type")}
+
 module tactic/AtomicTactic
 imports Lexical Qid
 
@@ -255,287 +565,6 @@ exports
   lexical syntax
     "Section" -> Reserved 
 
-module extensions/Module
-imports Vernacular Gallina Lexical Options Qid extensions/Section
-
-exports
-  lexical syntax
-    "Import"  -> Reserved 
-    "Export"  -> Reserved 
-    "Include" -> Reserved 
-    "Inline"  -> Reserved 
-    "Module"  -> Reserved 
-    "End"     -> Reserved 
-    "Require" -> Reserved 
-    "Type"    -> Reserved 
-
-  context-free syntax
-    "Module" OptModuleBindingKeywordPrefix Ident OptModuleBindings OptModuleTypes "." ModContent* "End" Ident "." -> Module {cons("InteractiveModule")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
-
-  context-free syntax
-    "Import"             -> ModuleBindingKeyword          {cons("Import")}
-    "Export"             -> ModuleBindingKeyword          {cons("Export")}
-                         -> OptModuleBindingKeywordPrefix {cons("None")}
-    ModuleBindingKeyword -> OptModuleBindingKeywordPrefix 
-
-  context-free syntax
-    CONTENTCOMPLETE -> ModuleBindingKeyword          {cons("COMPLETION-ModuleBindingKeyword")}
-    CONTENTCOMPLETE -> OptModuleBindingKeywordPrefix {cons("COMPLETION-OptModuleBindingKeywordPrefix")}
-
-  context-free syntax
-    QualId                                          -> ModuleType     {cons("QualifiedModule")}
-    ModuleType "with" "Definition" QualId ":=" Term -> ModuleType     {cons("ModuleWithDefinition")}
-    ModuleType "with" "Module" QualId ":=" QualId   -> ModuleType     {cons("ModuleWithModule")}
-    QualId QualId+                                  -> ModuleType     {cons("QualifiedModuleSeq")}
-    "!" QualId QualId+                              -> ModuleType     {cons("QualifiedModuleBangSeq")}
-    "(" ModuleType ")"                              -> ModuleType     {bracket}
-                                                    -> OptModuleTypes {cons("None")}
-    ":" ModuleType                                  -> OptModuleTypes 
-    "<:" {ModuleType "<:"}*                         -> OptModuleTypes 
-
-  context-free syntax
-    CONTENTCOMPLETE -> ModuleType     {cons("COMPLETION-ModuleType")}
-    CONTENTCOMPLETE -> OptModuleTypes {cons("COMPLETION-OptModuleTypes")}
-
-  context-free syntax
-    "(" OptModuleBindingKeywordPrefix Ident+ ModuleType ")" -> ModuleBinding     {cons("ModuleBinding")}
-                                                            -> OptModuleBindings {cons("None")}
-    ModuleBinding+                                          -> OptModuleBindings 
-
-  context-free syntax
-    CONTENTCOMPLETE -> ModuleBinding     {cons("COMPLETION-ModuleBinding")}
-    CONTENTCOMPLETE -> OptModuleBindings {cons("COMPLETION-OptModuleBindings")}
-
-  context-free syntax
-    Sentence                -> ModContent 
-    Module                  -> ModContent 
-    "Include" {Ident "<+"}+ -> ModContent {cons("Include")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> ModContent {cons("COMPLETION-ModContent")}
-
-  context-free syntax
-    "Module" Ident OptModuleBindings OptModuleTypes ":=" ModuleExpression "." -> Module {cons("ModuleDef"), prefer}
-    "Module" Ident OptModuleBindings ":=" {ModuleExpression "<+"}+            -> Module {cons("ModuleDefs")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
-
-  context-free syntax
-    QualId+     -> ModuleExpression {cons("ModuleExpression")}
-    "!" QualId+ -> ModuleExpression {cons("ModuleBangExpression")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> ModuleExpression {cons("COMPLETION-ModuleExpression")}
-
-  context-free syntax
-    "Module" "Type" Ident OptModuleBindings "." ModTypeContent* "End" Ident "." -> Module {cons("ModuleType")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
-
-  context-free syntax
-    ModContent                        -> ModTypeContent 
-    AssumptionKeyword "Inline" Assums -> ModTypeContent {cons("InlineAssumption")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> ModTypeContent {cons("COMPLETION-ModTypeContent")}
-
-  context-free syntax
-    "Module" "Type" Ident OptModuleBindings ":=" {ModuleType "<+"}+ -> Module {cons("ModuleTypeDef")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
-
-  context-free syntax
-    OptRequirePrefix "Import" QualId "." -> Sentence {cons("Import")}
-    OptRequirePrefix "Export" QualId "." -> Sentence {cons("Export")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
-
-  context-free syntax
-              -> OptRequirePrefix {cons("None")}
-    "Require" -> OptRequirePrefix 
-
-  context-free syntax
-    CONTENTCOMPLETE -> OptRequirePrefix {cons("COMPLETION-OptRequirePrefix")}
-
-module extensions/Function
-imports Gallina Options Lexical
-
-exports
-  context-free syntax
-    "Function" Ident Binder+ OptDecreaseAnnot ":" Type Term -> Term {cons("Function")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
-
-  context-free syntax
-                          -> OptDecreaseAnnot {cons("None")}
-    "{" DecreaseAnnot "}" -> OptDecreaseAnnot {cons("DecreaseAnnot")}
-    "struct" Ident        -> DecreaseAnnot    {cons("DecreaseStruct")}
-    "measure" Term Ident  -> DecreaseAnnot    {cons("DecreaseMeasure")}
-    "wf" Term Ident       -> DecreaseAnnot    {cons("DecreaseWF")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> OptDecreaseAnnot {cons("COMPLETION-OptDecreaseAnnot")}
-    CONTENTCOMPLETE -> DecreaseAnnot    {cons("COMPLETION-DecreaseAnnot")}
-
-module Gallina
-imports Lexical Qid Options extensions/Function
-
-exports
-  context-free syntax
-    "forall" Binder+ "," Term                                             -> Term {cons("ForAll")}
-    "fun" Binder+ "=>" Term                                               -> Term {cons("Fun")}
-    "fix" FixBodies                                                       -> Term {cons("Fix")}
-    "cofix" CoFixBodies                                                   -> Term {cons("CoFix")}
-    "let" Ident OptBinders OptType ":=" Term "in" Term                    -> Term {cons("Let")}
-    "let" "fix" FixBody "in" Term                                         -> Term {cons("LetFix")}
-    "let" "fix" CoFixBody "in" Term                                       -> Term {cons("LetCoFix")}
-    "let" "(" {Name ","}* ")" OptDepRetType ":=" Term "in" Term           -> Term {cons("LetTuple")}
-    "let" SingleQuote Pattern OptInTerm ":=" Term OptReturnType "in" Term -> Term {cons("LetPat")}
-    "if" Term OptDepRetType "then" Term "else" Term                       -> Term {cons("If")}
-    Term ":" Term                                                         -> Term {cons("Cast"), non-assoc}
-    Term "<:" Term                                                        -> Term {cons("Check"), non-assoc}
-    Term ":>"                                                             -> Term {cons("Coerce"), non-assoc}
-    Term "->" Term                                                        -> Term {cons("Arrow"), right}
-    Term Term                                                             -> Term {cons("Apply"), left, prefer}
-    Term Arg                                                              -> Term {cons("ApplyImplicit")}
-    "@" QualId OptTerms                                                   -> Term {cons("UnHide")}
-    Term "%" Ident                                                        -> Term {cons("ScopeRef")}
-    "match" {MatchItem ","}+ OptReturnType "with" Equations "end"         -> Term {cons("Match")}
-    QualId                                                                -> Term {cons("Ref")}
-    Sort                                                                  -> Term 
-    Num                                                                   -> Term 
-    "_"                                                                   -> Term {cons("WldTerm")}
-    "(" Term ")"                                                          -> Term {bracket}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
-
-  context-free syntax
-    "(" Ident ":=" Term ")" -> Arg {cons("ImplicitArg")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Arg {cons("COMPLETION-Arg")}
-
-  context-free syntax
-    Name                           -> Binder {cons("Bind")}
-    "(" Name+ ":" Term ")"         -> Binder {cons("Binds")}
-    "(" Name OptType ":=" Term ")" -> Binder {cons("Assign")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Binder {cons("COMPLETION-Binder")}
-
-  context-free syntax
-    Ident -> Name 
-    "_"   -> Name {cons("WldName")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Name {cons("COMPLETION-Name")}
-
-  context-free syntax
-    "Prop" -> Sort {cons("Prop")}
-    "Set"  -> Sort {cons("Set")}
-    "Type" -> Sort {cons("Type")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Sort {cons("COMPLETION-Sort")}
-
-  context-free syntax
-    "|" {Equation "|"}+ -> Equations {cons("ListEqBar")}
-    {Equation "|"}+     -> Equations {cons("ListEq")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Equations {cons("COMPLETION-Equations")}
-
-  context-free syntax
-    FixBody                                          -> FixBodies   
-    FixBody "with" {FixBody "with"}+ "for" Ident     -> FixBodies   {cons("With")}
-    Ident Binder+ OptAnnotation OptType ":=" Term    -> FixBody     {cons("FixBody")}
-    CoFixBody                                        -> CoFixBodies 
-    CoFixBody "with" {CoFixBody "with"}+ "for" Ident -> CoFixBodies {cons("With")}
-    Ident OptBinders OptType ":=" Term               -> CoFixBody   {cons("CoFixBody")}
-    Term OptAlias OptInTerm                          -> MatchItem   {cons("MatchItem")}
-    "return" Term                                    -> ReturnType  {cons("Return")}
-    {MultPattern "|"}+ "=>" Term                     -> Equation    {cons("Eq")}
-    {Pattern ","}+                                   -> MultPattern 
-    QualId Pattern+                                  -> Pattern     {cons("QidPattern")}
-    Pattern "as" Ident                               -> Pattern     {cons("AsPattern")}
-    Pattern "%" Ident                                -> Pattern     {cons("XPattern")}
-    QualId                                           -> Pattern     
-    "_"                                              -> Pattern     {cons("Wld")}
-    Num                                              -> Pattern     
-    "(" {OrPattern ","}+ ")"                         -> Pattern     {cons("OrPattern")}
-    {Pattern "|"}+                                   -> OrPattern   
-
-  context-free syntax
-    CONTENTCOMPLETE -> FixBodies   {cons("COMPLETION-FixBodies")}
-    CONTENTCOMPLETE -> FixBody     {cons("COMPLETION-FixBody")}
-    CONTENTCOMPLETE -> CoFixBodies {cons("COMPLETION-CoFixBodies")}
-    CONTENTCOMPLETE -> CoFixBody   {cons("COMPLETION-CoFixBody")}
-    CONTENTCOMPLETE -> MatchItem   {cons("COMPLETION-MatchItem")}
-    CONTENTCOMPLETE -> ReturnType  {cons("COMPLETION-ReturnType")}
-    CONTENTCOMPLETE -> Equation    {cons("COMPLETION-Equation")}
-    CONTENTCOMPLETE -> MultPattern {cons("COMPLETION-MultPattern")}
-    CONTENTCOMPLETE -> Pattern     {cons("COMPLETION-Pattern")}
-    CONTENTCOMPLETE -> OrPattern   {cons("COMPLETION-OrPattern")}
-
-  context-free syntax
-    "[" {Term ";"}* "]"          -> Term {cons("List")}
-    "(" Term "," {Term ","}+ ")" -> Term {cons("Tuple")}
-    Term "*" Term                -> Term {cons("Prod"), left}
-    Term "=" Term                -> Term {cons("Eq"), non-assoc}
-    Term "<>" Term               -> Term {cons("NotE"), non-assoc}
-    Term "/" "\\" Term           -> Term {cons("And")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
-
-  context-free priorities
-    "forall" Binder+ "," Term -> Term >
-    Term Term -> Term >
-    Term "->" Term -> Term >
-    Term "*" Term -> Term >
-    {non-assoc:
-      Term "<:" Term -> Term
-      Term ":" Term -> Term
-      Term ":>" -> Term
-      Term "=" Term -> Term
-      Term "<>" Term -> Term
-    } >
-    Term "/" "\\" Term -> Term
-
-  context-free syntax
-    Term -> Type 
-
-  context-free syntax
-    CONTENTCOMPLETE -> Type {cons("COMPLETION-Type")}
-
-module extensions/Coercion
-imports Qid Gallina
-
-exports
-  context-free syntax
-    "Coercion" QualId ":" Class ">->" Class "." -> Sentence {cons("Coercion")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
-
-  lexical syntax
-    "Coercion" -> Reserved 
-
-  context-free syntax
-    Term -> Class 
-
-  context-free syntax
-    CONTENTCOMPLETE -> Class {cons("COMPLETION-Class")}
-
 module Qid
 imports Lexical
 
@@ -546,46 +575,6 @@ exports
 
   context-free syntax
     CONTENTCOMPLETE -> QualId {cons("COMPLETION-QualId")}
-
-module extensions/Record
-imports Lexical Gallina Options Qid
-
-exports
-  context-free syntax
-    "Record"      -> RecordKeyword {cons("RecordRecord")}
-    "Structure"   -> RecordKeyword {cons("RecordStructure")}
-    "Inductive"   -> RecordKeyword {cons("RecordInductive")}
-    "CoInductive" -> RecordKeyword {cons("RecordCoInductive")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> RecordKeyword {cons("COMPLETION-RecordKeyword")}
-
-  context-free syntax
-    Record -> Sentence 
-
-  context-free syntax
-    CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
-
-  context-free syntax
-    RecordKeyword Ident OptBinders OptSort ":=" OptIdents "{" {RecordField ";"}* "}" "." -> Record {cons("Record")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Record {cons("COMPLETION-Record")}
-
-  context-free syntax
-    Ident OptBinders ":" Type OptWhereNotation -> RecordField {cons("RecFld")}
-    Ident OptBinders OptType ":=" Term         -> RecordField {cons("RecExplicitFld")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> RecordField {cons("COMPLETION-RecordField")}
-
-  context-free syntax
-    Term ".(" QualId ")"        -> Term {cons("Projection")}
-    Term ".(" QualId Arg+ ")"   -> Term {cons("ProjArgs")}
-    Term ".(@" QualId Term+ ")" -> Term {cons("ProjQualArgs")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Term {cons("COMPLETION-Term")}
 
 module Options
 imports Lexical Gallina
@@ -691,156 +680,163 @@ exports
     LAYOUT? -/- [\ \n\r\t]
     LAYOUT? -/- [\(] . [\*]
 
-module Vernacular
-imports Lexical Gallina Options extensions/Record extensions/Section
-        extensions/Module extensions/Coercion tactic/Toplevel
+module extensions/Module
+imports Vernacular Gallina Lexical Options Qid extensions/Section
 
 exports
-  context-free syntax
-    "Axiom"      -> AssumptionKeyword {cons("AssumptionAxiom")}
-    "Conjecture" -> AssumptionKeyword {cons("AssumptionConjecture")}
-    "Parameter"  -> AssumptionKeyword {cons("AssumptionParameter")}
-    "Parameters" -> AssumptionKeyword {cons("AssumptionParameters")}
-    "Variable"   -> AssumptionKeyword {cons("AssumptionVariable")}
-    "Variables"  -> AssumptionKeyword {cons("AssumptionVariables")}
-    "Hypothesis" -> AssumptionKeyword {cons("AssumptionHypothesis")}
-    "Hypotheses" -> AssumptionKeyword {cons("AssumptionHypotheses")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> AssumptionKeyword {cons("COMPLETION-AssumptionKeyword")}
-
-  context-free syntax
-    "Theorem"     -> AssertionKeyword {cons("AssertionTheorem")}
-    "Lemma"       -> AssertionKeyword {cons("AssertionLemma")}
-    "Remark"      -> AssertionKeyword {cons("AssertionRemark")}
-    "Fact"        -> AssertionKeyword {cons("AssertionFact")}
-    "Corollary"   -> AssertionKeyword {cons("AssertionCorollary")}
-    "Proposition" -> AssertionKeyword {cons("AssertionProposition")}
-    "Definition"  -> AssertionKeyword {cons("AssertionDefinition")}
-    "Example"     -> AssertionKeyword {cons("AssertionExample")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> AssertionKeyword {cons("COMPLETION-AssertionKeyword")}
-
   lexical syntax
-    AssumptionKeyword -> Reserved 
-    AssertionKeyword  -> Reserved 
+    "Import"  -> Reserved 
+    "Export"  -> Reserved 
+    "Include" -> Reserved 
+    "Inline"  -> Reserved 
+    "Module"  -> Reserved 
+    "End"     -> Reserved 
+    "Require" -> Reserved 
+    "Type"    -> Reserved 
 
   context-free syntax
-    Assumption      -> Sentence 
-    Definition      -> Sentence 
-    Inductive       -> Sentence 
-    Fixpoint        -> Sentence 
-    Assertion Proof -> Sentence {cons("AssertionProof")}
+    "Module" OptModuleBindingKeywordPrefix Ident OptModuleBindings OptModuleTypes "." ModContent* "End" Ident "." -> Module {cons("InteractiveModule")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
+
+  context-free syntax
+    "Import"             -> ModuleBindingKeyword          {cons("Import")}
+    "Export"             -> ModuleBindingKeyword          {cons("Export")}
+                         -> OptModuleBindingKeywordPrefix {cons("None")}
+    ModuleBindingKeyword -> OptModuleBindingKeywordPrefix 
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleBindingKeyword          {cons("COMPLETION-ModuleBindingKeyword")}
+    CONTENTCOMPLETE -> OptModuleBindingKeywordPrefix {cons("COMPLETION-OptModuleBindingKeywordPrefix")}
+
+  context-free syntax
+    QualId                                          -> ModuleType     {cons("QualifiedModule")}
+    ModuleType "with" "Definition" QualId ":=" Term -> ModuleType     {cons("ModuleWithDefinition")}
+    ModuleType "with" "Module" QualId ":=" QualId   -> ModuleType     {cons("ModuleWithModule")}
+    QualId QualId+                                  -> ModuleType     {cons("QualifiedModuleSeq")}
+    "!" QualId QualId+                              -> ModuleType     {cons("QualifiedModuleBangSeq")}
+    "(" ModuleType ")"                              -> ModuleType     {bracket}
+                                                    -> OptModuleTypes {cons("None")}
+    ":" ModuleType                                  -> OptModuleTypes 
+    "<:" {ModuleType "<:"}*                         -> OptModuleTypes 
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleType     {cons("COMPLETION-ModuleType")}
+    CONTENTCOMPLETE -> OptModuleTypes {cons("COMPLETION-OptModuleTypes")}
+
+  context-free syntax
+    "(" OptModuleBindingKeywordPrefix Ident+ ModuleType ")" -> ModuleBinding     {cons("ModuleBinding")}
+                                                            -> OptModuleBindings {cons("None")}
+    ModuleBinding+                                          -> OptModuleBindings 
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleBinding     {cons("COMPLETION-ModuleBinding")}
+    CONTENTCOMPLETE -> OptModuleBindings {cons("COMPLETION-OptModuleBindings")}
+
+  context-free syntax
+    Sentence                -> ModContent 
+    Module                  -> ModContent 
+    "Include" {Ident "<+"}+ -> ModContent {cons("Include")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModContent {cons("COMPLETION-ModContent")}
+
+  context-free syntax
+    "Module" Ident OptModuleBindings OptModuleTypes ":=" ModuleExpression "." -> Module {cons("ModuleDef"), prefer}
+    "Module" Ident OptModuleBindings ":=" {ModuleExpression "<+"}+            -> Module {cons("ModuleDefs")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
+
+  context-free syntax
+    QualId+     -> ModuleExpression {cons("ModuleExpression")}
+    "!" QualId+ -> ModuleExpression {cons("ModuleBangExpression")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModuleExpression {cons("COMPLETION-ModuleExpression")}
+
+  context-free syntax
+    "Module" "Type" Ident OptModuleBindings "." ModTypeContent* "End" Ident "." -> Module {cons("ModuleType")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
+
+  context-free syntax
+    ModContent                        -> ModTypeContent 
+    AssumptionKeyword "Inline" Assums -> ModTypeContent {cons("InlineAssumption")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> ModTypeContent {cons("COMPLETION-ModTypeContent")}
+
+  context-free syntax
+    "Module" "Type" Ident OptModuleBindings ":=" {ModuleType "<+"}+ -> Module {cons("ModuleTypeDef")}
+
+  context-free syntax
+    CONTENTCOMPLETE -> Module {cons("COMPLETION-Module")}
+
+  context-free syntax
+    OptRequirePrefix "Import" QualId "." -> Sentence {cons("Import")}
+    OptRequirePrefix "Export" QualId "." -> Sentence {cons("Export")}
 
   context-free syntax
     CONTENTCOMPLETE -> Sentence {cons("COMPLETION-Sentence")}
 
   context-free syntax
-    AssumptionKeyword Assums "." -> Assumption {cons("Assumption")}
-    Ident+ ":" Term              -> Assums     {cons("Term")}
-    AssumsPar+                   -> Assums     {cons("Terms")}
-    "(" Ident+ ":" Term ")"      -> AssumsPar  {cons("Pars")}
+              -> OptRequirePrefix {cons("None")}
+    "Require" -> OptRequirePrefix {cons("Require")}
 
   context-free syntax
-    CONTENTCOMPLETE -> Assumption {cons("COMPLETION-Assumption")}
-    CONTENTCOMPLETE -> Assums     {cons("COMPLETION-Assums")}
-    CONTENTCOMPLETE -> AssumsPar  {cons("COMPLETION-AssumsPar")}
-
-  context-free syntax
-    "Definition" Ident OptBinders OptType ":=" Term "." -> Definition {cons("Definition")}
-    "Let" Ident OptBinders OptType ":=" Term "."        -> Definition {cons("Let")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Definition {cons("COMPLETION-Definition")}
-
-  context-free syntax
-    "Inductive" {IndBody "with"}+ "."        -> Inductive {cons("Inductive")}
-    "CoInductive" {IndBody "with"}+ "."      -> Inductive {cons("CoInductive")}
-    Ident OptBinders ":" Term ":=" ConsDecls -> IndBody   {cons("Induc")}
-    "|" {ConsDecl "|"}+                      -> ConsDecls {cons("ListDeclBar")}
-    {ConsDecl "|"}+                          -> ConsDecls {cons("ListDecl")}
-    Ident OptBinders OptType                 -> ConsDecl  {cons("ConsDecl")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Inductive {cons("COMPLETION-Inductive")}
-    CONTENTCOMPLETE -> IndBody   {cons("COMPLETION-IndBody")}
-    CONTENTCOMPLETE -> ConsDecls {cons("COMPLETION-ConsDecls")}
-    CONTENTCOMPLETE -> ConsDecl  {cons("COMPLETION-ConsDecl")}
-
-  context-free syntax
-    "Fixpoint" {FixBody "with"}+ "."     -> Fixpoint {cons("Fixpoint")}
-    "CoFixpoint" {CoFixBody "with"}+ "." -> Fixpoint {cons("CoFixpoint")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Fixpoint {cons("COMPLETION-Fixpoint")}
-
-  context-free syntax
-    AssertionKeyword Ident OptBinders ":" Term "." -> Assertion {cons("Assertion")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Assertion {cons("COMPLETION-Assertion")}
-
-  context-free syntax
-    "Proof" "." Tactic+ "Qed" "."      -> Proof {cons("Qed")}
-    "Proof" "." Tactic+ "Defined" "."  -> Proof {cons("Defined")}
-    "Proof" "." Tactic+ "Admitted" "." -> Proof {cons("Admitted")}
-
-  context-free syntax
-    CONTENTCOMPLETE -> Proof {cons("COMPLETION-Proof")}
+    CONTENTCOMPLETE -> OptRequirePrefix {cons("COMPLETION-OptRequirePrefix")}
 
 module Coq
 imports Vernacular Gallina extensions/Module extensions/Section tactic/Toplevel
 
 exports
   context-free start-symbols
-    Start
+    CoqFile
 
   context-free syntax
-    CoqFile* -> Start 
-
-  context-free syntax
-    CONTENTCOMPLETE -> Start {cons("COMPLETION-Start")}
-
-  context-free syntax
-    Sentence -> CoqFile 
-    Module   -> CoqFile 
+    TopLevel* -> CoqFile 
 
   context-free syntax
     CONTENTCOMPLETE -> CoqFile {cons("COMPLETION-CoqFile")}
+
+  context-free syntax
+    Sentence -> TopLevel 
+    Module   -> TopLevel 
+
+  context-free syntax
+    CONTENTCOMPLETE -> TopLevel {cons("COMPLETION-TopLevel")}
 
 module mix/CoqMix[E]
 
 imports
   Coq
+  Gallina
+  Vernacular
+  
   
 exports
+  variables
+    "t_" [a-z]* [0-9]* "'"* -> Term      {prefer}
+    "decl" [0-9]*           -> ConsDecls {prefer}
+    "sent_" [a-z\-]* [0-9]* -> Sentence  {prefer}
+    "ident" [0-9]*          -> Ident     {prefer}
+
   context-free syntax
-    "T" "|[" Term     "]|" -> E {cons("ToMetaExpr")}
-    "C" "|[" CoqFile* "]|" -> E {cons("ToMetaExpr")}
+    "T" "|[" Term      "]|" -> E {cons("ToMetaExpr")}
+        "|[" TopLevel* "]|" -> E {cons("ToMetaListExpr")}
 
-variables
-
-  T                 -> Term      {prefer}
-  D                 -> ConsDecls {prefer}
-  S                 -> Sent*     {prefer}
-  Str               -> String    {prefer}
+  lexical syntax
+    "t_" [a-z]* [0-9]* "'"* -> Ident {reject}
+    "decl" [0-9]*           -> Ident {reject}
+    "sent_" [a-z\-]* [0-9]* -> Ident {reject}
+    "ident" [0-9]*          -> Ident {reject}
   
-lexical syntax
-	
-  ("x"|"y"|"t"|"ns"|"k"|"ty") [0-9]* "'"* -> T
-  "env" [0-9]* "'"*         -> T
-  "ident" [0-9]*            -> Str
   
-  "decls" [0-9]* -> D
-  "sents" [0-9]* -> S
-  
-lexical restrictions
-	
-	T -/- [a-zA-Z0-9\_\']
-	D -/- [a-zA-Z0-9\_\']
-  S -/- [a-zA-Z0-9\_\']
-  Str -/- [a-zA-Z0-9\_\']
+context-free restrictions
+  Term   -/- [\_a-z0-9\']
 
 module Stratego-Sugar-Overlays
 imports

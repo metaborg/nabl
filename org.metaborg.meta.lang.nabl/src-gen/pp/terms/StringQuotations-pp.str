@@ -46,3 +46,81 @@ strategies
 
   is-PPTerm =
     fail
+
+  prettyprint-StringQuotedChars1 =
+    ![S(<is-string>)]
+
+  prettyprint-QuotedBracket1 =
+    ![S(<is-string>)]
+
+  prettyprint-Dollar1 =
+    ![S(<is-string>)]
+
+  prettyprint-StringQuotedChars2 =
+    ![S(<is-string>)]
+
+  prettyprint-QuotedBracket2 =
+    ![S(<is-string>)]
+
+  prettyprint-Dollar2 =
+    ![S(<is-string>)]
+
+  prettyprint-StringQuotedChars3 =
+    ![S(<is-string>)]
+
+  prettyprint-QuotedBracket3 =
+    ![S(<is-string>)]
+
+  prettyprint-Dollar3 =
+    ![S(<is-string>)]
+
+  prettyprint-StringQuotedChars4 =
+    ![S(<is-string>)]
+
+  prettyprint-QuotedBracket4 =
+    ![S(<is-string>)]
+
+  prettyprint-Dollar4 =
+    ![S(<is-string>)]
+
+  prettyprint-Padding =
+    ![S(<is-string>)]
+
+  prettyprint-example =
+    prettyprint-StringQuotedChars1
+
+  prettyprint-example =
+    prettyprint-QuotedBracket1
+
+  prettyprint-example =
+    prettyprint-Dollar1
+
+  prettyprint-example =
+    prettyprint-StringQuotedChars2
+
+  prettyprint-example =
+    prettyprint-QuotedBracket2
+
+  prettyprint-example =
+    prettyprint-Dollar2
+
+  prettyprint-example =
+    prettyprint-StringQuotedChars3
+
+  prettyprint-example =
+    prettyprint-QuotedBracket3
+
+  prettyprint-example =
+    prettyprint-Dollar3
+
+  prettyprint-example =
+    prettyprint-StringQuotedChars4
+
+  prettyprint-example =
+    prettyprint-QuotedBracket4
+
+  prettyprint-example =
+    prettyprint-Dollar4
+
+  prettyprint-example =
+    prettyprint-Padding

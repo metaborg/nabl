@@ -1,7 +1,7 @@
-module src-gen/completion/terms/Vars-esv
+module src-gen/completions/terms/Vars-esv
 
 imports
-  src-gen/completion/common/Identifiers-esv
+  src-gen/completions/common/Identifiers-esv
 
 completions
   completion template Wld : "_" =

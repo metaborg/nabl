@@ -1,16 +1,16 @@
-module src-gen/completion/NameBindingLanguage-esv
+module src-gen/completions/NameBindingLanguage-esv
 
 imports
-  src-gen/completion/common/Layout-esv
-  src-gen/completion/common/Identifiers-esv
-  src-gen/completion/terms/Signatures-esv
-  src-gen/completion/terms/Terms-esv
-  src-gen/completion/formulas/Formulas-esv
-  src-gen/completion/formulas/Propositions-esv
-  src-gen/completion/core/Modules-esv
-  src-gen/completion/core/Namespaces-esv
-  src-gen/completion/core/Properties-esv
-  src-gen/completion/terms/Vars-esv
+  src-gen/completions/common/Layout-esv
+  src-gen/completions/common/Identifiers-esv
+  src-gen/completions/terms/Signatures-esv
+  src-gen/completions/terms/Terms-esv
+  src-gen/completions/formulas/Formulas-esv
+  src-gen/completions/formulas/Propositions-esv
+  src-gen/completions/core/Modules-esv
+  src-gen/completions/core/Namespaces-esv
+  src-gen/completions/core/Properties-esv
+  src-gen/completions/terms/Vars-esv
 
 completions
   completion template RestrictedNamespaceRef : " NamespaceRef" =

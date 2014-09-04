@@ -32,6 +32,9 @@ signature
     Conformant      : PropFilter
 
   constructors
+     : String -> SectionKeyword
+
+  constructors
     Bindings    : List(BindingRule) -> ModuleSection
     BindingRule : Pattern * Constraints * List(BindingClause) -> BindingRule
 

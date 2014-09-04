@@ -3,3 +3,10 @@ module src-gen/signatures/common/Layout-sig
 signature
   sorts
     LongCom CommChar Asterisk Eof
+
+  constructors
+     : String -> Eol
+     : String -> Eof
+     : String -> LongCom
+     : String -> CommChar
+     : String -> Asterisk

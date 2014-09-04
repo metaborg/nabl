@@ -1,12 +1,12 @@
 
-module src-gen/completion/formulas/Propositions-esv
+module src-gen/completions/formulas/Propositions-esv
 
 imports
-  src-gen/completion/terms/Terms-esv
-  src-gen/completion/terms/Vars-esv
-  src-gen/completion/core/Namespaces-esv
-  src-gen/completion/core/Scopes-esv
-  src-gen/completion/core/Properties-esv
+  src-gen/completions/terms/Terms-esv
+  src-gen/completions/terms/Vars-esv
+  src-gen/completions/core/Namespaces-esv
+  src-gen/completions/core/Scopes-esv
+  src-gen/completions/core/Properties-esv
 
 completions
   completion template Proposition : "true" =

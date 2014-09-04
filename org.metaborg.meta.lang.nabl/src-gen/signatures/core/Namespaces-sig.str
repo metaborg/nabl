@@ -7,6 +7,10 @@ imports
 
 signature
   constructors
+     : String -> NamespaceID
+     : String -> SectionKeyword
+
+  constructors
     Namespaces      : List(NamespaceDef) -> ModuleSection
     NamespaceDef    : NamespaceID -> NamespaceDef
     NamespaceRef    : LanguageRef * NamespaceID -> NamespaceRef

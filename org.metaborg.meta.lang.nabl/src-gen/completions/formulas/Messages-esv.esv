@@ -1,7 +1,7 @@
-module src-gen/completion/formulas/Messages-esv
+module src-gen/completions/formulas/Messages-esv
 
 imports
-  src-gen/completion/terms/Terms-esv
+  src-gen/completions/terms/Terms-esv
 
 completions
   completion template Message : "MessageKind Term on Term" =

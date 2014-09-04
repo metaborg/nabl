@@ -1,10 +1,10 @@
 
-module src-gen/completion/core/Scopes-esv
+module src-gen/completions/core/Scopes-esv
 
 imports
-  src-gen/completion/common/Identifiers-esv
-  src-gen/completion/core/Namespaces-esv
-  src-gen/completion/terms/Vars-esv
+  src-gen/completions/common/Identifiers-esv
+  src-gen/completions/core/Namespaces-esv
+  src-gen/completions/terms/Vars-esv
 
 completions
   completion template LocalScope : "NamespaceRef VarRef" =

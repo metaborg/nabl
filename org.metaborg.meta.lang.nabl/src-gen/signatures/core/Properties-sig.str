@@ -11,6 +11,11 @@ imports
 
 signature
   constructors
+     : String -> PropertyID
+     : String -> SectionKeyword
+     : String -> Relation
+
+  constructors
     Properties  : List(PropertyDef) -> ModuleSection
     PropertyDef : PropertyID * List(NamespaceRef) * Sort -> PropertyDef
     TypeProp    : PropertyRef

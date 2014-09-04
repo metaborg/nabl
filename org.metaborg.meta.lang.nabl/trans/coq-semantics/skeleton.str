@@ -1,0 +1,45 @@
+module cot-semantics/skeleton
+
+rules
+  
+    build-module:
+    (sent_ns, sent_scopes, sent_defines, sent_refers, sent_ty-def) -> |[
+Require Import nabl_definition.
+Require Import sdf_definition.
+Require Import ts_nabl.
+Require Import PCF.
+
+Module NaBL_PCF_gen <: (NaBL_Sig SDF_PCF_gen).
+Module Term := SDF_Term SDF_PCF_gen.
+Export Term.
+Export SDF_PCF_gen.
+
+sent_ns
+sent_scopes
+sent_defines
+sent_refers
+End NaBL_PCF_gen.
+
+
+Module TS_NaBL_PCF_gen <: TS_NaBL_Sig SDF_PCF_gen NaBL_PCF_gen.
+
+Module nabl_wf_mod := NaBL_wf SDF_PCF_gen NaBL_PCF_gen.
+Export nabl_wf_mod.
+Import SDF_PCF_gen.
+Import NaBL_PCF_gen.
+
+Definition type_sort := Type_S.
+
+sent_ty-def
+
+Lemma typed_def_unique : forall tt id ns ty1 ty2 k1 k2, typed_defines_R tt id ns ty1 k1 -> typed_defines_R tt id ns ty2 k2 -> ty1 = ty2 /\ k1 = k2.
+  Proof.
+    intros.
+    inversion H.
+    subst.
+    inversion H0; subst.
+    eauto.
+  Qed.
+
+End TS_NaBL_PCF_gen.
+      ]|

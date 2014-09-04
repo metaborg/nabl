@@ -24,46 +24,40 @@ rules
 rules
   
   module-to-coq:
-    Module(name, section*) -> T|[ sents ]|
+    Module(name, section*) -> output
     where
-      sents := <filter(section-to-coq); concat> section*
+       ns := <fetch-elem(?Namespaces(_)); namespaces-to-coq> section*
+     ; binding* := <fetch-elem(Bindings(id))> section*
+     ; scopes  := <binding-rules-to-coq(scope-to-coq        |"scopes",        T|[term -> NS -> Prop]|)> binding*
+     ; defines := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> binding*
+     ; refers  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> binding*
+     ; ty-def  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> binding*
+     ; output  := <build-module> (ns, scopes, defines, refers, ty-def)
     
 rules // namespaces
   
-  section-to-coq:
-  	Namespaces(ns*) -> C|[
-  	  Inductive ID_NS : Set :=
-  	    | decls
-  	    .
+  namespaces-to-coq:
+  	Namespaces(ns*) -> |[
+  	  Inductive ID_NS : Set := decl.
   	  Definition NS := ID_NS.
-  	]|
+  	  ]|
   	with
-  	  decls := <map(namespace-to-coq)> ns*
+  	  decl := <map(namespace-to-coq); !ListDeclBar(<id>)> ns*
   	  
   namespace-to-coq:
   	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
 
 rules // binding rules
   
-  section-to-coq:
-    Bindings(r*) -> [scopes*, defines*, refers*, ty-def*]
-    with
-      scopes*  := <binding-rules-to-coq(scope-to-coq        |"scopes",        T|[term -> NS -> Prop]|)> r*
-    ; defines* := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> r*
-    ; refers*  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> r*
-    ; ty-def*  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> r*
-  
-  binding-rules-to-coq(binding-to-coq|name, ty):
-    r* -> C|[
-      Inductive ident : ty :=
-        | decls
-        .
-      Definition ident1 := ident.
+  binding-rules-to-coq(binding-to-coq|name, t_ty):
+    r* -> |[
+      Inductive ident1 : t_ty := decl.
+      Definition ident2 := ident1.
       ]|
     with
-      decls  := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat> r*;
-      ident  := $[[name]R];
-      ident1 := $[[name]_R]
+      decl  := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat; !ListDeclBar(<id>)> r*;
+      ident1 := $[[name]R];
+      ident2 := $[[name]_R]
     
   binding-rule-to-coq(clause-to-coq|):
     BindingRule(pattern, [], clause*) -> <filter(clause-to-coq(|c, pattern))> clause*

@@ -1,8 +1,8 @@
-module src-gen/completion/formulas/Formulas-esv
+module src-gen/completions/formulas/Formulas-esv
 
 imports
-  src-gen/completion/terms/Terms-esv
-  src-gen/completion/formulas/Propositions-esv
+  src-gen/completions/terms/Terms-esv
+  src-gen/completions/formulas/Propositions-esv
 
 completions
   completion template Formula : "not Formula" =
