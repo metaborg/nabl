@@ -17,7 +17,7 @@ rules
       filename := <guarantee-extension(|"v")> path
     ; coq-file := <strip-annos; module-to-coq> ast
     with
-       result := <parenthesize-Coq; prettyprintCoq-Start; box2text-string(|100)> coq-file
+       result := <debug(!"Result: "); parenthesize-Coq; debug(!"Parenthesized: "); prettyprintCoq-CoqFile; debug(!"PP: ");box2text-string(|100)> coq-file
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(prettyprintCoq-example) ; debug(!"cannot pp ")))> coq-file
     ;  result := ""
  
@@ -32,30 +32,24 @@ rules
      ; defines := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; refers  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; ty-def  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> binding*
-     ; output  := <build-module> (ns, scopes, defines, refers, ty-def)
+     ; output  := <build-module; debug(!"Obtained output ")> (ns, scopes, defines, refers, ty-def)
     
 rules // namespaces
   
   namespaces-to-coq:
-  	Namespaces(ns*) -> |[
-  	  Inductive ID_NS : Set := decl.
-  	  Definition NS := ID_NS.
-  	  ]|
+  	Namespaces(ns*) -> (S|[Inductive ID_NS : Set := decls.]|,S|[Definition NS := ID_NS.]|)
   	with
-  	  decl := <map(namespace-to-coq); !ListDeclBar(<id>)> ns*
+  	  decls := <map(namespace-to-coq); !ListDeclBar(<id>)> ns*
   	  
   namespace-to-coq:
   	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
 
 rules // binding rules
   
-  binding-rules-to-coq(binding-to-coq|name, t_ty):
-    r* -> |[
-      Inductive ident1 : t_ty := decl.
-      Definition ident2 := ident1.
-      ]|
+  binding-rules-to-coq(binding-to-coq|name, term_ty):
+    r* -> (S|[Inductive ident1 : Set := decls.]|,S|[Definition ident2 := ident1.]|)
     with
-      decl  := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat; !ListDeclBar(<id>)> r*;
+      decls  := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat; !ListDeclBar(<id>)> r*;
       ident1 := $[[name]R];
       ident2 := $[[name]_R]
     

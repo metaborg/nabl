@@ -3,7 +3,11 @@ module cot-semantics/skeleton
 rules
   
     build-module:
-    (sent_ns, sent_scopes, sent_defines, sent_refers, sent_ty-def) -> |[
+    ((sent_ns,     sent_ns-def)
+    ,(sent_scopes, sent_scopes-def)
+    ,(sent_defines,sent_defines-def)
+    ,(sent_refers, sent_refers-def)
+    ,(sent_ty,     sent_ty-def)) -> |[
 Require Import nabl_definition.
 Require Import sdf_definition.
 Require Import ts_nabl.
@@ -15,9 +19,13 @@ Export Term.
 Export SDF_PCF_gen.
 
 sent_ns
+sent_ns-def
 sent_scopes
+sent_scopes-def
 sent_defines
+sent_defines-def
 sent_refers
+sent_refers-def
 End NaBL_PCF_gen.
 
 
@@ -30,6 +38,7 @@ Import NaBL_PCF_gen.
 
 Definition type_sort := Type_S.
 
+sent_ty
 sent_ty-def
 
 Lemma typed_def_unique : forall tt id ns ty1 ty2 k1 k2, typed_defines_R tt id ns ty1 k1 -> typed_defines_R tt id ns ty2 k2 -> ty1 = ty2 /\ k1 = k2.
