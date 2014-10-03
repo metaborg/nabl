@@ -1,0 +1,33 @@
+module lib/Coq/signatures/Options-sig
+
+imports
+  lib/Coq/signatures/Lexical-sig
+  lib/Coq/signatures/Gallina-sig
+
+
+signature
+  constructors
+    None   : OptType
+           : Term -> OptType
+    None   : OptInTerm
+           : Term -> OptInTerm
+    None   : OptDepRetType
+    DepRet : OptAlias * ReturnType -> OptDepRetType
+    None   : OptAlias
+    As     : Name -> OptAlias
+    None   : OptReturnType
+           : ReturnType -> OptReturnType
+    None   : OptBinders
+           : List(Binder) -> OptBinders
+    None   : OptTerms
+           : List(Term) -> OptTerms
+    None   : OptSort
+           : Sort -> OptSort
+    None   : OptAnnotation
+    Anno   : Ident -> OptAnnotation
+
+  constructors
+    None : OptIdents
+         : List(Ident) -> OptIdents
+    None : OptWhereNotation
+         : List(Notation) -> OptWhereNotation

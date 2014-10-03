@@ -1,11 +1,11 @@
 .cache
 bin
 target
-include
+include/*
 editor/java/trans
 editor/*.generated.esv
 editor/*.generated.str
-lib
+lib/*
 lib-refactoring
 utils
 syntax/*generated.sdf
@@ -19,4 +19,7 @@ test/*.str
 !editor/Modules.generated.esv
 !syntax/Modulesgenerated.sf
 !syntax/NaBLgenerated.sf
+!lib/Coq
+!include/Stratego-Coq.tbl
 src-gen
+/include/
