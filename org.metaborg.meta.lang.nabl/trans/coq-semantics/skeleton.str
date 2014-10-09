@@ -1,8 +1,8 @@
-module cot-semantics/skeleton
+module coq-semantics/skeleton
 
 rules
   
-    build-module:
+    build-module(|language):
     ((sent_ns,     sent_ns-def)
     ,(sent_scopes, sent_scopes-def)
     ,(sent_defines,sent_defines-def)
@@ -11,12 +11,12 @@ rules
 Require Import nabl_definition.
 Require Import sdf_definition.
 Require Import ts_nabl.
-Require Import PCF.
+Require Import ident_language.
 
-Module NaBL_PCF_gen <: (NaBL_Sig SDF_PCF_gen).
-Module Term := SDF_Term SDF_PCF_gen.
+Module ident_nabl_gen <: (NaBL_Sig ident_sdf_gen).
+Module Term := SDF_Term ident_sdf_gen.
 Export Term.
-Export SDF_PCF_gen.
+Export ident_sdf_gen.
 
 sent_ns
 sent_ns-def
@@ -26,15 +26,15 @@ sent_defines
 sent_defines-def
 sent_refers
 sent_refers-def
-End NaBL_PCF_gen.
+End ident_nabl_gen.
 
 
-Module TS_NaBL_PCF_gen <: TS_NaBL_Sig SDF_PCF_gen NaBL_PCF_gen.
+Module ident_ts_nabl_gen <: TS_NaBL_Sig ident_sdf_gen ident_nabl_gen.
 
-Module nabl_wf_mod := NaBL_wf SDF_PCF_gen NaBL_PCF_gen.
+Module nabl_wf_mod := NaBL_wf ident_sdf_gen ident_nabl_gen.
 Export nabl_wf_mod.
-Import SDF_PCF_gen.
-Import NaBL_PCF_gen.
+Import ident_sdf_gen.
+Import ident_nabl_gen.
 
 Definition type_sort := Type_S.
 
@@ -50,5 +50,10 @@ Lemma typed_def_unique : forall tt id ns ty1 ty2 k1 k2, typed_defines_R tt id ns
     eauto.
   Qed.
 
-End TS_NaBL_PCF_gen.
+End ident_ts_nabl_gen.
       ]|
+      where
+        ident_language    := language;
+        ident_sdf_gen     := $[SDF_[language]_gen];
+        ident_nabl_gen    := $[NaBL_[language]_gen];
+        ident_ts_nabl_gen := $[TS_NaBL_[language]_gen]

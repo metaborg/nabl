@@ -32,7 +32,7 @@ rules
      ; defines := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; refers  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; ty-def  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> binding*
-     ; output  := <build-module> (ns, scopes, defines, refers, ty-def)
+     ; output  := <build-module(|<base-filename> name)> (ns, scopes, defines, refers, ty-def)
     
 rules // namespaces
   
