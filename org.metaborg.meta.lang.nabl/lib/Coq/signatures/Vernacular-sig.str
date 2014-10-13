@@ -23,6 +23,9 @@ signature
     AssumptionHypotheses : AssumptionKeyword
 
   constructors
+     : String -> Reserved
+
+  constructors
     AssertionTheorem     : AssertionKeyword
     AssertionLemma       : AssertionKeyword
     AssertionRemark      : AssertionKeyword

@@ -7,27 +7,27 @@ imports
 
 signature
   constructors
-    None   : OptType
-           : Term -> OptType
-    None   : OptInTerm
-           : Term -> OptInTerm
-    None   : OptDepRetType
-    DepRet : OptAlias * ReturnType -> OptDepRetType
-    None   : OptAlias
-    As     : Name -> OptAlias
-    None   : OptReturnType
-           : ReturnType -> OptReturnType
-    None   : OptBinders
-           : List(Binder) -> OptBinders
-    None   : OptTerms
-           : List(Term) -> OptTerms
-    None   : OptSort
-           : Sort -> OptSort
-    None   : OptAnnotation
-    Anno   : Ident -> OptAnnotation
+    None          : OptType
+    OptType       : Term -> OptType
+    None          : OptInTerm
+    OptInTerm     : Term -> OptInTerm
+    None          : OptDepRetType
+    DepRet        : OptAlias * ReturnType -> OptDepRetType
+    None          : OptAlias
+    As            : Name -> OptAlias
+    None          : OptReturnType
+    OptReturnType : ReturnType -> OptReturnType
+    None          : OptBinders
+    OptBinders    : List(Binder) -> OptBinders
+    None          : OptTerms
+    OptTerms      : List(Term) -> OptTerms
+    None          : OptSort
+    OptSort       : Sort -> OptSort
+    None          : OptAnnotation
+    Anno          : Ident -> OptAnnotation
 
   constructors
-    None : OptIdents
-         : List(Ident) -> OptIdents
-    None : OptWhereNotation
-         : List(Notation) -> OptWhereNotation
+    None             : OptIdents
+    OptIdents        : List(Ident) -> OptIdents
+    None             : OptWhereNotation
+    OptWhereNotation : List(Notation) -> OptWhereNotation

@@ -76,6 +76,16 @@ exports
   context-free syntax
     CONTENTCOMPLETE -> AssumptionKeyword {cons("COMPLETION-AssumptionKeyword")}
 
+  lexical syntax
+    "Axiom"      -> Reserved 
+    "Conjecture" -> Reserved 
+    "Parameter"  -> Reserved 
+    "Parameters" -> Reserved 
+    "Variable"   -> Reserved 
+    "Variables"  -> Reserved 
+    "Hypothesis" -> Reserved 
+    "Hypotheses" -> Reserved 
+
   context-free syntax
     "Theorem"     -> AssertionKeyword {cons("AssertionTheorem")}
     "Lemma"       -> AssertionKeyword {cons("AssertionLemma")}
@@ -90,8 +100,14 @@ exports
     CONTENTCOMPLETE -> AssertionKeyword {cons("COMPLETION-AssertionKeyword")}
 
   lexical syntax
-    AssumptionKeyword -> Reserved 
-    AssertionKeyword  -> Reserved 
+    "Theorem"     -> Reserved 
+    "Lemma"       -> Reserved 
+    "Remark"      -> Reserved 
+    "Fact"        -> Reserved 
+    "Corollary"   -> Reserved 
+    "Proposition" -> Reserved 
+    "Definition"  -> Reserved 
+    "Example"     -> Reserved 
 
   context-free syntax
     Assumption      -> Sentence 
@@ -126,7 +142,7 @@ exports
     "CoInductive" {IndBody "with"}+ "."      -> Inductive {cons("CoInductive")}
     Ident OptBinders ":" Term ":=" ConsDecls -> IndBody   {cons("Induc")}
     "|" {ConsDecl "|"}+                      -> ConsDecls {cons("ListDeclBar")}
-    {ConsDecl "|"}+                          -> ConsDecls {cons("ListDecl")}
+    {ConsDecl "|"}*                          -> ConsDecls {cons("ListDecl")}
     Ident OptBinders OptType                 -> ConsDecl  {cons("ConsDecl")}
 
   context-free syntax
@@ -582,21 +598,21 @@ imports Lexical Gallina
 exports
   context-free syntax
                            -> OptType       {cons("None")}
-    ":" Term               -> OptType       
+    ":" Term               -> OptType       {cons("OptType")}
                            -> OptInTerm     {cons("None")}
-    "in" Term              -> OptInTerm     
+    "in" Term              -> OptInTerm     {cons("OptInTerm")}
                            -> OptDepRetType {cons("None")}
     OptAlias ReturnType    -> OptDepRetType {cons("DepRet")}
                            -> OptAlias      {cons("None")}
     "as" Name              -> OptAlias      {cons("As")}
                            -> OptReturnType {cons("None")}
-    ReturnType             -> OptReturnType 
+    ReturnType             -> OptReturnType {cons("OptReturnType")}
                            -> OptBinders    {cons("None")}
-    Binder+                -> OptBinders    
+    Binder+                -> OptBinders    {cons("OptBinders")}
                            -> OptTerms      {cons("None")}
-    Term+                  -> OptTerms      
+    Term+                  -> OptTerms      {cons("OptTerms")}
                            -> OptSort       {cons("None")}
-    ":" Sort               -> OptSort       
+    ":" Sort               -> OptSort       {cons("OptSort")}
                            -> OptAnnotation {cons("None")}
     "{" "struct" Ident "}" -> OptAnnotation {cons("Anno")}
 
@@ -613,9 +629,9 @@ exports
 
   context-free syntax
                                 -> OptIdents        {cons("None")}
-    Ident+                      -> OptIdents        
+    Ident+                      -> OptIdents        {cons("OptIdents")}
                                 -> OptWhereNotation {cons("None")}
-    "where" {Notation "where"}+ -> OptWhereNotation 
+    "where" {Notation "where"}+ -> OptWhereNotation {cons("OptWhereNotation")}
 
   context-free syntax
     CONTENTCOMPLETE -> OptIdents        {cons("COMPLETION-OptIdents")}
@@ -819,14 +835,17 @@ imports
   
 exports
   variables
-    "term"  [a-z0-9\-\_\']+ -> Term      {prefer}
-    "decl"  [a-z0-9\-\_\']+ -> ConsDecls {prefer}
-    "sent"  [a-z0-9\-\_\']+ -> Sentence  {prefer}
-    "ident" [a-z0-9\-\_\']+ -> Ident     {prefer}
+    "term"  [a-z0-9\-\_\']+ -> Term       {prefer}
+    "decl"  [a-z0-9\-\_\']+ -> ConsDecls  {prefer}
+    "sent"  [a-z0-9\-\_\']+ -> Sentence   {prefer}
+    "ident" [a-z0-9\-\_\']+ -> Ident      {prefer}
+    "bind"  [a-z0-9\-\_\']+ -> OptBinders {prefer}
+    "equations" [a-z0-9\-\_\']+ -> Equations {prefer}
 
   context-free syntax
     "T" "|[" Term      "]|" -> E {cons("ToMetaExpr")}
     "S" "|[" Sentence  "]|" -> E {cons("ToMetaExpr")}
+    "D" "|[" ConsDecl  "]|" -> E {cons("ToMetaExpr")}
         "|[" TopLevel* "]|" -> E {cons("ToMetaListExpr")}
 
   lexical syntax
@@ -834,10 +853,41 @@ exports
     "decl"  [a-z0-9\-\_\']+ -> Ident {reject}
     "sent"  [a-z0-9\-\_\']+ -> Ident {reject}
     "ident" [a-z0-9\-\_\']+ -> Ident {reject}
+    "bind"  [a-z0-9\-\_\']+ -> Ident {reject}
+    "equations" [a-z0-9\-\_\']+ -> Ident {reject}
   
   
 context-free restrictions
   Term   -/- [\_a-z0-9\']
+
+exports
+  variables
+    "optType"          [a-z0-9\-\_\']+ -> OptType          {prefer}
+    "optInTerm"        [a-z0-9\-\_\']+ -> OptInTerm        {prefer}
+    "optDepRetType"    [a-z0-9\-\_\']+ -> OptDepRetType    {prefer}
+    "optAlias"         [a-z0-9\-\_\']+ -> OptAlias         {prefer}
+    "optReturnType"    [a-z0-9\-\_\']+ -> OptReturnType    {prefer}
+    "optBinders"       [a-z0-9\-\_\']+ -> OptBinders       {prefer}
+    "optTerms"         [a-z0-9\-\_\']+ -> OptTerms         {prefer}
+    "optSort"          [a-z0-9\-\_\']+ -> OptSort          {prefer}
+    "OptAnnotation"    [a-z0-9\-\_\']+ -> OptAnnotation    {prefer}
+    "optIdents"        [a-z0-9\-\_\']+ -> OptSort          {prefer}
+    "optIdents"        [a-z0-9\-\_\']+ -> OptIdents        {prefer}
+    "optWhereNotation" [a-z0-9\-\_\']+ -> OptWhereNotation {prefer}
+    
+  lexical syntax
+    "optType"          [a-z0-9\-\_\']+ -> Ident {reject}
+    "optInTerm"        [a-z0-9\-\_\']+ -> Ident {reject}
+    "optDepRetType"    [a-z0-9\-\_\']+ -> Ident {reject}
+    "optAlias"         [a-z0-9\-\_\']+ -> Ident {reject}
+    "optReturnType"    [a-z0-9\-\_\']+ -> Ident {reject}
+    "optBinders"       [a-z0-9\-\_\']+ -> Ident {reject}
+    "optTerms"         [a-z0-9\-\_\']+ -> Ident {reject}
+    "optSort"          [a-z0-9\-\_\']+ -> Ident {reject}
+    "OptAnnotation"    [a-z0-9\-\_\']+ -> Ident {reject}
+    "optIdents"        [a-z0-9\-\_\']+ -> Ident {reject}
+    "optIdents"        [a-z0-9\-\_\']+ -> Ident {reject}
+    "optWhereNotation" [a-z0-9\-\_\']+ -> Ident {reject}
 
 module Stratego-Sugar-Overlays
 imports
