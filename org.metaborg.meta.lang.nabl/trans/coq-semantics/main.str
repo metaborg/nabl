@@ -14,8 +14,8 @@ rules
   generate-coq-semantics:
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
-      filename := <guarantee-extension(|"v")> path
-    ; coq-file := <strip-annos; module-to-coq> ast
+      filename := "src-gen/verification/names.v"
+    ; coq-file := <strip-annos; module-to-coq(|"names")> ast
     with
        result := <parenthesize-Coq; prettyprintCoq-CoqFile; box2text-string(|100)> coq-file
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(prettyprintCoq-example) ; debug(!"cannot pp ")))> coq-file
@@ -23,7 +23,7 @@ rules
  
 rules
   
-  module-to-coq:
+  module-to-coq(|filename):
     Module(name, section*) -> output
     where
        ns := <fetch-elem(?Namespaces(_)); namespaces-to-coq> section*
@@ -32,7 +32,7 @@ rules
      ; defines := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; refers  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; ty-def  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> binding*
-     ; output  := <build-module(|<base-filename> name)> (ns, scopes, defines, refers, ty-def)
+     ; output  := <build-module(|filename)> (ns, scopes, defines, refers, ty-def)
     
 rules // namespaces
   
@@ -42,7 +42,8 @@ rules // namespaces
   	  decls := <map(namespace-to-coq); listdecl> ns*
   	  
   namespace-to-coq:
-  	NamespaceDef(ns) -> ConsDecl($[[ns]NS], [], None())
+  	NamespaceDef(ns) -> D|[ident_ns]|
+  	where ident_ns := $[[ns]NS]
 
 rules // binding rules
   
