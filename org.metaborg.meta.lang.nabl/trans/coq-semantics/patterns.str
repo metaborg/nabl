@@ -15,20 +15,20 @@ rules
   patterns-to-term(|i, x): [] -> (Ref("nil"), [], i, None())
   
   patterns-to-term(|i, x):
-    [c|cs] -> (T|[cons ct cts]|, [cbind*, csbind*], k, ret)
+    [c|cs] -> (T|[cons termct termcts]|, [cbind*, csbind*], k, ret)
     with
-      (ct, cbind*, j, hd) := <pattern-to-term(|i, x)> c
-    ; (cts, csbind*, k, tl) := <patterns-to-term(|<inc> j, x)> cs
+      (termct, cbind*, j, hd) := <pattern-to-term(|i, x)> c
+    ; (termcts, csbind*, k, tl) := <patterns-to-term(|<inc> j, x)> cs
     ; ret := <?Some(_) <+ !tl> hd
 
   // (Co cC [c1; c2; c3] k)
   pattern-to-term(|i, x):
-    Op(c, term*) -> (T|[Co ident x k]|, binder*, j, maybe)
+    Op(c, term*) -> (T|[Co identc termx identk]|, binder*, j, maybe)
     with
-      ident := $[[c]C]
-    ; k := $[k[i]]
-    ; (x, cbinder*, j, maybe) := <patterns-to-term(|<inc> i, x)> term*
-    ; binder* := [cbinder*, Bind(k)]
+      identc := $[[c]C]
+    ; identk := $[k[i]]
+    ; (termx, cbinder*, j, maybe) := <patterns-to-term(|<inc> i, x)> term*
+    ; binder* := [cbinder*, Bind(identk)]
       
   pattern-to-term(|i, x):
     Var(n) -> (Ref(n), [Bind(n)], i, None())

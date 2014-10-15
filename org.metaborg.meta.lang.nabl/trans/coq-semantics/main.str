@@ -27,11 +27,11 @@ rules
     Module(name, section*) -> output
     where
        ns := <fetch-elem(?Namespaces(_)); namespaces-to-coq> section*
-     ; binding* := <fetch-elem(Bindings(id))> section*
+     ; binding* := <fetch-elem(?Bindings(<id>))> section*
      ; scopes  := <binding-rules-to-coq(scope-to-coq        |"scopes",        T|[term -> NS -> Prop]|)> binding*
      ; defines := <binding-rules-to-coq(defines-to-coq      |"defines",       T|[term -> Ident -> NS -> key -> Prop]|)> binding*
      ; refers  := <binding-rules-to-coq(refers-to-to-coq    |"refers_to",     T|[term -> Ident -> NS -> key -> Prop]|)> binding*
-     ; ty-def  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> key -> Prop]|)> binding*
+     ; ty-def  := <binding-rules-to-coq(typed-defines-to-coq|"typed_defines", T|[term -> Ident -> NS -> term -> key -> Prop]|)> binding*
      ; output  := <build-module(|filename)> (ns, scopes, defines, refers, ty-def)
     
 rules // namespaces
@@ -48,14 +48,14 @@ rules // namespaces
 rules // binding rules
   
   binding-rules-to-coq(binding-to-coq|name, term_ty):
-    r* -> (S|[Inductive ident1 : Set := decls.]|,S|[Definition ident2 := ident1.]|)
+    r* -> (S|[Inductive ident1 : term_ty := decls.]|,S|[Definition ident2 := ident1.]|)
     with
       decls  := <collect-all(binding-rule-to-coq(binding-to-coq|)); concat; listdecl> r*;
       ident1 := $[[name]R];
       ident2 := $[[name]_R]
     
   binding-rule-to-coq(clause-to-coq|):
-    BindingRule(pattern, [], clause*) -> <filter(clause-to-coq(|c, pattern))> clause*
+    BindingRule(pattern, _, clause*) -> <filter(clause-to-coq(|c, pattern))> clause*
     with
       c := <pattern-to-cons> pattern
       

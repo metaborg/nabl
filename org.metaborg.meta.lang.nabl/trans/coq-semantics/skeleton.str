@@ -11,7 +11,7 @@ rules
 Require Import nabl_definition.
 Require Import sdf_definition.
 Require Import ts_nabl.
-Require Import ident_language.
+Require Import ident_sdf_file.
 
 Module ident_nabl_gen <: (NaBL_Sig ident_sdf_gen).
 Module Term := SDF_Term ident_sdf_gen.
@@ -54,6 +54,7 @@ End ident_ts_nabl_gen.
       ]|
       where
         ident_language    := language;
-        ident_sdf_gen     := $[SDF_[language]_gen];
+        ident_sdf_file    := "syntax";
+        ident_sdf_gen     := $[SDF_syntax_gen];
         ident_nabl_gen    := $[NaBL_[language]_gen];
         ident_ts_nabl_gen := $[TS_NaBL_[language]_gen]

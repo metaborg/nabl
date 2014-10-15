@@ -11,22 +11,26 @@ imports
 rules
   
   defines-to-coq(|c, pattern):
-    DefClause(Explicit(), Unique(), NamespaceRef(CurrentLanguage(), ns), VarRef(x), [], Current(), []) ->
-      ConsDecl($[[c]_defines_[ns]], [Bind(x), binder*], coq-term-type)
+    DefClause(Explicit(), Unique(), NamespaceRef(CurrentLanguage(), ns), VarRef(identx), _, Current(), _) ->
+      D|[identcons optBinders' optTypecoq]|
     where
-      (t, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+      (termt, optBinders*, _, Some(identk)) := <pattern-to-term(|0, Some(identx))> pattern
     with
-      ns' := $[[ns]NS]
-    ; coq-term-type := T|[definesR t x ns k]|
+      identns'    := $[[ns]NS]
+    ; optTypecoq  := OptType(T|[definesR termt identx identns' identk]|)
+    ; optBinders' := OptBinders(<nub> [Bind(identx), optBinders*])
+    ; identcons   := $[[c]_defines_[ns]]
 
 rules
   
   typed-defines-to-coq(|c, pattern):
-    DefClause(Explicit(), Unique(), NamespaceRef(_,ns), VarRef(x), type, Current(), []) ->
-      ConsDecl($[[c]_typed_defines_[ns]], [Bind(x), Bind(ty'), binder*], coq-term-type)
+    DefClause(Explicit(), Unique(), NamespaceRef(CurrentLanguage(),ns), VarRef(identx), type, Current(), _) ->
+      D|[identcons optBinders' optTypecoq]|
     where
-      [PropertyTerm(TypeProp(), VarRef(ty'))] := type
-    ; (t, binder*, _, Some(k))                := <pattern-to-term(|0, Some(x))> pattern
+      [PropertyTerm(TypeProp(), VarRef(identty'))] := type
+    ; (termt, optBinders*, _, Some(identk))        := <pattern-to-term(|0, Some(identx))> pattern
     with
-      ns' := $[[ns]NS]
-    ; coq-term-type := T|[typed_definesR t x ns' ty' k]|
+      identns'    := $[[ns]NS]
+    ; optTypecoq  := OptType(T|[typed_definesR termt identx identns' identty' identk]|)
+    ; optBinders' := OptBinders(<nub> [Bind(identx), Bind(identty'), optBinders*])
+    ; identcons   := $[[c]_typed_defines_[ns]]

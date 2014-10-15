@@ -11,10 +11,12 @@ imports
 rules
   
   refers-to-to-coq(|c, pattern):
-    RefClause([RefClausePart(All(), NamespaceRef(CurrentLanguage(), ns), VarRef(x), [], Current(), [])]) ->
-      ConsDecl($[[c]_refers_to_[ns]], [Bind(x), binder*], coq-term-type)
+    RefClause([RefClausePart(All(), NamespaceRef(CurrentLanguage(), ns), VarRef(identx), _, Current(), _)]) ->
+      D|[identcons optBinders' optTypecoq]|
     where
-      (t, binder*, _, Some(k)) := <pattern-to-term(|0, Some(x))> pattern
+      (termt, optBinder*, _, Some(identk)) := <pattern-to-term(|0, Some(identx))> pattern
     with
-      ns' := $[[ns]NS]
-    ; coq-term-type := T|[refers_toR t x ns' k]|
+      identns     := $[[ns]NS]
+    ; optBinders' := OptBinders(<nub> [Bind(identx), optBinder*])
+    ; optTypecoq  := OptType(T|[refers_toR termt identx identns identk]|)
+    ; identcons   := $[[c]_refers_to_[ns]]
