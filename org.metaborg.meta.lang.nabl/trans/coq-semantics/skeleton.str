@@ -41,7 +41,7 @@ Definition type_sort := Type_S.
 sent_ty
 sent_ty-def
 
-Lemma typed_def_unique : forall tt id ns ty1 ty2 k1 k2, typed_defines_R tt id ns ty1 k1 -> typed_defines_R tt id ns ty2 k2 -> ty1 = ty2 /\ k1 = k2.
+Lemma typed_def_unique : (forall tt id ns ty1 ty2 k1 k2, typed_defines_R tt id ns ty1 k1 -> typed_defines_R tt id ns ty2 k2 -> ty1 = ty2 /\ k1 = k2).
   Proof.
     intros.
     inversion H.
