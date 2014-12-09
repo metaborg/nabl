@@ -1,6 +1,8 @@
 module lexical/Identifiers
 
-sorts Id LId LCID UCID ModuleID
+sorts 
+
+  Id LId LCID UCID ModuleID
 
 lexical syntax
 
@@ -23,5 +25,4 @@ lexical restrictions
   LCID     -/- [a-zA-Z0-9\'\-\_]
   UCID     -/- [a-zA-Z0-9\'\-\_]
   ModuleID -/- [a-zA-Z0-9\'\.\-\_]
-
-    
+  

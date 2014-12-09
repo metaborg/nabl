@@ -5,7 +5,9 @@ imports
 	common/Identifiers
 	terms/Constants
 	
-sorts Sort
+sorts 
+
+  Sort
 
 context-free syntax
 	

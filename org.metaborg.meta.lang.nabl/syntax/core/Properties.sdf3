@@ -1,34 +1,33 @@
 module core/Properties
 
 imports
-  common/Identifiers
-  terms/Signatures
-  terms/Vars
-  terms/Terms
-  formulas/Formulas
-  core/Namespaces
-  
+
+	common/Identifiers  
+	terms/Signatures  
+	terms/Vars  
+	terms/Terms 
+	formulas/Formulas 
+	core/Namespaces
+
 lexical syntax
 
-  PropertyID     = Id
-  PropertyID = "type"    {reject}
-  PropertyID     = SectionKeyword {reject}
-  SectionKeyword = "properties"
- 
-  Relation       = "<" [A-Za-z\-]* ":" 
+  PropertyID = Id 
+  PropertyID = "type" {reject}
+  PropertyID = SectionKeyword {reject}
+  
+  SectionKeyword = "properties" 
+  
+  Relation = "<" [A-Za-z\-]* ":" 
 
-templates
+context-free syntax
 
-  ModuleSection.Properties  = <
+  ModuleSection.Properties = <
   properties   
     <PropertyDef*>
   > 
-  
+
   PropertyDef.PropertyDef = <
-    <PropertyID> of <NamespaceRef+; separator=", "> : <Sort>>
-  
-  PropertyRef.TypeProp    = <type>  
-  PropertyRef.PropertyRef = <<PropertyID>>
-  
- 
-  
+    <PropertyID> of <{NamespaceRef ", "}+> : <Sort>> 
+
+  PropertyRef.TypeProp = <type> 
+  PropertyRef.PropertyRef = <<PropertyID>> 

@@ -1,28 +1,25 @@
 module core/Modules
 
-templates
-    
-  Module.Module = 
-  	<module <ModuleID> 
-    
-    <ModuleSection*>>
+context-free syntax
 
+  Module.Module = <module <ModuleID> 
+    
+    <ModuleSection*>> 
+    
   ModuleSection.Imports = <
-    imports <ImportModule*>>
-
-  ImportModule.ImportWildcard=
-  	<<ModuleID>/->
-  	            
-  ImportModule.Import = <<ModuleID>>
+    imports <ImportModule*>> 
+    
+  ImportModule.ImportWildcard = <<ModuleID>/-> 
+  ImportModule.Import = <<ModuleID>> 
 
 lexical syntax
 
-  ModuleID       = {ModuleIDPart "/"}+ 
-  ModuleIDPart   = [a-zA-Z\.\_] [a-zA-Z0-9\'\.\-\_]* 
-    
-  ModuleID       = SectionKeyword {reject}
-  SectionKeyword = "imports"
+  ModuleID = {ModuleIDPart "/"}+ 
+  ModuleIDPart = [a-zA-Z\.\_] [a-zA-Z0-9\'\.\-\_]* 
+  ModuleID = SectionKeyword {reject}
+  
+  SectionKeyword = "imports" 
 
 lexical restrictions
-  
+
   ModuleID -/- [a-zA-Z0-9\'\.\-\_]

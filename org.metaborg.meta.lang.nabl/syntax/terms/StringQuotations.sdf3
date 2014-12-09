@@ -1,73 +1,70 @@
 module terms/StringQuotations
 
-imports terms/Terms
+imports 
 
-  sorts
+  terms/Terms
 
-  	PPTerm
-    StringQuotation
-    StringQuotedPart1 StringQuotedChars1 QuotedBracket1 Dollar1
-    StringQuotedPart2 StringQuotedChars2 QuotedBracket2 Dollar2
-    StringQuotedPart3 StringQuotedChars3 QuotedBracket3 Dollar3
-    StringQuotedPart4 StringQuotedChars4 QuotedBracket4  Dollar4
-    Padding
+sorts
 
-  context-free syntax
+  PPTerm
+  StringQuotation
+  StringQuotedPart1 StringQuotedChars1 QuotedBracket1 Dollar1
+  StringQuotedPart2 StringQuotedChars2 QuotedBracket2 Dollar2
+  StringQuotedPart3 StringQuotedChars3 QuotedBracket3 Dollar3
+  StringQuotedPart4 StringQuotedChars4 QuotedBracket4 Dollar4
+  Padding
 
-    PPTerm = StringQuotation
+syntax
+  
+  PPTerm-CF = StringQuotation
+  
+  StringQuotation-CF.StringQuotation1 = "$" "[" Padding StringQuotedPart1* "]"
+  StringQuotedPart1-CF.StringEscape1  = Padding "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
+  StringQuotedPart1-CF.QStr           = StringQuotedChars1-LEX
+  StringQuotedPart1-CF.QDollar        = Dollar1-LEX
+  StringQuotedPart1-CF.QBr            = "$" QuotedBracket1-LEX "$"
+  StringQuotedChars1-LEX              = ~[\[\]\$]+
+  QuotedBracket1-LEX                  = [\[\]]
+  Dollar1-LEX                         = "$"
+  
+  StringQuotation-CF.StringQuotation2 = "$" "{" Padding StringQuotedPart2* "}"
+  StringQuotedPart2-CF.StringEscape2  =  Padding "{" LAYOUT?-CF Term-CF LAYOUT?-CF "}"
+  StringQuotedPart2-CF.QStr           = StringQuotedChars2-LEX
+  StringQuotedPart2-CF.QDollar        = Dollar2-LEX
+  StringQuotedPart2-CF.QBr            = "$" QuotedBracket2-LEX "$"
+  StringQuotedChars2-LEX              = ~[\{\}\$]+
+  QuotedBracket2-LEX                  = [\{\}]
+  Dollar2-LEX                         = "$"
 
-  syntax
+  StringQuotation-CF.StringQuotation3 = "$" "(" Padding StringQuotedPart3* ")"
+  StringQuotedPart3-CF.StringEscape3  = Padding "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
+  StringQuotedPart3-CF.QStr           = StringQuotedChars3-LEX
+  StringQuotedPart3-CF.QDollar        = Dollar3-LEX
+  StringQuotedPart3-CF.QBr            = "$" QuotedBracket3-LEX "$"
+  StringQuotedChars3-LEX              = ~[\(\)\$]+
+  QuotedBracket3-LEX                  = [\(\)]
+  Dollar3-LEX                         = "$"
 
-    StringQuotation -> <PPTerm-CF>
+  StringQuotation-CF.StringQuotation4 = "$" "<" Padding StringQuotedPart4* ">"
+  StringQuotedPart4-CF.StringEscape4  = Padding "<"  LAYOUT?-CF Term-CF LAYOUT?-CF ">"
+  StringQuotedPart4-CF.QStr           = StringQuotedChars4-LEX
+  StringQuotedPart4-CF.QDollar        = Dollar4-LEX
+  StringQuotedPart4-CF.QBr            = "$" QuotedBracket4-LEX "$"
+  StringQuotedChars4-LEX              = ~[\<\>\$]+
+  QuotedBracket4-LEX                  = [\<\>]
+  Dollar4-LEX                         = "$"
+      
+  // Padding is a dummy lexical that will contain the indentation prefix of every quotation
+  Padding-CF = Padding-LEX 
+  Padding-LEX = {indentpadding}
+  
+lexical restrictions
 
-    "$" "[" Padding StringQuotedPart1*               "]"    -> StringQuotation   {"StringQuotation1"}
-     Padding "[" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> "]"    -> StringQuotedPart1 {"StringEscape1"}
-    <StringQuotedChars1-LEX>                                -> StringQuotedPart1 {"QStr"}
-    <Dollar1-LEX>                                           -> StringQuotedPart1 {"QDollar"}
-    "$" <QuotedBracket1-LEX> "$"                            -> StringQuotedPart1 {"QBr"}
-    ~[\[\]\$]+                                              -> <StringQuotedChars1-LEX>
-    [\[\]]                                                  -> <QuotedBracket1-LEX>
-    "$"                                                     -> <Dollar1-LEX>
-
-    "$" "{" Padding StringQuotedPart2*               "}"    -> StringQuotation   {"StringQuotation2"}
-     Padding "{" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> "}"    -> StringQuotedPart2 {"StringEscape2"}
-    <StringQuotedChars2-LEX>                                -> StringQuotedPart2 {"QStr"}
-    <Dollar2-LEX>                                           -> StringQuotedPart2 {"QDollar"}
-    "$" <QuotedBracket2-LEX> "$"                            -> StringQuotedPart2 {"QBr"}
-    ~[\{\}\$]+                                              -> <StringQuotedChars2-LEX>
-    [\{\}]                                                  -> <QuotedBracket2-LEX>
-    "$"                                                     -> <Dollar2-LEX>
-
-    "$" "(" Padding StringQuotedPart3*              ")"     -> StringQuotation   {"StringQuotation3"}
-    Padding "(" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> ")"     -> StringQuotedPart3 {"StringEscape3"}
-    <StringQuotedChars3-LEX>                                -> StringQuotedPart3 {"QStr"}
-    <Dollar3-LEX>                                           -> StringQuotedPart3 {"QDollar"}
-    "$" <QuotedBracket3-LEX> "$"                            -> StringQuotedPart3 {"QBr"}
-    ~[\(\)\$]+                                              -> <StringQuotedChars3-LEX>
-    [\(\)]                                                  -> <QuotedBracket3-LEX>
-    "$"                                                     -> <Dollar3-LEX>
-
-    "$" "<" Padding StringQuotedPart4*               ">"    -> StringQuotation   {"StringQuotation4"}
-    Padding "<"  <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> ">"    -> StringQuotedPart4 {"StringEscape4"}
-    <StringQuotedChars4-LEX>                                -> StringQuotedPart4 {"QStr"}
-    <Dollar4-LEX>                                           -> StringQuotedPart4 {"QDollar"}
-    "$" <QuotedBracket4-LEX> "$"                            -> StringQuotedPart4 {"QBr"}
-    ~[\<\>\$]+                                              -> <StringQuotedChars4-LEX>
-    [\<\>]                                                  -> <QuotedBracket4-LEX>
-    "$"                                                     -> <Dollar4-LEX>
-   
-    %% Padding is a dummy lexical that will contain the indentation prefix of every quotation
-    <Padding-LEX>                                           -> Padding
-                                                            -> <Padding-LEX> {indentpadding}
-
-  lexical restrictions
-
-    StringQuotedChars1 -/- ~[\[\]\$]   
-    StringQuotedChars2 -/- ~[\{\}\$]    
-    StringQuotedChars3 -/- ~[\(\)\$]    
-    StringQuotedChars4 -/- ~[\<\>\$]
-    Dollar1            -/- [\[\]] . [\$]
-    Dollar2            -/- [\{\}] . [\$]
-    Dollar3            -/- [\(\)] . [\$]
-    Dollar4            -/- [\<\>] . [\$]
-
+  StringQuotedChars1 -/- ~[\[\]\$]
+  StringQuotedChars2 -/- ~[\{\}\$]
+  StringQuotedChars3 -/- ~[\(\)\$]
+  StringQuotedChars4 -/- ~[\<\>\$]
+  Dollar1 -/- [\[\]].[\$]
+  Dollar2 -/- [\{\}].[\$]
+  Dollar3 -/- [\(\)].[\$]
+  Dollar4 -/- [\<\>].[\$]

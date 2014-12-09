@@ -12,5 +12,8 @@ exports
     Id  -> VarRef {cons("VarRef")}
     LId -> VarRef {cons("ListVarRef")}
 
+  context-free syntax
+    CONTENTCOMPLETE -> Wld {cons("COMPLETION-Wld")}
+
   context-free restrictions
     Wld -/- [a-zA-Z0-9\'\-\_]
