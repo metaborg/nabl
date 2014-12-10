@@ -10,39 +10,39 @@ exports
 
   syntax
     StringQuotation                                     -> <PPTerm-CF>              
-    "$" "[" Padding StringQuotedPart1* "]"              -> <StringQuotation-CF>     {cons("StringQuotation1")}
-    Padding "[" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> "]" -> <StringQuotedPart1-CF>   {cons("StringEscape1")}
-    <StringQuotedChars1-LEX>                            -> <StringQuotedPart1-CF>   {cons("QStr")}
-    <Dollar1-LEX>                                       -> <StringQuotedPart1-CF>   {cons("QDollar")}
-    "$" <QuotedBracket1-LEX> "$"                        -> <StringQuotedPart1-CF>   {cons("QBr")}
+    "$" "[" Padding StringQuotedPart1* "]"              -> StringQuotation          {cons("StringQuotation1")}
+    Padding "[" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> "]" -> StringQuotedPart1        {cons("StringEscape1")}
+    <StringQuotedChars1-LEX>                            -> StringQuotedPart1        {cons("QStr")}
+    <Dollar1-LEX>                                       -> StringQuotedPart1        {cons("QDollar")}
+    "$" <QuotedBracket1-LEX> "$"                        -> StringQuotedPart1        {cons("QBr")}
     ~[\[\]\$]+                                          -> <StringQuotedChars1-LEX> 
     [\[\]]                                              -> <QuotedBracket1-LEX>     
     "$"                                                 -> <Dollar1-LEX>            
-    "$" "{" Padding StringQuotedPart2* "}"              -> <StringQuotation-CF>     {cons("StringQuotation2")}
-    Padding "{" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> "}" -> <StringQuotedPart2-CF>   {cons("StringEscape2")}
-    <StringQuotedChars2-LEX>                            -> <StringQuotedPart2-CF>   {cons("QStr")}
-    <Dollar2-LEX>                                       -> <StringQuotedPart2-CF>   {cons("QDollar")}
-    "$" <QuotedBracket2-LEX> "$"                        -> <StringQuotedPart2-CF>   {cons("QBr")}
+    "$" "{" Padding StringQuotedPart2* "}"              -> StringQuotation          {cons("StringQuotation2")}
+    Padding "{" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> "}" -> StringQuotedPart2        {cons("StringEscape2")}
+    <StringQuotedChars2-LEX>                            -> StringQuotedPart2        {cons("QStr")}
+    <Dollar2-LEX>                                       -> StringQuotedPart2        {cons("QDollar")}
+    "$" <QuotedBracket2-LEX> "$"                        -> StringQuotedPart2        {cons("QBr")}
     ~[\{\}\$]+                                          -> <StringQuotedChars2-LEX> 
     [\{\}]                                              -> <QuotedBracket2-LEX>     
     "$"                                                 -> <Dollar2-LEX>            
-    "$" "(" Padding StringQuotedPart3* ")"              -> <StringQuotation-CF>     {cons("StringQuotation3")}
-    Padding "(" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> ")" -> <StringQuotedPart3-CF>   {cons("StringEscape3")}
-    <StringQuotedChars3-LEX>                            -> <StringQuotedPart3-CF>   {cons("QStr")}
-    <Dollar3-LEX>                                       -> <StringQuotedPart3-CF>   {cons("QDollar")}
-    "$" <QuotedBracket3-LEX> "$"                        -> <StringQuotedPart3-CF>   {cons("QBr")}
+    "$" "(" Padding StringQuotedPart3* ")"              -> StringQuotation          {cons("StringQuotation3")}
+    Padding "(" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> ")" -> StringQuotedPart3        {cons("StringEscape3")}
+    <StringQuotedChars3-LEX>                            -> StringQuotedPart3        {cons("QStr")}
+    <Dollar3-LEX>                                       -> StringQuotedPart3        {cons("QDollar")}
+    "$" <QuotedBracket3-LEX> "$"                        -> StringQuotedPart3        {cons("QBr")}
     ~[\(\)\$]+                                          -> <StringQuotedChars3-LEX> 
     [\(\)]                                              -> <QuotedBracket3-LEX>     
     "$"                                                 -> <Dollar3-LEX>            
-    "$" "<" Padding StringQuotedPart4* ">"              -> <StringQuotation-CF>     {cons("StringQuotation4")}
-    Padding "<" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> ">" -> <StringQuotedPart4-CF>   {cons("StringEscape4")}
-    <StringQuotedChars4-LEX>                            -> <StringQuotedPart4-CF>   {cons("QStr")}
-    <Dollar4-LEX>                                       -> <StringQuotedPart4-CF>   {cons("QDollar")}
-    "$" <QuotedBracket4-LEX> "$"                        -> <StringQuotedPart4-CF>   {cons("QBr")}
+    "$" "<" Padding StringQuotedPart4* ">"              -> StringQuotation          {cons("StringQuotation4")}
+    Padding "<" <LAYOUT?-CF> <Term-CF> <LAYOUT?-CF> ">" -> StringQuotedPart4        {cons("StringEscape4")}
+    <StringQuotedChars4-LEX>                            -> StringQuotedPart4        {cons("QStr")}
+    <Dollar4-LEX>                                       -> StringQuotedPart4        {cons("QDollar")}
+    "$" <QuotedBracket4-LEX> "$"                        -> StringQuotedPart4        {cons("QBr")}
     ~[\<\>\$]+                                          -> <StringQuotedChars4-LEX> 
     [\<\>]                                              -> <QuotedBracket4-LEX>     
     "$"                                                 -> <Dollar4-LEX>            
-    <Padding-LEX>                                       -> <Padding-CF>             
+    <Padding-LEX>                                       -> Padding                  
                                                         -> <Padding-LEX>            {indentpadding}
 
   lexical restrictions

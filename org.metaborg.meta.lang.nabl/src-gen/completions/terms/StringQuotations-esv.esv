@@ -2,29 +2,3 @@ module src-gen/completions/terms/StringQuotations-esv
 
 imports
   src-gen/completions/terms/Terms-esv
-
-completions
-  completion template StringQuotation : "$[Padding]" =
-    "$[" <Padding:Padding> <:StringQuotedPart1> "]"  
-  completion template StringQuotedPart1 : "Padding[ Term ]" =
-    <Padding:Padding> "[ " <Term:Term> " ]"  
-  completion template StringQuotedPart1 : "$QuotedBracket1$" =
-    "$" <QuotedBracket1:QuotedBracket1> "$"  
-  completion template StringQuotation : "${Padding}" =
-    "${" <Padding:Padding> <:StringQuotedPart2> "}"  
-  completion template StringQuotedPart2 : "Padding{ Term }" =
-    <Padding:Padding> "{ " <Term:Term> " }"  
-  completion template StringQuotedPart2 : "$QuotedBracket2$" =
-    "$" <QuotedBracket2:QuotedBracket2> "$"  
-  completion template StringQuotation : "$(Padding)" =
-    "$(" <Padding:Padding> <:StringQuotedPart3> ")"  
-  completion template StringQuotedPart3 : "Padding( Term )" =
-    <Padding:Padding> "( " <Term:Term> " )"  
-  completion template StringQuotedPart3 : "$QuotedBracket3$" =
-    "$" <QuotedBracket3:QuotedBracket3> "$"  
-  completion template StringQuotation : "$<Padding>" =
-    "$<" <Padding:Padding> <:StringQuotedPart4> ">"  
-  completion template StringQuotedPart4 : "Padding< Term >" =
-    <Padding:Padding> "< " <Term:Term> " >"  
-  completion template StringQuotedPart4 : "$QuotedBracket4$" =
-    "$" <QuotedBracket4:QuotedBracket4> "$"  
