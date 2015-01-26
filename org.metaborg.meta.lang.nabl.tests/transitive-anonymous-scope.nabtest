@@ -1,0 +1,11 @@
+transitive scope {
+
+	declaration x
+	
+	transitive scope {
+	  declaration x
+	  reference x  
+	}
+  
+  reference x
+}

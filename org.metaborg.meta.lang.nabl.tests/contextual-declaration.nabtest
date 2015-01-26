@@ -1,0 +1,10 @@
+declaration x
+  in {
+    reference x
+  }
+  { 
+    reference x
+  }
+  in {
+    reference x
+  }
