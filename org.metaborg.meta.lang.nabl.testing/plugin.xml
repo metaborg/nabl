@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+   <extension
+         point="org.eclipse.imp.runtime.languageDescription">
+      <language
+            extensions="nabtest"
+            description="NaBLTesting"
+            language="NaBLTesting"
+            derivedFrom="DynamicRoot"
+            validator="org.metaborg.meta.lang.nabl.testing.NaBLTestingValidator"
+            validatorClass="org.metaborg.meta.lang.nabl.testing.NaBLTestingValidator"
+      ></language>
+   </extension>
+   <extension
+         id="org.metaborg.meta.lang.nabl.testing.parser"
+         name="NaBLTesting Parser"
+         point="org.eclipse.imp.runtime.parser">
+      <parser
+            class="org.metaborg.meta.lang.nabl.testing.NaBLTestingParseController"
+            language="NaBLTesting">
+      </parser>
+   </extension>    
+</plugin>

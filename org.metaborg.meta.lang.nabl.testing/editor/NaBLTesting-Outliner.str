@@ -1,0 +1,13 @@
+module editor/NaBLTesting-Outliner
+
+imports
+  
+  include/NaBLTesting
+  lib/runtime/editor/outline-library
+  lib/runtime/editor/origins
+  editor/NaBLTesting-Outliner.generated
+
+rules
+  
+  to-outline-label = fail
+  

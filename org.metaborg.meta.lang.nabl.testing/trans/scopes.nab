@@ -1,0 +1,30 @@
+module scopes
+
+imports
+  include/NaBLTesting
+  names
+  
+binding rules
+
+  Scope(Transitive(), Anonymous(), e*):
+    scopes Name
+  
+  Scope(Transitive(), Explicit(n), e*):
+    defines Name n
+    scopes Name
+  
+  Scope(Transitive(), Implicit(), e*):
+    implicitly defines Name "name"
+    scopes Name
+  
+  Scope(NonTransitive(), Anonymous(), e*):
+    non-transitively scopes Name
+  
+  Scope(NonTransitive(), Explicit(n), e*):
+    defines Name n
+    non-transitively scopes Name
+  
+  Scope(NonTransitive(), Implicit(), e*):
+    implicitly defines Name "name"
+    non-transitively scopes Name
+    

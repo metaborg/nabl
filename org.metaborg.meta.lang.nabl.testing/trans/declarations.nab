@@ -1,0 +1,32 @@
+module declarations
+
+imports
+  include/NaBLTesting
+  names
+  
+binding rules
+
+  Declaration(Explicit(n), Surrounding()):
+    defines Name n
+    
+  Declaration(Implicit(), Surrounding()):
+    implicitly defines Name "name"
+    
+  Declaration(Explicit(n), Context([In(e*)])):
+    defines Name n in e*
+
+  Declaration(Implicit(), Context([In(e*)])):
+    implicitly defines Name "name" in e*
+  
+  Declaration(Explicit(n), Context([In(e1*), In(e2*)])):
+    defines Name n in e1*, e2*
+
+  Declaration(Implicit(), Context([In(e1*), In(e2*)])):
+    implicitly defines Name "name" in e1*, e2*
+  
+  Declaration(Explicit(n), Context([In(e1*), NotIn(e2*), In(e3*)])):
+    defines Name n in e1*, e3*
+
+  Declaration(Implicit(), Context([In(e1*), NotIn(e2*), In(e3*)])):
+    implicitly defines Name "name" in e1*, e3*
+  

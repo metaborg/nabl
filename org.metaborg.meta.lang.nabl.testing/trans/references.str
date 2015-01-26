@@ -1,0 +1,61 @@
+module references
+
+imports
+  lib/runtime/nabl/-
+  lib/runtime/task/-
+  lib/runtime/properties/-
+  lib/runtime/types/-
+  lib/runtime/relations/-
+  lib/runtime/editor/-
+  include/NaBLTesting
+  names
+
+
+signature
+  constructors
+    
+
+
+signature
+  constructors
+    
+
+
+rules
+
+  nabl-custom-properties(add-properties) =
+    ![] ; add-properties
+
+
+rules
+
+  nabl-get-name :
+    Reference(n) -> n
+
+  nabl-name-apply(s) =
+    Reference(s)
+
+  nabl-use-site(|lang__, ctx__, uniques__, uris__, states__) =
+    ?Reference(n)
+    ; origin-track-forced(
+        Reference(
+          nabl-use(
+          | lang__
+          , ctx__
+          , uniques__
+          , uris__
+          , [ <{:
+                 id
+                 ; !UseCandidate(
+                      NablNsName()
+                    , []
+                    , Current()
+                    , True()
+                    , []
+                    )
+               }>
+            ]
+          )
+        )
+      |
+      )

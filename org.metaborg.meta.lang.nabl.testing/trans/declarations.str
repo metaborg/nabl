@@ -1,0 +1,480 @@
+module declarations
+
+imports
+  lib/runtime/nabl/-
+  lib/runtime/task/-
+  lib/runtime/properties/-
+  lib/runtime/types/-
+  lib/runtime/relations/-
+  lib/runtime/editor/-
+  include/NaBLTesting
+  names
+
+
+signature
+  constructors
+    
+
+
+signature
+  constructors
+    
+
+
+rules
+
+  nabl-custom-properties(add-properties) =
+    ![] ; add-properties
+
+
+rules
+
+  nabl-get-name :
+    Declaration(Explicit(n), Surrounding()) -> n
+
+  nabl-name-apply(s) =
+    Declaration(Explicit(s), Surrounding())
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(Explicit(n), Surrounding())
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(
+            Explicit(
+              nabl-def(
+                ?c-uri1__
+              , ?s-uri1__
+              | lang__
+              , ctx__
+              , uniques__
+              , uri__
+              , uri__
+              , NablNsName()
+              , Unique()
+              , Current()
+              , []
+              , []
+              )
+            )
+          |
+          )
+        , origin-track-forced(Surrounding()|)
+        )
+      |
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(Implicit(), Surrounding())
+    ; where(i-1__ := <nabl-def(
+                        ?c-uri1__
+                      , ?s-uri1__
+                      | lang__
+                      , ctx__
+                      , uniques__
+                      , uri__
+                      , uri__
+                      , NablNsName()
+                      , Unique()
+                      , Current()
+                      , []
+                      , []
+                      )> "name")
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[i-1__])
+
+  nabl-get-name :
+    Declaration(
+      Explicit(n)
+    , Context([In(e*)])
+    ) -> n
+
+  nabl-name-apply(s) =
+    Declaration(
+      Explicit(s)
+    , Context([In(id)])
+    )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(
+       Explicit(n)
+     , Context([In(e*)])
+     )
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(
+            Explicit(
+              nabl-def(
+                ?c-uri1__
+              , ?s-uri1__
+              | lang__
+              , ctx__
+              , uniques__
+              , uri__
+              , uri__
+              , NablNsName()
+              , Unique()
+              , [DefScope(e*)]
+              , []
+              , []
+              )
+            )
+          |
+          )
+        , origin-track-forced(
+            Context([origin-track-forced(In(id)|)])
+          |
+          )
+        )
+      |
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-external-def-site(|lang__, ctx__, uniques__, uri__, states__, implicits__) =
+    ?Declaration(
+       Explicit(n)
+     , Context([In(e*)])
+     )
+    ; uri1__ := <nabl-uri> n
+    ; <nabl-def-alias(|ctx__, uri1__)> e*
+    ; fail
+
+  nabl-scoping-site =
+    ?Declaration(
+       Implicit()
+     , Context([In(e*)])
+     )
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(Implicit()|)
+        , origin-track-forced(
+            Context(
+              [ origin-track-forced(
+                  In(nabl-scope(|[NablNsName()]))
+                |
+                )
+              ]
+            )
+          |
+          )
+        )
+      |
+      )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(
+       Implicit()
+     , Context([In(e*)])
+     )
+    ; where(i-1__ := <nabl-def(
+                        ?c-uri1__
+                      , ?s-uri1__
+                      | lang__
+                      , ctx__
+                      , uniques__
+                      , uri__
+                      , uri__
+                      , NablNsName()
+                      , Unique()
+                      , [DefScope(e*)]
+                      , []
+                      , []
+                      )> "name")
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[i-1__])
+
+  nabl-external-def-site(|lang__, ctx__, uniques__, uri__, states__, implicits__) =
+    ?Declaration(
+       Implicit()
+     , Context([In(e*)])
+     )
+    ; where([i-1__] := implicits__)
+    ; uri1__ := <nabl-uri> i-1__
+    ; <nabl-def-alias(|ctx__, uri1__)> e*
+    ; fail
+
+  nabl-get-name :
+    Declaration(
+      Explicit(n)
+    , Context([In(e1*), In(e2*)])
+    ) -> n
+
+  nabl-name-apply(s) =
+    Declaration(
+      Explicit(s)
+    , Context([In(id), In(id)])
+    )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(
+       Explicit(n)
+     , Context([In(e1*), In(e2*)])
+     )
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(
+            Explicit(
+              nabl-def(
+                ?c-uri1__
+              , ?s-uri1__
+              | lang__
+              , ctx__
+              , uniques__
+              , uri__
+              , uri__
+              , NablNsName()
+              , Unique()
+              , [DefScope(e1*), DefScope(e2*)]
+              , []
+              , []
+              )
+            )
+          |
+          )
+        , origin-track-forced(
+            Context(
+              [ origin-track-forced(In(id)|)
+              , origin-track-forced(In(id)|)
+              ]
+            )
+          |
+          )
+        )
+      |
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-external-def-site(|lang__, ctx__, uniques__, uri__, states__, implicits__) =
+    ?Declaration(
+       Explicit(n)
+     , Context([In(e1*), In(e2*)])
+     )
+    ; uri1__ := <nabl-uri> n
+    ; <nabl-def-alias(|ctx__, uri1__)> e1*
+    ; <nabl-def-alias(|ctx__, uri1__)> e2*
+    ; fail
+
+  nabl-scoping-site =
+    ?Declaration(
+       Implicit()
+     , Context([In(e1*), In(e2*)])
+     )
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(Implicit()|)
+        , origin-track-forced(
+            Context(
+              [ origin-track-forced(
+                  In(nabl-scope(|[NablNsName()]))
+                |
+                )
+              , origin-track-forced(
+                  In(nabl-scope(|[NablNsName()]))
+                |
+                )
+              ]
+            )
+          |
+          )
+        )
+      |
+      )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(
+       Implicit()
+     , Context([In(e1*), In(e2*)])
+     )
+    ; where(i-1__ := <nabl-def(
+                        ?c-uri1__
+                      , ?s-uri1__
+                      | lang__
+                      , ctx__
+                      , uniques__
+                      , uri__
+                      , uri__
+                      , NablNsName()
+                      , Unique()
+                      , [DefScope(e1*), DefScope(e2*)]
+                      , []
+                      , []
+                      )> "name")
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[i-1__])
+
+  nabl-external-def-site(|lang__, ctx__, uniques__, uri__, states__, implicits__) =
+    ?Declaration(
+       Implicit()
+     , Context([In(e1*), In(e2*)])
+     )
+    ; where([i-1__] := implicits__)
+    ; uri1__ := <nabl-uri> i-1__
+    ; <nabl-def-alias(|ctx__, uri1__)> e1*
+    ; <nabl-def-alias(|ctx__, uri1__)> e2*
+    ; fail
+
+  nabl-get-name :
+    Declaration(
+      Explicit(n)
+    , Context(
+        [ In(e1*)
+        , NotIn(e2*)
+        , In(e3*)
+        ]
+      )
+    ) -> n
+
+  nabl-name-apply(s) =
+    Declaration(
+      Explicit(s)
+    , Context(
+        [In(id), NotIn(id), In(id)]
+      )
+    )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(
+       Explicit(n)
+     , Context(
+         [ In(e1*)
+         , NotIn(e2*)
+         , In(e3*)
+         ]
+       )
+     )
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(
+            Explicit(
+              nabl-def(
+                ?c-uri1__
+              , ?s-uri1__
+              | lang__
+              , ctx__
+              , uniques__
+              , uri__
+              , uri__
+              , NablNsName()
+              , Unique()
+              , [DefScope(e1*), DefScope(e3*)]
+              , []
+              , []
+              )
+            )
+          |
+          )
+        , origin-track-forced(
+            Context(
+              [ origin-track-forced(In(id)|)
+              , origin-track-forced(NotIn(id)|)
+              , origin-track-forced(In(id)|)
+              ]
+            )
+          |
+          )
+        )
+      |
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-external-def-site(|lang__, ctx__, uniques__, uri__, states__, implicits__) =
+    ?Declaration(
+       Explicit(n)
+     , Context(
+         [ In(e1*)
+         , NotIn(e2*)
+         , In(e3*)
+         ]
+       )
+     )
+    ; uri1__ := <nabl-uri> n
+    ; <nabl-def-alias(|ctx__, uri1__)> e1*
+    ; <nabl-def-alias(|ctx__, uri1__)> e3*
+    ; fail
+
+  nabl-scoping-site =
+    ?Declaration(
+       Implicit()
+     , Context(
+         [ In(e1*)
+         , NotIn(e2*)
+         , In(e3*)
+         ]
+       )
+     )
+    ; origin-track-forced(
+        Declaration(
+          origin-track-forced(Implicit()|)
+        , origin-track-forced(
+            Context(
+              [ origin-track-forced(
+                  In(nabl-scope(|[NablNsName()]))
+                |
+                )
+              , origin-track-forced(NotIn(id)|)
+              , origin-track-forced(
+                  In(nabl-scope(|[NablNsName()]))
+                |
+                )
+              ]
+            )
+          |
+          )
+        )
+      |
+      )
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Declaration(
+       Implicit()
+     , Context(
+         [ In(e1*)
+         , NotIn(e2*)
+         , In(e3*)
+         ]
+       )
+     )
+    ; where(i-1__ := <nabl-def(
+                        ?c-uri1__
+                      , ?s-uri1__
+                      | lang__
+                      , ctx__
+                      , uniques__
+                      , uri__
+                      , uri__
+                      , NablNsName()
+                      , Unique()
+                      , [DefScope(e1*), DefScope(e3*)]
+                      , []
+                      , []
+                      )> "name")
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[i-1__])
+
+  nabl-external-def-site(|lang__, ctx__, uniques__, uri__, states__, implicits__) =
+    ?Declaration(
+       Implicit()
+     , Context(
+         [ In(e1*)
+         , NotIn(e2*)
+         , In(e3*)
+         ]
+       )
+     )
+    ; where([i-1__] := implicits__)
+    ; uri1__ := <nabl-uri> i-1__
+    ; <nabl-def-alias(|ctx__, uri1__)> e1*
+    ; <nabl-def-alias(|ctx__, uri1__)> e3*
+    ; fail

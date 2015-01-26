@@ -1,0 +1,50 @@
+module NaBLTesting
+
+imports
+  
+  Common
+
+context-free start-symbols
+  
+  Start
+
+context-free syntax
+  
+  Start = TestElem
+  
+  TestElem.Scope = 
+    <<ScopeTrans> scope <ScopeName>{
+      <TestElem*>
+    }
+    >
+
+  ScopeTrans.NonTransitive = <non-transitive>
+  ScopeTrans.Transitive    = <transitive>
+  ScopeName.Anonymous      = 
+  ScopeName                = <<DeclName> >
+  
+  TestElem.Declaration =
+    <<DeclName> <DeclScope>
+    >
+    
+  DeclName.Explicit = <declaration <ID>>
+  DeclName.Implicit = <implicit declaration>
+  
+  DeclScope.Surrounding =
+  DeclScope.Context = 
+    Context*
+    
+  Context.In =
+    <in {
+      <TestElem*>
+     }>
+  
+
+ Context.NotIn =
+    <{
+      <TestElem*>
+     }>
+    
+  TestElem.Reference =
+    <reference <ID>
+    >

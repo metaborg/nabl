@@ -1,0 +1,31 @@
+module NaBLTesting.main
+
+imports
+  NaBLTesting-Colorer
+  NaBLTesting-Completions
+  NaBLTesting-Folding
+  NaBLTesting-Menus
+  NaBLTesting-Refactorings
+  NaBLTesting-References
+  NaBLTesting-Syntax
+  NaBLTesting-Views
+
+language General properties
+  
+  name:          NaBLTesting
+  id:            org.metaborg.meta.lang.nabl.testing
+  extends:       Root
+  
+  description:   "Spoofax-generated editor for the NaBLTesting language"
+  url:           http://strategoxt.org
+  
+  extensions:    nabtest
+  table:         include/NaBLTesting.tbl
+  start symbols: Start
+  
+  provider:      include/nabltesting.ctree
+  provider:      include/nabltesting-java.jar
+  
+  observer:      editor-analyze (multifile)
+  
+  on save:       editor-save

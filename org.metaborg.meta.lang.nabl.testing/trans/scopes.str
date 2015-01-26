@@ -1,0 +1,166 @@
+module scopes
+
+imports
+  lib/runtime/nabl/-
+  lib/runtime/task/-
+  lib/runtime/properties/-
+  lib/runtime/types/-
+  lib/runtime/relations/-
+  lib/runtime/editor/-
+  include/NaBLTesting
+  names
+
+
+signature
+  constructors
+    
+
+
+signature
+  constructors
+    
+
+
+rules
+
+  nabl-custom-properties(add-properties) =
+    ![] ; add-properties
+
+
+rules
+
+  nabl-scoping-site =
+    ?Scope(Transitive(), Anonymous(), e*)
+    ; nabl-scope(|[NablNsName()])
+
+  nabl-get-scope =
+    ?Scope(Transitive(), Anonymous(), e*)
+    ; ![NablNsName()]
+
+  nabl-get-scope =
+    ?Scope(Transitive(), Explicit(n), e*)
+    ; ![NablNsName()]
+
+  nabl-get-name :
+    Scope(Transitive(), Explicit(n), e*) -> n
+
+  nabl-name-apply(s) =
+    Scope(Transitive(), Explicit(s), id)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Scope(Transitive(), Explicit(n), e*)
+    ; origin-track-forced(
+        Scope(
+          origin-track-forced(Transitive()|)
+        , origin-track-forced(
+            Explicit(
+              nabl-def(
+                ?c-uri1__
+              , ?s-uri1__
+              | lang__
+              , ctx__
+              , uniques__
+              , uri__
+              , uri__
+              , NablNsName()
+              , Unique()
+              , Current()
+              , [NablNsName()]
+              , []
+              )
+            )
+          |
+          )
+        , id
+        )
+      |
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-scoping-site =
+    ?Scope(Transitive(), Implicit(), e*)
+    ; nabl-scope(|[NablNsName()])
+
+  nabl-get-scope =
+    ?Scope(Transitive(), Implicit(), e*)
+    ; ![NablNsName()]
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Scope(Transitive(), Implicit(), e*)
+    ; where(i-1__ := <nabl-def(
+                        ?c-uri1__
+                      , ?s-uri1__
+                      | lang__
+                      , ctx__
+                      , uniques__
+                      , uri__
+                      , uri__
+                      , NablNsName()
+                      , Unique()
+                      , Current()
+                      , []
+                      , []
+                      )> "name")
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[i-1__])
+
+  nabl-get-name :
+    Scope(NonTransitive(), Explicit(n), e*) -> n
+
+  nabl-name-apply(s) =
+    Scope(NonTransitive(), Explicit(s), id)
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Scope(NonTransitive(), Explicit(n), e*)
+    ; origin-track-forced(
+        Scope(
+          origin-track-forced(NonTransitive()|)
+        , origin-track-forced(
+            Explicit(
+              nabl-def(
+                ?c-uri1__
+              , ?s-uri1__
+              | lang__
+              , ctx__
+              , uniques__
+              , uri__
+              , uri__
+              , NablNsName()
+              , Unique()
+              , Current()
+              , []
+              , [NablNsName()]
+              )
+            )
+          |
+          )
+        , id
+        )
+      |
+      )
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[])
+
+  nabl-def-site(child-uris__, sibl-uris__, implicits__|lang__, ctx__, uniques__, uri__, states__) =
+    ?Scope(NonTransitive(), Implicit(), e*)
+    ; where(i-1__ := <nabl-def(
+                        ?c-uri1__
+                      , ?s-uri1__
+                      | lang__
+                      , ctx__
+                      , uniques__
+                      , uri__
+                      , uri__
+                      , NablNsName()
+                      , Unique()
+                      , Current()
+                      , []
+                      , []
+                      )> "name")
+    ; match(child-uris__|c-uri1__)
+    ; match(sibl-uris__|s-uri1__)
+    ; match(implicits__|[i-1__])
