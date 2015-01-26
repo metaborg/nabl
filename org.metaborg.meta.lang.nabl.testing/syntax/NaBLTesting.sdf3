@@ -32,7 +32,7 @@ context-free syntax
   
   DeclScope.Surrounding =
   DeclScope.Context = 
-    Context*
+    Context+
     
   Context.In =
     <in {
