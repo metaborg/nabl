@@ -10,9 +10,40 @@
 	<parent>
 		<groupId>org.metaborg</groupId>
 		<artifactId>org.metaborg.maven.parent.language</artifactId>
-		<version>1.3.1</version>
+		<version>1.4.0-SNAPSHOT</version>
 		<relativePath>../../spoofax-deploy/org.metaborg.maven.parent.language</relativePath>
 	</parent>
+
+  <build>
+    <plugins>
+      <!-- Hack to prevent the src-gen folder from being cleaned. Since the build cannot run meta-languages such as SDF3, the
+        src-gen folder is committed to the git repository. The clean goal will clean the src-gen folder, temporarily renaming
+        it will prevent that. This hack overrides the spoofax-clean antrun execution from the parent POM. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>spoofax-clean</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>clean</phase>
+            <configuration>
+              <skip>${skip-language-build}</skip>
+              <target>
+                <move file="src-gen" tofile="src-gen-keep" />
+                <ant antfile="build.main.xml" inheritRefs="true">
+                  <target name="clean" />
+                </ant>
+                <move file="src-gen-keep" tofile="src-gen" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 	<developers>
 		<developer>

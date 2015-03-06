@@ -1,6 +1,8 @@
 module terms/Constants
 
-sorts Int Real String StrChar
+sorts 
+
+  Int Real String StrChar
 
 lexical syntax
 

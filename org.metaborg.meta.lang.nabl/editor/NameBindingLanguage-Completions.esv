@@ -1,6 +1,6 @@
 module NameBindingLanguage-Completions
 
-imports NameBindingLanguage-Completions.generated Modules.generated NaBL.generated
+imports src-gen/completions/NameBindingLanguage-esv
 
 completions
        

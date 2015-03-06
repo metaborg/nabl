@@ -1,0 +1,11 @@
+module src-gen/signatures/lexical/Layout-sig
+
+signature
+  sorts
+    LongCom CommChar Asterisk Eof
+
+  constructors
+     : String -> Eof
+     : String -> LongCom
+     : String -> CommChar
+     : String -> Asterisk
