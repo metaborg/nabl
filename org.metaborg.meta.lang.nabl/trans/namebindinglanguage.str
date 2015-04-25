@@ -17,6 +17,7 @@ imports
   lib/runtime/editor/-
   editor/NameBindingLanguage-Outliner
 
+  src-gen/names/analysis/names
   analysis/-
 	generation/-
   coq-semantics/-
