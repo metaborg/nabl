@@ -37,7 +37,7 @@ insert-elem(|pos, elem)=
  * @param List(Int), denoting an AST position
  * @param inserted list elements 
  * @type Term -> Term
- */	
+ */  
 insert-sublist(|pos, elems)=
   at-position(
     split-at(|<last> pos);
@@ -61,7 +61,7 @@ input-dialog:
   (title, label, default-value) -> <input-dialog>("", title, label, default-value)
 
 strategies //pp-table
-	
+
 get-pp-table=
   import-term(include/NameBindingLanguage.generated.pp.af)
-	
+

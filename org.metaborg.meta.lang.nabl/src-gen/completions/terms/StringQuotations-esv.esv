@@ -1,4 +1,0 @@
-module src-gen/completions/terms/StringQuotations-esv
-
-imports
-  src-gen/completions/terms/Terms-esv

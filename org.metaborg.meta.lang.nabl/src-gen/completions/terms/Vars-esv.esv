@@ -1,9 +1,0 @@
-module src-gen/completions/terms/Vars-esv
-
-imports
-  src-gen/completions/common/Identifiers-esv
-  src-gen/completions/terms/Terms-esv
-
-completions
-  completion template Wld : "_" =
-    "_"  
