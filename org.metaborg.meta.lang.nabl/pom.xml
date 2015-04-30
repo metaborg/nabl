@@ -22,12 +22,7 @@
 				<artifactId>spoofax-maven-plugin</artifactId>
 				<extensions>true</extensions>
 				<configuration>
-					<strategoArgs>
-						<arg>-la</arg><arg>stratego-lib</arg>
-						<arg>-la</arg><arg>stratego-sglr</arg>
-						<arg>-la</arg><arg>stratego-gpp</arg>
-						<arg>-la</arg><arg>stratego-xtc</arg>
-						<arg>-la</arg><arg>stratego-aterm</arg>
+					<strategoArgs combine.children="append">
 						<arg>-la</arg><arg>strc</arg>
 					</strategoArgs>
 				</configuration>
