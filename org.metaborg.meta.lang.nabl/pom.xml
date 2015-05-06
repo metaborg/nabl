@@ -25,6 +25,9 @@
 					<strategoArgs combine.children="append">
 						<arg>-la</arg><arg>strc</arg>
 					</strategoArgs>
+					<pardonedLanguages>
+						<language>EditorService</language>
+					</pardonedLanguages>
 				</configuration>
 				<dependencies>
 					<dependency>
