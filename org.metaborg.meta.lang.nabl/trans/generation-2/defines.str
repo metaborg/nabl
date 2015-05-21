@@ -1,0 +1,32 @@
+module generation-2/defines
+
+imports
+
+  include/NameBindingLanguage
+  generation/namespaces
+  generation-2/util
+
+rules
+	
+  clauses-to-defines-strategy(|scope,scope') =
+  	filter(defines-clause-to-strategy(|scope,scope'));
+  	unzip => (s*,c*);
+    <newname;str-list-var> "defines-c" => defines-c;
+    <foldr(!|[ id ]|,str-seq)> s* => defines-s;
+    !(|[ ~defines-s ; ~defines-c := [~*c*] ]|, defines-c)
+
+  defines-clause-to-strategy(|scope,scope'):
+    DefClause(kind, unique, NamespaceRef(CurrentLanguage(),ns),
+              VarRef(name), _, Current(), NoWhere())
+      -> (|[ ~decl := DeclId(~ns',~name',<get-position> term);
+             ~defines-c := [FDecl(~decl,~scope)]
+          ]|, defines-c)
+    with
+      ns'   := <ns-name;str-op0> ns;
+      name' := <str-var> name;
+      decl  := <newname;str-var> "decl";
+      defines-c := <newname;str-list-var> "defines-c"
+
+  defines-clause-to-strategy(|scope,scope'):
+    DefClause(_, _, _, _, _, _, _) -> <fail>
+  with debug(!"IGNORED ")

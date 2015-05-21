@@ -1,0 +1,28 @@
+module generation-2/bindings
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  lib/editor-common.generated
+
+  generation-2/scopes
+  generation-2/defines
+  generation-2/util
+
+rules // binding rules
+
+  bindings-to-section:
+    Bindings(r*) -> Rules(<map(binding-to-strategy)> r*)
+ 
+  binding-to-strategy:
+    BindingRule(pattern, _, clause*) ->
+    |[ nabl-ts-constraint(|~scope): term@~pattern -> [~scope-c, ~def-c, ~sub-c]
+         with ~scope-s;
+              ~def-s;
+              ~sub-c := <nabl-ts-traverse(|~scope')> term
+    ]|
+    with scope := <newname;str-var> "scope"
+       ; (scope-s,scope',scope-c) := <clauses-to-scopes-strategy(|scope)> clause*
+    	 ; (def-s,def-c) := <clauses-to-defines-strategy(|scope,scope')> clause*
+       ; sub-c := <newname;str-list-var> "sub-c"

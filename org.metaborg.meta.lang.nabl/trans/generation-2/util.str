@@ -1,0 +1,23 @@
+module generation-2/util
+
+imports
+  
+  libstrc
+
+rules
+
+  ns-name = !$[NablNs[<id>]]
+
+rules
+
+  str-str      = !Str(<is-string>)
+  str-var      = !Var(<is-string>)
+  str-list-var = !Var($[[<id>]*])
+
+  str-seq     = ?(s1,s2) ; !|[ ~s1  ;  ~s2 ]|
+  str-choice  = ?(s1,s2) ; !|[ ~s1  +  ~s2 ]|
+  str-lchoice = ?(s1,s2) ; !|[ ~s1 <+  ~s2 ]|
+  str-rchoice = ?(s1,s2) ; !|[ ~s1  +> ~s2 ]|
+
+  str-opdecl = !OpDecl(<Fst>, ConstType(Sort(<Snd>,[])))
+  str-op0    = !Op(<id>, [])

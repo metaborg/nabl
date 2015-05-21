@@ -1,0 +1,15 @@
+module generation/namespaces
+
+imports
+  libstrc
+  include/NameBindingLanguage
+  generation/namespaces
+  generation-2/util
+  
+rules // namespaces 
+      
+  namespaces-to-signature:
+    Namespaces(ns*) -> Signature([Constructors(<map(namespace-to-constructor)> ns*)])
+    
+  namespace-to-constructor:
+    NamespaceDef(ns) -> <str-opdecl> (<ns-name> ns, "Namespace")
