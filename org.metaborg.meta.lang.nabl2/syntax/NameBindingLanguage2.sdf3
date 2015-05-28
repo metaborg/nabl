@@ -1,0 +1,68 @@
+module NameBindingLanguage2
+
+imports 
+
+	Common
+
+context-free start-symbols
+
+	Start
+
+context-free syntax
+
+	Start.Module = <
+		module <ID> 
+		
+		<{Section "\n\n"}*>
+	>
+
+  Section.Rules = <
+    rules
+
+    <Rule*>
+  >
+
+  Rule.Rule = <
+    <Pattern> :
+    <{Part ";"}*>
+    .
+  >
+
+  Pattern.Ctor = <<ID>(<{Pattern ","}*>)>
+  Pattern.Wld = <_>
+  Pattern = AnyVar
+
+  AnyVar = Var
+  AnyVar = ListVar
+  Var.Var = <<ID>>
+  ListVar.ListVar = <<ID>*>
+
+  Build.Ctor = <<ID>(<{Pattern ","}*>)>
+  Build = AnyVar
+
+  Part = With
+  With.With   = <with <{ID ","}+>>
+
+  Part.Where = <where <{WhereClause "|"}+>>
+
+  WhereClause.HasType = <<Build> has type <Pattern>>
+  WhereClause.HasScope = <<Build> has associated scope <ID>>
+
+  Part.Create = <create <{CreateClause "|"}+>>
+  
+  CreateClause.CreateScope = <scope <Parent?> <Capture>>
+  CreateClause.CreateDecl = <declaration <Build> <InScope>>
+  CreateClause.CreateRef = <reference <Build> <InScope>>
+  CreateClause.Import = <import <Build> <InScope>>
+
+  InScope.CurrentScope = <>
+  InScope.InScope = <in <ID>>
+
+  Parent.NoParent = <without parent>
+  Parent.Parent = <with parent <ID>>
+
+  Capture.Capture = [=> [ID]]
+
+  Part.Visit = <visit <{VisitClause "|"}+>>
+
+  VisitClause.VisitClause = <<Build> <With?>>

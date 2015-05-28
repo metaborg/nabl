@@ -1,0 +1,13 @@
+/.cache
+/src-gen
+/include
+/lib/*.generated.*
+/lib/runtime
+/syntax/*.generated.*
+/trans/*.generated.*
+/bin
+/target
+
+*.swp
+\#*\#
+*~

@@ -1,0 +1,35 @@
+module NameBindingLanguage2-Folding.generated
+
+folding Default folding definitions
+  
+  // Folding rules indicate which syntactic constructs can be folded,
+  // and take one of the following forms:
+  //
+  //   <sort>.<constructor>
+  //
+  //   <sort>._
+  //
+  //   _.<constructor>
+  //
+  // To indicate that an element should always be folded, add
+  // a (folded) annotation:
+  //
+  //   _.Imports (folded)
+  //
+  // To disable a folding rule defined elsewhere, add a (disabled) annotation:
+  //
+  //   Definition._ (disabled)
+  
+  Start.Module
+  Section.Rules
+  Rule.Rule
+  OptWith6
+  With.With
+  OptWhere5
+  Where.Where
+  Build.Ctor
+  OptCreate5
+  Create.Create
+  OptVisit4
+  Visit.Visit
+  VisitClause.VisitClause

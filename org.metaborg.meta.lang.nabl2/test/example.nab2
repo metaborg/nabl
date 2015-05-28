@@ -1,0 +1,14 @@
+module example
+
+rules
+
+  LetSeq(b*,e)
+  with s:
+  where e has type ty
+      | d has associated scope s2;
+  create scope with parent s => s2
+       | reference r in s3
+       | declaration d in s;
+  visit e1 with s
+      | e2 with s1,s2
+  .

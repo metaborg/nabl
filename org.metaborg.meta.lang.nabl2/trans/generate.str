@@ -1,0 +1,19 @@
+module generate
+
+imports
+
+	include/NameBindingLanguage2
+
+rules // Builder
+	
+	// Generates a Java program for selected AST.
+	generate-java:
+		(selected, position, ast, path, project-path) -> (filename, result)
+		with
+			filename := <guarantee-extension(|"java")> path;
+			result	 := <to-java> selected
+
+rules // Transformation to java strings.
+
+  to-java:
+    _ -> ""

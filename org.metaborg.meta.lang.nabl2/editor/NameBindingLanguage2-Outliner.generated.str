@@ -1,0 +1,11 @@
+module editor/NameBindingLanguage2-Outliner.generated
+
+imports
+  
+  include/NameBindingLanguage2
+  lib/runtime/editor/outline-library
+
+rules
+  
+  to-outline-label = ?Module(<id>, _)
+  to-outline-label = ?Ctor(<id>, _)
