@@ -2,67 +2,63 @@ module NameBindingLanguage2
 
 imports 
 
-	Common
-
+	common/Layout
+	common/Identifiers
+  terms/Terms
+  terms/Vars
+  formulas/Constraints
+  core/Modules
+    
 context-free start-symbols
 
 	Start
 
 context-free syntax
 
-	Start.Module = <
-		module <ID> 
-		
-		<{Section "\n\n"}*>
-	>
+	Start = Module
 
-  Section.Rules = <
+  ModuleSection.Rules = <
     rules
 
     <Rule*>
   >
 
   Rule.Rule = <
-    <Pattern> :
-    <{Part ";"}*>
-    .
+    <Pattern> <With>:
+    <Part*>
   >
 
-  Pattern.Ctor = <<ID>(<{Pattern ","}*>)>
-  Pattern.Wld = <_>
-  Pattern = AnyVar
+  With.None =
+  With.With = <with <{Var ","}+>>
 
-  AnyVar = Var
-  AnyVar = ListVar
-  Var.Var = <<ID>>
-  ListVar.ListVar = <<ID>*>
+  Part.Where = <where <{Constraint "and"}+>>
 
-  Build.Ctor = <<ID>(<{Pattern ","}*>)>
-  Build = AnyVar
-
-  Part = With
-  With.With   = <with <{ID ","}+>>
-
-  Part.Where = <where <{WhereClause "|"}+>>
-
-  WhereClause.HasType = <<Build> has type <Pattern>>
-  WhereClause.HasScope = <<Build> has associated scope <ID>>
-
-  Part.Create = <create <{CreateClause "|"}+>>
+  Part.Create = <create <{Fact "and"}+>>
   
-  CreateClause.CreateScope = <scope <Parent?> <Capture>>
-  CreateClause.CreateDecl = <declaration <Build> <InScope>>
-  CreateClause.CreateRef = <reference <Build> <InScope>>
-  CreateClause.Import = <import <Build> <InScope>>
+  Fact.Scope       = <scope <Var> <Parent>>
+  Fact.Declaration = <declaration <Term> <InScope> <AssocScope>>
+  Fact.Reference   = <reference <Term> <InScope>>
+  Fact.Import      = <import <Term> <IntoScope>>
+  Fact.ImportScope = <import from <VarRef> <IntoScope>>
 
   InScope.CurrentScope = <>
-  InScope.InScope = <in <ID>>
+  InScope.InScope = <in <VarRef>>
 
-  Parent.NoParent = <without parent>
-  Parent.Parent = <with parent <ID>>
+  IntoScope.CurrentScope = <>
+  IntoScope.IntoScope = <into <VarRef>>
 
-  Capture.Capture = [=> [ID]]
+  AssocScope.None = 
+  AssocScope.Assoc = <with associated scope <VarRef>>
+  
+  Parent.None   = 
+  Parent.Parent = <with parent <VarRef>>
+  
+  Part.Visit = <visit <{VisitClause "and"}+>>
 
-  Part.Visit = <visit <{VisitClause "|"}+>>
-
-  VisitClause.VisitClause = <<Build> <With?>>
+  VisitClause.VisitClause = <<Term> <Args>>
+  
+  Args.None =
+  Args.Args = <with <{Arg ","}+>>
+  
+  Arg.Arg = <<Var> = <VarRef>>
+  
