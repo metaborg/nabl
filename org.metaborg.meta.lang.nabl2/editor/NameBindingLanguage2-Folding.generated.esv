@@ -20,16 +20,18 @@ folding Default folding definitions
   //
   //   Definition._ (disabled)
   
-  Start.Module
-  Section.Rules
+  Module.Module
+  ModuleSection.Imports
+  ModuleSection.Rules
   Rule.Rule
-  OptWith6
   With.With
-  OptWhere5
-  Where.Where
-  Build.Ctor
-  OptCreate5
-  Create.Create
-  OptVisit4
-  Visit.Visit
+  Part.Where
+  Constraint.Match
+  Constraint.HasScope
+  Part.Create
+  Fact.Declaration
+  Fact.Reference
+  Fact.Import
+  Part.Visit
   VisitClause.VisitClause
+  Args.Args

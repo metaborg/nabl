@@ -8,4 +8,6 @@ imports
 rules
   
   to-outline-label = ?Module(<id>, _)
-  to-outline-label = ?Ctor(<id>, _)
+  to-outline-label = ?Rule(<id>, _, _)
+  to-outline-label = ?Op(<id>, _)
+  to-outline-label = ?OpQ(<id>, _)
