@@ -39,12 +39,12 @@ rules // modules
     with
        <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
      ; lib* := []
-    <+ lib* := [ ImportWildcard("lib/runtime/nabl")
-               , ImportWildcard("lib/runtime/task")
-               , ImportWildcard("lib/runtime/properties")
-               , ImportWildcard("lib/runtime/types")
-               , ImportWildcard("lib/runtime/relations")
-               , ImportWildcard("lib/runtime/editor")
+    <+ lib* := [ ImportWildcard("runtime/nabl")
+               , ImportWildcard("runtime/task")
+               , ImportWildcard("runtime/properties")
+               , ImportWildcard("runtime/types")
+               , ImportWildcard("runtime/relations")
+               , ImportWildcard("runtime/editor")
                ]
       
     

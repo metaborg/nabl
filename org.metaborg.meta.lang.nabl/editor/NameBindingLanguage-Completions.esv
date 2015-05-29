@@ -1,6 +1,6 @@
 module NameBindingLanguage-Completions
 
-imports src-gen/completions/NameBindingLanguage-esv
+imports completions/NameBindingLanguage-esv
 
 completions
        

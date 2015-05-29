@@ -1,9 +1,0 @@
-module src-gen/completions/core/Modules-esv
-
-completions
-  completion template Module : "module ModuleID " =
-    "module " <ModuleID:ModuleID> "\n\n\t\t" (cursor) (blank)  
-  completion template ModuleSection : "imports " =
-    "imports " <:ImportModule> (blank)  
-  completion template ImportModule : "ModuleID/-" =
-    <ModuleID:ModuleID> "/-"  
