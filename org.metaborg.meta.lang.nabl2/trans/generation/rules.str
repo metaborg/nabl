@@ -4,14 +4,10 @@ imports
   
   libstrc
   include/NameBindingLanguage2
-  lib/editor-common.generated
-
-  // generation/scopes
-  // generation/defines
-  // generation/refers
-  // generation/imports
+  generation/visits
+  generation/facts
   generation/util
-
+  
 rules // binding rules
 
   rules-to-str:
@@ -21,7 +17,7 @@ rules // binding rules
     Rule(pattern, With(scope*), clause*) ->
     |[ nabl-ts-constraint(|constraints, ~scope*):
     	   ~pattern -> <id> //(~term'',[~scope-c, ~c, ~sub-c])
-         with <iset-addlist(|[ ~fact* ])> constraints
+         with ~fcollect
          with ~visit
          
         //  with ?~term
@@ -34,33 +30,10 @@ rules // binding rules
     ]|
     with visit := <collect-all(visit-to-appl); not([]); to-seq> clause*
       <+ visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
-    with fact* := <collect-all(fact-to-constraints); not([])> clause* 
-       
-    visit-to-appl:
-    	VisitClause(v, Args(arg*)) -> |[<s> ~v ]|
-    	with 
-    	  if [Arg(VarRef("s"), scope)] := arg* then
-	        s := |[ nabl-ts-traverse(| constraints, ~scope) ]|
-        else 
-    	    scope* := <map(?Arg(_, <id>))> arg*
-        ; s := |[ nabl-ts-constraint(| constraints, ~scope*) ]|
-        end
-        
-  fact-to-constraints:
-    Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
-    with
-      decl     := Term |[ DeclId("Name", ~term, <get-position> ~term) ]|
-    ; aconstr* := <assoc-scope-to-constraints(|decl)> assoc-scope
-  
-  fact-to-constraints:
-    Reference(term, InScope(scope)) -> [ Term |[ FRef(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
-  
-  assoc-scope-to-constraints(|decl):
-    None() -> []
-    
-  assoc-scope-to-constraints(|decl):
-    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]	
-    
+    with fcollect* := <collect-all(fact-to-strategy)> clause*
+       ; fact*     := <collect-all(fact-to-terms)> clause* 
+       ; fcollect  := <to-seq> [fcollect*, |[ <iset-addlist(|[~fact*])> constraints ]| ]
+            
       //  ; term := <newname;str-var> "term"
       //  ; term' := <newname;str-var> "term"
       //  ; term'' := <newname;str-var> "term"

@@ -1,0 +1,18 @@
+module generation/visits
+
+imports
+
+  libstrc
+  include/NameBindingLanguage2
+
+rules
+  
+  visit-to-appl:
+  VisitClause(v, Args(arg*)) -> |[<s> ~v ]|
+  with 
+    if [Arg(VarRef("s"), scope)] := arg* then
+      s := |[ nabl-ts-traverse(| constraints, ~scope) ]|
+    else 
+      scope* := <map(?Arg(_, <id>))> arg*
+    ; s := |[ nabl-ts-constraint(| constraints, ~scope*) ]|
+    end

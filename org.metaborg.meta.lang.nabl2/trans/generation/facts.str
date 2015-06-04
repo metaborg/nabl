@@ -1,0 +1,32 @@
+module generation/facts
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage2
+
+rules
+  
+  fact-to-strategy:
+    Scope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
+    
+  fact-to-terms:
+    Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
+    with
+      decl     := Term |[ DeclId("Name", ~term, <get-position> ~term) ]|
+    ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
+  
+  fact-to-terms:
+    Reference(term, InScope(scope)) -> [ Term |[ FRef(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
+  
+  fact-to-terms:
+    Scope(scope, None()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
+  
+  fact-to-terms:
+    Scope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]
+  
+  assoc-scope-to-terms(|decl):
+    None() -> []
+    
+  assoc-scope-to-terms(|decl):
+    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]  
