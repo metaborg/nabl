@@ -1,9 +1,9 @@
-module generation-2/util
+module generation/util
 
 imports
   
   libstrc
-  include/NameBindingLanguage
+  include/NameBindingLanguage2
 
 rules
 
@@ -36,6 +36,9 @@ rules
   make-wild = topdown(try(make-wild-local))
   make-wild-local: Var(_) -> Wld()
   make-wild-local: VarRef(_) -> Wld()
+
+  to-seq: [c]           -> c
+  to-seq: [c1, c2 | c*] -> Seq(c1, <to-seq> [c2|c*])
 
 rules
   

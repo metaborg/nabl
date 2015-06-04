@@ -1,0 +1,72 @@
+module generation/rules
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage2
+  lib/editor-common.generated
+
+  // generation/scopes
+  // generation/defines
+  // generation/refers
+  // generation/imports
+  generation/util
+
+rules // binding rules
+
+  rules-to-str:
+    Rules(r*) -> Rules(<map(rule-to-strategy)> r*)
+ 
+  rule-to-strategy:
+    Rule(pattern, With(scope*), clause*) ->
+    |[ nabl-ts-constraint(|constraints, ~scope*):
+    	   ~pattern -> <id> //(~term'',[~scope-c, ~c, ~sub-c])
+         with <iset-addlist(|[ ~fact* ])> constraints
+         with ~visit
+         
+        //  with ?~term
+        //     ; ~scope-s
+        //     ; (~term',~sub-c) := <nabl-ts-traverse-children(|~scope')> ~term
+        //  where ~pattern := ~term'
+        //  with ~s
+        //     ; a* := [~scope-a,~a]
+        //     ; ~term'' := <add-annotations(|a*)> ~term'
+    ]|
+    with visit := <collect-all(visit-to-appl); not([]); to-seq> clause*
+      <+ visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
+    with fact* := <collect-all(fact-to-constraints); not([])> clause* 
+       
+    visit-to-appl:
+    	VisitClause(v, Args(arg*)) -> |[<s> ~v ]|
+    	with 
+    	  if [Arg(VarRef("s"), scope)] := arg* then
+	        s := |[ nabl-ts-traverse(| constraints, ~scope) ]|
+        else 
+    	    scope* := <map(?Arg(_, <id>))> arg*
+        ; s := |[ nabl-ts-constraint(| constraints, ~scope*) ]|
+        end
+        
+  fact-to-constraints:
+    Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
+    with
+      decl     := Term |[ DeclId("Name", ~term, <get-position> ~term) ]|
+    ; aconstr* := <assoc-scope-to-constraints(|decl)> assoc-scope
+  
+  fact-to-constraints:
+    Reference(term, InScope(scope)) -> [ Term |[ FRef(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
+  
+  assoc-scope-to-constraints(|decl):
+    None() -> []
+    
+  assoc-scope-to-constraints(|decl):
+    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]	
+    
+      //  ; term := <newname;str-var> "term"
+      //  ; term' := <newname;str-var> "term"
+      //  ; term'' := <newname;str-var> "term"
+      //  ; (scope-s,scope',scope-c,scope-a) := <clauses-to-scopes-strategy(|scope)> clause*
+      //  ; sub-c := <newname;str-list-var> "sub-c"
+    	 // ; (s,c,a) := <collect-strategies( ![ <clauses-to-defines-strategy(|term',scope)>
+    	 //                                    , <clauses-to-refers-strategy(|term',scope)>
+    	 //                                    , <clauses-to-imports-strategy(|term',scope')>
+    	 //                                    ] )> clause*

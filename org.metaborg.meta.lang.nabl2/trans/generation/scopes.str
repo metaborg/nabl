@@ -1,10 +1,10 @@
-module generation-2/scopes
+module generation/scopes
 
 imports
 
-  include/NameBindingLanguage
+  include/NameBindingLanguage2
 
-  generation-2/util
+  generation/util
 
 rules
 	

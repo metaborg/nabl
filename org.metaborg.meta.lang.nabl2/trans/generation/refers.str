@@ -1,10 +1,10 @@
-module generation-2/refers
+module generation/refers
 
 imports
 
-  include/NameBindingLanguage
+  include/NameBindingLanguage2
   generation/namespaces
-  generation-2/util
+  generation/util
 
 rules
 	

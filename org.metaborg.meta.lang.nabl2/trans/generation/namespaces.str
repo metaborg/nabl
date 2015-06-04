@@ -2,9 +2,9 @@ module generation/namespaces
 
 imports
   libstrc
-  include/NameBindingLanguage
+  include/NameBindingLanguage2
   generation/namespaces
-  generation-2/util
+  generation/util
   
 rules // namespaces 
       

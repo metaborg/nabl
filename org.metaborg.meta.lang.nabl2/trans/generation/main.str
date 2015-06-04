@@ -1,21 +1,19 @@
-module generation-2/main
+module generation/main
 
 imports
   
   libstrc
-  include/NameBindingLanguage
-  generation/main
-  generation-2/namespaces
-  generation-2/bindings
- 
+  include/NameBindingLanguage2
+  generation/rules
+   
 rules
   
-  generate-name-analysis-2:
+  generate-collection:
     (selected, position, ast@Module(name, _), path, project-path)
       -> (filename, result)
     with
-      filename   := <guarantee-extension(|"generated.str")> path
-    ; str-module := <strip-annos; module-to-str-2; to-str-vars> ast
+      filename := <create-src-gen(|project-path, "analysis",  ".str")> name;
+      str-module := <strip-annos; module-to-str; to-str-vars> ast
     with
        result := <stratego-desugar;pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ;
@@ -23,7 +21,58 @@ rules
                      not(stratego-desugar;pp-stratego-string) ;
                      debug(!"cannot pp ")))> str-module
     ;  result := ""
+
+    get-dir(|path) :
+    s -> s'
+    with
+      names := <strip-annos; string-tokenize(|['/'])> s;
+      names' := <at-last(![])> names;
+    //  debug(!"names ");
+      if [h | tl] := names'
+      then      
+        first := <concat-strings> [path, "/" ,h]; 
+      //  debug(!"get-dir ");
+        <create-dirs(|first)> tl;
+      //  debug(!"create-dirs ");
+        s' := <concat-strings> [path, "/",  <separate-by(|"/"); concat-strings> names']
+        else
+          s' := path
+        end
+      
+   
+   create-dir  = not( file-exists ; filemode ; isdir) < mkdir + id
+   
+   create-dirs(|dir):
+    [h | tl] -> None()
+    where
+      <create-dir> dir;
+      new-dir := <concat-strings> [dir, "/", h];
+   //   debug(!"create-dirs new dir ");
+      <create-dirs(|new-dir)> tl
+    
+  create-dirs(|dir):
+    [] -> None()
+    where
+      <create-dir> dir
+    //  ; debug(!"create-dirs empty ")
+  
+  get-filename :
+    s -> s'
+    with
+      names := <strip-annos; string-tokenize(|['/'])> s;
+      //debug(!"names ");
+      s' := <last> names
  
+  create-src-gen(|project-path, folder, ext):
+    filename -> filename'
+  with
+    fn := <get-filename> filename; 
+    src-gen-path := <concat-strings; create-dir> [project-path, "/src-gen"];
+    src-gen-folder := <concat-strings; create-dir> [src-gen-path, "/" ,folder];
+    file-folder := <get-dir(|src-gen-folder)> filename ;
+    filename' := <concat-strings> [file-folder, "/" , fn, ext]
+    //;debug(!"filename' ")
+
 rules
 	
   to-str-vars = alltd(to-str-vars-local)
@@ -33,11 +82,11 @@ rules
 
 rules // modules
   
-  module-to-str-2:
-    Module(n, [ Imports(i*), ns, _, b ])
-      -> Module(n', [ Imports([lib*, i*]), sig, ns', b'])
+  module-to-str:
+    Module(n, [ Imports(i*), b ])
+      -> Module(n', [ Imports([lib*, i*]), b'])
     with
-      n' := $[[n].generated]
+      n' := $[src-gen/analysis/[n]]
     ; lib* := [
       	        Import("libstratego-gpp"),
       	        Import("runtime/editor/annotations"),
@@ -48,6 +97,6 @@ rules // modules
                 Import("libanalysis2/nabl-ts/-"),
                 Import("src-gen/signatures/libanalysis2/-") 
               ]
-    ; sig := <namespaces-to-signature> ns
-    ; ns' := <namespaces-to-pp-rules> ns
-    ; b'  := <bindings-to-rules> b
+    // ; sig := <namespaces-to-signature> ns
+    // ; ns' := <namespaces-to-pp-rules> ns
+    ; b'  := <rules-to-str> b

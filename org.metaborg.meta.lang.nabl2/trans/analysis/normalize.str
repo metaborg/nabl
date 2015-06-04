@@ -1,0 +1,20 @@
+module analysis/normalize
+
+imports
+  include/NameBindingLanguage2
+  libstrc
+  
+strategies
+   
+  normalize-all = alltd(normalize)
+  
+rules
+  
+  normalize:
+    Module(name, section*) -> Module(name, [Imports(i*), Rules(r*)])
+    with
+      i*  := <filterconcat(?Imports(<id>))> section*
+     ; r*  := <filterconcat(?Rules(<id>))> section*
+    
+    
+    

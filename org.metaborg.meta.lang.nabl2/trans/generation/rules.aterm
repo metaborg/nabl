@@ -1,0 +1,29 @@
+Rule(
+  NoAnnoList(
+    Op(
+      "Rule"
+    , [ Var("pattern")
+      , NoAnnoList(Op("With", [Var(ListVar("scope*"))]))
+      , Var(ListVar("clause*"))
+      ]
+    )
+  )
+, ToTerm(
+    RDefP(
+      "nabl-ts-constraint"
+    , []
+    , [Var("constraints"), FromTerm(Var(ListVar("scope*")))]
+    , RuleNoCond(FromTerm(Var("wpattern")), RootApp(Id()))
+    )
+  )
+, [ WithClause(
+      Seq(
+        Assign(
+          Var("wpattern")
+        , App(CallNoArgs(SVar("make-wild")), Var("pattern"))
+        )
+      , Assign(Var("visit"), Var("With"))
+      )
+    )
+  ]
+)
