@@ -1,0 +1,53 @@
+module generation-2/main
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage
+  generation/main
+  generation-2/namespaces
+  generation-2/bindings
+ 
+rules
+  
+  generate-name-analysis-2:
+    (selected, position, ast@Module(name, _), path, project-path)
+      -> (filename, result)
+    with
+      filename   := <guarantee-extension(|"generated.str")> path
+    ; str-module := <strip-annos; module-to-str-2; to-str-vars> ast
+    with
+       result := <stratego-desugar;pp-stratego-string> str-module
+    <+ <bottomup(try(not(is-string) ;
+                     not(is-list) ;
+                     not(stratego-desugar;pp-stratego-string) ;
+                     debug(!"cannot pp ")))> str-module
+    ;  result := ""
+ 
+rules
+	
+  to-str-vars = alltd(to-str-vars-local)
+    
+  to-str-vars-local: VarRef(x)     -> Var(x)
+  to-str-vars-local: ListVarRef(x) -> ListVar(x)
+
+rules // modules
+  
+  module-to-str-2:
+    Module(n, [ Imports(i*), ns, _, b ])
+      -> Module(n', [ Imports([lib*, i*]), sig, ns', b'])
+    with
+      n' := $[[n].generated]
+    ; lib* := [
+      	        Import("libstratego-gpp"),
+      	        Import("runtime/editor/annotations"),
+      	        Import("libanalysis2/-"),
+                Import("libanalysis2/abstract-syntax/-"),
+                Import("libanalysis2/namebinding/-"),
+                Import("libanalysis2/typechecking/-"),
+                Import("libanalysis2/nabl-ts/-"),
+                Import("src-gen/signatures/libanalysis2/-") 
+              ]
+    ; sig := <namespaces-to-signature> ns
+    ; ns' := <namespaces-to-pp-rules> ns
+    ; b'  := <bindings-to-rules> b

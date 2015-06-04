@@ -18,6 +18,7 @@ imports
 	names
 	check
 	generate
+  generation/-
 	pp
 
 rules // Analysis

@@ -1,0 +1,26 @@
+module generation-2/scopes
+
+imports
+
+  include/NameBindingLanguage
+
+  generation-2/util
+
+rules
+	
+  clauses-to-scopes-strategy(|scope) =
+  	filter(?ScopeClause(_)) ; scopes-clauses-to-strategy(|scope)
+
+  scopes-clauses-to-strategy(|scope):
+    [_|_] -> (|[ ~scope' := Scope(<NewScope>);
+                 ~scope-c := [FParent(~scope',SomeScope(~scope))];
+                 ~scope-a := [~scope']
+              ]|, scope', scope-c, scope-a)
+    with scope' := <newname;str-var> "scope";
+         scope-c := <newname;str-list-var> "scope-c";
+         scope-a := <newname;str-list-var> "scope-a"
+
+  scopes-clauses-to-strategy(|scope):
+  	[] -> (|[ ~scope-c := [] ; ~scope-a := [] ]|, scope, scope-c, scope-a)
+    with scope-c := <newname;str-list-var> "scope-c";
+         scope-a := <newname;str-list-var> "scope-a"
