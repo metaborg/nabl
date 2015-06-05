@@ -15,14 +15,18 @@ rules
   fact-to-terms:
     Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
-      decl     := Term |[ DeclId("Name", ~term, <get-position> ~term) ]|
+      decl     := <term-to-decl> term
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
   
   fact-to-terms:
-    Reference(term, InScope(scope)) -> [ Term |[ FRef(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
+    Reference(term, InScope(scope)) -> [ Term |[ FRef(~ref, ~scope) ]| ]
+    with
+      ref := <term-to-ref> term
   
   fact-to-terms:
-    Import(term, IntoScope(scope)) -> [ Term |[ FImportR(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
+    Import(term, IntoScope(scope)) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
+    with
+      ref := <term-to-ref> term
   
   fact-to-terms:
     ImportScope(v, IntoScope(scope)) -> [ Term |[ FImportS(~v, ~scope) ]| ]
@@ -38,3 +42,7 @@ rules
     
   assoc-scope-to-terms(|decl):
     Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]  
+
+  term-to-decl: term -> Term |[ DeclId(None(), ~term, <get-position> ~term) ]|
+
+  term-to-ref: term -> Term |[ RefId(None(), ~term, <get-position> ~term) ]|

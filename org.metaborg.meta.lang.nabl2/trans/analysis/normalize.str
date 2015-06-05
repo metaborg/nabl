@@ -1,9 +1,10 @@
 module analysis/normalize
 
 imports
-  include/NameBindingLanguage2
   libstrc
-  
+  include/NameBindingLanguage2
+  util
+
 strategies
    
   normalize-all = normalize-module
@@ -12,14 +13,17 @@ rules
   
   normalize-module:
     Module(name, section*) -> Module(name, [Imports(i*), Rules(r*)])
-    with
-      i*  := <filterconcat(?Imports(<id>))> section*
-     ; r*  := <filterconcat(?Rules(<map(normalize-rule)>))> section*
-    
+    with i*  := <filterconcat(?Imports(<id>))> section*
+       ; r*  := <filterconcat(?Rules(<map(normalize-rule)>))> section*
+ 
   normalize-rule:
-    Rule(pattern, with, part*) -> 
-    Rule(pattern, with, [Where(w*), Create(c*), Visit(v*)])
+    Rule(pattern, With(s*), part*) -> 
+    Rule(pattern, With(s'*), [Where(w*), Create(c*), Visit(v*)])
     with w* := <filterconcat(?Where(<id>))> part*
        ; c* := <filterconcat(?Create(<id>))> part*
        ; v* := <filterconcat(?Visit(<id>))> part* 
-    
+       ; s'* := <qsort((var-name,var-name);string-lt)> s*
+
+  normalize-rule:
+    VisitClause(v, Args(a*)) -> VisitClause(v, Args(a'*))
+    with a'* := <qsort((?Arg(<id>,_);?Arg(<id>,_));string-lt)> a*

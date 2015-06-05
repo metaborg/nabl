@@ -12,7 +12,7 @@ rules
     (selected, position, ast@Module(name, _), path, project-path)
       -> (filename, result)
     with
-      filename := <create-src-gen(|project-path, "analysis",  ".str")> name;
+      filename := <create-src-gen(|project-path, "nabl2",  ".str")> name;
       str-module := <strip-annos; module-to-str> ast
     with
        result := <to-str-vars; stratego-desugar; pp-stratego-string> str-module
@@ -98,6 +98,4 @@ rules // modules
                 Import("libanalysis2/nabl-ts/-"),
                 Import("src-gen/signatures/libanalysis2/-") 
               ]
-    // ; sig := <namespaces-to-signature> ns
-    // ; ns' := <namespaces-to-pp-rules> ns
     ; b'  := <rules-to-str> b

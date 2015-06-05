@@ -40,5 +40,5 @@ rules
   	   ; tp* := <map(try(type-pattern))> t*
   	     
   type-pattern:
-  	Wld() -> Term |[ <newTVar> ]|
+  	Wld() -> Term |[ TVar(<NewTVar>) ]|
   	

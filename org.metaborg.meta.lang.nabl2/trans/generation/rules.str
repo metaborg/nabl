@@ -4,10 +4,10 @@ imports
   
   libstrc
   include/NameBindingLanguage2
+  util
   generation/visits
   generation/constraints
   generation/facts
-  generation/util
   
 rules // binding rules
 
@@ -16,19 +16,12 @@ rules // binding rules
  
   rule-to-strategy:
     Rule(pattern, With(scope*), [Where(w*), Create(c*), Visit(v*)]) ->
-    |[ nabl-ts-constraint(|constraints, ~scope*):
-    	   ~pattern -> <id> //(~term'',[~scope-c, ~c, ~sub-c])
+    |[ nabl-ts-constraint(|constraints,scopes):
+    	   ~pattern -> <id>
+         with [~scope*] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
          with ~ccollect
          with ~fcollect
          with ~visit
-         
-        //  with ?~term
-        //     ; ~scope-s
-        //     ; (~term',~sub-c) := <nabl-ts-traverse-children(|~scope')> ~term
-        //  where ~pattern := ~term'
-        //  with ~s
-        //     ; a* := [~scope-a,~a]
-        //     ; ~term'' := <add-annotations(|a*)> ~term'
     ]|
     with ccollect*   := <mapconcat(constraint-to-strategies)> w*
        ; constraint* := <map(constraint-to-term)> w* 
@@ -37,17 +30,7 @@ rules // binding rules
        ; fact*     := <mapconcat(fact-to-terms)> c* 
        ; fcollect  := <to-seq> [fcollect*, |[ <iset-addlist(|[~fact*])> constraints ]| ]
     with if [] := v* then
-           visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
+           visit := |[ nabl-ts-traverse-children(|constraints,scopes) ]|
          else      
            visit := <map(visit-to-appl); to-seq> v*
          end
-            
-      //  ; term := <newname;str-var> "term"
-      //  ; term' := <newname;str-var> "term"
-      //  ; term'' := <newname;str-var> "term"
-      //  ; (scope-s,scope',scope-c,scope-a) := <clauses-to-scopes-strategy(|scope)> clause*
-      //  ; sub-c := <newname;str-list-var> "sub-c"
-    	 // ; (s,c,a) := <collect-strategies( ![ <clauses-to-defines-strategy(|term',scope)>
-    	 //                                    , <clauses-to-refers-strategy(|term',scope)>
-    	 //                                    , <clauses-to-imports-strategy(|term',scope')>
-    	 //                                    ] )> clause*

@@ -1,0 +1,53 @@
+module util
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage2
+
+rules
+
+  ns-name = !$[NablNs[<id>]]
+
+  collect-strategies(s) =
+    s;
+    unzip3 => (s*,c*,a*);
+    <newname;str-list-var> "c" => c;
+    <newname;str-list-var> "a" => a;
+    <foldr(!|[ id ]|,str-seq)> s* => s;
+    !(|[ ~s ;
+         ~c := [~*c*] ;
+         ~a := [~*a*] ]|, c, a)
+
+rules
+
+  str-str      = !Str(<is-string>)
+  str-var      = !Var(<is-string>)
+  str-list-var = !Var($[[<id>]*])
+
+  str-seq     = ?(s1,s2) ; !|[ ~s1  ;  ~s2 ]|
+  str-choice  = ?(s1,s2) ; !|[ ~s1  +  ~s2 ]|
+  str-lchoice = ?(s1,s2) ; !|[ ~s1 <+  ~s2 ]|
+  str-rchoice = ?(s1,s2) ; !|[ ~s1  +> ~s2 ]|
+
+  str-opdecl = !OpDecl(<Fst>, ConstType(Sort(<Snd>,[])))
+  str-op0    = !Op(<id>, [])
+
+  make-wild = topdown(try(make-wild-local))
+  make-wild-local: Var(_) -> Wld()
+  make-wild-local: VarRef(_) -> Wld()
+
+  to-seq: [c]           -> c
+  to-seq: [c1, c2 | c*] -> Seq(c1, <to-seq> [c2|c*])
+
+  var-name: Var(name) -> name
+  var-name: VarRef(name) -> name
+  var-name: ListVar(name) -> name
+  var-name: ListVarRef(name) -> name
+
+rules
+  
+  unzip3 = foldr( !([],[],[])
+                , !( [<Fst;Fst>|<Snd;Fst>]
+                   , [<Fst;Snd>|<Snd;Snd>]
+                   , [<Fst;Third>|<Snd;Third>] ) )

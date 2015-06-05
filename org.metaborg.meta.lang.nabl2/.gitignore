@@ -7,6 +7,7 @@
 /trans/*.generated.*
 /bin
 /target
+/utils
 
 *.swp
 \#*\#
