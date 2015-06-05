@@ -26,8 +26,9 @@ folding Default folding definitions
   Rule.Rule
   With.With
   Part.Where
-  Constraint.Match
-  Constraint.HasScope
+  BaseConstraint.Match
+  BaseConstraint.HasScope
+  Message.Message
   Part.Create
   Fact.Declaration
   Fact.Reference
