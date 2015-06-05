@@ -6,15 +6,20 @@ imports
   
 strategies
    
-  normalize-all = alltd(normalize)
+  normalize-all = normalize-module
   
 rules
   
-  normalize:
+  normalize-module:
     Module(name, section*) -> Module(name, [Imports(i*), Rules(r*)])
     with
       i*  := <filterconcat(?Imports(<id>))> section*
-     ; r*  := <filterconcat(?Rules(<id>))> section*
+     ; r*  := <filterconcat(?Rules(<map(normalize-rule)>))> section*
     
-    
+  normalize-rule:
+    Rule(pattern, with, part*) -> 
+    Rule(pattern, with, [Where(w*), Create(c*), Visit(v*)])
+    with w* := <filterconcat(?Where(<id>))> part*
+       ; c* := <filterconcat(?Create(<id>))> part*
+       ; v* := <filterconcat(?Visit(<id>))> part* 
     

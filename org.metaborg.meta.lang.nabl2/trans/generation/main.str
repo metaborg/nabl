@@ -13,12 +13,12 @@ rules
       -> (filename, result)
     with
       filename := <create-src-gen(|project-path, "analysis",  ".str")> name;
-      str-module := <strip-annos; module-to-str; to-str-vars> ast
+      str-module := <strip-annos; module-to-str> ast
     with
-       result := <stratego-desugar;pp-stratego-string> str-module
+       result := <to-str-vars; stratego-desugar; pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ;
                      not(is-list) ;
-                     not(stratego-desugar;pp-stratego-string) ;
+                     not(to-str-vars;stratego-desugar;pp-stratego-string) ;
                      debug(!"cannot pp ")))> str-module
     ;  result := ""
 
@@ -78,7 +78,8 @@ rules
   to-str-vars = alltd(to-str-vars-local)
     
   to-str-vars-local: VarRef(x)     -> Var(x)
-  to-str-vars-local: ListVarRef(x) -> ListVar(x)
+  to-str-vars-local: ListVarRef(x) -> Var(x)
+  to-str-vars-local: ListVar(x)    -> Var(x)
 
 rules // modules
   
