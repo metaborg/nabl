@@ -19,12 +19,13 @@ rules // binding rules
     |[ nabl-ts-constraint(|constraints,scopes):
     	   ~pattern -> <id>
          with [~scope*] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+         with position := <get-position>
          with ~ccollect
          with ~fcollect
          with ~visit
     ]|
     with ccollect*   := <mapconcat(constraint-to-strategies)> w*
-       ; constraint* := <map(constraint-to-term)> w* 
+       ; constraint* := <map(constraint-to-term(|Var("position")))> w* 
        ; ccollect  := <to-seq> [ccollect*, |[ <iset-addlist(|[~constraint*])> constraints ]| ]
     with fcollect* := <filter(fact-to-strategy)> c*
        ; fact*     := <mapconcat(fact-to-terms)> c* 

@@ -20,18 +20,39 @@ rules
     Match(_, pattern) -> str*
     with var* := <collect-all(?Var(_) + ?ListVar(_))> pattern
        ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
+  
+  constraint-to-strategies:
+    Success(c, _) -> str*
+    with str* := <constraint-to-strategies> c
+  
+  constraint-to-strategies:
+    Failure(c, _) -> str*
+    with str* := <constraint-to-strategies> c
     
-  constraint-to-term:
-    HasType(v, tv) -> Term |[ CTypeOf(~v, ~tv, <get-position> ~v) ]|
+  constraint-to-term(|pos):
+    Success(c, msg) -> t
+    with pos' := <message-to-term> msg
+    with t    := <constraint-to-term(|pos')> c
+    
+  constraint-to-term(|pos):
+    Failure(c, msg) -> t
+    with pos' := <message-to-term> msg
+    with t    := <constraint-to-term(|pos')> c
+         
+  message-to-term:
+    Message(_, _, t) -> Term |[ <get-position> t ]|
+      
+  constraint-to-term(|msg):
+    HasType(v, tv) -> Term |[ CTypeOf(~v, ~tv, ~msg) ]|
    
-  constraint-to-term:
-    Resolves(v, dv) -> Term |[ CResolves(~v, ~dv, <get-position> ~v) ]|
+  constraint-to-term(|msg):
+    Resolves(v, dv) -> Term |[ CResolves(~v, ~dv, ~msg) ]|
    
-  constraint-to-term:
-    HasScope(v, sv) -> Term |[ CAssoc(~v, ~sv, <get-position> ~v) ]|
+  constraint-to-term(|msg):
+    HasScope(v, sv) -> Term |[ CAssoc(~v, ~sv, ~msg) ]|
    
-  constraint-to-term:
-  	Match(v, pattern) -> Term |[ CEqType(~v, ~tp, <get-position> ~v)]|
+  constraint-to-term(|msg):
+  	Match(v, pattern) -> Term |[ CEqType(~v, ~tp, ~msg) ]|
   	with tp := <try(type-pattern)> pattern
   	
   type-pattern:

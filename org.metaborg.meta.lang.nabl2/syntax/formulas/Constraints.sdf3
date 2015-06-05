@@ -4,16 +4,16 @@ imports
 
   terms/Terms 
   terms/Vars  
-  // core/Namespaces 
-  // core/Scopes 
+  formulas/Messages
   
 context-free syntax
 
-  // Proposition.True = <true> 
-  // Proposition.False = <false> 
-  
-  Constraint.Match   = [[VarRef] == [Pattern]] 
-  Constraint.HasType = <<VarRef> has type <Var>> 
-  Constraint.Resolves = <<VarRef> resolves to <Var>>
+  BaseConstraint.Match   = [[VarRef] == [Pattern]] 
+  BaseConstraint.HasType = <<VarRef> has type <Var>> 
+  BaseConstraint.Resolves = <<VarRef> resolves to <Var>>
   // Proposition.InRelation = [[Term] [Relation] [Term]] 
-  Constraint.HasScope = <<Term> has associated scope <Var>>
+  BaseConstraint.HasScope = <<Term> has associated scope <Var>>
+
+  Constraint         = BaseConstraint
+  Constraint.Success = <<BaseConstraint> and <Message>>
+  Constraint.Failure = <<BaseConstraint> else <Message>>  
