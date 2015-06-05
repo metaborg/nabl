@@ -5,6 +5,7 @@ imports
   libstrc
   include/NameBindingLanguage2
   generation/visits
+  generation/constraints
   generation/facts
   generation/util
   
@@ -17,6 +18,7 @@ rules // binding rules
     Rule(pattern, With(scope*), clause*) ->
     |[ nabl-ts-constraint(|constraints, ~scope*):
     	   ~pattern -> <id> //(~term'',[~scope-c, ~c, ~sub-c])
+         with ~ccollect
          with ~fcollect
          with ~visit
          
@@ -28,11 +30,14 @@ rules // binding rules
         //     ; a* := [~scope-a,~a]
         //     ; ~term'' := <add-annotations(|a*)> ~term'
     ]|
-    with visit := <collect-all(visit-to-appl); not([]); to-seq> clause*
-      <+ visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
+    with ccollect*   := <collect-all(constraint-to-strategy)> clause*
+       ; constraint* := <collect-all(constraint-to-terms)> clause* 
+       ; ccollect  := <to-seq> [ccollect*, |[ <iset-addlist(|[~constraint*])> constraints ]| ]
     with fcollect* := <collect-all(fact-to-strategy)> clause*
        ; fact*     := <collect-all(fact-to-terms)> clause* 
        ; fcollect  := <to-seq> [fcollect*, |[ <iset-addlist(|[~fact*])> constraints ]| ]
+    with visit := <collect-all(visit-to-appl); not([]); to-seq> clause*
+      <+ visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
             
       //  ; term := <newname;str-var> "term"
       //  ; term' := <newname;str-var> "term"

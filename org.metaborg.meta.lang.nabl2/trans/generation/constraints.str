@@ -1,0 +1,28 @@
+module generation/constraints
+
+imports
+  
+  libstrc
+  include/NameBindingLanguage2
+
+rules
+  
+  constraint-to-strategy:
+    HasType(_, v) -> |[ ~v := TVar(<NewTVar>) ]|
+  
+  constraint-to-strategy:
+    Resolves(_, v) -> |[ ~v := DeclVar(<NewDeclVar>) ]|
+    
+  constraint-to-strategy:
+    HasScope(_, v) -> |[ ~v := ScopeVar(<NewScopeVar>) ]|
+    
+  constraint-to-terms:
+    HasType(v, tv) -> [ Term |[ CEqType(~v, ~tv, <get-position> ~v) ]| ]
+   
+  constraint-to-terms:
+    Resolves(v, dv) -> [ Term |[ CResolves(~v, ~dv, <get-position> ~v) ]| ]
+   
+  constraint-to-terms:
+    HasScope(v, sv) -> [ Term |[ CAssoc(~v, ~sv, <get-position> ~v) ]| ]
+   
+ 
