@@ -9,6 +9,8 @@ rules
   
   fact-to-strategy:
     Scope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
+
+rules
     
   fact-to-terms:
     Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
@@ -18,6 +20,12 @@ rules
   
   fact-to-terms:
     Reference(term, InScope(scope)) -> [ Term |[ FRef(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
+  
+  fact-to-terms:
+    Import(term, IntoScope(scope)) -> [ Term |[ FImportR(RefId("Name", ~term, <get-position> ~term), ~scope) ]| ]
+  
+  fact-to-terms:
+    ImportScope(v, IntoScope(scope)) -> [ Term |[ FImportS(~v, ~scope) ]| ]
   
   fact-to-terms:
     Scope(scope, None()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]

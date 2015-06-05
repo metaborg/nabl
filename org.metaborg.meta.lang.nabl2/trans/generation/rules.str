@@ -34,10 +34,13 @@ rules // binding rules
        ; constraint* := <map(constraint-to-term)> w* 
        ; ccollect  := <to-seq> [ccollect*, |[ <iset-addlist(|[~constraint*])> constraints ]| ]
     with fcollect* := <filter(fact-to-strategy)> c*
-       ; fact*     := <filterconcat(fact-to-terms)> c* 
+       ; fact*     := <mapconcat(fact-to-terms)> c* 
        ; fcollect  := <to-seq> [fcollect*, |[ <iset-addlist(|[~fact*])> constraints ]| ]
-    with visit := <not([]); map(visit-to-appl); to-seq> v*
-      <+ visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
+    with if [] := v* then
+           visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
+         else      
+           visit := <map(visit-to-appl); to-seq> v*
+         end
             
       //  ; term := <newname;str-var> "term"
       //  ; term' := <newname;str-var> "term"
