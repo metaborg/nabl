@@ -30,8 +30,8 @@ rules // binding rules
         //     ; a* := [~scope-a,~a]
         //     ; ~term'' := <add-annotations(|a*)> ~term'
     ]|
-    with ccollect*   := <filter(constraint-to-strategy)> w*
-       ; constraint* := <filter(constraint-to-terms)> w* 
+    with ccollect*   := <mapconcat(constraint-to-strategies)> w*
+       ; constraint* := <map(constraint-to-term)> w* 
        ; ccollect  := <to-seq> [ccollect*, |[ <iset-addlist(|[~constraint*])> constraints ]| ]
     with fcollect* := <filter(fact-to-strategy)> c*
        ; fact*     := <filterconcat(fact-to-terms)> c* 

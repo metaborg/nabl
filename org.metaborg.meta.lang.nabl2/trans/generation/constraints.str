@@ -7,22 +7,38 @@ imports
 
 rules
   
-  constraint-to-strategy:
-    HasType(_, v) -> |[ ~v := TVar(<NewTVar>) ]|
+  constraint-to-strategies:
+    HasType(_, v) -> [ |[ ~v := TVar(<NewTVar>) ]| ]
   
-  constraint-to-strategy:
-    Resolves(_, v) -> |[ ~v := DeclVar(<NewDeclVar>) ]|
+  constraint-to-strategies:
+    Resolves(_, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
     
-  constraint-to-strategy:
-    HasScope(_, v) -> |[ ~v := ScopeVar(<NewScopeVar>) ]|
+  constraint-to-strategies:
+    HasScope(_, v) -> [ |[ ~v := ScopeVar(<NewScopeVar>) ]| ]
+  
+  constraint-to-strategies:
+    Match(_, pattern) -> str*
+    with var* := <collect-all(?Var(_) + ?ListVar(_))> pattern
+       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
     
-  constraint-to-terms:
-    HasType(v, tv) -> [ Term |[ CEqType(~v, ~tv, <get-position> ~v) ]| ]
+  constraint-to-term:
+    HasType(v, tv) -> Term |[ CTypeOf(~v, ~tv, <get-position> ~v) ]|
    
-  constraint-to-terms:
-    Resolves(v, dv) -> [ Term |[ CResolves(~v, ~dv, <get-position> ~v) ]| ]
+  constraint-to-term:
+    Resolves(v, dv) -> Term |[ CResolves(~v, ~dv, <get-position> ~v) ]|
    
-  constraint-to-terms:
-    HasScope(v, sv) -> [ Term |[ CAssoc(~v, ~sv, <get-position> ~v) ]| ]
+  constraint-to-term:
+    HasScope(v, sv) -> Term |[ CAssoc(~v, ~sv, <get-position> ~v) ]|
    
- 
+  constraint-to-term:
+  	Match(v, pattern) -> Term |[ CEqType(~v, ~tp, <get-position> ~v)]|
+  	with tp := <try(type-pattern)> pattern
+  	
+  type-pattern:
+  	Op(tc, t*) -> Term |[ TApp(~tc', ~tp*) ]|
+  	with tc' := Str(<double-quote> tc)
+  	   ; tp* := <map(try(type-pattern))> t*
+  	     
+  type-pattern:
+  	Wld() -> Term |[ <newTVar> ]|
+  	
