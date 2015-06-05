@@ -37,7 +37,8 @@ rules // binding rules
        ; fact*     := <mapconcat(fact-to-terms)> c* 
        ; fcollect  := <to-seq> [fcollect*, |[ <iset-addlist(|[~fact*])> constraints ]| ]
     with if [] := v* then
-           visit := |[ nabl-ts-traverse-children(|constraints, scope) ]|
+           scope := Var("s") // work-around, can't use s directly in the following fragment
+         ; visit := |[ nabl-ts-traverse-children(|constraints, ~scope) ]|
          else      
            visit := <map(visit-to-appl); to-seq> v*
          end
