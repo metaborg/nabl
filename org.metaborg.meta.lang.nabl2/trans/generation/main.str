@@ -15,10 +15,10 @@ rules
       filename := <create-src-gen(|project-path, "nabl2",  ".str")> name;
       str-module := <strip-annos; module-to-str> ast
     with
-       result := <to-str-vars; stratego-desugar; pp-stratego-string> str-module
+       result := <fix-str; pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ;
                      not(is-list) ;
-                     not(to-str-vars;stratego-desugar;pp-stratego-string) ;
+                     not(fix-str;pp-stratego-string) ;
                      debug(!"cannot pp ")))> str-module
     ;  result := ""
 
@@ -75,12 +75,13 @@ rules
 
 rules
 	
-  to-str-vars = alltd(to-str-vars-local)
+  fix-str = topdown(try(fix-var + fix-decl))
     
-  to-str-vars-local: VarRef(x)     -> Var(x)
-  to-str-vars-local: ListVarRef(x) -> Var(x)
-  to-str-vars-local: ListVar(x)    -> Var(x)
-
+  fix-var: VarRef(x)     -> Var(x)
+  fix-var: ListVarRef(x) -> Var(x)
+  fix-var: ListVar(x)    -> Var(x)
+  fix-decl: RDefP(n, sp*, tp*, r) -> RDefT(n, sp*, tp*, r)
+  
 rules // modules
   
   module-to-str:
