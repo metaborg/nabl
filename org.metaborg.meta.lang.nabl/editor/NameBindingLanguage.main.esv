@@ -1,11 +1,9 @@
-
 module NameBindingLanguage.main
 
 imports NameBindingLanguage-Menus NameBindingLanguage-Colorer NameBindingLanguage-Completions NameBindingLanguage-Folding NameBindingLanguage-References NameBindingLanguage-Syntax
 
 language General properties
                   
-  name          : NameBindingLanguage
   id            : org.metaborg.meta.lang.nabl
   extends       : Root
                   
