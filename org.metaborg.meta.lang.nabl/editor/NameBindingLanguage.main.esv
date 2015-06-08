@@ -1,10 +1,9 @@
 module NameBindingLanguage.main
 
-imports NameBindingLanguage-Menus NameBindingLanguage-Colorer NameBindingLanguage-Completions NameBindingLanguage-Folding NameBindingLanguage-References NameBindingLanguage-Syntax
+imports NameBindingLanguage.generated NameBindingLanguage-Menus NameBindingLanguage-Colorer NameBindingLanguage-Completions NameBindingLanguage-Folding NameBindingLanguage-References NameBindingLanguage-Syntax
 
 language General properties
                   
-  id            : org.metaborg.meta.lang.nabl
   extends       : Root
                   
   description   : "Spoofax/IMP-generated editor for the NameBindingLanguage language"
