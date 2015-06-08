@@ -25,14 +25,12 @@ folding Default folding definitions
   ModuleSection.Rules
   Rule.Rule
   With.With
-  Part.Where
   BaseConstraint.Match
   BaseConstraint.HasScope
   Message.Message
-  Part.Create
   Fact.Declaration
   Fact.Reference
   Fact.Import
-  Part.Visit
-  VisitClause.VisitClause
+  VisitClause.Visit
   Args.Args
+  Rule.Rule

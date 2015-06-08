@@ -3,7 +3,7 @@ module generation/rules
 imports
   
   libstrc
-  include/NameBindingLanguage2
+  src-gen/signatures/-
   util
   generation/visits
   generation/constraints
@@ -15,7 +15,7 @@ rules // binding rules
     Rules(r*) -> Rules(<map(rule-to-strategy)> r*)
  
   rule-to-strategy:
-    Rule(pattern, With(scope*), [Where(w*), Create(c*), Visit(v*)]) ->
+    Rule(pattern, With(scope*), w*, c*, v*) ->
     |[ nabl-ts-constraint(|constraints,scopes):
     	   ~pattern -> <id>
          with [~scope*] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )

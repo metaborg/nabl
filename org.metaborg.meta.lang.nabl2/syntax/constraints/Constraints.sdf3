@@ -14,6 +14,6 @@ context-free syntax
   // Proposition.InRelation = [[Term] [Relation] [Term]] 
   BaseConstraint.HasScope = <<Term> has associated scope <Var>>
 
-  Constraint         = BaseConstraint
-  Constraint.Success = <<BaseConstraint> and <Message>>
-  Constraint.Failure = <<BaseConstraint> else <Message>>  
+  Constraint         = <<BaseConstraint>;>
+  Constraint.Success = <<BaseConstraint> and <Message>;>
+  Constraint.Failure = <<BaseConstraint> else <Message>;>  

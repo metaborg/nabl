@@ -7,11 +7,11 @@ imports
   
 context-free syntax
 
-  Fact.Scope       = <scope <Var> <Parent>>
-  Fact.Declaration = <declaration <Term> <InScope> <AssocScope>>
-  Fact.Reference   = <reference <Term> <InScope>>
-  Fact.Import      = <import <Term> <IntoScope>>
-  Fact.ImportScope = <import from <VarRef> <IntoScope>>
+  Fact.Scope       = <scope <Var> <Parent>;>
+  Fact.Declaration = <declaration <Term> <InScope> <AssocScope>;>
+  Fact.Reference   = <reference <Term> <InScope>;>
+  Fact.Import      = <import <Term> <IntoScope>;>
+  Fact.ImportScope = <import from <VarRef> <IntoScope>;>
 
   InScope.CurrentScope = 
   InScope.InScope      = <in <VarRef>>
@@ -27,4 +27,13 @@ context-free syntax
   
   // sugar
   Parent.None     = 
+  
+lexical syntax
+
+  Keyword = "scope"
+  Keyword = "declaration"
+  Keyword = "reference"
+  Keyword = "import"
+  Keyword = "with"
+  Keyword = "without"
   

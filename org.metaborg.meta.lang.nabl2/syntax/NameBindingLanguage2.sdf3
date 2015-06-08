@@ -24,22 +24,36 @@ context-free syntax
     <Rule*>
   >
 
+  // sugar
   Rule.Rule = <
     <Pattern> <With>:
-    <Part*>
+      <Part*>
   >
+
+  Rule.Rule = <
+    <Pattern> <With>:
+	    where 
+	      <Constraint*>
+	    create 
+	      <Fact*>
+	    visit 
+	      <VisitClause*>
+  >  {avoid}
 
   With.None =
   With.With = <with <{Var ","}+>>
 
-  Part.Where  = <where <{Constraint "and"}+>>
-  Part.Create = <create <{Fact "and"}+>>
-  Part.Visit  = <visit <{VisitClause "and"}+>>
-
-  VisitClause.VisitClause = <<Term> <Args>>
+  Part = Constraint
+  Part = Fact
+  Part = VisitClause
+  
+  VisitClause.Visit = <<Term> <Args>;>
   
   Args.None =
   Args.Args = <with <{Arg ","}+>>
   
   Arg.Arg = <<Var> = <VarRef>>
   
+lexical syntax
+
+  SectionKeyword = "rules"

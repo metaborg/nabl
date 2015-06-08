@@ -32,7 +32,7 @@ rules
     ImportScope(v, IntoScope(scope)) -> [ Term |[ FImportS(~v, ~scope) ]| ]
   
   fact-to-terms:
-    Scope(scope, None()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
+    Scope(scope, NoParent()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
   
   fact-to-terms:
     Scope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]

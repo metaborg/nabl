@@ -2,7 +2,10 @@ module analysis/normalize
 
 imports
   libstrc
-  include/NameBindingLanguage2
+  src-gen/signatures/-
+  src-gen/signatures/constraints/-
+  src-gen/pp/-
+  src-gen/pp/constraints/-
   util
 
 strategies
@@ -17,13 +20,21 @@ rules
        ; r*  := <filterconcat(?Rules(<map(normalize-rule)>))> section*
  
   normalize-rule:
-    Rule(pattern, With(s*), part*) -> 
-    Rule(pattern, With(s'*), [Where(w*), Create(c*), Visit(v*)])
-    with w* := <filterconcat(?Where(<id>))> part*
-       ; c* := <filterconcat(?Create(<id>))> part*
-       ; v* := <filterconcat(?Visit(<id>))> part* 
-       ; s'* := <qsort((var-name,var-name);string-lt)> s*
+    Rule(pattern, With(s*), w*, c*, v*) ->
+    Rule(pattern, With(s'*), w*, c*, v*)
+    with s'* := <qsort((var-name,var-name);string-lt)> s*
 
   normalize-rule:
-    VisitClause(v, Args(a*)) -> VisitClause(v, Args(a'*))
-    with a'* := <qsort((?Arg(<id>,_);?Arg(<id>,_));string-lt)> a*
+    Rule(pattern, With(s*), part*) -> 
+    Rule(pattern, With(s'*), w*, c*, v*)
+    with w*  := <filter(is-Constraint)> part*
+       ; c* := <filter(is-Fact; try(normalize-fact))> part*
+       ; v*  := <filter(is-VisitClause; normalize-visit)> part* 
+       ; s'* := <qsort((var-name,var-name);string-lt)> s*
+  
+  normalize-fact:
+    Scope(s, None()) -> Scope(s, NoParent())
+    
+  normalize-visit:
+    Visit(v, Args(a*)) -> Visit(v, Args(a'*))
+    with a'* := <qsort((?Arg(<id>,_),?Arg(<id>,_));string-lt)> a*

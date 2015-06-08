@@ -11,3 +11,4 @@ rules
   to-outline-label = ?Rule(<id>, _, _)
   to-outline-label = ?Op(<id>, _)
   to-outline-label = ?OpQ(<id>, _)
+  to-outline-label = ?Rule(<id>, _, _, _, _)

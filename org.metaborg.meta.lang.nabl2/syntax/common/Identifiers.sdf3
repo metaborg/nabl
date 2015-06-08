@@ -37,5 +37,3 @@ lexical syntax
 
   Keyword = "module" 
   Keyword = "rules" 
-  Keyword = "namespaces" 
-  Keyword = "properties" 
