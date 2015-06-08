@@ -1,10 +1,10 @@
-module formulas/Constraints
+module constraints/Constraints
 
 imports 
 
   terms/Terms 
   terms/Vars  
-  formulas/Messages
+  constraints/Messages
   
 context-free syntax
 

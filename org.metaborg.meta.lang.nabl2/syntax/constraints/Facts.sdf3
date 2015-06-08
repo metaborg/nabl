@@ -1,0 +1,30 @@
+module constraints/Facts
+
+imports 
+
+  terms/Terms 
+  terms/Vars  
+  
+context-free syntax
+
+  Fact.Scope       = <scope <Var> <Parent>>
+  Fact.Declaration = <declaration <Term> <InScope> <AssocScope>>
+  Fact.Reference   = <reference <Term> <InScope>>
+  Fact.Import      = <import <Term> <IntoScope>>
+  Fact.ImportScope = <import from <VarRef> <IntoScope>>
+
+  InScope.CurrentScope = 
+  InScope.InScope      = <in <VarRef>>
+
+  IntoScope.CurrentScope = 
+  IntoScope.IntoScope    = <into <VarRef>>
+
+  AssocScope.None  = 
+  AssocScope.Assoc = <with associated scope <VarRef>>
+  
+  Parent.NoParent = <without parent>
+  Parent.Parent   = <with parent <VarRef>>
+  
+  // sugar
+  Parent.None     = 
+  

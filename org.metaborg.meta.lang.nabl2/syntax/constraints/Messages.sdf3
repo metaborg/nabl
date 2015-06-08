@@ -1,4 +1,4 @@
-module formulas/Messages
+module constraints/Messages
 
 imports
 

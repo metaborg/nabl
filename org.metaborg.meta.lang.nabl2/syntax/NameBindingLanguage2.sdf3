@@ -4,10 +4,11 @@ imports
 
 	common/Layout
 	common/Identifiers
+  core/Modules
   terms/Terms
   terms/Vars
-  formulas/Constraints
-  core/Modules
+  constraints/Constraints
+  constraints/Facts
     
 context-free start-symbols
 
@@ -31,29 +32,9 @@ context-free syntax
   With.None =
   With.With = <with <{Var ","}+>>
 
-  Part.Where = <where <{Constraint "and"}+>>
-
+  Part.Where  = <where <{Constraint "and"}+>>
   Part.Create = <create <{Fact "and"}+>>
-  
-  Fact.Scope       = <scope <Var> <Parent>>
-  Fact.Declaration = <declaration <Term> <InScope> <AssocScope>>
-  Fact.Reference   = <reference <Term> <InScope>>
-  Fact.Import      = <import <Term> <IntoScope>>
-  Fact.ImportScope = <import from <VarRef> <IntoScope>>
-
-  InScope.CurrentScope = <>
-  InScope.InScope = <in <VarRef>>
-
-  IntoScope.CurrentScope = <>
-  IntoScope.IntoScope = <into <VarRef>>
-
-  AssocScope.None = 
-  AssocScope.Assoc = <with associated scope <VarRef>>
-  
-  Parent.None   = 
-  Parent.Parent = <with parent <VarRef>>
-  
-  Part.Visit = <visit <{VisitClause "and"}+>>
+  Part.Visit  = <visit <{VisitClause "and"}+>>
 
   VisitClause.VisitClause = <<Term> <Args>>
   
