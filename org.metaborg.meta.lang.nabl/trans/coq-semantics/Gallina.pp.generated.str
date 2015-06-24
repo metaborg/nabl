@@ -2,7 +2,7 @@ module Gallina.pp.generated
 
 imports 
   libstratego-gpp
-  lib/runtime/tmpl/-
+  runtime/tmpl/-
 
 imports
   coq-semantics/Coq
