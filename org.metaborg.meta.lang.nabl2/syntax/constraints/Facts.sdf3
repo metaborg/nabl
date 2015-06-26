@@ -4,14 +4,15 @@ imports
 
   terms/Terms 
   terms/Vars  
+  constraints/Constraints
   
 context-free syntax
 
-  Fact.Scope       = <scope <Var> <Parent>;>
-  Fact.Declaration = <declaration <Term> <InScope> <AssocScope>;>
-  Fact.Reference   = <reference <Term> <InScope>;>
-  Fact.Import      = <import <Term> <IntoScope>;>
-  Fact.ImportScope = <import from <VarRef> <IntoScope>;>
+  Fact.Scope       = <new scope <Var> <Parent>>
+  Fact.Declaration = <declares <Term> <InScope> <AssocScope>>
+  Fact.Reference   = <references <Term> <InScope>>
+  Fact.Import      = <imports <Term> <IntoScope>>
+  Fact.ImportScope = <imports from <VarRef> <IntoScope>>
 
   InScope.CurrentScope = 
   InScope.InScope      = <in <VarRef>>
@@ -27,6 +28,9 @@ context-free syntax
   
   // sugar
   Parent.None     = 
+
+  Fact.HasType = <<VarRef> : <Type>> 
+  Fact.SubType = [[VarRef] <: [Type]] 
   
 lexical syntax
 

@@ -24,36 +24,38 @@ context-free syntax
     <Rule*>
   >
 
-  // sugar
   Rule.Rule = <
     <Pattern> <With>:
-      <Part*>
+      <{Part ","}*>
+      <Where>
+  >
+  
+  Rule.TypeRule = <
+    <Pattern>:<Type>
+    <Where>
   >
 
-  Rule.Rule = <
-    <Pattern> <With>:
-	    where 
-	      <Constraint*>
-	    create 
-	      <Fact*>
-	    visit 
-	      <VisitClause*>
-  >  {avoid}
-
   With.None =
-  With.With = <with <{Var ","}+>>
+  With.With = [<[{Var ","}+]>]
+  With.Scope = <in scope <Var>>
+  With.Scopes = <in scopes <{Var ","}+>>
+  
+  Where.None  =
+  Where.Where = {Constraint ","}*
 
-  Part = Constraint
   Part = Fact
   Part = VisitClause
   
-  VisitClause.Visit = <<Term> <Args>;>
+  VisitClause.Scopes = <<VarRef> scopes <Term>>
+  VisitClause.Scope = <<{VarRef ","}+> scope <Term>>
+  VisitClause.Visit = <<Term><Args>;>
+  
+  VarRef.AttrRef = <<VarRef>.<VarRef>>
   
   Args.None =
-  Args.Args = <with <{Arg ","}+>>
-  
-  Arg.Arg = <<Var> = <VarRef>>
+  Args.Args = [<[{VarRef ","}+]>]
   
 lexical syntax
 
   SectionKeyword = "rules"
+  SectionKeyword = "into"
