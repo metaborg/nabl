@@ -10,5 +10,5 @@ rules
   visit-to-appl:
     Visit(v, Args(arg*)) -> |[<s> ~v ]|
     with
-      scope* := <map(?Arg(_, <id>))> arg*;
+      scope* := arg*;
       s := |[ nabl-ts-traverse(|constraints,[~scope*]) ]|

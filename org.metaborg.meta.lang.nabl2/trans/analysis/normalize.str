@@ -17,24 +17,28 @@ rules
   normalize-module:
     Module(name, section*) -> Module(name, [Imports(i*), Rules(r*)])
     with i*  := <filterconcat(?Imports(<id>))> section*
-       ; r*  := <filterconcat(?Rules(<map(normalize-rule)>))> section*
- 
-  normalize-rule:
-    Rule(pattern, With(s*), w*, c*, v*) ->
-    Rule(pattern, With(s'*), w*, c*, v*)
-    with s'* := <qsort((var-name,var-name);string-lt)> s*
+       ; r*  := <filterconcat(?Rules(<map(try(normalize-rule))>))> section*
 
   normalize-rule:
-    Rule(pattern, With(s*), part*) -> 
-    Rule(pattern, With(s'*), w*, c*, v*)
-    with w*  := <filter(is-Constraint)> part*
-       ; c* := <filter(is-Fact; try(normalize-fact))> part*
-       ; v*  := <filter(is-VisitClause; normalize-visit)> part* 
-       ; s'* := <qsort((var-name,var-name);string-lt)> s*
+    Rule(pattern, scopes, part*, constr) ->
+    Rule(pattern, scope*, part'*, constr*)
+    with part'*  := <map(try(normalize-fact + normalize-visit))> part*
+       ; scope*  := <normalize-scope> scopes
+       ; constr* := <normalize-constraint> constr
   
   normalize-fact:
     Scope(s, None()) -> Scope(s, NoParent())
+  
+  normalize-visit:
+    Scopes(v, t) -> Scope([v], t)
     
   normalize-visit:
-    Visit(v, Args(a*)) -> Visit(v, Args(a'*))
-    with a'* := <qsort((?Arg(<id>,_),?Arg(<id>,_));string-lt)> a*
+    Scope(v, t) -> Scope(v, t)
+    
+  normalize-scope: None()         -> []
+  normalize-scope: Scope(scope)   -> [scope]
+  normalize-scope: Scopes(scope*) -> scope*
+  normalize-scope: With(scope*)   -> scope*
+  
+  normalize-constraint: None()    -> []
+  normalize-constraint: Where(c*) -> c*
