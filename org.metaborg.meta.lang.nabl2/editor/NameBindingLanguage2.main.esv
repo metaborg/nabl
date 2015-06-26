@@ -19,7 +19,7 @@ language General properties
   description:   "Spoofax-generated editor for the NameBindingLanguage2 language"
   url:           http://strategoxt.org
   
-  extensions:    nab2
+  extensions:    nab2, ts2
   table:         include/NameBindingLanguage2.tbl
   start symbols: Start
   
