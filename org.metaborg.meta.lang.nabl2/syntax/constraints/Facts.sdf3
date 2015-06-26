@@ -40,4 +40,5 @@ lexical syntax
   Keyword = "import"
   Keyword = "with"
   Keyword = "without"
+  Keyword = "new"
   
