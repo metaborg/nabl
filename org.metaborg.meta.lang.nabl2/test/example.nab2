@@ -18,20 +18,19 @@ rules
 
   LetPar(b*, e) in scope s:
     new scope s' with parent s,
-    s' scopes b*,
+    s, s' scope b*,
     s' scopes e
-//     
-//   LetRec(b*, e) with s:
-//     create scope s' with parent s
-//     s' scopes b* with ds=s'
-//     s' scopes e
-//     // s' scopes e
-//     // current scope scopes b* with ds=s'
-//     
-//   Bind(x, e) with ds:
-//     create declaration x in ds
-//     visit e  
-//   
+    
+  LetRec(b*, e) in scope s:
+    new scope s' with parent s,
+    s', s' scope b*,
+    s' scopes e,
+    s' scopes e
+    
+  Bind(x, e) in scopes s, ds:
+    declares x in ds,
+    s scopes e  
+  
 //   Let(x, e1, e2):
 //     create scope s
 //     declares x in s

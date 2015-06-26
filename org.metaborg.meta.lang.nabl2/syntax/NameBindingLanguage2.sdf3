@@ -36,7 +36,7 @@ context-free syntax
   >
 
   With.None =
-  With.With = [<[{Var ","}+]>]
+  // With.With = [<[{Var ","}+]>]
   With.Scope = <in scope <Var>>
   With.Scopes = <in scopes <{Var ","}+>>
   
@@ -48,7 +48,7 @@ context-free syntax
   
   VisitClause.Scopes = <<VarRef> scopes <Term>>
   VisitClause.Scope = <<{VarRef ","}+> scope <Term>>
-  VisitClause.Visit = <<Term><Args>;>
+  // VisitClause.Visit = <<Term><Args>;>
   
   VarRef.AttrRef = <<VarRef>.<VarRef>>
   

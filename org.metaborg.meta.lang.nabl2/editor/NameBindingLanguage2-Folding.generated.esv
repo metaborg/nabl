@@ -24,7 +24,6 @@ folding Default folding definitions
   ModuleSection.Imports
   ModuleSection.Rules
   Rule.Rule
-  With.With
   With.Scopes
   Fact.Declaration
   Fact.Reference
@@ -35,8 +34,6 @@ folding Default folding definitions
   Fact.SubType
   VisitClause.Scopes
   VisitClause.Scope
-  VisitClause.Visit
-  Args.Args
   Where.Where
   BaseConstraint.Match
   BaseConstraint.HasType
