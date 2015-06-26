@@ -8,7 +8,8 @@ imports
 rules
   
   to-outline-label = ?Module(<id>, _)
-  to-outline-label = ?Rule(<id>, _, _)
+  to-outline-label = ?Rule(<id>, _, _, _)
   to-outline-label = ?Op(<id>, _)
   to-outline-label = ?OpQ(<id>, _)
-  to-outline-label = ?Rule(<id>, _, _, _, _)
+  to-outline-label = ?Type(<id>, _)
+  to-outline-label = ?Scope(_, <id>)
