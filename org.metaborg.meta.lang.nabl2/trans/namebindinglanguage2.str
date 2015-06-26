@@ -15,10 +15,10 @@ imports
 	lib/runtime/task/-
 	lib/runtime/analysis/-
 	lib/runtime/editor/-
-	names
-	check
+	// names
+	// check
   analysis/normalize
-	generation/main
+	// generation/main
 	pp
 
 rules // Analysis
@@ -30,7 +30,7 @@ rules // Analysis
 	analysis-multiple-default-interface = 
 		analysis-multiple-default(parse-file <+ !(), id, normalize-all, id|<language>, <project-path>)
 	
-	editor-save = where(analysis-save-default(|<language>)); generate-collection
+	editor-save = where(analysis-save-default(|<language>))//; generate-collection
 
 rules // Editor services
 	
