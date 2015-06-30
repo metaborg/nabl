@@ -6,82 +6,65 @@ rules
     new scope s,
     s scopes dec*
   
-  Module(m, d*):
-    new scope s' with parent s,
+  Module(m, d*) in scope s:
+    new scope ms with parent s,
     declares m in s 
-           with associated scope s',
-    s' scopes d*
+      with associated scope ms,
+    ms scopes d*
     
   Import(m) in scope s:
     references m in s,
     imports m into s
 
   LetPar(b*, e) in scope s:
-    new scope s' with parent s,
-    s, s' scope b*,
-    s' scopes e
+    new scope ds with parent s,
+    ds, s scope b*,
+    ds scopes e
     
   LetRec(b*, e) in scope s:
-    new scope s' with parent s,
-    s', s' scope b*,
-    s' scopes e,
-    s' scopes e
+    new scope ds with parent s,
+    ds, ds scope b*,
+    ds scopes e
     
-  Bind(x, e) in scopes s, ds:
+  Bind(x, e) in scopes ds, rs:
     declares x in ds,
-    s scopes e  
+    rs scopes e  
+
+  LetSeq(b*, e) in scope s:
+    s scopes LetSeq2(b*, e)
+      
+  LetSeq2([b|b*], e) in scope s:
+    new scope ds with parent s,
+    s, ds scope b,
+    ds scopes LetSeq2(b*, e)
+ 
+  LetSeq2([], e) in scope s:
+    s scopes e
+    
+  VarRef(x) in scope s:
+    references x in s
+    
+  FieldRef(e, f) in scope s:
+    new scope s',
+    imports es into s',
+    references f in s',
+    s scopes e
+	where 
+	  e has type ty,
+	  ty == TRec(d),
+	  d has associated scope es
   
-//   Let(x, e1, e2):
-//     create scope s
-//     declares x in s
-//     s scopes e2
-//     
-//   LetSeq([], e) with s:
-//     visit e with s=s
-//   
-//   LetSeq([b|b*], e):
-//     create scope s'
-//     b.ds=s' 
-//     s' scopes LetSeq(b*, e)
-//   
-//   LetSeq2(b*, e):
-//     visit b* returns s
-//     s scopes e
-//   
-//   [BindSeq(x, e)|b*]:
-//     create scope s
-//     declares x in s
-//     visit b* with s, returns s2
-//     returns s2
-//     
-//   VarRef(x) with s:
-//     create reference x in s
-//     
-//   FieldRef(e, f) with s:
-//     create scope s' 
-//     create import es into s'
-//     create reference f in s'
-//     visit e with s=s
-// 	  where e has type ty
-// 	    and ty == TRec(d)
-// 	    and d has associated scope es
-//   
-//   New(r, i*):
-//     create reference r
-//     visit i* with rs=s
-// 	  where r resolves to d
-// 	    and d has associated scope s
-//      
-//   // new R(x1 = y1, x2 = y2)
-//   RecInit(x, e) with rs:
-//     create reference x in rs
-//     visit e
-// 
-//   LetRec2(b*, e):
-//     create scope s'
-//     s' scopes
-//         
-//   RecBind(x, e):
-//     declares x
-//     
-// 
+  New(r, i*) in scope s:
+    references r in s,
+    s, rs scope i*
+	where 
+    r resolves to d,
+	  d has associated scope rs
+     
+  // new R(x1 = y1, x2 = y2)
+  RecInit(x, e) in scopes s, rs:
+    references x in rs,
+    s scopes e
+
+  RecBind(x, e) in scope s:
+    declares x in s

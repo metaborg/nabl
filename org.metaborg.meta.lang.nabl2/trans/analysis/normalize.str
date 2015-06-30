@@ -11,7 +11,11 @@ imports
 strategies
    
   normalize-all = normalize-module
-  
+
+signature constructors
+  	
+	Rule: Pattern * List(Var) * List(Fact) * List(Visit) * List(Constraint) -> Rule
+  	  
 rules
   
   normalize-module:
@@ -21,24 +25,28 @@ rules
 
   normalize-rule:
     Rule(pattern, scopes, part*, constr) ->
-    Rule(pattern, scope*, part'*, constr*)
-    with part'*  := <map(try(normalize-fact + normalize-visit))> part*
-       ; scope*  := <normalize-scope> scopes
-       ; constr* := <normalize-constraint> constr
+    Rule(pattern, scope*, fact*, visit*, constr*)
+    with scope*  := <normalize-scopes> scopes
+       ; fact*   := <filter(normalize-fact <+ is-Fact)> part*
+       ; visit*  := <filter(normalize-visit <+ is-Visit)> part* 
+       ; constr* := <normalize-constraints> constr
+  
+  normalize-rule:
+    TypeRule(pattern, scopes, type, fact*, constr) ->
+    TypeRule(pattern, scope*, type, fact'*, constr*)
+    with scope*  := <normalize-scopes> scopes
+       ; fact'*  := <filter(normalize-fact)> fact*
+       ; constr* := <normalize-constraints> constr
   
   normalize-fact:
-    Scope(s, None()) -> Scope(s, NoParent())
+    NewScope(s, None()) -> NewScope(s, NoParent())
   
   normalize-visit:
     Scopes(v, t) -> Scope([v], t)
     
-  normalize-visit:
-    Scope(v, t) -> Scope(v, t)
-    
-  normalize-scope: None()         -> []
-  normalize-scope: Scope(scope)   -> [scope]
-  normalize-scope: Scopes(scope*) -> scope*
-  normalize-scope: With(scope*)   -> scope*
+  normalize-scopes: None()         -> []
+  normalize-scopes: Scope(scope)   -> [scope]
+  normalize-scopes: Scopes(scope*) -> scope*
   
-  normalize-constraint: None()    -> []
-  normalize-constraint: Where(c*) -> c*
+  normalize-constraints: None()    -> []
+  normalize-constraints: Where(c*) -> c*

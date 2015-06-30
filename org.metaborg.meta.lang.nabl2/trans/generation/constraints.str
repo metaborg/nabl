@@ -8,8 +8,18 @@ imports
 rules
   
   constraint-to-strategies:
-    HasType(_, v) -> [ |[ ~v := TVar(<NewTVar>) ]| ]
+    HasType(_, type) -> str*
+    with var* := <collect-all(?Var(_) + ?ListVar(_))> type
+       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
+         
+  constraint-to-strategies:
+    c@LubType(type1, type2, type3) -> str*
+    with var* := <collect-all(?Var(_) + ?ListVar(_))> c
+       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
   
+  var-to-strategy:
+    VarRef(v) -> |[ ~v := TVar(<NewTVar>) ]|
+      
   constraint-to-strategies:
     Resolves(_, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
     
@@ -43,7 +53,15 @@ rules
     Message(_, _, t) -> Term |[ <get-position> t ]|
       
   constraint-to-term(|msg):
-    HasType(v, tv) -> Term |[ CTypeOf(~v, ~tv, ~msg) ]|
+    HasType(v, t) -> Term |[ CTypeOf(<get-type-var(|tvars)> ~v, ~tp, ~msg) ]|
+    with tp := <try(type-pattern)> t
+  
+  constraint-to-term(|msg):
+    LubType(t1, t2, t3) -> Term |[ CLubType(~tp1, ~tp2, ~tp3, ~msg) ]|
+    with tp1 := <try(type-pattern)> t1
+       ; tp2 := <try(type-pattern)> t2
+       ; tp3 := <try(type-pattern)> t3
+   
    
   constraint-to-term(|msg):
     Resolves(v, dv) -> Term |[ CResolves(~v, ~dv, ~msg) ]|
@@ -56,10 +74,17 @@ rules
   	with tp := <try(type-pattern)> pattern
   	
   type-pattern:
-  	Op(tc, t*) -> Term |[ TApp(~tc', ~tp*) ]|
-  	with tc' := Str(<double-quote> tc)
-  	   ; tp* := <map(try(type-pattern))> t*
-  	     
+  	Type(tc, None(), t*) -> Term |[ TApp(~tc', [~tp*]) ]|
+  	with 
+  	  tc' := Op(tc, [])
+  	; tp* := <alltd(try(wld-var))> t*
+  
   type-pattern:
+    Type(tc, cp*, t*) -> Term |[ TApp(~tc', [~tp*]) ]|
+    with 
+      tc' := Op(tc, cp*)
+    ; tp* := <alltd(try(wld-var))> t*
+       
+  wld-var:
   	Wld() -> Term |[ TVar(<NewTVar>) ]|
   	

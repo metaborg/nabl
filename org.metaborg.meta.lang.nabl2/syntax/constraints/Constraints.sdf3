@@ -3,15 +3,17 @@ module constraints/Constraints
 imports 
 
   terms/Terms 
-  terms/Vars  
+  terms/Vars
+  common/Identifiers  
   constraints/Messages
   
 context-free syntax
 
-  BaseConstraint.Match   = [[VarRef] == [Pattern]] 
+  BaseConstraint.Match   = [[VarRef] == [Type]] 
   BaseConstraint.HasType = <<VarRef> has type <Type>> 
   BaseConstraint.HasType = <<VarRef> : <Type>> 
-  BaseConstraint.SubType = [[VarRef] <: [Type]] 
+  BaseConstraint.SubType = [[Type] <: [Type]] 
+  BaseConstraint.LubType = [[Type] == lub ([Type], [Type])] {prefer} 
   BaseConstraint.Resolves = <<VarRef> resolves to <Var>>
   BaseConstraint.HasScope = <<Term> has associated scope <Var>>
 
@@ -19,6 +21,8 @@ context-free syntax
   Constraint.Success = <<BaseConstraint> and <Message>>
   Constraint.Failure = <<BaseConstraint> else <Message>>
   
-  Type      = Pattern
+  Type      = Var
+  Type.Type = <<Id><TypeParam>(<{Pattern ","}*>)> 
   
-  Type.Type = <<Pattern>[<{Pattern ","}*>]>  
+  TypeParam.None =
+  TypeParam      = <[<{Pattern ","}*>]>

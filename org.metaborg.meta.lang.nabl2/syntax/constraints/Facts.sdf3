@@ -8,12 +8,13 @@ imports
   
 context-free syntax
 
-  Fact.Scope       = <new scope <Var> <Parent>>
+  Fact.NewScope    = <new scope <Var> <Parent>>
   Fact.Declaration = <declares <Term> <InScope> <AssocScope>>
   Fact.Reference   = <references <Term> <InScope>>
   Fact.Import      = <imports <Term> <IntoScope>>
   Fact.ImportScope = <imports from <VarRef> <IntoScope>>
-
+  Fact.Subtype     = [[Type] <: [Type]]
+  
   InScope.CurrentScope = 
   InScope.InScope      = <in <VarRef>>
 

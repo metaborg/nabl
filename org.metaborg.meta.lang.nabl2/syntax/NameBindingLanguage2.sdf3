@@ -25,35 +25,29 @@ context-free syntax
   >
 
   Rule.Rule = <
-    <Pattern> <With>:
+    <Pattern> <Scopes>:
       <{Part ","}*>
       <Where>
-  >
+  > {prefer}
   
   Rule.TypeRule = <
-    <Pattern>:<Type>
+    <Pattern> <Scopes>:<Type>
+      <{Fact ","}*>
     <Where>
   >
 
-  With.None =
-  // With.With = [<[{Var ","}+]>]
-  With.Scope = <in scope <Var>>
-  With.Scopes = <in scopes <{Var ","}+>>
+  Scopes.None =
+  Scopes.Scope = <in scope <Var>>
+  Scopes.Scopes = <in scopes <{Var ","}+>>
   
   Where.None  =
-  Where.Where = {Constraint ","}*
+  Where.Where = <where <{Constraint ","}+>>
 
   Part = Fact
-  Part = VisitClause
+  Part = Visit
   
-  VisitClause.Scopes = <<VarRef> scopes <Term>>
-  VisitClause.Scope = <<{VarRef ","}+> scope <Term>>
-  // VisitClause.Visit = <<Term><Args>;>
-  
-  VarRef.AttrRef = <<VarRef>.<VarRef>>
-  
-  Args.None =
-  Args.Args = [<[{VarRef ","}+]>]
+  Visit.Scopes = <<VarRef> scopes <Term>>
+  Visit.Scope = <<{VarRef ","}+> scope <Term>>
   
 lexical syntax
 

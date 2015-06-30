@@ -4,11 +4,12 @@ imports
   
   libstrc
   include/NameBindingLanguage2
-
+  generation/constraints
+  
 rules
   
   fact-to-strategy:
-    Scope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
+    NewScope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
 
 rules
     
@@ -32,11 +33,17 @@ rules
     ImportScope(v, IntoScope(scope)) -> [ Term |[ FImportS(~v, ~scope) ]| ]
   
   fact-to-terms:
-    Scope(scope, NoParent()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
+    NewScope(scope, NoParent()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
   
   fact-to-terms:
-    Scope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]
+    NewScope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]
   
+  fact-to-terms:
+  	Subtype(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
+  	with
+  	  ty1' := <type-pattern> ty1
+  	; ty2' := <type-pattern> ty2
+      
   assoc-scope-to-terms(|decl):
     None() -> []
     

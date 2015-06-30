@@ -18,7 +18,7 @@ imports
 	// names
 	// check
   analysis/normalize
-	// generation/main
+	generation/main
 	pp
 
 rules // Analysis
