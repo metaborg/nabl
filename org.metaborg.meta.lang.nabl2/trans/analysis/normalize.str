@@ -41,10 +41,16 @@ rules
   normalize-fact:
     NewScope(s, None()) -> NewScope(s, NoParent())
   
+  normalize-fact:
+    Declaration(d, CurrentScope(), assoc) -> Declaration(d, InScope(Var("current")), assoc)
+  
+  normalize-fact:
+    Reference(r, CurrentScope()) -> Reference(r, InScope(Var("current")))
+  	
   normalize-visit:
     Scopes(v, t) -> Scope([v], t)
     
-  normalize-scopes: None()         -> []
+  normalize-scopes: None()         -> [Var("current")]
   normalize-scopes: Scope(scope)   -> [scope]
   normalize-scopes: Scopes(scope*) -> scope*
   
