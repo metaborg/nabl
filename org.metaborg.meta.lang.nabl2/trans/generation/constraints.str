@@ -17,6 +17,9 @@ rules
     with var* := <collect-all(?Var(_) + ?ListVar(_))> c
        ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
   
+  constraint-to-strategies:
+    c@SubType(type1, type2) -> []
+    
   var-to-strategy:
     VarRef(v) -> |[ ~v := TVar(<NewTVar>) ]|
       
@@ -63,7 +66,9 @@ rules
        ; tp2 := <try(type-pattern)> t2
        ; tp3 := <try(type-pattern)> t3
    
-   
+  constraint-to-term(|msg):
+    SubType(t1, t2) -> Term |[ CSubType(~t1, ~t2, ~msg) ]|
+       
   constraint-to-term(|msg):
     Resolves(v, dv) -> Term |[ CResolves(~v, ~dv, ~msg) ]|
    

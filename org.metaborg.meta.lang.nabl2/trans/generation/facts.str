@@ -39,7 +39,7 @@ rules
     NewScope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]
   
   fact-to-terms:
-  	Subtype(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
+  	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
   	with
   	  ty1' := <type-pattern> ty1
   	; ty2' := <type-pattern> ty2

@@ -18,10 +18,26 @@ rules // binding rules
     Rules(r*) -> Rules(<map(rule-to-strategy)> r*)
  
   rule-to-strategy:
+    Rule(pattern, scope*, fact*, [], constr*) ->
+    |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
+         ~pattern -> <fail>
+         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+         with position := <get-position>
+         with ~var
+         with <iset-addlist(|[~fcoll*])> facts
+            ;  <iset-addlist(|[~ccoll*])> constraints
+    ]|
+    with fvar* := <filter(fact-to-strategy)> fact*
+       ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
+       ; var   := <to-seq> [fvar*, cvar*]
+    with fcoll* := <mapconcat(fact-to-terms)> fact* 
+       ; ccoll* := <map(constraint-to-term(|Var("position")))> constr* 
+
+  rule-to-strategy:
     Rule(pattern, scope*, fact*, visit*, constr*) ->
     |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
-    	   ~pattern -> <id>
-         with [~scope*] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+         ~pattern -> <id>
+         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
          with position := <get-position>
          with ~var
          with <iset-addlist(|[~fcoll*])> facts
@@ -33,17 +49,14 @@ rules // binding rules
        ; var   := <to-seq> [fvar*, cvar*]
     with fcoll* := <mapconcat(fact-to-terms)> fact* 
        ; ccoll* := <map(constraint-to-term(|Var("position")))> constr* 
-    with if [] := visit* then
-           visit := |[ nabl-ts-traverse-children(|tvars,facts,constraints,scopes) ]|
-         else      
-           visit := <map(visit-to-appl); to-seq> visit*
-         end
-         
+    where [_|_] := visit*
+    with visit := <map(visit-to-appl); to-seq> visit*
+
    rule-to-strategy:
     TypeRule(pattern, scope*, type, fact*, constr*) ->
     |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
          ~pattern -> <fail>
-         with [~scope*] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
          with position := <get-position>
          with type-var := <get-type-var(|tvars)>
          with ~var

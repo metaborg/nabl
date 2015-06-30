@@ -12,7 +12,7 @@ context-free syntax
   BaseConstraint.Match   = [[VarRef] == [Type]] 
   BaseConstraint.HasType = <<VarRef> has type <Type>> 
   BaseConstraint.HasType = <<VarRef> : <Type>> 
-  BaseConstraint.SubType = [[Type] <: [Type]] 
+  BaseConstraint.SubType = [[VarRef] <: [VarRef]] 
   BaseConstraint.LubType = [[Type] == lub ([Type], [Type])] {prefer} 
   BaseConstraint.Resolves = <<VarRef> resolves to <Var>>
   BaseConstraint.HasScope = <<Term> has associated scope <Var>>
@@ -26,3 +26,7 @@ context-free syntax
   
   TypeParam.None =
   TypeParam      = <[<{Pattern ","}*>]>
+  
+lexical syntax
+
+  Keyword = "where"

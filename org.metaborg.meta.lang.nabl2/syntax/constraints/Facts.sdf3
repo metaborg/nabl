@@ -13,8 +13,7 @@ context-free syntax
   Fact.Reference   = <references <Term> <InScope>>
   Fact.Import      = <imports <Term> <IntoScope>>
   Fact.ImportScope = <imports from <VarRef> <IntoScope>>
-  Fact.Subtype     = [[Type] <: [Type]]
-  
+   
   InScope.CurrentScope = 
   InScope.InScope      = <in <VarRef>>
 
@@ -31,7 +30,7 @@ context-free syntax
   Parent.None     = 
 
   Fact.HasType = <<VarRef> : <Type>> 
-  Fact.SubType = [[VarRef] <: [Type]] 
+  Fact.SubType = [[Type] <: [Type]] 
   
 lexical syntax
 
