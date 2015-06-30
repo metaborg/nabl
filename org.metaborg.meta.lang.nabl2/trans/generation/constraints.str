@@ -51,9 +51,10 @@ rules
          
   message-to-term:
     Message(_, _, t) -> Term |[ <get-position> t ]|
-      
+  
+  // dynamic check could be avoided with proper static analysis
   constraint-to-term(|msg):
-    HasType(v, t) -> Term |[ CTypeOf(<get-type-var(|tvars)> ~v, ~tp, ~msg) ]|
+    HasType(v, t) -> Term |[ <get-type-constraint(|tvars, ~tp, ~msg)> ~v ]|
     with tp := <try(type-pattern)> t
   
   constraint-to-term(|msg):
