@@ -70,7 +70,9 @@ rules
     SubType(t1, t2) -> Term |[ CSubType(~t1, ~t2, ~msg) ]|
        
   constraint-to-term(|msg):
-    Resolves(v, dv) -> Term |[ CResolves(~v, ~dv, ~msg) ]|
+    Resolves(v, dv) -> Term |[ CResolves(~ref, ~dv, ~msg) ]|
+    with
+      ref := <term-to-ref> v
    
   constraint-to-term(|msg):
     HasScope(v, sv) -> Term |[ CAssoc(~v, ~sv, ~msg) ]|
@@ -94,3 +96,8 @@ rules
   wld-var:
   	Wld() -> Term |[ TVar(<NewTVar>) ]|
   	
+rules
+
+  term-to-decl: term -> Term |[ DeclId(None(), ~term, <get-position> ~term) ]|
+
+  term-to-ref: term -> Term |[ RefId(None(), ~term, <get-position> ~term) ]|

@@ -49,7 +49,3 @@ rules
     
   assoc-scope-to-terms(|decl):
     Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]  
-
-  term-to-decl: term -> Term |[ DeclId(None(), ~term, <get-position> ~term) ]|
-
-  term-to-ref: term -> Term |[ RefId(None(), ~term, <get-position> ~term) ]|
