@@ -1,0 +1,44 @@
+module rules/core/Facts
+
+imports 
+
+  terms/Terms 
+  terms/Vars  
+  rules/core/Constraints
+  rules/core/Scopes
+  
+context-free syntax
+
+  Fact.NewScope = <new scope <Var> in <ScopeRef>>
+
+context-free syntax
+
+  Fact.Declaration = <declares <Term> in <ScopeRef> <AssocScope>>
+  Fact.Reference   = <references <Term> in <ScopeRef>>
+
+  AssocScope.None  = 
+  AssocScope.Assoc = <with associated scope <ScopeRef>>
+  
+context-free syntax
+
+  Fact.Import      = <imports <Term> into <ScopeRef>>
+  Fact.ImportScope = <imports from <ScopeRef> into <ScopeRef>>
+
+context-free syntax
+
+  Fact.HasType = <declares <DeclRef> : <Type>> 
+  Fact.SubType = [declares [Type] <: [Type]] 
+  
+  DeclRef        = VarRef
+  DeclRef.DeclOf = <declaration of <Term>>
+   
+lexical syntax
+
+  Keyword = "scope"
+  Keyword = "declaration"
+  Keyword = "reference"
+  Keyword = "import"
+  Keyword = "with"
+  Keyword = "without"
+  Keyword = "new"
+  

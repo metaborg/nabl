@@ -1,0 +1,33 @@
+module rules/core/Constraints
+
+imports 
+
+  terms/Terms 
+  terms/Vars
+  common/Identifiers  
+  rules/core/Messages
+  rules/core/Facts
+  
+context-free syntax
+
+  Constraint         = <<BaseConstraint>>
+  Constraint.Success = <<BaseConstraint> and <Message>>
+  Constraint.Failure = <<BaseConstraint> else <Message>>
+
+context-free syntax
+
+  BaseConstraint.Match    = [[VarRef] == [Type]]
+  BaseConstraint.DeclOf   = [[VarRef] == [DeclRef]] {avoid} 
+  BaseConstraint.HasType  = <<DeclRef> : <Type>> 
+  BaseConstraint.SubType  = [[VarRef] <: [VarRef]] 
+  BaseConstraint.LubType  = [[Type] == lub ([Type], [Type])] {prefer} 
+  BaseConstraint.HasScope = [[DeclRef] is associated with scope [Var]]
+
+context-free syntax
+  
+  Type      = Var
+  Type.TApp = <<Id>[<{Pattern ","}*>](<{Pattern ","}*>)> 
+  
+lexical syntax
+
+  Keyword = "where"

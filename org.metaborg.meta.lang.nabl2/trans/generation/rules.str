@@ -3,8 +3,7 @@ module generation/rules
 imports
   
   libstrc
-  src-gen/signatures/-
-  src-gen/signatures/constraints/-
+  src-gen/signatures/rules/core/-
   src-gen/signatures/terms/-
   analysis/-
   util
@@ -18,7 +17,7 @@ rules // binding rules
     Rules(r*) -> Rules(<map(rule-to-strategy)> r*)
  
   rule-to-strategy:
-    Rule(pattern, scope*, fact*, [], constr*) ->
+    ScopeRule(pattern, InScopes(scope*), fact*, [], constr*) ->
     |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
          ~pattern -> <fail>
          with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
@@ -34,7 +33,7 @@ rules // binding rules
        ; ccoll* := <map(constraint-to-term(|Var("position")))> constr* 
 
   rule-to-strategy:
-    Rule(pattern, scope*, fact*, visit*, constr*) ->
+    ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
     |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
          ~pattern -> <id>
          with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
@@ -53,19 +52,15 @@ rules // binding rules
     with visit := <map(visit-to-appl); to-seq> visit*
 
    rule-to-strategy:
-    TypeRule(pattern, scope*, type, fact*, constr*) ->
+    TypeRule(pattern, type, constr*) ->
     |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
          ~pattern -> <fail>
-         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
          with position := <get-position>
          with type-var := <get-type-var(|tvars)>
          with ~var
-         with <iset-addlist(|[~fcoll*])> facts
-            ; <iset-addlist(|[~ccoll*])> constraints
+         with <iset-addlist(|[~ccoll*])> constraints
     ]|
-    with fvar* := <filter(fact-to-strategy)> fact*
-       ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
-       ; var   := <to-seq> [fvar*, cvar*]
-    with fcoll* := <mapconcat(fact-to-terms)> fact* 
-       ; ccoll* := <map(constraint-to-term(|Var("position")))> [Match(VarRef("type-var"), type)|constr*]
+    with cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
+       ; var   := <to-seq> cvar*
+    with ccoll* := <map(constraint-to-term(|Var("position")))> [Match(VarRef("type-var"), type)|constr*]
          

@@ -1,0 +1,64 @@
+module analysis/desugar
+
+imports
+  src-gen/signatures/terms/-
+  src-gen/signatures/rules/core/-
+  src-gen/signatures/rules/sugar/-
+  src-gen/pp/rules/core/-
+
+signature constructors
+  
+  ScopeRule: Pattern * Context * List(Fact) * List(Scope) * Constraints -> Rule
+
+strategies
+  
+  desugar-all = bottomup(try(desugar-nabl)); alltd(pass-current)
+  
+rules // rules
+  
+  desugar-nabl:
+    ScopeRule(pattern, context, fact-scope*, constraint*) -> 
+    ScopeRule(pattern, context, fact*, scope*, constraint*)
+    with
+      (fact*, scope*) := <partition(is-Fact)> fact-scope*
+  
+  pass-current:
+    ScopeRule(_, InScopes([Var(svar)]), _, _, _) ->
+    <alltd(?Current(); !VarRef(svar))>
+        
+rules // facts
+	
+	desugar-nabl: 
+	  NewRootScope(svar) -> NewScope(svar, Global())
+	
+	desugar-nabl: 
+	  NewSubScope(svar) -> NewScope(svar, Current())
+	
+	desugar-nabl: 
+	  Declaration(dec, scope) -> Declaration(dec, Current(), scope)
+	
+	desugar-nabl: 
+	  Reference(ref) -> Reference(ref, Current())
+	
+	desugar-nabl: 
+	  Import(ref) -> Import(ref, Current())
+	  
+  desugar-nabl: 
+    ImportScope(scope) -> ImportScope(scope, Current())
+
+rules // constraints
+  
+  desugar-nabl:
+    TApp(constr, type*) -> TApp(constr, [], type*)
+    
+rules // scopes
+  
+  desugar-nabl:
+    SingleScope(scope, term) -> Scope([scope], term)
+    
+  desugar-nabl:
+    InScope(scope) -> InScopes([scope])
+  
+  desugar-nabl:
+    ImplicitScope() -> InScopes([Var("implicit")])
+  

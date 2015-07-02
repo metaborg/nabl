@@ -1,0 +1,40 @@
+module rules/core/Rules
+
+imports
+  terms/Terms
+  rules/core/Constraints
+  rules/core/Facts
+  rules/core/Scopes
+    
+context-free syntax
+
+  ModuleSection.Rules = <
+    rules
+
+    <Rule*>
+  > {longest-match}
+
+  Rule.ScopeRule = <
+    <Pattern> <Context>:
+      <{FactOrScope ","}*>
+      <Constraints>
+  >
+  
+  FactOrScope = Fact
+  FactOrScope = Scope
+
+  Rule.TypeRule = <
+    <Pattern>:<Type>
+    <Constraints>
+    >
+    
+  Constraints = 
+  Constraints = <
+	  where 
+	    <{Constraint ","}+>
+	  >
+
+lexical syntax
+
+  SectionKeyword = "rules"
+  SectionKeyword = "into"

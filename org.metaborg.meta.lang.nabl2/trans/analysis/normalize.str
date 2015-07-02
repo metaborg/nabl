@@ -1,58 +1,16 @@
 module analysis/normalize
 
 imports
-  libstrc
-  src-gen/signatures/-
-  src-gen/signatures/constraints/-
-  src-gen/pp/-
-  src-gen/pp/constraints/-
-  util
-
+  src-gen/signatures/rules/core/-
+  analysis/desugar
+  
 strategies
    
-  normalize-all = normalize-module
+  normalize-all = desugar-all; alltd(normalize)
 
-signature constructors
-  	
-	Rule: Pattern * List(Var) * List(Fact) * List(Visit) * List(Constraint) -> Rule
-  	  
 rules
-  
-  normalize-module:
-    Module(name, section*) -> Module(name, [Imports(i*), Rules(r*)])
-    with i*  := <filterconcat(?Imports(<id>))> section*
-       ; r*  := <filterconcat(?Rules(<map(try(normalize-rule))>))> section*
 
-  normalize-rule:
-    Rule(pattern, scopes, part*, constr) ->
-    Rule(pattern, scope*, fact*, visit*, constr*)
-    with scope*  := <normalize-scopes> scopes
-       ; fact*   := <filter(normalize-fact <+ is-Fact)> part*
-       ; visit*  := <filter(normalize-visit <+ is-Visit)> part* 
-       ; constr* := <normalize-constraints> constr
+  normalize =
+    ScopeRule(id, id, id, id, is-list <+ ![])
+  + TypeRule(id, id, is-list <+ ![])
   
-  normalize-rule:
-    TypeRule(pattern, scopes, type, fact*, constr) ->
-    TypeRule(pattern, scope*, type, fact'*, constr*)
-    with scope*  := <normalize-scopes> scopes
-       ; fact'*  := <filter(normalize-fact)> fact*
-       ; constr* := <normalize-constraints> constr
-  
-  normalize-fact:
-    NewScope(s, None()) -> NewScope(s, NoParent())
-  
-  normalize-fact:
-    Declaration(d, CurrentScope(), assoc) -> Declaration(d, InScope(Var("current")), assoc)
-  
-  normalize-fact:
-    Reference(r, CurrentScope()) -> Reference(r, InScope(Var("current")))
-  	
-  normalize-visit:
-    Scopes(v, t) -> Scope([v], t)
-    
-  normalize-scopes: None()         -> [Var("current")]
-  normalize-scopes: Scope(scope)   -> [scope]
-  normalize-scopes: Scopes(scope*) -> scope*
-  
-  normalize-constraints: None()    -> []
-  normalize-constraints: Where(c*) -> c*

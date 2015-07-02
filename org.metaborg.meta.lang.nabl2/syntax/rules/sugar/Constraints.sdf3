@@ -1,0 +1,15 @@
+module rules/sugar/Constraints
+
+imports
+  terms/Terms
+  common/Identifiers
+  rules/core/Constraints
+  rules/core/Facts
+  
+context-free syntax
+
+  BaseConstraint.HasType = <<DeclRef> has type <Type>> 
+    
+  Type.TApp = <<Id>(<{Pattern ","}*>)> 
+   
+  

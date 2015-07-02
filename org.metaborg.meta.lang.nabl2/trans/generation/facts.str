@@ -3,7 +3,7 @@ module generation/facts
 imports
   
   libstrc
-  include/NameBindingLanguage2
+  src-gen/signatures/rules/core/-
   generation/constraints
   
 rules
@@ -14,30 +14,31 @@ rules
 rules
     
   fact-to-terms:
-    Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
+    Declaration(term, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
       decl     := <term-to-decl> term
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
   
   fact-to-terms:
-    Reference(term, InScope(scope)) -> [ Term |[ FRef(~ref, ~scope) ]| ]
+    Reference(term, scope) -> [ Term |[ FRef(~ref, ~scope) ]| ]
     with
       ref := <term-to-ref> term
   
   fact-to-terms:
-    Import(term, IntoScope(scope)) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
+    Import(term, scope) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
     with
       ref := <term-to-ref> term
   
   fact-to-terms:
-    ImportScope(v, IntoScope(scope)) -> [ Term |[ FImportS(~v, ~scope) ]| ]
+    ImportScope(v, scope) -> [ Term |[ FImportS(~v, ~scope) ]| ]
   
   fact-to-terms:
-    NewScope(scope, NoParent()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
+    NewScope(scope, Global()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
   
   fact-to-terms:
-    NewScope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]
-  
+    NewScope(scope, parent) -> [ Term |[ FParent(~scope, SomeScope(~parent)) ]| ]
+    where not(Global() := parent)
+    
   fact-to-terms:
   	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
   	with
