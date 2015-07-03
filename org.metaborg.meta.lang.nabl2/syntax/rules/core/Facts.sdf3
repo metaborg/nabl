@@ -21,23 +21,20 @@ context-free syntax
   
 context-free syntax
 
-  Fact.Import      = <imports <Term> into <ScopeRef>>
-  Fact.ImportScope = <imports from <ScopeRef> into <ScopeRef>>
+  Fact.NamedImport  = <imports <Term> into <ScopeRef>>
+  Fact.DirectImport = <imports from <ScopeRef> into <ScopeRef>>
 
 context-free syntax
 
-  Fact.HasType = <declares <DeclRef> : <Type>> 
+  Fact.HasType = <declares <Term> : <Type>> 
   Fact.SubType = [declares [Type] <: [Type]] 
-  
-  DeclRef        = VarRef
-  DeclRef.DeclOf = <declaration of <Term>>
    
 lexical syntax
 
   Keyword = "scope"
-  Keyword = "declaration"
-  Keyword = "reference"
-  Keyword = "import"
+  Keyword = "declares"
+  Keyword = "references"
+  Keyword = "imports"
   Keyword = "with"
   Keyword = "without"
   Keyword = "new"

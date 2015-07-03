@@ -85,10 +85,9 @@ rules
 rules // modules
   
   module-to-str:
-    Module(n, [ Imports(i*), b ])
-      -> Module(n', [ Imports([lib*, i*]), b'])
+    Module(n, s*) -> Module(n', [Imports(lib*)|s'*])
     with
-      n' := $[src-gen/analysis/[n]]
+      n'   := $[src-gen/analysis/[n]]
     ; lib* := [
       	        Import("libstratego-gpp"),
       	        Import("runtime/editor/annotations"),
@@ -99,4 +98,7 @@ rules // modules
                 Import("libanalysis2/nabl-ts/-"),
                 Import("src-gen/signatures/libanalysis2/-") 
               ]
-    ; b'  := <rules-to-str> b
+    ; s'* := <map(section-to-str)> s*
+      
+  section-to-str = ?Imports(_) <+ rules-to-str
+  

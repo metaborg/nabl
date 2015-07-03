@@ -28,14 +28,13 @@ folding Default folding definitions
   Fact
   Fact.Declaration
   Fact.Reference
-  Fact.Import
+  Fact.NamedImport
   Fact.HasType
-  DeclRef.DeclOf
   Type.TApp
   Type.TApp
   Fact.Declaration
   Fact.Reference
-  Fact.Import
+  Fact.NamedImport
   Scope
   Scope.Scope
   Term

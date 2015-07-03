@@ -28,7 +28,7 @@ context-free syntax
     <Constraints>
     >
     
-  Constraints = 
+  Constraints = {ast("[]")}
   Constraints = <
 	  where 
 	    <{Constraint ","}+>

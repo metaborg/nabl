@@ -24,8 +24,13 @@ rules
   var-to-strategy:
     VarRef(v) -> |[ ~v := TVar(<NewTVar>) ]|
       
-  // constraint-to-strategies:
-  //   Resolves(_, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
+  constraint-to-strategies:
+    Declares(v, dv) -> [ |[ ~dv := ~decl ]| ]
+    where
+    	decl := <term-to-decl> v
+
+  constraint-to-strategies:
+    Resolves(_, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
     
   constraint-to-strategies:
     HasScope(_, v) -> [ |[ ~v := ScopeVar(<NewScopeVar>) ]| ]
@@ -43,43 +48,46 @@ rules
     Failure(c, _) -> str*
     with str* := <constraint-to-strategies> c
     
-  constraint-to-term(|pos):
-    Success(c, msg) -> t
+  constraint-to-terms(|pos):
+    Success(c, msg) -> t*
     with pos' := <message-to-term> msg
-    with t    := <constraint-to-term(|pos')> c
+    with t*   := <constraint-to-terms(|pos')> c
     
-  constraint-to-term(|pos):
-    Failure(c, msg) -> t
+  constraint-to-terms(|pos):
+    Failure(c, msg) -> t*
     with pos' := <message-to-term> msg
-    with t    := <constraint-to-term(|pos')> c
+    with t*   := <constraint-to-terms(|pos')> c
          
   message-to-term:
     Message(_, _, t) -> Term |[ <get-position> t ]|
   
   // dynamic check could be avoided with proper static analysis
-  constraint-to-term(|msg):
-    HasType(v, t) -> Term |[ <get-type-constraint(|tvars, ~tp, ~msg)> ~v ]|
+  constraint-to-terms(|msg):
+    HasType(v, t) -> [ Term |[ <get-type-constraint(|tvars, ~tp, ~msg)> ~v ]| ]
     with tp := <try(type-pattern)> t
   
-  constraint-to-term(|msg):
-    LubType(t1, t2, t3) -> Term |[ CLubType(~tp1, ~tp2, ~tp3, ~msg) ]|
+  constraint-to-terms(|msg):
+    LubType(t1, t2, t3) -> [ Term |[ CLubType(~tp1, ~tp2, ~tp3, ~msg) ]| ]
     with tp1 := <try(type-pattern)> t1
        ; tp2 := <try(type-pattern)> t2
        ; tp3 := <try(type-pattern)> t3
    
-  constraint-to-term(|msg):
-    SubType(t1, t2) -> Term |[ CSubType(~t1, ~t2, ~msg) ]|
+  constraint-to-terms(|msg):
+    SubType(t1, t2) -> [ Term |[ CSubType(~t1, ~t2, ~msg) ]| ]
        
-  // constraint-to-term(|msg):
-  //   Resolves(v, dv) -> Term |[ CResolves(~ref, ~dv, ~msg) ]|
-  //   with
-  //     ref := <term-to-ref> v
+  constraint-to-terms(|msg):
+    Resolves(v, dv) -> [ Term |[ CResolves(~ref, ~dv, ~msg) ]| ]
+    with
+      ref := <term-to-ref> v
+  
+  constraint-to-terms(|msg):
+    Declares(_, _) -> []
+    
+  constraint-to-terms(|msg):
+    HasScope(v, sv) -> [ Term |[ CAssoc(~v, ~sv, ~msg) ]| ]
    
-  constraint-to-term(|msg):
-    HasScope(v, sv) -> Term |[ CAssoc(~v, ~sv, ~msg) ]|
-   
-  constraint-to-term(|msg):
-  	Match(v, pattern) -> Term |[ CEqType(~v, ~tp, ~msg) ]|
+  constraint-to-terms(|msg):
+  	Match(v, pattern) -> [ Term |[ CEqType(~v, ~tp, ~msg) ]| ]
   	with tp := <try(type-pattern)> pattern
   	
   type-pattern:

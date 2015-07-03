@@ -14,8 +14,8 @@ context-free syntax
   Fact.Declaration  = <declares <Term> <AssocScope>>
   Fact.Reference    = <references <Term>>
   
-  Fact.Import       = <imports <Term>>
-  Fact.ImportScope  = <imports from <ScopeRef>>
+  Fact.NamedImport  = <imports <Term>>
+  Fact.DirectImport = <imports from <ScopeRef>>
 
   AssocScope.Assoc = <with associated scope>
   

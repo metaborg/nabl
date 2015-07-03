@@ -10,19 +10,24 @@ imports
   
 context-free syntax
 
-  Constraint         = <<BaseConstraint>>
+  Constraint         = BaseConstraint
   Constraint.Success = <<BaseConstraint> and <Message>>
   Constraint.Failure = <<BaseConstraint> else <Message>>
 
+  // pseudo-constraint
+  Constraint.Declares = <<Term> declares <Var>> 
+
 context-free syntax
 
+  BaseConstraint.Resolves = <<Term> resolves to <Var>> 
   BaseConstraint.Match    = [[VarRef] == [Type]]
-  BaseConstraint.DeclOf   = [[VarRef] == [DeclRef]] {avoid} 
   BaseConstraint.HasType  = <<DeclRef> : <Type>> 
-  BaseConstraint.SubType  = [[VarRef] <: [VarRef]] 
+  BaseConstraint.SubType  = [[Type] <: [Type]] 
   BaseConstraint.LubType  = [[Type] == lub ([Type], [Type])] {prefer} 
-  BaseConstraint.HasScope = [[DeclRef] is associated with scope [Var]]
+  BaseConstraint.HasScope = [[VarRef] is associated with scope [Var]]
 
+  DeclRef = VarRef
+  
 context-free syntax
   
   Type      = Var

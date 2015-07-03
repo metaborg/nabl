@@ -25,12 +25,12 @@ rules
       ref := <term-to-ref> term
   
   fact-to-terms:
-    Import(term, scope) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
+    NamedImport(term, scope) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
     with
       ref := <term-to-ref> term
   
   fact-to-terms:
-    ImportScope(v, scope) -> [ Term |[ FImportS(~v, ~scope) ]| ]
+    DirectImport(v, scope) -> [ Term |[ FImportS(~v, ~scope) ]| ]
   
   fact-to-terms:
     NewScope(scope, Global()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
@@ -49,4 +49,5 @@ rules
     None() -> []
     
   assoc-scope-to-terms(|decl):
-    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]  
+    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]
+    

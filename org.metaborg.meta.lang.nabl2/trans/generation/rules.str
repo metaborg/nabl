@@ -30,7 +30,7 @@ rules // binding rules
        ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
        ; var   := <to-seq> [fvar*, cvar*]
     with fcoll* := <mapconcat(fact-to-terms)> fact* 
-       ; ccoll* := <map(constraint-to-term(|Var("position")))> constr* 
+       ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
 
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
@@ -47,7 +47,7 @@ rules // binding rules
        ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
        ; var   := <to-seq> [fvar*, cvar*]
     with fcoll* := <mapconcat(fact-to-terms)> fact* 
-       ; ccoll* := <map(constraint-to-term(|Var("position")))> constr* 
+       ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
     where [_|_] := visit*
     with visit := <map(visit-to-appl); to-seq> visit*
 
@@ -62,5 +62,5 @@ rules // binding rules
     ]|
     with cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
        ; var   := <to-seq> cvar*
-    with ccoll* := <map(constraint-to-term(|Var("position")))> [Match(VarRef("type-var"), type)|constr*]
+    with ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> [Match(VarRef("type-var"), type)|constr*]
          
