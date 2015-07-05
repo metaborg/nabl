@@ -1,4 +1,4 @@
-module core/Modules
+module common/Modules
 
 context-free syntax
 
@@ -7,7 +7,7 @@ context-free syntax
     <ModuleSection*>> 
     
   ModuleSection.Imports = <
-    imports <ImportModule*>> 
+    imports <ImportModule*>>
     
   ImportModule.ImportWildcard = <<ModuleID>/-> 
   ImportModule.Import = <<ModuleID>> 

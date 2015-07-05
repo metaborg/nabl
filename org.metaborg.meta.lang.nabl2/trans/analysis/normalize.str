@@ -1,44 +1,16 @@
 module analysis/normalize
 
 imports
-  libstrc
-  src-gen/signatures/-
-  src-gen/signatures/constraints/-
-  src-gen/pp/-
-  src-gen/pp/constraints/-
-  util
-
+  src-gen/signatures/rules/core/-
+  analysis/desugar
+  
 strategies
    
-  normalize-all = normalize-module
-  
-rules
-  
-  normalize-module:
-    Module(name, section*) -> Module(name, [Imports(i*), Rules(r*)])
-    with i*  := <filterconcat(?Imports(<id>))> section*
-       ; r*  := <filterconcat(?Rules(<map(try(normalize-rule))>))> section*
+  normalize-all = desugar-all; alltd(normalize)
 
-  normalize-rule:
-    Rule(pattern, scopes, part*, constr) ->
-    Rule(pattern, scope*, part'*, constr*)
-    with part'*  := <map(try(normalize-fact + normalize-visit))> part*
-       ; scope*  := <normalize-scope> scopes
-       ; constr* := <normalize-constraint> constr
+rules
+
+  normalize =
+    ScopeRule(id, id, id, id, is-list <+ ![])
+  + TypeRule(id, id, is-list <+ ![])
   
-  normalize-fact:
-    Scope(s, None()) -> Scope(s, NoParent())
-  
-  normalize-visit:
-    Scopes(v, t) -> Scope([v], t)
-    
-  normalize-visit:
-    Scope(v, t) -> Scope(v, t)
-    
-  normalize-scope: None()         -> []
-  normalize-scope: Scope(scope)   -> [scope]
-  normalize-scope: Scopes(scope*) -> scope*
-  normalize-scope: With(scope*)   -> scope*
-  
-  normalize-constraint: None()    -> []
-  normalize-constraint: Where(c*) -> c*

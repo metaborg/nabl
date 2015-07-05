@@ -3,7 +3,9 @@ module generation/rules
 imports
   
   libstrc
-  src-gen/signatures/-
+  src-gen/signatures/rules/core/-
+  src-gen/signatures/terms/-
+  analysis/-
   util
   generation/visits
   generation/constraints
@@ -15,23 +17,50 @@ rules // binding rules
     Rules(r*) -> Rules(<map(rule-to-strategy)> r*)
  
   rule-to-strategy:
-    Rule(pattern, With(scope*), w*, c*, v*) ->
-    |[ nabl-ts-constraint(|constraints,scopes):
-    	   ~pattern -> <id>
-         with [~scope*] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+    ScopeRule(pattern, InScopes(scope*), fact*, [], constr*) ->
+    |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
+         ~pattern -> <fail>
+         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
          with position := <get-position>
-         with ~ccollect
-         with ~fcollect
+         with ~var
+         with <iset-addlist(|[~fcoll*])> facts
+            ;  <iset-addlist(|[~ccoll*])> constraints
+    ]|
+    with fvar* := <filter(fact-to-strategy)> fact*
+       ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
+       ; var   := <to-seq> [fvar*, cvar*]
+    with fcoll* := <mapconcat(fact-to-terms)> fact* 
+       ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
+
+  rule-to-strategy:
+    ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
+    |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
+         ~pattern -> <id>
+         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+         with position := <get-position>
+         with ~var
+         with <iset-addlist(|[~fcoll*])> facts
+            ;  <iset-addlist(|[~ccoll*])> constraints
          with ~visit
     ]|
-    with ccollect*   := <mapconcat(constraint-to-strategies)> w*
-       ; constraint* := <map(constraint-to-term(|Var("position")))> w* 
-       ; ccollect  := <to-seq> [ccollect*, |[ <iset-addlist(|[~constraint*])> constraints ]| ]
-    with fcollect* := <filter(fact-to-strategy)> c*
-       ; fact*     := <mapconcat(fact-to-terms)> c* 
-       ; fcollect  := <to-seq> [fcollect*, |[ <iset-addlist(|[~fact*])> constraints ]| ]
-    with if [] := v* then
-           visit := |[ nabl-ts-traverse-children(|constraints,scopes) ]|
-         else      
-           visit := <map(visit-to-appl); to-seq> v*
-         end
+    with fvar* := <filter(fact-to-strategy)> fact*
+       ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
+       ; var   := <to-seq> [fvar*, cvar*]
+    with fcoll* := <mapconcat(fact-to-terms)> fact* 
+       ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
+    where [_|_] := visit*
+    with visit := <map(visit-to-appl); to-seq> visit*
+
+   rule-to-strategy:
+    TypeRule(pattern, type, constr*) ->
+    |[ nabl-ts-constraint(|tvars,facts,constraints,scopes):
+         ~pattern -> <fail>
+         with position := <get-position>
+         with type-var := <get-type-var(|tvars)>
+         with ~var
+         with <iset-addlist(|[~ccoll*])> constraints
+    ]|
+    with cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
+       ; var   := <to-seq> cvar*
+    with ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> [Match(VarRef("type-var"), type)|constr*]
+         

@@ -37,6 +37,7 @@ rules
   make-wild-local: Var(_) -> Wld()
   make-wild-local: VarRef(_) -> Wld()
 
+  to-seq: []            -> Id()
   to-seq: [c]           -> c
   to-seq: [c1, c2 | c*] -> Seq(c1, <to-seq> [c2|c*])
 

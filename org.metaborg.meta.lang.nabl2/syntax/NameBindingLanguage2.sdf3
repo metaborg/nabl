@@ -4,12 +4,12 @@ imports
 
 	common/Layout
 	common/Identifiers
-  core/Modules
-  terms/Terms
-  terms/Vars
-  constraints/Constraints
-  constraints/Facts
-    
+  common/Modules
+  rules/core/Rules
+  rules/sugar/Constraints
+  rules/sugar/Facts
+  rules/sugar/Scopes
+  
 context-free start-symbols
 
 	Start
@@ -18,44 +18,3 @@ context-free syntax
 
 	Start = Module
 
-  ModuleSection.Rules = <
-    rules
-
-    <Rule*>
-  >
-
-  Rule.Rule = <
-    <Pattern> <With>:
-      <{Part ","}*>
-      <Where>
-  >
-  
-  Rule.TypeRule = <
-    <Pattern>:<Type>
-    <Where>
-  >
-
-  With.None =
-  // With.With = [<[{Var ","}+]>]
-  With.Scope = <in scope <Var>>
-  With.Scopes = <in scopes <{Var ","}+>>
-  
-  Where.None  =
-  Where.Where = {Constraint ","}*
-
-  Part = Fact
-  Part = VisitClause
-  
-  VisitClause.Scopes = <<VarRef> scopes <Term>>
-  VisitClause.Scope = <<{VarRef ","}+> scope <Term>>
-  // VisitClause.Visit = <<Term><Args>;>
-  
-  VarRef.AttrRef = <<VarRef>.<VarRef>>
-  
-  Args.None =
-  Args.Args = [<[{VarRef ","}+]>]
-  
-lexical syntax
-
-  SectionKeyword = "rules"
-  SectionKeyword = "into"

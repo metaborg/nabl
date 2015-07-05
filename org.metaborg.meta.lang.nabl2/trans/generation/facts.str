@@ -3,46 +3,51 @@ module generation/facts
 imports
   
   libstrc
-  include/NameBindingLanguage2
-
+  src-gen/signatures/rules/core/-
+  generation/constraints
+  
 rules
   
   fact-to-strategy:
-    Scope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
+    NewScope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
 
 rules
     
   fact-to-terms:
-    Declaration(term, InScope(scope), assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
+    Declaration(term, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
       decl     := <term-to-decl> term
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
   
   fact-to-terms:
-    Reference(term, InScope(scope)) -> [ Term |[ FRef(~ref, ~scope) ]| ]
+    Reference(term, scope) -> [ Term |[ FRef(~ref, ~scope) ]| ]
     with
       ref := <term-to-ref> term
   
   fact-to-terms:
-    Import(term, IntoScope(scope)) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
+    NamedImport(term, scope) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
     with
       ref := <term-to-ref> term
   
   fact-to-terms:
-    ImportScope(v, IntoScope(scope)) -> [ Term |[ FImportS(~v, ~scope) ]| ]
+    DirectImport(v, scope) -> [ Term |[ FImportS(~v, ~scope) ]| ]
   
   fact-to-terms:
-    Scope(scope, NoParent()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
+    NewScope(scope, Global()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
   
   fact-to-terms:
-    Scope(scope, Parent(v)) -> [ Term |[ FParent(~scope, SomeScope(~v)) ]| ]
-  
+    NewScope(scope, parent) -> [ Term |[ FParent(~scope, SomeScope(~parent)) ]| ]
+    where not(Global() := parent)
+    
+  fact-to-terms:
+  	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
+  	with
+  	  ty1' := <type-pattern> ty1
+  	; ty2' := <type-pattern> ty2
+      
   assoc-scope-to-terms(|decl):
     None() -> []
     
   assoc-scope-to-terms(|decl):
-    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]  
-
-  term-to-decl: term -> Term |[ DeclId(None(), ~term, <get-position> ~term) ]|
-
-  term-to-ref: term -> Term |[ RefId(None(), ~term, <get-position> ~term) ]|
+    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]
+    

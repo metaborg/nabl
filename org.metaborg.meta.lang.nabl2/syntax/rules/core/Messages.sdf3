@@ -1,4 +1,4 @@
-module constraints/Messages
+module rules/core/Messages
 
 imports
 

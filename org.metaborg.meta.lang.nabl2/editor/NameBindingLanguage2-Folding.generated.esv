@@ -23,22 +23,21 @@ folding Default folding definitions
   Module.Module
   ModuleSection.Imports
   ModuleSection.Rules
-  Rule.Rule
-  With.Scopes
+  Rule.ScopeRule
+  Context.InScopes
+  Fact
   Fact.Declaration
   Fact.Reference
-  Fact.Import
+  Fact.NamedImport
   Fact.HasType
-  Pattern
-  Type.Type
-  Fact.SubType
-  VisitClause.Scopes
-  VisitClause.Scope
-  Where.Where
-  BaseConstraint.Match
-  BaseConstraint.HasType
-  BaseConstraint.HasType
-  BaseConstraint.SubType
-  BaseConstraint.HasScope
-  Message.Message
+  Type.TApp
+  Type.TApp
+  Fact.Declaration
+  Fact.Reference
+  Fact.NamedImport
+  Scope
+  Scope.Scope
+  Term
+  Scope.SingleScope
+  Scope.ImplicitNew
   Rule.TypeRule
