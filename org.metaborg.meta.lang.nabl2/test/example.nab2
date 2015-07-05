@@ -6,11 +6,11 @@ rules
     new scope s,
     s scopes dec*
   
-  Module(m, d*):
+  Module(m, dec*) in scope s:
     new scope s' with parent s,
     declares m in s 
            with associated scope s',
-    s' scopes d*
+    s' scopes dec*
     
   Import(m) in scope s:
     references m in s,
@@ -30,6 +30,29 @@ rules
   Bind(x, e) in scopes s, ds:
     declares x in ds,
     s scopes e  
+
+  FieldRef(e, f) in scope s:
+    references f in s_e,
+    s scopes e
+    e has type ty,
+    ty == TRec(d),
+    d has associated scope s_e
+        
+  FieldRef(e, f) in scope s:
+    new scope s' without parent,
+    imports s_e into s',
+    references f in s',
+    s scopes e    
+    e has type ty,
+    ty == TRec(d),
+    d has associated scope s_e
+    
+  FieldRef(e, f) : t
+  where e : TRec(d) and definition of f : t
+    
+	  // where e has type ty
+	  //   and ty == TRec(d)
+	  //   and d has associated scope es
   
 //   Let(x, e1, e2):
 //     create scope s
