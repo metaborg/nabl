@@ -20,7 +20,7 @@ context-free syntax
   Binder.Bind = <<Namespace> <Term>>
   
   Namespace.Name      = 
-  Namespace.Namespace = Id
+  Namespace.Namespace = <<Id>::>
   
   AssocScope.None  = 
   AssocScope.Assoc = <with associated scope <ScopeRef>>
