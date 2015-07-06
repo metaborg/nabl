@@ -54,7 +54,7 @@ rules
     with nst := <namespace-to-term> ns
     
   binder-to-ref: 
-    Bind(ns, term) -> Term |[ RefId(~ns, ~term, <get-position> ~term) ]|   
+    Bind(ns, term) -> Term |[ RefId(~nst, ~term, <get-position> ~term) ]|   
     with nst := <namespace-to-term> ns
 
   namespace-to-term: Name()        -> Term |[ None() ]|
