@@ -14,8 +14,8 @@ context-free syntax
   Fact.Declaration  = <declares <Binder> <AssocScope>>
   Fact.Reference    = <references <Binder>>
   
-  Fact.NamedImport  = <imports <Binder>>
-  Fact.DirectImport = <imports from <ScopeRef>>
+  Fact.NamedImport  = <imports <Binder> <Substitution>>
+  Fact.DirectImport = <imports from <ScopeRef> <Substitution>>
 
   AssocScope.Assoc = <with associated scope>
   

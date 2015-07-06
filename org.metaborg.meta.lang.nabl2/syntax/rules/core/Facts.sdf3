@@ -27,8 +27,11 @@ context-free syntax
   
 context-free syntax
 
-  Fact.NamedImport  = <imports <Binder> into <ScopeRef>>
-  Fact.DirectImport = <imports from <ScopeRef> into <ScopeRef>>
+  Fact.NamedImport  = <imports <Binder> into <ScopeRef> <Substitution>>
+  Fact.DirectImport = <imports from <ScopeRef> into <ScopeRef> <Substitution>>
+
+  Substitution.None  =
+  Substitution.Subst = <with <Term>>
 
 context-free syntax
 

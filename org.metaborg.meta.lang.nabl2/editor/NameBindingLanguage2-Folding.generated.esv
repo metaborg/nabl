@@ -26,9 +26,14 @@ folding Default folding definitions
   Rule.ScopeRule
   Context.InScopes
   Binder.Bind
+  Fact.NamedImport
+  Substitution.Subst
+  Fact.DirectImport
   Fact.HasType
   Type.TApp
   Type.TApp
+  Fact.NamedImport
+  Fact.DirectImport
   Scope
   Scope.Scope
   Term

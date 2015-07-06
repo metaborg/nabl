@@ -82,10 +82,10 @@ rules // facts
 	  Reference(ref) -> Reference(ref, Current())
 	
 	desugar-nabl: 
-	  NamedImport(ref) -> NamedImport(ref, Current())
+	  NamedImport(ref, subst) -> NamedImport(ref, Current(), subst)
 	  
   desugar-nabl: 
-    DirectImport(scope) -> DirectImport(scope, Current())
+    DirectImport(scope, subst) -> DirectImport(scope, Current(), subst)
 
 rules // constraints
   
