@@ -26,7 +26,7 @@ rules // binding rules
          with <iset-addlist(|[~fcoll*])> facts
             ;  <iset-addlist(|[~ccoll*])> constraints
     ]|
-    with fvar* := <filter(fact-to-strategy)> fact*
+    with fvar* := <filterconcat(fact-to-strategies)> fact*
        ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
        ; var   := <to-seq> [fvar*, cvar*]
     with fcoll* := <mapconcat(fact-to-terms)> fact* 
@@ -43,7 +43,7 @@ rules // binding rules
             ;  <iset-addlist(|[~ccoll*])> constraints
          with ~visit
     ]|
-    with fvar* := <filter(fact-to-strategy)> fact*
+    with fvar* := <filterconcat(fact-to-strategies)> fact*
        ; cvar* := <mapconcat(constraint-to-strategies); make-set> constr*
        ; var   := <to-seq> [fvar*, cvar*]
     with fcoll* := <mapconcat(fact-to-terms)> fact* 

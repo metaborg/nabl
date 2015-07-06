@@ -7,8 +7,13 @@ imports
   
 rules
   
-  fact-to-strategy:
-    NewScope(scope, _) -> |[ ~scope := Scope(<NewScope>) ]|
+  fact-to-strategies:
+    NewScope(scope, _) -> [ |[ ~scope := Scope(<NewScope>) ]| ]
+
+  fact-to-strategies:
+    HasType(_, type) -> str*
+    with var* := <collect-all(?Var(_) + ?ListVar(_))> type
+       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
 
 rules
     
@@ -40,6 +45,11 @@ rules
   fact-to-terms:
     NewScope(scope, parent) -> [ Term |[ FParent(~scope, SomeScope(~parent)) ]| ]
     where not(Global() := parent)
+
+  // dynamic check could be avoided with proper static analysis
+  fact-to-terms:
+    HasType(v, t) -> [ Term |[ <get-type-constraint(|tvars, ~tp, position)> ~v ]| ]
+    with tp := <try(type-pattern)> t
     
   fact-to-terms:
   	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
