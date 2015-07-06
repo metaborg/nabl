@@ -12,18 +12,18 @@ rules
   constraint-to-strategies:
     HasType(_, type) -> str*
     with var* := <collect-all(?Var(_) + ?ListVar(_))> type
-       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
+       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
          
   constraint-to-strategies:
     c@LubType(type1, type2, type3) -> str*
     with var* := <collect-all(?Var(_) + ?ListVar(_))> c
-       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
+       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
   
   constraint-to-strategies:
     c@SubType(type1, type2) -> []
     
   var-to-strategy:
-    VarRef(v) -> |[ ~v := TVar(<NewTVar>) ]|
+    VarRef(v) -> |[ ~v := Var(<NewVar>) ]|
       
   constraint-to-strategies:
     Declares(v, dv) -> [ |[ ~dv := ~decl ]| ]
@@ -31,15 +31,15 @@ rules
     	decl := <binder-to-decl> v
 
   constraint-to-strategies:
-    Resolves(_, _, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
+    Resolves(_, _, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
     
   constraint-to-strategies:
-    HasScope(_, v) -> [ |[ ~v := ScopeVar(<NewScopeVar>) ]| ]
+    HasScope(_, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
   
   constraint-to-strategies:
     Match(_, pattern) -> str*
     with var* := <collect-all(?Var(_) + ?ListVar(_))> pattern
-       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
+       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
   
   constraint-to-strategies:
     Success(c, _) -> str*

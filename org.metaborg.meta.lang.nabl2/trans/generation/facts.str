@@ -92,5 +92,5 @@ rules
     ; tp* := <alltd(try(wld-var))> t*
        
   wld-var:
-    Wld() -> Term |[ TVar(<NewTVar>) ]|
+    Wld() -> Term |[ Var(<NewVar>) ]|
     
