@@ -30,7 +30,7 @@ rules
     ; label := <substitution-to-term> subst
   
   fact-to-terms:
-    DirectImport(v, scope, subst) -> [ Term |[ FImportS(~v, ~scope) ]| ]
+    DirectImport(v, scope, subst) -> [ Term |[ FImportS(~v, ~label, ~scope) ]| ]
     with
       label := <substitution-to-term> subst
   
