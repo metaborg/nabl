@@ -11,10 +11,10 @@ context-free syntax
   Fact.NewRootScope = <new scope <Var>>
   Fact.NewSubScope  = <new subscope <Var>>
 
-  Fact.Declaration  = <declares <Term> <AssocScope>>
-  Fact.Reference    = <references <Term>>
+  Fact.Declaration  = <declares <Binder> <AssocScope>>
+  Fact.Reference    = <references <Binder>>
   
-  Fact.NamedImport  = <imports <Term>>
+  Fact.NamedImport  = <imports <Binder>>
   Fact.DirectImport = <imports from <ScopeRef>>
 
   AssocScope.Assoc = <with associated scope>

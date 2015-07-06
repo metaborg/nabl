@@ -38,7 +38,7 @@ rules // rules
   	Scope(s*, t*) -> <map(!Scope(s*, <id>))> t*
   
   explicit-resolution:
-  	HasType(DeclOf(t), ty) -> [Resolves(t, Var(d)), HasType(VarRef(d), ty)]
+  	HasType(DeclOf(t), ty) -> [Resolves(t, Name(), Var(d)), HasType(VarRef(d), ty)]
     with d := <newname> "decl"
     
   explicit-new-scope:

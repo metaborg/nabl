@@ -25,16 +25,10 @@ folding Default folding definitions
   ModuleSection.Rules
   Rule.ScopeRule
   Context.InScopes
-  Fact
-  Fact.Declaration
-  Fact.Reference
-  Fact.NamedImport
+  Binder.Bind
   Fact.HasType
   Type.TApp
   Type.TApp
-  Fact.Declaration
-  Fact.Reference
-  Fact.NamedImport
   Scope
   Scope.Scope
   Term

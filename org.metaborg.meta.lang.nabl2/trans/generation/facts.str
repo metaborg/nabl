@@ -4,7 +4,6 @@ imports
   
   libstrc
   src-gen/signatures/rules/core/-
-  generation/constraints
   
 rules
   
@@ -16,18 +15,18 @@ rules
   fact-to-terms:
     Declaration(term, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
-      decl     := <term-to-decl> term
+      decl     := <binder-to-decl> term
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
   
   fact-to-terms:
     Reference(term, scope) -> [ Term |[ FRef(~ref, ~scope) ]| ]
     with
-      ref := <term-to-ref> term
+      ref := <binder-to-ref> term
   
   fact-to-terms:
     NamedImport(term, scope) -> [ Term |[ FImportR(~ref, ~scope) ]| ]
     with
-      ref := <term-to-ref> term
+      ref := <binder-to-ref> term
   
   fact-to-terms:
     DirectImport(v, scope) -> [ Term |[ FImportS(~v, ~scope) ]| ]
@@ -50,4 +49,28 @@ rules
     
   assoc-scope-to-terms(|decl):
     Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]
+
+rules
+
+  binder-to-decl: 
+  	Bind(ns, term) -> Term |[ DeclId(~nst, ~term, <get-position> ~term) ]|
+    with nst := <namespace-to-term> ns
+    
+  binder-to-ref: 
+  	Bind(ns, term) -> Term |[ RefId(~ns, ~term, <get-position> ~term) ]|   
+    with nst := <namespace-to-term> ns
+
+  namespace-to-term: Name()        -> Term |[ None() ]|
+  namespace-to-term: Namespace(ns) -> Term |[ Namespace(~ns) ]|
+   
+rules
+   
+  type-pattern:
+    TApp(tc, cp*, t*) -> Term |[ TApp(~tc', [~tp*]) ]|
+    with 
+      tc' := Op(tc, cp*)
+    ; tp* := <alltd(try(wld-var))> t*
+       
+  wld-var:
+    Wld() -> Term |[ TVar(<NewTVar>) ]|
     

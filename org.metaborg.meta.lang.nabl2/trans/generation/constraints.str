@@ -5,6 +5,7 @@ imports
   libstrc
   src-gen/signatures/rules/core/-
   src-gen/signatures/terms/-
+  generation/facts
   
 rules
   
@@ -27,10 +28,10 @@ rules
   constraint-to-strategies:
     Declares(v, dv) -> [ |[ ~dv := ~decl ]| ]
     where
-    	decl := <term-to-decl> v
+    	decl := <binder-to-decl> v
 
   constraint-to-strategies:
-    Resolves(_, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
+    Resolves(_, _, v) -> [ |[ ~v := DeclVar(<NewDeclVar>) ]| ]
     
   constraint-to-strategies:
     HasScope(_, v) -> [ |[ ~v := ScopeVar(<NewScopeVar>) ]| ]
@@ -76,9 +77,9 @@ rules
     SubType(t1, t2) -> [ Term |[ CSubType(~t1, ~t2, ~msg) ]| ]
        
   constraint-to-terms(|msg):
-    Resolves(v, dv) -> [ Term |[ CResolves(~ref, ~dv, ~msg) ]| ]
+    Resolves(v, ns, dv) -> [ Term |[ CResolves(~ref, ~dv, ~msg) ]| ]
     with
-      ref := <term-to-ref> v
+      ref := <binder-to-ref> Bind(ns, v)
   
   constraint-to-terms(|msg):
     Declares(_, _) -> []
@@ -89,18 +90,3 @@ rules
   constraint-to-terms(|msg):
   	Match(v, pattern) -> [ Term |[ CEqType(~v, ~tp, ~msg) ]| ]
   	with tp := <try(type-pattern)> pattern
-  	
-  type-pattern:
-    TApp(tc, cp*, t*) -> Term |[ TApp(~tc', [~tp*]) ]|
-    with 
-      tc' := Op(tc, cp*)
-    ; tp* := <alltd(try(wld-var))> t*
-       
-  wld-var:
-  	Wld() -> Term |[ TVar(<NewTVar>) ]|
-  	
-rules
-
-  term-to-decl: term -> Term |[ DeclId(None(), ~term, <get-position> ~term) ]|
-
-  term-to-ref: term -> Term |[ RefId(None(), ~term, <get-position> ~term) ]|

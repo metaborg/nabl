@@ -2,6 +2,7 @@ module rules/core/Facts
 
 imports 
 
+  common/Identifiers
   terms/Terms 
   terms/Vars  
   rules/core/Constraints
@@ -13,15 +14,20 @@ context-free syntax
 
 context-free syntax
 
-  Fact.Declaration = <declares <Term> in <ScopeRef> <AssocScope>>
-  Fact.Reference   = <references <Term> in <ScopeRef>>
+  Fact.Declaration = <declares <Binder> in <ScopeRef> <AssocScope>>
+  Fact.Reference   = <references <Binder> in <ScopeRef>>
 
+  Binder.Bind = <<Namespace> <Term>>
+  
+  Namespace.Name      = 
+  Namespace.Namespace = Id
+  
   AssocScope.None  = 
   AssocScope.Assoc = <with associated scope <ScopeRef>>
   
 context-free syntax
 
-  Fact.NamedImport  = <imports <Term> into <ScopeRef>>
+  Fact.NamedImport  = <imports <Binder> into <ScopeRef>>
   Fact.DirectImport = <imports from <ScopeRef> into <ScopeRef>>
 
 context-free syntax
@@ -38,4 +44,4 @@ lexical syntax
   Keyword = "with"
   Keyword = "without"
   Keyword = "new"
-  
+  Keyword = "from"

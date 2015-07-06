@@ -15,11 +15,11 @@ context-free syntax
   Constraint.Failure = <<BaseConstraint> else <Message>>
 
   // pseudo-constraint
-  Constraint.Declares = <<Term> declares <Var>> 
+  Constraint.Declares = <<Binder> declares <Var>> 
 
 context-free syntax
 
-  BaseConstraint.Resolves = <<Term> resolves to <Var>> 
+  BaseConstraint.Resolves = <<Term> resolves to <Namespace> <Var>> 
   BaseConstraint.Match    = [[VarRef] == [Type]]
   BaseConstraint.HasType  = <<DeclRef> : <Type>> 
   BaseConstraint.SubType  = [[Type] <: [Type]] 
