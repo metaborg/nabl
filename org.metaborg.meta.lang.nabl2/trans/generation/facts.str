@@ -85,7 +85,7 @@ rules
 	
 rules
    
-  type-pattern = ! Term |[ <type-app> ~<alltd(try(wld-var))> ]|
+  type-pattern = ! Term |[ <type-app> ~<alltd(wld-var)> ]|
          
   wld-var:
     Wld() -> Term |[ Var(<NewVar>) ]|
