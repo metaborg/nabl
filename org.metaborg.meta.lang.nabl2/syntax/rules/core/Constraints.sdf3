@@ -19,17 +19,15 @@ context-free syntax
 
 context-free syntax
 
-  BaseConstraint.Resolves = <<Term> resolves to <Namespace> <Var>> 
+  BaseConstraint.Resolves = <<Term> resolves to <Namespace> <Var> through <Var>> 
   BaseConstraint.Match    = [[VarRef] == [Pattern]]
-  BaseConstraint.HasType  = <<DeclRef> : <Pattern>> 
+  BaseConstraint.HasType  = <<VarRef> : <Pattern>> 
   BaseConstraint.SubType  = [[Pattern] <: [Pattern]] 
   BaseConstraint.LubType  = [[Var] == lub ([Pattern], [Pattern])] {prefer} 
   BaseConstraint.HasScope = [[VarRef] is associated with scope [Var]]
   BaseConstraint.MkSub    = <<Var> == [<Term>/<Term>]>
   BaseConstraint.CmpSub   = <<Var> == <VarRef>.<VarRef>>
   BaseConstraint.ApplSub  = <<Pattern> == <VarRef>(<Pattern>)>
-  
-  DeclRef = VarRef
   
 lexical syntax
 

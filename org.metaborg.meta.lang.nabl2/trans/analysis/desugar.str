@@ -38,7 +38,7 @@ rules // rules
   	Scope(s*, t*) -> <map(!Scope(s*, <id>))> t*
   
   explicit-resolution:
-  	HasType(DeclOf(t), ty) -> [Resolves(t, Name(), Var(d)), HasType(VarRef(d), ty)]
+  	DeclHasType(t, ty, p) -> [Resolves(t, Name(), Var(d), p), HasType(VarRef(d), ty)]
     with d := <newname> "decl"
     
   explicit-new-scope:
@@ -86,6 +86,14 @@ rules // facts
 	  
   desugar-nabl: 
     DirectImport(scope, subst) -> DirectImport(scope, Current(), subst)
+
+rules // constraints
+  
+  desugar-nabl:
+    Resolves(n, ns, d) -> Resolves(n, ns, d, Wld())    
+  
+  desugar-nabl:
+    DeclHasType(t, ty) -> DeclHasType(t, ty, Wld())    
     
 rules // scopes
   

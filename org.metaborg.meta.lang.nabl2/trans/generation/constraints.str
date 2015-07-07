@@ -29,8 +29,12 @@ rules
     Declares(_, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
  
   constraint-to-strategies:
-    Resolves(_, _, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
-    
+    Resolves(_, _, v, Wld()) -> [ |[ ~v := Var(<NewVar>) ]| ]
+  
+  constraint-to-strategies:
+    Resolves(_, _, v, p) -> [ |[ ~v := Var(<NewVar>) ]|, |[ ~p := Var(<NewVar>) ]| ]
+    where not(Wld() := p)
+     
   constraint-to-strategies:
     HasScope(_, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
   
@@ -76,10 +80,11 @@ rules
     SubType(t1, t2) -> [ Term |[ CSubType(~t1, ~t2, ~msg) ]| ]
        
   constraint-to-terms(|msg):
-    Resolves(v, ns, dv) -> [ Term |[ CResolves(~ref, ~dv, ~msg) ]| ]
+    Resolves(v, ns, dv, pv) -> [ Term |[ CResolves(~ref, ~dv, ~msg, ~pv') ]| ]
     with
       ref := <binder-to-ref> Bind(ns, v)
-  
+    ; pv' := <try(wld-var)> pv
+      
   constraint-to-terms(|msg):
     Declares(v, dv) -> [ Term |[CEqType(~dv, ~decl, ~msg)]| ]
     with
