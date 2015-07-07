@@ -86,11 +86,6 @@ rules // facts
 	  
   desugar-nabl: 
     DirectImport(scope, subst) -> DirectImport(scope, Current(), subst)
-
-rules // constraints
-  
-  desugar-nabl:
-    TApp(constr, type*) -> TApp(constr, [], type*)
     
 rules // scopes
   

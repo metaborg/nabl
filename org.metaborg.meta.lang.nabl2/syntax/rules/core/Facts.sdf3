@@ -35,8 +35,8 @@ context-free syntax
 
 context-free syntax
 
-  Fact.HasType = <declares <Term> : <Type>> 
-  Fact.SubType = [declares [Type] <: [Type]] 
+  Fact.HasType = <declares <Term> : <Pattern>> 
+  Fact.SubType = [declares [Pattern] <: [Pattern]] 
    
 lexical syntax
 

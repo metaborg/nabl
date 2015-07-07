@@ -26,10 +26,8 @@ rules
     VarRef(v) -> |[ ~v := Var(<NewVar>) ]|
       
   constraint-to-strategies:
-    Declares(v, dv) -> [ |[ ~dv := ~decl ]| ]
-    where
-    	decl := <binder-to-decl> v
-
+    Declares(_, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
+ 
   constraint-to-strategies:
     Resolves(_, _, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
     
@@ -37,7 +35,8 @@ rules
     HasScope(_, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
   
   constraint-to-strategies:
-    Match(_, pattern) -> str*
+    Match(v, pattern) -> [ |[ ~v := Var(<NewVar>) ]|, str* ]
+    
     with var* := <collect-all(?Var(_) + ?ListVar(_))> pattern
        ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
   
@@ -64,14 +63,14 @@ rules
   
   // dynamic check could be avoided with proper static analysis
   constraint-to-terms(|msg):
-    HasType(v, t) -> [ Term |[ <get-type-constraint(|tvars, ~tp, ~msg)> ~v ]| ]
-    with tp := <try(type-pattern)> t
+    HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
+    with tp := <type-pattern> t
   
   constraint-to-terms(|msg):
     LubType(t1, t2, t3) -> [ Term |[ CLubType(~tp1, ~tp2, ~tp3, ~msg) ]| ]
-    with tp1 := <try(type-pattern)> t1
-       ; tp2 := <try(type-pattern)> t2
-       ; tp3 := <try(type-pattern)> t3
+    with tp1 := <type-pattern> t1
+       ; tp2 := <type-pattern> t2
+       ; tp3 := <type-pattern> t3
    
   constraint-to-terms(|msg):
     SubType(t1, t2) -> [ Term |[ CSubType(~t1, ~t2, ~msg) ]| ]
@@ -82,11 +81,13 @@ rules
       ref := <binder-to-ref> Bind(ns, v)
   
   constraint-to-terms(|msg):
-    Declares(_, _) -> []
-    
+    Declares(v, dv) -> [ Term |[CEqType(~dv, ~decl, ~msg)]| ]
+    with
+      decl := <binder-to-decl> v
+      
   constraint-to-terms(|msg):
     HasScope(v, sv) -> [ Term |[ CAssoc(~v, ~sv, ~msg) ]| ]
    
   constraint-to-terms(|msg):
   	Match(v, pattern) -> [ Term |[ CEqType(~v, ~tp, ~msg) ]| ]
-  	with tp := <try(type-pattern)> pattern
+  	with tp := <type-pattern> pattern

@@ -9,10 +9,7 @@ imports
   
 context-free syntax
 
-  BaseConstraint.HasType = <<DeclRef> has type <Type>> 
+  BaseConstraint.HasType = <<DeclRef> has type <Pattern>> 
   
   DeclRef.DeclOf = <declaration of <Term>>
-  
-  Type.TApp = <<Id>(<{Pattern ","}*>)> 
    
-  

@@ -24,7 +24,7 @@ context-free syntax
   FactOrScope = Scope
 
   Rule.TypeRule = <
-    <Pattern>:<Type>
+    <Pattern> : <Pattern>
     <Constraints>
     >
     

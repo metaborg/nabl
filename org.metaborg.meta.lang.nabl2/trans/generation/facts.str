@@ -13,7 +13,7 @@ rules
   fact-to-strategies:
     HasType(_, type) -> str*
     with var* := <collect-all(?Var(_) + ?ListVar(_))> type
-       ; str* := <map(!|[ ~<id> := TVar(<NewTVar>) ]|)> var*
+       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
 
 rules
     
@@ -48,8 +48,8 @@ rules
 
   // dynamic check could be avoided with proper static analysis
   fact-to-terms:
-    HasType(v, t) -> [ Term |[ <get-type-constraint(|tvars, ~tp, position)> ~v ]| ]
-    with tp := <try(type-pattern)> t
+    HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v,~tp, position) ]| ]
+    with tp := <type-pattern> t
     
   fact-to-terms:
   	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
@@ -85,12 +85,8 @@ rules
 	
 rules
    
-  type-pattern:
-    TApp(tc, cp*, t*) -> Term |[ TApp(~tc', [~tp*]) ]|
-    with 
-      tc' := Op(tc, cp*)
-    ; tp* := <alltd(try(wld-var))> t*
-       
+  type-pattern = ! Term |[ <type-app> ~<alltd(try(wld-var))> ]|
+         
   wld-var:
     Wld() -> Term |[ Var(<NewVar>) ]|
     

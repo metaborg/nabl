@@ -30,8 +30,7 @@ folding Default folding definitions
   Substitution.Subst
   Fact.DirectImport
   Fact.HasType
-  Type.TApp
-  Type.TApp
+  Fact.SubType
   Fact.NamedImport
   Fact.DirectImport
   Scope
