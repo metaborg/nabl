@@ -108,7 +108,7 @@ rules
        ; tp2 := <type-pattern> t2
         
   constraint-to-terms(|msg):
-    Resolves(v, ns, dv, pv) -> [ Term |[ CResolves(~ref, ~dv, ~msg, ~pv') ]| ]
+    Resolves(v, ns, dv, pv) -> [ Term |[ CResolves(~ref, ~pv', ~dv, ~msg) ]| ]
     with
       ref := <binder-to-ref> Bind(ns, v)
     ; pv' := <try(wld-var)> pv
