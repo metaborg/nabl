@@ -51,7 +51,18 @@ rules
   constraint-to-strategies:
     Failure(c, _) -> str*
     with str* := <constraint-to-strategies> c
-    
+
+  constraint-to-strategies:
+    c@MakeSub(v, _, _) -> [ |[ ~v := Var(<NewVar>) ]| ]
+
+  constraint-to-strategies:
+    c@ExtractSub(v, _) -> [ |[ ~v := Var(<NewVar>) ]| ]
+
+  constraint-to-strategies:
+    c@ApplySub(v, _, _) -> [ |[ ~v := Var(<NewVar>) ]| ]
+ 
+rules
+      
   constraint-to-terms(|pos):
     Success(c, msg) -> t*
     with pos' := <message-to-term> msg
@@ -77,8 +88,25 @@ rules
        ; tp3 := <type-pattern> t3
    
   constraint-to-terms(|msg):
-    SubType(t1, t2) -> [ Term |[ CSubType(~t1, ~t2, ~msg) ]| ]
-       
+    SubType(t1, t2) -> [ Term |[ CSubType(~tp1, ~tp2, ~msg) ]| ]
+    with tp1 := <type-pattern> t1
+       ; tp2 := <type-pattern> t2
+  
+  constraint-to-terms(|msg):
+    MakeSub(t1, t2, t3) -> [ Term |[ CMkSub(~tp1, ~tp2, ~tp3, ~msg) ]| ]
+    with tp1 := <type-pattern> t1
+       ; tp2 := <type-pattern> t2
+       ; tp3 := <type-pattern> t3
+   
+  constraint-to-terms(|msg):
+    ExtractSub(t, p) -> [ Term |[ CComposeSub(~tp, ~p, ~msg) ]| ]
+    with tp := <type-pattern> t
+  
+  constraint-to-terms(|msg):
+    ApplySub(t1, s, t2) -> [ Term |[ CApplySub(~tp1, ~s, ~tp2, ~msg) ]| ]
+    with tp1 := <type-pattern> t1
+       ; tp2 := <type-pattern> t2
+        
   constraint-to-terms(|msg):
     Resolves(v, ns, dv, pv) -> [ Term |[ CResolves(~ref, ~dv, ~msg, ~pv') ]| ]
     with
