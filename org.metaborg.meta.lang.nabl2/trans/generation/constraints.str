@@ -119,7 +119,7 @@ rules
     ; pv' := <try(wld-var)> pv
       
   constraint-to-terms(|msg):
-    Declares(v, dv) -> [ Term |[CEqType(~dv, ~decl, ~msg)]| ]
+    Declares(v, dv) -> [ Term |[CEqual(~dv, ~decl, ~msg)]| ]
     with
       decl := <binder-to-decl> v
       
@@ -127,5 +127,5 @@ rules
     HasScope(v, sv) -> [ Term |[ CAssoc(~v, ~sv, ~msg) ]| ]
    
   constraint-to-terms(|msg):
-  	Match(v, pattern) -> [ Term |[ CEqType(~v, ~tp, ~msg) ]| ]
+  	Match(v, pattern) -> [ Term |[ CEqual(~v, ~tp, ~msg) ]| ]
   	with tp := <type-pattern> pattern
