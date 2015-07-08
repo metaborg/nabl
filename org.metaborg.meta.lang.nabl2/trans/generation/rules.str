@@ -18,10 +18,9 @@ rules // binding rules
  
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, [], constr*) ->
-    |[ nabl-ts-constraint(|facts,constraints,scopes):
+    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
          ~pattern -> <fail>
          with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
-         with position := <get-position>
          with ~var
          with <iset-addlist(|[~fcoll*])> facts
             ;  <iset-addlist(|[~ccoll*])> constraints
@@ -34,10 +33,9 @@ rules // binding rules
 
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
-    |[ nabl-ts-constraint(|facts,constraints,scopes):
+    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
          ~pattern -> <id>
          with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
-         with position := <get-position>
          with ~var
          with <iset-addlist(|[~fcoll*])> facts
             ;  <iset-addlist(|[~ccoll*])> constraints
@@ -53,9 +51,8 @@ rules // binding rules
 
    rule-to-strategy:
     TypeRule(pattern, type, constr*) ->
-    |[ nabl-ts-constraint(|facts,constraints,scopes):
+    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
          ~pattern -> <fail>
-         with position := <get-position>
          with ~var
          with <iset-addlist(|[CTypeOf(position, ~tp, position), ~ccoll*])> constraints
     ]|
