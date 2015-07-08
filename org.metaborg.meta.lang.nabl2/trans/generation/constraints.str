@@ -39,10 +39,10 @@ rules
     HasScope(_, v) -> [ |[ ~v := Var(<NewVar>) ]| ]
   
   constraint-to-strategies:
-    Match(v, pattern) -> [ |[ ~v := Var(<NewVar>) ]|, str* ]
-    
-    with var* := <collect-all(?Var(_) + ?ListVar(_))> pattern
-       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
+    Match(pattern1, pattern2) -> str* 
+    with var1* := <collect-all(?Var(_) + ?ListVar(_))> pattern1
+       ; var2* := <collect-all(?Var(_) + ?ListVar(_))> pattern2
+       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> [var1*, var2*]
   
   constraint-to-strategies:
     Success(c, _) -> str*
@@ -127,5 +127,6 @@ rules
     HasScope(v, sv) -> [ Term |[ CAssoc(~v, ~sv, ~msg) ]| ]
    
   constraint-to-terms(|msg):
-  	Match(v, pattern) -> [ Term |[ CEqual(~v, ~tp, ~msg) ]| ]
-  	with tp := <type-pattern> pattern
+  	Match(pattern1, pattern2) -> [ Term |[ CEqual(~tp1, ~tp2, ~msg) ]| ]
+  	with tp1 := <type-pattern> pattern1
+  	   ; tp2 := <type-pattern> pattern2

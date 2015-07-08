@@ -19,7 +19,7 @@ context-free syntax
 
 context-free syntax
 
-  BaseConstraint.Match    = [[VarRef] == [Pattern]]
+  BaseConstraint.Match    = [[Pattern] == [Pattern]]
   
   BaseConstraint.Resolves = <<Term> resolves to <Namespace> <Var> through <Var>> 
   
