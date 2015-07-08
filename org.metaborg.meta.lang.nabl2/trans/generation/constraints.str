@@ -79,6 +79,11 @@ rules
   // dynamic check could be avoided with proper static analysis
   constraint-to-terms(|msg):
     HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
+    where not (ListVarRef(_) := v)
+    with tp := <type-pattern> t
+  
+  constraint-to-terms(|msg):
+    HasType(v@ListVarRef(_), t) -> [ Term |[ <type-of-constraints(|~tp, ~msg)> ~v ]| ]
     with tp := <type-pattern> t
   
   constraint-to-terms(|msg):
