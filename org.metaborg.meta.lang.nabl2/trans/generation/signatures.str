@@ -1,0 +1,21 @@
+module generation/signatures
+
+imports
+  
+  libstrc
+  src-gen/signatures/signatures/-
+  
+rules
+  
+  signature-to-str:
+    Signature(d*) -> Rules(<map(decl-to-strategy)> d*)
+  
+  decl-to-strategy:
+    TypeDecl(c, tp*) -> |[ type-app: c(~var*) -> TApp(c(t1*), [~t2*]) ]|
+    where
+      var-tp*    := <map-with-index((!Var($[p[<id>]]), id))> tp*
+    ; var*       := <map(Fst)> var-tp*
+    ; (t1*, t2*) := <partition(where(Snd; ?Decl()); Fst, Fst; to-rec-call)> var-tp*
+
+  to-rec-call:
+    t -> Term |[<type-app> t]|
