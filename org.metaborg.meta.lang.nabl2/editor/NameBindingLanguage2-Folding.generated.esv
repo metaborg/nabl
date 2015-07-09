@@ -39,3 +39,5 @@ folding Default folding definitions
   Scope.SingleScope
   Scope.ImplicitNew
   Rule.TypeRule
+  ModuleSection.Signature
+  TypeDecl.TypeDecl

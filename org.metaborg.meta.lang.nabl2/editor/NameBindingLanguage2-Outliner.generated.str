@@ -12,3 +12,4 @@ rules
   to-outline-label = ?Op(<id>, _)
   to-outline-label = ?OpQ(<id>, _)
   to-outline-label = ?Scope(_, <id>)
+  to-outline-label = ?TypeDecl(<id>, _)
