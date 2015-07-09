@@ -15,9 +15,13 @@ context-free syntax
   TypeDecl.TypeDecl = [[Id]([{TypeParam ","}*])]
   
   TypeParam.Decl  = <declaration>
-  TypeParam.Type  = <type>
-  TypeParam.Types = <type *>
+  TypeParam.Type  = <<Variance> type>
+  TypeParam.Types = <<Variance> type *>
   
+  Variance.Invariant     = <=>
+  Variance.Covariant     = <+>
+  Variance.Contravariant = <->
+
 lexical syntax
 
   SectionKeyword = "signature"
