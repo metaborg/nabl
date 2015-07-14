@@ -8,17 +8,23 @@ imports
 rules
   
   fact-to-strategies:
+    Declaration(term, v, scope, assoc-scope) -> [ |[ ~v := ~decl ]| ]
+    with
+      decl := <binder-to-decl> term
+ 
+  fact-to-strategies:
     NewScope(scope, _) -> [ |[ ~scope := Scope(<NewScope>) ]| ]
 
   fact-to-strategies:
     HasType(_, type) -> str*
-    with var* := <collect-all(?Var(_) + ?ListVar(_))> type
-       ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
+    with 
+      var* := <collect-all(?Var(_) + ?ListVar(_))> type
+    ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
 
 rules
     
   fact-to-terms:
-    Declaration(term, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
+    Declaration(term, v, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
       decl     := <binder-to-decl> term
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
@@ -68,8 +74,7 @@ rules
     with nst := <namespace-to-term> ns
 
   namespace-to-term: Name()        -> Term |[ None() ]|
-  namespace-to-term: Namespace(ns) -> Term |[ Namespace(~ns) ]|
-
+  namespace-to-term: Namespace(ns) -> Term |[ Namespace(~str:ns) ]|
 rules
 	      
   assoc-scope-to-terms(|decl):
