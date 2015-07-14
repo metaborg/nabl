@@ -29,7 +29,6 @@ folding Default folding definitions
   Fact.NamedImport
   Substitution.Subst
   Fact.DirectImport
-  Fact.HasType
   Fact.SubType
   Fact.NamedImport
   Fact.DirectImport
@@ -38,6 +37,8 @@ folding Default folding definitions
   Term
   Scope.SingleScope
   Scope.ImplicitNew
+  Rule.TypeRule
+  Rule.ScopeRule
   Rule.TypeRule
   ModuleSection.Signature
   TypeDecl.TypeDecl

@@ -16,7 +16,8 @@ strategies
     bottomup(try(desugar-nabl))
   ; alltd(inline-current-scope)
   ; alltd(explicit-new-scope)
-    
+  ; alltd(split-rules)
+     
 rules // rules
   
   desugar-nabl:
@@ -32,10 +33,12 @@ rules // rules
     TypeRule(pattern, type, constraint'*)
   with 
   	constraint'* := <mapconcat(explicit-resolution <+ MkSingleton)> constraint* 
-    
       
   split-scoped-terms:
   	Scope(s*, t*) -> <map(!Scope(s*, <id>))> t*
+  
+  split-scoped-terms:
+    ImplicitNew(t*) -> <map(!ImplicitNew(<id>))> t*
   
   explicit-resolution:
   	DeclHasType(t, ty, p) -> [Resolves(t, Name(), Var(d), p), HasType(VarRef(d), ty)]
@@ -66,7 +69,18 @@ rules // rules
   inline-current-scope:
     ScopeRule(_, InScopes([Var(svar)]), _, _, _) ->
     <alltd(?Current(); !VarRef(svar))>
-          
+  
+  split-rules =
+    Rules(mapconcat(split-rule <+ MkSingleton))
+
+  split-rule:
+    ScopeRule(pattern*, ctx, fact*, scope*, constraint*) -> 
+    <map(!ScopeRule(<id>, ctx, fact*, scope*, constraint*))> pattern*
+
+  split-rule:
+    TypeRule(pattern*, type, constraint*) -> 
+    <map(!TypeRule(<id>, type, constraint*))> pattern*
+
 rules // facts
 	
 	desugar-nabl: 
@@ -76,7 +90,7 @@ rules // facts
 	  NewSubScope(svar) -> NewScope(svar, Current())
 	
 	desugar-nabl: 
-	  Declaration(dec, scope) -> Declaration(dec, Current(), scope)
+	  Declaration(dec, v, scope) -> Declaration(dec, v, Current(), scope)
 	
 	desugar-nabl: 
 	  Reference(ref) -> Reference(ref, Current())

@@ -5,7 +5,7 @@ imports
 	common/Layout
 	common/Identifiers
   common/Modules
-  rules/core/Rules
+  rules/sugar/Rules
   rules/sugar/Constraints
   rules/sugar/Facts
   rules/sugar/Scopes
