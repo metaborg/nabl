@@ -7,6 +7,9 @@ imports
   
 rules
   
+  collect-fact-vars =
+    ?Declaration(_, <MkSingleton>, _, _)
+    
   fact-to-strategies:
     Declaration(term, v, scope, assoc-scope) -> [ |[ ~v := ~decl ]| ]
     with
@@ -14,12 +17,6 @@ rules
  
   fact-to-strategies:
     NewScope(scope, _) -> [ |[ ~scope := Scope(<NewScope>) ]| ]
-
-  fact-to-strategies:
-    HasType(_, type) -> str*
-    with 
-      var* := <collect-all(?Var(_) + ?ListVar(_))> type
-    ; str* := <map(!|[ ~<id> := Var(<NewVar>) ]|)> var*
 
 rules
     

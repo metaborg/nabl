@@ -17,37 +17,23 @@ rules // binding rules
     Rules(r*) -> [Rules(<map(rule-to-strategy)> r*)]
  
   rule-to-strategy:
-    ScopeRule(pattern, InScopes(scope*), fact*, [], constr*) ->
-    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
-         ~pattern -> <fail>
-         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
-         with ~var
-         with <iset-addlist(|[~fcoll*])> facts
-            ;  <iset-addlist(|[~ccoll*])> constraints
-    ]|
-    with fvar* := <filterconcat(fact-to-strategies)> fact*
-       ; cvar* := <mapconcat(constraint-to-strategies)> constr*
-       ; var   := <make-set; to-seq> [fvar*, cvar*]
-    with fcoll* := <mapconcat(fact-to-terms)> fact* 
-       ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
-
-  rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
     |[ nabl-ts-constraint(|facts, constraints, scopes, position):
          ~pattern -> <id>
          with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
-         with ~var
+         with ~fvar
+         with ~cvar
          with <iset-addlist(|[~fcoll*])> facts
             ;  <iset-addlist(|[~ccoll*])> constraints
          with ~visit
     ]|
-    with fvar* := <filterconcat(fact-to-strategies)> fact*
-       ; cvar* := <mapconcat(constraint-to-strategies)> constr*
-       ; var   := <make-set; to-seq> [fvar*, cvar*]
-    with fcoll* := <mapconcat(fact-to-terms)> fact* 
+    with fvar   := <filterconcat(fact-to-strategies); to-seq> fact*
+       ; fvar*  := <filterconcat(collect-fact-vars)> fact*
+       ; cvar*  := <mapconcat(collect-constraint-vars); make-set> constr*
+       ; cvar   := <diff; vars-to-init> (cvar*, fvar*)
+       ; fcoll* := <mapconcat(fact-to-terms)> fact* 
        ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
-    where [_|_] := visit*
-    with visit := <map(visit-to-appl); to-seq> visit*
+       ; visit  := <map(visit-to-appl); to-seq> visit*
 
    rule-to-strategy:
     TypeRule(pattern, type, constr*) ->
@@ -57,7 +43,10 @@ rules // binding rules
          with <iset-addlist(|[CTypeOf(position, ~tp, position), ~ccoll*])> constraints
     ]|
     with 
-    	var := <mapconcat(constraint-to-strategies); make-set; to-seq> constr*
+    	var*   := <mapconcat(collect-constraint-vars); make-set> constr*
+    ; var    := <vars-to-init> var* 
     ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr*
-    ; tp  := <type-pattern> type
-           
+    ; tp     := <type-pattern> type
+        
+    vars-to-init = map(!|[ ~<id> := Var(<NewVar()>) ]|); to-seq
+       
