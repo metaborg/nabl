@@ -14,7 +14,7 @@ imports
 rules // binding rules
 
   rules-to-str:
-    Rules(r*) -> Rules(<map(rule-to-strategy)> r*)
+    Rules(r*) -> [Rules(<map(rule-to-strategy)> r*)]
  
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, [], constr*) ->

@@ -8,8 +8,28 @@ imports
 rules
   
   signature-to-str:
-    Signature(d*) -> Rules(<map(decl-to-strategy)> d*)
+    Signature(d*) -> [Signature([Constructors(<mapconcat(decl-to-constrs)> d*)]), Rules(<map(decl-to-strategy)> d*)]
   
+  
+  decl-to-constrs:
+    TypeDecl(c, tp*) -> <make-set> [ Constr |[c: tp1 ]|, Constr |[c: tp2 ]| ]
+    where
+      (ty1*, ty2*) := <partition(?Decl(); to-sort, to-sort)> tp*
+    ; tp1 := <to-type(| Type |[ TypeConstr ]|)> ty1*
+    ; tp2 := <to-type(| Type |[ Type ]|)> [ty1*, ty2*]
+  
+  to-sort:
+    Decl() -> Sort |[ Declaration ]|
+  
+  to-sort:
+    Type(_) -> Sort |[ Type ]|
+  
+  to-sort:
+    Types(_) -> Sort |[ List(Type) ]|
+      
+  to-type(|ty) =
+  	?[] < !ty + !FunType(<id>, ty)
+  	
   decl-to-strategy:
     TypeDecl(c, tp*) -> |[ type-app: c(~var*) -> TApp(c(t1*), [~t2*]) ]|
     where
@@ -19,3 +39,6 @@ rules
 
   to-rec-call:
     t -> Term |[<type-app> t]|
+    
+    
+    

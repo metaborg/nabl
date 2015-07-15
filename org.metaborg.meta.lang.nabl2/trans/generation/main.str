@@ -4,8 +4,7 @@ imports
   
   libstrc
   src-gen/signatures/terms/-
-  generation/rules
-  generation/signatures
+  generation/modules
   
 rules
   
@@ -83,23 +82,4 @@ rules
   fix-var: ListVar(x)    -> Var(x)
   fix-decl: RDefP(n, sp*, tp*, r) -> RDefT(n, sp*, tp*, r)
   
-rules // modules
-  
-  module-to-str:
-    Module(n, s*) -> Module(n', [Imports(lib*)|s'*])
-    with
-      n'   := $[src-gen/analysis/[n]]
-    ; lib* := [
-      	        Import("libstratego-gpp"),
-      	        Import("runtime/editor/annotations"),
-      	        Import("libanalysis2/-"),
-                Import("libanalysis2/abstract-syntax/-"),
-                Import("libanalysis2/namebinding/-"),
-                Import("libanalysis2/typechecking/-"),
-                Import("libanalysis2/nabl-ts/-"),
-                Import("src-gen/signatures/libanalysis2/-") 
-              ]
-    ; s'* := <map(section-to-str)> s*
-      
-  section-to-str = ?Imports(_) <+ rules-to-str <+ signature-to-str
   
