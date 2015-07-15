@@ -42,3 +42,5 @@ folding Default folding definitions
   Rule.TypeRule
   ModuleSection.Signature
   TypeDecl.TypeDecl
+  ModuleSection.Relation
+  RelEntry.RelEntry

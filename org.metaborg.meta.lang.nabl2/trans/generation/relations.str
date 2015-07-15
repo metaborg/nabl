@@ -1,0 +1,21 @@
+module generation/relations
+
+imports
+  libstrc
+  src-gen/signatures/signatures/-
+
+imports
+  generation/signatures
+  
+rules
+  
+  relations-to-str:
+    Relation(e*) -> [Rules(<map(entry-to-strategy)> e*)]
+
+  entry-to-strategy:
+  	RelEntry(Op(c1, t1*), Op(c2, t2*)) -> |[ build-subtype-rel = hashtable-push(|c1(), (c2(), [~vt*])); fail ]|
+  	with
+  	  vt* := <map(param-to-term)> t2*
+
+  param-to-term = Op(id, map(param-to-term)) <+ var-to-term
+  
