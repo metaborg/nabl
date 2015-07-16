@@ -21,7 +21,9 @@ context-free syntax
 
   BaseConstraint.Match    = [[Pattern] == [Pattern]]
   
-  BaseConstraint.Resolves = <<Term> resolves to <Namespace> <Var> through <Var>> 
+  BaseConstraint.Resolves = <<Term> resolves to <BinderRef> through <Var>> 
+  
+  BinderRef.BindV = <<Namespace> <Var>>
   
   BaseConstraint.HasScope = [[VarRef] is associated with scope [Var]]
 

@@ -41,7 +41,7 @@ rules // rules
     ImplicitNew(t*) -> <map(!ImplicitNew(<id>))> t*
   
   explicit-resolution:
-  	DeclHasType(t, ty, p) -> [Resolves(t, Name(), Var(d), p), HasType(VarRef(d), ty)]
+  	DeclHasType(BindV(ns, r), ty, p) -> [Resolves(r, BindV(ns, Var(d)), p), HasType(VarRef(d), ty)]
     with d := <newname> "decl"
     
   explicit-new-scope:
@@ -104,7 +104,7 @@ rules // facts
 rules // constraints
   
   desugar-nabl:
-    Resolves(n, ns, d) -> Resolves(n, ns, d, Wld())    
+    Resolves(n, b) -> Resolves(n, b, Wld())    
   
   desugar-nabl:
     DeclHasType(t, ty) -> DeclHasType(t, ty, Wld())    

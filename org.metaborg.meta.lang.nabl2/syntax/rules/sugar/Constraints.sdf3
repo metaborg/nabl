@@ -9,7 +9,7 @@ imports
   
 context-free syntax
 
-  BaseConstraint.Resolves = <<Term> resolves to <Namespace> <Var>> 
-  BaseConstraint.DeclHasType = <declaration of <Term> : <Pattern>> 
-  BaseConstraint.DeclHasType = <declaration of <Term> : <Pattern> through <Var>> 
+  BaseConstraint.Resolves = <<Term> resolves to <BinderRef>> 
+  BaseConstraint.DeclHasType = <declaration of <BinderRef> : <Pattern>> 
+  BaseConstraint.DeclHasType = <declaration of <BinderRef> : <Pattern> through <Var>> 
   

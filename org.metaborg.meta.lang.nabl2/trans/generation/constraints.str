@@ -24,7 +24,7 @@ rules
   	?Declares(_, <MkSingleton>)
  
   collect-constraint-vars:
-    Resolves(_, _, v, p) -> [v, p]
+    Resolves(_, BindV(_, v), p) -> [v, p]
   
   collect-constraint-vars =
     ?HasScope(_, <MkSingleton>)
@@ -99,7 +99,7 @@ rules
        ; tp2 := <type-pattern> t2
         
   constraint-to-terms(|msg):
-    Resolves(v, ns, dv, pv) -> [ Term |[ CResolves(~ref, ~pv', ~dv, ~msg) ]| ]
+    Resolves(v, BindV(ns, dv), pv) -> [ Term |[ CResolves(~ref, ~pv', ~dv, ~msg) ]| ]
     with
       ref := <binder-to-ref> Bind(ns, v)
     ; pv' := <try(wld-var)> pv
