@@ -18,8 +18,8 @@ rules // binding rules
  
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
-    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
-         ~pattern -> <id>
+    |[ c(|facts, constraints, scopes, position):
+         ~pattern -> ~ret
          with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
          with ~fvar
          with ~cvar
@@ -34,7 +34,13 @@ rules // binding rules
        ; fcoll* := <mapconcat(fact-to-terms)> fact* 
        ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
        ; visit  := <map(visit-to-appl); to-seq> visit*
-
+       ; if []:= visit* then
+           c   := "nabl-ts-constraint"
+         ; ret := |[ <fail> ]|
+         else
+           c   := "nabl-ts-scope"
+         ; ret := |[ <id> ]|
+         end
    rule-to-strategy:
     TypeRule(pattern, type, constr*) ->
     |[ nabl-ts-constraint(|facts, constraints, scopes, position):
