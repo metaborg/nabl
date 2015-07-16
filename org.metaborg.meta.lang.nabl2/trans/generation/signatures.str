@@ -16,7 +16,7 @@ rules
     TypeDecl(c, tp*) -> <make-set> [ Constr |[c: tp1 ]|, Constr |[c: tp2 ]| ]
     with
       (ty1*, ty2*) := <partition(?Decl(); to-sort, to-sort)> tp*
-    ; tp1 := <to-type(| Type |[ TypeConstr ]|)> ty1*
+    ; tp1 := <to-type(| Type |[ TypeCon ]|)> ty1*
     ; tp2 := <to-type(| Type |[ Type ]|)> [ty1*, ty2*]
   
   to-sort:
@@ -33,7 +33,12 @@ rules
   	
   decl-to-strategies:
     TypeDecl(c, tp*) -> 
-    [ |[ type-app: c(~var*) -> TApp(c(~tv1*), [~call*]) ]|, st* ]
+    [ |[ type-app: c(~var*) -> TApp(c(~tv1*), [~call*]) ]|
+    , |[ build-subtype-rel = hashtable-push(|c(~tvt1*), (c(~tvt1*), [~tvt2*])); fail ]| 
+    , |[ subtype-variance: c(~w*) -> [~variance*] ]| 
+    , |[ is-TypeCon = ?c(~w*) ]|
+    , |[ prettyprint-TypeCon: c(~tv1*) -> [ H([SOpt(HS(), "0")], [S(~cs)])] ]|
+    ]
     with
       var-tp*      := <map-with-index((!Var($[p[<id>]]), id))> tp*
     ; var*         := <map(Fst)> var-tp*
@@ -43,9 +48,8 @@ rules
     ; tvt2*        := <map(var-to-term)> tv2*
     ; w*           := <map(!Wld())> tv1*
     ; variance*    := <filter(?Type(<variance-to-term>) + ?Types(<variance-to-term>))> tp*
-    ; st*          := [ |[ build-subtype-rel = hashtable-push(|c(~tvt1*), (c(~tvt1*), [~tvt2*])); fail ]| 
-	                    , |[ subtype-variance: c(~w*) -> [~variance*] ]| ]
- 
+    ; cs           := Str(<double-quote> c)
+    
   to-rec-call:
     t -> Term |[<type-app> t]|
         
