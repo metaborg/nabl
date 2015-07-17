@@ -17,5 +17,5 @@ rules
   	with
   	  vt* := <map(param-to-term)> t2*
 
-  param-to-term = Op(id, map(param-to-term)) <+ var-to-term
+  param-to-term = Op(id, alltd(var-to-term)); to-app-call <+ var-to-term
   

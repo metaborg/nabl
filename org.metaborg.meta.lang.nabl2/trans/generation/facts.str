@@ -4,6 +4,7 @@ imports
   
   libstrc
   src-gen/signatures/rules/core/-
+  src-gen/signatures/terms/-
   
 rules
   
@@ -12,6 +13,7 @@ rules
     
   fact-to-strategies:
     Declaration(term, v, scope, assoc-scope) -> [ |[ ~v := ~decl ]| ]
+    where <not(?Wld())> v
     with
       decl := <binder-to-decl> term
  
@@ -23,7 +25,11 @@ rules
   fact-to-terms:
     Declaration(term, v, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
-      decl     := <binder-to-decl> term
+      if Wld() := v then
+      	decl := <binder-to-decl> term
+      else 
+      	decl := v
+      end
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
   
   fact-to-terms:
@@ -57,19 +63,31 @@ rules
   fact-to-terms:
   	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
   	with
-  	  ty1' := <type-pattern> ty1
+  	  ty1' := <type-def-pattern> ty1
   	; ty2' := <type-pattern> ty2
 
 rules
 
   binder-to-decl: 
-    Bind(ns, term) -> Term |[ DeclId(~nst, ~term, <get-position> ~term) ]|
-    with nst := <namespace-to-term> ns
+    Bind(ns, term) -> Term |[ DeclId(~nst, ~term, ~pos) ]|
+    with 
+      nst := <namespace-to-term> ns
+    ; if <?VarRef(_) + ?ListVarRef(_)> term then
+        pos := Term |[ <get-position> ~term ]|
+      else
+	      pos := Term |[ <get-implicit-decl-position(|~term)> position ]|
+      end
     
   binder-to-ref: 
-    Bind(ns, term) -> Term |[ RefId(~nst, ~term, <get-position> ~term) ]|   
-    with nst := <namespace-to-term> ns
-
+    Bind(ns, term) -> Term |[ RefId(~nst, ~term, ~pos) ]|   
+    with 
+      nst := <namespace-to-term> ns
+    ; if <?Var(_) + ?ListVar(_) + ?VarRef(_) + ?ListVarRef(_)> term then
+        pos := Term |[ <get-position> ~term ]|
+      else
+        pos := Term |[ <get-implicit-ref-position(|~term)> position ]|
+      end
+    
   namespace-to-term: Name()        -> Term |[ None() ]|
   namespace-to-term: Namespace(ns) -> Term |[ Namespace(~str:ns) ]|
 rules
@@ -87,7 +105,8 @@ rules
 	
 rules
    
-  type-pattern = ! Term |[ <type-app> ~<alltd(wld-var)> ]|
+  type-def-pattern = ! Term |[ <type-def> ~<alltd(wld-var)> ]|
+  type-pattern     = ! Term |[ <type-app> ~<alltd(wld-var)> ]|
          
   wld-var:
     Wld() -> Term |[ Var(<NewVar>) ]|

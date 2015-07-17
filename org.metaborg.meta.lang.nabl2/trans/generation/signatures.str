@@ -33,7 +33,8 @@ rules
   	
   decl-to-strategies:
     TypeDecl(c, tp*) -> 
-    [ |[ type-app: c(~var*) -> TApp(c(~tv1*), [~call*]) ]|
+    [ |[ type-app: c(~var*) -> TApp(c(~tv1*), [~acall*]) ]|
+    , |[ type-def: c(~var*) -> TDef(c(~tv1*), [~dcall*]) ]|
     , |[ build-subtype-rel = hashtable-push(|c(~tvt1*), (c(~tvt1*), [~tvt2*])); fail ]| 
     , |[ subtype-variance: c(~w*) -> [~variance*] ]| 
     , |[ is-TypeCon = ?c(~w*) ]|
@@ -43,16 +44,20 @@ rules
       var-tp*      := <map-with-index((!Var($[p[<id>]]), id))> tp*
     ; var*         := <map(Fst)> var-tp*
     ; (tv1*, tv2*) := <partition(where(Snd; ?Decl()); Fst, Fst)> var-tp*
-    ; call*        := <map(to-rec-call)> tv2*
+    ; variance*    := <filter(?Type(<variance-to-term>) + ?Types(<variance-to-term>))> tp*
+    ; acall*       := <map(to-app-call)> tv2*
+    ; dcall*       := <zip(to-arg-call)> (variance*, acall*)
     ; tvt1*        := <map(var-to-term)> tv1*
     ; tvt2*        := <map(var-to-term)> tv2*
     ; w*           := <map(!Wld())> tv1*
-    ; variance*    := <filter(?Type(<variance-to-term>) + ?Types(<variance-to-term>))> tp*
     ; cs           := Str(<double-quote> c)
     
-  to-rec-call:
+  to-app-call:
     t -> Term |[<type-app> t]|
-        
+  
+  to-arg-call:
+    (v, a) -> Term |[ TArg(~v, ~a) ]|
+           
   var-to-term:
     _ -> Term |[ Var(x) ]|
     with
