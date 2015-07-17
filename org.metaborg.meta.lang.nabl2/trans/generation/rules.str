@@ -54,5 +54,5 @@ rules // binding rules
     ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr*
     ; tp     := <type-pattern> type
         
-    vars-to-init = map(!|[ ~<id> := Var(<NewVar()>) ]|); to-seq
+    vars-to-init = map(!|[ ~<id> := <new-var> ]|); to-seq
        
