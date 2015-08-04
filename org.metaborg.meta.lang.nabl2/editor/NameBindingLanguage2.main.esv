@@ -1,0 +1,33 @@
+module NameBindingLanguage2.main
+
+imports
+  NameBindingLanguage2-Colorer
+  NameBindingLanguage2-Completions
+  NameBindingLanguage2-Folding
+  NameBindingLanguage2-Menus
+  NameBindingLanguage2-Refactorings
+  NameBindingLanguage2-References
+  NameBindingLanguage2-Syntax
+  NameBindingLanguage2-Views
+
+language General properties
+  
+  name:          NameBindingLanguage2
+  id:            org.metaborg.meta.lang.nabl2
+  extends:       Root
+  
+  description:   "Spoofax-generated editor for the NameBindingLanguage2 language"
+  url:           http://strategoxt.org
+  
+  extensions:    nab2, ts2
+  table:         include/NameBindingLanguage2.tbl
+  start symbols: Start
+  
+  provider:      include/namebindinglanguage2.ctree
+  provider:      include/namebindinglanguage2-java.jar
+  
+  observer:      editor-analyze (multifile)
+  
+  on save:       editor-save
+  
+  jvm opts:      -server -Xss8m -Xmx1024m

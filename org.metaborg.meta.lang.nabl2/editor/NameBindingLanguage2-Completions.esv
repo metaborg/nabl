@@ -1,0 +1,16 @@
+module NameBindingLanguage2-Completions
+
+imports src-gen/completions/NameBindingLanguage2-esv
+
+completions
+                                                                   
+  // This file is used to define content completion.               
+  //                                                               
+  // See the imported file for a brief introduction and examples.  
+                                  
+completions
+  // Semantic (identifier) completion:   
+                                         
+  completion proposer                  : editor-complete
+                                         
+ 

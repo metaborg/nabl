@@ -1,0 +1,30 @@
+module generation/modules
+
+imports
+  src-gen/signatures/-
+  libstrc
+
+imports
+  generation/rules
+  generation/signatures
+  generation/relations
+    
+rules // modules
+  
+  module-to-str:
+    Module(n, s*) -> Module(n', [Imports(lib*)|s'*])
+    with
+      n'   := $[src-gen/analysis/[n]]
+    ; lib* := [
+                Import("libstratego-gpp"),
+                Import("runtime/editor/annotations"),
+                Import("libanalysis2/-"),
+                Import("libanalysis2/abstract-syntax/-"),
+                Import("libanalysis2/namebinding/-"),
+                Import("libanalysis2/typechecking/-"),
+                Import("libanalysis2/nabl-ts/-"),
+                Import("src-gen/signatures/libanalysis2/-") 
+              ]
+    ; s'* := <mapconcat(section-to-str)> s*
+      
+  section-to-str = ?Imports(_); MkSingleton <+ rules-to-str <+ signature-to-str <+ relations-to-str

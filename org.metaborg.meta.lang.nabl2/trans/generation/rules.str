@@ -1,0 +1,58 @@
+module generation/rules
+
+imports
+  
+  libstrc
+  src-gen/signatures/rules/core/-
+  src-gen/signatures/terms/-
+  analysis/-
+  util
+  generation/visits
+  generation/constraints
+  generation/facts
+  
+rules // binding rules
+
+  rules-to-str:
+    Rules(r*) -> [Rules(<map(rule-to-strategy)> r*)]
+ 
+  rule-to-strategy:
+    ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
+    |[ c(|facts, constraints, scopes, position):
+         ~pattern -> ~ret
+         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+         with ~fvar
+         with ~cvar
+         with <iset-addlist(|[~fcoll*])> facts
+            ;  <iset-addlist(|[~ccoll*])> constraints
+         with ~visit
+    ]|
+    with fvar   := <filterconcat(fact-to-strategies); to-seq> fact*
+       ; fvar*  := <filterconcat(collect-fact-vars)> fact*
+       ; cvar*  := <mapconcat(collect-constraint-vars); make-set> constr*
+       ; cvar   := <diff; vars-to-init> (cvar*, fvar*)
+       ; fcoll* := <mapconcat(fact-to-terms)> fact* 
+       ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
+       ; visit  := <map(visit-to-appl); to-seq> visit*
+       ; if []:= visit* then
+           c   := "nabl-ts-constraint"
+         ; ret := |[ <fail> ]|
+         else
+           c   := "nabl-ts-scope"
+         ; ret := |[ <id> ]|
+         end
+   rule-to-strategy:
+    TypeRule(pattern, type, constr*) ->
+    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
+         ~pattern -> <fail>
+         with ~var
+         with <iset-addlist(|[CTypeOf(position, ~tp, position), ~ccoll*])> constraints
+    ]|
+    with 
+    	var*   := <mapconcat(collect-constraint-vars); make-set> constr*
+    ; var    := <vars-to-init> var* 
+    ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr*
+    ; tp     := <type-pattern> type
+        
+    vars-to-init = map(!|[ ~<id> := <new-var> ]|); to-seq
+       

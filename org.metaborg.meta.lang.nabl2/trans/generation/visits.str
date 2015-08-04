@@ -1,0 +1,13 @@
+module generation/visits
+
+imports
+
+  libstrc
+  src-gen/signatures/-
+
+rules
+  
+  visit-to-appl:
+    Scope(scope*, t) -> |[<s> ~t ]|
+    with
+      s := |[ nabl-ts-traverse(|facts, constraints, [~scope*], position) ]|

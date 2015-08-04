@@ -1,0 +1,122 @@
+module analysis/desugar
+
+imports
+  src-gen/signatures/terms/-
+  src-gen/signatures/rules/core/-
+  src-gen/signatures/rules/sugar/-
+  src-gen/pp/rules/core/-
+
+signature constructors
+  
+  ScopeRule: Pattern * Context * List(Fact) * List(Scope) * Constraints -> Rule
+
+strategies
+  
+  desugar-all = 
+    bottomup(try(desugar-nabl))
+  ; alltd(inline-current-scope)
+  ; alltd(explicit-new-scope)
+  ; alltd(split-rules)
+     
+rules // rules
+  
+  desugar-nabl:
+    ScopeRule(pattern, context, fact-scope*, constraint*) -> 
+    ScopeRule(pattern, context, fact*, scope'*, constraint'*)
+    with
+      (fact*, scope*) := <partition(is-Fact)> fact-scope*
+    ; scope'*         := <mapconcat(split-scoped-terms <+ MkSingleton)> scope*
+    ; constraint'*    := <mapconcat(explicit-resolution <+ MkSingleton)> constraint* 
+  
+  desugar-nabl:
+  	TypeRule(pattern, type, constraint*) ->
+    TypeRule(pattern, type, constraint'*)
+  with 
+  	constraint'* := <mapconcat(explicit-resolution <+ MkSingleton)> constraint* 
+      
+  split-scoped-terms:
+  	Scope(s*, t*) -> <map(!Scope(s*, <id>))> t*
+  
+  split-scoped-terms:
+    ImplicitNew(t*) -> <map(!ImplicitNew(<id>))> t*
+  
+  explicit-resolution:
+  	DeclHasType(BindV(ns, r), ty, p) -> [Resolves(r, BindV(ns, Var(d)), p), HasType(VarRef(d), ty)]
+    with d := <newname> "decl"
+    
+  explicit-new-scope:
+    ScopeRule(pattern, ctx@InScopes([Var(svar)]), fact*, scope*, constraint*) ->
+    ScopeRule(pattern, ctx, fact'*, scope'*, constraint*)
+    where
+      <fetch(?ImplicitNew(_))> scope*
+    + <fetch(?Declaration(_, _, Assoc()))> fact*
+    with
+      if <fetch(?NewScope(Var(s), _))> fact* then
+        new* := []
+      else
+        s    := "new"
+      ; new* := [NewScope(Var(s), VarRef(svar))]
+      end
+    ; fact'*  := [new* | <map(try(explicit-assoc(|s)))> fact*]
+    ; scope'* := <map(try(explicit-implicit(|s)))> scope*
+  
+  explicit-assoc(|a):
+    Declaration(d, s, Assoc()) -> Declaration(d, s, Assoc(VarRef(a)))    
+  
+  explicit-implicit(|s):
+    ImplicitNew(t) -> Scope([VarRef(s)], t)
+    
+  inline-current-scope:
+    ScopeRule(_, InScopes([Var(svar)]), _, _, _) ->
+    <alltd(?Current(); !VarRef(svar))>
+  
+  split-rules =
+    Rules(mapconcat(split-rule <+ MkSingleton))
+
+  split-rule:
+    ScopeRule(pattern*, ctx, fact*, scope*, constraint*) -> 
+    <map(!ScopeRule(<id>, ctx, fact*, scope*, constraint*))> pattern*
+
+  split-rule:
+    TypeRule(pattern*, type, constraint*) -> 
+    <map(!TypeRule(<id>, type, constraint*))> pattern*
+
+rules // facts
+	
+	desugar-nabl: 
+	  NewRootScope(svar) -> NewScope(svar, Global())
+	
+	desugar-nabl: 
+	  NewSubScope(svar) -> NewScope(svar, Current())
+	
+	desugar-nabl: 
+	  Declaration(dec, v, scope) -> Declaration(dec, v, Current(), scope)
+	
+	desugar-nabl: 
+	  Reference(ref) -> Reference(ref, Current())
+	
+	desugar-nabl: 
+	  NamedImport(ref, subst) -> NamedImport(ref, Current(), subst)
+	  
+  desugar-nabl: 
+    DirectImport(scope, subst) -> DirectImport(scope, Current(), subst)
+
+rules // constraints
+  
+  desugar-nabl:
+    Resolves(n, b) -> Resolves(n, b, Wld())    
+  
+  desugar-nabl:
+    DeclHasType(t, ty) -> DeclHasType(t, ty, Wld())    
+    
+rules // scopes
+  
+  desugar-nabl:
+    SingleScope(scope, term) -> Scope([scope], term)
+    
+  desugar-nabl:
+    InScope(scope) -> InScopes([scope])
+  
+  desugar-nabl:
+    ImplicitScope() -> InScopes([Var("implicit")])
+  

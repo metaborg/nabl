@@ -1,0 +1,16 @@
+module analysis/normalize
+
+imports
+  src-gen/signatures/rules/core/-
+  analysis/desugar
+  
+strategies
+   
+  normalize-all = desugar-all; alltd(normalize)
+
+rules
+
+  normalize =
+    ScopeRule(id, id, id, id, is-list <+ ![])
+  + TypeRule(id, id, is-list <+ ![])
+  

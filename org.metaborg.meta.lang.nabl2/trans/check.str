@@ -1,0 +1,9 @@
+module check
+
+imports
+
+	include/NameBindingLanguage2
+	lib/editor-common.generated
+
+rules
+	

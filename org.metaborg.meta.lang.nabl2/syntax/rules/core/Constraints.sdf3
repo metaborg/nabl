@@ -1,0 +1,41 @@
+module rules/core/Constraints
+
+imports 
+
+  terms/Terms 
+  terms/Vars
+  common/Identifiers  
+  rules/core/Messages
+  rules/core/Facts
+  
+context-free syntax
+
+  Constraint         = BaseConstraint
+  Constraint.Success = <<BaseConstraint> and <Message>>
+  Constraint.Failure = <<BaseConstraint> else <Message>>
+
+  // pseudo-constraint
+  Constraint.Declares = <<Binder> declares <Var>> 
+
+context-free syntax
+
+  BaseConstraint.Match    = [[Pattern] == [Pattern]]
+  
+  BaseConstraint.Resolves = <<Term> resolves to <BinderRef> through <Var>> 
+  
+  BinderRef.BindV = <<Namespace> <Var>>
+  
+  BaseConstraint.HasScope = [[VarRef] is associated with scope [Var]]
+
+  BaseConstraint.HasType  = <<VarRef> : <Pattern>> 
+  BaseConstraint.SubType  = [[Pattern] <: [Pattern]] 
+  BaseConstraint.LubType  = [[Var] == lub ([Pattern], [Pattern])] {prefer} 
+    
+  BaseConstraint.MakeSub    = [[Var] == [Term] |-> [Term]]
+  BaseConstraint.MakeSub    = <<Var> == [<Term>/<Term>]>
+  BaseConstraint.ExtractSub = [[Var] == extract ([Term])] {prefer}
+  BaseConstraint.ApplySub   = [[Var] == apply ([Term], [Term])] {prefer}
+  
+lexical syntax
+
+  Keyword = "where"
