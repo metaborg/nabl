@@ -3,8 +3,8 @@ module editor/NameBindingLanguage2-Outliner
 imports
   
   include/NameBindingLanguage2
-  lib/runtime/editor/outline-library
-  lib/runtime/editor/origins
+  runtime/editor/outline-library
+  runtime/editor/origins
   editor/NameBindingLanguage2-Outliner.generated
 
 rules

@@ -3,7 +3,7 @@ module generation/main
 imports
   
   libstrc
-  src-gen/signatures/terms/-
+  signatures/terms/-
   generation/modules
   
 rules

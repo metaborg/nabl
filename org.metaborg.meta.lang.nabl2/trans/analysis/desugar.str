@@ -1,10 +1,10 @@
 module analysis/desugar
 
 imports
-  src-gen/signatures/terms/-
-  src-gen/signatures/rules/core/-
-  src-gen/signatures/rules/sugar/-
-  src-gen/pp/rules/core/-
+  signatures/terms/-
+  signatures/rules/core/-
+  signatures/rules/sugar/-
+  pp/rules/core/-
 
 signature constructors
   

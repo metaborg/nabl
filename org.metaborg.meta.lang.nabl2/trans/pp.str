@@ -3,9 +3,9 @@ module pp
 imports
 
 	libstratego-gpp
-	lib/runtime/refactoring/-
+	runtime/refactoring/-
 	include/NameBindingLanguage2-parenthesize
-	src-gen/pp/NameBindingLanguage2-pp
+	pp/NameBindingLanguage2-pp
 
 rules
 	

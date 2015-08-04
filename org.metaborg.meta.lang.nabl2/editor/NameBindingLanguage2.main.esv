@@ -1,6 +1,7 @@
 module NameBindingLanguage2.main
 
 imports
+  NameBindingLanguage2.generated
   NameBindingLanguage2-Colorer
   NameBindingLanguage2-Completions
   NameBindingLanguage2-Folding
@@ -12,8 +13,6 @@ imports
 
 language General properties
   
-  name:          NameBindingLanguage2
-  id:            org.metaborg.meta.lang.nabl2
   extends:       Root
   
   description:   "Spoofax-generated editor for the NameBindingLanguage2 language"
@@ -24,8 +23,7 @@ language General properties
   start symbols: Start
   
   provider:      include/namebindinglanguage2.ctree
-  provider:      include/namebindinglanguage2-java.jar
-  
+
   observer:      editor-analyze (multifile)
   
   on save:       editor-save

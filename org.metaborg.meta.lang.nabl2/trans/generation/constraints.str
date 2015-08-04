@@ -3,8 +3,8 @@ module generation/constraints
 imports
   
   libstrc
-  src-gen/signatures/rules/core/-
-  src-gen/signatures/terms/-
+  signatures/rules/core/-
+  signatures/terms/-
   generation/facts
   
 rules

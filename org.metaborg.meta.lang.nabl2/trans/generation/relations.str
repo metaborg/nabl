@@ -2,7 +2,7 @@ module generation/relations
 
 imports
   libstrc
-  src-gen/signatures/signatures/-
+  signatures/signatures/-
 
 imports
   generation/signatures

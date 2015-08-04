@@ -5,71 +5,79 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 >
   <modelVersion>4.0.0</modelVersion>
+  <name>NameBindingLanguage2</name>
   <artifactId>org.metaborg.meta.lang.nabl2</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
-  <packaging>eclipse-plugin</packaging>
+  <packaging>spoofax-language</packaging>
+  <description>Spoofax meta-language for declaratively specifying name resolution</description>
+  <url>https://github.com/metaborg/nabl</url>
 
   <parent>
     <groupId>org.metaborg</groupId>
     <artifactId>org.metaborg.maven.parent.language</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
-    <relativePath/>
+    <version>1.5.0-SNAPSHOT</version>
+    <relativePath>../../spoofax-deploy/org.metaborg.maven.parent.language</relativePath>
   </parent>
 
-  <repositories>
-    <repository>
-      <id>metaborg-nexus-snapshots</id>
-      <url>http://artifacts.metaborg.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>metaborg-nexus-releases</id>
-      <url>http://artifacts.metaborg.org/content/repositories/releases/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>spoofax-nightly</id>
-      <url>http://download.spoofax.org/update/nightly/</url>
-      <layout>p2</layout>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
+  <dependencies>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.spoofax.meta.runtime.libraries</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+  </dependencies>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>metaborg-nexus-snapshots</id>
-      <url>http://artifacts.metaborg.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>metaborg-nexus-releases</id>
-      <url>http://artifacts.metaborg.org/content/repositories/releases/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.metaborg</groupId>
+        <artifactId>spoofax-maven-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <strategoArgs combine.children="append">
+            <arg>-la</arg>
+            <arg>strc</arg>
+          </strategoArgs>
+          <pardonedLanguages>
+            <language>EditorService</language>
+          </pardonedLanguages>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.metaborg</groupId>
+            <artifactId>org.metaborg.meta.lang.template</artifactId>
+            <version>${metaborg-version}</version>
+            <type>spoofax-language</type>
+          </dependency>
+          <dependency>
+            <groupId>org.metaborg</groupId>
+            <artifactId>org.metaborg.meta.lang.esv</artifactId>
+            <version>${metaborg-version}</version>
+            <type>spoofax-language</type>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+
+  <developers>
+    <developer>
+      <name>Guido Wachsmuth</name>
+      <email>g.h.wachsmuth@tudelft.nl</email>
+      <organization>Delft University of Technology</organization>
+      <organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
+    </developer>
+    <developer>
+      <name>Hendrik van Antwerpen</name>
+      <email>h.vanantwerpen@tudelft.nl</email>
+      <organization>Delft University of Technology</organization>
+      <organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:metaborg/nabl.git</connection>
+    <developerConnection>scm:git:git@github.com:metaborg/nabl.git</developerConnection>
+    <url>https://github.com/metaborg/nabl</url>
+  </scm>
 </project>

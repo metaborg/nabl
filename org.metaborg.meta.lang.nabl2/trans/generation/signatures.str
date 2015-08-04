@@ -3,8 +3,8 @@ module generation/signatures
 imports
   
   libstrc
-  src-gen/signatures/signatures/-
-  src-gen/signatures/terms/-
+  signatures/signatures/-
+  signatures/terms/-
   
 rules
   

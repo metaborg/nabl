@@ -1,7 +1,7 @@
 module generation/modules
 
 imports
-  src-gen/signatures/-
+  signatures/-
   libstrc
 
 imports
@@ -14,7 +14,7 @@ rules // modules
   module-to-str:
     Module(n, s*) -> Module(n', [Imports(lib*)|s'*])
     with
-      n'   := $[src-gen/analysis/[n]]
+      n'   := $[analysis/[n]]
     ; lib* := [
                 Import("libstratego-gpp"),
                 Import("runtime/editor/annotations"),
@@ -23,7 +23,7 @@ rules // modules
                 Import("libanalysis2/namebinding/-"),
                 Import("libanalysis2/typechecking/-"),
                 Import("libanalysis2/nabl-ts/-"),
-                Import("src-gen/signatures/libanalysis2/-") 
+                Import("signatures/libanalysis2/-") 
               ]
     ; s'* := <mapconcat(section-to-str)> s*
       
