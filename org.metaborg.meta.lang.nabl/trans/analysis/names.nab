@@ -2,9 +2,9 @@ module analysis/names
 
 imports 
 
-	src-gen/signatures/-
-  src-gen/signatures/core/-
-  src-gen/signatures/terms/-
+  syntax/-
+  syntax/core/-
+  syntax/terms/-
 
 namespaces
  
