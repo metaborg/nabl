@@ -3,6 +3,7 @@ module src-gen/pp/formulas/Propositions-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/formulas/Propositions-sig
 
 
@@ -173,3 +174,6 @@ strategies
 
   is-Proposition =
     fail
+
+  prettyprint-Proposition :
+    amb([h|hs]) -> <prettyprint-Proposition> h

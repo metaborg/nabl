@@ -1,0 +1,94 @@
+module src-gen/check/terms/Vars-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/terms/Vars-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Terms-sig
+
+
+imports
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/terms/Terms-chk
+
+
+strategies
+  check-example =
+    check-Wld
+
+  check-example =
+    check-Var
+
+  check-example =
+    check-VarRef
+
+  check-Wld :
+    Wld() -> <id>
+
+  is-Wld-with-constructor =
+    ?Wld()
+
+  check-Var :
+    t1__ -> <id>
+    where not(is-Var-with-constructor)
+    where <(check-Wld <+ error-Wld)> t1__
+
+  check-Var :
+    Var(t1__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+
+  is-Var-with-constructor =
+    ?Var(_)
+
+  check-Var :
+    ListVar(t1__) -> <id>
+    with <(check-LId <+ error-LId)> t1__
+
+  is-Var-with-constructor =
+    ?ListVar(_)
+
+  check-VarRef :
+    VarRef(t1__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+
+  is-VarRef-with-constructor =
+    ?VarRef(_)
+
+  check-VarRef :
+    ListVarRef(t1__) -> <id>
+    with <(check-LId <+ error-LId)> t1__
+
+  is-VarRef-with-constructor =
+    ?ListVarRef(_)
+
+  is-Wld-with-constructor =
+    fail
+
+  is-Var-with-constructor =
+    fail
+
+  is-VarRef-with-constructor =
+    fail
+
+  check-Wld :
+    amb([h|hs]) -> <check-Wld> h
+
+  check-Var :
+    amb([h|hs]) -> <check-Var> h
+
+  check-VarRef :
+    amb([h|hs]) -> <check-VarRef> h
+
+  error-Wld =
+    debug(!"Unexpected constructor. Expected constructor from sort Wld instead. ")
+
+  error-Var =
+    debug(!"Unexpected constructor. Expected constructor from sort Var instead. ")
+
+  error-VarRef =
+    debug(!"Unexpected constructor. Expected constructor from sort VarRef instead. ")

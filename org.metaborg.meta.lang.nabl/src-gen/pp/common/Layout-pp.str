@@ -3,6 +3,7 @@ module src-gen/pp/common/Layout-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/common/Layout-sig
 
 
@@ -30,3 +31,15 @@ strategies
 
   prettyprint-example =
     prettyprint-Asterisk
+
+  prettyprint-Eof :
+    amb([h|hs]) -> <prettyprint-Eof> h
+
+  prettyprint-LongCom :
+    amb([h|hs]) -> <prettyprint-LongCom> h
+
+  prettyprint-CommChar :
+    amb([h|hs]) -> <prettyprint-CommChar> h
+
+  prettyprint-Asterisk :
+    amb([h|hs]) -> <prettyprint-Asterisk> h

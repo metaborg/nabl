@@ -1,0 +1,81 @@
+module src-gen/check/lexical/Identifiers-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/lexical/Identifiers-sig
+
+
+strategies
+  check-Id =
+    is-string
+
+  check-LId =
+    is-string
+
+  check-LCID =
+    is-string
+
+  check-UCID =
+    is-string
+
+  check-ModuleID =
+    is-string
+
+  check-ModuleIDPart =
+    is-string
+
+  check-example =
+    check-Id
+
+  check-example =
+    check-LId
+
+  check-example =
+    check-LCID
+
+  check-example =
+    check-UCID
+
+  check-example =
+    check-ModuleID
+
+  check-example =
+    check-ModuleIDPart
+
+  check-Id :
+    amb([h|hs]) -> <check-Id> h
+
+  check-LId :
+    amb([h|hs]) -> <check-LId> h
+
+  check-LCID :
+    amb([h|hs]) -> <check-LCID> h
+
+  check-UCID :
+    amb([h|hs]) -> <check-UCID> h
+
+  check-ModuleID :
+    amb([h|hs]) -> <check-ModuleID> h
+
+  check-ModuleIDPart :
+    amb([h|hs]) -> <check-ModuleIDPart> h
+
+  error-Id =
+    debug(!"Unexpected constructor. Expected string from sort Id instead. ")
+
+  error-LId =
+    debug(!"Unexpected constructor. Expected string from sort LId instead. ")
+
+  error-LCID =
+    debug(!"Unexpected constructor. Expected string from sort LCID instead. ")
+
+  error-UCID =
+    debug(!"Unexpected constructor. Expected string from sort UCID instead. ")
+
+  error-ModuleID =
+    debug(!"Unexpected constructor. Expected string from sort ModuleID instead. ")
+
+  error-ModuleIDPart =
+    debug(!"Unexpected constructor. Expected string from sort ModuleIDPart instead. ")

@@ -3,6 +3,7 @@ module src-gen/pp/core/Properties-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/core/Properties-sig
 
 
@@ -42,6 +43,15 @@ strategies
 
   prettyprint-example =
     prettyprint-Relation
+
+  prettyprint-PropertyID :
+    amb([h|hs]) -> <prettyprint-PropertyID> h
+
+  prettyprint-SectionKeyword :
+    amb([h|hs]) -> <prettyprint-SectionKeyword> h
+
+  prettyprint-Relation :
+    amb([h|hs]) -> <prettyprint-Relation> h
 
 
 strategies
@@ -113,3 +123,12 @@ strategies
 
   is-PropertyRef =
     fail
+
+  prettyprint-ModuleSection :
+    amb([h|hs]) -> <prettyprint-ModuleSection> h
+
+  prettyprint-PropertyDef :
+    amb([h|hs]) -> <prettyprint-PropertyDef> h
+
+  prettyprint-PropertyRef :
+    amb([h|hs]) -> <prettyprint-PropertyRef> h

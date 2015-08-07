@@ -3,6 +3,7 @@ module src-gen/pp/formulas/Messages-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/formulas/Messages-sig
 
 
@@ -74,3 +75,9 @@ strategies
 
   is-MessageKind =
     fail
+
+  prettyprint-Message :
+    amb([h|hs]) -> <prettyprint-Message> h
+
+  prettyprint-MessageKind :
+    amb([h|hs]) -> <prettyprint-MessageKind> h

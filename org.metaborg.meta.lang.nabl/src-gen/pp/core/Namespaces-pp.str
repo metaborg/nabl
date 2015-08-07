@@ -3,6 +3,7 @@ module src-gen/pp/core/Namespaces-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/core/Namespaces-sig
 
 
@@ -28,6 +29,12 @@ strategies
 
   prettyprint-example =
     prettyprint-SectionKeyword
+
+  prettyprint-NamespaceID :
+    amb([h|hs]) -> <prettyprint-NamespaceID> h
+
+  prettyprint-SectionKeyword :
+    amb([h|hs]) -> <prettyprint-SectionKeyword> h
 
 
 strategies
@@ -110,3 +117,15 @@ strategies
 
   is-LanguageRef =
     fail
+
+  prettyprint-ModuleSection :
+    amb([h|hs]) -> <prettyprint-ModuleSection> h
+
+  prettyprint-NamespaceDef :
+    amb([h|hs]) -> <prettyprint-NamespaceDef> h
+
+  prettyprint-NamespaceRef :
+    amb([h|hs]) -> <prettyprint-NamespaceRef> h
+
+  prettyprint-LanguageRef :
+    amb([h|hs]) -> <prettyprint-LanguageRef> h

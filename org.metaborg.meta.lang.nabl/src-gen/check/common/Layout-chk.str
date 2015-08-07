@@ -1,0 +1,57 @@
+module src-gen/check/common/Layout-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/common/Layout-sig
+
+
+strategies
+  check-Eof =
+    is-string
+
+  check-LongCom =
+    is-string
+
+  check-CommChar =
+    is-string
+
+  check-Asterisk =
+    is-string
+
+  check-example =
+    check-Eof
+
+  check-example =
+    check-LongCom
+
+  check-example =
+    check-CommChar
+
+  check-example =
+    check-Asterisk
+
+  check-Eof :
+    amb([h|hs]) -> <check-Eof> h
+
+  check-LongCom :
+    amb([h|hs]) -> <check-LongCom> h
+
+  check-CommChar :
+    amb([h|hs]) -> <check-CommChar> h
+
+  check-Asterisk :
+    amb([h|hs]) -> <check-Asterisk> h
+
+  error-Eof =
+    debug(!"Unexpected constructor. Expected string from sort Eof instead. ")
+
+  error-LongCom =
+    debug(!"Unexpected constructor. Expected string from sort LongCom instead. ")
+
+  error-CommChar =
+    debug(!"Unexpected constructor. Expected string from sort CommChar instead. ")
+
+  error-Asterisk =
+    debug(!"Unexpected constructor. Expected string from sort Asterisk instead. ")

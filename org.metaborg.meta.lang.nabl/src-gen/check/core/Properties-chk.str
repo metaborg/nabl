@@ -1,0 +1,130 @@
+module src-gen/check/core/Properties-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/core/Properties-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Signatures-sig
+  src-gen/signatures/terms/Vars-sig
+  src-gen/signatures/terms/Terms-sig
+  src-gen/signatures/formulas/Formulas-sig
+  src-gen/signatures/core/Namespaces-sig
+
+
+imports
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/terms/Signatures-chk
+  src-gen/check/terms/Vars-chk
+  src-gen/check/terms/Terms-chk
+  src-gen/check/formulas/Formulas-chk
+  src-gen/check/core/Namespaces-chk
+
+
+strategies
+  check-PropertyID =
+    is-string
+
+  check-SectionKeyword =
+    is-string
+
+  check-Relation =
+    is-string
+
+  check-example =
+    check-PropertyID
+
+  check-example =
+    check-SectionKeyword
+
+  check-example =
+    check-Relation
+
+  check-PropertyID :
+    amb([h|hs]) -> <check-PropertyID> h
+
+  check-SectionKeyword :
+    amb([h|hs]) -> <check-SectionKeyword> h
+
+  check-Relation :
+    amb([h|hs]) -> <check-Relation> h
+
+  error-PropertyID =
+    debug(!"Unexpected constructor. Expected string from sort PropertyID instead. ")
+
+  error-SectionKeyword =
+    debug(!"Unexpected constructor. Expected string from sort SectionKeyword instead. ")
+
+  error-Relation =
+    debug(!"Unexpected constructor. Expected string from sort Relation instead. ")
+
+
+strategies
+  check-example =
+    check-ModuleSection
+
+  check-example =
+    check-PropertyDef
+
+  check-example =
+    check-PropertyRef
+
+  check-ModuleSection :
+    Properties(t1__) -> <id>
+    with <map(check-PropertyDef <+ error-PropertyDef)> t1__
+
+  is-ModuleSection-with-constructor =
+    ?Properties(_)
+
+  check-PropertyDef :
+    PropertyDef(t1__, t2__, t3__) -> <id>
+    with <(check-PropertyID <+ error-PropertyID)> t1__
+    with <map(check-NamespaceRef <+ error-NamespaceRef)> t2__
+    with <(check-Sort <+ error-Sort)> t3__
+
+  is-PropertyDef-with-constructor =
+    ?PropertyDef(_, _, _)
+
+  check-PropertyRef :
+    TypeProp() -> <id>
+
+  is-PropertyRef-with-constructor =
+    ?TypeProp()
+
+  check-PropertyRef :
+    PropertyRef(t1__) -> <id>
+    with <(check-PropertyID <+ error-PropertyID)> t1__
+
+  is-PropertyRef-with-constructor =
+    ?PropertyRef(_)
+
+  is-ModuleSection-with-constructor =
+    fail
+
+  is-PropertyDef-with-constructor =
+    fail
+
+  is-PropertyRef-with-constructor =
+    fail
+
+  check-ModuleSection :
+    amb([h|hs]) -> <check-ModuleSection> h
+
+  check-PropertyDef :
+    amb([h|hs]) -> <check-PropertyDef> h
+
+  check-PropertyRef :
+    amb([h|hs]) -> <check-PropertyRef> h
+
+  error-ModuleSection =
+    debug(!"Unexpected constructor. Expected constructor from sort ModuleSection instead. ")
+
+  error-PropertyDef =
+    debug(!"Unexpected constructor. Expected constructor from sort PropertyDef instead. ")
+
+  error-PropertyRef =
+    debug(!"Unexpected constructor. Expected constructor from sort PropertyRef instead. ")

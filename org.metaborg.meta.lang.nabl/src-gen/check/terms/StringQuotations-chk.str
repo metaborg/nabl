@@ -1,0 +1,190 @@
+module src-gen/check/terms/StringQuotations-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/terms/StringQuotations-sig
+
+
+imports
+  src-gen/signatures/terms/Terms-sig
+
+
+imports
+  src-gen/check/terms/Terms-chk
+
+
+strategies
+  check-example =
+    check-PPTerm
+
+  check-PPTerm :
+    t1__ -> <id>
+    where not(is-PPTerm-with-constructor)
+    where <(check-StringQuotation <+ error-StringQuotation)> t1__
+
+  is-PPTerm-with-constructor =
+    fail
+
+  check-StringQuotedChars1 =
+    is-string
+
+  check-QuotedBracket1 =
+    is-string
+
+  check-Dollar1 =
+    is-string
+
+  check-StringQuotedChars2 =
+    is-string
+
+  check-QuotedBracket2 =
+    is-string
+
+  check-Dollar2 =
+    is-string
+
+  check-StringQuotedChars3 =
+    is-string
+
+  check-QuotedBracket3 =
+    is-string
+
+  check-Dollar3 =
+    is-string
+
+  check-StringQuotedChars4 =
+    is-string
+
+  check-QuotedBracket4 =
+    is-string
+
+  check-Dollar4 =
+    is-string
+
+  check-Padding =
+    is-string
+
+  check-example =
+    check-StringQuotedChars1
+
+  check-example =
+    check-QuotedBracket1
+
+  check-example =
+    check-Dollar1
+
+  check-example =
+    check-StringQuotedChars2
+
+  check-example =
+    check-QuotedBracket2
+
+  check-example =
+    check-Dollar2
+
+  check-example =
+    check-StringQuotedChars3
+
+  check-example =
+    check-QuotedBracket3
+
+  check-example =
+    check-Dollar3
+
+  check-example =
+    check-StringQuotedChars4
+
+  check-example =
+    check-QuotedBracket4
+
+  check-example =
+    check-Dollar4
+
+  check-example =
+    check-Padding
+
+  check-PPTerm :
+    amb([h|hs]) -> <check-PPTerm> h
+
+  check-StringQuotedChars1 :
+    amb([h|hs]) -> <check-StringQuotedChars1> h
+
+  check-QuotedBracket1 :
+    amb([h|hs]) -> <check-QuotedBracket1> h
+
+  check-Dollar1 :
+    amb([h|hs]) -> <check-Dollar1> h
+
+  check-StringQuotedChars2 :
+    amb([h|hs]) -> <check-StringQuotedChars2> h
+
+  check-QuotedBracket2 :
+    amb([h|hs]) -> <check-QuotedBracket2> h
+
+  check-Dollar2 :
+    amb([h|hs]) -> <check-Dollar2> h
+
+  check-StringQuotedChars3 :
+    amb([h|hs]) -> <check-StringQuotedChars3> h
+
+  check-QuotedBracket3 :
+    amb([h|hs]) -> <check-QuotedBracket3> h
+
+  check-Dollar3 :
+    amb([h|hs]) -> <check-Dollar3> h
+
+  check-StringQuotedChars4 :
+    amb([h|hs]) -> <check-StringQuotedChars4> h
+
+  check-QuotedBracket4 :
+    amb([h|hs]) -> <check-QuotedBracket4> h
+
+  check-Dollar4 :
+    amb([h|hs]) -> <check-Dollar4> h
+
+  check-Padding :
+    amb([h|hs]) -> <check-Padding> h
+
+  error-StringQuotedChars1 =
+    debug(!"Unexpected constructor. Expected string from sort StringQuotedChars1 instead. ")
+
+  error-QuotedBracket1 =
+    debug(!"Unexpected constructor. Expected string from sort QuotedBracket1 instead. ")
+
+  error-Dollar1 =
+    debug(!"Unexpected constructor. Expected string from sort Dollar1 instead. ")
+
+  error-StringQuotedChars2 =
+    debug(!"Unexpected constructor. Expected string from sort StringQuotedChars2 instead. ")
+
+  error-QuotedBracket2 =
+    debug(!"Unexpected constructor. Expected string from sort QuotedBracket2 instead. ")
+
+  error-Dollar2 =
+    debug(!"Unexpected constructor. Expected string from sort Dollar2 instead. ")
+
+  error-StringQuotedChars3 =
+    debug(!"Unexpected constructor. Expected string from sort StringQuotedChars3 instead. ")
+
+  error-QuotedBracket3 =
+    debug(!"Unexpected constructor. Expected string from sort QuotedBracket3 instead. ")
+
+  error-Dollar3 =
+    debug(!"Unexpected constructor. Expected string from sort Dollar3 instead. ")
+
+  error-StringQuotedChars4 =
+    debug(!"Unexpected constructor. Expected string from sort StringQuotedChars4 instead. ")
+
+  error-QuotedBracket4 =
+    debug(!"Unexpected constructor. Expected string from sort QuotedBracket4 instead. ")
+
+  error-Dollar4 =
+    debug(!"Unexpected constructor. Expected string from sort Dollar4 instead. ")
+
+  error-Padding =
+    debug(!"Unexpected constructor. Expected string from sort Padding instead. ")
+
+  error-PPTerm =
+    debug(!"Unexpected constructor. Expected constructor from sort PPTerm instead. ")

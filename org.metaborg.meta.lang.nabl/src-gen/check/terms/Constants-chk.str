@@ -1,0 +1,83 @@
+module src-gen/check/terms/Constants-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/terms/Constants-sig
+
+
+strategies
+  check-Int =
+    is-string
+
+  check-Real =
+    is-string
+
+  check-String =
+    is-string
+
+  check-StrChar =
+    is-string
+
+  check-example =
+    check-Int
+
+  check-example =
+    check-Real
+
+  check-example =
+    check-String
+
+  check-example =
+    check-StrChar
+
+  check-Int :
+    amb([h|hs]) -> <check-Int> h
+
+  check-Real :
+    amb([h|hs]) -> <check-Real> h
+
+  check-String :
+    amb([h|hs]) -> <check-String> h
+
+  check-StrChar :
+    amb([h|hs]) -> <check-StrChar> h
+
+  error-Int =
+    debug(!"Unexpected constructor. Expected string from sort Int instead. ")
+
+  error-Real =
+    debug(!"Unexpected constructor. Expected string from sort Real instead. ")
+
+  error-String =
+    debug(!"Unexpected constructor. Expected string from sort String instead. ")
+
+  error-StrChar =
+    debug(!"Unexpected constructor. Expected string from sort StrChar instead. ")
+
+
+strategies
+  check-Char =
+    is-string
+
+  check-CharChar =
+    is-string
+
+  check-example =
+    check-Char
+
+  check-example =
+    check-CharChar
+
+  check-Char :
+    amb([h|hs]) -> <check-Char> h
+
+  check-CharChar :
+    amb([h|hs]) -> <check-CharChar> h
+
+  error-Char =
+    debug(!"Unexpected constructor. Expected string from sort Char instead. ")
+
+  error-CharChar =
+    debug(!"Unexpected constructor. Expected string from sort CharChar instead. ")

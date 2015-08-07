@@ -3,6 +3,7 @@ module src-gen/pp/terms/Constants-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/terms/Constants-sig
 
 
@@ -31,6 +32,18 @@ strategies
   prettyprint-example =
     prettyprint-StrChar
 
+  prettyprint-Int :
+    amb([h|hs]) -> <prettyprint-Int> h
+
+  prettyprint-Real :
+    amb([h|hs]) -> <prettyprint-Real> h
+
+  prettyprint-String :
+    amb([h|hs]) -> <prettyprint-String> h
+
+  prettyprint-StrChar :
+    amb([h|hs]) -> <prettyprint-StrChar> h
+
 
 strategies
   prettyprint-Char =
@@ -44,3 +57,9 @@ strategies
 
   prettyprint-example =
     prettyprint-CharChar
+
+  prettyprint-Char :
+    amb([h|hs]) -> <prettyprint-Char> h
+
+  prettyprint-CharChar :
+    amb([h|hs]) -> <prettyprint-CharChar> h

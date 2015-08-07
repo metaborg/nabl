@@ -3,6 +3,7 @@ module src-gen/pp/NameBindingLanguage-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/NameBindingLanguage-sig
 
 
@@ -53,6 +54,9 @@ strategies
   is-Start =
     fail
 
+  prettyprint-Start :
+    amb([h|hs]) -> <prettyprint-Start> h
+
 
 strategies
   prettyprint-example =
@@ -88,6 +92,12 @@ strategies
 
   is-Restriction =
     fail
+
+  prettyprint-RestrictedNamespaceRef :
+    amb([h|hs]) -> <prettyprint-RestrictedNamespaceRef> h
+
+  prettyprint-Restriction :
+    amb([h|hs]) -> <prettyprint-Restriction> h
 
 
 strategies
@@ -221,6 +231,21 @@ strategies
   is-PropFilter =
     fail
 
+  prettyprint-PropertyDef :
+    amb([h|hs]) -> <prettyprint-PropertyDef> h
+
+  prettyprint-QualityRef :
+    amb([h|hs]) -> <prettyprint-QualityRef> h
+
+  prettyprint-PropertyTerm :
+    amb([h|hs]) -> <prettyprint-PropertyTerm> h
+
+  prettyprint-PropertyPattern :
+    amb([h|hs]) -> <prettyprint-PropertyPattern> h
+
+  prettyprint-PropFilter :
+    amb([h|hs]) -> <prettyprint-PropFilter> h
+
 
 strategies
   prettyprint-SectionKeyword =
@@ -228,6 +253,9 @@ strategies
 
   prettyprint-example =
     prettyprint-SectionKeyword
+
+  prettyprint-SectionKeyword :
+    amb([h|hs]) -> <prettyprint-SectionKeyword> h
 
 
 strategies
@@ -272,6 +300,12 @@ strategies
 
   is-BindingRule =
     fail
+
+  prettyprint-ModuleSection :
+    amb([h|hs]) -> <prettyprint-ModuleSection> h
+
+  prettyprint-BindingRule :
+    amb([h|hs]) -> <prettyprint-BindingRule> h
 
 
 strategies
@@ -629,6 +663,27 @@ strategies
   is-Disambiguator =
     fail
 
+  prettyprint-DefKind :
+    amb([h|hs]) -> <prettyprint-DefKind> h
+
+  prettyprint-Unique :
+    amb([h|hs]) -> <prettyprint-Unique> h
+
+  prettyprint-RefClausePart :
+    amb([h|hs]) -> <prettyprint-RefClausePart> h
+
+  prettyprint-ImportClausePart :
+    amb([h|hs]) -> <prettyprint-ImportClausePart> h
+
+  prettyprint-Alias :
+    amb([h|hs]) -> <prettyprint-Alias> h
+
+  prettyprint-BindingClause :
+    amb([h|hs]) -> <prettyprint-BindingClause> h
+
+  prettyprint-Disambiguator :
+    amb([h|hs]) -> <prettyprint-Disambiguator> h
+
 
 strategies
   prettyprint-example =
@@ -869,6 +924,30 @@ strategies
   is-Disambiguator =
     fail
 
+  prettyprint-InDefScopes :
+    amb([h|hs]) -> <prettyprint-InDefScopes> h
+
+  prettyprint-IntoDefScopes :
+    amb([h|hs]) -> <prettyprint-IntoDefScopes> h
+
+  prettyprint-DefScopes :
+    amb([h|hs]) -> <prettyprint-DefScopes> h
+
+  prettyprint-DefScope :
+    amb([h|hs]) -> <prettyprint-DefScope> h
+
+  prettyprint-InRefScope :
+    amb([h|hs]) -> <prettyprint-InRefScope> h
+
+  prettyprint-FromRefScope :
+    amb([h|hs]) -> <prettyprint-FromRefScope> h
+
+  prettyprint-RefScope :
+    amb([h|hs]) -> <prettyprint-RefScope> h
+
+  prettyprint-Disambiguator :
+    amb([h|hs]) -> <prettyprint-Disambiguator> h
+
 
 strategies
   prettyprint-example =
@@ -938,3 +1017,12 @@ strategies
 
   is-Proposition =
     fail
+
+  prettyprint-Constraints :
+    amb([h|hs]) -> <prettyprint-Constraints> h
+
+  prettyprint-Filters :
+    amb([h|hs]) -> <prettyprint-Filters> h
+
+  prettyprint-Proposition :
+    amb([h|hs]) -> <prettyprint-Proposition> h

@@ -1,0 +1,197 @@
+module src-gen/check/terms/Terms-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/terms/Terms-sig
+
+
+imports
+  src-gen/signatures/terms/Constants-sig
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Vars-sig
+
+
+imports
+  src-gen/check/terms/Constants-chk
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/terms/Vars-chk
+
+
+strategies
+  check-example =
+    check-Pattern
+
+  check-Pattern :
+    t1__ -> <id>
+    where not(is-Pattern-with-constructor)
+    where <(check-Var <+ error-Var)> t1__
+
+  check-Pattern :
+    Int(t1__) -> <id>
+    with <(check-Int <+ error-Int)> t1__
+
+  is-Pattern-with-constructor =
+    ?Int(_)
+
+  check-Pattern :
+    Real(t1__) -> <id>
+    with <(check-Real <+ error-Real)> t1__
+
+  is-Pattern-with-constructor =
+    ?Real(_)
+
+  check-Pattern :
+    Str(t1__) -> <id>
+    with <(check-String <+ error-String)> t1__
+
+  is-Pattern-with-constructor =
+    ?Str(_)
+
+  check-Pattern :
+    Op(t1__, t2__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+    with <map(check-Pattern <+ error-Pattern)> t2__
+
+  is-Pattern-with-constructor =
+    ?Op(_, _)
+
+  check-Pattern :
+    OpQ(t1__, t2__) -> <id>
+    with <(check-String <+ error-String)> t1__
+    with <map(check-Pattern <+ error-Pattern)> t2__
+
+  is-Pattern-with-constructor =
+    ?OpQ(_, _)
+
+  check-Pattern :
+    Char(t1__) -> <id>
+    with <(check-Char <+ error-Char)> t1__
+
+  is-Pattern-with-constructor =
+    ?Char(_)
+
+  check-Pattern :
+    Tuple(t1__) -> <id>
+    with <map(check-Pattern <+ error-Pattern)> t1__
+
+  is-Pattern-with-constructor =
+    ?Tuple(_)
+
+  check-Pattern :
+    List(t1__) -> <id>
+    with <map(check-Pattern <+ error-Pattern)> t1__
+
+  is-Pattern-with-constructor =
+    ?List(_)
+
+  check-Pattern :
+    ListTail(t1__, t2__) -> <id>
+    with <map(check-Pattern <+ error-Pattern)> t1__
+    with <(check-Pattern <+ error-Pattern)> t2__
+
+  is-Pattern-with-constructor =
+    ?ListTail(_, _)
+
+  check-Pattern :
+    As(t1__, t2__) -> <id>
+    with <(check-Var <+ error-Var)> t1__
+    with <(check-Pattern <+ error-Pattern)> t2__
+
+  is-Pattern-with-constructor =
+    ?As(_, _)
+
+  is-Pattern-with-constructor =
+    fail
+
+  check-Pattern :
+    amb([h|hs]) -> <check-Pattern> h
+
+  error-Pattern =
+    debug(!"Unexpected constructor. Expected constructor from sort Pattern instead. ")
+
+
+strategies
+  check-example =
+    check-Term
+
+  check-Term :
+    t1__ -> <id>
+    where not(is-Term-with-constructor)
+    where <(check-VarRef <+ error-VarRef)> t1__
+
+  check-Term :
+    Int(t1__) -> <id>
+    with <(check-Int <+ error-Int)> t1__
+
+  is-Term-with-constructor =
+    ?Int(_)
+
+  check-Term :
+    Real(t1__) -> <id>
+    with <(check-Real <+ error-Real)> t1__
+
+  is-Term-with-constructor =
+    ?Real(_)
+
+  check-Term :
+    Str(t1__) -> <id>
+    with <(check-String <+ error-String)> t1__
+
+  is-Term-with-constructor =
+    ?Str(_)
+
+  check-Term :
+    Op(t1__, t2__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+    with <map(check-Term <+ error-Term)> t2__
+
+  is-Term-with-constructor =
+    ?Op(_, _)
+
+  check-Term :
+    OpQ(t1__, t2__) -> <id>
+    with <(check-String <+ error-String)> t1__
+    with <map(check-Term <+ error-Term)> t2__
+
+  is-Term-with-constructor =
+    ?OpQ(_, _)
+
+  check-Term :
+    Char(t1__) -> <id>
+    with <(check-Char <+ error-Char)> t1__
+
+  is-Term-with-constructor =
+    ?Char(_)
+
+  check-Term :
+    Tuple(t1__) -> <id>
+    with <map(check-Term <+ error-Term)> t1__
+
+  is-Term-with-constructor =
+    ?Tuple(_)
+
+  check-Term :
+    List(t1__) -> <id>
+    with <map(check-Term <+ error-Term)> t1__
+
+  is-Term-with-constructor =
+    ?List(_)
+
+  check-Term :
+    ListTail(t1__, t2__) -> <id>
+    with <map(check-Term <+ error-Term)> t1__
+    with <(check-Term <+ error-Term)> t2__
+
+  is-Term-with-constructor =
+    ?ListTail(_, _)
+
+  is-Term-with-constructor =
+    fail
+
+  check-Term :
+    amb([h|hs]) -> <check-Term> h
+
+  error-Term =
+    debug(!"Unexpected constructor. Expected constructor from sort Term instead. ")

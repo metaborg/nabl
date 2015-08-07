@@ -3,6 +3,7 @@ module src-gen/pp/formulas/Formulas-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/formulas/Formulas-sig
 
 
@@ -85,3 +86,6 @@ strategies
 
   is-Formula =
     fail
+
+  prettyprint-Formula :
+    amb([h|hs]) -> <prettyprint-Formula> h

@@ -1,0 +1,146 @@
+module src-gen/check/core/Scopes-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/core/Scopes-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/core/Namespaces-sig
+  src-gen/signatures/terms/Vars-sig
+
+
+imports
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/core/Namespaces-chk
+  src-gen/check/terms/Vars-chk
+
+
+strategies
+  check-ScopeID =
+    is-string
+
+  check-example =
+    check-ScopeID
+
+  check-ScopeID :
+    amb([h|hs]) -> <check-ScopeID> h
+
+  error-ScopeID =
+    debug(!"Unexpected constructor. Expected string from sort ScopeID instead. ")
+
+
+strategies
+  check-example =
+    check-LocalScope
+
+  check-example =
+    check-Scope
+
+  check-LocalScope :
+    NamedScope(t1__, t2__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+    with <(check-VarRef <+ error-VarRef)> t2__
+
+  is-LocalScope-with-constructor =
+    ?NamedScope(_, _)
+
+  check-LocalScope :
+    CurrentScope(t1__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+
+  is-LocalScope-with-constructor =
+    ?CurrentScope(_)
+
+  check-LocalScope :
+    TermScope(t1__, t2__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+    with <(check-VarRef <+ error-VarRef)> t2__
+
+  is-LocalScope-with-constructor =
+    ?TermScope(_, _)
+
+  check-LocalScope :
+    Enclosing(t1__, t2__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+    with <(check-LocalScope <+ error-LocalScope)> t2__
+
+  is-LocalScope-with-constructor =
+    ?Enclosing(_, _)
+
+  check-Scope :
+    GlobalScope() -> <id>
+
+  is-Scope-with-constructor =
+    ?GlobalScope()
+
+  check-Scope :
+    t1__ -> <id>
+    where not(is-Scope-with-constructor)
+    where <(check-LocalScope <+ error-LocalScope)> t1__
+
+  check-Scope :
+    Anonymous(t1__) -> <id>
+    with <(check-Scope <+ error-Scope)> t1__
+
+  is-Scope-with-constructor =
+    ?Anonymous(_)
+
+  is-LocalScope-with-constructor =
+    fail
+
+  is-Scope-with-constructor =
+    fail
+
+  check-LocalScope :
+    amb([h|hs]) -> <check-LocalScope> h
+
+  check-Scope :
+    amb([h|hs]) -> <check-Scope> h
+
+  error-LocalScope =
+    debug(!"Unexpected constructor. Expected constructor from sort LocalScope instead. ")
+
+  error-Scope =
+    debug(!"Unexpected constructor. Expected constructor from sort Scope instead. ")
+
+
+strategies
+  check-example =
+    check-Clause
+
+  check-Clause :
+    ChildScope(t1__, t2__) -> <id>
+    with <(check-Scope <+ error-Scope)> t1__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t2__
+
+  is-Clause-with-constructor =
+    ?ChildScope(_, _)
+
+  check-Clause :
+    SubsequentScope(t1__, t2__) -> <id>
+    with <(check-Scope <+ error-Scope)> t1__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t2__
+
+  is-Clause-with-constructor =
+    ?SubsequentScope(_, _)
+
+  check-Clause :
+    NodeScope(t1__, t2__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+    with <(check-VarRef <+ error-VarRef)> t2__
+
+  is-Clause-with-constructor =
+    ?NodeScope(_, _)
+
+  is-Clause-with-constructor =
+    fail
+
+  check-Clause :
+    amb([h|hs]) -> <check-Clause> h
+
+  error-Clause =
+    debug(!"Unexpected constructor. Expected constructor from sort Clause instead. ")

@@ -3,6 +3,7 @@ module src-gen/pp/core/Modules-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/core/Modules-sig
 
 
@@ -75,6 +76,15 @@ strategies
   is-ImportModule =
     fail
 
+  prettyprint-Module :
+    amb([h|hs]) -> <prettyprint-Module> h
+
+  prettyprint-ModuleSection :
+    amb([h|hs]) -> <prettyprint-ModuleSection> h
+
+  prettyprint-ImportModule :
+    amb([h|hs]) -> <prettyprint-ImportModule> h
+
 
 strategies
   prettyprint-ModuleID =
@@ -94,3 +104,12 @@ strategies
 
   prettyprint-example =
     prettyprint-SectionKeyword
+
+  prettyprint-ModuleID :
+    amb([h|hs]) -> <prettyprint-ModuleID> h
+
+  prettyprint-ModuleIDPart :
+    amb([h|hs]) -> <prettyprint-ModuleIDPart> h
+
+  prettyprint-SectionKeyword :
+    amb([h|hs]) -> <prettyprint-SectionKeyword> h

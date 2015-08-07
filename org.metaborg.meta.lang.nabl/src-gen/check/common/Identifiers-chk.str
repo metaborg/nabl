@@ -1,0 +1,71 @@
+module src-gen/check/common/Identifiers-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/common/Identifiers-sig
+
+
+strategies
+  check-LId =
+    is-string
+
+  check-Id =
+    is-string
+
+  check-LCID =
+    is-string
+
+  check-UCID =
+    is-string
+
+  check-example =
+    check-LId
+
+  check-example =
+    check-Id
+
+  check-example =
+    check-LCID
+
+  check-example =
+    check-UCID
+
+  check-LId :
+    amb([h|hs]) -> <check-LId> h
+
+  check-Id :
+    amb([h|hs]) -> <check-Id> h
+
+  check-LCID :
+    amb([h|hs]) -> <check-LCID> h
+
+  check-UCID :
+    amb([h|hs]) -> <check-UCID> h
+
+  error-LId =
+    debug(!"Unexpected constructor. Expected string from sort LId instead. ")
+
+  error-Id =
+    debug(!"Unexpected constructor. Expected string from sort Id instead. ")
+
+  error-LCID =
+    debug(!"Unexpected constructor. Expected string from sort LCID instead. ")
+
+  error-UCID =
+    debug(!"Unexpected constructor. Expected string from sort UCID instead. ")
+
+
+strategies
+  check-Keyword =
+    is-string
+
+  check-example =
+    check-Keyword
+
+  check-Keyword :
+    amb([h|hs]) -> <check-Keyword> h
+
+  error-Keyword =
+    debug(!"Unexpected constructor. Expected string from sort Keyword instead. ")

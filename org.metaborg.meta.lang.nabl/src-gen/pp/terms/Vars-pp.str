@@ -3,6 +3,7 @@ module src-gen/pp/terms/Vars-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/terms/Vars-sig
 
 
@@ -97,3 +98,12 @@ strategies
 
   is-VarRef =
     fail
+
+  prettyprint-Wld :
+    amb([h|hs]) -> <prettyprint-Wld> h
+
+  prettyprint-Var :
+    amb([h|hs]) -> <prettyprint-Var> h
+
+  prettyprint-VarRef :
+    amb([h|hs]) -> <prettyprint-VarRef> h

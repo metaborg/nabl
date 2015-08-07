@@ -3,6 +3,7 @@ module src-gen/pp/lexical/Identifiers-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/lexical/Identifiers-sig
 
 
@@ -42,3 +43,21 @@ strategies
 
   prettyprint-example =
     prettyprint-ModuleIDPart
+
+  prettyprint-Id :
+    amb([h|hs]) -> <prettyprint-Id> h
+
+  prettyprint-LId :
+    amb([h|hs]) -> <prettyprint-LId> h
+
+  prettyprint-LCID :
+    amb([h|hs]) -> <prettyprint-LCID> h
+
+  prettyprint-UCID :
+    amb([h|hs]) -> <prettyprint-UCID> h
+
+  prettyprint-ModuleID :
+    amb([h|hs]) -> <prettyprint-ModuleID> h
+
+  prettyprint-ModuleIDPart :
+    amb([h|hs]) -> <prettyprint-ModuleIDPart> h

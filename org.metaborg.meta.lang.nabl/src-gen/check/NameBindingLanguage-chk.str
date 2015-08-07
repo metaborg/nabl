@@ -1,0 +1,801 @@
+module src-gen/check/NameBindingLanguage-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/NameBindingLanguage-sig
+
+
+imports
+  src-gen/signatures/common/Layout-sig
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Signatures-sig
+  src-gen/signatures/terms/Terms-sig
+  src-gen/signatures/formulas/Formulas-sig
+  src-gen/signatures/formulas/Propositions-sig
+  src-gen/signatures/core/Modules-sig
+  src-gen/signatures/core/Namespaces-sig
+  src-gen/signatures/core/Properties-sig
+  src-gen/signatures/terms/Vars-sig
+
+
+imports
+  src-gen/check/common/Layout-chk
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/terms/Signatures-chk
+  src-gen/check/terms/Terms-chk
+  src-gen/check/formulas/Formulas-chk
+  src-gen/check/formulas/Propositions-chk
+  src-gen/check/core/Modules-chk
+  src-gen/check/core/Namespaces-chk
+  src-gen/check/core/Properties-chk
+  src-gen/check/terms/Vars-chk
+
+
+strategies
+  check-SDF-start-symbols =
+    check-Start
+
+
+strategies
+  check-example =
+    check-Start
+
+  check-Start :
+    t1__ -> <id>
+    where not(is-Start-with-constructor)
+    where <(check-Module <+ error-Module)> t1__
+
+  is-Start-with-constructor =
+    fail
+
+  check-Start :
+    amb([h|hs]) -> <check-Start> h
+
+  error-Start =
+    debug(!"Unexpected constructor. Expected constructor from sort Start instead. ")
+
+
+strategies
+  check-example =
+    check-RestrictedNamespaceRef
+
+  check-example =
+    check-Restriction
+
+  check-RestrictedNamespaceRef :
+    Restricted(t1__, t2__) -> <id>
+    with <map(check-Restriction <+ error-Restriction)> t1__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t2__
+
+  is-RestrictedNamespaceRef-with-constructor =
+    ?Restricted(_, _)
+
+  check-Restriction :
+    Imported() -> <id>
+
+  is-Restriction-with-constructor =
+    ?Imported()
+
+  is-RestrictedNamespaceRef-with-constructor =
+    fail
+
+  is-Restriction-with-constructor =
+    fail
+
+  check-RestrictedNamespaceRef :
+    amb([h|hs]) -> <check-RestrictedNamespaceRef> h
+
+  check-Restriction :
+    amb([h|hs]) -> <check-Restriction> h
+
+  error-RestrictedNamespaceRef =
+    debug(!"Unexpected constructor. Expected constructor from sort RestrictedNamespaceRef instead. ")
+
+  error-Restriction =
+    debug(!"Unexpected constructor. Expected constructor from sort Restriction instead. ")
+
+
+strategies
+  check-example =
+    check-PropertyDef
+
+  check-example =
+    check-QualityRef
+
+  check-example =
+    check-PropertyTerm
+
+  check-example =
+    check-PropertyPattern
+
+  check-example =
+    check-PropFilter
+
+  check-PropertyDef :
+    QualityDef(t1__, t2__) -> <id>
+    with <(check-PropertyID <+ error-PropertyID)> t1__
+    with <map(check-NamespaceRef <+ error-NamespaceRef)> t2__
+
+  is-PropertyDef-with-constructor =
+    ?QualityDef(_, _)
+
+  check-QualityRef :
+    QualityRef(t1__) -> <id>
+    with <(check-PropertyID <+ error-PropertyID)> t1__
+
+  is-QualityRef-with-constructor =
+    ?QualityRef(_)
+
+  check-PropertyTerm :
+    PropertyTerm(t1__, t2__) -> <id>
+    with <(check-PropertyRef <+ error-PropertyRef)> t1__
+    with <(check-Term <+ error-Term)> t2__
+
+  is-PropertyTerm-with-constructor =
+    ?PropertyTerm(_, _)
+
+  check-PropertyTerm :
+    QualityTerm(t1__) -> <id>
+    with <(check-QualityRef <+ error-QualityRef)> t1__
+
+  is-PropertyTerm-with-constructor =
+    ?QualityTerm(_)
+
+  check-PropertyPattern :
+    PropertyPattern(t1__, t2__, t3__) -> <id>
+    with <(check-PropFilter <+ error-PropFilter)> t1__
+    with <(check-PropertyRef <+ error-PropertyRef)> t2__
+    with <(check-Term <+ error-Term)> t3__
+
+  is-PropertyPattern-with-constructor =
+    ?PropertyPattern(_, _, _)
+
+  check-PropertyPattern :
+    QualityPattern(t1__) -> <id>
+    with <(check-QualityRef <+ error-QualityRef)> t1__
+
+  is-PropertyPattern-with-constructor =
+    ?QualityPattern(_)
+
+  check-PropFilter :
+    Equal() -> <id>
+
+  is-PropFilter-with-constructor =
+    ?Equal()
+
+  check-PropFilter :
+    Conformant() -> <id>
+
+  is-PropFilter-with-constructor =
+    ?Conformant()
+
+  is-PropertyDef-with-constructor =
+    fail
+
+  is-QualityRef-with-constructor =
+    fail
+
+  is-PropertyTerm-with-constructor =
+    fail
+
+  is-PropertyPattern-with-constructor =
+    fail
+
+  is-PropFilter-with-constructor =
+    fail
+
+  check-PropertyDef :
+    amb([h|hs]) -> <check-PropertyDef> h
+
+  check-QualityRef :
+    amb([h|hs]) -> <check-QualityRef> h
+
+  check-PropertyTerm :
+    amb([h|hs]) -> <check-PropertyTerm> h
+
+  check-PropertyPattern :
+    amb([h|hs]) -> <check-PropertyPattern> h
+
+  check-PropFilter :
+    amb([h|hs]) -> <check-PropFilter> h
+
+  error-PropertyDef =
+    debug(!"Unexpected constructor. Expected constructor from sort PropertyDef instead. ")
+
+  error-QualityRef =
+    debug(!"Unexpected constructor. Expected constructor from sort QualityRef instead. ")
+
+  error-PropertyTerm =
+    debug(!"Unexpected constructor. Expected constructor from sort PropertyTerm instead. ")
+
+  error-PropertyPattern =
+    debug(!"Unexpected constructor. Expected constructor from sort PropertyPattern instead. ")
+
+  error-PropFilter =
+    debug(!"Unexpected constructor. Expected constructor from sort PropFilter instead. ")
+
+
+strategies
+  check-SectionKeyword =
+    is-string
+
+  check-example =
+    check-SectionKeyword
+
+  check-SectionKeyword :
+    amb([h|hs]) -> <check-SectionKeyword> h
+
+  error-SectionKeyword =
+    debug(!"Unexpected constructor. Expected string from sort SectionKeyword instead. ")
+
+
+strategies
+  check-example =
+    check-ModuleSection
+
+  check-example =
+    check-BindingRule
+
+  check-ModuleSection :
+    Bindings(t1__) -> <id>
+    with <map(check-BindingRule <+ error-BindingRule)> t1__
+
+  is-ModuleSection-with-constructor =
+    ?Bindings(_)
+
+  check-BindingRule :
+    BindingRule(t1__, t2__, t3__) -> <id>
+    with <(check-Pattern <+ error-Pattern)> t1__
+    with <(check-Constraints <+ error-Constraints)> t2__
+    with <map(check-BindingClause <+ error-BindingClause)> t3__
+
+  is-BindingRule-with-constructor =
+    ?BindingRule(_, _, _)
+
+  is-ModuleSection-with-constructor =
+    fail
+
+  is-BindingRule-with-constructor =
+    fail
+
+  check-ModuleSection :
+    amb([h|hs]) -> <check-ModuleSection> h
+
+  check-BindingRule :
+    amb([h|hs]) -> <check-BindingRule> h
+
+  error-ModuleSection =
+    debug(!"Unexpected constructor. Expected constructor from sort ModuleSection instead. ")
+
+  error-BindingRule =
+    debug(!"Unexpected constructor. Expected constructor from sort BindingRule instead. ")
+
+
+strategies
+  check-example =
+    check-DefKind
+
+  check-example =
+    check-Unique
+
+  check-example =
+    check-RefClausePart
+
+  check-example =
+    check-ImportClausePart
+
+  check-example =
+    check-Alias
+
+  check-example =
+    check-BindingClause
+
+  check-example =
+    check-Disambiguator
+
+  check-BindingClause :
+    DefClause(
+      t1__
+    , t2__
+    , t3__
+    , t4__
+    , t5__
+    , t6__
+    , t7__
+    ) -> <id>
+    with <(check-DefKind <+ error-DefKind)> t1__
+    with <(check-Unique <+ error-Unique)> t2__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t3__
+    with <(check-Term <+ error-Term)> t4__
+    with <map(check-PropertyTerm <+ error-PropertyTerm)> t5__
+    with <(check-InDefScopes <+ error-InDefScopes)> t6__
+    with <(check-Constraints <+ error-Constraints)> t7__
+
+  is-BindingClause-with-constructor =
+    ?DefClause(_, _, _, _, _, _, _)
+
+  check-DefKind :
+    Explicit() -> <id>
+
+  is-DefKind-with-constructor =
+    ?Explicit()
+
+  check-DefKind :
+    Implicit() -> <id>
+
+  is-DefKind-with-constructor =
+    ?Implicit()
+
+  check-Unique :
+    Unique() -> <id>
+
+  is-Unique-with-constructor =
+    ?Unique()
+
+  check-Unique :
+    Unique() -> <id>
+
+  is-Unique-with-constructor =
+    ?Unique()
+
+  check-Unique :
+    NonUnique() -> <id>
+
+  is-Unique-with-constructor =
+    ?NonUnique()
+
+  check-BindingClause :
+    ScopeClause(t1__) -> <id>
+    with <map(check-NamespaceRef <+ error-NamespaceRef)> t1__
+
+  is-BindingClause-with-constructor =
+    ?ScopeClause(_)
+
+  check-BindingClause :
+    NonTransitiveScopeClause(t1__) -> <id>
+    with <map(check-NamespaceRef <+ error-NamespaceRef)> t1__
+
+  is-BindingClause-with-constructor =
+    ?NonTransitiveScopeClause(_)
+
+  check-BindingClause :
+    RefClause(t1__) -> <id>
+    with <map(check-RefClausePart <+ error-RefClausePart)> t1__
+
+  is-BindingClause-with-constructor =
+    ?RefClause(_)
+
+  check-RefClausePart :
+    RefClausePart(t1__, t2__, t3__, t4__, t5__, t6__) -> <id>
+    with <(check-Disambiguator <+ error-Disambiguator)> t1__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t2__
+    with <(check-Term <+ error-Term)> t3__
+    with <map(check-PropertyPattern <+ error-PropertyPattern)> t4__
+    with <(check-InRefScope <+ error-InRefScope)> t5__
+    with <(check-Constraints <+ error-Constraints)> t6__
+
+  is-RefClausePart-with-constructor =
+    ?RefClausePart(_, _, _, _, _, _)
+
+  check-BindingClause :
+    ImportClause(t1__) -> <id>
+    with <map(check-ImportClausePart <+ error-ImportClausePart)> t1__
+
+  is-BindingClause-with-constructor =
+    ?ImportClause(_)
+
+  check-ImportClausePart :
+    SingleImport(
+      t1__
+    , t2__
+    , t3__
+    , t4__
+    , t5__
+    , t6__
+    , t7__
+    , t8__
+    ) -> <id>
+    with <(check-Disambiguator <+ error-Disambiguator)> t1__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t2__
+    with <(check-Term <+ error-Term)> t3__
+    with <map(check-PropertyPattern <+ error-PropertyPattern)> t4__
+    with <(check-FromRefScope <+ error-FromRefScope)> t5__
+    with <(check-Alias <+ error-Alias)> t6__
+    with <(check-IntoDefScopes <+ error-IntoDefScopes)> t7__
+    with <(check-Constraints <+ error-Constraints)> t8__
+
+  is-ImportClausePart-with-constructor =
+    ?SingleImport(_, _, _, _, _, _, _, _)
+
+  check-ImportClausePart :
+    WildcardImport(t1__, t2__, t3__, t4__, t5__) -> <id>
+    with <map(check-RestrictedNamespaceRef <+ error-RestrictedNamespaceRef)> t1__
+    with <map(check-PropertyPattern <+ error-PropertyPattern)> t2__
+    with <(check-FromRefScope <+ error-FromRefScope)> t3__
+    with <(check-IntoDefScopes <+ error-IntoDefScopes)> t4__
+    with <(check-Constraints <+ error-Constraints)> t5__
+
+  is-ImportClausePart-with-constructor =
+    ?WildcardImport(_, _, _, _, _)
+
+  check-Alias :
+    None() -> <id>
+
+  is-Alias-with-constructor =
+    ?None()
+
+  check-Alias :
+    Alias(t1__) -> <id>
+    with <(check-Term <+ error-Term)> t1__
+
+  is-Alias-with-constructor =
+    ?Alias(_)
+
+  check-BindingClause :
+    FilterClause(t1__, t2__, t3__, t4__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+    with <(check-Term <+ error-Term)> t2__
+    with <(check-Filters <+ error-Filters)> t3__
+    with <(check-Constraints <+ error-Constraints)> t4__
+
+  is-BindingClause-with-constructor =
+    ?FilterClause(_, _, _, _)
+
+  check-BindingClause :
+    DisambiguateClause(t1__, t2__, t3__, t4__, t5__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+    with <(check-Term <+ error-Term)> t2__
+    with <(check-Filters <+ error-Filters)> t3__
+    with <(check-Disambiguator <+ error-Disambiguator)> t4__
+    with <(check-Constraints <+ error-Constraints)> t5__
+
+  is-BindingClause-with-constructor =
+    ?DisambiguateClause(_, _, _, _, _)
+
+  check-Disambiguator :
+    MinimalDistance(t1__, t2__, t3__) -> <id>
+    with <(check-Term <+ error-Term)> t1__
+    with <(check-Relation <+ error-Relation)> t2__
+    with <(check-Term <+ error-Term)> t3__
+
+  is-Disambiguator-with-constructor =
+    ?MinimalDistance(_, _, _)
+
+  is-DefKind-with-constructor =
+    fail
+
+  is-Unique-with-constructor =
+    fail
+
+  is-RefClausePart-with-constructor =
+    fail
+
+  is-ImportClausePart-with-constructor =
+    fail
+
+  is-Alias-with-constructor =
+    fail
+
+  is-BindingClause-with-constructor =
+    fail
+
+  is-Disambiguator-with-constructor =
+    fail
+
+  check-DefKind :
+    amb([h|hs]) -> <check-DefKind> h
+
+  check-Unique :
+    amb([h|hs]) -> <check-Unique> h
+
+  check-RefClausePart :
+    amb([h|hs]) -> <check-RefClausePart> h
+
+  check-ImportClausePart :
+    amb([h|hs]) -> <check-ImportClausePart> h
+
+  check-Alias :
+    amb([h|hs]) -> <check-Alias> h
+
+  check-BindingClause :
+    amb([h|hs]) -> <check-BindingClause> h
+
+  check-Disambiguator :
+    amb([h|hs]) -> <check-Disambiguator> h
+
+  error-DefKind =
+    debug(!"Unexpected constructor. Expected constructor from sort DefKind instead. ")
+
+  error-Unique =
+    debug(!"Unexpected constructor. Expected constructor from sort Unique instead. ")
+
+  error-RefClausePart =
+    debug(!"Unexpected constructor. Expected constructor from sort RefClausePart instead. ")
+
+  error-ImportClausePart =
+    debug(!"Unexpected constructor. Expected constructor from sort ImportClausePart instead. ")
+
+  error-Alias =
+    debug(!"Unexpected constructor. Expected constructor from sort Alias instead. ")
+
+  error-BindingClause =
+    debug(!"Unexpected constructor. Expected constructor from sort BindingClause instead. ")
+
+  error-Disambiguator =
+    debug(!"Unexpected constructor. Expected constructor from sort Disambiguator instead. ")
+
+
+strategies
+  check-example =
+    check-InDefScopes
+
+  check-example =
+    check-IntoDefScopes
+
+  check-example =
+    check-DefScopes
+
+  check-example =
+    check-DefScope
+
+  check-example =
+    check-InRefScope
+
+  check-example =
+    check-FromRefScope
+
+  check-example =
+    check-RefScope
+
+  check-example =
+    check-Disambiguator
+
+  check-InDefScopes :
+    Current() -> <id>
+
+  is-InDefScopes-with-constructor =
+    ?Current()
+
+  check-InDefScopes :
+    Parenthetical(t1__) -> <id>
+    with <(check-DefScopes <+ error-DefScopes)> t1__
+
+  check-IntoDefScopes :
+    Current() -> <id>
+
+  is-IntoDefScopes-with-constructor =
+    ?Current()
+
+  check-IntoDefScopes :
+    Parenthetical(t1__) -> <id>
+    with <(check-DefScopes <+ error-DefScopes)> t1__
+
+  check-DefScopes :
+    Current() -> <id>
+
+  is-DefScopes-with-constructor =
+    ?Current()
+
+  check-DefScopes :
+    DefScopes(t1__) -> <id>
+    with <map(check-DefScope <+ error-DefScope)> t1__
+
+  is-DefScopes-with-constructor =
+    ?DefScopes(_)
+
+  check-DefScope :
+    Subsequent() -> <id>
+
+  is-DefScope-with-constructor =
+    ?Subsequent()
+
+  check-DefScope :
+    DefScope(t1__) -> <id>
+    with <(check-Term <+ error-Term)> t1__
+
+  is-DefScope-with-constructor =
+    ?DefScope(_)
+
+  check-InRefScope :
+    Current() -> <id>
+
+  is-InRefScope-with-constructor =
+    ?Current()
+
+  check-InRefScope :
+    Parenthetical(t1__) -> <id>
+    with <(check-RefScope <+ error-RefScope)> t1__
+
+  check-FromRefScope :
+    Current() -> <id>
+
+  is-FromRefScope-with-constructor =
+    ?Current()
+
+  check-FromRefScope :
+    Parenthetical(t1__) -> <id>
+    with <(check-RefScope <+ error-RefScope)> t1__
+
+  check-RefScope :
+    Current() -> <id>
+
+  is-RefScope-with-constructor =
+    ?Current()
+
+  check-RefScope :
+    Enclosing(t1__) -> <id>
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t1__
+
+  is-RefScope-with-constructor =
+    ?Enclosing(_)
+
+  check-RefScope :
+    Context(t1__, t2__, t3__, t4__, t5__) -> <id>
+    with <(check-Disambiguator <+ error-Disambiguator)> t1__
+    with <(check-NamespaceRef <+ error-NamespaceRef)> t2__
+    with <(check-Term <+ error-Term)> t3__
+    with <map(check-PropertyPattern <+ error-PropertyPattern)> t4__
+    with <(check-InRefScope <+ error-InRefScope)> t5__
+
+  is-RefScope-with-constructor =
+    ?Context(_, _, _, _, _)
+
+  check-RefScope :
+    RefScope(t1__) -> <id>
+    with <(check-Term <+ error-Term)> t1__
+
+  is-RefScope-with-constructor =
+    ?RefScope(_)
+
+  check-Disambiguator :
+    All() -> <id>
+
+  is-Disambiguator-with-constructor =
+    ?All()
+
+  check-Disambiguator :
+    Best() -> <id>
+
+  is-Disambiguator-with-constructor =
+    ?Best()
+
+  is-InDefScopes-with-constructor =
+    fail
+
+  is-IntoDefScopes-with-constructor =
+    fail
+
+  is-DefScopes-with-constructor =
+    fail
+
+  is-DefScope-with-constructor =
+    fail
+
+  is-InRefScope-with-constructor =
+    fail
+
+  is-FromRefScope-with-constructor =
+    fail
+
+  is-RefScope-with-constructor =
+    fail
+
+  is-Disambiguator-with-constructor =
+    fail
+
+  check-InDefScopes :
+    amb([h|hs]) -> <check-InDefScopes> h
+
+  check-IntoDefScopes :
+    amb([h|hs]) -> <check-IntoDefScopes> h
+
+  check-DefScopes :
+    amb([h|hs]) -> <check-DefScopes> h
+
+  check-DefScope :
+    amb([h|hs]) -> <check-DefScope> h
+
+  check-InRefScope :
+    amb([h|hs]) -> <check-InRefScope> h
+
+  check-FromRefScope :
+    amb([h|hs]) -> <check-FromRefScope> h
+
+  check-RefScope :
+    amb([h|hs]) -> <check-RefScope> h
+
+  check-Disambiguator :
+    amb([h|hs]) -> <check-Disambiguator> h
+
+  error-InDefScopes =
+    debug(!"Unexpected constructor. Expected constructor from sort InDefScopes instead. ")
+
+  error-IntoDefScopes =
+    debug(!"Unexpected constructor. Expected constructor from sort IntoDefScopes instead. ")
+
+  error-DefScopes =
+    debug(!"Unexpected constructor. Expected constructor from sort DefScopes instead. ")
+
+  error-DefScope =
+    debug(!"Unexpected constructor. Expected constructor from sort DefScope instead. ")
+
+  error-InRefScope =
+    debug(!"Unexpected constructor. Expected constructor from sort InRefScope instead. ")
+
+  error-FromRefScope =
+    debug(!"Unexpected constructor. Expected constructor from sort FromRefScope instead. ")
+
+  error-RefScope =
+    debug(!"Unexpected constructor. Expected constructor from sort RefScope instead. ")
+
+  error-Disambiguator =
+    debug(!"Unexpected constructor. Expected constructor from sort Disambiguator instead. ")
+
+
+strategies
+  check-example =
+    check-Constraints
+
+  check-example =
+    check-Filters
+
+  check-example =
+    check-Proposition
+
+  check-Constraints :
+    NoWhere() -> <id>
+
+  is-Constraints-with-constructor =
+    ?NoWhere()
+
+  check-Constraints :
+    Where(t1__) -> <id>
+    with <(check-Formula <+ error-Formula)> t1__
+
+  is-Constraints-with-constructor =
+    ?Where(_)
+
+  check-Filters :
+    Filter(t1__) -> <id>
+    with <(check-Formula <+ error-Formula)> t1__
+
+  is-Filters-with-constructor =
+    ?Filter(_)
+
+  check-Proposition :
+    PropertyPattern(t1__, t2__, t3__) -> <id>
+    with <(check-VarRef <+ error-VarRef)> t1__
+    with <(check-PropertyRef <+ error-PropertyRef)> t2__
+    with <(check-Pattern <+ error-Pattern)> t3__
+
+  is-Proposition-with-constructor =
+    ?PropertyPattern(_, _, _)
+
+  is-Constraints-with-constructor =
+    fail
+
+  is-Filters-with-constructor =
+    fail
+
+  is-Proposition-with-constructor =
+    fail
+
+  check-Constraints :
+    amb([h|hs]) -> <check-Constraints> h
+
+  check-Filters :
+    amb([h|hs]) -> <check-Filters> h
+
+  check-Proposition :
+    amb([h|hs]) -> <check-Proposition> h
+
+  error-Constraints =
+    debug(!"Unexpected constructor. Expected constructor from sort Constraints instead. ")
+
+  error-Filters =
+    debug(!"Unexpected constructor. Expected constructor from sort Filters instead. ")
+
+  error-Proposition =
+    debug(!"Unexpected constructor. Expected constructor from sort Proposition instead. ")

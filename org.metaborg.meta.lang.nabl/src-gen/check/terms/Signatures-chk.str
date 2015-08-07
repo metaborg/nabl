@@ -1,0 +1,151 @@
+module src-gen/check/terms/Signatures-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/terms/Signatures-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/terms/Constants-sig
+
+
+imports
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/terms/Constants-chk
+
+
+strategies
+  check-example =
+    check-Sort
+
+  check-Sort :
+    SortVar(t1__) -> <id>
+    with <(check-LCID <+ error-LCID)> t1__
+
+  is-Sort-with-constructor =
+    ?SortVar(_)
+
+  check-Sort :
+    SortNoArgs(t1__) -> <id>
+    with <(check-UCID <+ error-UCID)> t1__
+
+  is-Sort-with-constructor =
+    ?SortNoArgs(_)
+
+  check-Sort :
+    Sort(t1__, t2__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+    with <map(check-Sort <+ error-Sort)> t2__
+
+  is-Sort-with-constructor =
+    ?Sort(_, _)
+
+  is-Sort-with-constructor =
+    fail
+
+  check-Sort :
+    amb([h|hs]) -> <check-Sort> h
+
+  error-Sort =
+    debug(!"Unexpected constructor. Expected constructor from sort Sort instead. ")
+
+
+strategies
+  check-example =
+    check-TypeDecl
+
+  check-example =
+    check-PPTerm
+
+  check-TypeDecl :
+    TypeDecl(t1__, t2__, t3__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+    with <(check-TypeParams <+ error-TypeParams)> t2__
+    with <(check-PPTerm <+ error-PPTerm)> t3__
+
+  is-TypeDecl-with-constructor =
+    ?TypeDecl(_, _, _)
+
+  check-TypeDecl :
+    TypeDeclQ(t1__, t2__, t3__) -> <id>
+    with <(check-String <+ error-String)> t1__
+    with <(check-TypeParams <+ error-TypeParams)> t2__
+    with <(check-PPTerm <+ error-PPTerm)> t3__
+
+  is-TypeDecl-with-constructor =
+    ?TypeDeclQ(_, _, _)
+
+  check-PPTerm :
+    Str(t1__) -> <id>
+    with <(check-String <+ error-String)> t1__
+
+  is-PPTerm-with-constructor =
+    ?Str(_)
+
+  is-TypeDecl-with-constructor =
+    fail
+
+  is-PPTerm-with-constructor =
+    fail
+
+  check-TypeDecl :
+    amb([h|hs]) -> <check-TypeDecl> h
+
+  check-PPTerm :
+    amb([h|hs]) -> <check-PPTerm> h
+
+  error-TypeDecl =
+    debug(!"Unexpected constructor. Expected constructor from sort TypeDecl instead. ")
+
+  error-PPTerm =
+    debug(!"Unexpected constructor. Expected constructor from sort PPTerm instead. ")
+
+
+strategies
+  check-example =
+    check-TypeParams
+
+  check-example =
+    check-TypeParam
+
+  check-TypeParams :
+    NoTypeParams() -> <id>
+
+  is-TypeParams-with-constructor =
+    ?NoTypeParams()
+
+  check-TypeParams :
+    TypeParams(t1__) -> <id>
+    with <map(check-TypeParam <+ error-TypeParam)> t1__
+
+  is-TypeParams-with-constructor =
+    ?TypeParams(_)
+
+  check-TypeParam :
+    TypeParam(t1__, t2__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+    with <(check-Sort <+ error-Sort)> t2__
+
+  is-TypeParam-with-constructor =
+    ?TypeParam(_, _)
+
+  is-TypeParams-with-constructor =
+    fail
+
+  is-TypeParam-with-constructor =
+    fail
+
+  check-TypeParams :
+    amb([h|hs]) -> <check-TypeParams> h
+
+  check-TypeParam :
+    amb([h|hs]) -> <check-TypeParam> h
+
+  error-TypeParams =
+    debug(!"Unexpected constructor. Expected constructor from sort TypeParams instead. ")
+
+  error-TypeParam =
+    debug(!"Unexpected constructor. Expected constructor from sort TypeParam instead. ")

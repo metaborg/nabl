@@ -3,6 +3,7 @@ module src-gen/pp/core/Scopes-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/core/Scopes-sig
 
 
@@ -24,6 +25,9 @@ strategies
 
   prettyprint-example =
     prettyprint-ScopeID
+
+  prettyprint-ScopeID :
+    amb([h|hs]) -> <prettyprint-ScopeID> h
 
 
 strategies
@@ -123,6 +127,12 @@ strategies
   is-Scope =
     fail
 
+  prettyprint-LocalScope :
+    amb([h|hs]) -> <prettyprint-LocalScope> h
+
+  prettyprint-Scope :
+    amb([h|hs]) -> <prettyprint-Scope> h
+
 
 strategies
   prettyprint-example =
@@ -178,3 +188,6 @@ strategies
 
   is-Clause =
     fail
+
+  prettyprint-Clause :
+    amb([h|hs]) -> <prettyprint-Clause> h

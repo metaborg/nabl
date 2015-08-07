@@ -3,6 +3,7 @@ module src-gen/pp/terms/Terms-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/terms/Terms-sig
 
 
@@ -167,6 +168,9 @@ strategies
   is-Pattern =
     fail
 
+  prettyprint-Pattern :
+    amb([h|hs]) -> <prettyprint-Pattern> h
+
 
 strategies
   prettyprint-example =
@@ -304,3 +308,6 @@ strategies
 
   is-Term =
     fail
+
+  prettyprint-Term :
+    amb([h|hs]) -> <prettyprint-Term> h

@@ -1,0 +1,128 @@
+module src-gen/check/core/Namespaces-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/core/Namespaces-sig
+
+
+imports
+  src-gen/signatures/common/Identifiers-sig
+  src-gen/signatures/core/Modules-sig
+
+
+imports
+  src-gen/check/common/Identifiers-chk
+  src-gen/check/core/Modules-chk
+
+
+strategies
+  check-NamespaceID =
+    is-string
+
+  check-SectionKeyword =
+    is-string
+
+  check-example =
+    check-NamespaceID
+
+  check-example =
+    check-SectionKeyword
+
+  check-NamespaceID :
+    amb([h|hs]) -> <check-NamespaceID> h
+
+  check-SectionKeyword :
+    amb([h|hs]) -> <check-SectionKeyword> h
+
+  error-NamespaceID =
+    debug(!"Unexpected constructor. Expected string from sort NamespaceID instead. ")
+
+  error-SectionKeyword =
+    debug(!"Unexpected constructor. Expected string from sort SectionKeyword instead. ")
+
+
+strategies
+  check-example =
+    check-ModuleSection
+
+  check-example =
+    check-NamespaceDef
+
+  check-example =
+    check-NamespaceRef
+
+  check-example =
+    check-LanguageRef
+
+  check-ModuleSection :
+    Namespaces(t1__) -> <id>
+    with <map(check-NamespaceDef <+ error-NamespaceDef)> t1__
+
+  is-ModuleSection-with-constructor =
+    ?Namespaces(_)
+
+  check-NamespaceDef :
+    NamespaceDef(t1__) -> <id>
+    with <(check-NamespaceID <+ error-NamespaceID)> t1__
+
+  is-NamespaceDef-with-constructor =
+    ?NamespaceDef(_)
+
+  check-NamespaceRef :
+    NamespaceRef(t1__, t2__) -> <id>
+    with <(check-LanguageRef <+ error-LanguageRef)> t1__
+    with <(check-NamespaceID <+ error-NamespaceID)> t2__
+
+  is-NamespaceRef-with-constructor =
+    ?NamespaceRef(_, _)
+
+  check-LanguageRef :
+    CurrentLanguage() -> <id>
+
+  is-LanguageRef-with-constructor =
+    ?CurrentLanguage()
+
+  check-LanguageRef :
+    LanguageRef(t1__) -> <id>
+    with <(check-Id <+ error-Id)> t1__
+
+  is-LanguageRef-with-constructor =
+    ?LanguageRef(_)
+
+  is-ModuleSection-with-constructor =
+    fail
+
+  is-NamespaceDef-with-constructor =
+    fail
+
+  is-NamespaceRef-with-constructor =
+    fail
+
+  is-LanguageRef-with-constructor =
+    fail
+
+  check-ModuleSection :
+    amb([h|hs]) -> <check-ModuleSection> h
+
+  check-NamespaceDef :
+    amb([h|hs]) -> <check-NamespaceDef> h
+
+  check-NamespaceRef :
+    amb([h|hs]) -> <check-NamespaceRef> h
+
+  check-LanguageRef :
+    amb([h|hs]) -> <check-LanguageRef> h
+
+  error-ModuleSection =
+    debug(!"Unexpected constructor. Expected constructor from sort ModuleSection instead. ")
+
+  error-NamespaceDef =
+    debug(!"Unexpected constructor. Expected constructor from sort NamespaceDef instead. ")
+
+  error-NamespaceRef =
+    debug(!"Unexpected constructor. Expected constructor from sort NamespaceRef instead. ")
+
+  error-LanguageRef =
+    debug(!"Unexpected constructor. Expected constructor from sort LanguageRef instead. ")

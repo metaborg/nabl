@@ -1,0 +1,68 @@
+module src-gen/check/formulas/Messages-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/formulas/Messages-sig
+
+
+imports
+  src-gen/signatures/terms/Terms-sig
+
+
+imports
+  src-gen/check/terms/Terms-chk
+
+
+strategies
+  check-example =
+    check-Message
+
+  check-example =
+    check-MessageKind
+
+  check-Message :
+    Message(t1__, t2__, t3__) -> <id>
+    with <(check-MessageKind <+ error-MessageKind)> t1__
+    with <(check-Term <+ error-Term)> t2__
+    with <(check-Term <+ error-Term)> t3__
+
+  is-Message-with-constructor =
+    ?Message(_, _, _)
+
+  check-MessageKind :
+    Error() -> <id>
+
+  is-MessageKind-with-constructor =
+    ?Error()
+
+  check-MessageKind :
+    Warning() -> <id>
+
+  is-MessageKind-with-constructor =
+    ?Warning()
+
+  check-MessageKind :
+    Note() -> <id>
+
+  is-MessageKind-with-constructor =
+    ?Note()
+
+  is-Message-with-constructor =
+    fail
+
+  is-MessageKind-with-constructor =
+    fail
+
+  check-Message :
+    amb([h|hs]) -> <check-Message> h
+
+  check-MessageKind :
+    amb([h|hs]) -> <check-MessageKind> h
+
+  error-Message =
+    debug(!"Unexpected constructor. Expected constructor from sort Message instead. ")
+
+  error-MessageKind =
+    debug(!"Unexpected constructor. Expected constructor from sort MessageKind instead. ")

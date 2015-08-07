@@ -3,6 +3,7 @@ module src-gen/pp/common/Identifiers-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/common/Identifiers-sig
 
 
@@ -31,6 +32,18 @@ strategies
   prettyprint-example =
     prettyprint-UCID
 
+  prettyprint-LId :
+    amb([h|hs]) -> <prettyprint-LId> h
+
+  prettyprint-Id :
+    amb([h|hs]) -> <prettyprint-Id> h
+
+  prettyprint-LCID :
+    amb([h|hs]) -> <prettyprint-LCID> h
+
+  prettyprint-UCID :
+    amb([h|hs]) -> <prettyprint-UCID> h
+
 
 strategies
   prettyprint-Keyword =
@@ -38,3 +51,6 @@ strategies
 
   prettyprint-example =
     prettyprint-Keyword
+
+  prettyprint-Keyword :
+    amb([h|hs]) -> <prettyprint-Keyword> h

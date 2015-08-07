@@ -1,0 +1,63 @@
+module src-gen/check/formulas/Formulas-chk
+
+imports
+  libstratego-gpp
+  runtime/tmpl/pp
+  libstratego-sglr
+  src-gen/signatures/formulas/Formulas-sig
+
+
+imports
+  src-gen/signatures/terms/Terms-sig
+  src-gen/signatures/formulas/Propositions-sig
+
+
+imports
+  src-gen/check/terms/Terms-chk
+  src-gen/check/formulas/Propositions-chk
+
+
+strategies
+  check-example =
+    check-Formula
+
+  check-Formula :
+    t1__ -> <id>
+    where not(is-Formula-with-constructor)
+    where <(check-Proposition <+ error-Proposition)> t1__
+
+  check-Formula :
+    Not(t1__) -> <id>
+    with <(check-Formula <+ error-Formula)> t1__
+
+  is-Formula-with-constructor =
+    ?Not(_)
+
+  check-Formula :
+    And(t1__, t2__) -> <id>
+    with <(check-Formula <+ error-Formula)> t1__
+    with <(check-Formula <+ error-Formula)> t2__
+
+  is-Formula-with-constructor =
+    ?And(_, _)
+
+  check-Formula :
+    Or(t1__, t2__) -> <id>
+    with <(check-Formula <+ error-Formula)> t1__
+    with <(check-Formula <+ error-Formula)> t2__
+
+  is-Formula-with-constructor =
+    ?Or(_, _)
+
+  check-Formula :
+    Parenthetical(t1__) -> <id>
+    with <(check-Formula <+ error-Formula)> t1__
+
+  is-Formula-with-constructor =
+    fail
+
+  check-Formula :
+    amb([h|hs]) -> <check-Formula> h
+
+  error-Formula =
+    debug(!"Unexpected constructor. Expected constructor from sort Formula instead. ")

@@ -3,6 +3,7 @@ module src-gen/pp/terms/StringQuotations-pp
 imports
   libstratego-gpp
   runtime/tmpl/pp
+  libstratego-sglr
   src-gen/signatures/terms/StringQuotations-sig
 
 
@@ -107,3 +108,45 @@ strategies
 
   prettyprint-example =
     prettyprint-Padding
+
+  prettyprint-PPTerm :
+    amb([h|hs]) -> <prettyprint-PPTerm> h
+
+  prettyprint-StringQuotedChars1 :
+    amb([h|hs]) -> <prettyprint-StringQuotedChars1> h
+
+  prettyprint-QuotedBracket1 :
+    amb([h|hs]) -> <prettyprint-QuotedBracket1> h
+
+  prettyprint-Dollar1 :
+    amb([h|hs]) -> <prettyprint-Dollar1> h
+
+  prettyprint-StringQuotedChars2 :
+    amb([h|hs]) -> <prettyprint-StringQuotedChars2> h
+
+  prettyprint-QuotedBracket2 :
+    amb([h|hs]) -> <prettyprint-QuotedBracket2> h
+
+  prettyprint-Dollar2 :
+    amb([h|hs]) -> <prettyprint-Dollar2> h
+
+  prettyprint-StringQuotedChars3 :
+    amb([h|hs]) -> <prettyprint-StringQuotedChars3> h
+
+  prettyprint-QuotedBracket3 :
+    amb([h|hs]) -> <prettyprint-QuotedBracket3> h
+
+  prettyprint-Dollar3 :
+    amb([h|hs]) -> <prettyprint-Dollar3> h
+
+  prettyprint-StringQuotedChars4 :
+    amb([h|hs]) -> <prettyprint-StringQuotedChars4> h
+
+  prettyprint-QuotedBracket4 :
+    amb([h|hs]) -> <prettyprint-QuotedBracket4> h
+
+  prettyprint-Dollar4 :
+    amb([h|hs]) -> <prettyprint-Dollar4> h
+
+  prettyprint-Padding :
+    amb([h|hs]) -> <prettyprint-Padding> h
