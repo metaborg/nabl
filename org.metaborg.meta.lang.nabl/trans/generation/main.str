@@ -51,7 +51,22 @@ rules // modules
                ]
       
   import-to-str:
-    Import(t) -> Import($[src-gen/names/[t]])
+    Import(m) -> Import($[src-gen/names/[m]])
     where
-      <nabl-collect-use-task; not(task-has-failed)> t
-      
+      <nabl-collect-use-task; not(task-has-failed)> m
+   
+  import-to-str:
+    Import(m) -> Import($[src-gen/signatures/[m']-sig])
+    where
+      <nabl-collect-use-task; task-has-failed> m
+    where
+      m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")
+  
+  import-to-str:
+  	ImportWildcard("syntax") -> ImportWildcard("src-gen/signatures")
+  	
+  import-to-str:
+    ImportWildcard(m) -> ImportWildcard($[src-gen/signatures/[m']])
+    where
+      m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")
+  
