@@ -19,9 +19,7 @@ rules // modules
                 Import("libstratego-gpp"),
                 Import("runtime/editor/annotations"),
                 Import("libanalysis2/-"),
-                Import("libanalysis2/abstract-syntax/-"),
-                Import("libanalysis2/namebinding/-"),
-                Import("libanalysis2/typechecking/-"),
+                Import("libanalysis2/positioning/-"),
                 Import("libanalysis2/nabl-ts/-"),
                 Import("src-gen/signatures/libanalysis2/-") 
               ]
