@@ -20,7 +20,7 @@ rules // modules
                 Import("runtime/editor/annotations"),
                 Import("libanalysis2/-"),
                 Import("libanalysis2/positioning/-"),
-                Import("libanalysis2/nabl-ts/-"),
+                Import("libanalysis2/nabl2/-"),
                 Import("src-gen/signatures/libanalysis2/-") 
               ]
     ; s'* := <mapconcat(section-to-str)> s*

@@ -35,15 +35,15 @@ rules // binding rules
        ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
        ; visit  := <map(visit-to-appl); to-seq> visit*
        ; if []:= visit* then
-           c   := "nabl-ts-constraint"
+           c   := "nabl2-constraint"
          ; ret := |[ <fail> ]|
          else
-           c   := "nabl-ts-scope"
+           c   := "nabl2-scope"
          ; ret := |[ <id> ]|
          end
    rule-to-strategy:
     TypeRule(pattern, type, constr*) ->
-    |[ nabl-ts-constraint(|facts, constraints, scopes, position):
+    |[ nabl2-constraint(|facts, constraints, scopes, position):
          ~pattern -> <fail>
          with ~var
          with <iset-addlist(|[CTypeOf(position, ~tp, position), ~ccoll*])> constraints
