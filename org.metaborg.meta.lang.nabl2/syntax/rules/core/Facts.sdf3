@@ -37,7 +37,7 @@ context-free syntax
 
 context-free syntax
 
-  Fact.SubType = [declares [Pattern] <: [Pattern]] 
+  Fact.SubType = [declares [Term] <: [Term]]
    
 lexical syntax
 
