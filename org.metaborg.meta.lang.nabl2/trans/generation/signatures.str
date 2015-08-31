@@ -38,7 +38,7 @@ rules
     , |[ build-subtype-rel = hashtable-push(|c(~tvt1*), (c(~tvt1*), [~tvt2*])); fail ]| 
     , |[ subtype-variance: c(~w*) -> [~variance*] ]| 
     , |[ is-TypeCon = ?c(~w*) ]|
-    , |[ prettyprint-TypeCon: c(~tv1*) -> [ H([SOpt(HS(), "0")], [S(~cs)])] ]|
+    , pp
     ]
     with
       var-tp*      := <map-with-index((!Var($[p[<id>]]), id))> tp*
@@ -51,6 +51,12 @@ rules
     ; tvt2*        := <map(var-to-term)> tv2*
     ; w*           := <map(!Wld())> tv1*
     ; cs           := Str(<double-quote> c)
+    ; ( [] := tv1*
+      < pp := |[ prettyprint-TypeCon: c(~tv1*) -> [ H([SOpt(HS(), "0")], [S(~cs)])] ]|
+      + pp := |[ prettyprint-TypeCon: c(~tv1*) -> [ H( [SOpt(HS(), "0")], [S(~cs),S("("),a__,S(")")])]
+                 with a__ := <pp-H-list(prettyprint-DeclId|",")> [~tv1*]
+              ]|
+      )
     
   to-app-call:
     t -> Term |[<type-app> t]|
