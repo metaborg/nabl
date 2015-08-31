@@ -27,10 +27,11 @@ rules // binding rules
             ;  <iset-addlist(|[~ccoll*])> constraints
          with ~visit
     ]|
-    with fvar   := <filterconcat(fact-to-strategies); to-seq> fact*
+    with pvar*  := <collect-vars> pattern
+       ; fvar   := <filterconcat(fact-to-strategies); to-seq> fact*
        ; fvar*  := <filterconcat(collect-fact-vars)> fact*
        ; cvar*  := <mapconcat(collect-constraint-vars); make-set> constr*
-       ; cvar   := <diff; vars-to-init> (cvar*, fvar*)
+       ; cvar   := <diff; vars-to-init> (cvar*, <conc> (pvar*,fvar*))
        ; fcoll* := <mapconcat(fact-to-terms)> fact* 
        ; ccoll* := <mapconcat(constraint-to-terms(|Var("position")))> constr* 
        ; visit  := <map(visit-to-appl); to-seq> visit*
