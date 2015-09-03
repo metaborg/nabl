@@ -1,7 +1,7 @@
 module namebindinglanguage
 
 imports
-	
+
 	libstratego-lib
 	libstratego-gpp
 	libstratego-aterm
@@ -17,16 +17,17 @@ imports
   runtime/editor/-
   editor/NameBindingLanguage-Outliner
 
+  names/analysis/names
   analysis/-
 	generation/-
   coq-semantics/-
-  
+
 rules // Analysis
-  
+
   editor-analyze = analyze-all(desugar-all; normalize-all, id, id|<language>, <project-path>)
-  
+
   editor-save = generate-name-analysis
-      
+
 rules // Editor services
 
   editor-resolve:
@@ -36,24 +37,24 @@ rules // Editor services
 
   editor-hover:
     (selected, position, ast, path, project-path) -> <fail>
-  
+
   editor-complete:
     (node, position, ast, path, project-path) -> proposals
     where
     	proposals := <analysis-propose-completions(|<language>, project-path)> ast
-    	
+
   editor-outline:
     (node, position, ast, path, project-path) -> outline
     where
       outline := <outline> ast
 
 rules // Debugging
-  
+
   debug-show-aterm:
     (selected, position, ast, path, project-path) -> (filename, selected)
     with
       filename := <guarantee-extension(|"aterm")> path
-      
+
   debug-show-analyzed:
     (selected, position, ast, path, project-path) -> (filename, selected)
     with
@@ -70,7 +71,7 @@ rules // Debugging
     analysis-debug-task-partition(|<language>)
   debug-task-selection =
     analysis-debug-task-selection(|<language>)
-    
+
   debug-project =
     analysis-debug-project(|<language>)
   debug-partition =
