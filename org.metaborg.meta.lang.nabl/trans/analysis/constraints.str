@@ -1,9 +1,9 @@
 module constraints
 
 imports
-  include/NameBindingLanguage
-  lib/runtime/task/messages
-  lib/runtime/task/tasks
+  NameBindingLanguage
+  runtime/task/messages
+  runtime/task/tasks
   
 rules
   

@@ -1,7 +1,7 @@
 module coq-semantics/scopes
 
 imports
-  include/NameBindingLanguage
+  NameBindingLanguage
   generation/util
   coq-semantics/Coq
   coq-semantics/patterns

@@ -3,7 +3,7 @@ module generation/main
 imports
   
   libstrc
-  include/NameBindingLanguage
+  NameBindingLanguage
   generation/util
   generation/namespaces
   generation/properties
