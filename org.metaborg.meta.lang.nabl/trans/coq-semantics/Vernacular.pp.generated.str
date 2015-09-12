@@ -1,4 +1,4 @@
-module Vernacular.pp.generated
+module coq-semantics/Vernacular.pp.generated
 
 imports 
   libstratego-gpp

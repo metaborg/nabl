@@ -1,4 +1,4 @@
-module names
+module analysis/names
 
 imports
   runtime/nabl/-

@@ -1,4 +1,4 @@
-module Qid.pp.generated
+module coq-semantics/Qid.pp.generated
 
 imports 
   libstratego-gpp

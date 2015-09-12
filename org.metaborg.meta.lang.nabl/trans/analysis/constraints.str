@@ -1,4 +1,4 @@
-module constraints
+module analysis/constraints
 
 imports
   NameBindingLanguage

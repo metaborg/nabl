@@ -1,4 +1,4 @@
-module Lexical.pp.generated
+module coq-semantics/Lexical.pp.generated
 
 imports 
   libstratego-gpp

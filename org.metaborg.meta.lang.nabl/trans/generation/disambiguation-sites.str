@@ -1,4 +1,4 @@
-module disambiguation-sites
+module generation/disambiguation-sites
 
 imports
   

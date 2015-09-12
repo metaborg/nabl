@@ -1,4 +1,4 @@
-module Coq
+module coq-semantics/Coq
 
 signature
   constructors
