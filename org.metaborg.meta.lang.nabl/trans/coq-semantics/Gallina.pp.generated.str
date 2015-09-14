@@ -1,4 +1,4 @@
-module cog-semantics/Gallina.pp.generated
+module coq-semantics/Gallina.pp.generated
 
 imports 
   libstratego-gpp
