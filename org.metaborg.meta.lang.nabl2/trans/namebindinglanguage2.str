@@ -1,7 +1,7 @@
 module namebindinglanguage2
 
 imports
-	
+
 	libstratego-lib
 	libstratego-gpp
 	libstratego-aterm
@@ -20,13 +20,13 @@ imports
 	pp
 
 rules // Analysis
-	
-	editor-analyze = analyze-all(id, normalize-all, id|<language>, <project-path>)
-	
+
+	editor-analyze = analyze-all(id, normalize-all, id|<language>)
+
 	editor-save = generate-collection
 
 rules // Editor services
-	
+
 	// Resolves a reference when the user control-clicks or presses F3 in the editor.
 	editor-resolve:
 		(node, position, ast, path, project-path) -> definition
@@ -56,8 +56,8 @@ rules // Editor services
 		(node, position, ast, path, project-path) -> proposals
 		where
 			proposals := <analysis-propose-completions(|<language>, project-path)> ast
-	
-	// Formats the program using a pretty printer.	
+
+	// Formats the program using a pretty printer.
   editor-format:
     (selected, position, ast, path, project-path) -> (filename, result)
     with
@@ -66,24 +66,24 @@ rules // Editor services
       result   := <pp-debug> selected
 
 rules // Debugging
-	
+
 	// Prints the abstract syntax ATerm of a selection.
 	debug-show-aterm:
 		(selected, position, ast, path, project-path) -> (filename, result)
 		with
 			filename := <guarantee-extension(|"aterm")> path;
 			result	 := selected
-			
+
 	// Prints the analyzed annotated abstract syntax ATerm of a selection.
 	debug-show-analyzed:
 		(selected, position, ast, path, project-path) -> (filename, result)
 		with
 			filename := <guarantee-extension(|"analyzed.aterm")> path;
 			result	 := ast
-			
+
 	debug-index-project =
 		analysis-debug-index-project(|<language>)
-	debug-index-project-resolve = 
+	debug-index-project-resolve =
 		analysis-debug-index-project-resolve(|<language>)
 	debug-index-partition =
 		analysis-debug-index-partition(|<language>)
@@ -96,7 +96,7 @@ rules // Debugging
 		analysis-debug-task-selection(|<language>)
 	debug-index-partition-resolve =
 		analysis-debug-index-partition-resolve(|<language>)
-		
+
 	debug-project =
 		analysis-debug-project(|<language>)
 	debug-partition =
