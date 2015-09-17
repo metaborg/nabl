@@ -1,7 +1,7 @@
 module generation/main
 
 imports
-  
+
   libstrc
   include/NameBindingLanguage
   generation/util
@@ -10,9 +10,9 @@ imports
   generation/sections
   runtime/task/-
   runtime/nabl/-
-  
+
 rules
-  
+
   generate-name-analysis:
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
@@ -22,17 +22,17 @@ rules
        result := <pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
     ;  result := ""
-      
+
 rules // modules
-  
+
   to-ppable-str = alltd(to-ppable-str-local)
-    
+
   to-ppable-str-local: ListVar(x)    -> Var(x)
   to-ppable-str-local: VarRef(x)     -> Var(x)
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
   module-to-str:
-    Module(n, [ Imports(i*), ns, p, r ]) -> Module($[src-gen/names/[n]], [ Imports([lib*, i'*]), ns', p-sig, p-str, r'])
+    Module(n, [ Imports(i*), ns, p, r ]) -> Module($[names/[n]], [ Imports([lib*, i'*]), ns', p-sig, p-str, r'])
     with
       ns'   := <namespaces-to-str> ns
     ; p-sig := <properties-to-sig> p
@@ -40,7 +40,7 @@ rules // modules
     ; r'    := <strip-annos; to-ppable-str; rules-to-str> r
     ; i'*   := <map(try(import-to-str))> i*
     with
-       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
+       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i*
      ; lib* := []
     <+ lib* := [ ImportWildcard("runtime/nabl")
                , ImportWildcard("runtime/task")
@@ -49,24 +49,23 @@ rules // modules
                , ImportWildcard("runtime/relations")
                , ImportWildcard("runtime/editor")
                ]
-      
+
   import-to-str:
-    Import(m) -> Import($[src-gen/names/[m]])
+    Import(m) -> Import($[names/[m]])
     where
       <nabl-collect-use-task; not(task-has-failed)> m
-   
+
   import-to-str:
-    Import(m) -> Import($[src-gen/signatures/[m']-sig])
+    Import(m) -> Import($[signatures/[m']-sig])
     where
       <nabl-collect-use-task; task-has-failed> m
     where
       m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")
-  
+
   import-to-str:
-  	ImportWildcard("syntax") -> ImportWildcard("src-gen/signatures")
-  	
+  	ImportWildcard("syntax") -> ImportWildcard("signatures")
+
   import-to-str:
-    ImportWildcard(m) -> ImportWildcard($[src-gen/signatures/[m']])
+    ImportWildcard(m) -> ImportWildcard($[signatures/[m']])
     where
       m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")
-  
