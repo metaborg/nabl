@@ -17,13 +17,14 @@ rules // modules
       n'   := $[analysis/[n]]
     ; lib* := [
                 Import("libstratego-gpp"),
+                Import("runtime/tmpl/pp"),
+                Import("libstratego-sglr"),
                 Import("runtime/editor/annotations"),
                 Import("libanalysis2/-"),
-                Import("libanalysis2/abstract-syntax/-"),
-                Import("libanalysis2/namebinding/-"),
-                Import("libanalysis2/typechecking/-"),
-                Import("libanalysis2/nabl-ts/-"),
-                Import("signatures/libanalysis2/-") 
+                Import("libanalysis2/positioning/-"),
+                Import("libanalysis2/nabl2/-"),
+                Import("signatures/libanalysis2/-"),
+                Import("pp/libanalysis2/-") 
               ]
     ; s'* := <mapconcat(section-to-str)> s*
       
