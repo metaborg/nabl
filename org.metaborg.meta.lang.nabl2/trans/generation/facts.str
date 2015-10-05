@@ -55,16 +55,20 @@ rules
     NewScope(scope, parent) -> [ Term |[ FParent(~scope, SomeScope(~parent)) ]| ]
     where not(Global() := parent)
 
+  default-message: _ -> Term |[ Message(Error(),None(),term) ]|
+
   // dynamic check could be avoided with proper static analysis
   fact-to-terms:
-    HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v,~tp, position) ]| ]
+    HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
     with tp := <type-pattern> t
-    
+       ; msg := <default-message>
+ 
   fact-to-terms:
-  	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', position) ]| ]
+  	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', ~msg) ]| ]
   	with
   	  ty1' := <type-def-pattern> ty1
   	; ty2' := <type-pattern> ty2
+    ; msg := <default-message>
 
 rules
 

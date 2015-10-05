@@ -7,7 +7,7 @@ imports
 context-free syntax
 
   Message.Message = <<MessageKind> <Term> on <Term>> 
-  
+ 
   MessageKind.Error = <error> 
   MessageKind.Warning = <warning> 
   MessageKind.Note = <note> 

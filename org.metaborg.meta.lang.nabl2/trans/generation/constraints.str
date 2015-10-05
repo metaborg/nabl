@@ -49,19 +49,14 @@ rules
  
 rules
       
-  constraint-to-terms(|pos):
+  constraint-to-terms(|msg'):
     Success(c, msg) -> t*
-    with pos' := <message-to-term> msg
-    with t*   := <constraint-to-terms(|pos')> c
+    with t* := <constraint-to-terms(|msg)> c
     
-  constraint-to-terms(|pos):
+  constraint-to-terms(|msg'):
     Failure(c, msg) -> t*
-    with pos' := <message-to-term> msg
-    with t*   := <constraint-to-terms(|pos')> c
+    with t* := <constraint-to-terms(|msg)> c
          
-  message-to-term:
-    Message(_, _, t) -> Term |[ <get-position> t ]|
-  
   // dynamic check could be avoided with proper static analysis
   constraint-to-terms(|msg):
     HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
