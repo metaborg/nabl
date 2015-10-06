@@ -10,4 +10,4 @@ rules
   visit-to-appl:
     Scope(scope*, t) -> |[<s> ~t ]|
     with
-      s := |[ nabl2-traverse(|facts, constraints, [~scope*], position) ]|
+      s := |[ nabl2-traverse(|facts__, constraints__, [~scope*], position__) ]|

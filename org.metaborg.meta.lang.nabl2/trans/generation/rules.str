@@ -10,6 +10,7 @@ imports
   generation/visits
   generation/constraints
   generation/facts
+  generation/messages
   
 rules // binding rules
 
@@ -18,13 +19,14 @@ rules // binding rules
  
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
-    |[ c(|facts, constraints, scopes, position):
-         term@~pattern -> ~ret
-         with [~scope* | _] := scopes <+ ( debug(!$[wrong scope count [<length> scopes] for ]) ; fail )
+    |[ c(|facts__, constraints__, scopes__, position__):
+         ~pattern -> ~ret
+         with ?term__
+         with [~scope* | _] := scopes__ <+ ( debug(!$[wrong scope count [<length> scopes__] for ]) ; fail )
          with ~fvar
          with ~cvar
-         with <iset-addlist(|[~fcoll*])> facts
-            ;  <iset-addlist(|[~ccoll*])> constraints
+         with <iset-addlist(|[~fcoll*])> facts__
+            ;  <iset-addlist(|[~ccoll*])> constraints__
          with ~visit
     ]|
     with pvar*  := <collect-vars> pattern
@@ -42,19 +44,22 @@ rules // binding rules
            c   := "nabl2-scope"
          ; ret := |[ <id> ]|
          end
+
    rule-to-strategy:
     TypeRule(pattern, type, constr*) ->
-    |[ nabl2-constraint(|facts, constraints, scopes, position):
-         term@~pattern -> <fail>
+    |[ nabl2-constraint(|facts__, constraints__, scopes__, position__):
+         ~pattern -> <fail>
+         with ?term__
          with ~var
-         with <iset-addlist(|[CTypeOf(position, ~tp, ~msg), ~ccoll*])> constraints
+         with <iset-addlist(|[CTypeOf(position__, ~tp, ~msg), ~ccoll*])> constraints__
     ]|
     with 
-    	var*   := <mapconcat(collect-constraint-vars); make-set> constr*
-    ; var    := <vars-to-init> var* 
+      tvar*  := <collect-vars> type
+    ; cvar*  := <mapconcat(collect-constraint-vars)> constr*
+    ; var    := <make-set; vars-to-init> [tvar*,cvar*]
     ; ccoll* := <mapconcat(constraint-to-terms(|<default-message>))> constr*
     ; tp     := <type-pattern> type
-    ; msg := <default-message>
+    ; msg    := <default-message>
         
     vars-to-init = map(!|[ ~<id> := <new-var> ]|); to-seq
        

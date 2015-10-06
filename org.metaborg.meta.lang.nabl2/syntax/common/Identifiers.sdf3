@@ -37,3 +37,4 @@ lexical syntax
 
   Keyword = "module" 
   Keyword = "rules" 
+  Keyword = [a-zA-Z0-9\'\-\_]* "__"

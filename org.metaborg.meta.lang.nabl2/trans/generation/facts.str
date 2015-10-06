@@ -5,6 +5,7 @@ imports
   libstrc
   signatures/rules/core/-
   signatures/terms/-
+  generation/messages
   
 rules
   
@@ -55,8 +56,6 @@ rules
     NewScope(scope, parent) -> [ Term |[ FParent(~scope, SomeScope(~parent)) ]| ]
     where not(Global() := parent)
 
-  default-message: _ -> Term |[ Message(Error(),None(),term) ]|
-
   // dynamic check could be avoided with proper static analysis
   fact-to-terms:
     HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
@@ -79,7 +78,7 @@ rules
     ; if <?VarRef(_) + ?ListVarRef(_)> term then
         pos := Term |[ <get-position> ~term ]|
       else
-	      pos := Term |[ <get-implicit-decl-position(|~term)> position ]|
+	      pos := Term |[ <get-implicit-decl-position(|~term)> position__ ]|
       end
     
   binder-to-ref: 
@@ -89,7 +88,7 @@ rules
     ; if <?Var(_) + ?ListVar(_) + ?VarRef(_) + ?ListVarRef(_)> term then
         pos := Term |[ <get-position> ~term ]|
       else
-        pos := Term |[ <get-implicit-ref-position(|~term)> position ]|
+        pos := Term |[ <get-implicit-ref-position(|~term)> position__ ]|
       end
     
   namespace-to-term: Name()        -> Term |[ None() ]|

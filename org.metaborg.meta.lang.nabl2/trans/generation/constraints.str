@@ -6,6 +6,7 @@ imports
   signatures/rules/core/-
   signatures/terms/-
   generation/facts
+  generation/messages
   
 rules
   
@@ -33,9 +34,6 @@ rules
   	?Match(_, _); collect-vars
   
   collect-constraint-vars =
-    ?Success(<collect-constraint-vars>, _)
-  
-  collect-constraint-vars =
     ?Failure(<collect-constraint-vars>, _)
   
   collect-constraint-vars =
@@ -50,12 +48,8 @@ rules
 rules
       
   constraint-to-terms(|msg'):
-    Success(c, msg) -> t*
-    with t* := <constraint-to-terms(|msg)> c
-    
-  constraint-to-terms(|msg'):
     Failure(c, msg) -> t*
-    with t* := <constraint-to-terms(|msg)> c
+    with t* := <constraint-to-terms(|<message-to-term> msg)> c
          
   // dynamic check could be avoided with proper static analysis
   constraint-to-terms(|msg):
