@@ -1,5 +1,9 @@
 # NaBL2
 
+Namebinding and typechecking language based on scope graphs and
+constraints. Read further for instructions on how to use it for your
+own Spoofax language.
+
 ## Project Setup
 
 NaBL2 only works with Spoofax Core projects. Instructions how to
@@ -39,12 +43,13 @@ you leave them in.
 
 ## Use NaBL2 Analysis
 
-NaBL2 comes with its own runtime, which providesathe analysis
-functions you should use. To use them, we need to change the main
-language file (e.g. `trans/LANGNAME.str`). First, make sure any
-imports of `runtime/{analysis,nabl,task,index,properties,types}/-` and
-calls to old `analysis-*` strategies are gone, because they will not
-work anymore. Then, add the following imports and rules:
+NaBL2 comes with its own runtime, which provides the analysis
+functions you should use. To use them, we need to change the
+language's main Stratego file (e.g. `trans/LANGNAME.str`). First,
+remove any imports of
+`runtime/{analysis,nabl,task,index,properties,types}/-`, and usages of
+the old `analysis-*` strategies, because they will not work
+anymore. Then, add the following imports and rules:
 
     module LANGNAME
 
@@ -92,8 +97,8 @@ work anymore. Then, add the following imports and rules:
 
       [...]
 
-Add an entry to `editor/LANGNAME-Menus.esv` to allow inspecting the
-analysis result:
+Add an entry to `editor/LANGNAME-Menus.esv` to add a builder that lets
+you inspect the analysis result:
 
     module LANGNAME-Menus
 
