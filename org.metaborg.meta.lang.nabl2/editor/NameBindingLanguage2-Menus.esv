@@ -9,8 +9,6 @@ menus
     action: "Show analyzed syntax"   = debug-show-analyzed (meta)
     
   menu: "Analysis"                     (meta)
-    
-    action: "Reset and reanalyze"    = debug-reanalyze  
 
     submenu: "Show analysis"           (openeditor)
       action: "Project"              = debug-project

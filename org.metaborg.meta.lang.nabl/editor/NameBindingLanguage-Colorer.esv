@@ -1,6 +1,8 @@
 module NameBindingLanguage-Colorer
 
-imports NameBindingLanguage-Colorer.generated
+imports 
+
+  editor/Colorer.generated
 
 colorer
   

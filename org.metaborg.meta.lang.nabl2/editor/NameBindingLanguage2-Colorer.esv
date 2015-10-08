@@ -1,11 +1,9 @@
 module NameBindingLanguage2-Colorer
 
-imports NameBindingLanguage2-Colorer.generated
+imports 
 
-colorer
-                                                                      
-  // This file can be used for custom colorer rules.                  
-  //                                                                  
-  // See the imported file for a brief introduction and examples.     
+  editor/Colorer.generated
+
+colorer  
   
-  Binder.Bind: 255 0 100 bold 
+  Binder.Bind: 255 0 100 bold
