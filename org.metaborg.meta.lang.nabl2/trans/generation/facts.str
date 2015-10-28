@@ -50,10 +50,10 @@ rules
       label := <substitution-to-term> subst
   
   fact-to-terms:
-    NewScope(scope, Global()) -> [ Term |[ FParent(~scope, NoneScope()) ]| ]
+    NewScope(scope, Global()) -> [ Term |[ FParent(~scope, None()) ]| ]
   
   fact-to-terms:
-    NewScope(scope, parent) -> [ Term |[ FParent(~scope, SomeScope(~parent)) ]| ]
+    NewScope(scope, parent) -> [ Term |[ FParent(~scope, ~parent) ]| ]
     where not(Global() := parent)
 
   // dynamic check could be avoided with proper static analysis
