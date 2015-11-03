@@ -1,28 +1,31 @@
 module generation/facts
 
 imports
-  
+
   libstrc
   signatures/rules/core/-
   signatures/terms/-
   generation/messages
-  
+
 rules
-  
-  collect-fact-vars =
+
+  collect-bound-vars =
     ?Declaration(_, <MkSingleton>, _, _)
-    
+
   fact-to-strategies:
     Declaration(term, v, scope, assoc-scope) -> [ |[ ~v := ~decl ]| ]
     where <not(?Wld())> v
     with
       decl := <binder-to-decl> term
- 
+
+  collect-bound-vars =
+    ?NewScope(<MkSingleton>, _)
+
   fact-to-strategies:
     NewScope(scope, _) -> [ |[ ~scope := Scope(<NewScope>) ]| ]
 
 rules
-    
+
   fact-to-terms:
     Declaration(term, v, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
     with
@@ -32,26 +35,26 @@ rules
       	decl := v
       end
     ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
-  
+
   fact-to-terms:
     Reference(term, scope) -> [ Term |[ FRef(~ref, ~scope) ]| ]
     with
       ref := <binder-to-ref> term
-  
+
   fact-to-terms:
     NamedImport(term, scope, subst) -> [ Term |[ FImportR(~ref, ~label, ~scope) ]| ]
     with
       ref   := <binder-to-ref> term
     ; label := <substitution-to-term> subst
-  
+
   fact-to-terms:
     DirectImport(v, scope, subst) -> [ Term |[ FImportS(~v, ~label, ~scope) ]| ]
     with
       label := <substitution-to-term> subst
-  
+
   fact-to-terms:
     NewScope(scope, Global()) -> [ Term |[ FParent(~scope, None()) ]| ]
-  
+
   fact-to-terms:
     NewScope(scope, parent) -> [ Term |[ FParent(~scope, ~parent) ]| ]
     where not(Global() := parent)
@@ -61,7 +64,7 @@ rules
     HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
     with tp := <type-pattern> t
        ; msg := <default-message>
- 
+
   fact-to-terms:
   	SubType(ty1, ty2) -> [ Term |[ FSubType(~ty1', ~ty2', ~msg) ]| ]
   	with
@@ -80,7 +83,7 @@ rules
       else
 	      pos := Term |[ <get-implicit-decl-position(|~term)> position__ ]|
       end
-    
+
   binder-to-ref: 
     Bind(ns, term) -> Term |[ RefId(~nst, ~term, ~pos) ]|   
     with 
@@ -90,14 +93,14 @@ rules
       else
         pos := Term |[ <get-implicit-ref-position(|~term)> position__ ]|
       end
-    
+
   namespace-to-term: Name()        -> Term |[ None() ]|
   namespace-to-term: Namespace(ns) -> Term |[ Namespace(~str:ns) ]|
 rules
 	      
   assoc-scope-to-terms(|decl):
     None() -> []
-    
+
   assoc-scope-to-terms(|decl):
     Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]
 
@@ -107,10 +110,10 @@ rules
 	substitution-to-term: Subst(t) -> t
 	
 rules
-   
+
   type-def-pattern = ! Term |[ <type-def> ~<alltd(wld-var)> ]|
   type-pattern     = ! Term |[ <type-app> ~<alltd(wld-var)> ]|
-         
+
   wld-var:
     Wld() -> Term |[ Var(<NewVar>) ]|
-    
+

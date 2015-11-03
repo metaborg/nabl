@@ -1,7 +1,7 @@
 module generation/rules
 
 imports
-  
+
   libstrc
   signatures/rules/core/-
   signatures/terms/-
@@ -11,29 +11,31 @@ imports
   generation/constraints
   generation/facts
   generation/messages
-  
+
 rules // binding rules
 
   rules-to-str:
     Rules(r*) -> [Rules(<map(rule-to-strategy)> r*)]
- 
+
   rule-to-strategy:
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
     |[ c(|facts__, constraints__, scopes__, position__):
          ~pattern -> ~ret
          with ?term__
          with [~scope* | _] := scopes__ <+ ( debug(!$[wrong scope count [<length> scopes__] for ]) ; fail )
-         with ~fvar
-         with ~cvar
+         with ~vstr
+         with ~fstr
+         with ~cstr
          with <iset-addlist(|[~fcoll*])> facts__
-            ;  <iset-addlist(|[~ccoll*])> constraints__
+            ; <iset-addlist(|[~ccoll*])> constraints__
          with ~visit
     ]|
-    with pvar*  := <collect-vars> pattern
-       ; fvar   := <filterconcat(fact-to-strategies); to-seq> fact*
-       ; fvar*  := <filterconcat(collect-fact-vars)> fact*
-       ; cvar*  := <mapconcat(collect-constraint-vars); make-set> constr*
-       ; cvar   := <diff; vars-to-init> (cvar*, <conc> (pvar*,fvar*))
+    with pvar*  := <collect-vars; make-set> pattern
+       ; var*   := <mapconcat(collect-vars); make-set> [fact*,constr*]
+       ; bvar*  := <filterconcat(collect-bound-vars); make-set> [fact*,constr*]
+       ; vstr   := <diff; vars-to-init> (var*, [pvar*,bvar*])
+       ; fstr   := <filterconcat(fact-to-strategies); to-seq> fact*
+       ; cstr   := <filterconcat(constraint-to-strategies); to-seq> constr*
        ; fcoll* := <mapconcat(fact-to-terms)> fact* 
        ; ccoll* := <mapconcat(constraint-to-terms(|<default-message>))> constr* 
        ; visit  := <map(visit-to-appl); to-seq> visit*
@@ -50,16 +52,18 @@ rules // binding rules
     |[ nabl2-constraint(|facts__, constraints__, scopes__, position__):
          ~pattern -> <fail>
          with ?term__
-         with ~var
+         with ~vstr
+         with ~cstr
          with <iset-addlist(|[CTypeOf(position__, ~tp, ~msg), ~ccoll*])> constraints__
     ]|
-    with 
-      tvar*  := <collect-vars> type
-    ; cvar*  := <mapconcat(collect-constraint-vars)> constr*
-    ; var    := <make-set; vars-to-init> [tvar*,cvar*]
-    ; ccoll* := <mapconcat(constraint-to-terms(|<default-message>))> constr*
-    ; tp     := <type-pattern> type
-    ; msg    := <default-message>
-        
+    with pvar*  := <collect-vars; make-set> pattern
+       ; var*   := <mapconcat(collect-vars); make-set> [type,constr*]
+       ; bvar*  := <filterconcat(collect-bound-vars); make-set> constr*
+       ; vstr   := <diff; vars-to-init> (var*, [pvar*,bvar*])
+       ; cstr   := <filterconcat(constraint-to-strategies); to-seq> constr*
+       ; ccoll* := <mapconcat(constraint-to-terms(|<default-message>))> constr*
+       ; tp     := <type-pattern> type
+       ; msg    := <default-message>
+
     vars-to-init = map(!|[ ~<id> := <new-var> ]|); to-seq
-       
+
