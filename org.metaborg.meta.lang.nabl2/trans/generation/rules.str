@@ -31,9 +31,10 @@ rules // binding rules
          with ~visit
     ]|
     with pvar*  := <collect-vars; make-set> pattern
+       ; svar*  := <collect-vars; make-set> scope*
        ; var*   := <mapconcat(collect-vars); make-set> [fact*,constr*]
        ; bvar*  := <filterconcat(collect-bound-vars); make-set> [fact*,constr*]
-       ; vstr   := <diff; vars-to-init> (var*, [pvar*,bvar*])
+       ; vstr   := <diff; vars-to-init> (var*, [pvar*,svar*,bvar*])
        ; fstr   := <filterconcat(fact-to-strategies); to-seq> fact*
        ; cstr   := <filterconcat(constraint-to-strategies); to-seq> constr*
        ; fcoll* := <mapconcat(fact-to-terms)> fact* 
