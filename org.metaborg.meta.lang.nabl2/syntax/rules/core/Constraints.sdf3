@@ -7,7 +7,8 @@ imports
   common/Identifiers  
   rules/core/Messages
   rules/core/Facts
-  
+  rules/core/Scopes
+ 
 context-free syntax
 
   Constraint         = BaseConstraint
@@ -21,6 +22,13 @@ context-free syntax
   BaseConstraint.Match    = [[Pattern] == [Pattern]]
   
   BaseConstraint.Resolves = <<Term> resolves to <BinderRef> through <Var>> 
+  BaseConstraint.Distinct = <distinct <Names>>
+  BaseConstraint.Include = <<Names> include <Names>>
+  BaseConstraint.Disjoint = <<Names> and <Names> are disjoint>
+
+  Names.Declarations = <<Namespace> declarations in <ScopeRef>>
+  Names.References = <<Namespace> references in <ScopeRef>>
+  Names.Visibles = <<Namespace> visibles in <ScopeRef>>
   
   BinderRef.BindV = <<Namespace> <Var>>
   
@@ -29,7 +37,7 @@ context-free syntax
   BaseConstraint.HasType  = <<VarRef> : <Pattern>> 
   BaseConstraint.SubType  = [[Pattern] <: [Pattern]] 
   BaseConstraint.LubType  = [[Var] == lub ([Pattern], [Pattern])] {prefer} 
-    
+ 
   BaseConstraint.MakeSub    = [[Var] == [Term] |-> [Term]]
   BaseConstraint.MakeSub    = <<Var> == [<Term>/<Term>]>
   BaseConstraint.ExtractSub = [[Var] == extract ([Term])] {prefer}

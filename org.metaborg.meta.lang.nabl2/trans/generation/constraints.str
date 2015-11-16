@@ -70,6 +70,32 @@ rules
     ; pv' := <try(wld-var)> pv
 
   constraint-to-terms(|msg):
+    Distinct(n) -> [ Term |[ CDistinct(~n',~msg) ]| ]
+    with n' := <names-to-term> n
+
+  constraint-to-terms(|msg):
+    Include(n1,n2) -> [ Term |[ CIncluded(~n2',~n1',~msg) ]| ]
+    with n1' := <names-to-term> n1
+       ; n2' := <names-to-term> n2
+
+  constraint-to-terms(|msg):
+    Disjoint(n1,n2) -> [ Term |[ CDisjoint(~n1',~n2',~msg) ]| ]
+    with n1' := <names-to-term> n1
+       ; n2' := <names-to-term> n2
+
+  names-to-term:
+    Declarations(ns,s) -> Term |[ Declarations(~ns',~s)  ]|
+    with ns' := <namespace-to-term> ns
+
+  names-to-term:
+    References(ns,s) -> Term |[ References(~ns',~s)  ]|
+    with ns' := <namespace-to-term> ns
+
+  names-to-term:
+    Visibles(ns,s) -> Term |[ Visibles(~ns',~s)  ]|
+    with ns' := <namespace-to-term> ns
+
+  constraint-to-terms(|msg):
     Declares(_, _) -> []
 
   constraint-to-terms(|msg):
