@@ -74,7 +74,7 @@ rules
     with n' := <names-to-term> n
 
   constraint-to-terms(|msg):
-    Include(n1,n2) -> [ Term |[ CIncluded(~n2',~n1',~msg) ]| ]
+    Subset(n1,n2) -> [ Term |[ CSubset(~n1',~n2',~msg) ]| ]
     with n1' := <names-to-term> n1
        ; n2' := <names-to-term> n2
 

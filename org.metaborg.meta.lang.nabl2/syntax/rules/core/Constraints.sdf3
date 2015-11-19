@@ -22,9 +22,9 @@ context-free syntax
   BaseConstraint.Match    = [[Pattern] == [Pattern]]
   
   BaseConstraint.Resolves = <<Term> resolves to <BinderRef> through <Var>> 
-  BaseConstraint.Distinct = <distinct <Names>>
-  BaseConstraint.Include = <<Names> include <Names>>
-  BaseConstraint.Disjoint = <<Names> and <Names> are disjoint>
+  BaseConstraint.Distinct = <<Names> are distinct>
+  BaseConstraint.Subset = <<Names> are a subset of <Names>>
+  BaseConstraint.Disjoint = <<Names> are disjoint from <Names>>
 
   Names.Declarations = <<Namespace> declarations in <ScopeRef>>
   Names.References = <<Namespace> references in <ScopeRef>>

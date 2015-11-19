@@ -45,7 +45,7 @@ rules // rules
     with d := <newname> "decl"
     
   explicit-subset:
-    Equals(n1,n2) -> [Include(n1,n2),Include(n2,n1)]
+    Equals(n1,n2) -> [Subset(n1,n2),Subset(n2,n1)]
     
   explicit-new-scope:
     ScopeRule(pattern, ctx@InScopes([Var(svar)]), fact*, scope*, constraint*) ->
