@@ -7,6 +7,7 @@ imports
   terms/Vars  
   rules/core/Constraints
   rules/core/Scopes
+  signatures/Resolution
   
 context-free syntax
 
@@ -29,8 +30,11 @@ context-free syntax
   
 context-free syntax
 
-  Fact.NamedImport  = <imports <Binder> into <ScopeRef> <Substitution>>
-  Fact.DirectImport = <imports from <ScopeRef> into <ScopeRef> <Substitution>>
+  Fact.NamedImport  = <<ImportLabel> imports <Binder> into <ScopeRef> <Substitution>>
+  Fact.DirectImport = <<ImportLabel> imports from <ScopeRef> into <ScopeRef> <Substitution>>
+
+  ImportLabel.I = <>
+  ImportLabel   = LabelRef
 
   Substitution.None  =
   Substitution.Subst = <with <Term>>

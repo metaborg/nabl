@@ -8,6 +8,7 @@ imports
   generation/rules
   generation/signatures
   generation/relations
+  generation/resolution
     
 rules // modules
   
@@ -24,8 +25,15 @@ rules // modules
                 Import("libanalysis2/positioning/-"),
                 Import("libanalysis2/nabl2/-"),
                 Import("signatures/libanalysis2/-"),
-                Import("pp/libanalysis2/-") 
+                Import("signatures/libanalysis2/equality/-"),
+                Import("signatures/libanalysis2/namebinding/-"),
+                Import("signatures/libanalysis2/positioning/-"),
+                Import("signatures/libanalysis2/solver/-"),
+                Import("signatures/libanalysis2/typechecking/-"),
+                Import("pp/libanalysis2/-"),
+                Import("pp/libanalysis2/namebinding/-"),
+                Import("pp/libanalysis2/typechecking/-")
               ]
     ; s'* := <mapconcat(section-to-str)> s*
-      
-  section-to-str = ?Imports(_); MkSingleton <+ rules-to-str <+ signature-to-str <+ relations-to-str
+ 
+  section-to-str = ?Imports(_); MkSingleton <+ rules-to-str <+ signature-to-str <+ relations-to-str <+ resolution-to-str

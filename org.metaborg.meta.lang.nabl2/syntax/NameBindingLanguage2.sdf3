@@ -11,6 +11,7 @@ imports
   rules/sugar/Scopes
   signatures/Types
   signatures/Relations
+  signatures/Resolution
   
 context-free start-symbols
 

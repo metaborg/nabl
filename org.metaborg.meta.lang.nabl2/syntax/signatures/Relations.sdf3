@@ -12,4 +12,3 @@ context-free syntax
   > {longest-match}
 
   RelEntry.RelEntry = [[Pattern] <: [Term]]
-  

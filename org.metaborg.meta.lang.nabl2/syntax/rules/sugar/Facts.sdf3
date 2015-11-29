@@ -5,6 +5,7 @@ imports
   terms/Vars
   rules/core/Facts
   rules/core/Scopes
+  signatures/Resolution
   
 context-free syntax
 
@@ -14,8 +15,8 @@ context-free syntax
   Fact.Declaration  = <declares <Binder> <DeclVar> <AssocScope>>
   Fact.Reference    = <references <Binder>>
   
-  Fact.NamedImport  = <imports <Binder> <Substitution>>
-  Fact.DirectImport = <imports from <ScopeRef> <Substitution>>
+  Fact.NamedImport  = <<ImportLabel> imports <Binder> <Substitution>>
+  Fact.DirectImport = <<ImportLabel> imports from <ScopeRef> <Substitution>>
 
   AssocScope.Assoc = <with associated scope>
   

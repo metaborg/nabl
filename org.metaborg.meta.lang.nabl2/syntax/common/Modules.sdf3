@@ -2,12 +2,15 @@ module common/Modules
 
 context-free syntax
 
-  Module.Module = <module <ModuleID> 
+  Module.Module = <
+    module <ModuleID>
     
-    <ModuleSection*>> 
+    <ModuleSection*>
+  >
     
   ModuleSection.Imports = <
-    imports <ImportModule*>>
+    imports <ImportModule*>
+  >
     
   ImportModule.ImportWildcard = <<ModuleID>/-> 
   ImportModule.Import = <<ModuleID>> 

@@ -46,6 +46,9 @@ rules
   var-name: ListVar(name) -> name
   var-name: ListVarRef(name) -> name
 
+  to-term = !Str(<is-string>)
+  to-term = ?c#(a*) ; !Op(c,<map(to-term)> a*)
+
 rules
   
   unzip3 = foldr( !([],[],[])

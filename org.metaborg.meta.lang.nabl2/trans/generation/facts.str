@@ -6,6 +6,7 @@ imports
   signatures/rules/core/-
   signatures/terms/-
   generation/messages
+  util
 
 rules
 
@@ -42,21 +43,23 @@ rules
       ref := <binder-to-ref> term
 
   fact-to-terms:
-    NamedImport(term, scope, subst) -> [ Term |[ FImportR(~ref, ~label, ~scope) ]| ]
+    NamedImport(label, term, scope, subst) -> [ Term |[ FImportR(~label', ~ref, ~subst', ~scope) ]| ]
     with
-      ref   := <binder-to-ref> term
-    ; label := <substitution-to-term> subst
+      label' := <to-term> label
+    ; ref    := <binder-to-ref> term
+    ; subst' := <substitution-to-term> subst
 
   fact-to-terms:
-    DirectImport(v, scope, subst) -> [ Term |[ FImportS(~v, ~label, ~scope) ]| ]
+    DirectImport(label, v, scope, subst) -> [ Term |[ FImportS(~label', ~v, ~subst', ~scope) ]| ]
     with
-      label := <substitution-to-term> subst
+      label' := <to-term> label
+    ; subst' := <substitution-to-term> subst
 
   fact-to-terms:
-    NewScope(scope, Global()) -> [ Term |[ FParent(~scope, None()) ]| ]
+    NewScope(scope, Global()) -> [ ]
 
   fact-to-terms:
-    NewScope(scope, parent) -> [ Term |[ FParent(~scope, ~parent) ]| ]
+    NewScope(scope, parent) -> [ Term |[ FImportS(P(), ~parent, None(), ~scope) ]| ]
     where not(Global() := parent)
 
   // dynamic check could be avoided with proper static analysis
