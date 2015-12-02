@@ -12,8 +12,8 @@ rules
   collect-strategies(s) =
     s;
     unzip3 => (s*,c*,a*);
-    <newname;str-list-var> "c" => c;
-    <newname;str-list-var> "a" => a;
+    <newname_;str-list-var> "c" => c;
+    <newname_;str-list-var> "a" => a;
     <foldr(!|[ id ]|,str-seq)> s* => s;
     !(|[ ~s ;
          ~c := [~*c*] ;
@@ -48,6 +48,8 @@ rules
 
   to-term = !Str(<is-string>)
   to-term = ?c#(a*) ; !Op(c,<map(to-term)> a*)
+
+  newname_ = !$[[<newname>]_]
 
 rules
   

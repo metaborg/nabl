@@ -11,10 +11,10 @@ imports
 rules
 
   collect-bound-vars =
-    ?Declaration(_, <MkSingleton>, _, _)
+    ?Declaration(_, <MkSingleton>, _)
 
   fact-to-strategies:
-    Declaration(term, v, scope, assoc-scope) -> [ |[ ~v := ~decl ]| ]
+    Declaration(term, v, _) -> [ |[ ~v := ~decl ]| ]
     where <not(?Wld())> v
     with
       decl := <binder-to-decl> term
@@ -28,14 +28,13 @@ rules
 rules
 
   fact-to-terms:
-    Declaration(term, v, scope, assoc-scope) -> [ Term |[ FDecl(~decl, ~scope) ]| , aconstr* ]
+    Declaration(term, v, scope) -> [ Term |[ FDecl(~decl, ~scope) ]| ]
     with
       if Wld() := v then
-      	decl := <binder-to-decl> term
-      else 
-      	decl := v
+        decl := <binder-to-decl> term
+      else
+        decl := v
       end
-    ; aconstr* := <assoc-scope-to-terms(|decl)> assoc-scope
 
   fact-to-terms:
     Reference(term, scope) -> [ Term |[ FRef(~ref, ~scope) ]| ]
@@ -62,6 +61,15 @@ rules
     NewScope(scope, parent) -> [ Term |[ FImportS(P(), ~parent, None(), ~scope) ]| ]
     where not(Global() := parent)
 
+  fact-to-terms:
+    WithAssoc(term, Assoc(scope)) -> [ Term |[ FAssoc(~pos, ~scope) ]| ]
+    with
+      if <?Var(_) + ?ListVar(_) + ?VarRef(_) + ?ListVarRef(_)> term then
+        pos := Term |[ <get-position> ~term ]|
+      else
+	      pos := Term |[ <get-implicit-decl-position(|~term)> position__ ]|
+      end
+
   // dynamic check could be avoided with proper static analysis
   fact-to-terms:
     HasType(v, t) -> [ Term |[ CTypeOf(<get-position> ~v, ~tp, ~msg) ]| ]
@@ -77,7 +85,7 @@ rules
 
 rules
 
-  binder-to-decl: 
+  binder-to-decl:
     Bind(ns, term) -> Term |[ DeclId(~nst, ~term, ~pos) ]|
     with 
       nst := <namespace-to-term> ns
@@ -99,13 +107,6 @@ rules
 
   namespace-to-term: Name()        -> Term |[ None() ]|
   namespace-to-term: Namespace(ns) -> Term |[ Namespace(~str:ns) ]|
-rules
-	      
-  assoc-scope-to-terms(|decl):
-    None() -> []
-
-  assoc-scope-to-terms(|decl):
-    Assoc(scope) -> [ Term |[ FAssoc(~decl, ~scope) ]| ]
 
 rules
 	

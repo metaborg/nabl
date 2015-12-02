@@ -15,17 +15,18 @@ context-free syntax
 
 context-free syntax
 
-  Fact.Declaration = <declares <Binder> <DeclVar> in <ScopeRef> <AssocScope>>
+  Fact.Declaration = <declares <Binder> <DeclVar> in <ScopeRef>>
   Fact.Reference   = <references <Binder> in <ScopeRef>>
 
   Binder.Bind = <<Namespace> <Term>>
 
-  DeclVar = <as <Var>>  
+  DeclVar = <as <Var>>
   
   Namespace.Name      = 
   Namespace.Namespace = <<Id>>
   
-  AssocScope.None  = 
+  Fact.WithAssoc = <<Term> <AssocScope>>
+
   AssocScope.Assoc = <with associated scope <ScopeRef>>
   
 context-free syntax
