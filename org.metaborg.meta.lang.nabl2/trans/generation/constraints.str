@@ -38,7 +38,7 @@ rules
     with tp := <type-pattern> t
 
   constraint-to-terms(|msg):
-    LubType(t1, t2, t3) -> [ Term |[ CLubType(~tp1, ~tp2, ~tp3, ~msg) ]| ]
+    LubType(t1, t2, t3) -> [ Term |[ CEqual(~tp1, Lub(~tp2,~tp3), ~msg) ]| ]
     with tp1 := <type-pattern> t1
        ; tp2 := <type-pattern> t2
        ; tp3 := <type-pattern> t3

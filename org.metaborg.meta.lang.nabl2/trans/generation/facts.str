@@ -42,14 +42,14 @@ rules
       ref := <binder-to-ref> term
 
   fact-to-terms:
-    NamedImport(label, term, scope, subst) -> [ Term |[ FImportR(~label', ~ref, ~subst', ~scope) ]| ]
+    NamedImport(label, term, scope, subst) -> [ Term |[ FNamedEdge(~label', ~ref, ~subst', ~scope) ]| ]
     with
       label' := <to-term> label
     ; ref    := <binder-to-ref> term
     ; subst' := <substitution-to-term> subst
 
   fact-to-terms:
-    DirectImport(label, v, scope, subst) -> [ Term |[ FImportS(~label', ~v, ~subst', ~scope) ]| ]
+    DirectImport(label, v, scope, subst) -> [ Term |[ FDirectEdge(~label', ~v, ~subst', ~scope) ]| ]
     with
       label' := <to-term> label
     ; subst' := <substitution-to-term> subst
@@ -58,7 +58,7 @@ rules
     NewScope(scope, Global()) -> [ ]
 
   fact-to-terms:
-    NewScope(scope, parent) -> [ Term |[ FImportS(P(), ~parent, None(), ~scope) ]| ]
+    NewScope(scope, parent) -> [ Term |[ FDirectEdge(P(), ~parent, None(), ~scope) ]| ]
     where not(Global() := parent)
 
   fact-to-terms:
