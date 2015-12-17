@@ -95,6 +95,10 @@ rules
     Visibles(ns,s) -> Term |[ Visibles(~ns',~s)  ]|
     with ns' := <namespace-to-term> ns
 
+  names-to-term:
+    Reachables(ns,s) -> Term |[ Reachables(~ns',~s)  ]|
+    with ns' := <namespace-to-term> ns
+
   constraint-to-terms(|msg):
     Declares(_, _) -> []
 

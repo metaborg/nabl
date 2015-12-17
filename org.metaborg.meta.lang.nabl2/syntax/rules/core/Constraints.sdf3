@@ -29,6 +29,7 @@ context-free syntax
   Names.Declarations = <<Namespace> declarations in <ScopeRef>>
   Names.References = <<Namespace> references in <ScopeRef>>
   Names.Visibles = <<Namespace> visibles in <ScopeRef>>
+  Names.Reachables = <<Namespace> reachables in <ScopeRef>>
   
   BinderRef.BindV = <<Namespace> <Var>>
   
