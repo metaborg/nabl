@@ -99,6 +99,9 @@ rules
     Reachables(ns,s) -> Term |[ Reachables(~ns',~s)  ]|
     with ns' := <namespace-to-term> ns
 
+  namespace-match-to-term: Wld() -> Term |[ Wld() ]|
+  namespace-match-to-term = namespace-to-term
+
   constraint-to-terms(|msg):
     Declares(_, _) -> []
 

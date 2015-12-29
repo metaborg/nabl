@@ -26,10 +26,13 @@ context-free syntax
   BaseConstraint.Subset = <<Names> are a subset of <Names>>
   BaseConstraint.Disjoint = <<Names> are disjoint from <Names>>
 
-  Names.Declarations = <<Namespace> declarations in <ScopeRef>>
-  Names.References = <<Namespace> references in <ScopeRef>>
-  Names.Visibles = <<Namespace> visibles in <ScopeRef>>
-  Names.Reachables = <<Namespace> reachables in <ScopeRef>>
+  Names.Declarations = <<NamespaceMatch> declarations in <ScopeRef>>
+  Names.References   = <<NamespaceMatch> references in <ScopeRef>>
+  Names.Visibles     = <<NamespaceMatch> visibles in <ScopeRef>>
+  Names.Reachables   = <<NamespaceMatch> reachables in <ScopeRef>>
+  
+  NamespaceMatch     = Namespace
+  NamespaceMatch.Wld = <_>
   
   BinderRef.BindV = <<Namespace> <Var>>
   
