@@ -23,7 +23,7 @@ rules
     ?NewScope(<MkSingleton>, _)
 
   fact-to-strategies:
-    NewScope(scope, _) -> [ |[ ~scope := Scope(<NewScope>) ]| ]
+    NewScope(scope, _) -> [ |[ ~scope := ScopeId(<NewScope>) ]| ]
 
 rules
 
