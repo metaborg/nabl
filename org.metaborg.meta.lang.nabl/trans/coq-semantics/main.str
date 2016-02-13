@@ -10,6 +10,7 @@ imports
   coq-semantics/defines
   coq-semantics/refersto
   coq-semantics/Coq-parenthesize
+  libstratego-gpp
   
 rules
   

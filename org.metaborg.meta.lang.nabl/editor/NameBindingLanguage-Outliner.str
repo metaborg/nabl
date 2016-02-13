@@ -4,8 +4,8 @@ imports
 	
 	libstrc
   include/NameBindingLanguage
-  lib/runtime/editor/outline-library
-  lib/runtime/editor/origins
+  runtime/editor/outline-library
+  runtime/editor/origins
 
 rules
   

@@ -1,0 +1,8 @@
+module NameBindingLanguage2-Syntax
+
+language
+
+  line comment  : "//"
+  block comment : "/*" * "*/"
+
+  fences        : [ ] ( ) { }

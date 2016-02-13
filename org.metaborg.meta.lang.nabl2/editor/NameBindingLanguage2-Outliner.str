@@ -1,0 +1,12 @@
+module editor/NameBindingLanguage2-Outliner
+
+imports
+  
+  include/NameBindingLanguage2
+  runtime/editor/outline-library
+  runtime/editor/origins
+
+rules
+  
+  to-outline-label = fail
+  

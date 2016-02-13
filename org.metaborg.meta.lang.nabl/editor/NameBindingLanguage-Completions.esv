@@ -1,7 +1,0 @@
-module NameBindingLanguage-Completions
-
-imports src-gen/completions/NameBindingLanguage-esv
-
-completions
-       
-  completion proposer : editor-complete

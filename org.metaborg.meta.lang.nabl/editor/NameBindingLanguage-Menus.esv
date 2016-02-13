@@ -29,5 +29,3 @@ menus
       action: "Project"            = debug-project (openeditor) (meta)
       action: "Partition"          = debug-partition (openeditor) (meta)
     end
-    
-    action: "Reset and reanalyze"  = debug-reanalyze (meta)   

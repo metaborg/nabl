@@ -1,0 +1,19 @@
+module rules/core/Scopes
+
+imports
+  terms/Terms
+  terms/Vars
+  
+context-free syntax
+
+  Scope.Scope = <<{ScopeRef ","}+> scope <ScopedTerm>>
+  
+  ScopedTerm  = Term
+
+context-free syntax
+  
+  Context.InScopes = <in scopes <{Var ","}+>>
+
+  ScopeRef        = VarRef
+  ScopeRef.Global = <global scope>
+    
