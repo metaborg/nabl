@@ -11,9 +11,8 @@ dependencies:
   source:
   - org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}
 generates:
-- generate:
-    language: Stratego-Sugar
-    directory: src-gen
+- language: Stratego-Sugar
+  directory: src-gen
 pardonedLanguages:
 - EditorService
 - Stratego-Sugar
