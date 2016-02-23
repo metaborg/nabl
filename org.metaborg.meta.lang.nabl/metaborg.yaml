@@ -1,33 +1,37 @@
 ---
-metaborgVersion: "2.0.0-SNAPSHOT"
-metaborgBaselineVersion: "1.5.0-baseline-20150917-172646"
-id: "org.metaborg:org.metaborg.meta.lang.nabl:${metaborgVersion}"
-name: "NameBindingLanguage"
-format: "ctree"
-compileDependencies:
-- "org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}"
-- "org.metaborg:org.metaborg.meta.lang.nabl:${metaborgBaselineVersion}"
-- "org.metaborg:org.metaborg.meta.lang.esv:${metaborgBaselineVersion}"
-runtimeDependencies:
-- "org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}"
+id: org.metaborg:org.metaborg.meta.lang.nabl:${metaborgVersion}
+name: NameBindingLanguage
+metaborgVersion: 2.0.0-SNAPSHOT
+metaborgBaselineVersion: 2.0.0-baseline-20160221-213050
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
+  - org.metaborg:org.metaborg.meta.lang.nabl:${metaborgBaselineVersion}
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgBaselineVersion}
+  source:
+  - org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}
+generates:
+- language: Stratego-Sugar
+  directory: src-gen
 pardonedLanguages:
-- "EditorService"
-- "Stratego-Sugar"
-- "SDF"
+- EditorService
+- Stratego-Sugar
+- SDF
 language:
   stratego:
+    format: ctree
     args:
-    - "-la"
-    - "stratego-lib"
-    - "-la"
-    - "stratego-sglr"
-    - "-la"
-    - "stratego-gpp"
-    - "-la"
-    - "stratego-xtc"
-    - "-la"
-    - "stratego-aterm"
-    - "-la"
-    - "stratego-sdf"
-    - "-la"
-    - "strc"
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc

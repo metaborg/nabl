@@ -5,7 +5,6 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 >
   <modelVersion>4.0.0</modelVersion>
-  <name>NameBindingLanguage</name>
   <artifactId>org.metaborg.meta.lang.nabl</artifactId>
   <packaging>spoofax-language</packaging>
   <description>Spoofax meta-language for declaratively specifying name resolution</description>
@@ -18,67 +17,24 @@
     <relativePath>../../releng/parent/language</relativePath>
   </parent>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.lib.analysis</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-      <scope>${metaborg-meta-lang-scope}</scope>
-    </dependency>
+  <developers>
+    <developer>
+      <name>Guido Wachsmuth</name>
+      <email>g.h.wachsmuth@tudelft.nl</email>
+      <organization>Delft University of Technology</organization>
+      <organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
+    </developer>
+    <developer>
+      <name>Gabriël Konat</name>
+      <email>g.d.p.konat@tudelft.nl</email>
+      <organization>Delft University of Technology</organization>
+      <organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
+    </developer>
+  </developers>
 
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.lang.template</artifactId>
-      <version>${metaborg-baseline-version}</version>
-      <type>spoofax-language</type>
-      <scope>${metaborg-meta-lang-scope}</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.lang.nabl</artifactId>
-      <version>${metaborg-baseline-version}</version>
-      <type>spoofax-language</type>
-      <scope>${metaborg-meta-lang-scope}</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.lang.esv</artifactId>
-      <version>${metaborg-baseline-version}</version>
-      <type>spoofax-language</type>
-      <scope>${metaborg-meta-lang-scope}</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.metaborg</groupId>
-        <artifactId>spoofax-maven-plugin</artifactId>
-        <version>${metaborg-version}</version>
-        <extensions>true</extensions>
-      </plugin>
-    </plugins>
-  </build>
-
-	<developers>
-		<developer>
-			<name>Guido Wachsmuth</name>
-			<email>g.h.wachsmuth@tudelft.nl</email>
-			<organization>Delft University of Technology</organization>
-			<organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
-		</developer>
-		<developer>
-			<name>Gabriël Konat</name>
-			<email>g.d.p.konat@tudelft.nl</email>
-			<organization>Delft University of Technology</organization>
-			<organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
-		</developer>
-	</developers>
-
-	<scm>
-		<connection>scm:git:git@github.com:metaborg/nabl.git</connection>
-		<developerConnection>scm:git:git@github.com:metaborg/nabl.git</developerConnection>
-		<url>https://github.com/metaborg/nabl</url>
-	</scm>
+  <scm>
+    <connection>scm:git:git@github.com:metaborg/nabl.git</connection>
+    <developerConnection>scm:git:git@github.com:metaborg/nabl.git</developerConnection>
+    <url>https://github.com/metaborg/nabl</url>
+  </scm>
 </project>
