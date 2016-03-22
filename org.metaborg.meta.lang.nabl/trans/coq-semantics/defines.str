@@ -1,7 +1,7 @@
 module coq-semantics/defines
 
 imports
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   generation/util
   coq-semantics/Coq
   coq-semantics/patterns

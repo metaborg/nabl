@@ -2,7 +2,7 @@ module constraints
 
 imports
 
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   runtime/nabl/-
   runtime/task/-
   

@@ -3,7 +3,7 @@ module generation/use-sites
 imports
   
   libstrc
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   
   generation/-
   
