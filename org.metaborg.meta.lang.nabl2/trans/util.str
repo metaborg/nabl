@@ -3,7 +3,7 @@ module util
 imports
   
   libstrc
-  include/NameBindingLanguage2
+  signatures/NameBindingLanguage2-sig
 
 rules
 

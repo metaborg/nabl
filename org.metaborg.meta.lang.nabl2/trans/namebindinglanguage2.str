@@ -5,9 +5,9 @@ imports
 	libstratego-lib
 	libstratego-gpp
 	libstratego-aterm
-	include/NameBindingLanguage2
-	editor/NameBindingLanguage2-Outliner
-	editor-common.generated
+	signatures/NameBindingLanguage2-sig
+	outline
+	stratego/metaborg
 	runtime/index/-
 	runtime/nabl/-
 	runtime/properties/-

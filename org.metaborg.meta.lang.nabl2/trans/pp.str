@@ -4,7 +4,7 @@ imports
 
 	libstratego-gpp
 	runtime/refactoring/-
-	include/NameBindingLanguage2-parenthesize
+	pp/NameBindingLanguage2-parenthesize
 	pp/NameBindingLanguage2-pp
 
 rules

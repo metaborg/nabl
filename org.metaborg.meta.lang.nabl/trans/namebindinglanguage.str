@@ -5,8 +5,8 @@ imports
 	libstratego-lib
 	libstratego-gpp
 	libstratego-aterm
-  include/NameBindingLanguage
-  editor-common.generated
+  signatures/NameBindingLanguage-sig
+  stratego/metaborg
   runtime/analysis/-
   runtime/nabl/-
   runtime/task/-
@@ -15,7 +15,7 @@ imports
   runtime/properties/-
   runtime/types/-
   runtime/editor/-
-  editor/NameBindingLanguage-Outliner
+  outline
 
   names/analysis/names
   analysis/-

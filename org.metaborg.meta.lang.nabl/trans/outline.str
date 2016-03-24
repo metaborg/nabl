@@ -1,9 +1,9 @@
-module editor/NameBindingLanguage-Outliner
+module outline
 
 imports
 	
 	libstrc
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   runtime/editor/outline-library
   runtime/editor/origins
 

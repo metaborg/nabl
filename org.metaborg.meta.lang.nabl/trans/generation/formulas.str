@@ -2,7 +2,7 @@ module generation/formulas
 
 imports 
   
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   libstrc
   
   generation/-
