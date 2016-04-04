@@ -21,6 +21,7 @@ rules // binding rules
     ScopeRule(pattern, InScopes(scope*), fact*, visit*, constr*) ->
     |[ c(|facts__, constraints__, scopes__, position__):
          ~pattern -> ~ret
+         where ~pstr
          with ?term__
          with [~scope* | _] := scopes__ <+ ( debug(!$[wrong scope count [<length> scopes__] for ]) ; fail )
          with ~vstr
@@ -31,6 +32,7 @@ rules // binding rules
          with ~visit
     ]|
     with pvar*  := <collect-vars; make-set> pattern
+       ; pstr   := <vars-to-solid-test> pvar*
        ; svar*  := <collect-vars; make-set> scope*
        ; var*   := <mapconcat(collect-vars); make-set> [fact*,constr*]
        ; bvar*  := <filterconcat(collect-bound-vars); make-set> [fact*,constr*]
@@ -48,16 +50,21 @@ rules // binding rules
          ; ret := |[ <id> ]|
          end
 
+
+   vars-to-solid-test = map(!|[ <not(is-SDF-placeholder)> ~<id> ]|); to-seq
+
    rule-to-strategy:
     TypeRule(pattern, type, constr*) ->
     |[ nabl2-constraint(|facts__, constraints__, scopes__, position__):
          ~pattern -> <fail>
+         where ~pstr
          with ?term__
          with ~vstr
          with ~cstr
          with <iset-addlist(|[CTypeOf(position__, ~tp, ~msg), ~ccoll*])> constraints__
     ]|
     with pvar*  := <collect-vars; make-set> pattern
+       ; pstr   := <vars-to-solid-test> pvar*
        ; var*   := <mapconcat(collect-vars); make-set> [type,constr*]
        ; bvar*  := <filterconcat(collect-bound-vars); make-set> constr*
        ; vstr   := <diff; vars-to-init> (var*, [pvar*,bvar*])
