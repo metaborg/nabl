@@ -1,0 +1,12 @@
+module Colorer
+
+imports 
+
+  editor/Colorer.generated
+
+colorer
+  
+  NamespaceID._       : 0 64 128 italic //bold
+  
+  PropertyID._        : 0 64 128 italic //bold
+  PropertyRef.TypeProp: 0 64 128 italic bold

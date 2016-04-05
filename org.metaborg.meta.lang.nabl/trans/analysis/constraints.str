@@ -1,13 +1,35 @@
 module constraints
 
 imports
-  include/NameBindingLanguage
-  lib/runtime/task/messages
-  lib/runtime/task/tasks
+
+  signatures/NameBindingLanguage-sig
+  runtime/nabl/-
+  runtime/task/-
   
 rules
   
-  nabl-constraint(|ctx) =
-    where(?ImportWildcard(<string-ends-with(|"/nabl")>))
-  ; task-create-warning(|ctx, "Generated runtime libraries will not be imported. Make sure to rely only on your local runtime libraries.")
-   
+  nabl-check-disable-unresolved = id
+  
+  nabl-constraint(|ctx):
+    ImportWildcard(name) -> <fail>
+    where
+      <string-ends-with(|"/nabl")> name
+    ; <task-create-warning(|ctx, "Generated runtime libraries will not be imported. Make sure to rely only on your local runtime libraries.")> name
+  
+  nabl-constraint(|ctx):
+    _ -> <fail>
+    where
+      ( ?NamespaceRef(_, name)
+      + ?PropertyRef(name)
+      + ?VarRef(name)
+      + ?ListVarRef(name)
+      )
+    ; task := <nabl-collect-use-task> name
+    ; <task-create-error-on-failure(|ctx, task, "Unresolved reference")> name
+
+  nabl-constraint(|ctx):
+  	Import(name) -> <fail>
+  	where 
+  		<not(string-starts-with(|"src-gen/") + string-starts-with(|"syntax/"))> name
+    ; task := <nabl-collect-use-task> name
+    ; <task-create-error-on-failure(|ctx, task, "Unresolved reference")> name

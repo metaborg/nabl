@@ -1,81 +1,78 @@
 module namebindinglanguage
 
 imports
-	
+
 	libstratego-lib
 	libstratego-gpp
 	libstratego-aterm
-  include/NameBindingLanguage
-  lib/editor-common.generated
-  lib/runtime/analysis/-
-  lib/runtime/nabl/-
-  lib/runtime/task/-
-  lib/runtime/index/-
-  lib/runtime/tmpl/-
-  lib/runtime/properties/-
-  lib/runtime/types/-
-  lib/runtime/editor/-
-  editor/NameBindingLanguage-Outliner
+  signatures/NameBindingLanguage-sig
+  stratego/metaborg
+  runtime/analysis/-
+  runtime/nabl/-
+  runtime/task/-
+  runtime/index/-
+  runtime/tmpl/-
+  runtime/properties/-
+  runtime/types/-
+  runtime/editor/-
+  outline
 
+  names/analysis/names
   analysis/-
 	generation/-
   coq-semantics/-
-  
+
 rules // Analysis
-  
-  editor-analyze = analysis-default-editor // analysis-default-cmd
-  
-  analysis-single-default-interface = 
-  	analysis-single-default(desugar-all; normalize-all, id, id|<language>)
-  	
-  analysis-multiple-default-interface = 
-  	analysis-multiple-default(parse-file <+ !(), desugar-all; normalize-all, id, id|<language>, <project-path>)
-  
-  editor-save = where(analysis-save-default(|<language>)); generate-name-analysis
-      
+
+  editor-analyze = analyze-all(desugar-all; normalize-all, id, id|<language>)
+
+  editor-save = generate-name-analysis
+
 rules // Editor services
 
   editor-resolve:
     (node, position, ast, path, project-path) -> definition
     where
-    	definition := <analysis-resolve(|<language>, project-path, path)> node
+    	definition := <analysis-resolve(|<language>, project-path)> node
 
   editor-hover:
     (selected, position, ast, path, project-path) -> <fail>
-  
+
   editor-complete:
     (node, position, ast, path, project-path) -> proposals
     where
-    	proposals := <analysis-propose-completions(|<language>, project-path, path)> ast
-    	
+    	proposals := <analysis-propose-completions(|<language>, project-path)> ast
+
   editor-outline:
     (node, position, ast, path, project-path) -> outline
     where
       outline := <outline> ast
 
 rules // Debugging
-  
+
   debug-show-aterm:
     (selected, position, ast, path, project-path) -> (filename, selected)
     with
       filename := <guarantee-extension(|"aterm")> path
-      
+
   debug-show-analyzed:
     (selected, position, ast, path, project-path) -> (filename, selected)
     with
       filename := <guarantee-extension(|"analyzed.aterm")> path
 
-  debug-show-index-current =
-    analysis-debug-show-current-partition(|<language>)
-     
-  debug-show-index-all =
-    analysis-debug-show-all-partitions(|<language>)
+  debug-index-project =
+    analysis-debug-index-project(|<language>)
+  debug-index-partition =
+    analysis-debug-index-partition(|<language>)
 
-	debug-show-tasks-selection =
-		analysis-debug-show-tasks-selection(|<language>)
+  debug-task-project =
+    analysis-debug-task-project(|<language>)
+  debug-task-partition =
+    analysis-debug-task-partition(|<language>)
+  debug-task-selection =
+    analysis-debug-task-selection(|<language>)
 
-  debug-show-tasks-partition =
-    analysis-debug-show-tasks(|<language>)
-  	
-  debug-reanalyze = 
-  	analysis-debug-reanalyze(|<language>)
+  debug-project =
+    analysis-debug-project(|<language>)
+  debug-partition =
+    analysis-debug-partition(|<language>)

@@ -2,7 +2,7 @@ module Lexical.pp.generated
 
 imports 
   libstratego-gpp
-  lib/runtime/tmpl/-
+  runtime/tmpl/-
   
 strategies
   prettyprint-LAYOUT =

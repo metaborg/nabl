@@ -3,8 +3,8 @@ module generation/sections
 imports
   
   libstrc
-  include/NameBindingLanguage
-  lib/editor-common.generated
+  signatures/NameBindingLanguage-sig
+  stratego/metaborg
   
   generation/-
         	

@@ -1,7 +1,7 @@
 module generation/scope
 
 imports
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   generation/-
   libstrc
   

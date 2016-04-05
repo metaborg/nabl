@@ -1,9 +1,0 @@
-module test/names
-
-namespaces Foo Method Type Package
-
-binding rules
-
-  Class(c, m*):
-    defines Type c
-    scopes Method

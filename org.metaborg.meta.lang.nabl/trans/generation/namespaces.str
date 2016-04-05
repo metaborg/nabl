@@ -2,7 +2,7 @@ module generation/namespaces
 
 imports
   libstrc
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   generation/util
   
 rules // namespaces 

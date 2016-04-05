@@ -1,3 +1,0 @@
-module NameBindingLanguage-Refactorings
-
-imports NameBindingLanguage-Refactorings.generated

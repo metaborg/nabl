@@ -1,7 +1,7 @@
 module coq-semantics/main
 
 imports
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   generation/util
   coq-semantics/Coq
   coq-semantics/Vernacular.pp.generated
@@ -10,6 +10,7 @@ imports
   coq-semantics/defines
   coq-semantics/refersto
   coq-semantics/Coq-parenthesize
+  libstratego-gpp
   
 rules
   

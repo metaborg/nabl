@@ -1,50 +1,71 @@
 module generation/main
 
 imports
-  
+
   libstrc
-  include/NameBindingLanguage
+  signatures/NameBindingLanguage-sig
   generation/util
   generation/namespaces
   generation/properties
   generation/sections
-  
+  runtime/task/-
+  runtime/nabl/-
+
 rules
-  
+
   generate-name-analysis:
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
-      filename   := <guarantee-extension(|"str")> path
-    ; str-module := <strip-annos; to-ppable-str; module-to-str> ast
+      filename   := $[src-gen/names/[<guarantee-extension(|"str")> name]]
+    ; str-module := <module-to-str> ast
     with
        result := <pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
     ;  result := ""
-      
+
 rules // modules
-  
+
   to-ppable-str = alltd(to-ppable-str-local)
-    
+
   to-ppable-str-local: ListVar(x)    -> Var(x)
   to-ppable-str-local: VarRef(x)     -> Var(x)
   to-ppable-str-local: ListVarRef(x) -> Var(x)
 
   module-to-str:
-    Module(n, [ Imports(i*), ns, p, r ]) -> Module(n, [ Imports([lib*, i*]), ns', p-sig, p-str, r'])
+    Module(n, [ Imports(i*), ns, p, r ]) -> Module($[names/[n]], [ Imports([lib*, i'*]), ns', p-sig, p-str, r'])
     with
       ns'   := <namespaces-to-str> ns
     ; p-sig := <properties-to-sig> p
     ; p-str := <properties-to-strategies> p
-    ; r'    := <rules-to-str> r
+    ; r'    := <strip-annos; to-ppable-str; rules-to-str> r
+    ; i'*   := <map(try(import-to-str))> i*
     with
-       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i* 
+       <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i*
      ; lib* := []
-    <+ lib* := [ ImportWildcard("lib/runtime/nabl")
-               , ImportWildcard("lib/runtime/task")
-               , ImportWildcard("lib/runtime/properties")
-               , ImportWildcard("lib/runtime/types")
-               , ImportWildcard("lib/runtime/relations")
-               , ImportWildcard("lib/runtime/editor")
+    <+ lib* := [ ImportWildcard("runtime/nabl")
+               , ImportWildcard("runtime/task")
+               , ImportWildcard("runtime/properties")
+               , ImportWildcard("runtime/types")
+               , ImportWildcard("runtime/relations")
+               , ImportWildcard("runtime/editor")
                ]
-      
-    
+
+  import-to-str:
+    Import(m) -> Import($[names/[m]])
+    where
+      <nabl-collect-use-task; not(task-has-failed)> m
+
+  import-to-str:
+    Import(m) -> Import($[signatures/[m']-sig])
+    where
+      <nabl-collect-use-task; task-has-failed> m
+    where
+      m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")
+
+  import-to-str:
+  	ImportWildcard("syntax") -> ImportWildcard("signatures")
+
+  import-to-str:
+    ImportWildcard(m) -> ImportWildcard($[signatures/[m']])
+    where
+      m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")

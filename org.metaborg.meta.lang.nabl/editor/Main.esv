@@ -1,0 +1,23 @@
+module Main
+
+imports 
+
+  Menus
+  Colorer
+  Syntax
+  Views
+
+language
+
+  extensions : nab
+  
+  table         : target/metaborg/sdf.tbl
+  start symbols : Start
+
+  provider : target/metaborg/stratego.ctree
+  observer : editor-analyze (multifile)
+  on save  : generate-name-analysis
+
+references
+
+  reference _ : editor-resolve

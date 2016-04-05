@@ -1,7 +1,0 @@
-module NameBindingLanguage-References
-
-imports NameBindingLanguage-References.generated
-
-references
-
-  reference _ : editor-resolve
