@@ -16,8 +16,8 @@ language General properties
   table         : include/NameBindingLanguage.tbl
   start symbols : Start
 
-  //provider : include/namebindinglanguage.ctree
   provider : include/namebindinglanguage-java.jar
+  provider : include/namebindinglanguage.jar
   
   observer : editor-analyze (multifile)
   on save  : generate-name-analysis
