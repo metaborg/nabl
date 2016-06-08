@@ -1,0 +1,56 @@
+module analysis/normalize
+
+imports
+
+  nabl2shared
+
+  signatures/common/-
+  signatures/modules/-
+
+  generation/defaults
+
+rules
+
+  normalize =
+    try(sometd(normalize-type-match));
+    try(sometd(normalize-term-type));
+    try(sometd(normalize-message));
+    try(sometd(normalize-index <+ normalize-default-index));
+    try(sometd(normalize-rule-names))
+
+
+  normalize-type-match:
+    CGenRule(CGenPattern(name,pattern,param,type),C,new)
+      -> CGenRule(CGenPattern(name,pattern,param,<type-var>),
+             CConj(CEqual(<type-var>,type,DefaultMessage()),C),new)
+    where <not(?NoType()+is-var)> type
+
+
+  normalize-term-type:
+    CGenRule(CGenPattern(name,pattern,param,type),C,new)
+      -> CGenRule(CGenPattern(name,pattern,param,type),
+             CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C),new)
+    where <not(?NoType())> type
+
+
+  normalize-message:
+    DefaultMessage() ->
+      Message(Error(),Default(),DefaultIndex())
+
+
+  normalize-index:
+    Message(kind,content,DefaultIndex()) ->
+      Message(kind,content,ASTIndexFromTerm(<term-var>))
+
+  normalize-index:
+    Occurence(ns,name,DefaultIndex()) ->
+      Occurence(ns,name,ASTIndexFromTerm(name))
+    where <is-var> name
+
+  normalize-default-index:
+    DefaultIndex() -> ASTIndexFromTerm(<term-var>)
+
+
+  normalize-rule-names:
+    NoName() -> Name(<default-rule-name>)
+

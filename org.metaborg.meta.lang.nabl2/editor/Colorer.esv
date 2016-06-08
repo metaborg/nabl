@@ -1,9 +1,0 @@
-module Colorer
-
-imports 
-
-  editor/Colorer.generated
-
-colorer  
-  
-  Binder.Bind: 255 0 100 bold

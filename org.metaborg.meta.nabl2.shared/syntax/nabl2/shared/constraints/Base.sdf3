@@ -1,0 +1,30 @@
+module nabl2/shared/constraints/Base
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  Constraint.CTrue   = <true>
+  Constraint.CFalse  = <false <Message>>
+
+  Constraint.CConj   = [[Constraint],[Constraint]] {right}
+  Constraint.CDisj   = [[Constraint];[Constraint]] {right}
+
+  Constraint         = [([Constraint])] {bracket}
+
+context-free priorities
+
+  Constraint.CConj >
+  Constraint.CDisj
+
+
+lexical syntax
+
+  Keyword = "true" | "false"

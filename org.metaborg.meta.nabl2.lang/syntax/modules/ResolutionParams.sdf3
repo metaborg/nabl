@@ -1,0 +1,27 @@
+module modules/ResolutionParams
+
+imports
+
+  nabl2/shared/common/Names
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  ModuleSection.ResolutionParams = <
+    resolution parameters
+      labels <{LabelRef ","}*>
+      order  <{LabelOrder ","}*>
+      well-formedness <LabelRE>
+  > {longest-match}
+
+
+lexical syntax
+
+  SectionKeyword = "resolution" | "parameters"
+
+ 

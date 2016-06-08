@@ -1,0 +1,26 @@
+module nabl2/runtime/common/substitutions
+
+imports
+
+  nabl2/runtime/prelude/-
+ 
+rules
+
+  // S-foldr(s0: s, s: a -> s) :: [a] -> s
+  S-foldr(isv,s0,s) = foldr(s0,S-foldr-step(isv,s))
+  // S-foldr-step(s: a -> s) :: (a,s) -> s
+  S-foldr-step(isv,s): (t,s) -> s''
+  where <S-apply(isv);s> (s,t) => s'
+      ; <S-compose(isv)> (s',s) => s''
+
+  S-compose(isv): s* -> s
+  where is-list
+  with s := <foldr([],S-compose(isv))> s*
+
+  S-compose(isv): (s',s) ->  <conc> (s', <mapv(<S-apply(isv)> (s',<id>))> s)
+
+  S-apply(isv): (s,t) -> t'
+  with <topdown( try( isv ; <lookup> (<id>,s) ) )> t => t'
+
+  S-occurs(isv): (v,t) -> <id>
+  where <elem> (v, <collect-all(isv)> t)

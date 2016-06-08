@@ -1,0 +1,21 @@
+module nabl2/runtime/solver/Solution
+
+imports
+
+  nabl2/shared/common/Vars
+  nabl2/runtime/common/Resolution
+  nabl2/runtime/common/ScopeGraph
+  nabl2/runtime/solver/Namebinding
+  nabl2/runtime/solver/Substitution
+  nabl2/runtime/solver/Typechecking
+
+context-free syntax
+
+  Solution.Sol = <
+    scope graph      = <ScopeGraph>
+    resolution       = <{OneResolution "\n"}*>
+    typing           = <{Typing "\n"}*>
+    substitution     = <Substitution>
+    subtype relation = <SubtypeRelation>
+  >
+

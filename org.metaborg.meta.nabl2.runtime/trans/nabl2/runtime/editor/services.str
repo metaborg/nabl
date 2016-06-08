@@ -1,0 +1,14 @@
+module nabl2/runtime/editor/services
+
+imports
+
+  nabl2/runtime/analysis/-
+  nabl2/runtime/pp
+
+rules
+
+  editor-resolve: (node, position, ast, path, project-path) -> decl
+    where decl := <get-ref> node
+
+  editor-hover: (node, position, ast, path, project-path) -> label
+    where label := <get-type;pp-TypeTerm;xmlencode> node

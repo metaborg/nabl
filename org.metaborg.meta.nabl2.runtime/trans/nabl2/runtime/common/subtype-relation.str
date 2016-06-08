@@ -1,0 +1,20 @@
+module nabl2/runtime/common/subtype-relation
+
+imports
+
+  nabl2/runtime/prelude/-
+
+rules
+
+  initial-subtype-relation = ![]
+ 
+  extend-subtype-relation(|x*) =
+    ?(ty1,ty2);
+    where(not(is-subtype(|x*)));
+    <update(![ty2|<id>],![]|ty1);
+     mapv(try(\ ty* -> <nub> [ty2|ty*] where <elem> (ty1,ty*) \))> x*
+ 
+  is-subtype(|x*) =
+    ?(ty1,ty2);
+    where(eq + <elem> (ty1, <lookup> (ty2,x*)))
+ 

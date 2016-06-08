@@ -1,9 +1,0 @@
-module check
-
-imports
-
-	signatures/NameBindingLanguage2-sig
-	stratego/metaborg
-
-rules
-	

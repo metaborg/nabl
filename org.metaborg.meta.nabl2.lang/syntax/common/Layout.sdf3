@@ -1,0 +1,30 @@
+module common/Layout
+
+lexical syntax
+
+  LAYOUT = [\t\ \n\r] 
+  LAYOUT = LineComment
+  LAYOUT = BlockComment
+
+  EOF =  
+
+  LineComment  = "//" ~[\n]* ([\n] | EOF)
+
+  BlockComment = "/*" CommentText (BlockComment CommentText)* ("*/" | EOF)
+  CommentText = CommentChar*
+  CommentChar = ~[\*\/] | Asterisk | Slash
+  Slash       = "/"
+  Asterisk    = "*"
+
+lexical restrictions
+
+  EOF         -/- ~[]
+  CommentText -/- ~[\*\/]
+  Asterisk    -/- [\/]
+  Slash       -/- [\*]
+
+context-free restrictions
+
+  LAYOUT?     -/- [\ \t\n\r]   // whitespace
+  LAYOUT?     -/- [\/].[\/]    // line comment start
+  LAYOUT?     -/- [\/].[\*]    // block comment start

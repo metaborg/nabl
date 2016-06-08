@@ -1,0 +1,32 @@
+module generation/modules
+
+imports
+
+  libstrc
+  generation/-
+
+rules
+
+  module-to-str:
+    Module(name,section*) -> Module(name,[import-str,section-str*])
+    with
+      import-str := Imports([
+        Import("nabl2shared"),
+        Import("nabl2runtime")
+      ]);
+      section-str* := <filter(section-to-str)> section*
+ 
+
+rules
+
+  section-to-str:
+    Imports(import*) -> Imports(import'*)
+    with
+      import'* := <map(import-to-str)> import*
+  
+  import-to-str:
+    Import(_) -> <id>
+    
+  import-to-str:
+    ImportWildcard(name) -> Import($[[name]/-])
+

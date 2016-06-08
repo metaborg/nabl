@@ -1,0 +1,27 @@
+module analysis/main
+
+imports
+
+  libstratego-sglr // for amb(_)
+
+  analysis/-
+  pp
+
+rules
+
+  editor-analyze:
+    (source-ast,_,_) -> result
+    with
+      result := <analyze> source-ast
+      
+  analyze =
+    ?ast;
+    analyzed-ast := <normalize> ast;
+    error* := <collect-all(analysis-error)> analyzed-ast;
+    warning* := <collect-all(analysis-warning)> analyzed-ast;
+    note* := <collect-all(analysis-note)> analyzed-ast;
+    !(analyzed-ast, error*, warning*, note*)
+ 
+  analysis-error = fail
+  analysis-warning = fail
+  analysis-note = fail

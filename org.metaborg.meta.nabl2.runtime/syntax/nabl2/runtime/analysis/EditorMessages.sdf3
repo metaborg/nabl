@@ -1,0 +1,9 @@
+module nabl2/runtime/analysis/EditorMessages
+
+imports
+
+  nabl2/shared/common/Terms
+
+context-free syntax
+
+  EditorMessage = <(<Term>,<Term>)>

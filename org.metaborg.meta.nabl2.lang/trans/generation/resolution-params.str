@@ -1,0 +1,25 @@
+module generation/resolution-params
+
+imports
+
+  libstrc
+  generation/-
+  signatures/modules/-
+  util/stratego
+
+rules
+
+  section-to-str:
+    ResolutionParams(label*,order*,wf) -> Rules([
+      |[ labels = !~labelstr ]|,
+      orderstr*,
+      |[ labels-wf = !~wfstr ]|
+    ])
+    with labelstr  := List(<map(explode(injection-to-term))> label*)
+    with orderstr* := <map(label-order-to-str)> order*
+    with wfstr     := <explode(injection-to-term)> wf
+
+  label-order-to-str: Lt(l1, l2) -> |[ label-lt = ?(~l1',~l2') ]|
+    with l1' := <explode(injection-to-term)> l1
+       ; l2' := <explode(injection-to-term)> l2
+

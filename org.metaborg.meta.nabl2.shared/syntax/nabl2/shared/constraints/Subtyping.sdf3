@@ -1,0 +1,13 @@
+module nabl2/shared/constraints/Subtyping
+
+imports
+
+  nabl2/shared/common/Types
+  nabl2/shared/common/Messages
+
+context-free syntax
+
+  Constraint.FSubtype = [[TypeTerm] <! [TypeTerm] [Message]]
+  Constraint.CSubtype = [[TypeTerm] <? [TypeTerm] [Message]]
+
+ 

@@ -1,0 +1,34 @@
+module nabl2/runtime/common/ScopeGraph
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Names
+
+context-free syntax
+
+  ScopeGraph.G = <
+    scope graph {
+      <{ScopeEntry "\n"}*>
+      assocs = <{AssocEntry "\n"}*>
+    }
+  >
+ 
+  ScopeEntry = <<Scope> = <ScopeDef>>
+ 
+  ScopeDef.S = <
+    {
+      decls        = <{Occurence ", "}*>
+      refs         = <{Occurence ", "}*>
+      direct edges = <{DirectEdgeEntry ", "}*>
+      named edges  = <{NamedEdgeEntry ", "}*>
+    }
+  >
+ 
+  DirectEdgeEntry = <<LabelRef>/<Scope>>
+  NamedEdgeEntry = <<LabelRef>/<Occurence>>
+  AssocEntry = <<Associable> : <Scope>>
+
+  Associable = <<Occurence>/<LabelRef>>
+  Associable = <<ASTIndex>/<LabelRef>>
+

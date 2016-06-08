@@ -1,0 +1,39 @@
+module nabl2/runtime/analysis/base
+
+imports
+
+  runtime/editor/annotations
+  runtime/editor/origins
+
+rules // ast indices
+
+  index-ast =
+    ?ast;
+    {| NodeIndex:
+	    node-counter := <new-counter>;
+	    rules( NodeIndex: _ -> <next-counter> node-counter );
+	    <topdown({?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
+    |}
+
+  get-ast-index = get-annotation(is-int) <+ warn(|"Cannot get AST index") ; !-1
+
+
+rules // origins
+
+  copy-origin(|from): to -> <origin-location-offset-set(|origin)> to
+    with origin := <origin-location-offset <+ warn(|"Cannot get origin") ; !("",-1,-1,-1,-1)> from
+
+
+rules // annotations
+
+  remove-annotation(s):
+    t{a*} -> t{a'*}
+    where ([_|_],a'*) := <partition(s)> a*
+
+  apply-annotations(s|aa*): ast -> ast'
+  with <topdown(try(apply-annotations-to-term(s|aa*)))> ast => ast'
+
+  apply-annotations-to-term(s|aa*): t{a*} -> t{a''*}
+  where a'* := <filter(<lookup> (<id>,aa*));map(s)> a*;
+        a''* := [a*,a'*]
+ 

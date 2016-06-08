@@ -1,0 +1,7 @@
+module nabl2/shared/common/Native
+
+lexical syntax
+
+  ABSTRACT = []
+  Int      = []
+  String   = []

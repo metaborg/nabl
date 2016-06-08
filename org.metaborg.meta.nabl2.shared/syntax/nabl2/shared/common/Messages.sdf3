@@ -1,0 +1,24 @@
+module nabl2/shared/common/Messages
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Terms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  Message.Message        = <| <MessageKind> <MessageContent> <MessagePosition>>
+
+  MessageKind.Error      = <error>
+  MessageKind.Warning    = <warning>
+  MessageKind.Note       = <note>
+
+  MessageContent.Default =
+  MessageContent         = Term
+
+  MessagePosition        = ASTIndex
+

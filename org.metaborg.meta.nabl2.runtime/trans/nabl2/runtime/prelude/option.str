@@ -1,0 +1,74 @@
+module nabl2/runtime/prelude/option
+
+imports
+  nabl2/runtime/prelude/base
+  nabl2/runtime/prelude/interfaces
+  nabl2/runtime/prelude/tuple
+
+rules
+  
+  is-option: o@Some(_) -> o
+  is-option: o@None() -> o
+
+rules // functor
+
+  fmap(s): Some(x) -> Some(<s> x)
+  fmap(s): None() -> None()
+
+rules // applicative
+
+  pureO: x -> Some(x)
+
+rules // monad
+ 
+  bind(s): Some(x) -> <s> x
+  bind(s): None() -> None()
+
+  join: Some(Some(x)) -> Some(x)
+  join: Some(None()) -> None()
+  join: None() -> None()
+
+rules // monadplus
+
+  mplus(s): (Some(x1),Some(x2)) -> Some(<s> (x1,x2))
+  mplus(s): (s@Some(_),None()) -> s
+  mplus(s): (None(),s@Some(_)) -> s
+  mplus(s): (None(),None()) -> None()
+
+rules // list
+  
+  sequenceO = sequenceO(id)
+
+  // sequenceO(s: a -> b) :: [Option a] -> Option [b]
+  sequenceO(s): x* -> o
+  where is-list
+  with ( <map(?Some(_))> x*
+       < !Some(<map(?Some(<id>);s)>)
+       + !None()
+       ) => o
+
+rules // tuple
+
+  // twrapO :: (o a1, ..., o an) -> o (a1, ..., an)
+  twrapO: t -> o
+  where is-tuple
+  with TupleToList ; sequenceO ; fmap(ListToTuple) => o
+
+  // tunwrap :: o (a1, ..., an) -> (o a1, ..., o an)
+  tunwrap(|n): Some(t) -> <tmap(pureO)> t
+  with <TupleToList;length> t => n
+  tunwrap(|n): None() -> <pureT(|n)> None()
+
+rules // fail
+
+  safeO(s): x -> o
+  with
+    ( <s> x < !Some(<id>) + !None() ) => o
+  
+  fromSome: Some(x) -> x
+  fromSome: None() -> <fail>
+
+rules // specific
+
+  orElse(s): None() -> Some(<s>)
+  orElse(s): s@Some(_) -> s

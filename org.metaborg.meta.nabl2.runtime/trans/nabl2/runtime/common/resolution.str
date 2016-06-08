@@ -1,0 +1,165 @@
+module nabl2/runtime/common/resolution
+
+imports
+
+  nabl2shared
+
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/pp
+
+  signatures/nabl2/runtime/common/-
+
+signature
+
+  // type Env = (Partial,[(Name,[(Decl,Path)])])
+
+rules
+
+  // resolve-all :: Graph -> [(Ref,[(Decl,Path)])]
+  resolve-all =
+    ?g
+  ; G-refs
+  ; filter(!(<id>,<resolve(|g)>))
+
+  // resolve(|Graph) :: Ref -|-> [(Decl,Path)]
+  resolve(|g) = resolve(|g,[])
+
+rules // resolution internal
+
+  // resolve :: Ref -|-> [(Decl,Path)]
+  resolve(|g,ir*) =
+    with(dbg-res(|"resolve "))
+  ; ?r
+  ; ( s := <G-scope> (g,r) // :: Scope
+   <+ <debug(!"ERROR: Cannot get scope for reference ");fail> r
+    )
+  ; (f,e*) := <env(labels-lt|<labels-wf<+default-labels-wf>,g,[r|ir*],[])> s // :: Env
+  ; ( <lookup> (<occurence-atom> r, e*) // :: [(Decl,Path)]
+   <+ where(Total() := f) ; ![]
+    ) // :: [(Decl,Path)]
+  ; with(dbg-res(|"resolve = "))
+
+
+
+  // env(|RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env(lt|re,g,ir*,is*) =
+    with(dbg-res(|"env "))
+  ; ?s
+  ; ( (<elem> (s,is*) + <emptiness> re)
+    < !(Total(),[])
+    + <env_L(lt|[D(),I(),P()|<labels<+![]>],re,g,ir*,is*)> s
+    )
+  ; with(dbg-res(pp-Env|"env = "))
+
+
+
+  // env(|[Label],RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env_L(lt|L,re,g,ir*,is*) =
+    where(<is-list> L)
+  ; with(dbg-res(|"env^L "))
+  ; ?s
+  ; <max-labels> L
+  ; map(\ l -> <env-shadow> ( <env_L(lt|<lt(|l)> L,re,g,ir*,is*)> s
+                            , <env_l(lt|l,re,g,ir*,is*)> s
+                            ) \)
+  ; env-unions
+  ; with(dbg-res(pp-Env|"env^L = "))
+
+
+
+  // env(|D(),RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env_l(lt|l,re,g,ir*,is*) =
+    where(D() := l)
+  ; with(dbg-res(|"env^D "))
+  ; ?s
+  ; ( Empty() := <nullable> re
+    < ![]
+    + <G-decls;map(\ d -> (d,[D(d)]) \)> (g,s)
+    ; group(Fst;occurence-atom)
+    )
+  ; !(Total(),<id>)
+  ; with(dbg-res(pp-Env|"env^D = "))
+
+
+
+  // env(|Label,RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env_l(lt|l,re,g,ir*,is*) =
+    with(dbg-res(|"env^l "))
+  ; ?s
+  ; ( <union> ( <iss(|l,g)> s
+              , <irs(|l,g,ir*)> s
+              )
+    < map({ step:
+              ?(<id>,step)
+            ; env(lt|<deriv(|l)> re,g,ir*,[s|is*])
+            ; env-prepend(|step)
+         })
+    ; env-unions
+    + !(Partial(),[])
+    )
+  ; with(dbg-res(pp-Env|"env^l = "))
+
+  // iss(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
+  iss(|l,g) =
+    with(dbg-res(|"iss^l "))
+  ; ?s
+  ; <G-direct-edges> (g,s) // :: [(Label,Scope)]
+  ; map(where(Snd;is-ground))
+  ; filter(?(l,_);Snd) // :: [Scope]
+  ; map(\ s' -> (s',E(l,s')) \) // :: [(Scope,Step)]
+  ; with(dbg-res(|"iss^l = "))
+
+  // irs(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
+  irs(|l,g,ir*) =
+    with(dbg-res(|"irs^l "))
+  ; ?s
+  ; <G-named-edges> (g,s) // :: [(Label,Ref)]
+  ; filter(?(l,_);Snd) // :: [Ref]
+  ; filter(where(<not(elem)> (<id>,ir*))) // :: [Ref]
+  ; mapconcat(\ r -> <resolve(|g,ir*);mapv(!r)> r \) // :: [(Decl,Ref)]
+  ; filter({ d,r,s':
+               ?(d,r)
+             ; s' := <G-assoc> (g,(d,l))
+             ; !(s',N(l,r,s'))
+          }) // :: [(Scope,Step)]
+  ; with(dbg-res(|"irs^l = "))
+
+
+  // shadow :: (Env, Env) -> Env
+  env-shadow: ((Total(),e1),(f,e2)) -> (f, e')
+    with e' := <merge(union,Fst)> (e1,e2)
+  env-shadow: (e@(Partial(),_),_) -> e
+
+  // shadow :: [Env] -> Env
+  env-unions: e* -> (f,pe)
+    with f  := <map(Fst;?Total())<!Total()+!Partial()> e*
+       ; (t*,p*) := <partition(?(Total(),<id>),?(Partial(),<id>))> e*
+       ; te := <foldr(![],merge(union,union))> t*
+       ; pe := <foldr(!te,merge(isect,union))> p*
+
+  // env-prepend(|Step) = Env -> Env
+  env-prepend(|step) = (id,mapv(map(\ (d,p) -> (d,[step|p]) \)))
+
+
+
+rules
+ 
+  get-names(|g): Declarations(s,ns) -> n*
+    with n* := <G-decls;filter-ns(|ns)> (g,s)
+
+  get-names(|g): References(s,ns) -> n*
+    with n* := <G-refs;filter-ns(|ns)> (g,s)
+
+  get-names(|g): Visibles(s,ns) -> n*
+    where (Total(),e*) := <env(labels-lt|<labels-wf<+default-labels-wf>,g,[],[])> s
+    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
+ 
+  get-names(|g): Reachables(s,ns) -> n*
+    where (Total(),e*) := <env(empty-lt|<labels-wf<+default-labels-wf>,g,[],[])> s
+    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
+ 
+
+  dbg-res(s|n) = id // s ; debug(!n)
+  dbg-res(|n) = dbg-res(id|n)
+  dbg-res(s) = dbg-res(s|"")

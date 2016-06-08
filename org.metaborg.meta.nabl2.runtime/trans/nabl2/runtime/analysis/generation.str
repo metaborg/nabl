@@ -1,0 +1,63 @@
+module nabl2/runtime/analysis/generation
+
+imports
+
+  nabl2shared
+  nabl2/runtime/analysis/-
+
+rules
+
+  // top-level funtion that is called during analysis
+  generate-constraint =
+    ?ast;
+    {| NewScope, NewVar:
+	    scope-counter := <new-counter>;
+	    var-counter   := <new-counter>;
+	    rules( NewScope: _ -> <next-counter> scope-counter
+	           NewVar:   _ -> <next-counter> var-counter
+	         );
+      <generate-constraint-init> ast
+	  |}
+
+  new-var   = !Var($[v[<NewVar;int-to-string>]])
+  new-scope = !Scope(<NewScope;int-to-string>)
+
+  // signatures of the generated rules
+  generate-constraint-default-rule(|param) = fail
+  generate-constraint-with-type-default-rule(|param,type) = fail
+  generate-constraint-init-rule = fail
+
+  // error throwing wrappers for recursive invocations
+  generate-constraint(s|params) =
+    s(|params) <+
+    generate-constraint-list(s|params) <+
+    fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
+
+  generate-constraint-with-type(s|params,type) =
+    s(|params,type) <+
+    generate-constraint-with-type-list(s|params,type) <+
+    fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params] and type [<pp-Term> type]])
+
+  generate-constraint-init =
+    generate-constraint-init-rule <+
+    generate-constraint(generate-constraint-default-rule|Global()) <+
+    fatal-err(|"No suitable constraint generation init rule found and default failed.")
+
+  // default rule for lists
+  generate-constraint-list(s|params):
+    [x|xs] -> CConj(<generate-constraint(s|params)> x,
+                    <generate-constraint-list(s|params)> xs)
+
+  generate-constraint-list(s|params):
+    [] -> CTrue()
+ 
+  generate-constraint-with-type-list(s|params,type):
+    xs -> CConj(CEqual(type,type*,Message(Error(),Default(),<get-ast-index> xs)),c)
+    where (type*,c*) := <map(generate-constraint-with-type-elem(s|params));unzip> xs;
+          c := <foldr(!CTrue(),!CConj(<Fst>,<Snd>))> c*
+ 
+  generate-constraint-with-type-elem(s|params):
+    x -> (type,c)
+    where type := <new-var>;
+          c    := <generate-constraint-with-type(s|params,type)> x
+ 

@@ -1,0 +1,13 @@
+module nabl2/shared/common/Types
+
+imports
+
+  nabl2/shared/common/Native
+
+context-free syntax
+
+context-free syntax
+
+  TypeTerm      = ABSTRACT
+  Comparable    = TypeTerm
+

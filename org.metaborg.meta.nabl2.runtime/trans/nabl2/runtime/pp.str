@@ -1,0 +1,21 @@
+module nabl2/runtime/pp
+
+imports
+
+  nabl2shared
+  pp/nabl2/runtime/analysis/-
+  pp/nabl2/runtime/common/-
+  pp/nabl2/runtime/solver/-
+
+rules
+
+  pp-Constraint = pp(prettyprint-Constraint)
+  pp-Env        = pp(prettyprint-Env)
+  pp-Var        = pp(prettyprint-Var)
+  pp-TypeTerm   = pp(prettyprint-TypeTerm)
+  
+  prettyprint-Term = prettyprint-Scope
+  prettyprint-Term = prettyprint-Occurence
+  
+  prettyprint-TypeTerm = prettyprint-Term
+

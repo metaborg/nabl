@@ -1,0 +1,8 @@
+module nabl2/Menus
+
+menus
+
+  menu: "Analysis"
+
+    action: "Show Analysis"          = show-analysis       (meta) (realtime) (openeditor)
+    action: "Show Analysis ATerm"    = show-analysis-aterm (meta) (realtime) (openeditor)

@@ -1,0 +1,14 @@
+module nabl2/runtime/prelude/set
+
+strategies
+  
+  dups = dups(eq)
+  
+  dups(eq): [x|x*] -> [d*|<dups(eq)> z*]
+    where (y*,z*) := <partition(where(<eq> (x,<id>)))> x*
+        ; if [] := y* then
+            d* := []
+          else
+            d* := [x|y*]
+          end
+  dups(eq): [] -> []

@@ -1,0 +1,16 @@
+module nabl2/shared/common/vars
+
+imports
+
+  pp/nabl2/shared/common/-
+
+rules
+
+  is-var     = is-Var
+  all-vars   = collect-all(is-var) ; make-set
+  var-occurs = (id,all-vars) ; elem
+
+  is-op      = fail
+
+  is-ground  = where(collect-all(is-var + is-op) => [])
+

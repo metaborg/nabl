@@ -1,0 +1,46 @@
+module nabl2/runtime/solver/csolve
+
+rules
+
+  // solve : (c,e) -> [(e,[c])]
+  // preprocess : (e,c) -> c
+  // postprocess : (e,[c]) -> e
+
+  csolve(preprocess,solve) = csolve-fixpoint(preprocess,solve)
+
+rules
+
+  /** csolve-fixpoint :: (Ctx,[C]) -> [(Ctx,[C])]
+   * Solve a list of constraints repeatedly, until a fixpoint is reached.
+   */
+
+  csolve-fixpoint(preprocess,solve): (e,c*) -> res*
+  with <csolve-onepass(preprocess,solve)> (c*,e,[])
+     ; map( where( <set-eq> (<Snd>,c*) )
+          ; ![<id>]
+         <+ csolve-fixpoint(preprocess,solve)
+          ) ; concat => res*
+
+rules
+
+  /** csolve-onepass :: ([C],Ctx,[C]) -> [(Ctx,[C])]
+   *  Solve a list of constraints as much as possible in one pass, always trying to solve head.
+   *  - on failure: add the constraint to the return constraint list
+   *       success: add new constraints at the head of to the current list
+   *  - continue with the tail
+   */
+
+  csolve-onepass(preprocess,solve): ([c|c*],e,c'*) -> res*
+  with <preprocess> (e,c) => (e',c')
+     ; ( <solve> (c',e') => e'*
+       < map( !(<conc> (<Snd>,c*), <Fst>, c'*)
+            ; csolve-onepass(preprocess,solve)
+            ) ; concat
+       + <csolve-onepass(preprocess,solve)> (c*,e,[c'|c'*])
+       ) => res*
+
+  csolve-onepass(preprocess,solve): ([],e,c'*) -> [(e, <reverse> c'*)]
+
+rules
+
+  preprocess-default: (_,c) -> c

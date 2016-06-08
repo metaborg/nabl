@@ -1,0 +1,63 @@
+module modules/CGenRules
+
+imports
+ 
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Names
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Types
+  nabl2/shared/common/Vars
+
+  common/Identifiers
+  common/Types
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  ModuleSection.CGenRules = <
+    constraint-generation rules
+ 
+      <{CGenRule "\n"}*>
+  > {longest-match}
+
+  CGenRule.CGenRule = <
+    <CGenPattern> :=
+        <Constraint>
+        <CGenNew>.
+  >
+
+  CGenPattern.CGenInit = "init"
+
+  CGenNew.NoNew        =
+  CGenNew.New          = <, new <{Var ","}+>>
+
+  CGenName.NoName      =
+  CGenName.Name        = RuleId
+
+context-free syntax
+
+  CGenPattern.CGenPattern = <<CGenName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]]>
+
+  CGenParamsPattern.List  = <^ (<{VarOrWld ","}*>)>
+
+  CGenTypePattern.NoType  =
+  CGenTypePattern         = <: <TypePattern>>
+
+context-free syntax
+
+  Constraint.CGenTerm = <<CGenName> [[ <Var> <CGenParamsTerm> <CGenType> ]]>
+
+  CGenParamsTerm.List = <^ (<{TypeTerm ","}*>)>
+
+  CGenType.NoType     =
+  CGenType            = <: <TypeTerm>>
+
+lexical syntax
+
+  SectionKeyword = "constraint" | "generation" | "rules"
+  Keyword        = "new"
+
+ 
