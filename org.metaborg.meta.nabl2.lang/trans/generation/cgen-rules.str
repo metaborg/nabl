@@ -24,13 +24,12 @@ rules
     RDefT(rule-name,[],param-term*,
         Rule(pattern',constraint-term,clause*))
     with
-      if CGenInit() := match then
+      if CGenInit(pattern) := match then
         rule-name := "generate-constraint-init-rule";
-        pattern := <init-var>;
         (param-term*,param-str) := ([], |[ id ]|)
       else
-        pattern := <cgenpattern-to-pattern> match;
-        (param-term*,param-str,rule-name) := <cgenpattern-to-param-term'str'name> match
+        pattern := <cgenmatch-to-pattern> match;
+        (param-term*,param-str,rule-name) := <cgenmatch-to-param-term'str'name> match
       end;
       pattern' := As(<term-var>,pattern);
       bound-var* := <all-vars> (pattern',match,new);
@@ -46,15 +45,15 @@ rules
   constraint-to-term = explode(explode-guard)
  
   explode-guard(e) = injection-to-term(e)
-  explode-guard(e) = cgenterm-to-term(e)
+  explode-guard(e) = cgenrecurse-to-term(e)
 
 rules
 
-  cgenpattern-to-pattern:
-    CGenPattern(_,pattern,_,_) -> pattern 
+  cgenmatch-to-pattern:
+    CGenMatch(_,pattern,_,_) -> pattern 
  
-  cgenpattern-to-param-term'str'name: 
-    CGenPattern(Name(name),_,params,type) -> (params-term*,pattern-str',rule-name)
+  cgenmatch-to-param-term'str'name: 
+    CGenMatch(Name(name),_,params,type) -> (params-term*,pattern-str',rule-name)
     with
       if NoType() := type then
         params-term* := [<params-var>];
@@ -77,8 +76,8 @@ rules
 
 rules
 
-  cgenterm-to-term(e):
-    CGenTerm(Name(name),v,params,type) -> App(CallT(SVar(wrapper-name),[SVar(rule-name)],param*),v)
+  cgenrecurse-to-term(e):
+    CGenRecurse(Name(name),v,params,type) -> App(CallT(SVar(wrapper-name),[SVar(rule-name)],param*),v)
     with
       paramstr       := <e> params;
       if NoType()    := type then

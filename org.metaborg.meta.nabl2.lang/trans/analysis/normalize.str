@@ -20,15 +20,15 @@ rules
 
 
   normalize-type-match:
-    CGenRule(CGenPattern(name,pattern,param,type),C,new)
-      -> CGenRule(CGenPattern(name,pattern,param,<type-var>),
+    CGenRule(CGenMatch(name,pattern,param,type),C,new)
+      -> CGenRule(CGenMatch(name,pattern,param,<type-var>),
              CConj(CEqual(<type-var>,type,DefaultMessage()),C),new)
     where <not(?NoType()+is-var)> type
 
 
   normalize-term-type:
-    CGenRule(CGenPattern(name,pattern,param,type),C,new)
-      -> CGenRule(CGenPattern(name,pattern,param,type),
+    CGenRule(CGenMatch(name,pattern,param,type),C,new)
+      -> CGenRule(CGenMatch(name,pattern,param,type),
              CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C),new)
     where <not(?NoType())> type
 
