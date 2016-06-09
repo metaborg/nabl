@@ -23,25 +23,31 @@ rules
   new-scope = !Scope(<NewScope;int-to-string>)
 
   // signatures of the generated rules
-  generate-constraint-default-rule(|param) = fail
-  generate-constraint-with-type-default-rule(|param,type) = fail
   generate-constraint-init-rule = fail
+  generate-constraint-default-rule(|params) = fail
+  generate-constraint-with-type-default-rule(|params,type) = fail
 
   // error throwing wrappers for recursive invocations
   generate-constraint(s|params) =
     s(|params) <+
+    warn(|"Trying default list rule.");
     generate-constraint-list(s|params) <+
     fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
 
+
   generate-constraint-with-type(s|params,type) =
     s(|params,type) <+
+    warn(|"Trying default list rule.");
     generate-constraint-with-type-list(s|params,type) <+
     fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params] and type [<pp-Term> type]])
 
+
   generate-constraint-init =
     generate-constraint-init-rule <+
-    generate-constraint(generate-constraint-default-rule|Global()) <+
+    warn(|"Trying default init rule.");
+    generate-constraint(generate-constraint-default-rule|[Global()]) <+
     fatal-err(|"No suitable constraint generation init rule found and default failed.")
+
 
   // default rule for lists
   generate-constraint-list(s|params):
@@ -51,9 +57,11 @@ rules
   generate-constraint-list(s|params):
     [] -> CTrue()
  
+
   generate-constraint-with-type-list(s|params,type):
     xs -> CConj(CEqual(type,type*,Message(Error(),Default(),<get-ast-index> xs)),c)
-    where (type*,c*) := <map(generate-constraint-with-type-elem(s|params));unzip> xs;
+    where is-list;
+          (type*,c*) := <map(generate-constraint-with-type-elem(s|params));unzip> xs;
           c := <foldr(!CTrue(),!CConj(<Fst>,<Snd>))> c*
  
   generate-constraint-with-type-elem(s|params):

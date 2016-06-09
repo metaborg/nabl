@@ -6,9 +6,9 @@ imports
 
 rules
 
-  term-var   = !Var("term__")
-  type-var   = !Var("type__")
-  params-var = !Var("params__")
-  init-var   = !Var("init")
+  term-var       = !Var("term__")
+  type-var       = !Var("type__")
+  params-var     = !Var("params__")
+  constraint-var = !Var("constraint__")
   
   default-rule-name = !"default"
