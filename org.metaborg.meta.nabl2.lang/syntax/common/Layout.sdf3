@@ -2,13 +2,13 @@ module common/Layout
 
 lexical syntax
 
-  LAYOUT = [\t\ \n\r] 
+  LAYOUT = [\t\ \r\n]
   LAYOUT = LineComment
   LAYOUT = BlockComment
 
   EOF =  
 
-  LineComment  = "//" ~[\n]* ([\n] | EOF)
+  LineComment  = "//" ~[\r\n]* ([\r\n] | EOF)
 
   BlockComment = "/*" CommentText (BlockComment CommentText)* ("*/" | EOF)
   CommentText = CommentChar*
@@ -25,6 +25,6 @@ lexical restrictions
 
 context-free restrictions
 
-  LAYOUT?     -/- [\ \t\n\r]   // whitespace
+  LAYOUT?     -/- [\ \t\r\n]   // whitespace
   LAYOUT?     -/- [\/].[\/]    // line comment start
   LAYOUT?     -/- [\/].[\*]    // block comment start
