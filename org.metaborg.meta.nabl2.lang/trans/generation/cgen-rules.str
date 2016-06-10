@@ -22,7 +22,7 @@ rules
   rule-to-str:
     CGenRule(match,constraint,new) ->
     RDefT(rule-name,[],param-term*,
-        Rule(pattern,<constraint-var>,clause*))
+        Rule(pattern, <constraint-var>, clause*))
     with
       if CGenInit(pattern) := match then
         rule-name := "generate-constraint-init-rule";

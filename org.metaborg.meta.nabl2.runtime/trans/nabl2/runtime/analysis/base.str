@@ -15,7 +15,10 @@ rules // ast indices
 	    <bottomup({?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
     |}
 
-  get-ast-index = get-annotation(is-int) <+ warn(|"Cannot get AST index") ; <subt> (0,<next-random;abs>)
+  get-ast-index =
+    get-annotation(is-int)
+ <+ warn(|"Cannot get AST index");
+    <subt> (0,<next-random;abs>)
 
   has-ast-index = get-annotation(is-int)
 

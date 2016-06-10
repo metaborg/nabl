@@ -19,12 +19,10 @@ rules
     try(sometd(normalize-index <+ normalize-default-index));
     try(sometd(normalize-rule-names))
 
-  // capture the matched term, or the first term in the list in term__ 
+  // capture the matched term, or (FIXME) the first term in the list in term__ 
   normalize-term-match:
     CGenMatch(name,pattern,param,type) ->
-      CGenMatch(name,pattern',param,type)
-    where pattern' := <oncetd(\ op@Op(_,_) -> As(<term-var>,op) \)> pattern <+
-          pattern' := As(<term-var>, pattern)
+      CGenMatch(name,As(<term-var>, pattern),param,type)
 
   normalize-term-match:
     CGenInit(pattern) ->
