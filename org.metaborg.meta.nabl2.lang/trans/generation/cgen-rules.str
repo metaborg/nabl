@@ -22,24 +22,33 @@ rules
   rule-to-str:
     CGenRule(match,constraint,new) ->
     RDefT(rule-name,[],param-term*,
-        Rule(pattern',<constraint-var>,clause*))
+        Rule(pattern,<constraint-var>,clause*))
     with
       if CGenInit(pattern) := match then
         rule-name := "generate-constraint-init-rule";
-        (param-term*,param-str) := ([], |[ id ]|)
+        (param-term*,param-str) := ([], |[ id ]|);
+        debug-str := |[ try(<concat-strings;debug-generate-constraint> ["init [[ ",<pp-Term> ~<term-var>," ]]"]) ]|
       else
         pattern := <cgenmatch-to-pattern> match;
-        (param-term*,param-str,rule-name) := <cgenmatch-to-param-term'str'name> match
+        (param-term*,param-str,rule-name,debug-str) := <cgenmatch-to-param-term'str'name'debug> match
       end;
-      pattern' := As(<term-var>,pattern);
-      bound-var* := <all-vars> (pattern',match,new);
+      bound-var* := <all-vars> (pattern,match,new);
       used-var* := <all-vars> constraint;
       free-var* := <diff> (used-var*, bound-var*);
-      var-str := <mapseq(\ v -> |[ ~v := <new-var> ]|  \)> free-var*;
+      var-str := <mapseq({\ v -> |[ ~v := <new-var> ~n ]| with n := Str(<var-name> v) \})> free-var*;
       new-str := <new-to-str> new;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
-      clause* := [ With(|[ ~param-str ; ~new-str ; ~var-str; ~constraint-str ]|) ]
+      clause* := [
+        With(debug-str),
+        With(param-str),
+        With(new-str),
+        With(var-str),
+        With(constraint-str)
+      ]
+ 
+  var-name:
+    Var(name) -> name 
  
 rules
  
@@ -53,20 +62,25 @@ rules
   cgenmatch-to-pattern:
     CGenMatch(_,pattern,_,_) -> pattern 
  
-  cgenmatch-to-param-term'str'name: 
-    CGenMatch(Name(name),_,params,type) -> (params-term*,pattern-str',rule-name)
+  cgenmatch-to-param-term'str'name'debug: 
+    CGenMatch(Name(name),_,params,type) -> (params-term*,params-str',rule-name,debug-str)
     with
       if NoType() := type then
         params-term* := [<params-var>];
-        rule-name    := $[generate-constraint-[name]-rule]
+        rule-name    := $[generate-constraint-[name]-rule];
+        debug-str    :=
+          |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<pp-Term> ~<params-var>,")"]) ]|
       else
         params-term* := [<params-var>,type];
-        rule-name    := $[generate-constraint-with-type-[name]-rule]
+        rule-name    := $[generate-constraint-with-type-[name]-rule];
+        debug-str    :=
+          |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<pp-Term> ~<params-var>,") : ",<pp-Term> ~type]) ]|
       end;
       paramstr       := <explode(injection-to-pattern)> params;
-      pattern-str    := |[ ~paramstr := ~<params-var> ]|;
-      pattern-string := Str(<pp-stratego-string> paramstr);
-      pattern-str'   := |[ ~pattern-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~pattern-string," with actual ",<pp-Term> ~<params-var>, "."]) ]|
+      params-str     := |[ ~paramstr := ~<params-var> ]|;
+      match-string   := Str(<pp-stratego-string> paramstr);
+      params-string  := Str(<pp-stratego-string> paramstr);
+      params-str'    := |[ ~params-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~params-string," with actual ",<pp-Term> ~<params-var>, "."]) ]|
  
   new-to-str:
     NoNew() -> |[ id ]|
@@ -78,7 +92,7 @@ rules
 rules
 
   cgenrecurse-to-term(e):
-    CGenRecurse(Name(name),v,params,type) -> App(CallT(SVar(wrapper-name),[SVar(rule-name)],param*),v)
+    CGenRecurse(Name(name),v,params,type) -> App(recurse-str,v)
     with
       paramstr       := <e> params;
       if NoType()    := type then
@@ -89,5 +103,6 @@ rules
         param*       := [paramstr, type];
         wrapper-name := "generate-constraint-with-type";
         rule-name    := $[generate-constraint-with-type-[name]-rule]
-      end
+      end;
+      recurse-str := CallT(SVar(wrapper-name),[SVar(rule-name)],param*)
 

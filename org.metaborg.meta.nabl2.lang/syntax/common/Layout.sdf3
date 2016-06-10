@@ -8,23 +8,23 @@ lexical syntax
 
   EOF =  
 
-  LineComment  = "//" ~[\r\n]* ([\r\n] | EOF)
+  LineComment     = "//" ~[\r\n]* ([\r\n] | EOF)
 
-  BlockComment = "/*" CommentText (BlockComment CommentText)* ("*/" | EOF)
-  CommentText = CommentChar*
-  CommentChar = ~[\*\/] | Asterisk | Slash
-  Slash       = "/"
-  Asterisk    = "*"
+  BlockComment    = "/*" CommentText (BlockComment CommentText)* ("*/" | EOF)
+  CommentText     = CommentChar*
+  CommentChar     = ~[\*\/] | CommentAsterisk | CommentSlash
+  CommentSlash    = "/"
+  CommentAsterisk = "*"
 
 lexical restrictions
 
-  EOF         -/- ~[]
-  CommentText -/- ~[\*\/]
-  Asterisk    -/- [\/]
-  Slash       -/- [\*]
+  EOF             -/- ~[]
+  CommentText     -/- ~[\*\/]
+  CommentAsterisk -/- [\/]
+  CommentSlash    -/- [\*]
 
 context-free restrictions
 
-  LAYOUT?     -/- [\ \t\r\n]   // whitespace
-  LAYOUT?     -/- [\/].[\/]    // line comment start
-  LAYOUT?     -/- [\/].[\*]    // block comment start
+  LAYOUT? -/- [\ \t\r\n]   // whitespace
+  LAYOUT? -/- [\/].[\/]    // line comment start
+  LAYOUT? -/- [\/].[\*]    // block comment start

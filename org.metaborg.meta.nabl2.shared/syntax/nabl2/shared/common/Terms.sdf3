@@ -20,13 +20,15 @@ context-free syntax
 syntax
  
   StringTerm-CF.Str = "\"" StringContent-LEX "\""
-  
+ 
 lexical syntax
 
   StringContent = StringChar*
-  StringChar    = ~[\"\n]
-  StringChar    = '\\' [trn\"\\]
+  StringChar    = ~[\"\t\r\n]
 
+lexical restrictions
+
+  StringChar -/- [\t\r\n]
 
 context-free syntax
 

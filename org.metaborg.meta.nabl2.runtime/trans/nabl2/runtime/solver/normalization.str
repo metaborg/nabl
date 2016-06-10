@@ -5,16 +5,13 @@ imports
   runtime/editor/annotations
 
   nabl2shared
-
-signature
-  constructors
-    CConj : List(Constraint) -> Constraint
-    CDisj : List(Constraint) -> Constraint
+  nabl2runtime
 
 rules
 
   normalize-constraint =
-    flatten-junctions
+    flatten-junctions;
+    flatten-composites
 
   
   flatten-junctions = bottomup(try(flatten-conj + flatten-disj))
@@ -33,18 +30,12 @@ rules
   flatten-disj: CDisj(C*) -> CDisj([<concat> C1*,C2*])
     with (C1*,C2*) := <partition(?CDisj(_))> C*
  
-rules
-  
-  denormalize-constraint =
-    expand-junctions
- 
-  expand-junctions = topdown(try(expand-conj + expand-disj))
-  
-  expand-conj: CConj([C1,C2]) -> CConj(C1,C2)
-  expand-conj: CConj([C1|C2*]) -> CConj(C1,CConj(C2*))
 
-  expand-disj: CDisj([C1,C2]) -> CDisj(C1,C2)
-  expand-disj: CDisj([C1|C2*]) -> CDisj(C1,CDisj(C2*))
+  flatten-composites = sometd(flatten-composite)
+  
+  flatten-composite: Composite(c) -> CompositeFlat(x*)
+    with x* := <rec f({?(x,xs) < ![x|<f> xs] + ![]})> c
+
 
 rules
 
