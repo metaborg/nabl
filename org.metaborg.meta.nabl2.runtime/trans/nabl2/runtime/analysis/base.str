@@ -12,16 +12,21 @@ rules // ast indices
     {| NodeIndex:
 	    node-counter := <new-counter>;
 	    rules( NodeIndex: _ -> <next-counter> node-counter );
-	    <topdown({?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
+	    <bottomup({?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
     |}
 
-  get-ast-index = get-annotation(is-int) <+ warn(|"Cannot get AST index") ; !-1
+  get-ast-index = get-annotation(is-int) <+ warn(|"Cannot get AST index") ; <subt> (0,<next-random;abs>)
+
+  has-ast-index = get-annotation(is-int)
+
+  set-ast-index(|idx) = add-annotation(|idx)
 
 
 rules // origins
 
-  copy-origin(|from): to -> <origin-location-offset-set(|origin)> to
-    with origin := <origin-location-offset <+ warn(|"Cannot get origin") ; !("",-1,-1,-1,-1)> from
+  copy-origin(|from) =
+    origin-location-offset-set(|<origin-location-offset> from)
+ <+ warn(|"Cannot copy origin from")
 
 
 rules // annotations
