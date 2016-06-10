@@ -33,14 +33,20 @@ rules
     with
       names := <strip-annos; string-tokenize(|['/'])> s;
       names' := <at-last(![])> names;
-      if [h | tl] := names'
-      then      
+      if [h | tl] := names' then
         first := <concat-strings> [path, "/" ,h]; 
         <create-dirs(|first)> tl;
         s' := <concat-strings> [path, "/",  <separate-by(|"/"); concat-strings> names']
-        else
-          s' := path
-        end
+      else
+        s' := path
+      end
+
+  create-dirs(|dir):
+    [h | tl] -> None()
+    where
+      <create-dir> dir;
+      new-dir := <concat-strings> [dir, "/", h];
+      <create-dirs(|new-dir)> tl
 
   create-dirs(|dir):
     [] -> None()
