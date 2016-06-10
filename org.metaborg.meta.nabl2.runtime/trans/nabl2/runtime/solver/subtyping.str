@@ -18,9 +18,9 @@ rules
        ; <add-message(detail-message(|msg)|msginfo)> sol-wm
        ) => sol-wm'
 
-  solve-constraint: (CSubtype(ty1*,ty2*,msginfo),sol-wm) -> [res]
-  where <is-list> ty1*
-      ; <is-list> ty2*
+  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [res]
+  where ty1* := <is-list+(is-tuple;TupleToList)> ty1
+      ; ty2* := <is-list+(is-tuple;TupleToList)> ty2
   with ( <(length,length);eq> (ty1*,ty2*)
        < msg := [ty1*," not a subtype of ",ty2*]
        ; msginfo' := <detail-message(|msg)> msginfo

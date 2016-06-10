@@ -31,7 +31,7 @@ rules
   Analysis-order: AlternativeSolutions(_) -> 99
   Analysis-order: _ -> 100
 
-  sanitize-Analysis = Constraint(sanitize-Constraint;denormalize-constraint)
+  sanitize-Analysis = Constraint(sanitize-Constraint)
 
   sanitize-Constraint =
     topdown(try(
