@@ -31,7 +31,7 @@ rules
   solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
   where <not(var-occurs)> (v,t)
       ; <is-reduced> t
-  with sol-wm' := <sol-wm-apply-s> ([(v,t)],sol-wm)
+  with sol-wm' := <sol-wm-apply-s(|[(v,t)])> sol-wm
   
   solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol-wm) -> [(sol-wm',[])]
   where <not(is-op)> t1

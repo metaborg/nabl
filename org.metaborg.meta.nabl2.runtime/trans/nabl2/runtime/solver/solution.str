@@ -4,6 +4,7 @@ imports
 
   nabl2shared
   nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
   signatures/nabl2/runtime/solver/-
@@ -20,9 +21,11 @@ rules
   sol-s = ?Sol(_,_,_,<id>,_)
   sol-x = ?Sol(_,_,_,_,<id>)
  
-  sol-with-g: (g,Sol(_,r*,p*,s*,x*)) -> Sol(g,r*,p*,s*,x*)
+  sol-with-g(|g):
+    Sol(_,r*,p*,s*,x*) -> Sol(g,r*,p*,s*,x*)
 
-  sol-apply-s: (s',Sol(g,r*,p*,s*,x*)) -> Sol(g',r'*,p'*,s'*,x*)
+  sol-apply-s(|s'):
+    Sol(g,r*,p*,s*,x*) -> Sol(g',r'*,p'*,s'*,x*)
     where g'  := <S-apply(is-var)> (s',g)
         ; r'* := <S-apply(is-var)> (s',r*)
         ; p'* := <S-apply(is-var)> (s',p*)
@@ -44,6 +47,5 @@ rules
   with <set(!d|r)> r* => r'*
 
 rules
-  
-  sol-wm-apply-s: (s,sol-wm) -> sol-wm'
-  with <fmap(<sol-apply-s> (s,<id>))> sol-wm => sol-wm'
+
+  sol-wm-apply-s(|s) = fmap(sol-apply-s(|s)) ; fmap-messages(<S-apply(is-var)> (s,<id>))

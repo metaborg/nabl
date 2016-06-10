@@ -4,6 +4,7 @@ imports
 
   nabl2shared
   nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
 rules

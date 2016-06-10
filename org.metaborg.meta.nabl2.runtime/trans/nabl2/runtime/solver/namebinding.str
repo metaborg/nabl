@@ -4,6 +4,7 @@ imports
  
   nabl2shared
   nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
 rules
@@ -13,27 +14,27 @@ rules
   solve-namebinding-fact: (CGDecl(d,s),sol-wm) -> [(sol-wm',[])]
   with <fromWM;sol-g> sol-wm => g
      ; <G-with-decl> (g,s,d) => g'
-     ; <fmap(<sol-with-g> (g',<id>))> sol-wm => sol-wm'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
 
   solve-namebinding-fact: (CGRef(r,s),sol-wm) -> [(sol-wm',[])]
   with <fromWM;sol-g> sol-wm => g
      ; <G-with-ref> (g,s,r) => g'
-     ; <fmap(<sol-with-g> (g',<id>))> sol-wm => sol-wm'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
 
   solve-namebinding-fact: (CGDirectEdge(s,l,s'),sol-wm) -> [(sol-wm',[])]
   with <fromWM;sol-g> sol-wm => g
      ; <G-with-direct-edge> (g,s,(l,s')) => g'
-     ; <fmap(<sol-with-g> (g',<id>))> sol-wm => sol-wm'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
 
   solve-namebinding-fact: (CGNamedEdge(r,l,s),sol-wm) -> [(sol-wm',[])]
   with <fromWM;sol-g> sol-wm => g
      ; <G-with-named-edge> (g,s,(l,r)) => g'
-     ; <fmap(<sol-with-g> (g',<id>))> sol-wm => sol-wm'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
 
   solve-namebinding-fact: (CGAssoc(d,l,s),sol-wm)    -> [(sol-wm',[])]
   with <fromWM;sol-g> sol-wm => g
      ; <G-with-assoc> (g,(d,l),s) => g'
-     ; <fmap(<sol-with-g> (g',<id>))> sol-wm => sol-wm'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
 
   constraint-priority: CGDecl(_,_) -> 3
   constraint-priority: CGRef(_,_) -> 3

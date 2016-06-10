@@ -60,13 +60,18 @@ rules
   wm-errors: WithMessages(_,e*,_,_) -> e*
   add-error(|tm): WithMessages(x,e*,w*,n*) -> WithMessages(x,[tm|e*],w*,n*)
   add-errors(|tm*): WithMessages(x,e*,w*,n*) -> WithMessages(x,[tm*,e*],w*,n*)
+  fmap-errors(s) = WithMessages(id,map(s),id,id)
 
   wm-warnings: WithMessages(_,_,w*,_) -> w*
   add-warning(|tm): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,[tm|w*],n*)
   add-warnings(|tm*): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,[tm*,w*],n*)
+  fmap-warnings(s) = WithMessages(id,id,map(s),id)
 
   wm-notes: WithMessages(_,_,_,n*) -> n*
   add-note(|tm): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,w*,[tm|n*])
   add-notes(|tm*): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,w*,[tm*,n*])
+  fmap-notes(s) = WithMessages(id,id,id,map(s))
+
+  fmap-messages(s) = WithMessages(id,map(s),map(s),map(s))
 
   wm-nub: WithMessages(x,e*,w*,n*) -> WithMessages(x, <nub> e*, <nub> w*, <nub> n*)
