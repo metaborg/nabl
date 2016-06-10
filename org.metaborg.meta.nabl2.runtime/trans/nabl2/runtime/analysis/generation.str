@@ -29,24 +29,28 @@ rules
 
   // error throwing wrappers for recursive invocations
   generate-constraint(s|params) =
+    generate-constraint-placeholder <+
     s(|params) <+
     warn(|"Trying default list rule.");
     generate-constraint-list(s|params) <+
     fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
 
-
   generate-constraint-with-type(s|params,type) =
+    generate-constraint-placeholder <+
     s(|params,type) <+
     warn(|"Trying default list rule.");
     generate-constraint-with-type-list(s|params,type) <+
     fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params] and type [<pp-Term> type]])
 
-
   generate-constraint-init =
+    generate-constraint-placeholder <+
     generate-constraint-init-rule <+
     warn(|"Trying default init rule.");
     generate-constraint(generate-constraint-default-rule|[Global()]) <+
     fatal-err(|"No suitable constraint generation init rule found and default failed.")
+
+  generate-constraint-placeholder =
+    is-SDF-placeholder; !CTrue()
 
 
   // default rule for lists
