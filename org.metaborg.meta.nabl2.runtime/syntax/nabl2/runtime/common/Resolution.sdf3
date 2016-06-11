@@ -7,12 +7,9 @@ imports
 
 context-free syntax
 
-  FullResolution     = <<Occurence> <{FullResolved "\n"}*>>
-  FullResolved.None  = <unresolved>
-  FullResolved       = [
-    |--> [Occurence]
-         path = [Path]
-  ]
+  FullResolution     = [[Occurence] |--> \[[{FullResolved "\n"}*]\]]
+  FullResolved.None  = <none>
+  FullResolved       = [[Occurence] via [Path]]
 
 context-free syntax
 
@@ -31,3 +28,4 @@ context-free syntax
   TotalOrPartial.Partial = <P>
 
   Name.Name              = <<Namespace> <Term>>
+

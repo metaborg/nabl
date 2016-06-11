@@ -120,7 +120,7 @@ rules // resolution internal
   ; mapconcat(\ r -> <resolve(|g,ir*);mapv(!r)> r \) // :: [(Decl,Ref)]
   ; filter({ d,r,s':
                ?(d,r)
-             ; s' := <G-assoc> (g,(d,l))
+             ; s' := <G-assocs;get(|l)> (g,d)
              ; !(s',N(l,r,s'))
           }) // :: [(Scope,Step)]
   ; with(dbg-res(|"irs^l = "))

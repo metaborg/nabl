@@ -33,7 +33,7 @@ rules
 
   solve-namebinding-fact: (CGAssoc(d,l,s),sol-wm)    -> [(sol-wm',[])]
   with <fromWM;sol-g> sol-wm => g
-     ; <G-with-assoc> (g,(d,l),s) => g'
+     ; <G-with-assoc> (g,d,(l,s)) => g'
      ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
 
   constraint-priority: CGDecl(_,_) -> 3
@@ -79,7 +79,7 @@ rules
   solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol-wm) -> [res]
   where <is-ground> d
       ; g := <fromWM;sol-g> sol-wm
-  with ( s' := <G-assoc> (g,(d,l))
+  with ( s' := <G-assocs;get(|l)> (g,d)
        < msg := ["Problem associating scope ",s," with ",d]
        ; !(sol-wm,[CEqual(s,s',<default-message(|msg)> msginfo)])
        + msg := [d," is not associated with a ",l," scope"]

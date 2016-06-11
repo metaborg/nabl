@@ -27,8 +27,9 @@ context-free syntax
  
   DirectEdgeEntry = <<LabelRef>/<Scope>>
   NamedEdgeEntry = <<LabelRef>/<Occurence>>
-  AssocEntry = <<Associable> : <Scope>>
 
-  Associable = <<Occurence>/<LabelRef>>
-  Associable = <<ASTIndex>/<LabelRef>>
+  AssocEntry = <<Associable> : <{AssocValue ", "}*>>
+  AssocValue = <<LabelRef>/<Scope>>
+  Associable = Occurence
+  Associable = ASTIndex
 
