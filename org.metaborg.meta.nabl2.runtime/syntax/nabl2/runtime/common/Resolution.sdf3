@@ -7,8 +7,9 @@ imports
 
 context-free syntax
 
-  FullResolution     = [[Occurence] |--> \[[{FullResolved "\n"}*]\]]
+  FullResolution     = [[Occurence] |--> [FullResolveds]]
   FullResolved.None  = <none>
+  FullResolveds      = <[<{FullResolved ",\n"}*>]>
   FullResolved       = [[Occurence] via [Path]]
 
 context-free syntax
@@ -21,11 +22,11 @@ context-free syntax
  
 context-free syntax
 
-  Env                    = <<TotalOrPartial> <{EnvEntry "\n"}*>>
+  Env                    = <<TotalOrPartial>[<{EnvEntry "\n"}*>]>
   EnvEntry               = <<Name> = <{FullResolved "\n"}*>>
 
-  TotalOrPartial.Total   = <T>
-  TotalOrPartial.Partial = <P>
+  TotalOrPartial.Total   = <Total>
+  TotalOrPartial.Partial = <Partial>
 
-  Name.Name              = <<Namespace> <Term>>
+  Name.Name              = <<Namespace>{<Term>}>
 

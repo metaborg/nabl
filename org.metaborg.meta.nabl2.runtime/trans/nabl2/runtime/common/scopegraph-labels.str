@@ -53,4 +53,4 @@ rules
   
   empty-lt(|l) = ![]
   
-  default-labels-wf = !Concat(Closure(I()),Closure(P()))
+  default-labels-wf = !Concat(Closure(P()),Closure(I()))

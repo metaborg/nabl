@@ -13,6 +13,14 @@ rules
   pp-Env        = pp(prettyprint-Env)
   pp-Var        = pp(prettyprint-Var)
   pp-TypeTerm   = pp(prettyprint-TypeTerm)
+  pp-LabelRE    = pp(prettyprint-LabelRE)
+  pp-Label      = pp(prettyprint-Label)
+  pp-Labels     = pp(prettyprint-List(prettyprint-Label))
+  pp-Scope      = pp(prettyprint-Scope)
+  pp-Scopes     = pp(prettyprint-List(prettyprint-Scope))
+  pp-Occurence  = pp(prettyprint-Occurence)
+  pp-Occurences = pp(prettyprint-List(prettyprint-Occurence))
+  pp-FullResolveds = pp(prettyprint-FullResolveds)
   
   prettyprint-Term = prettyprint-Scope
   prettyprint-Term = prettyprint-Occurence
