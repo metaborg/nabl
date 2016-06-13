@@ -15,9 +15,9 @@ context-free syntax
   Scope.Scope    = <scope [<Int>]>
   Comparable     = Scope
  
-  Occurence           = VarOrWld
-  Occurence.Occurence = <<Namespace>{<Term> <ASTIndex>}>
-  Comparable          = Occurence
+  Occurrence           = VarOrWld
+  Occurrence.Occurrence = <<Namespace>{<Term> <ASTIndex>}>
+  Comparable          = Occurrence
 
   Namespace.Default   =
   Namespace.Namespace = NamespaceId
@@ -56,5 +56,5 @@ context-free priorities
 lexical syntax
 
   Keyword     = "global" | "scope" | "NAMES"
-  Constructor = "Global" | "Scope" | "Occurence"
+  Constructor = "Global" | "Scope" | "Occurrence"
   

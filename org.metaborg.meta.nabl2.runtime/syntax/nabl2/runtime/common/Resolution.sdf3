@@ -7,18 +7,18 @@ imports
 
 context-free syntax
 
-  FullResolution     = [[Occurence] |--> [FullResolveds]]
+  FullResolution     = [[Occurrence] |--> [FullResolveds]]
   FullResolved.None  = <none>
   FullResolveds      = <[<{FullResolved ",\n"}*>]>
-  FullResolved       = [[Occurence] via [Path]]
+  FullResolved       = [[Occurrence] via [Path]]
 
 context-free syntax
 
   Path            = {Step "\n"}*
 
-  Step.D          = <D(<Occurence>)>
+  Step.D          = <D(<Occurrence>)>
   Step.E          = <E(<LabelRef>,<Scope>)>
-  Step.N          = <N(<LabelRef>,<Occurence>,<Scope>)>
+  Step.N          = <N(<LabelRef>,<Occurrence>,<Scope>)>
  
 context-free syntax
 

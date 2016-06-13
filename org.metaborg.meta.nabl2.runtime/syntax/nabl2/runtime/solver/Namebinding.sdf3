@@ -7,7 +7,7 @@ imports
 
 context-free syntax
 
-  OneResolution = [[Occurence] |--> [FullResolved]]
+  OneResolution = [[Occurrence] |--> [FullResolved]]
 
   Placeholder.NAMES      = "NAMES"
 

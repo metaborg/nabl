@@ -9,18 +9,18 @@ imports
 
 context-free syntax
 
-  Constraint.CGDecl       = [[Occurence] <- [Scope]]
-  Constraint.CGRef        = [[Occurence] -> [Scope]]
+  Constraint.CGDecl       = [[Occurrence] <- [Scope]]
+  Constraint.CGRef        = [[Occurrence] -> [Scope]]
 
-  Constraint.CResolve     = [[Occurence] |-> [Occurence] [Message]]
+  Constraint.CResolve     = [[Occurrence] |-> [Occurrence] [Message]]
 
 syntax
 
   Constraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
-  Constraint-CF.CGAssoc      = Occurence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
-  Constraint-CF.CGNamedEdge  = Occurence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
 
-  Constraint-CF.CAssoc       = Occurence-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF Message-CF
+  Constraint-CF.CAssoc       = Occurrence-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF Message-CF
 
 
 context-free syntax

@@ -36,7 +36,7 @@ rules
     Scope() -> SortNoArgs("Scope")
 
   typesort-to-sort:
-    Occurence() -> SortNoArgs("Occurence")
+    Occurrence() -> SortNoArgs("Occurrence")
 
   typesort-to-sort:
     Type() -> <typeterm-sort>

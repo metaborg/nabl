@@ -48,10 +48,10 @@ rules
     DefaultMessage() ->
       Message(Error(),Default(),DefaultIndex())
 
-  // get index from occurence, if name is from AST
+  // get index from occurrence, if name is from AST
   normalize-index:
-    Occurence(ns,name,DefaultIndex()) ->
-      Occurence(ns,name,ASTIndexFromTerm(name))
+    Occurrence(ns,name,DefaultIndex()) ->
+      Occurrence(ns,name,ASTIndexFromTerm(name))
     where <is-var> name
 
   // get index from matched term

@@ -22,13 +22,13 @@ context-free syntax
 
   TypeSort.SortNoArgs = TypeSortId
   TypeSort.Sort       = <<TypeSortId>(<{TypeSort ","}*>)>
-  TypeSort.Occurence  = "occurence"
+  TypeSort.Occurrence  = "occurrence"
   TypeSort.Scope      = "scope"
   TypeSort.Type       = "type"
 
 lexical syntax
 
   TypeSortId = OpId
-  TypeSortId = "scope" | "occurence" | "type" {reject}
+  TypeSortId = "scope" | "occurrence" | "type" {reject}
 
   SectionKeyword = "type" | "signature"

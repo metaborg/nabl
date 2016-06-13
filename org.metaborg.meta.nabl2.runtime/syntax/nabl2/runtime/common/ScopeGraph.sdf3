@@ -18,18 +18,18 @@ context-free syntax
  
   ScopeDef.S = <
     {
-      decls        = <{Occurence ", "}*>
-      refs         = <{Occurence ", "}*>
+      decls        = <{Occurrence ", "}*>
+      refs         = <{Occurrence ", "}*>
       direct edges = <{DirectEdgeEntry ", "}*>
       named edges  = <{NamedEdgeEntry ", "}*>
     }
   >
  
   DirectEdgeEntry = <<LabelRef>/<Scope>>
-  NamedEdgeEntry = <<LabelRef>/<Occurence>>
+  NamedEdgeEntry = <<LabelRef>/<Occurrence>>
 
   AssocEntry = <<Associable> : <{AssocValue ", "}*>>
   AssocValue = <<LabelRef>/<Scope>>
-  Associable = Occurence
+  Associable = Occurrence
   Associable = ASTIndex
 

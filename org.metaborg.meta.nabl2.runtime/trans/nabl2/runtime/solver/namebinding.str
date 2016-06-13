@@ -91,7 +91,7 @@ rules
   where <is-ground> N
       ; g := <fromWM;sol-g> sol-wm
       ; n* := <get-names(|g)> N
-  with n'* := <dups(occurence-eq)> n*
+  with n'* := <dups(occurrence-eq)> n*
      ; ( ?[]
        < !sol-wm
        + msg := "Duplicate name"
@@ -104,7 +104,7 @@ rules
       ; g := <fromWM;sol-g> sol-wm
       ; n1* := <get-names(|g)> N1
       ; n2* := <get-names(|g)> N2
-  with n'* := <diff(occurence-eq)> (n1*,n2*)
+  with n'* := <diff(occurrence-eq)> (n1*,n2*)
      ; ( ?[]
        < !sol-wm
        + msg := "Missing name"
@@ -117,7 +117,7 @@ rules
       ; g := <fromWM;sol-g> sol-wm
       ; n1* := <get-names(|g)> N1
       ; n2* := <get-names(|g)> N2
-  with n'* := <isect(occurence-eq)> (n1*,n2*)
+  with n'* := <isect(occurrence-eq)> (n1*,n2*)
      ; ( ?[]
        < !sol-wm
        + msg := "Duplicate name"
@@ -136,7 +136,7 @@ rules
  
   default-names-pos(|n*) =
     try(Message(id,?None(),!NAMES()))
-  ; Message(id,bottomup(try(?NAMES();<map(occurence-name)> n*)),try(?NAMES();<map(occurence-index)> n*))
+  ; Message(id,bottomup(try(?NAMES();<map(occurrence-name)> n*)),try(?NAMES();<map(occurrence-index)> n*))
  
   unresolved-refs(|rn*): sol-wm -> sol-wm'
     with sol := <fromWM> sol-wm
@@ -144,7 +144,7 @@ rules
        ; res* := <sol-r;keys> sol
        ; ar* := <diff> (<keys> rn*, res*)
        ; ur* := <diff> (ref*,[res*,ar*])
-       ; sol-wm' := <foldr(!sol-wm,{ ?(r,<id>) ; add-message(id|Message(Error(),["Failed to resolve ",r],<occurence-index> r)) })> ur*
+       ; sol-wm' := <foldr(!sol-wm,{ ?(r,<id>) ; add-message(id|Message(Error(),["Failed to resolve ",r],<occurrence-index> r)) })> ur*
  
   constraint-message: CResolve(r,_,msginfo) -> <default-message(|["Failed to resolve ",r])> msginfo
 

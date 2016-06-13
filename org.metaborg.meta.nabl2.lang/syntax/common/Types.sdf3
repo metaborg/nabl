@@ -16,7 +16,7 @@ context-free syntax
   TypeTerm.Tuple    = <(<{TypeTerm ","}*>)>
   TypeTerm          = IntTerm
   TypeTerm          = StringTerm
-  TypeTerm          = Occurence
+  TypeTerm          = Occurrence
   TypeTerm          = Scope
 
   TypePattern          = VarOrWld   {prefer}

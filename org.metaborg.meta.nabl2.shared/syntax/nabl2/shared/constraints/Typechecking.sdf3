@@ -13,5 +13,5 @@ context-free syntax
   Constraint.CTypeOf = [[Typeable] : [TypeTerm] [Message]]
   
   Typeable = ASTIndex
-  Typeable = Occurence
+  Typeable = Occurrence
 
