@@ -25,4 +25,8 @@ rules
     + <debug> $[[<n>]: [<write-to-string> t] -> fail] ; fail
     )
 
+  log(s|n) = with(s ; debug(!n))
+  log(|n)  = log(id|n)
+  log(s)   = log(s|"")
+
   assert(s|t) = with(<s> t <+ debug(!"Assert failed: "))

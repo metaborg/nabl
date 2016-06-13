@@ -38,3 +38,4 @@ lexical restrictions
 
   MessageText -/- ~[\[\]]
   MessageText -/- [\t\r\n]
+

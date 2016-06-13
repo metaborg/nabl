@@ -34,3 +34,9 @@ rules
       ; <fromWM;sol-x> sol-wm => x*
       ; <is-subtype(|x*)> (ty1,ty2)
 
+
+  constraint-priority: FSubtype(_,_,_) -> 5
+  constraint-priority: CSubtype(_,_,_) -> 6
+
+  constraint-message: FSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to set ",ty1," as subtype of ",ty2])> msginfo
+  constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo

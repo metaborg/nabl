@@ -9,9 +9,6 @@ context-free syntax
 
   Typing               = <<Typeable> : <TypeTerm>>
 
-  SubtypeRelation      = <
-    subtype relation :=
-      <{SubtypeEntry "\n"}*>
-  >
+  SubtypeRelation      = {SubtypeEntry "\n"}*
   SubtypeEntry         = [[TypeTerm] <: [{TypeTerm ","}*]]
 

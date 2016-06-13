@@ -30,7 +30,7 @@ rules // resolution internal
   // resolve :: Ref -|-> [(Decl,Path)]
   resolve(|g,ir*) =
     with(dbg-msg := $[resolve(|g,ir*=[<pp-Occurrences> ir*])])
-  ; with(dbg-res(pp-Occurrence|$[[dbg-msg]_]))
+  ; with(log-res(pp-Occurrence|$[[dbg-msg]_]))
   ; ?r
   ; ( s := <G-scope> (g,r) // :: Scope
    <+ <debug(!"ERROR: Cannot get scope for reference ");fail> r
@@ -39,20 +39,20 @@ rules // resolution internal
   ; ( <lookup> (<occurrence-atom> r, e*) // :: [(Decl,Path)]
    <+ where(Total() := f) ; ![]
     ) // :: [(Decl,Path)]
-  ; with(dbg-res(pp-FullResolveds|$[[dbg-msg]_[<pp-Occurrence> r]_=_]))
+  ; with(log-res(pp-FullResolveds|$[[dbg-msg]_[<pp-Occurrence> r]_=_]))
 
 
 
   // env(|RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env(lt|re,g,ir*,is*) =
     with(dbg-msg := $[env(|re=[<pp-LabelRE> re],g,ir*[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(dbg-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
   ; ?s
   ; ( (<elem> (s,is*) + <emptiness> re)
     < !(Total(),[])
     + <env_L(lt|<labels>,re,g,ir*,is*)> s
     )
-  ; with(dbg-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
 
 
@@ -60,14 +60,14 @@ rules // resolution internal
   env_L(lt|L,re,g,ir*,is*) =
     where(<is-list> L)
   ; with(dbg-msg := $[env^[<pp-Labels> L](|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(dbg-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
   ; ?s
   ; <max-labels> L
   ; map(\ l -> <env-shadow> ( <env_L(lt|<lt(|l)> L,re,g,ir*,is*)> s
                             , <env_l(lt|l,re,g,ir*,is*)> s
                             ) \)
   ; env-unions
-  ; with(dbg-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
 
 
@@ -75,7 +75,7 @@ rules // resolution internal
   env_l(lt|l,re,g,ir*,is*) =
     where(D() := l)
   ; with(dbg-msg := $[env^D(|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(dbg-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
   ; ?s
   ; ( Empty() := <nullable> re
     < ![]
@@ -83,14 +83,14 @@ rules // resolution internal
     ; group(Fst;occurrence-atom)
     )
   ; !(Total(),<id>)
-  ; with(dbg-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
 
 
   // env(|Label,RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env_l(lt|l,re,g,ir*,is*) =
     with(dbg-msg := $[env^[<pp-Label> l](|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(dbg-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
   ; ?s
   ; ( <union> ( <iss(|l,g)> s
               , <irs(|l,g,ir*)> s
@@ -103,23 +103,23 @@ rules // resolution internal
     ; env-unions
     + !(Partial(),[])
     )
-  ; with(dbg-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
   // iss(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
   iss(|l,g) =
     with(dbg-msg := $[iss^[<pp-Label> l](|g)])
-  ; with(dbg-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
   ; ?s
   ; <G-direct-edges> (g,s) // :: [(Label,Scope)]
   ; map(where(Snd;is-ground))
   ; filter(?(l,_);Snd) // :: [Scope]
   ; map(\ s' -> (s',E(l,s')) \) // :: [(Scope,Step)]
-  ; with(dbg-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
   // irs(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
   irs(|l,g,ir*) =
     with(dbg-msg := $[irs^[<pp-Label> l](|g,ir*=[<pp-Occurrences> ir*])])
-  ; with(dbg-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
   ; ?s
   ; <G-named-edges> (g,s) // :: [(Label,Ref)]
   ; filter(?(l,_);Snd) // :: [Ref]
@@ -130,7 +130,7 @@ rules // resolution internal
              ; s' := <G-assocs;get(|l)> (g,d)
              ; !(s',N(l,r,s'))
           }) // :: [(Scope,Step)]
-  ; with(dbg-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
 
 
@@ -168,6 +168,6 @@ rules
     with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
  
 
-  dbg-res(s|n) = id // s ; debug(!n)
-  dbg-res(|n) = dbg-res(id|n)
-  dbg-res(s) = dbg-res(s|"")
+  log-res(s|n) = id // log(s|n)
+  log-res(|n)  = log-res(id|n)
+  log-res(s)   = log-res(s|"")

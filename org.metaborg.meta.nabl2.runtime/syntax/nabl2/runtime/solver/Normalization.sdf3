@@ -7,7 +7,7 @@ imports
 
 context-free syntax
 
-  MessageContent.CompositeFlat = {Term ""}*
+  MessageContent = {Term ""}*
 
   Constraint.CConj = <(<{Constraint ",\n"}*>)>
   Constraint.CDisj = <(<{Constraint ";\n"}*>)>

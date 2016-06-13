@@ -64,3 +64,4 @@ rules
 
   get(|k) = <lookup> (k,<id>)
 
+  getOr(v|k) = <lookup> (k,<id>) <+ v

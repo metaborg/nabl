@@ -33,7 +33,7 @@ rules
 
   flatten-composites = try(sometd(flatten-composite))
   
-  flatten-composite: Composite(c) -> CompositeFlat(x*)
+  flatten-composite: Composite(c) -> x*
     with x* := <rec f({?(x,xs) < ![x|<f> xs] + ![]})> c
 
 
