@@ -48,12 +48,12 @@ context-free syntax
 
 context-free syntax
 
-  Constraint.CGenRecurse = <<CGenName> [[ <Var> <CGenParamsTerm> <CGenType> ]]>
+  Constraint.CGenRecurse = <<CGenName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
   CGenParamsTerm.List    = <^ (<{TypeTerm ","}*>)>
 
-  CGenType.NoType        =
-  CGenType               = <: <TypeTerm>>
+  CGenTypeTerm.NoType    =
+  CGenTypeTerm           = <: <TypeTerm>>
 
 lexical syntax
 

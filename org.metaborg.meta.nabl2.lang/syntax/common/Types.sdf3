@@ -9,7 +9,7 @@ imports
 
 context-free syntax
 
-  TypeTerm          = Var   {prefer}
+  TypeTerm          = Var {prefer}
   TypeTerm.Op       = <<OpId>(<{TypeTerm ","}*>)>
   TypeTerm.List     = <[<{TypeTerm ","}*>]>
   TypeTerm.ListTail = <[<{TypeTerm ","}*>|<TypeTerm>]>
@@ -19,10 +19,6 @@ context-free syntax
   TypeTerm          = Occurrence
   TypeTerm          = Scope
 
-  TypePattern          = VarOrWld   {prefer}
-  TypePattern.Op       = <<OpId>(<{TypePattern ","}*>)>
-  TypePattern.List     = <[<{TypePattern ","}*>]>
-  TypePattern.ListTail = <[<{TypePattern ","}*>|<TypePattern>]>
-  TypePattern.Tuple    = <(<{TypePattern ","}*>)>
-  TypePattern.As       = <<Var>@<TypePattern>>
+  TypePattern       = TypeTerm
+  TypePattern.As    = <<Var>@<TypePattern>>
 

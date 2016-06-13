@@ -10,14 +10,14 @@ imports
 
 context-free syntax
 
-  Scope          = VarOrWld
+  Scope          = Var
   Scope.Global   = "global"
   Scope.Scope    = <scope [<Int>]>
   Comparable     = Scope
  
-  Occurrence           = VarOrWld
+  Occurrence            = Var
   Occurrence.Occurrence = <<Namespace>{<Term> <ASTIndex>}>
-  Comparable          = Occurrence
+  Comparable            = Occurrence
 
   Namespace.Default   =
   Namespace.Namespace = NamespaceId

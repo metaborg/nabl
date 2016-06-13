@@ -11,5 +11,5 @@ context-free syntax
   Constraint.CEqual         = [[Comparable] == [Comparable] [Message]]
   Constraint.CInequal       = [[Comparable] != [Comparable] [Message]]
 
-  Comparable                = VarOrWld   {prefer}
+  Comparable                = Var {prefer}
 

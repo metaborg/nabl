@@ -21,7 +21,6 @@ rules
  
 
   injection-to-pattern(e) = Var(id)
-  injection-to-pattern(e) = Wld()
   injection-to-pattern(e) = Op(id,map(e))
   injection-to-pattern(e) = List(map(e))
   injection-to-pattern(e) = ListTail(map(e),e)

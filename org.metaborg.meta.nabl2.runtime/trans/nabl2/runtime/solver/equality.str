@@ -19,9 +19,6 @@ rules
   solve-constraint: (CEqual(t1,t2,_),sol-wm) -> [(sol-wm,[])]
   where <term-eq> (t1,t2)
 
-  solve-constraint: (CEqual(Wld(),_,_),sol-wm) -> [(sol-wm,[])]
-  solve-constraint: (CEqual(_,Wld(),_),sol-wm) -> [(sol-wm,[])]
-
   solve-constraint: (CEqual(t,v@Var(_),msginfo),sol-wm) -> [(sol-wm,[CEqual(v,t,msginfo)])]
   where <not(is-var)> t
 
