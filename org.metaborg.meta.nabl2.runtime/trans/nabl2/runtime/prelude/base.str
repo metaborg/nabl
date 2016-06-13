@@ -1,8 +1,14 @@
 module nabl2/runtime/prelude/base
 
+imports
+
+  runtime/editor/annotations
+
 rules
 
   noop(s) = id
+
+  term-eq = (strip-annos,strip-annos) ; eq
 
   xmlencode =
     try(string-replace(|"&","&amp;"))
