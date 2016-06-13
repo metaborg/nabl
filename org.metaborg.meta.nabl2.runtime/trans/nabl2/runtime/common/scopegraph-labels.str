@@ -6,8 +6,13 @@ imports
 
 rules
 
-  labels    = fail
-  labels-wf = fail
+  labels    = <conc> (<custom-labels<+![]>,<default-labels>)
+  labels-wf = custom-labels-wf <+ default-labels-wf
+  label-lt  = custom-label-lt + default-label-lt
+
+  custom-labels    = fail
+  custom-labels-wf = fail
+  custom-label-lt = fail
 
 rules
 
@@ -43,14 +48,16 @@ rules
   deriv(|l): _ -> Empty()
  
   // builtin labels
-  label-lt = ?(D(),I())
-  label-lt = ?(D(),P())
-  label-lt = ?(I(),P())
-  
   max-labels = ?L ; filter(\ l -> l where <map(\ l' -> <not(label-lt)> (l,l') \)> L \) ; make-set
   
   labels-lt(|l) = filter(\ l' -> l' where <label-lt> (l',l) \) ; make-set
   
   empty-lt(|l) = ![]
+  
+  default-labels    = ![D(),P(),I()]
+  
+  default-label-lt = ?(D(),I())
+  default-label-lt = ?(D(),P())
+  default-label-lt = ?(I(),P())
   
   default-labels-wf = !Concat(Closure(P()),Closure(I()))

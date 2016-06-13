@@ -69,7 +69,10 @@ rules
       fr* := <resolve-all> g;
       (r1*,rn*) := <partition({\ (r,[dp]) -> (r,dp) \})> fr*;
       sol-wm2 := <fmap(sol-add-r(|r1*))> sol-wm1;
-      <index-collect-analysis-result(|source)> InitialResolution(fr*)
+      <index-collect-analysis-result(|source)> InitialResolution(fr*);
+      lo* := <join(label-lt)> (<labels>,<labels>);
+      <index-collect-analysis-result(|source)>
+        ResolutionParams(<labels>,<labels-wf>,lo*)
     );
 
     where(<debug> ">>> Solving constraints (phase 2) <<<");

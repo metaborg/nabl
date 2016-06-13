@@ -40,8 +40,8 @@ context-free syntax
   LabelRE            = LabelRef
   LabelRE.Closure    = <<LabelRE>*>
   LabelRE.Concat     = <<LabelRE>.<LabelRE>>   {right}
-  LabelRE.And        = <<LabelRE>&<LabelRE>>   {left}
-  LabelRE.Or         = <<LabelRE>|<LabelRE>>   {left}
+  LabelRE.And        = <<LabelRE> & <LabelRE>>   {left}
+  LabelRE.Or         = <<LabelRE> | <LabelRE>>   {left}
   LabelRE            = <(<LabelRE>)>           {bracket}
 
   LabelOrder.Lt      = [[Label] < [LabelRef]]

@@ -17,7 +17,8 @@ rules
     map(try(sanitize-Analysis));
     pp(prettyprint-Analysis)
 
-  Analysis-order: Constraint(_) -> 1
+  Analysis-order: Constraint(_) -> 0
+  Analysis-order: ResolutionParams(_,_,_) -> 2
   Analysis-order: InitialScopeGraph(_) -> 2
   Analysis-order: InitialResolution(_) -> 3
   Analysis-order: ScopeGraph(_) -> 4

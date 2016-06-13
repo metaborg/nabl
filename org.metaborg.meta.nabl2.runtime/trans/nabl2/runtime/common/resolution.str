@@ -35,7 +35,7 @@ rules // resolution internal
   ; ( s := <G-scope> (g,r) // :: Scope
    <+ <debug(!"ERROR: Cannot get scope for reference ");fail> r
     )
-  ; (f,e*) := <env(labels-lt|<labels-wf<+default-labels-wf>,g,[r|ir*],[])> s // :: Env
+  ; (f,e*) := <env(labels-lt|<labels-wf>,g,[r|ir*],[])> s // :: Env
   ; ( <lookup> (<occurrence-atom> r, e*) // :: [(Decl,Path)]
    <+ where(Total() := f) ; ![]
     ) // :: [(Decl,Path)]
@@ -50,7 +50,7 @@ rules // resolution internal
   ; ?s
   ; ( (<elem> (s,is*) + <emptiness> re)
     < !(Total(),[])
-    + <env_L(lt|[D(),I(),P()|<labels<+![]>],re,g,ir*,is*)> s
+    + <env_L(lt|<labels>,re,g,ir*,is*)> s
     )
   ; with(dbg-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
@@ -160,11 +160,11 @@ rules
     with n* := <G-refs;filter-ns(|ns)> (g,s)
 
   get-names(|g): Visibles(s,ns) -> n*
-    where (Total(),e*) := <env(labels-lt|<labels-wf<+default-labels-wf>,g,[],[])> s
+    where (Total(),e*) := <env(labels-lt|<labels-wf>,g,[],[])> s
     with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
  
   get-names(|g): Reachables(s,ns) -> n*
-    where (Total(),e*) := <env(empty-lt|<labels-wf<+default-labels-wf>,g,[],[])> s
+    where (Total(),e*) := <env(empty-lt|<labels-wf>,g,[],[])> s
     with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
  
 

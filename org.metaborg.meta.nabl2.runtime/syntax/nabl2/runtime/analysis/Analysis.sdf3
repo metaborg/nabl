@@ -3,6 +3,7 @@ module nabl2/runtime/analysis/Analysis
 imports
 
   nabl2/shared/common/Native
+  nabl2/shared/common/Names
   nabl2/shared/constraints/Base
   nabl2/runtime/common/Resolution
   nabl2/runtime/common/ScopeGraph
@@ -43,6 +44,15 @@ context-free syntax
     substitution := 
       <{Substitution "\n"}*>
   >
+
+  AnalysisResult.ResolutionParams = <
+    resolution parameters :=
+      labels          = <{Label ", "}*>
+      well-formedness = <LabelRE>
+      label order     = <{LabelLeq ", "}*>
+  >
+  
+  LabelLeq = [[Label] < [Label]]
 
   AnalysisResult.InitialScopeGraph = <
     initial scope graph :=
