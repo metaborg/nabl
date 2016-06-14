@@ -20,6 +20,7 @@ rules
     ASTIndexFromTerm(t) -> Term |[ <get-ast-index> ~t ]|
  
 
+  injection-to-pattern(e) = Wld()
   injection-to-pattern(e) = Var(id)
   injection-to-pattern(e) = Op(id,map(e))
   injection-to-pattern(e) = List(map(e))
