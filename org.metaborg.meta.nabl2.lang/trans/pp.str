@@ -4,10 +4,9 @@ imports
 
   libstratego-gpp
 
-  nabl2/shared/pp
+  nabl2shared
 
-  pp/NaBL2Lang-parenthesize
-  pp/NaBL2Lang-pp
+  pp/-
 
 rules
 

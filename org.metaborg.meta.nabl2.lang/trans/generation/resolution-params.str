@@ -10,10 +10,13 @@ imports
 rules
 
   resolution-params-to-str:
-    section* -> Rules([labelstr, orderstr*, wfstr*])
-    with label*     := <collect-all(?Labels(<id>));concat> section*;
-         labelterm* := <map(explode(injection-to-term))> label*;
-         labelstr   := |[ custom-labels = !~List(labelterm*) ]|
+    section* -> Rules([labelstr*, orderstr*, wfstr*])
+    with if label*@[_|_] := <collect-all(?Labels(<id>));concat> section* then
+           labelterm*   := <map(explode(injection-to-term))> label*;
+           labelstr*    := [ |[ custom-labels = !~List(labelterm*) ]| ]
+         else
+           labelstr*    := []
+         end
     with order*    := <collect-all(?Order(<id>));concat> section*;
          orderstr* := <map(label-order-to-str)> order*
     with if wf := <collect-one(?WF(<id>))> section* then
