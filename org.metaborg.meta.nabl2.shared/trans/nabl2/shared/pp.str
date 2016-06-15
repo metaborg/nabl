@@ -7,6 +7,7 @@ imports
   runtime/editor/origins
   runtime/tmpl/pp
 
+  pp/-
   pp/nabl2/shared/common/-
   pp/nabl2/shared/constraints/-
 
@@ -16,6 +17,9 @@ rules
     (prettyprint <+ fatal-err(|"WARNING: Could not pp "));
     !V([], <id>);
     box2text-string(|120)
+
+  pp-partial-NaBL2Shared-string =
+    pp(prettyprint-NaBL2Shared)
 
 
 rules
