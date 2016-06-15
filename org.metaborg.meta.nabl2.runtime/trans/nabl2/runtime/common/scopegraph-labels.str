@@ -6,7 +6,7 @@ imports
 
 rules
 
-  labels    = <conc> (<custom-labels<+![]>,<default-labels>)
+  labels    = <conc;make-set> (<custom-labels<+![]>,<default-labels>)
   labels-wf = custom-labels-wf <+ default-labels-wf
   label-lt  = custom-label-lt + default-label-lt
 

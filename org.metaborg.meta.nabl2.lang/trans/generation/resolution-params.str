@@ -9,17 +9,20 @@ imports
 
 rules
 
-  section-to-str:
-    ResolutionParams(label*,order*,wf) -> Rules([
-      |[ custom-labels = !~labelstr ]|,
-      orderstr*,
-      |[ custom-labels-wf = !~wfstr ]|
-    ])
-    with labelstr  := List(<map(explode(injection-to-term))> label*)
-    with orderstr* := <map(label-order-to-str)> order*
-    with wfstr     := <explode(injection-to-term)> wf
-
+  resolution-params-to-str:
+    section* -> Rules([labelstr, orderstr*, wfstr*])
+    with label*     := <collect-all(?Labels(<id>));concat> section*;
+         labelterm* := <map(explode(injection-to-term))> label*;
+         labelstr   := |[ custom-labels = !~List(labelterm*) ]|
+    with order*    := <collect-all(?Order(<id>));concat> section*;
+         orderstr* := <map(label-order-to-str)> order*
+    with if wf := <collect-one(?WF(<id>))> section* then
+           wfterm := <explode(injection-to-term)> wf;
+           wfstr* := [ |[ custom-labels-wf = !~wfterm  ]| ]
+         else
+           wfstr* := []
+         end
+    
   label-order-to-str: Lt(l1, l2) -> |[ custom-label-lt = ?(~l1',~l2') ]|
     with l1' := <explode(injection-to-term)> l1
        ; l2' := <explode(injection-to-term)> l2
-

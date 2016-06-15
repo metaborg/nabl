@@ -8,13 +8,15 @@ imports
 rules
 
   module-to-str:
-    Module(name,section*) -> Module(name,[import-str,section-str*])
+    Module(name,section*) ->
+      Module(name,[import-str,resolution-params-str,section-str*])
     with
       import-str := Imports([
         Import("nabl2shared"),
         Import("nabl2runtime")
       ]);
-      section-str* := <filter(section-to-str)> section*
+      resolution-params-str := <resolution-params-to-str> section*;
+      section-str*          := <filter(section-to-str)> section*
  
 
 rules

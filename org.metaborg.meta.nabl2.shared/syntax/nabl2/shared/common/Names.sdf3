@@ -22,15 +22,15 @@ context-free syntax
   Namespace.Default   =
   Namespace.Namespace = NamespaceId
 
-  DeclLabel.D    = "D"
+  Label.Label    = LabelId
 
+  LabelRef       = Label
   LabelRef.P     = "P"
   LabelRef.I     = "I"
-  LabelRef.Label = LabelId
-  
-  Label          = DeclLabel
-  Label          = LabelRef
-
+ 
+  AllLabelRef    = LabelRef
+  AllLabelRef.D  = "D"
+ 
   MessagePosition.NAMES = <@ NAMES>
  
 context-free syntax
@@ -44,7 +44,7 @@ context-free syntax
   LabelRE.Or         = <<LabelRE> | <LabelRE>>   {left}
   LabelRE            = <(<LabelRE>)>           {bracket}
 
-  LabelOrder.Lt      = [[Label] < [LabelRef]]
+  LabelOrder.Lt      = [[AllLabelRef] < [AllLabelRef]]
 
 context-free priorities
 
