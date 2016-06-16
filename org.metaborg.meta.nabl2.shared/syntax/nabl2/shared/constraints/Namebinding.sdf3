@@ -26,10 +26,10 @@ syntax
 context-free syntax
 
   ELabel.P = "-"
-  ELabel   = LabelRef
+  ELabel   = PathLabel
 
   NLabel.I = "="
-  NLabel   = LabelRef
+  NLabel   = PathLabel
 
 
 context-free syntax

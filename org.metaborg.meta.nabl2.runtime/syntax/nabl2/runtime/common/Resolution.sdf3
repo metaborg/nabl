@@ -17,8 +17,8 @@ context-free syntax
   Path            = {Step "\n"}*
 
   Step.D          = <D(<Occurrence>)>
-  Step.E          = <E(<LabelRef>,<Scope>)>
-  Step.N          = <N(<LabelRef>,<Occurrence>,<Scope>)>
+  Step.E          = <E(<PathLabel>,<Scope>)>
+  Step.N          = <N(<PathLabel>,<Occurrence>,<Scope>)>
  
 context-free syntax
 
