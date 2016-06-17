@@ -47,12 +47,12 @@ context-free syntax
 
   AnalysisResult.ResolutionParams = <
     resolution parameters :=
-      labels          = <{Label ", "}*>
+      labels          = <{AnyLabel ", "}*>
       well-formedness = <LabelRE>
       label order     = <{LabelLeq ", "}*>
   >
   
-  LabelLeq = [[Label] < [Label]]
+  LabelLeq = [[AnyLabel] < [AnyLabel]]
 
   AnalysisResult.InitialScopeGraph = <
     initial scope graph :=
