@@ -47,17 +47,15 @@ rules
     with column' := <(origin-column;inc<+!-1);int-to-string> t
 
   prettyprint-ATerm: c#(a*) -> [ H( [SOpt(HS(),"0")]
-                                 , [S(c),S("("),a',S(")")] ) ]
+                                  , [S(c),S("("),a',S(")")] ) ]
     with a' := <pp-H-list(prettyprint-Term|",")> a*
 
 rules
 
-  pp-Term = pp(prettyprint-Term)
+  prettyprint-Term = prettyprint-object <+ prettyprint-ATerm
 
-  // try specific strategies first
-  prettyprint-Term = prettyprint-Int
-  prettyprint-Term = prettyprint-Real
-  prettyprint-Term = prettyprint-String
-  prettyprint-Term = prettyprint-List(prettyprint-Term)
-  prettyprint-Term = prettyprint-ATerm
+  prettyprint-object = prettyprint-Int
+  prettyprint-object = prettyprint-Real
+  prettyprint-object = prettyprint-String
+  prettyprint-object = prettyprint-List(prettyprint-Term)
 

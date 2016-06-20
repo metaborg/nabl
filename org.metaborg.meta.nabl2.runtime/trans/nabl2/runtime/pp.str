@@ -9,21 +9,24 @@ imports
 
 rules
 
-  pp-Constraint = pp(prettyprint-Constraint)
-  pp-Env        = pp(prettyprint-Env)
-  pp-Var        = pp(prettyprint-Var)
-  pp-TypeTerm   = pp(prettyprint-TypeTerm)
-  pp-LabelRE    = pp(prettyprint-LabelRE)
-  pp-Label      = pp(prettyprint-AnyLabel)
-  pp-Labels     = pp(prettyprint-List(prettyprint-AnyLabel))
-  pp-Scope      = pp(prettyprint-Scope)
-  pp-Scopes     = pp(prettyprint-List(prettyprint-Scope))
-  pp-Occurrence  = pp(prettyprint-Occurrence)
-  pp-Occurrences = pp(prettyprint-List(prettyprint-Occurrence))
-  pp-FullResolveds = pp(prettyprint-FullResolveds)
-  
-  prettyprint-Term = prettyprint-Scope
-  prettyprint-Term = prettyprint-Occurrence
+  pp-Term           = pp(prettyprint-Term)
+  pp-Constraint     = pp(prettyprint-Constraint)
+  pp-Env            = pp(prettyprint-Env)
+  pp-Var            = pp(prettyprint-Var)
+  pp-TypeTerm       = pp(prettyprint-TypeTerm)
+  pp-LabelRE        = pp(prettyprint-LabelRE)
+  pp-Label          = pp(prettyprint-AnyLabel)
+  pp-Labels         = pp(prettyprint-List(prettyprint-AnyLabel))
+  pp-Scope          = pp(prettyprint-Scope)
+  pp-Scopes         = pp(prettyprint-List(prettyprint-Scope))
+  pp-Occurrence     = pp(prettyprint-Occurrence)
+  pp-Occurrences    = pp(prettyprint-List(prettyprint-Occurrence))
+  pp-FullResolveds  = pp(prettyprint-FullResolveds)
+
+  pp-EditorMessage  = is-string <+ pp(prettyprint-MessageContent)
+
+  prettyprint-object   = prettyprint-Scope
+  prettyprint-object   = prettyprint-Occurrence
   
   prettyprint-TypeTerm = prettyprint-Term
 

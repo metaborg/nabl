@@ -12,20 +12,18 @@ rules
   detail-messages(|detailmsg) = map(detail-message(|detailmsg))
 
   detail-message(|detailmsg): Message(kind,msg,pos) -> Message(kind,msg',pos)
-    with if None() := msg
-         then
+    with if Default() := msg then
            msg' := detailmsg
          else
-           msg*  := <is-list <+ MkSingleton> msg
-         ; dmsg* := <is-list <+ MkSingleton> detailmsg
-         ; msg'  := [msg*," (",dmsg*,")"]
+           msg*  := <is-list <+ MkSingleton> msg;
+           dmsg* := <is-list <+ MkSingleton> detailmsg;
+           msg'  := [msg*," (",dmsg*,")"]
          end
 
   default-messages(|defaultmsg) = map(default-message(|defaultmsg))
 
   default-message(|defaultmsg): Message(kind,msg,pos) -> Message(kind,msg',pos)
-    with if None() := msg
-         then
+    with if Default() := msg then
            msg' := defaultmsg
          else
            msg' := msg
@@ -37,14 +35,14 @@ rules
   add-message(s|msginfo): sol-wm -> sol-wm'
     with Message(kind,msg,pos) := <s> msginfo
     where <is-list> pos
-    with sol-wm' := <map(!Message(kind,msg,<id>))
-                    ;foldr(!sol-wm,add-message-step(s))> pos
+    with sol-wm' := <map(!Message(kind,msg,<id>));
+                     foldr(!sol-wm,add-message-step(s))> pos
 
   add-message(s|msginfo): sol-wm -> sol-wm'
     with Message(kind,msg,pos) := <s> msginfo
     where <not(is-list)> pos
-    with msg' := <pp-Term> msg
-       ; sol-wm' := <add-message> (kind,(pos,msg'),sol-wm)
+    with msg'    := <pp-EditorMessage> msg;
+         sol-wm' := <add-message> (kind,(pos,msg),sol-wm)
 
   add-message-step(s) = ?(msginfo,<id>) ; add-message(s|msginfo)
 
@@ -62,7 +60,8 @@ rules
      ; unresolved-refs(|rn*)
      ; wm-nub => sol-wm'
 
-  free-var-messages = all-vars;map(!Message(Warning(),$[Free variable [<pp-Var>]],<id>))
+  free-var-messages =
+    all-vars; map(!Message(Warning(),["Free variable ",<id>],<id>))
 
   constraint-message = fail
 

@@ -69,3 +69,4 @@ rules
   default-unify-error(|t1,t2) = !["Cannot not unify ",t1," with ",t2]
 
   constraint-message: CEqual(t1,t2,msginfo) -> <default-message(|<default-unify-error(|t1,t2)>)> msginfo
+  constraint-message: CInequal(t1,t2,msginfo) -> <default-message(|["Terms ",t1," and ",t2,"cannot be equal"])> msginfo
