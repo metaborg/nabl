@@ -97,23 +97,30 @@ rules
       <index-collect-analysis-result(|source)> AlternativeSolutions(<Tl> sol*);
       (good,bad) := <partition(not(is-erronious));(length,length)> sol-wm*;
       status := (None(),$[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.]);
+      if <gt> (good,1) then
+        (statuse*,statusw*,statusn*) := ([],[status],[])
+      else if <eq> (good,1) then
+        (statuse*,statusw*,statusn*) := ([],[],[status])
+      else
+        (statuse*,statusw*,statusn*) := ([status],[],[])
+      end end;
       ( sol-wm := <Hd> sol-wm*
-      < where(<debug> "> Found solution <")
-        ; r* := <fromWM;sol-r> sol-wm
-        ; where(<debug> "> Applying name resolution <")
-        ; resolved-ast := <apply-resolution(|r*)> indexed-ast
-        ; where(<debug> "> Applying types <")
-        ; <fromWM;sol-p> sol-wm => p*
-        ; annotated-ast := <apply-types(|p*)> resolved-ast
-        ; error* := <wm-errors;mapv(xmlencode)> sol-wm
-        ; warning* := <wm-warnings;mapv(xmlencode)> sol-wm
-        ; note* := [status|<wm-notes;mapv(xmlencode)> sol-wm]
-      + where(<debug> "> No solution found <")
-        ; r* := <filter((id,Hd))> fr*
-        ; annotated-ast := <apply-resolution(|r*)> indexed-ast
-        ; error* := [(None(),"Found no correct or erronious solutions.")]
-        ; warning* := []
-        ; note* := [status]
+      < where(<debug> "> Found solution <");
+        r* := <fromWM;sol-r> sol-wm;
+        where(<debug> "> Applying name resolution <");
+        resolved-ast := <apply-resolution(|r*)> indexed-ast;
+        where(<debug> "> Applying types <");
+        <fromWM;sol-p> sol-wm => p*;
+        annotated-ast := <apply-types(|p*)> resolved-ast;
+        error* := [statuse*|<wm-errors;mapv(xmlencode)> sol-wm];
+        warning* := [statusw*|<wm-warnings;mapv(xmlencode)> sol-wm];
+        note* := [statusn*|<wm-notes;mapv(xmlencode)> sol-wm]
+      + where(<debug> "> No solution found <");
+        r* := <filter((id,Hd))> fr*;
+        annotated-ast := <apply-resolution(|r*)> indexed-ast;
+        error* := [(None(),"Found no correct or erronious solutions.")];
+        warning* := [];
+        note* := []
       )
     );
 

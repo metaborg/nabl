@@ -14,7 +14,7 @@ rules
   with <fromWM;sol-x> sol-wm => x*
      ; ( <extend-subtype-relation(|x*)> (ty1,ty2) => x'*
        < <fmap(sol-set-x(|x'*))> sol-wm
-       + msg := $[Subtyping relation cannot be cyclic [<pp-Constraint> f]]
+       + msg := ["Setting ",ty1," as a subtype of ",ty2," creates a cycle in the subtyping relation"]
        ; <add-message(detail-message(|msg)|msginfo)> sol-wm
        ) => sol-wm'
 
