@@ -3,6 +3,7 @@ module nabl2/runtime/pp
 imports
 
   nabl2shared
+  nabl2/runtime/prelude/-
   pp/nabl2/runtime/analysis/-
   pp/nabl2/runtime/common/-
   pp/nabl2/runtime/solver/-
@@ -23,7 +24,7 @@ rules
   pp-Occurrences    = pp(prettyprint-List(prettyprint-Occurrence))
   pp-FullResolveds  = pp(prettyprint-FullResolveds)
 
-  pp-EditorMessage  = is-string <+ pp(prettyprint-MessageContent)
+  pp-MessageContent = pp(prettyprint-MessageContent)
 
   prettyprint-object   = prettyprint-Scope
   prettyprint-object   = prettyprint-Occurrence

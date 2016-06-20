@@ -41,8 +41,8 @@ rules
   add-message(s|msginfo): sol-wm -> sol-wm'
     with Message(kind,msg,pos) := <s> msginfo
     where <not(is-list)> pos
-    with msg'    := <pp-EditorMessage> msg;
-         sol-wm' := <add-message> (kind,(pos,msg),sol-wm)
+    with msg'    := <pp-MessageContent> msg;
+         sol-wm' := <add-message> (kind,(pos,msg'),sol-wm)
 
   add-message-step(s) = ?(msginfo,<id>) ; add-message(s|msginfo)
 
