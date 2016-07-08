@@ -1,0 +1,41 @@
+module nabl2/shared/common/Messages
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Terms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  Message.Message        = <| <MessageKind> <MessageContent> <MessagePosition>>
+
+  MessageKind.Error      = <error>
+  MessageKind.Warning    = <warning>
+  MessageKind.Note       = <note>
+
+  MessageContent.Default   =
+  MessageContent           = StringTerm
+
+  MessagePosition          = ASTIndex
+
+syntax
+
+  MessageContent-CF.Composite = "$[" MessageContentPart-CF  "]"
+
+  MessageContentPart-CF = "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]" MessageContentPart-CF
+  MessageContentPart-CF = MessageText-LEX MessageContentPart-CF
+  MessageContentPart-CF =
+
+lexical syntax
+
+  MessageText = ~[\[\]\t\r\n]+
+
+lexical restrictions
+
+  MessageText -/- ~[\[\]]
+  MessageText -/- [\t\r\n]
+

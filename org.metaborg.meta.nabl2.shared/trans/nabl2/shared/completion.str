@@ -1,0 +1,11 @@
+module nabl2/shared/completion
+
+imports
+
+  runtime/completion/-
+  completion/NaBL2Shared-cp
+  nabl2/shared/pp
+
+rules
+
+  pp-completion = pp-partial-NaBL2Shared-string

@@ -1,0 +1,44 @@
+module generation/type-signature
+
+imports
+
+  libstrc
+  generation/-
+  signatures/modules/-
+  util/stratego
+
+rules
+
+  section-to-str:
+    TypeSignature(typedecl*) -> Signature([Constructors(typedeclstr)])
+    with typedeclstr := <map(typedecl-to-opdecl)> typedecl*
+    
+
+  typedecl-to-opdecl:
+    TypeDecl(c,a*) -> OpDecl(c,FunType(astr*,sstr))
+    where [_|_] := a*
+    with sstr := ConstType(<typeterm-sort>);
+         astr* := <map(typesort-to-sort;!ConstType(<id>))> a*
+
+  typedecl-to-opdecl:
+    TypeDecl(c,a*) -> OpDecl(c,sstr)
+    where [] := a*
+    with sstr := ConstType(<typeterm-sort>)
+ 
+
+  typesort-to-sort =
+    SortNoArgs(id)
+
+  typesort-to-sort =
+    Sort(id,map(typesort-to-sort))
+
+  typesort-to-sort:
+    Scope() -> SortNoArgs("Scope")
+
+  typesort-to-sort:
+    Occurrence() -> SortNoArgs("Occurrence")
+
+  typesort-to-sort:
+    Type() -> <typeterm-sort>
+
+  typeterm-sort = !SortNoArgs("TypeTerm")

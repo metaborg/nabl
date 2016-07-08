@@ -1,0 +1,140 @@
+module nabl2/runtime/analysis/main
+
+imports
+
+  runtime/analysis/core
+  runtime/editor/-
+  runtime/index/-
+
+  nabl2/runtime/analysis/-
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
+
+  signatures/nabl2/runtime/analysis/-
+
+rules // analysis
+
+  analyze(pre,post):
+    file* -> Result(file-result*, [], [], debug-result, time-result)
+  where is-list
+  with file-result* := <map(analyze-one(pre,post))> file*
+     ; debug-result := DebugResult(CollectDebugResult(-1, -1, -1, -1, -1), [], [], [])
+     ; time-result := TimeResult(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+
+  analyze-one(pre,post):
+    File(source,source-ast,i) -> FileResult(source,source-ast,analyzed-ast,error*,warning*,note*)
+  with (analyzed-ast,error*,warning*,note*) := <do-analysis(pre,post)> source-ast
+
+  analyze(pre,post): (source-ast,path,project-path) -> result
+  where not(is-list)
+  with result := <do-analysis(pre,post)> source-ast
+
+  get-analysis: source-ast -> <index-get-all-values-in-source> source
+  with source := <origin-file> source-ast
+
+rules
+
+  do-analysis(pre,post):
+    source-ast -> (analyzed-ast, error*, warning*, note*)
+  with source := <origin-file> source-ast
+  with
+    where(<debug> $[>>>>>> Analyzing [source] <<<<<<]);
+    index-start-collection(|source)
+
+    where(<debug> ">>> Preprocessing AST <<<");
+    report-time(
+      preprocessed-ast := <pre> source-ast
+    );
+
+    where(<debug> ">>> Indexing AST <<<");
+    report-time(
+      indexed-ast := <index-ast> preprocessed-ast
+    );
+
+    where(<debug> ">>> Extracting constraints <<<");
+    report-time(
+      C := <generate-constraint;
+            normalize-constraint> indexed-ast;
+      <index-collect-analysis-result(|source)> Constraint(C);
+      C' := <in-junctions(sort-constraints)> C
+    );
+
+    where(<debug> ">>> Solving constraints (phase 1) <<<");
+    report-time(
+      sol-i := <initial-solution>;
+      [(sol-wm1,C1*)] := <solve-constraints-phase1> (sol-i,[C']);
+      g := <fromWM;sol-g> sol-wm1;
+      <index-collect-analysis-result(|source)> InitialScopeGraph(g);
+      fr* := <resolve-all> g;
+      (r1*,rn*) := <partition({\ (r,[dp]) -> (r,dp) \})> fr*;
+      sol-wm2 := <fmap(sol-add-r(|r1*))> sol-wm1;
+      <index-collect-analysis-result(|source)> InitialResolution(fr*);
+      lo* := <join(label-lt)> (<labels>,<labels>);
+      <index-collect-analysis-result(|source)>
+        ResolutionParams(<labels>,<labels-wf>,lo*)
+    );
+
+    where(<debug> ">>> Solving constraints (phase 2) <<<");
+    report-time(
+      sol-wm3* := <solve-constraints-phase2;map(postprocess-errors(|rn*))> (sol-wm2,C1*)
+    );
+
+    where(<debug> ">>> Processing solutions <<<");
+    report-time(
+      sol-wm* := <qsort((wm-errors;length,wm-errors;length);lt)> sol-wm3*;
+      sol* := <map( ![ ScopeGraph(<fromWM;sol-g>)
+                     , Typing(<fromWM;sol-p>)
+                     , Substitution(<fromWM;sol-s>)
+                     , Resolution(<fromWM;sol-r>)
+                     , SubtypeRelation(<fromWM;sol-x>)
+                     , Errors(<wm-errors>)
+                     , Warnings(<wm-warnings>)
+                     , Notes(<wm-notes>)
+                     ]
+                  )> sol-wm*;
+      <Hd;map(index-collect-analysis-result(|source))> sol*;
+      <index-collect-analysis-result(|source)> AlternativeSolutions(<Tl> sol*);
+      (good,bad) := <partition(not(is-erronious));(length,length)> sol-wm*;
+      status := (None(),$[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.]);
+      if <gt> (good,1) then
+        (statuse*,statusw*,statusn*) := ([],[status],[])
+      else if <eq> (good,1) then
+        (statuse*,statusw*,statusn*) := ([],[],[status])
+      else
+        (statuse*,statusw*,statusn*) := ([status],[],[])
+      end end;
+      ( sol-wm := <Hd> sol-wm*
+      < where(<debug> "> Found solution <");
+        r* := <fromWM;sol-r> sol-wm;
+        where(<debug> "> Applying name resolution <");
+        resolved-ast := <apply-resolution(|r*)> indexed-ast;
+        where(<debug> "> Applying types <");
+        <fromWM;sol-p> sol-wm => p*;
+        annotated-ast := <apply-types(|p*)> resolved-ast;
+        error* := [statuse*|<wm-errors;mapv(xmlencode)> sol-wm];
+        warning* := [statusw*|<wm-warnings;mapv(xmlencode)> sol-wm];
+        note* := [statusn*|<wm-notes;mapv(xmlencode)> sol-wm]
+      + where(<debug> "> No solution found <");
+        r* := <filter((id,Hd))> fr*;
+        annotated-ast := <apply-resolution(|r*)> indexed-ast;
+        error* := [(None(),"Found no correct or erronious solutions.")];
+        warning* := [];
+        note* := []
+      )
+    );
+
+    where(<debug> ">>> Postprocessing AST <<<");
+    report-time(
+      analyzed-ast := <post> annotated-ast
+    );
+
+    index-stop-collection(|source);
+    where(<debug> $[>>>>>> Analysis of [source] finished <<<<<<])
+
+rules
+
+  report-time(s) = measure-time(s,where(<debug> $[Finished in [<cputime-to-seconds;real-to-string(|2)>]s]))
+
+  index-collect-analysis-result(|source): result -> <index-collect(|result,source)> "nabl2"
+

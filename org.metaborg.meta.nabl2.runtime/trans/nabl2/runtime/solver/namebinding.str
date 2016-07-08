@@ -1,0 +1,158 @@
+module nabl2/runtime/solver/namebinding
+
+imports
+ 
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
+
+rules
+ 
+  solve-fact = solve-namebinding-fact 
+ 
+  solve-namebinding-fact: (CGDecl(d,s),sol-wm) -> [(sol-wm',[])]
+  with <fromWM;sol-g> sol-wm => g
+     ; <G-with-decl> (g,s,d) => g'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
+
+  solve-namebinding-fact: (CGRef(r,s),sol-wm) -> [(sol-wm',[])]
+  with <fromWM;sol-g> sol-wm => g
+     ; <G-with-ref> (g,s,r) => g'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
+
+  solve-namebinding-fact: (CGDirectEdge(s,l,s'),sol-wm) -> [(sol-wm',[])]
+  with <fromWM;sol-g> sol-wm => g
+     ; <G-with-direct-edge> (g,s,(l,s')) => g'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
+
+  solve-namebinding-fact: (CGNamedEdge(r,l,s),sol-wm) -> [(sol-wm',[])]
+  with <fromWM;sol-g> sol-wm => g
+     ; <G-with-named-edge> (g,s,(l,r)) => g'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
+
+  solve-namebinding-fact: (CGAssoc(d,l,s),sol-wm)    -> [(sol-wm',[])]
+  with <fromWM;sol-g> sol-wm => g
+     ; <G-with-assoc> (g,d,(l,s)) => g'
+     ; <fmap(sol-with-g(|g'))> sol-wm => sol-wm'
+
+  constraint-priority: CGDecl(_,_) -> 3
+  constraint-priority: CGRef(_,_) -> 3
+  constraint-priority: CGDirectEdge(_,_,_) -> 3
+  constraint-priority: CGNamedEdge(_,_,_) -> 3
+  constraint-priority: CGAssoc(_,_,_) -> 3
+
+rules
+
+  solve-constraint = solve-namebinding-constraint
+
+  solve-namebinding-constraint: (CResolve(r,d,msginfo),sol-wm) -> [(sol-wm,c*)]
+  where r* := <fromWM;sol-r> sol-wm
+      ; dp := <lookup> (r,r*)
+  with ( None() := dp
+       < ![]
+       + (d',p) := dp
+       ; msg := ["Cannot resolve ",r," to ",d]
+       ; msginfo' := <default-message(|msg)> msginfo
+       ; ![ CEqual(d,d',msginfo') ]
+       ) => c*
+
+  solve-namebinding-constraint: (CResolve(r,d,msginfo),sol-wm) -> res*
+  where r* := <fromWM;sol-r> sol-wm
+      ; <not(lookup)> (r,r*)
+      ; g := <fromWM;sol-g> sol-wm
+      ; dl* := <resolve(|g)> r
+  with ( [] := dl*
+       < msg := [r," does not resolve to any declaration"]
+       ; sol-wm' := <fmap(sol-set-r(|r,None()))
+                    ;add-message(detail-message(|msg)|msginfo)> sol-wm
+       ; ![ (sol-wm',[]) ]
+       + msg := ["Problem resolving ",r," to ",d]
+       ; msginfo' := <default-message(|msg)> msginfo
+       ; <map(solve-namebinding-constraint-step(|r,d,msginfo',sol-wm))> dl*
+       ) => res*
+
+  solve-namebinding-constraint-step(|r,d,msginfo,sol-wm): (d',p) -> (sol-wm',c*)
+  with <fmap(sol-set-r(|r,(d',p)))> sol-wm => sol-wm'
+  with c* := [ CEqual(d,d',msginfo) ]
+ 
+  solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol-wm) -> [res]
+  where <is-ground> d
+      ; g := <fromWM;sol-g> sol-wm
+  with ( s' := <G-assocs;get(|l)> (g,d)
+       < msg := ["Problem associating scope ",s," with ",d]
+       ; !(sol-wm,[CEqual(s,s',<default-message(|msg)> msginfo)])
+       + msg := [d," is not associated with a ",l," scope"]
+       ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+       ; !(sol-wm',[])
+       ) => res
+ 
+  solve-namebinding-constraint: (CDistinct(N,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <is-ground> N
+      ; g := <fromWM;sol-g> sol-wm
+      ; n* := <get-names(|g)> N
+  with n'* := <dups(occurrence-eq)> n*
+     ; ( ?[]
+       < !sol-wm
+       + msg := "Duplicate name"
+       ; <add-message(default-message(|msg)|<default-names-pos(|n'*)> msginfo)> sol-wm
+       ) => sol-wm'
+
+  solve-namebinding-constraint: (CSubset(N1,N2,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <is-ground> N1
+      ; <is-ground> N2
+      ; g := <fromWM;sol-g> sol-wm
+      ; n1* := <get-names(|g)> N1
+      ; n2* := <get-names(|g)> N2
+  with n'* := <diff(occurrence-eq)> (n1*,n2*)
+     ; ( ?[]
+       < !sol-wm
+       + msg := "Missing name"
+       ; <add-message(default-message(|msg)|<default-names-pos(|n'*)> msginfo)> sol-wm
+       ) => sol-wm'
+
+  solve-namebinding-constraint: (CDisjoint(N1,N2,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <is-ground> N1
+      ; <is-ground> N2
+      ; g := <fromWM;sol-g> sol-wm
+      ; n1* := <get-names(|g)> N1
+      ; n2* := <get-names(|g)> N2
+  with n'* := <isect(occurrence-eq)> (n1*,n2*)
+     ; ( ?[]
+       < !sol-wm
+       + msg := "Duplicate name"
+       ; <add-message(default-message(|msg)|<default-names-pos(|n'*)> msginfo)> sol-wm
+       ) => sol-wm'
+
+rules
+
+  constraint-priority: CAssoc(_,_,_,_) -> 4
+  constraint-priority: CResolve(_,_,_) -> 4
+  constraint-priority: CDistinct(_,_) -> 4
+  constraint-priority: CSubset(_,_,_) -> 4
+  constraint-priority: CDisjoint(_,_,_) -> 4
+
+rules
+ 
+  default-names-pos(|n*) =
+    try(Message(id,?None(),!NAMES()))
+  ; Message(id,bottomup(try(?NAMES();<map(occurrence-name)> n*)),try(?NAMES();<map(occurrence-index)> n*))
+ 
+  unresolved-refs(|rn*): sol-wm -> sol-wm'
+    with sol := <fromWM> sol-wm
+       ; ref* := <sol-g;G-refs> sol
+       ; res* := <sol-r;keys> sol
+       ; ar* := <diff> (<keys> rn*, res*)
+       ; ur* := <diff> (ref*,[res*,ar*])
+       ; sol-wm' := <foldr(!sol-wm,{ ?(r,<id>) ; add-message(id|Message(Error(),["Failed to resolve ",r],<occurrence-index> r)) })> ur*
+ 
+  constraint-message: CResolve(r,_,msginfo) -> <default-message(|["Failed to resolve ",r])> msginfo
+
+  constraint-message: CAssoc(d,l,_,msginfo) -> <default-message(|["Failed to find associated scope of ",d," with label ",l])> msginfo
+
+  constraint-message: CDistinct(n,msginfo) -> <default-message(|["Failed to check if names in ",n," are distinct"])> msginfo
+
+  constraint-message: CSubset(n1,n2,msginfo) -> <default-message(|["Failed to check if names in ",n1," are in in ",n2])> msginfo
+
+  constraint-message: CDisjoint(n1,n2,msginfo) -> <default-message(|["Failed to check if names in ",n1," and ",n2," are disjoint"])> msginfo
+

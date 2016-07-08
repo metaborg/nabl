@@ -1,0 +1,20 @@
+module nabl2/runtime/analysis/typechecking
+
+imports
+
+  runtime/editor/annotations
+
+  nabl2/runtime/analysis/-
+
+signature
+  constructors
+    Type : Type -> Annotation
+
+rules
+
+  apply-types(|t*): ast -> ast'
+  with <apply-annotations(make-type|t*)> ast => ast'
+
+  make-type: ty -> Type(ty)
+
+  get-type = get-annotation(?Type(<id>))

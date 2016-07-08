@@ -1,0 +1,72 @@
+module nabl2/runtime/solver/equality
+
+imports
+
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
+
+rules
+  
+  do-not-unify = fail // use to guard special constructors from accidental unification
+  
+  solve-constraint: (CEqual(t,t',msginfo),sol-wm) -> [(sol-wm',[])]
+  where <do-not-unify> t + <do-not-unify> t'
+  with msg := "Unifying subtitutions is forbidden"
+     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+
+  solve-constraint: (CEqual(t1,t2,_),sol-wm) -> [(sol-wm,[])]
+  where <term-eq> (t1,t2)
+
+  solve-constraint: (CEqual(t,v@Var(_),msginfo),sol-wm) -> [(sol-wm,[CEqual(v,t,msginfo)])]
+  where <not(is-var)> t
+
+  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <var-occurs> (v,t)
+  with msg := [v," occurs in ",t]
+     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+  
+  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <not(var-occurs)> (v,t)
+      ; <is-reduced> t
+  with sol-wm' := <sol-wm-apply-s(|[(v,t)])> sol-wm
+  
+  solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol-wm) -> [(sol-wm',[])]
+  where <not(is-op)> t1
+      ; <not(is-op)> t2
+      ; ( <not(term-eq)> (c1,c2) 
+       <+ <(length,length);not(eq)> (a1,a2)
+        )
+  with msg := <default-unify-error(|t1,t2)>
+     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+
+  solve-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol-wm) -> [(sol-wm,C*)]
+  where <not(is-op)> t1;
+        <(length,length);eq> (a1,a2)
+  with msg := <default-unify-error(|t1,t2)>;
+       msginfo' := <default-message(|msg)> msginfo;
+       C* := <zip(!CEqual(<Fst>,<Snd>,msginfo'))> (a1,a2)
+
+
+  solve-constraint: (CInequal(t1,t2,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <is-ground> t1;
+        <is-ground> t2
+  with ( <term-eq> (t1,t2)
+       < msg := [t1," and ",t2," are equal"];
+         <add-message(detail-message(|msg)|msginfo)> sol-wm
+       + !sol-wm
+       ) => sol-wm'
+
+
+rules
+
+  constraint-priority: CEqual(_,_,_) -> 0
+  constraint-priority: CInequal(_,_,_) -> 99
+
+rules
+
+  default-unify-error(|t1,t2) = !["Cannot not unify ",t1," with ",t2]
+
+  constraint-message: CEqual(t1,t2,msginfo) -> <default-message(|<default-unify-error(|t1,t2)>)> msginfo
+  constraint-message: CInequal(t1,t2,msginfo) -> <default-message(|["Terms ",t1," and ",t2,"cannot be equal"])> msginfo

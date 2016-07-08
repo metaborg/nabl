@@ -1,0 +1,33 @@
+module nabl2/runtime/pp
+
+imports
+
+  nabl2shared
+  nabl2/runtime/prelude/-
+  pp/nabl2/runtime/analysis/-
+  pp/nabl2/runtime/common/-
+  pp/nabl2/runtime/solver/-
+
+rules
+
+  pp-Term           = pp(prettyprint-Term)
+  pp-Constraint     = pp(prettyprint-Constraint)
+  pp-Env            = pp(prettyprint-Env)
+  pp-Var            = pp(prettyprint-Var)
+  pp-TypeTerm       = pp(prettyprint-TypeTerm)
+  pp-LabelRE        = pp(prettyprint-LabelRE)
+  pp-Label          = pp(prettyprint-AnyLabel)
+  pp-Labels         = pp(prettyprint-List(prettyprint-AnyLabel))
+  pp-Scope          = pp(prettyprint-Scope)
+  pp-Scopes         = pp(prettyprint-List(prettyprint-Scope))
+  pp-Occurrence     = pp(prettyprint-Occurrence)
+  pp-Occurrences    = pp(prettyprint-List(prettyprint-Occurrence))
+  pp-FullResolveds  = pp(prettyprint-FullResolveds)
+
+  pp-MessageContent = pp(prettyprint-MessageContent)
+
+  prettyprint-object   = prettyprint-Scope
+  prettyprint-object   = prettyprint-Occurrence
+  
+  prettyprint-TypeTerm = prettyprint-Term
+

@@ -1,0 +1,82 @@
+module nabl2/runtime/prelude/partial
+
+signature
+  sorts
+    Partial
+    
+  constructors
+    Total   : Term -> Partial
+    Partial : Term -> Partial
+
+rules
+  
+  is-partial: p@Total(_) -> p
+  is-partial: p@Partial(_) -> p
+  
+rules // functor
+
+  fmap(s): Total(x) -> Total(<s> x)
+  fmap(s): Partial(x) -> Partial(<s> x)
+
+rules // applicative
+
+  pureP: x -> Total(x)
+
+rules // monad
+  
+  bind(s): Total(x) -> <s> x
+  bind(s): Partial(x) -> <s> x
+
+  join: Total(Total(x)) -> Total(x)
+  join: Total(Partial(x)) -> Partial(x)
+  join: Partial(Total(x)) -> Partial(x)
+  join: Partial(Partial(x)) -> Partial(x)
+
+rules // monadplus
+  
+  mplus(s): (Total(x1),Total(x2)) -> Total(<s> (x1,x2))
+  mplus(s): (Total(x1),Partial(x2)) -> Partial(<s> (x1,x2))
+  mplus(s): (Partial(x1),Total(x2)) -> Partial(<s> (x1,x2))
+  mplus(s): (Partial(x1),Partial(x2)) -> Partial(<s> (x1,x2))
+
+rules
+
+  sequenceP = sequenceP(id)
+
+  // sequenceP :: [p a] -> p [b]
+  sequenceP(s): x* -> p
+  where is-list
+  with ( <map(?Total(_))> x* 
+       < !Total(<map(fromP;s)> x*)
+       + !Partial(<map(fromP;s)> x*)
+       ) => p
+
+rules
+  
+  // twrapP :: (p a1, ..., p a2) -> p (a1, ..., a2)
+  twrapP: t -> p
+  where is-tuple
+  with  TupleToList ; sequenceP ; fmap(ListToTuple) => p
+
+  // tunwrap(|n) :: p (a1, ..., an) -> (p a1, ..., p an)
+  tunwrap(|n): Partial(t) -> <tmap(!Total(<id>))> t
+  with <TupleToList;length> t => n
+  tunwrap(|n): Total(t) ->  <tmap(!Partial(<id>))> t
+  with <TupleToList;length> t => n
+
+rules
+  
+  toO: Total(x) -> Some(x)
+  toO: Partial(_) -> None()
+
+  fromP: Total(x) -> x
+  fromP: Partial(x) -> x
+
+  fromTotal: Total(x) -> x
+
+  filterToP(s) = !Total(<map(s)>) <+ !Partial(<filter(s)>)
+
+rules
+
+  pp-Partial(s): Partial(t) -> $[Partial([<s> t])]
+  pp-Partial(s): Total(t) -> $[Total([<s> t])]

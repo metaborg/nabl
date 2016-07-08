@@ -1,0 +1,42 @@
+module nabl2/runtime/solver/subtyping
+
+imports
+
+  nabl2shared
+
+  nabl2/runtime/common/-
+  nabl2/runtime/solver/-
+
+rules
+
+  solve-constraint: (f@FSubtype(ty1,ty2,msginfo),sol-wm) -> [(sol-wm',[])]
+  where <is-ground> (ty1,ty2)
+  with <fromWM;sol-x> sol-wm => x*
+     ; ( <extend-subtype-relation(|x*)> (ty1,ty2) => x'*
+       < <fmap(sol-set-x(|x'*))> sol-wm
+       + msg := ["Setting ",ty1," as a subtype of ",ty2," creates a cycle in the subtyping relation"]
+       ; <add-message(detail-message(|msg)|msginfo)> sol-wm
+       ) => sol-wm'
+
+  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [res]
+  where ty1* := <is-list+(is-tuple;TupleToList)> ty1
+      ; ty2* := <is-list+(is-tuple;TupleToList)> ty2
+  with ( <(length,length);eq> (ty1*,ty2*)
+       < msg := [ty1*," not a subtype of ",ty2*]
+       ; msginfo' := <detail-message(|msg)> msginfo
+       ; !(sol-wm, <zip;map(!CSubtype(<Fst>,<Snd>,msginfo'))> (ty1*,ty2*))
+       + msg := ["Cannot check subtyping for lists ",ty1*," and ",ty2*," of different length."]
+       ; !(<add-message(detail-message(|msg)|msginfo)> sol-wm, [])
+       ) => res
+
+  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [(sol-wm,[])]
+  where <is-ground> (ty1,ty2)
+      ; <fromWM;sol-x> sol-wm => x*
+      ; <is-subtype(|x*)> (ty1,ty2)
+
+
+  constraint-priority: FSubtype(_,_,_) -> 5
+  constraint-priority: CSubtype(_,_,_) -> 6
+
+  constraint-message: FSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to set ",ty1," as subtype of ",ty2])> msginfo
+  constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo

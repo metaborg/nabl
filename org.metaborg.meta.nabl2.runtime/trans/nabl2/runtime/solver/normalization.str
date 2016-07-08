@@ -1,0 +1,43 @@
+module nabl2/runtime/solver/normalization
+
+imports
+
+  runtime/editor/annotations
+
+  nabl2shared
+  nabl2runtime
+
+rules
+
+  normalize-constraint =
+    flatten-junctions;
+    flatten-composites
+
+  
+  flatten-junctions = bottomup(try(flatten-conj + flatten-disj))
+  
+  flatten-conj: CConj(CConj(C1*),CConj(C2*)) -> CConj([C1*,C2*])
+  flatten-conj: CConj(CConj(C1*),C2) -> CConj([C1*,C2])
+  flatten-conj: CConj(C1,CConj(C2*)) -> CConj([C1,C2*])
+  flatten-conj: CConj(C1,C2) -> CConj([C1,C2])
+  flatten-conj: CConj(C*) -> CConj([<concat> C1*,C2*])
+    with (C1*,C2*) := <partition(?CConj(_))> C*
+
+  flatten-disj: CDisj(CDisj(C1*),CDisj(C2*)) -> CDisj([C1*,C2*])
+  flatten-disj: CDisj(CDisj(C1*),C2) -> CDisj([C1*,C2])
+  flatten-disj: CDisj(C1,CDisj(C2*)) -> CDisj([C1,C2*])
+  flatten-disj: CDisj(C1,C2) -> CDisj([C1,C2])
+  flatten-disj: CDisj(C*) -> CDisj([<concat> C1*,C2*])
+    with (C1*,C2*) := <partition(?CDisj(_))> C*
+ 
+
+  flatten-composites = try(sometd(flatten-composite))
+  
+  flatten-composite: Composite(c) -> x*
+    with x* := <rec f({?(x,xs) < ![x|<f> xs] + ![]})> c
+
+
+rules
+
+  in-junctions(s) = topdown(try(CConj(s) + CDisj(s)))
+

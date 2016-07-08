@@ -1,0 +1,26 @@
+module nabl2/runtime/solver/typechecking
+
+imports
+
+  runtime/editor/origins
+  
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/solver/-
+ 
+rules
+ 
+  solve-constraint: (f@CTypeOf(p,ty,msginfo),sol-wm) -> [res]
+  where <is-ground> p
+  with <fromWM;sol-p> sol-wm => p*
+     ; ( <lookup> (p, p*) => ty'
+       < !(sol-wm, [CEqual(ty, ty', msginfo)])
+       + !(<fmap(sol-set-p(|p,ty))> sol-wm, [])
+       ) => res
+
+rules
+
+  constraint-priority: CTypeOf(_,_,_) -> 1
+
+  constraint-message: CTypeOf(p,ty,msginfo) -> <default-message(|["Failed to get type of ",p])> msginfo
+

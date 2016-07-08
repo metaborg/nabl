@@ -1,0 +1,11 @@
+module nabl2/runtime/solver/Substitution
+
+imports
+
+  nabl2/shared/common/Vars
+  nabl2/shared/constraints/Equality
+
+context-free syntax
+
+  Substitution = [[Var] |--> [Comparable]]
+

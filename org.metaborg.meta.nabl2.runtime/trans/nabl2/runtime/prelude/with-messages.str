@@ -1,0 +1,77 @@
+module nabl2/runtime/prelude/with-messages
+
+imports
+  runtime/editor/origins
+  runtime/task/messages
+
+signature
+  sorts
+    WithMessages
+
+  constructors
+    WithMessages : Term * List(String) * List(String) * List(String) -> WithMessages
+
+rules // functor
+  
+  fmap(s): WithMessages(x, e*, w*, n*) -> WithMessages(<s> x, e*, w*, n*)  
+  
+rules
+  
+  pureWM: x -> WithMessages(x,[],[],[])
+
+rules
+  
+  bind(s): WithMessages(x,_,_,_) -> <s> x
+
+  join: WithMessages(WithMessages(x,ie*,iw*,in*),oe*,ow*,on*)
+        -> WithMessages(x,[ie*,oe*],[iw*,ow*],[in*,on*])
+
+rules
+  
+  mplus(s): (WithMessages(x1,e1*,w1*,n1*),WithMessages(x2,e2*,w2*,n2*))
+            -> WithMessages(<s> (x1,x2),[e1*,e2*],[w1*,w2*],[n1*,n2*])
+
+rules
+  
+  sequenceWM = sequenceWM(id)
+ 
+  sequenceWM(s): wm* -> WithMessages(x*,e*,w*,n*)
+  where is-list
+  with <map(fromWM;s)> wm* => x*
+     ; <map(wm-errors);concat> wm* => e*
+     ; <map(wm-warnings);concat> wm* => w*
+     ; <map(wm-notes);concat> wm* => n*
+
+rules
+  
+  twrapWM: t -> wm
+  where is-tuple
+  with TupleToList ; sequenceWM ; fmap(ListToTuple) => wm
+
+  tunwrap(|n): WithMessages(t,e*,w*,n*) -> <tmap(!WithMessages(<id>,e*,w*,n*))> t
+  with <TupleToList;length> t => n
+
+rules
+
+  fromWM: WithMessages(x,_,_,_) -> x
+
+  is-erronious: WithMessages(_, [_|_], _, _) -> <id>
+
+  wm-errors: WithMessages(_,e*,_,_) -> e*
+  add-error(|tm): WithMessages(x,e*,w*,n*) -> WithMessages(x,[tm|e*],w*,n*)
+  add-errors(|tm*): WithMessages(x,e*,w*,n*) -> WithMessages(x,[tm*,e*],w*,n*)
+  fmap-errors(s) = WithMessages(id,map(s),id,id)
+
+  wm-warnings: WithMessages(_,_,w*,_) -> w*
+  add-warning(|tm): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,[tm|w*],n*)
+  add-warnings(|tm*): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,[tm*,w*],n*)
+  fmap-warnings(s) = WithMessages(id,id,map(s),id)
+
+  wm-notes: WithMessages(_,_,_,n*) -> n*
+  add-note(|tm): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,w*,[tm|n*])
+  add-notes(|tm*): WithMessages(x,e*,w*,n*) -> WithMessages(x,e*,w*,[tm*,n*])
+  fmap-notes(s) = WithMessages(id,id,id,map(s))
+
+  fmap-messages(s) = WithMessages(id,map(s),map(s),map(s))
+
+  wm-nub: WithMessages(x,e*,w*,n*) -> WithMessages(x, <nub> e*, <nub> w*, <nub> n*)

@@ -1,0 +1,17 @@
+module nabl2/shared/constraints/Typechecking
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Names
+  nabl2/shared/common/Types
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  Constraint.CTypeOf = [[Typeable] : [TypeTerm] [Message]]
+  
+  Typeable = ASTIndex
+  Typeable = Occurrence
+

@@ -1,0 +1,34 @@
+module modules/TypeSignature
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Names
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  ModuleSection.TypeSignature = <
+    type signature
+      <{TypeDecl "\n"}*>
+  > {longest-match}
+
+  TypeDecl.TypeDecl   = <<TypeSortId>(<{TypeSort ","}*>)>
+
+  TypeSort.SortNoArgs = TypeSortId
+  TypeSort.Sort       = <<TypeSortId>(<{TypeSort ","}*>)>
+  TypeSort.Occurrence  = "occurrence"
+  TypeSort.Scope      = "scope"
+  TypeSort.Type       = "type"
+
+lexical syntax
+
+  TypeSortId = OpId
+  TypeSortId = "scope" | "occurrence" | "type" {reject}
+
+  SectionKeyword = "type" | "signature"

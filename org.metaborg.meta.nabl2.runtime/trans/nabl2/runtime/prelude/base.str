@@ -1,0 +1,32 @@
+module nabl2/runtime/prelude/base
+
+imports
+
+  runtime/editor/annotations
+
+rules
+
+  noop(s) = id
+
+  term-eq = (strip-annos,strip-annos) ; eq
+
+  xmlencode =
+    try(string-replace(|"&","&amp;"))
+  ; try(string-replace(|"<","&lt;"))
+  ; try(string-replace(|">","&gt;"))
+
+  debugwrap(n,s) = ?t ; <s> t ; debug(!$[[<n>]: [<write-to-string> t] -> ])
+  debugwrap(s) = ?t ; <s> t ; debug(!$[[<write-to-string> t] -> ])
+
+  debugwrapfail(n,s) =
+    ?t
+  ; ( <s> t
+    < debug(!$[[<n>]: [<write-to-string> t] -> ])
+    + <debug> $[[<n>]: [<write-to-string> t] -> fail] ; fail
+    )
+
+  log(s|n) = with(s ; debug(!n))
+  log(|n)  = log(id|n)
+  log(s)   = log(s|"")
+
+  assert(s|t) = with(<s> t <+ debug(!"Assert failed: "))

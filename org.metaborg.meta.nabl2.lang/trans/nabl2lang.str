@@ -1,0 +1,26 @@
+module nabl2lang
+
+imports
+
+  libstratego-lib
+  libstratego-aterm
+
+  nabl2shared
+
+  analysis/main
+  completion
+  generation/main
+  pp
+ 
+rules // Debugging
+  
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-aterm: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path
+       ; result   := selected
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (selected, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := selected
+ 

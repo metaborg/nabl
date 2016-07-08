@@ -1,0 +1,23 @@
+module nabl2/runtime/analysis/namebinding
+
+imports
+
+  nabl2shared
+  nabl2/runtime/analysis/-
+
+signature
+  constructors
+    Ref : Occurrence -> Annotation
+
+rules
+
+  apply-resolution(|r*) =
+    apply-annotations(make-occurrence-anno|<filter((occurrence-to-index,not(?None());Fst))> r*)
+
+  occurrence-to-index = ?Occurrence(_,_,<id>)
+
+  make-occurrence-anno: d@Occurrence(_,_,idx) -> r
+    with r := <copy-origin(|idx)> Ref(d)
+
+  get-ref = get-annotation(?Ref(_))
+

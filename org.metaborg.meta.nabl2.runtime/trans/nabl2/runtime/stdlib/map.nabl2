@@ -1,0 +1,29 @@
+module nabl2/runtime/stdlib/map
+
+constraint-generation rules
+
+  /* NOTE:
+   * In the types we use nested tuples instead of lists, because Stratego does
+   * not allow us to create a list with a Var(_) in the tail, which is later
+   * instantiated.
+   */
+
+  Map1 [[ [x|xs] ^ (s) ]] :=
+    [[ x ^ (s) ]], Map1 [[ xs ^ (s) ]].
+  Map1 [[ [] ^ (s) ]] :=
+    true.
+
+  Map1 [[ [x|xs] ^ (s) : (ty,tys) ]] :=
+    [[ x ^ (s) : ty ]], Map1 [[ xs ^ (s) : tys ]].
+  Map1 [[ [] ^ (s) : () ]] :=
+    true.
+
+  Map2 [[ [x|xs] ^ (s1,s2) ]] :=
+    [[ x ^ (s1,s2) ]], Map2 [[ xs ^ (s1,s2) ]].
+  Map2 [[ [] ^ (s1,s2) ]] :=
+    true.
+
+  Map2 [[ [x|xs] ^ (s1,s2) : (ty,tys) ]] :=
+    [[ x ^ (s1,s2) : ty ]], Map2 [[ xs ^ (s1,s2) : tys ]].
+  Map2 [[ [] ^ (s1,s2) : () ]] :=
+    true.

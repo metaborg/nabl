@@ -1,0 +1,33 @@
+module nabl2/runtime/prelude/interfaces
+
+rules // functor
+
+  // fmap(s: a -> b) :: c a -> c b
+
+rules // applicative
+ 
+  // pureC :: a -> c a
+
+  // app(s1: a -> b, ..., sn: a -> b) :: c a -> c b
+
+rules // monad
+ 
+  // bind(s: a -> c b) :: c a -> c b
+
+  // join :: c (c a) -> c a
+
+rules // monadplus
+
+  // mplus(s: a * a -> a) :: (c a * c a) -> c a
+
+rules // list
+
+  // sequenceC(s: a -> b) :: [c a] -> c [b]
+
+  // sequenceC :: [c a] -> c [a]
+
+rules // tuple
+
+  // twrapC :: (c a1, ..., c an) -> c (a1, ..., an)
+
+  // tunwrap(|n) :: c (a1, ..., an) -> (c a1, ..., c an)

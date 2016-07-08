@@ -1,0 +1,23 @@
+module NaBL2Lang
+
+imports
+
+  NaBL2Shared
+
+  common/Identifiers
+  common/Injections
+  common/Layout
+
+  modules/CGenRules
+  modules/Modules
+  modules/ResolutionParams
+  modules/TypeSignature
+  
+context-free start-symbols
+
+  Start
+  
+context-free syntax
+
+  Start = Module
+

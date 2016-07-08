@@ -1,0 +1,12 @@
+module Lang
+
+language
+
+  extensions            : nabl2
+  
+  table                 : target/metaborg/sdf.tbl
+  start symbols         : Start
+  
+  provider              : target/metaborg/stratego.ctree
+  observer              : editor-analyze
+  on save               : editor-save

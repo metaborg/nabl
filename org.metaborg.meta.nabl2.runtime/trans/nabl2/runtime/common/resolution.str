@@ -1,0 +1,173 @@
+module nabl2/runtime/common/resolution
+
+imports
+
+  nabl2shared
+
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/pp
+
+  signatures/nabl2/runtime/common/-
+
+signature
+
+  // type Env = (Partial,[(Name,[(Decl,Path)])])
+
+rules
+
+  // resolve-all :: Graph -> [(Ref,[(Decl,Path)])]
+  resolve-all =
+    ?g
+  ; G-refs
+  ; filter(!(<id>,<resolve(|g)>))
+
+  // resolve(|Graph) :: Ref -|-> [(Decl,Path)]
+  resolve(|g) = resolve(|g,[])
+
+rules // resolution internal
+
+  // resolve :: Ref -|-> [(Decl,Path)]
+  resolve(|g,ir*) =
+    with(dbg-msg := $[resolve(|g,ir*=[<pp-Occurrences> ir*])])
+  ; with(log-res(pp-Occurrence|$[[dbg-msg]_]))
+  ; ?r
+  ; ( s := <G-scope> (g,r) // :: Scope
+   <+ <debug(!"ERROR: Cannot get scope for reference ");fail> r
+    )
+  ; (f,e*) := <env(labels-lt|<labels-wf>,g,[r|ir*],[])> s // :: Env
+  ; ( <lookup> (<occurrence-atom> r, e*) // :: [(Decl,Path)]
+   <+ where(Total() := f) ; ![]
+    ) // :: [(Decl,Path)]
+  ; with(log-res(pp-FullResolveds|$[[dbg-msg]_[<pp-Occurrence> r]_=_]))
+
+
+
+  // env(|RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env(lt|re,g,ir*,is*) =
+    with(dbg-msg := $[env(|re=[<pp-LabelRE> re],g,ir*[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; ?s
+  ; ( (<elem> (s,is*) + <emptiness> re)
+    < !(Total(),[])
+    + <env_L(lt|<labels>,re,g,ir*,is*)> s
+    )
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+
+
+
+  // env(|[Label],RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env_L(lt|L,re,g,ir*,is*) =
+    where(<is-list> L)
+  ; with(dbg-msg := $[env^[<pp-Labels> L](|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; ?s
+  ; <max-labels> L
+  ; map(\ l -> <env-shadow> ( <env_L(lt|<lt(|l)> L,re,g,ir*,is*)> s
+                            , <env_l(lt|l,re,g,ir*,is*)> s
+                            ) \)
+  ; env-unions
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+
+
+
+  // env(|D(),RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env_l(lt|l,re,g,ir*,is*) =
+    where(D() := l)
+  ; with(dbg-msg := $[env^D(|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; ?s
+  ; ( Empty() := <nullable> re
+    < ![]
+    + <G-decls;map(\ d -> (d,[D(d)]) \)> (g,s)
+    ; group(Fst;occurrence-atom)
+    )
+  ; !(Total(),<id>)
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+
+
+
+  // env(|Label,RE,Graph,[Ref],[Scope]) :: Scope -> Env
+  env_l(lt|l,re,g,ir*,is*) =
+    with(dbg-msg := $[env^[<pp-Label> l](|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; ?s
+  ; ( <union> ( <iss(|l,g)> s
+              , <irs(|l,g,ir*)> s
+              )
+    < map({ step:
+              ?(<id>,step)
+            ; env(lt|<deriv(|l)> re,g,ir*,[s|is*])
+            ; env-prepend(|step)
+         })
+    ; env-unions
+    + !(Partial(),[])
+    )
+  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+
+  // iss(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
+  iss(|l,g) =
+    with(dbg-msg := $[iss^[<pp-Label> l](|g)])
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; ?s
+  ; <G-direct-edges> (g,s) // :: [(Label,Scope)]
+  ; map(where(Snd;is-ground))
+  ; filter(?(l,_);Snd) // :: [Scope]
+  ; map(\ s' -> (s',E(l,s')) \) // :: [(Scope,Step)]
+  ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+
+  // irs(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
+  irs(|l,g,ir*) =
+    with(dbg-msg := $[irs^[<pp-Label> l](|g,ir*=[<pp-Occurrences> ir*])])
+  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; ?s
+  ; <G-named-edges> (g,s) // :: [(Label,Ref)]
+  ; filter(?(l,_);Snd) // :: [Ref]
+  ; filter(where(<not(elem)> (<id>,ir*))) // :: [Ref]
+  ; mapconcat(\ r -> <resolve(|g,ir*);mapv(!r)> r \) // :: [(Decl,Ref)]
+  ; filter({ d,r,s':
+               ?(d,r)
+             ; s' := <G-assocs;get(|l)> (g,d)
+             ; !(s',N(l,r,s'))
+          }) // :: [(Scope,Step)]
+  ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+
+
+
+  // shadow :: (Env, Env) -> Env
+  env-shadow: ((Total(),e1),(f,e2)) -> (f, e')
+    with e' := <merge(union,Fst)> (e1,e2)
+  env-shadow: (e@(Partial(),_),_) -> e
+
+  // shadow :: [Env] -> Env
+  env-unions: e* -> (f,pe)
+    with f  := <map(Fst;?Total())<!Total()+!Partial()> e*
+       ; (t*,p*) := <partition(?(Total(),<id>),?(Partial(),<id>))> e*
+       ; te := <foldr(![],merge(union,union))> t*
+       ; pe := <foldr(!te,merge(isect,union))> p*
+
+  // env-prepend(|Step) = Env -> Env
+  env-prepend(|step) = (id,mapv(map(\ (d,p) -> (d,[step|p]) \)))
+
+
+
+rules
+ 
+  get-names(|g): Declarations(s,ns) -> n*
+    with n* := <G-decls;filter-ns(|ns)> (g,s)
+
+  get-names(|g): References(s,ns) -> n*
+    with n* := <G-refs;filter-ns(|ns)> (g,s)
+
+  get-names(|g): Visibles(s,ns) -> n*
+    where (Total(),e*) := <env(labels-lt|<labels-wf>,g,[],[])> s
+    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
+ 
+  get-names(|g): Reachables(s,ns) -> n*
+    where (Total(),e*) := <env(empty-lt|<labels-wf>,g,[],[])> s
+    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
+ 
+
+  log-res(s|n) = id // log(s|n)
+  log-res(|n)  = log-res(id|n)
+  log-res(s)   = log-res(s|"")

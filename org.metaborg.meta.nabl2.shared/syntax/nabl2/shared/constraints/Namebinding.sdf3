@@ -1,0 +1,57 @@
+module nabl2/shared/constraints/Namebinding
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Names
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  Constraint.CGDecl       = [[Occurrence] <- [Scope]]
+  Constraint.CGRef        = [[Occurrence] -> [Scope]]
+
+  Constraint.CResolve     = [[Occurrence] |-> [Occurrence] [Message]]
+
+syntax
+
+  Constraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
+
+  Constraint-CF.CAssoc       = Occurrence-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF Message-CF
+
+
+context-free syntax
+
+  ELabel.P = "-"
+  ELabel   = PathLabel
+
+  NLabel.I = "="
+  NLabel   = PathLabel
+
+
+context-free syntax
+
+  Constraint.CDistinct = <!<Names> <Message>>
+  Constraint.CSubset   = <<Names> in <Names> <Message>>
+  Constraint.CDisjoint = <<Names> # <Names> <Message>>
+
+
+syntax
+
+  Names-CF.Declarations   = "D(" Scope-CF ")" NamespacePattern-CF
+  Names-CF.References     = "R(" Scope-CF ")" NamespacePattern-CF
+  Names-CF.Visibles       = "V(" Scope-CF ")" NamespacePattern-CF
+  Names-CF.Reachables     = "W(" Scope-CF ")" NamespacePattern-CF
+
+  NamespacePattern-CF.Default   =
+  NamespacePattern-CF.All       = "/*"
+  NamespacePattern-CF.Namespace = "/" NamespaceId-LEX
+
+
+lexical syntax
+
+  Keyword = "global" | "in" | "unique"
+

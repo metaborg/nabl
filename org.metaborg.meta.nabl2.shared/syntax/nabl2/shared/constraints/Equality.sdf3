@@ -1,0 +1,15 @@
+module nabl2/shared/constraints/Equality
+
+imports
+
+  nabl2/shared/common/Vars
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Messages
+
+context-free syntax
+
+  Constraint.CEqual         = [[Comparable] == [Comparable] [Message]]
+  Constraint.CInequal       = [[Comparable] != [Comparable] [Message]]
+
+  Comparable                = Var {prefer}
+

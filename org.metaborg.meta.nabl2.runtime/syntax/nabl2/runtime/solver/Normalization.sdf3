@@ -1,0 +1,15 @@
+module nabl2/runtime/common/Normalization
+
+imports
+
+  nabl2/shared/common/Native
+  nabl2/shared/common/Terms
+  nabl2/shared/constraints/Base
+
+context-free syntax
+
+  MessageContent = String
+  MessageContent = {Term ""}*
+
+  Constraint.CConj = <(<{Constraint ",\n"}*>)>
+  Constraint.CDisj = <(<{Constraint ";\n"}*>)>

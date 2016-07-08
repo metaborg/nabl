@@ -1,0 +1,67 @@
+module nabl2/runtime/prelude/map
+
+imports
+  nabl2/runtime/prelude/base
+  nabl2/runtime/prelude/tuple
+
+rules
+
+  is-map = map(?(_,_))
+
+  // keys :: map k v -> [k]
+  keys = map(Fst)
+
+  // keys :: map k v -> [v]
+  values = map(Snd)
+
+  // mapv(s: a -> b) :: map k a -> map k b
+  mapv(s) = map(!(<Fst>,<Snd;s>))
+
+  // filterv(s: a -?> b) :: map k a -> map k b
+  filterv(s) = filter(!(<Fst>,<Snd;s>))
+
+  // partitionv(s: a -?> b) :: map k a -> (map k b, map k a)
+  partitionv(s) = partition(!(<Fst>,<Snd;s>))
+
+  // mapk(s: k -?> k') :: map k v -> map k' v
+  mapk(s) = map(!(<Fst;s>,<Snd>))
+
+  // filterk(s: k -?> k') :: map k v -> map k' v
+  filterk(s) = filter(!(<Fst;s>,<Snd>))
+
+  // partitionk(s: k -?> k' :: map k v -> (map k' v, map k v)
+  partitionk(s) = partition(!(<Fst;s>,<Snd>))
+
+  // merge(ks: [k] * [k] -> [k], vs: v * v -> v) :: map k v * map k v -> map k v
+  merge(ks,vs) =
+    ?(kv1*,kv2*)
+  ; <ks> (<keys> kv1*, <keys> kv2*)
+  ; map(<merge-step(vs)> (<id>,kv1*,kv2*))
+  merge-step(vs) =
+    ?(k,kv1*,kv2*)
+  ; ( <lookup> (k,kv1*)
+    < ?v1
+    ; ( <lookup> (k,kv2*)
+      < <vs> (v1,<id>)
+      + !v1
+      )
+    + <lookup> (k,kv2*)
+    )
+  ; !(k,<id>)
+
+  // group(s: a -> b) :: [a] -> map b [a]
+  group(s) = foldr(![],group-step(s))
+  group-step(s) =
+    ?(a,kv*)
+  ; <s> a => b
+  ; <update(![a|<id>],![]|b)> kv*
+
+  // update(s: v -> v, v: v | k) :: map k v -> map k v
+  update(s,v|k) = ?kv* ; ![ (k,<(lookup<+v);s> (k,kv*)) | <filterk(not(?k))> kv* ]
+
+  // set(v: v) :: (k * map k v) -> map k v
+  set(v|k) = update(v,v|k)
+
+  get(|k) = <lookup> (k,<id>)
+
+  getOr(v|k) = <lookup> (k,<id>) <+ v

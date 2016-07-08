@@ -1,0 +1,13 @@
+module nabl2/runtime/solver/Namebinding
+
+imports
+
+  nabl2/shared/common/Names
+  nabl2/runtime/common/Resolution
+
+context-free syntax
+
+  OneResolution = [[Occurrence] |--> [FullResolved]]
+
+  Placeholder.NAMES      = "NAMES"
+

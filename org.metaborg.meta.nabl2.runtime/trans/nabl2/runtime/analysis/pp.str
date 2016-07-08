@@ -1,0 +1,43 @@
+module nabl2/runtime/analysis/pp
+
+imports
+
+  nabl2/runtime/analysis/-
+  nabl2/runtime/common/-
+  nabl2/runtime/solver/-
+  nabl2/runtime/pp
+
+  signatures/nabl2/runtime/analysis/-
+  pp/nabl2/runtime/analysis/-
+
+rules
+
+  pp-Analysis =
+    qsort((Analysis-order,Analysis-order);lt);
+    map(try(sanitize-Analysis));
+    pp(prettyprint-Analysis)
+
+  Analysis-order: Constraint(_) -> 0
+  Analysis-order: ResolutionParams(_,_,_) -> 2
+  Analysis-order: InitialScopeGraph(_) -> 2
+  Analysis-order: InitialResolution(_) -> 3
+  Analysis-order: ScopeGraph(_) -> 4
+  Analysis-order: Resolution(_) -> 5
+  Analysis-order: Typing(_) -> 6
+  Analysis-order: Substitution(_) -> 7
+  Analysis-order: SubtypeRelation(_) -> 8
+  Analysis-order: Errors(_) -> 9
+  Analysis-order: Warnings(_) -> 10
+  Analysis-order: Notes(_) -> 11
+  Analysis-order: AlternativeSolutions(_) -> 99
+  Analysis-order: _ -> 100
+
+  sanitize-Analysis = Constraint(sanitize-Constraint)
+
+  sanitize-Constraint =
+    topdown(try(
+      CConj(filter(not(hide-constraint))) +
+      CDisj(filter(not(hide-constraint)))
+    ))
+
+  hide-constraint = ?CTypeOf(<is-ASTIndex>,_,_)

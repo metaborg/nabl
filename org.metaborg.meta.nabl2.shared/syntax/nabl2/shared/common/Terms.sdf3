@@ -1,0 +1,41 @@
+module nabl2/shared/common/Terms
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  Term          = Var
+  Term.Op       = <<OpId>(<{Term ","}*>)>
+  Term.List     = <[<{Term ","}*>]>
+  Term.ListTail = <[<{Term ","}*>|<Term>]>
+  Term.Tuple    = <(<{Term ","}*>)>
+  Term          = IntTerm
+  Term          = StringTerm
+  
+  IntTerm.Int   = INT
+
+syntax
+ 
+  StringTerm-CF.Str = "\"" StringContent-LEX "\""
+ 
+lexical syntax
+
+  StringContent = StringChar*
+  StringChar    = ~[\"\t\r\n]
+
+lexical restrictions
+
+  StringChar -/- [\t\r\n]
+
+context-free syntax
+
+  Pattern          = VarOrWld
+  Pattern.Op       = <<OpId>(<{Pattern ","}*>)>
+  Pattern.List     = <[<{Pattern ","}*>]>
+  Pattern.ListTail = <[<{Pattern ","}*>|<Pattern>]>
+  Pattern.Tuple    = <(<{Pattern ","}*>)>
+  Pattern.As       = <<Var>@<Pattern>>
+

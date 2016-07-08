@@ -1,0 +1,9 @@
+module nabl2/shared/common/AST
+
+imports
+
+  nabl2/shared/common/Native
+
+context-free syntax
+
+  ASTIndex = <@<Int>>

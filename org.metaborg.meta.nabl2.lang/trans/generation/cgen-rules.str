@@ -1,0 +1,108 @@
+module generation/cgen-rules
+
+imports
+
+  libstrc
+
+  nabl2shared
+ 
+  signatures/common/-
+  signatures/modules/-
+
+  generation/-
+  util/stratego
+
+rules
+
+  section-to-str:
+    CGenRules(rule*) -> Rules(rule-str*)
+    with
+      rule-str* := <map(rule-to-str)> rule*
+
+  rule-to-str:
+    CGenRule(match,constraint,new) ->
+    RDefT(rule-name,[],param-term*,
+        Rule(pattern, <constraint-var>, clause*))
+    with
+      if CGenInit(pattern) := match then
+        rule-name := "generate-constraint-init-rule";
+        (param-term*,param-str) := ([], |[ id ]|);
+        debug-str := |[ try(<concat-strings;debug-generate-constraint> ["init [[ ",<pp-Term> ~<term-var>," ]]"]) ]|
+      else
+        pattern := <cgenmatch-to-pattern> match;
+        (param-term*,param-str,rule-name,debug-str) := <cgenmatch-to-param-term'str'name'debug> match
+      end;
+      bound-var* := <all-vars> (pattern,match,new);
+      used-var* := <all-vars> constraint;
+      free-var* := <diff> (used-var*, bound-var*);
+      var-str := <mapseq({\ v -> |[ ~v := <new-var> ~n ]| with n := Str(<var-name> v) \})> free-var*;
+      new-str := <new-to-str> new;
+      constraint-term := <constraint-to-term> constraint;
+      constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
+      clause* := [
+        With(debug-str),
+        With(param-str),
+        With(new-str),
+        With(var-str),
+        With(constraint-str)
+      ]
+ 
+  var-name:
+    Var(name) -> name 
+ 
+rules
+ 
+  constraint-to-term = explode(explode-guard)
+ 
+  explode-guard(e) = injection-to-term(e)
+  explode-guard(e) = cgenrecurse-to-term(e)
+
+rules
+
+  cgenmatch-to-pattern:
+    CGenMatch(_,pattern,_,_) -> pattern 
+ 
+  cgenmatch-to-param-term'str'name'debug: 
+    CGenMatch(Name(name),_,params,type) -> (params-term*,params-str',rule-name,debug-str)
+    with
+      if NoType() := type then
+        params-term* := [<params-var>];
+        rule-name    := $[generate-constraint-[name]-rule];
+        debug-str    :=
+          |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<pp-Term> ~<params-var>,")"]) ]|
+      else
+        params-term* := [<params-var>,type];
+        rule-name    := $[generate-constraint-with-type-[name]-rule];
+        debug-str    :=
+          |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<pp-Term> ~<params-var>,") : ",<pp-Term> ~type]) ]|
+      end;
+      paramstr       := <explode(injection-to-pattern)> params;
+      params-str     := |[ ~paramstr := ~<params-var> ]|;
+      match-string   := Str(<pp-stratego-string> paramstr);
+      params-string  := Str(<pp-stratego-string> paramstr);
+      params-str'    := |[ ~params-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~params-string," with actual ",<pp-Term> ~<params-var>, "."]) ]|
+ 
+  new-to-str:
+    NoNew() -> |[ id ]|
+
+  new-to-str:
+    New(var*) -> str
+    with str := <mapseq(\ v -> |[ ~v := <new-scope> ]| \)> var*
+
+rules
+
+  cgenrecurse-to-term(e):
+    CGenRecurse(Name(name),v,params,type) -> App(recurse-str,v)
+    with
+      paramstr       := <e> params;
+      if NoType()    := type then
+        param*       := [paramstr];
+        wrapper-name := "generate-constraint";
+        rule-name    := $[generate-constraint-[name]-rule]
+      else
+        param*       := [paramstr, type];
+        wrapper-name := "generate-constraint-with-type";
+        rule-name    := $[generate-constraint-with-type-[name]-rule]
+      end;
+      recurse-str := CallT(SVar(wrapper-name),[SVar(rule-name)],param*)
+

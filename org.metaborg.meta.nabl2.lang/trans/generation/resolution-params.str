@@ -1,0 +1,31 @@
+module generation/resolution-params
+
+imports
+
+  libstrc
+  generation/-
+  signatures/modules/-
+  util/stratego
+
+rules
+
+  resolution-params-to-str:
+    section* -> Rules([labelstr*, orderstr*, wfstr*])
+    with if label*@[_|_] := <collect-all(?Labels(<id>));concat> section* then
+           labelterm*   := <map(explode(injection-to-term))> label*;
+           labelstr*    := [ |[ custom-labels = !~List(labelterm*) ]| ]
+         else
+           labelstr*    := []
+         end
+    with order*    := <collect-all(?Order(<id>));concat> section*;
+         orderstr* := <map(label-order-to-str)> order*
+    with if wf := <collect-one(?WF(<id>))> section* then
+           wfterm := <explode(injection-to-term)> wf;
+           wfstr* := [ |[ custom-labels-wf = !~wfterm  ]| ]
+         else
+           wfstr* := []
+         end
+    
+  label-order-to-str: Lt(l1, l2) -> |[ custom-label-lt = ?(~l1',~l2') ]|
+    with l1' := <explode(injection-to-term)> l1
+       ; l2' := <explode(injection-to-term)> l2

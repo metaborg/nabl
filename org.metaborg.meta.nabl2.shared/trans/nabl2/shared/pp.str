@@ -1,0 +1,61 @@
+module nabl2/shared/common/pp
+
+imports
+
+  libstratego-gpp
+
+  runtime/editor/origins
+  runtime/tmpl/pp
+
+  pp/-
+  pp/nabl2/shared/common/-
+  pp/nabl2/shared/constraints/-
+
+rules
+
+  pp(prettyprint) =
+    (prettyprint <+ fatal-err(|"WARNING: Could not pp "));
+    !V([], <id>);
+    box2text-string(|120)
+
+  pp-partial-NaBL2Shared-string =
+    pp(prettyprint-NaBL2Shared)
+
+
+rules
+
+  prettyprint-String:
+    s -> [S("\""),S(s),S("\"")]
+    where <is-string> s
+
+  prettyprint-Int:
+    i -> [S(<int-to-string> i)]
+    where is-int
+
+  prettyprint-Real:
+    r -> [S(<real-to-string> r)]
+    where is-real
+
+  prettyprint-List(pp): t -> [ H( [SOpt(HS(),"0")]
+                                , [S("["),t',S("]")] ) ]
+    where is-list
+    with t' := <pp-H-list(pp|",")> t
+
+  prettyprint-Origin:
+    t -> [ H([SOpt(HS(),"0")], [ S("@("), S(line'), S(","), S(column'), S(")") ] ) ]
+    with line'   := <(origin-line;inc<+!-1);int-to-string> t
+    with column' := <(origin-column;inc<+!-1);int-to-string> t
+
+  prettyprint-ATerm: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                  , [S(c),S("("),a',S(")")] ) ]
+    with a' := <pp-H-list(prettyprint-Term|",")> a*
+
+rules
+
+  prettyprint-Term = prettyprint-object <+ prettyprint-ATerm
+
+  prettyprint-object = prettyprint-Int
+  prettyprint-object = prettyprint-Real
+  prettyprint-object = prettyprint-String
+  prettyprint-object = prettyprint-List(prettyprint-Term)
+

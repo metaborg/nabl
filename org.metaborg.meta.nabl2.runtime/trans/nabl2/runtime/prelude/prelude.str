@@ -1,0 +1,12 @@
+module nabl2/runtime/prelude/prelude
+
+imports
+  nabl2/runtime/prelude/base
+  nabl2/runtime/prelude/interfaces
+  nabl2/runtime/prelude/map
+  nabl2/runtime/prelude/option
+  nabl2/runtime/prelude/partial
+  nabl2/runtime/prelude/set
+  nabl2/runtime/prelude/term
+  nabl2/runtime/prelude/tuple
+  nabl2/runtime/prelude/with-messages

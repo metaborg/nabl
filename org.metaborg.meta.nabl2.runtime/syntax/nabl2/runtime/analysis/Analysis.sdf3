@@ -1,0 +1,86 @@
+module nabl2/runtime/analysis/Analysis
+
+imports
+
+  nabl2/shared/common/Native
+  nabl2/shared/common/Names
+  nabl2/shared/constraints/Base
+  nabl2/runtime/common/Resolution
+  nabl2/runtime/common/ScopeGraph
+  nabl2/runtime/solver/Substitution
+  nabl2/runtime/solver/Namebinding
+  nabl2/runtime/solver/Typechecking
+  nabl2/runtime/analysis/EditorMessages
+
+context-free syntax
+
+  Analysis = {AnalysisResult "\n\n"}*
+
+  AnalysisResult.Constraint = <
+    constraint :=
+      <Constraint>
+  >
+
+  AnalysisResult.Errors = <
+    errors :=
+      <{EditorMessage "\n"}*>
+  >
+  AnalysisResult.Warnings = <
+    warnings :=
+      <{EditorMessage "\n"}*>
+  >
+  AnalysisResult.Notes = <
+    notes :=
+      <{EditorMessage "\n"}*>
+  >
+
+  AnalysisResult.AlternativeSolutions = <
+    alternative solutions := 
+      <{AlternativeSolution "\n\n"}*>
+  >
+  AlternativeSolution = <[<Int> <Analysis>]>
+
+  AnalysisResult.Substitution = <
+    substitution := 
+      <{Substitution "\n"}*>
+  >
+
+  AnalysisResult.ResolutionParams = <
+    resolution parameters :=
+      labels          = <{AnyLabel ", "}*>
+      well-formedness = <LabelRE>
+      label order     = <{LabelLeq ", "}*>
+  >
+  
+  LabelLeq = [[AnyLabel] < [AnyLabel]]
+
+  AnalysisResult.InitialScopeGraph = <
+    initial scope graph :=
+      <ScopeGraph>
+  >
+
+  AnalysisResult.InitialResolution = <
+    initial name resolution := 
+      <{FullResolution "\n"}*>
+  >
+
+  AnalysisResult.ScopeGraph = <
+    scope graph :=
+      <ScopeGraph>
+  >
+  
+  AnalysisResult.Resolution = <
+    name resolution := 
+      <{OneResolution "\n"}*>
+  >
+
+  AnalysisResult.Typing = <
+    typing :=
+      <{Typing "\n"}*>
+  >
+
+  AnalysisResult.SubtypeRelation = <
+    subtype relation :=
+      <SubtypeRelation>
+  >
+

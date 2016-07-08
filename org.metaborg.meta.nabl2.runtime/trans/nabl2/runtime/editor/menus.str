@@ -1,0 +1,15 @@
+module nabl2/runtime/editor/menus
+
+imports
+
+  nabl2/runtime/analysis/pp
+
+rules
+
+  show-analysis: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analysis.txt")> path
+       ; result := <get-analysis;pp-Analysis> ast
+
+  show-analysis-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analysis.aterm")> path
+       ; result := <get-analysis> ast

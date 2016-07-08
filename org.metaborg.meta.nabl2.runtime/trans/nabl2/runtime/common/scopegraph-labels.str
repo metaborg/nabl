@@ -1,0 +1,63 @@
+module nabl2/runtime/common/scopegraph-labels
+
+imports
+
+  nabl2shared
+
+rules
+
+  labels    = <conc;make-set> (<custom-labels<+![]>,<default-labels>)
+  labels-wf = custom-labels-wf <+ default-labels-wf
+  label-lt  = custom-label-lt + default-label-lt
+
+  custom-labels    = fail
+  custom-labels-wf = fail
+  custom-label-lt = fail
+
+rules
+
+  nullable:
+    Epsilon() -> Epsilon()
+  nullable:
+    Closure(_) -> Epsilon()
+  nullable:
+    Concat(r1,r2) -> Epsilon()
+    where Epsilon() := <nullable> r1
+        ; Epsilon() := <nullable> r2
+  nullable:
+    Or(r1,r2) -> Epsilon()
+    where Epsilon() := <nullable> r1
+        + Epsilon() := <nullable> r2
+  nullable:
+    And(r1,r2) -> Epsilon()
+    where Epsilon() := <nullable> r1
+        ; Epsilon() := <nullable> r2
+  nullable:
+    _ -> Empty()
+ 
+  emptiness = ?Empty()
+  emptiness = ?Concat(<emptiness>,_) + ?Concat(_,<emptiness>)
+  emptiness = ?Or(<emptiness>,<emptiness>)
+  emptiness = ?And(<emptiness>,_) + ?And(_,<emptiness>)
+
+  deriv(|l): l -> Epsilon()
+  deriv(|l): Closure(r) -> Concat(<deriv(|l)> r, Closure(r))
+  deriv(|l): Concat(r1,r2) -> Or(Concat(<deriv(|l)> r1, r2), Concat(<nullable> r1, <deriv(|l)> r2))
+  deriv(|l): Or(r1,r2) -> Or(<deriv(|l)> r1, <deriv(|l)> r2)
+  deriv(|l): And(r1,r2) -> And(<deriv(|l)> r1, <deriv(|l)> r2)
+  deriv(|l): _ -> Empty()
+ 
+  // builtin labels
+  max-labels = ?L ; filter(\ l -> l where <map(\ l' -> <not(label-lt)> (l,l') \)> L \) ; make-set
+  
+  labels-lt(|l) = filter(\ l' -> l' where <label-lt> (l',l) \) ; make-set
+  
+  empty-lt(|l) = ![]
+  
+  default-labels    = ![D(),P(),I()]
+  
+  default-label-lt = ?(D(),I())
+  default-label-lt = ?(D(),P())
+  default-label-lt = ?(I(),P())
+  
+  default-labels-wf = !Concat(Closure(P()),Closure(I()))

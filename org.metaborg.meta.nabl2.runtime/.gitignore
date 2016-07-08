@@ -1,0 +1,10 @@
+# Build artifacts
+/src-gen
+/bin
+/target
+/.cache
+
+# Eclipse
+/.project
+/.classpath
+/.settings

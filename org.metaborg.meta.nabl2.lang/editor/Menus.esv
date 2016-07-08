@@ -1,0 +1,13 @@
+module Menus
+
+menus
+  
+  menu: "Syntax" (openeditor) (meta) (realtime)
+
+    action: "Show abstract syntax"     = debug-show-aterm (source)
+    action: "Show analyzed syntax"     = debug-show-analyzed
+
+  menu: "Generation" (openeditor) (meta) (realtime)
+
+    action: "Generate Stratego"   = generate-cgen-str
+

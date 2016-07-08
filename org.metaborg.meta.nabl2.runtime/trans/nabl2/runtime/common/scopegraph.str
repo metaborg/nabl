@@ -1,0 +1,46 @@
+module nabl2/runtime/common/scopegraph
+
+imports
+
+  nabl2shared
+
+  nabl2/runtime/prelude/-
+
+  signatures/nabl2/runtime/common/-
+
+rules
+
+  G-new = !G([(Global(),<G--new_s>)],[])
+  G--new_s = !S([],[],[],[])
+  G-with-decl        = ?(<id>,s,d) ; G(update(S(![d|<id>],id,id,id),G--new_s|s), id)
+  G-with-ref         = ?(<id>,s,r) ; G(update(S(id,![r|<id>],id,id),G--new_s|s), id)
+  G-with-direct-edge = ?(<id>,s,e@(_,s')) ; G(try(where(<is-ground> s');update(id,G--new_s|s'))
+                                             ;update(S(id,id,![e|<id>],id),G--new_s|s), id)
+  G-with-named-edge  = ?(<id>,s,n) ; G(update(S(id,id,id,![n|<id>]),G--new_s|s), id)
+  G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(update(id,G--new_s|s),update(![a|<id>],![]|d))
+
+  G-refs             = ?G(<id>,_) ; map(?(_,<id>);?S(_,<id>,_,_)) ; concat
+  G-scope            = ?(G(<id>,_),r) ; getfirst(G-scope_exists(|r))
+  G-scope_exists(|r) = ?(s,S(_,r*,_,_)) ; <elem> (r,r*) ; !s
+  G-decls            = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
+  G-refs             = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
+  G-direct-edges     = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
+  G-named-edges      = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
+  G-assocs           = ?(G(_,a*),d) ; <lookup> (d,a*)
+
+rules
+
+  occurrence-eq = (occurrence-atom,occurrence-atom) ; eq
+
+  occurrence-atom = ?Name(_,_)
+  occurrence-atom = !Name(<occurrence-ns>,<occurrence-name>)
+
+  occurrence-name = ?Name(_,<strip-annos>)
+  occurrence-name = ?Occurrence(_,<strip-annos>,_)
+
+  occurrence-ns = ?Name(<strip-annos>,_)
+  occurrence-ns = ?Occurrence(<strip-annos>,_,_)
+
+  occurrence-index = ?Occurrence(_,_,<strip-annos>)
+
+  filter-ns(|ns) = where(All() := ns) < id + filter(where(occurrence-ns ; ?ns))

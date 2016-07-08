@@ -1,0 +1,63 @@
+module analysis/normalize
+
+imports
+
+  nabl2shared
+
+  signatures/common/-
+  signatures/modules/-
+
+  generation/-
+
+rules
+
+  normalize =
+    try(sometd(normalize-term-match));
+    try(sometd(normalize-type-match));
+    try(sometd(normalize-term-type));
+    try(sometd(normalize-message));
+    try(sometd(normalize-index <+ normalize-default-index));
+    try(sometd(normalize-rule-names))
+
+  // capture the matched term, or (FIXME) the first term in the list in term__ 
+  normalize-term-match:
+    CGenMatch(name,pattern,param,type) ->
+      CGenMatch(name,As(<term-var>, pattern),param,type)
+
+  normalize-term-match:
+    CGenInit(pattern) ->
+      CGenInit(As(<term-var>,pattern))
+
+  // replace type terms with a variable and an equality constraint
+  normalize-type-match:
+    CGenRule(CGenMatch(name,pattern,param,type),C,new)
+      -> CGenRule(CGenMatch(name,pattern,param,<type-var>),
+             CConj(CEqual(<type-var>,type,DefaultMessage()),C),new)
+    where <not(?NoType() + is-var)> type
+
+  // assign type to term, if it is not a list
+  normalize-term-type:
+    CGenRule(CGenMatch(name,pattern,param,type),C,new)
+      -> CGenRule(CGenMatch(name,pattern,param,type),
+             CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C),new)
+    where <not(?NoType())> type;
+          <outermost-term-pattern(not(?List(_) + ?ListTail(_,_)))> pattern
+
+  // create default error message
+  normalize-message:
+    DefaultMessage() ->
+      Message(Error(),Default(),DefaultIndex())
+
+  // get index from occurrence, if name is from AST
+  normalize-index:
+    Occurrence(ns,name,DefaultIndex()) ->
+      Occurrence(ns,name,ASTIndexFromTerm(name))
+    where <is-var> name
+
+  // get index from matched term
+  normalize-default-index:
+    DefaultIndex() -> ASTIndexFromTerm(<term-var>)
+
+  // set default name for anonymous rules
+  normalize-rule-names:
+    NoName() -> Name(<default-rule-name>)

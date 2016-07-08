@@ -1,0 +1,7 @@
+module Colorer
+
+imports
+
+  editor/Colorer.generated
+
+  completion/colorer/NaBL2Lang-cc-esv

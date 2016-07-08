@@ -1,0 +1,87 @@
+module nabl2/runtime/solver/base
+
+imports
+
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/solver/-
+
+rules
+	
+  solve-fact = fail
+  
+  solve-constraint = fail	
+	
+  constraint-priority = fail	
+	
+rules
+
+  initial-solution = sol-new;pureWM
+
+  solve-constraints-phase1: c* -> s
+  with
+    s := <csolve( solve-specialise
+                , solve-fact
+                )> c*
+
+  solve-constraints-phase2: c* -> s
+  with
+    s := <csolve( solve-specialise
+                , solve-constraint
+                )> c*
+
+  solve-specialise: (sol-wm,c) -> res
+  with <fromWM;sol-s> sol-wm => s*
+     ; <fromWM> sol-wm => sol
+     ; <S-apply(is-var)> (s*,c) => c'
+     ; {| ReduceErrors:
+            rules(ReduceErrors : _ -> [])
+          ; <bottomup(try(reduce-op(|sol-wm)))> c' => c''
+          ; re* := <ReduceErrors>
+          ; if [] := re*
+            then
+              !(sol-wm,c'')
+            else
+              msg' := <get-constraint-message> c'
+            ; msg'' := <foldr(!msg',{ ?(re,<id>) ; detail-message(|re) })> re*
+            ; sol-wm' := <add-message(id|msg'')> sol-wm
+            ; !(sol-wm',CTrue())
+            end
+       |} => res
+
+  add-reduce-error(|msg) =
+    where(msg* := <ReduceErrors> ; rules(ReduceErrors : _ -> [msg|msg*]))
+
+rules
+ 
+  solve-constraint: (CTrue(),sol-wm) -> [(sol-wm,[])]
+  solve-constraint: (CFalse(msginfo),sol-wm) -> [(sol-wm',[])]
+    with msg     := "False never succeeds";
+         sol-wm' := <add-message(default-message(|msg)|msginfo)> sol-wm
+
+  solve-fact: (CConj(c*),sol-wm) -> [(sol-wm,c*)]
+
+  solve-constraint: (CConj(c*),sol-wm) -> [(sol-wm,c*)]
+  solve-constraint: (CDisj(c*),sol-wm) -> <map(\ c -> (sol-wm,c) \)> c*
+  
+  constraint-priority: CTrue() -> 0
+  constraint-priority: CFalse(_) -> 0
+  constraint-priority: CConj(_) -> 0
+  constraint-priority: CDisj(_) -> 100
+
+rules
+
+  sort-constraints = qsort((constraint-priority,constraint-priority);lt)
+
+  constraint-priority-or-default = constraint-priority <+ 99
+
+rules
+ 
+  debug-solve(s): i@(c,sol-wm) -> o*
+    with <debug> $[solve [<pp-Constraint> c]]
+    where if o* := <s> i then
+            <with(map(Snd;debug;map(pp-Constraint);debug(!"--> ")))> o*
+          else
+            <debug> "--> (unsolved)"; fail
+          end
+

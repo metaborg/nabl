@@ -1,0 +1,41 @@
+module util/stratego
+
+imports
+
+  libstrc
+
+rules
+
+  mapseq(s): [x|x*] -> |[ ~str ; ~str* ]|
+    with str := <s> x;
+         str* := <mapseq(s)> x*
+
+  mapseq(s): [x] -> <s> x
+
+  mapseq(s): [] -> |[ id ]|
+  
+  explode(g) = g(explode(g)) <+ explode-generic(g)
+
+  explode-generic(g): s -> Str(s)
+    where is-string
+
+  explode-generic(g): i -> Int(<int-to-string> i)
+    where is-int
+
+  explode-generic(g): t* -> List(t'*)
+    where is-list
+    with
+      t'* := <map(explode(g))> t*
+
+  explode-generic(g): t -> Tuple(t'*)
+    where is-tuple
+    with
+      t* := <TupleToList> t;
+      t'* := <map(explode(g))> t*
+
+  explode-generic(g): c#(t*) -> Op(c,t'*)
+    with
+      t'* := <map(explode(g))> t*
+
+  outermost-term-pattern(s) = As(id,outermost-term-pattern(s))
+  outermost-term-pattern(s) = not(?As(_,_)) ; s

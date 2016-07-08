@@ -1,0 +1,19 @@
+module NaBL2Shared
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Names
+  nabl2/shared/common/Native
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Types
+  nabl2/shared/common/Vars
+
+  nabl2/shared/constraints/Base
+  nabl2/shared/constraints/Equality
+  nabl2/shared/constraints/Namebinding
+  nabl2/shared/constraints/Typechecking
+  nabl2/shared/constraints/Subtyping
+

@@ -1,0 +1,24 @@
+module common/Types
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Names
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  TypeTerm          = Var {prefer}
+  TypeTerm.Op       = <<OpId>(<{TypeTerm ","}*>)>
+  TypeTerm.List     = <[<{TypeTerm ","}*>]>
+  TypeTerm.ListTail = <[<{TypeTerm ","}*>|<TypeTerm>]>
+  TypeTerm.Tuple    = <(<{TypeTerm ","}*>)>
+  TypeTerm          = IntTerm
+  TypeTerm          = StringTerm
+  TypeTerm          = Occurrence
+  TypeTerm          = Scope
+
+  TypePattern       = TypeTerm
+  TypePattern.As    = <<Var>@<TypePattern>>
+

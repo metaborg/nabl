@@ -1,0 +1,11 @@
+module nabl2/runtime/common/vars
+
+imports
+
+  nabl2shared
+
+rules
+  
+  reduce-op(|sol-wm) = fail
+  is-reduced = where(collect-all(is-op) => [])
+

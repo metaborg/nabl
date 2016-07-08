@@ -1,0 +1,24 @@
+module pp
+
+imports
+
+  libstratego-gpp
+
+  nabl2shared
+
+  pp/-
+
+rules
+
+  pp-NaBL2Lang-string =
+    parenthesize-NaBL2Lang
+    ; prettyprint-NaBL2Lang-start-symbols
+    ; !V([], <id>)
+    ; box2text-string(|120)
+      
+  pp-partial-NaBL2Lang-string =
+    parenthesize-NaBL2Lang
+    ; prettyprint-NaBL2Lang
+    ; !V([], <id>)
+    ; box2text-string(|120)
+ 

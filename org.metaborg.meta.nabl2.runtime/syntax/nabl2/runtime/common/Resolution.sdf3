@@ -1,0 +1,32 @@
+module nabl2/runtime/common/Resolution
+
+imports
+
+  nabl2/shared/common/Names
+  nabl2/shared/common/Terms
+
+context-free syntax
+
+  FullResolution     = [[Occurrence] |--> [FullResolveds]]
+  FullResolved.None  = <none>
+  FullResolveds      = <[<{FullResolved ",\n"}*>]>
+  FullResolved       = [[Occurrence] via [Path]]
+
+context-free syntax
+
+  Path            = {Step "\n"}*
+
+  Step.D          = <D(<Occurrence>)>
+  Step.E          = <E(<PathLabel>,<Scope>)>
+  Step.N          = <N(<PathLabel>,<Occurrence>,<Scope>)>
+ 
+context-free syntax
+
+  Env                    = <<TotalOrPartial>[<{EnvEntry "\n"}*>]>
+  EnvEntry               = <<Name> = <{FullResolved "\n"}*>>
+
+  TotalOrPartial.Total   = <Total>
+  TotalOrPartial.Partial = <Partial>
+
+  Name.Name              = <<Namespace>{<Term>}>
+
