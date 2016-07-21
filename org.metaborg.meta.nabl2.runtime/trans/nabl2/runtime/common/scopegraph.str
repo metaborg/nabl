@@ -10,7 +10,7 @@ imports
 
 rules
 
-  G-new = !G([(Global(),<G--new_s>)],[])
+  G-new = !G([],[])
   G--new_s = !S([],[],[],[])
   G-with-decl        = ?(<id>,s,d) ; G(update(S(![d|<id>],id,id,id),G--new_s|s), id)
   G-with-ref         = ?(<id>,s,r) ; G(update(S(id,![r|<id>],id,id),G--new_s|s), id)

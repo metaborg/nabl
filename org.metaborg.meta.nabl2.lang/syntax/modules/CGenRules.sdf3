@@ -23,37 +23,36 @@ context-free syntax
       <{CGenRule "\n"}*>
   > {longest-match}
 
-  CGenRule.CGenRule = <
-    <CGenMatch> :=
-        <Constraint>
-        <CGenNew>.
+  CGenRule.CGenInitRule = <
+    init <CGenParamsTerm> <CGenTypeTerm> :=
+        <Constraint>.
   >
 
-  CGenMatch.CGenInit = <init [[ <Pattern> ]]>
-
-  CGenNew.NoNew        =
-  CGenNew.New          = <, new <{Var ","}+>>
+  CGenRule.CGenMatchRule = <
+    <CGenName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+        <Constraint>.
+  >
 
   CGenName.NoName      =
   CGenName.Name        = RuleId
 
 context-free syntax
 
-  CGenMatch.CGenMatch    = <<CGenName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]]>
+  CGenParamsTerm.List    = <^ (<{TypeTerm ","}*>)>
 
   CGenParamsPattern.List = <^ (<{VarOrWld ","}*>)>
 
+  CGenTypeTerm.NoType    =
+  CGenTypeTerm.Type      = <: <TypeTerm>>
+
   CGenTypePattern.NoType =
-  CGenTypePattern        = <: <TypePattern>>
+  CGenTypePattern.Type   = <: <TypePattern>>
 
 context-free syntax
 
   Constraint.CGenRecurse = <<CGenName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
-  CGenParamsTerm.List    = <^ (<{TypeTerm ","}*>)>
-
-  CGenTypeTerm.NoType    =
-  CGenTypeTerm           = <: <TypeTerm>>
+  Constraint.New         = <new <{Var " "}+>>
 
 lexical syntax
 

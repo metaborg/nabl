@@ -21,27 +21,22 @@ rules
 
   // capture the matched term, or (FIXME) the first term in the list in term__ 
   normalize-term-match:
-    CGenMatch(name,pattern,param,type) ->
-      CGenMatch(name,As(<term-var>, pattern),param,type)
-
-  normalize-term-match:
-    CGenInit(pattern) ->
-      CGenInit(As(<term-var>,pattern))
+    CGenMatchRule(name,pattern,params,type,C)
+      -> CGenMatchRule(name,As(<term-var>, pattern),params,type,C)
 
   // replace type terms with a variable and an equality constraint
   normalize-type-match:
-    CGenRule(CGenMatch(name,pattern,param,type),C,new)
-      -> CGenRule(CGenMatch(name,pattern,param,<type-var>),
-             CConj(CEqual(<type-var>,type,DefaultMessage()),C),new)
-    where <not(?NoType() + is-var)> type
+    CGenMatchRule(name,pattern,param,Type(type),C)
+      -> CGenMatchRule(name,pattern,param,Type(<type-var>),
+             CConj(CEqual(<type-var>,type,DefaultMessage()),C))
+    where <not(is-var)> type
 
   // assign type to term, if it is not a list
   normalize-term-type:
-    CGenRule(CGenMatch(name,pattern,param,type),C,new)
-      -> CGenRule(CGenMatch(name,pattern,param,type),
-             CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C),new)
-    where <not(?NoType())> type;
-          <outermost-term-pattern(not(?List(_) + ?ListTail(_,_)))> pattern
+    CGenMatchRule(name,pattern,param,Type(type),C)
+      -> CGenMatchRule(name,pattern,param,Type(type),
+             CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C))
+    where <outermost-term-pattern(not(?List(_) + ?ListTail(_,_)))> pattern
 
   // create default error message
   normalize-message:

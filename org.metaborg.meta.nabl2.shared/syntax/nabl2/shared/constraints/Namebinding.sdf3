@@ -53,5 +53,5 @@ syntax
 
 lexical syntax
 
-  Keyword = "global" | "in" | "unique"
+  Keyword = "in" | "unique"
 
