@@ -13,27 +13,53 @@ imports
 
   signatures/nabl2/runtime/analysis/-
 
+signature
+  sorts AnalysisAction constructors
+    Init : AnalysisAction
+    IndexAST : AnalysisAction
+    PreprocessAST : AnalysisAction
+    GenerateConstraint : AnalysisAction
+    SolveConstraint : AnalysisAction
+    PostprocessAST : AnalysisAction
+
 rules // analysis
 
-  analyze(pre,post):
-    file* -> Result(file-result*, [], [], debug-result, time-result)
-  where is-list
-  with file-result* := <map(analyze-one(pre,post))> file*
-     ; debug-result := DebugResult(CollectDebugResult(-1, -1, -1, -1, -1), [], [], [])
-     ; time-result := TimeResult(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+  analyze(pre,post): Init() -> (params,C)
+    with (params,C) := <generate-constraint-init>
 
-  analyze-one(pre,post):
-    File(source,source-ast,i) -> FileResult(source,source-ast,analyzed-ast,error*,warning*,note*)
-  with (analyzed-ast,error*,warning*,note*) := <do-analysis(pre,post)> source-ast
+  analyze(pre,post): (IndexAST(),ast) -> ast'
+    with <debug> ">>> Indexing AST <<<"
+    with report-time(
+      ast' := <index-ast> ast
+    )
 
-  analyze(pre,post): (source-ast,path,project-path) -> result
-  where not(is-list)
-  with result := <do-analysis(pre,post)> source-ast
-
-  get-analysis: source-ast -> <index-get-all-values-in-source> source
-  with source := <origin-file> source-ast
-
+  analyze(pre,post): (PreprocessAST(),ast) -> ast'
+    with <debug> ">>> Preprocessing AST <<<"
+    with report-time(
+      ast' := <pre> ast
+    )
+  
+  analyze(pre,post): (GenerateConstraint(),ast,params) -> C
+    with <debug> ">>> Generating constraints <<<"
+    with report-time(
+      C := <generate-constraint-file(|params)> ast
+    )
+  
+  analyze(pre,post): (SolveConstraint(),C) -> S
+    with <debug> ">>> Solving constraints <<<"
+    with report-time(
+      S := None()
+    )
+  
+  analyze(pre,post): (PostprocessAST(),ast) -> ast'
+    with <debug> ">>> Postprocessing AST <<<"
+    with report-time(
+      ast' := <post> ast
+    )
+ 
 rules
+
+  get-analysis = fail
 
   do-analysis(pre,post):
     source-ast -> (analyzed-ast, error*, warning*, note*)
