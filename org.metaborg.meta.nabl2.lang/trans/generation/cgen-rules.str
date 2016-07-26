@@ -22,13 +22,13 @@ rules
   rule-to-str:
     CGenInitRule(params,type,constraint)
       -> RDefNoArgs(<rule-name> "init",
-           Rule(Wld(), Tuple([<params-var>, <constraint-var>]), clause*))
+           Rule(<term-var>, Tuple([<params-var>, <constraint-var>]), clause*))
     with
       debug-str := Strat |[ try(<concat-strings;debug-generate-constraint> ["init"]) ]|;
       new-scope-var* := <all-new-vars> constraint;
       new-scope-str := <new-scope-str> new-scope-var*;
       used-var* := <all-vars> (params,type,constraint);
-      free-var* := <diff> (used-var*, new-scope-var*);
+      free-var* := <diff> (used-var*, [<term-var>,new-scope-var*]);
       new-var-str := <new-var-str> free-var*;
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then

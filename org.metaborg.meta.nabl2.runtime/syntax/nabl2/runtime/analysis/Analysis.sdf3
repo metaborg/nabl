@@ -38,7 +38,7 @@ context-free syntax
     alternative solutions := 
       <{AlternativeSolution "\n\n"}*>
   >
-  AlternativeSolution = <[<Int> <Analysis>]>
+  AlternativeSolution = <[<Int>] <Analysis>>
 
   AnalysisResult.Substitution = <
     substitution := 

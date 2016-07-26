@@ -15,7 +15,7 @@ imports
 
 signature
   sorts AnalysisAction constructors
-    Init : AnalysisAction
+    Initialize : AnalysisAction
     IndexAST : AnalysisAction
     PreprocessAST : AnalysisAction
     GenerateConstraint : AnalysisAction
@@ -25,8 +25,11 @@ signature
 
 rules // analysis
 
-  analyze(pre,post): Init() -> (params,C)
-    with (params,C) := <generate-constraint-init>
+  analyze(pre,post): (Initialize(),global) -> (params,C)
+    with <debug> ">>> Initializing <<<"
+    with report-time(
+      (params,C) := <generate-constraint-init> global
+    )
 
   analyze(pre,post): (IndexAST(),ast) -> ast'
     with <debug> ">>> Indexing AST <<<"
@@ -87,12 +90,10 @@ rules // analysis
       (good,bad) := <partition(not(is-erronious));(length,length)> sol-wm*;
       where(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.]);
       ( sol-wm := <Hd> sol-wm*
-      < where(<debug> "> Found solution <");
-        error* := <wm-errors;mapv(xmlencode)> sol-wm;
+      < error* := <wm-errors;mapv(xmlencode)> sol-wm;
         warning* := <wm-warnings;mapv(xmlencode)> sol-wm;
         note* := <wm-notes;mapv(xmlencode)> sol-wm
-      + where(<debug> "> No solution found <");
-        error* := [];
+      + error* := [];
         warning* := [];
         note* := []
       );

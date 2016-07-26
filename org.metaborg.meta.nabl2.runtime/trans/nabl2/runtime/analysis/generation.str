@@ -10,13 +10,14 @@ rules // top-level functions that are called during analysis
   // GTODO : variables and scopes must be unique across files
 
   generate-constraint-init =
+    ?global;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
 	    var-counter   := <new-counter>;
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      generate-constraint-init-rule
+      <generate-constraint-init-rule> global
 	  |}
 
   generate-constraint-file(|params) =
