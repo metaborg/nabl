@@ -12,7 +12,7 @@ rules // ast indices
     {| NodeIndex:
 	    node-counter := <new-counter>;
 	    rules( NodeIndex: _ -> <next-counter> node-counter );
-	    <bottomup({?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
+	    <bottomup(is-list <+ {?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
     |}
 
   get-ast-index =
