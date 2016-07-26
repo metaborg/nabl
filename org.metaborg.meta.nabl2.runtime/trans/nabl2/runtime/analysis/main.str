@@ -19,6 +19,7 @@ signature
     IndexAST : AnalysisAction
     PreprocessAST : AnalysisAction
     GenerateConstraint : AnalysisAction
+    NormalizeConstraint : AnalysisAction
     SolveConstraint : AnalysisAction
     PostprocessAST : AnalysisAction
 
@@ -42,24 +43,47 @@ rules // analysis
   analyze(pre,post): (GenerateConstraint(),ast,params) -> C
     with <debug> ">>> Generating constraints <<<"
     with report-time(
-      C := <generate-constraint-file(|params)> ast
+      C := <generate-constraint-file(|params);normalize-constraint> ast
     )
  
+  analyze(pre,post): (NormalizeConstraint(),C) -> C'
+    with <debug> ">>> Normalzing constraints <<<"
+    with report-time(
+      C' := <normalize-constraint> C
+    )
+
   analyze(pre,post): (SolveConstraint(),C) -> S
     with <debug> ">>> Solving constraints <<<"
     with report-time(
-      C' := <normalize-constraint> C;
       sol-i := <initial-solution>;
+      C' := <normalize-constraint> C;
       [(sol-wm1,C1*)] := <solve-constraints-phase1> (sol-i,[C']);
       g := <fromWM;sol-g> sol-wm1;
       fr* := <resolve-all> g;
       (r1*,rn*) := <partition({\ (r,[dp]) -> (r,dp) \})> fr*;
       sol-wm2 := <fmap(sol-add-r(|r1*))> sol-wm1;
-      sol-wm3* := <solve-constraints-phase2;map(postprocess-errors(|rn*))> (sol-wm2,C1*)
+      lo* := <join(label-lt)> (<labels>,<labels>);
+      sol-wm3* := <solve-constraints-phase2;map(postprocess-errors(|rn*))> (sol-wm2,C1*);
+      analysis1* := [
+        Constraint(C),
+        InitialScopeGraph(g),
+        InitialResolution(fr*),
+        ResolutionParams(<labels>,<labels-wf>,lo*)
+      ]
     )
     with <debug> ">>> Processing solutions <<<"
     with report-time(
       sol-wm* := <qsort((wm-errors;length,wm-errors;length);lt)> sol-wm3*;
+      sol* := <map( ![ ScopeGraph(<fromWM;sol-g>)
+                     , Typing(<fromWM;sol-p>)
+                     , Substitution(<fromWM;sol-s>)
+                     , Resolution(<fromWM;sol-r>)
+                     , SubtypeRelation(<fromWM;sol-x>)
+                     , Errors(<wm-errors>)
+                     , Warnings(<wm-warnings>)
+                     , Notes(<wm-notes>)
+                     ] )> sol-wm*;
+      analysis2* := <Hd> sol*;
       (good,bad) := <partition(not(is-erronious));(length,length)> sol-wm*;
       where(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.]);
       ( sol-wm := <Hd> sol-wm*
@@ -72,16 +96,17 @@ rules // analysis
         warning* := [];
         note* := []
       );
-      S := <debug> (error*, warning*, note*)
+      analysis := [analysis1*, analysis2*, AlternativeSolutions(<Tl;map-with-index(id)> sol*)];
+      S := (error*, warning*, note*, analysis)
     )
-  
+
   analyze(pre,post): (PostprocessAST(),ast) -> ast'
     with <debug> ">>> Postprocessing AST <<<"
     with report-time(
       ast' := <post> ast
     )
  
-  get-analysis = fail
+  get-analysis = prim("SSL_EXT_get_analysis")
 
 rules
 
