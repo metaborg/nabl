@@ -6,6 +6,7 @@ imports
 
 rules
 
+  source-var     = !Var("source__")
   term-var       = !Var("term__")
   type-var       = !Var("type__")
   params-var     = !Var("params__")

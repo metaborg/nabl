@@ -15,47 +15,46 @@ imports
 
 signature
   sorts AnalysisAction constructors
-    Initialize : AnalysisAction
-    IndexAST : AnalysisAction
-    PreprocessAST : AnalysisAction
-    GenerateConstraint : AnalysisAction
-    NormalizeConstraint : AnalysisAction
-    SolveConstraint : AnalysisAction
-    PostprocessAST : AnalysisAction
+    Initialize : String * Term -> AnalysisAction
+    IndexAST : String * Term -> AnalysisAction
+    PreprocessAST : String * Term -> AnalysisAction
+    GenerateConstraint : String * Term * List(Scope) -> AnalysisAction
+    NormalizeConstraint : Constraint -> AnalysisAction
+    SolveConstraint : Constraint -> AnalysisAction
 
-rules // analysis
+rules
 
-  analyze(pre,post): (Initialize(),global) -> (params,C)
+  analyze(pre): Initialize(source,global) -> C
     with <debug> ">>> Initializing <<<"
     with report-time(
-      (params,C) := <generate-constraint-init> global
+      C := <generate-constraint-init(|source)> global
     )
 
-  analyze(pre,post): (IndexAST(),ast) -> ast'
+  analyze(pre): IndexAST(source,ast) -> ast'
     with <debug> ">>> Indexing AST <<<"
     with report-time(
-      ast' := <index-ast> ast
+      ast' := <index-ast(|source)> ast
     )
 
-  analyze(pre,post): (PreprocessAST(),ast) -> ast'
+  analyze(pre): PreprocessAST(source,ast) -> ast'
     with <debug> ">>> Preprocessing AST <<<"
     with report-time(
       ast' := <pre> ast
     )
   
-  analyze(pre,post): (GenerateConstraint(),ast,params) -> C
+  analyze(pre): GenerateConstraint(source,ast,params) -> C
     with <debug> ">>> Generating constraints <<<"
     with report-time(
-      C := <generate-constraint-file(|params);normalize-constraint> ast
+      C := <generate-constraint-file(|source,params);normalize-constraint> ast
     )
  
-  analyze(pre,post): (NormalizeConstraint(),C) -> C'
-    with <debug> ">>> Normalzing constraints <<<"
+  analyze(pre): NormalizeConstraint(C) -> C'
+    with <debug> ">>> Normalizing constraints <<<"
     with report-time(
       C' := <normalize-constraint> C
     )
 
-  analyze(pre,post): (SolveConstraint(),C) -> S
+  analyze(pre): SolveConstraint(C) -> S
     with <debug> ">>> Solving constraints <<<"
     with report-time(
       sol-i := <initial-solution>;
@@ -101,15 +100,9 @@ rules // analysis
       S := (error*, warning*, note*, analysis)
     )
 
-  analyze(pre,post): (PostprocessAST(),ast) -> ast'
-    with <debug> ">>> Postprocessing AST <<<"
-    with report-time(
-      ast' := <post> ast
-    )
- 
-  get-analysis = prim("SSL_EXT_get_analysis")
+  analyze(pre) = fatal-err(|"Unknown analysis action")
 
-rules
+  get-analysis = prim("SG_get_analysis")
 
   report-time(s) = measure-time(s,where(<debug> $[Finished in [<cputime-to-seconds;real-to-string(|2)>]s]))
 

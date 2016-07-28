@@ -6,10 +6,18 @@ imports
 
 rules
 
-  show-analysis: (_, _, _, path, project-path) -> (filename, result)
+  show-analysis-single: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.txt")> path
        ; result := <get-analysis;pp-Analysis> $[[project-path]/[path]]
 
-  show-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
+  show-analysis-single-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.aterm")> path
        ; result := <get-analysis> $[[project-path]/[path]]
+
+  show-analysis-multi: (_, _, _, _, project-path) -> (filename, result)
+    with filename := $[[project-path]/analysis.txt]
+       ; result := <get-analysis;pp-Analysis> project-path
+
+  show-analysis-multi-aterm: (_, _, _, path, project-path) -> (filename, result)
+    with filename := $[[project-path]/analysis.aterm]
+       ; result := <get-analysis> project-path

@@ -5,25 +5,33 @@ imports
   runtime/editor/annotations
   runtime/editor/origins
 
+  nabl2shared
+
 rules // ast indices
 
-  index-ast =
+  index-ast(|source) =
     ?ast;
     {| NodeIndex:
 	    node-counter := <new-counter>;
 	    rules( NodeIndex: _ -> <next-counter> node-counter );
-	    <bottomup(is-list <+ {?t;add-annotation(|<NodeIndex;copy-origin(|t)>)})> ast
+	    <bottomup(
+	       is-list
+	    <+ \ t -> <add-annotation(|<copy-origin(|t)> ASTIndex(source,<NodeIndex>))> t \
+	     )> ast
     |}
 
   get-ast-index =
-    get-annotation(is-int)
+    get-annotation(?ASTIndex(_,_))
  <+ warn(|"Cannot get AST index");
-    <subt> (0,<next-random;abs>)
+    !ASTIndex("FAKE", <next-random>)
 
-  has-ast-index = get-annotation(is-int)
+  has-ast-index = where(get-annotation(?ASTIndex(_,_)))
 
   set-ast-index(|idx) = add-annotation(|idx)
 
+  get-ast-metadata(|key) = prim("SG_get_ast_metadata", key)
+
+  set-ast-metadata(|key,value) = prim("SG_set_ast_metadata", key, value)
 
 rules // origins
 
@@ -31,17 +39,3 @@ rules // origins
     origin-location-offset-set(|<origin-location-offset> from)
  <+ warn(|"Cannot copy origin from")
 
-
-rules // annotations
-
-  remove-annotation(s):
-    t{a*} -> t{a'*}
-    where ([_|_],a'*) := <partition(s)> a*
-
-  apply-annotations(s|aa*): ast -> ast'
-  with <topdown(try(apply-annotations-to-term(s|aa*)))> ast => ast'
-
-  apply-annotations-to-term(s|aa*): t{a*} -> t{a''*}
-  where a'* := <filter(<lookup> (<id>,aa*));map(s)> a*;
-        a''* := [a*,a'*]
- 

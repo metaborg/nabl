@@ -2,8 +2,6 @@ module nabl2/runtime/solver/normalization
 
 imports
 
-  runtime/editor/annotations
-
   nabl2shared
   nabl2runtime
 

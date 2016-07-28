@@ -9,7 +9,7 @@ rules // top-level functions that are called during analysis
 
   // GTODO : variables and scopes must be unique across files
 
-  generate-constraint-init =
+  generate-constraint-init(|source) =
     ?global;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
@@ -17,10 +17,10 @@ rules // top-level functions that are called during analysis
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      <generate-constraint-init-rule> global
+      <generate-constraint-init-rule(|source)> global
 	  |}
 
-  generate-constraint-file(|params) =
+  generate-constraint-file(|source,params) =
     ?ast;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
@@ -28,25 +28,30 @@ rules // top-level functions that are called during analysis
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      <generate-constraint(generate-constraint-default-rule|params)> ast
+      <generate-constraint(generate-constraint-default-rule|source,params)> ast
 	  |}
 
 rules
 
-  new-var   = (is-string <+ !"v") => n ; !Var($[[n]'[<NewVar;int-to-string>]])
-  new-scope = !Scope(<NewScope;int-to-string>)
+  new-var(|source)   = (is-string <+ !"v") => n ; !Var($[[source]'[n]'[<NewVar;int-to-string>]])
+  new-scope(|source) = !Scope($[[source]'[<NewScope;int-to-string>]])
 
   // signatures of the generated rules
-  generate-constraint-init-rule = fail
-  generate-constraint-default-rule(|params) = fail
+  generate-constraint-init-rule(|source) = fail
+  generate-constraint-default-rule(|source,params) = fail
 
   // error throwing wrappers for recursive invocations
-  generate-constraint(s|params) =
-    generate-constraint-placeholder <+
-    s(|params) <+
+  generate-constraint(s|source,params) =
+    generate-constraint-placeholder(|params) <+
+    s(|source,params) <+
     fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
 
-  generate-constraint-placeholder =
-    is-SDF-placeholder; !CTrue()
+  generate-constraint-placeholder(|params): term -> CTrue()
+    where <is-SDF-placeholder> term
+    with if (scopes,type) := params then
+      <set-params(|scopes);set-type(|type)> term
+    else
+      <set-params(|params)> term
+    end
 
   debug-generate-constraint = fail

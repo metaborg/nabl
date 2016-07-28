@@ -8,6 +8,7 @@ imports
   signatures/modules/-
 
   generation/-
+  util/-
 
 rules
 
@@ -19,10 +20,14 @@ rules
     try(sometd(normalize-index <+ normalize-default-index));
     try(sometd(normalize-rule-names))
 
+rules
+
   // capture the matched term, or (FIXME) the first term in the list in term__ 
   normalize-term-match:
     CGenMatchRule(name,pattern,params,type,C)
       -> CGenMatchRule(name,As(<term-var>, pattern),params,type,C)
+
+rules
 
   // replace type terms with a variable and an equality constraint
   normalize-type-match:
@@ -31,17 +36,23 @@ rules
              CConj(CEqual(<type-var>,type,DefaultMessage()),C))
     where <not(is-var)> type
 
+rules
+
   // assign type to term, if it is not a list
   normalize-term-type:
     CGenMatchRule(name,pattern,param,Type(type),C)
       -> CGenMatchRule(name,pattern,param,Type(type),
              CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C))
-    where <outermost-term-pattern(not(?List(_) + ?ListTail(_,_)))> pattern
+    where <not(outermost-list-pattern)> pattern
+
+rules
 
   // create default error message
   normalize-message:
     DefaultMessage() ->
       Message(Error(),Default(),DefaultIndex())
+
+rules
 
   // get index from occurrence, if name is from AST
   normalize-index:

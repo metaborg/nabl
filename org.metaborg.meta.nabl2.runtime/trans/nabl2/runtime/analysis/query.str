@@ -1,0 +1,25 @@
+module nabl2/runtime/analysis/query
+
+imports
+
+  nabl2/runtime/analysis/-
+
+signature
+  sorts ASTMetadata constructors
+    Type   : ASTMetadata
+    Params : ASTMetadata
+
+rules
+
+  get-analysis = prim("SG_get_analysis")
+
+  get-params = get-ast-metadata(|Params())
+
+  set-params(|params) = set-ast-metadata(|Params(), params)
+  
+  get-type = get-ast-metadata(|Type())
+
+  set-type(|type) = set-ast-metadata(|Type(), type)
+  
+  get-ref = fail
+

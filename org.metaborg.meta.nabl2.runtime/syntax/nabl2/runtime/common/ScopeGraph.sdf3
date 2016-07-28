@@ -18,10 +18,10 @@ context-free syntax
  
   ScopeDef.S = <
     {
-      decls        = <{Occurrence ", "}*>
-      refs         = <{Occurrence ", "}*>
-      direct edges = <{DirectEdgeEntry ", "}*>
-      named edges  = <{NamedEdgeEntry ", "}*>
+      decls        = <{Occurrence ",\n"}*>
+      refs         = <{Occurrence ",\n"}*>
+      direct edges = <{DirectEdgeEntry ",\n"}*>
+      named edges  = <{NamedEdgeEntry ",\n"}*>
     }
   >
  

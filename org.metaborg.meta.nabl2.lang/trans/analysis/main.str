@@ -2,8 +2,6 @@ module analysis/main
 
 imports
 
-  libstratego-sglr // for amb(_)
-
   analysis/-
   pp
 
@@ -12,18 +10,29 @@ rules
   editor-analyze:
     (source-ast,_,_) -> result
     with
-      result := <analyze> source-ast
-      
-  analyze =
+      result := <analyze-file> source-ast
+ 
+  analyze-file =
     ?ast;
-    analyzed-ast := <normalize> ast;
-    error* := <collect-messages(analysis-error)> analyzed-ast;
-    warning* := <collect-messages(analysis-warning)> analyzed-ast;
-    note* := <collect-messages(analysis-note)> analyzed-ast;
-    !(analyzed-ast, error*, warning*, note*)
+    {| AddError, AddWarning, AddNote :
+      errors := <new-iset>;
+      warnings := <new-iset>;
+      notes := <new-iset>;
+      rules(
+        AddError:   error -> <iset-add(|error)> errors
+        AddWarning: warning -> <iset-add(|warning)> warnings
+        AddNote:    note -> <iset-add(|note)> notes
+      );
+      analyzed-ast := <normalize> ast;
+      <topdown(try(analysis-rule))> analyzed-ast;
+      error* := <iset-elements> errors;
+      warning* := <iset-elements> warnings;
+      note* := <iset-elements> notes;
+      <iset-destroy> errors;
+      <iset-destroy> warnings;
+      <iset-destroy> notes;
+      !(analyzed-ast, error*, warning*, note*)
+    |}
  
-  collect-messages(s) =  collect-all(s ; (is-list<+MkSingleton)) ; concat
- 
-  analysis-error = fail
-  analysis-warning = fail
-  analysis-note = fail
+  analysis-rule = fail
+

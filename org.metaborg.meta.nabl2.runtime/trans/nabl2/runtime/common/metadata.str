@@ -1,0 +1,14 @@
+module nabl2/runtime/common/metadata
+
+imports
+
+  nabl2shared
+
+rules
+
+  // set-ast-data(|Key,Value) : ASTNode -> ASTNode
+  set-ast-metadata(|key,value) = prim("SG_set_ast_metadata",key,value)
+
+  // get-ast-data(|Key) : ASTNode -> Value
+  get-ast-metadata(|key) = prim("SG_get_ast_metadata",key)
+

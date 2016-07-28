@@ -21,10 +21,9 @@ rules
 
   rule-to-str:
     CGenInitRule(params,type,constraint)
-      -> RDefNoArgs(<rule-name> "init",
-           Rule(<term-var>, Tuple([<params-var>, <constraint-var>]), clause*))
+      -> RDefT(<rule-name> "init",[],[<source-var>],
+           Rule(<term-var>, <constraint-var>, clause*))
     with
-      debug-str := Strat |[ try(<concat-strings;debug-generate-constraint> ["init"]) ]|;
       new-scope-var* := <all-new-vars> constraint;
       new-scope-str := <new-scope-str> new-scope-var*;
       used-var* := <all-vars> (params,type,constraint);
@@ -33,33 +32,57 @@ rules
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
-        params-str := |[ ~<params-var> := (~params-term,~type-term) ]|
+        metadata-str := |[
+          <set-params(|~params-term);
+           set-type(|~type-term)> ~<term-var>
+        ]|;
+        debug-str := Strat |[ try(<concat-strings;debug-generate-constraint> ["init ^(",<pp-Term> ~params-term,") : ",<pp-Term> ~type-term]) ]|
       else
-        params-str := |[ ~<params-var> := ~params-term ]|
+        metadata-str := |[
+          <set-params(|~params-term)> ~<term-var>
+        ]|;
+        debug-str := Strat |[ try(<concat-strings;debug-generate-constraint> ["init ^ (",<pp-Term> ~params-term,")"]) ]|
       end;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
       clause* := [
-        With(debug-str),
         With(new-scope-str),
         With(new-var-str),
         With(constraint-str),
-        With(params-str)
+        With(metadata-str),
+        With(debug-str)
       ]
  
   rule-to-str:
     CGenMatchRule(Name(name),pattern,params,type,constraint)
-      -> RDefT(<rule-name> name,[],[<params-var>],
+      -> RDefT(<rule-name> name,[],[<source-var>,<params-var>],
            Rule(pattern, <constraint-var>, clause*))
     with
       if Type(type') := type then
         params-pattern := <explode(injection-to-pattern)> Tuple([params,type']);
+        params-str := |[
+          ~params-pattern := ~<params-var>
+        ]|;
+        metadata-str := |[
+          <set-params(|<Fst> ~<params-var>);
+           set-type(|<Snd> ~<params-var>)> ~<term-var>
+        ]|;
         debug-str := |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<Fst;pp-Term> ~<params-var>,") : ",<Snd;pp-Term> ~<params-var>]) ]|
       else
         params-pattern := <explode(injection-to-pattern)> params;
+        params-str := |[
+          ~params-pattern := ~<params-var>
+        ]|;
+        metadata-str := |[
+          <set-params(|~<params-var>)> ~<term-var>
+        ]|;
         debug-str := |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<pp-Term> ~<params-var>,")"]) ]|
       end;
-      params-str := |[ ~params-pattern := ~<params-var> ]|;
+      if <outermost-list-pattern> pattern then
+        safe-metadata-str := |[ id ]|
+      else
+        safe-metadata-str := metadata-str
+      end;
       params-string := Str(<pp-stratego-string> params-pattern);
       guarded-params-str := |[ ~params-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~params-string," with actual ",<pp-Term> ~<params-var>, "."]) ]|;
       new-scope-var* := <all-new-vars> constraint;
@@ -75,7 +98,8 @@ rules
         With(guarded-params-str),
         With(new-scope-str),
         With(new-var-str),
-        With(constraint-str)
+        With(constraint-str),
+        With(safe-metadata-str)
       ]
  
   rule-name =
@@ -85,10 +109,10 @@ rules
     collect-all(\ New(v*) -> v* \) ; concat
 
   new-var-str =
-    mapseq({\ v -> |[ ~v := <new-var> ~n ]| with n := Str(<var-name> v) \})
+    mapseq({\ v -> |[ ~v := <new-var(|~<source-var>)> ~n ]| with n := Str(<var-name> v) \})
 
   new-scope-str =
-    mapseq(\ v -> |[ ~v := <new-scope> ]| \)
+    mapseq(\ v -> |[ ~v := <new-scope(|~<source-var>)> ]| \)
  
   var-name:
     Var(name) -> name 
@@ -111,7 +135,7 @@ rules
       else
         recurse-arg := params-term
       end;
-      recurse-str := CallT(SVar("generate-constraint"),[SVar(<rule-name> name)],[recurse-arg])
+      recurse-str := CallT(SVar("generate-constraint"),[SVar(<rule-name> name)],[<source-var>,recurse-arg])
 
   new-to-term(e):
     New(_) -> <e> CTrue()
