@@ -112,7 +112,7 @@ rules
     mapseq({\ v -> |[ ~v := <new-var(|~<source-var>)> ~n ]| with n := Str(<var-name> v) \})
 
   new-scope-str =
-    mapseq(\ v -> |[ ~v := <new-scope(|~<source-var>)> ]| \)
+    mapseq({\ v -> |[ ~v := <new-scope(|~<source-var>)> ~n ]| with n := Str(<var-name> v) \})
  
   var-name:
     Var(name) -> name 
@@ -135,7 +135,8 @@ rules
       else
         recurse-arg := params-term
       end;
-      recurse-str := CallT(SVar("generate-constraint"),[SVar(<rule-name> name)],[<source-var>,recurse-arg])
+      recurse-str := CallT(SVar("generate-constraint"),
+          [SVar(<rule-name> name)],[<source-var>,recurse-arg])
 
   new-to-term(e):
     New(_) -> <e> CTrue()

@@ -5,6 +5,7 @@ imports
   nabl2shared
   
   signatures/common/-
+  generation/-
   util/-
   
 rules
@@ -17,7 +18,7 @@ rules
   injection-to-term(e) = Str(id)
   injection-to-term(e) = Int(id)
   injection-to-term(e):
-    ASTIndexFromTerm(t) -> Term |[ <get-ast-index> ~t ]|
+    ASTIndexFromTerm(t) -> Term |[ <get-ast-index-or-default(|~<source-var>)> ~t ]|
  
 
   injection-to-pattern(e) = Wld()

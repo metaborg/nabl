@@ -25,25 +25,25 @@ signature
 rules
 
   analyze(pre): Initialize(source,global) -> C
-    with <debug> ">>> Initializing <<<"
+    with <debug> $[>>> Initializing [source] <<<]
     with report-time(
       C := <generate-constraint-init(|source)> global
     )
 
   analyze(pre): IndexAST(source,ast) -> ast'
-    with <debug> ">>> Indexing AST <<<"
+    with <debug> $[>>> Indexing AST [source] <<<]
     with report-time(
       ast' := <index-ast(|source)> ast
     )
 
   analyze(pre): PreprocessAST(source,ast) -> ast'
-    with <debug> ">>> Preprocessing AST <<<"
+    with <debug> $[>>> Preprocessing AST [source] <<<]
     with report-time(
       ast' := <pre> ast
     )
   
   analyze(pre): GenerateConstraint(source,ast,params) -> C
-    with <debug> ">>> Generating constraints <<<"
+    with <debug> $[>>> Generating constraints [source] <<<]
     with report-time(
       C := <generate-constraint-file(|source,params);normalize-constraint> ast
     )

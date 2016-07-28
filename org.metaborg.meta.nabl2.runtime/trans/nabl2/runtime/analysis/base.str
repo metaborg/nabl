@@ -6,6 +6,7 @@ imports
   runtime/editor/origins
 
   nabl2shared
+  nabl2runtime
 
 rules // ast indices
 
@@ -16,16 +17,19 @@ rules // ast indices
 	    rules( NodeIndex: _ -> <next-counter> node-counter );
 	    <bottomup(
 	       is-list
-	    <+ \ t -> <add-annotation(|<copy-origin(|t)> ASTIndex(source,<NodeIndex>))> t \
+	    <+ \ t -> <add-annotation(|<copy-origin(|t)> I(source,<NodeIndex>))> t \
 	     )> ast
     |}
 
-  get-ast-index =
-    get-annotation(?ASTIndex(_,_))
- <+ warn(|"Cannot get AST index");
-    !ASTIndex("FAKE", <next-random>)
+  is-ast-index = ?I(_,_)
 
-  has-ast-index = where(get-annotation(?ASTIndex(_,_)))
+  get-ast-index =
+    get-annotation(is-ast-index)
+
+  get-ast-index-or-default(|source) =
+    get-ast-index <+ !I(source,())
+
+  has-ast-index = where(get-annotation(is-ast-index))
 
   set-ast-index(|idx) = add-annotation(|idx)
 

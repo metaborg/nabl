@@ -6,7 +6,7 @@ imports
 
 context-free syntax
 
-  ASTIndex.ASTIndex = <@<String>:<NodeIndex>>
+  ASTIndex.I = <@<String>.<NodeIndex>>
   
   NodeIndex = Int
   NodeIndex = "-"

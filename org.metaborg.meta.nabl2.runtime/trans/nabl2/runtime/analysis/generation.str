@@ -34,7 +34,7 @@ rules // top-level functions that are called during analysis
 rules
 
   new-var(|source)   = (is-string <+ !"v") => n ; !Var($[[source]'[n]'[<NewVar;int-to-string>]])
-  new-scope(|source) = !Scope($[[source]'[<NewScope;int-to-string>]])
+  new-scope(|source) = (is-string <+ !"s") => n ; !Scope($[[source]'[n]'[<NewScope;int-to-string>]])
 
   // signatures of the generated rules
   generate-constraint-init-rule(|source) = fail
