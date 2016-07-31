@@ -17,12 +17,10 @@ context-free syntax
       <{ResolutionParam "\n"}*>
   > {longest-match}
 
-  ResolutionParam.Labels = <labels <{Label ","}*>>
-  ResolutionParam.Order  = <order <{LabelOrder ","}*>>
-  ResolutionParam.WF     = <well-formedness <LabelRE>>
+  ResolutionParam.Labels     = <labels <{Label ","}*>>
+  ResolutionParam.Order      = <order <{LabelOrder ","}*>>
+  ResolutionParam.WF         = <well-formedness <LabelRE>>
 
 lexical syntax
 
   SectionKeyword = "name-resolution" | "parameters"
-
- 

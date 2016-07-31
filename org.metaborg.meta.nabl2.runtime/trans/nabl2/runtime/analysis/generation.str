@@ -49,9 +49,9 @@ rules
   generate-constraint-placeholder(|params): term -> CTrue()
     where <is-SDF-placeholder> term
     with if (scopes,type) := params then
-      <set-params(|scopes);set-type(|type)> term
+      <set-ast-params(|scopes);set-ast-type(|type)> term
     else
-      <set-params(|params)> term
+      <set-ast-params(|params)> term
     end
 
   debug-generate-constraint = fail

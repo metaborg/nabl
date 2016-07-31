@@ -7,7 +7,7 @@ imports
   signatures/common/-
   generation/-
   util/-
-  
+ 
 rules
 
   injection-to-term(e) = Var(id)

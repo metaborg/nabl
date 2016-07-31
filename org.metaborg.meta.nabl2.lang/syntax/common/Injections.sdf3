@@ -3,6 +3,7 @@ module common/Injections
 imports
 
   nabl2/shared/common/Names
+  nabl2/shared/common/Terms
   nabl2/shared/common/Vars
   
   common/Types
@@ -14,3 +15,4 @@ context-free syntax
   ASTIndex.DefaultIndex     =
   ASTIndex.ASTIndexFromTerm = <@<Var>>
 
+  Constraint.CTypeAndValueOf  = [[Occurrence] : [TypeTerm] := [Term] [Message]]

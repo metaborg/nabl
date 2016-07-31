@@ -13,13 +13,12 @@ rules
 
   get-analysis = prim("SG_get_analysis")
 
-  get-params = get-ast-metadata(|Params())
+  get-ast-params = get-ast-metadata(|Params())
 
-  set-params(|params) = set-ast-metadata(|Params(), params)
+  set-ast-params(|params) = set-ast-metadata(|Params(), params)
   
-  get-type = get-ast-metadata(|Type())
+  get-ast-type = get-ast-metadata(|Type())
 
-  set-type(|type) = set-ast-metadata(|Type(), type)
-  
-  get-ref = fail
+  set-ast-type(|type) = set-ast-metadata(|Type(), type)
 
+  get-ast-ref = get-ast-refs ; Hd

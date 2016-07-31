@@ -15,11 +15,13 @@ context-free syntax
   Comparable     = Scope
  
   Occurrence            = Var
-  Occurrence.Occurrence = <<Namespace>{<Term> <ASTIndex>}>
+  Occurrence.Occurrence = <<NamespaceRef>{<Term> <ASTIndex>}>
   Comparable            = Occurrence
 
-  Namespace.Default   =
-  Namespace.Namespace = NamespaceId
+  Namespace.Namespace  = NamespaceId
+
+  NamespaceRef         = Namespace
+  NamespaceRef.Default =
 
   Label.Label    = LabelId
 

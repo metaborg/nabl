@@ -29,36 +29,35 @@ rules
            msg' := msg
          end
 
-  add-messages(s|msginfo*): sol-wm -> sol-wm'
-    with sol-wm' := <foldr(!sol-wm,add-message-step(s))> msginfo*
+  add-messages(s|msginfo*): sol -> sol'
+    with sol' := <foldr(!sol,add-message-step(s))> msginfo*
 
-  add-message(s|msginfo): sol-wm -> sol-wm'
+  add-message(s|msginfo): sol -> sol'
     with Message(kind,msg,pos) := <s> msginfo
     where <is-list> pos
-    with sol-wm' := <map(!Message(kind,msg,<id>));
-                     foldr(!sol-wm,add-message-step(s))> pos
+    with sol' := <map(!Message(kind,msg,<id>));
+                  foldr(!sol,add-message-step(s))> pos
 
-  add-message(s|msginfo): sol-wm -> sol-wm'
+  add-message(s|msginfo): sol -> sol'
     with Message(kind,msg,pos) := <s> msginfo
     where <not(is-list)> pos
-    with msg'    := <pp-MessageContent> msg;
-         sol-wm' := <add-message> (kind,(pos,msg'),sol-wm)
+    with msg' := <pp-MessageContent> msg;
+         sol' := <add-message> (kind,(pos,msg'),sol)
 
   add-message-step(s) = ?(msginfo,<id>) ; add-message(s|msginfo)
 
-  add-message: (Error(), error, sol-wm) -> <add-error(|error)> sol-wm
-  add-message: (Warning(), warning, sol-wm) -> <add-warning(|warning)> sol-wm
-  add-message: (Note(), note, sol-wm) -> <add-note(|note)> sol-wm
+  add-message: (Error(), error, sol) -> <sol-add-error(|error)> sol
+  add-message: (Warning(), warning, sol) -> <sol-add-warning(|warning)> sol
+  add-message: (Note(), note, sol) -> <sol-add-note(|note)> sol
 
 rules
 
-  postprocess-errors(|rn*): (sol-wm,c*) -> sol-wm'
-  with <fromWM> sol-wm => sol
-     ; <sol-p;free-var-messages> sol => fmsg*
+  postprocess-errors(|rn*): (sol,c*) -> sol'
+  with  <sol-t;free-var-messages> sol => fmsg*
      ; <map({?c;get-constraint-message;detail-message(|"Unsolved")})> c* => umsg*
-     ; <add-messages(id|[fmsg*,umsg*])> sol-wm
+     ; <add-messages(id|[fmsg*,umsg*])> sol
      ; unresolved-refs(|rn*)
-     ; wm-nub => sol-wm'
+     ; ?sol'
 
   free-var-messages =
     all-vars; map(!Message(Warning(),["Free variable ",<id>],<id>))

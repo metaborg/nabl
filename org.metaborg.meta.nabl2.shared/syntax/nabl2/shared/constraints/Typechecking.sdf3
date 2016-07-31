@@ -6,12 +6,11 @@ imports
   nabl2/shared/common/Messages
   nabl2/shared/common/Names
   nabl2/shared/common/Types
-  nabl2/shared/common/Vars
+  nabl2/shared/common/Terms
 
 context-free syntax
 
-  Constraint.CTypeOf = [[Typeable] : [TypeTerm] [Message]]
-  
-  Typeable = ASTIndex
-  Typeable = Occurrence
+  Constraint.CTypeOf  = [[Occurrence] : [TypeTerm] [Message]]
 
+  Constraint.CValueOf = [[Occurrence] := [Term]]
+ 

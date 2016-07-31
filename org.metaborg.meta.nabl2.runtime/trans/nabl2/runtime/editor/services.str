@@ -8,8 +8,8 @@ imports
 rules
 
   editor-resolve: (node, position, ast, path, project-path) -> decl
-    where decl := <get-ref> node
+    where decl := <get-ast-ref> node
 
   editor-hover: (node, position, ast, path, project-path) -> label
-    where type := <get-type;pp-TypeTerm;xmlencode> node
+    where type := <get-ast-type;pp-TypeTerm;xmlencode> node
     with  label := $[Type: [type]]

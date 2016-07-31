@@ -15,7 +15,7 @@ rules
   normalize =
     try(sometd(normalize-term-match));
     try(sometd(normalize-type-match));
-    try(sometd(normalize-term-type));
+    try(sometd(normalize-constraints));
     try(sometd(normalize-message));
     try(sometd(normalize-index <+ normalize-default-index));
     try(sometd(normalize-rule-names))
@@ -36,14 +36,6 @@ rules
              CConj(CEqual(<type-var>,type,DefaultMessage()),C))
     where <not(is-var)> type
 
-rules
-
-  // assign type to term, if it is not a list
-  normalize-term-type:
-    CGenMatchRule(name,pattern,param,Type(type),C)
-      -> CGenMatchRule(name,pattern,param,Type(type),
-             CConj(CTypeOf(DefaultIndex(),type,DefaultMessage()),C))
-    where <not(outermost-list-pattern)> pattern
 
 rules
 
@@ -67,3 +59,9 @@ rules
   // set default name for anonymous rules
   normalize-rule-names:
     NoName() -> Name(<default-rule-name>)
+
+rules
+
+  normalize-constraints:
+    CTypeAndValueOf(occ,type,value,msg) ->
+      CConj(CTypeOf(occ,type,msg),CValueOf(occ,value))

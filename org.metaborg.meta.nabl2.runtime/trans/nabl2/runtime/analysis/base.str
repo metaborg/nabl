@@ -26,6 +26,9 @@ rules // ast indices
   get-ast-index =
     get-annotation(is-ast-index)
 
+  get-ast-source =
+    get-annotation(?I(<id>,_))
+
   get-ast-index-or-default(|source) =
     get-ast-index <+ !I(source,())
 
@@ -36,6 +39,8 @@ rules // ast indices
   get-ast-metadata(|key) = prim("SG_get_ast_metadata", key)
 
   set-ast-metadata(|key,value) = prim("SG_set_ast_metadata", key, value)
+
+  get-ast-refs = prim("SG_get_ast_references")
 
 rules // origins
 

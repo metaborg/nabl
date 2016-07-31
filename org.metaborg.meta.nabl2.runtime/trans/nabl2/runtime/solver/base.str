@@ -16,7 +16,7 @@ rules
 	
 rules
 
-  initial-solution = sol-new;pureWM
+  initial-solution = sol-new
 
   solve-constraints-phase1: c* -> s
   with
@@ -30,22 +30,21 @@ rules
                 , solve-constraint
                 )> c*
 
-  solve-specialise: (sol-wm,c) -> res
-  with <fromWM;sol-s> sol-wm => s*
-     ; <fromWM> sol-wm => sol
+  solve-specialise: (sol,c) -> res
+  with <sol-s> sol => s*
      ; <S-apply(is-var)> (s*,c) => c'
      ; {| ReduceErrors:
             rules(ReduceErrors : _ -> [])
-          ; <bottomup(try(reduce-op(|sol-wm)))> c' => c''
+          ; <bottomup(try(reduce-op(|sol)))> c' => c''
           ; re* := <ReduceErrors>
           ; if [] := re*
             then
-              !(sol-wm,c'')
+              !(sol,c'')
             else
               msg' := <get-constraint-message> c'
             ; msg'' := <foldr(!msg',{ ?(re,<id>) ; detail-message(|re) })> re*
-            ; sol-wm' := <add-message(id|msg'')> sol-wm
-            ; !(sol-wm',CTrue())
+            ; sol' := <add-message(id|msg'')> sol
+            ; !(sol',CTrue())
             end
        |} => res
 
@@ -54,15 +53,15 @@ rules
 
 rules
  
-  solve-constraint: (CTrue(),sol-wm) -> [(sol-wm,[])]
-  solve-constraint: (CFalse(msginfo),sol-wm) -> [(sol-wm',[])]
-    with msg     := "False never succeeds";
-         sol-wm' := <add-message(default-message(|msg)|msginfo)> sol-wm
+  solve-constraint: (CTrue(),sol) -> [(sol,[])]
+  solve-constraint: (CFalse(msginfo),sol) -> [(sol',[])]
+    with msg  := "False never succeeds";
+         sol' := <add-message(default-message(|msg)|msginfo)> sol
 
-  solve-fact: (CConj(c*),sol-wm) -> [(sol-wm,c*)]
+  solve-fact: (CConj(c*),sol) -> [(sol,c*)]
 
-  solve-constraint: (CConj(c*),sol-wm) -> [(sol-wm,c*)]
-  solve-constraint: (CDisj(c*),sol-wm) -> <map(\ c -> (sol-wm,c) \)> c*
+  solve-constraint: (CConj(c*),sol) -> [(sol,c*)]
+  solve-constraint: (CDisj(c*),sol) -> <map(\ c -> (sol,c) \)> c*
   
   constraint-priority: CTrue() -> 0
   constraint-priority: CFalse(_) -> 0
@@ -77,7 +76,7 @@ rules
 
 rules
  
-  debug-solve(s): i@(c,sol-wm) -> o*
+  debug-solve(s): i@(c,sol) -> o*
     with <debug> $[solve [<pp-Constraint> c]]
     where if o* := <s> i then
             <with(map(Snd;debug;map(pp-Constraint);debug(!"--> ")))> o*
