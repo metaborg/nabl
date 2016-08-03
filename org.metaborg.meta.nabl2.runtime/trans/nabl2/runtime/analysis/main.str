@@ -67,25 +67,28 @@ rules
       ]
     )
     with <debug> ">>> Processing solutions <<<"
-    with report-time(
+    where report-time(
+    with(
       sol* := <qsort((sol-e;length,sol-e;length);lt)> sol3*;
       analysis2* := <Hd> sol*;
       (good,bad) := <partition(not(is-erronious));(length,length)> sol*;
       with(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
-    )
-    where
+    );
+    where(
       sol := <Hd> sol*
-    with
+    );
+    with(
       error* := <sol-e;mapv(xmlencode)> sol;
       warning* := <sol-w;mapv(xmlencode)> sol;
       note* := <sol-n;mapv(xmlencode)> sol;
-      resolution := <sol-r;map((occurrence-index,Fst;occurrence-index))> sol;
+      resolution := <sol-r;filter(not(?(_,None())));map((occurrence-index,Fst;occurrence-index))> sol;
       analysis := [
         analysis1*,
         analysis2*,
         AlternativeSolutions(<Tl;map-with-index(id)> sol*)
       ];
       S := (error*, warning*, note*, resolution, analysis)
+    ))
 
   analyze(pre) = fatal-err(|"Unknown analysis action")
 
