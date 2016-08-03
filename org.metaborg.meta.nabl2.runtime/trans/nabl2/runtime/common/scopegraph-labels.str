@@ -3,7 +3,7 @@ module nabl2/runtime/common/scopegraph-labels
 imports
 
   nabl2shared
-
+  
 rules
 
   labels    = <conc;make-set> (<custom-labels<+![]>,<default-labels>)

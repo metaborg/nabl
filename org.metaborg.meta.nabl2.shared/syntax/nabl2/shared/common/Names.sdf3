@@ -15,7 +15,7 @@ context-free syntax
   Comparable     = Scope
  
   Occurrence            = Var
-  Occurrence.Occurrence = <<NamespaceRef>{<Term> <ASTIndex>}>
+  Occurrence.Occurrence = <<NamespaceRef>{<Term> <TermIndex>}>
   Comparable            = Occurrence
 
   Namespace.Namespace  = NamespaceId

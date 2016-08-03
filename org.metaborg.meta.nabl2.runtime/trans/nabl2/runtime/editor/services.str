@@ -3,6 +3,7 @@ module nabl2/runtime/editor/services
 imports
 
   nabl2/runtime/analysis/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/pp
 
 rules

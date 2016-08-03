@@ -49,12 +49,12 @@ rules
   // get index from occurrence, if name is from AST
   normalize-index:
     Occurrence(ns,name,DefaultIndex()) ->
-      Occurrence(ns,name,ASTIndexFromTerm(name))
+      Occurrence(ns,name,IndexFromTerm(name))
     where <is-var> name
 
   // get index from matched term
   normalize-default-index:
-    DefaultIndex() -> ASTIndexFromTerm(<term-var>)
+    DefaultIndex() -> IndexFromTerm(<term-var>)
 
   // set default name for anonymous rules
   normalize-rule-names:

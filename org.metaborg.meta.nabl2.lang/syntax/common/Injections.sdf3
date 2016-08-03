@@ -12,7 +12,7 @@ context-free syntax
 
   Message.DefaultMessage    =
 
-  ASTIndex.DefaultIndex     =
-  ASTIndex.ASTIndexFromTerm = <@<Var>>
+  TermIndex.DefaultIndex     =
+  TermIndex.IndexFromTerm = <@<Var>>
 
   Constraint.CTypeAndValueOf  = [[Occurrence] : [TypeTerm] := [Term] [Message]]

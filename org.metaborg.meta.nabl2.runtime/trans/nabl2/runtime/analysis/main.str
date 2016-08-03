@@ -16,7 +16,6 @@ imports
 signature
   sorts AnalysisAction constructors
     Initialize : String * Term -> AnalysisAction
-    IndexAST : String * Term -> AnalysisAction
     PreprocessAST : String * Term -> AnalysisAction
     GenerateConstraint : String * Term * List(Scope) -> AnalysisAction
     NormalizeConstraint : Constraint -> AnalysisAction
@@ -28,12 +27,6 @@ rules
     with <debug> $[>>> Initializing [source] <<<]
     with report-time(
       C := <generate-constraint-init(|source)> global
-    )
-
-  analyze(pre): IndexAST(source,ast) -> ast'
-    with <debug> $[>>> Indexing AST [source] <<<]
-    with report-time(
-      ast' := <index-ast(|source)> ast
     )
 
   analyze(pre): PreprocessAST(source,ast) -> ast'

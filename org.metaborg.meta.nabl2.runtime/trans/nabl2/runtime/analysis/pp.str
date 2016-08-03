@@ -2,6 +2,8 @@ module nabl2/runtime/analysis/pp
 
 imports
 
+  nabl2shared
+  
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/solver/-
@@ -40,4 +42,4 @@ rules
       CDisj(filter(not(hide-constraint)))
     ))
 
-  hide-constraint = ?CTypeOf(<is-ASTIndex>,_,_)
+  hide-constraint = fail

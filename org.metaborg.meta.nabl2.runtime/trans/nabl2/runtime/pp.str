@@ -3,7 +3,6 @@ module nabl2/runtime/pp
 imports
 
   nabl2shared
-  nabl2/runtime/prelude/-
   pp/nabl2/runtime/analysis/-
   pp/nabl2/runtime/common/-
   pp/nabl2/runtime/solver/-

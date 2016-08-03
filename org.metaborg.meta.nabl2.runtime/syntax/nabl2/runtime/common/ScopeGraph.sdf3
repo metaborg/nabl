@@ -28,8 +28,6 @@ context-free syntax
   DirectEdgeEntry = <<PathLabel>/<Scope>>
   NamedEdgeEntry = <<PathLabel>/<Occurrence>>
 
-  AssocEntry = <<Associable> : <{AssocValue ", "}*>>
+  AssocEntry = <<Occurrence> : <{AssocValue ", "}*>>
   AssocValue = <<PathLabel>/<Scope>>
-  Associable = Occurrence
-  Associable = ASTIndex
 

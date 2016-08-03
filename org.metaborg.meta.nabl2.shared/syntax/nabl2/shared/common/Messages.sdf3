@@ -20,7 +20,7 @@ context-free syntax
   MessageContent.Default   =
   MessageContent           = StringTerm
 
-  MessagePosition          = ASTIndex
+  MessagePosition          = TermIndex
 
 syntax
 
