@@ -1,4 +1,4 @@
-module modules/CGenRules
+module rules/CGen
 
 imports
  
@@ -10,6 +10,7 @@ imports
 
   common/Identifiers
   common/Types
+  rules/Rules
 
 template options
 
@@ -17,24 +18,15 @@ template options
 
 context-free syntax
 
-  ModuleSection.CGenRules = <
-    constraint-generation rules
- 
-      <{CGenRule "\n"}*>
-  > {longest-match}
-
-  CGenRule.CGenInitRule = <
+  Rule.CGenInitRule = <
     init <CGenParamsTerm> <CGenTypeTerm> :=
         <Constraint>.
   >
 
-  CGenRule.CGenMatchRule = <
-    <CGenName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+  Rule.CGenMatchRule = <
+    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
         <Constraint>.
   >
-
-  CGenName.NoName      =
-  CGenName.Name        = RuleId
 
 context-free syntax
 
@@ -50,13 +42,13 @@ context-free syntax
 
 context-free syntax
 
-  Constraint.CGenRecurse = <<CGenName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  Constraint.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
   Constraint.New         = <new <{Var " "}+>>
 
 lexical syntax
 
-  SectionKeyword = "constraint" | "generation" | "rules"
+  SectionKeyword = "constraint-generation" | "rules"
   Keyword        = "new"
 
  

@@ -1,0 +1,25 @@
+module signatures/Rules
+
+imports
+
+  nabl2/shared/common/Terms
+  rules/Rules
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Signature.Rules = <
+    rules
+      <{RuleSig "\n"}*>
+  >
+  
+  RuleSig.RuleSig = <<RuleName> [[ <Sort> ]] <RuleSigParams> <RuleSigType>>
+ 
+  RuleSigParams   = <^ (<{Sort ","}*>)>
+
+  RuleSigType.NoType = <>
+  RuleSigType.Type   = <: *>
+

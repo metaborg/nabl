@@ -1,4 +1,4 @@
-module modules/Modules
+module modules/Module
 
 template options
 

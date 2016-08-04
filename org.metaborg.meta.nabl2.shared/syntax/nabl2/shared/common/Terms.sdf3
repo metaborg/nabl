@@ -39,3 +39,15 @@ context-free syntax
   Pattern.Tuple    = <(<{Pattern ","}*>)>
   Pattern.As       = <<Var>@<Pattern>>
 
+context-free syntax
+
+  Sort            = SortVar
+  Sort.SortNoArgs = SortId
+  Sort.Sort       = <<SortId>(<{Sort ","}*>)>
+
+lexical syntax
+
+  SortVar.Var     = VarId
+  SortId          = OpId
+  
+  

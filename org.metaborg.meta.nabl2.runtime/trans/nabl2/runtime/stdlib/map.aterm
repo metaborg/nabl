@@ -1,0 +1,117 @@
+Module(
+  "nabl2/runtime/stdlib/map"
+, [ Signature([])
+  , Rules([])
+  , Rules(
+      [ CGenMatchRule(
+          Name("Map1")
+        , ListTail([Var("x")], Var("xs"))
+        , List([Var("s")])
+        , NoType()
+        , CConj(
+            CGenRecurse(
+              NoName()
+            , Var("x")
+            , List([Var("s")])
+            , NoType()
+            )
+          , CGenRecurse(
+              Name("Map1")
+            , Var("xs")
+            , List([Var("s")])
+            , NoType()
+            )
+          )
+        )
+      , CGenMatchRule(
+          Name("Map1")
+        , List([])
+        , List([Var("s")])
+        , NoType()
+        , CTrue()
+        )
+      , CGenMatchRule(
+          Name("Map1T")
+        , ListTail([Var("x")], Var("xs"))
+        , List([Var("s")])
+        , Type(Tuple([Var("ty"), Var("tys")]))
+        , CConj(
+            CGenRecurse(
+              NoName()
+            , Var("x")
+            , List([Var("s")])
+            , Type(Var("ty"))
+            )
+          , CGenRecurse(
+              Name("Map1T")
+            , Var("xs")
+            , List([Var("s")])
+            , Type(Var("tys"))
+            )
+          )
+        )
+      , CGenMatchRule(
+          Name("Map1T")
+        , List([])
+        , List([Var("s")])
+        , Type(Tuple([]))
+        , CTrue()
+        )
+      , CGenMatchRule(
+          Name("Map2")
+        , ListTail([Var("x")], Var("xs"))
+        , List([Var("s1"), Var("s2")])
+        , NoType()
+        , CConj(
+            CGenRecurse(
+              NoName()
+            , Var("x")
+            , List([Var("s1"), Var("s2")])
+            , NoType()
+            )
+          , CGenRecurse(
+              Name("Map2")
+            , Var("xs")
+            , List([Var("s1"), Var("s2")])
+            , NoType()
+            )
+          )
+        )
+      , CGenMatchRule(
+          Name("Map2")
+        , List([])
+        , List([Var("s1"), Var("s2")])
+        , NoType()
+        , CTrue()
+        )
+      , CGenMatchRule(
+          Name("Map2T")
+        , ListTail([Var("x")], Var("xs"))
+        , List([Var("s1"), Var("s2")])
+        , Type(Tuple([Var("ty"), Var("tys")]))
+        , CConj(
+            CGenRecurse(
+              NoName()
+            , Var("x")
+            , List([Var("s1"), Var("s2")])
+            , Type(Var("ty"))
+            )
+          , CGenRecurse(
+              Name("Map2T")
+            , Var("xs")
+            , List([Var("s1"), Var("s2")])
+            , Type(Var("tys"))
+            )
+          )
+        )
+      , CGenMatchRule(
+          Name("Map2T")
+        , List([])
+        , List([Var("s1"), Var("s2")])
+        , Type(Tuple([]))
+        , CTrue()
+        )
+      ]
+    )
+  ]
+)

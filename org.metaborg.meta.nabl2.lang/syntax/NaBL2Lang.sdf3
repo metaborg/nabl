@@ -8,11 +8,10 @@ imports
   common/Injections
   common/Layout
 
-  modules/CGenRules
-  modules/Modules
-  modules/ResolutionParams
-  modules/TypeSignature
-  
+  modules/Module
+  signatures/Signature
+  rules/Rules
+
 context-free start-symbols
 
   Start

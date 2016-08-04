@@ -1,0 +1,23 @@
+module signatures/Types
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Names
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
+  common/Sorts
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Signature.Types = <
+    types
+      <{TypeSig "\n"}*>
+  > {longest-match}
+
+  TypeSig.TypeSig         = <<SortId>(<{Sort ","}*>)>
+

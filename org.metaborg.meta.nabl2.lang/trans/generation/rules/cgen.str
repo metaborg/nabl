@@ -1,4 +1,4 @@
-module generation/cgen-rules
+module generation/rules/cgen
 
 imports
 
@@ -7,7 +7,7 @@ imports
   nabl2shared
  
   signatures/common/-
-  signatures/modules/-
+  signatures/rules/-
 
   generation/-
   util/stratego
@@ -15,7 +15,7 @@ imports
 rules
 
   section-to-str:
-    CGenRules(rule*) -> Rules(rule-str*)
+    Rules(rule*) -> Rules(rule-str*)
     with
       rule-str* := <map(rule-to-str)> rule*
 
