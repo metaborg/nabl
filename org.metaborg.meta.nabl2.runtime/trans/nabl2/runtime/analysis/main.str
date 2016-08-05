@@ -18,15 +18,16 @@ imports
 
 rules
 
-  analyze(pre): AnalyzeInitial(source) -> InitialResult((params,C))
+  analyze(pre): AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
     with <debug> $[>>> Initializing [source] <<<]
     with report-time(
       (params,C) := <generate-constraint-init(|source)> source
     )
 
-  analyze(pre): AnalyzeUnit(source,ast,(params,_)) -> UnitResult(ast',C)
+  analyze(pre): AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
     with <debug> $[>>> Preprocessing AST [source] <<<]
     with report-time(
+      params := <getfirst(?Params(<id>))> initial;
       ast' := <pre;index-ast(|source)> ast
     )
     with <debug> $[>>> Generating constraints [source] <<<]
@@ -34,9 +35,11 @@ rules
       C := <generate-constraint-file(|source,params);normalize-constraint> ast'
     )
  
-  analyze(pre): AnalyzeFinal(source,(_,C),C*) -> FinalResult(error*,warning*,note*,analysis)
+  analyze(pre): AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
     with <debug> ">>> Normalizing constraints <<<"
     with report-time(
+      C  := <getfirst(?Constraint(<id>))> initial;
+      C* := <map(getfirst(?Constraint(<id>)))> unit*;
       C' := <normalize-constraint> CConj([C|C*])
     )
     with <debug> ">>> Solving constraints <<<"

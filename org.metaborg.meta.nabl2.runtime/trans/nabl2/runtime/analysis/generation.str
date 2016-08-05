@@ -48,7 +48,6 @@ rules
     < fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> scopes] : [<pp-Term> type]])
     + fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
     )
-    
 
   generate-constraint-placeholder(|params): term -> CTrue()
     where <is-SDF-placeholder> term
