@@ -16,7 +16,7 @@ context-free syntax
       <{RuleSig "\n"}*>
   >
   
-  RuleSig.RuleSig = <<RuleName> [[ <Sort> ]] <RuleSigParams> <RuleSigType>>
+  RuleSig.RuleSig = <<RuleName> [[ <Sort> <RuleSigParams> <RuleSigType> ]]>
  
   RuleSigParams   = <^ (<{Sort ","}*>)>
 

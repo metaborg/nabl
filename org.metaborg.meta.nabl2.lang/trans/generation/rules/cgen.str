@@ -22,7 +22,7 @@ rules
   rule-to-str:
     CGenInitRule(params,type,constraint)
       -> RDefT(<rule-name> "init",[],[<source-var>],
-           Rule(<term-var>, <constraint-var>, clause*))
+           Rule(<term-var>, Tuple([<params-var>, <constraint-var>]), clause*))
     with
       new-scope-var* := <all-new-vars> constraint;
       new-scope-str := <new-scope-str> new-scope-var*;
@@ -32,15 +32,10 @@ rules
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
-        metadata-str := |[
-          <set-ast-params(|~params-term);
-           set-ast-type(|~type-term)> ~<term-var>
-        ]|;
+        params-str := |[ ~<params-var> := (~params-term,~type-term) ]|;
         debug-str := Strat |[ try(<concat-strings;debug-generate-constraint> ["init ^(",<pp-Term> ~params-term,") : ",<pp-Term> ~type-term]) ]|
       else
-        metadata-str := |[
-          <set-ast-params(|~params-term)> ~<term-var>
-        ]|;
+        params-str := |[ ~<params-var> := ~params-term ]|;
         debug-str := Strat |[ try(<concat-strings;debug-generate-constraint> ["init ^ (",<pp-Term> ~params-term,")"]) ]|
       end;
       constraint-term := <constraint-to-term> constraint;
@@ -49,7 +44,7 @@ rules
         With(new-scope-str),
         With(new-var-str),
         With(constraint-str),
-        With(metadata-str),
+        With(params-str),
         With(debug-str)
       ]
  

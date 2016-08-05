@@ -48,7 +48,6 @@ context-free syntax
 
 lexical syntax
 
-  SectionKeyword = "constraint-generation" | "rules"
   Keyword        = "new"
 
  

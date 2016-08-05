@@ -6,52 +6,42 @@ imports
   runtime/editor/-
   runtime/index/-
 
+  nabl2shared
+ 
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
   signatures/nabl2/runtime/analysis/-
-
-signature
-  sorts AnalysisAction constructors
-    Initialize : String * Term -> AnalysisAction
-    PreprocessAST : String * Term -> AnalysisAction
-    GenerateConstraint : String * Term * List(Scope) -> AnalysisAction
-    NormalizeConstraint : Constraint -> AnalysisAction
-    SolveConstraint : Constraint -> AnalysisAction
+  signatures/nabl2/runtime/solver/-
 
 rules
 
-  analyze(pre): Initialize(source,global) -> C
+  analyze(pre): AnalyzeInitial(source) -> InitialResult((params,C))
     with <debug> $[>>> Initializing [source] <<<]
     with report-time(
-      C := <generate-constraint-init(|source)> global
+      (params,C) := <generate-constraint-init(|source)> source
     )
 
-  analyze(pre): PreprocessAST(source,ast) -> ast'
+  analyze(pre): AnalyzeUnit(source,ast,(params,_)) -> UnitResult(ast',C)
     with <debug> $[>>> Preprocessing AST [source] <<<]
     with report-time(
-      ast' := <pre> ast
+      ast' := <pre;index-ast(|source)> ast
     )
-  
-  analyze(pre): GenerateConstraint(source,ast,params) -> C
     with <debug> $[>>> Generating constraints [source] <<<]
     with report-time(
-      C := <generate-constraint-file(|source,params);normalize-constraint> ast
+      C := <generate-constraint-file(|source,params);normalize-constraint> ast'
     )
  
-  analyze(pre): NormalizeConstraint(C) -> C'
+  analyze(pre): AnalyzeFinal(source,(_,C),C*) -> FinalResult(error*,warning*,note*,analysis)
     with <debug> ">>> Normalizing constraints <<<"
     with report-time(
-      C' := <normalize-constraint> C
+      C' := <normalize-constraint> CConj([C|C*])
     )
-
-  analyze(pre): SolveConstraint(C) -> S
     with <debug> ">>> Solving constraints <<<"
     with report-time(
       sol-i := <initial-solution>;
-      C' := <normalize-constraint> C;
       [(sol1,C1*)] := <solve-constraints-phase1> (sol-i,[C']);
       g := <sol-g> sol1;
       fr* := <resolve-all> g;
@@ -60,7 +50,7 @@ rules
       lo* := <join(label-lt)> (<labels>,<labels>);
       sol3* := <solve-constraints-phase2;map(postprocess-errors(|rn*))> (sol2,C1*);
       analysis1* := [
-        Constraint(C),
+        Constraint(C'),
         InitialScopeGraph(g),
         InitialResolution(fr*),
         ResolutionParams(<labels>,<labels-wf>,lo*)
@@ -86,13 +76,10 @@ rules
         analysis1*,
         analysis2*,
         AlternativeSolutions(<Tl;map-with-index(id)> sol*)
-      ];
-      S := (error*, warning*, note*, resolution, analysis)
+      ]
     ))
 
-  analyze(pre) = fatal-err(|"Unknown analysis action")
-
-  get-analysis = prim("SG_get_analysis")
+  analyze(pre) = warn(|"Using null analysis fallback") ; null-analysis
 
   report-time(s) = measure-time(s,where(<debug> $[Finished in [<cputime-to-seconds;real-to-string(|2)>]s]))
 

@@ -3,11 +3,8 @@ module nabl2/shared/common/AST
 imports
 
   nabl2/shared/common/Native
-  nabl2/shared/common/Terms
 
 context-free syntax
-
-  IndexedTerm = Term
 
   TermIndex.TermIndex = <@<String>:<Int>>
   

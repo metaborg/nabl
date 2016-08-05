@@ -28,6 +28,8 @@ lexical syntax
   ModuleIdPart = [a-zA-Z\_] [a-zA-Z0-9\.\-\_]*
   ModuleId = SectionKeyword {reject}
   
+  RuleId = SectionKeyword {reject}
+  
   SectionKeyword = "imports"
 
 lexical restrictions

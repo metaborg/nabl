@@ -43,13 +43,6 @@ rules
     where is-list
     with t' := <pp-H-list(pp|",")> t
 
-  prettyprint-IndexedTerm:
-    t -> [ H([SOpt(HS(),"0")], [ t', idx' ] ) ]
-    where not(is-IndexedTerm)
-    with t' := <is-string ; pp-one-Z(prettyprint-origin-term)
-               <+ pp-one-Z(prettyprint-Term)> t
-    with idx' := <get-ast-index < pp-one-Z(prettyprint-TermIndex) + !S("@?")> t
-
   prettyprint-Origin:
     t -> [ H([SOpt(HS(),"0")], [ S("@("), S(line'), S(","), S(column'), S(")") ] ) ]
     with line'   := <(origin-line;inc<+!-1);int-to-string> t

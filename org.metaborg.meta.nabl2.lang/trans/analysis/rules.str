@@ -7,13 +7,3 @@ imports
   signatures/modules/-
 
 rules
-
-  analysis-rule: m@Module(_,_) -> <fail>
-    where wf*@[_,_|_] := <collect-all(?WF(_))> m
-    with <map(\ wf -> <AddError> (wf, "Only one well-formedness predicate allowed.") \)> wf*
-
-/*
-
-  - if a variable is visited, no sub-variables can be visited
-
- */

@@ -8,5 +8,6 @@ language
   start symbols         : Start
   
   provider              : target/metaborg/stratego.ctree
-  observer              : editor-analyze
+  observer              : editor-analyze (constraint) (multifile)
   on save               : editor-save
+

@@ -1,0 +1,15 @@
+Module(
+  "Lang"
+, NoImports()
+, [ Language(
+      ""
+    , [ Extensions(Values(["nabl2"]))
+      , Table("target/metaborg/sdf.tbl")
+      , StartSymbols([Sort("Start")])
+      , SemanticProvider("target/metaborg/stratego.ctree")
+      , SemanticObserver(Strategy("editor-analyze"), [Constraint(), MultiFile()])
+      , OnSave(Strategy("editor-save"), None())
+      ]
+    )
+  ]
+)

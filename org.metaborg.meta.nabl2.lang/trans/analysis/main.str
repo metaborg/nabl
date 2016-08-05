@@ -2,37 +2,14 @@ module analysis/main
 
 imports
 
+  nabl2shared
   analysis/-
   pp
 
 rules
 
-  editor-analyze:
-    (source-ast,_,_) -> result
-    with
-      result := <analyze-file> source-ast
+  editor-analyze = analyze
  
-  analyze-file =
-    ?ast;
-    {| AddError, AddWarning, AddNote :
-      errors := <new-iset>;
-      warnings := <new-iset>;
-      notes := <new-iset>;
-      rules(
-        AddError:   error -> <iset-add(|error)> errors
-        AddWarning: warning -> <iset-add(|warning)> warnings
-        AddNote:    note -> <iset-add(|note)> notes
-      );
-      analyzed-ast := <normalize> ast;
-      <topdown(try(analysis-rule))> analyzed-ast;
-      error* := <iset-elements> errors;
-      warning* := <iset-elements> warnings;
-      note* := <iset-elements> notes;
-      <iset-destroy> errors;
-      <iset-destroy> warnings;
-      <iset-destroy> notes;
-      !(analyzed-ast, error*, warning*, note*)
-    |}
- 
-  analysis-rule = fail
-
+  analyze: AnalyzeUnit(_,ast,_) -> UnitResult(ast',None())
+    with ast' := <normalize> ast
+  analyze = null-analysis

@@ -19,3 +19,8 @@ context-free syntax
 
   RuleName.NoName      =
   RuleName.Name        = RuleId
+
+lexical syntax
+
+  SectionKeyword = "rules"
+  SectionKeyword = "constraint-generation" // keep here a bit for catching legacy

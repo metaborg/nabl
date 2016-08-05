@@ -10,14 +10,14 @@ rules // top-level functions that are called during analysis
   // GTODO : variables and scopes must be unique across files
 
   generate-constraint-init(|source) =
-    ?global;
+    ?ast;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
 	    var-counter   := <new-counter>;
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      <generate-constraint-init-rule(|source)> global
+      <generate-constraint-init-rule(|source)> ast
 	  |}
 
   generate-constraint-file(|source,params) =
@@ -44,7 +44,11 @@ rules
   generate-constraint(s|source,params) =
     generate-constraint-placeholder(|params) <+
     s(|source,params) <+
-    fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
+    ( where((scopes,type) := params)
+    < fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> scopes] : [<pp-Term> type]])
+    + fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
+    )
+    
 
   generate-constraint-placeholder(|params): term -> CTrue()
     where <is-SDF-placeholder> term

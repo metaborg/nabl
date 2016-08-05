@@ -9,6 +9,16 @@ imports
 
 context-free syntax
 
+  Scope                 = Var
+  Comparable            = Scope
+
+  Occurrence            = Var
+  Comparable            = Occurrence
+
+  MessagePosition.NAMES = <@ NAMES>
+
+context-free syntax
+
   Constraint.CGDecl       = [[Occurrence] <- [Scope]]
   Constraint.CGRef        = [[Occurrence] -> [Scope]]
 
@@ -49,7 +59,6 @@ syntax
   NamespacePattern-CF.Default   =
   NamespacePattern-CF.All       = "/*"
   NamespacePattern-CF.Namespace = "/" NamespaceId-LEX
-
 
 lexical syntax
 

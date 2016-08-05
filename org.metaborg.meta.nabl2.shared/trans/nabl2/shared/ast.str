@@ -6,6 +6,9 @@ imports
 
 rules // ast indices
 
+  index-ast(|source) =
+    prim("SG_index_ast", source)
+
   get-ast-index =
     ?t ; prim("SG_get_ast_index") ; copy-origin(|t)
 
