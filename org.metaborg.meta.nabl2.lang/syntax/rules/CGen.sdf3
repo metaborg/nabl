@@ -7,6 +7,7 @@ imports
   nabl2/shared/common/Terms
   nabl2/shared/common/Types
   nabl2/shared/common/Vars
+  nabl2/shared/constraints/Base
 
   common/Identifiers
   common/Types
@@ -20,13 +21,21 @@ context-free syntax
 
   Rule.CGenInitRule = <
     init <CGenParamsTerm> <CGenTypeTerm> :=
-        <Constraint>.
+        <{RuleClause ","}+>.
   >
 
   Rule.CGenMatchRule = <
     <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
-        <Constraint>.
+        <{RuleClause ","}+>.
   >
+
+  RuleClause = PrimitiveConstraint
+
+  RuleClause = <(<Constraint>)>
+
+  RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+
+  RuleClause.NewScopes   = <new <{Var " "}+>>
 
 context-free syntax
 
@@ -39,12 +48,6 @@ context-free syntax
 
   CGenTypePattern.NoType =
   CGenTypePattern.Type   = <: <TypePattern>>
-
-context-free syntax
-
-  Constraint.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
-
-  Constraint.New         = <new <{Var " "}+>>
 
 lexical syntax
 

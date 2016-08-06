@@ -3,11 +3,16 @@ module nabl2/shared/ast
 imports
 
   runtime/editor/origins
+  
+  signatures/nabl2/shared/common/-
 
 rules // ast indices
 
   index-ast(|source) =
     prim("SG_index_ast", source)
+
+  index-sublist(|list) =
+    prim("SG_index_sublist", list)
 
   get-ast-index =
     ?t ; prim("SG_get_ast_index") ; copy-origin(|t)
@@ -34,5 +39,5 @@ rules // origins
 
   copy-origin(|from) =
     origin-location-offset-set(|<origin-location-offset> from)
- <+ warn(|"Cannot copy origin from")
+ <+ warn(|"Cannot copy origin")
 

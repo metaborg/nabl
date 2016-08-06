@@ -8,8 +8,8 @@ imports
 
 context-free syntax
 
-  Constraint.CEqual         = [[Comparable] == [Comparable] [Message]]
-  Constraint.CInequal       = [[Comparable] != [Comparable] [Message]]
+  PrimitiveConstraint.CEqual         = [[Comparable] == [Comparable] [Message]]
+  PrimitiveConstraint.CInequal       = [[Comparable] != [Comparable] [Message]]
 
   Comparable                = Var {prefer}
 

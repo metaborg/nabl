@@ -1,0 +1,11 @@
+module rules/Normalization
+
+imports
+
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  RuleClause.NewVars      = <new vars <{Var " "}+>>
+
+  RuleClause.IndexSublist = <from list <Var> index sublist <Var>>

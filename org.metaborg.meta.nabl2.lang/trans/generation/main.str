@@ -18,5 +18,5 @@ rules
     with
       filename   := <create-src-gen(|project-path, "nabl2", ".str")> name;
       module-str := <module-to-str> ast;
-      result     := <pp-stratego-string> module-str
+      result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
  

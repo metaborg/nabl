@@ -19,18 +19,18 @@ context-free syntax
 
 context-free syntax
 
-  Constraint.CGDecl       = [[Occurrence] <- [Scope]]
-  Constraint.CGRef        = [[Occurrence] -> [Scope]]
+  PrimitiveConstraint.CGDecl       = [[Occurrence] <- [Scope]]
+  PrimitiveConstraint.CGRef        = [[Occurrence] -> [Scope]]
 
-  Constraint.CResolve     = [[Occurrence] |-> [Occurrence] [Message]]
+  PrimitiveConstraint.CResolve     = [[Occurrence] |-> [Occurrence] [Message]]
 
 syntax
 
-  Constraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
-  Constraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
-  Constraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
+  PrimitiveConstraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
+  PrimitiveConstraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
+  PrimitiveConstraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
 
-  Constraint-CF.CAssoc       = Occurrence-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF Message-CF
+  PrimitiveConstraint-CF.CAssoc       = Occurrence-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF Message-CF
 
 
 context-free syntax
@@ -44,9 +44,9 @@ context-free syntax
 
 context-free syntax
 
-  Constraint.CDistinct = <!<Names> <Message>>
-  Constraint.CSubset   = <<Names> in <Names> <Message>>
-  Constraint.CDisjoint = <<Names> # <Names> <Message>>
+  PrimitiveConstraint.CDistinct = <!<Names> <Message>>
+  PrimitiveConstraint.CSubset   = <<Names> in <Names> <Message>>
+  PrimitiveConstraint.CDisjoint = <<Names> # <Names> <Message>>
 
 
 syntax

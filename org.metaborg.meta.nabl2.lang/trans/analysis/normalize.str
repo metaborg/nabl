@@ -6,6 +6,7 @@ imports
 
   signatures/common/-
   signatures/modules/-
+  signatures/rules/-
 
   generation/-
   util/-
@@ -13,31 +14,86 @@ imports
 rules
 
   normalize =
-    try(sometd(normalize-term-match));
-    try(sometd(normalize-type-match));
-    try(sometd(normalize-constraints));
-    try(sometd(normalize-message));
-    try(sometd(normalize-index <+ normalize-default-index));
-    try(sometd(normalize-rule-names))
+    normalize-term-matches;
+    normalize-type-matches;
+    normalize-list-matches;
+    normalize-rule-vars;
+    normalize-constraints;
+    normalize-messages;
+    normalize-indices;
+    normalize-rule-names
 
 rules
 
-  // capture the matched term, or (FIXME) the first term in the list in term__ 
+  normalize-term-matches = try(sometd(normalize-term-match))
+
+  // capture the matched term
   normalize-term-match:
-    CGenMatchRule(name,pattern,params,type,C)
-      -> CGenMatchRule(name,As(<term-var>, pattern),params,type,C)
+    CGenMatchRule(name,pattern,params,type,clause*)
+      -> CGenMatchRule(name,As(<term-var>, pattern),params,type,clause*)
 
 rules
+
+  normalize-type-matches = try(sometd(normalize-type-match))
 
   // replace type terms with a variable and an equality constraint
   normalize-type-match:
-    CGenMatchRule(name,pattern,param,Type(type),C)
+    CGenMatchRule(name,pattern,param,Type(type),clause*)
       -> CGenMatchRule(name,pattern,param,Type(<type-var>),
-             CConj(CEqual(<type-var>,type,DefaultMessage()),C))
+             [CEqual(<type-var>,type,DefaultMessage()),clause*])
     where <not(is-var)> type
 
+rules
+
+  normalize-list-matches =
+    bottomup(try(normalize-list-match));
+    try(sometd(normalize-sublist-index))
+
+  normalize-list-match:
+    ListTail(xs*,ListTail(ys*,tl)) -> ListTail([xs*,ys*],tl)
+ 
+  normalize-list-match:
+    ListTail(xs*,List(ys*)) -> List([xs*,ys*])
+
+  normalize-sublist-index:
+    CGenMatchRule(name,pattern,params,type,clause*)
+      -> CGenMatchRule(name,pattern',params,type,[clause'*,clause*])
+    with pattern' := <bottomup(try({\
+                        ListTail(xs,Var(name)) -> As(Var(name'),ListTail(xs,Var(name)))
+                        with name' := $[list__[name]]
+                      \}))> pattern;
+         clause'* := <collect-all(\
+                        As(list,ListTail(_,sublist)) -> IndexSublist(list,sublist)
+                      \)> pattern'
+ 
+rules
+
+  normalize-rule-vars = 
+    try(sometd(normalize-free-vars))
+
+  normalize-free-vars:
+    CGenInitRule(params,type,clause*)
+      -> CGenInitRule(params,type,[NewVars(free-var*),clause*])
+    with new-var* := <clauses-new-vars> clause*;
+         used-var* := <all-vars> (params,type,clause*);
+         free-var* := <diff> (used-var*, [<term-var>,new-var*])
+
+  normalize-free-vars:
+    CGenMatchRule(name,pattern,params,type,clause*)
+      -> CGenMatchRule(name,pattern,params,type,[NewVars(free-var*),clause*])
+    with new-var* := <clauses-new-vars> clause*;
+         bound-var* := <all-vars> (pattern,params,type,new-var*);
+         used-var* := <all-vars> clause*;
+         free-var* := <diff> (used-var*, bound-var*)
+
+  clauses-new-vars =
+    filter(clause-new-vars); concat
+
+  clause-new-vars: NewScopes(v*) -> v*
 
 rules
+
+  normalize-messages = topdown(try(normalize-message))
 
   // create default error message
   normalize-message:
@@ -46,8 +102,10 @@ rules
 
 rules
 
+  normalize-indices = topdown(try(normalize-occurrence-index <+ normalize-default-index))
+
   // get index from occurrence, if name is from AST
-  normalize-index:
+  normalize-occurrence-index:
     Occurrence(ns,name,DefaultIndex()) ->
       Occurrence(ns,name,IndexFromTerm(name))
     where <is-var> name
@@ -56,12 +114,18 @@ rules
   normalize-default-index:
     DefaultIndex() -> IndexFromTerm(<term-var>)
 
+rules
+
+  normalize-rule-names = topdown(try(normalize-rule-name))
+
   // set default name for anonymous rules
-  normalize-rule-names:
+  normalize-rule-name:
     NoName() -> Name(<default-rule-name>)
 
 rules
 
-  normalize-constraints:
+  normalize-constraints = topdown(try(normalize-constraint))
+
+  normalize-constraint:
     CTypeAndValueOf(occ,type,value,msg) ->
       CConj(CTypeOf(occ,type,msg),CValueOf(occ,value))

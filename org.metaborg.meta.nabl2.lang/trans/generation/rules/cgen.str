@@ -20,15 +20,11 @@ rules
       rule-str* := <map(rule-to-str)> rule*
 
   rule-to-str:
-    CGenInitRule(params,type,constraint)
+    CGenInitRule(params,type,clause*)
       -> RDefT(<rule-name> "init",[],[<source-var>],
-           Rule(<term-var>, Tuple([<params-var>, <constraint-var>]), clause*))
+           Rule(<term-var>, Tuple([<params-var>, <constraint-var>]), strclause*))
     with
-      new-scope-var* := <all-new-vars> constraint;
-      new-scope-str := <new-scope-str> new-scope-var*;
-      used-var* := <all-vars> (params,type,constraint);
-      free-var* := <diff> (used-var*, [<term-var>,new-scope-var*]);
-      new-var-str := <new-var-str> free-var*;
+      (str*,constraint) := <clauses-to-str> clause*;
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
@@ -40,19 +36,19 @@ rules
       end;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
-      clause* := [
-        With(new-scope-str),
-        With(new-var-str),
-        With(constraint-str),
+      strclause* := [
+        str*,
         With(params-str),
+        With(constraint-str),
         With(debug-str)
       ]
  
   rule-to-str:
-    CGenMatchRule(Name(name),pattern,params,type,constraint)
+    CGenMatchRule(Name(name),pattern,params,type,clause*)
       -> RDefT(<rule-name> name,[],[<source-var>,<params-var>],
-           Rule(pattern, <constraint-var>, clause*))
+           Rule(pattern, <constraint-var>, strclause*))
     with
+      (str*,constraint) := <clauses-to-str> clause*;
       if Type(type') := type then
         params-pattern := <explode(injection-to-pattern)> Tuple([params,type']);
         params-str := |[
@@ -73,52 +69,56 @@ rules
         ]|;
         debug-str := |[ try( <concat-strings;debug-generate-constraint> [~Str(name)," [[ ",<pp-Term> ~<term-var>," ]] ^ (",<pp-Term> ~<params-var>,")"]) ]|
       end;
-      if <outermost-list-pattern> pattern then
-        safe-metadata-str := |[ id ]|
-      else
-        safe-metadata-str := metadata-str
-      end;
       params-string := Str(<pp-stratego-string> params-pattern);
       guarded-params-str := |[ ~params-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~params-string," with actual ",<pp-Term> ~<params-var>, "."]) ]|;
-      new-scope-var* := <all-new-vars> constraint;
-      new-scope-str := <new-scope-str> new-scope-var*;
-      bound-var* := <all-vars> (pattern,params,type,new-scope-var*);
-      used-var* := <all-vars> constraint;
-      free-var* := <diff> (used-var*, bound-var*);
-      new-var-str := <new-var-str> free-var*;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
-      clause* := [
-        With(debug-str),
+      strclause* := [
         With(guarded-params-str),
-        With(new-scope-str),
-        With(new-var-str),
+        With(debug-str),
+        str*,
         With(constraint-str),
-        With(safe-metadata-str)
+        With(metadata-str)
       ]
  
   rule-name =
     !$[generate-constraint-[<id>]-rule]
  
-  all-new-vars =
-    collect-all(\ New(v*) -> v* \) ; concat
+rules
 
-  new-var-str =
-    mapseq({\ v -> |[ ~v := <new-var(|~<source-var>)> ~n ]| with n := Str(<var-name> v) \})
+  clauses-to-str =
+    partition(clause-to-str);
+    (map(!With(<id>)),list-to-conj)
 
-  new-scope-str =
-    mapseq({\ v -> |[ ~v := <new-scope(|~<source-var>)> ~n ]| with n := Str(<var-name> v) \})
+  clause-to-str:
+    NewScopes(v*) -> str
+    with str := <mapseq({\
+                   v -> |[ ~v := <new-scope(|~<source-var>)> ~n ]|
+                   with n := Str(<var-name> v)
+                 \})> v*
  
-  var-name:
-    Var(name) -> name 
- 
+  clause-to-str:
+    NewVars(v*) -> str
+    with str := <mapseq({\
+                   v -> |[ ~v := <new-var(|~<source-var>)> ~n ]|
+                   with n := Str(<var-name> v)
+                 \})> v*
+
+  clause-to-str:
+    IndexSublist(list,sublist) -> str
+    with str := |[ <index-sublist(|~list)> ~sublist ]|
+
 rules
  
-  constraint-to-term = explode(explode-guard)
+  list-to-conj: [] -> CTrue()
+  list-to-conj: [c] -> c 
+  list-to-conj: [c|cs] -> CConj(c, <list-to-conj> cs) 
+ 
+  constraint-to-term =
+    explode(explode-guard)
  
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)
-  explode-guard(e) = new-to-term(e)
 
   cgenrecurse-to-term(e):
     CGenRecurse(Name(name),v,params,type) -> App(recurse-str,v)
@@ -132,6 +132,3 @@ rules
       end;
       recurse-str := CallT(SVar("generate-constraint"),
           [SVar(<rule-name> name)],[<source-var>,recurse-arg])
-
-  new-to-term(e):
-    New(_) -> <e> CTrue()

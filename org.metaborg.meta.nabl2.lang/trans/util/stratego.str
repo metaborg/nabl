@@ -41,3 +41,7 @@ rules
   outermost-term-pattern(s) = not(?As(_,_)) ; s
 
   outermost-list-pattern = outermost-term-pattern(?List(_) + ?ListTail(_,_))
+
+  var-name:
+    Var(name) -> name 
+ 

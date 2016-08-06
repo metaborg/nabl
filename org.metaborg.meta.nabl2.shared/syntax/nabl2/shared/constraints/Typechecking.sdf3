@@ -10,7 +10,7 @@ imports
 
 context-free syntax
 
-  Constraint.CTypeOf  = [[Occurrence] : [TypeTerm] [Message]]
+  PrimitiveConstraint.CTypeOf  = [[Occurrence] : [TypeTerm] [Message]]
 
-  Constraint.CValueOf = [[Occurrence] := [Term]]
+  PrimitiveConstraint.CValueOf = [[Occurrence] := [Term]]
  

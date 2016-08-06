@@ -7,7 +7,7 @@ imports
 
 context-free syntax
 
-  Constraint.FSubtype = [[TypeTerm] <! [TypeTerm] [Message]]
-  Constraint.CSubtype = [[TypeTerm] <? [TypeTerm] [Message]]
+  PrimitiveConstraint.FSubtype = [[TypeTerm] <! [TypeTerm] [Message]]
+  PrimitiveConstraint.CSubtype = [[TypeTerm] <? [TypeTerm] [Message]]
 
  
