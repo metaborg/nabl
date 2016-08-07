@@ -16,7 +16,7 @@ imports
 rules
 
   pp(prettyprint) =
-    (prettyprint <+ fatal-err(|"WARNING: Could not pp "));
+    (parenthesize-NaBL2Shared;prettyprint <+ fatal-err(|"WARNING: Could not pp "));
     !V([], <id>);
     box2text-string(|120)
 
