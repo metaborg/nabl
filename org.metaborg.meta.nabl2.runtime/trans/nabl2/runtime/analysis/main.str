@@ -82,6 +82,10 @@ rules
       ]
     ))
 
+  analyze(pre): ApplyAnalysis(value,solution) -> value'
+    where s := <sol-s> solution
+    with value' := <S-apply(is-var)> (s,value)
+
   analyze(pre) = warn(|"Using null analysis fallback") ; null-analysis
 
   report-time(s) = measure-time(s,where(<debug> $[Finished in [<cputime-to-seconds;real-to-string(|2)>]s]))
