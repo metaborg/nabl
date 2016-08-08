@@ -12,7 +12,7 @@ template options
 context-free syntax
 
   Signature.Rules = <
-    rules
+    rule
       <{RuleSig "\n"}*>
   >
   
