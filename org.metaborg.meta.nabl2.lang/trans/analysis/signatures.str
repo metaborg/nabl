@@ -1,2 +1,98 @@
 module analysis/signatures
 
+imports
+
+  signatures/-
+  signatures/modules/-
+  signatures/signatures/-
+  signatures/rules/-
+  signatures/common/-
+  
+rules
+
+	module-extract-signatures:
+		Module(_, ds) -> (type_sigs, rule_sigs, subterm_sigs)
+		with
+			// Signatures and rules
+			sigs := <filter(?Signature(<id>)); concat> ds;
+			rs := <filter(?Rules(<id>)); concat> ds;
+			// Extract signature information
+			type_sigs := <filter(?Types(<id>)); concat> sigs;
+			rule_sigs := <filter(?CGen(<id>)); concat> sigs;
+			// Iterate over all rules, extract sub-term annotation signatures
+			subterm_sigs := 
+				<map(extract-rule-sigs); concat> rs
+
+	extract-rule-sigs:
+		CGenInitRule(_, _, _) -> []
+		
+	extract-rule-sigs:
+		CGenMatchRule(Name(name), As(_, Op(c, args)), scopes, types, body) ->
+			[((c, arity), sigs)]
+		with
+			arity := <length> args;
+			// FIXME: traverse argument list to extract deep match subterm signatures
+			sigs := <map(extract-subterm-sigs(|args)); concat> body
+	
+	// FIXME
+	extract-rule-sigs:
+		x ->
+			[]
+		where
+			not(!x; ?CGenMatchRule(Name(_), As(_, Op(_, _)), _, _, _))
+	
+	extract-subterm-sigs(|args):
+		CGenRecurse(Name(name), x, _, _) -> [(name, i)]
+		with
+			(!x; ?Var(y); i := <get-index0(?Var(y))> args) <+
+				(<concat-strings; debug> ["WARNING: ", name, " recurses on non-variable sub-term: ", <write-to-string> x])
+	
+	extract-subterm-sigs(|args):
+		x -> []
+		with
+			not(!x; ?CGenRecurse(_, Var(_), _, _))
+
+/*
+
+Rough plan:
+
+*** Step 1: 
+
+Extract named relation signatures and type signatures; serialize to file
+
+*** Step 2: Extract NaBL2 subterm signatures
+
+Extract and infer relationship between named relations and sub-term
+positions; serialize to file.
+
+Approach:
+
+- for each NaBL2 rule that matches on a particular constructor, record
+  which sub-terms are invoked with which NaBL2 relations (map from
+  constructor declaration to a map from sub-terms to NaBL2 relations);
+
+- Support deep matching in left-hand sides of NaBL2 rules; we should
+  only ever recurse on variables on the right hand sides (warn if rules
+  do otherwise);
+  
+- well-formedness check: check that the same term constructor does not
+  associate different annotations with the same sub-term.
+
+*** Step 3:
+
+Based on serialized information from Step 1 and 2, transform DynSem:
+
+- For each signature for term sort X, generate a sort PostX which has
+  the annotations indicated in the NaBL2 signature;
+
+- Store each sort in a map from each named NaBL2 relation to its
+  PostX sort, and add each PostX sort to the list of declared sorts in
+  DynSem.
+
+- specialize term constructor declarations based on subterm signatures:
+
+  + For each term constructor, look in the NaBL2 relation map; replace
+    each sub-term occurrence with its annotated term counter-part
+    (PostX)
+
+*/
