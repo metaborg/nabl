@@ -2,7 +2,8 @@ module signatures/NameResolution
 
 imports
 
-  nabl2/shared/common/Names
+  nabl2/shared/common/Scopegraph
+  nabl2/shared/common/Resolution
   nabl2/shared/common/Terms
   nabl2/shared/common/Vars
 
@@ -13,7 +14,7 @@ template options
 context-free syntax
 
   Signature.NameResolution = <
-    name-resolution
+    name resolution
       <{NameResolutionParam "\n"}*>
   > {longest-match}
 

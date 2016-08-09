@@ -33,6 +33,9 @@ exports:
 - language: EditorService
   directory: src-gen
   includes: "**/*.esv"
+- language: ds
+  directory: trans
+  includes: "**/*.ds"
 language:
   stratego:
     format: ctree

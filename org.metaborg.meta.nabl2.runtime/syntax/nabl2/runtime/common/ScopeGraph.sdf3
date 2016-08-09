@@ -3,7 +3,8 @@ module nabl2/runtime/common/ScopeGraph
 imports
 
   nabl2/shared/common/AST
-  nabl2/shared/common/Names
+  nabl2/shared/common/Resolution
+  nabl2/shared/common/Scopegraph
 
 context-free syntax
 

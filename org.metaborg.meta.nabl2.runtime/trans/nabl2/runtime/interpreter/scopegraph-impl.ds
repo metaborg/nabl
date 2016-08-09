@@ -1,0 +1,9 @@
+module nabl2/runtime/interpreter/scopegraph-impl
+
+imports
+
+  nabl2/runtime/interpreter/scopegraph-api
+
+signature
+
+  constructors

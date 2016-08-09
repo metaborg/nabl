@@ -2,7 +2,8 @@ module nabl2/runtime/common/Resolution
 
 imports
 
-  nabl2/shared/common/Names
+  nabl2/shared/common/Scopegraph
+  nabl2/shared/common/Resolution
   nabl2/shared/common/Terms
 
 context-free syntax

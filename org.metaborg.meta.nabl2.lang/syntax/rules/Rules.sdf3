@@ -23,4 +23,3 @@ context-free syntax
 lexical syntax
 
   SectionKeyword = "rules"
-  SectionKeyword = "constraint-generation" // keep here a bit for catching legacy

@@ -7,5 +7,5 @@ imports
 rules
 
   signature-to-str:
-    Rules(_) -> []
+    CGen(_) -> []
 

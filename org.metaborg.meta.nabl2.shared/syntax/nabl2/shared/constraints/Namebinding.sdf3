@@ -4,7 +4,7 @@ imports
 
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
-  nabl2/shared/common/Names
+  nabl2/shared/common/Resolution
   nabl2/shared/common/Vars
 
 context-free syntax

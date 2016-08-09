@@ -3,7 +3,7 @@ module common/Types
 imports
 
   nabl2/shared/common/Identifiers
-  nabl2/shared/common/Names
+  nabl2/shared/common/Scopegraph
   nabl2/shared/common/Terms
   nabl2/shared/common/Vars
 

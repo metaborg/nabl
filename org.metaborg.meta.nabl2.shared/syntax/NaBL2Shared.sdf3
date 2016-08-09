@@ -5,7 +5,8 @@ imports
   nabl2/shared/common/AST
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
-  nabl2/shared/common/Names
+  nabl2/shared/common/Resolution
+  nabl2/shared/common/Scopegraph
   nabl2/shared/common/Native
   nabl2/shared/common/Terms
   nabl2/shared/common/Types
