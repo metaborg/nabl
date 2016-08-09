@@ -15,8 +15,8 @@ rules
     with result := None()
 
   analyze: AnalyzeUnit(_,ast,_) ->
-      (ast',result)
-    with ast' := <normalize> ast;
+      UnitResult(ast',result)
+    with ast'   := <normalize> ast;
          result := None()
 
   analysis: AnalyzeFinal(_,initial-result,unit-result*) ->
@@ -24,5 +24,5 @@ rules
     with error*   := [];
          warning* := [];
          note*    := [];
-         result := None()
+         result   := None()
 
