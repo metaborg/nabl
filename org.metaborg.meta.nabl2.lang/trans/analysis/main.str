@@ -17,7 +17,7 @@ rules
   analyze: AnalyzeUnit(_,ast,_) ->
       UnitResult(ast',result)
     with ast'   := <normalize> ast;
-         result := None()
+    		 result := <module-extract-signatures> ast'
 
   analysis: AnalyzeFinal(_,initial-result,unit-result*) ->
       FinalResult(error*,warning*,note*,result)
