@@ -1,0 +1,52 @@
+module nabl2/runtime/interpreter/frame-api
+
+imports
+  nabl2/runtime/interpreter/scopegraph-api
+
+signature // The API is parameterized by some notion of value
+
+  sorts Val
+
+//////////////////////////////
+// VANILLA FRAMES AND HEAPS //
+//////////////////////////////
+
+signature
+
+  sorts H
+
+  sorts Frame
+
+  sorts FrameId
+  
+  sorts Addr constructors
+    Addr : FrameId * Occurrence -> Addr
+
+  constructors
+    lookup : FrameId * H * Path --> Addr
+    get : FrameId * H * Occurrence --> Val
+    set : FrameId * H * Occurrence * Val --> H
+    scopeofFrame : H * FrameId --> Scope
+    initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
+    
+  constructors
+    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
+    slotsOf : H * FrameId --> Map(Occurrence, Val)
+
+  variables
+    f : FrameId
+    h : H
+
+//////////////////////////////
+// DEFAULT FRAMES AND HEAPS //
+//////////////////////////////
+
+signature // The API is parameterized by some operation that returns a default value for each sort
+
+  arrows
+    Type -defaultv-> Val
+
+signature
+
+  constructors
+    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
