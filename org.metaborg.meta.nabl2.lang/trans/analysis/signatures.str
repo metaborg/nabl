@@ -70,10 +70,10 @@ rules
 			ts' := <map(extract-subterm-sigs(|body)); concat> args
 	
 	extract-term-sigs(|body):
-		ListTail(hd, tl) -> <map(extract-term-sigs(|body)); concat> hd
+		ListTail(hd, tl) -> <map(extract-subterm-sigs(|body)); concat> hd
 	
 	extract-term-sigs(|body):
-		List(l) -> <map(extract-term-sigs(|body)); concat> l
+		List(l) -> <map(extract-subterm-sigs(|body)); concat> l
 	
 	// Sub-term signature extraction:
 	extract-subterm-sigs(|body):
