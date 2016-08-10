@@ -10,4 +10,5 @@ menus
   menu: "Generation" (openeditor) (meta) (realtime)
 
     action: "Generate Stratego"   = generate-str
+    action: "Generate Signatures" = extract-sigs
 

@@ -11,6 +11,7 @@ imports
   completion
   generation/main
   pp
+  signature-extraction/main
  
 rules // Debugging
   
