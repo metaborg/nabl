@@ -18,13 +18,17 @@ imports
 
 rules
 
-  analyze(pre): AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
+  analyze(pre):
+    AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
     with <debug> $[>>> Initializing [source] <<<]
     with report-time(
       (params,C) := <generate-constraint-init(|source)> source
     )
 
-  analyze(pre): AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
+
+  analyze(pre):
+    AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
+    where not(() := ast)
     with <debug> $[>>> Preprocessing AST [source] <<<]
     with report-time(
       params := <getfirst(?Params(<id>))> initial;
@@ -34,7 +38,13 @@ rules
     with report-time(
       C := <generate-constraint-file(|source,params);normalize-constraint> ast'
     )
+
+  analyze(pre):
+    AnalyzeUnit(source,ast,_) -> UnitResult(ast,[Constraint(C)])
+    where () := ast
+    with C := CFalse(Message(Warning(),"Empty file was not parsed.",<get-ast-index> source))
  
+
   analyze(pre): AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
     with <debug> ">>> Normalizing constraints <<<"
     with report-time(
@@ -82,9 +92,11 @@ rules
       ]
     ))
 
+
   analyze(pre): ApplyAnalysis(value,solution) -> value'
     where s := <sol-s> solution
     with value' := <S-apply(is-var)> (s,value)
+
 
   analyze(pre) = warn(|"Using null analysis fallback") ; null-analysis
 
