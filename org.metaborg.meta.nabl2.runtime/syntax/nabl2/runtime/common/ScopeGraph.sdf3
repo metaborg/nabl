@@ -4,7 +4,7 @@ imports
 
   nabl2/shared/common/AST
   nabl2/shared/common/Resolution
-  nabl2/shared/common/Scopegraph
+  nabl2/shared/common/ScopeGraph
 
 context-free syntax
 

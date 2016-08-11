@@ -2,7 +2,7 @@ module common/Injections
 
 imports
 
-  nabl2/shared/common/Scopegraph
+  nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Terms
   nabl2/shared/common/Vars
   
@@ -17,3 +17,4 @@ context-free syntax
 
   PrimitiveConstraint.CTypeAndValueOf  = [[Occurrence] : [TypeTerm] := [Term] [Message]]
 
+  Name = Term

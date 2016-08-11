@@ -8,8 +8,6 @@ imports
 
 rules
 
-  editor-analyze = analyze <+ null-analysis
-
   analyze: AnalyzeInitial(_) ->
       InitialResult(result)
     with result := None()

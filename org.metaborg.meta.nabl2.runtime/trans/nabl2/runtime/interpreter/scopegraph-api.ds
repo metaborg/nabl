@@ -3,38 +3,20 @@ module nabl2/runtime/interpreter/scopegraph-api
 signature
   
   sorts
-    TermIndex
-    Namespace
     Occurrence
-    Label
     Path
     Scope
     LabeledScope
-    LabeledOccurrence
     Type
 
-  constructors
-    TermIndex : String * Int -> TermIndex
- 
-    DefaultNamespace : Namespace
-    Namespace : String -> Namespace
- 
-    Occurrence : Namespace * String * TermIndex -> Occurrence
-    LabeledOccurrence : Label * Occurrence -> LabeledOccurrence
- 
-    Scope : String -> Scope 
-    LabeledScope : Label * Scope -> LabeledScope
- 
-    P : Label
-    I : Label
-    Label : String -> Label
- 
-    D : Scope * Occurrence -> Path
-    N : Path
-    E : Scope * Label * Scope -> Path
-
   native operators
-    pathOfRef : Occurrence -> Path
+  //indexOf : Term -> TermIndex
+  //mkOcc : String -> Occurrence
+  //mkOcc : String * String -> Occurrence
+  //mkOcc : String * String * TermIndex -> Occurrence
+    pathOfRef    : Occurrence -> Path
     declsOfScope : Scope -> List(Occurrence)
     linksOfScope : Scope -> List(LabeledScope)
-    typeOfDecl : Occurrence -> Type
+    typeOfDecl   : Occurrence -> Type
+    valueOfDecl  : Occurrence -> Type
+

@@ -1,4 +1,4 @@
-module nabl2/shared/common/Scopegraph
+module nabl2/shared/common/ScopeGraph
 
 imports
 
@@ -9,17 +9,19 @@ imports
 
 context-free syntax
 
-  Scope.Scope           = <scope [<VarId>]>
+  Scope.Scope                    = <scope [<VarId>]>
 
-  Occurrence.Occurrence = <<NamespaceRef>{<Term> <TermIndex>}>
+  Occurrence.Occurrence          = <<NamespaceRef>{<Name> <TermIndex>}>
 
-  Namespace.Namespace  = NamespaceId
+  Name                           = String
 
-  NamespaceRef         = Namespace
-  NamespaceRef.Default =
+  Namespace.Namespace            = NamespaceId
+
+  NamespaceRef                   = Namespace
+  NamespaceRef.DefaultNamespace  =
 
 lexical syntax
 
   Keyword     = "scope"
   Constructor = "Scope" | "Occurrence"
-  
+ 

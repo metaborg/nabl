@@ -3,7 +3,7 @@ module nabl2/shared/common/Resolution
 imports
 
   nabl2/shared/common/Identifiers
-  nabl2/shared/common/Scopegraph
+  nabl2/shared/common/ScopeGraph
 
 context-free syntax
 
