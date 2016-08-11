@@ -9,12 +9,9 @@ signature
   sorts
     TermIndex
     Namespace
-    Label
-    Step
  
   constructors
     Scope            : String -> Scope
-    LabeledScope     : Label * Scope -> LabeledScope
 
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
@@ -27,9 +24,7 @@ signature
     I                : Label
     Label            : String -> Label
  
-    Path             : List(Step) -> Path
- 
-    D                : Scope * Occurrence -> Step
-    N                : Scope * Label * Occurrence * Path ->  Step
-    E                : Scope * Label -> Step
+    D                : Scope * Occurrence -> Path
+    N                : Scope * Label * Occurrence * Path * Path -> Path
+    E                : Scope * Label * Path -> Path
 

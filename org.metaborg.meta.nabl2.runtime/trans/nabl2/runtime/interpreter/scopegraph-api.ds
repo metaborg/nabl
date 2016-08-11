@@ -6,8 +6,12 @@ signature
     Occurrence
     Path
     Scope
+    Label
     LabeledScope
     Type
+
+  constructors
+    LabeledScope     : Label * Scope -> LabeledScope
 
   native operators
   //indexOf : Term -> TermIndex
