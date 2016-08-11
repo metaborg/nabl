@@ -79,7 +79,7 @@ rules // resolution internal
   ; ?s
   ; ( Empty() := <nullable> re
     < ![]
-    + <G-decls;map(\ d -> (d,[D(d)]) \)> (g,s)
+    + <G-decls;map(\ d -> (d,[D(s,d)]) \)> (g,s)
     ; group(Fst;occurrence-atom)
     )
   ; !(Total(),<id>)
@@ -113,7 +113,7 @@ rules // resolution internal
   ; <G-direct-edges> (g,s) // :: [(Label,Scope)]
   ; map(where(Snd;is-ground))
   ; filter(?(l,_);Snd) // :: [Scope]
-  ; map(\ s' -> (s',E(l,s')) \) // :: [(Scope,Step)]
+  ; map(\ s' -> (s',E(s,l)) \) // :: [(Scope,Step)]
   ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 
   // irs(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
@@ -124,11 +124,12 @@ rules // resolution internal
   ; <G-named-edges> (g,s) // :: [(Label,Ref)]
   ; filter(?(l,_);Snd) // :: [Ref]
   ; filter(where(<not(elem)> (<id>,ir*))) // :: [Ref]
-  ; mapconcat(\ r -> <resolve(|g,ir*);mapv(!r)> r \) // :: [(Decl,Ref)]
+  ; mapconcat(\ r -> <resolve(|g,ir*);
+                      mapv(\ p -> (r,p) \)> r \) // :: [(Decl,(Ref,Path))]
   ; filter({ d,r,s':
-               ?(d,r)
+               ?(d,(r,p))
              ; s' := <G-assocs;get(|l)> (g,d)
-             ; !(s',N(l,r,s'))
+             ; !(s',N(s,l,r,p))
           }) // :: [(Scope,Step)]
   ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
 

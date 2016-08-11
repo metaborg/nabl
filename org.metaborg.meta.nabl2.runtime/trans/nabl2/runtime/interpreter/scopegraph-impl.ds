@@ -6,4 +6,25 @@ imports
 
 signature
 
+  sorts
+    TermIndex
+    Namespace
+ 
   constructors
+    Scope            : String -> Scope
+
+    DefaultNamespace : Namespace
+    Namespace        : String -> Namespace
+ 
+    TermIndex        : String * Int -> TermIndex
+
+    Occurrence       : Namespace * String * TermIndex -> Occurrence
+
+    P                : Label
+    I                : Label
+    Label            : String -> Label
+ 
+    D                : Scope * Occurrence -> Path
+    N                : Scope * Label * Occurrence * Path * Path -> Path
+    E                : Scope * Label * Path -> Path
+

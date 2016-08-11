@@ -25,10 +25,12 @@ rules
     fresh => ff.
     
   // Dynamic address lookup  
-  
-  lookup(f, _, PD(d)) --> Addr(f, d).
-  
-  lookup(f1, h, PE(l, s, p)) --> Addr(f3, d)
+  // FIXME the scope in a step is the scope stepping from, does this function
+  //       use it that way?
+
+  lookup(f, _, D(_, d)) --> Addr(f, d).
+
+  lookup(f1, h, E(s, l, p)) --> Addr(f3, d)
   where
     linksOf(h, f1) --> ks;
     ks[l][s] => f2;

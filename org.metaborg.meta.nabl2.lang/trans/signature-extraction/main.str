@@ -4,14 +4,13 @@ imports
 
   libstrc
   analysis/signatures
+  util/src-gen
 
 rules
-
-  editor-save = extract-sigs
 
   extract-sigs:
     (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
     with
-      filename   := <guarantee-extension(|"nabl2sig")> path;
+      filename   := <create-src-gen(|project-path, "nabl2", ".nabl2sig")> name;
       result := <module-extract-signatures> ast
  
