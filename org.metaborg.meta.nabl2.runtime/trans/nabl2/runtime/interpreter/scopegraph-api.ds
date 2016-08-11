@@ -23,4 +23,3 @@ signature
     linksOfScope : Scope -> List(LabeledScope)
     typeOfDecl   : Occurrence -> Type
     valueOfDecl  : Occurrence -> Type
-

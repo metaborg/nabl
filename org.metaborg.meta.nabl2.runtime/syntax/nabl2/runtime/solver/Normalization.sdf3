@@ -1,4 +1,4 @@
-module nabl2/runtime/common/Normalization
+module nabl2/runtime/solver/Normalization
 
 imports
 
