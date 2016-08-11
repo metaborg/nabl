@@ -87,7 +87,12 @@ rules
 	
 	extract-subterm-sigs(|body):
 		Wld() -> []
-							
+	
+	extract-subterm-sigs(|body):
+		ListTail(hd, tl) -> <map(extract-subterm-sigs(|body)); concat> hd
+	
+	extract-subterm-sigs(|body):
+		List(l) -> <map(extract-subterm-sigs(|body)); concat> l
 
 	// Body signature extraction
 		
