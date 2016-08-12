@@ -1,0 +1,11 @@
+[CoqImport("scopes"),
+ SortAlias("Occurrence", "Occurrence"),
+ SortAlias("Scope", "ScopeId"),
+ SortAlias("Label", "Label"),
+ SortAlias("Path", "Path"),
+ SortAlias("Addr", ""),
+ SortAlias("Type", "T"),
+ SortAlias("LabeledScope", ""),
+ ConstructorAlias("P", 0, Name("P")),
+ ConstructorAlias("I", 0, Name("I")),
+ ConstructorAlias("LabeledScope", 2, Tuple())]

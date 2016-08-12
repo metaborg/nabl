@@ -22,16 +22,45 @@ signature
   sorts Addr constructors
     Addr : FrameId * Occurrence -> Addr
 
-  constructors
-    lookup : FrameId * H * Path --> Addr
-    get : FrameId * H * Occurrence --> Val
-    set : FrameId * H * Occurrence * Val --> H
-    scopeOfFrame : H * FrameId --> Scope
-    initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
+	// We could use meta-functions ...
+	// But, this entails that relations get the same auxiliary entities as the default arrow!
+	// This muddles the semantic definition.
+	// We use arrows instead.
+//  constructors
+//    lookup : FrameId * H * Path --> Addr
+//    get : FrameId * H * Occurrence --> Val
+//    set : FrameId * H * Occurrence * Val --> H
+//    scopeOfFrame : H * FrameId --> Scope
+//    initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
+  
+  // Arrows are painful because we have to define tuple types manually.
+  sorts lookup__Arrow constructors
+    lookup : FrameId * H * Path -> lookup__Arrow
+  sorts get__Arrow constructors
+  	get : FrameId * H * Occurrence -> get__Arrow
+  sorts set__Arrow constructors
+  	set : FrameId * H * Occurrence * Val -> set__Arrow 
+  sorts scopeOfFrame__Arrow constructors
+  	scopeOfFrame : H * FrameId -> scopeOfFrame__Arrow
+  sorts initFrame__Arrow constructors
+  	initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> initFrame__Arrow
+  sorts linksOf__Arrow constructors
+  	linksOf : H * FrameId -> linksOf__Arrow
+  sorts slotsOf__Arrow constructors
+  	slotsOf : H * FrameId -> slotsOf__Arrow
+  
+  arrows
+  	lookup__Arrow -lookup-> Addr
+  	get__Arrow -get-> Val
+  	set__Arrow -set-> H
+  	scopeOfFrame__Arrow -scopeOfFrame-> Scope
+  	initFrame__Arrow -initFrame-> FrameId
+  	linksOf__Arrow -linksOf-> Map(Label, Map(Scope, FrameId))
+  	slotsOf__Arrow -slotsOf-> Map(Occurrence, Val) 
     
-  constructors
-    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
-    slotsOf : H * FrameId --> Map(Occurrence, Val)
+//  constructors
+//    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
+//    slotsOf : H * FrameId --> Map(Occurrence, Val)
 
   variables
     f : FrameId
@@ -48,5 +77,11 @@ signature // The API is parameterized by some operation that returns a default v
 
 signature
 
-  constructors
-    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
+//  constructors
+//    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
+	sorts initDefault__Arrow constructors
+    initDefault : Scope * Map(Label, Map(Scope, FrameId)) -> initDefault__Arrow
+    
+  arrows
+  	initDefault__Arrow -initDefault-> FrameId
+    
