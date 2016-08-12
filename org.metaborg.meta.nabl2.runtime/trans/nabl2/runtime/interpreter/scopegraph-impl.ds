@@ -20,8 +20,6 @@ signature
 
     Occurrence       : Namespace * String * TermIndex -> Occurrence
 
-    P                : Label
-    I                : Label
     Label            : String -> Label
  
     D                : Scope * Occurrence -> Path
