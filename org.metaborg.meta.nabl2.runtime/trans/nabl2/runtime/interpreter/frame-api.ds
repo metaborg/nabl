@@ -26,7 +26,7 @@ signature
     lookup : FrameId * H * Path --> Addr
     get : FrameId * H * Occurrence --> Val
     set : FrameId * H * Occurrence * Val --> H
-    scopeofFrame : H * FrameId --> Scope
+    scopeOfFrame : H * FrameId --> Scope
     initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
     
   constructors

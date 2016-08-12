@@ -34,6 +34,7 @@
  SortAlias("linksOf__Arrow", ""),
  SortAlias("typeofDecl__Arrow", ""),
  SortAlias("Frame", ""),
+ SortAlias("Type", "T"),
  ConstructorAlias("lookup", 3, Tuple()),
  ConstructorAlias("Addr", 2, Name("Addr")),
  ConstructorAlias("pathofRef", 1, Tuple()),

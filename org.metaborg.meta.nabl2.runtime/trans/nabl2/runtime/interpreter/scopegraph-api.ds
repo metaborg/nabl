@@ -13,6 +13,10 @@ signature
   constructors
     LabeledScope     : Label * Scope -> LabeledScope
 
+	constructors
+		P                : Label
+    I                : Label
+
   native operators
   //indexOf : Term -> TermIndex
   //mkOcc : String -> Occurrence
