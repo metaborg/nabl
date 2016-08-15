@@ -28,6 +28,7 @@
  ConstructorAlias("initDefault", 2, Tuple()),
  ConstructorAlias("scopeOfFrame", 2, Tuple()),
  ConstructorAlias("slotsOf", 2, Tuple()),
+ ConstructorAlias("linksOf", 2, Tuple()),
  ConstructorAlias("get", 3, Tuple()),
  ConstructorAlias("set", 4, Tuple()),
  ConstructorAlias("Heap", 1, Tuple())]

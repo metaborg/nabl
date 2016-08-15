@@ -3,6 +3,8 @@ module nabl2/runtime/interpreter/frame-api
 imports
   nabl2/runtime/interpreter/scopegraph-api
 
+// FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
+
 signature // The API is parameterized by some notion of value
 
   sorts Val
@@ -26,12 +28,15 @@ signature
 	// But, this entails that relations get the same auxiliary entities as the default arrow!
 	// This muddles the semantic definition.
 	// We use arrows instead.
+
 //  constructors
 //    lookup : FrameId * H * Path --> Addr
 //    get : FrameId * H * Occurrence --> Val
 //    set : FrameId * H * Occurrence * Val --> H
 //    scopeOfFrame : H * FrameId --> Scope
 //    initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
+//    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
+//    slotsOf : H * FrameId --> Map(Occurrence, Val)
   
   // Arrows are painful because we have to define tuple types manually.
   sorts lookup__Arrow constructors
@@ -57,10 +62,6 @@ signature
   	initFrame__Arrow -initFrame-> FrameId
   	linksOf__Arrow -linksOf-> Map(Label, Map(Scope, FrameId))
   	slotsOf__Arrow -slotsOf-> Map(Occurrence, Val) 
-    
-//  constructors
-//    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
-//    slotsOf : H * FrameId --> Map(Occurrence, Val)
 
   variables
     f : FrameId
@@ -84,4 +85,3 @@ signature
     
   arrows
   	initDefault__Arrow -initDefault-> FrameId
-    

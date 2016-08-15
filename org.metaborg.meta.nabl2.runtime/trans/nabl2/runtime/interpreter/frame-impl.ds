@@ -5,6 +5,8 @@ imports
   nabl2/runtime/interpreter/scopegraph-api
   nabl2/runtime/interpreter/scopegraph-impl
 
+// FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
+
 signature
 
   constructors
@@ -20,7 +22,7 @@ rules
 
   // Operations on frames
 
-  initFrame(s, ks, slots) :: H Heap(x) --> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  initFrame(s, ks, slots) :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff.
     
@@ -28,32 +30,32 @@ rules
   // FIXME the scope in a step is the scope stepping from, does this function
   //       use it that way?
 
-  lookup(f, _, D(_, d)) --> Addr(f, d).
+  lookup(f, _, D(_, d)) -lookup-> Addr(f, d).
 
-  lookup(f1, h, E(s, l, p)) --> Addr(f3, d)
+  lookup(f1, h, E(s, l, p)) -lookup-> Addr(f3, d)
   where
-    linksOf(h, f1) --> ks;
+    linksOf(h, f1) -linksOf-> ks;
     ks[l][s] => f2;
-    lookup(f2, h, p) --> Addr(f3, d).
+    lookup(f2, h, p) -lookup-> Addr(f3, d).
     
   // Fetching and mutating slot values
     
-  get(f, h, d) --> v
+  get(f, h, d) -get-> v
   where
-    slotsOf(h, f) --> slots;
+    slotsOf(h, f) -slotsOf-> slots;
     slots[d] => v.
 
-  set(f, Heap(x), d, v) --> Heap({f |--> F(s, ks, {d |--> v, slots}), x})
+  set(f, Heap(x), d, v) -set-> Heap({f |--> F(s, ks, {d |--> v, slots}), x})
   where
     x[f] => F(s, ks, slots).
     
 rules
   
-  linksOf(Heap(x), f) --> ks
+  linksOf(Heap(x), f) -linksOf-> ks
   where
     x[f] => F(_, ks, _).
     
-  slotsOf(Heap(x), f) --> slots
+  slotsOf(Heap(x), f) -slotsOf-> slots
   where
     x[f] => F(_, _, slots).
 
@@ -68,7 +70,7 @@ signature
 
 rules
 
-  initDefault(s, ks) :: H Heap(x) --> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  initDefault(s, ks) :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff;
     declsOfScope(s) => ds;
