@@ -20,7 +20,7 @@ signature
   sorts Frame
 
   sorts FrameId
-  
+
   sorts Addr constructors
     Addr : FrameId * Occurrence -> Addr
 
@@ -37,31 +37,31 @@ signature
 //    initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
 //    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
 //    slotsOf : H * FrameId --> Map(Occurrence, Val)
-  
+
   // Arrows are painful because we have to define tuple types manually.
   sorts lookup__Arrow constructors
-    lookup : FrameId * H * Path -> lookup__Arrow
+    lookup : Path -> lookup__Arrow
   sorts get__Arrow constructors
-  	get : FrameId * H * Occurrence -> get__Arrow
+  	get : Occurrence -> get__Arrow
   sorts set__Arrow constructors
-  	set : FrameId * H * Occurrence * Val -> set__Arrow 
+  	set : Occurrence * Val -> set__Arrow 
   sorts scopeOfFrame__Arrow constructors
-  	scopeOfFrame : H * FrameId -> scopeOfFrame__Arrow
+  	scopeOfFrame : scopeOfFrame__Arrow
   sorts initFrame__Arrow constructors
   	initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> initFrame__Arrow
   sorts linksOf__Arrow constructors
-  	linksOf : H * FrameId -> linksOf__Arrow
+  	linksOf : linksOf__Arrow
   sorts slotsOf__Arrow constructors
-  	slotsOf : H * FrameId -> slotsOf__Arrow
-  
+  	slotsOf : slotsOf__Arrow
+
   arrows
   	lookup__Arrow -lookup-> Addr
   	get__Arrow -get-> Val
-  	set__Arrow -set-> H
+  	set__Arrow -set-> Val // Returns the value being assigned -- should possibly be a null or unit value 
   	scopeOfFrame__Arrow -scopeOfFrame-> Scope
   	initFrame__Arrow -initFrame-> FrameId
   	linksOf__Arrow -linksOf-> Map(Label, Map(Scope, FrameId))
-  	slotsOf__Arrow -slotsOf-> Map(Occurrence, Val) 
+  	slotsOf__Arrow -slotsOf-> Map(Occurrence, Val)
 
   variables
     f : FrameId
@@ -82,6 +82,6 @@ signature
 //    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
 	sorts initDefault__Arrow constructors
     initDefault : Scope * Map(Label, Map(Scope, FrameId)) -> initDefault__Arrow
-    
+
   arrows
   	initDefault__Arrow -initDefault-> FrameId

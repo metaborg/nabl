@@ -26,36 +26,40 @@ rules
   where
     fresh => ff.
     
+  f, H Heap(x) |- scopeOfFrame() -scopeOfFrame-> s
+  where
+  	x[f] => F(s, _, _).
+  
   // Dynamic address lookup  
   // FIXME the scope in a step is the scope stepping from, does this function
   //       use it that way?
 
-  lookup(f, _, D(_, d)) -lookup-> Addr(f, d).
+  f |- lookup(D(_, d)) -lookup-> Addr(f, d).
 
-  lookup(f1, h, E(s, l, p)) -lookup-> Addr(f3, d)
+  f1, h |- lookup(E(s, l, p)) -lookup-> Addr(f3, d)
   where
-    linksOf(h, f1) -linksOf-> ks;
+    f1, h |- linksOf() -linksOf-> ks;
     ks[l][s] => f2;
-    lookup(f2, h, p) -lookup-> Addr(f3, d).
+    f2, h |- lookup(p) -lookup-> Addr(f3, d).
     
   // Fetching and mutating slot values
     
-  get(f, h, d) -get-> v
+  f, h |- get(d) -get-> v
   where
-    slotsOf(h, f) -slotsOf-> slots;
+    f, h |- slotsOf() -slotsOf-> slots;
     slots[d] => v.
 
-  set(f, Heap(x), d, v) -set-> Heap({f |--> F(s, ks, {d |--> v, slots}), x})
+  f |- set(d, v) :: H Heap(x) -set-> v :: H {f |--> F(s, ks, {d |--> v, slots}), x}
   where
     x[f] => F(s, ks, slots).
-    
+  
 rules
   
-  linksOf(Heap(x), f) -linksOf-> ks
+  f, H Heap(x) |- linksOf() -linksOf-> ks
   where
     x[f] => F(_, ks, _).
     
-  slotsOf(Heap(x), f) -slotsOf-> slots
+  f, H Heap(x) |- slotsOf() -slotsOf-> slots
   where
     x[f] => F(_, _, slots).
 
