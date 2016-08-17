@@ -18,17 +18,17 @@ rules
 
   initial-solution = sol-new
 
-  solve-constraints-phase1: c* -> s
-  with
-    s := <csolve( solve-specialise
-                , solve-fact
-                )> c*
+  solve-constraints-phase1 =
+    csolve-exhaustive( solve-specialise
+                     , solve-fact
+                     , id
+                     )
 
-  solve-constraints-phase2: c* -> s
-  with
-    s := <csolve( solve-specialise
-                , solve-constraint
-                )> c*
+  solve-constraints-phase2(|rn*) =
+    csolve-exhaustive( solve-specialise
+                     , solve-constraint
+                     , postprocess-errors(|rn*)
+                     )
 
   solve-specialise: (sol,c) -> res
   with <sol-s> sol => s*

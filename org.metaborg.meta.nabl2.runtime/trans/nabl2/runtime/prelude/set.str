@@ -12,3 +12,11 @@ strategies
             d* := [x|y*]
           end
   dups(eq): [] -> []
+  
+
+  set-add(|x): xs@[x|_] -> xs
+
+  set-add(|x): [y|ys] -> [y|<set-add(|x)> ys]
+    where <not(eq)> (x,y)
+
+  set-add(|x): [] -> [x]

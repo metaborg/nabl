@@ -43,8 +43,7 @@ rules
 rules
 
   solve-constraint: (CResolve(r,d,msginfo),sol) -> [(sol,c*)]
-  where r* := <sol-r> sol
-      ; dp := <lookup> (r,r*)
+  where dp := <sol-r;get(|r)> sol
   with ( None() := dp
        < ![]
        + (d',p) := dp
@@ -54,8 +53,7 @@ rules
        ) => c*
 
   solve-constraint: (CResolve(r,d,msginfo),sol) -> res*
-  where r* := <sol-r> sol
-      ; <not(lookup)> (r,r*)
+  where <sol-r;not(get(|r))> sol
       ; g := <sol-g> sol
       ; dl* := <resolve(|g)> r
   with ( [] := dl*

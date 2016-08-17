@@ -6,18 +6,23 @@ imports
   
   nabl2shared
   nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
  
 rules
  
-  solve-constraint: (CValueOf(o,val),sol) -> [res]
-  where <sol-v> sol => v*;
-        <not(lookup)> (o, v*)
-  with res := (<sol-set-v(|o,val)> sol, [])
+  solve-constraint: (CValueOf(o,val),sol) -> [(sol',[])]
+  where <is-ground> o
+  with ( val' := <sol-v;get(|o)> sol;
+         <not(eq)> (val,val')
+       < msg := Message(Error(),["Value for ",o," already set before to a different value."],<occurrence-index> o);
+         <add-message(id|msg)> sol
+       + <sol-set-v(|o,val)> sol
+       ) => sol'
 
   solve-constraint: (CTypeOf(o,ty,msginfo),sol) -> [res]
   where <is-ground> o
-  with <sol-t> sol => t*
+  with t* := <sol-t> sol
      ; ( <lookup> (o, t*) => ty'
        < !(sol, [CEqual(ty, ty', msginfo)])
        + !(<sol-set-t(|o,ty)> sol, [])
@@ -26,6 +31,8 @@ rules
 rules
 
   constraint-priority: CTypeOf(_,_,_) -> 1
+  constraint-priority: CValueOf(_,_) -> 1
 
-  constraint-message: CTypeOf(p,ty,msginfo) -> <default-message(|["Failed to get type of ",p])> msginfo
+  constraint-message: CTypeOf(o,ty,msginfo) -> <default-message(|["Failed to get type of ",o])> msginfo
+  constraint-message: CValueOf(o,val) -> Message(Error(),["Failed to set value of ",o],o)
 

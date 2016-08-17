@@ -10,14 +10,14 @@ imports
 
 rules
 
-  G-new = !G([],[])
-  G--new_s = !S([],[],[],[])
-  G-with-decl        = ?(<id>,s,d) ; G(update(S(![d|<id>],id,id,id),G--new_s|s), id)
-  G-with-ref         = ?(<id>,s,r) ; G(update(S(id,![r|<id>],id,id),G--new_s|s), id)
+  G-new              = !G([],[])
+  G--new_s           = !S([],[],[],[])
+  G-with-decl        = ?(<id>,s,d) ; G(update(S(set-add(|d),id,id,id),G--new_s|s), id)
+  G-with-ref         = ?(<id>,s,r) ; G(update(S(id,set-add(|r),id,id),G--new_s|s), id)
   G-with-direct-edge = ?(<id>,s,e@(_,s')) ; G(try(where(<is-ground> s');update(id,G--new_s|s'))
-                                             ;update(S(id,id,![e|<id>],id),G--new_s|s), id)
-  G-with-named-edge  = ?(<id>,s,n) ; G(update(S(id,id,id,![n|<id>]),G--new_s|s), id)
-  G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(update(id,G--new_s|s),update(![a|<id>],![]|d))
+                                             ;update(S(id,id,set-add(|e),id),G--new_s|s), id)
+  G-with-named-edge  = ?(<id>,s,n) ; G(update(S(id,id,id,set-add(|n)),G--new_s|s), id)
+  G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(update(id,G--new_s|s),update(set-add(|a),![]|d))
 
   G-refs             = ?G(<id>,_) ; map(?(_,<id>);?S(_,<id>,_,_)) ; concat
   G-scope            = ?(G(<id>,_),r) ; getfirst(G-scope_exists(|r))

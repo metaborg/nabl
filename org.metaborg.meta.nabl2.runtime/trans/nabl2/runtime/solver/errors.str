@@ -52,12 +52,12 @@ rules
 
 rules
 
-  postprocess-errors(|rn*): (sol,c*) -> sol'
-  with  <sol-t;free-var-messages> sol => fmsg*
-     ; <map({?c;get-constraint-message;detail-message(|"Unsolved")})> c* => umsg*
-     ; <add-messages(id|[fmsg*,umsg*])> sol
-     ; unresolved-refs(|rn*)
-     ; ?sol'
+  postprocess-errors(|rn*): (sol,c*) -> (sol',[])
+  with <sol-t;free-var-messages> sol => fmsg*;
+       <map({?c;get-constraint-message;detail-message(|"Unsolved")})> c* => umsg*;
+       <add-messages(id|[fmsg*,umsg*])> sol;
+       unresolved-refs(|rn*);
+       ?sol'
 
   free-var-messages =
     all-vars; map(!Message(Warning(),["Free variable ",<id>],<id>))

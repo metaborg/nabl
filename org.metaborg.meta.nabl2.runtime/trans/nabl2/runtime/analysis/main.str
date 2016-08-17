@@ -45,7 +45,8 @@ rules
     with C := CFalse(Message(Warning(),"Empty file was not parsed.",<get-ast-index> source))
  
 
-  analyze(pre): AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
+  analyze(pre):
+    AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
     with <debug> ">>> Normalizing constraints <<<"
     with report-time(
       C  := <getfirst(?Constraint(<id>))> initial;
@@ -61,8 +62,9 @@ rules
       (r1*,rn*) := <partition({\ (r,[dp]) -> (r,dp) \})> fr*;
       sol2 := <sol-add-r(|r1*)> sol1;
       lo* := <join(label-lt)> (<labels>,<labels>);
-      sol3* := <solve-constraints-phase2;map(postprocess-errors(|rn*))> (sol2,C1*);
-      analysis1* := [
+      sol3* := <solve-constraints-phase2(|rn*)> (sol2,C1*);
+      sol4* := <map(Fst)> sol3*; // discard constraint part
+      pre-sol := [
         Constraint(C'),
         InitialScopeGraph(g),
         InitialResolution(fr*),
@@ -72,8 +74,7 @@ rules
     with <debug> ">>> Processing solutions <<<"
     where report-time(
     with(
-      sol* := <qsort((sol-e;length,sol-e;length);lt)> sol3*;
-      analysis2* := <Hd> sol*;
+      sol* := <qsort((sol-e;length,sol-e;length);lt)> sol4*;
       (good,bad) := <partition(not(is-erronious));(length,length)> sol*;
       with(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
     );
@@ -85,10 +86,10 @@ rules
       warning* := <sol-w;mapv(xmlencode)> sol;
       note* := <sol-n;mapv(xmlencode)> sol;
       resolution := <sol-r;filter(not(?(_,None())));map((occurrence-index,Fst;occurrence-index))> sol;
-      analysis := [
-        analysis1*,
-        analysis2*,
-        AlternativeSolutions(<Tl;map-with-index(id)> sol*)
+      analysis := <concat> [
+        pre-sol,
+        sol,
+        [AlternativeSolutions(<Tl;map-with-index(id)> sol*)]
       ]
     ))
 

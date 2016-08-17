@@ -19,7 +19,7 @@ rules
   // resolve-all :: Graph -> [(Ref,[(Decl,Path)])]
   resolve-all =
     ?g
-  ; G-refs
+  ; G-refs ; debug
   ; filter(!(<id>,<resolve(|g)>))
 
   // resolve(|Graph) :: Ref -|-> [(Decl,Path)]

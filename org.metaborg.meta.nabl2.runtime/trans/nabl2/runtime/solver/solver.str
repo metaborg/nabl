@@ -1,0 +1,31 @@
+module nabl2/runtime/solver/solver
+
+imports
+
+  nabl2/runtime/solver/-
+
+rules 
+ 
+  // csolve-exhaustive :: (sol,[c]) -> [(sol,[c])] 
+  // solve for all possible solutions
+  
+  csolve-exhaustive(pre,solve,post) =
+    csolve-one(pre,solve)
+  < mapconcat(csolve-exhaustive(pre,solve,post))
+  + ![<post>]
+ 
+  // csolve-one :: (sol,[c]) -> [(sol,[c])]
+  // solve one constraint, or fail
+ 
+  csolve-one(pre,solve) =
+    ?(sol,active*);
+    <csolve-one-acc(pre,solve)> (sol,active*,[])
+
+  csolve-one-acc(pre,solve) =
+    ?(sol,[c|active*],defer*);
+    with((sol',c') := <pre> (sol,c));
+    ( s'* := <solve> (c',sol')
+    < <map(\ (sol',new*) -> (sol',[new*,active*,defer*]) \)> s'*
+    + <csolve-one-acc(pre,solve)> (sol,active*,[c'|defer*])
+    )
+
