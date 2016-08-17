@@ -1,4 +1,4 @@
-module modules/Modules
+module modules/Module
 
 template options
 
@@ -27,6 +27,8 @@ lexical syntax
   ModuleId = {ModuleIdPart "/"}+
   ModuleIdPart = [a-zA-Z\_] [a-zA-Z0-9\.\-\_]*
   ModuleId = SectionKeyword {reject}
+  
+  RuleId = SectionKeyword {reject}
   
   SectionKeyword = "imports"
 

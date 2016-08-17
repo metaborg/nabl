@@ -9,29 +9,29 @@ imports
 
 rules
 
-  solve-constraint: (f@FSubtype(ty1,ty2,msginfo),sol-wm) -> [(sol-wm',[])]
+  solve-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
   where <is-ground> (ty1,ty2)
-  with <fromWM;sol-x> sol-wm => x*
+  with <sol-x> sol => x*
      ; ( <extend-subtype-relation(|x*)> (ty1,ty2) => x'*
-       < <fmap(sol-set-x(|x'*))> sol-wm
+       < <sol-set-x(|x'*)> sol
        + msg := ["Setting ",ty1," as a subtype of ",ty2," creates a cycle in the subtyping relation"]
-       ; <add-message(detail-message(|msg)|msginfo)> sol-wm
-       ) => sol-wm'
+       ; <add-message(detail-message(|msg)|msginfo)> sol
+       ) => sol'
 
-  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [res]
+  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [res]
   where ty1* := <is-list+(is-tuple;TupleToList)> ty1
       ; ty2* := <is-list+(is-tuple;TupleToList)> ty2
   with ( <(length,length);eq> (ty1*,ty2*)
        < msg := [ty1*," not a subtype of ",ty2*]
        ; msginfo' := <detail-message(|msg)> msginfo
-       ; !(sol-wm, <zip;map(!CSubtype(<Fst>,<Snd>,msginfo'))> (ty1*,ty2*))
+       ; !(sol, <zip;map(!CSubtype(<Fst>,<Snd>,msginfo'))> (ty1*,ty2*))
        + msg := ["Cannot check subtyping for lists ",ty1*," and ",ty2*," of different length."]
-       ; !(<add-message(detail-message(|msg)|msginfo)> sol-wm, [])
+       ; !(<add-message(detail-message(|msg)|msginfo)> sol, [])
        ) => res
 
-  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [(sol-wm,[])]
+  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
   where <is-ground> (ty1,ty2)
-      ; <fromWM;sol-x> sol-wm => x*
+      ; <sol-x> sol => x*
       ; <is-subtype(|x*)> (ty1,ty2)
 
 

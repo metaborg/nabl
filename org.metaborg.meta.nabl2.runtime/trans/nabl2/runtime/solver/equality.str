@@ -8,40 +8,40 @@ imports
   nabl2/runtime/solver/-
 
 rules
-  
+ 
   do-not-unify = fail // use to guard special constructors from accidental unification
   
-  solve-constraint: (CEqual(t,t',msginfo),sol-wm) -> [(sol-wm',[])]
+  solve-constraint: (CEqual(t,t',msginfo),sol) -> [(sol',[])]
   where <do-not-unify> t + <do-not-unify> t'
   with msg := "Unifying subtitutions is forbidden"
-     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+     ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
 
-  solve-constraint: (CEqual(t1,t2,_),sol-wm) -> [(sol-wm,[])]
+  solve-constraint: (CEqual(t1,t2,_),sol) -> [(sol,[])]
   where <term-eq> (t1,t2)
 
-  solve-constraint: (CEqual(t,v@Var(_),msginfo),sol-wm) -> [(sol-wm,[CEqual(v,t,msginfo)])]
+  solve-constraint: (CEqual(t,v@Var(_),msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
   where <not(is-var)> t
 
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
+  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
   where <var-occurs> (v,t)
   with msg := [v," occurs in ",t]
-     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+     ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
   
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
+  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
   where <not(var-occurs)> (v,t)
       ; <is-reduced> t
-  with sol-wm' := <sol-wm-apply-s(|[(v,t)])> sol-wm
+  with sol' := <sol-apply-s(|[(v,t)])> sol
   
-  solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol-wm) -> [(sol-wm',[])]
+  solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
   where <not(is-op)> t1
       ; <not(is-op)> t2
       ; ( <not(term-eq)> (c1,c2) 
        <+ <(length,length);not(eq)> (a1,a2)
         )
   with msg := <default-unify-error(|t1,t2)>
-     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+     ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
 
-  solve-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol-wm) -> [(sol-wm,C*)]
+  solve-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol) -> [(sol,C*)]
   where <not(is-op)> t1;
         <(length,length);eq> (a1,a2)
   with msg := <default-unify-error(|t1,t2)>;
@@ -49,14 +49,14 @@ rules
        C* := <zip(!CEqual(<Fst>,<Snd>,msginfo'))> (a1,a2)
 
 
-  solve-constraint: (CInequal(t1,t2,msginfo),sol-wm) -> [(sol-wm',[])]
+  solve-constraint: (CInequal(t1,t2,msginfo),sol) -> [(sol',[])]
   where <is-ground> t1;
         <is-ground> t2
   with ( <term-eq> (t1,t2)
        < msg := [t1," and ",t2," are equal"];
-         <add-message(detail-message(|msg)|msginfo)> sol-wm
-       + !sol-wm
-       ) => sol-wm'
+         <add-message(detail-message(|msg)|msginfo)> sol
+       + !sol
+       ) => sol'
 
 
 rules

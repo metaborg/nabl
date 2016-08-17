@@ -1,23 +1,25 @@
-module generation/modules
+module generation/modules/module
 
 imports
 
   libstrc
+  signatures/modules/-
   generation/-
+  generation/signatures/-
 
 rules
 
   module-to-str:
     Module(name,section*) ->
-      Module(name,[import-str,resolution-params-str,section-str*])
+      module-str
     with
       import-str := Imports([
         Import("nabl2shared"),
         Import("nabl2runtime")
       ]);
-      resolution-params-str := <resolution-params-to-str> section*;
-      section-str*          := <filter(section-to-str)> section*
- 
+      nameresolution-str* := <sections-to-nameresolution-str> section*;
+      section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;
+      module-str := Module(name,[import-str,nameresolution-str*,section-str*])
 
 rules
 

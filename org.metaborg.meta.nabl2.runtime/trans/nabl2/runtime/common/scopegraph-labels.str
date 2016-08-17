@@ -3,8 +3,11 @@ module nabl2/runtime/common/scopegraph-labels
 imports
 
   nabl2shared
-
+  
 rules
+
+  // TODO: Calculate (and check) the closure over the label order. If some pairs
+  // are not explicit, the resolution algorithm will currently fail.
 
   labels    = <conc;make-set> (<custom-labels<+![]>,<default-labels>)
   labels-wf = custom-labels-wf <+ default-labels-wf
@@ -49,10 +52,10 @@ rules
  
   // builtin labels
   max-labels = ?L ; filter(\ l -> l where <map(\ l' -> <not(label-lt)> (l,l') \)> L \) ; make-set
-  
+ 
   labels-lt(|l) = filter(\ l' -> l' where <label-lt> (l',l) \) ; make-set
-  
-  empty-lt(|l) = ![]
+ 
+  empty-lt(|l) = filter(not(?l))
   
   default-labels    = ![D(),P(),I()]
   

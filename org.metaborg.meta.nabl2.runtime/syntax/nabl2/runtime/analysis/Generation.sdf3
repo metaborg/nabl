@@ -1,0 +1,13 @@
+module nabl2/runtime/analysis/Generation
+
+imports
+
+  nabl2/shared/common/Terms
+
+context-free syntax
+
+  AnalysisResult.Params = <params <Params>>
+
+  Params = <^ (<{Term ","}*>) : <Term>>
+  Params = <^ (<{Term ","}*>)>
+

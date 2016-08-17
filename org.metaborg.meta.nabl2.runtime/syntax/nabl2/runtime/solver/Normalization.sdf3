@@ -1,7 +1,9 @@
-module nabl2/runtime/common/Normalization
+module nabl2/runtime/solver/Normalization
 
 imports
 
+  nabl2/shared/common/AST
+  nabl2/shared/common/Identifiers
   nabl2/shared/common/Native
   nabl2/shared/common/Terms
   nabl2/shared/constraints/Base
@@ -13,3 +15,4 @@ context-free syntax
 
   Constraint.CConj = <(<{Constraint ",\n"}*>)>
   Constraint.CDisj = <(<{Constraint ";\n"}*>)>
+ 

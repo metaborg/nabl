@@ -1,0 +1,43 @@
+module nabl2/shared/ast
+
+imports
+
+  runtime/editor/origins
+  
+  signatures/nabl2/shared/common/-
+
+rules // ast indices
+
+  index-ast(|source) =
+    prim("SG_index_ast", source)
+
+  index-sublist(|list) =
+    prim("SG_index_sublist", list)
+
+  get-ast-index =
+    ?t ; prim("SG_get_ast_index") ; copy-origin(|t)
+
+  set-ast-index(|index) =
+    prim("SG_set_ast_index",index)
+
+  get-ast-metadata(|key) =
+    prim("SG_get_ast_metadata", key)
+
+  set-ast-metadata(|key,value) =
+    prim("SG_set_ast_metadata", key, value)
+
+  get-ast-refs =
+    prim("SG_get_ast_references")
+
+  copy-ast-index(|from) =
+    set-ast-index(|<get-ast-index> from)
+ <+ warn(|"Cannot copy ast index")
+
+  ast-eq = where((get-ast-index,get-ast-index);eq) ; where(eq)
+
+rules // origins
+
+  copy-origin(|from) =
+    origin-location-offset-set(|<origin-location-offset> from)
+ <+ warn(|"Cannot copy origin")
+

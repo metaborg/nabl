@@ -1,0 +1,28 @@
+module nabl2/runtime/interpreter/scopegraph-impl
+
+imports
+
+  nabl2/runtime/interpreter/scopegraph-api
+
+signature
+
+  sorts
+    TermIndex
+    Namespace
+ 
+  constructors
+    Scope            : String -> Scope
+
+    DefaultNamespace : Namespace
+    Namespace        : String -> Namespace
+ 
+    TermIndex        : String * Int -> TermIndex
+
+    Occurrence       : Namespace * String * TermIndex -> Occurrence
+
+    Label            : String -> Label
+ 
+    D                : Scope * Occurrence -> Path
+    N                : Scope * Label * Occurrence * Path * Path -> Path
+    E                : Scope * Label * Path -> Path
+

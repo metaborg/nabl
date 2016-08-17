@@ -2,14 +2,26 @@ module nabl2/runtime/editor/menus
 
 imports
 
-  nabl2/runtime/analysis/pp
+  nabl2/runtime/analysis/-
 
 rules
 
-  show-analysis: (_, _, ast, path, project-path) -> (filename, result)
+  show-file-analysis: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.txt")> path
-       ; result := <get-analysis;pp-Analysis> ast
+       ; result := <get-analysis;pp-Analysis> $[[project-path]/[path]]
+      <+ result := "(no file analysis found)"
 
-  show-analysis-aterm: (_, _, ast, path, project-path) -> (filename, result)
+  show-file-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.aterm")> path
-       ; result := <get-analysis> ast
+       ; result := <get-analysis> $[[project-path]/[path]]
+      <+ result := None()
+
+  show-project-analysis: (_, _, _, _, project-path) -> (filename, result)
+    with filename := $[[project-path]/analysis.txt]
+       ; result := <get-analysis;pp-Analysis> project-path
+      <+ result := "(no project analysis found)"
+
+  show-project-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
+    with filename := $[[project-path]/analysis.aterm]
+       ; result := <get-analysis> project-path
+      <+ result := None()

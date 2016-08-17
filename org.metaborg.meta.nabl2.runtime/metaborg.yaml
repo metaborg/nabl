@@ -7,6 +7,8 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
+  # org.metaborg:dynsem:${metaborgVersion} # cannot appear here, because dynsem
+                                           # is built later in the build process
   source:
   - org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
@@ -33,6 +35,9 @@ exports:
 - language: EditorService
   directory: src-gen
   includes: "**/*.esv"
+- language: ds
+  directory: trans
+  includes: "**/*.ds"
 language:
   stratego:
     format: ctree

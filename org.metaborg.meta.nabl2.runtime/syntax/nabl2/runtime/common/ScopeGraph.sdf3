@@ -3,7 +3,8 @@ module nabl2/runtime/common/ScopeGraph
 imports
 
   nabl2/shared/common/AST
-  nabl2/shared/common/Names
+  nabl2/shared/common/Resolution
+  nabl2/shared/common/ScopeGraph
 
 context-free syntax
 
@@ -18,18 +19,16 @@ context-free syntax
  
   ScopeDef.S = <
     {
-      decls        = <{Occurrence ", "}*>
-      refs         = <{Occurrence ", "}*>
-      direct edges = <{DirectEdgeEntry ", "}*>
-      named edges  = <{NamedEdgeEntry ", "}*>
+      decls        = <{Occurrence ",\n"}*>
+      refs         = <{Occurrence ",\n"}*>
+      direct edges = <{DirectEdgeEntry ",\n"}*>
+      named edges  = <{NamedEdgeEntry ",\n"}*>
     }
   >
  
   DirectEdgeEntry = <<PathLabel>/<Scope>>
   NamedEdgeEntry = <<PathLabel>/<Occurrence>>
 
-  AssocEntry = <<Associable> : <{AssocValue ", "}*>>
+  AssocEntry = <<Occurrence> : <{AssocValue ", "}*>>
   AssocValue = <<PathLabel>/<Scope>>
-  Associable = Occurrence
-  Associable = ASTIndex
 

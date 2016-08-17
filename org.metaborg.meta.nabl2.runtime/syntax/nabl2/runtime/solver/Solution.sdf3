@@ -3,6 +3,7 @@ module nabl2/runtime/solver/Solution
 imports
 
   nabl2/shared/common/Vars
+  nabl2/runtime/analysis/EditorMessages
   nabl2/runtime/common/Resolution
   nabl2/runtime/common/ScopeGraph
   nabl2/runtime/solver/Namebinding
@@ -11,11 +12,47 @@ imports
 
 context-free syntax
 
-  Solution.Sol = <
-    scope graph      = <ScopeGraph>
-    resolution       = <{OneResolution "\n"}*>
-    typing           = <{Typing "\n"}*>
-    substitution     = <Substitution>
-    subtype relation = <SubtypeRelation>
+  Solution = {SolutionComponent "\n\n"}*
+
+  SolutionComponent.ScopeGraph = <
+    scope graph :=
+      <ScopeGraph>
+  >
+  
+  SolutionComponent.NameResolution = <
+    name resolution := 
+      <{OneResolution "\n"}*>
   >
 
+  SolutionComponent.Typing = <
+    typing :=
+      <{Typing "\n"}*>
+  >
+
+  SolutionComponent.Values = <
+    values :=
+      <{Valuation "\n"}*>
+  >
+
+  SolutionComponent.Substitution = <
+    substitution := 
+      <{Substitution "\n"}*>
+  >
+
+  SolutionComponent.SubtypeRelation = <
+    subtype relation :=
+      <SubtypeRelation>
+  >
+
+  SolutionComponent.Errors = <
+    errors :=
+      <{EditorMessage "\n"}*>
+  >
+  SolutionComponent.Warnings = <
+    warnings :=
+      <{EditorMessage "\n"}*>
+  >
+  SolutionComponent.Notes = <
+    notes :=
+      <{EditorMessage "\n"}*>
+  >

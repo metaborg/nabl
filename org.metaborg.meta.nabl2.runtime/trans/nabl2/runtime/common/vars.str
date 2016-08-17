@@ -6,6 +6,6 @@ imports
 
 rules
   
-  reduce-op(|sol-wm) = fail
+  reduce-op(|sol) = fail
   is-reduced = where(collect-all(is-op) => [])
 

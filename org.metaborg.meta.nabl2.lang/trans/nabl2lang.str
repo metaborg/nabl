@@ -6,11 +6,17 @@ imports
   libstratego-aterm
 
   nabl2shared
-
+ 
   analysis/main
   completion
   generation/main
   pp
+  signature-extraction/main
+ 
+ 
+rules
+
+  editor-analyze = analyze <+ null-analysis
  
 rules // Debugging
   

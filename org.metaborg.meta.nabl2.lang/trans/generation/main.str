@@ -4,16 +4,17 @@ imports
 
   libstrc
   generation/-
+  generation/modules/-
+  generation/rules/-
+  generation/signatures/-
   util/src-gen
 
 rules
 
-  editor-save = generate-cgen-str
-
-  generate-cgen-str:
+  generate-str:
     (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
     with
       filename   := <create-src-gen(|project-path, "nabl2", ".str")> name;
       module-str := <module-to-str> ast;
-      result     := <pp-stratego-string> module-str
+      result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
  

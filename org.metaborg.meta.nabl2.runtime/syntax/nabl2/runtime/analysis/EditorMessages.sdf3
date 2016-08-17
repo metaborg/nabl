@@ -10,6 +10,6 @@ context-free syntax
 
   EditorMessage = <<OriginTerm> : <String>>
   
-  OriginTerm = ASTIndex
+  OriginTerm = TermIndex
   OriginTerm = Term
 

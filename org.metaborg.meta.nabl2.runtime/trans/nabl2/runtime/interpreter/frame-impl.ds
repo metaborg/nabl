@@ -1,0 +1,89 @@
+module nabl2/runtime/interpreter/frame
+
+imports
+  nabl2/runtime/interpreter/frame-api
+  nabl2/runtime/interpreter/scopegraph-api
+  nabl2/runtime/interpreter/scopegraph-impl
+
+// FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
+
+signature
+
+  constructors
+    FID : Int -> FrameId {implicit}
+    F : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> Frame 
+    Heap : Map(FrameId, Frame) -> H {implicit}
+
+//////////////////////////////
+// VANILLA FRAMES AND HEAPS //
+//////////////////////////////
+
+rules
+
+  // Operations on frames
+
+  initFrame(s, ks, slots) :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  where
+    fresh => ff.
+    
+  f, H Heap(x) |- scopeOfFrame() -scopeOfFrame-> s
+  where
+  	x[f] => F(s, _, _).
+  
+  // Dynamic address lookup  
+  // FIXME the scope in a step is the scope stepping from, does this function
+  //       use it that way?
+
+  f |- lookup(D(_, d)) -lookup-> Addr(f, d).
+
+  f1, h |- lookup(E(s, l, p)) -lookup-> Addr(f3, d)
+  where
+    f1, h |- linksOf() -linksOf-> ks;
+    ks[l][s] => f2;
+    f2, h |- lookup(p) -lookup-> Addr(f3, d).
+    
+  // Fetching and mutating slot values
+    
+  f, h |- get(d) -get-> v
+  where
+    f, h |- slotsOf() -slotsOf-> slots;
+    slots[d] => v.
+
+  f |- set(d, v) :: H Heap(x) -set-> v :: H {f |--> F(s, ks, {d |--> v, slots}), x}
+  where
+    x[f] => F(s, ks, slots).
+  
+rules
+  
+  f, H Heap(x) |- linksOf() -linksOf-> ks
+  where
+    x[f] => F(_, ks, _).
+    
+  f, H Heap(x) |- slotsOf() -slotsOf-> slots
+  where
+    x[f] => F(_, _, slots).
+
+//////////////////////////////
+// DEFAULT FRAMES AND HEAPS //
+//////////////////////////////
+
+signature
+  
+  constructors
+    DefaultSlots : List(Occurrence) --> Map(Occurrence, Val)
+
+rules
+
+  initDefault(s, ks) :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  where
+    fresh => ff;
+    declsOfScope(s) => ds;
+    DefaultSlots(ds) --> slots.
+  
+  DefaultSlots([]) --> {}.
+  
+  DefaultSlots([d|ds]) --> { d |--> v, slots }
+  where
+    typeOfDecl(d) => t;
+    t -defaultv-> v;
+    DefaultSlots(ds) --> slots.

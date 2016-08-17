@@ -6,4 +6,5 @@ imports
 
 context-free syntax
 
-  ASTIndex = <@<Int>>
+  TermIndex.TermIndex = <@<String>:<Int>>
+  

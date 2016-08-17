@@ -1,0 +1,29 @@
+module nabl2/runtime/interpreter/scopegraph-api
+
+signature
+  
+  sorts
+    Occurrence
+    Path
+    Scope
+    Label
+    LabeledScope
+    Type
+
+  constructors
+    LabeledScope     : Label * Scope -> LabeledScope
+
+	constructors
+		P                : Label
+    I                : Label
+
+  native operators
+  //indexOf : Term -> TermIndex
+  //mkOcc : String -> Occurrence
+  //mkOcc : String * String -> Occurrence
+  //mkOcc : String * String * TermIndex -> Occurrence
+    pathOfRef    : Occurrence -> Path
+    declsOfScope : Scope -> List(Occurrence)
+    linksOfScope : Scope -> List(LabeledScope)
+    typeOfDecl   : Occurrence -> Type
+    valueOfDecl  : Occurrence -> Type

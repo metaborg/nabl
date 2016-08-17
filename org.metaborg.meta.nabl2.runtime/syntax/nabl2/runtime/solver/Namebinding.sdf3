@@ -2,7 +2,7 @@ module nabl2/runtime/solver/Namebinding
 
 imports
 
-  nabl2/shared/common/Names
+  nabl2/shared/common/ScopeGraph
   nabl2/runtime/common/Resolution
 
 context-free syntax
@@ -11,3 +11,6 @@ context-free syntax
 
   Placeholder.NAMES      = "NAMES"
 
+lexical syntax
+
+  Keyword = "NAMES"

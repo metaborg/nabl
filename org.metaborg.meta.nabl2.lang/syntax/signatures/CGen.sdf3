@@ -1,0 +1,25 @@
+module signatures/CGen
+
+imports
+
+  nabl2/shared/common/Terms
+  rules/Rules
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Signature.CGen = <
+    constraint generator
+      <{CGenSig "\n"}*>
+  >
+  
+  CGenSig.CGenSig = <<RuleName> [[ <Sort> <CGenSigParams> <CGenSigType> ]]>
+ 
+  CGenSigParams   = <^ (<{Sort ","}*>)>
+
+  CGenSigType.NoType = <>
+  CGenSigType.Type   = <: *>
+

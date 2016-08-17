@@ -10,7 +10,7 @@ imports
 
 rules
 
-  G-new = !G([(Global(),<G--new_s>)],[])
+  G-new = !G([],[])
   G--new_s = !S([],[],[],[])
   G-with-decl        = ?(<id>,s,d) ; G(update(S(![d|<id>],id,id,id),G--new_s|s), id)
   G-with-ref         = ?(<id>,s,r) ; G(update(S(id,![r|<id>],id,id),G--new_s|s), id)
@@ -35,12 +35,12 @@ rules
   occurrence-atom = ?Name(_,_)
   occurrence-atom = !Name(<occurrence-ns>,<occurrence-name>)
 
-  occurrence-name = ?Name(_,<strip-annos>)
-  occurrence-name = ?Occurrence(_,<strip-annos>,_)
+  occurrence-name = ?Name(_,<id>)
+  occurrence-name = ?Occurrence(_,<id>,_)
 
-  occurrence-ns = ?Name(<strip-annos>,_)
-  occurrence-ns = ?Occurrence(<strip-annos>,_,_)
+  occurrence-ns = ?Name(<id>,_)
+  occurrence-ns = ?Occurrence(<id>,_,_)
 
-  occurrence-index = ?Occurrence(_,_,<strip-annos>)
+  occurrence-index = ?Occurrence(_,_,<id>)
 
   filter-ns(|ns) = where(All() := ns) < id + filter(where(occurrence-ns ; ?ns))

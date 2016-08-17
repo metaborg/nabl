@@ -2,7 +2,8 @@ module nabl2/runtime/common/Resolution
 
 imports
 
-  nabl2/shared/common/Names
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Resolution
   nabl2/shared/common/Terms
 
 context-free syntax
@@ -14,11 +15,11 @@ context-free syntax
 
 context-free syntax
 
-  Path            = {Step "\n"}*
-
-  Step.D          = <D(<Occurrence>)>
-  Step.E          = <E(<PathLabel>,<Scope>)>
-  Step.N          = <N(<PathLabel>,<Occurrence>,<Scope>)>
+  Path = {Step "\n"}*
+  
+  Step.D          = <D(<Scope>,<Occurrence>)>
+  Step.E          = <E(<Scope>,<PathLabel>)>
+  Step.N          = <N(<Scope>,<PathLabel>,<Occurrence>,<Path>)>
  
 context-free syntax
 

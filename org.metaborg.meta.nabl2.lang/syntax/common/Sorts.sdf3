@@ -1,0 +1,12 @@
+module common/Sorts
+
+context-free syntax
+
+  Sort.OccurrenceSort = "occurrence"
+  Sort.ScopeSort      = "scope"
+  Sort.TypeSort       = "type"
+
+lexical syntax
+
+  SortVar = "scope" | "occurrence" | "type" {reject}
+

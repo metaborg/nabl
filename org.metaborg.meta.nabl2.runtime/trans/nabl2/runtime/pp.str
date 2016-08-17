@@ -3,7 +3,6 @@ module nabl2/runtime/pp
 imports
 
   nabl2shared
-  nabl2/runtime/prelude/-
   pp/nabl2/runtime/analysis/-
   pp/nabl2/runtime/common/-
   pp/nabl2/runtime/solver/-
@@ -14,7 +13,7 @@ rules
   pp-Constraint     = pp(prettyprint-Constraint)
   pp-Env            = pp(prettyprint-Env)
   pp-Var            = pp(prettyprint-Var)
-  pp-TypeTerm       = pp(prettyprint-TypeTerm)
+  pp-Type           = pp(prettyprint-Type <+ prettyprint-TypeTerm)
   pp-LabelRE        = pp(prettyprint-LabelRE)
   pp-Label          = pp(prettyprint-AnyLabel)
   pp-Labels         = pp(prettyprint-List(prettyprint-AnyLabel))

@@ -2,28 +2,25 @@ module analysis/main
 
 imports
 
-  libstratego-sglr // for amb(_)
-
+  nabl2shared
   analysis/-
   pp
 
 rules
 
-  editor-analyze:
-    (source-ast,_,_) -> result
-    with
-      result := <analyze> source-ast
-      
-  analyze =
-    ?ast;
-    analyzed-ast := <normalize> ast;
-    error* := <collect-messages(analysis-error)> analyzed-ast;
-    warning* := <collect-messages(analysis-warning)> analyzed-ast;
-    note* := <collect-messages(analysis-note)> analyzed-ast;
-    !(analyzed-ast, error*, warning*, note*)
- 
-  collect-messages(s) =  collect-all(s ; (is-list<+MkSingleton)) ; concat
- 
-  analysis-error = fail
-  analysis-warning = fail
-  analysis-note = fail
+  analyze: AnalyzeInitial(_) ->
+      InitialResult(result)
+    with result := None()
+
+  analyze: AnalyzeUnit(_,ast,_) ->
+      UnitResult(ast',result)
+    with ast'   := <normalize> ast;
+    		 result := <module-extract-signatures> ast'
+
+  analysis: AnalyzeFinal(_,initial-result,unit-result*) ->
+      FinalResult(error*,warning*,note*,result)
+    with error*   := [];
+         warning* := [];
+         note*    := [];
+         result   := None()
+

@@ -2,13 +2,16 @@ module nabl2/runtime/solver/Typechecking
 
 imports
 
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Terms
   nabl2/shared/common/Types
   nabl2/shared/constraints/Typechecking
 
 context-free syntax
 
-  Typing               = <<Typeable> : <TypeTerm>>
+  Typing               = <<Occurrence> : <TypeTerm>>
 
   SubtypeRelation      = {SubtypeEntry "\n"}*
   SubtypeEntry         = [[TypeTerm] <: [{TypeTerm ","}*]]
 
+  Valuation            = <<Occurrence> : <Term>>

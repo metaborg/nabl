@@ -4,14 +4,13 @@ imports
 
   nabl2/shared/common/AST
   nabl2/shared/common/Messages
-  nabl2/shared/common/Names
+  nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Types
-  nabl2/shared/common/Vars
+  nabl2/shared/common/Terms
 
 context-free syntax
 
-  Constraint.CTypeOf = [[Typeable] : [TypeTerm] [Message]]
-  
-  Typeable = ASTIndex
-  Typeable = Occurrence
+  PrimitiveConstraint.CTypeOf  = [[Occurrence] : [TypeTerm] [Message]]
 
+  PrimitiveConstraint.CValueOf = [[Occurrence] := [Term]]
+ 

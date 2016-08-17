@@ -1,0 +1,23 @@
+module signatures/NameResolution
+
+imports
+
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Resolution
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Signature.NameResolution = <
+    name resolution
+      <{NameResolutionParam "\n"}*>
+  > {longest-match}
+
+  NameResolutionParam.Labels     = <labels <{Label ","}*>>
+  NameResolutionParam.Order      = <order <{LabelOrder ","}*>>
+  NameResolutionParam.WF         = <well-formedness <LabelRE>>

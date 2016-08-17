@@ -1,21 +1,31 @@
 module nabl2/runtime/stdlib/map
 
-constraint-generation rules
-
   /* NOTE:
    * In the types we use nested tuples instead of lists, because Stratego does
    * not allow us to create a list with a Var(_) in the tail, which is later
    * instantiated.
    */
 
+signature
+
+  constraint generator
+
+    Map1  [[ List(a) ^ (b) ]]
+    Map1T [[ List(a) ^ (b) : * ]]
+
+    Map2  [[ List(a) ^ (b,c) ]]
+    Map2T [[ List(a) ^ (b,c) : * ]]
+
+rules
+
   Map1 [[ [x|xs] ^ (s) ]] :=
     [[ x ^ (s) ]], Map1 [[ xs ^ (s) ]].
   Map1 [[ [] ^ (s) ]] :=
     true.
 
-  Map1 [[ [x|xs] ^ (s) : (ty,tys) ]] :=
-    [[ x ^ (s) : ty ]], Map1 [[ xs ^ (s) : tys ]].
-  Map1 [[ [] ^ (s) : () ]] :=
+  Map1T [[ [x|xs] ^ (s) : (ty,tys) ]] :=
+    [[ x ^ (s) : ty ]], Map1T [[ xs ^ (s) : tys ]].
+  Map1T [[ [] ^ (s) : () ]] :=
     true.
 
   Map2 [[ [x|xs] ^ (s1,s2) ]] :=
@@ -23,7 +33,8 @@ constraint-generation rules
   Map2 [[ [] ^ (s1,s2) ]] :=
     true.
 
-  Map2 [[ [x|xs] ^ (s1,s2) : (ty,tys) ]] :=
-    [[ x ^ (s1,s2) : ty ]], Map2 [[ xs ^ (s1,s2) : tys ]].
-  Map2 [[ [] ^ (s1,s2) : () ]] :=
+  Map2T [[ [x|xs] ^ (s1,s2) : (ty,tys) ]] :=
+    [[ x ^ (s1,s2) : ty ]], Map2T [[ xs ^ (s1,s2) : tys ]].
+  Map2T [[ [] ^ (s1,s2) : () ]] :=
     true.
+ 

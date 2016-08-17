@@ -3,13 +3,16 @@ module nabl2/runtime/editor/services
 imports
 
   nabl2/runtime/analysis/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/pp
+  
+  pp/-
 
 rules
 
   editor-resolve: (node, position, ast, path, project-path) -> decl
-    where decl := <get-ref> node
+    where decl := <get-ast-ref> node
 
   editor-hover: (node, position, ast, path, project-path) -> label
-    where type := <get-type;pp-TypeTerm;xmlencode> node
+    where type := <get-ast-type;pp-Type;xmlencode> node
     with  label := $[Type: [type]]

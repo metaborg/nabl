@@ -1,0 +1,55 @@
+module rules/CGen
+
+imports
+ 
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Terms
+  nabl2/shared/common/Types
+  nabl2/shared/common/Vars
+  nabl2/shared/constraints/Base
+
+  common/Identifiers
+  common/Types
+  rules/Rules
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Rule.CGenInitRule = <
+    init <CGenParamsTerm> <CGenTypeTerm> :=
+        <{RuleClause ","}+>.
+  >
+
+  Rule.CGenMatchRule = <
+    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+        <{RuleClause ","}+>.
+  >
+
+  RuleClause = PrimitiveConstraint
+
+  RuleClause = <(<Constraint>)>
+
+  RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+
+  RuleClause.NewScopes   = <new <{Var " "}+>>
+
+context-free syntax
+
+  CGenParamsTerm.List    = <^ (<{TypeTerm ","}*>)>
+
+  CGenParamsPattern.List = <^ (<{VarOrWld ","}*>)>
+
+  CGenTypeTerm.NoType    =
+  CGenTypeTerm.Type      = <: <TypeTerm>>
+
+  CGenTypePattern.NoType =
+  CGenTypePattern.Type   = <: <TypePattern>>
+
+lexical syntax
+
+  Keyword        = "new"
+
+ 

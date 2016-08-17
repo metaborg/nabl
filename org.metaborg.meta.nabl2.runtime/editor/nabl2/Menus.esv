@@ -4,5 +4,10 @@ menus
 
   menu: "Analysis"
 
-    action: "Show Analysis"          = show-analysis       (meta) (realtime) (openeditor)
-    action: "Show Analysis ATerm"    = show-analysis-aterm (meta) (realtime) (openeditor)
+    action: "Show File Analysis (singlefile)"       = show-file-analysis (meta) (realtime) (openeditor)
+    action: "Show File Analysis ATerm (singlefile)" = show-file-analysis-aterm (meta) (realtime) (openeditor)
+
+    separator
+
+    action: "Show Project Analysis (multifile)"        = show-project-analysis (meta) (realtime) (openeditor)
+    action: "Show Project Analysis ATerm (multifile)"  = show-project-analysis-aterm (meta) (realtime) (openeditor)
