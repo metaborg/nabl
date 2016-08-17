@@ -7,8 +7,6 @@ imports
   runtime/editor/origins
   runtime/tmpl/pp
 
-  nabl2/shared/-
-
   pp/-
   pp/nabl2/shared/common/-
   pp/nabl2/shared/constraints/-
@@ -26,17 +24,14 @@ rules
 
 rules
 
-  prettyprint-String:
-    s -> [S("\""),S(s),S("\"")]
-    where <is-string> s
+  prettyprint-String =
+    ![S($["[<is-string>]"])]
 
-  prettyprint-Int:
-    i -> [S(<int-to-string> i)]
-    where is-int
+  prettyprint-Int =
+    ![S(<is-int;int-to-string>)]
 
-  prettyprint-Real:
-    r -> [S(<real-to-string> r)]
-    where is-real
+  prettyprint-Real =
+    ![S(<is-real;real-to-string>)]
 
   prettyprint-List(pp): t -> [ H( [SOpt(HS(),"0")]
                                 , [S("["),t',S("]")] ) ]
