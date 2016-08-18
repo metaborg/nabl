@@ -24,9 +24,6 @@ rules
 
 rules
 
-  prettyprint-String =
-    ![S($["[<is-string>]"])]
-
   prettyprint-Int =
     ![S(<is-int;int-to-string>)]
 
