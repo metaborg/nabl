@@ -1,0 +1,4 @@
+[ConstructorAlias("DummyAddr", 0, Tuple()),
+ ConstructorAlias("DummyVal", 0, Tuple()),
+ ConstructorAlias("DummyScope", 0, Tuple()),
+ ConstructorAlias("DummyFrameId", 0, Tuple())]
