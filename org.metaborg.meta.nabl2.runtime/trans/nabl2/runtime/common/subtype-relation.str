@@ -9,6 +9,7 @@ rules
 
   initial-subtype-relation = ![]
  
+
   extend-subtype-relation(|x*): (ty1,ty2) -> x2*
     where not(<get(|ty1)> x*);
           not(<is-subtype(|x*)> (ty2,ty1))
@@ -16,9 +17,13 @@ rules
          x2* := <mapv(try(\ ty* -> <nub> [ty2|ty*]
                             where <elem(term-eq)> (ty1,ty*) \))> x1*
  
+  extend-subtype-relation(|x*): (ty1,ty2) -> x*
+    where <eq> (<get(|ty1);Hd> x*, ty2)
+ 
+
   is-subtype(|x*): (ty1,ty2) -> <id>
     where term-eq
         + ( ty* := <get(|ty1)> x*;
             <elem(term-eq)> (ty2, ty*)
           )
- 
+

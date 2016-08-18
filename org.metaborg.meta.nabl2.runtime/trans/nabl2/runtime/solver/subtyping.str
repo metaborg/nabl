@@ -40,3 +40,4 @@ rules
 
   constraint-message: FSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to set ",ty1," as subtype of ",ty2])> msginfo
   constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
+
