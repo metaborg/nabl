@@ -60,7 +60,7 @@ rules
       g := <sol-g> sol1;
       fr* := <resolve-all> g;
       (r1*,rn*) := <partition({\ (r,[dp]) -> (r,dp) \})> fr*;
-      sol2 := <sol-add-r(|r1*)> sol1;
+      sol2 := <sol-set-r(|r1*)> sol1;
       lo* := <join(label-lt)> (<labels>,<labels>);
       sol3* := <solve-constraints-phase2(|rn*)> (sol2,C1*);
       sol4* := <map(Fst)> sol3*; // discard constraint part

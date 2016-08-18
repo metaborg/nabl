@@ -44,12 +44,12 @@ rules
 
   sol-set-x(|x*) = fetch(SubtypeRelation(!x*))
 
-  sol-add-r(|r*) = fetch(NameResolution(![r*|<id>]))
+  sol-set-r(|r*) = fetch(NameResolution(!r*))
 
   sol-set-r(|r,d) = fetch(NameResolution(set(!d|r)))
 
-  sol-add-error(|msg) = fetch(Errors(![msg|<id>]))
-  sol-add-warning(|msg) = fetch(Warnings(![msg|<id>]))
-  sol-add-note(|msg) = fetch(Notes(![msg|<id>]))
+  sol-add-error(|msg) = fetch(Errors(set-add(|msg)))
+  sol-add-warning(|msg) = fetch(Warnings(set-add(|msg)))
+  sol-add-note(|msg) = fetch(Notes(set-add(|msg)))
 
   is-erronious = fetch(?Errors([_|_]))

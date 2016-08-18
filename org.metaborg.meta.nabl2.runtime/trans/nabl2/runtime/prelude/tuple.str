@@ -1,8 +1,0 @@
-module nabl2/runtime/prelude/tuple
-
-imports
-  nabl2/runtime/prelude/interfaces
-
-rules // applicative
-
-  pureT(|n): x -> <copy;ListToTuple> (n,x)
