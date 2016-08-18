@@ -22,11 +22,11 @@ rules
 
   // Operations on frames
 
-  initFrame(s, ks, slots) :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  SLS(s, ks, slots) :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff.
     
-  f, H Heap(x) |- scopeOfFrame() -scopeOfFrame-> s
+  f, H Heap(x) |- scopeOf() -scopeOf-> s
   where
   	x[f] => F(s, _, _).
   
@@ -34,22 +34,22 @@ rules
   // FIXME the scope in a step is the scope stepping from, does this function
   //       use it that way?
 
-  f |- lookup(D(_, d)) -lookup-> Addr(f, d).
+  f |- D(_, d) -lookup-> Addr(f, d).
 
-  f1, h |- lookup(E(s, l, p)) -lookup-> Addr(f3, d)
+  f1, h |- E(s, l, p) -lookup-> Addr(f3, d)
   where
     f1, h |- linksOf() -linksOf-> ks;
     ks[l][s] => f2;
-    f2, h |- lookup(p) -lookup-> Addr(f3, d).
+    f2, h |- p -lookup-> Addr(f3, d).
     
   // Fetching and mutating slot values
     
-  f, h |- get(d) -get-> v
+  f, h |- d:Occurrence -get-> v
   where
     f, h |- slotsOf() -slotsOf-> slots;
     slots[d] => v.
 
-  f |- set(d, v) :: H Heap(x) -set-> v :: H {f |--> F(s, ks, {d |--> v, slots}), x}
+  f |- OV(d, v) :: H Heap(x) -set-> v :: H {f |--> F(s, ks, {d |--> v, slots}), x}
   where
     x[f] => F(s, ks, slots).
   
@@ -74,14 +74,14 @@ signature
 
 rules
 
-  initDefault(s, ks) :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  SL(s, ks) :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff;
     declsOfScope(s) => ds;
     DefaultSlots(ds) --> slots.
-  
+
   DefaultSlots([]) --> {}.
-  
+
   DefaultSlots([d|ds]) --> { d |--> v, slots }
   where
     typeOfDecl(d) => t;

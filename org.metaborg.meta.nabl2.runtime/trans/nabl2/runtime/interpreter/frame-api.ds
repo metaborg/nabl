@@ -39,29 +39,23 @@ signature
 //    slotsOf : H * FrameId --> Map(Occurrence, Val)
 
   // Arrows are painful because we have to define tuple types manually.
-  sorts lookup__Arrow constructors
-    lookup : Path -> lookup__Arrow
-  sorts get__Arrow constructors
-  	get : Occurrence -> get__Arrow
-  sorts set__Arrow constructors
-  	set : Occurrence * Val -> set__Arrow 
-  sorts scopeOfFrame__Arrow constructors
-  	scopeOfFrame : scopeOfFrame__Arrow
-  sorts initFrame__Arrow constructors
-  	initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> initFrame__Arrow
-  sorts linksOf__Arrow constructors
-  	linksOf : linksOf__Arrow
-  sorts slotsOf__Arrow constructors
-  	slotsOf : slotsOf__Arrow
+  sorts OccValTuple constructors
+  	OV : Occurrence * Val -> OccValTuple
+  sorts ScopeLinksSlotsTuple constructors
+  	SLS : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> ScopeLinksSlotsTuple
+  sorts scopeOf__Meta linksOf__Meta slotsOf__Meta constructors // These constructors play no role other than determine which rule to apply
+  	scopeOf : scopeOf__Meta
+  	linksOf : linksOf__Meta
+  	slotsOf : slotsOf__Meta
 
   arrows
-  	lookup__Arrow -lookup-> Addr
-  	get__Arrow -get-> Val
-  	set__Arrow -set-> Val // Returns the value being assigned -- should possibly be a null or unit value 
-  	scopeOfFrame__Arrow -scopeOfFrame-> Scope
-  	initFrame__Arrow -initFrame-> FrameId
-  	linksOf__Arrow -linksOf-> Map(Label, Map(Scope, FrameId))
-  	slotsOf__Arrow -slotsOf-> Map(Occurrence, Val)
+  	FrameId, H |- Path -lookup-> Addr
+  	FrameId, H |- Occurrence -get-> Val
+  	FrameId    |- OccValTuple :: H -set-> Val :: H // Returns the value being assigned -- should possibly be a null or unit value 
+  	FrameId, H |- scopeOf__Meta -scopeOf-> Scope
+  	              ScopeLinksSlotsTuple :: H -initFrame-> FrameId :: H
+  	FrameId, H |- linksOf__Meta -linksOf-> Map(Label, Map(Scope, FrameId))
+  	FrameId, H |- slotsOf__Meta -slotsOf-> Map(Occurrence, Val)
 
   variables
     f : FrameId
@@ -80,8 +74,8 @@ signature
 
 //  constructors
 //    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
-	sorts initDefault__Arrow constructors
-    initDefault : Scope * Map(Label, Map(Scope, FrameId)) -> initDefault__Arrow
+	sorts ScopeLinksTuple constructors
+    SL : Scope * Map(Label, Map(Scope, FrameId)) -> ScopeLinksTuple
 
   arrows
-  	initDefault__Arrow -initDefault-> FrameId
+  	ScopeLinksTuple :: H -initDefault-> FrameId :: H
