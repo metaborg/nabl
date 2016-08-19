@@ -2,6 +2,8 @@ module nabl2/runtime/solver/errors
 
 imports
 
+  runtime/editor/origins
+
   nabl2shared
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -49,6 +51,9 @@ rules
   add-message: (Error(), error, sol) -> <sol-add-error(|error)> sol
   add-message: (Warning(), warning, sol) -> <sol-add-warning(|warning)> sol
   add-message: (Note(), note, sol) -> <sol-add-note(|note)> sol
+
+  message-eq =
+    where(eq;(Fst;origin-location-offset,Fst;origin-location-offset);eq)
 
 rules
 

@@ -33,13 +33,13 @@ rules
   occurrence-eq = (occurrence-atom,occurrence-atom) ; eq
 
   occurrence-atom = ?Name(_,_)
-  occurrence-atom = !Name(<occurrence-ns>,<occurrence-name>)
+  occurrence-atom = ?Occurrence(ns,name,index); <copy-origin(|index)> Name(ns,name)
 
-  occurrence-name = ?Name(_,<id>)
-  occurrence-name = ?Occurrence(_,<id>,_)
+  occurrence-name = preserve-origin(?Name(_,<id>))
+  occurrence-name = ?Occurrence(_,name,index); <copy-origin(|index)> name
 
-  occurrence-ns = ?Name(<id>,_)
-  occurrence-ns = ?Occurrence(<id>,_,_)
+  occurrence-ns = preserve-origin(?Name(<id>,_))
+  occurrence-ns = ?Occurrence(ns,_,index); <copy-origin(|index)> ns
 
   occurrence-index = ?Occurrence(_,_,<id>)
 

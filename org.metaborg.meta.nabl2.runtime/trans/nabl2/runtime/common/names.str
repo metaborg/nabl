@@ -1,0 +1,38 @@
+module nabl2/runtime/common/names
+
+imports
+
+  nabl2shared
+
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/pp
+
+  signatures/nabl2/runtime/common/-
+
+rules
+ 
+  get-names(|g): Declarations(s,ns) -> n*
+    where <is-ground> s;
+          d* := <G-decls> (g,s)
+    with n* := <filter-ns(|ns);map(occurrence-atom)> d*
+
+  get-names(|g): References(s,ns) -> n*
+    where <is-ground> s;
+          r* := <G-refs> (g,s)
+    with n* := <filter-ns(|ns);map(occurrence-atom)> r*
+
+  get-names(|g): Visibles(s,ns) -> n*
+    where <is-ground> s;
+          (Total(),e*) := <env(labels-lt|<labels-wf>,g,[],[])> s
+    with  n* := <values;concat;map(Fst);
+                 filter-ns(|ns);
+                 map(occurrence-atom)> e*
+ 
+  get-names(|g): Reachables(s,ns) -> n*
+    where <is-ground> s;
+          (Total(),e*) := <env(empty-lt|<labels-wf>,g,[],[])> s
+    with  n* := <values;concat;map(Fst);
+                 filter-ns(|ns);
+                 map(occurrence-atom)> e*
+ 

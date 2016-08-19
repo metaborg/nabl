@@ -48,8 +48,8 @@ rules
 
   sol-set-r(|r,d) = fetch(NameResolution(set(!d|r)))
 
-  sol-add-error(|msg) = fetch(Errors(set-add(|msg)))
-  sol-add-warning(|msg) = fetch(Warnings(set-add(|msg)))
-  sol-add-note(|msg) = fetch(Notes(set-add(|msg)))
+  sol-add-error(|msg) = fetch(Errors(set-add(message-eq|msg)))
+  sol-add-warning(|msg) = fetch(Warnings(set-add(message-eq|msg)))
+  sol-add-note(|msg) = fetch(Notes(set-add(message-eq|msg)))
 
   is-erronious = fetch(?Errors([_|_]))

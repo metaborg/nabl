@@ -33,6 +33,9 @@ rules // ast indices
     set-ast-index(|<get-ast-index> from)
  <+ warn(|"Cannot copy ast index")
 
+  preserve-ast-index(s) =
+    ?t; s; copy-ast-index(|t)
+
   ast-eq = where((get-ast-index,get-ast-index);eq) ; where(eq)
 
 rules // origins
@@ -41,3 +44,5 @@ rules // origins
     origin-location-offset-set(|<origin-location-offset> from)
  <+ warn(|"Cannot copy origin")
 
+  preserve-origin(s) =
+    ?t; s; copy-origin(|t)

@@ -1,0 +1,15 @@
+module nabl2/shared/common/Sets
+
+imports
+
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  Set.Empty        = <0>
+
+  SetExpr          = Set
+  SetExpr.Isect    = <(<SetExpr> isect <SetExpr>)> {left}
+  SetExpr.Union    = <(<SetExpr> union <SetExpr>)> {left}
+  SetExpr.Diff     = <(<SetExpr> minus <SetExpr>)> {left}
+

@@ -81,56 +81,23 @@ rules
        ; !(sol',[])
        ) => res
  
-  solve-constraint: (CDistinct(N,msginfo),sol) -> [(sol',[])]
-  where <is-ground> N
-      ; g := <sol-g> sol
-      ; n* := <get-names(|g)> N
-  with n'* := <dups(occurrence-eq)> n*
-     ; ( ?[]
-       < !sol
-       + msg := "Duplicate name"
-       ; <add-message(default-message(|msg)|<default-names-pos(|n'*)> msginfo)> sol
-       ) => sol'
+rules 
 
-  solve-constraint: (CSubset(N1,N2,msginfo),sol) -> [(sol',[])]
-  where <is-ground> N1
-      ; <is-ground> N2
-      ; g := <sol-g> sol
-      ; n1* := <get-names(|g)> N1
-      ; n2* := <get-names(|g)> N2
-  with n'* := <diff(occurrence-eq)> (n1*,n2*)
-     ; ( ?[]
-       < !sol
-       + msg := "Missing name"
-       ; <add-message(default-message(|msg)|<default-names-pos(|n'*)> msginfo)> sol
-       ) => sol'
+  is-op = is-Names
 
-  solve-constraint: (CDisjoint(N1,N2,msginfo),sol) -> [(sol',[])]
-  where <is-ground> N1
-      ; <is-ground> N2
-      ; g := <sol-g> sol
-      ; n1* := <get-names(|g)> N1
-      ; n2* := <get-names(|g)> N2
-  with n'* := <isect(occurrence-eq)> (n1*,n2*)
-     ; ( ?[]
-       < !sol
-       + msg := "Duplicate name"
-       ; <add-message(default-message(|msg)|<default-names-pos(|n'*)> msginfo)> sol
-       ) => sol'
+  reduce-op(|sol) = get-names(|<sol-g> sol)
+
+  elems-pos(|x*): NAMES() -> x*
+
+  elems-rep(|x*): NAMES() -> r*
+    with r* := <map(occurrence-name)> x*
 
 rules
 
   constraint-priority: CAssoc(_,_,_,_) -> 4
   constraint-priority: CResolve(_,_,_) -> 4
-  constraint-priority: CDistinct(_,_) -> 4
-  constraint-priority: CSubset(_,_,_) -> 4
-  constraint-priority: CDisjoint(_,_,_) -> 4
 
 rules
- 
-  default-names-pos(|n*) =
-    try(Message(id,?None(),!NAMES()))
-  ; Message(id,bottomup(try(?NAMES();<map(occurrence-name)> n*)),try(?NAMES();<map(occurrence-index)> n*))
  
   unresolved-refs(|rn*): sol -> sol'
     with ref* := <sol-g;G-refs> sol
@@ -142,10 +109,4 @@ rules
   constraint-message: CResolve(r,_,msginfo) -> <default-message(|["Failed to resolve ",r])> msginfo
 
   constraint-message: CAssoc(d,l,_,msginfo) -> <default-message(|["Failed to find associated scope of ",d," with label ",l])> msginfo
-
-  constraint-message: CDistinct(n,msginfo) -> <default-message(|["Failed to check if names in ",n," are distinct"])> msginfo
-
-  constraint-message: CSubset(n1,n2,msginfo) -> <default-message(|["Failed to check if names in ",n1," are in in ",n2])> msginfo
-
-  constraint-message: CDisjoint(n1,n2,msginfo) -> <default-message(|["Failed to check if names in ",n1," and ",n2," are disjoint"])> msginfo
 

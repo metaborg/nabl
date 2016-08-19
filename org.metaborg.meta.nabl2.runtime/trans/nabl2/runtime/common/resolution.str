@@ -150,24 +150,7 @@ rules // resolution internal
   // env-prepend(|Step) = Env -> Env
   env-prepend(|step) = (id,mapv(map(\ (d,p) -> (d,[step|p]) \)))
 
-
-
 rules
- 
-  get-names(|g): Declarations(s,ns) -> n*
-    with n* := <G-decls;filter-ns(|ns)> (g,s)
-
-  get-names(|g): References(s,ns) -> n*
-    with n* := <G-refs;filter-ns(|ns)> (g,s)
-
-  get-names(|g): Visibles(s,ns) -> n*
-    where (Total(),e*) := <env(labels-lt|<labels-wf>,g,[],[])> s
-    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
- 
-  get-names(|g): Reachables(s,ns) -> n*
-    where (Total(),e*) := <env(empty-lt|<labels-wf>,g,[],[])> s
-    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
- 
 
   log-res(s|n) = id // log(s|n)
   log-res(|n)  = log-res(id|n)
