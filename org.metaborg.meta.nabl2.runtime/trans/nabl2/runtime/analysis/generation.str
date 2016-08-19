@@ -42,12 +42,10 @@ rules
 
   // error throwing wrappers for recursive invocations
   generate-constraint(s|source,params) =
-    generate-constraint-placeholder(|params) <+
-    s(|source,params) <+
-    ( where((scopes,type) := params)
-    < fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> scopes] : [<pp-Term> type]])
-    + fatal-err(|$[No suitable constraint generation rule defined with parameters [<pp-Term> params]])
-    )
+    generate-constraint-placeholder(|params)
+ <+ where(!1 => x); // this is freaky, but otherwise the next call fails sometimes
+    s(|source,params)
+ <+ generate-constraint-missing(|params)
 
   generate-constraint-placeholder(|params): term -> CTrue()
     where <is-SDF-placeholder> term
@@ -56,5 +54,15 @@ rules
     else
       <set-ast-params(|params)> term
     end
+
+  generate-constraint-missing(|params): term -> CFalse(Message(Warning(),msg,term))
+    with if (scopes,type) := params then
+      <set-ast-params(|scopes);set-ast-type(|type)> term;
+      msg := $[No suitable constraint generation rule defined with parameters [<pp-Term> scopes] : [<pp-Term> type]]
+    else
+      <set-ast-params(|params)> term;
+      msg := $[No suitable constraint generation rule defined with parameters [<pp-Term> params]]
+    end
+    with warn(|msg)
 
   debug-generate-constraint = fail
