@@ -53,15 +53,17 @@ rules
       <set-ast-params(|params)> term
     end
 
-  generate-constraint-missing(|params): term -> CFalse(Message(Warning(),msg,term))
+  generate-constraint-missing(|params): term -> CFalse(Message(Warning(),emsg,term))
     with if (scopes,type) := params then
       <set-ast-params(|scopes);set-ast-type(|type)> term;
-      msg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> scopes] : _]
+      emsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> scopes] : _];
+      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-Term> scopes] : [<pp-Term> type]]
     else
       <set-ast-params(|params)> term;
-      msg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> params]]
+      emsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> params]];
+      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-Term> params]]
     end
-    with warn(|msg)
+    with warn(|cmsg)
 
   pp-term-sig: c#(a*) -> $[[c]([<pp-term-args> a*])]
 
