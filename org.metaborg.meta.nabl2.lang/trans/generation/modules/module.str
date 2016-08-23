@@ -19,8 +19,8 @@ rules
         Import("nabl2runtime")
       ]);
       pp-str := Rules([
-        SDefNoArgs("prettyprint-NaBL2-Type", CallNoArgs(SVar($[prettyprint-[<language-spec-name>]-Type]))),
-        SDefNoArgs($[prettyprint-[<language-spec-name>]-Type], Fail())
+      //SDefNoArgs("prettyprint-NaBL2-object", CallNoArgs(SVar($[prettyprint-[<language-spec-name>]-Type]))),
+      //SDefNoArgs($[prettyprint-[<language-spec-name>]-Type], Fail())
       ]);
       nameresolution-str* := <sections-to-nameresolution-str> section*;
       section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;

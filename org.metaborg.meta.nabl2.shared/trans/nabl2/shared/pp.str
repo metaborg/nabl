@@ -62,8 +62,6 @@ rules
 
   prettyprint-NaBL2-Term = prettyprint-NaBL2-object <+ prettyprint-NaBL2-ATerm
 
-  prettyprint-NaBL2-Type = fail
-
   prettyprint-NaBL2-object = prettyprint-NaBL2-Int
   prettyprint-NaBL2-object = prettyprint-NaBL2-Real
   prettyprint-NaBL2-object = prettyprint-NaBL2-String
