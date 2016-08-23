@@ -10,4 +10,4 @@ imports
 
 rules
 
-  pp-completion = pp-partial-NaBL2Lang-string
+  pp-completion = pp-partial-NaBL2-string

@@ -3,30 +3,31 @@ module nabl2/runtime/pp
 imports
 
   nabl2shared
+  pp/-
   pp/nabl2/runtime/analysis/-
   pp/nabl2/runtime/common/-
   pp/nabl2/runtime/solver/-
 
 rules
 
-  pp-Term           = pp(prettyprint-NaBL2-Term)
-  pp-Constraint     = pp(prettyprint-NaBL2-Constraint)
-  pp-Env            = pp(prettyprint-NaBL2-Env)
-  pp-Var            = pp(prettyprint-NaBL2-Var)
-  pp-Type           = pp(prettyprint-NaBL2-Type <+ prettyprint-NaBL2-TypeTerm)
-  pp-LabelRE        = pp(prettyprint-NaBL2-LabelRE)
-  pp-Label          = pp(prettyprint-NaBL2-AnyLabel)
-  pp-Labels         = pp(prettyprint-List(prettyprint-NaBL2-AnyLabel))
-  pp-Scope          = pp(prettyprint-NaBL2-Scope)
-  pp-Scopes         = pp(prettyprint-List(prettyprint-NaBL2-Scope))
-  pp-Occurrence     = pp(prettyprint-NaBL2-Occurrence)
-  pp-Occurrences    = pp(prettyprint-List(prettyprint-NaBL2-Occurrence))
-  pp-FullResolveds  = pp(prettyprint-NaBL2-FullResolveds)
+  pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term)
+  pp-NaBL2-Constraint     = pp-NaBL2(prettyprint-NaBL2-Constraint)
+  pp-NaBL2-Env            = pp-NaBL2(prettyprint-NaBL2-Env)
+  pp-NaBL2-Var            = pp-NaBL2(prettyprint-NaBL2-Var)
+  pp-NaBL2-Type           = pp-NaBL2(prettyprint-NaBL2-Type <+ prettyprint-NaBL2-TypeTerm)
+  pp-NaBL2-LabelRE        = pp-NaBL2(prettyprint-NaBL2-LabelRE)
+  pp-NaBL2-Label          = pp-NaBL2(prettyprint-NaBL2-AnyLabel)
+  pp-NaBL2-Labels         = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-AnyLabel))
+  pp-NaBL2-Scope          = pp-NaBL2(prettyprint-NaBL2-Scope)
+  pp-NaBL2-Scopes         = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-Scope))
+  pp-NaBL2-Occurrence     = pp-NaBL2(prettyprint-NaBL2-Occurrence)
+  pp-NaBL2-Occurrences    = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-Occurrence))
+  pp-NaBL2-FullResolveds  = pp-NaBL2(prettyprint-NaBL2-FullResolveds)
 
-  pp-MessageContent = pp(prettyprint-NaBL2-MessageContent)
+  pp-NaBL2-MessageContent = pp-NaBL2(prettyprint-NaBL2-MessageContent)
 
-  prettyprint-object   = prettyprint-NaBL2-Scope
-  prettyprint-object   = prettyprint-NaBL2-Occurrence
+  prettyprint-NaBL2-object   = prettyprint-NaBL2-Scope
+  prettyprint-NaBL2-object   = prettyprint-NaBL2-Occurrence
   
-  prettyprint-TypeTerm = prettyprint-NaBL2-Term
+  prettyprint-NaBL2-TypeTerm = prettyprint-NaBL2-Term
 

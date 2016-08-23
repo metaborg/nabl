@@ -43,7 +43,7 @@ rules
   add-message(s|msginfo): sol -> sol'
     with Message(kind,msg,pos) := <s> msginfo
     where <not(is-list)> pos
-    with msg' := <pp-MessageContent> msg;
+    with msg' := <pp-NaBL2-MessageContent> msg;
          sol' := <add-message> (kind,(pos,msg'),sol)
 
   add-message-step(s) = ?(msginfo,<id>) ; add-message(s|msginfo)
@@ -71,7 +71,7 @@ rules
 
   get-constraint-message =
     ?c
-  ; ( (constraint-message ; default-message(|<pp-Constraint> c))
-   <+ !Message(Error(),<pp-Constraint> c,None())
+  ; ( (constraint-message ; default-message(|<pp-NaBL2-Constraint> c))
+   <+ !Message(Error(),<pp-NaBL2-Constraint> c,None())
     )
 

@@ -9,27 +9,33 @@ imports
 
 rules
  
-  solve-fact: (CGDecl(d,s),sol) -> [(sol',[])]
+  solve-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
+  where <is-ground> c
   with <sol-g> sol => g
      ; <G-with-decl> (g,s,d) => g'
      ; <sol-with-g(|g')> sol => sol'
 
-  solve-fact: (CGRef(r,s),sol) -> [(sol',[])]
+  solve-fact: (c@CGRef(r,s),sol) -> [(sol',[])]
+  where <is-ground> c
   with <sol-g> sol => g
      ; <G-with-ref> (g,s,r) => g'
      ; <sol-with-g(|g')> sol => sol'
 
   solve-fact: (CGDirectEdge(s,l,s'),sol) -> [(sol',[])]
+  where <is-ground> (s,l);
+        <is-ground + is-var> s'
   with <sol-g> sol => g
      ; <G-with-direct-edge> (g,s,(l,s')) => g'
      ; <sol-with-g(|g')> sol => sol'
 
-  solve-fact: (CGNamedEdge(r,l,s),sol) -> [(sol',[])]
+  solve-fact: (c@CGNamedEdge(r,l,s),sol) -> [(sol',[])]
+  where <is-ground> c
   with <sol-g> sol => g
      ; <G-with-named-edge> (g,s,(l,r)) => g'
      ; <sol-with-g(|g')> sol => sol'
 
-  solve-fact: (CGAssoc(d,l,s),sol)    -> [(sol',[])]
+  solve-fact: (c@CGAssoc(d,l,s),sol)    -> [(sol',[])]
+  where <is-ground> c
   with <sol-g> sol => g
      ; <G-with-assoc> (g,d,(l,s)) => g'
      ; <sol-with-g(|g')> sol => sol'
@@ -43,7 +49,8 @@ rules
 rules
 
   solve-constraint: (CResolve(r,d,msginfo),sol) -> [(sol,c*)]
-  where dp := <sol-r;get(|r)> sol
+  where <is-ground> r;
+        dp := <sol-r;get(|r)> sol
   with ( None() := dp
        < ![]
        + (d',p) := dp
@@ -53,9 +60,10 @@ rules
        ) => c*
 
   solve-constraint: (CResolve(r,d,msginfo),sol) -> res*
-  where <sol-r;not(get(|r))> sol
-      ; g := <sol-g> sol
-      ; dl* := <resolve(|g)> r
+  where <is-ground> r;
+        <sol-r;not(get(|r))> sol;
+        g := <sol-g> sol;
+        dl* := <resolve(|g)> r
   with ( [] := dl*
        < msg := [r," does not resolve to any declaration"]
        ; sol' := <sol-set-r(|r,None());
@@ -71,8 +79,8 @@ rules
   with c* := [ CEqual(d,d',msginfo) ]
  
   solve-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
-  where <is-ground> d
-      ; g := <sol-g> sol
+  where <is-ground> d;
+        g := <sol-g> sol
   with ( s' := <G-assocs;get(|l)> (g,d)
        < msg := ["Problem associating scope ",s," with ",d]
        ; !(sol,[CEqual(s,s',<default-message(|msg)> msginfo)])
@@ -81,7 +89,7 @@ rules
        ; !(sol',[])
        ) => res
  
-rules 
+rules
 
   is-op = is-NaBL2-Names
 

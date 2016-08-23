@@ -6,6 +6,7 @@ imports
   signatures/modules/-
   generation/-
   generation/signatures/-
+  stratego/metaborg
 
 rules
 
@@ -17,9 +18,15 @@ rules
         Import("nabl2shared"),
         Import("nabl2runtime")
       ]);
+      pp-str := Rules([
+        SDefNoArgs("prettyprint-NaBL2-Type", CallNoArgs(SVar($[prettyprint-[<language-spec-name>]-Type]))),
+        SDefNoArgs($[prettyprint-[<language-spec-name>]-Type], Fail())
+      ]);
       nameresolution-str* := <sections-to-nameresolution-str> section*;
       section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;
-      module-str := Module(name,[import-str,nameresolution-str*,section-str*])
+      module-str := Module(name,[import-str,pp-str,nameresolution-str*,section-str*])
+
+  language-spec-name = prim("SSL_EXT_language_spec_name") <+ "unknown"
 
 rules
 

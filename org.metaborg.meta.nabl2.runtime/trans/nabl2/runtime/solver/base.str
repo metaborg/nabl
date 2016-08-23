@@ -18,15 +18,23 @@ rules
 
   initial-solution = sol-new
 
+	solve-ignore-placeholders: (c,sol) -> [(sol,[])]
+	where <is-NaBL2-PrimitiveConstraint;
+	       has-placeholder> c
+
+  has-placeholder =
+    not(?Message(_,_,_));
+    (is-SDF-placeholder <+ one(has-placeholder))
+
   solve-constraints-phase1 =
     csolve-exhaustive( solve-specialise
-                     , solve-fact
+                     , solve-ignore-placeholders + solve-fact
                      , id
                      )
 
   solve-constraints-phase2(|rn*) =
     csolve-exhaustive( solve-specialise
-                     , solve-constraint
+                     , solve-ignore-placeholders + solve-constraint
                      , postprocess-errors(|rn*)
                      )
 
@@ -62,7 +70,7 @@ rules
 
   solve-constraint: (CConj(c*),sol) -> [(sol,c*)]
   solve-constraint: (CDisj(c*),sol) -> <map(\ c -> (sol,c) \)> c*
-  
+ 
   constraint-priority: CTrue() -> 0
   constraint-priority: CFalse(_) -> 0
   constraint-priority: CConj(_) -> 0
@@ -77,9 +85,9 @@ rules
 rules
  
   debug-solve(s): i@(c,sol) -> o*
-    with <debug> $[solve [<pp-Constraint> c]]
+    with <debug> $[solve [<pp-NaBL2-Constraint> c]]
     where if o* := <s> i then
-            <with(map(Snd;debug;map(pp-Constraint);debug(!"--> ")))> o*
+            <with(map(Snd;debug;map(pp-NaBL2-Constraint);debug(!"--> ")))> o*
           else
             <debug> "--> (unsolved)"; fail
           end

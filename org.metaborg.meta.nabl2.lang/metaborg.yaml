@@ -12,6 +12,7 @@ dependencies:
 generates:
 - language: Stratego-Sugar
   directory: src-gen/nabl2
+prettyprint: NaBL2
 language:
   stratego:
     format: ctree

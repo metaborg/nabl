@@ -8,7 +8,7 @@ rules
 
   show-file-analysis: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.txt")> path
-       ; result := <get-analysis;pp-Analysis> $[[project-path]/[path]]
+       ; result := <get-analysis;pp-NaBL2-Analysis> $[[project-path]/[path]]
       <+ result := "(no file analysis found)"
 
   show-file-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
@@ -18,7 +18,7 @@ rules
 
   show-project-analysis: (_, _, _, _, project-path) -> (filename, result)
     with filename := $[[project-path]/analysis.txt]
-       ; result := <get-analysis;pp-Analysis> project-path
+       ; result := <get-analysis;pp-NaBL2-Analysis> project-path
       <+ result := "(no project analysis found)"
 
   show-project-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)

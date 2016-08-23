@@ -34,7 +34,7 @@ rules // ast indices
 
   copy-ast-index(|from) =
     set-ast-index(|<get-ast-index> from)
- <+ warn(|"Cannot copy ast index")
+ <+ with(<warn(|"Cannot copy ast index from ")> from)
 
   preserve-ast-index(s) =
     ?t; s; try-copy-ast-index(|t)
@@ -48,7 +48,7 @@ rules // origins
 
   copy-origin(|from) =
     origin-location-offset-set(|<origin-location-offset> from)
- <+ warn(|"Cannot copy origin")
+ <+ with(<is-list <+ warn(|"Cannot copy origin from ")> from)
 
   preserve-origin(s) =
     ?t; s; try-copy-origin(|t)

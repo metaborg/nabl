@@ -12,6 +12,4 @@ rules
 
   is-op      = fail
 
-  is-ground  =
-    where(not(is-SDF-placeholder); collect-all(is-var + is-op) => [])
-
+  is-ground  = not(collect-one(is-var + is-op + is-SDF-placeholder))

@@ -40,10 +40,14 @@ rules
 
   // error throwing wrappers for recursive invocations
   generate-constraint(s|source,params) =
-    generate-constraint-placeholder(|params)
- <+ where(!1 => x); // this is freaky, but otherwise the next call fails sometimes
-    s(|source,params)
+    error-no-index
+ <+ generate-constraint-placeholder(|params)
+ <+ (where(!1 => x);s(|source,params)) // this is freaky, but otherwise the next call fails sometimes
  <+ generate-constraint-missing(|params)
+
+  error-no-index: term -> CFalse(Message(Error(),msg,term))
+    where not(get-ast-index)
+    with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]]
 
   generate-constraint-placeholder(|params): term -> CTrue()
     where <is-SDF-placeholder> term
@@ -57,17 +61,28 @@ rules
     with if (scopes,type) := params then
       <set-ast-params(|scopes);set-ast-type(|type)> term;
       emsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> scopes] : _];
-      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-Term> scopes] : [<pp-Term> type]]
+      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-NaBL2-Term> scopes] : [<pp-NaBL2-Term> type]]
     else
       <set-ast-params(|params)> term;
       emsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> params]];
-      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-Term> params]]
+      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-NaBL2-Term> params]]
     end
     with warn(|cmsg)
 
-  pp-term-sig: c#(a*) -> $[[c]([<pp-term-args> a*])]
+
+  pp-term-sig: c#(a*) -> ${[{<pp-term-args> a*}]}
+  where is-list
 
   pp-term-args: a* -> [a']
   with a' := <map(!"_");separate-by(|",");concat-strings> a*
+
+  pp-term-sig: i -> <int-to-string>
+  where is-int
+
+  pp-term-sig: r -> <real-to-string>
+  where is-real
+
+  pp-term-sig: c#(a*) -> $[[c]([<pp-term-args> a*])]
+
 
   debug-generate-constraint = fail

@@ -14,10 +14,10 @@ imports
 
 rules
 
-  pp-Analysis =
+  pp-NaBL2-Analysis =
     qsort((Analysis-order,Analysis-order);lt);
     map(try(sanitize-Analysis));
-    pp(prettyprint-NaBL2-Analysis)
+    pp-NaBL2(prettyprint-NaBL2-Analysis)
 
   Analysis-order: Constraint(_) -> 0
   Analysis-order: ResolutionParams(_,_,_) -> 2
