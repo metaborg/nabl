@@ -7,8 +7,6 @@ imports
 
 rules // top-level functions that are called during analysis
 
-  // GTODO : variables and scopes must be unique across files
-
   generate-constraint-init(|source) =
     ?ast;
     {| NewScope, NewVar:
@@ -58,11 +56,16 @@ rules
   generate-constraint-missing(|params): term -> CFalse(Message(Warning(),msg,term))
     with if (scopes,type) := params then
       <set-ast-params(|scopes);set-ast-type(|type)> term;
-      msg := $[No suitable constraint generation rule defined with parameters [<pp-Term> scopes] : [<pp-Term> type]]
+      msg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> scopes] : _]
     else
       <set-ast-params(|params)> term;
-      msg := $[No suitable constraint generation rule defined with parameters [<pp-Term> params]]
+      msg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> params]]
     end
     with warn(|msg)
+
+  pp-term-sig: c#(a*) -> $[[c]([<pp-term-args> a*])]
+
+  pp-term-args: a* -> [a']
+  with a' := <map(!"_");separate-by(|",");concat-strings> a*
 
   debug-generate-constraint = fail
