@@ -19,7 +19,7 @@ rules
     box2text-string(|120)
 
   pp-partial-NaBL2Shared-string =
-    pp(prettyprint-NaBL2Shared)
+    pp(prettyprint-NaBL2)
 
 
 rules
@@ -48,10 +48,10 @@ rules
 
   prettyprint-Term = prettyprint-object <+ prettyprint-ATerm
 
-  prettyprint-Type = fail
+  prettyprint-NaBL2-Type = fail
 
   prettyprint-object = prettyprint-Int
   prettyprint-object = prettyprint-Real
-  prettyprint-object = prettyprint-String
+  prettyprint-object = prettyprint-NaBL2-String
   prettyprint-object = prettyprint-List(prettyprint-Term)
 

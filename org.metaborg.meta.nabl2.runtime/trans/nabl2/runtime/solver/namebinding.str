@@ -83,7 +83,7 @@ rules
  
 rules 
 
-  is-op = is-Names
+  is-op = is-NaBL2-Names
 
   reduce-op(|sol) = get-names(|<sol-g> sol)
 

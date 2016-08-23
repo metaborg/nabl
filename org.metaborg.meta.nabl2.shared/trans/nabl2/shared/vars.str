@@ -6,7 +6,7 @@ imports
 
 rules
 
-  is-var     = is-Var
+  is-var     = is-NaBL2-Var
   all-vars   = collect-all(is-var) ; make-set
   var-occurs = (id,all-vars) ; elem
 

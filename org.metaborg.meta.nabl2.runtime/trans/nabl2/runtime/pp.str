@@ -9,24 +9,24 @@ imports
 
 rules
 
-  pp-Term           = pp(prettyprint-Term)
-  pp-Constraint     = pp(prettyprint-Constraint)
-  pp-Env            = pp(prettyprint-Env)
-  pp-Var            = pp(prettyprint-Var)
-  pp-Type           = pp(prettyprint-Type <+ prettyprint-TypeTerm)
-  pp-LabelRE        = pp(prettyprint-LabelRE)
-  pp-Label          = pp(prettyprint-AnyLabel)
-  pp-Labels         = pp(prettyprint-List(prettyprint-AnyLabel))
-  pp-Scope          = pp(prettyprint-Scope)
-  pp-Scopes         = pp(prettyprint-List(prettyprint-Scope))
-  pp-Occurrence     = pp(prettyprint-Occurrence)
-  pp-Occurrences    = pp(prettyprint-List(prettyprint-Occurrence))
-  pp-FullResolveds  = pp(prettyprint-FullResolveds)
+  pp-Term           = pp(prettyprint-NaBL2-Term)
+  pp-Constraint     = pp(prettyprint-NaBL2-Constraint)
+  pp-Env            = pp(prettyprint-NaBL2-Env)
+  pp-Var            = pp(prettyprint-NaBL2-Var)
+  pp-Type           = pp(prettyprint-NaBL2-Type <+ prettyprint-NaBL2-TypeTerm)
+  pp-LabelRE        = pp(prettyprint-NaBL2-LabelRE)
+  pp-Label          = pp(prettyprint-NaBL2-AnyLabel)
+  pp-Labels         = pp(prettyprint-List(prettyprint-NaBL2-AnyLabel))
+  pp-Scope          = pp(prettyprint-NaBL2-Scope)
+  pp-Scopes         = pp(prettyprint-List(prettyprint-NaBL2-Scope))
+  pp-Occurrence     = pp(prettyprint-NaBL2-Occurrence)
+  pp-Occurrences    = pp(prettyprint-List(prettyprint-NaBL2-Occurrence))
+  pp-FullResolveds  = pp(prettyprint-NaBL2-FullResolveds)
 
-  pp-MessageContent = pp(prettyprint-MessageContent)
+  pp-MessageContent = pp(prettyprint-NaBL2-MessageContent)
 
-  prettyprint-object   = prettyprint-Scope
-  prettyprint-object   = prettyprint-Occurrence
+  prettyprint-object   = prettyprint-NaBL2-Scope
+  prettyprint-object   = prettyprint-NaBL2-Occurrence
   
-  prettyprint-TypeTerm = prettyprint-Term
+  prettyprint-TypeTerm = prettyprint-NaBL2-Term
 
