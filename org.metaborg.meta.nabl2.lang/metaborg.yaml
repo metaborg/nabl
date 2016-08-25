@@ -14,6 +14,8 @@ generates:
   directory: src-gen/nabl2
 pretty-print: NaBL2
 language:
+  sdf:
+    sdf2table: java
   stratego:
     format: ctree
     args:

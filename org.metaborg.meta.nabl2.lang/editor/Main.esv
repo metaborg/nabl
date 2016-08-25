@@ -2,6 +2,6 @@ module Main
 
 imports
 
-  Colorer
   Menus
   Lang
+  Syntax

@@ -16,8 +16,8 @@ context-free syntax
   TypeTerm.Tuple    = <(<{TypeTerm ","}*>)>
   TypeTerm          = IntTerm
   TypeTerm          = StringTerm
-  TypeTerm          = Occurrence
-  TypeTerm          = Scope
+  TypeTerm          = Occurrence {avoid} // avoid ambiguity via Comparable
+  TypeTerm          = Scope      {avoid} // avoid ambiguity via Comparable
 
   TypePattern       = TypeTerm
   TypePattern.As    = <<Var>@<TypePattern>>

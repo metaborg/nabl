@@ -1,0 +1,15 @@
+module Syntax
+
+imports
+
+  editor/Colorer.generated
+  completion/colorer/NaBL2Lang-cc-esv
+
+language
+
+  table         : target/metaborg/sdf.tbl
+  start symbols : Start
+
+  line comment  : "//"
+  block comment : "/*" * "*/"
+  fences        : [[ ]] ( ) { } [ ]
