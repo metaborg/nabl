@@ -35,9 +35,9 @@ rules
 	      	mbind(\ syntax_types -> 
 	      	// Generate rules
 	      	<rules-to-coq(|sigs);
-	      	mbind(\ rule_types ->
-	      	<concat; parenthesize-Coq; prettyprint-Coq; debug(!3); box2text-string(|100)> [syntax_types, rule_types]
-	      	\)> ruls \)> sigs
+	      	mbind(\ (_, rule_types) ->
+	      	<concat; parenthesize-Coq; prettyprint-Coq; box2text-string(|100)> [syntax_types, rule_types]
+	      	\)> (ruls, []) \)> sigs
 
 rules // Signatures
 
@@ -61,11 +61,11 @@ rules // Signatures
  			x
  		with
  			x :=
- 			<type-sigs-to-coq; debug(!5);
+ 			<type-sigs-to-coq;
  				mbind(\
  				ts' ->
  				Inductive([Induc(<coq-type-name>, None(), Type(),
- 					ListDeclBar(ts'))]) \); debug(!3)> ts
+ 					ListDeclBar(ts'))]) \)> ts
  	 	
  	sig-to-coq:
  		x ->
@@ -89,16 +89,14 @@ rules // Signatures
 		TypeSig(tname, tparams) ->
 			<foldr(!Ref(<coq-type-name>),
 					\ (x, y) ->
-						<mbind(\
-						z ->
+						<mbind(\ z ->
 						<type-sort-to-coq;
-						mbind(\
-						x' ->
+						mbind(\ x' ->
 						Arrow(x', z)
-						\)> x \)> y \); debug(!2);
+						\)> x \)> y \);
 			mbind(\ t ->
-				ConsDecl(tname, None(),
-				OptType(t)) \)> tparams				
+			ConsDecl(tname, None(),
+			OptType(t)) \)> tparams
 
 	type-sort-to-coq:
 		TypeSort() -> Ref(<coq-type-name>)
@@ -114,20 +112,31 @@ rules // Signatures
 rules // Rules
 
 	rules-to-coq(|sigs):
-		_ -> []
-		
+		([r|rs], coq) ->
+			<rule-to-coq(|sigs);
+			mbind(\ (r', coq') ->
+			<rules-to-coq(|sigs);
+			mbind(\ (rs', coq'') ->
+			(<cons-if-some> (r', rs'), coq'') \)> (rs, coq') \)> (r, coq)
+	
+	rules-to-coq(|sigs):
+		([], coq) -> ([], coq)
+
+	rule-to-coq(|sigs):
+		(_, coq) -> (None(), coq) 
+
 rules // Monadic style bind operation
 
 	mbind(s):	
 		Error(str) -> Error(str)
-	
+
 	mbind(s):
 		x -> <s> x
 		where
 			not(?Error(_))
 
 rules // Error handling
- 
+
  	err:
  		string -> Error(string)
  		with
@@ -137,7 +146,7 @@ rules // Conditional list consing
 
 	cons-if-some:
 		(None(), xs) -> xs
-		
+
 	cons-if-some:
 		(x, xs) -> [x|xs]
 		where
