@@ -1,0 +1,17 @@
+module nabl2/shared/constraints/Sets
+
+imports
+
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Sets
+  nabl2/shared/common/Vars
+
+context-free syntax
+
+  Set                           = Var {prefer}
+
+  PrimitiveConstraint.CSubsetEq = <<SetExpr> subseteq <SetExpr> <Message>>
+  PrimitiveConstraint.CSetEq    = <<SetExpr> seteq <SetExpr> <Message>>
+
+  PrimitiveConstraint.CDistinct = <!<SetExpr> <Message>>
+

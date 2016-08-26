@@ -29,8 +29,8 @@ rules // resolution internal
 
   // resolve :: Ref -|-> [(Decl,Path)]
   resolve(|g,ir*) =
-    with(dbg-msg := $[resolve(|g,ir*=[<pp-Occurrences> ir*])])
-  ; with(log-res(pp-Occurrence|$[[dbg-msg]_]))
+    with(dbg-msg := $[resolve(|g,ir*=[<pp-NaBL2-Occurrences> ir*])])
+  ; with(log-res(pp-NaBL2-Occurrence|$[[dbg-msg]_]))
   ; ?r
   ; ( s := <G-scope> (g,r) // :: Scope
    <+ <debug(!"ERROR: Cannot get scope for reference ");fail> r
@@ -39,43 +39,43 @@ rules // resolution internal
   ; ( <lookup> (<occurrence-atom> r, e*) // :: [(Decl,Path)]
    <+ where(Total() := f) ; ![]
     ) // :: [(Decl,Path)]
-  ; with(log-res(pp-FullResolveds|$[[dbg-msg]_[<pp-Occurrence> r]_=_]))
+  ; with(log-res(pp-NaBL2-FullResolveds|$[[dbg-msg]_[<pp-NaBL2-Occurrence> r]_=_]))
 
 
 
   // env(|RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env(lt|re,g,ir*,is*) =
-    with(dbg-msg := $[env(|re=[<pp-LabelRE> re],g,ir*[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+    with(dbg-msg := $[env(|re=[<pp-NaBL2-LabelRE> re],g,ir*[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])])
+  ; with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]))
   ; ?s
   ; ( (<elem> (s,is*) + <emptiness> re)
     < !(Total(),[])
     + <env_L(lt|<labels>,re,g,ir*,is*)> s
     )
-  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
 
 
 
   // env(|[Label],RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env_L(lt|L,re,g,ir*,is*) =
     where(<is-list> L)
-  ; with(dbg-msg := $[env^[<pp-Labels> L](|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(dbg-msg := $[env^[<pp-NaBL2-Labels> L](|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])])
+  ; with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]))
   ; ?s
   ; <max-labels> L
   ; map(\ l -> <env-shadow> ( <env_L(lt|<lt(|l)> L,re,g,ir*,is*)> s
                             , <env_l(lt|l,re,g,ir*,is*)> s
                             ) \)
   ; env-unions
-  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
 
 
 
   // env(|D(),RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env_l(lt|l,re,g,ir*,is*) =
     where(D() := l)
-  ; with(dbg-msg := $[env^D(|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+  ; with(dbg-msg := $[env^D(|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])])
+  ; with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]))
   ; ?s
   ; ( Empty() := <nullable> re
     < ![]
@@ -83,14 +83,14 @@ rules // resolution internal
     ; group(Fst;occurrence-atom)
     )
   ; !(Total(),<id>)
-  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
 
 
 
   // env(|Label,RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env_l(lt|l,re,g,ir*,is*) =
-    with(dbg-msg := $[env^[<pp-Label> l](|re=[<pp-LabelRE> re],g,ir*=[<pp-Occurrences> ir*],is*=[<pp-Scopes> is*])])
-  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+    with(dbg-msg := $[env^[<pp-NaBL2-Label> l](|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])])
+  ; with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]))
   ; ?s
   ; ( <union> ( <iss(|l,g)> s
               , <irs(|l,g,ir*)> s
@@ -103,23 +103,23 @@ rules // resolution internal
     ; env-unions
     + !(Partial(),[])
     )
-  ; with(log-res(pp-Env|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
 
   // iss(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
   iss(|l,g) =
-    with(dbg-msg := $[iss^[<pp-Label> l](|g)])
-  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+    with(dbg-msg := $[iss^[<pp-NaBL2-Label> l](|g)])
+  ; with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]))
   ; ?s
   ; <G-direct-edges> (g,s) // :: [(Label,Scope)]
   ; map(where(Snd;is-ground))
   ; filter(?(l,_);Snd) // :: [Scope]
   ; map(\ s' -> (s',E(s,l)) \) // :: [(Scope,Step)]
-  ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
 
   // irs(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
   irs(|l,g,ir*) =
-    with(dbg-msg := $[irs^[<pp-Label> l](|g,ir*=[<pp-Occurrences> ir*])])
-  ; with(log-res(pp-Scope|$[[dbg-msg]_]))
+    with(dbg-msg := $[irs^[<pp-NaBL2-Label> l](|g,ir*=[<pp-NaBL2-Occurrences> ir*])])
+  ; with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]))
   ; ?s
   ; <G-named-edges> (g,s) // :: [(Label,Ref)]
   ; filter(?(l,_);Snd) // :: [Ref]
@@ -131,7 +131,7 @@ rules // resolution internal
              ; s' := <G-assocs;get(|l)> (g,d)
              ; !(s',N(s,l,r,p))
           }) // :: [(Scope,Step)]
-  ; with(log-res(|$[[dbg-msg]_[<pp-Scope> s]_=_]))
+  ; with(log-res(|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
 
 
 
@@ -150,24 +150,7 @@ rules // resolution internal
   // env-prepend(|Step) = Env -> Env
   env-prepend(|step) = (id,mapv(map(\ (d,p) -> (d,[step|p]) \)))
 
-
-
 rules
- 
-  get-names(|g): Declarations(s,ns) -> n*
-    with n* := <G-decls;filter-ns(|ns)> (g,s)
-
-  get-names(|g): References(s,ns) -> n*
-    with n* := <G-refs;filter-ns(|ns)> (g,s)
-
-  get-names(|g): Visibles(s,ns) -> n*
-    where (Total(),e*) := <env(labels-lt|<labels-wf>,g,[],[])> s
-    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
- 
-  get-names(|g): Reachables(s,ns) -> n*
-    where (Total(),e*) := <env(empty-lt|<labels-wf>,g,[],[])> s
-    with  n*           := <values;concat;map(Fst);filter-ns(|ns)> e*
- 
 
   log-res(s|n) = id // log(s|n)
   log-res(|n)  = log-res(id|n)

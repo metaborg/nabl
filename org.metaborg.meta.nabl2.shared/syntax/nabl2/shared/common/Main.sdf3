@@ -5,9 +5,10 @@ imports
   nabl2/shared/common/AST
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
+  nabl2/shared/common/Native
   nabl2/shared/common/Resolution
   nabl2/shared/common/ScopeGraph
-  nabl2/shared/common/Native
+  nabl2/shared/common/Sets
   nabl2/shared/common/Terms
   nabl2/shared/common/Types
   nabl2/shared/common/Vars

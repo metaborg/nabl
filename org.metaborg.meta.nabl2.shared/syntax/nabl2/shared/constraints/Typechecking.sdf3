@@ -7,6 +7,7 @@ imports
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Types
   nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
 
 context-free syntax
 

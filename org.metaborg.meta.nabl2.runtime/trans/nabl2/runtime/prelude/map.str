@@ -1,9 +1,5 @@
 module nabl2/runtime/prelude/map
 
-imports
-  nabl2/runtime/prelude/base
-  nabl2/runtime/prelude/tuple
-
 rules
 
   is-map = map(?(_,_))

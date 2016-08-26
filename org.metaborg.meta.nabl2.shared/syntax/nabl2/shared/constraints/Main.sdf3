@@ -5,6 +5,7 @@ imports
   nabl2/shared/constraints/Base
   nabl2/shared/constraints/Equality
   nabl2/shared/constraints/Namebinding
-  nabl2/shared/constraints/Typechecking
+  nabl2/shared/constraints/Sets
   nabl2/shared/constraints/Subtyping
+  nabl2/shared/constraints/Typechecking
 

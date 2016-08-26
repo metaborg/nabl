@@ -14,5 +14,5 @@ rules
     where decl := <get-ast-ref> node
 
   editor-hover: (node, position, ast, path, project-path) -> label
-    where type := <get-ast-type;pp-Type;xmlencode> node
+    where type := <get-ast-type;pp-NaBL2-Type;xmlencode> node
     with  label := $[Type: [type]]

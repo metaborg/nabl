@@ -1,0 +1,9 @@
+module nabl2/runtime/common/Types
+
+imports
+
+  nabl2/shared/common/Terms
+
+context-free syntax
+
+  TypeTerm = Term

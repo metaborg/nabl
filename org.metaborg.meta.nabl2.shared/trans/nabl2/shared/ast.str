@@ -29,15 +29,26 @@ rules // ast indices
   get-ast-refs =
     prim("SG_get_ast_references")
 
+  try-copy-ast-index(|from) =
+    try(set-ast-index(|<get-ast-index> from))
+
   copy-ast-index(|from) =
     set-ast-index(|<get-ast-index> from)
- <+ warn(|"Cannot copy ast index")
+ <+ with(<warn(|"Cannot copy ast index from ")> from)
+
+  preserve-ast-index(s) =
+    ?t; s; try-copy-ast-index(|t)
 
   ast-eq = where((get-ast-index,get-ast-index);eq) ; where(eq)
 
 rules // origins
 
+  try-copy-origin(|from) =
+    try(origin-location-offset-set(|<origin-location-offset> from))
+
   copy-origin(|from) =
     origin-location-offset-set(|<origin-location-offset> from)
- <+ warn(|"Cannot copy origin")
+ <+ with(<is-list <+ warn(|"Cannot copy origin from ")> from)
 
+  preserve-origin(s) =
+    ?t; s; try-copy-origin(|t)

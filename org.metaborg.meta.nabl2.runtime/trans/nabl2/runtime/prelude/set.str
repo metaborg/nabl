@@ -14,9 +14,12 @@ strategies
   dups(eq): [] -> []
   
 
-  set-add(|x): xs@[x|_] -> xs
+  set-add(|x) = set-add(eq|x)
 
-  set-add(|x): [y|ys] -> [y|<set-add(|x)> ys]
+  set-add(eq|x): ys@[y|_] -> ys
+    where <eq> (x,y)
+
+  set-add(eq|x): [y|ys] -> [y|<set-add(eq|x)> ys]
     where <not(eq)> (x,y)
 
-  set-add(|x): [] -> [x]
+  set-add(eq|x): [] -> [x]

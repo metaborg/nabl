@@ -15,7 +15,8 @@ context-free syntax
   Occurrence            = Var
   Comparable            = Occurrence
 
-  MessagePosition.NAMES = <@ NAMES>
+  Set                   = Var
+  Set                   = Names
 
 context-free syntax
 
@@ -41,14 +42,6 @@ context-free syntax
   NLabel.I = "="
   NLabel   = PathLabel
 
-
-context-free syntax
-
-  PrimitiveConstraint.CDistinct = <!<Names> <Message>>
-  PrimitiveConstraint.CSubset   = <<Names> in <Names> <Message>>
-  PrimitiveConstraint.CDisjoint = <<Names> # <Names> <Message>>
-
-
 syntax
 
   Names-CF.Declarations   = "D(" Scope-CF ")" NamespacePattern-CF
@@ -60,7 +53,11 @@ syntax
   NamespacePattern-CF.All       = "/*"
   NamespacePattern-CF.Namespace = "/" NamespaceId-LEX
 
+context-free syntax
+
+  MessagePosition.NAMES = <@ NAMES>
+
 lexical syntax
 
-  Keyword = "in" | "unique"
+  Keyword = "in" | "unique" | "NAMES"
 

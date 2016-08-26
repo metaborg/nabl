@@ -2,6 +2,8 @@ module nabl2/runtime/solver/errors
 
 imports
 
+  runtime/editor/origins
+
   nabl2shared
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -41,7 +43,7 @@ rules
   add-message(s|msginfo): sol -> sol'
     with Message(kind,msg,pos) := <s> msginfo
     where <not(is-list)> pos
-    with msg' := <pp-MessageContent> msg;
+    with msg' := <pp-NaBL2-MessageContent> msg;
          sol' := <add-message> (kind,(pos,msg'),sol)
 
   add-message-step(s) = ?(msginfo,<id>) ; add-message(s|msginfo)
@@ -49,6 +51,9 @@ rules
   add-message: (Error(), error, sol) -> <sol-add-error(|error)> sol
   add-message: (Warning(), warning, sol) -> <sol-add-warning(|warning)> sol
   add-message: (Note(), note, sol) -> <sol-add-note(|note)> sol
+
+  message-eq =
+    where(eq;(Fst;origin-location-offset,Fst;origin-location-offset);eq)
 
 rules
 
@@ -66,7 +71,7 @@ rules
 
   get-constraint-message =
     ?c
-  ; ( (constraint-message ; default-message(|<pp-Constraint> c))
-   <+ !Message(Error(),<pp-Constraint> c,None())
+  ; ( (constraint-message ; default-message(|<pp-NaBL2-Constraint> c))
+   <+ !Message(Error(),<pp-NaBL2-Constraint> c,None())
     )
 

@@ -7,6 +7,7 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
   source:
   - org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}
+pretty-print: NaBL2
 exports:
 - language: SDF
   directory: src-gen/syntax

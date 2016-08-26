@@ -11,50 +11,59 @@ imports
   pp/nabl2/shared/common/-
   pp/nabl2/shared/constraints/-
 
+  completion/nabl2/shared/common/-
+
 rules
 
-  pp(prettyprint) =
-    (parenthesize-NaBL2Shared;prettyprint <+ fatal-err(|"WARNING: Could not pp "));
+  pp-NaBL2(prettyprint) =
+    pp-NaBL2(prettyprint|120)
+
+  pp-NaBL2(prettyprint|width) =
+    (parenthesize-NaBL2;prettyprint <+ fatal-err(|"Could not pp "));
     !V([], <id>);
-    box2text-string(|120)
+    box2text-string(|width)
 
-  pp-partial-NaBL2Shared-string =
-    pp(prettyprint-NaBL2Shared)
+  pp-NaBL2-string =
+    pp-NaBL2(prettyprint-NaBL2-start-symbols)
 
+  pp-partial-NaBL2-string =
+    pp-NaBL2(prettyprint-NaBL2)
+
+  parenthesize-NaBL2 = parenthesize-NaBL2Shared
 
 rules
 
-  prettyprint-String =
-    ![S($["[<is-string>]"])]
-
-  prettyprint-Int =
+  prettyprint-NaBL2-Int =
     ![S(<is-int;int-to-string>)]
 
-  prettyprint-Real =
+  prettyprint-NaBL2-Real =
     ![S(<is-real;real-to-string>)]
 
-  prettyprint-List(pp): t -> [ H( [SOpt(HS(),"0")]
-                                , [S("["),t',S("]")] ) ]
+  prettyprint-NaBL2-List(pp): t -> [ H( [SOpt(HS(),"0")]
+                                      , [S("["),t',S("]")] ) ]
     where is-list
     with t' := <pp-H-list(pp|",")> t
 
-  prettyprint-Origin:
-    t -> [ H([SOpt(HS(),"0")], [ S("@("), S(line'), S(","), S(column'), S(")") ] ) ]
+  prettyprint-NaBL2-Origin:
+    t -> [ H( [SOpt(HS(),"0")]
+            , [ S("@("), S(line'), S(","), S(column'), S(")") ] ) ]
     with line'   := <(origin-line;inc<+!-1);int-to-string> t
     with column' := <(origin-column;inc<+!-1);int-to-string> t
 
-  prettyprint-ATerm: c#(a*) -> [ H( [SOpt(HS(),"0")]
-                                  , [S(c),S("("),a',S(")")] ) ]
-    with a' := <pp-H-list(prettyprint-Term|",")> a*
+  prettyprint-NaBL2-Name:
+    _ -> [S("?")]
+    where is-SDF-placeholder
+
+  prettyprint-NaBL2-ATerm: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                        , [S(c),S("("),a',S(")")] ) ]
+    with a' := <pp-H-list(prettyprint-NaBL2-Term|",")> a*
 
 rules
 
-  prettyprint-Term = prettyprint-object <+ prettyprint-ATerm
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-object <+ prettyprint-NaBL2-ATerm
 
-  prettyprint-Type = fail
-
-  prettyprint-object = prettyprint-Int
-  prettyprint-object = prettyprint-Real
-  prettyprint-object = prettyprint-String
-  prettyprint-object = prettyprint-List(prettyprint-Term)
+  prettyprint-NaBL2-object = prettyprint-NaBL2-Int
+  prettyprint-NaBL2-object = prettyprint-NaBL2-Real
+  prettyprint-NaBL2-object = prettyprint-NaBL2-String
+  prettyprint-NaBL2-object = prettyprint-NaBL2-List(prettyprint-NaBL2-Term)
 

@@ -11,9 +11,7 @@ context-free syntax
 
   Scope.Scope                    = <scope [<VarId>]>
 
-  Occurrence.Occurrence          = <<NamespaceRef>{<Name> <TermIndex>}>
-
-  Name                           = String
+  Occurrence.Occurrence          = <<NamespaceRef>{<Term> <TermIndex>}>
 
   Namespace.Namespace            = NamespaceId
 

@@ -1,0 +1,80 @@
+module nabl2/runtime/solver/sets
+
+imports
+ 
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
+
+rules
+ 
+  solve-constraint: (CDistinct(x*,msginfo),sol) -> [(sol',[])]
+  where <is-ground> x*
+  with x'* := <dups(eq)> x*
+     ; ( ?[]
+       < !sol
+       + msg := "Duplicate"
+       ; <add-message(default-message(|msg)|<apply-elems-message(|x'*)> msginfo)> sol
+       ) => sol'
+
+  solve-constraint: (CSubsetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
+  where <is-ground> x1*
+      ; <is-ground> x2*
+  with x'* := <diff(eq)> (x1*,x2*)
+     ; ( ?[]
+       < !sol
+       + msg := "Missing"
+       ; <add-message(default-message(|msg)|<apply-elems-message(|x'*)> msginfo)> sol
+       ) => sol'
+
+  solve-constraint: (CSetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
+  where <is-ground> x1*
+      ; <is-ground> x2*
+  with x'* := <sym-diff(eq)> (x1*,x2*)
+     ; ( ?[]
+       < !sol
+       + msg := "Missing"
+       ; <add-message(default-message(|msg)|<apply-elems-message(|x'*)> msginfo)> sol
+       ) => sol'
+
+  constraint-priority: CDistinct(_,_) -> 5
+  constraint-priority: CSubsetEq(_,_,_) -> 5
+  constraint-priority: CSetEq(_,_,_) -> 5
+
+rules
+
+  reduce-op(|sol): Empty() -> []
+
+  reduce-op(|sol): Isect(s1,s2) -> <isect(eq)> (s1,s2)
+    where <is-ground> s1;
+          <is-ground> s2
+
+  reduce-op(|sol): Union(s1,s2) -> <union(eq)> (s1,s2)
+    where <is-ground> s1;
+          <is-ground> s2
+
+  reduce-op(|sol): Diff(s1,s2) -> <diff(eq)> (s1,s2)
+    where <is-ground> s1;
+          <is-ground> s2
+ 
+rules
+ 
+  elems-pos(|x*) = fail
+  elems-rep(|x*) = fail
+ 
+  apply-elems-message(|x*) =
+    Message(id,bottomup(try(elems-rep(|x*))),try(elems-pos(|x*)))
+
+  constraint-message:
+    CDistinct(n,msginfo) -> <default-message(|msg)> msginfo
+    with msg := ["Failed to check if elements of ",n," are distinct"]
+
+  constraint-message:
+    CSubsetEq(s1,s2,msginfo) -> <default-message(|msg)> msginfo
+    with msg := ["Failed to check if ",s1," is a subset of, or equal to ",s2]
+
+  constraint-message:
+    CSetEq(s1,s2,msginfo) -> <default-message(|msg)> msginfo
+    with msg := ["Failed to check if ",s1," is equal to ",s2]
+
