@@ -1,7 +1,6 @@
 module signature-extraction/main
 
 imports
-
   libstrc
   analysis/signatures
   util/src-gen
@@ -11,6 +10,5 @@ rules
   extract-sigs:
     (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
     with
-      filename   := <create-src-gen(|project-path, "nabl2", ".nabl2sig")> name;
+      filename := <create-src-gen(|project-path, "nabl2", ".nabl2sig")> name;
       result := <module-extract-signatures> ast
- 

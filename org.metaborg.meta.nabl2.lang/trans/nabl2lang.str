@@ -10,8 +10,9 @@ imports
   analysis/main
   completion
   generation/main
-  pp
   signature-extraction/main
+  coq/main
+  pp
  
  
 rules

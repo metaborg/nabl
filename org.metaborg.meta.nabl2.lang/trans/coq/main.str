@@ -1,0 +1,144 @@
+module coq/main
+
+imports
+	libstrc
+	libstratego-gpp
+  analysis/signatures
+  util/src-gen
+  signatures/signatures/CGen-sig
+  signatures/signatures/Types-sig
+  signatures/common/Sorts-sig
+  signatures/Vernacular-sig
+  signatures/Gallina-sig
+  signatures/Options-sig
+	pp/Coq-parenthesize
+	pp/Coq-pp
+
+signature
+	
+	constructors
+		Error: String -> TopLevel
+
+rules
+
+  generate-coq:
+    (_, _, ast@Module(name, decls), path, project-path) -> (filename, result)
+    with
+      filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
+      // Pre-processing
+      imps := <filter(?Imports(<id>)); concat> decls;
+      sigs := <filter(?Signature(<id>)); concat> decls;
+      ruls := <filter(?Rules(<id>)); concat> decls;
+      result :=
+	      // Generate syntax
+	     	<sigs-to-coq;
+	      	mbind(\ syntax_types -> 
+	      	// Generate rules
+	      	<rules-to-coq(|sigs);
+	      	mbind(\ rule_types ->
+	      	<concat; parenthesize-Coq; prettyprint-Coq; debug(!3); box2text-string(|100)> [syntax_types, rule_types]
+	      	\)> ruls \)> sigs
+
+rules // Signatures
+
+	sigs-to-coq:
+ 		[x|xs] ->
+ 			<sig-to-coq;
+ 			mbind(\ y ->
+ 			<sigs-to-coq;
+ 			mbind(\ xs' ->
+ 			<cons-if-some> (y, xs') \)> xs \)> x
+ 	
+ 	sigs-to-coq:
+ 		[] -> []
+ 	
+ 	sig-to-coq:
+ 		CGen(_) ->
+ 			None()
+ 	
+ 	sig-to-coq:
+ 		Types(ts) ->
+ 			x
+ 		with
+ 			x :=
+ 			<type-sigs-to-coq; debug(!5);
+ 				mbind(\
+ 				ts' ->
+ 				Inductive([Induc(<coq-type-name>, None(), Type(),
+ 					ListDeclBar(ts'))]) \); debug(!3)> ts
+ 	 	
+ 	sig-to-coq:
+ 		x ->
+ 			<conc-strings; err> ("Found an unexpected declaration: ",
+ 				<write-to-string> x)
+ 		where
+ 			not(?CGen(_) <+ ?Types(_))
+
+	type-sigs-to-coq:
+		[tsig|tsigs] ->
+			<type-sig-to-coq;
+				mbind(\ y ->
+				<type-sigs-to-coq;
+				mbind(\ tsigs' ->
+				<cons-if-some> (y, tsigs') \)> tsigs \)> tsig
+
+	type-sigs-to-coq:
+		[] -> []
+
+	type-sig-to-coq:
+		TypeSig(tname, tparams) ->
+			<foldr(!Ref(<coq-type-name>),
+					\ (x, y) ->
+						<mbind(\
+						z ->
+						<type-sort-to-coq;
+						mbind(\
+						x' ->
+						Arrow(x', z)
+						\)> x \)> y \); debug(!2);
+			mbind(\ t ->
+				ConsDecl(tname, None(),
+				OptType(t)) \)> tparams				
+
+	type-sort-to-coq:
+		TypeSort() -> Ref(<coq-type-name>)
+
+	type-sort-to-coq:
+		x ->
+			<conc-strings; err> ("Unknown type sort: ", <write-to-string> x)
+	where
+		not(?TypeSort())
+
+	coq-type-name = !"T"
+
+rules // Rules
+
+	rules-to-coq(|sigs):
+		_ -> []
+		
+rules // Monadic style bind operation
+
+	mbind(s):	
+		Error(str) -> Error(str)
+	
+	mbind(s):
+		x -> <s> x
+		where
+			not(?Error(_))
+
+rules // Error handling
+ 
+ 	err:
+ 		string -> Error(string)
+ 		with
+ 			<debug> string
+
+rules // Conditional list consing
+
+	cons-if-some:
+		(None(), xs) -> xs
+		
+	cons-if-some:
+		(x, xs) -> [x|xs]
+		where
+			not(!x; ?None())
