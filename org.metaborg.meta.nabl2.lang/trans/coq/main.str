@@ -3,14 +3,23 @@ module coq/main
 imports
 	libstrc
 	libstratego-gpp
-  analysis/signatures
   util/src-gen
+  analysis/normalize
+  analysis/signatures
+  
+  // NaBL2 imports:
   signatures/signatures/CGen-sig
   signatures/signatures/Types-sig
   signatures/common/Sorts-sig
+  signatures/rules/CGen-sig
+  signatures/rules/Rules-sig
+  
+  // Coq imports:
   signatures/Vernacular-sig
   signatures/Gallina-sig
   signatures/Options-sig
+  
+  // Coq pp
 	pp/Coq-parenthesize
 	pp/Coq-pp
 
@@ -19,11 +28,17 @@ signature
 	constructors
 		Error: String -> TopLevel
 
+rules // Constant(s)
+
+	coq-type-name = !"T"
+	coq-list-name = !"list"
+
 rules
 
   generate-coq:
-    (_, _, ast@Module(name, decls), path, project-path) -> (filename, result)
+    (_, _, ast, path, project-path) -> (filename, result)
     with
+    	Module(name, decls) := <normalize> ast;
       filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
       // Pre-processing
       imps := <filter(?Imports(<id>)); concat> decls;
@@ -36,7 +51,7 @@ rules
 	      	// Generate rules
 	      	<rules-to-coq(|sigs);
 	      	mbind(\ (_, rule_types) ->
-	      	<concat; parenthesize-Coq; prettyprint-Coq; box2text-string(|100)> [syntax_types, rule_types]
+	      	<concat; parenthesize-Coq; prettyprint-Coq; box2text-string(|100)> [<concat> syntax_types, rule_types]
 	      	\)> (ruls, []) \)> sigs
 
 rules // Signatures
@@ -53,26 +68,61 @@ rules // Signatures
  		[] -> []
  	
  	sig-to-coq:
- 		CGen(_) ->
- 			None()
+ 		CGen(cs) ->
+ 			<cgen-sigs-to-coq> cs
  	
  	sig-to-coq:
  		Types(ts) ->
- 			x
- 		with
- 			x :=
  			<type-sigs-to-coq;
- 				mbind(\
- 				ts' ->
- 				Inductive([Induc(<coq-type-name>, None(), Type(),
- 					ListDeclBar(ts'))]) \)> ts
- 	 	
+ 			mbind(\ ts' ->
+ 			[Inductive([Induc(<coq-type-name>, None(), Type(),
+ 				ListDeclBar(ts'))])] \)> ts
+
  	sig-to-coq:
  		x ->
- 			<conc-strings; err> ("Found an unexpected declaration: ",
- 				<write-to-string> x)
+ 			<concat-strings; err> ["Encountered an unexpected declaration: ",
+ 				<write-to-string> x, ". Please report."]
  		where
  			not(?CGen(_) <+ ?Types(_))
+
+rules	// Constraint generation signatures
+
+	cgen-sigs-to-coq:
+		[csig|csigs] ->
+			<cgen-sig-to-coq;
+			mbind(\ csig' ->
+			<cgen-sigs-to-coq;
+			mbind(\ csigs' ->
+			<cons-if-some> (csig', csigs') \)> csigs \)> csig
+			
+	cgen-sigs-to-coq:
+		[] -> []
+		
+	cgen-sig-to-coq:
+		CGenSig(name, trsort, ssorts, tysort) ->
+			<get-name;
+				mbind(\ name' ->
+				<term-sort-to-coq;
+				mbind(\ trsort' ->
+				<conc; foldr(!Prop(),
+					\ (x, y) ->
+						<mbind(\ y' ->
+						<type-sort-to-coq;
+						mbind(\ x' ->
+						Arrow(x', y')
+						\)> x \)> y \);
+				mbind(\ srts' ->
+				Inductive([Induc(<cgen-rename> name', None(),
+					Arrow(trsort', srts'), None())]) \)> (ssorts, [tysort]) \)> trsort \)> name
+			
+	cgen-sig-to-coq:
+		x ->
+			<concat-strings; err> ["Encountered an unexpected constraint generation signature: ",
+				<write-to-string> x, ". Please report."]
+		where
+			not(?CGenSig(_, _, _, _))
+
+rules // Type signatures
 
 	type-sigs-to-coq:
 		[tsig|tsigs] ->
@@ -96,18 +146,38 @@ rules // Signatures
 						\)> x \)> y \);
 			mbind(\ t ->
 			ConsDecl(tname, None(),
-			OptType(t)) \)> tparams
+				OptType(t)) \)> tparams
+
+rules // NaBL2 sorts
 
 	type-sort-to-coq:
 		TypeSort() -> Ref(<coq-type-name>)
+	
+	type-sort-to-coq:
+		Type() -> Ref(<coq-type-name>)
+
+	type-sort-to-coq:
+		"s" -> Ref("ScopeId")
 
 	type-sort-to-coq:
 		x ->
-			<conc-strings; err> ("Unknown type sort: ", <write-to-string> x)
+			<concat-strings; err> ["Encountered an unexpected type sort: ", <write-to-string> x, ". Please report."]
 	where
-		not(?TypeSort())
-
-	coq-type-name = !"T"
+		not(?TypeSort() <+ ?Type() <+ ?"s")
+	
+	term-sort-to-coq:
+		SortNoArgs(name) ->
+			Ref(name)
+	
+	term-sort-to-coq:
+		Sort("List", [sort]) ->
+			Apply(Ref(<coq-list-name>), <term-sort-to-coq> sort)
+	
+	term-sort-to-coq:
+		x ->
+			<concat-strings; err> ["Encountered an unexpected term sort: ", <write-to-string> x, ". Please report."]
+		where
+			not(?SortNoArgs(_) <+ ?Sort("List", [_]))
 
 rules // Rules
 
@@ -123,7 +193,19 @@ rules // Rules
 		([], coq) -> ([], coq)
 
 	rule-to-coq(|sigs):
-		(_, coq) -> (None(), coq) 
+		(CGenInitRule(spattern, tpattern, body), coq) ->
+			(None(), coq)
+		
+	rule-to-coq(|sigs):
+		(CGenMatchRule(name, trpattern, spattern, typattern, body), coq) ->
+			(None(), coq)
+	
+	rule-to-coq(|sigs):
+		(r, _) -> 
+			<concat-strings; err> ["Encountered an unexpected rule kind: ", <write-to-string> r, ". Please report."]
+		where
+			not(?CGenInitRule(_, _, _) <+
+				?CGenMatchRule(_, _, _, _, _))
 
 rules // Monadic style bind operation
 
@@ -151,3 +233,17 @@ rules // Conditional list consing
 		(x, xs) -> [x|xs]
 		where
 			not(!x; ?None())
+
+rules // Projection
+
+	get-name:
+		Name(x) -> x
+	
+	get-name:
+		x ->
+			<concat-strings; err> ["Encountered an unexpected name kind: ", <write-to-string> x, ". Please report."]
+
+rules // Naming conventions
+
+	cgen-rename:
+		x -> <conc-strings> ("CG", x)
