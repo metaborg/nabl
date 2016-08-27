@@ -458,20 +458,6 @@ rules // Dependency analysis
 		where
 			not(?CGenRecurse(_, _, _, _))
 
-rules // Mapify
-
-	mapify:
-		xs -> <mapify0(|<new-hashtable>)> xs
-	
-	mapify0(|m):
-		[] -> m
-		
-	mapify0(|m):
-		[(x, y)|zs] ->
-			<mapify0(|m)> zs
-		with
-			<map(<hashtable-put(|x, y)> m)> y 
-
 rules // Monadic style bind operation
 
 	mbind(s):	
