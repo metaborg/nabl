@@ -13,6 +13,8 @@ imports
   signatures/common/Sorts-sig
   signatures/rules/CGen-sig
   signatures/rules/Rules-sig
+  signatures/rules/Normalization-sig
+  signatures/nabl2/shared/constraints/Equality-sig
   
   // Coq imports:
   signatures/Vernacular-sig
@@ -38,33 +40,81 @@ rules
   generate-coq:
     (_, _, ast, path, project-path) -> (filename, result)
     with
-    	Module(name, decls) := <normalize> ast;
+    	Module(name, decls) := ast;
       filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
       // Pre-processing
       imps := <filter(?Imports(<id>)); concat> decls;
       sigs := <filter(?Signature(<id>)); concat> decls;
       ruls := <filter(?Rules(<id>)); concat> decls;
       result :=
-	      // Generate syntax
+      	//  Calculate dependencies between constraint generation rules
+      	<mdeps;
+      	mbind(\ deps ->
+	      // Generate syntax and rule types based on signatures
 	     	<sigs-to-coq;
-	      	mbind(\ syntax_types -> 
-	      	// Generate rules
-	      	<rules-to-coq(|sigs);
-	      	mbind(\ (_, rule_types) ->
-	      	<concat; parenthesize-Coq; prettyprint-Coq; box2text-string(|100)> [<concat> syntax_types, rule_types]
-	      	\)> (ruls, []) \)> sigs
+	      mbind(\ coq_defs ->
+	     	// Augment definitions with generated rules
+	     	<rules-to-coq;
+	     	mbind(\ coq_defs' ->
+	    	// Transform based on dependencies between rules (definition-before-use)
+	     	<foldl(\
+	    		((x, y), coq2) ->
+	    			<join-induc-defs> (x, y, coq2) \);
+	    	mbind(\ coq1 ->
+	    	// Pretty-print
+	    	<parenthesize-Coq; prettyprint-Coq; box2text-string(|100)> coq1
+	    	\)> (<concat> deps, coq_defs')
+	     	\)> (ruls, coq_defs) \)> sigs \)> ruls
+
+rules // Joining inductive definitions
+
+	join-induc-defs:
+		(name1, name2, coq) ->
+			coq'
+		with
+			// Hoist dependent definition of Coq definition
+			(inducs1, coq1) := <get-def> (name2, coq);
+			name1' := <cgen-rename> name1;
+			// Insert dependent definition in definition for dependee
+			(
+				coq' :=
+					<oncetd(\
+						Inductive(inducs) ->
+							Inductive(<conc> (inducs, inducs1))
+							where <fetch(?Induc(name1', _, _, _))> inducs \)> coq1
+				<+
+				coq' := <conc> (coq1, [Inductive(inducs1)])
+			)
+	
+	get-def:
+		(name1, coqdefs) -> (inducs', coqdefs')
+		with
+			name1' := <cgen-rename> name1;
+			// Coq definitions after removing the definition for name1
+			coqdefs' := 
+				<filter({ inducs:
+					not(?Inductive(inducs);
+						<fetch(?Induc(name1', _, _, _))> inducs) })> coqdefs;
+			// Binds inducs' to the definition for name1
+			<alltd({ inducs:
+				?Inductive(inducs);
+				<fetch({x,y,z: ?Induc(name1', x, y, z) })> inducs;
+				inducs' := inducs })> coqdefs
 
 rules // Signatures
 
 	sigs-to-coq:
+		sigs -> <sigs-to-coql; concat> sigs
+
+	sigs-to-coql:
  		[x|xs] ->
  			<sig-to-coq;
  			mbind(\ y ->
- 			<sigs-to-coq;
+ 			<sigs-to-coql;
  			mbind(\ xs' ->
  			<cons-if-some> (y, xs') \)> xs \)> x
  	
- 	sigs-to-coq:
+ 	sigs-to-coql:
  		[] -> []
  	
  	sig-to-coq:
@@ -78,7 +128,7 @@ rules // Signatures
  			[Inductive([Induc(<coq-type-name>, None(), Type(),
  				ListDeclBar(ts'))])] \)> ts
 
- 	sig-to-coq:
+ 	sig-to-coq(|deps):
  		x ->
  			<concat-strings; err> ["Encountered an unexpected declaration: ",
  				<write-to-string> x, ". Please report."]
@@ -90,21 +140,25 @@ rules	// Constraint generation signatures
 	cgen-sigs-to-coq:
 		[csig|csigs] ->
 			<cgen-sig-to-coq;
-			mbind(\ csig' ->
+			mbind(\ coqsig' ->
 			<cgen-sigs-to-coq;
-			mbind(\ csigs' ->
-			<cons-if-some> (csig', csigs') \)> csigs \)> csig
+			mbind(\ coqsigs' ->
+			<cons-if-some> (coqsig', coqsigs')
+			\)> csigs \)> csig
 			
 	cgen-sigs-to-coq:
 		[] -> []
-		
+	
 	cgen-sig-to-coq:
 		CGenSig(name, trsort, ssorts, tysort) ->
+			x''
+			with
+			x'':=
 			<get-name;
 				mbind(\ name' ->
 				<term-sort-to-coq;
 				mbind(\ trsort' ->
-				<conc; foldr(!Prop(),
+				<append-if-some; foldr(!Prop(),
 					\ (x, y) ->
 						<mbind(\ y' ->
 						<type-sort-to-coq;
@@ -113,7 +167,7 @@ rules	// Constraint generation signatures
 						\)> x \)> y \);
 				mbind(\ srts' ->
 				Inductive([Induc(<cgen-rename> name', None(),
-					Arrow(trsort', srts'), None())]) \)> (ssorts, [tysort]) \)> trsort \)> name
+					Arrow(trsort', srts'), None())]) \)> (ssorts, tysort) \)> trsort \)> name
 			
 	cgen-sig-to-coq:
 		x ->
@@ -181,31 +235,242 @@ rules // NaBL2 sorts
 
 rules // Rules
 
-	rules-to-coq(|sigs):
+	rules-to-coq:
 		([r|rs], coq) ->
-			<rule-to-coq(|sigs);
-			mbind(\ (r', coq') ->
-			<rules-to-coq(|sigs);
-			mbind(\ (rs', coq'') ->
-			(<cons-if-some> (r', rs'), coq'') \)> (rs, coq') \)> (r, coq)
+			<rule-to-coq;
+			mbind(\ coq' ->
+			<rules-to-coq> (rs, coq') \)> (r, coq)
 	
-	rules-to-coq(|sigs):
-		([], coq) -> ([], coq)
+	rules-to-coq:
+		([], coq) -> coq
 
-	rule-to-coq(|sigs):
+	// Ignored, for now...
+	rule-to-coq:
 		(CGenInitRule(spattern, tpattern, body), coq) ->
-			(None(), coq)
+			coq
 		
-	rule-to-coq(|sigs):
+	rule-to-coq:
 		(CGenMatchRule(name, trpattern, spattern, typattern, body), coq) ->
-			(None(), coq)
+			<rule-name-from-term-pattern;
+			mbind(\ rname ->
+			<term-pattern-to-coq;
+			mbind(\ trpattern' ->
+			<get-name;
+			mbind(\ cgen_name ->
+			<alltd(\
+			Induc(coq_name, x, ty, cs) ->
+				Induc(coq_name, x, ty,
+					<append-constructor>
+						(cs, ConsDecl(rname,
+							None(), // Binders -- FIXME
+							OptType(trpattern'))))
+				where
+					<equal> (<cgen-rename> cgen_name, coq_name)
+				 \)> coq
+			\)> name
+			\)> trpattern
+			\)> (name, trpattern)
+		with
+			// Reset wld-name counter
+			rules(wld-name: _ -> 0)
 	
 	rule-to-coq(|sigs):
 		(r, _) -> 
-			<concat-strings; err> ["Encountered an unexpected rule kind: ", <write-to-string> r, ". Please report."]
+			<concat-strings; err>
+				["Encountered an unexpected rule kind: ",
+					<write-to-string> r, ". Please report."]
 		where
-			not(?CGenInitRule(_, _, _) <+
+			not(!r; ?CGenInitRule(_, _, _) <+
 				?CGenMatchRule(_, _, _, _, _))
+
+	// Converts a None() to a ListDeclBar if necessary,
+	// and appends the constructor
+	append-constructor:
+		(None(), c) ->
+			ListDeclBar([c])
+
+	append-constructor:
+		(ListDeclBar(cs), c) ->
+			ListDeclBar(<conc> (cs, [c]))
+
+rules // Rule naming
+
+	rule-name-from-term-pattern:
+		(rname, Op(cname, _)) ->
+			<get-name;
+			mbind(\ name -> 
+			<conc-strings> (name, cname)
+			\)> rname
+			
+	rule-name-from-term-pattern:
+		(rname, List([])) ->
+			<get-name;
+			mbind(\ name ->
+			<conc-strings> (name, "Nil")
+			\)> rname
+			
+	rule-name-from-term-pattern:
+		(rname, List([_|_])) ->
+			<get-name;
+			mbind(\ name ->
+			<conc-strings> (name, "Cons")
+			\)> rname
+	
+	rule-name-from-term-pattern:
+		(rname, ListTail(_, _)) ->
+			<get-name;
+			mbind(\ name ->
+			<conc-strings> (name, "Cons")
+			\)> rname
+	
+	rule-name-from-term-pattern:
+		(rname, x) ->
+			<concat-strings; err>
+				["Encountered an unexpected term kind during rule name generation: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(!x;
+				?Op(_, _) <+
+				?List([]) <+
+				?List([_|_]) <+
+				?ListTail)
+
+rules // Term patterns
+
+	term-pattern-to-coq:
+		Op(cname, params) ->
+			<foldr(!Ref(cname),
+				\ (param, coq_term) ->
+					Apply(coq_term, <term-pattern-to-coq> param) \)> params
+	
+	term-pattern-to-coq:
+		Wld() -> x
+		where
+			w := <wld-name; inc>;
+			rules(wld-name: _ -> w);
+			x := Ref(<conc-strings> ("x", <write-to-string> w))
+	
+	term-pattern-to-coq:
+		List(lst) ->
+			<list-pattern-to-coq> lst
+			
+	term-pattern-to-coq:
+		ListTail(heads, tail) ->
+			<conc; list-pattern-to-coq> (heads, [tail])
+	
+	term-pattern-to-coq:
+		Var(x) -> Ref(x)
+	
+	term-pattern-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected term: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?Op(_, _) <+
+				?Wld() <+
+				?List(_) <+
+				?ListTail(_, _) <+
+				?Var(_))
+
+rules // Lists
+
+	list-pattern-to-coq:
+		[] -> Ref("nil")
+		
+	list-pattern-to-coq:
+		[x|xs] ->
+			<term-pattern-to-coq;
+			mbind(\ x' ->
+			<list-pattern-to-coq;
+			mbind(\ xs' ->
+			Apply(Apply(Ref("cons"), x'), xs')
+			\)> xs
+			\)> x
+
+	list-pattern-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered term where a list was expected during",
+					" list pattern generation: ", <write-to-string> x]
+		where
+			not(?[] <+ ?[_|_])
+
+rules // Dependency analysis
+
+	mdeps:
+		[r|rs] ->
+			<mdep;
+			mbind(\ depsr ->
+			<mdeps;
+			mbind(\ depsrs ->
+			<cons-if-some> (depsr, depsrs) \)> rs \)> r
+
+	mdeps:
+		[] -> []
+
+	mdep:
+		CGenInitRule(_, _, body) -> None()
+	
+	mdep:
+		CGenMatchRule(name, _, _, _, body) ->
+			x'
+			with
+			x':=
+			<get-name;
+			mbind(\ name' ->
+			<mdeps-body(|name')> body \)> name
+	
+	mdep:
+		x ->
+			<concat-strings; err>
+				["Mutual dependency analysis encountered an unexpected rule kind:",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?CGenInitRule(_, _, _) <+ ?CGenMatchRule(_, _, _, _, _))
+	
+	mdeps-body(|name):
+		[b|bs] ->
+			x
+			with
+			x:=
+			<mdep-body(|name);
+			mbind(\ depsb ->
+			<mdeps-body(|name);
+			mbind(\ depsbs ->
+			<cons-if-some> (depsb, depsbs) \)> bs \)> b
+	
+	mdeps-body(|name):
+		[] -> []
+	
+	mdep-body(|name):
+		CGenRecurse(name0, _, _, _) ->
+			<get-name;
+			mbind(\ name' ->
+			<if <equal> (name, name')
+			 then !None()
+			 else !(name, name')
+			 end>
+			\)> name0
+
+	mdep-body(|name):
+		x -> None()
+		where
+			not(?CGenRecurse(_, _, _, _))
+
+rules // Mapify
+
+	mapify:
+		xs -> <mapify0(|<new-hashtable>)> xs
+	
+	mapify0(|m):
+		[] -> m
+		
+	mapify0(|m):
+		[(x, y)|zs] ->
+			<mapify0(|m)> zs
+		with
+			<map(<hashtable-put(|x, y)> m)> y 
 
 rules // Monadic style bind operation
 
@@ -233,15 +498,28 @@ rules // Conditional list consing
 		(x, xs) -> [x|xs]
 		where
 			not(!x; ?None())
+	
+	append-if-some:
+		(xs, None()) -> xs
+	
+	append-if-some:
+		(xs, x) -> <conc> (xs, [x])
 
-rules // Projection
+rules // Name projection/normalization
 
 	get-name:
 		Name(x) -> x
-	
+
+	get-name:
+		NoName() -> "Default"
+
 	get-name:
 		x ->
-			<concat-strings; err> ["Encountered an unexpected name kind: ", <write-to-string> x, ". Please report."]
+			<concat-strings; err>
+				["Encountered an unexpected name kind: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?Name(_) <+ ?NoName())
 
 rules // Naming conventions
 
