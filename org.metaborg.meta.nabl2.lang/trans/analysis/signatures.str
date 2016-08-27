@@ -26,21 +26,12 @@ rules
 	extract-rule-sigs:
 		CGenInitRule(_, _, _) -> []
 		
-//	extract-rule-sigs:
-//		CGenMatchRule(Name(name), As(_, Op(c, args)), scopes, types, body) ->
-//			[((c, arity), sigs)]
-//		with
-//			arity := <length> args;
-//			// FIXME: traverse argument list to extract deep match subterm signatures
-//			sigs := <map(extract-body-sigs(|args)); concat> body
-	
 	extract-rule-sigs:
 		CGenMatchRule(Name(name), match, scopes, types, body) ->
 			term_sigs
 		with
 			term_sigs := <extract-term-sigs(|body)> match
 	
-	// FIXME
 	extract-rule-sigs:
 		x ->
 			[]
