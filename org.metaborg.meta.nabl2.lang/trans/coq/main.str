@@ -14,7 +14,10 @@ imports
   signatures/rules/CGen-sig
   signatures/rules/Rules-sig
   signatures/rules/Normalization-sig
-  signatures/nabl2/shared/constraints/Equality-sig
+  signatures/nabl2/shared/common/ScopeGraph-sig
+  signatures/nabl2/shared/constraints/Base-sig
+  signatures/nabl2/shared/constraints/Namebinding-sig
+  signatures/nabl2/shared/constraints/Typechecking-sig
   
   // Coq imports:
   coq/analysis/explicate-wildcards
@@ -29,6 +32,15 @@ imports
   // Coq pp
 	pp/Coq-parenthesize
 	pp/Coq-pp
+
+rules // Constant(s)
+
+	coq-type-name = !"T"
+	coq-list-name = !"list"
+	cgref         = !"scopeofRef"
+	cresolve      = !"rlookup"
+	ctypeof       = !"typofDecl"
+	get-occ       = !"getOccurrence"
 
 rules
 
@@ -61,11 +73,6 @@ rules
 	    	<parenthesize-Coq; prettyprint-Coq; box2text-string(|100)> coq1
 	    	\)> (<concat> deps, coq_defs')
 	     	\)> (ruls, coq_defs) \)> sigs \)> ruls
-
-rules // Constant(s)
-
-	coq-type-name = !"T"
-	coq-list-name = !"list"
 
 rules // Signatures
 
@@ -233,21 +240,26 @@ rules // Rules
 			mbind(\ spattern' ->
 			<type-pattern-to-coq;
 			mbind(\ typattern' ->
+			<cgen-body-to-coq;
+			mbind(\ body' ->
 			<alltd(\
 			Induc(coq_name, x, ty, cs) ->
 				Induc(coq_name, x, ty,
 					<append-constructor>
 						(cs, ConsDecl(rname,
 							None(), // Binders -- FIXME
-							OptType(
+							<foldr(
+							  !OptType(
 								<foldr(!Ref(post_c),
 									\ (x, y) -> Apply(y, x) \)>
-										[trpattern', typattern'|<reverse> spattern']))))
+										[trpattern', typattern'|<reverse> spattern']),
+								\ (x, y) -> Arrow(x, y) \)> body')))
 				where
 					<equal> (<cgen-rename> cgen_name, coq_name);
 					Arrow(Ref(post_sort), Prop()) := ty;
 					post_c := <rename-post-sort-to-post-constructor> post_sort
 				 \)> coq
+			\)> body
 			\)> typattern
 			\)> spattern
 			\)> name
@@ -387,6 +399,112 @@ rules // Type pattern
 			<concat-strings; err>
 				["Encountered an unexpected type annotation: ",
 					<write-to-string> x, ". Please report."]
+
+rules // CGen body
+
+	cgen-body-to-coq:
+		[c|cs] ->
+			<cgen-clause-to-coq;
+			mbind(\ c' ->
+			<cgen-body-to-coq;
+			mbind(\ cs' ->
+			<cons-if-some> (c', cs')
+			\)> cs
+			\)> c
+
+	cgen-body-to-coq:
+		[] -> []
+
+	cgen-clause-to-coq:
+		CTrue() -> None()
+		
+	cgen-clause-to-coq:
+		CGRef(occ, s) ->
+			<occurrence-to-coq;
+			mbind(\ occ' ->
+			<term-pattern-to-coq;
+			mbind(\ s' ->
+			Apply(Apply(Ref(<cgref>), occ'), s')
+			\)> s
+			\)> occ
+	
+	cgen-clause-to-coq:
+		CResolve(occ1, occ2, _) ->
+			<occurrence-to-coq;
+			mbind(\ occ1' ->
+			<occurrence-to-coq;
+			mbind(\ occ2' ->
+			Apply(Apply(Ref(<cresolve>), occ1'), occ2')
+			\)> occ2
+			\)> occ1 
+			
+	cgen-clause-to-coq:
+		CTypeOf(occ, t, _) ->
+			<occurrence-to-coq;
+			mbind(\ occ' ->
+			<term-pattern-to-coq;
+			mbind(\ t' ->
+			Apply(Apply(<ctypeof>, occ'), t')
+			\)> t
+			\)> occ
+	
+	cgen-clause-to-coq:
+		CGenRecurse(name, trpattern, spatterns, typattern) ->
+			<get-name;
+			mbind(\ name' ->
+			<term-pattern-to-coq;
+			mbind(\ trpattern' ->
+			<scope-patterns-to-coq;
+			mbind(\ spatterns' ->
+			<type-pattern-to-coq;
+			mbind(\ typattern' ->
+			<foldr(!Ref(<cgen-rename> name'),
+					\ (x, y) -> Apply(y, x) \)>
+				[trpattern', typattern'|<reverse> spatterns']
+			\)> typattern
+			\)> spatterns
+			\)> trpattern
+			\)> name
+	
+//	cgen-clause-to-coq:
+//		CGDirectEdge(s1, lbl, s2) ->
+//			<term-pattern-to-coq;
+//			mbind(\ s1' ->
+//			<label-pattern-to-coq;
+//			mbind(\ lbl' ->
+//			<term-pattern-to-coq;
+//			mbind(\ s2' ->			
+	
+	cgen-clause-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected clause: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?CTrue() <+
+				?CGRef(_, _) <+
+				?CResolve(_, _, _) <+
+				?CTypeOf(_, _, _) <+
+				?CGenRecurse(_, _, _, _))
+
+rules // Occurrence
+	
+	// FIXME: This naive notion of occurrence disregards namespaces, for now
+	occurrence-to-coq:
+		Occurrence(_, x, _) ->
+			Apply(Ref(<get-occ>), <term-pattern-to-coq> x)
+	
+	occurrence-to-coq:
+		Var(x) -> Ref(x)
+	
+	occurrence-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected occurrence: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?Occurrence(_, _, _) <+
+				?Var(_))
 
 rules // Lists
 
