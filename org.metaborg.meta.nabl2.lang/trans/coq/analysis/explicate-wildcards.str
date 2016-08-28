@@ -14,7 +14,7 @@ rules // Wildcard explication
 		(_, _, ast, path, project-path) -> (filename, result)
 		with
     	Module(name, decls) := ast;
-      filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
+      filename := <create-src-gen(|project-path, "explicated-wildcards", ".aterm")> name;
 			result := <explicate-wildcards> ast
 
 	explicate-wildcards =
