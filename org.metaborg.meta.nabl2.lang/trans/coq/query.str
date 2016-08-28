@@ -1,0 +1,23 @@
+module coq/query
+
+imports
+  signatures/rules/Rules-sig
+  coq/util/mbind-err
+
+// Various operations for querying NaBL2 definitions
+
+rules // Name projection/normalization
+
+	get-name:
+		Name(x) -> x
+
+	get-name:
+		NoName() -> "Default"
+
+	get-name:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected name kind: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?Name(_) <+ ?NoName())

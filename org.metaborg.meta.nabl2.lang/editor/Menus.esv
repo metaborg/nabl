@@ -11,4 +11,8 @@ menus
 
     action: "Generate Stratego"   = generate-str
     action: "Generate Signatures" = extract-sigs
-    action: "Generate Coq"        = generate-coq (openeditor) (meta) (source)
+    action: "Explicate Wildcards" = explicate-module-wildcards
+
+  menu: "Coq" (openeditor) (meta) (realtime) (source)
+ 		
+    action: "Generate Coq"        = generate-coq

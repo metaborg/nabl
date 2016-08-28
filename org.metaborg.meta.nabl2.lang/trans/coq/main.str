@@ -6,7 +6,7 @@ imports
   util/src-gen
   analysis/normalize
   analysis/signatures
-  
+    
   // NaBL2 imports:
   signatures/signatures/CGen-sig
   signatures/signatures/Types-sig
@@ -17,6 +17,11 @@ imports
   signatures/nabl2/shared/constraints/Equality-sig
   
   // Coq imports:
+  coq/analysis/explicate-wildcards
+  coq/analysis/dependencies
+  coq/util/maybe-list
+  coq/util/mbind-err
+  coq/query
   signatures/Vernacular-sig
   signatures/Gallina-sig
   signatures/Options-sig
@@ -24,11 +29,6 @@ imports
   // Coq pp
 	pp/Coq-parenthesize
 	pp/Coq-pp
-
-signature
-	
-	constructors
-		Error: String -> TopLevel
 
 rules // Constant(s)
 
@@ -43,9 +43,10 @@ rules
     	Module(name, decls) := ast;
       filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
       // Pre-processing
-      imps := <filter(?Imports(<id>)); concat> decls;
-      sigs := <filter(?Signature(<id>)); concat> decls;
-      ruls := <filter(?Rules(<id>)); concat> decls;
+      decls' := <explicate-wildcards> decls;
+      imps := <filter(?Imports(<id>)); concat> decls';
+      sigs := <filter(?Signature(<id>)); concat> decls';
+      ruls := <filter(?Rules(<id>)); concat> decls';
       result :=
       	//  Calculate dependencies between constraint generation rules
       	<mdeps;
@@ -257,6 +258,8 @@ rules // Rules
 			mbind(\ trpattern' ->
 			<get-name;
 			mbind(\ cgen_name ->
+			<scope-pattern-to-coq;
+			mbind(\ spattern' ->
 			<alltd(\
 			Induc(coq_name, x, ty, cs) ->
 				Induc(coq_name, x, ty,
@@ -267,12 +270,10 @@ rules // Rules
 				where
 					<equal> (<cgen-rename> cgen_name, coq_name)
 				 \)> coq
+			\)> spattern
 			\)> name
 			\)> trpattern
 			\)> (name, trpattern)
-		with
-			// Reset wld-name counter
-			rules(wld-name: _ -> 0)
 	
 	rule-to-coq(|sigs):
 		(r, _) -> 
@@ -344,13 +345,6 @@ rules // Term patterns
 					Apply(coq_term, <term-pattern-to-coq> param) \)> params
 	
 	term-pattern-to-coq:
-		Wld() -> x
-		where
-			w := <wld-name; inc>;
-			rules(wld-name: _ -> w);
-			x := Ref(<conc-strings> ("x", <write-to-string> w))
-	
-	term-pattern-to-coq:
 		List(lst) ->
 			<list-pattern-to-coq> lst
 			
@@ -368,16 +362,36 @@ rules // Term patterns
 					<write-to-string> x, ". Please report."]
 		where
 			not(?Op(_, _) <+
-				?Wld() <+
 				?List(_) <+
 				?ListTail(_, _) <+
 				?Var(_))
+
+rules // Scope patterns
+
+	scope-patterns-to-coq:
+		[sp|sps] ->
+			<scope-pattern-to-coq;
+			mbind(\ sp' ->
+			<scope-patterns-to-coq;
+			mbind(\ sps' ->
+			[sp'|sps']
+			\)> sps
+			\)> sp
+	
+	scope-patterns-to-coq:
+		[] -> []
+
+	scope-pattern-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected scope annotation: ",
+					<write-to-string> x, ". Please report."]
 
 rules // Lists
 
 	list-pattern-to-coq:
 		[] -> Ref("nil")
-		
+	
 	list-pattern-to-coq:
 		[x|xs] ->
 			<term-pattern-to-coq;
@@ -395,117 +409,6 @@ rules // Lists
 					" list pattern generation: ", <write-to-string> x]
 		where
 			not(?[] <+ ?[_|_])
-
-rules // Dependency analysis
-
-	mdeps:
-		[r|rs] ->
-			<mdep;
-			mbind(\ depsr ->
-			<mdeps;
-			mbind(\ depsrs ->
-			<cons-if-some> (depsr, depsrs) \)> rs \)> r
-
-	mdeps:
-		[] -> []
-
-	mdep:
-		CGenInitRule(_, _, body) -> None()
-	
-	mdep:
-		CGenMatchRule(name, _, _, _, body) ->
-			x'
-			with
-			x':=
-			<get-name;
-			mbind(\ name' ->
-			<mdeps-body(|name')> body \)> name
-	
-	mdep:
-		x ->
-			<concat-strings; err>
-				["Mutual dependency analysis encountered an unexpected rule kind:",
-					<write-to-string> x, ". Please report."]
-		where
-			not(?CGenInitRule(_, _, _) <+ ?CGenMatchRule(_, _, _, _, _))
-	
-	mdeps-body(|name):
-		[b|bs] ->
-			x
-			with
-			x:=
-			<mdep-body(|name);
-			mbind(\ depsb ->
-			<mdeps-body(|name);
-			mbind(\ depsbs ->
-			<cons-if-some> (depsb, depsbs) \)> bs \)> b
-	
-	mdeps-body(|name):
-		[] -> []
-	
-	mdep-body(|name):
-		CGenRecurse(name0, _, _, _) ->
-			<get-name;
-			mbind(\ name' ->
-			<if <equal> (name, name')
-			 then !None()
-			 else !(name, name')
-			 end>
-			\)> name0
-
-	mdep-body(|name):
-		x -> None()
-		where
-			not(?CGenRecurse(_, _, _, _))
-
-rules // Monadic style bind operation
-
-	mbind(s):	
-		Error(str) -> Error(str)
-
-	mbind(s):
-		x -> <s> x
-		where
-			not(?Error(_))
-
-rules // Error handling
-
- 	err:
- 		string -> Error(string)
- 		with
- 			<debug> string
-
-rules // Conditional list consing
-
-	cons-if-some:
-		(None(), xs) -> xs
-
-	cons-if-some:
-		(x, xs) -> [x|xs]
-		where
-			not(!x; ?None())
-	
-	append-if-some:
-		(xs, None()) -> xs
-	
-	append-if-some:
-		(xs, x) -> <conc> (xs, [x])
-
-rules // Name projection/normalization
-
-	get-name:
-		Name(x) -> x
-
-	get-name:
-		NoName() -> "Default"
-
-	get-name:
-		x ->
-			<concat-strings; err>
-				["Encountered an unexpected name kind: ",
-					<write-to-string> x, ". Please report."]
-		where
-			not(?Name(_) <+ ?NoName())
 
 rules // Naming conventions
 
