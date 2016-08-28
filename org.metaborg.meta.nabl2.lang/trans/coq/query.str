@@ -3,6 +3,8 @@ module coq/query
 imports
   signatures/rules/Rules-sig
   coq/util/mbind-err
+  
+  signatures/nabl2/shared/common/Terms-sig
 
 // Various operations for querying NaBL2 definitions
 
@@ -21,3 +23,16 @@ rules // Name projection/normalization
 					<write-to-string> x, ". Please report."]
 		where
 			not(?Name(_) <+ ?NoName())
+
+	// Following DynSem's sort name projection conventions (dynsem/trans/lib-ds.str)
+	get-sort-name:
+		SortNoArgs(name) -> name
+	
+	get-sort-name:
+    Sort("List", s) -> <concat-strings> ["L_", <get-sort-name> s]
+
+	get-sort-name:
+		x ->
+			<concat-strings; err>
+				["Encountered unexpected sort while trying to read sort name: ",
+					<write-to-string> x, ". Please report."]

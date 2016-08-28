@@ -30,11 +30,6 @@ imports
 	pp/Coq-parenthesize
 	pp/Coq-pp
 
-rules // Constant(s)
-
-	coq-type-name = !"T"
-	coq-list-name = !"list"
-
 rules
 
   generate-coq:
@@ -67,40 +62,10 @@ rules
 	    	\)> (<concat> deps, coq_defs')
 	     	\)> (ruls, coq_defs) \)> sigs \)> ruls
 
-rules // Joining inductive definitions
+rules // Constant(s)
 
-	join-induc-defs:
-		(name1, name2, coq) ->
-			coq'
-		with
-			// Hoist dependent definition of Coq definition
-			(inducs1, coq1) := <get-def> (name2, coq);
-			name1' := <cgen-rename> name1;
-			// Insert dependent definition in definition for dependee
-			(
-				coq' :=
-					<oncetd(\
-						Inductive(inducs) ->
-							Inductive(<conc> (inducs, inducs1))
-							where <fetch(?Induc(name1', _, _, _))> inducs \)> coq1
-				<+
-				coq' := <conc> (coq1, [Inductive(inducs1)])
-			)
-	
-	get-def:
-		(name1, coqdefs) -> (inducs', coqdefs')
-		with
-			name1' := <cgen-rename> name1;
-			// Coq definitions after removing the definition for name1
-			coqdefs' := 
-				<filter({ inducs:
-					not(?Inductive(inducs);
-						<fetch(?Induc(name1', _, _, _))> inducs) })> coqdefs;
-			// Binds inducs' to the definition for name1
-			<alltd({ inducs:
-				?Inductive(inducs);
-				<fetch({x,y,z: ?Induc(name1', x, y, z) })> inducs;
-				inducs' := inducs })> coqdefs
+	coq-type-name = !"T"
+	coq-list-name = !"list"
 
 rules // Signatures
 
@@ -146,10 +111,10 @@ rules	// Constraint generation signatures
 			mbind(\ coqsigs' ->
 			<cons-if-some> (coqsig', coqsigs')
 			\)> csigs \)> csig
-			
+
 	cgen-sigs-to-coq:
 		[] -> []
-	
+
 	cgen-sig-to-coq:
 		CGenSig(name, trsort, ssorts, tysort) ->
 			x''
@@ -157,19 +122,25 @@ rules	// Constraint generation signatures
 			x'':=
 			<get-name;
 				mbind(\ name' ->
-				<term-sort-to-coq;
+				<postify-term-sort;
 				mbind(\ trsort' ->
-				<append-if-some; foldr(!Prop(),
-					\ (x, y) ->
-						<mbind(\ y' ->
-						<type-sort-to-coq;
-						mbind(\ x' ->
-						Arrow(x', y')
-						\)> x \)> y \);
-				mbind(\ srts' ->
+				<term-sort-to-coq;
+				mbind(\ trsort'' ->
+//				<append-if-some; foldr(!Prop(),
+//					\ (x, y) ->
+//						<mbind(\ y' ->
+//						<type-sort-to-coq;
+//						mbind(\ x' ->
+//						Arrow(x', y')
+//						\)> x \)> y \);
+//				mbind(\ srts' ->
 				Inductive([Induc(<cgen-rename> name', None(),
-					Arrow(trsort', srts'), None())]) \)> (ssorts, tysort) \)> trsort \)> name
-			
+					Arrow(trsort'', Prop()), None())])
+//					\)> (ssorts, tysort)
+					\)> trsort'
+					\)> trsort
+					\)> name
+	
 	cgen-sig-to-coq:
 		x ->
 			<concat-strings; err> ["Encountered an unexpected constraint generation signature: ",
@@ -258,18 +229,26 @@ rules // Rules
 			mbind(\ trpattern' ->
 			<get-name;
 			mbind(\ cgen_name ->
-			<scope-pattern-to-coq;
+			<scope-patterns-to-coq;
 			mbind(\ spattern' ->
+			<type-pattern-to-coq;
+			mbind(\ typattern' ->
 			<alltd(\
 			Induc(coq_name, x, ty, cs) ->
 				Induc(coq_name, x, ty,
 					<append-constructor>
 						(cs, ConsDecl(rname,
 							None(), // Binders -- FIXME
-							OptType(trpattern'))))
+							OptType(
+								<foldr(!Ref(post_c),
+									\ (x, y) -> Apply(y, x) \)>
+										[trpattern', typattern'|<reverse> spattern']))))
 				where
-					<equal> (<cgen-rename> cgen_name, coq_name)
+					<equal> (<cgen-rename> cgen_name, coq_name);
+					Arrow(Ref(post_sort), Prop()) := ty;
+					post_c := <rename-post-sort-to-post-constructor> post_sort
 				 \)> coq
+			\)> typattern
 			\)> spattern
 			\)> name
 			\)> trpattern
@@ -281,7 +260,8 @@ rules // Rules
 				["Encountered an unexpected rule kind: ",
 					<write-to-string> r, ". Please report."]
 		where
-			not(!r; ?CGenInitRule(_, _, _) <+
+			not(!r;
+				?CGenInitRule(_, _, _) <+
 				?CGenMatchRule(_, _, _, _, _))
 
 	// Converts a None() to a ListDeclBar if necessary,
@@ -369,22 +349,43 @@ rules // Term patterns
 rules // Scope patterns
 
 	scope-patterns-to-coq:
+		List(sps) ->
+			<scope-pattern-list-to-coq> sps
+
+	scope-pattern-list-to-coq:
 		[sp|sps] ->
 			<scope-pattern-to-coq;
 			mbind(\ sp' ->
-			<scope-patterns-to-coq;
+			<scope-pattern-list-to-coq;
 			mbind(\ sps' ->
 			[sp'|sps']
 			\)> sps
 			\)> sp
 	
-	scope-patterns-to-coq:
+	scope-pattern-list-to-coq:
 		[] -> []
+
+	scope-pattern-to-coq:
+		Var(s) -> Ref(s)
 
 	scope-pattern-to-coq:
 		x ->
 			<concat-strings; err>
 				["Encountered an unexpected scope annotation: ",
+					<write-to-string> x, ". Please report."]
+		where
+			(?Var(_))
+
+rules // Type pattern
+
+	type-pattern-to-coq:
+		Type(x) ->
+			<term-pattern-to-coq> x
+	
+	type-pattern-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected type annotation: ",
 					<write-to-string> x, ". Please report."]
 
 rules // Lists
@@ -410,7 +411,75 @@ rules // Lists
 		where
 			not(?[] <+ ?[_|_])
 
+rules // Postification -- embeds scope/type patterns in term constructors
+
+	postify-term-sort:
+		SortNoArgs(sort_name) ->
+			SortNoArgs(<conc-strings> ("Post", sort_name))
+		
+	postify-term-sort:
+		Sort("List", [sort]) ->
+			<get-sort-name;
+			mbind(\ sort' ->
+			SortNoArgs(<conc-strings> ("PostL", sort'))
+			\)> sort
+
+	postify-term-sort:
+		x ->
+			<concat-strings; err>
+				["Term sort postification encountered an unexpected term sort: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?SortNoArgs(_) <+ ?Sort("List", [_]))
+
+	rename-post-sort-to-post-constructor:
+		x -> <conc-strings> (x, "_")
+		
+rules // Joining inductive definitions
+
+	join-induc-defs:
+		(name1, name2, coq) ->
+			coq'
+		with
+			// Hoist dependent definition of Coq definition
+			(inducs1, coq1) := <get-def> (name2, coq);
+			name1' := <cgen-rename> name1;
+			// Insert dependent definition in definition for dependee
+			(
+				coq' :=
+					<oncetd(\
+						Inductive(inducs) ->
+							Inductive(<conc> (inducs, inducs1))
+							where <fetch(?Induc(name1', _, _, _))> inducs \)> coq1
+				<+
+				coq' := <conc> (coq1, [Inductive(inducs1)])
+			)
+	
+	get-def:
+		(name1, coqdefs) -> (inducs', coqdefs')
+		with
+			name1' := <cgen-rename> name1;
+			// Coq definitions after removing the definition for name1
+			coqdefs' := 
+				<filter({ inducs:
+					not(?Inductive(inducs);
+						<fetch(?Induc(name1', _, _, _))> inducs) })> coqdefs;
+			// Binds inducs' to the definition for name1
+			<alltd({ inducs:
+				?Inductive(inducs);
+				<fetch({x,y,z: ?Induc(name1', x, y, z) })> inducs;
+				inducs' := inducs })> coqdefs
+
 rules // Naming conventions
 
 	cgen-rename:
 		x -> <conc-strings> ("CG", x)
+
+rules // Utility for getting first letter of string
+
+	first-letter =
+		string-as-chars(\ [x|_] -> <upper-case-chars> [x] \) <+
+		?str;
+		<concat-strings; err>
+			["Expected a non-empty string, but was given: ",
+				<write-to-string> str]

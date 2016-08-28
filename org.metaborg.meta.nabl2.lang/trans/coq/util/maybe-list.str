@@ -15,3 +15,9 @@ rules // Custom operations for Maybe lists
 	
 	append-if-some:
 		(xs, x) -> <conc> (xs, [x])
+
+	conc-if-some:
+		(None(), xs) -> xs
+	
+	conc-if-some:
+		(xs, None()) -> xs
