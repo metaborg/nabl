@@ -39,6 +39,9 @@ exports:
 - language: ds
   directory: trans
   includes: "**/*.ds"
+- language: dynsem2coq
+  directory: trans
+  includes: "**/*.ds2v"
 language:
   stratego:
     format: ctree
