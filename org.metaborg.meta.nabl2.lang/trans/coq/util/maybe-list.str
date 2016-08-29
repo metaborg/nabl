@@ -21,3 +21,8 @@ rules // Custom operations for Maybe lists
 	
 	conc-if-some:
 		(xs, None()) -> xs
+	
+	conc-if-some:
+		(xs, ys) -> <conc> (xs, ys)
+		where
+			not(?(None(), None()))

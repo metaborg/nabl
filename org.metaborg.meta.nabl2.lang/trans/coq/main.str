@@ -37,9 +37,15 @@ rules // Constant(s)
 
 	coq-type-name = !"T"
 	coq-list-name = !"list"
+	
 	cgref         = !"scopeofRef"
+	cgdecl        = !"scopeofDecl"
 	cresolve      = !"rlookup"
 	ctypeof       = !"typofDecl"
+	cgdirectedge  = !"edgeofScope"
+	
+	p-edge        = !"P"
+	
 	get-occ       = !"getOccurrence"
 
 rules
@@ -248,12 +254,14 @@ rules // Rules
 					<append-constructor>
 						(cs, ConsDecl(rname,
 							None(), // Binders -- FIXME
-							<foldr(
-							  !OptType(
-								<foldr(!Ref(post_c),
-									\ (x, y) -> Apply(y, x) \)>
-										[trpattern', typattern'|<reverse> spattern']),
-								\ (x, y) -> Arrow(x, y) \)> body')))
+							OptType(
+								<foldr(
+								  !
+									Apply(Ref(coq_name),
+										<foldr(!Ref(post_c),
+											\ (x, y) -> Apply(y, x) \)>
+												[trpattern', typattern'|<reverse> spattern']),
+									\ (x, y) -> ArrowLn(x, y) \)> body'))))
 				where
 					<equal> (<cgen-rename> cgen_name, coq_name);
 					Arrow(Ref(post_sort), Prop()) := ty;
@@ -332,7 +340,7 @@ rules // Term patterns
 
 	term-pattern-to-coq:
 		Op(cname, params) ->
-			<foldr(!Ref(cname),
+			<reverse; foldr(!Ref(cname),
 				\ (param, coq_term) ->
 					Apply(coq_term, <term-pattern-to-coq> param) \)> params
 	
@@ -404,11 +412,12 @@ rules // CGen body
 
 	cgen-body-to-coq:
 		[c|cs] ->
+			x with x:=
 			<cgen-clause-to-coq;
 			mbind(\ c' ->
 			<cgen-body-to-coq;
 			mbind(\ cs' ->
-			<cons-if-some> (c', cs')
+			<conc-if-some> (c', cs')
 			\)> cs
 			\)> c
 
@@ -424,9 +433,20 @@ rules // CGen body
 			mbind(\ occ' ->
 			<term-pattern-to-coq;
 			mbind(\ s' ->
-			Apply(Apply(Ref(<cgref>), occ'), s')
+			[Apply(Apply(Ref(<cgref>), occ'), s')]
 			\)> s
 			\)> occ
+
+	cgen-clause-to-coq:
+		CGDecl(occ, s) ->
+			<occurrence-to-coq;
+			mbind(\ occ' ->
+			<term-pattern-to-coq;
+			mbind(\ s' ->
+			[Apply(Apply(Ref(<cgdecl>), occ'), s')]
+			\)> s
+			\)> occ
+
 	
 	cgen-clause-to-coq:
 		CResolve(occ1, occ2, _) ->
@@ -434,7 +454,7 @@ rules // CGen body
 			mbind(\ occ1' ->
 			<occurrence-to-coq;
 			mbind(\ occ2' ->
-			Apply(Apply(Ref(<cresolve>), occ1'), occ2')
+			[Apply(Apply(Ref(<cresolve>), occ1'), occ2')]
 			\)> occ2
 			\)> occ1 
 			
@@ -444,7 +464,7 @@ rules // CGen body
 			mbind(\ occ' ->
 			<term-pattern-to-coq;
 			mbind(\ t' ->
-			Apply(Apply(<ctypeof>, occ'), t')
+			[Apply(Apply(Ref(<ctypeof>), occ'), t')]
 			\)> t
 			\)> occ
 	
@@ -458,22 +478,32 @@ rules // CGen body
 			mbind(\ spatterns' ->
 			<type-pattern-to-coq;
 			mbind(\ typattern' ->
-			<foldr(!Ref(<cgen-rename> name'),
-					\ (x, y) -> Apply(y, x) \)>
-				[trpattern', typattern'|<reverse> spatterns']
+			[Apply(Ref(<cgen-rename> name'), trpattern'),
+			Parenthetical(Eq(Apply(Ref(<conc-strings> ("proj_", name')), trpattern'),
+				<foldr(!Ref("nil"),
+					\ (x, y) -> Apply(Apply(Ref("cons"), x), y) \)>
+				<conc> (spatterns', [typattern'])))]
 			\)> typattern
 			\)> spatterns
 			\)> trpattern
 			\)> name
 	
-//	cgen-clause-to-coq:
-//		CGDirectEdge(s1, lbl, s2) ->
-//			<term-pattern-to-coq;
-//			mbind(\ s1' ->
-//			<label-pattern-to-coq;
-//			mbind(\ lbl' ->
-//			<term-pattern-to-coq;
-//			mbind(\ s2' ->			
+	cgen-clause-to-coq:
+		CGDirectEdge(s1, lbl, s2) ->
+			<term-pattern-to-coq;
+			mbind(\ s1' ->
+			<label-pattern-to-coq;
+			mbind(\ lbl' ->
+			<term-pattern-to-coq;
+			mbind(\ s2' ->
+			[Apply(Apply(Apply(Ref(<cgdirectedge>), s1'), lbl'), s2')]
+			\)> s2
+			\)> lbl
+			\)> s1
+			
+	// FIXME: do we need this information in Coq?
+	cgen-clause-to-coq:
+		NewScopes(_) -> None()
 	
 	cgen-clause-to-coq:
 		x ->
@@ -485,7 +515,21 @@ rules // CGen body
 				?CGRef(_, _) <+
 				?CResolve(_, _, _) <+
 				?CTypeOf(_, _, _) <+
-				?CGenRecurse(_, _, _, _))
+				?CGenRecurse(_, _, _, _) <+
+				?CGDirectEdge(_, _, _))
+
+rules // Label
+
+	label-pattern-to-coq:
+		P() -> Ref(<p-edge>)
+	
+	label-pattern-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected label pattern: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?P())
 
 rules // Occurrence
 	
