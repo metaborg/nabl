@@ -38,6 +38,8 @@ context-free syntax
   Pattern.ListTail = <[<{Pattern ","}*>|<Pattern>]>
   Pattern.Tuple    = <(<{Pattern ","}*>)>
   Pattern.As       = <<Var>@<Pattern>>
+  Pattern          = IntTerm
+  Pattern          = StringTerm
 
 context-free syntax
 
