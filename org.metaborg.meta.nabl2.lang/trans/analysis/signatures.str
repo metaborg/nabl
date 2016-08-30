@@ -85,6 +85,12 @@ rules
 	extract-subterm-sigs(|body):
 		List(l) -> <map(extract-subterm-sigs(|body)); concat> l
 
+	extract-subterm-sigs(|body):
+		Str(_) -> []
+	
+	extract-subterm-sigs(|body):
+		Int(_) -> []
+	
 	// Body signature extraction
 		
 	extract-body-sigs(|args):
