@@ -17,3 +17,6 @@ context-free syntax
   // makes {left} not work
   TypeTerm.TListConc = <<TypeTerm> ++ <TypeTerm>> {left}
 
+lexical syntax
+
+  Constructor = "TList" | "TListTail" | "TListConc"
