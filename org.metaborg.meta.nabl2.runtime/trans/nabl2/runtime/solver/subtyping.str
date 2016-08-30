@@ -22,10 +22,10 @@ rules
   where ty1* := <is-list+(is-tuple;TupleToList)> ty1
       ; ty2* := <is-list+(is-tuple;TupleToList)> ty2
   with ( <(length,length);eq> (ty1*,ty2*)
-       < msg := [ty1*," not a subtype of ",ty2*]
+       < msg := [TList(ty1*)," not a subtype of ",TList(ty2*)]
        ; msginfo' := <detail-message(|msg)> msginfo
        ; !(sol, <zip;map(!CSubtype(<Fst>,<Snd>,msginfo'))> (ty1*,ty2*))
-       + msg := ["Cannot check subtyping for lists ",ty1*," and ",ty2*," of different length."]
+       + msg := ["Cannot check subtyping for lists ",TList(ty1*)," and ",TList(ty2*)," of different length."]
        ; !(<add-message(detail-message(|msg)|msginfo)> sol, [])
        ) => res
 

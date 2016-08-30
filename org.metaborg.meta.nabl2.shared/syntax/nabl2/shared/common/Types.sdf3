@@ -8,6 +8,12 @@ context-free syntax
 
 context-free syntax
 
-  TypeTerm      = ABSTRACT
-  Comparable    = TypeTerm
+  TypeTerm   = TypeList
+  Comparable = TypeTerm
+
+  TypeList.TList     = <[<{TypeTerm ","}*>]>
+  TypeList.TListTail = <[<{TypeTerm ","}*>|<TypeTerm>]>
+  // needs to be TypeTerm, because indirection via TypeList
+  // makes {left} not work
+  TypeTerm.TListConc = <<TypeTerm> ++ <TypeTerm>> {left}
 

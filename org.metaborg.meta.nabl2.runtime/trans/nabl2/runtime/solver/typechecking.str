@@ -30,6 +30,21 @@ rules
 
 rules
 
+  is-op = ?TList(_) + ?TListTail(_,_) + ?TListConc(_,_)
+
+  reduce-op(|sol): TList(xs) -> xs
+    where <is-list> xs
+
+  reduce-op(|sol): TListTail(xs,ys) -> <conc> (xs,ys)
+    where <is-list> xs;
+          <is-list> ys
+
+  reduce-op(|sol): TListConc(xs,ys) -> <conc> (xs,ys)
+    where <is-list> xs;
+          <is-list> ys
+
+rules
+
   constraint-priority: CTypeOf(_,_,_) -> 1
   constraint-priority: CValueOf(_,_) -> 1
 

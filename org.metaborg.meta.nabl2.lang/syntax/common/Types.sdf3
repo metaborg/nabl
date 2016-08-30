@@ -11,8 +11,6 @@ context-free syntax
 
   TypeTerm          = Var {prefer}
   TypeTerm.Op       = <<OpId>(<{TypeTerm ","}*>)>
-  TypeTerm.List     = <[<{TypeTerm ","}*>]>
-  TypeTerm.ListTail = <[<{TypeTerm ","}*>|<TypeTerm>]>
   TypeTerm.Tuple    = <(<{TypeTerm ","}*>)>
   TypeTerm          = IntTerm
   TypeTerm          = StringTerm
