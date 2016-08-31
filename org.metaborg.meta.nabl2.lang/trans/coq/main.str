@@ -8,16 +8,11 @@ imports
   analysis/signatures
     
   // NaBL2 imports:
-  signatures/signatures/CGen-sig
-  signatures/signatures/Types-sig
-  signatures/common/Sorts-sig
-  signatures/rules/CGen-sig
-  signatures/rules/Rules-sig
-  signatures/rules/Normalization-sig
-  signatures/nabl2/shared/common/ScopeGraph-sig
-  signatures/nabl2/shared/constraints/Base-sig
-  signatures/nabl2/shared/constraints/Namebinding-sig
-  signatures/nabl2/shared/constraints/Typechecking-sig
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+  signatures/common/-
+  signatures/signatures/-
+  signatures/rules/-
   
   // Coq imports:
   coq/analysis/explicate-wildcards
