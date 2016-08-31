@@ -2,21 +2,23 @@ module nabl2/shared/common/Types
 
 imports
 
+  nabl2/shared/common/Identifiers
   nabl2/shared/common/Native
 
 context-free syntax
 
-context-free syntax
+  TypeTerm           = TypeVar
+  TypeVar.TVar       = <'<TVarId>>
 
-  TypeTerm   = TypeList
-  Comparable = TypeTerm
-
+  TypeTerm           = TypeList
   TypeList.TList     = <[<{TypeTerm ","}*>]>
   TypeList.TListTail = <[<{TypeTerm ","}*>|<TypeTerm>]>
-  // needs to be TypeTerm, because indirection via TypeList
-  // makes {left} not work
+  // TListConc needs to be TypeTerm, because indirection
+  // via TypeList makes {left} not work
   TypeTerm.TListConc = <<TypeTerm> ++ <TypeTerm>> {left}
+
+  Comparable = TypeTerm
 
 lexical syntax
 
-  Constructor = "TList" | "TListTail" | "TListConc"
+  Constructor = "TList" | "TListTail" | "TListConc" | "TVar"

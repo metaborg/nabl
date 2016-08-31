@@ -2,28 +2,115 @@ module nabl2/runtime/common/subtype-relation
 
 imports
 
+  nabl2shared
+
+  nabl2/runtime/common/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
 
+signature
+
+  constructors
+    covar     : Variance
+    contravar : Variance
+
 rules
+
+  type-sig-of = fail
+
 
   initial-subtype-relation = ![]
  
 
-  extend-subtype-relation(|x*): (ty1,ty2) -> x2*
-    where not(<get(|ty1)> x*);
-          not(<is-subtype(|x*)> (ty2,ty1))
-    with x1* := <set(![ty2|<getOr(![]|ty2)> x*]|ty1)> x*;
-         x2* := <mapv(try(\ ty* -> <nub> [ty2|ty*]
-                            where <elem(term-eq)> (ty1,ty*) \))> x1*
+  extend-subtype-relation(|x*): (ty1,ty2) -> [x|x'*]
+    where ety1 := <erase-subtypeterms> ty1;
+          ety2 := <erase-subtypeterms> ty2;
+          <not(getfirst((where(erase-subtypeterms;?ety1),id)))> x*;
+          not(<upcast(|x*)> (ty2,ty1))
+    with if (ty2',supty2*) := <getfirst((where(erase-subtypeterms;?ety2),id))> x* then
+           tvar2* := <get-subtypeterms> ty2;
+           tvar2'* := <get-subtypeterms> ty2';
+           s := <zip> (tvar2'*,tvar2*);
+           supty2'* := <S-apply(is-NaBL2-TypeVar)> (s,supty2*)
+         else
+           supty2'* := []
+         end;
+         supty1* := [ty2|supty2'*];
+         x := (ty1,supty1*);
+         tvar1* := <get-subtypeterms> ty1;
+         x'* := <map(try({ ty1', ttrm1'*, s, supty1'*: \
+           (ty,supty*) -> (ty,[supty*,supty1'*])
+           where ty1' := <getfirst(where(erase-subtypeterms;?ety1))> supty*;
+                 ttrm1'* := <get-subtypeterms> ty1';
+                 s := <zip> (tvar1*,ttrm1'*);
+                 supty1'* := <S-apply(is-NaBL2-TypeVar)> (s,supty1*)
+         \}))> x*
  
   extend-subtype-relation(|x*): (ty1,ty2) -> x*
-    where <eq> (<get(|ty1);Hd> x*, ty2)
+    where ety1 := <erase-subtypeterms> ty1;
+          (ty1',ty2') := <getfirst((where(erase-subtypeterms;?ety1),Hd))> x*;
+          tvar* := <get-subtypeterms> ty1;
+          tvar'* := <get-subtypeterms> ty1';
+          s := <zip> (tvar*,tvar'*);
+          ty2'' := <S-apply(is-NaBL2-TypeVar)> (s,ty2);
+          <term-eq> (ty2',ty2'')
+
+
+  is-subtype(|x*):
+    (ty1,ty2) -> <is-subtype(|x*)> (ty1,covar(),ty2)
+
+  is-subtype(|x*):
+    (ty1,_,ty2) -> <id>
+    where <term-eq> (ty1,ty2)
+
+  is-subtype(|x*):
+    (ty1,contravar(),ty2) -> <id>
+    where <is-subtype(|x*)> (ty2,covar(),ty1)
+
+  is-subtype(|x*):
+    (ty1*,covar(),ty2*) -> <id>
+    where <is-list> ty1*;
+          <is-list> ty2*;
+          <zip;map(\ (ty1,ty2) -> <is-subtype(|x*)> (ty1,covar(),ty2) \)> (ty1*,ty2*)
+
+  is-subtype(|x*):
+    (ty1,covar(),ty2) -> <id>
+    where <not(is-list)> ty1;
+          <not(is-list)> ty2;
+          ty2' := <upcast(|x*)> (ty1,ty2);
+          var*    := <get-subtypevariances> ty2';
+          subty*  := <get-subtypeterms> ty2;
+          subty'* := <get-subtypeterms> ty2';
+          <zipN;map(is-subtype(|x*))> (subty'*,var*,subty*)
  
 
-  is-subtype(|x*): (ty1,ty2) -> <id>
-    where term-eq
-        + ( ty* := <get(|ty1)> x*;
-            <elem(term-eq)> (ty2, ty*)
-          )
+  upcast(|x*):
+    (ty1,ty2) -> ty1
+    where ety1 := <erase-subtypeterms> ty1;
+          ety2 := <erase-subtypeterms> ty2;
+          <term-eq> (ety1,ety2)
 
+  upcast(|x*):
+    (ty1,ty2) -> ty2''
+    where ety1 := <erase-subtypeterms> ty1;
+          ety2 := <erase-subtypeterms> ty2;
+          <not(term-eq)> (ety1,ety2);
+          (ty1',ty2') := <getfirst((where(erase-subtypeterms;?ety1),getfirst(where(erase-subtypeterms;?ety2))))> x*;
+          ttrm* := <get-subtypeterms> ty1;
+          tvar* := <get-subtypeterms> ty1';
+          s := <zip> (tvar*,ttrm*);
+          ty2'' := <S-apply(is-NaBL2-TypeVar)> (s,ty2')
+ 
+
+  erase-subtypeterms: ty@c#(a*) -> c#(a'*)
+    where sig* := <type-sig-of<+fatal-err(|"Missing type signature for ")> ty;
+          a'* := <zip;map(?((_,SortNoArgs("TypeTerm")),_) < !Wld() + Snd)> (sig*,a*)
+
+  get-subtypeterms: ty@c#(a*) -> ty*
+    where sig* := <type-sig-of<+fatal-err(|"Missing type signature for ")> ty;
+          ty* := <zip;filter(\ ((_,SortNoArgs("TypeTerm")),ty) -> ty \)> (sig*,a*)
+ 
+  get-subtypevariances: ty -> variance*
+    where sig* := <type-sig-of<+fatal-err(|"Missing type signature for ")> ty;
+          variance* := <filter(\ (var,SortNoArgs("TypeTerm")) -> var \)> sig*
+ 

@@ -18,17 +18,6 @@ rules
        ; <add-message(detail-message(|msg)|msginfo)> sol
        ) => sol'
 
-  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [res]
-  where ty1* := <is-list+(is-tuple;TupleToList)> ty1
-      ; ty2* := <is-list+(is-tuple;TupleToList)> ty2
-  with ( <(length,length);eq> (ty1*,ty2*)
-       < msg := [TList(ty1*)," not a subtype of ",TList(ty2*)]
-       ; msginfo' := <detail-message(|msg)> msginfo
-       ; !(sol, <zip;map(!CSubtype(<Fst>,<Snd>,msginfo'))> (ty1*,ty2*))
-       + msg := ["Cannot check subtyping for lists ",TList(ty1*)," and ",TList(ty2*)," of different length."]
-       ; !(<add-message(detail-message(|msg)|msginfo)> sol, [])
-       ) => res
-
   solve-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
   where <is-ground> (ty1,ty2)
       ; <sol-x> sol => x*

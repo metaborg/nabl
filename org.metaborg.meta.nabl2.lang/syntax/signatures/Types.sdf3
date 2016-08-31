@@ -5,7 +5,6 @@ imports
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Terms
   nabl2/shared/common/Vars
-  common/Sorts
 
 template options
 
@@ -18,5 +17,22 @@ context-free syntax
       <{TypeSig "\n"}*>
   > {longest-match}
 
-  TypeSig.TypeSig         = <<SortId>(<{Sort ","}*>)>
+  TypeSig.TypeSig         = <<OpId>(<{TypeArg ","}*>)>
 
+context-free syntax
+
+  TypeArg                 = <<TypeMod> <TypeSort>>
+
+  TypeMod.None            =
+  TypeMod.OpNoArgs        = TModId
+
+  TypeSort.OccurrenceSort = "occurrence"
+  TypeSort.ScopeSort      = "scope"
+  TypeSort.TypeSort       = "type"
+  TypeSort.SortNoArgs     = SortId
+  TypeSort.Sort           = <<SortId>(<{Sort ","}*>)>
+
+
+lexical syntax
+
+  SortVar = "scope" | "occurrence" | "type" {reject}

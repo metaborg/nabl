@@ -5,6 +5,10 @@ imports
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Vars
 
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
 context-free syntax
 
   Term          = Var
@@ -51,5 +55,5 @@ lexical syntax
 
   SortVar.Var     = VarId
   SortId          = OpId
-  
-  
+ 
+ 

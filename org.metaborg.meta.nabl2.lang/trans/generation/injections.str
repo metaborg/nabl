@@ -10,23 +10,9 @@ imports
  
 rules
 
-  injection-to-term(e) = Var(id)
-  injection-to-term(e) = Op(id,map(e))
-  injection-to-term(e) = List(map(e))
-  injection-to-term(e) = ListTail(map(e),e)
-  injection-to-term(e) = Tuple(map(e))
-  injection-to-term(e) = Str(id)
-  injection-to-term(e) = Int(id)
+  injection-to-term(e) = term-to-term(e)
   injection-to-term(e):
     IndexFromTerm(t) -> Term |[ <get-ast-index> ~t ]|
  
 
-  injection-to-pattern(e) = Wld()
-  injection-to-pattern(e) = Var(id)
-  injection-to-pattern(e) = Op(id,map(e))
-  injection-to-pattern(e) = List(map(e))
-  injection-to-pattern(e) = ListTail(map(e),e)
-  injection-to-pattern(e) = Tuple(map(e))
-  injection-to-pattern(e) = Str(id)
-  injection-to-pattern(e) = Int(id)
-
+  injection-to-pattern(e) = pattern-to-pattern(e)

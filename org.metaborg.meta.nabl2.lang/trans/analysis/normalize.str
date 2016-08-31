@@ -14,6 +14,7 @@ imports
 rules
 
   normalize =
+    normalize-type-sigs;
     normalize-term-matches;
     normalize-type-matches;
     normalize-list-matches;
@@ -22,6 +23,13 @@ rules
     normalize-messages;
     normalize-indices;
     normalize-rule-names
+
+rules
+
+  normalize-type-sigs = try(sometd(normalize-type-sig))
+  
+  normalize-type-sig:
+    OpNoArgs(x) -> Op(x,[])
 
 rules
 

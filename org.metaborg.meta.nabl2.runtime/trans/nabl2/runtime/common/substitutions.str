@@ -13,14 +13,32 @@ rules
   where <S-apply(isv);s> (s,t) => s'
       ; <S-compose(isv)> (s',s) => s''
 
+
   S-compose(isv): s* -> s
   where is-list
   with s := <foldr([],S-compose(isv))> s*
 
   S-compose(isv): (s',s) ->  <conc> (s', <mapv(<S-apply(isv)> (s',<id>))> s)
 
+
   S-apply(isv): (s,t) -> t'
   with <topdown( try( isv ; <lookup> (<id>,s) ) )> t => t'
 
+
   S-occurs(isv): (v,t) -> <id>
-  where <elem> (v, <collect-all(isv)> t)
+  where <sometd(?v)> t
+
+
+  S-unify(isv): (t,t) -> []
+
+  S-unify(isv): (v,t) -> [(v,t)]
+    where <isv> v;
+          <not(S-occurs(isv))> (v,t)
+
+  S-unify(isv): (t,v) -> <S-unify(isv)> (v,t)
+    where <isv> v
+ 
+  S-unify(isv): (c#(a1*),c#(a2*)) -> s''
+    where s'' := <zip;foldr(![],{\ ((t1,t2),s) -> <S-compose(isv)> (s',s)
+                                     where s' := <S-apply(isv);S-unify(isv)> (s,(t1,t2))
+                                \})> (a1*,a2*)

@@ -1,0 +1,11 @@
+module nabl2/runtime/prelude/list
+
+strategies
+  
+  zipN: t -> [<ListToTuple> hd* | <ListToTuple;zipN> tl*]
+    where ls* := <TupleToList> t;
+          hd* := <map(Hd)> ls*;
+          tl* := <map(Tl)> ls*
+
+  zipN: t -> []
+    where <TupleToList;map(?[])> t

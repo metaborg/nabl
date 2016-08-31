@@ -8,10 +8,15 @@ lexical syntax
 
   INT            = "-"? [0-9]+
 
+  TVarId         = [a-zA-Z] [a-zA-Z0-9]*
+  TVarId         = Keyword {reject}
+
+  TModId         = [a-z] [a-zA-Z0-9]*
+  TModId         = Keyword {reject}
+
   VarId          = [a-z] [a-zA-Z0-9\_]* [\']*
   VarId          = [a-zA-Z0-9\_]* "_" {reject}
   VarId          = Keyword [\']* {reject}
-  VarId          = Constructor [\']* {reject}
 
   OpId           = [A-Z] [a-zA-Z0-9\_\']*
   OpId           = [A-Z0-9\_\']* "_" {reject}

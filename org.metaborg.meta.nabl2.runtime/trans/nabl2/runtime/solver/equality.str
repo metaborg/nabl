@@ -19,6 +19,11 @@ rules
   solve-constraint: (CEqual(t1,t2,_),sol) -> [(sol,[])]
   where <term-eq> (t1,t2)
 
+  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
+  where <not(var-occurs)> (v,t)
+      ; <is-reduced> t
+  with sol' := <sol-apply-s(|[(v,t)])> sol
+  
   solve-constraint: (CEqual(t,v@Var(_),msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
   where <not(is-var)> t
 
@@ -26,12 +31,7 @@ rules
   where <var-occurs> (v,t)
   with msg := [v," occurs in ",t]
      ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
-  
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
-  where <not(var-occurs)> (v,t)
-      ; <is-reduced> t
-  with sol' := <sol-apply-s(|[(v,t)])> sol
-  
+ 
   solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
   where <not(is-op)> t1
       ; <not(is-op)> t2
