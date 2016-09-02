@@ -126,7 +126,7 @@ rules // resolution internal
   ; filter(where(<not(elem)> (<id>,ir*))) // :: [Ref]
   ; mapconcat(\ r -> <resolve(|g,ir*);
                       mapv(\ p -> (r,p) \)> r \) // :: [(Decl,(Ref,Path))]
-  ; filter({ d,r,s':
+  ; filter({ d,r,p,s':
                ?(d,(r,p))
              ; s' := <G-assocs;get(|l)> (g,d)
              ; !(s',N(s,l,r,p))
