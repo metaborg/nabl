@@ -33,7 +33,7 @@ rules // resolution internal
   ; with(log-res(pp-NaBL2-Occurrence|$[[dbg-msg]_]))
   ; ?r
   ; ( s := <G-scope> (g,r) // :: Scope
-   <+ <debug(!"ERROR: Cannot get scope for reference ");fail> r
+   <+ <fatal-err(|"Cannot get scope for reference ")> r
     )
   ; (f,e*) := <env(labels-lt|<labels-wf>,g,[r|ir*],[])> s // :: Env
   ; ( <lookup> (<occurrence-atom> r, e*) // :: [(Decl,Path)]

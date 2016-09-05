@@ -1,0 +1,24 @@
+module nabl2/runtime/solver/uninterpreted
+
+imports
+
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
+
+rules
+ 
+  solve-constraint: (CGoal(t),sol) -> [(sol',[])]
+    where <is-ground> t
+    with sol' := <sol-add-u-goal(|t)> sol
+
+  solve-constraint: (CFact(t),sol) -> [(sol',[])]
+    where <is-ground> t
+    with sol' := <sol-add-u-fact(|t)> sol
+
+rules
+
+  constraint-priority: CGoal(_) -> 99
+  constraint-priority: CFact(_) -> 99
+

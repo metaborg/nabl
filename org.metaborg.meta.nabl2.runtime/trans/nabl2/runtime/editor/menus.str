@@ -2,7 +2,10 @@ module nabl2/runtime/editor/menus
 
 imports
 
+  signatures/nabl2/runtime/solver/-
+
   nabl2/runtime/analysis/-
+  nabl2/runtime/solver/-
 
 rules
 
@@ -16,6 +19,14 @@ rules
        ; result := <get-analysis> $[[project-path]/[path]]
       <+ result := None()
 
+  show-file-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"uninterpreted-constraints.aterm")> path
+       ; goals := <get-analysis;sol-u-goals> $[[project-path]/[path]]
+       ; facts := <get-analysis;sol-u-facts> $[[project-path]/[path]]
+       ; result := ("Goals"#([goals]),"Facts"#([facts]))
+      <+ result := None()
+
+
   show-project-analysis: (_, _, _, _, project-path) -> (filename, result)
     with filename := $[[project-path]/analysis.txt]
        ; result := <get-analysis;pp-NaBL2-Analysis> project-path
@@ -24,4 +35,10 @@ rules
   show-project-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := $[[project-path]/analysis.aterm]
        ; result := <get-analysis> project-path
+      <+ result := None()
+
+  show-project-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
+    with filename := $[[project-path]/uninterpreted-constraints.aterm]
+       ; goals := <get-analysis;sol-u-goals> project-path
+       ; facts := <get-analysis;sol-u-facts> project-path
       <+ result := None()

@@ -18,20 +18,23 @@ rules
     Values([]),
     Substitution([]),
     SubtypeRelation(<initial-subtype-relation>),
+    Uninterpreted([],[]),
     Errors([]),
     Warnings([]),
     Notes([])
   ]
 
-  sol-g = fetch-elem(?ScopeGraph(<id>))
-  sol-r = fetch-elem(?NameResolution(<id>))
-  sol-t = fetch-elem(?Typing(<id>))
-  sol-v = fetch-elem(?Values(<id>))
-  sol-s = fetch-elem(?Substitution(<id>))
-  sol-x = fetch-elem(?SubtypeRelation(<id>))
-  sol-e = fetch-elem(?Errors(<id>))
-  sol-w = fetch-elem(?Warnings(<id>))
-  sol-n = fetch-elem(?Notes(<id>))
+  sol-g       = fetch-elem(?ScopeGraph(<id>))
+  sol-r       = fetch-elem(?NameResolution(<id>))
+  sol-t       = fetch-elem(?Typing(<id>))
+  sol-v       = fetch-elem(?Values(<id>))
+  sol-s       = fetch-elem(?Substitution(<id>))
+  sol-x       = fetch-elem(?SubtypeRelation(<id>))
+  sol-u-goals = fetch-elem(?Uninterpreted(<id>,_))
+  sol-u-facts = fetch-elem(?Uninterpreted(_,<id>))
+  sol-e       = fetch-elem(?Errors(<id>))
+  sol-w       = fetch-elem(?Warnings(<id>))
+  sol-n       = fetch-elem(?Notes(<id>))
  
   sol-with-g(|g) = fetch(ScopeGraph(!g))
 
@@ -47,6 +50,9 @@ rules
   sol-set-r(|r*) = fetch(NameResolution(!r*))
 
   sol-set-r(|r,d) = fetch(NameResolution(set(!d|r)))
+
+  sol-add-u-goal(|g) = fetch(Uninterpreted(![g|<id>],id))
+  sol-add-u-fact(|f) = fetch(Uninterpreted(id,![f|<id>]))
 
   sol-add-error(|msg) = fetch(Errors(set-add(message-eq|msg)))
   sol-add-warning(|msg) = fetch(Warnings(set-add(message-eq|msg)))
