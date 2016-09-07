@@ -11,14 +11,19 @@ imports
  
 rules
  
-  solve-constraint: (CValueOf(o,val),sol) -> [(sol',[])]
-  where <is-ground> o
-  with ( val' := <sol-v;get(|o)> sol;
-         <not(eq)> (val,val')
-       < msg := Message(Error(),["Value for ",o," already set before to a different value."],<occurrence-index> o);
-         <add-message(id|msg)> sol
-       + <sol-set-v(|o,val)> sol
-       ) => sol'
+  solve-constraint: (CValueOf(o,key,val),sol) -> [(sol',[])]
+  where <is-ground> o;
+        <is-ground> val
+  with if val' := <sol-v;get(|o);get(|key)> sol then
+         if <eq> (val,val') then
+           !sol
+         else
+           msg := Message(Error(),["Value ",val," for ",o,".",key," conflicts with previously set value ",val',"."],<occurrence-index> o);
+           <add-message(id|msg)> sol
+         end
+       else
+         <sol-add-v(|o,(key,val))> sol
+       end => sol'
 
   solve-constraint: (CTypeOf(o,ty,prio,msginfo),sol) -> [res]
   where <is-ground> o
@@ -52,8 +57,7 @@ rules
 rules
 
   constraint-priority: CTypeOf(_,_,_,_) -> 1
-  constraint-priority: CValueOf(_,_) -> 1
+  constraint-priority: CValueOf(_,_,_) -> 1
 
   constraint-message: CTypeOf(o,_,_,msginfo) -> <default-message(|["Failed to get type of ",o])> msginfo
-  constraint-message: CValueOf(o,val) -> Message(Error(),["Failed to set value of ",o],o)
-
+  constraint-message: CValueOf(o,key,val) -> Message(Error(),["Failed to set ",key," value of ",o],o)

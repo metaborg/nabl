@@ -43,7 +43,7 @@ rules
 
   sol-set-t(|o,ty) = fetch(Typing(set(!ty|o)))
 
-  sol-set-v(|o,val) = fetch(Values(set(!val|o)))
+  sol-add-v(|o,val) = fetch(Values(update(![val|<id>],![]|o)))
 
   sol-set-x(|x*) = fetch(SubtypeRelation(!x*))
 

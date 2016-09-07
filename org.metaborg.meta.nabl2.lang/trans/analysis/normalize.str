@@ -19,7 +19,6 @@ rules
     normalize-type-matches;
     normalize-list-matches;
     normalize-rule-vars;
-    normalize-constraints;
     normalize-messages;
     normalize-indices;
     normalize-rule-names
@@ -129,11 +128,3 @@ rules
   // set default name for anonymous rules
   normalize-rule-name:
     NoName() -> Name(<default-rule-name>)
-
-rules
-
-  normalize-constraints = topdown(try(normalize-constraint))
-
-  normalize-constraint:
-    CTypeAndValueOf(occ,type,value,prio,msg) ->
-      CConj(CTypeOf(occ,type,prio,msg),CValueOf(occ,value))

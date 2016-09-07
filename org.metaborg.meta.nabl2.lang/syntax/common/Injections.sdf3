@@ -15,5 +15,3 @@ context-free syntax
 
   TermIndex.DefaultIndex     =
   TermIndex.IndexFromTerm = <@<Var>>
-
-  PrimitiveConstraint.CTypeAndValueOf  = [[Occurrence] : [TypeTerm] := [Term] [ConstraintPriority] [Message]]

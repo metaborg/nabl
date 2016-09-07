@@ -3,6 +3,7 @@ module nabl2/shared/constraints/Typechecking
 imports
 
   nabl2/shared/common/AST
+  nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Types
@@ -14,5 +15,6 @@ context-free syntax
 
   PrimitiveConstraint.CTypeOf  = [[Occurrence] : [TypeTerm] [ConstraintPriority] [Message]]
 
-  PrimitiveConstraint.CValueOf = [[Occurrence] := [Term]]
+  PrimitiveConstraint.CValueOf = [[Occurrence].[ValueKey] := [Term]]
  
+  ValueKey.Key = KeyId

@@ -22,4 +22,3 @@ rules
   set-ast-type(|type) = set-ast-metadata(|Type(), type)
 
   get-ast-ref = get-ast-refs ; Hd
-

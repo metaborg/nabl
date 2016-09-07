@@ -18,4 +18,5 @@ context-free syntax
   SubtypeRelation      = {SubtypeEntry "\n"}*
   SubtypeEntry         = [[TypeTerm] <: [{TypeTerm ","}*]]
 
-  Valuation            = <<Occurrence> : <Term>>
+  Valuation            = <<Occurrence> . <{ValuationEntry "\n"}*>>
+  ValuationEntry       = <<ValueKey> := <Term>>
