@@ -7,4 +7,4 @@ imports
   nabl2/runtime/editor/-
   nabl2/runtime/solver/-
   nabl2/runtime/stdlib/-
-  nabl2/runtime/pp
+  nabl2/runtime/-

@@ -8,10 +8,11 @@ imports
   nabl2/shared/common/Types
   nabl2/shared/common/Terms
   nabl2/shared/common/Vars
+  nabl2/shared/constraints/Base
 
 context-free syntax
 
-  PrimitiveConstraint.CTypeOf  = [[Occurrence] : [TypeTerm] [Message]]
+  PrimitiveConstraint.CTypeOf  = [[Occurrence] : [TypeTerm] [ConstraintPriority] [Message]]
 
   PrimitiveConstraint.CValueOf = [[Occurrence] := [Term]]
  

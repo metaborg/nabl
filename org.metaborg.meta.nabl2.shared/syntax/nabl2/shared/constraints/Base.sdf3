@@ -26,6 +26,9 @@ context-free priorities
   Constraint.CConj >
   Constraint.CDisj
 
+lexical syntax
+
+  ConstraintPriority = "!"*
 
 lexical syntax
 

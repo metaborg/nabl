@@ -20,13 +20,19 @@ rules
        + <sol-set-v(|o,val)> sol
        ) => sol'
 
-  solve-constraint: (CTypeOf(o,ty,msginfo),sol) -> [res]
+  solve-constraint: (CTypeOf(o,ty,prio,msginfo),sol) -> [res]
   where <is-ground> o
   with t* := <sol-t> sol
-     ; ( <lookup> (o, t*) => ty'
-       < !(sol, [CEqual(ty, ty', msginfo)])
-       + !(<sol-set-t(|o,ty)> sol, [])
+     ; ( <lookup> (o, t*) => (ty',(prio',msginfo'))
+       < if <priority-gt> (prio,prio') then
+           !(<sol-set-t(|o,(ty,(prio,msginfo)))> sol, [CEqual(ty, ty', msginfo')])
+         else
+           !(sol, [CEqual(ty, ty', msginfo)])
+         end
+       + !(<sol-set-t(|o,(ty,(prio,msginfo)))> sol, [])
        ) => res
+
+  priority-gt = (length,length);gt
 
 rules
 
@@ -45,9 +51,9 @@ rules
 
 rules
 
-  constraint-priority: CTypeOf(_,_,_) -> 1
+  constraint-priority: CTypeOf(_,_,_,_) -> 1
   constraint-priority: CValueOf(_,_) -> 1
 
-  constraint-message: CTypeOf(o,ty,msginfo) -> <default-message(|["Failed to get type of ",o])> msginfo
+  constraint-message: CTypeOf(o,_,_,msginfo) -> <default-message(|["Failed to get type of ",o])> msginfo
   constraint-message: CValueOf(o,val) -> Message(Error(),["Failed to set value of ",o],o)
 

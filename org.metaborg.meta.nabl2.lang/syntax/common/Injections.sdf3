@@ -5,6 +5,7 @@ imports
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Terms
   nabl2/shared/common/Vars
+  nabl2/shared/constraints/Base
   
   common/Types
   
@@ -15,4 +16,4 @@ context-free syntax
   TermIndex.DefaultIndex     =
   TermIndex.IndexFromTerm = <@<Var>>
 
-  PrimitiveConstraint.CTypeAndValueOf  = [[Occurrence] : [TypeTerm] := [Term] [Message]]
+  PrimitiveConstraint.CTypeAndValueOf  = [[Occurrence] : [TypeTerm] := [Term] [ConstraintPriority] [Message]]

@@ -69,7 +69,7 @@ rules
   solve-fact: (CConj(c*),sol) -> [(sol,c*)]
 
   solve-constraint: (CConj(c*),sol) -> [(sol,c*)]
-  solve-constraint: (CDisj(c*),sol) -> <map(\ c -> (sol,c) \)> c*
+  solve-constraint: (CDisj(c*),sol) -> <map(\ c -> (sol,[c]) \)> c*
  
   constraint-priority: CTrue() -> 0
   constraint-priority: CFalse(_) -> 0

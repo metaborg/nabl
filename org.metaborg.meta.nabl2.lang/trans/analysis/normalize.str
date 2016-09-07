@@ -135,5 +135,5 @@ rules
   normalize-constraints = topdown(try(normalize-constraint))
 
   normalize-constraint:
-    CTypeAndValueOf(occ,type,value,msg) ->
-      CConj(CTypeOf(occ,type,msg),CValueOf(occ,value))
+    CTypeAndValueOf(occ,type,value,prio,msg) ->
+      CConj(CTypeOf(occ,type,prio,msg),CValueOf(occ,value))

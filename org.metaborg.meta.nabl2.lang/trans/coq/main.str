@@ -454,7 +454,7 @@ rules // CGen body
 			\)> occ1 
 			
 	cgen-clause-to-coq:
-		CTypeOf(occ, t, _) ->
+		CTypeOf(occ, t, _, _) ->
 			<occurrence-to-coq;
 			mbind(\ occ' ->
 			<term-pattern-to-coq;
@@ -509,7 +509,7 @@ rules // CGen body
 			not(?CTrue() <+
 				?CGRef(_, _) <+
 				?CResolve(_, _, _) <+
-				?CTypeOf(_, _, _) <+
+				?CTypeOf(_, _, _, _) <+
 				?CGenRecurse(_, _, _, _) <+
 				?CGDirectEdge(_, _, _))
 
