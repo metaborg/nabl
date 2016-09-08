@@ -16,8 +16,11 @@ rules
   // solve for all possible solutions
 
   csolve-exhaustive(pre,solve,post,lt) =
+    mapconcat(csolve-exhaustive-acc(pre,solve,post,lt))
+
+  csolve-exhaustive-acc(pre,solve,post,lt) =
     csolve-one(pre,solve)
-  < mapconcat(csolve-exhaustive(pre,solve,post,lt));
+  < mapconcat(csolve-exhaustive-acc(pre,solve,post,lt));
     qsort(lt)
   + ![<post>]
  
@@ -25,7 +28,7 @@ rules
   // solve for the best solution
 
   csolve-greedy(pre,solve,post,lt,z) =
-    ![Active(<id>)];
+    map(!Active(<id>));
     csolve-greedy-acc(pre,solve,post,lt,z);
     map(csolve-unwrap)
  

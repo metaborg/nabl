@@ -14,6 +14,7 @@ rules
   sol-new = ![
     ScopeGraph(<G-new>),
     NameResolution([]),
+    FullNameResolution([]),
     Typing([]),
     Values([]),
     Substitution([]),
@@ -26,6 +27,7 @@ rules
 
   sol-g       = fetch-elem(?ScopeGraph(<id>))
   sol-r       = fetch-elem(?NameResolution(<id>))
+  sol-fr      = fetch-elem(?FullNameResolution(<id>))
   sol-t       = fetch-elem(?Typing(<id>))
   sol-v       = fetch-elem(?Values(<id>))
   sol-s       = fetch-elem(?Substitution(<id>))
@@ -47,9 +49,11 @@ rules
 
   sol-set-x(|x*) = fetch(SubtypeRelation(!x*))
 
-  sol-set-r(|r*) = fetch(NameResolution(!r*))
-
   sol-set-r(|r,d) = fetch(NameResolution(set(!d|r)))
+
+  sol-set-fr(|fr*) = fetch(FullNameResolution(!fr*))
+
+  sol-set-fr(|r,d*) = fetch(FullNameResolution(set(!d*|r)))
 
   sol-add-u-goal(|g) = fetch(Uninterpreted(![g|<id>],id))
   sol-add-u-fact(|f) = fetch(Uninterpreted(id,![f|<id>]))

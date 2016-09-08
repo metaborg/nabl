@@ -11,7 +11,9 @@ imports
  
 rules
  
-  solve-constraint: (CValueOf(o,key,val),sol) -> [(sol',[])]
+  solve-constraint = time-analysis(solve-typing-constraint|"typing")
+
+  solve-typing-constraint: (CValueOf(o,key,val),sol) -> [(sol',[])]
   where <is-ground> o;
         <is-ground> val
   with if val' := <sol-v;get(|o);get(|key)> sol then
@@ -25,7 +27,7 @@ rules
          <sol-add-v(|o,(key,val))> sol
        end => sol'
 
-  solve-constraint: (CTypeOf(o,ty,prio,msginfo),sol) -> [res]
+  solve-typing-constraint: (CTypeOf(o,ty,prio,msginfo),sol) -> [res]
   where <is-ground> o
   with t* := <sol-t> sol
      ; ( <lookup> (o, t*) => (ty',(prio',msginfo'))

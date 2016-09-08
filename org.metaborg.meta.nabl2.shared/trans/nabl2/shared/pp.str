@@ -37,7 +37,7 @@ rules
     ![S(<is-int;int-to-string>)]
 
   prettyprint-NaBL2-Real =
-    ![S(<is-real;real-to-string>)]
+    ![S(<is-real;real-to-string(|2)>)]
 
   prettyprint-NaBL2-List(pp): t -> [ H( [SOpt(HS(),"0")]
                                       , [S("["),t',S("]")] ) ]

@@ -9,24 +9,26 @@ imports
 
 rules
 
-  solve-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
+  solve-constraint = time-analysis(solve-subtype-constraint|"subtype")
+
+  solve-subtype-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
   where <is-ground> (ty1,ty2)
   with <sol-x> sol => x*
      ; ( <extend-subtype-relation(|x*)> (ty1,ty2) => x'*
        < <sol-set-x(|x'*)> sol
-       + msg := ["Setting ",ty1," as a subtype of ",ty2," creates a cycle in the subtyping relation"]
-       ; <add-message(detail-message(|msg)|msginfo)> sol
+       + msg := ["Setting ",ty1," as a subtype of ",ty2," creates invalid subtype relation."];
+         <add-message(default-message(|msg)|msginfo)> sol
        ) => sol'
 
-  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
-  where <is-ground> (ty1,ty2)
-      ; <sol-x> sol => x*
-      ; <is-subtype(|x*)> (ty1,ty2)
+  solve-subtype-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
+  where <is-ground> (ty1,ty2);
+        x* := <sol-x> sol;
+        <is-subtype(|x*)> (ty1,ty2)
 
 
   constraint-priority: FSubtype(_,_,_) -> 5
   constraint-priority: CSubtype(_,_,_) -> 6
 
-  constraint-message: FSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to set ",ty1," as subtype of ",ty2])> msginfo
+  constraint-message: FSubtype(ty1,ty2,o) -> Message(Error(),["Failed to set ",ty1," as subtype of ",ty2],o)
   constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
 

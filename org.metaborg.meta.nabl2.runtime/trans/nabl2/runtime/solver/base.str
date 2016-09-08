@@ -26,18 +26,17 @@ rules
     not(?Message(_,_,_));
     (is-SDF-placeholder <+ one(has-placeholder))
 
-  solve-constraints-phase1 =
-    csolve-greedy( solve-specialise
-                 , solve-ignore-placeholders + solve-fact
-                 , id
-                 , solve-errors-lt
-                 , solve-zero-errors
-                 )
+  solve-facts =
+    csolve-exhaustive( time-analysis(solve-specialise|"specialize")
+                     , solve-ignore-placeholders + solve-fact
+                     , id
+                     , solve-errors-lt
+                     )
 
-  solve-constraints-phase2(|rn*) =
-    csolve-greedy( solve-specialise
+  solve-constraints =
+    csolve-greedy( time-analysis(solve-specialise|"specialize")
                  , solve-ignore-placeholders + solve-constraint
-                 , postprocess-errors(|rn*)
+                 , postprocess-errors
                  , solve-errors-lt
                  , solve-zero-errors
                  )
@@ -64,22 +63,33 @@ rules
     where(msg* := <ReduceErrors> ; rules(ReduceErrors : _ -> [msg|msg*]))
 
   solve-errors-lt =
-    let en = Fst ; sol-e ; length in (en,en) ; lt end
+    (sol-e;length, sol-e;length) ; lt
+
+  solve-messages-lt =
+    let count(s) = Fst ; s ; length
+        comp(s) = (count(s), count(s)) ; lt
+    in
+      comp(sol-e) <+ comp(sol-w) <+ comp(sol-n)
+    end
 
   solve-zero-errors =
    Fst ; sol-e ; length ; ?0 
 
 rules
  
-  solve-constraint: (CTrue(),sol) -> [(sol,[])]
-  solve-constraint: (CFalse(msginfo),sol) -> [(sol',[])]
+  solve-fact = time-analysis(solve-base-fact|"base") 
+  solve-constraint = time-analysis(solve-base-constraint|"base") 
+ 
+  solve-base-fact = solve-junction
+
+  solve-base-constraint: (CTrue(),sol) -> [(sol,[])]
+  solve-base-constraint: (CFalse(msginfo),sol) -> [(sol',[])]
     with msg  := "False never succeeds";
          sol' := <add-message(default-message(|msg)|msginfo)> sol
+  solve-base-constraint = solve-junction
 
-  solve-fact: (CConj(c*),sol) -> [(sol,c*)]
-
-  solve-constraint: (CConj(c*),sol) -> [(sol,c*)]
-  solve-constraint: (CDisj(c*),sol) -> <map(\ c -> (sol,[c]) \)> c*
+  solve-junction: (CConj(c*),sol) -> [(sol,c*)]
+  solve-junction: (CDisj(c*),sol) -> <map(\ c -> (sol,[c]) \)> c*
  
   constraint-priority: CTrue() -> 0
   constraint-priority: CFalse(_) -> 0

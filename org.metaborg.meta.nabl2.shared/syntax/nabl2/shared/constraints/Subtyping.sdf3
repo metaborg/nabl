@@ -2,6 +2,7 @@ module nabl2/shared/constraints/Subtyping
 
 imports
 
+  nabl2/shared/common/AST
   nabl2/shared/common/Types
   nabl2/shared/common/Messages
 
@@ -9,5 +10,3 @@ context-free syntax
 
   PrimitiveConstraint.FSubtype = [[TypeTerm] <! [TypeTerm] [Message]]
   PrimitiveConstraint.CSubtype = [[TypeTerm] <? [TypeTerm] [Message]]
-
- 

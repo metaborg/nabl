@@ -9,7 +9,9 @@ imports
 
 rules
  
-  solve-constraint: (CDistinct(x*,msginfo),sol) -> [(sol',[])]
+  solve-constraint = time-analysis(solve-set-constraint|"set")
+
+  solve-set-constraint: (CDistinct(x*,msginfo),sol) -> [(sol',[])]
   where <is-ground> x*
   with x'* := <dups(eq)> x*
      ; ( ?[]
@@ -18,7 +20,7 @@ rules
        ; <add-message(default-message(|msg)|<apply-elems-message(|x'*)> msginfo)> sol
        ) => sol'
 
-  solve-constraint: (CSubsetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
+  solve-set-constraint: (CSubsetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
   where <is-ground> x1*
       ; <is-ground> x2*
   with x'* := <diff(eq)> (x1*,x2*)
@@ -28,7 +30,7 @@ rules
        ; <add-message(default-message(|msg)|<apply-elems-message(|x'*)> msginfo)> sol
        ) => sol'
 
-  solve-constraint: (CSetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
+  solve-set-constraint: (CSetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
   where <is-ground> x1*
       ; <is-ground> x2*
   with x'* := <sym-diff(eq)> (x1*,x2*)

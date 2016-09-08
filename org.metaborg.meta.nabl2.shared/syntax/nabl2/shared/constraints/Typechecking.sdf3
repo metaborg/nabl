@@ -18,3 +18,7 @@ context-free syntax
   PrimitiveConstraint.CValueOf = [[Occurrence].[ValueKey] := [Term]]
  
   ValueKey.Key = KeyId
+
+lexical syntax
+
+  KeyId = "type" {reject}

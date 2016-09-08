@@ -10,38 +10,40 @@ imports
 rules
  
   do-not-unify = fail // use to guard special constructors from accidental unification
-  
-  solve-constraint: (CEqual(t,t',msginfo),sol) -> [(sol',[])]
+ 
+  solve-constraint = time-analysis(solve-equality-constraint|"equality") 
+ 
+  solve-equality-constraint: (CEqual(t,t',msginfo),sol) -> [(sol',[])]
   where <do-not-unify> t + <do-not-unify> t'
-  with msg := "Unifying subtitutions is forbidden"
-     ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
+  with msg := ["Unifying ",t," and ",t'," is forbidden"];
+       sol' := <add-message(detail-message(|msg)|msginfo)> sol
 
-  solve-constraint: (CEqual(t1,t2,_),sol) -> [(sol,[])]
+  solve-equality-constraint: (CEqual(t1,t2,msginfo),sol) -> [(sol,[])]
   where <term-eq> (t1,t2)
 
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
-  where <not(var-occurs)> (v,t)
-      ; <is-reduced> t
+  solve-equality-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
+  where <not(var-occurs)> (v,t);
+        <is-reduced> t
   with sol' := <sol-apply-s(|[(v,t)])> sol
   
-  solve-constraint: (CEqual(t,v@Var(_),msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
+  solve-equality-constraint: (CEqual(t,v@Var(_),msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
   where <not(is-var)> t
 
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
+  solve-equality-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
   where <var-occurs> (v,t)
-  with msg := [v," occurs in ",t]
-     ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
+  with msg := [v," occurs in ",t];
+       sol' := <add-message(detail-message(|msg)|msginfo)> sol
  
-  solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
-  where <not(is-op)> t1
-      ; <not(is-op)> t2
-      ; ( <not(term-eq)> (c1,c2) 
+  solve-equality-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
+  where <not(is-op)> t1;
+        <not(is-op)> t2;
+        ( <not(term-eq)> (c1,c2) 
        <+ <(length,length);not(eq)> (a1,a2)
         )
-  with msg := <default-unify-error(|t1,t2)>
-     ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
+  with msg := <default-unify-error(|t1,t2)>;
+       sol' := <add-message(detail-message(|msg)|msginfo)> sol
 
-  solve-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol) -> [(sol,C*)]
+  solve-equality-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol) -> [(sol,C*)]
   where <not(is-op)> t1;
         <(length,length);eq> (a1,a2)
   with msg := <default-unify-error(|t1,t2)>;
@@ -49,7 +51,7 @@ rules
        C* := <zip(!CEqual(<Fst>,<Snd>,msginfo'))> (a1,a2)
 
 
-  solve-constraint: (CInequal(t1,t2,msginfo),sol) -> [(sol',[])]
+  solve-equality-constraint: (CInequal(t1,t2,msginfo),sol) -> [(sol',[])]
   where <is-ground> t1;
         <is-ground> t2
   with ( <term-eq> (t1,t2)

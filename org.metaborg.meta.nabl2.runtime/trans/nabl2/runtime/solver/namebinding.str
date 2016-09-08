@@ -9,36 +9,38 @@ imports
 
 rules
  
-  solve-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
-  where <is-ground> c
-  with <sol-g> sol => g
-     ; <G-with-decl> (g,s,d) => g'
-     ; <sol-with-g(|g')> sol => sol'
+  solve-fact = time-analysis(solve-scopegraph-fact|"scopegraph")
 
-  solve-fact: (c@CGRef(r,s),sol) -> [(sol',[])]
+  solve-scopegraph-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
   where <is-ground> c
-  with <sol-g> sol => g
-     ; <G-with-ref> (g,s,r) => g'
-     ; <sol-with-g(|g')> sol => sol'
+  with g := <sol-g> sol => g;
+       g' := <G-with-decl> (g,s,d);
+       sol' := <sol-with-g(|g')> sol
 
-  solve-fact: (CGDirectEdge(s,l,s'),sol) -> [(sol',[])]
+  solve-scopegraph-fact: (c@CGRef(r,s),sol) -> [(sol',[])]
+  where <is-ground> c
+  with g := <sol-g> sol;
+       g' := <G-with-ref> (g,s,r);
+       sol' := <sol-with-g(|g')> sol
+
+  solve-scopegraph-fact: (CGDirectEdge(s,l,s'),sol) -> [(sol',[])]
   where <is-ground> (s,l);
         <is-ground + is-var> s'
-  with <sol-g> sol => g
-     ; <G-with-direct-edge> (g,s,(l,s')) => g'
-     ; <sol-with-g(|g')> sol => sol'
+  with g := <sol-g> sol;
+       g' := <G-with-direct-edge> (g,s,(l,s'));
+       sol' := <sol-with-g(|g')> sol
 
-  solve-fact: (c@CGNamedEdge(r,l,s),sol) -> [(sol',[])]
+  solve-scopegraph-fact: (c@CGNamedEdge(r,l,s),sol) -> [(sol',[])]
   where <is-ground> c
-  with <sol-g> sol => g
-     ; <G-with-named-edge> (g,s,(l,r)) => g'
-     ; <sol-with-g(|g')> sol => sol'
+  with g := <sol-g> sol;
+       g' := <G-with-named-edge> (g,s,(l,r));
+       sol' := <sol-with-g(|g')> sol
 
-  solve-fact: (c@CGAssoc(d,l,s),sol)    -> [(sol',[])]
+  solve-scopegraph-fact: (c@CGAssoc(d,l,s),sol)    -> [(sol',[])]
   where <is-ground> c
-  with <sol-g> sol => g
-     ; <G-with-assoc> (g,d,(l,s)) => g'
-     ; <sol-with-g(|g')> sol => sol'
+  with g := <sol-g> sol;
+       g' := <G-with-assoc> (g,d,(l,s));
+       sol' := <sol-with-g(|g')> sol
 
   constraint-priority: CGDecl(_,_) -> 3
   constraint-priority: CGRef(_,_) -> 3
@@ -48,37 +50,36 @@ rules
 
 rules
 
-  solve-constraint: (CResolve(r,d,msginfo),sol) -> [(sol,c*)]
-  where <is-ground> r;
-        dp := <sol-r;get(|r)> sol
-  with ( None() := dp
-       < ![]
-       + (d',p) := dp
-       ; msg := ["Cannot resolve ",r," to ",d]
-       ; msginfo' := <default-message(|msg)> msginfo
-       ; ![ CEqual(d,d',msginfo') ]
-       ) => c*
+  solve-constraint = time-analysis(solve-namebinding-constraint|"namebinding")
 
-  solve-constraint: (CResolve(r,d,msginfo),sol) -> res*
+  solve-namebinding-constraint: (CResolve(r,d,msginfo),sol) -> res*
   where <is-ground> r;
-        <sol-r;not(get(|r))> sol;
-        g := <sol-g> sol;
-        dl* := <resolve(|g)> r
-  with ( [] := dl*
-       < msg := [r," does not resolve to any declaration"]
-       ; sol' := <sol-set-r(|r,None());
-                  add-message(detail-message(|msg)|msginfo)> sol
-       ; ![ (sol',[]) ]
-       + msg := ["Problem resolving ",r," to ",d]
-       ; msginfo' := <default-message(|msg)> msginfo
-       ; <map(solve-namebinding-constraint-step(|r,d,msginfo',sol))> dl*
-       ) => res*
+       if d' := <sol-r;get(|r)> sol then
+          msg := ["Cannot resolve ",r," to ",d];
+          msginfo' := <default-message(|msg)> msginfo;
+          ![(sol, [CEqual(d,d',msginfo')])]
+        else
+          if dp* := <sol-fr;get(|r)> sol then
+            !sol
+          else
+            dp* := <resolve(|<sol-g> sol)> r;
+            <sol-set-fr(|r,dp*)> sol
+          end => sol';
+          if [] := dp* then
+            msg := [r," does not resolve to any declaration"];
+            ![(<add-message(detail-message(|msg)|msginfo)> sol',[])]
+          else
+            msg := ["Problem resolving ",r," to ",d];
+            msginfo' := <default-message(|msg)> msginfo;
+            <map(solve-namebinding-constraint-step(|r,d,msginfo',sol))> dp*
+          end
+       end => res*
 
   solve-namebinding-constraint-step(|r,d,msginfo,sol): (d',p) -> (sol',c*)
   with <sol-set-r(|r,(d',p))> sol => sol'
   with c* := [ CEqual(d,d',msginfo) ]
  
-  solve-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
+  solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
   where <is-ground> d;
         g := <sol-g> sol
   with ( s' := <G-assocs;get(|l)> (g,d)
@@ -107,12 +108,14 @@ rules
 
 rules
  
-  unresolved-refs(|rn*): sol -> sol'
-    with ref* := <sol-g;G-refs> sol
-       ; res* := <sol-r;keys> sol
-       ; ar* := <diff> (<keys> rn*, res*)
-       ; ur* := <diff> (ref*,[res*,ar*])
-       ; sol' := <foldr(!sol,{ ?(r,<id>) ; add-message(id|Message(Error(),["Failed to resolve ",r],<occurrence-index> r)) })> ur*
+  unresolved-refs-errors: sol -> sol'
+    with g := <sol-g> sol;
+         fr* := <sol-fr> sol;
+         ref* := <G-refs> g;
+         res* := <sol-r;keys> sol;
+         ar* := <diff> (<keys> fr*, res*);
+         ur* := <diff> (ref*,[res*,ar*]);
+         sol' := <foldr(!sol,{ ?(r,<id>) ; add-message(id|Message(Error(),["Failed to resolve ",r],<occurrence-index> r)) })> ur*
  
   constraint-message: CResolve(r,_,msginfo) -> <default-message(|["Failed to resolve ",r])> msginfo
 

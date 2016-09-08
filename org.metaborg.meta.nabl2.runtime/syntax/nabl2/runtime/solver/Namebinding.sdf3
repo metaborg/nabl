@@ -9,7 +9,7 @@ context-free syntax
 
   OneResolution = [[Occurrence] |--> [FullResolved]]
 
-  Placeholder.NAMES      = "NAMES"
+  Placeholder.NAMES = "NAMES"
 
 lexical syntax
 

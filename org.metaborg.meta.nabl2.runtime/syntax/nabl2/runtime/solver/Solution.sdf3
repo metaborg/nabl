@@ -20,6 +20,11 @@ context-free syntax
       <ScopeGraph>
   >
   
+  SolutionComponent.FullNameResolution = <
+    full name resolution := 
+      <{FullResolution "\n"}*>
+  >
+
   SolutionComponent.NameResolution = <
     name resolution := 
       <{OneResolution "\n"}*>

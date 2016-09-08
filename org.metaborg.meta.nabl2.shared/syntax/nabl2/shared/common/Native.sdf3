@@ -4,4 +4,5 @@ lexical syntax
 
   ABSTRACT = []
   Int      = []
+  Real     = []
   String   = []

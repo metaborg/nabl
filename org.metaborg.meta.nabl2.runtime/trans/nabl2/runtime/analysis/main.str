@@ -20,8 +20,7 @@ rules
 
   analyze(pre):
     AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
-    with <debug> $[>>> Initializing [source] <<<]
-    with report-time(
+    with report-time(!$[Initializing [source]],
       (params,C) := <generate-constraint-init(|source)> source
     )
 
@@ -29,13 +28,11 @@ rules
   analyze(pre):
     AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
     where not(() := ast)
-    with <debug> $[>>> Preprocessing AST [source] <<<]
-    with report-time(
+    with report-time(!$[Preprocessing AST [source]],
       params := <getfirst(?Params(<id>))> initial;
       ast' := <pre;index-ast(|source)> ast
     )
-    with <debug> $[>>> Generating constraints [source] <<<]
-    with report-time(
+    with report-time(!$[Generating constraints [source]],
       C := <generate-constraint-file(|source,params);normalize-constraint> ast'
     )
 
@@ -47,32 +44,32 @@ rules
 
   analyze(pre):
     AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
-    with <debug> ">>> Normalizing constraints <<<"
-    with report-time(
+    with report-time(!"Normalizing constraints",
       C  := <getfirst(?Constraint(<id>))> initial;
       C* := <map(getfirst(?Constraint(<id>)))> unit*;
       C' := <normalize-constraint> CConj([C|C*])
     )
-    with <debug> ">>> Solving constraints <<<"
-    with report-time(
-      sol-i := <initial-solution>;
-      [(sol1,C1*)] := <solve-constraints-phase1> (sol-i,[C']);
-      g := <sol-g> sol1;
-      fr* := <resolve-all> g;
-      (r1*,rn*) := <partition({\ (r,[dp]) -> (r,dp) \})> fr*;
-      sol2 := <sol-set-r(|r1*)> sol1;
+    with report-time(!"Solving constraints",
+    {| AnalysisTiming:
       lo* := <join(label-lt)> (<labels>,<labels>);
-      sol3* := <solve-constraints-phase2(|rn*)> (sol2,C1*);
+      sol1* := <solve-facts> [(<initial-solution>,[C'])];
+      sol2* := <map(({ sol1, g, fr*, r1*, rn*, sol1':
+        ?sol1;
+        g := <sol-g> sol1;
+        fr* := <time-analysis(resolve-all|"resolution")> g;
+        sol1' := <sol-set-fr(|fr*)> sol1;
+        ![ Constraint(C'),
+           InitialScopeGraph(g),
+           InitialResolution(fr*),
+           ResolutionParams(<labels>,<labels-wf>,lo*)
+         | sol1'
+         ]
+      },id))> sol1*;
+      sol3* := <solve-constraints> sol2*;
       sol4* := <map(Fst)> sol3*; // discard constraint part
-      pre-sol := [
-        Constraint(C'),
-        InitialScopeGraph(g),
-        InitialResolution(fr*),
-        ResolutionParams(<labels>,<labels-wf>,lo*)
-      ]
-    )
-    with <debug> ">>> Processing solutions <<<"
-    where report-time(
+      timing := <get-analysis-timing>
+    |})
+    where report-time(!"Processing solutions",
     with(
       (good,bad) := <partition(not(is-erronious));(length,length)> sol4*;
       with(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
@@ -86,9 +83,8 @@ rules
       note* := <sol-n;mapv(xmlencode)> sol;
       resolution := <sol-r;filter(not(?(_,None())));map((occurrence-index,Fst;occurrence-index))> sol;
       analysis := <concat> [
-        pre-sol,
         sol,
-        [AlternativeSolutions(<Tl;map-with-index(id)> sol4*)]
+        [Timing(timing),AlternativeSolutions(<Tl;map-with-index(id)> sol4*)]
       ]
     ))
 
@@ -100,5 +96,16 @@ rules
 
   analyze(pre) = warn(|"Using null analysis fallback") ; null-analysis
 
-  report-time(s) = measure-time(s,where(<debug> $[Finished in [<cputime-to-seconds;real-to-string(|2)>]s]))
+  report-time(msg,s) =
+    where(msg := <msg>; <debug> $[>>> [msg]]);
+    measure-time(s,where(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
 
+  time-analysis(s|key) =
+    measure-time(s,?time');
+    where(
+      (count,time) := <AnalysisTiming <+ !(0,0.0)> key;
+      rules(AnalysisTiming : key -> (<inc> count, <add> (time,time'))))
+
+  get-analysis-timing =
+    dr-all-keys(|"AnalysisTiming");
+    map(!(<id>,<AnalysisTiming;(id,cputime-to-seconds)>))

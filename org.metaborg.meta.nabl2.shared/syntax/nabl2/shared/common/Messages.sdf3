@@ -22,7 +22,7 @@ context-free syntax
   MessageContent           = StringTerm
 
   MessagePosition          = TermIndex
-
+ 
 syntax
 
   MessageContent-CF.Composite = "$[" MessageContentPart-CF  "]"

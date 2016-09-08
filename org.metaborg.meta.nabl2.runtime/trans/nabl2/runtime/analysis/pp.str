@@ -20,17 +20,19 @@ rules
     pp-NaBL2(prettyprint-NaBL2-Analysis)
 
   Analysis-order: Constraint(_) -> 0
-  Analysis-order: ResolutionParams(_,_,_) -> 2
+  Analysis-order: ResolutionParams(_,_,_) -> 1
   Analysis-order: InitialScopeGraph(_) -> 2
   Analysis-order: InitialResolution(_) -> 3
   Analysis-order: ScopeGraph(_) -> 4
   Analysis-order: NameResolution(_) -> 5
-  Analysis-order: Typing(_) -> 6
-  Analysis-order: Substitution(_) -> 7
-  Analysis-order: SubtypeRelation(_) -> 8
-  Analysis-order: Errors(_) -> 9
-  Analysis-order: Warnings(_) -> 10
-  Analysis-order: Notes(_) -> 11
+  Analysis-order: FullNameResolution(_) -> 6
+  Analysis-order: Typing(_) -> 7
+  Analysis-order: Values(_) -> 8
+  Analysis-order: Substitution(_) -> 9
+  Analysis-order: SubtypeRelation(_) -> 10
+  Analysis-order: Errors(_) -> 11
+  Analysis-order: Warnings(_) -> 12
+  Analysis-order: Notes(_) -> 13
   Analysis-order: AlternativeSolutions(_) -> 99
   Analysis-order: _ -> 100
 

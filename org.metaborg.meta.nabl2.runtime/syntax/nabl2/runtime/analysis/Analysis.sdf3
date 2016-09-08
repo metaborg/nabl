@@ -37,6 +37,19 @@ context-free syntax
       <{FullResolution "\n"}*>
   >
 
+  AnalysisResult.Timing = <
+    timing :=
+      <{TimingEntry "\n"}*>
+  >
+  TimingEntry = <
+    <String>:
+      <TimingEntry2>
+  >
+  TimingEntry2 = <
+    count = <Int>
+    time  = <Real>s
+  >
+
   AnalysisResult = SolutionComponent
 
   AnalysisResult.AlternativeSolutions = <
