@@ -4,15 +4,51 @@ imports
 
   nabl2/runtime/solver/-
 
+signature
+
+  constructors
+    Active : Term -> Liveness
+    Done   : Term -> Liveness
+
 rules 
  
   // csolve-exhaustive :: (sol,[c]) -> [(sol,[c])] 
   // solve for all possible solutions
-  
+
   csolve-exhaustive(pre,solve,post) =
     csolve-one(pre,solve)
   < mapconcat(csolve-exhaustive(pre,solve,post))
   + ![<post>]
+ 
+  // csolve-greedy :: (sol,[c]) -> [(sol,[c])] 
+  // solve for the best solution
+
+  csolve-greedy(pre,solve,post,lt,z) =
+    ![Active(<id>)];
+    csolve-greedy-acc(pre,solve,post,lt,z);
+    map(csolve-unwrap)
+ 
+  csolve-greedy-acc(pre,solve,post,lt,z) =
+    qsort((csolve-unwrap,csolve-unwrap);lt);
+    if ?[Active(s)|s*] then
+      if s'* := <csolve-one(pre,solve)> s then
+        <map(!Active(<id>))> s'*;
+        <conc> (<id>,s*)
+      else
+        <post> s;
+        ![Done(<id>)|s*]
+      end;
+      csolve-greedy-acc(pre,solve,post,lt,z)
+    else
+      if ?[s,s'|s*]; <csolve-unwrap;z> s' then
+        ![s'|s*];
+        csolve-greedy-acc(pre,solve,post,lt,z);
+        ![s|<conc> (<id>,s*)]
+      end
+    end
+ 
+  csolve-unwrap = ?Active(<id>)
+  csolve-unwrap = ?Done(<id>) 
  
   // csolve-one :: (sol,[c]) -> [(sol,[c])]
   // solve one constraint, or fail

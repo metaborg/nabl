@@ -27,16 +27,20 @@ rules
     (is-SDF-placeholder <+ one(has-placeholder))
 
   solve-constraints-phase1 =
-    csolve-exhaustive( solve-specialise
-                     , solve-ignore-placeholders + solve-fact
-                     , id
-                     )
+    csolve-greedy( solve-specialise
+                 , solve-ignore-placeholders + solve-fact
+                 , id
+                 , solve-errors-lt
+                 , solve-zero-errors
+                 )
 
   solve-constraints-phase2(|rn*) =
-    csolve-exhaustive( solve-specialise
-                     , solve-ignore-placeholders + solve-constraint
-                     , postprocess-errors(|rn*)
-                     )
+    csolve-greedy( solve-specialise
+                 , solve-ignore-placeholders + solve-constraint
+                 , postprocess-errors(|rn*)
+                 , solve-errors-lt
+                 , solve-zero-errors
+                 )
 
   solve-specialise: (sol,c) -> res
   with <sol-s> sol => s*
@@ -58,6 +62,12 @@ rules
 
   add-reduce-error(|msg) =
     where(msg* := <ReduceErrors> ; rules(ReduceErrors : _ -> [msg|msg*]))
+
+  solve-errors-lt =
+    let en = Fst ; sol-e ; length in (en,en) ; lt end
+
+  solve-zero-errors =
+   Fst ; sol-e ; length ; ?0 
 
 rules
  
