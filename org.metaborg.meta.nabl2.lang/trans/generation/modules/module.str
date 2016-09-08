@@ -26,7 +26,7 @@ rules
       section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;
       module-str := Module(name,[import-str,pp-str,nameresolution-str*,section-str*])
 
-  language-spec-name = prim("SSL_EXT_language_spec_name") <+ "unknown"
+  language-spec-name = prim("SSL_EXT_language_spec_pp_name") <+ "unknown"
 
 rules
 

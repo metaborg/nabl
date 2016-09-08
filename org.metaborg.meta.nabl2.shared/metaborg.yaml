@@ -9,6 +9,8 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}
 pretty-print: NaBL2
 exports:
+- language: ATerm
+  directory: src-gen/syntax
 - language: SDF
   directory: src-gen/syntax
   includes: "**/*.sdf"
@@ -25,6 +27,8 @@ exports:
   directory: src-gen
   includes: "**/*.esv"
 language:
+  sdf:
+    sdf2table: c
   stratego:
     format: ctree
     args:

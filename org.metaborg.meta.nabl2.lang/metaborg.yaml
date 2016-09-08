@@ -18,7 +18,7 @@ placeholder:
   prefix: "$"
 language:
   sdf:
-    sdf2table: java
+    sdf2table: c
   stratego:
     format: ctree
     args:
