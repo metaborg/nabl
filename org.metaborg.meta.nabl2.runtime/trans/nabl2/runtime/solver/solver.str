@@ -15,9 +15,10 @@ rules
   // csolve-exhaustive :: (sol,[c]) -> [(sol,[c])] 
   // solve for all possible solutions
 
-  csolve-exhaustive(pre,solve,post) =
+  csolve-exhaustive(pre,solve,post,lt) =
     csolve-one(pre,solve)
-  < mapconcat(csolve-exhaustive(pre,solve,post))
+  < mapconcat(csolve-exhaustive(pre,solve,post,lt));
+    qsort(lt)
   + ![<post>]
  
   // csolve-greedy :: (sol,[c]) -> [(sol,[c])] 

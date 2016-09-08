@@ -74,12 +74,11 @@ rules
     with <debug> ">>> Processing solutions <<<"
     where report-time(
     with(
-      sol* := <qsort((sol-e;length,sol-e;length);lt)> sol4*;
-      (good,bad) := <partition(not(is-erronious));(length,length)> sol*;
+      (good,bad) := <partition(not(is-erronious));(length,length)> sol4*;
       with(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
     );
     where(
-      sol := <Hd> sol*
+      sol := <Hd> sol4*
     );
     with(
       error* := <sol-e;mapv(xmlencode)> sol;
@@ -89,7 +88,7 @@ rules
       analysis := <concat> [
         pre-sol,
         sol,
-        [AlternativeSolutions(<Tl;map-with-index(id)> sol*)]
+        [AlternativeSolutions(<Tl;map-with-index(id)> sol4*)]
       ]
     ))
 
