@@ -6,7 +6,6 @@ imports
   signatures/modules/-
   generation/-
   generation/signatures/-
-  stratego/metaborg
 
 rules
 

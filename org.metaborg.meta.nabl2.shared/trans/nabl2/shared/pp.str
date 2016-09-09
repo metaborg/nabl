@@ -4,8 +4,7 @@ imports
 
   libstratego-gpp
 
-  runtime/editor/origins
-  runtime/tmpl/pp
+  libspoofax/sdf/pp
 
   pp/-
   pp/nabl2/shared/common/-

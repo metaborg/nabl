@@ -10,6 +10,7 @@ dependencies:
   # org.metaborg:dynsem:${metaborgVersion} # cannot appear here, because dynsem
                                            # is built later in the build process
   source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.lib.analysis:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
 pretty-print: NaBL2
