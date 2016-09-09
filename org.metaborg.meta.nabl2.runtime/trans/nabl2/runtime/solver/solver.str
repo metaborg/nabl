@@ -39,8 +39,8 @@ rules
  
   csolve-greedy-acc(pre,solve,post,s-lt,s-good,s-guard,c-lt) =
     if ?[Active(s)|s*]; <s-guard> s then
-      if s'* := <csolve-one(pre,solve,c-lt);csolve-greedy-sort(s-lt)> s then
-        <map(!Active(<id>))> s'*
+      if s'* := <csolve-one(pre,solve,c-lt)> s then
+        <map(!Active(<id>));csolve-greedy-sort(s-lt)> s'*
       else
         ![Done(<post> s)]
       end;

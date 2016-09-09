@@ -62,7 +62,7 @@ rules
       },id))> sol1*;
       sol3* := <solve-constraints> sol2*;
       sol4* := <map(Fst)> sol3*; // discard constraint part
-      timing := <get-analysis-timing;qsort(where((Fst,Fst);string-lt))>
+      timing := <get-analysis-timing;qsort(where((Snd;Snd,Snd;Snd);gt))>
     |})
     where report-time(!"Processing solutions",
     with(
