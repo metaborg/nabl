@@ -106,14 +106,10 @@ rules
          unknown* := <diff> (ref*, res*);
          sol' := <foldr(!sol,{ ref,sol, dp*:
            ?(ref,sol);
-           if <occurrence-ns;not(ignore-unused-references)> ref then
-             dp* := <resolve(|g)<+![]> ref;
-             <sol-set-fr(|ref,dp*)> sol;
-             if [] := dp* then
-               add-message(id|Message(Error(),["Failed to resolve ",ref],<occurrence-index> ref))
-             end
-           else
-             !sol
+           dp* := <resolve(|g)<+![]> ref;
+           <sol-set-fr(|ref,dp*)> sol;
+           if [] := dp*; <not(occurrence-ns;ignore-unused-references)> ref then
+             add-message(id|Message(Error(),["Failed to resolve ",ref],<occurrence-index> ref))
            end
          })> unknown*
     )
