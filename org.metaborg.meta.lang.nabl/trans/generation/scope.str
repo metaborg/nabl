@@ -1,9 +1,11 @@
 module generation/scope
 
 imports
-  signatures/NameBindingLanguage-sig
-  generation/-
+
   libstrc
+  signatures/NameBindingLanguage-sig
+
+  generation/-
   
 rules
 

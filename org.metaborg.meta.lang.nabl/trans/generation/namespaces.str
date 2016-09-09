@@ -1,8 +1,10 @@
 module generation/namespaces
 
 imports
+  
   libstrc
   signatures/NameBindingLanguage-sig
+  
   generation/util
   
 rules // namespaces 

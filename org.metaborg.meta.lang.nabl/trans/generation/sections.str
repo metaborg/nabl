@@ -4,7 +4,6 @@ imports
   
   libstrc
   signatures/NameBindingLanguage-sig
-  stratego/metaborg
   
   generation/-
         	

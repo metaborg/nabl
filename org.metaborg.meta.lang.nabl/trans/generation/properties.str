@@ -1,8 +1,10 @@
 module generation/properties
 
 imports
-  signatures/NameBindingLanguage-sig
+
   libstrc
+  signatures/NameBindingLanguage-sig
+
   generation/util
   
 rules // properties
