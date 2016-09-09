@@ -27,18 +27,20 @@ rules
     (is-SDF-placeholder <+ one(has-placeholder))
 
   solve-facts =
-    csolve-exhaustive( time-analysis(solve-specialise|"specialize")
+    csolve-exhaustive( time-analysis(!"specialize",solve-specialise)
                      , solve-ignore-placeholders + solve-fact
                      , id
                      , solve-errors-lt
+                     , constraint-lt
                      )
 
   solve-constraints =
-    csolve-greedy( time-analysis(solve-specialise|"specialize")
+    csolve-greedy( time-analysis(!"specialize",solve-specialise)
                  , solve-ignore-placeholders + solve-constraint
                  , postprocess-errors
                  , solve-errors-lt
                  , solve-zero-errors
+                 , constraint-lt
                  )
 
   solve-specialise: (sol,c) -> res
@@ -63,22 +65,23 @@ rules
     where(msg* := <ReduceErrors> ; rules(ReduceErrors : _ -> [msg|msg*]))
 
   solve-errors-lt =
-    (sol-e;length, sol-e;length) ; lt
+    with( ll := <(Fst;sol-e;length, Fst;sol-e;length)> );
+    <lt> ll
 
   solve-messages-lt =
     let count(s) = Fst ; s ; length
-        comp(s) = (count(s), count(s)) ; lt
+        comp(s) = with( ll := <(count(s), count(s))> ) ; <lt> ll
     in
       comp(sol-e) <+ comp(sol-w) <+ comp(sol-n)
     end
 
   solve-zero-errors =
-   Fst ; sol-e ; length ; ?0 
+   Fst ; sol-e ; length ; ?0
 
 rules
  
-  solve-fact = time-analysis(solve-base-fact|"base") 
-  solve-constraint = time-analysis(solve-base-constraint|"base") 
+  solve-fact = time-analysis(!"base",solve-base-fact) 
+  solve-constraint = time-analysis(!"base",solve-base-constraint) 
  
   solve-base-fact = solve-junction
 
@@ -94,13 +97,15 @@ rules
   constraint-priority: CTrue() -> 0
   constraint-priority: CFalse(_) -> 0
   constraint-priority: CConj(_) -> 0
-  constraint-priority: CDisj(_) -> 100
+  constraint-priority: CDisj(_) -> 0
 
 rules
 
-  sort-constraints = qsort((constraint-priority,constraint-priority);lt)
-
-  constraint-priority-or-default = constraint-priority <+ 99
+  constraint-lt =
+    with( ll := <(constraint-priority-or-default,constraint-priority-or-default)> );
+    <lt> ll
+  
+  constraint-priority-or-default = constraint-priority <+ !99
 
 rules
  

@@ -9,7 +9,7 @@ imports
 
 rules
  
-  solve-fact = time-analysis(solve-scopegraph-fact|"scopegraph")
+  solve-fact = time-analysis(!"scopegraph",solve-scopegraph-fact)
 
   solve-scopegraph-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
   where <is-ground> c
@@ -42,15 +42,9 @@ rules
        g' := <G-with-assoc> (g,d,(l,s));
        sol' := <sol-with-g(|g')> sol
 
-  constraint-priority: CGDecl(_,_) -> 3
-  constraint-priority: CGRef(_,_) -> 3
-  constraint-priority: CGDirectEdge(_,_,_) -> 3
-  constraint-priority: CGNamedEdge(_,_,_) -> 3
-  constraint-priority: CGAssoc(_,_,_) -> 3
-
 rules
 
-  solve-constraint = time-analysis(solve-namebinding-constraint|"namebinding")
+  solve-constraint = time-analysis(!"namebinding",solve-namebinding-constraint)
 
   solve-namebinding-constraint: (CResolve(r,d,msginfo),sol) -> res*
   where <is-ground> r;
@@ -99,19 +93,26 @@ rules
 
 rules
 
-  constraint-priority: CAssoc(_,_,_,_) -> 4
-  constraint-priority: CResolve(_,_,_) -> 4
+  constraint-priority: CAssoc(_,_,_,_) -> 2
+  constraint-priority: CResolve(_,_,_) -> 2
 
 rules
  
   unresolved-refs-errors: sol -> sol'
-    with g := <sol-g> sol;
-         fr* := <sol-fr> sol;
+    with time-analysis(!"namebinding",
+         g := <sol-g> sol;
          ref* := <G-refs> g;
-         res* := <sol-r;keys> sol;
-         ar* := <diff> (<keys> fr*, res*);
-         ur* := <diff> (ref*,[res*,ar*]);
-         sol' := <foldr(!sol,{ ?(r,<id>) ; add-message(id|Message(Error(),["Failed to resolve ",r],<occurrence-index> r)) })> ur*
+         res* := <sol-fr;keys> sol;
+         unknown* := <diff> (ref*, res*);
+         sol' := <foldr(!sol,{ ref,sol, dp*:
+           ?(ref,sol);
+           dp* := <resolve(|g)<+![]> ref;
+           <sol-set-fr(|ref,dp*)> sol;
+           if [] := dp* then
+             add-message(id|Message(Error(),["Failed to resolve ",ref],<occurrence-index> ref))
+           end
+         })> unknown*
+    )
  
   constraint-message: CResolve(r,_,msginfo) -> <default-message(|["Failed to resolve ",r])> msginfo
 

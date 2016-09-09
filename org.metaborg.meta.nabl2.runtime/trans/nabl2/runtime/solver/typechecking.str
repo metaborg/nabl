@@ -11,7 +11,7 @@ imports
  
 rules
  
-  solve-constraint = time-analysis(solve-typing-constraint|"typing")
+  solve-constraint = time-analysis(!"typing",solve-typing-constraint)
 
   solve-typing-constraint: (CValueOf(o,key,val),sol) -> [(sol',[])]
   where <is-ground> o;
@@ -58,8 +58,8 @@ rules
 
 rules
 
-  constraint-priority: CTypeOf(_,_,_,_) -> 1
-  constraint-priority: CValueOf(_,_,_) -> 1
+  constraint-priority: CTypeOf(_,_,_,_) -> 3
+  constraint-priority: CValueOf(_,_,_) -> 3
 
   constraint-message: CTypeOf(o,_,_,msginfo) -> <default-message(|["Failed to get type of ",o])> msginfo
   constraint-message: CValueOf(o,key,val) -> Message(Error(),["Failed to set ",key," value of ",o],o)

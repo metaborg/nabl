@@ -62,7 +62,7 @@ rules
       },id))> sol1*;
       sol3* := <solve-constraints> sol2*;
       sol4* := <map(Fst)> sol3*; // discard constraint part
-      timing := <get-analysis-timing>
+      timing := <get-analysis-timing;qsort(where((Fst,Fst);string-lt))>
     |})
     where report-time(!"Processing solutions",
     with(
@@ -97,10 +97,11 @@ rules
     where(msg := <msg>; <debug> $[>>> [msg]]);
     measure-time(s,where(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
 
-  time-analysis(s|key) =
+  time-analysis(key,s) =
     measure-time(s,?time');
     where(
-      (count,time) := <AnalysisTiming <+ !(0,0.0)> key;
+      key := <key>;
+      (count,time) := <key;AnalysisTiming <+ !(0,0.0)> key;
       rules(AnalysisTiming : key -> (<inc> count, <add> (time,time'))))
 
   get-analysis-timing =

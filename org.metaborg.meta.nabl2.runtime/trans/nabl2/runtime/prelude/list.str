@@ -2,6 +2,7 @@ module nabl2/runtime/prelude/list
 
 strategies
   
+  // n-ary zip 
   zipN: t -> [<ListToTuple> hd* | <ListToTuple;zipN> tl*]
     where ls* := <TupleToList> t;
           hd* := <map(Hd)> ls*;
@@ -9,3 +10,19 @@ strategies
 
   zipN: t -> []
     where <TupleToList;map(?[])> t
+
+
+  // merge two sorted lists, merge is stable, i.e. for equal elements,
+  // the elements in the left list come before the elements in the right
+  // list
+  merge-sorted(lt): ([x|x*], [y|y*]) -> z*
+    with if <merge-sorted(lt)> (x,y) then
+           ![y|<merge-sorted(lt)> ([x|x*],y*)]
+         else
+           ![x|<merge-sorted(lt)> (x*,[y|y*])]
+         end => z*
+ 
+  merge-sorted(lt): (new*, []) -> new*
+
+  merge-sorted(lt): ([], sol*) -> sol*
+ 

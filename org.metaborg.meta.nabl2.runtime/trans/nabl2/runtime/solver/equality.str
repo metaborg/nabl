@@ -11,7 +11,7 @@ rules
  
   do-not-unify = fail // use to guard special constructors from accidental unification
  
-  solve-constraint = time-analysis(solve-equality-constraint|"equality") 
+  solve-constraint = time-analysis(!"equality",solve-equality-constraint) 
  
   solve-equality-constraint: (CEqual(t,t',msginfo),sol) -> [(sol',[])]
   where <do-not-unify> t + <do-not-unify> t'
@@ -63,7 +63,7 @@ rules
 
 rules
 
-  constraint-priority: CEqual(_,_,_) -> 0
+  constraint-priority: CEqual(_,_,_) -> 1
   constraint-priority: CInequal(_,_,_) -> 99
 
 rules

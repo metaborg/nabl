@@ -9,7 +9,7 @@ imports
 
 rules
  
-  solve-constraint = time-analysis(solve-set-constraint|"set")
+  solve-constraint = time-analysis(!"set",solve-set-constraint)
 
   solve-set-constraint: (CDistinct(x*,msginfo),sol) -> [(sol',[])]
   where <is-ground> x*
@@ -40,9 +40,9 @@ rules
        ; <add-message(default-message(|msg)|<apply-elems-message(|x'*)> msginfo)> sol
        ) => sol'
 
-  constraint-priority: CDistinct(_,_) -> 5
-  constraint-priority: CSubsetEq(_,_,_) -> 5
-  constraint-priority: CSetEq(_,_,_) -> 5
+  constraint-priority: CDistinct(_,_) -> 3
+  constraint-priority: CSubsetEq(_,_,_) -> 3
+  constraint-priority: CSetEq(_,_,_) -> 3
 
 rules
 

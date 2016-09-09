@@ -9,7 +9,7 @@ imports
 
 rules
  
-  solve-constraint = time-analysis(solve-uninterpreted-constraint|"uninterpreted")
+  solve-constraint = time-analysis(!"uninterpreted",solve-uninterpreted-constraint)
 
   solve-uninterpreted-constraint: (CGoal(t),sol) -> [(sol',[])]
     where <is-ground> t

@@ -9,7 +9,7 @@ imports
 
 rules
 
-  solve-constraint = time-analysis(solve-subtype-constraint|"subtype")
+  solve-constraint = time-analysis(!"subtype",solve-subtype-constraint)
 
   solve-subtype-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
   where <is-ground> (ty1,ty2)
@@ -26,8 +26,8 @@ rules
         <is-subtype(|x*)> (ty1,ty2)
 
 
-  constraint-priority: FSubtype(_,_,_) -> 5
-  constraint-priority: CSubtype(_,_,_) -> 6
+  constraint-priority: FSubtype(_,_,_) -> 3
+  constraint-priority: CSubtype(_,_,_) -> 4
 
   constraint-message: FSubtype(ty1,ty2,o) -> Message(Error(),["Failed to set ",ty1," as subtype of ",ty2],o)
   constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
