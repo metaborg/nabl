@@ -3,6 +3,8 @@ module nabl2/runtime/analysis/query
 imports
 
   nabl2shared
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
 
 signature
   sorts ASTMetadata constructors
@@ -11,14 +13,66 @@ signature
 
 rules
 
+  /**
+   * @type Filename -> Analysis
+   */
   get-analysis = prim("SG_get_analysis")
 
+  /**
+   * @type Term -> List(Term)
+   */
   get-ast-params = get-ast-metadata(|Params())
 
+  /**
+   * @params params : List(Term)
+   * @type Term -> _
+   */
   set-ast-params(|params) = set-ast-metadata(|Params(), params)
   
+  /**
+   * @type Term -> Type
+   */
   get-ast-type = get-ast-metadata(|Type())
 
+  /**
+   * @params type : Type
+   * @type Term -> _
+   */
   set-ast-type(|type) = set-ast-metadata(|Type(), type)
 
-  get-ast-ref = get-ast-refs ; Hd
+  /**
+   * @type Term -> Occurrence
+   */
+  get-ast-ref = get-ast-refs ; ?[<id>]
+
+rules
+
+  /**
+   * @param a : Analysis
+   * @type Occurrence -> Type
+   */
+  get-type(|a): o -> ty
+    where (ty,_) := <sol-p;get(|o);get(|Type())> a
+
+  /**
+   * @param a : Analysis
+   * @param prop : String
+   * @type Occurrence -> Term
+   */
+  get-property(|a,prop): o -> val
+    where (val,_) := <sol-p;get(|o);get(|Property(prop))> a
+
+  /**
+   * @param a : Analysis
+   * @type _ -> ScopeGraph
+   */
+  get-scopegraph(|a): _ -> g
+    with g := <sol-g> a 
+  
+  /**
+   * @param a : Analysis
+   * @type Occurrence -> (Occurrence,Path)
+   */
+  get-nameresolution(|a): r -> d
+    with d := <sol-r;get(|r)> a 
+  

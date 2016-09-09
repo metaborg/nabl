@@ -19,6 +19,7 @@ rules
     normalize-type-matches;
     normalize-list-matches;
     normalize-rule-vars;
+    normalize-constraints;
     normalize-messages;
     normalize-indices;
     normalize-rule-names
@@ -97,6 +98,14 @@ rules
     filter(clause-new-vars); concat
 
   clause-new-vars: NewScopes(v*) -> v*
+
+rules
+
+  normalize-constraints = topdown(try(normalize-constraint))
+
+  normalize-constraint:
+    CTypeOf(o,ty,prio,msginfo) ->
+      CPropertyOf(o,Type(),ty,prio,msginfo)
 
 rules
 

@@ -58,7 +58,7 @@ rules
 rules
 
   postprocess-errors: (sol,c*) -> (sol',[])
-  with <sol-t;free-var-messages> sol => fmsg*;
+  with <sol-p;free-var-messages> sol => fmsg*;
        <map({?c;get-constraint-message;detail-message(|"Unsolved")})> c* => umsg*;
        <add-messages(id|[fmsg*,umsg*])> sol;
        unresolved-refs-errors;

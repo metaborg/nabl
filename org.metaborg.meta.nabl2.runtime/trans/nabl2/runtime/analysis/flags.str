@@ -1,0 +1,21 @@
+module nabl2/runtime/analysis/flags
+
+rules
+
+  /**
+   * Control the logging of constraint generation. If the strategy succeeds (id),
+   * constraint generation is logged, if it fails (fail) constraint generation
+   * is silent.
+   *
+   * @type _ -> _
+   */
+  debug-constraint-generation = fail
+
+  /**
+   * Control whether to ignore errors on unused references. If the strategy
+   * succeeds for its namespace argument, no error is generated if the reference
+   * does not resolve.
+   * 
+   * @type ns -> _
+   */
+  ignore-unused-references = fail

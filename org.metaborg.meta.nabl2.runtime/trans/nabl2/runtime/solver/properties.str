@@ -1,0 +1,49 @@
+module nabl2/runtime/solver/properties
+
+imports
+
+  runtime/editor/origins
+  
+  nabl2shared
+  nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
+ 
+rules
+ 
+  solve-constraint = time-analysis(!"properties",solve-property-constraint)
+
+  solve-property-constraint: (CPropertyOf(o,key,val,prio,msginfo),sol) -> [res]
+  where <is-ground> o
+  with if (val',(prio',msginfo')) := <sol-p;get(|o);get(|key)> sol then
+         if <priority-gt> (prio,prio') then
+           !(<sol-add-p(|o,key,(val,(prio,msginfo)))> sol, [CEqual(val, val', msginfo')])
+         else
+           !(sol, [CEqual(val, val', msginfo)])
+         end
+       else
+         !(<sol-add-p(|o,key,(val,(prio,msginfo)))> sol, [])
+       end => res
+
+  priority-gt = (length,length);gt
+
+rules
+
+  is-op = ?TList(_) + ?TListTail(_,_) + ?TListConc(_,_)
+
+  reduce-op(|sol): TList(xs) -> xs
+    where <is-list> xs
+
+  reduce-op(|sol): TListTail(xs,ys) -> <conc> (xs,ys)
+    where <is-list> xs;
+          <is-list> ys
+
+  reduce-op(|sol): TListConc(xs,ys) -> <conc> (xs,ys)
+    where <is-list> xs;
+          <is-list> ys
+
+rules
+
+  constraint-priority: CPropertyOf(_,_,_,_,_) -> 3
+
+  constraint-message: CPropertyOf(o,key,_,_,msginfo) -> <default-message(|["Failed to get ",key," of ",o])> msginfo

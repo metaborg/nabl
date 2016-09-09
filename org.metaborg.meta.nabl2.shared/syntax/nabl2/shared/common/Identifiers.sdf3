@@ -26,8 +26,8 @@ lexical syntax
   NamespaceId    = [A-Z] [a-zA-Z0-9]*
   NamespaceId    = Keyword {reject}
 
-  KeyId          = [a-z] [a-zA-Z0-9]*
-  Keyid          = Keyword {reject}
+  PropertyId     = [a-z] [a-zA-Z0-9]*
+  PropertyId     = Keyword {reject}
 
   LabelId        = [A-Z]+
   LabelId        = "D" | "I" | "P" {reject}

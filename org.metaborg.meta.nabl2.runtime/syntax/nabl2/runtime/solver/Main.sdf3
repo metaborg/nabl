@@ -6,5 +6,6 @@ imports
   nabl2/runtime/solver/Normalization
   nabl2/runtime/solver/Solution
   nabl2/runtime/solver/Substitution
-  nabl2/runtime/solver/Typechecking
+  nabl2/runtime/solver/Subtyping
+  nabl2/runtime/solver/Properties
 

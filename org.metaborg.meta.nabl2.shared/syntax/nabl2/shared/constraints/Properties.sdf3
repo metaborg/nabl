@@ -1,0 +1,21 @@
+module nabl2/shared/constraints/Properties
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/constraints/Base
+  nabl2/shared/constraints/Equality
+
+context-free syntax
+
+  PrimitiveConstraint.CPropertyOf = [[Occurrence].[Property] := [Comparable] [ConstraintPriority] [Message]]
+ 
+  Property.Property = PropertyId
+  Property.Type     = "type"
+
+lexical syntax
+
+  PropertyId = "type" {reject}

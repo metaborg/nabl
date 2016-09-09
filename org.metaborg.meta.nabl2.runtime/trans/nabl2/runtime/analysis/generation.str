@@ -85,4 +85,3 @@ rules
   pp-term-sig: c#(a*) -> $[[c]([<pp-term-args> a*])]
 
 
-  debug-generate-constraint = fail

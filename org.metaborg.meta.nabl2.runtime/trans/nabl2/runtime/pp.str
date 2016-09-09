@@ -31,5 +31,4 @@ rules
   prettyprint-NaBL2-object   = prettyprint-NaBL2-Scope
   prettyprint-NaBL2-object   = prettyprint-NaBL2-Occurrence
   prettyprint-NaBL2-object   = prettyprint-NaBL2-TypeList
-  prettyprint-NaBL2-object   = prettyprint-NaBL2-ValueKey
-  
+  prettyprint-NaBL2-object   = prettyprint-NaBL2-Property
