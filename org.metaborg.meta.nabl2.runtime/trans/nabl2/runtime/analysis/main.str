@@ -53,16 +53,11 @@ rules
     {| AnalysisTiming:
       lo* := <join(label-lt)> (<labels>,<labels>);
       sol1* := <solve-facts> [(<initial-solution>,[C'])];
-      sol2* := <map(({ sol1, g, fr*, r1*, rn*, sol1':
+      sol2* := <map(({ sol1, g:
         ?sol1;
         g := <sol-g> sol1;
-        fr* := <time-analysis(resolve-all|"resolution")> g;
-        sol1' := <sol-set-fr(|fr*)> sol1;
-        ![ Constraint(C'),
-           InitialScopeGraph(g),
-           InitialResolution(fr*),
-           ResolutionParams(<labels>,<labels-wf>,lo*)
-         | sol1'
+        ![ InitialScopeGraph(g)
+         | sol1
          ]
       },id))> sol1*;
       sol3* := <solve-constraints> sol2*;
@@ -81,11 +76,13 @@ rules
       error* := <sol-e;mapv(xmlencode)> sol;
       warning* := <sol-w;mapv(xmlencode)> sol;
       note* := <sol-n;mapv(xmlencode)> sol;
-      resolution := <sol-r;filter(not(?(_,None())));map((occurrence-index,Fst;occurrence-index))> sol;
-      analysis := <concat> [
-        sol,
-        [Timing(timing),AlternativeSolutions(<Tl;map-with-index(id)> sol4*)]
-      ]
+      resolution := <sol-r;map((occurrence-index,Fst;occurrence-index))> sol;
+      analysis := [ Constraint(C')
+                  , ResolutionParams(<labels>,<labels-wf>,lo*)
+                  , Timing(timing)
+                  , AlternativeSolutions(<(Tl<+![]);map-with-index(id)> sol4*)
+                  | sol
+                  ]
     ))
 
 

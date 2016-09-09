@@ -9,7 +9,6 @@ imports
 context-free syntax
 
   FullResolution     = [[Occurrence] |--> [FullResolveds]]
-  FullResolved.None  = <none>
   FullResolveds      = <[<{FullResolved ",\n"}*>]>
   FullResolved       = [[Occurrence] via [Path]]
 

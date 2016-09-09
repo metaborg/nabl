@@ -54,31 +54,27 @@ rules
 
   solve-namebinding-constraint: (CResolve(r,d,msginfo),sol) -> res*
   where <is-ground> r;
-       if d' := <sol-r;get(|r)> sol then
-          msg := ["Cannot resolve ",r," to ",d];
-          msginfo' := <default-message(|msg)> msginfo;
-          ![(sol, [CEqual(d,d',msginfo')])]
-        else
-          if dp* := <sol-fr;get(|r)> sol then
-            !sol
-          else
-            dp* := <resolve(|<sol-g> sol)> r;
-            <sol-set-fr(|r,dp*)> sol
-          end => sol';
-          if [] := dp* then
-            msg := [r," does not resolve to any declaration"];
-            ![(<add-message(detail-message(|msg)|msginfo)> sol',[])]
-          else
-            msg := ["Problem resolving ",r," to ",d];
-            msginfo' := <default-message(|msg)> msginfo;
-            <map(solve-namebinding-constraint-step(|r,d,msginfo',sol))> dp*
-          end
-       end => res*
+        if (d',_) := <sol-r;get(|r)> sol then
+           msg := ["Cannot resolve ",r," to ",d];
+           msginfo' := <default-message(|msg)> msginfo;
+           ![(sol, [CEqual(d,d',msginfo')])]
+         else
+           if dp* := <sol-fr;get(|r)> sol then
+             !sol
+           else
+             dp* := <resolve(|<sol-g> sol)> r;
+             <sol-set-fr(|r,dp*)> sol
+           end => sol';
+           if [] := dp* then
+             msg := [r," does not resolve to any declaration"];
+             ![(<add-message(detail-message(|msg)|msginfo)> sol',[])]
+           else
+             msg := ["Problem resolving ",r," to ",d];
+             msginfo' := <default-message(|msg)> msginfo;
+             <map(\ (d',p) -> (<sol-set-r(|r,(d',p))> sol', [CEqual(d,d',msginfo')]) \)> dp*
+           end
+         end => res*
 
-  solve-namebinding-constraint-step(|r,d,msginfo,sol): (d',p) -> (sol',c*)
-  with <sol-set-r(|r,(d',p))> sol => sol'
-  with c* := [ CEqual(d,d',msginfo) ]
- 
   solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
   where <is-ground> d;
         g := <sol-g> sol
