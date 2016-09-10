@@ -22,7 +22,7 @@ strategies
            ![x|<merge-sorted(lt)> (x*,[y|y*])]
          end => z*
  
-  merge-sorted(lt): (new*, []) -> new*
+  merge-sorted(lt): (x*, []) -> x*
 
-  merge-sorted(lt): ([], sol*) -> sol*
+  merge-sorted(lt): ([], y*) -> y*
  

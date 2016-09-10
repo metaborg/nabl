@@ -97,7 +97,7 @@ rules
   constraint-priority: CTrue() -> 0
   constraint-priority: CFalse(_) -> 0
   constraint-priority: CConj(_) -> 0
-  constraint-priority: CDisj(_) -> 0
+  constraint-priority: CDisj(_) -> 99
 
 rules
 

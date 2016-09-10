@@ -50,7 +50,7 @@ rules
       if ?[s,s'|s*]; <csolve-greedy-pred1(s-good)> s' then
         ![s'|s*];
         csolve-greedy-acc(pre,solve,post,s-lt,s-good,s-good,c-lt);
-        ![s|<conc> (<id>,s*)]
+        ![s|<id>]
       end
     end
 
