@@ -30,3 +30,5 @@ rules
   log(s)   = log(s|"")
 
   assert(s|t) = with(<s> t <+ debug(!"Assert failed: "))
+
+  strict(s) = s <+ warn(|"Failure in strict mode");with(fail)

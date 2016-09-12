@@ -4,6 +4,7 @@ imports
 
   nabl2shared
   nabl2/runtime/common/-
+  nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
 rules
@@ -30,7 +31,7 @@ rules
     csolve-exhaustive( time-analysis(!"specialize",solve-specialise)
                      , solve-ignore-placeholders + solve-fact
                      , id
-                     , solve-errors-lt
+                     , solve-cost
                      , constraint-lt
                      )
 
@@ -38,8 +39,7 @@ rules
     csolve-greedy( time-analysis(!"specialize",solve-specialise)
                  , solve-ignore-placeholders + solve-constraint
                  , postprocess-errors
-                 , solve-errors-lt
-                 , solve-zero-errors
+                 , solve-cost
                  , constraint-lt
                  )
 
@@ -64,19 +64,8 @@ rules
   add-reduce-error(|msg) =
     where(msg* := <ReduceErrors> ; rules(ReduceErrors : _ -> [msg|msg*]))
 
-  solve-errors-lt =
-    with( ll := <(Fst;sol-e;length, Fst;sol-e;length)> );
-    <lt> ll
-
-  solve-messages-lt =
-    let count(s) = Fst ; s ; length
-        comp(s) = with( ll := <(count(s), count(s))> ) ; <lt> ll
-    in
-      comp(sol-e) <+ comp(sol-w) <+ comp(sol-n)
-    end
-
-  solve-zero-errors =
-   Fst ; sol-e ; length ; ?0
+  solve-cost =
+    strict(Fst; sol-e; length)
 
 rules
  
@@ -102,8 +91,8 @@ rules
 rules
 
   constraint-lt =
-    with( ll := <(constraint-priority-or-default,constraint-priority-or-default)> );
-    <lt> ll
+    strict((constraint-priority-or-default,constraint-priority-or-default));
+    lt
   
   constraint-priority-or-default = constraint-priority <+ !99
 

@@ -16,10 +16,10 @@ strategies
   // the elements in the left list come before the elements in the right
   // list
   merge-sorted(lt): ([x|x*], [y|y*]) -> z*
-    with if <merge-sorted(lt)> (x,y) then
-           ![y|<merge-sorted(lt)> ([x|x*],y*)]
-         else
+    with if <lt> (x,y) then
            ![x|<merge-sorted(lt)> (x*,[y|y*])]
+         else
+           ![y|<merge-sorted(lt)> ([x|x*],y*)]
          end => z*
  
   merge-sorted(lt): (x*, []) -> x*
