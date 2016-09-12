@@ -10,6 +10,78 @@ imports
 
 rules
 
+  /**
+   * Get all declarations in the scope graph
+   *
+   * @type ScopeGraph -> List(Occurrences)
+   */
+  G-decls            = ?G(<id>,_) ; map(Snd;?S(<id>,_,_,_)) ; concat
+
+  /**
+   * Get all references in the scope graph
+   *
+   * @type ScopeGraph -> List(Occurrences)
+   */
+  G-refs             = ?G(<id>,_) ; map(Snd;?S(_,<id>,_,_)) ; concat
+
+  /**
+   * Get all scopes in the scope graph
+   *
+   * @type ScopeGraph -> List(Scope)
+   */
+  G-scopes           = ?G(<id>,_) ; map(Fst)
+
+  /**
+   * Get the scope of a reference
+   *
+   * @type (ScopeGraph,Occurrence) -> Scope
+   */
+  G-ref-scope        = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)
+
+  /**
+   * Get the scope of a declaration
+   *
+   * @type (ScopeGraph,Occurrence) -> Scope
+   */
+  G-decl-scope       = ?(G(<id>,_),d) ; getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \)
+
+  /**
+   * Get declarations in a scope
+   *
+   * @type (ScopeGraph,Scope) -> List(Occurrence)
+   */
+  G-decls            = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
+
+  /**
+   * Get references in a scope
+   *
+   * @type (ScopeGraph,Scope) -> List(Occurrence)
+   */
+  G-refs             = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
+
+  /**
+   * Get direct edges from a scope
+   *
+   * @type (ScopeGraph,Scope) -> List((Label,Scope))
+   */
+  G-direct-edges     = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
+
+  /**
+   * Get named (import) edges from a scope
+   *
+   * @type (ScopeGraph,Scope) -> List((Label,Occurrence))
+   */
+  G-named-edges      = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
+
+  /**
+   * Get associated scopes of a declaration
+   *
+   * @type (ScopeGraph,Occurrence) -> List((Label,Scope))
+   */
+  G-assocs           = ?(G(_,a*),d) ; <lookup> (d,a*)
+
+rules
+
   G-new              = !G([],[])
   G--new_s           = !S([],[],[],[])
   G-with-decl        = ?(<id>,s,d) ; G(update(S(set-add(|d),id,id,id),G--new_s|s), id)
@@ -18,15 +90,6 @@ rules
                                              ;update(S(id,id,set-add(|e),id),G--new_s|s), id)
   G-with-named-edge  = ?(<id>,s,n) ; G(update(S(id,id,id,set-add(|n)),G--new_s|s), id)
   G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(update(id,G--new_s|s),update(set-add(|a),![]|d))
-
-  G-refs             = ?G(<id>,_) ; map(?(_,<id>);?S(_,<id>,_,_)) ; concat
-  G-scope            = ?(G(<id>,_),r) ; getfirst(G-scope_exists(|r))
-  G-scope_exists(|r) = ?(s,S(_,r*,_,_)) ; <elem> (r,r*) ; !s
-  G-decls            = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
-  G-refs             = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
-  G-direct-edges     = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
-  G-named-edges      = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
-  G-assocs           = ?(G(_,a*),d) ; <lookup> (d,a*)
 
 rules
 

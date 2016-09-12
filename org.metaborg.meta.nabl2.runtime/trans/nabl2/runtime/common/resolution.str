@@ -32,7 +32,7 @@ rules // resolution internal
     with(dbg-msg := $[resolve(|g,ir*=[<pp-NaBL2-Occurrences> ir*])])
   ; with(log-res(pp-NaBL2-Occurrence|$[[dbg-msg]_]))
   ; ?r
-  ; ( s := <G-scope> (g,r) // :: Scope
+  ; ( s := <G-ref-scope> (g,r) // :: Scope
    <+ <fatal-err(|"Cannot get scope for reference ")> r
     )
   ; (f,e*) := <env(labels-lt|<labels-wf>,g,[r|ir*],[])> s // :: Env
