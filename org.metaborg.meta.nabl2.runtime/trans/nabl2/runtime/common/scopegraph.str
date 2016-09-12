@@ -30,7 +30,7 @@ rules
 
   nabl2--G-assocs = ?(G(_,a*),d) ; <lookup> (d,a*)
 
-  nabl2--G-scope-assocs = ?(G(_,a*),s) ; filter(\ (d,(l,s')) -> (d,l) where <eq> (s,s') \)
+  nabl2--G-scope-assocs = ?(G(_,<id>),s) ; filter(\ (d,ls*) -> <filter(\ (l,s') -> (d,l) where <eq> (s,s') \)> ls* \); concat
 
 rules
 
