@@ -18,67 +18,67 @@ imports
 
 rules
 
-  analyze(pre):
+  nabl2--analyze(pre):
     AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
-    with report-time(!$[Initializing [source]],
-      (params,C) := <generate-constraint-init(|source)> source
+    with nabl2--report-time(!$[Initializing [source]],
+      (params,C) := <nabl2--generate-constraint-init(|source)> source
     )
 
 
-  analyze(pre):
+  nabl2--analyze(pre):
     AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
     where not(() := ast)
-    with report-time(!$[Preprocessing AST [source]],
+    with nabl2--report-time(!$[Preprocessing AST [source]],
       params := <getfirst(?Params(<id>))> initial;
-      ast' := <pre;index-ast(|source)> ast
+      ast' := <pre;nabl2--index-ast(|source)> ast
     )
-    with report-time(!$[Generating constraints [source]],
-      C := <generate-constraint-file(|source,params);normalize-constraint> ast'
+    with nabl2--report-time(!$[Generating constraints [source]],
+      C := <nabl2--generate-constraint-file(|source,params);nabl2--normalize-constraint> ast'
     )
 
-  analyze(pre):
+  nabl2--analyze(pre):
     AnalyzeUnit(source,ast,_) -> UnitResult(ast,[Constraint(C)])
     where () := ast
-    with C := CFalse(Message(Warning(),"Empty file was not parsed.",<get-ast-index> source))
+    with C := CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> source))
  
 
-  analyze(pre):
+  nabl2--analyze(pre):
     AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
-    with report-time(!"Normalizing constraints",
+    with nabl2--report-time(!"Normalizing constraints",
       C  := <getfirst(?Constraint(<id>))> initial;
       C* := <map(getfirst(?Constraint(<id>)))> unit*;
-      C' := <normalize-constraint> CConj([C|C*])
+      C' := <nabl2--normalize-constraint> CConj([C|C*])
     )
-    with report-time(!"Solving constraints",
+    with nabl2--report-time(!"Solving constraints",
     {| AnalysisTiming:
-      lo* := <join(label-lt)> (<labels>,<labels>);
-      sol1* := <solve-facts> [(<initial-solution>,[C'])];
+      lo* := <join(nabl2--label-lt)> (<nabl2--labels>,<nabl2--labels>);
+      sol1* := <nabl2--solve-facts> [(<nabl2--initial-solution>,[C'])];
       sol2* := <map(({ sol1, g:
         ?sol1;
-        g := <sol-g> sol1;
+        g := <nabl2--sol-g> sol1;
         ![ InitialScopeGraph(g)
          | sol1
          ]
       },id))> sol1*;
-      sol3* := <solve-constraints> sol2*;
+      sol3* := <nabl2--solve-constraints> sol2*;
       sol4* := <map(Fst)> sol3*; // discard constraint part
-      timing := <get-analysis-timing;qsort(where((Snd;Snd,Snd;Snd);gt))>
+      timing := <nabl2--get-analysis-timing;qsort(where((Snd;Snd,Snd;Snd);gt))>
     |})
-    where report-time(!"Processing solutions",
+    where nabl2--report-time(!"Processing solutions",
     with(
-      (good,bad) := <partition(not(is-erronious));(length,length)> sol4*;
+      (good,bad) := <partition(not(nabl2--is-erronious));(length,length)> sol4*;
       with(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
     );
     where(
       sol := <Hd> sol4*
     );
     with(
-      error* := <sol-e;mapv(xmlencode)> sol;
-      warning* := <sol-w;mapv(xmlencode)> sol;
-      note* := <sol-n;mapv(xmlencode)> sol;
-      resolution := <sol-r;map((occurrence-index,Fst;occurrence-index))> sol;
+      error* := <nabl2--sol-e;nabl2--mapv(nabl2--xmlencode)> sol;
+      warning* := <nabl2--sol-w;nabl2--mapv(nabl2--xmlencode)> sol;
+      note* := <nabl2--sol-n;nabl2--mapv(nabl2--xmlencode)> sol;
+      resolution := <nabl2--sol-r;map((nabl2--occurrence-index,Fst;nabl2--occurrence-index))> sol;
       analysis := [ Constraint(C')
-                  , ResolutionParams(<labels>,<labels-wf>,lo*)
+                  , ResolutionParams(<nabl2--labels>,<nabl2--labels-wf>,lo*)
                   , Timing(timing)
                   , AlternativeSolutions(<(Tl<+![]);map-with-index(id)> sol4*)
                   | sol
@@ -86,24 +86,22 @@ rules
     ))
 
 
-  analyze(pre): ApplyAnalysis(value,solution) -> value'
-    where s := <sol-s> solution
-    with value' := <S-apply(is-var)> (s,value)
+  nabl2--analyze(pre): ApplyAnalysis(value,solution) -> value'
+    where s := <nabl2--sol-s> solution
+    with value' := <nabl2--S-apply(nabl2--is-var)> (s,value)
 
 
-  analyze(pre) = warn(|"Using null analysis fallback") ; null-analysis
-
-  report-time(msg,s) =
+ nabl2--report-time(msg,s) =
     where(msg := <msg>; <debug> $[>>> [msg]]);
     measure-time(s,where(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
 
-  time-analysis(key,s) =
+ nabl2--time-analysis(key,s) =
     measure-time(s,?time');
     where(
       key := <key>;
       (count,time) := <key;AnalysisTiming <+ !(0,0.0)> key;
       rules(AnalysisTiming : key -> (<inc> count, <add> (time,time'))))
 
-  get-analysis-timing =
+ nabl2--get-analysis-timing =
     dr-all-keys(|"AnalysisTiming");
     map(!(<id>,<AnalysisTiming;(id,cputime-to-seconds)>))

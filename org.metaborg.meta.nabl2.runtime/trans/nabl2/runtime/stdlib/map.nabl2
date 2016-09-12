@@ -1,11 +1,5 @@
 module nabl2/runtime/stdlib/map
 
-  /* NOTE:
-   * In the types we use nested tuples instead of lists, because Stratego does
-   * not allow us to create a list with a Var(_) in the tail, which is later
-   * instantiated.
-   */
-
 signature
 
   constraint generator

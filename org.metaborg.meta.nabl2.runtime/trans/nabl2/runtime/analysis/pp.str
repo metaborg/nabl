@@ -15,32 +15,32 @@ imports
 rules
 
   pp-NaBL2-Analysis =
-    qsort((Analysis-order,Analysis-order);lt);
-    map(try(sanitize-Analysis));
+    qsort((nabl2--Analysis-order,nabl2--Analysis-order);lt);
+    map(try(nabl2--sanitize-Analysis));
     pp-NaBL2(prettyprint-NaBL2-Analysis)
 
-  Analysis-order: Constraint(_) -> 0
-  Analysis-order: ResolutionParams(_,_,_) -> 1
-  Analysis-order: InitialScopeGraph(_) -> 2
-  Analysis-order: InitialResolution(_) -> 3
-  Analysis-order: ScopeGraph(_) -> 4
-  Analysis-order: NameResolution(_) -> 5
-  Analysis-order: FullNameResolution(_) -> 6
-  Analysis-order: Properties(_) -> 7
-  Analysis-order: Substitution(_) -> 9
-  Analysis-order: SubtypeRelation(_) -> 10
-  Analysis-order: Errors(_) -> 11
-  Analysis-order: Warnings(_) -> 12
-  Analysis-order: Notes(_) -> 13
-  Analysis-order: AlternativeSolutions(_) -> 99
-  Analysis-order: _ -> 100
+  nabl2--Analysis-order: Constraint(_) -> 0
+  nabl2--Analysis-order: ResolutionParams(_,_,_) -> 1
+  nabl2--Analysis-order: InitialScopeGraph(_) -> 2
+  nabl2--Analysis-order: InitialResolution(_) -> 3
+  nabl2--Analysis-order: ScopeGraph(_) -> 4
+  nabl2--Analysis-order: NameResolution(_) -> 5
+  nabl2--Analysis-order: FullNameResolution(_) -> 6
+  nabl2--Analysis-order: Properties(_) -> 7
+  nabl2--Analysis-order: Substitution(_) -> 9
+  nabl2--Analysis-order: SubtypeRelation(_) -> 10
+  nabl2--Analysis-order: Errors(_) -> 11
+  nabl2--Analysis-order: Warnings(_) -> 12
+  nabl2--Analysis-order: Notes(_) -> 13
+  nabl2--Analysis-order: AlternativeSolutions(_) -> 99
+  nabl2--Analysis-order: _ -> 100
 
-  sanitize-Analysis = Constraint(sanitize-Constraint)
+  nabl2--sanitize-Analysis = Constraint(nabl2--sanitize-Constraint)
 
-  sanitize-Constraint =
+  nabl2--sanitize-Constraint =
     topdown(try(
-      CConj(filter(not(hide-constraint))) +
-      CDisj(filter(not(hide-constraint)))
+      CConj(filter(not(nabl2--hide-constraint))) +
+      CDisj(filter(not(nabl2--hide-constraint)))
     ))
 
-  hide-constraint = fail
+  nabl2--hide-constraint = fail

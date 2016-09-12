@@ -7,33 +7,33 @@ imports
 
 rules
 
-  normalize-constraint =
-    flatten-junctions;
-    flatten-composites
+  nabl2--normalize-constraint =
+    nabl2--flatten-junctions;
+    nabl2--flatten-composites
 
   
-  flatten-junctions = bottomup(try(flatten-conj + flatten-disj))
+  nabl2--flatten-junctions = bottomup(try(nabl2--flatten-conj + nabl2--flatten-disj))
   
-  flatten-conj: CConj(CConj(C1*),CConj(C2*)) -> CConj([C1*,C2*])
-  flatten-conj: CConj(CConj(C1*),C2) -> CConj([C1*,C2])
-  flatten-conj: CConj(C1,CConj(C2*)) -> CConj([C1,C2*])
-  flatten-conj: CConj(C1,C2) -> CConj([C1,C2])
-  flatten-conj: CConj(C*) -> CConj([C1*,C2*])
+  nabl2--flatten-conj: CConj(CConj(C1*),CConj(C2*)) -> CConj([C1*,C2*])
+  nabl2--flatten-conj: CConj(CConj(C1*),C2) -> CConj([C1*,C2])
+  nabl2--flatten-conj: CConj(C1,CConj(C2*)) -> CConj([C1,C2*])
+  nabl2--flatten-conj: CConj(C1,C2) -> CConj([C1,C2])
+  nabl2--flatten-conj: CConj(C*) -> CConj([C1*,C2*])
     with (C1*,C2*) := <partition(?CConj(<id>));(concat,id)> C*
 
-  flatten-disj: CDisj(CDisj(C1*),CDisj(C2*)) -> CDisj([C1*,C2*])
-  flatten-disj: CDisj(CDisj(C1*),C2) -> CDisj([C1*,C2])
-  flatten-disj: CDisj(C1,CDisj(C2*)) -> CDisj([C1,C2*])
-  flatten-disj: CDisj(C1,C2) -> CDisj([C1,C2])
-  flatten-disj: CDisj(C*) -> CDisj([C1*,C2*])
+  nabl2--flatten-disj: CDisj(CDisj(C1*),CDisj(C2*)) -> CDisj([C1*,C2*])
+  nabl2--flatten-disj: CDisj(CDisj(C1*),C2) -> CDisj([C1*,C2])
+  nabl2--flatten-disj: CDisj(C1,CDisj(C2*)) -> CDisj([C1,C2*])
+  nabl2--flatten-disj: CDisj(C1,C2) -> CDisj([C1,C2])
+  nabl2--flatten-disj: CDisj(C*) -> CDisj([C1*,C2*])
     with (C1*,C2*) := <partition(?CDisj(<id>));(concat,id)> C*
 
-  flatten-composites = try(sometd(flatten-composite))
+  nabl2--flatten-composites = try(sometd(nabl2--flatten-composite))
   
-  flatten-composite: Composite(c) -> x*
+  nabl2--flatten-composite: Composite(c) -> x*
     with x* := <rec f({?(x,xs) < ![x|<f> xs] + ![]})> c
 
 rules
 
-  in-junctions(s) = topdown(try(CConj(s) + CDisj(s)))
+  nabl2--in-junctions(s) = topdown(try(CConj(s) + CDisj(s)))
 

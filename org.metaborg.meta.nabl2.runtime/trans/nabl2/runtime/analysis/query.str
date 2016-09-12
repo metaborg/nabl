@@ -13,66 +13,21 @@ signature
 
 rules
 
-  /**
-   * @type Filename -> Analysis
-   */
-  get-analysis = prim("SG_get_analysis")
+  nabl2--get-ast-params = nabl2--get-ast-metadata(|Params())
 
-  /**
-   * @type Term -> List(Term)
-   */
-  get-ast-params = get-ast-metadata(|Params())
-
-  /**
-   * @params params : List(Term)
-   * @type Term -> _
-   */
-  set-ast-params(|params) = set-ast-metadata(|Params(), params)
+  nabl2--set-ast-params(|params) = nabl2--set-ast-metadata(|Params(), params)
   
-  /**
-   * @type Term -> Type
-   */
-  get-ast-type = get-ast-metadata(|Type())
+  nabl2--get-ast-type = nabl2--get-ast-metadata(|Type())
 
-  /**
-   * @params type : Type
-   * @type Term -> _
-   */
-  set-ast-type(|type) = set-ast-metadata(|Type(), type)
-
-  /**
-   * @type Term -> Occurrence
-   */
-  get-ast-ref = get-ast-refs ; ?[<id>]
+  nabl2--set-ast-type(|type) = nabl2--set-ast-metadata(|Type(), type)
 
 rules
 
-  /**
-   * @param a : Analysis
-   * @type Occurrence -> Type
-   */
-  get-type(|a): o -> ty
-    where (ty,_) := <sol-p;get(|o);get(|Type())> a
+  nabl2--get-type(|a): o -> ty
+    where (ty,_) := <nabl2--sol-p;nabl2--get(|o);nabl2--get(|Type())> a
 
-  /**
-   * @param a : Analysis
-   * @param prop : String
-   * @type Occurrence -> Term
-   */
-  get-property(|a,prop): o -> val
-    where (val,_) := <sol-p;get(|o);get(|Property(prop))> a
+  nabl2--get-property(|a,prop): o -> val
+    where (val,_) := <nabl2--sol-p;nabl2--get(|o);nabl2--get(|Property(prop))> a
 
-  /**
-   * @param a : Analysis
-   * @type _ -> ScopeGraph
-   */
-  get-scopegraph(|a): _ -> g
-    with g := <sol-g> a 
-  
-  /**
-   * @param a : Analysis
-   * @type Occurrence -> (Occurrence,Path)
-   */
-  get-nameresolution(|a): r -> d
-    with d := <sol-r;get(|r)> a 
-
+  nabl2--get-resolved-name(|a): r -> d
+    with d := <nabl2--sol-r;nabl2--get(|r)> a 

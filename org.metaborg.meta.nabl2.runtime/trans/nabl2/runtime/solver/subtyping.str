@@ -9,26 +9,26 @@ imports
 
 rules
 
-  solve-constraint = time-analysis(!"subtype",solve-subtype-constraint)
+  nabl2--solve-constraint =nabl2--time-analysis(!"subtype",nabl2--solve-subtype-constraint)
 
-  solve-subtype-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
-  where <is-ground> (ty1,ty2)
-  with <sol-x> sol => x*
-     ; ( <extend-subtype-relation(|x*)> (ty1,ty2) => x'*
-       < <sol-set-x(|x'*)> sol
+  nabl2--solve-subtype-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
+  where <nabl2--is-ground> (ty1,ty2)
+  with <nabl2--sol-x> sol => x*
+     ; ( <nabl2--extend-subtype-relation(|x*)> (ty1,ty2) => x'*
+       < <nabl2--sol-set-x(|x'*)> sol
        + msg := ["Setting ",ty1," as a subtype of ",ty2," creates invalid subtype relation."];
-         <add-message(default-message(|msg)|msginfo)> sol
+         <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
        ) => sol'
 
-  solve-subtype-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
-  where <is-ground> (ty1,ty2);
-        x* := <sol-x> sol;
-        <is-subtype(|x*)> (ty1,ty2)
+  nabl2--solve-subtype-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
+  where <nabl2--is-ground> (ty1,ty2);
+        x* := <nabl2--sol-x> sol;
+        <nabl2--is-subtype(|x*)> (ty1,ty2)
 
 
-  constraint-priority: FSubtype(_,_,_) -> 3
-  constraint-priority: CSubtype(_,_,_) -> 4
+  nabl2--constraint-priority: FSubtype(_,_,_) -> 3
+  nabl2--constraint-priority: CSubtype(_,_,_) -> 4
 
-  constraint-message: FSubtype(ty1,ty2,o) -> Message(Error(),["Failed to set ",ty1," as subtype of ",ty2],o)
-  constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
+  nabl2--constraint-message: FSubtype(ty1,ty2,o) -> Message(Error(),["Failed to set ",ty1," as subtype of ",ty2],o)
+  nabl2--constraint-message: CSubtype(ty1,ty2,msginfo) -> <nabl2--default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
 

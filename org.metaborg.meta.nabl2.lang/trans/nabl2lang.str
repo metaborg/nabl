@@ -17,7 +17,7 @@ imports
  
 rules
 
-  editor-analyze = analyze <+ null-analysis
+  editor-analyze = analyze <+ nabl2--null-analysis
  
 rules // Debugging
   

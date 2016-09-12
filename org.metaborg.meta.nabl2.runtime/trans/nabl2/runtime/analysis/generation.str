@@ -7,7 +7,9 @@ imports
 
 rules // top-level functions that are called during analysis
 
-  generate-constraint-init(|source) =
+  nabl2-debug-constraint-generation-hook = fail
+
+  nabl2--generate-constraint-init(|source) =
     ?ast;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
@@ -15,10 +17,10 @@ rules // top-level functions that are called during analysis
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      <generate-constraint-init-rule(|source)> ast
+      <nabl2--generate-constraint-init-rule(|source)> ast
 	  |}
 
-  generate-constraint-file(|source,params) =
+  nabl2--generate-constraint-file(|source,params) =
     ?ast;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
@@ -26,62 +28,62 @@ rules // top-level functions that are called during analysis
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      <generate-constraint(generate-constraint-default-rule|source,params)> ast
+      <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|source,params)> ast
 	  |}
 
 rules
 
-  new-var(|source)   = (is-string <+ !"v") => n ; !Var($[[source]'[n]'[<NewVar;int-to-string>]])
-  new-scope(|source) = (is-string <+ !"s") => n ; !Scope($[[source]'[n]'[<NewScope;int-to-string>]])
+  nabl2--new-var(|source)   = (is-string <+ !"v") => n ; !Var($[[source]'[n]'[<NewVar;int-to-string>]])
+  nabl2--new-scope(|source) = (is-string <+ !"s") => n ; !Scope($[[source]'[n]'[<NewScope;int-to-string>]])
 
   // signatures of the generated rules
-  generate-constraint-init-rule(|source) = fail
-  generate-constraint-default-rule(|source,params) = fail
+  nabl2--generate-constraint-init-rule(|source) = fail
+  nabl2--generate-constraint-default-rule(|source,params) = fail
 
   // error throwing wrappers for recursive invocations
-  generate-constraint(s|source,params) =
-    error-no-index
- <+ generate-constraint-placeholder(|params)
+  nabl2--generate-constraint(s|source,params) =
+    nabl2--error-no-index
+ <+ nabl2--generate-constraint-placeholder(|params)
  <+ (where(!1 => x);s(|source,params)) // this is freaky, but otherwise the next call fails sometimes
- <+ generate-constraint-missing(|params)
+ <+ nabl2--generate-constraint-missing(|params)
 
-  error-no-index: term -> CFalse(Message(Error(),msg,term))
-    where not(get-ast-index)
+  nabl2--error-no-index: term -> CFalse(Message(Error(),msg,term))
+    where not(nabl2--get-ast-index)
     with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]]
 
-  generate-constraint-placeholder(|params): term -> CTrue()
+  nabl2--generate-constraint-placeholder(|params): term -> CTrue()
     where <is-SDF-placeholder> term
     with if (scopes,type) := params then
-      <set-ast-params(|scopes);set-ast-type(|type)> term
+      <nabl2--set-ast-params(|scopes);nabl2--set-ast-type(|type)> term
     else
-      <set-ast-params(|params)> term
+      <nabl2--set-ast-params(|params)> term
     end
 
-  generate-constraint-missing(|params): term -> CFalse(Message(Warning(),emsg,term))
+  nabl2--generate-constraint-missing(|params): term -> CFalse(Message(Warning(),emsg,term))
     with if (scopes,type) := params then
-      <set-ast-params(|scopes);set-ast-type(|type)> term;
-      emsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> scopes] : _];
-      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-NaBL2-Term> scopes] : [<pp-NaBL2-Term> type]]
+      <nabl2--set-ast-params(|scopes);nabl2--set-ast-type(|type)> term;
+      emsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<nabl2--pp-term-sig> scopes] : _];
+      cmsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<pp-NaBL2-Term> scopes] : [<pp-NaBL2-Term> type]]
     else
-      <set-ast-params(|params)> term;
-      emsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-term-sig> params]];
-      cmsg := $[Missing constraint generation rule for [<pp-term-sig> term] ^ [<pp-NaBL2-Term> params]]
+      <nabl2--set-ast-params(|params)> term;
+      emsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<nabl2--pp-term-sig> params]];
+      cmsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<pp-NaBL2-Term> params]]
     end
     with warn(|cmsg)
 
 
-  pp-term-sig: c#(a*) -> ${[{<pp-term-args> a*}]}
+  nabl2--pp-term-sig: c#(a*) -> ${[{<nabl2--pp-term-args> a*}]}
   where is-list
 
-  pp-term-args: a* -> [a']
+  nabl2--pp-term-args: a* -> [a']
   with a' := <map(!"_");separate-by(|",");concat-strings> a*
 
-  pp-term-sig: i -> <int-to-string>
+  nabl2--pp-term-sig: i -> <int-to-string>
   where is-int
 
-  pp-term-sig: r -> <real-to-string>
+  nabl2--pp-term-sig: r -> <real-to-string>
   where is-real
 
-  pp-term-sig: c#(a*) -> $[[c]([<pp-term-args> a*])]
+  nabl2--pp-term-sig: c#(a*) -> $[[c]([<nabl2--pp-term-args> a*])]
 
 

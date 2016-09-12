@@ -2,6 +2,7 @@ module nabl2runtime
 
 imports
 
+  nabl2/api
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/editor/-

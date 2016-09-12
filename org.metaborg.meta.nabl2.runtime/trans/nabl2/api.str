@@ -1,0 +1,227 @@
+module nabl2/api
+
+
+
+rules // ###### Custom type operations ######
+
+  /**
+   * Succeed if the term is a type operation that need to be reduced
+   *
+   * @type Term -> _
+   */
+  nabl2-is-op-hook = fail
+
+  /**
+   * Reduce a type operation. Make sure to implement `nabl2-is-op-hook` for the
+   * constructor as well.
+   *
+   * @param a : Analysis (can be incomplete!)
+   * @type TypeOp -> Type
+   */
+  nabl2-reduce-op-hook(|a) = fail
+
+  /**
+   * Produce an error during type operation reduction.
+   *
+   * @type String -> _
+   */
+  nabl2-add-reduce-error = nabl2--add-reduce-error
+
+rules // ###### Analysis execution ######
+
+  /**
+   * Control the logging of constraint generation. If the strategy succeeds (id),
+   * constraint generation is logged, if it fails (fail) constraint generation
+   * is silent.
+   *
+   * @type _ -> _
+   */
+  nabl2-debug-constraint-generation-hook = fail
+
+  /**
+   * Control whether to ignore errors on unused references. If the strategy
+   * succeeds for its namespace argument, no error is generated if the reference
+   * does not resolve.
+   * 
+   * @type ns -> _
+   */
+  nabl2-ignore-unused-references-hook = fail
+
+  /**
+   * Main analysis strategy for NaBL2.
+   *
+   * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
+   */
+  nabl2-analyze(pre) = nabl2--analyze(pre)
+
+  /**
+   * Dummy analysis function for NaBL2.
+   */
+  nabl2-null-analysis = nabl2--null-analysis
+
+
+
+rules // ###### Analysis results ######
+
+  /**
+   * @type Filename -> Analysis
+   */
+  nabl2-get-analysis = nabl2--get-analysis
+
+  /**
+   * @type Term -> List(Term)
+   */
+  nabl2-get-ast-params = nabl2--get-ast-params
+
+  /**
+   * @type Term -> Type
+   */
+  nabl2-get-ast-type = nabl2--get-ast-type
+
+  /**
+   * @type Term -> List(Occurrence)
+   */
+  nabl2-get-ast-refs = nabl2--get-ast-refs
+
+  /**
+   * @param a : Analysis
+   * @type Occurrence -> Type
+   */
+  nabl2-get-type(|a) = nabl2--get-type(|a)
+
+  /**
+   * @param a : Analysis
+   * @param prop : String
+   * @type Occurrence -> Term
+   */
+  nabl2-get-property(|a,prop) = nabl2--get-property(|a,prop)
+
+  /**
+   * @param a : Analysis
+   * @type Occurrence -> (Occurrence,Path)
+   */
+  nabl2-get-resolved-name(|a) = nabl2--get-resolved-name(|a)
+
+
+
+rules // ###### Scope graphs ######
+
+  /**
+   * Get all declarations in the scope graph
+   *
+   * @param a : Analysis
+   * @type _ -> List(Occurrences)
+   */
+  nabl2-get-all-decls(|a) = <nabl2--sol-g;nabl2--G-decls> a
+
+  /**
+   * Get all references in the scope graph
+   *
+   * @param a : Analysis
+   * @type _ -> List(Occurrences)
+   */
+  nabl2-get-all-refs(|a) = <nabl2--sol-g;nabl2--G-refs> a
+
+  /**
+   * Get all scopes in the scope graph
+   *
+   * @param a : Analysis
+   * @type _ -> List(Scope)
+   */
+  nabl2-get-all-scopes(|a) = <nabl2--sol-g;nabl2--G-scopes> a
+
+  /**
+   * Get the scope of a reference
+   *
+   * @param a : Analysis
+   * @type Occurrence -> Scope
+   */
+  nabl2-get-ref-scope(|a) = <nabl2--G-ref-scope> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get the scope of a declaration
+   *
+   * @param a : Analysis
+   * @type Occurrence -> Scope
+   */
+  nabl2-get-decl-scope(|a) = <nabl2--G-decl-scope> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get declarations in a scope
+   *
+   * @type Scope -> List(Occurrence)
+   */
+  nabl2-get-scope-decls(|a) = <nabl2--G-decls> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get references in a scope
+   *
+   * @type Scope -> List(Occurrence)
+   */
+  nabl2-get-scope-refs(|a) = <nabl2--G-refs> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get direct edges from a scope
+   *
+   * @type Scope -> List((Label,Scope))
+   */
+  nabl2-get-scope-direct-edges(|a) = <nabl2--G-direct-edges> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get named (import) edges from a scope
+   *
+   * @type Scope -> List((Label,Occurrence))
+   */
+  nabl2-get-scope-named-edges(|a) = <nabl2--G-named-edges> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get associated scopes of a declaration
+   *
+   * @type Occurrence -> List((Label,Scope))
+   */
+  nabl2-get-decl-assocs(|a) = <nabl2--G-assocs> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get occurrences associated with a scope
+   *
+   * @type Scope -> List((Occurrence,Label))
+   */
+  nabl2-get-scope-assocs(|a) = <nabl2--G-scope-assocs> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Make an occurrence in the default namespace
+   *
+   * @type Term -> Occurrence
+   */
+  nabl2-mk-occurrence = nabl2--mk-occurrence
+
+  /**
+   * Make an occurrence in the specified namespace
+   *
+   * @param ns : String
+   * @type Term -> Occurrence
+   */
+  nabl2-mk-occurrence(|ns) = nabl2--mk-occurrence(|ns)
+
+  /**
+   * Make an occurrence in the specified namespace, using an origin term
+   *
+   * @param ns : String
+   * @param t : Term
+   * @type Term -> Occurrence
+   */
+  nabl2-mk-occurrence(|ns,t) = nabl2--mk-occurrence(|ns,t)
+
+  /**
+   * Get namespace of an occurrence
+   *
+   * @type Occurrence -> Namespace
+   */
+  nabl2-occurrence-ns = nabl2--occurrence-ns
+
+  /**
+   * Get name of an occurrence
+   *
+   * @type Occurrence -> Term
+   */
+  nabl2-occurrence-name = nabl2--occurrence-name

@@ -13,65 +13,65 @@ signature
 
 rules 
  
-  // csolve-exhaustive :: (sol,[c]) -> [(sol,[c])] 
+  // nabl2--csolve-exhaustive :: (sol,[c]) -> [(sol,[c])] 
   // solve for all possible solutions
 
-  csolve-exhaustive(pre,solve,post,s-cost,c-lt) = strict(
-    map((id,csolve-one-sort(c-lt)));
-    mapconcat(csolve-exhaustive-acc(pre,solve,post,s-cost,c-lt));
-    time-analysis(!"solution sorting",qsort(csolve-exhaustive-lt(s-cost)))
+  nabl2--csolve-exhaustive(pre,solve,post,s-cost,c-lt) = nabl2--strict(
+    map((id,nabl2--csolve-one-sort(c-lt)));
+    mapconcat(nabl2--csolve-exhaustive-acc(pre,solve,post,s-cost,c-lt));
+   nabl2--time-analysis(!"solution sorting",qsort(nabl2--csolve-exhaustive-lt(s-cost)))
   )
 
-  csolve-exhaustive-lt(s-cost) =
-    strict((s-cost,s-cost));
+  nabl2--csolve-exhaustive-lt(s-cost) =
+    nabl2--strict((s-cost,s-cost));
     lt
 
-  csolve-exhaustive-acc(pre,solve,post,s-cost,c-lt) = strict(
-    csolve-one(pre,solve,c-lt)
-  < mapconcat(csolve-exhaustive-acc(pre,solve,post,s-cost,c-lt))
+  nabl2--csolve-exhaustive-acc(pre,solve,post,s-cost,c-lt) = nabl2--strict(
+    nabl2--csolve-one(pre,solve,c-lt)
+  < mapconcat(nabl2--csolve-exhaustive-acc(pre,solve,post,s-cost,c-lt))
   + ![<post>]
   )
  
-  // csolve-greedy :: (sol,[c]) -> [(sol,[c])] 
+  // nabl2--csolve-greedy :: (sol,[c]) -> [(sol,[c])] 
   // solve for the best solution (solve all good
   // branches exhaustively)
 
-  csolve-greedy(pre,solve,post,s-cost,c-lt) = strict(
-    map((id,csolve-one-sort(c-lt)));
+  nabl2--csolve-greedy(pre,solve,post,s-cost,c-lt) = nabl2--strict(
+    map((id,nabl2--csolve-one-sort(c-lt)));
     map(!Active(<id>));
-    csolve-greedy-sort(s-cost);
-    csolve-greedy-acc(pre,solve,post,s-cost,id,c-lt);
-    map(csolve-unwrap(id))
+    nabl2--csolve-greedy-sort(s-cost);
+    nabl2--csolve-greedy-acc(pre,solve,post,s-cost,id,c-lt);
+    map(nabl2--csolve-unwrap(id))
   )
  
-  csolve-greedy-acc(pre,solve,post,s-cost,s-guard,c-lt) = strict(
-    if Hd;csolve-unwrap(s-cost);s-guard then
+  nabl2--csolve-greedy-acc(pre,solve,post,s-cost,s-guard,c-lt) = nabl2--strict(
+    if Hd;nabl2--csolve-unwrap(s-cost);s-guard then
       if ?[Active(s)|s*] then
-        if s'* := <csolve-one(pre,solve,c-lt)> s then
-          <map(!Active(<id>));csolve-greedy-sort(s-cost)> s'*
+        if s'* := <nabl2--csolve-one(pre,solve,c-lt)> s then
+          <map(!Active(<id>));nabl2--csolve-greedy-sort(s-cost)> s'*
         else
           ![Done(<post> s)]
         end;
-        <csolve-greedy-insert(s-cost)> (<id>,s*);
-        csolve-greedy-acc(pre,solve,post,s-cost,s-guard,c-lt)
+        <nabl2--csolve-greedy-insert(s-cost)> (<id>,s*);
+        nabl2--csolve-greedy-acc(pre,solve,post,s-cost,s-guard,c-lt)
       else
-        if ?[s,s'|s*]; <csolve-unwrap(s-cost);?0> s' then
+        if ?[s,s'|s*]; <nabl2--csolve-unwrap(s-cost);?0> s' then
           ![s'|s*];
-          csolve-greedy-acc(pre,solve,post,s-cost,?0,c-lt);
+          nabl2--csolve-greedy-acc(pre,solve,post,s-cost,?0,c-lt);
           ![s|<id>]
         end
       end
     end
   )
 
-  csolve-greedy-insert(s-cost) =
-    time-analysis(!"solution sorting",merge-sorted(csolve-greedy-lt(s-cost)))
+  nabl2--csolve-greedy-insert(s-cost) =
+   nabl2--time-analysis(!"solution sorting",nabl2--merge-sorted(nabl2--csolve-greedy-lt(s-cost)))
     
 
   // compare solutions, first by errors, then active over done
-  csolve-greedy-lt(s-cost) = strict(
+  nabl2--csolve-greedy-lt(s-cost) = nabl2--strict(
     ?ss;
-    cc := <(csolve-unwrap(s-cost),csolve-unwrap(s-cost))>
+    cc := <(nabl2--csolve-unwrap(s-cost),nabl2--csolve-unwrap(s-cost))>
   );
   ( <lt> cc
  <+ <eq> cc;
@@ -79,35 +79,35 @@ rules
   )
  
   // sort list of solutions
-  csolve-greedy-sort(s-cost) =
-    time-analysis(!"solution sorting",qsort(csolve-greedy-lt(s-cost)))
+  nabl2--csolve-greedy-sort(s-cost) =
+   nabl2--time-analysis(!"solution sorting",qsort(nabl2--csolve-greedy-lt(s-cost)))
 
-  csolve-apply(s)  = strict(Active(s) + Done(s))
-  csolve-unwrap(s) = strict(?Active(<s>) + ?Done(<s>))
+  nabl2--csolve-apply(s)  = nabl2--strict(Active(s) + Done(s))
+  nabl2--csolve-unwrap(s) = nabl2--strict(?Active(<s>) + ?Done(<s>))
 
-  // csolve-one :: (sol,[c]) -> [(sol,[c])]
+  // nabl2--csolve-one :: (sol,[c]) -> [(sol,[c])]
   // solve one constraint, or fail
  
-  csolve-one(pre,solve,c-lt) =
+  nabl2--csolve-one(pre,solve,c-lt) =
     ?(sol,active*);
-    <csolve-one-acc(pre,solve,c-lt)> (sol,active*,[])
+    <nabl2--csolve-one-acc(pre,solve,c-lt)> (sol,active*,[])
 
-  csolve-one-acc(pre,solve,c-lt) =
+  nabl2--csolve-one-acc(pre,solve,c-lt) =
     ?(sol,[c|active*],defer*);
     with((sol',c') := <pre> (sol,c));
     ( s'* := <solve> (c',sol')
     < <map({ sol', new*, new'*, active'*:
         ?(sol',new*);
         new'* :=  <qsort(c-lt)> new*;
-        active'* := <csolve-one-insert(c-lt)> (new'*,active*);
+        active'* := <nabl2--csolve-one-insert(c-lt)> (new'*,active*);
         !(sol', [active'*,defer*])
       })> s'*
-    + <csolve-one-acc(pre,solve,c-lt)> (sol,active*,[c'|defer*])
+    + <nabl2--csolve-one-acc(pre,solve,c-lt)> (sol,active*,[c'|defer*])
     )
 
-    csolve-one-sort(c-lt) =
-      time-analysis(!"constraint sorting",qsort(c-lt))
+    nabl2--csolve-one-sort(c-lt) =
+     nabl2--time-analysis(!"constraint sorting",qsort(c-lt))
 
-    csolve-one-insert(c-lt) =
-      time-analysis(!"constraint sorting",merge-sorted(c-lt))
+    nabl2--csolve-one-insert(c-lt) =
+     nabl2--time-analysis(!"constraint sorting",nabl2--merge-sorted(c-lt))
  

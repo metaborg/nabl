@@ -29,10 +29,10 @@ rules
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
         params-str := |[ ~<params-var> := (~params-term,~type-term) ]|;
-        debug-str := Strat |[ if debug-constraint-generation then <concat-strings;debug> ["init ^(",<pp-NaBL2-Term> ~params-term,") : ",<pp-NaBL2-Term> ~type-term] end ]|
+        debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^(",<pp-NaBL2-Term> ~params-term,") : ",<pp-NaBL2-Term> ~type-term] end ]|
       else
         params-str := |[ ~<params-var> := ~params-term ]|;
-        debug-str := Strat |[ if debug-constraint-generation then <concat-strings;debug> ["init ^ (",<pp-NaBL2-Term> ~params-term,")"] end ]|
+        debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^ (",<pp-NaBL2-Term> ~params-term,")"] end ]|
       end;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
@@ -55,19 +55,19 @@ rules
           ~params-pattern := ~<params-var>
         ]|;
         metadata-str := |[
-          <set-ast-params(|<Fst> ~<params-var>);
-           set-ast-type(|<Snd> ~<params-var>)> ~<term-var>
+          <nabl2--set-ast-params(|<Fst> ~<params-var>);
+           nabl2--set-ast-type(|<Snd> ~<params-var>)> ~<term-var>
         ]|;
-        debug-str := |[ if debug-constraint-generation then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ]] ^ (",<Fst;pp-NaBL2-Term> ~<params-var>,") : ",<Snd;pp-NaBL2-Term> ~<params-var>] end ]|
+        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ]] ^ (",<Fst;pp-NaBL2-Term> ~<params-var>,") : ",<Snd;pp-NaBL2-Term> ~<params-var>] end ]|
       else
         params-pattern := <explode(injection-to-pattern)> params;
         params-str := |[
           ~params-pattern := ~<params-var>
         ]|;
         metadata-str := |[
-          <set-ast-params(|~<params-var>)> ~<term-var>
+          <nabl2--set-ast-params(|~<params-var>)> ~<term-var>
         ]|;
-        debug-str := |[ if debug-constraint-generation then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ]] ^ (",<pp-NaBL2-Term> ~<params-var>,")"] end ]|
+        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ]] ^ (",<pp-NaBL2-Term> ~<params-var>,")"] end ]|
       end;
       params-string := Str(<pp-stratego-string> params-pattern);
       guarded-params-str := |[ ~params-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~params-string," with actual ",<pp-NaBL2-Term> ~<params-var>, "."]) ]|;
@@ -82,7 +82,7 @@ rules
       ]
  
   rule-name =
-    !$[generate-constraint-[<id>]-rule]
+    !$[nabl2--generate-constraint-[<id>]-rule]
  
 rules
 
@@ -93,20 +93,20 @@ rules
   clause-to-str:
     NewScopes(v*) -> str
     with str := <mapseq({\
-                   v -> |[ ~v := <new-scope(|~<source-var>)> ~n ]|
+                   v -> |[ ~v := <nabl2--new-scope(|~<source-var>)> ~n ]|
                    with n := Str(<var-name> v)
                  \})> v*
  
   clause-to-str:
     NewVars(v*) -> str
     with str := <mapseq({\
-                   v -> |[ ~v := <new-var(|~<source-var>)> ~n ]|
+                   v -> |[ ~v := <nabl2--new-var(|~<source-var>)> ~n ]|
                    with n := Str(<var-name> v)
                  \})> v*
 
   clause-to-str:
     IndexSublist(list,sublist) -> str
-    with str := |[ <index-sublist(|~list)> ~sublist ]|
+    with str := |[ <nabl2--index-sublist(|~list)> ~sublist ]|
 
 rules
  
@@ -130,5 +130,5 @@ rules
       else
         recurse-arg := params-term
       end;
-      recurse-str := CallT(SVar("generate-constraint"),
+      recurse-str := CallT(SVar("nabl2--generate-constraint"),
           [SVar(<rule-name> name)],[<source-var>,recurse-arg])

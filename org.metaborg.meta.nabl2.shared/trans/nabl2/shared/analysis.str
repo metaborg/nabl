@@ -20,12 +20,12 @@ signature
     UnitResult    : Term/* processed ast */ * Term/* unit solution */ -> UnitResult
     FinalResult   : List(EditorMessage) * List(EditorMessage) * List(EditorMessage) * Term /* final solution */ -> FinalResult
 
-rules 
+rules
 
-  get-analysis = prim("SG_get_analysis")
+  nabl2--get-analysis = prim("SG_get_analysis")
 
-  null-analysis: AnalyzeInitial(_) -> InitialResult(None())
-  null-analysis: AnalyzeUnit(_,ast,_) -> UnitResult(ast,None())
-  null-analysis: AnalyzeFinal(source,_,_) -> FinalResult([],[],[],None())
-  null-analysis: ApplyAnalysis(value,_) -> value
-  null-analysis = fatal-err(|"Unknown analysis action.")
+  nabl2--null-analysis: AnalyzeInitial(_) -> InitialResult(None())
+  nabl2--null-analysis: AnalyzeUnit(_,ast,_) -> UnitResult(ast,None())
+  nabl2--null-analysis: AnalyzeFinal(source,_,_) -> FinalResult([],[],[],None())
+  nabl2--null-analysis: ApplyAnalysis(value,_) -> value
+  nabl2--null-analysis = fatal-err(|"Unknown analysis action.")

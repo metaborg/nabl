@@ -9,58 +9,58 @@ rules
   // TODO: Calculate (and check) the closure over the label order. If some pairs
   // are not explicit, the resolution algorithm will currently fail.
 
-  labels    = <conc;make-set> (<custom-labels<+![]>,<default-labels>)
-  labels-wf = custom-labels-wf <+ default-labels-wf
-  label-lt  = custom-label-lt + default-label-lt
+  nabl2--labels    = <conc;make-set> (<nabl2--custom-labels<+![]>,<nabl2--default-labels>)
+  nabl2--labels-wf = nabl2--custom-labels-wf <+ nabl2--default-labels-wf
+  nabl2--label-lt  = nabl2--custom-label-lt + nabl2--default-label-lt
 
-  custom-labels    = fail
-  custom-labels-wf = fail
-  custom-label-lt = fail
+  nabl2--custom-labels    = fail
+  nabl2--custom-labels-wf = fail
+  nabl2--custom-label-lt = fail
 
 rules
 
-  nullable:
+  nabl2--nullable:
     Epsilon() -> Epsilon()
-  nullable:
+  nabl2--nullable:
     Closure(_) -> Epsilon()
-  nullable:
+  nabl2--nullable:
     Concat(r1,r2) -> Epsilon()
-    where Epsilon() := <nullable> r1
-        ; Epsilon() := <nullable> r2
-  nullable:
+    where Epsilon() := <nabl2--nullable> r1
+        ; Epsilon() := <nabl2--nullable> r2
+  nabl2--nullable:
     Or(r1,r2) -> Epsilon()
-    where Epsilon() := <nullable> r1
-        + Epsilon() := <nullable> r2
-  nullable:
+    where Epsilon() := <nabl2--nullable> r1
+        + Epsilon() := <nabl2--nullable> r2
+  nabl2--nullable:
     And(r1,r2) -> Epsilon()
-    where Epsilon() := <nullable> r1
-        ; Epsilon() := <nullable> r2
-  nullable:
+    where Epsilon() := <nabl2--nullable> r1
+        ; Epsilon() := <nabl2--nullable> r2
+  nabl2--nullable:
     _ -> Empty()
  
-  emptiness = ?Empty()
-  emptiness = ?Concat(<emptiness>,_) + ?Concat(_,<emptiness>)
-  emptiness = ?Or(<emptiness>,<emptiness>)
-  emptiness = ?And(<emptiness>,_) + ?And(_,<emptiness>)
+  nabl2--emptiness = ?Empty()
+  nabl2--emptiness = ?Concat(<nabl2--emptiness>,_) + ?Concat(_,<nabl2--emptiness>)
+  nabl2--emptiness = ?Or(<nabl2--emptiness>,<nabl2--emptiness>)
+  nabl2--emptiness = ?And(<nabl2--emptiness>,_) + ?And(_,<nabl2--emptiness>)
 
-  deriv(|l): l -> Epsilon()
-  deriv(|l): Closure(r) -> Concat(<deriv(|l)> r, Closure(r))
-  deriv(|l): Concat(r1,r2) -> Or(Concat(<deriv(|l)> r1, r2), Concat(<nullable> r1, <deriv(|l)> r2))
-  deriv(|l): Or(r1,r2) -> Or(<deriv(|l)> r1, <deriv(|l)> r2)
-  deriv(|l): And(r1,r2) -> And(<deriv(|l)> r1, <deriv(|l)> r2)
-  deriv(|l): _ -> Empty()
+  nabl2--deriv(|l): l -> Epsilon()
+  nabl2--deriv(|l): Closure(r) -> Concat(<nabl2--deriv(|l)> r, Closure(r))
+  nabl2--deriv(|l): Concat(r1,r2) -> Or(Concat(<nabl2--deriv(|l)> r1, r2), Concat(<nabl2--nullable> r1, <nabl2--deriv(|l)> r2))
+  nabl2--deriv(|l): Or(r1,r2) -> Or(<nabl2--deriv(|l)> r1, <nabl2--deriv(|l)> r2)
+  nabl2--deriv(|l): And(r1,r2) -> And(<nabl2--deriv(|l)> r1, <nabl2--deriv(|l)> r2)
+  nabl2--deriv(|l): _ -> Empty()
  
   // builtin labels
-  max-labels = ?L ; filter(\ l -> l where <map(\ l' -> <not(label-lt)> (l,l') \)> L \) ; make-set
+  nabl2--max-labels = ?L ; filter(\ l -> l where <map(\ l' -> <not(nabl2--label-lt)> (l,l') \)> L \) ; make-set
  
-  labels-lt(|l) = filter(\ l' -> l' where <label-lt> (l',l) \) ; make-set
+  nabl2--labels-lt(|l) = filter(\ l' -> l' where <nabl2--label-lt> (l',l) \) ; make-set
  
-  empty-lt(|l) = filter(not(?l))
+  nabl2--empty-lt(|l) = filter(not(?l))
   
-  default-labels    = ![D(),P(),I()]
+  nabl2--default-labels    = ![D(),P(),I()]
   
-  default-label-lt = ?(D(),I())
-  default-label-lt = ?(D(),P())
-  default-label-lt = ?(I(),P())
+  nabl2--default-label-lt = ?(D(),I())
+  nabl2--default-label-lt = ?(D(),P())
+  nabl2--default-label-lt = ?(I(),P())
   
-  default-labels-wf = !Concat(Closure(P()),Closure(I()))
+  nabl2--default-labels-wf = !Concat(Closure(P()),Closure(I()))

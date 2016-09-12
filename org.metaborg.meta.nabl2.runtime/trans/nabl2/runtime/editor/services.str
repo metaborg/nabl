@@ -10,9 +10,9 @@ imports
 
 rules
 
-  editor-resolve: (node, position, ast, path, project-path) -> decl
-    where decl := <get-ast-ref> node
+  nabl2--editor-resolve: (node, position, ast, path, project-path) -> decl
+    where decl := <nabl2--get-ast-refs;Hd> node
 
-  editor-hover: (node, position, ast, path, project-path) -> label
-    where type := <get-ast-type;pp-NaBL2-Type;xmlencode> node
+  nabl2--editor-hover: (node, position, ast, path, project-path) -> label
+    where type := <nabl2--get-ast-type;pp-NaBL2-Type;nabl2--xmlencode> node
     with  label := $[Type: [type]]

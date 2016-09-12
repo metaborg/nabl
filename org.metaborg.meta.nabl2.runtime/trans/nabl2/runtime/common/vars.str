@@ -6,6 +6,6 @@ imports
 
 rules
   
-  reduce-op(|sol) = fail
-  is-reduced = where(collect-all(is-op) => [])
+  nabl2-reduce-op-hook(|sol) = fail
 
+  nabl2--is-reduced = where(collect-all(nabl2-is-op-hook) => [])

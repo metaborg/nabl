@@ -10,113 +10,58 @@ imports
 
 rules
 
-  /**
-   * Get all declarations in the scope graph
-   *
-   * @type ScopeGraph -> List(Occurrences)
-   */
-  G-decls = ?G(<id>,_) ; map(Snd;?S(<id>,_,_,_)) ; concat
+  nabl2--G-decls = ?G(<id>,_) ; map(Snd;?S(<id>,_,_,_)) ; concat
 
-  /**
-   * Get all references in the scope graph
-   *
-   * @type ScopeGraph -> List(Occurrences)
-   */
-  G-refs = ?G(<id>,_) ; map(Snd;?S(_,<id>,_,_)) ; concat
+  nabl2--G-refs = ?G(<id>,_) ; map(Snd;?S(_,<id>,_,_)) ; concat
 
-  /**
-   * Get all scopes in the scope graph
-   *
-   * @type ScopeGraph -> List(Scope)
-   */
-  G-scopes = ?G(<id>,_) ; map(Fst)
+  nabl2--G-scopes = ?G(<id>,_) ; map(Fst)
 
-  /**
-   * Get the scope of a reference
-   *
-   * @type (ScopeGraph,Occurrence) -> Scope
-   */
-  G-ref-scope = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)
+  nabl2--G-ref-scope = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)
 
-  /**
-   * Get the scope of a declaration
-   *
-   * @type (ScopeGraph,Occurrence) -> Scope
-   */
-  G-decl-scope = ?(G(<id>,_),d) ; getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \)
+  nabl2--G-decl-scope = ?(G(<id>,_),d) ; getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \)
 
-  /**
-   * Get declarations in a scope
-   *
-   * @type (ScopeGraph,Scope) -> List(Occurrence)
-   */
-  G-decls = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
+  nabl2--G-decls = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
 
-  /**
-   * Get references in a scope
-   *
-   * @type (ScopeGraph,Scope) -> List(Occurrence)
-   */
-  G-refs = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
+  nabl2--G-refs = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
 
-  /**
-   * Get direct edges from a scope
-   *
-   * @type (ScopeGraph,Scope) -> List((Label,Scope))
-   */
-  G-direct-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
+  nabl2--G-direct-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
 
-  /**
-   * Get named (import) edges from a scope
-   *
-   * @type (ScopeGraph,Scope) -> List((Label,Occurrence))
-   */
-  G-named-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
+  nabl2--G-named-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
 
-  /**
-   * Get associated scopes of a declaration
-   *
-   * @type (ScopeGraph,Occurrence) -> List((Label,Scope))
-   */
-  G-assocs = ?(G(_,a*),d) ; <lookup> (d,a*)
+  nabl2--G-assocs = ?(G(_,a*),d) ; <lookup> (d,a*)
 
-  /**
-   * Get occurrences associated with a scope
-   *
-   * @type (ScopeGraph,Scope) -> List((Occurrence,Label))
-   */
-  G-scope-assocs = ?(G(_,a*),s) ; filter(\ (d,(l,s')) -> (d,l) where <eq> (s,s') \)
+  nabl2--G-scope-assocs = ?(G(_,a*),s) ; filter(\ (d,(l,s')) -> (d,l) where <eq> (s,s') \)
 
 rules
 
-  G-new              = !G([],[])
-  G--new_s           = !S([],[],[],[])
-  G-with-decl        = ?(<id>,s,d) ; G(update(S(set-add(|d),id,id,id),G--new_s|s), id)
-  G-with-ref         = ?(<id>,s,r) ; G(update(S(id,set-add(|r),id,id),G--new_s|s), id)
-  G-with-direct-edge = ?(<id>,s,e@(_,s')) ; G(try(where(<is-ground> s');update(id,G--new_s|s'))
-                                             ;update(S(id,id,set-add(|e),id),G--new_s|s), id)
-  G-with-named-edge  = ?(<id>,s,n) ; G(update(S(id,id,id,set-add(|n)),G--new_s|s), id)
-  G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(update(id,G--new_s|s),update(set-add(|a),![]|d))
+  nabl2--G-new              = !G([],[])
+  nabl2--G--new_s           = !S([],[],[],[])
+  nabl2--G-with-decl        = ?(<id>,s,d) ; G(nabl2--update(S(nabl2--set-add(|d),id,id,id),nabl2--G--new_s|s), id)
+  nabl2--G-with-ref         = ?(<id>,s,r) ; G(nabl2--update(S(id,nabl2--set-add(|r),id,id),nabl2--G--new_s|s), id)
+  nabl2--G-with-direct-edge = ?(<id>,s,e@(_,s')) ; G(try(where(<nabl2--is-ground> s');nabl2--update(id,nabl2--G--new_s|s'));
+                                                     nabl2--update(S(id,id,nabl2--set-add(|e),id),nabl2--G--new_s|s), id)
+  nabl2--G-with-named-edge  = ?(<id>,s,n) ; G(nabl2--update(S(id,id,id,nabl2--set-add(|n)),nabl2--G--new_s|s), id)
+  nabl2--G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(nabl2--update(id,nabl2--G--new_s|s),nabl2--update(nabl2--set-add(|a),![]|d))
 
-  G-import-refs      = ?G(<id>,_) ; map(Snd;?S(_,_,_,<id>)) ; mapconcat(Snd)
+  nabl2--G-import-refs      = ?G(<id>,_) ; map(Snd;?S(_,_,_,<id>)) ; mapconcat(Snd)
 
 rules
 
-  mk-occurrence          = !Occurrence(DefaultNamespace(),<id>,<get-ast-index>)
-  mk-occurrence(|ns)     = !Occurrence(Namespace(ns),<id>,<get-ast-index>)
-  mk-occurrence(|ns,idx) = !Occurrence(Namespace(ns),<id>,<get-ast-index> idx)
+  nabl2--mk-occurrence        = !Occurrence(DefaultNamespace(),<id>,<nabl2--get-ast-index>)
+  nabl2--mk-occurrence(|ns)   = !Occurrence(Namespace(ns),<id>,<nabl2--get-ast-index>)
+  nabl2--mk-occurrence(|ns,t) = !Occurrence(Namespace(ns),<id>,<nabl2--get-ast-index> t)
 
-  occurrence-name = preserve-origin(?Name(_,<id>))
-  occurrence-name = ?Occurrence(_,name,index); <try-copy-origin(|index)> name
+  nabl2--occurrence-name = nabl2--try-preserve-origin(?Name(_,<id>))
+  nabl2--occurrence-name = ?Occurrence(_,name,index); <nabl2--try-copy-origin(|index)> name
 
-  occurrence-ns = preserve-origin(?Name(<id>,_))
-  occurrence-ns = ?Occurrence(ns,_,index); <try-copy-origin(|index)> ns
+  nabl2--occurrence-ns = nabl2--try-preserve-origin(?Name(<id>,_))
+  nabl2--occurrence-ns = ?Occurrence(ns,_,index); <nabl2--try-copy-origin(|index)> ns
 
-  occurrence-eq = (occurrence-atom,occurrence-atom) ; eq
+  nabl2--occurrence-eq = (nabl2--occurrence-atom,nabl2--occurrence-atom) ; eq
 
-  occurrence-atom = ?Name(_,_)
-  occurrence-atom = ?Occurrence(ns,name,index); <try-copy-origin(|index)> Name(ns,name)
+  nabl2--occurrence-atom = ?Name(_,_)
+  nabl2--occurrence-atom = ?Occurrence(ns,name,index); <nabl2--try-copy-origin(|index)> Name(ns,name)
 
-  occurrence-index = ?Occurrence(_,_,<id>)
+  nabl2--occurrence-index = ?Occurrence(_,_,<id>)
 
-  filter-ns(|ns) = where(All() := ns) < id + filter(where(occurrence-ns ; ?ns))
+  nabl2--filter-ns(|ns) = where(All() := ns) < id + filter(where(nabl2--occurrence-ns ; ?ns))

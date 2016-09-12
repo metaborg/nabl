@@ -6,29 +6,17 @@ imports
 
 rules
 
-  noop(s) = id
+  nabl2--term-eq = (strip-annos,strip-annos) ; eq
 
-  term-eq = (strip-annos,strip-annos) ; eq
-
-  xmlencode =
+  nabl2--xmlencode =
     try(string-replace(|"&","&amp;"))
   ; try(string-replace(|"<","&lt;"))
   ; try(string-replace(|">","&gt;"))
 
-  debugwrap(n,s) = ?t ; <s> t ; debug(!$[[<n>]: [<write-to-string> t] -> ])
-  debugwrap(s) = ?t ; <s> t ; debug(!$[[<write-to-string> t] -> ])
+  nabl2--log(s|n) = with(s ; debug(!n))
+  nabl2--log(|n)  = nabl2--log(id|n)
+  nabl2--log(s)   = nabl2--log(s|"")
 
-  debugwrapfail(n,s) =
-    ?t
-  ; ( <s> t
-    < debug(!$[[<n>]: [<write-to-string> t] -> ])
-    + <debug> $[[<n>]: [<write-to-string> t] -> fail] ; fail
-    )
+  nabl2--assert(s|t) = with(<s> t <+ debug(!"Assert failed: "))
 
-  log(s|n) = with(s ; debug(!n))
-  log(|n)  = log(id|n)
-  log(s)   = log(s|"")
-
-  assert(s|t) = with(<s> t <+ debug(!"Assert failed: "))
-
-  strict(s) = s <+ warn(|"Failure in strict mode");with(fail)
+  nabl2--strict(s) = s <+ warn(|"Failure in nabl2--strict mode");with(fail)

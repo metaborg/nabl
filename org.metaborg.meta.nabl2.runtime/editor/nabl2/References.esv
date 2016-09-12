@@ -2,5 +2,5 @@ module nabl2/References
 
 references
 
-  reference _ : editor-resolve
-  hover _     : editor-hover
+  reference _ : nabl2--editor-resolve
+  hover _     : nabl2--editor-hover

@@ -31,7 +31,7 @@ rules
     with sstr := ConstType(<typeterm-sort>)
  
   typesig-to-str:
-    TypeSig(c,a*) -> |[ type-sig-of: ~op -> ~args ]|
+    TypeSig(c,a*) -> |[ nabl2--type-sig-of-hook: ~op -> ~args ]|
     with op := Op(c,<map(!Wld())> a*);
          args := List(<map((id,typesort-to-sort);explode(term-to-term))> a*)
 

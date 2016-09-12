@@ -9,112 +9,114 @@ imports
 
 rules
  
-  solve-fact = time-analysis(!"scopegraph",solve-scopegraph-fact)
+  nabl2--solve-fact = nabl2--time-analysis(!"scopegraph",nabl2--solve-scopegraph-fact)
 
-  solve-scopegraph-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
-  where <is-ground> c
-  with g := <sol-g> sol => g;
-       g' := <G-with-decl> (g,s,d);
-       sol' := <sol-with-g(|g')> sol
+  nabl2--solve-scopegraph-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
+  where <nabl2--is-ground> c
+  with g := <nabl2--sol-g> sol => g;
+       g' := <nabl2--G-with-decl> (g,s,d);
+       sol' := <nabl2--sol-with-g(|g')> sol
 
-  solve-scopegraph-fact: (c@CGRef(r,s),sol) -> [(sol',[])]
-  where <is-ground> c
-  with g := <sol-g> sol;
-       g' := <G-with-ref> (g,s,r);
-       sol' := <sol-with-g(|g')> sol
+  nabl2--solve-scopegraph-fact: (c@CGRef(r,s),sol) -> [(sol',[])]
+  where <nabl2--is-ground> c
+  with g := <nabl2--sol-g> sol;
+       g' := <nabl2--G-with-ref> (g,s,r);
+       sol' := <nabl2--sol-with-g(|g')> sol
 
-  solve-scopegraph-fact: (CGDirectEdge(s,l,s'),sol) -> [(sol',[])]
-  where <is-ground> (s,l);
-        <is-ground + is-var> s'
-  with g := <sol-g> sol;
-       g' := <G-with-direct-edge> (g,s,(l,s'));
-       sol' := <sol-with-g(|g')> sol
+  nabl2--solve-scopegraph-fact: (CGDirectEdge(s,l,s'),sol) -> [(sol',[])]
+  where <nabl2--is-ground> (s,l);
+        <nabl2--is-ground + nabl2--is-var> s'
+  with g := <nabl2--sol-g> sol;
+       g' := <nabl2--G-with-direct-edge> (g,s,(l,s'));
+       sol' := <nabl2--sol-with-g(|g')> sol
 
-  solve-scopegraph-fact: (c@CGNamedEdge(r,l,s),sol) -> [(sol',[])]
-  where <is-ground> c
-  with g := <sol-g> sol;
-       g' := <G-with-named-edge> (g,s,(l,r));
-       sol' := <sol-with-g(|g')> sol
+  nabl2--solve-scopegraph-fact: (c@CGNamedEdge(r,l,s),sol) -> [(sol',[])]
+  where <nabl2--is-ground> c
+  with g := <nabl2--sol-g> sol;
+       g' := <nabl2--G-with-named-edge> (g,s,(l,r));
+       sol' := <nabl2--sol-with-g(|g')> sol
 
-  solve-scopegraph-fact: (c@CGAssoc(d,l,s),sol)    -> [(sol',[])]
-  where <is-ground> c
-  with g := <sol-g> sol;
-       g' := <G-with-assoc> (g,d,(l,s));
-       sol' := <sol-with-g(|g')> sol
+  nabl2--solve-scopegraph-fact: (c@CGAssoc(d,l,s),sol)    -> [(sol',[])]
+  where <nabl2--is-ground> c
+  with g := <nabl2--sol-g> sol;
+       g' := <nabl2--G-with-assoc> (g,d,(l,s));
+       sol' := <nabl2--sol-with-g(|g')> sol
 
 rules
 
-  solve-constraint = time-analysis(!"namebinding",solve-namebinding-constraint)
+  nabl2--solve-constraint =nabl2--time-analysis(!"namebinding",nabl2--solve-namebinding-constraint)
 
-  solve-namebinding-constraint: (CResolve(r,d,msginfo),sol) -> res*
-  where <is-ground> r;
-        if (d',_) := <sol-r;get(|r)> sol then
+  nabl2--solve-namebinding-constraint: (CResolve(r,d,msginfo),sol) -> res*
+  where <nabl2--is-ground> r;
+        if (d',_) := <nabl2--sol-r;nabl2--get(|r)> sol then
            msg := ["Cannot resolve ",r," to ",d];
-           msginfo' := <default-message(|msg)> msginfo;
+           msginfo' := <nabl2--default-message(|msg)> msginfo;
            ![(sol, [CEqual(d,d',msginfo')])]
          else
-           if dp* := <sol-fr;get(|r)> sol then
+           if dp* := <nabl2--sol-fr;nabl2--get(|r)> sol then
              !sol
            else
-             dp* := <resolve(|<sol-g> sol)> r;
-             <sol-set-fr(|r,dp*)> sol
+             dp* := <nabl2--resolve(|<nabl2--sol-g> sol)> r;
+             <nabl2--sol-set-fr(|r,dp*)> sol
            end => sol';
            if [] := dp* then
              msg := [r," does not resolve to any declaration"];
-             ![(<add-message(detail-message(|msg)|msginfo)> sol',[])]
+             ![(<nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol',[])]
            else
              msg := ["Problem resolving ",r," to ",d];
-             msginfo' := <default-message(|msg)> msginfo;
-             <map(\ (d',p) -> (<sol-set-r(|r,(d',p))> sol', [CEqual(d,d',msginfo')]) \)> dp*
+             msginfo' := <nabl2--default-message(|msg)> msginfo;
+             <map(\ (d',p) -> (<nabl2--sol-set-r(|r,(d',p))> sol', [CEqual(d,d',msginfo')]) \)> dp*
            end
          end => res*
 
-  solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
-  where <is-ground> d;
-        g := <sol-g> sol
-  with ( s' := <G-assocs;get(|l)> (g,d)
+  nabl2--solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
+  where <nabl2--is-ground> d;
+        g := <nabl2--sol-g> sol
+  with ( s' := <nabl2--G-assocs;nabl2--get(|l)> (g,d)
        < msg := ["Problem associating scope ",s," with ",d]
-       ; !(sol,[CEqual(s,s',<default-message(|msg)> msginfo)])
+       ; !(sol,[CEqual(s,s',<nabl2--default-message(|msg)> msginfo)])
        + msg := [d," is not associated with a ",l," scope"]
-       ; sol' := <add-message(detail-message(|msg)|msginfo)> sol
+       ; sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
        ; !(sol',[])
        ) => res
  
 rules
 
-  is-op = is-NaBL2-Names
+  nabl2-is-op-hook = is-NaBL2-Names
 
-  reduce-op(|sol) = get-names(|<sol-g> sol)
+  nabl2-reduce-op-hook(|sol) = nabl2--get-names(|<nabl2--sol-g> sol)
 
-  elems-pos(|x*): NAMES() -> x*
+  nabl2--elems-pos(|x*): NAMES() -> x*
 
-  elems-rep(|x*): NAMES() -> r*
-    with r* := <map(occurrence-name)> x*
+  nabl2--elems-rep(|x*): NAMES() -> r*
+    with r* := <map(nabl2--occurrence-name)> x*
 
 rules
 
-  constraint-priority: CAssoc(_,_,_,_) -> 2
-  constraint-priority: CResolve(_,_,_) -> 2
+  nabl2--constraint-priority: CAssoc(_,_,_,_) -> 2
+  nabl2--constraint-priority: CResolve(_,_,_) -> 2
 
 rules
  
-  unresolved-refs-errors: sol -> sol'
-    with time-analysis(!"namebinding",
-         g := <sol-g> sol;
-         ref* := <G-refs> g;
-         res* := <sol-fr;keys> sol;
+  nabl2-ignore-unused-references-hook = fail
+
+  nabl2--unresolved-refs-errors: sol -> sol'
+    withnabl2--time-analysis(!"namebinding",
+         g := <nabl2--sol-g> sol;
+         ref* := <nabl2--G-refs> g;
+         res* := <nabl2--sol-fr;nabl2--keys> sol;
          unknown* := <diff> (ref*, res*);
          sol' := <foldr(!sol,{ ref,sol, dp*:
            ?(ref,sol);
-           dp* := <resolve(|g)<+![]> ref;
-           <sol-set-fr(|ref,dp*)> sol;
-           if [] := dp*; <not(occurrence-ns;ignore-unused-references)> ref then
-             add-message(id|Message(Error(),["Failed to resolve ",ref],<occurrence-index> ref))
+           dp* := <nabl2--resolve(|g)<+![]> ref;
+           <nabl2--sol-set-fr(|ref,dp*)> sol;
+           if [] := dp*; <not(nabl2--occurrence-ns;nabl2-ignore-unused-references-hook)> ref then
+             nabl2--add-message(id|Message(Error(),["Failed to resolve ",ref],<nabl2--occurrence-index> ref))
            end
          })> unknown*
     )
  
-  constraint-message: CResolve(r,_,msginfo) -> <default-message(|["Failed to resolve ",r])> msginfo
+  nabl2--constraint-message: CResolve(r,_,msginfo) -> <nabl2--default-message(|["Failed to resolve ",r])> msginfo
 
-  constraint-message: CAssoc(d,l,_,msginfo) -> <default-message(|["Failed to find associated scope of ",d," with label ",l])> msginfo
+  nabl2--constraint-message: CAssoc(d,l,_,msginfo) -> <nabl2--default-message(|["Failed to find associated scope of ",d," with label ",l])> msginfo
 
