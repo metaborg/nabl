@@ -217,11 +217,11 @@ rules // ###### Scope graphs ######
    *
    * @type Occurrence -> Namespace
    */
-  nabl2-occurrence-ns = nabl2--occurrence-ns
+  nabl2-get-occurrence-ns = nabl2--occurrence-ns
 
   /**
    * Get name of an occurrence
    *
    * @type Occurrence -> Term
    */
-  nabl2-occurrence-name = nabl2--occurrence-name
+  nabl2-get-occurrence-name = nabl2--occurrence-name
