@@ -15,70 +15,70 @@ rules
    *
    * @type ScopeGraph -> List(Occurrences)
    */
-  G-decls            = ?G(<id>,_) ; map(Snd;?S(<id>,_,_,_)) ; concat
+  G-decls = ?G(<id>,_) ; map(Snd;?S(<id>,_,_,_)) ; concat
 
   /**
    * Get all references in the scope graph
    *
    * @type ScopeGraph -> List(Occurrences)
    */
-  G-refs             = ?G(<id>,_) ; map(Snd;?S(_,<id>,_,_)) ; concat
+  G-refs = ?G(<id>,_) ; map(Snd;?S(_,<id>,_,_)) ; concat
 
   /**
    * Get all scopes in the scope graph
    *
    * @type ScopeGraph -> List(Scope)
    */
-  G-scopes           = ?G(<id>,_) ; map(Fst)
+  G-scopes = ?G(<id>,_) ; map(Fst)
 
   /**
    * Get the scope of a reference
    *
    * @type (ScopeGraph,Occurrence) -> Scope
    */
-  G-ref-scope        = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)
+  G-ref-scope = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)
 
   /**
    * Get the scope of a declaration
    *
    * @type (ScopeGraph,Occurrence) -> Scope
    */
-  G-decl-scope       = ?(G(<id>,_),d) ; getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \)
+  G-decl-scope = ?(G(<id>,_),d) ; getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \)
 
   /**
    * Get declarations in a scope
    *
    * @type (ScopeGraph,Scope) -> List(Occurrence)
    */
-  G-decls            = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
+  G-decls = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
 
   /**
    * Get references in a scope
    *
    * @type (ScopeGraph,Scope) -> List(Occurrence)
    */
-  G-refs             = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
+  G-refs = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
 
   /**
    * Get direct edges from a scope
    *
    * @type (ScopeGraph,Scope) -> List((Label,Scope))
    */
-  G-direct-edges     = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
+  G-direct-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
 
   /**
    * Get named (import) edges from a scope
    *
    * @type (ScopeGraph,Scope) -> List((Label,Occurrence))
    */
-  G-named-edges      = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
+  G-named-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
 
   /**
    * Get associated scopes of a declaration
    *
    * @type (ScopeGraph,Occurrence) -> List((Label,Scope))
    */
-  G-assocs           = ?(G(_,a*),d) ; <lookup> (d,a*)
+  G-assocs = ?(G(_,a*),d) ; <lookup> (d,a*)
 
 rules
 
@@ -95,16 +95,20 @@ rules
 
 rules
 
-  occurrence-eq = (occurrence-atom,occurrence-atom) ; eq
-
-  occurrence-atom = ?Name(_,_)
-  occurrence-atom = ?Occurrence(ns,name,index); <try-copy-origin(|index)> Name(ns,name)
+  mk-occurrence          = !Occurrence(DefaultNamespace(),<id>,<get-term-index>)
+  mk-occurrence(|ns)     = !Occurrence(Namespace(ns),<id>,<get-term-index>)
+  mk-occurrence(|ns,idx) = !Occurrence(Namespace(ns),<id>,<get-term-index> idx)
 
   occurrence-name = preserve-origin(?Name(_,<id>))
   occurrence-name = ?Occurrence(_,name,index); <try-copy-origin(|index)> name
 
   occurrence-ns = preserve-origin(?Name(<id>,_))
   occurrence-ns = ?Occurrence(ns,_,index); <try-copy-origin(|index)> ns
+
+  occurrence-eq = (occurrence-atom,occurrence-atom) ; eq
+
+  occurrence-atom = ?Name(_,_)
+  occurrence-atom = ?Occurrence(ns,name,index); <try-copy-origin(|index)> Name(ns,name)
 
   occurrence-index = ?Occurrence(_,_,<id>)
 

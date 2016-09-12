@@ -75,4 +75,4 @@ rules
    */
   get-nameresolution(|a): r -> d
     with d := <sol-r;get(|r)> a 
-  
+
