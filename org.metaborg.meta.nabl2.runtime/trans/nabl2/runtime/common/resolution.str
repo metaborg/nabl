@@ -46,8 +46,8 @@ rules // resolution internal
 
   // env(|RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env(lt|re,g,ir*,is*) =
-    with(dbg-msg := $[env(|re=[<pp-NaBL2-LabelRE> re],g,ir*[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])])
- <+ with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
+    with(dbg-msg := $[env(|re=[<pp-NaBL2-LabelRE> re],g,ir*[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])]);
+    with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
     ( (<elem> (s,is*) + <emptiness> re)
     < !(Total(),[])
