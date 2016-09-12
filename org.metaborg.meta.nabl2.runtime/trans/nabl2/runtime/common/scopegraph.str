@@ -80,6 +80,13 @@ rules
    */
   G-assocs = ?(G(_,a*),d) ; <lookup> (d,a*)
 
+  /**
+   * Get occurrences associated with a scope
+   *
+   * @type (ScopeGraph,Scope) -> List((Occurrence,Label))
+   */
+  G-scope-assocs = ?(G(_,a*),s) ; filter(\ (d,(l,s')) -> (d,l) where <eq> (s,s') \)
+
 rules
 
   G-new              = !G([],[])
@@ -95,9 +102,9 @@ rules
 
 rules
 
-  mk-occurrence          = !Occurrence(DefaultNamespace(),<id>,<get-term-index>)
-  mk-occurrence(|ns)     = !Occurrence(Namespace(ns),<id>,<get-term-index>)
-  mk-occurrence(|ns,idx) = !Occurrence(Namespace(ns),<id>,<get-term-index> idx)
+  mk-occurrence          = !Occurrence(DefaultNamespace(),<id>,<get-ast-index>)
+  mk-occurrence(|ns)     = !Occurrence(Namespace(ns),<id>,<get-ast-index>)
+  mk-occurrence(|ns,idx) = !Occurrence(Namespace(ns),<id>,<get-ast-index> idx)
 
   occurrence-name = preserve-origin(?Name(_,<id>))
   occurrence-name = ?Occurrence(_,name,index); <try-copy-origin(|index)> name
