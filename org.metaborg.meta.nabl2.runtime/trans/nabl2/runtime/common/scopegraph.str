@@ -91,6 +91,8 @@ rules
   G-with-named-edge  = ?(<id>,s,n) ; G(update(S(id,id,id,set-add(|n)),G--new_s|s), id)
   G-with-assoc       = ?(<id>,d,a@(_,s)) ; G(update(id,G--new_s|s),update(set-add(|a),![]|d))
 
+  G-import-refs      = ?G(<id>,_) ; map(Snd;?S(_,_,_,<id>)) ; mapconcat(Snd)
+
 rules
 
   occurrence-eq = (occurrence-atom,occurrence-atom) ; eq
