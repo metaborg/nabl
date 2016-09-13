@@ -2,7 +2,7 @@ module nabl2/shared/ast
 
 imports
 
-  runtime/editor/origins
+  libspoofax/term/origin
   
   signatures/nabl2/shared/common/-
 

@@ -2,7 +2,7 @@ module nabl2/runtime/prelude/base
 
 imports
 
-  runtime/editor/annotations
+  libspoofax/term/annotation
 
 rules
 

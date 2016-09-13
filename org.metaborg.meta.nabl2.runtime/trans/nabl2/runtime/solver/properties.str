@@ -2,8 +2,6 @@ module nabl2/runtime/solver/properties
 
 imports
 
-  runtime/editor/origins
-  
   nabl2shared
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-

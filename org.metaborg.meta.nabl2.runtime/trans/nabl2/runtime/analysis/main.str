@@ -2,10 +2,6 @@ module nabl2/runtime/analysis/main
 
 imports
 
-  runtime/analysis/core
-  runtime/editor/-
-  runtime/index/-
-
   nabl2shared
  
   nabl2/runtime/analysis/-
