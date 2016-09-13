@@ -10,7 +10,8 @@ rules
   term-var       = !Var("term__")
   type-var       = !Var("type__")
   params-var     = !Var("params__")
+  args-var       = !Var("args__")
   constraint-var = !Var("constraint__")
-  
+
   default-rule-name = !"default"
  

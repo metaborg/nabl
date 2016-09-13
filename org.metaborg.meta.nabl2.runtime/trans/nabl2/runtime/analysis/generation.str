@@ -5,6 +5,12 @@ imports
   nabl2shared
   nabl2/runtime/analysis/-
 
+signature
+
+  constructors
+    Params        : Term -> Args
+    ParamsAndType : Term * Term -> Args
+
 rules // top-level functions that are called during analysis
 
   nabl2-debug-constraint-generation-hook = fail

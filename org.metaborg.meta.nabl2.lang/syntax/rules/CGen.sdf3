@@ -38,15 +38,15 @@ context-free syntax
 
 context-free syntax
 
-  CGenParamsTerm.List    = <^ (<{TypeTerm ","}*>)>
+  CGenParamsTerm.Tuple    = <^ (<{TypeTerm ","}*>)>
 
-  CGenParamsPattern.List = <^ (<{VarOrWld ","}*>)>
+  CGenParamsPattern.Tuple = <^ (<{VarOrWld ","}*>)>
 
-  CGenTypeTerm.NoType    =
-  CGenTypeTerm.Type      = <: <TypeTerm>>
+  CGenTypeTerm.NoType     =
+  CGenTypeTerm.Type       = <: <TypeTerm>>
 
-  CGenTypePattern.NoType =
-  CGenTypePattern.Type   = <: <TypePattern>>
+  CGenTypePattern.NoType  =
+  CGenTypePattern.Type    = <: <TypePattern>>
 
 lexical syntax
 
