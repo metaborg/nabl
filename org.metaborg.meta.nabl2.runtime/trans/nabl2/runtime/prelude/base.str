@@ -20,3 +20,5 @@ rules
   nabl2--assert(s|t) = with(<s> t <+ debug(!"Assert failed: "))
 
   nabl2--strict(s) = s <+ warn(|"Failure in nabl2--strict mode");with(fail)
+
+  nabl2--deprecated(|msg) = with(<warn(|"DEPRECATED")> msg)
