@@ -53,6 +53,8 @@ rules // ###### Analysis execution ######
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
+  analyze(pre)       = with(<warn(|"DEPRECATED")> "Use of 'analyze(pre)' is deprecated, use 'nabl2-analyze(pre)' instead.");
+                       nabl2-analyze(pre)
 
   /**
    * Dummy analysis function for NaBL2.
