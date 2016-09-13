@@ -2,7 +2,6 @@ module nabl2/runtime/interpreter/frame
 
 imports
   nabl2/runtime/interpreter/frame-api
-  nabl2/runtime/interpreter/scopegraph-api
   nabl2/runtime/interpreter/scopegraph-impl
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
@@ -34,9 +33,9 @@ rules
   // FIXME the scope in a step is the scope stepping from, does this function
   //       use it that way?
 
-  f |- D(_, d) -lookup-> Addr(f, d).
+  f |- [D(_, d)]:List(Step) -lookup-> Addr(f, d).
 
-  f1, h |- E(s, l, p) -lookup-> Addr(f3, d)
+  f1, h |- [E(s, l)|p]:List(Step) -lookup-> Addr(f3, d)
   where
     f1, h |- linksOf() -linksOf-> ks;
     ks[l][s] => f2;
@@ -77,13 +76,13 @@ rules
   SL(s, ks) :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff;
-    declsOfScope(s) => ds;
+    s -declsOf-> ds;
     DefaultSlots(ds) --> slots.
 
   DefaultSlots([]) --> {}.
 
   DefaultSlots([d|ds]) --> { d |--> v, slots }
   where
-    typeOfDecl(d) => t;
+    d -typeOf-> t;
     t -defaultv-> v;
     DefaultSlots(ds) --> slots.

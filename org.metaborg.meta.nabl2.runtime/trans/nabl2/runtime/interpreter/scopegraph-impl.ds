@@ -5,24 +5,22 @@ imports
   nabl2/runtime/interpreter/scopegraph-api
 
 signature
-
-  sorts
-    TermIndex
-    Namespace
  
   constructors
-    Scope            : String -> Scope
+    Scope : String -> Scope
 
+  constructors
+    Occurrence : Namespace * String * TermIndex -> Occurrence
+ 
+  sorts TermIndex constructors
+    TermIndex : String * Int -> TermIndex
+ 
+  sorts Namespace constructors
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
  
-    TermIndex        : String * Int -> TermIndex
-
-    Occurrence       : Namespace * String * TermIndex -> Occurrence
-
-    Label            : String -> Label
+  sort aliases NameResolution = Map(Occurrence, (Occurrence * Path))
  
-    D                : Scope * Occurrence -> Path
-    N                : Scope * Label * Occurrence * Path * Path -> Path
-    E                : Scope * Label * Path -> Path
-
+  sorts ScopeGraph ScopeEntry constructors
+  //G : Map(Scope, ScopeEntry) * Map(Occurrence, List((Label * Scope))) -> ScopeGraph
+  //S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
