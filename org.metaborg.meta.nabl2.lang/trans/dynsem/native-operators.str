@@ -1,0 +1,84 @@
+module dynsem/native-operators
+
+rules
+
+  analysis-component-operator(|component): _ -> compilation-unit |[
+    package ~basepkg.natives;
+
+    import ~basepkg.generated.terms.*;
+    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphUnit;
+    import org.spoofax.interpreter.terms.IStrategoTerm;
+
+    import com.oracle.truffle.api.dsl.Specialization;
+    import com.oracle.truffle.api.source.SourceSection;
+
+    public abstract class ~operatorClass extends TermBuild {
+
+        public ~operatorClass(SourceSection source) {
+            super(source);
+        }
+
+        @Specialization
+        public ~resultClass doGet(IExprTerm term) {
+            ISpoofaxScopeGraphContext context = (ISpoofaxScopeGraphContext) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
+            IStrategoTerm result = null;
+            return ~resultClass.create(result);
+        }
+     
+        public static TermBuild create(SourceSection source, TermBuild term) {
+            return ~nodeGenClass.create(source, term);
+        }
+     
+    }
+  ]|
+  with basepkg := <fail>;
+       operatorClass := $[get[component]_0];
+       nodeGenClass := $[[operatorClass]NodeGen];
+       resultClass := <fail>
+
+  metadata-operator(|sort): _ -> compilation-unit |[
+    package ~basepkg.natives;
+
+    import ~basepkg.generated.terms.*;
+    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.scopegraph.indices.TermIndex;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphUnit;
+    import org.spoofax.interpreter.terms.IStrategoTerm;
+
+    import com.oracle.truffle.api.dsl.NodeChild;
+    import com.oracle.truffle.api.dsl.Specialization;
+    import com.oracle.truffle.api.source.SourceSection;
+
+    @NodeChild(value = "term", type = TermBuild.class)
+    public abstract class ~operatorClass extends TermBuild {
+
+        public ~operatorClass(SourceSection source) {
+            super(source);
+        }
+
+        @Specialization
+        public ~resultClass doGet(IExprTerm term) {
+            ISpoofaxScopeGraphContext context = (ISpoofaxScopeGraphContext) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
+            TermIndex index = TermIndex.get(term.getStrategoTerm());
+            ISpoofaxScopeGraphUnit unit = context.unit(index.resource());
+            IStrategoTerm key = (IStrategoTerm) getContext().readProperty(DynSemRunner.~metadataKey, null);
+            IStrategoTerm result = unit.metadata(index.nodeId(), key);
+            return ~resultClass.create(result);
+        }
+     
+        public static TermBuild create(SourceSection source, TermBuild term) {
+            return ~nodeGenClass.create(source, term);
+        }
+     
+    }
+  ]|
+  with basepkg := <fail>;
+       operatorClass := $[paramsOf[sort]_1];
+       nodeGenClass := $[[operatorClass]NodeGen];
+       resultClass := <fail>;
+       metadataKey := <fail>

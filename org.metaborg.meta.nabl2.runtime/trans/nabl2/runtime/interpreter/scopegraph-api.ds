@@ -3,8 +3,8 @@ module nabl2/runtime/interpreter/scopegraph-api
 signature
 
   sorts
-    Term
     Type
+    Term
     Scope
     Occurrence
  

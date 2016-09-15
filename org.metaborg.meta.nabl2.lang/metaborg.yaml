@@ -13,6 +13,8 @@ dependencies:
 generates:
 - language: Stratego-Sugar
   directory: src-gen/nabl2
+- language: ds
+  directory: src-gen/nabl2
 pretty-print: NaBL2
 placeholder:
   prefix: "$"

@@ -30,7 +30,8 @@ context-free syntax
   TypeSort.ScopeSort      = "scope"
   TypeSort.TypeSort       = "type"
   TypeSort.SortNoArgs     = SortId
-  TypeSort.Sort           = <<SortId>(<{Sort ","}*>)>
+  TypeSort.Sort           = <<SortId>(<{Sort ","}+>)>
+  TypeSort.TupleSort      = <(<{Sort "*"}*>)>
 
 
 lexical syntax

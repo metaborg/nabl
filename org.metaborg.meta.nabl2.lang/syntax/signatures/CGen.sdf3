@@ -4,6 +4,7 @@ imports
 
   nabl2/shared/common/Terms
   rules/Rules
+  signatures/Types
 
 template options
 
@@ -18,7 +19,7 @@ context-free syntax
   
   CGenSig.CGenSig = <<RuleName> [[ <Sort> <CGenSigParams> <CGenSigType> ]]>
  
-  CGenSigParams   = <^ (<{Sort ","}*>)>
+  CGenSigParams   = <^ (<{TypeSort ","}*>)>
 
   CGenSigType.NoType = <>
   CGenSigType.Type   = <: *>

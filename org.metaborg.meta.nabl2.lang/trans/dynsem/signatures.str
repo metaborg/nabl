@@ -1,0 +1,68 @@
+module dynsem/signatures
+
+imports
+
+  libspoofax/core/language
+  dynsem/lib
+  util/src-gen
+  generation/defaults
+  signatures/-
+
+rules
+
+  module-to-ds(|langname):
+    Module(name,section*) -> Module(name,[
+      Imports([
+        Import("nabl2runtime"),
+        Import($[ds-signatures/[langname]-sig])
+      ]),
+      Signatures([
+        NativeOperators([
+          params-op*,
+          type-op*
+        ]),
+        ArrowDeclarations([
+          params-arrow*,
+          type-arrow*
+        ]),
+        Constructors([
+          type-con*
+        ])
+      ]),
+      Rules([
+        params-rule*,
+        type-rule*
+      ])
+    ])
+    with (params-op*, params-arrow*, params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> section*;
+         (type-op*, type-arrow*, type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> section*;
+         type-con* := <collect-om(type-sig-to-ds)> section*
+
+  cgen-sig-to-params-ds: CGenSig(Name(name), sort, arg*, _) -> <native-op-ds>  (<sort-to-ds> sort, <cgen-op-name(|name)> "paramsOf", TupleSort(<map(sort-to-ds)> arg*))
+
+  cgen-sig-to-type-ds: CGenSig(Name(name), sort, _, Type()) -> <native-op-ds>  (<sort-to-ds> sort, <cgen-op-name(|name)> "typeOf", SimpleSort("Type"))
+
+  cgen-op-name(|rule-name): op-name -> name
+    with if default-rule-name => rule-name then
+      name := op-name
+    else
+      name := $[[rule-name]_[op-name]]
+    end
+
+  unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
+
+  native-op-ds: (src-sort, name, target-sort) -> (op, arrow, rule)
+    with op-name := $[[name][<ds-sort-to-string> src-sort]];
+         op := NativeOpDecl(op-name, [src-sort], target-sort);
+         arrow := ArrowDecl(NoArrowROs(),src-sort,NoArrowRWs(),name,target-sort,NoArrowRWs());
+         rule := Axiom(Relation(NoReads(),Source(Cast(VarRef("t"),src-sort)),NamedDynamic(name),Target(Con(op-name, [VarRef("t")]))))
+
+  type-sig-to-ds: TypeSig(name, []) -> NullaryConsDecl(name, SimpleSort("Type"), NoAnnos())
+  type-sig-to-ds: TypeSig(name, arg*) -> ConsDecl(name, <map(Snd;sort-to-ds)> arg*, SimpleSort("Type"), NoAnnos())
+
+  sort-to-ds: SortNoArgs(name) -> SimpleSort(name)
+  sort-to-ds: Sort("List", [arg]) -> ListSort(<sort-to-ds> arg)
+  sort-to-ds: TupleSort(arg*) -> TupleSort(<map(sort-to-ds)> arg*)
+  sort-to-ds: Sort(name, arg*) -> <fatal-err(|"Not supported in DynSem")>
+  sort-to-ds: ScopeSort() -> SimpleSort("Scope")
+  sort-to-ds: TypeSort() -> SimpleSort("Type")

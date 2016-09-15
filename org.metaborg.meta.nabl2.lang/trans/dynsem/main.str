@@ -1,0 +1,24 @@
+module dynsem/main
+
+imports
+
+  libjava-front
+  libspoofax/core/language
+  util/src-gen
+  dynsem/-
+  signatures/-
+  
+rules
+  
+  generate-dynsem:
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    with if is-ds-active then
+      ds-options := <ds-get-options> (path, project-path);
+      langname := <lookup> (LangName(), ds-options);
+      filename := <create-src-gen(|project-path, "nabl2", ".ds")> name;
+      ds-ast := <module-to-ds(|langname)> ast;
+      source := <ds-pp-module> ds-ast;
+      result := (filename,source)
+    else
+      result := None()
+    end

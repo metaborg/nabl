@@ -8,4 +8,5 @@ language
   observer              : editor-analyze (constraint) (multifile)
 
   on save               : generate-str
+//on save               : generate-dynsem
   on save               : extract-sigs

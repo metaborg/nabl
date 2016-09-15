@@ -22,5 +22,9 @@ signature
   sort aliases NameResolution = Map(Occurrence, (Occurrence * Path))
  
   sorts ScopeGraph ScopeEntry constructors
-  //G : Map(Scope, ScopeEntry) * Map(Occurrence, List((Label * Scope))) -> ScopeGraph
-  //S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
+    G : Map(Scope, ScopeEntry) * Map(Occurrence, List((Label * Scope))) -> ScopeGraph
+    S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
+
+  native operators
+    getScopeGraph : ScopeGraph
+    getNameResolution : NameResolution

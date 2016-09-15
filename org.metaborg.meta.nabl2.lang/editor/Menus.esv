@@ -10,6 +10,7 @@ menus
   menu: "Generation" (openeditor) (meta) (realtime)
 
     action: "Generate Stratego"   = generate-str
+    action: "Generate DynSem"     = generate-dynsem
     action: "Generate Signatures" = extract-sigs
     action: "Explicate Wildcards" = explicate-module-wildcards
 

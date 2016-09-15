@@ -10,6 +10,7 @@ imports
   analysis/main
   completion
   generation/main
+  dynsem/main
   signature-extraction/main
   coq/main
   pp
