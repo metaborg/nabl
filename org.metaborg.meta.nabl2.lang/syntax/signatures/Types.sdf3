@@ -29,6 +29,7 @@ context-free syntax
   TypeSort.OccurrenceSort = "occurrence"
   TypeSort.ScopeSort      = "scope"
   TypeSort.TypeSort       = "type"
+  TypeSort.Var            = VarId
   TypeSort.SortNoArgs     = SortId
   TypeSort.Sort           = <<SortId>(<{Sort ","}+>)>
   TypeSort.TupleSort      = <(<{Sort "*"}*>)>
