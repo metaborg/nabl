@@ -16,18 +16,20 @@ rules
 
   cgen-sig-to-params-java(|native-pkg,term-pkg,native-dir):
     CGenSig(Name(name), sort, param*, _) -> (filename, source)
-    with src-name := <sort-to-ds;ds-sort-to-string> sort;
+    with src-sort := <sort-to-ds> sort;
+         src-name := <ds-sort-to-string> src-sort;
          target-name := <param-sorts-to-ds;ds-sort-to-string> param*;
-         op-name := <cgen-op-name(|name)> $[paramsOf[src-name]];
+         op-name := <cgen-op-name(|name,src-sort)> "paramsOf";
          (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "PARAMS_METADATA", target-name);
          filename := $[[native-dir]/[class-name].java];
          source := <pp-java-string> java-ast
 
   cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir):
     CGenSig(Name(name), sort, _, Type()) -> (filename, source)
-    with src-name := <sort-to-ds;ds-sort-to-string> sort;
+    with src-sort := <sort-to-ds> sort;
+         src-name := <ds-sort-to-string> src-sort;
          target-name := <ds-sort-to-string> SimpleSort("Type");
-         op-name := <cgen-op-name(|name)> $[typeOf[src-name]];
+         op-name := <cgen-op-name(|name,src-sort)> "typeOf";
          (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "TYPE_METADATA", target-name);
          filename := $[[native-dir]/[class-name].java];
          source := <pp-java-string> java-ast
@@ -55,7 +57,7 @@ rules
         }
 
         @Specialization
-        public ~x:target-name doGet(IExprTerm term) {
+        public ~x:target-name doGet(~x:src-name term) {
             ISpoofaxScopeGraphContext context =
               (ISpoofaxScopeGraphContext) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
             TermIndex index = TermIndex.get(term.getStrategoTerm());
@@ -122,7 +124,7 @@ rules
       }
     }
   ]|)
-  with class-name := "scopeGraph_1";
+  with class-name := "nabl2_scopeGraph_1";
        nodegen-name := $[[class-name]NodeGen]
 
   nameresolution-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
@@ -164,5 +166,5 @@ rules
       }
     }
   ]|)
-  with class-name := "nameResolution_1";
+  with class-name := "nabl2_nameResolution_1";
        nodegen-name := $[[class-name]NodeGen]

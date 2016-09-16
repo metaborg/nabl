@@ -26,9 +26,9 @@ signature
     S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
 
   native operators
-    scopeGraph : AST -> ScopeGraph
-    nameResolution : AST -> NameResolution
+    nabl2_scopeGraph : AST -> ScopeGraph
+    nabl2_nameResolution : AST -> NameResolution
 
 rules
 
-  NaBL2(t) -init-> NaBL2(t) :: ScopeGraph scopeGraph(t), NameResolution nameResolution(t).
+  NaBL2(t) -init-> NaBL2(t) :: ScopeGraph nabl2_scopeGraph(t), NameResolution nabl2_nameResolution(t).
