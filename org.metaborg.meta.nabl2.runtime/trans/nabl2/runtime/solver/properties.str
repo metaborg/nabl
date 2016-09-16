@@ -44,4 +44,4 @@ rules
 
   nabl2--constraint-priority: CPropertyOf(_,_,_,_,_) -> 3
 
-  nabl2--constraint-message: CPropertyOf(o,key,_,_,msginfo) -> <nabl2--default-message(|["Failed to nabl2--get ",key," of ",o])> msginfo
+  nabl2--constraint-message: CPropertyOf(o,key,_,_,msginfo) -> <nabl2--default-message(|["Failed to get ",key," of ",o])> msginfo
