@@ -18,12 +18,16 @@ signature
   sorts Step constructors
     D : Scope * Occurrence -> Step
     E : Scope * Label -> Step
-    N : Scope * Label * Occurrence * Path -> Step
+    N : Scope * Label * Occurrence * /*Path*/List(Step) -> Step
 
+  sorts NaBL2 constructors
+    NaBL2 : AST -> NaBL2
+ 
   arrows
+    NaBL2 -init-> NaBL2
     Scope -declsOf-> List(Occurrence)
     Term -mkOccurrence-> Occurrence
     (String * Term) -mkOccurrence-> Occurrence
     (String * Term * Term) -mkOccurrence-> Occurrence
-    Occurrence -resolvesTo-> Path
+    Occurrence -resolvesTo-> /*Path*/List(Step)
     Occurrence -typeOf-> Type

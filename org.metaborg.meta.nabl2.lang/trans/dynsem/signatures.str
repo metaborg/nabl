@@ -10,10 +10,16 @@ imports
 
 rules
 
+  generate-dynsem-signatures(|path, project-path, langname):
+    ast@Module(name,_) -> [(filename, source)]
+    with filename := <create-src-gen(|project-path, "nabl2", ".ds")> name;
+         ds-ast := <module-to-ds(|langname)> ast;
+         source := <ds-pp-module> ds-ast
+
   module-to-ds(|langname):
-    Module(name,section*) -> Module(name,[
+    ast@Module(name,_) -> Module(name,[
       Imports([
-        Import("nabl2runtime"),
+        Import("nabl2/runtime/interpreter/scopegraph-api"),
         Import($[ds-signatures/[langname]-sig])
       ]),
       Signatures([
@@ -34,11 +40,11 @@ rules
         type-rule*
       ])
     ])
-    with (params-op*, params-arrow*, params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> section*;
-         (type-op*, type-arrow*, type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> section*;
-         type-con* := <collect-om(type-sig-to-ds)> section*
+    with (params-op*, params-arrow*, params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> ast;
+         (type-op*, type-arrow*, type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> ast;
+         type-con* := <collect-om(type-sig-to-ds)> ast
 
-  cgen-sig-to-params-ds: CGenSig(Name(name), sort, arg*, _) -> <native-op-ds>  (<sort-to-ds> sort, <cgen-op-name(|name)> "paramsOf", TupleSort(<map(sort-to-ds)> arg*))
+  cgen-sig-to-params-ds: CGenSig(Name(name), sort, param*, _) -> <native-op-ds>  (<sort-to-ds> sort, <cgen-op-name(|name)> "paramsOf", <param-sorts-to-ds> param*)
 
   cgen-sig-to-type-ds: CGenSig(Name(name), sort, _, Type()) -> <native-op-ds>  (<sort-to-ds> sort, <cgen-op-name(|name)> "typeOf", SimpleSort("Type"))
 
@@ -59,6 +65,9 @@ rules
 
   type-sig-to-ds: TypeSig(name, []) -> NullaryConsDecl(name, SimpleSort("Type"), NoAnnos())
   type-sig-to-ds: TypeSig(name, arg*) -> ConsDecl(name, <map(Snd;sort-to-ds)> arg*, SimpleSort("Type"), NoAnnos())
+
+  param-sorts-to-ds: [sort] -> <sort-to-ds> sort
+  param-sorts-to-ds: sort* -> <sort-to-ds> TupleSort(sort*)
 
   sort-to-ds: SortNoArgs(name) -> SimpleSort(name)
   sort-to-ds: Sort("List", [arg]) -> ListSort(<sort-to-ds> arg)

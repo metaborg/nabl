@@ -6,8 +6,10 @@ imports
 
 signature
   constructors
-    NativePkg : DSOpt
-    LangName  : DSOpt
+    JavaGenDirAbs : DSOpt
+    LangName      : DSOpt
+    NativePkg     : DSOpt
+    TermPkg       : DSOpt
 
     Module            : String * List(DSSection) -> DSModule
     ArrowDecl         : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
@@ -37,8 +39,8 @@ signature
 
 rules
 
-  is-ds-active      = <is-language-active> "ds"
-  call-ds(|s)       = call-in-language(|"ds",s)
-  ds-get-options    = call-ds(|"ds-to-interp-get-options")
-  ds-pp-module      = call-ds(|"pp-dynsem-string")
-  ds-sort-to-string = call-ds(|"ds-to-interp-terms-types-name")
+  is-ds-active        = <is-language-active> "ds"
+  call-ds(|s)         = call-in-language(|"ds",s)
+  ds-get-options      = call-ds(|"ds-to-interp-get-options")
+  ds-pp-module        = call-ds(|"pp-dynsem-string")
+  ds-sort-to-string   = call-ds(|"ds-to-interp-terms-types-name")

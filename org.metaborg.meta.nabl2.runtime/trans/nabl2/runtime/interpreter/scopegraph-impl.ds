@@ -19,12 +19,16 @@ signature
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
  
-  sort aliases NameResolution = Map(Occurrence, (Occurrence * Path))
+  sort aliases NameResolution = List((Occurrence * (Occurrence * /*Path*/List(Step))))
  
   sorts ScopeGraph ScopeEntry constructors
-    G : Map(Scope, ScopeEntry) * Map(Occurrence, List((Label * Scope))) -> ScopeGraph
+    G : List((Scope * ScopeEntry)) * List((Occurrence * List((Label * Scope)))) -> ScopeGraph
     S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
 
   native operators
-    getScopeGraph : ScopeGraph
-    getNameResolution : NameResolution
+    scopeGraph : AST -> ScopeGraph
+    nameResolution : AST -> NameResolution
+
+rules
+
+  NaBL2(t) -init-> NaBL2(t) :: ScopeGraph scopeGraph(t), NameResolution nameResolution(t).

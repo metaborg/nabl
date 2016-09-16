@@ -1,48 +1,41 @@
 module dynsem/native-operators
 
+imports
+
+  libjava-front
+  dynsem/-
+  signatures/-
+
 rules
 
-  analysis-component-operator(|component): _ -> compilation-unit |[
-    package ~basepkg.natives;
+  generate-java-operators(|native-pkg,term-pkg,native-dir):
+    ast@Module(name,_) -> [params-result*,type-result*,init-result*]
+    with params-result* := <collect-om(cgen-sig-to-params-java(|native-pkg,term-pkg,native-dir))> ast;
+         type-result* := <collect-om(cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir))> ast;
+         init-result* := <collect-one(init-to-java(|native-pkg,term-pkg,native-dir))<+![]> ast
 
-    import ~basepkg.generated.terms.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
-    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
-    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphUnit;
-    import org.spoofax.interpreter.terms.IStrategoTerm;
+  cgen-sig-to-params-java(|native-pkg,term-pkg,native-dir):
+    CGenSig(Name(name), sort, param*, _) -> (filename, source)
+    with src-name := <sort-to-ds;ds-sort-to-string> sort;
+         target-name := <param-sorts-to-ds;ds-sort-to-string> param*;
+         op-name := <cgen-op-name(|name)> $[paramsOf[src-name]];
+         (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "PARAMS_METADATA", target-name);
+         filename := $[[native-dir]/[class-name].java];
+         source := <debug;pp-java-string> java-ast
 
-    import com.oracle.truffle.api.dsl.Specialization;
-    import com.oracle.truffle.api.source.SourceSection;
+  cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir):
+    CGenSig(Name(name), sort, _, Type()) -> (filename, source)
+    with src-name := <sort-to-ds;ds-sort-to-string> sort;
+         target-name := <ds-sort-to-string> SimpleSort("Type");
+         op-name := <cgen-op-name(|name)> $[typeOf[src-name]];
+         (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "TYPE_METADATA", target-name);
+         filename := $[[native-dir]/[class-name].java];
+         source := <pp-java-string> java-ast
 
-    public abstract class ~operatorClass extends TermBuild {
+  metadata-java: (native-pkg, term-pkg, op-name, src-name, metadata-name, target-name) -> (class-name, compilation-unit |[
+    package ~x:native-pkg;
 
-        public ~operatorClass(SourceSection source) {
-            super(source);
-        }
-
-        @Specialization
-        public ~resultClass doGet(IExprTerm term) {
-            ISpoofaxScopeGraphContext context = (ISpoofaxScopeGraphContext) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
-            IStrategoTerm result = null;
-            return ~resultClass.create(result);
-        }
-     
-        public static TermBuild create(SourceSection source, TermBuild term) {
-            return ~nodeGenClass.create(source, term);
-        }
-     
-    }
-  ]|
-  with basepkg := <fail>;
-       operatorClass := $[get[component]_0];
-       nodeGenClass := $[[operatorClass]NodeGen];
-       resultClass := <fail>
-
-  metadata-operator(|sort): _ -> compilation-unit |[
-    package ~basepkg.natives;
-
-    import ~basepkg.generated.terms.*;
+    import ~x:term-pkg.*;
     import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
     import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
     import org.metaborg.scopegraph.indices.TermIndex;
@@ -55,30 +48,121 @@ rules
     import com.oracle.truffle.api.source.SourceSection;
 
     @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~operatorClass extends TermBuild {
+    public abstract class ~x:class-name extends TermBuild {
 
-        public ~operatorClass(SourceSection source) {
+        public ~x:class-name(SourceSection source) {
             super(source);
         }
 
         @Specialization
-        public ~resultClass doGet(IExprTerm term) {
-            ISpoofaxScopeGraphContext context = (ISpoofaxScopeGraphContext) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
+        public ~x:target-name doGet(IExprTerm term) {
+            ISpoofaxScopeGraphContext context =
+              (ISpoofaxScopeGraphContext) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
             TermIndex index = TermIndex.get(term.getStrategoTerm());
             ISpoofaxScopeGraphUnit unit = context.unit(index.resource());
-            IStrategoTerm key = (IStrategoTerm) getContext().readProperty(DynSemRunner.~metadataKey, null);
+            IStrategoTerm key = (IStrategoTerm) getContext().readProperty(DynSemRunner.~x:metadata-name, null);
             IStrategoTerm result = unit.metadata(index.nodeId(), key);
-            return ~resultClass.create(result);
+            return ~x:target-name.create(result);
         }
-     
+
         public static TermBuild create(SourceSection source, TermBuild term) {
-            return ~nodeGenClass.create(source, term);
+            return ~x:nodegen-name.create(source, term);
         }
-     
+
     }
-  ]|
-  with basepkg := <fail>;
-       operatorClass := $[paramsOf[sort]_1];
-       nodeGenClass := $[[operatorClass]NodeGen];
-       resultClass := <fail>;
-       metadataKey := <fail>
+  ]|)
+  with class-name := $[[op-name]_1];
+       nodegen-name := $[[class-name]NodeGen]
+
+  init-to-java(|native-pkg,term-pkg,native-dir):
+    CGenInitRule(_, _, _) -> [(g-filename, g-source),(r-filename, r-source)]
+    with (g-class-name, g-ast) := <scopegraph-operator> (native-pkg, term-pkg);
+         g-filename := $[[native-dir]/[g-class-name].java];
+         g-source := <pp-java-string> g-ast;
+         (r-class-name, r-ast) := <nameresolution-operator> (native-pkg, term-pkg);
+         r-filename := $[[native-dir]/[r-class-name].java];
+         r-source := <pp-java-string> r-ast
+
+  scopegraph-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
+    package ~x:native-pkg;
+
+    import ~x:term-pkg.*;
+    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.meta.lang.dynsem.interpreter.terms.ITerm;
+    import org.metaborg.scopegraph.indices.TermIndex;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphUnit;
+    import org.spoofax.interpreter.terms.IStrategoTerm;
+
+    import com.oracle.truffle.api.dsl.NodeChild;
+    import com.oracle.truffle.api.dsl.Specialization;
+    import com.oracle.truffle.api.source.SourceSection;
+
+    @NodeChild(value = "term", type = TermBuild.class)
+    public abstract class ~x:class-name extends TermBuild
+    {
+      public ~x:class-name(SourceSection source)
+      {
+        super(source);
+      }
+
+      @Specialization public IScopeGraphTerm doGet(ITerm term)
+      {
+        ISpoofaxScopeGraphContext context = (ISpoofaxScopeGraphContext)getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
+        TermIndex index = TermIndex.get(term.getStrategoTerm());
+        ISpoofaxScopeGraphUnit unit = context.unit(index.resource());
+        IStrategoTerm scopeGraph = unit.scopeGraph().strategoTerm();
+        return IScopeGraphTerm.create(scopeGraph);
+      }
+
+      public static TermBuild create(SourceSection source, TermBuild term)
+      {
+        return ~x:nodegen-name.create(source, term);
+      }
+    }
+  ]|)
+  with class-name := "scopeGraph_1";
+       nodegen-name := $[[class-name]NodeGen]
+
+  nameresolution-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
+    package ~x:native-pkg;
+
+    import ~x:term-pkg.*;
+    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.meta.lang.dynsem.interpreter.terms.ITerm;
+    import org.metaborg.scopegraph.indices.TermIndex;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
+    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphUnit;
+    import org.spoofax.interpreter.terms.IStrategoTerm;
+
+    import com.oracle.truffle.api.dsl.NodeChild;
+    import com.oracle.truffle.api.dsl.Specialization;
+    import com.oracle.truffle.api.source.SourceSection;
+
+    @NodeChild(value = "term", type = TermBuild.class)
+    public abstract class ~x:class-name extends TermBuild
+    {
+      public ~x:class-name(SourceSection source)
+      {
+        super(source);
+      }
+
+      @Specialization public List_Tuple_IOccurrenceTerm_Tuple_IOccurrenceTerm_List_IStepTerm doGet(ITerm term)
+      {
+        ISpoofaxScopeGraphContext context = (ISpoofaxScopeGraphContext)getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
+        TermIndex index = TermIndex.get(term.getStrategoTerm());
+        ISpoofaxScopeGraphUnit unit = context.unit(index.resource());
+        IStrategoTerm nameResolution = unit.nameResolution().strategoTerm();
+        return List_Tuple_IOccurrenceTerm_Tuple_IOccurrenceTerm_List_IStepTerm.create(nameResolution);
+      }
+
+      public static TermBuild create(SourceSection source, TermBuild term)
+      {
+        return ~x:nodegen-name.create(source, term);
+      }
+    }
+  ]|)
+  with class-name := "nameResolution_1";
+       nodegen-name := $[[class-name]NodeGen]
