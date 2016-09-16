@@ -42,4 +42,6 @@ lexical restrictions
   VarId        -/- [a-zA-Z0-9\_\']
   OpId         -/- [a-zA-Z0-9\_\']
   NamespaceId  -/- [a-zA-Z0-9]
+  TModId       -/- [a-zA-Z0-9]
+  TVarId       -/- [a-zA-Z0-9]
 

@@ -26,14 +26,13 @@ context-free syntax
   TypeMod.None            =
   TypeMod.OpNoArgs        = TModId
 
+  TypeSort                = SortVar
   TypeSort.OccurrenceSort = "occurrence"
   TypeSort.ScopeSort      = "scope"
   TypeSort.TypeSort       = "type"
-  TypeSort.Var            = VarId
   TypeSort.SortNoArgs     = SortId
-  TypeSort.Sort           = <<SortId>(<{Sort ","}+>)>
-  TypeSort.TupleSort      = <(<{Sort "*"}*>)>
-
+  TypeSort.Sort           = <<SortId>(<{TypeSort ","}+>)>
+  TypeSort.TupleSort      = <(<{TypeSort "*"}*>)>
 
 lexical syntax
 
