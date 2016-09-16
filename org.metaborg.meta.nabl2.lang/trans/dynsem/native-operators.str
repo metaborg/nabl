@@ -21,7 +21,7 @@ rules
          op-name := <cgen-op-name(|name)> $[paramsOf[src-name]];
          (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "PARAMS_METADATA", target-name);
          filename := $[[native-dir]/[class-name].java];
-         source := <debug;pp-java-string> java-ast
+         source := <pp-java-string> java-ast
 
   cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir):
     CGenSig(Name(name), sort, _, Type()) -> (filename, source)
