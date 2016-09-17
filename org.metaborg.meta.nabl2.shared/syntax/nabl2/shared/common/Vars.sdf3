@@ -2,14 +2,8 @@ module nabl2/shared/common/Vars
 
 imports
 
-  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Native
 
 context-free syntax
 
-  Wld.Wld           = "_"
-
-  Var.Var           = VarId
-
-  VarOrWld          = Var
-  VarOrWld          = Wld
-
+  CVar.CVar      = <?<String>-<String>>

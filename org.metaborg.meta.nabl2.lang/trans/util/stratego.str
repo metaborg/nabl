@@ -56,3 +56,6 @@ rules
   var-name:
     Var(name) -> name 
  
+  is-var = ?Var(_)
+
+  all-vars = collect-all(is-var)

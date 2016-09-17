@@ -49,7 +49,7 @@ rules
     CGenMatchRule(name,pattern,param,Type(type),clause*)
       -> CGenMatchRule(name,pattern,param,Type(<type-var>),
              [CEqual(<type-var>,type,DefaultMessage()),clause*])
-    where <not(nabl2--is-var)> type
+    where <not(is-var)> type
 
 rules
 
@@ -83,15 +83,15 @@ rules
     CGenInitRule(params,type,clause*)
       -> CGenInitRule(params,type,[NewVars(free-var*),clause*])
     with new-var* := <clauses-new-vars> clause*;
-         used-var* := <nabl2--all-vars> (params,type,clause*);
+         used-var* := <all-vars> (params,type,clause*);
          free-var* := <diff> (used-var*, [<term-var>,new-var*])
 
   normalize-free-vars:
     CGenMatchRule(name,pattern,params,type,clause*)
       -> CGenMatchRule(name,pattern,params,type,[NewVars(free-var*),clause*])
     with new-var* := <clauses-new-vars> clause*;
-         bound-var* := <nabl2--all-vars> (pattern,params,type,new-var*);
-         used-var* := <nabl2--all-vars> clause*;
+         bound-var* := <all-vars> (pattern,params,type,new-var*);
+         used-var* := <all-vars> clause*;
          free-var* := <diff> (used-var*, bound-var*)
 
   clauses-new-vars =
@@ -124,7 +124,7 @@ rules
   normalize-occurrence-index:
     Occurrence(ns,name,DefaultIndex()) ->
       Occurrence(ns,name,IndexFromTerm(name))
-    where <nabl2--is-var> name
+    where <is-var> name
 
   // get index from matched term
   normalize-default-index:

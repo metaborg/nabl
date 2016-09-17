@@ -3,8 +3,8 @@ module nabl2/shared/common/AST
 imports
 
   nabl2/shared/common/Native
+  nabl2/shared/common/Vars
 
 context-free syntax
 
   TermIndex.TermIndex = <@<String>:<Int>>
-  

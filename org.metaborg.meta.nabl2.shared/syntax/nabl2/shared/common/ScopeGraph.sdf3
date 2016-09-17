@@ -6,10 +6,11 @@ imports
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Native
   nabl2/shared/common/Terms
+  nabl2/shared/common/Vars
 
 context-free syntax
 
-  Scope.Scope                    = <scope [<VarId>]>
+  Scope.Scope                    = <scope [<String>-<String>]>
 
   Occurrence.Occurrence          = <<NamespaceRef>{<Term> <TermIndex>}>
 

@@ -9,7 +9,7 @@ imports
 
 context-free syntax
 
-  TypeTerm          = Var {prefer}
+  TypeTerm          = CVar {prefer}
   TypeTerm.Op       = <<OpId>(<{TypeTerm ","}*>)>
   TypeTerm.Tuple    = <(<{TypeTerm ","}*>)>
   TypeTerm          = IntTerm
@@ -18,5 +18,4 @@ context-free syntax
   TypeTerm          = Scope      {avoid} // avoid ambiguity via Comparable
 
   TypePattern       = TypeTerm
-  TypePattern.As    = <<Var>@<TypePattern>>
-
+  TypePattern.As    = <<CVar>@<TypePattern>>

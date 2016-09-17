@@ -39,8 +39,8 @@ rules // top-level functions that are called during analysis
 
 rules
 
-  nabl2--new-var(|source)   = (is-string <+ !"v") => n ; !Var($[[source]'[n]'[<NewVar;int-to-string>]])
-  nabl2--new-scope(|source) = (is-string <+ !"s") => n ; !Scope($[[source]'[n]'[<NewScope;int-to-string>]])
+  nabl2--new-var(|source)   = (is-string <+ !"v") => n ; !CVar(source,$[[n]'[<NewVar;int-to-string>]])
+  nabl2--new-scope(|source) = (is-string <+ !"s") => n ; !Scope(source,$[[n]'[<NewScope;int-to-string>]])
 
   // signatures of the generated rules
   nabl2--generate-constraint-init-rule(|source) = fail

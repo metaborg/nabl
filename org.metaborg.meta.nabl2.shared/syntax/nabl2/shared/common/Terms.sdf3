@@ -11,7 +11,12 @@ template options
 
 context-free syntax
 
-  Term          = Var
+  TermWld.Wld   = "_"
+  TermVar.Var   = VarId
+  TermVarOrWld  = TermVar
+  TermVarOrWld  = TermWld
+
+  Term          = TermVar
   Term.Op       = <<OpId>(<{Term ","}*>)>
   Term.List     = <[<{Term ","}*>]>
   Term.ListTail = <[<{Term ","}*>|<Term>]>
@@ -36,12 +41,13 @@ lexical restrictions
 
 context-free syntax
 
-  Pattern          = VarOrWld
+  Pattern          = TermVar
+  Pattern          = TermWld
   Pattern.Op       = <<OpId>(<{Pattern ","}*>)>
   Pattern.List     = <[<{Pattern ","}*>]>
   Pattern.ListTail = <[<{Pattern ","}*>|<Pattern>]>
   Pattern.Tuple    = <(<{Pattern ","}*>)>
-  Pattern.As       = <<Var>@<Pattern>>
+  Pattern.As       = <<TermVar>@<Pattern>>
   Pattern          = IntTerm
   Pattern          = StringTerm
 

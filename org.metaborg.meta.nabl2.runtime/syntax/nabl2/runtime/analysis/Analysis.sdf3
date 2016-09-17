@@ -13,6 +13,13 @@ context-free syntax
 
   Analysis = {AnalysisResult "\n\n"}*
 
+  AnalysisResult.Files = <
+    file abbreviations :=
+      <{FileEntry "\n"}*>
+  >
+  
+  FileEntry = <<String> : <String>>
+
   AnalysisResult.Constraint = <
     constraint :=
       <Constraint>

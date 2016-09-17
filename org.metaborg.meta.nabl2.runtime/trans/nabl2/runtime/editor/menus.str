@@ -10,27 +10,30 @@ imports
 rules
 
   nabl2--show-file-analysis: (_, _, _, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"analysis.txt")> path
-       ; result := <nabl2--get-analysis;pp-NaBL2-Analysis> $[[project-path]/[path]]
-      <+ result := "(no file analysis found)"
+    with filename := <guarantee-extension(|"analysis.txt")> path;
+         analysis := <nabl2--get-analysis> $[[project-path]/[path]]
+       < result := <pp-NaBL2-Analysis> analysis
+       + result := "(no file analysis found)"
 
   nabl2--show-file-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"analysis.aterm")> path
-       ; result := <nabl2--get-analysis> $[[project-path]/[path]]
+    with filename := <guarantee-extension(|"analysis.aterm")> path;
+         result := <nabl2--get-analysis> $[[project-path]/[path]]
       <+ result := None()
 
   nabl2--show-file-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"uninterpreted-constraints.aterm")> path
-       ; goals := <nabl2--get-analysis;nabl2--sol-u-goals> $[[project-path]/[path]]
-       ; facts := <nabl2--get-analysis;nabl2--sol-u-facts> $[[project-path]/[path]]
-       ; result := ("Goals"#([goals]),"Facts"#([facts]))
-      <+ result := None()
+    with filename := <guarantee-extension(|"uninterpreted-constraints.aterm")> path;
+         analysis := <nabl2--get-analysis> $[[project-path]/[path]]
+       < goals := <nabl2--sol-u-goals> analysis;
+         facts := <nabl2--sol-u-facts> analysis;
+         result := ("Goals"#([goals]),"Facts"#([facts]))
+       + result := None()
 
 
   nabl2--show-project-analysis: (_, _, _, _, project-path) -> (filename, result)
-    with filename := $[[project-path]/analysis.txt]
-       ; result := <nabl2--get-analysis;pp-NaBL2-Analysis> project-path
-      <+ result := "(no project analysis found)"
+    with filename := $[[project-path]/analysis.txt];
+         analysis := <nabl2--get-analysis> project-path
+       < result := <pp-NaBL2-Analysis> analysis
+       + result := "(no project analysis found)"
 
   nabl2--show-project-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := $[[project-path]/analysis.aterm]
@@ -38,7 +41,8 @@ rules
       <+ result := None()
 
   nabl2--show-project-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := $[[project-path]/uninterpreted-constraints.aterm]
-       ; goals := <nabl2--get-analysis;nabl2--sol-u-goals> project-path
-       ; facts := <nabl2--get-analysis;nabl2--sol-u-facts> project-path
-      <+ result := None()
+    with filename := $[[project-path]/uninterpreted-constraints.aterm];
+         analysis := <nabl2--get-analysis> project-path
+       < goals := <nabl2--sol-u-goals> analysis
+       ; facts := <nabl2--sol-u-facts> analysis
+       + result := None()

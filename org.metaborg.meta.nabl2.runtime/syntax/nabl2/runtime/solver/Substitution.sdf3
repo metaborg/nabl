@@ -7,5 +7,5 @@ imports
 
 context-free syntax
 
-  Substitution = [[Var] |--> [Comparable]]
+  Substitution = [[CVar] |--> [Comparable]]
 

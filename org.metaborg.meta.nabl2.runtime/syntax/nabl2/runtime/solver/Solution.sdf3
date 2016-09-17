@@ -3,7 +3,6 @@ module nabl2/runtime/solver/Solution
 imports
 
   nabl2/shared/common/Terms
-  nabl2/shared/common/Vars
   nabl2/runtime/analysis/EditorMessages
   nabl2/runtime/common/Resolution
   nabl2/runtime/common/ScopeGraph

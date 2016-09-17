@@ -14,16 +14,19 @@ rules
   nabl2--solve-equality-constraint: (CEqual(t1,t2,msginfo),sol) -> [(sol,[])]
   where <nabl2--term-eq> (t1,t2)
 
-  nabl2--solve-equality-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
-  where <not(nabl2--var-occurs)> (v,t);
+  nabl2--solve-equality-constraint: (CEqual(v,t,msginfo),sol) -> [(sol',[])]
+  where <nabl2--is-var> v;
+        <not(nabl2--var-occurs)> (v,t);
         <nabl2--is-reduced> t
   with sol' := <nabl2--sol-apply-s(|[(v,t)])> sol
   
-  nabl2--solve-equality-constraint: (CEqual(t,v@Var(_),msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
-  where <not(nabl2--is-var)> t
+  nabl2--solve-equality-constraint: (CEqual(t,v,msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
+  where <not(nabl2--is-var)> t;
+        <nabl2--is-var> v
 
-  nabl2--solve-equality-constraint: (CEqual(v@Var(_),t,msginfo),sol) -> [(sol',[])]
-  where <nabl2--var-occurs> (v,t)
+  nabl2--solve-equality-constraint: (CEqual(v,t,msginfo),sol) -> [(sol',[])]
+  where <nabl2--is-var> v;
+        <nabl2--var-occurs> (v,t)
   with msg := [v," occurs in ",t];
        sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
  

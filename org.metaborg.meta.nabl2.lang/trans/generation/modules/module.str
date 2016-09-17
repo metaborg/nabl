@@ -14,16 +14,25 @@ rules
       module-str
     with
       import-str := Imports([
-        Import("nabl2shared"),
-        Import("nabl2runtime")
-      ]);
-      pp-str := Rules([
-      //SDefNoArgs("prettyprint-NaBL2-object", CallNoArgs(SVar($[prettyprint-[<language-spec-name>]-Type]))),
-      //SDefNoArgs($[prettyprint-[<language-spec-name>]-Type], Fail())
+        Import("signatures/nabl2/shared/-"),
+        Import("signatures/nabl2/shared/common/-"),
+        Import("signatures/nabl2/shared/constraints/-"),
+        Import("nabl2/shared/-"),
+        Import("signatures/nabl2/runtime/-"),
+        Import("signatures/nabl2/runtime/analysis/-"),
+        Import("signatures/nabl2/runtime/common/-"),
+        Import("signatures/nabl2/runtime/solver/-"),
+        Import("nabl2/runtime/-"),
+        Import("nabl2/runtime/analysis/-"),
+        Import("nabl2/runtime/common/-"),
+        Import("nabl2/runtime/editor/-"),
+        Import("nabl2/runtime/prelude/-"),
+        Import("nabl2/runtime/solver/-"),
+        Import("nabl2/runtime/stdlib/-")
       ]);
       nameresolution-str* := <sections-to-nameresolution-str> section*;
       section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;
-      module-str := Module(name,[import-str,pp-str,nameresolution-str*,section-str*])
+      module-str := Module(name,[import-str,nameresolution-str*,section-str*])
 
   language-spec-name = prim("SSL_EXT_language_spec_pp_name") <+ "unknown"
 

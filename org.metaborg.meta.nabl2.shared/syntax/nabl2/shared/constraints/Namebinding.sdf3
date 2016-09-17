@@ -9,13 +9,13 @@ imports
 
 context-free syntax
 
-  Scope                 = Var
+  Scope                 = CVar
   Comparable            = Scope
 
-  Occurrence            = Var
+  Occurrence            = CVar
   Comparable            = Occurrence
 
-  Set                   = Var
+  Set                   = CVar
   Set                   = Names
 
 context-free syntax
