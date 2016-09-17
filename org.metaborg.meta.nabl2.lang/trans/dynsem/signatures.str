@@ -3,10 +3,10 @@ module dynsem/signatures
 imports
 
   libspoofax/core/language
-  dynsem/lib
+  dynsem/-
   util/src-gen
   generation/defaults
-  signatures/-
+  signatures/signatures/-
 
 rules
 

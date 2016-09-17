@@ -1,4 +1,4 @@
-module dynsem/lib
+module dynsem/ds-lib
 
 imports
 
@@ -6,12 +6,15 @@ imports
 
 signature
   constructors
+    CleanProject  : DSOpt
     JavaGenDirAbs : DSOpt
     LangName      : DSOpt
     NativePkg     : DSOpt
     TermPkg       : DSOpt
 
     Module            : String * List(DSSection) -> DSModule
+    Imports           : List(DSImport) -> DSSection
+    Import            : String -> DSImport
     ArrowDecl         : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
     NoArrowROs        : DSArrowROs
     NoArrowRWs        : DSArrowRWs
