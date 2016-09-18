@@ -7,7 +7,7 @@ imports
 signature
  
   constructors
-    Scope : String -> Scope
+    Scope : String * String -> Scope
 
   constructors
     Occurrence : Namespace * String * TermIndex -> Occurrence
