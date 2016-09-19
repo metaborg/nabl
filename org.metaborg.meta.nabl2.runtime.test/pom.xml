@@ -15,6 +15,7 @@
   </parent>
   
   <dependencies>
+    <!-- compile -->
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>org.metaborg.meta.lang.esv</artifactId>
@@ -40,6 +41,30 @@
       <type>spoofax-language</type>
       <scope>test</scope>
     </dependency>
+
+    <!-- source -->
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>meta.lib.spoofax</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.nabl2.shared</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.meta.nabl2.runtime</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+      <scope>provided</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -48,6 +73,14 @@
         <groupId>org.metaborg</groupId>
         <artifactId>spoofax-maven-plugin</artifactId>
         <version>${metaborg-version}</version>
+        <executions>
+          <execution>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <languageUnderTest>org.metaborg:org.metaborg.meta.nabl2.runtime.test:${metaborg-version}</languageUnderTest>
         </configuration>
