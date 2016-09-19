@@ -23,6 +23,7 @@
     <module>org.metaborg.meta.nabl2.lang.test</module>
     <module>org.metaborg.meta.nabl2.runtime</module>
     <module>org.metaborg.meta.nabl2.runtime.eclipse</module>
+    <module>org.metaborg.meta.nabl2.runtime.test</module>
     <module>org.metaborg.meta.nabl2.shared</module>
     <module>org.metaborg.meta.nabl2.shared.eclipse</module>
     <module>org.metaborg.meta.nabl2.eclipse.feature</module>
