@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/org.metaborg.meta.nabl2.eclipse.feature_2.1.0.qualifier.jar" id="org.metaborg.meta.nabl2.eclipse.feature" version="2.1.0.qualifier">
+      <category name="nabl2"/>
+   </feature>
+   <category-def name="nabl2" label="nabl2 language Eclipse plugin">
+      <description>
+         nabl2 language Eclipse plugin.
+      </description>
+   </category-def>
+</site>
