@@ -2,8 +2,9 @@ module nabl2/runtime/editor/menus
 
 imports
 
-  signatures/nabl2/runtime/solver/-
+  nabl2/shared/-
 
+  signatures/nabl2/runtime/solver/-
   nabl2/runtime/analysis/-
   nabl2/runtime/solver/-
 

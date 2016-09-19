@@ -4,7 +4,9 @@ imports
 
   libspoofax/term/origin
 
-  nabl2shared
+  nabl2/shared/-
+
+  nabl2/runtime/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
   nabl2/runtime/solver/-

@@ -2,8 +2,9 @@ module nabl2/runtime/solver/normalization
 
 imports
 
-  nabl2shared
-  nabl2runtime
+  nabl2/shared/-
+  signatures/nabl2/shared/constraints/-
+  signatures/nabl2/runtime/solver/-
 
 rules
 

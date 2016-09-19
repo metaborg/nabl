@@ -2,7 +2,7 @@ module nabl2/runtime/analysis/main
 
 imports
 
-  nabl2shared
+  nabl2/shared/-
  
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
@@ -23,7 +23,7 @@ rules
 
   nabl2--analyze(pre):
     AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
-    where not(() := ast)
+    where not(<nabl2--is-empty-ast> ast)
     with nabl2--report-time(!$[Preprocessing AST [source]],
       params := <getfirst(?Params(<id>))> initial;
       ast' := <pre;nabl2--index-ast(|source)> ast
@@ -34,7 +34,7 @@ rules
 
   nabl2--analyze(pre):
     AnalyzeUnit(source,ast,_) -> UnitResult(ast,[Constraint(C)])
-    where () := ast
+    where <nabl2--is-empty-ast> ast
     with C := CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> source))
  
 
@@ -86,18 +86,19 @@ rules
     where s := <nabl2--sol-s> solution
     with value' := <nabl2--S-apply(nabl2--is-var)> (s,value)
 
+  nabl2--is-empty-ast = is-tuple; ?()
 
- nabl2--report-time(msg,s) =
+  nabl2--report-time(msg,s) =
     where(msg := <msg>; <debug> $[>>> [msg]]);
     measure-time(s,where(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
 
- nabl2--time-analysis(key,s) =
+  nabl2--time-analysis(key,s) =
     measure-time(s,?time');
     where(
       key := <key>;
       (count,time) := <key;AnalysisTiming <+ !(0,0.0)> key;
       rules(AnalysisTiming : key -> (<inc> count, <add> (time,time'))))
 
- nabl2--get-analysis-timing =
+  nabl2--get-analysis-timing =
     dr-all-keys(|"AnalysisTiming");
     map(!(<id>,<AnalysisTiming;(id,cputime-to-seconds)>))

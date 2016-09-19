@@ -2,7 +2,10 @@ module nabl2/runtime/analysis/generation
 
 imports
 
-  nabl2shared
+  libspoofax/editor/completion/interface
+
+  nabl2/shared/-
+  nabl2/runtime/pp
   nabl2/runtime/analysis/-
 
 signature

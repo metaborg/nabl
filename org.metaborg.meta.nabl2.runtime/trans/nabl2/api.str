@@ -2,7 +2,13 @@ module nabl2/api
 
 imports
 
+  nabl2/shared/-
+  nabl2/runtime/-
   nabl2/runtime/analysis/-
+  nabl2/runtime/common/-
+  nabl2/runtime/editor/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/solver/-
 
 rules // ###### Custom type operations ######
 

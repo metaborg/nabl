@@ -1,9 +1,5 @@
 module nabl2/runtime/common/metadata
 
-imports
-
-  nabl2shared
-
 rules
 
   // set-ast-data(|Key,Value) : ASTNode -> ASTNode

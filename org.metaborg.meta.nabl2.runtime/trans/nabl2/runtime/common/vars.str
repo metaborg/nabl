@@ -2,7 +2,7 @@ module nabl2/runtime/common/vars
 
 imports
 
-  nabl2shared
+  nabl2/shared/-
 
 rules
   
