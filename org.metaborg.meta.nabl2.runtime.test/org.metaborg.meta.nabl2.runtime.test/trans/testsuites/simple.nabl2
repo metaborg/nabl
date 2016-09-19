@@ -1,0 +1,10 @@
+module testsuites/simple
+
+imports
+
+  signatures/-
+
+rules
+
+  [[ FalseFails() ^ () ]] :=
+    false.
