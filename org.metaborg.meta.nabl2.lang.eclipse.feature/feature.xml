@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+  id="org.metaborg.meta.nabl2.lang.eclipse.feature"
+  label="nabl2 language Eclipse plugin"
+  version="2.1.0.qualifier"
+>
+  <plugin id="org.metaborg.meta.nabl2.lang.eclipse" version="2.1.0.qualifier" unpack="true" />
+  <includes id="org.metaborg.spoofax.eclipse.feature" version="0" />
+</feature>
