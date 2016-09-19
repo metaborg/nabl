@@ -2,8 +2,8 @@ module nabl2/runtime/analysis/main
 
 imports
 
+  nabl2/api
   nabl2/shared/-
- 
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -16,7 +16,7 @@ rules
 
   nabl2--analyze(pre):
     AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
-    with nabl2--report-time(!$[Initializing [source]],
+    with nabl2--analysis-step(!$[Initializing [source]],
       (params,C) := <nabl2--generate-constraint-init(|source)> source
     )
 
@@ -24,11 +24,11 @@ rules
   nabl2--analyze(pre):
     AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C)])
     where not(<nabl2--is-empty-ast> ast)
-    with nabl2--report-time(!$[Preprocessing AST [source]],
+    with nabl2--analysis-step(!$[Preprocessing AST [source]],
       params := <getfirst(?Params(<id>))> initial;
       ast' := <pre;nabl2--index-ast(|source)> ast
     )
-    with nabl2--report-time(!$[Generating constraints [source]],
+    with nabl2--analysis-step(!$[Generating constraints [source]],
       C := <nabl2--generate-constraint-file(|source,params);nabl2--normalize-constraint> ast'
     )
 
@@ -40,12 +40,12 @@ rules
 
   nabl2--analyze(pre):
     AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
-    with nabl2--report-time(!"Normalizing constraints",
+    with nabl2--analysis-step(!"Normalizing constraints",
       C  := <getfirst(?Constraint(<id>))> initial;
       C* := <map(getfirst(?Constraint(<id>)))> unit*;
       C' := <nabl2--normalize-constraint> CConj([C|C*])
     )
-    with nabl2--report-time(!"Solving constraints",
+    with nabl2--analysis-step(!"Solving constraints",
     {| AnalysisTiming:
       lo* := <join(nabl2--label-lt)> (<nabl2--labels>,<nabl2--labels>);
       sol1* := <nabl2--solve-facts> [(<nabl2--initial-solution>,[C'])];
@@ -60,10 +60,10 @@ rules
       sol4* := <map(Fst)> sol3*; // discard constraint part
       timing := <nabl2--get-analysis-timing;qsort(where((Snd;Snd,Snd;Snd);gt))>
     |})
-    where nabl2--report-time(!"Processing solutions",
+    where nabl2--analysis-step(!"Processing solutions",
     with(
       (good,bad) := <partition(not(nabl2--is-erronious));(length,length)> sol4*;
-      with(<debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
+      try(nabl2-debug-analysis-hook; <debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
     );
     where(
       sol := <Hd> sol4*
@@ -88,9 +88,14 @@ rules
 
   nabl2--is-empty-ast = is-tuple; ?()
 
-  nabl2--report-time(msg,s) =
-    where(msg := <msg>; <debug> $[>>> [msg]]);
-    measure-time(s,where(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
+  nabl2--analysis-step(msg,s) =
+    where(not(nabl2-debug-analysis-hook));
+    s
+
+  nabl2--analysis-step(msg,s) =
+    where(nabl2-debug-analysis-hook);
+    with(msg := <msg>; <debug> $[>>> [msg]]);
+    measure-time(s,with(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
 
   nabl2--time-analysis(key,s) =
     measure-time(s,?time');
