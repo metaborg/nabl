@@ -13,15 +13,15 @@ imports
 rules // ###### Custom type operations ######
 
   /**
-   * Succeed if the term is a type operation that need to be reduced
+   * Succeed if the term is a type operation that needs to be reduced
    *
    * @type Term -> _
    */
   nabl2-is-op-hook = fail
 
   /**
-   * Reduce a type operation. Make sure to implement `nabl2-is-op-hook` for the
-   * constructor as well.
+   * Reduce a type operation. Make sure to implement `nabl2-is-op-hook` for all
+   * constructors that you reduce.
    *
    * @param a : Analysis (can be incomplete!)
    * @type TypeOp -> Type
@@ -82,41 +82,43 @@ rules // ###### Analysis execution ######
 rules // ###### Analysis results ######
 
   /**
-   * @type Filename -> Analysis
+   * Get analysis for the given file
+   *
+   * @type filename:String -> Analysis
    */
   nabl2-get-analysis = nabl2--get-analysis
 
   /**
-   * @type Term -> List(Term)
+   * @type node:Term -> Term
    */
   nabl2-get-ast-params = nabl2--get-ast-params
 
   /**
-   * @type Term -> Type
+   * @type node:Term -> Type
    */
   nabl2-get-ast-type = nabl2--get-ast-type
 
   /**
-   * @type Term -> List(Occurrence)
+   * @type node:Term -> List(Occurrence)
    */
   nabl2-get-ast-refs = nabl2--get-ast-refs
 
   /**
    * @param a : Analysis
-   * @type Occurrence -> Type
+   * @type decl:Occurrence -> Type
    */
   nabl2-get-type(|a) = nabl2--get-type(|a)
 
   /**
    * @param a : Analysis
    * @param prop : String
-   * @type Occurrence -> Term
+   * @type decl:Occurrence -> Term
    */
   nabl2-get-property(|a,prop) = nabl2--get-property(|a,prop)
 
   /**
    * @param a : Analysis
-   * @type Occurrence -> (Occurrence,Path)
+   * @type ref:Occurrence -> (decl:Occurrence, Path)
    */
   nabl2-get-resolved-name(|a) = nabl2--get-resolved-name(|a)
 
@@ -152,7 +154,7 @@ rules // ###### Scope graphs ######
    * Get the scope of a reference
    *
    * @param a : Analysis
-   * @type Occurrence -> Scope
+   * @type ref:Occurrence -> Scope
    */
   nabl2-get-ref-scope(|a) = <nabl2--G-ref-scope> (<nabl2--sol-g> a, <id>)
 
@@ -160,7 +162,7 @@ rules // ###### Scope graphs ######
    * Get the scope of a declaration
    *
    * @param a : Analysis
-   * @type Occurrence -> Scope
+   * @type decl:Occurrence -> Scope
    */
   nabl2-get-decl-scope(|a) = <nabl2--G-decl-scope> (<nabl2--sol-g> a, <id>)
 
@@ -195,7 +197,7 @@ rules // ###### Scope graphs ######
   /**
    * Get associated scopes of a declaration
    *
-   * @type Occurrence -> List((Label,Scope))
+   * @type decl:Occurrence -> List((Label,Scope))
    */
   nabl2-get-decl-assocs(|a) = <nabl2--G-assocs> (<nabl2--sol-g> a, <id>)
 
@@ -209,7 +211,7 @@ rules // ###### Scope graphs ######
   /**
    * Make an occurrence in the default namespace
    *
-   * @type Term -> Occurrence
+   * @type node:Term -> Occurrence
    */
   nabl2-mk-occurrence = nabl2--mk-occurrence
 
@@ -217,7 +219,7 @@ rules // ###### Scope graphs ######
    * Make an occurrence in the specified namespace
    *
    * @param ns : String
-   * @type Term -> Occurrence
+   * @type node:Term -> Occurrence
    */
   nabl2-mk-occurrence(|ns) = nabl2--mk-occurrence(|ns)
 
@@ -226,7 +228,7 @@ rules // ###### Scope graphs ######
    *
    * @param ns : String
    * @param t : Term
-   * @type Term -> Occurrence
+   * @type node:Term -> Occurrence
    */
   nabl2-mk-occurrence(|ns,t) = nabl2--mk-occurrence(|ns,t)
 

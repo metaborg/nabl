@@ -30,4 +30,4 @@ rules
     where (val,_) := <nabl2--sol-p;nabl2--get(|o);nabl2--get(|Property(prop))> a
 
   nabl2--get-resolved-name(|a): r -> d
-    with d := <nabl2--sol-r;nabl2--get(|r)> a 
+    where d := <nabl2--sol-r;nabl2--get(|r)> a 
