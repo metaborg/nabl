@@ -245,3 +245,21 @@ rules // ###### Scope graphs ######
    * @type Occurrence -> Term
    */
   nabl2-get-occurrence-name = nabl2--occurrence-name
+
+  
+rules // ###### Editor Integration ######
+
+  /**
+   * Editor resolve references integration
+   *
+   * @type (node, position, ast, path, project-path) -> decl
+   */
+  nabl2-editor-resolve = nabl2--editor-resolve
+
+  /**
+   * Editor hover integration
+   *
+   * @type (node, position, ast, path, project-path) -> label
+   */
+  nabl2-editor-hover = nabl2--editor-hover
+  
