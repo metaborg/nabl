@@ -6,8 +6,10 @@ imports
 
 context-free syntax
 
-  AnalysisResult.Params = <params <Params>>
+  AnalysisResult.Params = <params <CGenArgs>>
 
-  Params = <^ (<{Term ","}*>) : <Term>>
-  Params = <^ (<{Term ","}*>)>
+  CGenArgs.Params        = <<CGenParams>>
+  CGenArgs.ParamsAndType = <<CGenParams> : <Pattern>>
 
+  CGenParams = <^ (<Pattern>)>
+  CGenParams = <^ (<{Pattern ","}*>)>

@@ -1,5 +1,9 @@
 module nabl2/runtime/prelude/map
 
+imports
+
+  nabl2/runtime/prelude/base
+
 rules
 
   // nabl2--keys :: map k v -> [k]
@@ -27,21 +31,30 @@ rules
   partitionk(s) = partition(!(<Fst;s>,<Snd>))
 
   // nabl2--merge(ks: [k] * [k] -> [k], vs: v * v -> v) :: map k v * map k v -> map k v
-  nabl2--merge(ks,vs) =
-    ?(kv1*,kv2*)
-  ; <ks> (<nabl2--keys> kv1*, <nabl2--keys> kv2*)
-  ; map(<nabl2--merge-step(vs)> (<id>,kv1*,kv2*))
+
+  nabl2--mergemap(ks,vs) = nabl2--strict(
+    ?(kv1*,kv2*);
+    <ks> (<nabl2--keys> kv1*, <nabl2--keys> kv2*);
+    map(<nabl2--merge-step(vs)> (<id>,kv1*,kv2*))
+  )
+
+  nabl2--mergefilter(ks,vs) = nabl2--strict(
+    ?(kv1*,kv2*);
+    <ks> (<nabl2--keys> kv1*, <nabl2--keys> kv2*);
+    filter(<nabl2--merge-step(vs)> (<id>,kv1*,kv2*))
+  )
+
   nabl2--merge-step(vs) =
-    ?(k,kv1*,kv2*)
-  ; ( <lookup> (k,kv1*)
-    < ?v1
-    ; ( <lookup> (k,kv2*)
-      < <vs> (v1,<id>)
+    ?(k,kv1*,kv2*);
+    ( v1 := <lookup> (k,kv1*)
+    < ( v2 := <lookup> (k,kv2*)
+      < <vs> (v1,v2)
       + !v1
       )
     + <lookup> (k,kv2*)
-    )
-  ; !(k,<id>)
+    );
+    !(k,<id>)
+
 
   // nabl2--group(s: a -> b) :: [a] -> map b [a]
   nabl2--group(s) = foldr(![],nabl2--group-step(s))

@@ -1,0 +1,31 @@
+module nabl2/runtime/prelude/bag
+
+imports
+
+  nabl2/runtime/prelude/map
+
+strategies
+  
+  nabl2--bag-add(|x): [(y,n)|ys] -> [(y, <inc> n)|ys]
+    where <eq> (x,y)
+
+  nabl2--bag-add(|x): [y|ys] -> [y|<nabl2--bag-add(|x)> ys]
+    where <not(eq)> (x,y)
+
+  nabl2--bag-add(|x): [] -> [(x,1)]
+
+
+  nabl2--bag2set = map(Fst)
+
+
+  nabl2--list2bag = foldr(![],\ (x,b) -> <nabl2--bag-add(|x)> b \)
+  
+
+  nabl2--bag-union = nabl2--mergefilter(union,add;where(<gt> (<id>,0)))
+  
+  nabl2--bag-diff = nabl2--mergefilter(Fst,subt;where(<gt> (<id>,0)))
+
+  nabl2--bag-isect = nabl2--mergefilter(isect,min;where(<gt> (<id>,0)))
+
+
+  nabl2--bag-dups = filter(\ (x,n) -> x where <gt> (n,1) \)

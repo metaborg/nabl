@@ -15,24 +15,27 @@ rules
   nabl2--get-names(|g): Declarations(s,ns) -> n*
     where <nabl2--is-ground> s;
           d* := <nabl2--G-decls> (g,s)
-    with n* := <nabl2--filter-ns(|ns);map(nabl2--occurrence-atom)> d*
+    with n* := <nabl2--filter-ns(|ns);map(nabl2--occurrence-atom);nabl2--list2bag> d*
 
   nabl2--get-names(|g): References(s,ns) -> n*
     where <nabl2--is-ground> s;
           r* := <nabl2--G-refs> (g,s)
-    with n* := <nabl2--filter-ns(|ns);map(nabl2--occurrence-atom)> r*
+    with n* := <nabl2--filter-ns(|ns);map(nabl2--occurrence-atom);nabl2--list2bag> r*
 
   nabl2--get-names(|g): Visibles(s,ns) -> n*
     where <nabl2--is-ground> s;
-          (Total(),e*) := <env(nabl2--labels-lt|<nabl2--labels-wf>,g,[],[])> s
-    with  n* := <nabl2--values;concat;map(Fst);
-                 nabl2--filter-ns(|ns);
-                 map(nabl2--occurrence-atom)> e*
+          (Total(),e*) := <env(nabl2--label-lt|<nabl2--labels-wf>,g,[],[])> s
+    with n* := <nabl2--env-to-names(|ns)> e*
  
   nabl2--get-names(|g): Reachables(s,ns) -> n*
     where <nabl2--is-ground> s;
-          (Total(),e*) := <env(nabl2--empty-lt|<nabl2--labels-wf>,g,[],[])> s
+          (Total(),e*) := <env(fail|<nabl2--labels-wf>,g,[],[])> s
+    with n* := <nabl2--env-to-names(|ns)> e*
+          
+          
+  nabl2--env-to-names(|ns): e* -> n*
     with  n* := <nabl2--values;concat;map(Fst);
                  nabl2--filter-ns(|ns);
-                 map(nabl2--occurrence-atom)> e*
+                 map(nabl2--occurrence-atom);
+                 nabl2--list2bag> e*
  

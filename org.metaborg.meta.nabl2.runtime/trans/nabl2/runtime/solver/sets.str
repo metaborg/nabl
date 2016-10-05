@@ -10,11 +10,11 @@ imports
 
 rules
  
-  nabl2--solve-constraint =nabl2--time-analysis(!"set",nabl2--solve-set-constraint)
+  nabl2--solve-constraint = nabl2--time-analysis(!"sets",nabl2--solve-set-constraint)
 
   nabl2--solve-set-constraint: (CDistinct(x*,msginfo),sol) -> [(sol',[])]
   where <nabl2--is-ground> x*
-  with x'* := <nabl2--dups(eq)> x*
+  with x'* := <nabl2--bag-dups> x*
      ; ( ?[]
        < !sol
        + msg := "Duplicate"
@@ -24,17 +24,7 @@ rules
   nabl2--solve-set-constraint: (CSubsetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
   where <nabl2--is-ground> x1*
       ; <nabl2--is-ground> x2*
-  with x'* := <diff(eq)> (x1*,x2*)
-     ; ( ?[]
-       < !sol
-       + msg := "Missing"
-       ; <nabl2--add-message(nabl2--default-message(|msg)|<nabl2--apply-elems-message(|x'*)> msginfo)> sol
-       ) => sol'
-
-  nabl2--solve-set-constraint: (CSetEq(x1*,x2*,msginfo),sol) -> [(sol',[])]
-  where <nabl2--is-ground> x1*
-      ; <nabl2--is-ground> x2*
-  with x'* := <sym-diff(eq)> (x1*,x2*)
+  with x'* := <nabl2--bag-diff;nabl2--bag2set> (x1*,x2*)
      ; ( ?[]
        < !sol
        + msg := "Missing"
@@ -43,21 +33,20 @@ rules
 
   nabl2--constraint-priority: CDistinct(_,_) -> 3
   nabl2--constraint-priority: CSubsetEq(_,_,_) -> 3
-  nabl2--constraint-priority: CSetEq(_,_,_) -> 3
 
 rules
 
   nabl2-reduce-op-hook(|sol): Empty() -> []
 
-  nabl2-reduce-op-hook(|sol): Isect(s1,s2) -> <isect(eq)> (s1,s2)
+  nabl2-reduce-op-hook(|sol): Isect(s1,s2) -> <nabl2--bag-isect> (s1,s2)
     where <nabl2--is-ground> s1;
           <nabl2--is-ground> s2
 
-  nabl2-reduce-op-hook(|sol): Union(s1,s2) -> <union(eq)> (s1,s2)
+  nabl2-reduce-op-hook(|sol): Union(s1,s2) -> <nabl2--bag-union> (s1,s2)
     where <nabl2--is-ground> s1;
           <nabl2--is-ground> s2
 
-  nabl2-reduce-op-hook(|sol): Diff(s1,s2) -> <diff(eq)> (s1,s2)
+  nabl2-reduce-op-hook(|sol): Diff(s1,s2) -> <nabl2--bag-diff> (s1,s2)
     where <nabl2--is-ground> s1;
           <nabl2--is-ground> s2
  
@@ -76,8 +65,3 @@ rules
   nabl2--constraint-message:
     CSubsetEq(s1,s2,msginfo) -> <nabl2--default-message(|msg)> msginfo
     with msg := ["Failed to check if ",s1," is a subset of, or equal to ",s2]
-
-  nabl2--constraint-message:
-    CSetEq(s1,s2,msginfo) -> <nabl2--default-message(|msg)> msginfo
-    with msg := ["Failed to check if ",s1," is equal to ",s2]
-

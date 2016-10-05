@@ -18,7 +18,7 @@ rules
     pp-NaBL2(prettyprint|120)
 
   pp-NaBL2(prettyprint|width) =
-    (parenthesize-NaBL2;prettyprint <+ fatal-err(|"Could not pp "));
+    parenthesize-NaBL2;prettyprint;
     !V([], <id>);
     box2text-string(|width)
 
@@ -57,12 +57,20 @@ rules
                                         , [S(c),S("("),a',S(")")] ) ]
     with a' := <pp-H-list(prettyprint-NaBL2-Term|",")> a*
 
-rules
+  prettyprint-NaBL2-APattern: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                           , [S(c),S("("),a',S(")")] ) ]
+    with a' := <pp-H-list(prettyprint-NaBL2-Pattern|",")> a*
 
-  prettyprint-NaBL2-Term = prettyprint-NaBL2-object <+ prettyprint-NaBL2-ATerm
+rules
 
   prettyprint-NaBL2-object = prettyprint-NaBL2-Int
   prettyprint-NaBL2-object = prettyprint-NaBL2-Real
   prettyprint-NaBL2-object = prettyprint-NaBL2-String
-  prettyprint-NaBL2-object = prettyprint-NaBL2-List(prettyprint-NaBL2-Term)
 
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-object
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-List(prettyprint-NaBL2-Term)
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-ATerm
+
+  prettyprint-NaBL2-Pattern = prettyprint-NaBL2-object
+  prettyprint-NaBL2-Pattern = prettyprint-NaBL2-List(prettyprint-NaBL2-Pattern)
+  prettyprint-NaBL2-Pattern = prettyprint-NaBL2-APattern

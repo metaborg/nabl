@@ -8,10 +8,7 @@ imports
 
 context-free syntax
 
-  Set                           = CVar {prefer}
+  Set = CVar {prefer}
 
   PrimitiveConstraint.CSubsetEq = <<SetExpr> subseteq <SetExpr> <Message>>
-  PrimitiveConstraint.CSetEq    = <<SetExpr> seteq <SetExpr> <Message>>
-
   PrimitiveConstraint.CDistinct = <!<SetExpr> <Message>>
-

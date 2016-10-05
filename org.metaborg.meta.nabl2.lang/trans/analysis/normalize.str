@@ -107,6 +107,10 @@ rules
     CTypeOf(o,ty,prio,msginfo) ->
       CPropertyOf(o,Type(),ty,prio,msginfo)
 
+  normalize-constraint:
+    CSetEq(s1,s2,msginfo) ->
+      CConj(CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo))
+
 rules
 
   normalize-messages = topdown(try(normalize-message))

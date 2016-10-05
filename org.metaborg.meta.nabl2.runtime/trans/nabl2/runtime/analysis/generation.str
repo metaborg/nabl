@@ -68,31 +68,25 @@ rules
       <nabl2--set-ast-params(|params)> term
     end
 
-  nabl2--generate-constraint-missing(|params): term -> CFalse(Message(Warning(),emsg,term))
-    with if (scopes,type) := params then
-      <nabl2--set-ast-params(|scopes);nabl2--set-ast-type(|type)> term;
-      emsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<nabl2--pp-term-sig> scopes] : _];
-      cmsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<pp-NaBL2-Term> scopes] : [<pp-NaBL2-Term> type]]
-    else
-      <nabl2--set-ast-params(|params)> term;
-      emsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<nabl2--pp-term-sig> params]];
-      cmsg := $[Missing constraint generation rule for [<nabl2--pp-term-sig> term] ^ [<pp-NaBL2-Term> params]]
+  nabl2--generate-constraint-missing(|args): term -> CFalse(Message(Warning(),msg,term))
+    with if ParamsAndType(params,type) := args then
+      <nabl2--set-ast-params(|params);nabl2--set-ast-type(|type)> term
+    else if Params(params) := args then
+      <nabl2--set-ast-params(|params)> term
+    end end;
+    msg := $[Missing constraint generation rule for [<nabl2--flatten-term;pp-NaBL2-Term> term] [<nabl2--flatten-term;pp-NaBL2-CGenArgs> args]];
+    if nabl2-debug-constraint-generation-hook then
+      warn(|msg)
     end
-    with warn(|cmsg)
 
+rules
 
-  nabl2--pp-term-sig: c#(a*) -> ${[{<nabl2--pp-term-args> a*}]}
-  where is-list
+  nabl2--flatten-term: c#(a*) -> c#(<map(!"_")> a*)
 
-  nabl2--pp-term-args: a* -> [a']
-  with a' := <map(!"_");separate-by(|",");concat-strings> a*
+  nabl2--pp-term-sig: a* -> ${[{a'}]}
+    where is-list
+    with a' := <map(nabl2--pp-term-sig);separate-by(|",");concat-strings> a*
 
-  nabl2--pp-term-sig: i -> <int-to-string>
-  where is-int
-
-  nabl2--pp-term-sig: r -> <real-to-string>
-  where is-real
-
-  nabl2--pp-term-sig: c#(a*) -> $[[c]([<nabl2--pp-term-args> a*])]
-
-
+  nabl2--pp-term-sig: c#(a*) -> $[[c]([a'])]
+    where not(is-list)
+    with a' := <map(!"_");separate-by(|",");concat-strings> a*

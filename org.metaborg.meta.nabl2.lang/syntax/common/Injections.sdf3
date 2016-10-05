@@ -3,6 +3,7 @@ module common/Injections
 imports
 
   nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Sets
   nabl2/shared/common/Terms
   nabl2/shared/constraints/Base
   
@@ -18,3 +19,5 @@ context-free syntax
   TermIndex.IndexFromTerm = <@<TermVar>>
 
   PrimitiveConstraint.CTypeOf = [[Occurrence] : [TypeTerm] [ConstraintPriority] [Message]]
+
+  PrimitiveConstraint.CSetEq  = <<SetExpr> seteq <SetExpr> <Message>>

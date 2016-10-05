@@ -1,4 +1,4 @@
-id: org.example:org.metaborg.meta.nabl2.lang.test:2.1.0-SNAPSHOT
+id: org.metaborg:org.metaborg.meta.nabl2.lang.test:2.1.0-SNAPSHOT
 name: NaBL2LangTest
 metaborgVersion: 2.1.0-SNAPSHOT
 dependencies:

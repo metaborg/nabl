@@ -3,13 +3,14 @@ module nabl2/runtime/common/scopegraph-labels
 imports
 
   nabl2/shared/-
+  nabl2/runtime/prelude/-
   
 rules
 
   // TODO: Calculate (and check) the closure over the label order. If some pairs
   // are not explicit, the resolution algorithm will currently fail.
 
-  nabl2--labels    = <conc;make-set> (<nabl2--custom-labels<+![]>,<nabl2--default-labels>)
+  nabl2--labels    = ![D()|<nabl2--custom-labels <+ nabl2--default-labels>]
   nabl2--labels-wf = nabl2--custom-labels-wf <+ nabl2--default-labels-wf
   nabl2--label-lt  = nabl2--custom-label-lt + nabl2--default-label-lt
 
@@ -51,13 +52,18 @@ rules
   nabl2--deriv(|l): _ -> Empty()
  
   // builtin labels
-  nabl2--max-labels = ?L ; filter(\ l -> l where <map(\ l' -> <not(nabl2--label-lt)> (l,l') \)> L \) ; make-set
+  nabl2--max-labels(lt) = nabl2--strict(
+    ?L;
+    filter(\ l -> l where <map(\ l' -> <not(lt)> (l,l') \)> L \);
+    make-set
+  )
  
-  nabl2--labels-lt(|l) = filter(\ l' -> l' where <nabl2--label-lt> (l',l) \) ; make-set
+  nabl2--labels-lt(lt|l) = nabl2--strict(
+    filter(\ l' -> l' where <lt> (l',l) \);
+    make-set
+  )
  
-  nabl2--empty-lt(|l) = filter(not(?l))
-  
-  nabl2--default-labels    = ![D(),P(),I()]
+  nabl2--default-labels   = ![P(),I()]
   
   nabl2--default-label-lt = ?(D(),I())
   nabl2--default-label-lt = ?(D(),P())

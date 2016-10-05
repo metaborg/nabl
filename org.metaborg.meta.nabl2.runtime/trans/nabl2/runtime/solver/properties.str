@@ -10,7 +10,7 @@ imports
  
 rules
  
-  nabl2--solve-constraint =nabl2--time-analysis(!"properties",nabl2--solve-property-constraint)
+  nabl2--solve-constraint = nabl2--time-analysis(!"properties",nabl2--solve-property-constraint)
 
   nabl2--solve-property-constraint: (CPropertyOf(o,key,val,prio,msginfo),sol) -> [res]
   where <nabl2--is-ground> o
@@ -24,7 +24,7 @@ rules
          !(<nabl2--sol-add-p(|o,key,(val,(prio,msginfo)))> sol, [])
        end => res
 
-  nabl2--priority-gt = (length,length);gt
+  nabl2--priority-gt = nabl2--strict((string-length,string-length));gt
 
 rules
 

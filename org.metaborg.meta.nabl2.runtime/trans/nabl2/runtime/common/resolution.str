@@ -36,7 +36,7 @@ rules // resolution internal
     ( s := <nabl2--G-ref-scope> (g,r) // :: Scope
    <+ <fatal-err(|"Cannot get scope for reference ")> r
     );
-    (f,e*) := <env(nabl2--labels-lt|<nabl2--labels-wf>,g,[r|ir*],[])> s; // :: Env
+    (f,e*) := <env(nabl2--label-lt|<nabl2--labels-wf>,g,[r|ir*],[])> s; // :: Env
     ( <lookup> (<nabl2--occurrence-atom> r, e*) // :: [(Decl,Path)]
    <+ where(Total() := f) ; ![]
     ); // :: [(Decl,Path)]
@@ -63,8 +63,8 @@ rules // resolution internal
     with(dbg-msg := $[env^[<pp-NaBL2-Labels> L](|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])]);
     with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
-    <nabl2--max-labels> L;
-    map(\ l -> <env-shadow> ( <env_L(lt|<lt(|l)> L,re,g,ir*,is*)> s
+    <nabl2--max-labels(lt)> L;
+    map(\ l -> <env-shadow> ( <env_L(lt|<nabl2--labels-lt(lt|l)> L,re,g,ir*,is*)> s
                             , <env_l(lt|l,re,g,ir*,is*)> s
                             ) \);
     env-unions;
@@ -138,15 +138,15 @@ rules // resolution internal
 
   // shadow :: (Env, Env) -> Env
   env-shadow: ((Total(),e1),(f,e2)) -> (f, e')
-    with e' := <nabl2--merge(union,Fst)> (e1,e2)
+    with e' := <nabl2--mergemap(union,Fst)> (e1,e2)
   env-shadow: (e@(Partial(),_),_) -> e
 
   // shadow :: [Env] -> Env
   env-unions: e* -> (f,pe)
     with f  := <map(Fst;?Total())<!Total()+!Partial()> e*;
          (t*,p*) := <partition(?(Total(),<id>),?(Partial(),<id>))> e*;
-         te := <foldr(![],nabl2--merge(union,union))> t*;
-         pe := <foldr(!te,nabl2--merge(isect,union))> p*
+         te := <foldr(![],nabl2--mergemap(union,union))> t*;
+         pe := <foldr(!te,nabl2--mergemap(isect,union))> p*
 
   // env-prepend(|Step) = Env -> Env
   env-prepend(|step) = (id,nabl2--mapv(map(\ (d,p) -> (d,[step|p]) \)))
