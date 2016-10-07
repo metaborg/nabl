@@ -4,8 +4,6 @@ imports
 
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Resolution
-  nabl2/shared/common/Terms
-  nabl2/shared/common/Vars
 
 template options
 

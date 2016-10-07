@@ -2,13 +2,11 @@ module nabl2/shared/constraints/Equality
 
 imports
 
-  nabl2/shared/common/Vars
-  nabl2/shared/common/Terms
+  nabl2/shared/common/CTerms
   nabl2/shared/common/Messages
 
 context-free syntax
 
-  PrimitiveConstraint.CEqual   = [[Comparable] == [Comparable] [Message]]
-  PrimitiveConstraint.CInequal = [[Comparable] != [Comparable] [Message]]
+  PrimitiveConstraint.CEqual   = [[CTerm] == [CTerm] [Message]]
+  PrimitiveConstraint.CInequal = [[CTerm] != [CTerm] [Message]]
 
-  Comparable = CVar {prefer}

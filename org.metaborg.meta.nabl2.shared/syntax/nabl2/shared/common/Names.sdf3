@@ -1,0 +1,23 @@
+module nabl2/shared/common/Names
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/ScopeGraph
+
+context-free syntax
+
+  CTerm = Names
+
+syntax
+
+  Names-CF.Declarations   = "D(" CTerm-CF ")" NamespacePattern-CF
+  Names-CF.References     = "R(" CTerm-CF ")" NamespacePattern-CF
+  Names-CF.Visibles       = "V(" CTerm-CF ")" NamespacePattern-CF
+  Names-CF.Reachables     = "W(" CTerm-CF ")" NamespacePattern-CF
+
+  NamespacePattern-CF.Default   =
+  NamespacePattern-CF.All       = "/*"
+  NamespacePattern-CF.Namespace = "/" NamespaceId-LEX

@@ -4,11 +4,9 @@ imports
 
   nabl2/shared/common/Messages
   nabl2/shared/common/Sets
-  nabl2/shared/common/Vars
+  nabl2/shared/common/CTerms
 
 context-free syntax
 
-  Set = CVar {prefer}
-
-  PrimitiveConstraint.CSubsetEq = <<SetExpr> subseteq <SetExpr> <Message>>
-  PrimitiveConstraint.CDistinct = <!<SetExpr> <Message>>
+  PrimitiveConstraint.CSubsetEq = <<CTerm> subseteq <CTerm> <Message>>
+  PrimitiveConstraint.CDistinct = <distinct <CTerm> <Message>>

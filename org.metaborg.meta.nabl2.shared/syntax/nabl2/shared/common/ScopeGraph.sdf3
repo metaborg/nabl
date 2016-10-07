@@ -2,25 +2,24 @@ module nabl2/shared/common/ScopeGraph
 
 imports
 
+  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/AST
+  nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
-  nabl2/shared/common/Native
-  nabl2/shared/common/Terms
-  nabl2/shared/common/Vars
 
 context-free syntax
 
-  Scope.Scope                    = <scope [<String>-<String>]>
 
-  Occurrence.Occurrence          = <<NamespaceRef>{<Term> <TermIndex>}>
+  Scope                          = ABSTRACT
+  Scope                          = CVar
+  CTerm                          = Scope
+
+  Occurrence.Occurrence          = <<NamespaceRef>{<CTerm> <TermIndex>}> // FIXME Use NaBL2_ prefix
+  Occurrence                     = CVar
+  CTerm                          = Occurrence
 
   Namespace.Namespace            = NamespaceId
 
   NamespaceRef                   = Namespace
   NamespaceRef.DefaultNamespace  =
 
-lexical syntax
-
-  Keyword     = "scope"
-  Constructor = "Scope" | "Occurrence"
- 

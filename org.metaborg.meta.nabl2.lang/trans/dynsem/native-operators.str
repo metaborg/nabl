@@ -4,6 +4,7 @@ imports
 
   libjava-front
   dynsem/-
+  signatures/rules/-
   signatures/signatures/-
 
 rules
@@ -25,10 +26,11 @@ rules
          source := <pp-java-string> java-ast
 
   cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir):
-    CGenSig(Name(name), sort, _, Type()) -> (filename, source)
-    with src-sort := <sort-to-ds> sort;
+    CGenSig(Name(name), sort, _, Type(tsort)) -> (filename, source)
+    with type-sort := <sort-to-ds> tsort;
+         src-sort := <sort-to-ds> sort;
          src-name := <ds-sort-to-string> src-sort;
-         target-name := <ds-sort-to-string> SimpleSort("Type");
+         target-name := <ds-sort-to-string> type-sort;
          op-name := <cgen-op-name(|name,src-sort)> "typeOf";
          (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "TYPE_METADATA", target-name);
          filename := $[[native-dir]/[class-name].java];

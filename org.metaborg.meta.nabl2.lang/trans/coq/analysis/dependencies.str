@@ -6,7 +6,7 @@ imports
 	coq/query
 	
 	signatures/rules/CGen-sig
-  signatures/nabl2/shared/common/Vars-sig
+  signatures/nabl2/shared/common/-
 
 rules // Dependency analysis
 

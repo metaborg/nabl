@@ -2,14 +2,14 @@ module nabl2/runtime/analysis/Generation
 
 imports
 
-  nabl2/shared/common/Terms
+  nabl2/shared/common/CTerms
 
 context-free syntax
 
   AnalysisResult.Params = <params <CGenArgs>>
 
   CGenArgs.Params        = <<CGenParams>>
-  CGenArgs.ParamsAndType = <<CGenParams> : <Pattern>>
+  CGenArgs.ParamsAndType = <<CGenParams> : <CTerm>>
 
-  CGenParams = <^ (<Pattern>)>
-  CGenParams = <^ (<{Pattern ","}*>)>
+  CGenParams = <^ (<CTerm>)>
+  CGenParams = <^ (<{CTerm ","}*>)>

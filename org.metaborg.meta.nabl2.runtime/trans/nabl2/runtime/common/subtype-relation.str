@@ -13,6 +13,7 @@ signature
   constructors
     covar     : Variance
     contravar : Variance
+    Wld       : Pattern
 
 rules
 
@@ -103,14 +104,18 @@ rules
  
 
   nabl2--erase-subtypeterms: ty@c#(a*) -> c#(a'*)
+    with tsort := <type-sort>
     where sig* := <nabl2--type-sig-of-hook<+fatal-err(|"Missing type signature for ")> ty;
-          a'* := <zip;map(?((_,SortNoArgs("TypeTerm")),_) < !Wld() + Snd)> (sig*,a*)
+          a'* := <zip;map(?((_,tsort),_) < !Wld() + Snd)> (sig*,a*)
 
   nabl2--get-subtypeterms: ty@c#(a*) -> ty*
+    with tsort := <type-sort>
     where sig* := <nabl2--type-sig-of-hook<+fatal-err(|"Missing type signature for ")> ty;
-          ty* := <zip;filter(\ ((_,SortNoArgs("TypeTerm")),ty) -> ty \)> (sig*,a*)
+          ty* := <zip;filter(\ ((_,tsort),ty) -> ty \)> (sig*,a*)
  
   nabl2--get-subtypevariances: ty -> variance*
+    with tsort := <type-sort>
     where sig* := <nabl2--type-sig-of-hook<+fatal-err(|"Missing type signature for ")> ty;
-          variance* := <filter(\ (var,SortNoArgs("TypeTerm")) -> var \)> sig*
+          variance* := <filter(\ (var,tsort) -> var \)> sig*
  
+  type-sort = !SortNoArgs("Type")

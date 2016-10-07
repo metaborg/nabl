@@ -4,7 +4,6 @@ imports
 
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
-  nabl2/shared/common/Vars
 
 template options
 

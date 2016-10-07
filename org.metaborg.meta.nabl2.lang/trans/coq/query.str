@@ -1,10 +1,10 @@
 module coq/query
 
 imports
-  signatures/rules/Rules-sig
+  signatures/common/-
+  signatures/rules/-
   coq/util/mbind-err
   
-  signatures/nabl2/shared/common/Terms-sig
 
 // Various operations for querying NaBL2 definitions
 
@@ -29,7 +29,7 @@ rules // Name projection/normalization
 		SortNoArgs(name) -> name
 	
 	get-sort-name:
-    Sort("List", s) -> <concat-strings> ["L_", <get-sort-name> s]
+    ListSort(s) -> <concat-strings> ["L_", <get-sort-name> s]
 
 	get-sort-name:
 		x ->

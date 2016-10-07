@@ -6,6 +6,8 @@ imports
   dynsem/-
   util/src-gen
   generation/defaults
+  signatures/common/-
+  signatures/rules/-
   signatures/signatures/-
 
 rules
@@ -44,9 +46,13 @@ rules
          (type-op*, type-arrow*, type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> ast;
          type-con* := <collect-om(type-sig-to-ds)> ast
 
-  cgen-sig-to-params-ds: CGenSig(Name(name), sort, param*, _) -> <native-op-ds(|name)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
+  cgen-sig-to-params-ds:
+    CGenSig(Name(name), sort, param*, _) ->
+      <native-op-ds(|name)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
 
-  cgen-sig-to-type-ds: CGenSig(Name(name), sort, _, Type()) -> <native-op-ds(|name)>  (<sort-to-ds> sort, "typeOf", SimpleSort("Type"))
+  cgen-sig-to-type-ds:
+    CGenSig(Name(name), sort, _, Type(tsort)) ->
+      <native-op-ds(|name)>  (<sort-to-ds> sort, "typeOf", <sort-to-ds> tsort)
 
   unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
 
@@ -72,15 +78,22 @@ rules
            arrow-name := $[[rule-name]_[base-name]]
          end
 
-  type-sig-to-ds: TypeSig(name, []) -> NullaryConsDecl(name, SimpleSort("Type"), NoAnnos())
-  type-sig-to-ds: TypeSig(name, arg*) -> ConsDecl(name, <map(Snd;sort-to-ds)> arg*, SimpleSort("Type"), NoAnnos())
+  type-sig-to-ds:
+    TypeSig(name, []) ->
+      NullaryConsDecl(name, <type-sort;sort-to-ds>, NoAnnos())
+
+  type-sig-to-ds:
+    TypeSig(name, arg*) ->
+      ConsDecl(name, <map(Snd;sort-to-ds)> arg*, <type-sort;sort-to-ds>, NoAnnos())
 
   param-sorts-to-ds: [sort] -> <sort-to-ds> sort
   param-sorts-to-ds: sort* -> <sort-to-ds> TupleSort(sort*)
 
   sort-to-ds: SortNoArgs(name) -> SimpleSort(name)
-  sort-to-ds: Sort("List", [arg]) -> ListSort(<sort-to-ds> arg)
+  sort-to-ds: ListSort(arg) -> ListSort(<sort-to-ds> arg)
   sort-to-ds: TupleSort(arg*) -> TupleSort(<map(sort-to-ds)> arg*)
-  sort-to-ds: Sort(name, arg*) -> <fatal-err(|"Not supported in DynSem")>
   sort-to-ds: ScopeSort() -> SimpleSort("Scope")
-  sort-to-ds: TypeSort() -> SimpleSort("Type")
+  sort-to-ds: OccurrenceSort() -> SimpleSort("Occurrence")
+  sort-to-ds: Var(_) -> <fatal-err(|"Not supported in DynSem")>
+  sort-to-ds: Sort(_, _) -> <fatal-err(|"Not supported in DynSem")>
+

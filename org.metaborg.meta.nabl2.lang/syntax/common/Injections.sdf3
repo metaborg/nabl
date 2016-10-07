@@ -2,22 +2,27 @@ module common/Injections
 
 imports
 
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Sets
-  nabl2/shared/common/Terms
   nabl2/shared/constraints/Base
-  
-  common/Types
+  common/Terms
   
 context-free syntax
 
-  CVar = TermVar
+  CVar             = Var
+
+  CTerm.Op         = <<OpId>(<{CTerm ","}*>)>
+  CTerm.Tuple      = <(<{CTerm ","}*>)>
+  CTerm            = IntTerm
+  CTerm            = StringTerm
 
   Message.DefaultMessage =
 
   TermIndex.DefaultIndex  =
-  TermIndex.IndexFromTerm = <@<TermVar>>
+  TermIndex.IndexFromTerm = <@<Var>>
 
-  PrimitiveConstraint.CTypeOf = [[Occurrence] : [TypeTerm] [ConstraintPriority] [Message]]
+  PrimitiveConstraint.CTypeOf = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
-  PrimitiveConstraint.CSetEq  = <<SetExpr> seteq <SetExpr> <Message>>
+  PrimitiveConstraint.CSetEq  = <<CTerm> seteq <CTerm> <Message>>

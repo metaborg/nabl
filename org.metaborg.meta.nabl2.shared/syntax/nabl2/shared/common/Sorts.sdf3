@@ -1,0 +1,30 @@
+module nabl2/shared/common/Sorts
+
+imports
+
+  nabl2/shared/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\']
+
+context-free syntax
+
+  Sort.SortNoArgs        = SortId
+
+  SortRef.Var            = SortVarId
+  SortRef.SortNoArgs     = SortId
+//SortRef.Sort           = <<SortId>(<{SortRef ","}*>)>
+  SortRef.OccurrenceSort = "occurrence"
+  SortRef.ScopeSort      = "scope"
+  SortRef.TupleSort      = <(<{SortRef "*"}*>)>
+  SortRef.ListSort       = <[<SortRef>]>
+ 
+ 
+ 
+lexical syntax
+
+  SortVarId = VarId
+
+  SortId    = "List" {reject}
+  SortVarId = "scope" | "occurrence" {reject}

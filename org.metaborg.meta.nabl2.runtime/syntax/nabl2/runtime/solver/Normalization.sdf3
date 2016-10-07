@@ -4,14 +4,10 @@ imports
 
   nabl2/shared/common/AST
   nabl2/shared/common/Identifiers
-  nabl2/shared/common/Native
-  nabl2/shared/common/Terms
   nabl2/shared/constraints/Base
+  nabl2/runtime/common/Native
 
 context-free syntax
-
-  MessageContent = String
-  MessageContent = {Term ""}*
 
   Constraint.CConj = <(<{Constraint ",\n"}*>)>
   Constraint.CDisj = <(<{Constraint ";\n"}*>)>

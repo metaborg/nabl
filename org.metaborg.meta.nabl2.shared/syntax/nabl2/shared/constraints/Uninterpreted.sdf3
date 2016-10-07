@@ -2,10 +2,10 @@ module nabl2/shared/constraints/Uninterpreted
 
 imports
 
-  nabl2/shared/common/Terms
+  nabl2/shared/common/CTerms
 
 context-free syntax
 
-  PrimitiveConstraint.CGoal = [?- [Term]]
-  PrimitiveConstraint.CFact = [!- [Term]]
+  PrimitiveConstraint.CGoal = [?- [CTerm]]
+  PrimitiveConstraint.CFact = [!- [CTerm]]
 

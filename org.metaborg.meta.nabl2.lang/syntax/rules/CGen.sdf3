@@ -2,14 +2,12 @@ module rules/CGen
 
 imports
  
+  nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
-  nabl2/shared/common/Terms
-  nabl2/shared/common/Types
-  nabl2/shared/common/Vars
   nabl2/shared/constraints/Base
 
   common/Identifiers
-  common/Types
+  common/Terms
   rules/Rules
 
 template options
@@ -32,24 +30,24 @@ context-free syntax
 
   RuleClause = <(<Constraint>)>
 
-  RuleClause.CGenRecurse = <<RuleName> [[ <TermVar> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
-  RuleClause.NewScopes   = <new <{TermVar " "}+>>
+  RuleClause.NewScopes   = <new <{CVar " "}+>>
 
 context-free syntax
 
-  CGenParamsTerm.Tuple    = <^ (<{TypeTerm ","}*>)>
+  CGenParamsTerm.Tuple    = <^ (<{CTerm ","}*>)>
 
-  CGenParamsPattern.Tuple = <^ (<{TermVarOrWld ","}*>)>
+  CGenParamsPattern.Tuple = <^ (<{VarOrWld ","}*>)>
 
   CGenTypeTerm.NoType     =
-  CGenTypeTerm.Type       = <: <TypeTerm>>
+  CGenTypeTerm.Type       = <: <CTerm>>
 
   CGenTypePattern.NoType  =
-  CGenTypePattern.Type    = <: <TypePattern>>
+  CGenTypePattern.Type    = <: <CTerm>>
 
 lexical syntax
 
-  Keyword        = "new"
+  Keyword = "new"
 
  

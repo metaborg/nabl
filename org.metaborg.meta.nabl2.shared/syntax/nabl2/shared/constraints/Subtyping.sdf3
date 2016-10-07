@@ -3,10 +3,15 @@ module nabl2/shared/constraints/Subtyping
 imports
 
   nabl2/shared/common/AST
-  nabl2/shared/common/Types
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
 
 context-free syntax
 
-  PrimitiveConstraint.FSubtype = [[TypeTerm] <! [TypeTerm] [Message]]
-  PrimitiveConstraint.CSubtype = [[TypeTerm] <? [TypeTerm] [Message]]
+  TypeVar.TVar = <'<TVarId>> // FIXME Use NaBL2_ prefix
+  CTerm        = TypeVar
+
+  PrimitiveConstraint.FSubtype = [[CTerm] <! [CTerm] [Message]]
+  PrimitiveConstraint.CSubtype = [[CTerm] <? [CTerm] [Message]]
+

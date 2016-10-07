@@ -1,0 +1,13 @@
+module nabl2/runtime/common/Messages
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+  nabl2/runtime/common/Native
+
+context-free syntax
+
+  MessageContent.Formatted = {MessageContent ""}*
+  MessageContent.Text      = String
+  MessageContent.Term      = CTerm

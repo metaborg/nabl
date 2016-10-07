@@ -2,7 +2,7 @@ module signatures/CGen
 
 imports
 
-  nabl2/shared/common/Terms
+  nabl2/shared/common/Sorts
   rules/Rules
   signatures/Types
 
@@ -17,10 +17,10 @@ context-free syntax
       <{CGenSig "\n"}*>
   >
   
-  CGenSig.CGenSig = <<RuleName> [[ <Sort> <CGenSigParams> <CGenSigType> ]]>
+  CGenSig.CGenSig = <<RuleName> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
  
-  CGenSigParams   = <^ (<{TypeSort ","}*>)>
+  CGenSigParams   = <^ (<{SortRef ","}*>)>
 
   CGenSigType.NoType = <>
-  CGenSigType.Type   = <: *>
+  CGenSigType.Type   = <: <SortRef>>
 

@@ -2,7 +2,7 @@ module nabl2/runtime/solver/Solution
 
 imports
 
-  nabl2/shared/common/Terms
+  nabl2/shared/common/CTerms
   nabl2/runtime/analysis/EditorMessages
   nabl2/runtime/common/Resolution
   nabl2/runtime/common/ScopeGraph
@@ -47,8 +47,8 @@ context-free syntax
 
   SolutionComponent.Uninterpreted = <
     uninterpreted :=
-      ?- <{Term "\n"}*>
-      !- <{Term "\n"}*>
+      ?- <{CTerm "\n"}*>
+      !- <{CTerm "\n"}*>
   >
 
   SolutionComponent.Errors = <

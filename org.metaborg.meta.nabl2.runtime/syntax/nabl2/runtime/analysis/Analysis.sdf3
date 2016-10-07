@@ -2,9 +2,9 @@ module nabl2/runtime/analysis/Analysis
 
 imports
 
-  nabl2/shared/common/Native
   nabl2/shared/common/Resolution
   nabl2/shared/constraints/Base
+  nabl2/runtime/common/Native
   nabl2/runtime/common/Resolution
   nabl2/runtime/common/ScopeGraph
   nabl2/runtime/solver/Solution

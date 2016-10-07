@@ -5,7 +5,7 @@ imports
 
   signatures/modules/Module-sig
   signatures/rules/CGen-sig
-  signatures/nabl2/shared/common/Vars-sig
+  signatures/nabl2/shared/common/-
 
 rules // Wildcard explication
 

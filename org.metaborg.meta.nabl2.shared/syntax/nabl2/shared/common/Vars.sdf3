@@ -1,9 +1,0 @@
-module nabl2/shared/common/Vars
-
-imports
-
-  nabl2/shared/common/Native
-
-context-free syntax
-
-  CVar.CVar      = <?<String>-<String>>

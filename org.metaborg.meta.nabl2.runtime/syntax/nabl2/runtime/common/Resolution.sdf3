@@ -2,9 +2,10 @@ module nabl2/runtime/common/Resolution
 
 imports
 
+  nabl2/shared/common/CTerms
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Resolution
-  nabl2/shared/common/Terms
+  nabl2/runtime/common/Native
 
 context-free syntax
 
@@ -28,5 +29,5 @@ context-free syntax
   TotalOrPartial.Total   = <Total>
   TotalOrPartial.Partial = <Partial>
 
-  Name.Name              = <<Namespace>{<Term>}>
+  Name.Name              = <<Namespace>{<CTerm>}>
 

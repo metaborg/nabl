@@ -2,10 +2,9 @@ module nabl2/runtime/solver/Substitution
 
 imports
 
-  nabl2/shared/common/Vars
-  nabl2/shared/constraints/Equality
+  nabl2/shared/common/CTerms
 
 context-free syntax
 
-  Substitution = [[CVar] |--> [Comparable]]
+  Substitution = [[CVar] |--> [CTerm]]
 

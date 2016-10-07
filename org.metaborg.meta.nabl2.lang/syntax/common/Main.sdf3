@@ -5,5 +5,5 @@ imports
   common/Identifiers
   common/Injections
   common/Layout
-  common/Types
+  common/Messages
 

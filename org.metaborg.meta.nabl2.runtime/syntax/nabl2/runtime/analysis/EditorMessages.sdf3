@@ -3,8 +3,7 @@ module nabl2/runtime/analysis/EditorMessages
 imports
 
   nabl2/shared/common/AST
-  nabl2/shared/common/Native
-  nabl2/shared/common/Terms
+  nabl2/runtime/common/Native
 
 context-free syntax
 

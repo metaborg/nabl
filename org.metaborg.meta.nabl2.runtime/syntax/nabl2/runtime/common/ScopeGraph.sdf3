@@ -5,9 +5,12 @@ imports
   nabl2/shared/common/AST
   nabl2/shared/common/Resolution
   nabl2/shared/common/ScopeGraph
+  nabl2/runtime/common/Native
 
 context-free syntax
 
+  Scope.Scope = <scope [<String>-<String>]>
+  
   ScopeGraph.G = <
     scope graph {
       <{ScopeEntry "\n"}*>

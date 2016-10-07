@@ -2,7 +2,10 @@ module nabl2/runtime/common/Main
 
 imports
 
+  nabl2/runtime/common/AST
+  nabl2/runtime/common/CTerms
+  nabl2/runtime/common/Messages
+  nabl2/runtime/common/Native
   nabl2/runtime/common/Resolution
   nabl2/runtime/common/ScopeGraph
-  nabl2/runtime/common/Types
 

@@ -2,10 +2,10 @@ module rules/Normalization
 
 imports
 
-  nabl2/shared/common/Terms
+  nabl2/shared/common/CTerms
 
 context-free syntax
 
-  RuleClause.NewVars      = <new vars <{TermVar " "}+>>
+  RuleClause.NewVars      = <new vars <{CVar " "}+>>
 
-  RuleClause.IndexSublist = <from list <TermVar> index sublist <TermVar>>
+  RuleClause.IndexSublist = <from list <CVar> index sublist <CVar>>

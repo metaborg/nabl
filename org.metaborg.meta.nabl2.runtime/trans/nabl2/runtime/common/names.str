@@ -8,6 +8,7 @@ imports
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
 
+  signatures/nabl2/shared/common/-
   signatures/nabl2/runtime/common/-
 
 rules

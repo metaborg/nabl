@@ -36,7 +36,7 @@ rules
 
 rules
 
-  nabl2-reduce-op-hook(|sol): Empty() -> []
+  nabl2-reduce-op-hook(|sol): EmptySet() -> []
 
   nabl2-reduce-op-hook(|sol): Isect(s1,s2) -> <nabl2--bag-isect> (s1,s2)
     where <nabl2--is-ground> s1;

@@ -1,8 +1,8 @@
-module nabl2/shared/common/Native
+module nabl2/runtime/common/Native
 
 lexical syntax
 
-  ABSTRACT = []
   Int      = []
   Real     = []
   String   = []
+  Term     = []

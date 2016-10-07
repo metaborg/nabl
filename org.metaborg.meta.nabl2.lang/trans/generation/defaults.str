@@ -2,16 +2,18 @@ module generation/defaults
 
 imports
 
-  nabl2shared
+  signatures/common/-
 
 rules
 
-  source-var     = !Var("source__")
-  term-var       = !Var("term__")
-  type-var       = !Var("type__")
-  params-var     = !Var("params__")
-  args-var       = !Var("args__")
-  constraint-var = !Var("constraint__")
+  source-var     = !Var("nabl2_source")
+  term-var       = !Var("nabl2_term")
+  type-var       = !Var("nabl2_type")
+  params-var     = !Var("nabl2_params")
+  args-var       = !Var("nabl2_args")
+  constraint-var = !Var("nabl2_constraint")
+
+  type-sort      = !SortNoArgs("Type")
 
   default-rule-name = !"default"
  

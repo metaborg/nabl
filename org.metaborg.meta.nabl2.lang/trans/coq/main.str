@@ -30,7 +30,6 @@ imports
 
 rules // Constant(s)
 
-	coq-type-name = !"T"
 	coq-list-name = !"list"
 	
 	cgref         = !"scopeofRef"
@@ -99,7 +98,7 @@ rules // Signatures
  		Types(ts) ->
  			<type-sigs-to-coq;
  			mbind(\ ts' ->
- 			[Inductive([Induc(<coq-type-name>, None(), Type(),
+ 			[Inductive([Induc("GroupByTypeHere", None(), Type(),
  				ListDeclBar(ts'))])] \)> ts
 
  	sig-to-coq(|deps):
@@ -169,9 +168,9 @@ rules // Type signatures
 	type-sigs-to-coq:
 		[] -> []
 
-	type-sig-to-coq:
-		TypeSig(tname, tparams) ->
-			<foldr(!Ref(<coq-type-name>),
+  type-sig-to-coq:
+    TypeSig(tname, tparams) -> 
+			<foldr(!Ref(<type-sort;type-sort-to-coq>),
 					\ (x, y) ->
 						<mbind(\ z ->
 						<type-sort-to-coq;
@@ -185,11 +184,8 @@ rules // Type signatures
 rules // NaBL2 sorts
 
 	type-sort-to-coq:
-		TypeSort() -> Ref(<coq-type-name>)
+		SortNoArgs(name) -> Ref(name)
 	
-	type-sort-to-coq:
-		Type() -> Ref(<coq-type-name>)
-
 	type-sort-to-coq:
 		"s" -> Ref("ScopeId")
 
@@ -197,7 +193,7 @@ rules // NaBL2 sorts
 		x ->
 			<concat-strings; err> ["Encountered an unexpected type sort: ", <write-to-string> x, ". Please report."]
 	where
-		not(?TypeSort() <+ ?Type() <+ ?"s")
+		not(?SortNoArgs(_) <+ ?"s")
 	
 	term-sort-to-coq:
 		SortNoArgs(name) ->

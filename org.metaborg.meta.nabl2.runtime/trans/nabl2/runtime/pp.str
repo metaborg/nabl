@@ -10,14 +10,14 @@ imports
 
 rules
 
-  parenthesize-NaBL2 = parenthesize-NaBL2Runtime
+  parenthesize-NaBL2      = parenthesize-NaBL2Runtime
 
-  pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term)
+  pp-NaBL2-Type           = pp-NaBL2(prettyprint-NaBL2-CTerm)
+  pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term;debug)
   pp-NaBL2-CGenArgs       = pp-NaBL2(prettyprint-NaBL2-CGenArgs)
   pp-NaBL2-Constraint     = pp-NaBL2(prettyprint-NaBL2-Constraint)
   pp-NaBL2-Env            = pp-NaBL2(prettyprint-NaBL2-Env)
   pp-NaBL2-CVar           = pp-NaBL2(prettyprint-NaBL2-CVar)
-  pp-NaBL2-Type           = pp-NaBL2(prettyprint-NaBL2-TypeTerm)
   pp-NaBL2-LabelRE        = pp-NaBL2(prettyprint-NaBL2-LabelRE)
   pp-NaBL2-Label          = pp-NaBL2(prettyprint-NaBL2-AnyLabel)
   pp-NaBL2-Labels         = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-AnyLabel))
@@ -29,7 +29,49 @@ rules
 
   pp-NaBL2-MessageContent = pp-NaBL2(prettyprint-NaBL2-MessageContent)
 
-  prettyprint-NaBL2-object   = prettyprint-NaBL2-Scope
-  prettyprint-NaBL2-object   = prettyprint-NaBL2-Occurrence
-  prettyprint-NaBL2-object   = prettyprint-NaBL2-TypeList
-  prettyprint-NaBL2-object   = prettyprint-NaBL2-Property
+rules // Special rules
+
+  prettyprint-NaBL2-Name:
+    _ -> [S("?")]
+    where is-SDF-placeholder
+
+  prettyprint-NaBL2-Int =
+    ![S(<is-int;int-to-string>)]
+
+  prettyprint-NaBL2-Real =
+    ![S(<is-real;real-to-string(|2)>)]
+
+  prettyprint-NaBL2-List(pp): t -> [ H( [SOpt(HS(),"0")]
+                                      , [S("["),t',S("]")] ) ]
+    where is-list
+    with t' := <pp-H-list(pp|",")> t
+
+rules // Terms
+
+  prettyprint-NaBL2-primitive = ![S(<is-int;int-to-string>)]
+  prettyprint-NaBL2-primitive = ![S(<is-real;real-to-string(|2)>)]
+  prettyprint-NaBL2-primitive = ![S($["[<is-string>]"])]
+
+
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-primitive
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-List(prettyprint-NaBL2-Term)
+  prettyprint-NaBL2-Term: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                        , [S(c),S("("),a',S(")")] ) ]
+    with a' := <pp-H-list(prettyprint-NaBL2-Term|",")> a*
+
+rules // CTerms
+
+  prettyprint-NaBL2-CTerm = prettyprint-NaBL2-primitive
+  prettyprint-NaBL2-CTerm = prettyprint-NaBL2-List(prettyprint-NaBL2-CTerm)
+  prettyprint-NaBL2-CTerm: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                        , [S(c),S("("),a',S(")")] ) ]
+    where not(nabl2--actual-CTerm)
+    with a' := <pp-H-list(prettyprint-NaBL2-CTerm|",")> a*
+
+  nabl2--actual-CTerm = is-NaBL2-CVar
+  nabl2--actual-CTerm = is-NaBL2-CTerm
+  nabl2--actual-CTerm = is-NaBL2-Occurrence
+  nabl2--actual-CTerm = is-NaBL2-Scope
+  nabl2--actual-CTerm = is-NaBL2-Names
+  nabl2--actual-CTerm = is-NaBL2-TypeVar
+  nabl2--actual-CTerm = is-NaBL2-SetExpr

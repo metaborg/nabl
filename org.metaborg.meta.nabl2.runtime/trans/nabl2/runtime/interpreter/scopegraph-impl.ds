@@ -19,7 +19,7 @@ signature
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
  
-  sort aliases NameResolution = List((Occurrence * (Occurrence * /*Path*/List(Step))))
+  sort aliases NameResolution = List((Occurrence * (Occurrence * Path)))
  
   sorts ScopeGraph ScopeEntry constructors
     G : List((Scope * ScopeEntry)) * List((Occurrence * List((Label * Scope)))) -> ScopeGraph

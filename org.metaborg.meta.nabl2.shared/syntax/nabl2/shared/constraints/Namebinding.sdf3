@@ -5,25 +5,14 @@ imports
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
   nabl2/shared/common/Resolution
-  nabl2/shared/common/Vars
-
-context-free syntax
-
-  Scope                 = CVar
-  Comparable            = Scope
-
-  Occurrence            = CVar
-  Comparable            = Occurrence
-
-  Set                   = CVar
-  Set                   = Names
+  nabl2/shared/common/ScopeGraph
 
 context-free syntax
 
   PrimitiveConstraint.CGDecl       = [[Occurrence] <- [Scope]]
   PrimitiveConstraint.CGRef        = [[Occurrence] -> [Scope]]
 
-  PrimitiveConstraint.CResolve     = [[Occurrence] |-> [Occurrence] [Message]]
+  PrimitiveConstraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
 
 syntax
 
@@ -31,7 +20,7 @@ syntax
   PrimitiveConstraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
   PrimitiveConstraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
 
-  PrimitiveConstraint-CF.CAssoc       = Occurrence-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF Message-CF
+  PrimitiveConstraint-CF.CAssoc       = CTerm-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
 
 
 context-free syntax
@@ -42,16 +31,6 @@ context-free syntax
   NLabel.I = "="
   NLabel   = PathLabel
 
-syntax
-
-  Names-CF.Declarations   = "D(" Scope-CF ")" NamespacePattern-CF
-  Names-CF.References     = "R(" Scope-CF ")" NamespacePattern-CF
-  Names-CF.Visibles       = "V(" Scope-CF ")" NamespacePattern-CF
-  Names-CF.Reachables     = "W(" Scope-CF ")" NamespacePattern-CF
-
-  NamespacePattern-CF.Default   =
-  NamespacePattern-CF.All       = "/*"
-  NamespacePattern-CF.Namespace = "/" NamespaceId-LEX
 
 context-free syntax
 
@@ -59,5 +38,5 @@ context-free syntax
 
 lexical syntax
 
-  Keyword = "in" | "unique" | "NAMES"
+  Keyword = "NAMES"
 
