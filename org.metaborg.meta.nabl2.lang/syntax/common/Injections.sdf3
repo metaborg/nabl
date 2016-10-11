@@ -25,4 +25,8 @@ context-free syntax
 
   PrimitiveConstraint.CTypeOf = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
-  PrimitiveConstraint.CSetEq  = <<CTerm> seteq <CTerm> <Message>>
+  PrimitiveConstraint.CSetEq  = <<CSet> seteq <CSet> <Message>>
+
+lexical syntax
+
+  Keyword = "seteq"
