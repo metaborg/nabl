@@ -55,6 +55,19 @@ rules // ###### Analysis execution ######
   nabl2-debug-constraint-generation-hook = fail
 
   /**
+   * Control implicit traversal of the constraint generation. If the stragegy
+   * succeeds (id), children are implicitly traversed if no rule for a constructor
+   * is defined. If it fails, children are not traversed implicitly, and a warning
+   * is generated.
+   * 
+   * Implicit traversal only works if the node does not have a type parameter. A
+   * warning is always generated when there is no rule for a typed node.
+   *
+   * @type _ -> _
+   */
+  nabl2-constraint-generation-implicit-traversal-hook = fail
+
+  /**
    * Control whether to ignore errors on unused references. If the strategy
    * succeeds for its namespace argument, no error is generated if the reference
    * does not resolve.

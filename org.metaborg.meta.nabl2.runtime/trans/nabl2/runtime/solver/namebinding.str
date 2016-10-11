@@ -104,7 +104,7 @@ rules
   nabl2--unresolved-refs-errors: sol -> sol'
     withnabl2--time-analysis(!"namebinding",
          g := <nabl2--sol-g> sol;
-         ref* := <nabl2--G-refs> g;
+         ref* := <conc> (<nabl2--G-refs> g, <nabl2--G-imports> g);
          res* := <nabl2--sol-fr;nabl2--keys> sol;
          unknown* := <diff> (ref*, res*);
          sol' := <foldr(!sol,{ ref,sol, dp*:

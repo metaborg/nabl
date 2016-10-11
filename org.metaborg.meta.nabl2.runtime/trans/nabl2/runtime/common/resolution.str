@@ -32,13 +32,14 @@ rules // resolution internal
     with(dbg-msg := $[nabl2--resolve(|g,ir*=[<pp-NaBL2-Occurrences> ir*])]);
     with(log-res(pp-NaBL2-Occurrence|$[[dbg-msg]_]));
     ?r;
-    ( s := <nabl2--G-ref-scope> (g,r) // :: Scope
-   <+ <fatal-err(|"Cannot get scope for reference ")> r
+    ( s := <nabl2--G-ref-scope> (g,r); // :: Scope
+      (f,e*) := <env(nabl2--label-lt|<nabl2--labels-wf>,g,[r|ir*],[])> s; // :: Env
+      ( <lookup> (<nabl2--occurrence-atom> r, e*) // :: [(Decl,Path)]
+     <+ where(Total() := f) ; ![]
+      ) // :: [(Decl,Path)]
+   <+ <warn(|"Not a reference in the scope graph ")> r;
+      ![]
     );
-    (f,e*) := <env(nabl2--label-lt|<nabl2--labels-wf>,g,[r|ir*],[])> s; // :: Env
-    ( <lookup> (<nabl2--occurrence-atom> r, e*) // :: [(Decl,Path)]
-   <+ where(Total() := f) ; ![]
-    ); // :: [(Decl,Path)]
     with(log-res(pp-NaBL2-FullResolveds|$[[dbg-msg]_[<pp-NaBL2-Occurrence> r]_=_]))
 
 

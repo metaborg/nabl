@@ -53,6 +53,8 @@ rules
 
   outermost-list-pattern = outermost-term-pattern(?List(_) + ?ListTail(_,_))
 
+  strip-as-pattern = bottomup(try(?As(_,<id>)))
+
   var-name:
     Var(name) -> name 
  

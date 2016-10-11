@@ -14,6 +14,8 @@ rules
 
   nabl2--G-refs = ?G(<id>,_) ; map(Snd;?S(_,<id>,_,_)) ; concat
 
+  nabl2--G-imports = ?G(<id>,_) ; map(Snd;?S(_,_,_,<map(Snd)>)) ; concat
+
   nabl2--G-scopes = ?G(<id>,_) ; map(Fst)
 
   nabl2--G-ref-scope = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)

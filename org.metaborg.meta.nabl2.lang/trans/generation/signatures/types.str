@@ -42,3 +42,6 @@ rules
   csort-to-str:
     OccurrenceSort() -> SortNoArgs("Occurrence") // FIXME Use NaBL2_ prefix
 
+  csort-to-str:
+    TypeSort() -> SortNoArgs("Type") // FIXME Use NaBL2_ prefix
+
