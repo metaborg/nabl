@@ -4,11 +4,11 @@ signature
 
   constraint generator
 
-    Map1  [[ [a] ^ (b)        ]]
-    Map1T [[ [a] ^ (b) : Type ]]
+    Map1  [[ List(a) ^ (b)        ]]
+    Map1T [[ List(a) ^ (b) : type ]]
 
-    Map2  [[ [a] ^ (b,c)        ]]
-    Map2T [[ [a] ^ (b,c) : Type ]]
+    Map2  [[ List(a) ^ (b,c)        ]]
+    Map2T [[ List(a) ^ (b,c) : type ]]
 
 rules
 
