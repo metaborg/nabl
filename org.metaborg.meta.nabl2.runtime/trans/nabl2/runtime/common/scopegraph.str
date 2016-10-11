@@ -18,19 +18,19 @@ rules
 
   nabl2--G-scopes = ?G(<id>,_) ; map(Fst)
 
-  nabl2--G-ref-scope = ?(G(<id>,_),r) ; getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \)
+  nabl2--G-ref-scope = ?(G(<id>,_),r) ; ( getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \) <+ warn(|"reference not found "); fail )
 
-  nabl2--G-decl-scope = ?(G(<id>,_),d) ; getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \)
+  nabl2--G-decl-scope = ?(G(<id>,_),d) ; ( getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \) <+ warn(|"declaration not found "); fail )
 
-  nabl2--G-decls = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(<id>,_,_,_)
+  nabl2--G-decls = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(<id>,_,_,_) + warn(|"scope not found "); ![] )
 
-  nabl2--G-refs = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,<id>,_,_)
+  nabl2--G-refs = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,<id>,_,_) + warn(|"scope not found "); ![] )
 
-  nabl2--G-direct-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,<id>,_)
+  nabl2--G-direct-edges = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,_,<id>,_) + warn(|"scope not found "); ![] )
 
-  nabl2--G-named-edges = ?(G(s*,_),s) ; <lookup> (s,s*) ; ?S(_,_,_,<id>)
+  nabl2--G-named-edges = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,_,_,<id>) + warn(|"scope not found "); ![] )
 
-  nabl2--G-assocs = ?(G(_,a*),d) ; <lookup> (d,a*)
+  nabl2--G-assocs = ?(G(_,a*),d) ; ( <lookup> (d,a*) <+ ![] )
 
   nabl2--G-scope-assocs = ?(G(_,<id>),s) ; filter(\ (d,ls*) -> <filter(\ (l,s') -> (d,l) where <eq> (s,s') \)> ls* \); concat
 

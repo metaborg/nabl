@@ -16,10 +16,11 @@ signature
 rules
 
   // nabl2--resolve-all :: Graph -> [(Ref,[(Decl,Path)])]
-  nabl2--resolve-all =
+  nabl2--resolve-all = nabl2--strict(
     ?g;
     nabl2--G-refs;
     filter(!(<id>,<nabl2--resolve(|g)>))
+  )
 
   // nabl2--resolve(|Graph) :: Ref -|-> [(Decl,Path)]
   nabl2--resolve(|g) =
@@ -32,20 +33,20 @@ rules // resolution internal
     with(dbg-msg := $[nabl2--resolve(|g,ir*=[<pp-NaBL2-Occurrences> ir*])]);
     with(log-res(pp-NaBL2-Occurrence|$[[dbg-msg]_]));
     ?r;
-    ( s := <nabl2--G-ref-scope> (g,r); // :: Scope
+    if s := <nabl2--G-ref-scope> (g,r) then // :: Scope
       (f,e*) := <env(nabl2--label-lt|<nabl2--labels-wf>,g,[r|ir*],[])> s; // :: Env
       ( <lookup> (<nabl2--occurrence-atom> r, e*) // :: [(Decl,Path)]
      <+ where(Total() := f) ; ![]
       ) // :: [(Decl,Path)]
-   <+ <warn(|"Not a reference in the scope graph ")> r;
+    else
       ![]
-    );
+    end;
     with(log-res(pp-NaBL2-FullResolveds|$[[dbg-msg]_[<pp-NaBL2-Occurrence> r]_=_]))
 
 
 
   // env(|RE,Graph,[Ref],[Scope]) :: Scope -> Env
-  env(lt|re,g,ir*,is*) =
+  env(lt|re,g,ir*,is*) = nabl2--strict(
     with(dbg-msg := $[env(|re=[<pp-NaBL2-LabelRE> re],g,ir*[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])]);
     with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
@@ -54,12 +55,14 @@ rules // resolution internal
     + <env_L(lt|<nabl2--labels>,re,g,ir*,is*)> s
     );
     with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
+  )
 
 
 
   // env(|[Label],RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env_L(lt|L,re,g,ir*,is*) =
     where(<is-list> L);
+  nabl2--strict(
     with(dbg-msg := $[env^[<pp-NaBL2-Labels> L](|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])]);
     with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
@@ -69,12 +72,14 @@ rules // resolution internal
                             ) \);
     env-unions;
     with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
+  )
 
 
 
   // env(|D(),RE,Graph,[Ref],[Scope]) :: Scope -> Env
   env_l(lt|l,re,g,ir*,is*) =
     where(D() := l);
+  nabl2--strict(
     with(dbg-msg := $[env^D(|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])]);
     with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
@@ -85,11 +90,12 @@ rules // resolution internal
     );
     !(Total(),<id>);
     with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
+  )
 
 
 
   // env(|Label,RE,Graph,[Ref],[Scope]) :: Scope -> Env
-  env_l(lt|l,re,g,ir*,is*) =
+  env_l(lt|l,re,g,ir*,is*) = nabl2--strict(
     with(dbg-msg := $[env^[<pp-NaBL2-Label> l](|re=[<pp-NaBL2-LabelRE> re],g,ir*=[<pp-NaBL2-Occurrences> ir*],is*=[<pp-NaBL2-Scopes> is*])]);
     with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
@@ -105,6 +111,7 @@ rules // resolution internal
     + !(Partial(),[])
     );
     with(log-res(pp-NaBL2-Env|$[[dbg-msg]_[<pp-NaBL2-Scope> s]_=_]))
+  )
 
   // iss(|Graph,[Ref]) :: Scope -|-> [(Scope,Step)]
   iss(|l,g) =
@@ -123,6 +130,7 @@ rules // resolution internal
     with(log-res(pp-NaBL2-Scope|$[[dbg-msg]_]));
     ?s;
     <nabl2--G-named-edges> (g,s); // :: [(Label,Ref)]
+    map(where(Snd;nabl2--is-ground));
     filter(?(l,_);Snd); // :: [Ref]
     filter(where(<not(elem)> (<id>,ir*))); // :: [Ref]
     mapconcat(\ r -> <nabl2--resolve(|g,ir*);

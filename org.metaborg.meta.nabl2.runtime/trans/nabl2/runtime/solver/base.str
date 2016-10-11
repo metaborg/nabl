@@ -30,7 +30,7 @@ rules
     (is-SDF-placeholder <+ one(nabl2--has-placeholder))
 
   nabl2--solve-facts =
-    nabl2--csolve-exhaustive(nabl2--time-analysis(!"specialize",nabl2--solve-specialise)
+    nabl2--csolve-exhaustive(id
                      , solve-ignore-placeholders + nabl2--solve-fact
                      , id
                      , nabl2--solve-cost

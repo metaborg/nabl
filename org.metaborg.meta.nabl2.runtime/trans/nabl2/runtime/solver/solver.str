@@ -95,7 +95,7 @@ rules
 
   nabl2--csolve-one-acc(pre,solve,c-lt) =
     ?(sol,[c|active*],defer*);
-    with((sol',c') := <pre> (sol,c));
+    (sol',c') := <try(pre)> (sol,c);
     ( s'* := <solve> (c',sol')
     < <map({ sol', new*, new'*, active'*:
         ?(sol',new*);
