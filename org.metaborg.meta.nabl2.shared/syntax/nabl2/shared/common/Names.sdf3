@@ -9,14 +9,14 @@ imports
 
 context-free syntax
 
-  CTerm = Names
+  CSet = Names
 
 syntax
 
-  Names-CF.Declarations   = "D(" CTerm-CF ")" NamespacePattern-CF
-  Names-CF.References     = "R(" CTerm-CF ")" NamespacePattern-CF
-  Names-CF.Visibles       = "V(" CTerm-CF ")" NamespacePattern-CF
-  Names-CF.Reachables     = "W(" CTerm-CF ")" NamespacePattern-CF
+  Names-CF.Declarations   = "D(" Scope-CF ")" NamespacePattern-CF
+  Names-CF.References     = "R(" Scope-CF ")" NamespacePattern-CF
+  Names-CF.Visibles       = "V(" Scope-CF ")" NamespacePattern-CF
+  Names-CF.Reachables     = "W(" Scope-CF ")" NamespacePattern-CF
 
   NamespacePattern-CF.Default   =
   NamespacePattern-CF.All       = "/*"

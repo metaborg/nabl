@@ -3,11 +3,59 @@ module completion
 imports
 
   libspoofax/editor/completion/-
-
   completion/NaBL2Lang-cp
-
+  pp/-
+  nabl2/shared/pp
   pp
-
+ 
 rules
 
-  pp-completion = pp-partial-NaBL2-string
+  /* All this code is inlined from completion/completion (which should NOT be
+   * imported), because generation of that file does not take the `pretty-print`
+   * project setting into account.
+   */
+
+  get-proposals-empty-program-NaBL2 = ?(sort, _); 
+    get-proposals-empty-program(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                                NaBL2-get-indent, NaBL2-get-leading-ws, 
+                                NaBL2-get-separator)
+
+  get-proposals-left-recursive-NaBL2 = ?(sort, _); 
+    get-proposals-left-recursive(pp-partial-NaBL2-string, parenthesize-NaBL2, 
+                                 NaBL2-get-indent, NaBL2-get-leading-ws, 
+                                 NaBL2-get-separator)
+
+  get-proposals-right-recursive-NaBL2 = ?(sort, _); 
+    get-proposals-right-recursive(pp-partial-NaBL2-string, parenthesize-NaBL2, 
+                                  NaBL2-get-indent, NaBL2-get-leading-ws, 
+                                  NaBL2-get-separator)
+
+  get-proposals-placeholder-NaBL2 = ?(sort, _, _, _);
+    get-proposals-placeholder(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                              NaBL2-get-indent, NaBL2-get-leading-ws, 
+                              NaBL2-get-separator)
+
+  get-proposals-optional-NaBL2 = ?(sort, _, _);
+    get-proposals-optional(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                           NaBL2-get-indent, NaBL2-get-leading-ws, 
+                           NaBL2-get-separator)
+
+  get-proposals-list-NaBL2 = ?(sort, _, _, _);
+    get-proposals-list(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                       NaBL2-get-indent, NaBL2-get-leading-ws, 
+                       NaBL2-get-separator)
+
+  get-proposals-incorrect-programs-NaBL2 = ?(sort, _, _, _, _);
+    get-proposals-incorrect-programs(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                                     NaBL2-get-indent, NaBL2-get-leading-ws, 
+                                     NaBL2-get-separator)
+
+  get-proposals-incorrect-programs-nested-NaBL2 = ?(sort, _, _, _, _, _);
+    get-proposals-incorrect-programs-nested(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                                            NaBL2-get-indent, NaBL2-get-leading-ws, 
+                                            NaBL2-get-separator)
+
+  get-proposals-incorrect-programs-single-placeholder-NaBL2 = ?(sort, _, _, _, _, _, _);
+    get-proposals-incorrect-programs-single-placeholder(pp-partial-NaBL2-string(|sort), parenthesize-NaBL2, 
+                                                        NaBL2-get-indent, NaBL2-get-leading-ws, 
+                                                        NaBL2-get-separator)

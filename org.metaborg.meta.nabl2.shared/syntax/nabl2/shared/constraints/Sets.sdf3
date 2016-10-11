@@ -8,5 +8,10 @@ imports
 
 context-free syntax
 
-  PrimitiveConstraint.CSubsetEq = <<CTerm> subseteq <CTerm> <Message>>
-  PrimitiveConstraint.CDistinct = <distinct <CTerm> <Message>>
+  PrimitiveConstraint.CSubsetEq = <<CSet> subseteq <CSet> <Message>>
+  PrimitiveConstraint.CDistinct = <distinct <CSet> <Message>>
+  PrimitiveConstraint.CDistinct = <!<CSet> <Message>>
+
+lexical syntax
+
+  Keyword = "subseteq" | "distinct"
