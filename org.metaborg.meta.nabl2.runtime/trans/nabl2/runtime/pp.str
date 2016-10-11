@@ -12,8 +12,9 @@ rules
 
   parenthesize-NaBL2      = parenthesize-NaBL2Runtime
 
+  pp-NaBL2-CTerm          = pp-NaBL2(prettyprint-NaBL2-CTerm)
   pp-NaBL2-Type           = pp-NaBL2(prettyprint-NaBL2-CTerm)
-  pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term;debug)
+  pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term)
   pp-NaBL2-CGenArgs       = pp-NaBL2(prettyprint-NaBL2-CGenArgs)
   pp-NaBL2-Constraint     = pp-NaBL2(prettyprint-NaBL2-Constraint)
   pp-NaBL2-Env            = pp-NaBL2(prettyprint-NaBL2-Env)

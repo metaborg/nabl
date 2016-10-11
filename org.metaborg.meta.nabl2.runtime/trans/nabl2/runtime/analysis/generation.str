@@ -50,39 +50,75 @@ rules
   nabl2--generate-constraint-default-rule(|source,params) = fail
 
   // error throwing wrappers for recursive invocations
-  nabl2--generate-constraint(s|source,params) =
+  nabl2--generate-constraint(s|source,args) =
     nabl2--error-no-index
- <+ nabl2--generate-constraint-placeholder(|params)
- <+ (where(!1 => x);s(|source,params)) // this is freaky, but otherwise the next call fails sometimes
- <+ nabl2--generate-constraint-missing(|params)
+ <+ nabl2--generate-constraint-placeholder(|source,args)
+ <+ (where(!1 => x);s(|source,args)) // this is freaky, but otherwise the next call fails sometimes
+ <+ nabl2--generate-constraint-missing(s|source,args)
 
   nabl2--error-no-index: term -> CFalse(Message(Error(),msg,term))
     where not(nabl2--get-ast-index)
     with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]]
 
-  nabl2--generate-constraint-placeholder(|params): term -> CTrue()
+  nabl2--generate-constraint-placeholder(|source,args): term -> CTrue()
     where <is-SDF-placeholder> term
-    with if (scopes,type) := params then
-      <nabl2--set-ast-params(|scopes);nabl2--set-ast-type(|type)> term
-    else
-      <nabl2--set-ast-params(|params)> term
-    end
-
-  nabl2--generate-constraint-missing(|args): term -> CFalse(Message(Warning(),msg,term))
     with if ParamsAndType(params,type) := args then
       <nabl2--set-ast-params(|params);nabl2--set-ast-type(|type)> term
     else if Params(params) := args then
       <nabl2--set-ast-params(|params)> term
-    end end;
-    msg := $[Missing constraint generation rule for [<nabl2--flatten-term;pp-NaBL2-Term> term] [<nabl2--flatten-term;pp-NaBL2-CGenArgs> args]];
-    if nabl2-debug-constraint-generation-hook then
-      warn(|msg)
-    end
+    end end
+
+  nabl2--generate-constraint-missing(s|source,args): term@_#(subterm*) -> constraint
+    with if ParamsAndType(params,type) := args then
+      <nabl2--set-ast-params(|params);nabl2--set-ast-type(|type)> term;
+      if nabl2-constraint-generation-implicit-traversal-hook then
+        msg := $[Cannot do typed implicit traversal for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
+        if nabl2-debug-constraint-generation-hook then
+          warn(|msg)
+        end;
+        constraint := CFalse(Message(Warning(),msg,term))
+      else
+        msg := $[Missing constraint generation rule for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
+        if nabl2-debug-constraint-generation-hook then
+          warn(|msg)
+        end;
+        constraint := CFalse(Message(Warning(),msg,term))
+      end
+    else if Params(params) := args then
+      <nabl2--set-ast-params(|params)> term;
+      if nabl2-constraint-generation-implicit-traversal-hook then
+        <debug> $({implicit} [[ (<pp-NaBL2-Term> subterm*) ^ (<pp-NaBL2-CTerm> params) ]]);
+        subconstraint* := <filter(nabl2--generate-constraint(s|source,args);not(?CTrue()))> subterm*;
+        constraint := <foldr(!CTrue(),\ (c,acc) -> CConj(c,acc) \)> subconstraint*
+      else
+        msg := $[Missing constraint generation rule for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
+        if nabl2-debug-constraint-generation-hook then
+          warn(|msg)
+        end;
+        constraint := CFalse(Message(Warning(),msg,term))
+      end
+    end end
 
 rules
 
-  nabl2--flatten-term: c#(a*) -> c#(<map(!"_")> a*)
+  nabl2--pp-flat-term: c#(a*) -> $[[c]([as])] 
+    where not(is-list)
+    with as := <map(!"_");separate-by(|",");concat-strings> a*
+  
+  nabl2--pp-flat-term: c#(a*) -> ${[{as}]} 
+    where is-list
+    with as := <map(!"_");separate-by(|",");concat-strings> a*
+  
+  nabl2--pp-flat-args: Params(a*) -> $[^ ([p])]
+    with if <is-tuple> a* then
+      p := <TupleToList;map(!"_");separate-by(|",");concat-strings> a*
+    else
+      p := "_"
+    end
 
+  nabl2--pp-flat-args: ParamsAndType(a*,_) -> $[[p] : _]
+    with p := <nabl2--pp-flat-args> Params(a*)
+  
   nabl2--pp-term-sig: a* -> ${[{a'}]}
     where is-list
     with a' := <map(nabl2--pp-term-sig);separate-by(|",");concat-strings> a*
