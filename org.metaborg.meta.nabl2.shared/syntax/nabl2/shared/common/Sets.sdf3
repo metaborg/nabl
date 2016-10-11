@@ -6,9 +6,13 @@ imports
 
 context-free syntax
 
-  SetExpr.EmptySet = <0>                              // FIXME Use NaBL2_ prefix
-  SetExpr.Isect    = <(<CTerm> isect <CTerm>)> {left} // FIXME Use NaBL2_ prefix
-  SetExpr.Union    = <(<CTerm> union <CTerm>)> {left} // FIXME Use NaBL2_ prefix
-  SetExpr.Diff     = <(<CTerm> minus <CTerm>)> {left} // FIXME Use NaBL2_ prefix
+  SetExpr.EmptySet = <0>                            // FIXME Use NaBL2_ prefix
+  SetExpr.Isect    = <(<CSet> isect <CSet>)> {left} // FIXME Use NaBL2_ prefix
+  SetExpr.Union    = <(<CSet> union <CSet>)> {left} // FIXME Use NaBL2_ prefix
+  SetExpr.Diff     = <(<CSet> minus <CSet>)> {left} // FIXME Use NaBL2_ prefix
 
-  CTerm = SetExpr
+  CSet = SetExpr
+
+lexical syntax
+
+  Keyword = "isect" | "union" | "minus"

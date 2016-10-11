@@ -18,7 +18,8 @@ rules
     pp-NaBL2(prettyprint|120)
 
   pp-NaBL2(prettyprint|width) =
-    parenthesize-NaBL2;prettyprint;
+    parenthesize-NaBL2;
+    prettyprint;
     !V([], <id>);
     box2text-string(|width)
 
@@ -28,5 +29,7 @@ rules
   pp-partial-NaBL2-string =
     pp-NaBL2(prettyprint-NaBL2)
 
-  parenthesize-NaBL2 = parenthesize-NaBL2Shared
+  pp-partial-NaBL2-string(|sort) =
+    pp-NaBL2(prettyprint-NaBL2(|sort))
 
+  parenthesize-NaBL2 = parenthesize-NaBL2Shared
