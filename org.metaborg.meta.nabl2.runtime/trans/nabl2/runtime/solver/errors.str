@@ -38,14 +38,7 @@ rules
     with sol' := <foldr(!sol,\ (msginfo,sol) -> <nabl2--add-message(s|msginfo)> sol \)> msginfo*
 
   nabl2--add-message(s|msginfo): sol -> sol'
-    with Message(kind,msg,pos*) := <s> msginfo
-    where <is-list> pos*
-    with msginfo* := <map(!Message(kind,msg,<id>))> pos*;
-         sol' := <nabl2--add-messages(s|msginfo*)> sol
-
-  nabl2--add-message(s|msginfo): sol -> sol'
     with Message(kind,msg,pos) := <s> msginfo
-    where <not(is-list)> pos
     with msg' := <nabl2--sanitize-message;pp-NaBL2-MessageContent> msg;
          sol' := <nabl2--add-message> (kind,(pos,msg'),sol)
 

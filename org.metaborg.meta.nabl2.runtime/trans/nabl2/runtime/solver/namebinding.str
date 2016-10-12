@@ -2,9 +2,11 @@ module nabl2/runtime/solver/namebinding
 
 imports
  
+  signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
+  signatures/nabl2/runtime/solver/-
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -93,10 +95,9 @@ rules
 
   nabl2-reduce-op-hook(|sol) = nabl2--get-names(|<nabl2--sol-g> sol)
 
-  nabl2--elems-pos(|x*): NAMES() -> x*
-
-  nabl2--elems-rep(|x*): NAMES() -> r*
-    with r* := <map(nabl2--occurrence-name)> x*
+  nabl2--apply-elems-message(|x*): msginfo@Message(kind,message,pos) -> msg*
+    where <collect-one(?NAME())> msginfo
+    with msg* := <map(\ x -> Message(kind, <bottomup(try(\ NAME() -> <nabl2--occurrence-name> x \))> message, <try(\ NAME() -> x \)> pos ) \)> x*
 
 rules
 

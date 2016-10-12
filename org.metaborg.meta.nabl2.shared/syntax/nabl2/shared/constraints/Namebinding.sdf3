@@ -34,9 +34,12 @@ context-free syntax
 
 context-free syntax
 
-  MessagePosition.NAMES = <@ NAMES>
+  CTerm.NAME           = "NAME"
+
+  MessagePosition.NAME = <@ NAME>
+  MessagePosition.NAME = <@ NAMES>
 
 lexical syntax
 
-  Keyword = "NAMES"
+  Keyword = "NAME"
 
