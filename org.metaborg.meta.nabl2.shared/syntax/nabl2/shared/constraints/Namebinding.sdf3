@@ -36,7 +36,6 @@ context-free syntax
 
   CTerm.NAME           = "NAME"
 
-  MessagePosition.NAME = <@ NAME>
   MessagePosition.NAME = <@ NAMES>
 
 lexical syntax
