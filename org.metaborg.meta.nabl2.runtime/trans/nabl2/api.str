@@ -31,7 +31,7 @@ rules // ###### Custom type operations ######
   /**
    * Produce an error during type operation reduction.
    *
-   * @type String -> _
+   * @type (Term,String) -> _
    */
   nabl2-add-reduce-error = nabl2--add-reduce-error
 

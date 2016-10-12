@@ -28,6 +28,14 @@ rules
 
 rules
 
+  nabl2--postprocess-constraint = nabl2--postprocess-property-constraint
+
+  nabl2--postprocess-property-constraint: (CPropertyOf(o,key,_,_,msginfo), sol) -> sol'
+  with msg := ["Failed set property ",key," of ",o];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+rules
+
   nabl2-is-op-hook = ?TList(_) + ?TListTail(_,_) + ?TListConc(_,_)
 
   nabl2-reduce-op-hook(|sol): TList(xs) -> xs
@@ -45,4 +53,3 @@ rules
 
   nabl2--constraint-priority: CPropertyOf(_,_,_,_,_) -> 3
 
-  nabl2--constraint-message: CPropertyOf(o,key,_,_,msginfo) -> <nabl2--default-message(|["Failed to get ",key," of ",o])> msginfo

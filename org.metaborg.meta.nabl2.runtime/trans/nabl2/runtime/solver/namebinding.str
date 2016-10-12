@@ -2,7 +2,9 @@ module nabl2/runtime/solver/namebinding
 
 imports
  
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
+
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -50,7 +52,7 @@ rules
   nabl2--solve-namebinding-constraint: (CResolve(r,d,msginfo),sol) -> res*
   where <nabl2--is-ground> r;
         if (d',_) := <nabl2--sol-r;nabl2--get(|r)> sol then
-           msg := ["Cannot resolve ",r," to ",d];
+           msg := ["Actual resolution ",d'," of ",r," differs from expected ",d];
            msginfo' := <nabl2--default-message(|msg)> msginfo;
            ![(sol, [CEqual(d,d',msginfo')])]
          else
@@ -64,9 +66,13 @@ rules
              msg := [r," does not resolve to any declaration"];
              ![(<nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol',[])]
            else
-             msg := ["Problem resolving ",r," to ",d];
-             msginfo' := <nabl2--default-message(|msg)> msginfo;
-             <map(\ (d',p) -> (<nabl2--sol-set-r(|r,(d',p))> sol', [CEqual(d,d',msginfo')]) \)> dp*
+             <map({msg, msginfo', sol'', c*:
+                   \ (d',p) -> (sol'', c*)
+                     where msg := ["Actual resolution ",d'," of ",r," differs from expected ",d];
+                           msginfo' := <nabl2--default-message(|msg)> msginfo;
+                           sol'' := <nabl2--sol-set-r(|r,(d',p))> sol';
+                           c* := [CEqual(d,d',msginfo')]
+                  \})> dp*
            end
          end => res*
 
@@ -94,6 +100,19 @@ rules
 
 rules
 
+  nabl2--postprocess-constraint = nabl2--postprocess-namebinding-constraint
+
+  nabl2--postprocess-namebinding-constraint: (CResolve(r,_,msginfo), sol) -> sol'
+  with msg := ["Failed to resolve ",r];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+  nabl2--postprocess-namebinding-constraint: (CAssoc(d,l,_,msginfo), sol) -> sol
+  with msg := ["Failed to get associated scope with label ",l," of ",d];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+
+rules
+
   nabl2--constraint-priority: CAssoc(_,_,_,_) -> 2
   nabl2--constraint-priority: CResolve(_,_,_) -> 2
 
@@ -117,7 +136,3 @@ rules
          })> unknown*
     )
  
-  nabl2--constraint-message: CResolve(r,_,msginfo) -> <nabl2--default-message(|["Failed to resolve ",r])> msginfo
-
-  nabl2--constraint-message: CAssoc(d,l,_,msginfo) -> <nabl2--default-message(|["Failed to find associated scope of ",d," with label ",l])> msginfo
-

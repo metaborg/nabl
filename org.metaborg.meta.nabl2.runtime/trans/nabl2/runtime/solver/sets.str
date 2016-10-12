@@ -2,7 +2,9 @@ module nabl2/runtime/solver/sets
 
 imports
  
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
+
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -36,6 +38,18 @@ rules
 
 rules
 
+  nabl2--postprocess-constraint = nabl2--postprocess-set-constraint
+
+  nabl2--postprocess-set-constraint: (CDistinct(s, msginfo), sol) -> sol'
+  with msg := ["Failed to check if elements in ",s," are distinct"];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+  nabl2--postprocess-set-constraint: (CSubsetEq(s1, s2, msginfo), sol) -> sol'
+  with msg := ["Failed to check if ",s1," is a subset of or equal to ",s2];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+rules
+
   nabl2-reduce-op-hook(|sol): EmptySet() -> []
 
   nabl2-reduce-op-hook(|sol): Isect(s1,s2) -> <nabl2--bag-isect> (s1,s2)
@@ -58,10 +72,3 @@ rules
   nabl2--apply-elems-message(|x*) =
     Message(id,bottomup(try(nabl2--elems-rep(|x*))),try(nabl2--elems-pos(|x*)))
 
-  nabl2--constraint-message:
-    CDistinct(n,msginfo) -> <nabl2--default-message(|msg)> msginfo
-    with msg := ["Failed to check if elements of ",n," are distinct"]
-
-  nabl2--constraint-message:
-    CSubsetEq(s1,s2,msginfo) -> <nabl2--default-message(|msg)> msginfo
-    with msg := ["Failed to check if ",s1," is a subset of, or equal to ",s2]

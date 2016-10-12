@@ -26,10 +26,25 @@ rules
         x* := <nabl2--sol-x> sol;
         <nabl2--is-subtype(|x*)> (ty1,ty2)
 
+rules
+
+  nabl2--postprocess-constraint = nabl2--postprocess-subtype-constraint
+
+  nabl2--postprocess-subtype-constraint: (FSubtype(ty1,ty2,msginfo), sol) -> sol'
+  with msg := ["Failed to set ",ty1," is a subtype of ",ty2];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+  nabl2--postprocess-subtype-constraint: (CSubtype(ty1,ty2,msginfo), sol) -> sol'
+  with if <nabl2--is-ground> ty1;
+          <nabl2--is-ground> ty2 then
+         msg := [ty1," is not a subtype of ",ty2]
+       else
+         msg := ["Failed to check if ",ty1," is a subtype of ",ty2]
+       end;
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+rules
 
   nabl2--constraint-priority: FSubtype(_,_,_) -> 3
   nabl2--constraint-priority: CSubtype(_,_,_) -> 4
-
-  nabl2--constraint-message: FSubtype(ty1,ty2,o) -> Message(Error(),["Failed to set ",ty1," as subtype of ",ty2],o)
-  nabl2--constraint-message: CSubtype(ty1,ty2,msginfo) -> <nabl2--default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
 
