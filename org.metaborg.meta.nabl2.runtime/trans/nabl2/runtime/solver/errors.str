@@ -4,8 +4,11 @@ imports
 
   libspoofax/term/origin
 
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
+  signatures/nabl2/runtime/common/-
   nabl2/runtime/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -66,21 +69,8 @@ rules
 
 rules
 
-  postprocess-errors: (sol,c*) -> (sol',[])
-  with <nabl2--sol-p;nabl2--free-var-messages> sol => fmsg*;
-       <map({?c;nabl2--get-constraint-message;nabl2--detail-message(|"Unsolved")})> c* => umsg*;
-       <nabl2--add-messages(id|[fmsg*,umsg*])> sol;
-       nabl2--unresolved-refs-errors;
-       ?sol'
-
-  nabl2--free-var-messages =
-    nabl2--all-vars; map(!Message(Warning(),["Free variable ",<id>],<id>))
-
-  nabl2--constraint-message = fail
-
-  nabl2--get-constraint-message =
-    ?c
-  ; ( (nabl2--constraint-message ; nabl2--default-message(|<pp-NaBL2-Constraint> c))
-   <+ !Message(Error(),<pp-NaBL2-Constraint> c,None())
-    )
+  nabl2--add-unsolved-constraint-error =
+    ?(c,sol);
+    msg := Message(Error(),$[Unsolved constraint: [<pp-NaBL2-Constraint> c]],None());
+    <nabl2--add-message(id|msg)> sol
 

@@ -107,3 +107,4 @@ rules
   nabl2--get-analysis-timing =
     dr-all-keys(|"AnalysisTiming");
     map(!(<id>,<AnalysisTiming;(id,cputime-to-seconds)>))
+ <+ ![]

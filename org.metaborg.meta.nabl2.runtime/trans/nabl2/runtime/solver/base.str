@@ -2,8 +2,10 @@ module nabl2/runtime/solver/base
 
 imports
 
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
+  signatures/nabl2/runtime/solver/-
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -14,14 +16,16 @@ rules
   nabl2--solve-fact = fail
   
   nabl2--solve-constraint = fail	
+
+  nabl2--postprocess-constraint = fail	
 	
   nabl2--constraint-priority = fail	
-	
+
 rules
 
   nabl2--initial-solution = nabl2--sol-new
 
-	solve-ignore-placeholders: (c,sol) -> [(sol,[])]
+	nabl2--solve-ignore-placeholders: (c,sol) -> [(sol,[])]
 	where <is-NaBL2-PrimitiveConstraint;
 	       nabl2--has-placeholder> c
 
@@ -31,7 +35,7 @@ rules
 
   nabl2--solve-facts =
     nabl2--csolve-exhaustive(id
-                     , solve-ignore-placeholders + nabl2--solve-fact
+                     , nabl2--solve-ignore-placeholders + nabl2--solve-fact
                      , id
                      , nabl2--solve-cost
                      , nabl2--constraint-lt
@@ -39,8 +43,8 @@ rules
 
   nabl2--solve-constraints =
     nabl2--csolve-greedy(nabl2--time-analysis(!"specialize",nabl2--solve-specialise)
-                 , solve-ignore-placeholders + nabl2--solve-constraint
-                 , postprocess-errors
+                 , nabl2--solve-ignore-placeholders + nabl2--solve-constraint
+                 , nabl2--solve-postprocess
                  , nabl2--solve-cost
                  , nabl2--constraint-lt
                  )
@@ -49,27 +53,39 @@ rules
   with <nabl2--sol-s> sol => s*
      ; <nabl2--S-apply(nabl2--is-var)> (s*,c) => c'
      ; {| ReduceErrors:
-            rules(ReduceErrors : _ -> [])
-          ; <bottomup(try(nabl2-reduce-op-hook(|sol)))> c' => c''
-          ; re* := <ReduceErrors>
-          ; if [] := re*
-            then
+            rules(ReduceErrors : _ -> []);
+            <bottomup(try(nabl2-reduce-op-hook(|sol)))> c' => c'';
+            re* := <ReduceErrors>;
+            if [] := re* then
               !(sol,c'')
             else
-              msg' := <nabl2--get-constraint-message> c'
-            ; msg'' := <foldr(!msg',{ ?(re,<id>) ; nabl2--detail-message(|re) })> re*
-            ; sol' := <nabl2--add-message(id|msg'')> sol
-            ; !(sol',CTrue())
+              sol' := <foldr(!sol,\ (re,sol) -> <nabl2--add-message> (Error(), re, sol) \)> re*;
+              !(sol',CTrue())
             end
        |} => res
 
-  nabl2--add-reduce-error =
-    ?msg;
+  nabl2--add-reduce-error = nabl2--strict(
+    ?(term,msg);
     where(msg* := <ReduceErrors>;
-          rules(ReduceErrors : _ -> [msg|msg*]))
+          rules(ReduceErrors : _ -> [(term,msg)|msg*]))
+  )
 
-  nabl2--solve-cost =
-    nabl2--strict(Fst; nabl2--sol-e; length)
+  nabl2--solve-cost = nabl2--strict(
+    Fst; nabl2--sol-e; length
+  )
+
+  nabl2--solve-postprocess = nabl2--strict(
+     ?(sol,c*);
+     <foldr(!sol,nabl2--postprocess-constraint <+ nabl2--add-unsolved-constraint-error)> c*;
+     with(fmsg* := <nabl2--sol-p;nabl2--free-var-messages>);
+     nabl2--add-messages(id|fmsg*);
+     nabl2--unresolved-refs-errors;
+     !(<id>, [])
+   )
+
+  nabl2--free-var-messages =
+    nabl2--all-vars; map(!Message(Warning(),["Free variable ",<id>],<id>))
+
 
 rules
  

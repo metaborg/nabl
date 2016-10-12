@@ -22,6 +22,18 @@ rules
 
 rules
 
+  nabl2--postprocess-constraint = nabl2--postprocess-uninterpreted-constraint
+
+  nabl2--postprocess-uninterpreted-constraint: (c@CGoal(t), sol) -> sol'
+  with msg := ["Failed to add goal ",t,", because it is not ground"];
+       sol' := <nabl2--add-message> (Error(), (c, msg), sol)
+
+  nabl2--postprocess-uninterpreted-constraint: (c@CFact(t), sol) -> sol'
+  with msg := ["Failed to add fact ",t,", because it is not ground"];
+       sol' := <nabl2--add-message> (Error(), (c, msg), sol)
+
+rules
+
   nabl2--constraint-priority: CGoal(_) -> 99
   nabl2--constraint-priority: CFact(_) -> 99
 
