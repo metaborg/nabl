@@ -3,23 +3,22 @@ module nabl2/runtime/analysis/query
 imports
 
   nabl2shared
+  
+  signatures/nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
-signature
-  sorts ASTMetadata constructors
-    Type   : ASTMetadata
-    Params : ASTMetadata
-
 rules
 
-  nabl2--get-ast-params = nabl2--get-ast-metadata(|Params())
+  nabl2--get-ast-metadata(|analysis,key): term -> value
+  where index := <nabl2--get-ast-index> term;
+        value := <fetch-elem(?AstMetadata(<id>));
+                  nabl2--get(|index);
+                  nabl2--get(|key)> analysis
 
-  nabl2--set-ast-params(|params) = nabl2--set-ast-metadata(|Params(), params)
-  
-  nabl2--get-ast-type = nabl2--get-ast-metadata(|Type())
+  nabl2--get-ast-params(|a) = nabl2--get-ast-metadata(|a,Params())
 
-  nabl2--set-ast-type(|type) = nabl2--set-ast-metadata(|Type(), type)
+  nabl2--get-ast-type(|a) = nabl2--get-ast-metadata(|a,Type())
 
 rules
 

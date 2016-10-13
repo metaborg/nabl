@@ -95,21 +95,44 @@ rules // ###### Analysis execution ######
 rules // ###### Analysis results ######
 
   /**
-   * Get analysis for the given file
+   * Get analysis for the given AST node
+   *
+   * @type node:Term -> Analysis
+   */
+  nabl2-get-ast-analysis = nabl2--get-ast-analysis
+
+  /**
+   * Get analysis for the given resource
    *
    * @type filename:String -> Analysis
    */
-  nabl2-get-analysis = nabl2--get-analysis
+  nabl2-get-resource-analysis = nabl2--get-resource-analysis
 
   /**
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params = nabl2--get-ast-params
+  nabl2-get-ast-params =
+    where(a := <nabl2--get-ast-analysis>);
+    nabl2--get-ast-params(|a)
+
+  /**
+   * @param a : Analysis
+   * @type node:Term -> Term
+   */
+  nabl2-get-ast-params(|a) = nabl2--get-ast-params(|a)
 
   /**
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type = nabl2--get-ast-type
+  nabl2-get-ast-type =
+    where(a := <nabl2--get-ast-analysis>);
+    nabl2--get-ast-type(|a)
+
+  /**
+   * @param a : Analysis
+   * @type node:Term -> Type
+   */
+  nabl2-get-ast-type(|a) = nabl2--get-ast-type(|a)
 
   /**
    * @type node:Term -> List(Occurrence)

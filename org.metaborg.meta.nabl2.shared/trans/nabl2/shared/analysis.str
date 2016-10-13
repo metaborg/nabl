@@ -22,7 +22,8 @@ signature
 
 rules
 
-  nabl2--get-analysis = prim("SG_get_analysis")
+  nabl2--get-resource-analysis = prim("SG_get_resource_analysis")
+  nabl2--get-resource-partial-analysis = prim("SG_get_resource_partial_analysis")
 
   nabl2--null-analysis: AnalyzeInitial(_) -> InitialResult(None())
   nabl2--null-analysis: AnalyzeUnit(_,ast,_) -> UnitResult(ast,None())

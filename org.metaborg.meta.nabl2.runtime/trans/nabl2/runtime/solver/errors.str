@@ -64,6 +64,8 @@ rules
 
   nabl2--add-unsolved-constraint-error =
     ?(c,sol);
+  nabl2--strict(
     msg := Message(Error(),$[Unsolved constraint: [<pp-NaBL2-Constraint> c]],None());
     <nabl2--add-message(id|msg)> sol
+  )
 

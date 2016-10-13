@@ -5,8 +5,12 @@ imports
   libspoofax/editor/completion/interface
 
   nabl2/shared/-
-  nabl2/runtime/pp
+
+  signatures/nabl2/runtime/common/-
   nabl2/runtime/analysis/-
+  nabl2/runtime/prelude/-
+  nabl2/runtime/pp
+  nabl2/api
 
 signature
 
@@ -18,7 +22,7 @@ rules // top-level functions that are called during analysis
 
   nabl2-debug-constraint-generation-hook = fail
 
-  nabl2--generate-constraint-init(|source) =
+  nabl2--generate-constraint-init(|source) = nabl2--strict(
     ?ast;
     {| NewScope, NewVar:
 	    scope-counter := <new-counter>;
@@ -28,17 +32,27 @@ rules // top-level functions that are called during analysis
 	         );
       <nabl2--generate-constraint-init-rule(|source)> ast
 	  |}
+  )
 
-  nabl2--generate-constraint-file(|source,params) =
+  nabl2--generate-constraint-file(|source,params) = nabl2--strict(
     ?ast;
-    {| NewScope, NewVar:
+    {| NewScope, NewVar, AstMetadata:
 	    scope-counter := <new-counter>;
 	    var-counter   := <new-counter>;
 	    rules( NewScope: _ -> <next-counter> scope-counter
 	           NewVar:   _ -> <next-counter> var-counter
 	         );
-      <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|source,params)> ast
+      C := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|source,params)> ast;
+      metadata := <nabl2--get-generated-metadata>;
+      !(C, metadata)
 	  |}
+  )
+
+  nabl2--get-generated-metadata = nabl2--strict(
+    dr-all-keys(|"AstMetadata");
+    map(!(<id>,<AstMetadata>))
+ <+ ![]
+  )
 
 rules
 
@@ -62,15 +76,17 @@ rules
 
   nabl2--generate-constraint-placeholder(|source,args): term -> CTrue()
     where <is-SDF-placeholder> term
-    with if ParamsAndType(params,type) := args then
-      <nabl2--set-ast-params(|params);nabl2--set-ast-type(|type)> term
-    else if Params(params) := args then
-      <nabl2--set-ast-params(|params)> term
-    end end
+    with index := <nabl2--get-ast-index> term;
+         if ParamsAndType(params,type) := args then
+           rules(AstMetadata: index -> [(Params(), params), (Type(), type)])
+         else if Params(params) := args then
+           rules(AstMetadata: index -> [(Params(), params)])
+         end end
 
   nabl2--generate-constraint-missing(s|source,args): term@_#(subterm*) -> constraint
-    with if ParamsAndType(params,type) := args then
-      <nabl2--set-ast-params(|params);nabl2--set-ast-type(|type)> term;
+    with index := <nabl2--get-ast-index> term;
+    if ParamsAndType(params,type) := args then
+      rules(AstMetadata: index -> [(Params(), params), (Type(), type)]);
       if nabl2-constraint-generation-implicit-traversal-hook then
         msg := $[Cannot do typed implicit traversal for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
         if nabl2-debug-constraint-generation-hook then
@@ -85,7 +101,7 @@ rules
         constraint := CFalse(Message(Warning(),msg,term))
       end
     else if Params(params) := args then
-      <nabl2--set-ast-params(|params)> term;
+      rules(AstMetadata: index -> [(Params(), params)]);
       if nabl2-constraint-generation-implicit-traversal-hook then
         <debug> $({implicit} [[ (<pp-NaBL2-Term> subterm*) ^ (<pp-NaBL2-CTerm> params) ]]);
         subconstraint* := <filter(nabl2--generate-constraint(s|source,args);not(?CTrue()))> subterm*;
