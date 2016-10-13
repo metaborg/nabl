@@ -133,7 +133,11 @@ rules
            <nabl2--sol-set-fr(|ref,dp*)> sol;
            if [] := dp*; <not(nabl2--occurrence-ns;nabl2-ignore-unused-references-hook)> ref then
              nabl2--add-message(id|Message(Error(),["Failed to resolve ",ref],<nabl2--occurrence-index> ref))
-           end
+           else if [dp] := dp* then
+             <nabl2--sol-set-r(|ref,dp)> sol
+           else if <not(nabl2--occurrence-ns;nabl2-ignore-unused-references-hook)> ref then
+             nabl2--add-message(id|Message(Error(),["Ambiguous resolution for ",ref],<nabl2--occurrence-index> ref))
+           end end end
          })> unknown*
     )
  
