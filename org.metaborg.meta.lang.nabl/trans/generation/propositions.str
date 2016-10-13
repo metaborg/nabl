@@ -76,7 +76,7 @@ rules
       key := <new-key(|"match")> r
     ; <iset-add(|MATCH_RULE(key, p, v, var*))> r
       
-  new-key(|base) = <newname> base
+  new-key(|base) = <concat-strings; newname> [base, "_", <CurrentModule>, "_"]
   
 overlays
 	
