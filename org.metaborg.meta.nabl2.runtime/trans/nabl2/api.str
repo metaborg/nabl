@@ -82,8 +82,6 @@ rules // ###### Analysis execution ######
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
-  analyze(pre)       = nabl2--deprecated(|"Use of 'analyze(pre)' is deprecated, use 'nabl2-analyze(pre)' instead.");
-                       nabl2-analyze(pre)
 
   /**
    * Dummy analysis function for NaBL2.
@@ -105,7 +103,8 @@ rules // ###### Custom analysis hooks ######
 
   /**
    * @param a : Analysis
-   * @type (resource:String, CustomInitialResult, List(CustomUnitResult)) -> CustomFinalResult
+   * @type (resource:String, CustomInitialResult, List(CustomUnitResult))
+   *         -> (errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage), CustomFinalResult)
    */
   nabl2-custom-analysis-final-hook(|a) = fail
 

@@ -61,7 +61,7 @@ rules
  
 
   nabl2--analyze(pre):
-    AnalyzeFinal(resource,initial,unit*) -> FinalResult(error*,warning*,note*,result')
+    AnalyzeFinal(resource,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
     with nabl2--analysis-step(!"Normalizing constraints",
       C  := <getfirst(?Constraint(<id>))> initial;
       C* := <map(getfirst(?Constraint(<id>)))> unit*;
@@ -92,32 +92,39 @@ rules
     );
     where(
       sol := <Hd> sol4*
-    );
-    with(
-      error* := <nabl2--sol-e;nabl2--mapv(nabl2--xmlencode)> sol;
-      warning* := <nabl2--sol-w;nabl2--mapv(nabl2--xmlencode)> sol;
-      note* := <nabl2--sol-n;nabl2--mapv(nabl2--xmlencode)> sol;
-      resolution := <nabl2--sol-r;map((nabl2--occurrence-index,Fst;nabl2--occurrence-index))> sol;
-      analysis := [ Constraint(C')
-                  , ResolutionParams(<nabl2--labels>,<nabl2--labels-wf>,lo*)
-                  , Timing(timing)
-                  , AlternativeSolutions(<(Tl<+![]);map-with-index(id)> sol4*)
-                  | sol
-                  ]
     ))
     with nabl2--analysis-step(!$[Custom final analysis [resource]],
       custom-initial := <nabl2--get-custom-analysis <+ !None()> initial;
       custom-unit* := <filter(nabl2--get-custom-analysis)> unit*;
-      if custom := <nabl2-custom-analysis-final-hook(|analysis)> (resource, custom-initial, custom-unit*) then
-        result' := <nabl2--set-custom-analysis(|custom)> analysis
+      if custom-result := <nabl2-custom-analysis-final-hook(|sol)> (resource, custom-initial, custom-unit*) then
+        if (custom-error*, custom-warning*, custom-note*, custom-analysis) := custom-result then
+          sol'1 := <foldr(!sol  ,\ (msg,sol) -> <nabl2--sol-add-error(|msg)> sol \)> custom-error*;
+          sol'2 := <foldr(!sol'1,\ (msg,sol) -> <nabl2--sol-add-warning(|msg)> sol \)> custom-error*;
+          sol'3 := <foldr(!sol'2,\ (msg,sol) -> <nabl2--sol-add-note(|msg)> sol \)> custom-error*;
+          sol' := <nabl2--set-custom-analysis(|custom-analysis)> sol'3
+        else
+          <warn(|"Expected 4-tuple (error*,warning*,note*,custom-analysis) from custom final analysis, got:")> custom-result;
+          sol' := sol
+        end
       else
-        result' := <switch !(custom-initial, custom-unit*)
-          case ?(None(), []) : !analysis
-          case ?(None(), custom)  : <nabl2--set-custom-analysis(|custom)> analysis
-          case ?(custom, [])      : <nabl2--set-custom-analysis(|custom)> analysis
-          case ?custom            : <nabl2--set-custom-analysis(|custom)> analysis
+        sol' := <switch !(custom-initial, custom-unit*)
+          case ?(None(), [])     : !sol
+          case ?(None(), custom) : <nabl2--set-custom-analysis(|custom)> sol
+          case ?(custom, [])     : <nabl2--set-custom-analysis(|custom)> sol
+          case ?custom           : <nabl2--set-custom-analysis(|custom)> sol
         end>
       end
+    )
+    with(
+      error* := <nabl2--sol-e;nabl2--mapv(nabl2--xmlencode)> sol';
+      warning* := <nabl2--sol-w;nabl2--mapv(nabl2--xmlencode)> sol';
+      note* := <nabl2--sol-n;nabl2--mapv(nabl2--xmlencode)> sol';
+      analysis := [ Constraint(C')
+                  , ResolutionParams(<nabl2--labels>,<nabl2--labels-wf>,lo*)
+                  , Timing(timing)
+                  , AlternativeSolutions(<(Tl<+![]);map-with-index(id)> sol4*)
+                  | sol'
+                  ]
     )
 
 
