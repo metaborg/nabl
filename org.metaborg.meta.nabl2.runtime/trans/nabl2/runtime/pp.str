@@ -2,11 +2,18 @@ module nabl2/runtime/pp
 
 imports
 
-  nabl2shared
-  pp/-
+  libspoofax/editor/completion/interface
+
+  nabl2/api
+
+  pp/nabl2/shared/common/-
+  pp/nabl2/shared/constraints/-
+  nabl2/shared/-
+
   pp/nabl2/runtime/analysis/-
   pp/nabl2/runtime/common/-
   pp/nabl2/runtime/solver/-
+  pp/-
 
 rules
 
@@ -76,3 +83,12 @@ rules // CTerms
   nabl2--actual-CTerm = is-NaBL2-Names
   nabl2--actual-CTerm = is-NaBL2-TypeVar
   nabl2--actual-CTerm = is-NaBL2-SetExpr
+
+rules // Custom analysis
+
+  prettyprint-NaBL2-CustomAnalysis =
+    where(not(is-NaBL2-CustomAnalysis));
+  ( nabl2-prettyprint-custom-analysis-hook
+ <+ prettyprint-NaBL2-CTerm
+  )
+

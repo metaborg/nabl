@@ -4,6 +4,7 @@ imports
 
   nabl2/api
   
+  signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
@@ -18,32 +19,49 @@ imports
 rules
 
   nabl2--analyze(pre):
-    AnalyzeInitial(source) -> InitialResult([Params(params),Constraint(C)])
-    with nabl2--analysis-step(!$[Initializing [source]],
-      (params,C) := <nabl2--generate-constraint-init(|source)> source
+    AnalyzeInitial(resource) -> InitialResult(result')
+    with nabl2--analysis-step(!$[Initializing [resource]],
+      (params,C) := <nabl2--generate-constraint-init(|resource)> resource;
+      result := [Params(params),Constraint(C)]
+    )
+    with nabl2--analysis-step(!$[Custom initial analysis [resource]],
+      if custom := <nabl2-custom-analysis-init-hook> resource then
+        result' := <nabl2--set-custom-analysis(|custom)> result
+      else
+        result' := result
+      end
     )
 
 
   nabl2--analyze(pre):
-    AnalyzeUnit(source,ast,initial) -> UnitResult(ast',[Constraint(C), AstMetadata(metadata)])
+    AnalyzeUnit(resource,ast,initial) -> UnitResult(ast',result')
     where not(<nabl2--is-empty-ast> ast)
-    with nabl2--analysis-step(!$[Preprocessing AST [source]],
+    with nabl2--analysis-step(!$[Preprocessing AST [resource]],
       params := <getfirst(?Params(<id>))> initial;
-      ast' := <pre;nabl2--index-ast(|source)> ast
+      ast' := <pre;nabl2--index-ast(|resource)> ast
     )
-    with nabl2--analysis-step(!$[Generating constraints [source]],
-      (rawC,metadata) := <nabl2--generate-constraint-file(|source,params)> ast';
-      C := <nabl2--normalize-constraint> rawC
+    with nabl2--analysis-step(!$[Generating constraints [resource]],
+      (rawC,metadata) := <nabl2--generate-constraint-file(|resource,params)> ast';
+      C := <nabl2--normalize-constraint> rawC;
+      result := [Constraint(C),AstMetadata(metadata)]
+    )
+    with nabl2--analysis-step(!$[Custom unit analysis [resource]],
+      custom-initial := <nabl2--get-custom-analysis <+ !None()> initial;
+      if custom := <nabl2-custom-analysis-unit-hook> (resource, ast', custom-initial) then
+        result' := <nabl2--set-custom-analysis(|custom)> result
+      else
+        result' := result
+      end
     )
 
   nabl2--analyze(pre):
-    AnalyzeUnit(source,ast,_) -> UnitResult(ast,[Constraint(C), AstMetadata([])])
+    AnalyzeUnit(resource,ast,_) -> UnitResult(ast,[Constraint(C), AstMetadata([])])
     where <nabl2--is-empty-ast> ast
-    with C := CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> source))
+    with C := CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> resource))
  
 
   nabl2--analyze(pre):
-    AnalyzeFinal(source,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
+    AnalyzeFinal(resource,initial,unit*) -> FinalResult(error*,warning*,note*,result')
     with nabl2--analysis-step(!"Normalizing constraints",
       C  := <getfirst(?Constraint(<id>))> initial;
       C* := <map(getfirst(?Constraint(<id>)))> unit*;
@@ -87,11 +105,21 @@ rules
                   | sol
                   ]
     ))
+    with nabl2--analysis-step(!$[Custom final analysis [resource]],
+      custom-initial := <nabl2--get-custom-analysis <+ !None()> initial;
+      custom-unit* := <filter(nabl2--get-custom-analysis)> unit*;
+      if custom := <nabl2-custom-analysis-final-hook(|analysis)> (resource, custom-initial, custom-unit*) then
+        result' := <nabl2--set-custom-analysis(|custom)> analysis
+      else
+        result' := <switch !(custom-initial, custom-unit*)
+          case ?(None(), []) : !analysis
+          case ?(None(), custom)  : <nabl2--set-custom-analysis(|custom)> analysis
+          case ?(custom, [])      : <nabl2--set-custom-analysis(|custom)> analysis
+          case ?custom            : <nabl2--set-custom-analysis(|custom)> analysis
+        end>
+      end
+    )
 
-
-  nabl2--analyze(pre): ApplyAnalysis(value,solution) -> value'
-    where s := <nabl2--sol-s> solution
-    with value' := <nabl2--S-apply(nabl2--is-var)> (s,value)
 
   nabl2--is-empty-ast = is-tuple; ?()
 

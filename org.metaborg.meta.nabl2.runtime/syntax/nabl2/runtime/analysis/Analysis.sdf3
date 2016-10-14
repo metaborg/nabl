@@ -2,8 +2,10 @@ module nabl2/runtime/analysis/Analysis
 
 imports
 
+  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/Resolution
   nabl2/shared/constraints/Base
+
   nabl2/runtime/common/AST
   nabl2/runtime/common/Native
   nabl2/runtime/common/Resolution
@@ -49,6 +51,12 @@ context-free syntax
     AST metadata := 
       <{AstMetadata "\n"}*>
   >
+
+  AnalysisResult.CustomAnalysis = <
+    custom analysis := 
+      <CustomAnalysis>
+  >
+  CustomAnalysis.None = <none>
 
   AnalysisResult.Timing = <
     timing :=

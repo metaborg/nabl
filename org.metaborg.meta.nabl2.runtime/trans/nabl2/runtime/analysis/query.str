@@ -5,6 +5,7 @@ imports
   nabl2shared
   
   signatures/nabl2/runtime/analysis/-
+  signatures/nabl2/runtime/common/-
   nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
@@ -30,3 +31,9 @@ rules
 
   nabl2--get-resolved-name(|a): r -> d
     where d := <nabl2--sol-r;nabl2--get(|r)> a 
+
+rules
+
+  nabl2--get-custom-analysis = getfirst(?CustomAnalysis(<id>))
+
+  nabl2--set-custom-analysis(|custom) = fetch(CustomAnalysis(!custom)) <+ ![CustomAnalysis(custom)|<id>]

@@ -4,6 +4,7 @@ imports
  
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
+  pp/nabl2/shared/common/-
   nabl2/shared/-
 
   signatures/nabl2/runtime/solver/-

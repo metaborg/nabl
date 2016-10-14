@@ -91,6 +91,33 @@ rules // ###### Analysis execution ######
   nabl2-null-analysis = nabl2--null-analysis
 
 
+rules // ###### Custom analysis hooks ######
+
+  /**
+   * @type resource:String -> CustomInitialResult
+   */
+  nabl2-custom-analysis-init-hook = fail
+
+  /**
+   * @type (resource:String, ast:Term, CustomInitialResult) -> CustomUnitResult
+   */
+  nabl2-custom-analysis-unit-hook = fail
+
+  /**
+   * @param a : Analysis
+   * @type (resource:String, CustomInitialResult, List(CustomUnitResult)) -> CustomFinalResult
+   */
+  nabl2-custom-analysis-final-hook(|a) = fail
+
+  /**
+   * @type Analysis -> CustomFinalResult
+   */
+  nalb2-get-custom-analysis = nabl2--get-custom-analysis
+
+  /**
+   * @type CustomFinalResult -> Box
+   */
+  nabl2-prettyprint-custom-analysis-hook = fail
 
 rules // ###### Analysis results ######
 
