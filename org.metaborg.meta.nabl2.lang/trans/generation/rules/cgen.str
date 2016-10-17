@@ -4,7 +4,7 @@ imports
 
   libstrc
 
-  nabl2shared
+  signatures/nabl2/shared/constraints/-
  
   signatures/common/-
   signatures/rules/-
@@ -48,6 +48,7 @@ rules
       -> RDefT(<rule-name> name,[],[<source-var>,<args-var>],
            Rule(pattern, <constraint-var>, strclause*))
     with
+      pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
       (str*,constraint) := <clauses-to-str> clause*;
       params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
       params-string := <strip-as-pattern;pp-stratego-string> params-pattern;
@@ -76,7 +77,10 @@ rules
         ]|;
         debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"] end ]|
       end;
-      guarded-args-str := |[ ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected parameters ",~args-string," with actual parameters ",<nabl2--pp-flat-args> ~<args-var>, "."]) ]|;
+      guarded-args-str := |[
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
+                                                  " when matching ",~pattern-string, " with ",<pp-NaBL2-Term> ~<term-var>,"."])
+      ]|;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
       strclause* := [
