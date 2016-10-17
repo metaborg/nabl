@@ -84,13 +84,12 @@ rules // ###### Analysis execution ######
   nabl2-constraint-generation-implicit-traversal-hook = fail
 
   /**
-   * Control whether to ignore errors on unused references. If the strategy
-   * succeeds for its namespace argument, no error is generated if the reference
-   * does not resolve.
+   * Control whether to resolve unused references. If the strategy succeeds for
+   * its namespace argument, an error is generated if the reference does not resolve.
    * 
    * @type ns -> _
    */
-  nabl2-ignore-unused-references-hook = fail
+  nabl2-resolve-unused-references-hook = fail
 
   /**
    * Main analysis strategy for NaBL2.

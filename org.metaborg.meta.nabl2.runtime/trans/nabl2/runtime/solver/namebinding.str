@@ -2,6 +2,8 @@ module nabl2/runtime/solver/namebinding
 
 imports
  
+  nabl2/api
+ 
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   pp/nabl2/shared/common/-
@@ -120,25 +122,24 @@ rules
 
 rules
  
-  nabl2-ignore-unused-references-hook = fail
-
   nabl2--unresolved-refs-errors: sol -> sol'
     withnabl2--time-analysis(!"namebinding",
          g := <nabl2--sol-g> sol;
          ref* := <conc> (<nabl2--G-refs> g, <nabl2--G-imports> g);
          res* := <nabl2--sol-fr;nabl2--keys> sol;
-         unknown* := <diff> (ref*, res*);
+         unknown* := <diff;filter(where(nabl2--occurrence-ns;
+                                        nabl2-resolve-unused-references-hook))> (ref*, res*);
          sol' := <foldr(!sol,{ ref,sol, dp*:
            ?(ref,sol);
            dp* := <nabl2--resolve(|g)<+![]> ref;
            <nabl2--sol-set-fr(|ref,dp*)> sol;
-           if [] := dp*; <not(nabl2--occurrence-ns;nabl2-ignore-unused-references-hook)> ref then
+           if [] := dp* then
              nabl2--add-message(id|Message(Error(),["Failed to resolve ",ref],<nabl2--occurrence-index> ref))
            else if [dp] := dp* then
              <nabl2--sol-set-r(|ref,dp)> sol
-           else if <not(nabl2--occurrence-ns;nabl2-ignore-unused-references-hook)> ref then
+           else 
              nabl2--add-message(id|Message(Error(),["Ambiguous resolution for ",ref],<nabl2--occurrence-index> ref))
-           end end end
+           end end
          })> unknown*
     )
  
