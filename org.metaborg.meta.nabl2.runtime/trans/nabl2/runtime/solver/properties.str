@@ -2,7 +2,9 @@ module nabl2/runtime/solver/properties
 
 imports
 
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
+
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-

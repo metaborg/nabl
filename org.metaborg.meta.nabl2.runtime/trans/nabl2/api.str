@@ -35,6 +35,22 @@ rules // ###### Custom type operations ######
    */
   nabl2-add-reduce-error = nabl2--add-reduce-error
 
+
+  /**
+   * By default the subtyping relation only allows one direct supertype per type.
+   * For types where this strategy succeeds, multiple direct supertypes are allowed.
+   * For example, if you have a built-in bottom or null type, you could use
+   *
+   *     nabl2-allow-multiple-supertypes-hook = ?Bottom()
+   *
+   * or, if multiple inheritance is allowed for all user defined types as well,
+   *
+   *     nabl2-allow-multiple-supertypes-hook = id
+   * 
+   * @type Type -> _
+   */
+  nabl2-allow-multiple-supertypes-hook = fail
+
 rules // ###### Analysis execution ######
 
   /**
