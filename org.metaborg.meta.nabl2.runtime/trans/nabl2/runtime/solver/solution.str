@@ -41,7 +41,7 @@ rules
   nabl2--sol-apply-s(|s') =
     map(Substitution(<nabl2--S-compose(nabl2--is-var)> (s',<id>)) <+ <nabl2--S-apply(nabl2--is-var)> (s',<id>))
 
-  nabl2--sol-add-p(|o,key,val) = fetch(Properties(nabl2--update(![(key,val)|<id>],![]|o)))
+  nabl2--sol-add-p(|o,key,val) = fetch(Properties(nabl2--update(nabl2--set(!val|key),![]|o)))
 
   nabl2--sol-set-x(|x*) = fetch(SubtypeRelation(!x*))
 
