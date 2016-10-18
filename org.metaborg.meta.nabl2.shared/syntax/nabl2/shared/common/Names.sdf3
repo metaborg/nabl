@@ -18,6 +18,5 @@ syntax
   Names-CF.Visibles       = "V(" Scope-CF ")" NamespacePattern-CF
   Names-CF.Reachables     = "W(" Scope-CF ")" NamespacePattern-CF
 
-  NamespacePattern-CF.Default   =
-  NamespacePattern-CF.All       = "/*"
+  NamespacePattern-CF.All       =
   NamespacePattern-CF.Namespace = "/" NamespaceId-LEX
