@@ -11,5 +11,5 @@ context-free syntax
   CGenArgs.Params        = <<CGenParams>>
   CGenArgs.ParamsAndType = <<CGenParams> : <CTerm>>
 
-  CGenParams = <^ (<CTerm>)>
   CGenParams = <^ (<{CTerm ","}*>)>
+  CGenParams = <^ (<CTerm>)>

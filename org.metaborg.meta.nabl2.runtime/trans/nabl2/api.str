@@ -35,6 +35,22 @@ rules // ###### Custom type operations ######
    */
   nabl2-add-reduce-error = nabl2--add-reduce-error
 
+
+  /**
+   * By default the subtyping relation only allows one direct supertype per type.
+   * For types where this strategy succeeds, multiple direct supertypes are allowed.
+   * For example, if you have a built-in bottom or null type, you could use
+   *
+   *     nabl2-allow-multiple-supertypes-hook = ?Bottom()
+   *
+   * or, if multiple inheritance is allowed for all user defined types as well,
+   *
+   *     nabl2-allow-multiple-supertypes-hook = id
+   * 
+   * @type Type -> _
+   */
+  nabl2-allow-multiple-supertypes-hook = fail
+
 rules // ###### Analysis execution ######
 
   /**
@@ -68,13 +84,12 @@ rules // ###### Analysis execution ######
   nabl2-constraint-generation-implicit-traversal-hook = fail
 
   /**
-   * Control whether to ignore errors on unused references. If the strategy
-   * succeeds for its namespace argument, no error is generated if the reference
-   * does not resolve.
+   * Control whether to resolve unused references. If the strategy succeeds for
+   * its namespace argument, an error is generated if the reference does not resolve.
    * 
    * @type ns -> _
    */
-  nabl2-ignore-unused-references-hook = fail
+  nabl2-resolve-unused-references-hook = fail
 
   /**
    * Main analysis strategy for NaBL2.
@@ -82,8 +97,6 @@ rules // ###### Analysis execution ######
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
-  analyze(pre)       = nabl2--deprecated(|"Use of 'analyze(pre)' is deprecated, use 'nabl2-analyze(pre)' instead.");
-                       nabl2-analyze(pre)
 
   /**
    * Dummy analysis function for NaBL2.
@@ -91,25 +104,76 @@ rules // ###### Analysis execution ######
   nabl2-null-analysis = nabl2--null-analysis
 
 
+rules // ###### Custom analysis hooks ######
+
+  /**
+   * @type resource:String -> CustomInitialResult
+   */
+  nabl2-custom-analysis-init-hook = fail
+
+  /**
+   * @type (resource:String, ast:Term, CustomInitialResult) -> CustomUnitResult
+   */
+  nabl2-custom-analysis-unit-hook = fail
+
+  /**
+   * @param a : Analysis
+   * @type (resource:String, CustomInitialResult, List(CustomUnitResult))
+   *         -> (errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage), CustomFinalResult)
+   */
+  nabl2-custom-analysis-final-hook(|a) = fail
+
+  /**
+   * @type Analysis -> CustomFinalResult
+   */
+  nalb2-get-custom-analysis = nabl2--get-custom-analysis
+
+  /**
+   * @type CustomFinalResult -> Box
+   */
+  nabl2-prettyprint-custom-analysis-hook = fail
 
 rules // ###### Analysis results ######
 
   /**
-   * Get analysis for the given file
+   * Get analysis for the given AST node
+   *
+   * @type node:Term -> Analysis
+   */
+  nabl2-get-ast-analysis = nabl2--get-ast-analysis
+
+  /**
+   * Get analysis for the given resource
    *
    * @type filename:String -> Analysis
    */
-  nabl2-get-analysis = nabl2--get-analysis
+  nabl2-get-resource-analysis = nabl2--get-resource-analysis
 
   /**
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params = nabl2--get-ast-params
+  nabl2-get-ast-params =
+    where(a := <nabl2--get-ast-analysis>);
+    nabl2--get-ast-params(|a)
+
+  /**
+   * @param a : Analysis
+   * @type node:Term -> Term
+   */
+  nabl2-get-ast-params(|a) = nabl2--get-ast-params(|a)
 
   /**
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type = nabl2--get-ast-type
+  nabl2-get-ast-type =
+    where(a := <nabl2--get-ast-analysis>);
+    nabl2--get-ast-type(|a)
+
+  /**
+   * @param a : Analysis
+   * @type node:Term -> Type
+   */
+  nabl2-get-ast-type(|a) = nabl2--get-ast-type(|a)
 
   /**
    * @type node:Term -> List(Occurrence)

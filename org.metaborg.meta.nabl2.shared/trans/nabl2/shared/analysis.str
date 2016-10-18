@@ -13,7 +13,6 @@ signature
     AnalyzeInitial : String/* source */ -> AnalysisAction
     AnalyzeUnit    : String/* source */ * Term/* ast */ * Term/* initial solution */ -> AnalysisAction
     AnalyzeFinal   : String/* source */ * Term/* initial solution */ * List(Term/* unit solution */) -> AnalysisAction
-    ApplyAnalysis  : Term/* value */ * List(Term/* final solution */) -> AnalysisAction
 
   constructors
     InitialResult : Term/* initial solution */ -> InitialResult
@@ -22,10 +21,10 @@ signature
 
 rules
 
-  nabl2--get-analysis = prim("SG_get_analysis")
+  nabl2--get-resource-analysis = prim("SG_get_resource_analysis")
+  nabl2--get-resource-partial-analysis = prim("SG_get_resource_partial_analysis")
 
   nabl2--null-analysis: AnalyzeInitial(_) -> InitialResult(None())
   nabl2--null-analysis: AnalyzeUnit(_,ast,_) -> UnitResult(ast,None())
   nabl2--null-analysis: AnalyzeFinal(source,_,_) -> FinalResult([],[],[],None())
-  nabl2--null-analysis: ApplyAnalysis(value,_) -> value
   nabl2--null-analysis = fatal-err(|"Unknown analysis action.")

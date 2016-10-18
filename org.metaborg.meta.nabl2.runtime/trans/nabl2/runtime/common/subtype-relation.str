@@ -23,19 +23,21 @@ rules
   nabl2--initial-subtype-relation = ![]
  
 
+  // case not already in the subtype relation
   nabl2--extend-subtype-relation(|x*): (ty1,ty2) -> [x|x'*]
     where ety1 := <nabl2--erase-subtypeterms> ty1;
           ety2 := <nabl2--erase-subtypeterms> ty2;
-          <not(getfirst((where(nabl2--erase-subtypeterms;?ety1),id)))> x*;
+          ( <nabl2-allow-multiple-supertypes-hook> ty1
+         <+ <not(getfirst((where(nabl2--erase-subtypeterms;?ety1),id)))> x*
+          );
           not(<nabl2--upcast(|x*)> (ty2,ty1))
-    with if (ty2',supty2*) := <getfirst((where(nabl2--erase-subtypeterms;?ety2),id))> x* then
+    with supty2'* := <filter({ ty2', supty2*, tvar2*, tvar2'*, s:
+           (ty2',supty2*) := <(where(nabl2--erase-subtypeterms;?ety2),id)>;
            tvar2* := <nabl2--get-subtypeterms> ty2;
            tvar2'* := <nabl2--get-subtypeterms> ty2';
            s := <zip> (tvar2'*,tvar2*);
-           supty2'* := <nabl2--S-apply(is-NaBL2-TypeVar)> (s,supty2*)
-         else
-           supty2'* := []
-         end;
+           <nabl2--S-apply(is-NaBL2-TypeVar)> (s,supty2*)
+         });concat> x*;
          supty1* := [ty2|supty2'*];
          x := (ty1,supty1*);
          tvar1* := <nabl2--get-subtypeterms> ty1;
@@ -47,6 +49,7 @@ rules
                  supty1'* := <nabl2--S-apply(is-NaBL2-TypeVar)> (s,supty1*)
          \}))> x*
  
+  // case already in the subtype relation
   nabl2--extend-subtype-relation(|x*): (ty1,ty2) -> x*
     where ety1 := <nabl2--erase-subtypeterms> ty1;
           (ty1',ty2') := <getfirst((where(nabl2--erase-subtypeterms;?ety1),Hd))> x*;

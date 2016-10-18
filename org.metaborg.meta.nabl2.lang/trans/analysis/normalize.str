@@ -2,11 +2,12 @@ module analysis/normalize
 
 imports
 
-  nabl2shared
+  signatures/nabl2/shared/constraints/-
 
   signatures/common/-
   signatures/modules/-
   signatures/rules/-
+  signatures/signatures/-
 
   generation/-
   util/-
@@ -67,11 +68,16 @@ rules
     CGenMatchRule(name,pattern,params,type,clause*)
       -> CGenMatchRule(name,pattern',params,type,[clause'*,clause*])
     with pattern' := <bottomup(try({\
-                        ListTail(xs,Var(name)) -> As(Var(name'),ListTail(xs,Var(name)))
-                        with name' := $[list__[name]]
+                        ListTail(xs,tail) -> As(listvar,ListTail(xs,tail'))
+                        with listvar := Var(<newname> "nabl2__list");
+                             if As(_,_) := tail then
+                               tail' := tail
+                             else
+                               tail' := As(Var(<newname> "nabl2__sublist"),tail)
+                             end
                       \}))> pattern;
          clause'* := <collect-all(\
-                        As(list,ListTail(_,sublist)) -> IndexSublist(list,sublist)
+                        As(listvar,ListTail(_,As(sublistvar,_))) -> IndexSublist(listvar,sublistvar)
                       \)> pattern'
  
 rules

@@ -4,7 +4,7 @@ imports
 
   libstrc
 
-  nabl2shared
+  signatures/nabl2/shared/constraints/-
  
   signatures/common/-
   signatures/rules/-
@@ -48,6 +48,7 @@ rules
       -> RDefT(<rule-name> name,[],[<source-var>,<args-var>],
            Rule(pattern, <constraint-var>, strclause*))
     with
+      pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
       (str*,constraint) := <clauses-to-str> clause*;
       params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
       params-string := <strip-as-pattern;pp-stratego-string> params-pattern;
@@ -60,8 +61,8 @@ rules
           ~args-pattern := ~<args-var>
         ]|;
         metadata-str := |[
-          <nabl2--set-ast-params(|~<params-var>);
-           nabl2--set-ast-type(|~<type-var>)> ~<term-var>
+          ~<index-var> := <nabl2--get-ast-index> ~<term-var>;
+          rules(AstMetadata: ~<index-var> -> [(Params(), ~<params-var>), (Type(), ~<type-var>)])
         ]|;
         debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-Type> ~<type-var>," ]]"] end ]|
       else
@@ -71,19 +72,23 @@ rules
           ~args-pattern := ~<args-var>
         ]|;
         metadata-str := |[
-          <nabl2--set-ast-params(|~<params-var>)> ~<term-var>
+          ~<index-var> := <nabl2--get-ast-index> ~<term-var>;
+          rules(AstMetadata: ~<index-var> -> [(Params(), ~<params-var>)])
         ]|;
         debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"] end ]|
       end;
-      guarded-args-str := |[ ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected parameters ",~args-string," with actual parameters ",<nabl2--pp-flat-args> ~<args-var>, "."]) ]|;
+      guarded-args-str := |[
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
+                                                  " when matching ",~pattern-string, " with ",<pp-NaBL2-Term> ~<term-var>,"."])
+      ]|;
       constraint-term := <constraint-to-term> constraint;
       constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
       strclause* := [
         With(guarded-args-str),
         With(debug-str),
         str*,
-        With(constraint-str),
-        With(metadata-str)
+        With(metadata-str),
+        With(constraint-str)
       ]
  
   rule-name =

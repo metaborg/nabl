@@ -12,18 +12,18 @@ rules
 
   nabl2--show-file-analysis: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.txt")> path;
-         analysis := <nabl2--get-analysis> $[[project-path]/[path]]
+         analysis := <nabl2--get-resource-partial-analysis <+ nabl2--get-resource-analysis> $[[project-path]/[path]]
        < result := <pp-NaBL2-Analysis> analysis
        + result := "(no file analysis found)"
 
   nabl2--show-file-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analysis.aterm")> path;
-         result := <nabl2--get-analysis> $[[project-path]/[path]]
+         result := <nabl2--get-resource-partial-analysis <+ nabl2--get-resource-analysis> $[[project-path]/[path]]
       <+ result := None()
 
   nabl2--show-file-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"uninterpreted-constraints.aterm")> path;
-         analysis := <nabl2--get-analysis> $[[project-path]/[path]]
+         analysis := <nabl2--get-resource-analysis> $[[project-path]/[path]]
        < goals := <nabl2--sol-u-goals> analysis;
          facts := <nabl2--sol-u-facts> analysis;
          result := ("Goals"#([goals]),"Facts"#([facts]))
@@ -32,18 +32,18 @@ rules
 
   nabl2--show-project-analysis: (_, _, _, _, project-path) -> (filename, result)
     with filename := $[[project-path]/analysis.txt];
-         analysis := <nabl2--get-analysis> project-path
+         analysis := <nabl2--get-resource-analysis> project-path
        < result := <pp-NaBL2-Analysis> analysis
        + result := "(no project analysis found)"
 
   nabl2--show-project-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := $[[project-path]/analysis.aterm]
-       ; result := <nabl2--get-analysis> project-path
+       ; result := <nabl2--get-resource-analysis> project-path
       <+ result := None()
 
   nabl2--show-project-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
     with filename := $[[project-path]/uninterpreted-constraints.aterm];
-         analysis := <nabl2--get-analysis> project-path
+         analysis := <nabl2--get-resource-analysis> project-path
        < goals := <nabl2--sol-u-goals> analysis
        ; facts := <nabl2--sol-u-facts> analysis
        + result := None()
