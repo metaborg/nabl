@@ -92,6 +92,15 @@ rules // ###### Analysis execution ######
   nabl2-resolve-unused-references-hook = fail
 
   /**
+   * Control whether to ambiguous references branch, or result in an error. If the
+   * strategy succeeds for its namespace argument, the solver branches on all
+   * possible resolutions. If the strategy fails, an error is reported.
+   * 
+   * @type ns -> _
+   */
+  nabl2-branch-on-ambiguous-references-hook = fail
+
+  /**
    * Main analysis strategy for NaBL2.
    *
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
