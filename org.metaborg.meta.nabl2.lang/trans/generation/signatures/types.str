@@ -4,6 +4,7 @@ imports
 
   libstrc
   generation/-
+  signatures/nabl2/shared/common/-
   signatures/common/-
   signatures/signatures/-
   util/stratego
@@ -34,14 +35,14 @@ rules
     with op := Op(c,<map(!Wld())> a*);
          args := List(<map((id,sort-to-str);explode(term-to-term))> a*)
 
-  sort-to-str = bottomup(try(csort-to-str))
+  sort-to-str: SortNoArgs(name) -> SortNoArgs(name)
+  sort-to-str: ListSort(arg) -> Sort("List", [<sort-to-str> arg])
+  sort-to-str: TupleSort(arg*) -> SortTuple(<map(sort-to-str)> arg*)
+  sort-to-str: Var(name) -> Var(name)
 
-  csort-to-str:
-    ScopeSort() -> SortNoArgs("Scope") // FIXME Use NaBL2_ prefix
+  sort-to-str: ScopeSort() -> SortNoArgs("Scope") // FIXME Use NaBL2_ prefix
+  sort-to-str: OccurrenceSort() -> SortNoArgs("Occurrence") // FIXME Use NaBL2_ prefix
+  sort-to-str: TypeSort() -> SortNoArgs("Type") // FIXME Use NaBL2_ prefix
 
-  csort-to-str:
-    OccurrenceSort() -> SortNoArgs("Occurrence") // FIXME Use NaBL2_ prefix
 
-  csort-to-str:
-    TypeSort() -> SortNoArgs("Type") // FIXME Use NaBL2_ prefix
 
