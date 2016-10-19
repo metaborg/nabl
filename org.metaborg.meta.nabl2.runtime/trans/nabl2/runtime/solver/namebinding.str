@@ -70,7 +70,8 @@ rules
            if [] := dp* then
              msg := [r," does not resolve to any declaration"];
              ![(<nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol',[])]
-           else
+           else if [_] := dp*
+                 + <nabl2--occurrence-ns;nabl2-branch-on-ambiguous-references-hook> r then
              <map({msg, msginfo', sol'', c*:
                    \ (d',p) -> (sol'', c*)
                      where msg := ["Actual resolution ",d'," of ",r," differs from expected ",d];
@@ -78,18 +79,21 @@ rules
                            sol'' := <nabl2--sol-set-r(|r,(d',p))> sol';
                            c* := [CEqual(d,d',msginfo')]
                   \})> dp*
-           end
+           else
+             msg := ["Resolution of ",r," is ambiguous"];
+             ![(<nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol',[])]
+           end end
          end => res*
 
   nabl2--solve-namebinding-constraint: (CAssoc(d,l,s,msginfo),sol) -> [res]
   where <nabl2--is-ground> d;
         g := <nabl2--sol-g> sol
   with ( s' := <nabl2--G-assocs;nabl2--get(|l)> (g,d)
-       < msg := ["Problem associating scope ",s," with ",d]
-       ; !(sol,[CEqual(s,s',<nabl2--default-message(|msg)> msginfo)])
-       + msg := [d," is not associated with a ",l," scope"]
-       ; sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
-       ; !(sol',[])
+       < msg := ["Problem associating scope ",s," with ",d];
+         !(sol,[CEqual(s,s',<nabl2--default-message(|msg)> msginfo)])
+       + msg := [d," is not associated with a ",l," scope"];
+         sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol;
+         !(sol',[])
        ) => res
  
 rules
