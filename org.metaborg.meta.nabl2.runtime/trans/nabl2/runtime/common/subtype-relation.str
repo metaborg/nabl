@@ -2,6 +2,7 @@ module nabl2/runtime/common/subtype-relation
 
 imports
 
+  signatures/nabl2/shared/common/-
   nabl2/shared/-
 
   nabl2/runtime/common/-
@@ -121,4 +122,4 @@ rules
     where sig* := <nabl2--type-sig-of-hook<+fatal-err(|"Missing type signature for ")> ty;
           variance* := <filter(\ (var,tsort) -> var \)> sig*
  
-  type-sort = !SortNoArgs("Type")
+  type-sort = !TypeSort()
