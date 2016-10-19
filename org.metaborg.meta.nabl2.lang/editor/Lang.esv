@@ -5,7 +5,7 @@ language
   extensions            : nabl2
 
   provider              : target/metaborg/stratego.ctree
-  observer              : editor-analyze (constraint) (multifile)
+  observer              : editor-analyze
 
   on save               : generate-str
 //on save               : generate-dynsem

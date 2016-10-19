@@ -2,6 +2,7 @@ module nabl2/runtime/common/scopegraph
 
 imports
 
+  signatures/nabl2/shared/common/-
   nabl2/shared/-
 
   nabl2/runtime/prelude/-
@@ -18,17 +19,17 @@ rules
 
   nabl2--G-scopes = ?G(<id>,_) ; map(Fst)
 
-  nabl2--G-ref-scope = ?(G(<id>,_),r) ; ( getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \) <+ warn(|"reference not found "); fail )
+  nabl2--G-ref-scope = ?(G(<id>,_),r) ; ( getfirst(\ (s,S(_,r*,_,_)) -> s where <elem> (r,r*) \) <+ dbg-sg(|"reference not found "); fail )
 
-  nabl2--G-decl-scope = ?(G(<id>,_),d) ; ( getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \) <+ warn(|"declaration not found "); fail )
+  nabl2--G-decl-scope = ?(G(<id>,_),d) ; ( getfirst(\ (s,S(d*,_,_,_)) -> s where <elem> (d,d*) \) <+ dbg-sg(|"declaration not found "); fail )
 
-  nabl2--G-decls = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(<id>,_,_,_) + warn(|"scope not found "); ![] )
+  nabl2--G-decls = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(<id>,_,_,_) + dbg-sg(|"scope not found "); ![] )
 
-  nabl2--G-refs = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,<id>,_,_) + warn(|"scope not found "); ![] )
+  nabl2--G-refs = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,<id>,_,_) + dbg-sg(|"scope not found "); ![] )
 
-  nabl2--G-direct-edges = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,_,<id>,_) + warn(|"scope not found "); ![] )
+  nabl2--G-direct-edges = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,_,<id>,_) + dbg-sg(|"scope not found "); ![] )
 
-  nabl2--G-named-edges = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,_,_,<id>) + warn(|"scope not found "); ![] )
+  nabl2--G-named-edges = ?(G(s*,_),s) ; ( <lookup> (s,s*) < ?S(_,_,_,<id>) + dbg-sg(|"scope not found "); ![] )
 
   nabl2--G-assocs = ?(G(_,a*),d) ; ( <lookup> (d,a*) <+ ![] )
 
@@ -67,3 +68,8 @@ rules
   nabl2--occurrence-index = ?Occurrence(_,_,<id>)
 
   nabl2--filter-ns(|ns) = where(All() := ns) < id + filter(where(nabl2--occurrence-ns ; ?ns))
+
+rules
+  
+  dbg-sg(s|msg) = id // s ; debug(!msg)
+  dbg-sg(|msg)  = dbg-sg(id|msg)

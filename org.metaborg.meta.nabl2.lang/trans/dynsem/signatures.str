@@ -6,6 +6,7 @@ imports
   dynsem/-
   util/src-gen
   generation/defaults
+  signatures/nabl2/shared/common/-
   signatures/common/-
   signatures/rules/-
   signatures/signatures/-
@@ -92,9 +93,9 @@ rules
   sort-to-ds: SortNoArgs(name) -> SimpleSort(name)
   sort-to-ds: ListSort(arg) -> ListSort(<sort-to-ds> arg)
   sort-to-ds: TupleSort(arg*) -> TupleSort(<map(sort-to-ds)> arg*)
+  sort-to-ds: Var(_) -> <fatal-err(|"Not supported in DynSem")>
+
   sort-to-ds: ScopeSort() -> SimpleSort("Scope")
   sort-to-ds: OccurrenceSort() -> SimpleSort("Occurrence")
   sort-to-ds: TypeSort() -> SimpleSort("Type")
-  sort-to-ds: Var(_) -> <fatal-err(|"Not supported in DynSem")>
-  sort-to-ds: Sort(_, _) -> <fatal-err(|"Not supported in DynSem")>
 
