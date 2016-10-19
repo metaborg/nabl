@@ -140,7 +140,7 @@ rules
            if [] := dp* then
              nabl2--add-message(id|Message(Error(),["Failed to resolve ",ref],<nabl2--occurrence-index> ref))
            else if [dp] := dp* then
-             <nabl2--sol-set-r(|ref,dp)> sol
+             nabl2--sol-set-r(|ref,dp)
            else 
              nabl2--add-message(id|Message(Error(),["Ambiguous resolution for ",ref],<nabl2--occurrence-index> ref))
            end end
