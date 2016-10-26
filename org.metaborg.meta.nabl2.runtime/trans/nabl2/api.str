@@ -255,6 +255,7 @@ rules // ###### Scope graphs ######
   /**
    * Get declarations in a scope
    *
+   * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
   nabl2-get-scope-decls(|a) = <nabl2--G-decls> (<nabl2--sol-g> a, <id>)
@@ -262,6 +263,7 @@ rules // ###### Scope graphs ######
   /**
    * Get references in a scope
    *
+   * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
   nabl2-get-scope-refs(|a) = <nabl2--G-refs> (<nabl2--sol-g> a, <id>)
@@ -269,6 +271,7 @@ rules // ###### Scope graphs ######
   /**
    * Get direct edges from a scope
    *
+   * @param a : Analysis
    * @type Scope -> List((Label,Scope))
    */
   nabl2-get-scope-direct-edges(|a) = <nabl2--G-direct-edges> (<nabl2--sol-g> a, <id>)
@@ -276,6 +279,7 @@ rules // ###### Scope graphs ######
   /**
    * Get named (import) edges from a scope
    *
+   * @param a : Analysis
    * @type Scope -> List((Label,Occurrence))
    */
   nabl2-get-scope-named-edges(|a) = <nabl2--G-named-edges> (<nabl2--sol-g> a, <id>)
@@ -283,6 +287,7 @@ rules // ###### Scope graphs ######
   /**
    * Get associated scopes of a declaration
    *
+   * @param a : Analysis
    * @type decl:Occurrence -> List((Label,Scope))
    */
   nabl2-get-decl-assocs(|a) = <nabl2--G-assocs> (<nabl2--sol-g> a, <id>)
@@ -290,9 +295,26 @@ rules // ###### Scope graphs ######
   /**
    * Get occurrences associated with a scope
    *
+   * @param a : Analysis
    * @type Scope -> List((Occurrence,Label))
    */
   nabl2-get-scope-assocs(|a) = <nabl2--G-scope-assocs> (<nabl2--sol-g> a, <id>)
+
+  /**
+   * Get visible declarations in scope
+   *
+   * @param a : Analysis
+   * @type Scope -> List(Occurrence)
+   */
+  nabl2-get-visible-decls(|a) = nabl2--visibles(|<nabl2--sol-g> a)
+
+  /**
+   * Get reachable declarations in scope
+   *
+   * @param a : Analysis
+   * @type Scope -> List(Occurrence)
+   */
+  nabl2-get-reachable-decls(|a) = nabl2--reachables(|<nabl2--sol-g> a)
 
   /**
    * Make an occurrence in the default namespace

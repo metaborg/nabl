@@ -27,6 +27,14 @@ rules
   nabl2--resolve(|g) =
     nabl2--resolve(|g,[])
 
+  nabl2--visibles(|g) =
+    nabl2--env(nabl2--label-lt|<nabl2--labels-wf>,g,[],[]);
+    ?(Total(),<nabl2--env-occurrences>)
+ 
+  nabl2--reachables(|g) =
+    nabl2--env(fail|<nabl2--labels-wf>,g,[],[]);
+    ?(Total(),<nabl2--env-occurrences>)
+
 rules // resolution internal
 
   // nabl2--resolve :: Ref -|-> [(Decl,Path)]
@@ -159,6 +167,12 @@ rules // resolution internal
 
   // nabl2--env-prepend(|Step) = Env -> Env
   nabl2--env-prepend(|step) = (id,nabl2--mapv(map(\ (d,p) -> (d,[step|p]) \)))
+
+  nabl2--env-occurrences = nabl2--strict(
+    nabl2--values;
+    concat;
+    map(Fst)
+  )
 
 rules
 
