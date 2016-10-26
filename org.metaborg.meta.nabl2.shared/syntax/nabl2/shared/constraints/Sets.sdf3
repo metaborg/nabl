@@ -10,8 +10,10 @@ context-free syntax
 
   PrimitiveConstraint.CSubsetEq = <<CSet> subseteq <CSet> <Message>>
   PrimitiveConstraint.CDistinct = <distinct <CSet> <Message>>
-  PrimitiveConstraint.CDistinct = <!<CSet> <Message>>                   {deprecated("Syntax is deprecated, use 'distinct <X>' instead.")}
+  PrimitiveConstraint.CDistinct = <! <CSet> <Message>>                   {deprecated("'! _' is deprecated, use 'distinct _' instead.")}
 
 lexical syntax
 
   Keyword = "subseteq" | "distinct"
+  
+  '!' = {recover,reject}
