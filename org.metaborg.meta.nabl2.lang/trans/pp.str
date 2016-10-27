@@ -11,8 +11,8 @@ imports
 rules
 
   editor-format:
-    (node, _, ast, path, project-path) -> (filename, result)
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
     with
       ext      := <get-extension> path;
       filename := <guarantee-extension(|$[pp.[ext]])> path;
-      result   := <pp-NaBL2-string> node
+      result   := <pp-NaBL2-string> Module($[[name].pp],section*)
