@@ -11,3 +11,5 @@ context-free syntax
   MessageContent.Formatted = {MessageContent ""}*
   MessageContent.Text      = String
   MessageContent.Term      = CTerm
+
+  MessagePosition.NoIndex  = <@->
