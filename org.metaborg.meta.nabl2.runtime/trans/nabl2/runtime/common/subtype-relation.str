@@ -2,6 +2,8 @@ module nabl2/runtime/common/subtype-relation
 
 imports
 
+  nabl2/api
+ 
   signatures/nabl2/shared/common/-
   nabl2/shared/-
 

@@ -21,6 +21,10 @@ context-free syntax
         <{RuleClause ","}+>.
   >
 
+  Rule.CGenMatchRuleNoConstraint = <
+    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
+  >
+
   Rule.CGenMatchRule = <
     <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
         <{RuleClause ","}+>.

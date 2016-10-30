@@ -15,6 +15,7 @@ imports
 rules
 
   normalize =
+    normalize-axioms;
     normalize-type-sigs;
     normalize-term-matches;
     normalize-type-matches;
@@ -24,6 +25,15 @@ rules
     normalize-messages;
     normalize-indices;
     normalize-rule-names
+
+rules
+
+  normalize-axioms = try(sometd(normalize-axiom))
+
+  // capture the matched term
+  normalize-axiom:
+    CGenMatchRuleNoConstraint(name,pattern,params,type)
+      -> CGenMatchRule(name,pattern,params,type, [])
 
 rules
 

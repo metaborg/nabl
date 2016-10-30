@@ -2,7 +2,9 @@ module nabl2/runtime/solver/equality
 
 imports
 
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
+
   nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
@@ -10,7 +12,7 @@ imports
 
 rules
  
-  nabl2--solve-constraint =nabl2--time-analysis(!"equality",nabl2--solve-equality-constraint) 
+  nabl2--solve-constraint = nabl2--time-analysis(!"equality",nabl2--solve-equality-constraint) 
  
   nabl2--solve-equality-constraint: (CEqual(t1,t2,msginfo),sol) -> [(sol,[])]
   where <nabl2--term-eq> (t1,t2)
@@ -45,28 +47,28 @@ rules
         <(length,length);eq> (a1,a2)
   with msg := <nabl2--default-unify-error(|t1,t2)>;
        msginfo' := <nabl2--default-message(|msg)> msginfo;
-       C* := <zip(!CEqual(<Fst>,<Snd>,msginfo'))> (a1,a2)
+       C* := <zip(\ (t1,t2) -> CEqual(t1,t2,msginfo') \)> (a1,a2)
 
   nabl2--default-unify-error(|t1,t2) = !["Cannot not unify ",t1," with ",t2]
 
 
 rules
 
-  nabl2--solve-equality-constraint: (CInequal(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol,[])]
-  where <not(nabl2-is-op-hook)> t1;
-        <not(nabl2-is-op-hook)> t2;
-        ( <not(eq)> (c1,c2)
-       <+ <not((length,length);eq)> (a1,a2)
-        )
+  nabl2--solve-equality-constraint: (CInequal(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
+  where if <eq> (t1,t2) then
+          msg := [t1," and ",t2," are equal"];
+          sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
+        else if <nabl2--not-unifiable> (t1,t2) then
+          sol' := sol
+        end end
 
-  nabl2--solve-equality-constraint: (CInequal(t1,t2,msginfo),sol) -> [(sol',[])]
-  where <nabl2--is-ground> t1;
-        <nabl2--is-ground> t2
-  with ( <nabl2--term-eq> (t1,t2)
-       < msg := [t1," and ",t2," are equal"];
-         <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
-       + !sol
-       ) => sol'
+  nabl2--not-unifiable: (t1@c1#(a1),t2@c2#(a2)) -> <id>
+  where <not(nabl2-is-op-hook; nabl2--is-var)> t1;
+        <not(nabl2-is-op-hook; nabl2--is-var)> t2;
+      ( <not(eq)> (c1,c2)
+     <+ <not((length,length);eq)> (a1,a2)
+     <+ <zip;getfirst(nabl2--not-unifiable)> (a1,a2)
+      )
 
 
 rules

@@ -4,6 +4,8 @@ imports
 
   libspoofax/editor/completion/interface
 
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
   signatures/nabl2/runtime/common/-
@@ -70,9 +72,13 @@ rules
  <+ (where(!1 => x);s(|source,args)) // this is freaky, but otherwise the next call fails sometimes
  <+ nabl2--generate-constraint-missing(s|source,args)
 
-  nabl2--error-no-index: term -> CFalse(Message(Error(),msg,term))
+  nabl2--error-no-index: term -> constraint
     where not(nabl2--get-ast-index)
-    with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]]
+    with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]];
+         if nabl2-debug-constraint-generation-hook then
+           warn(|msg)
+         end;
+         constraint := CFalse(Message(Error(),msg,NoIndex()))
 
   nabl2--generate-constraint-placeholder(|source,args): term -> CTrue()
     where <is-SDF-placeholder> term
@@ -92,13 +98,13 @@ rules
         if nabl2-debug-constraint-generation-hook then
           warn(|msg)
         end;
-        constraint := CFalse(Message(Warning(),msg,term))
+        constraint := CFalse(Message(Warning(),msg,index))
       else
         msg := $[Missing constraint generation rule for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
         if nabl2-debug-constraint-generation-hook then
           warn(|msg)
         end;
-        constraint := CFalse(Message(Warning(),msg,term))
+        constraint := CFalse(Message(Warning(),msg,index))
       end
     else if Params(params) := args then
       rules(AstMetadata: index -> [(Params(), params)]);
@@ -111,7 +117,7 @@ rules
         if nabl2-debug-constraint-generation-hook then
           warn(|msg)
         end;
-        constraint := CFalse(Message(Warning(),msg,term))
+        constraint := CFalse(Message(Warning(),msg,index))
       end
     end end
 

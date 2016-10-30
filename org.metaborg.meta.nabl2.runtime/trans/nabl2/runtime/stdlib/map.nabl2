@@ -16,16 +16,14 @@ rules
     [[ x ^ (s) ]],
     Map1[[ xs ^ (s) ]].
 
-  Map1[[ [] ^ (s) ]] :=
-    true.
+  Map1[[ [] ^ (s) ]].
 
 
   Map1T[[ [x|xs] ^ (s) : [ty|tys] ]] :=
     [[ x ^ (s) : ty ]],
     Map1T[[ xs ^ (s) : tys ]].
 
-  Map1T[[ [] ^ (s) : [] ]] :=
-    true.
+  Map1T[[ [] ^ (s) : [] ]].
 
 
 rules
@@ -34,14 +32,11 @@ rules
     [[ x ^ (s1,s2) ]],
     Map2[[ xs ^ (s1,s2) ]].
 
-  Map2[[ [] ^ (s1,s2) ]] :=
-    true.
+  Map2[[ [] ^ (s1,s2) ]].
 
 
   Map2T[[ [x|xs] ^ (s1,s2) : [ty|tys] ]] :=
     [[ x ^ (s1,s2) : ty ]],
     Map2T[[ xs ^ (s1,s2) : tys ]].
 
-  Map2T[[ [] ^ (s1,s2) : [] ]] :=
-    true.
- 
+  Map2T[[ [] ^ (s1,s2) : [] ]].
