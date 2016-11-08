@@ -6,6 +6,7 @@ imports
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
 
+/*
 signature
 
   constructors
@@ -21,59 +22,59 @@ rules
 
   // Operations on frames
 
-  SLS(s, ks, slots) :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  (s, ks, slots):ScopeLinksSlots :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff.
     
-  f, H Heap(x) |- scopeOf() -scopeOf-> s
+  F, H Heap(x) |- scopeOf() -scopeOf-> s
   where
-  	x[f] => F(s, _, _).
+  	x[F] => F(s, _, _).
   
   // Dynamic address lookup  
   // FIXME the scope in a step is the scope stepping from, does this function
   //       use it that way?
 
-  f |- [D(_, d)]:Path -lookup-> Addr(f, d).
+  F |- [D(_, d)]:Path -lookup-> Addr(F, d).
 
-  f1, h |- [E(s, l)|p]:Path -lookup-> Addr(f3, d)
+  F1, H |- [E(s, l)|p]:Path -lookup-> Addr(F3, d)
   where
-    f1, h |- linksOf() -linksOf-> ks;
-    ks[l][s] => f2;
-    f2, h |- p -lookup-> Addr(f3, d).
+    F1, H |- linksOf() -linksOf-> ks;
+    ks[l][s] => F2;
+    F2, H |- p -lookup-> Addr(F3, d).
     
   // Fetching and mutating slot values
     
-  f, h |- d:Occurrence -get-> v
+  F, H |- d:Occurrence -get-> v
   where
-    f, h |- slotsOf() -slotsOf-> slots;
+    F, H |- slotsOf() -slotsOf-> slots;
     slots[d] => v.
 
-  f |- OV(d, v) :: H Heap(x) -set-> v :: H {f |--> F(s, ks, {d |--> v, slots}), x}
+  F |- (d, v):(Occurrence * Val)   :: H Heap(x) -set-> v :: H { F |--> F(s, ks, {d |--> v, slots}), x }
   where
-    x[f] => F(s, ks, slots).
+    x[F] => F(s, ks, slots).
   
 rules
   
-  f, H Heap(x) |- linksOf() -linksOf-> ks
+  F, H Heap(x) |- linksOf() -linksOf-> ks
   where
-    x[f] => F(_, ks, _).
+    x[F] => F(_, ks, _).
     
-  f, H Heap(x) |- slotsOf() -slotsOf-> slots
+  F, H Heap(x) |- slotsOf() -slotsOf-> slots
   where
-    x[f] => F(_, _, slots).
+    x[F] => F(_, _, slots).
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
 //////////////////////////////
 
 signature
-  
-  constructors
-    DefaultSlots : List(Occurrence) --> Map(Occurrence, Val)
+ 
+  arrows
+    DefaultSlots(List(Occurrence)) --> Map(Occurrence, Val)
 
 rules
 
-  SL(s, ks) :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+  (s, ks):ScopeLinks :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
   where
     fresh => ff;
     s -declsOf-> ds;
@@ -86,3 +87,4 @@ rules
     d -typeOf-> t;
     t -defaultv-> v;
     DefaultSlots(ds) --> slots.
+*/

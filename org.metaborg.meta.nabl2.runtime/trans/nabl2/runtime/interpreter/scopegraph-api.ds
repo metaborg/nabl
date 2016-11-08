@@ -12,21 +12,21 @@ signature
     I     : Label
     Label : String -> Label
 
-  sort aliases Path = List(Step)
-
   sorts Step constructors
     D : Scope * Occurrence -> Step
     E : Scope * Label -> Step
-    N : Scope * Label * Occurrence * Path -> Step
+    N : Scope * Label * Occurrence * List(Step)/*Path*/ -> Step
 
-  sorts NaBL2 constructors
-    NaBL2 : AST -> NaBL2
- 
   arrows
-    NaBL2 -init-> NaBL2
     Scope -declsOf-> List(Occurrence)
+    Scope -linksOf-> List((Label * Scope))
+
+  arrows
     AST -mkOccurrence-> Occurrence
     (String * AST) -mkOccurrence-> Occurrence
+    (AST * AST) -mkOccurrence-> Occurrence
     (String * AST * AST) -mkOccurrence-> Occurrence
-    Occurrence -resolvesTo-> Path
+
+  arrows
+    Occurrence -pathOf-> List(Step)/*Path*/
     Occurrence -typeOf-> Type

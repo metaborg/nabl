@@ -1,31 +1,28 @@
 module nabl2/runtime/interpreter/frame-dummy
 
 imports
-  nabl2/runtime/interpreter/frame-api
+  nabl2/runtime/interpreter/scopegraph-api
 
-// This provides dummy rules for all frame arrows, which guarantee that they get the right semantic components during explication.
-
+/*
 signature
 
-	// These will all be removed by the frame-dummy.ds2v
-	constructors
-		DummyAddr : Addr
-		DummyVal : Val
-		DummyScope : Scope
-		DummyFrameId : FrameId
-		
-rules
+  sorts
+    FrameId
+    Heap
 
-	f, h |- _:Path -lookup-> DummyAddr().
-	
-	f, h |- _:Occurrence -get-> DummyVal().
-	
-	f |- _:OccValTuple :: h -set-> DummyVal() :: h.
-	
-	f, h |- _:scopeOf__Meta -scopeOf-> DummyScope().
-	
-	_:ScopeLinksSlotsTuple :: h -initFrame-> DummyFrameId() :: h.
-	
-	f, h |- _:linksOf__Meta -linksOf-> {}.
-	
-	f, h |- _:slotsOf__Meta -slotsOf-> {}.
+  sorts Val constructors
+    UninitV : Val
+ 
+  components
+    H : Heap
+    F : FrameId
+
+  sorts Frames constructors
+    Frames : Scope -> Frames
+
+  arrows
+    Frames -init-> FrameId :: H
+    Scope :: H -initFrame-> FrameId :: H
+    F |- Occurrence :: H -get-> Val
+    F |- (Occurrence * Val) :: H -set-> Val :: H
+*/

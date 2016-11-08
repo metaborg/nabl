@@ -10,7 +10,7 @@ signature
     Scope : String * String -> Scope
 
   constructors
-    Occurrence : Namespace * String * TermIndex -> Occurrence
+    Occurrence : Namespace * AST * TermIndex -> Occurrence
  
   sorts TermIndex constructors
     TermIndex : String * Int -> TermIndex
@@ -19,16 +19,86 @@ signature
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
  
-  sort aliases NameResolution = List((Occurrence * (Occurrence * Path)))
- 
   sorts ScopeGraph ScopeEntry constructors
     G : List((Scope * ScopeEntry)) * List((Occurrence * List((Label * Scope)))) -> ScopeGraph
     S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
 
+  sort aliases
+    NameResolution  = List((Occurrence * (Occurrence * List(Step)/*Path*/)))
+    OccurrenceTypes = List((Occurrence * Type))
+
+  sorts NaBL2 constructors
+    NaBL2 : AST -> NaBL2
+ 
   native operators
     nabl2_scopeGraph : AST -> ScopeGraph
     nabl2_nameResolution : AST -> NameResolution
+    nabl2_occurrenceTypes : AST -> OccurrenceTypes
+    nabl2_indexOf : AST -> TermIndex
+
+  arrows
+    NaBL2 -init-> NaBL2
+
+  components
+    SG : ScopeGraph
+    NR : NameResolution
+    OT : OccurrenceTypes
 
 rules
 
-  NaBL2(t) -init-> NaBL2(t) :: ScopeGraph nabl2_scopeGraph(t), NameResolution nabl2_nameResolution(t).
+  NaBL2(t) -init-> NaBL2(t) :: SG, NR, OT
+    where nabl2_scopeGraph(t) => SG;
+          nabl2_nameResolution(t) => NR;
+          nabl2_occurrenceTypes(t) => OT.
+ 
+rules
+
+  SG G([(s',S(ds,_,_,_))|_],_) |- s:Scope -declsOf-> ds
+    where s == s'.
+
+  SG G([(s',_)|ss],as) |- s:Scope -declsOf-> ds
+    where s != s';
+          SG G(ss,as) |- s -declsOf -> ds.
+
+
+  SG G([(s',S(_,_,ls,_))|_],_) |- s:Scope -linksOf-> ls
+    where s == s'.
+
+  SG G([(s',_)|ss],as) |- s:Scope -linksOf-> ls
+    where s != s';
+          SG G(ss,as) |- s -linksOf -> ls.
+rules
+
+  t:AST -mkOccurrence-> Occurrence(ns,t,idx)
+    where DefaultNamespace() => ns;
+          nabl2_indexOf(t) => idx.
+
+  (ns, t):(String * AST) -mkOccurrence-> Occurrence(ns',t,idx)
+    where Namespace(ns) => ns';
+          nabl2_indexOf(t) => idx.
+
+  (t, o):(AST * AST) -mkOccurrence-> Occurrence(ns,t,idx)
+    where DefaultNamespace() => ns;
+          nabl2_indexOf(o) => idx.
+
+  (ns, t, o):(String * AST * AST) -mkOccurrence-> Occurrence(ns',t,idx)
+    where Namespace(ns) => ns';
+          nabl2_indexOf(o) => idx.
+
+rules
+
+  NR [(o',(_,p))|_] |- o:Occurrence -pathOf-> p
+    where o == o'.
+
+  NR [(o',_)|NR'] |- o:Occurrence -pathOf-> p
+    where o != o';
+          NR' |- o -pathOf-> p.
+
+rules
+ 
+  OT [(o',ty)|_] |- o:Occurrence -typeOf-> ty
+    where o == o'.
+
+  OT [(o',_)|OT'] |- o:Occurrence -typeOf-> ty
+    where o != o';
+          OT' |- o -typeOf-> ty.

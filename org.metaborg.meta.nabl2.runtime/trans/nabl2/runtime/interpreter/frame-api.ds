@@ -5,6 +5,7 @@ imports
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
 
+/*
 signature // The API is parameterized by some notion of value
 
   sorts Val
@@ -38,28 +39,27 @@ signature
 //    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
 //    slotsOf : H * FrameId --> Map(Occurrence, Val)
 
-  // Arrows are painful because we have to define tuple types manually.
-  sorts OccValTuple constructors
-  	OV : Occurrence * Val -> OccValTuple
-  sorts ScopeLinksSlotsTuple constructors
-  	SLS : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> ScopeLinksSlotsTuple
+  sort aliases
+  	  ScopeLinksSlots = (Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val))
+  
   sorts scopeOf__Meta linksOf__Meta slotsOf__Meta constructors // These constructors play no role other than determine which rule to apply
-  	scopeOf : scopeOf__Meta
-  	linksOf : linksOf__Meta
-  	slotsOf : slotsOf__Meta
+  	  scopeOf : scopeOf__Meta
+  	  linksOf : linksOf__Meta
+  	  slotsOf : slotsOf__Meta
+
+  components
+    F : FrameId
+    H : H
 
   arrows
-  	FrameId, H |- Path -lookup-> Addr
-  	FrameId, H |- Occurrence -get-> Val
-  	FrameId    |- OccValTuple :: H -set-> Val :: H // Returns the value being assigned -- should possibly be a null or unit value 
-  	FrameId, H |- scopeOf__Meta -scopeOf-> Scope
-  	              ScopeLinksSlotsTuple :: H -initFrame-> FrameId :: H
-  	FrameId, H |- linksOf__Meta -linksOf-> Map(Label, Map(Scope, FrameId))
-  	FrameId, H |- slotsOf__Meta -slotsOf-> Map(Occurrence, Val)
+    F, H |- Path -lookup-> Addr
+    F, H |- Occurrence -get-> Val
+    F    |- (Occurrence * Val) :: H -set-> Val :: H // Returns the value being assigned -- should possibly be a null or unit value 
+    F, H |- scopeOf__Meta -scopeOf-> Scope
+    ScopeLinksSlots :: H -initFrame-> FrameId :: H
+    F, H |- linksOf__Meta -linksOf-> Map(Label, Map(Scope, FrameId))
+    F, H |- slotsOf__Meta -slotsOf-> Map(Occurrence, Val)
 
-  variables
-    f : FrameId
-    h : H
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
@@ -74,8 +74,9 @@ signature
 
 //  constructors
 //    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
-	sorts ScopeLinksTuple constructors
-    SL : Scope * Map(Label, Map(Scope, FrameId)) -> ScopeLinksTuple
+	sort aliases
+    ScopeLinks = (Scope * Map(Label, Map(Scope, FrameId)))
 
   arrows
-  	ScopeLinksTuple :: H -initDefault-> FrameId :: H
+    ScopeLinks :: H -initDefault-> FrameId :: H
+*/
