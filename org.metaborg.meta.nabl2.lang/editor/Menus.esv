@@ -1,7 +1,7 @@
 module Menus
 
 menus
-  
+
   menu: "Syntax" (openeditor) (meta) (realtime)
 
     action: "Show abstract syntax"     = debug-show-aterm (source)
@@ -10,11 +10,19 @@ menus
 
   menu: "Generation" (openeditor) (meta) (realtime)
 
-    action: "Generate Stratego"   = generate-str
-    action: "Generate DynSem"     = generate-dynsem
-    action: "Generate Signatures" = extract-sigs
-    action: "Explicate Wildcards" = explicate-module-wildcards
+    action: "Generate Stratego"     = generate-str
+
+    separator
+
+    action: "Generate All DynSem"   = generate-all-dynsem
+    action: "Generate DynSem Rules" = generate-dynsem-ds
+    action: "Generate DynSem Java"  = generate-dynsem-java
+
+    separator
+
+    action: "Generate Signatures"   = extract-sigs
+    action: "Explicate Wildcards"   = explicate-module-wildcards
 
   menu: "Coq" (openeditor) (meta) (realtime) (source)
- 		
+
     action: "Generate Coq"        = generate-coq
