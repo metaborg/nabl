@@ -6,13 +6,20 @@ imports
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
 
-/*
 signature
 
+	constructors
+		tt : Unit
+
+	constructors
+    Addr : Frame * Occurrence -> Addr
+
+	sorts FrameContainer constructors
+		FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
+    
   constructors
-    FID : Int -> FrameId {implicit}
-    F : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) -> Frame 
-    Heap : Map(FrameId, Frame) -> H {implicit}
+    F_ : Int -> Frame {implicit}
+    H_ : Map(Frame, Frame) -> Heap {implicit}
 
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
@@ -22,69 +29,68 @@ rules
 
   // Operations on frames
 
-  (s, ks, slots):ScopeLinksSlots :: H Heap(x) -initFrame-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
+
+  initFrame(s, ks, slots) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
   where
     fresh => ff.
     
-  F, H Heap(x) |- scopeOf() -scopeOf-> s
+  H H_(x) |- scopeOf(f) --> s
   where
-  	x[F] => F(s, _, _).
+  	x[f] => FC_(s, _, _).
   
   // Dynamic address lookup  
-  // FIXME the scope in a step is the scope stepping from, does this function
-  //       use it that way?
+  H h, F f |- lookup([D(_, d)]) --> Addr(f, d).
 
-  F |- [D(_, d)]:Path -lookup-> Addr(F, d).
-
-  F1, H |- [E(s, l)|p]:Path -lookup-> Addr(F3, d)
+  H h, F f1 |- lookup([E(s, l)|p]) --> Addr(f3, d)
   where
-    F1, H |- linksOf() -linksOf-> ks;
-    ks[l][s] => F2;
-    F2, H |- p -lookup-> Addr(F3, d).
+    H h |- linksOf(f1) --> ks;
+    ks[l][s] => f2;
+    H h, F f2 |- lookup(p) --> Addr(f3, d).
     
   // Fetching and mutating slot values
     
-  F, H |- d:Occurrence -get-> v
+  H h |- get(Addr(f', d)) --> v
   where
-    F, H |- slotsOf() -slotsOf-> slots;
+    H h |- slotsOf(f') --> slots;
     slots[d] => v.
 
-  F |- (d, v):(Occurrence * Val)   :: H Heap(x) -set-> v :: H { F |--> F(s, ks, {d |--> v, slots}), x }
+  set(Addr(f, d), v) :: H H_(x) --> tt() :: H {f |--> FC_(s, ks, {d |--> v, slots}), x}
   where
-    x[F] => F(s, ks, slots).
+    x[f] => FC_(s, ks, slots).
   
 rules
   
-  F, H Heap(x) |- linksOf() -linksOf-> ks
+  H H_(x) |- linksOf(f) --> ks
   where
-    x[F] => F(_, ks, _).
+    x[f] => FC_(_, ks, _).
     
-  F, H Heap(x) |- slotsOf() -slotsOf-> slots
+  H H_(x) |- slotsOf(f) --> slots
   where
-    x[F] => F(_, _, slots).
+    x[f] => FC_(_, _, slots).
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
 //////////////////////////////
 
-signature
- 
+signature // Utility function
+  
   arrows
     DefaultSlots(List(Occurrence)) --> Map(Occurrence, Val)
 
-rules
-
-  (s, ks):ScopeLinks :: H Heap(x) -initDefault-> ff:FrameId :: H { ff |--> F(s, ks, slots), x }
-  where
-    fresh => ff;
-    s -declsOf-> ds;
-    DefaultSlots(ds) --> slots.
+rules // Utility function
 
   DefaultSlots([]) --> {}.
 
   DefaultSlots([d|ds]) --> { d |--> v, slots }
   where
     d -typeOf-> t;
-    t -defaultv-> v;
+    default(t) --> v;
     DefaultSlots(ds) --> slots.
-*/
+
+rules // initDefault
+
+  initDefault(s, ks) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
+  where
+    fresh => ff;
+    s -declsOf-> ds;
+    DefaultSlots(ds) --> slots.

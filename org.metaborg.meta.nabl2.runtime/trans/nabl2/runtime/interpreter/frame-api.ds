@@ -3,80 +3,53 @@ module nabl2/runtime/interpreter/frame-api
 imports
   nabl2/runtime/interpreter/scopegraph-api
 
-// FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
+signature // The API is parameterized by a `Val` and `Unit` sort
 
-/*
-signature // The API is parameterized by some notion of value
 
-  sorts Val
+  sorts Val Unit
+
 
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
 //////////////////////////////
 
-signature
+signature // Exported
 
-  sorts H
+  sorts Heap
 
   sorts Frame
 
-  sorts FrameId
-
-  sorts Addr constructors
-    Addr : FrameId * Occurrence -> Addr
-
-	// We could use meta-functions ...
-	// But, this entails that relations get the same auxiliary entities as the default arrow!
-	// This muddles the semantic definition.
-	// We use arrows instead.
-
-//  constructors
-//    lookup : FrameId * H * Path --> Addr
-//    get : FrameId * H * Occurrence --> Val
-//    set : FrameId * H * Occurrence * Val --> H
-//    scopeOfFrame : H * FrameId --> Scope
-//    initFrame : Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val) --> FrameId
-//    linksOf : H * FrameId --> Map(Label, Map(Scope, FrameId))
-//    slotsOf : H * FrameId --> Map(Occurrence, Val)
-
-  sort aliases
-  	  ScopeLinksSlots = (Scope * Map(Label, Map(Scope, FrameId)) * Map(Occurrence, Val))
   
-  sorts scopeOf__Meta linksOf__Meta slotsOf__Meta constructors // These constructors play no role other than determine which rule to apply
-  	  scopeOf : scopeOf__Meta
-  	  linksOf : linksOf__Meta
-  	  slotsOf : slotsOf__Meta
-
-  components
-    F : FrameId
-    H : H
-
+  sorts Addr
+  
+	components
+		F : Frame
+		H : Heap
+	
   arrows
-    F, H |- Path -lookup-> Addr
-    F, H |- Occurrence -get-> Val
-    F    |- (Occurrence * Val) :: H -set-> Val :: H // Returns the value being assigned -- should possibly be a null or unit value 
-    F, H |- scopeOf__Meta -scopeOf-> Scope
-    ScopeLinksSlots :: H -initFrame-> FrameId :: H
-    F, H |- linksOf__Meta -linksOf-> Map(Label, Map(Scope, FrameId))
-    F, H |- slotsOf__Meta -slotsOf-> Map(Occurrence, Val)
+    F, H |- lookup(List(Step)) --> Addr
+    H |- get(Addr) --> Val
+    F, H |- set(Addr, Val) --> Unit
+		H |- scopeOf(Frame) --> Scope
+    initFrame(Scope, Map(Label, Map(Scope, Frame)), Map(Occurrence, Val)) :: H --> Frame :: H
+    H |- linksOf(Frame) --> Map(Label, Map(Scope, Frame))
+    H |- slotsOf(Frame) --> Map(Occurrence, Val)
 
+  variables
+    f : Frame
+    h : Heap
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
 //////////////////////////////
 
-signature // The API is parameterized by some operation that returns a default value for each sort
+signature // The API is parameterized by a `default` operation that returns a default value for each type
 
   arrows
-    Type -defaultv-> Val
+    default(Type) --> Val
 
-signature
 
-//  constructors
-//    initDefault : Scope * Map(Label, Map(Scope, FrameId)) --> FrameId
-	sort aliases
-    ScopeLinks = (Scope * Map(Label, Map(Scope, FrameId)))
+signature // Exported
 
   arrows
-    ScopeLinks :: H -initDefault-> FrameId :: H
-*/
+    initDefault(Scope, Map(Label, Map(Scope, Frame))) :: H --> Frame :: H
