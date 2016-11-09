@@ -19,7 +19,6 @@ signature // Exported
 
   sorts Frame
 
-  
   sorts Addr
   
 	components

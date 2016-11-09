@@ -39,7 +39,7 @@ rules
   	x[f] => FC_(s, _, _).
   
   // Dynamic address lookup  
-  H h, F f |- lookup([D(_, d)]) --> Addr(f, d).
+  F f |- lookup([D(_, d)]) --> Addr(f, d).
 
   H h, F f1 |- lookup([E(s, l)|p]) --> Addr(f3, d)
   where
