@@ -1,0 +1,35 @@
+package org.metaborg.meta.nabl2.terms.generic;
+
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.terms.IApplTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermFunction;
+
+import com.google.common.collect.Iterables;
+
+@Value.Immutable
+@Serial.Structural
+public abstract class ApplTerm implements IApplTerm {
+
+    @Override public abstract String getOp();
+
+    @Override public abstract Iterable<ITerm> getArgs();
+
+    @Value.Lazy @Override public int getArity() {
+        return Iterables.size(getArgs());
+    }
+
+    @Value.Lazy @Override public boolean isGround() {
+        boolean ground = true;
+        for (ITerm arg : getArgs()) {
+            ground &= arg.isGround();
+        }
+        return ground;
+    }
+
+    @Override public <T> T apply(ITermFunction<T> visitor) {
+        return visitor.apply(this);
+    }
+
+}
