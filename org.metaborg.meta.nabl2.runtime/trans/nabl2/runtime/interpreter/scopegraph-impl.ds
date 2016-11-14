@@ -20,53 +20,37 @@ signature
     Namespace        : String -> Namespace
  
   sorts ScopeGraph ScopeEntry constructors
-    G : List((Scope * ScopeEntry)) * List((Occurrence * List((Label * Scope)))) -> ScopeGraph
+    G : Map(Scope, ScopeEntry) * Map(Occurrence, Map(Label, Scope)) -> ScopeGraph
     S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
 
-  sort aliases
-    NameResolution  = List((Occurrence * (Occurrence * List(Step)/*Path*/)))
-    OccurrenceTypes = List((Occurrence * Type))
+  sorts NameResolution constructors
+    NR : Map(Occurrence, (Occurrence * Path)) -> NameResolution
 
-  sorts NaBL2 constructors
-    NaBL2 : AST -> NaBL2
- 
+  sorts OccurrenceTypes constructors
+    OT : Map(Occurrence, Type) -> OccurrenceTypes
+
   native operators
     nabl2_scopeGraph : AST -> ScopeGraph
     nabl2_nameResolution : AST -> NameResolution
     nabl2_occurrenceTypes : AST -> OccurrenceTypes
     nabl2_indexOf : AST -> TermIndex
 
+  sorts NaBL2 constructors
+    NaBL2 : ScopeGraph * NameResolution * OccurrenceTypes -> NaBL2
+ 
   arrows
-    NaBL2 -init-> NaBL2
+    initNaBL2(AST) --> NaBL2
 
   components
-    SG : ScopeGraph
-    NR : NameResolution
-    OT : OccurrenceTypes
+    NaBL2 : NaBL2
 
 rules
 
-  NaBL2(t) -init-> NaBL2(t) :: SG, NR, OT
+  initNaBL2(t) --> NaBL2(SG, NR, OT)
     where nabl2_scopeGraph(t) => SG;
           nabl2_nameResolution(t) => NR;
           nabl2_occurrenceTypes(t) => OT.
  
-rules
-
-  SG G([(s',S(ds,_,_,_))|_],_) |- s:Scope -declsOf-> ds
-    where s == s'.
-
-  SG G([(s',_)|ss],as) |- s:Scope -declsOf-> ds
-    where s != s';
-          SG G(ss,as) |- s -declsOf -> ds.
-
-
-  SG G([(s',S(_,_,ls,_))|_],_) |- s:Scope -linksOf-> ls
-    where s == s'.
-
-  SG G([(s',_)|ss],as) |- s:Scope -linksOf-> ls
-    where s != s';
-          SG G(ss,as) |- s -linksOf -> ls.
 rules
 
   t:AST -mkOccurrence-> Occurrence(ns,t,idx)
@@ -87,18 +71,13 @@ rules
 
 rules
 
-  NR [(o',(_,p))|_] |- o:Occurrence -pathOf-> p
-    where o == o'.
+  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -declsOf-> decls
+    where scopes[s] => S(decls,_,_,_).
 
-  NR [(o',_)|NR'] |- o:Occurrence -pathOf-> p
-    where o != o';
-          NR' |- o -pathOf-> p.
+  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -linksOf-> links
+    where scopes[s] => S(_,_,links,_).
 
-rules
- 
-  OT [(o',ty)|_] |- o:Occurrence -typeOf-> ty
-    where o == o'.
+  NaBL2 NaBL2(_,NR(entries),_) |- o:Occurrence -pathOf-> p
+    where entries[o] => (_,p).
 
-  OT [(o',_)|OT'] |- o:Occurrence -typeOf-> ty
-    where o != o';
-          OT' |- o -typeOf-> ty.
+  NaBL2 NaBL2(_,_,OT(entries)) |- o:Occurrence -typeOf-> entries[o].

@@ -12,10 +12,13 @@ signature
     I     : Label
     Label : String -> Label
 
+  sort aliases
+    Path = List(Step)
+ 
   sorts Step constructors
     D : Scope * Occurrence -> Step
     E : Scope * Label -> Step
-    N : Scope * Label * Occurrence * List(Step)/*Path*/ -> Step
+    N : Scope * Label * Occurrence * Path -> Step
 
   arrows
     Scope -declsOf-> List(Occurrence)
@@ -28,5 +31,5 @@ signature
     (String * AST * AST) -mkOccurrence-> Occurrence
 
   arrows
-    Occurrence -pathOf-> List(Step)/*Path*/
+    Occurrence -pathOf-> Path
     Occurrence -typeOf-> Type

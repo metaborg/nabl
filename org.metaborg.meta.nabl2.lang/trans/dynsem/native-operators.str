@@ -163,14 +163,14 @@ rules
         super(source);
       }
 
-      @Specialization public List_Tuple_IOccurrenceTerm_Tuple_IOccurrenceTerm_List_IStepTerm doGet(ITerm term)
+      @Specialization public INameResolutionTerm doGet(ITerm term)
       {
         ISpoofaxScopeGraphContext<?> context =
             (ISpoofaxScopeGraphContext<?>)getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
         TermIndex index = TermIndex.get(term.getStrategoTerm());
         IScopeGraphUnit unit = context.unit(index.resource());
         IStrategoTerm nameResolution = unit.nameResolution().strategoTerm();
-        return List_Tuple_IOccurrenceTerm_Tuple_IOccurrenceTerm_List_IStepTerm.create(nameResolution);
+        return INameResolutionTerm.create(nameResolution);
       }
 
       public static TermBuild create(SourceSection source, TermBuild term)
@@ -220,8 +220,6 @@ rules
   otypes-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
     package ~x:native-pkg;
 
-    import java.util.ArrayList;
-    import java.util.List;
     import java.util.Map.Entry;
 
     import ~x:term-pkg.*;
@@ -245,19 +243,22 @@ rules
         super(source);
       }
 
-      @Specialization public List_Tuple_IOccurrenceTerm_ITypeTerm doGet(ITerm term)
+      @Specialization public IOccurrenceTypesTerm doGet(ITerm term)
       {
         ISpoofaxScopeGraphContext<?> context = (ISpoofaxScopeGraphContext<?>) getContext()
                 .readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
         TermIndex index = TermIndex.get(term.getStrategoTerm());
         IScopeGraphUnit unit = context.unit(index.resource());
-        List<Tuple_IOccurrenceTerm_ITypeTerm> tuples = new ArrayList<Tuple_IOccurrenceTerm_ITypeTerm>();
+        java.util.Map<IOccurrenceTerm, ITypeTerm> entries =
+          new java.util.HashMap<IOccurrenceTerm, ITypeTerm>();
         for(Entry<IStrategoTerm, IStrategoTerm> entry : unit.occurrenceTypes().get()) {
             IOccurrenceTerm occurrence = IOccurrenceTerm.create(entry.getKey());
             ITypeTerm type = ITypeTerm.create(entry.getValue());
-            tuples.add(new Tuple_IOccurrenceTerm_ITypeTerm(occurrence, type));
+            entries.put(occurrence, type);
         }
-        return new List_Tuple_IOccurrenceTerm_ITypeTerm((Tuple_IOccurrenceTerm_ITypeTerm[])tuples.toArray());
+        com.github.krukow.clj_lang.IPersistentMap<IOccurrenceTerm, ITypeTerm> map =
+          com.github.krukow.clj_lang.PersistentHashMap.create(entries);
+        return new OT_1_Term(map);
       }
 
       public static TermBuild create(SourceSection source, TermBuild term)
