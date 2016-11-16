@@ -149,6 +149,7 @@ rules
     import org.metaborg.scopegraph.context.IScopeGraphUnit;
     import org.metaborg.scopegraph.indices.TermIndex;
     import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
+    import org.spoofax.interpreter.core.Tools;
     import org.spoofax.interpreter.terms.IStrategoTerm;
 
     import com.oracle.truffle.api.dsl.NodeChild;
@@ -163,14 +164,22 @@ rules
         super(source);
       }
 
-      @Specialization public INameResolutionTerm doGet(ITerm term)
+      @Specialization public com.github.krukow.clj_lang.IPersistentMap<IOccurrenceTerm,Tuple_IOccurrenceTerm_List_IStepTerm> doGet(ITerm term)
       {
         ISpoofaxScopeGraphContext<?> context =
             (ISpoofaxScopeGraphContext<?>)getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
         TermIndex index = TermIndex.get(term.getStrategoTerm());
         IScopeGraphUnit unit = context.unit(index.resource());
-        IStrategoTerm nameResolution = unit.nameResolution().strategoTerm();
-        return INameResolutionTerm.create(nameResolution);
+        IStrategoTerm nameResolutionTerm = unit.nameResolution().strategoTerm();
+        assert Tools.isTermList(nameResolutionTerm);
+        java.util.Map<IOccurrenceTerm, Tuple_IOccurrenceTerm_List_IStepTerm> nameResolution =
+            new java.util.HashMap<IOccurrenceTerm, Tuple_IOccurrenceTerm_List_IStepTerm>();
+        for(IStrategoTerm entry : nameResolutionTerm)
+        { 
+          assert Tools.isTermTuple(nameResolutionTerm) && nameResolutionTerm.getSubtermCount() == 2;
+          nameResolution.put(IOccurrenceTerm.create(entry.getSubterm(0)), Tuple_IOccurrenceTerm_List_IStepTerm.create(entry.getSubterm(1)));
+        }
+        return com.github.krukow.clj_lang.PersistentHashMap.create(nameResolution);
       }
 
       public static TermBuild create(SourceSection source, TermBuild term)
@@ -243,7 +252,7 @@ rules
         super(source);
       }
 
-      @Specialization public IOccurrenceTypesTerm doGet(ITerm term)
+      @Specialization public com.github.krukow.clj_lang.IPersistentMap<IOccurrenceTerm, ITypeTerm> doGet(ITerm term)
       {
         ISpoofaxScopeGraphContext<?> context = (ISpoofaxScopeGraphContext<?>) getContext()
                 .readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
@@ -256,9 +265,7 @@ rules
             ITypeTerm type = ITypeTerm.create(entry.getValue());
             entries.put(occurrence, type);
         }
-        com.github.krukow.clj_lang.IPersistentMap<IOccurrenceTerm, ITypeTerm> map =
-          com.github.krukow.clj_lang.PersistentHashMap.create(entries);
-        return new OT_1_Term(map);
+        return com.github.krukow.clj_lang.PersistentHashMap.create(entries);
       }
 
       public static TermBuild create(SourceSection source, TermBuild term)

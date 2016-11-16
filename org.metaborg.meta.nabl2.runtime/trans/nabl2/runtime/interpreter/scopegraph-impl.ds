@@ -23,11 +23,9 @@ signature
     G : Map(Scope, ScopeEntry) * Map(Occurrence, Map(Label, Scope)) -> ScopeGraph
     S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
 
-  sorts NameResolution constructors
-    NR : Map(Occurrence, (Occurrence * Path)) -> NameResolution
-
-  sorts OccurrenceTypes constructors
-    OT : Map(Occurrence, Type) -> OccurrenceTypes
+  sort aliases
+    NameResolution = Map(Occurrence, (Occurrence * Path))
+    OccurrenceTypes = Map(Occurrence, Type)
 
   native operators
     nabl2_scopeGraph : AST -> ScopeGraph
