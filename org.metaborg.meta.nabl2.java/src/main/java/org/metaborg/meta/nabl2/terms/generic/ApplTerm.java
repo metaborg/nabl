@@ -10,7 +10,7 @@ import com.google.common.collect.Iterables;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class ApplTerm implements IApplTerm {
+abstract class ApplTerm implements IApplTerm {
 
     @Override public abstract String getOp();
 

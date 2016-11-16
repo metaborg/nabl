@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.ITermFunction;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class NilTerm implements INilTerm {
+abstract class NilTerm implements INilTerm {
 
     @Override public boolean isGround() {
         return true;

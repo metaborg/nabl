@@ -9,7 +9,7 @@ import org.metaborg.meta.nabl2.terms.ITermFunction;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class ConsTerm implements IConsTerm {
+abstract class ConsTerm implements IConsTerm {
 
     public abstract ITerm getHead();
 

@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.ITermFunction;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class StringTerm implements IStringTerm {
+abstract class StringTerm implements IStringTerm {
 
     @Override public abstract String getValue();
 

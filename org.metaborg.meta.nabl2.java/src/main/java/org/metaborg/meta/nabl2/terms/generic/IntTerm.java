@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.ITermFunction;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class IntTerm implements IIntTerm {
+abstract class IntTerm implements IIntTerm {
 
     public abstract int getValue();
 

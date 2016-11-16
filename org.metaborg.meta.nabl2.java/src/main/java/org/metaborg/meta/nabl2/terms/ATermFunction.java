@@ -30,10 +30,6 @@ public abstract class ATermFunction<T> implements ITermFunction<T> {
         return defaultApply(var);
     }
 
-    @Override public T apply(ITermOp op) {
-        return defaultApply(op);
-    }
-
     protected abstract T defaultApply(ITerm term);
 
 }

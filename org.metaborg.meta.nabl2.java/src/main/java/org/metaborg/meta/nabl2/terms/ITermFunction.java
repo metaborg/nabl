@@ -18,12 +18,10 @@ public interface ITermFunction<T> {
 
     T apply(ITermVar var);
 
-    T apply(ITermOp op);
-
     static <T> ITermFunction<T> of(Function<? super IApplTerm,T> applFun, Function<? super ITupleTerm,T> tupleFun,
             Function<? super IConsTerm,T> consFun, Function<? super INilTerm,T> nilFun,
             Function<? super IStringTerm,T> stringFun, Function<? super IIntTerm,T> intFun,
-            Function<? super ITermOp,T> opFun, Function<? super ITermVar,T> varFun) {
+            Function<? super ITermVar,T> varFun) {
         return new ITermFunction<T>() {
 
             @Override public T apply(IApplTerm applTerm) {
@@ -52,24 +50,6 @@ public interface ITermFunction<T> {
 
             @Override public T apply(ITermVar termVar) {
                 return varFun.apply(termVar);
-            }
-
-            @Override public T apply(ITermOp termOp) {
-                return opFun.apply(termOp);
-            }
-
-        };
-    }
-
-    static <T> ITermFunction<T> of(Function<? super IApplTerm,T> applFun, Function<? super ITerm,T> defaultFun) {
-        return new ATermFunction<T>() {
-
-            @Override public T apply(IApplTerm applTerm) {
-                return applFun.apply(applTerm);
-            }
-
-            @Override protected T defaultApply(ITerm term) {
-                return defaultFun.apply(term);
             }
 
         };

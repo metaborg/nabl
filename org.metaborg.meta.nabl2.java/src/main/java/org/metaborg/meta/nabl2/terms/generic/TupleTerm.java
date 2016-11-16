@@ -10,7 +10,7 @@ import com.google.common.collect.Iterables;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class TupleTerm implements ITupleTerm {
+abstract class TupleTerm implements ITupleTerm {
 
     @Override public abstract Iterable<ITerm> getArgs();
 
