@@ -49,3 +49,4 @@ signature // Exported
     initHeap(AST) --> Heap
     initFrame(Scope, Map(Label, Map(Scope, Frame)), Map(Occurrence, Val)) :: H --> Frame :: H
     initDefault(Scope, Map(Label, Map(Scope, Frame))) :: H --> Frame :: H
+    mkAddr(Frame, Occurrence) --> Addr

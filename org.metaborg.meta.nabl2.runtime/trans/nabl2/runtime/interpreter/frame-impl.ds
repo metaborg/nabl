@@ -57,6 +57,7 @@ rules
   where
     x[f] => FC_(s, ks, slots).
   
+  mkAddr(f, d) --> Addr(f, d).
 
 rules
   
