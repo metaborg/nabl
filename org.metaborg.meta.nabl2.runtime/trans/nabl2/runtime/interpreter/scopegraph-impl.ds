@@ -33,15 +33,9 @@ signature
     nabl2_occurrenceTypes : AST -> OccurrenceTypes
     nabl2_indexOf : AST -> TermIndex
 
-  sorts NaBL2 constructors
+  constructors
     NaBL2 : ScopeGraph * NameResolution * OccurrenceTypes -> NaBL2
  
-  arrows
-    initNaBL2(AST) --> NaBL2
-
-  components
-    NaBL2 : NaBL2
-
 rules
 
   initNaBL2(t) --> NaBL2(SG, NR, OT)
@@ -75,7 +69,7 @@ rules
   NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -linksOf-> links
     where scopes[s] => S(_,_,links,_).
 
-  NaBL2 NaBL2(_,NR(entries),_) |- o:Occurrence -pathOf-> p
-    where entries[o] => (_,p).
+  NaBL2 NaBL2(_,NR,_) |- o:Occurrence -pathOf-> p
+    where NR[o] => (_,p).
 
-  NaBL2 NaBL2(_,_,OT(entries)) |- o:Occurrence -typeOf-> entries[o].
+  NaBL2 NaBL2(_,_,OT) |- o:Occurrence -typeOf-> OT[o].

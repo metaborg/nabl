@@ -21,8 +21,8 @@ signature
     N : Scope * Label * Occurrence * Path -> Step
 
   arrows
-    Scope -declsOf-> List(Occurrence)
-    Scope -linksOf-> List((Label * Scope))
+    NaBL2 |- Scope -declsOf-> List(Occurrence)
+    NaBL2 |- Scope -linksOf-> List((Label * Scope))
 
   arrows
     AST -mkOccurrence-> Occurrence
@@ -31,5 +31,14 @@ signature
     (String * AST * AST) -mkOccurrence-> Occurrence
 
   arrows
-    Occurrence -pathOf-> Path
-    Occurrence -typeOf-> Type
+    NaBL2 |- Occurrence -pathOf-> Path
+    NaBL2 |- Occurrence -typeOf-> Type
+
+  sorts
+    NaBL2
+
+  components
+    NaBL2 : NaBL2
+
+  arrows
+    initNaBL2(AST) --> NaBL2
