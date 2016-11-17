@@ -2,20 +2,16 @@ module nabl2/runtime/interpreter/frame
 
 imports
   nabl2/runtime/interpreter/frame-api
-  nabl2/runtime/interpreter/scopegraph-impl
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
 
 signature
 
-	constructors
-		tt : Unit
-
-	constructors
+  constructors
     Addr : Frame * Occurrence -> Addr
 
-	sorts FrameContainer constructors
-		FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
+  sorts FrameContainer constructors
+    FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
     
   constructors
     F_ : Int -> Frame {implicit}
@@ -27,16 +23,19 @@ signature
 
 rules
 
-  // Operations on frames
+  // Operations on heap
+  
+  initHeap(_) --> H_({}).
 
+  // Operations on frames
 
   initFrame(s, ks, slots) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
   where
     fresh => ff.
-    
+ 
   H H_(x) |- scopeOf(f) --> s
   where
-  	x[f] => FC_(s, _, _).
+    x[f] => FC_(s, _, _).
   
   // Dynamic address lookup  
   F f |- lookup([D(_, d)]) --> Addr(f, d).
@@ -46,7 +45,7 @@ rules
     H h |- linksOf(f1) --> ks;
     ks[l][s] => f2;
     H h, F f2 |- lookup(p) --> Addr(f3, d).
-    
+ 
   // Fetching and mutating slot values
     
   H h |- get(Addr(f', d)) --> v
@@ -54,10 +53,11 @@ rules
     H h |- slotsOf(f') --> slots;
     slots[d] => v.
 
-  set(Addr(f, d), v) :: H H_(x) --> tt() :: H {f |--> FC_(s, ks, {d |--> v, slots}), x}
+  set(Addr(f, d), v) :: H H_(x) --> v :: H {f |--> FC_(s, ks, {d |--> v, slots}), x}
   where
     x[f] => FC_(s, ks, slots).
   
+
 rules
   
   H H_(x) |- linksOf(f) --> ks

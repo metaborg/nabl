@@ -4,10 +4,9 @@ imports
 
   nabl2/runtime/interpreter/scopegraph-api
 
-signature // The API is parameterized by a `Val` and `Unit` sort
+signature // The API is parameterized by a `Val` sort
 
-  sorts
-    Val
+  sorts Val
 
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
@@ -21,22 +20,19 @@ signature // Exported
 
   sorts Addr
   
-	components
-		F : Frame
-		H : Heap
-	
+  components
+    F : Frame
+    H : Heap
+  
   arrows
     F, H |- lookup(Path) --> Addr
     H |- get(Addr) --> Val
-    F, H |- set(Addr, Val) --> Val
-		H |- scopeOf(Frame) --> Scope
-    initFrame(Scope, Map(Label, Map(Scope, Frame)), Map(Occurrence, Val)) :: H --> Frame :: H
+    F |- set(Addr, Val) :: H --> Val :: H
+
+  arrows // private?
+    H |- scopeOf(Frame) --> Scope
     H |- linksOf(Frame) --> Map(Label, Map(Scope, Frame))
     H |- slotsOf(Frame) --> Map(Occurrence, Val)
-
-  variables
-    f : Frame
-    h : Heap
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
@@ -45,10 +41,11 @@ signature // Exported
 signature // The API is parameterized by a `default` operation that returns a default value for each type
 
   arrows
-    defaultVal(Type) --> Val
+    default(Type) --> Val
 
 signature // Exported
 
   arrows
     initHeap(AST) --> Heap
+    initFrame(Scope, Map(Label, Map(Scope, Frame)), Map(Occurrence, Val)) :: H --> Frame :: H
     initDefault(Scope, Map(Label, Map(Scope, Frame))) :: H --> Frame :: H
