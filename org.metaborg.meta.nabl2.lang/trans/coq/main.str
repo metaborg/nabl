@@ -39,6 +39,7 @@ rules // Constant(s)
 	cgdirectedge  = !"edgeofScope"
 	cdeclsofscope = !"declsofScope" // FIXME: in NaBL2, these are indexed by namespaces. In Coq, they are not (currently)
 	crefsofscope  = !"refsofScope" // FIXME: in NaBL2, these are indexed by namespaces. In Coq, they are not (currently)
+	cassocscopeofdecl = !"assocScope" // FIXME: in NaBL2, these are labeled. In Coq, they are not (currently)
 	csub          = !"sub_trans"
 	csubseteq     = !"subset_eq" // FIXME: what should this really map to?
 	
@@ -338,7 +339,7 @@ rules // Rule normalization
 		where
 			var1 := <newname> "set";
 			var2 := <newname> "set"
-	
+
 rules // Normalize scope patterns by making "as" patterns into equalities in the body of a rule
 
   extract-scope-patterns:
@@ -394,6 +395,11 @@ rules // Normalize scope patterns by making "as" patterns into equalities in the
 
 rules // Normalize type patterns by making "as" patterns into equalities in the body of a rule
 	
+//	  do (spat', body0) := <extract-type-pattern> (spat, body);
+//		   (spats', body') := <extract-type-pattern-list> (spats, body);
+//		   spats_final := <cons-if-some> (spat, spats');
+//		   return (spats_final, body')	
+	
 	extract-type-pattern-list:
 		([spat|spats], body) ->
 			<extract-type-pattern;
@@ -436,6 +442,21 @@ rules // Normalize type patterns by making "as" patterns into equalities in the 
 			\)> (sterm, body)		
 
 	extract-type-pattern:
+		(TList(ts), body) ->
+			<extract-type-pattern-list;
+			mbind(\ (ts', body') -> (TList(ts'), body') \)> (ts, body)
+
+	extract-type-pattern:
+		(TListTail(theads,tl), body) ->
+			<extract-type-pattern-list;
+			mbind(\ (theads', body0) ->
+			<extract-type-pattern;
+			mbind(\ (tl', body') ->
+			(TListTail(theads', tl'), body')
+			\)> (tl, body)
+			\)> (theads, body)
+
+	extract-type-pattern:
 		(x, _) ->
 			<concat-strings; err>
 				["Encountered an unexpected type pattern: ",
@@ -445,6 +466,8 @@ rules // Normalize type patterns by making "as" patterns into equalities in the 
 			not(?Var(_) <+
 				?Op(_, _) <+
 				?Type(_) <+
+				?TList(_) <+
+				?TListTail(_, _) <+
 				?As(_, _))
 	
 rules // Normalize term patterns by making "as" patterns into equalities in the body of a rule
@@ -531,9 +554,11 @@ rules // Rules
 	rule-to-coq:
 		(CGenInitRule(spattern, tpattern, body), coq) ->
 			coq
-		
+	
 	rule-to-coq:
-		(CGenMatchRule(name, trpattern, spattern, typattern, body), coq) ->
+		(r@CGenMatchRule(name, trpattern, spattern, typattern, body), coq) ->
+			<collect-all(\ Var(x) -> Bind(x) \);
+			mbind(\ var_names ->
 			<rule-name-from-term-pattern;
 			mbind(\ rname ->
 			<term-pattern-to-coq;
@@ -551,7 +576,7 @@ rules // Rules
 				Induc(coq_name, x, ty,
 					<append-constructor>
 						(cs, ConsDecl(rname,
-							None(), // Binders -- FIXME
+							OptBinders(var_names), // Binders -- FIXME
 							OptType(
 								<foldr(
 								  !
@@ -571,6 +596,7 @@ rules // Rules
 			\)> name
 			\)> trpattern
 			\)> (name, trpattern)
+			\)> r
 	
 	rule-to-coq(|sigs):
 		(r, _) -> 
@@ -648,7 +674,15 @@ rules // Term patterns
 			
 	term-pattern-to-coq:
 		ListTail(heads, tail) ->
-			<conc; list-pattern-to-coq> (heads, [tail])
+			<list-pattern-to-coq(|tail)> heads
+	
+	term-pattern-to-coq:
+		TList(lst) ->
+			<list-pattern-to-coq> lst
+			
+	term-pattern-to-coq:
+		TListTail(heads, tail) ->
+			<list-pattern-to-coq(|tail)> heads
 	
 	term-pattern-to-coq:
 		Var(x) -> Ref(x)
@@ -676,7 +710,7 @@ rules // Term patterns
 	term-pattern-to-coq:
 		Str(str) ->
 			str
-	
+		
 	term-pattern-to-coq:
 		x ->
 			<concat-strings; err>
@@ -686,6 +720,8 @@ rules // Term patterns
 			not(?Op(_, _) <+
 				?List(_) <+
 				?ListTail(_, _) <+
+				?TList(_) <+
+				?TListTail(_, _) <+
 				?Declarations(_, _) <+
 				?Var(_))
 
@@ -888,7 +924,33 @@ rules // CGen body
 			[Apply(Apply(Ref(<csubseteq>), x'), y')]
 			\)> y
 			\)> x
-		
+	
+	cgen-clause-to-coq:
+		CGAssoc(x, lbl, scope) ->
+			<occurrence-to-coq;
+			mbind(\ x' ->
+			<label-pattern-to-coq;
+			mbind(\ lbl' ->
+			<term-pattern-to-coq;
+			mbind(\ scope' ->
+			[Apply(Apply(Apply(Ref(<cassocscopeofdecl>), x'), lbl'), scope')]
+			\)> scope
+			\)> lbl
+			\)> x
+	
+	cgen-clause-to-coq:
+		CAssoc(x, lbl, scope, _) ->
+			<term-pattern-to-coq;
+			mbind(\ x' ->
+			<label-pattern-to-coq;
+			mbind(\ lbl' ->
+			<term-pattern-to-coq;
+			mbind(\ scope' ->
+			[Apply(Apply(Apply(Ref(<cassocscopeofdecl>), x'), lbl'), scope')]
+			\)> scope
+			\)> lbl
+			\)> x
+	
 	cgen-clause-to-coq:
 		x ->
 			<concat-strings; err>
@@ -903,6 +965,8 @@ rules // CGen body
 				?CGDirectEdge(_, _, _) <+
 				?NewScopes(_) <+
 				?CDistinct(_, _) <+
+				?CGAssoc(_, _, _) <+
+				?CAssoc(_, _, _, _) <+
 				?CEqual(_, _, _) <+
 				?CSubtype(_, _, _) <+
 				?FSubtype(_, _, _) <+
@@ -915,6 +979,9 @@ rules // Label
 	
 	label-pattern-to-coq:
 		I() -> Ref(<i-edge>)
+	
+	label-pattern-to-coq:
+		Label(x) -> Ref(x)
 	
 	label-pattern-to-coq:
 		x ->
@@ -972,6 +1039,27 @@ rules // Lists
 			\)> x
 
 	list-pattern-to-coq:
+		x ->
+			<concat-strings; err>
+				["Encountered term where a list was expected during",
+					" list pattern generation: ", <write-to-string> x]
+		where
+			not(?[] <+ ?[_|_])
+
+	list-pattern-to-coq(|last_elem):
+		[] -> <term-pattern-to-coq> last_elem
+	
+	list-pattern-to-coq(|last_elem):
+		[x|xs] ->
+			<term-pattern-to-coq;
+			mbind(\ x' ->
+			<list-pattern-to-coq(|last_elem);
+			mbind(\ xs' ->
+			Apply(Apply(Ref("cons"), x'), xs')
+			\)> xs
+			\)> x
+
+	list-pattern-to-coq(|last_elem):
 		x ->
 			<concat-strings; err>
 				["Encountered term where a list was expected during",
