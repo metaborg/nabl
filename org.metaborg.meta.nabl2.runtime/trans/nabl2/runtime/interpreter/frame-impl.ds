@@ -14,8 +14,8 @@ signature
     FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
     
   constructors
-    F_ : Int -> Frame {implicit}
-    H_ : Map(Frame, Frame) -> Heap {implicit}
+    F_ : Int -> Frame // {implicit}
+    H_ : Map(Frame, Frame) -> Heap // {implicit}
 
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
@@ -29,9 +29,9 @@ rules
 
   // Operations on frames
 
-  initFrame(s, ks, slots) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
+  initFrame(s, ks, slots) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
   where
-    fresh => ff.
+    F_(fresh) => ff.
  
   H H_(x) |- scopeOf(f) --> s
   where
@@ -53,7 +53,7 @@ rules
     H h |- slotsOf(f') --> slots;
     slots[d] => v.
 
-  set(Addr(f, d), v) :: H H_(x) --> v :: H {f |--> FC_(s, ks, {d |--> v, slots}), x}
+  set(Addr(f, d), v) :: H H_(x) --> v :: H H_({f |--> FC_(s, ks, {d |--> v, slots}), x})
   where
     x[f] => FC_(s, ks, slots).
   
@@ -90,8 +90,8 @@ rules // Utility function
 
 rules // initDefault
 
-  initDefault(s, ks) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
+  initDefault(s, ks) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
   where
-    fresh => ff;
+    F_(fresh) => ff;
     s -declsOf-> ds;
     DefaultSlots(ds) --> slots.
