@@ -1100,18 +1100,21 @@ rules // Joining inductive definitions
 			// Hoist inductive type out of set of inductive types
 			<get-def;
 			mbind(\ (inducs2, coq2) ->
-			<name2' := <cgen-rename> name2;
-			// Insert dependent definition in definition for dependee
-			(
-				coq' :=
-					<oncetd(\
-						Inductive(inducs) ->
-							Inductive(<conc> (inducs, inducs2))
-							where <fetch(?Induc(name2', _, _, _))> inducs \)> coq2
-				<+
-				coq' := <conc> (coq2, [Inductive(inducs2)])
-			)>
-			\)> (name2, coq)
+				coq'
+					where
+						name2' := <cgen-rename> name2;
+						// Insert dependent definition in definition for dependee
+						(
+							coq' :=
+								<oncetd(\
+									Inductive(inducs) ->
+										Inductive(<conc> (inducs2, inducs))
+										where 
+											<fetch(?Induc(name2', _, _, _))> inducs \)> coq2
+							<+
+							coq' := <conc> (coq2, [Inductive(inducs2)])
+						)
+			\)> (name1, coq)
 			
 	
 	get-def:
