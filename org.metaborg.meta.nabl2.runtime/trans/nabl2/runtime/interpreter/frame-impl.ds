@@ -95,3 +95,30 @@ rules // initDefault
     F_(fresh) => ff;
     s -declsOf-> ds;
     DefaultSlots(ds) --> slots.
+
+signature // initEager helpers
+  
+  arrows
+    initEagerEdges(List((Label * List(Scope)))) :: H --> Map(Label, Map(Scope, Frame)) :: H
+    initEagerEdge(List(Scope)) :: H --> Map(Scope, Frame) :: H
+
+rules // initEager takes a scope and recursively traverses its edges to construct frame links
+
+  initEager(s) --> initDefault(s, links)
+  where
+    s -edgesOf-> es;
+    initEagerEdges(es) --> links.
+    
+  initEagerEdges([]) --> {}.
+  
+  initEagerEdges([(l, ss)|edges]) -->
+    { l |--> link, initEagerEdges(edges) }
+  where
+    initEagerEdge(ss) --> link.
+
+  initEagerEdge([]) --> {}.
+  
+  initEagerEdge([s|ss]) --> { s |--> F, link }
+  where
+    initEager(s) --> F;
+    initEagerEdge(ss) --> link.

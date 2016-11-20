@@ -22,7 +22,7 @@ signature
 
   arrows
     NaBL2 |- Scope -declsOf-> List(Occurrence)
-    NaBL2 |- Scope -linksOf-> List((Label * Scope))
+    NaBL2 |- Scope -edgesOf-> List((Label * List(Scope)))
 
   arrows
     AST -mkOccurrence-> Occurrence
@@ -33,6 +33,8 @@ signature
   arrows
     NaBL2 |- Occurrence -pathOf-> Path
     NaBL2 |- Occurrence -typeOf-> Type
+    NaBL2 |- Occurrence -scopeOf-> Scope
+    NaBL2 |- Occurrence -assocScopeOf-> Scope
 
   sorts
     NaBL2
