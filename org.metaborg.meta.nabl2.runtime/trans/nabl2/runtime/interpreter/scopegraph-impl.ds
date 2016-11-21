@@ -66,8 +66,8 @@ rules
   NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -declsOf-> decls
     where scopes[s] => S(decls,_,_,_).
 
-  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -linksOf-> links
-    where scopes[s] => S(_,_,links,_).
+//  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -edgesOf-> links
+//    where scopes[s] => S(_,_,links,_).
 
   NaBL2 NaBL2(_,NR,_) |- o:Occurrence -pathOf-> p
     where NR[o] => (_,p).
