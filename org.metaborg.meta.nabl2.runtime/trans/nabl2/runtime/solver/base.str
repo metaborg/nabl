@@ -79,7 +79,7 @@ rules
      <foldr(!sol,nabl2--postprocess-constraint <+ nabl2--add-unsolved-constraint-error)> c*;
      with(fmsg* := <nabl2--sol-p;nabl2--free-var-messages>);
      nabl2--add-messages(id|fmsg*);
-     nabl2--unresolved-refs-errors;
+     nabl2--postprocess-namebinding;
      !(<id>, [])
    )
 

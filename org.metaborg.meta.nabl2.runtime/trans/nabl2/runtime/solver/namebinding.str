@@ -126,8 +126,12 @@ rules
 
 rules
  
-  nabl2--unresolved-refs-errors: sol -> sol'
-    withnabl2--time-analysis(!"namebinding",
+  nabl2--postprocess-namebinding =
+    nabl2--add-unresolved-ref-errors;
+    nabl2--ensure-all-scopes
+
+  nabl2--add-unresolved-ref-errors: sol -> sol'
+    with nabl2--time-analysis(!"namebinding",
          g := <nabl2--sol-g> sol;
          ref* := <conc> (<nabl2--G-refs> g, <nabl2--G-imports> g);
          res* := <nabl2--sol-fr;nabl2--keys> sol;
@@ -146,4 +150,11 @@ rules
            end end
          })> unknown*
     )
- 
+
+  nabl2--ensure-all-scopes: sol -> sol'
+    with nabl2--time-analysis(!"namebinding",
+      ss := <collect-all(?Scope(_,_))> sol;
+      g := <nabl2--sol-g> sol;
+      g' := <foldr(!g,flip(nabl2--G-ensure-scope))> ss;
+      sol' := <nabl2--sol-with-g(|g')> sol
+    )
