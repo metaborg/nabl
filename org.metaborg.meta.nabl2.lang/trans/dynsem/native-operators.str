@@ -176,7 +176,7 @@ rules
             new java.util.HashMap<IOccurrenceTerm, Tuple_IOccurrenceTerm_List_IStepTerm>();
         for(IStrategoTerm entry : nameResolutionTerm)
         { 
-          assert Tools.isTermTuple(nameResolutionTerm) && nameResolutionTerm.getSubtermCount() == 2;
+          assert Tools.isTermTuple(entry) && entry.getSubtermCount() == 2;
           nameResolution.put(IOccurrenceTerm.create(entry.getSubterm(0)), Tuple_IOccurrenceTerm_List_IStepTerm.create(entry.getSubterm(1)));
         }
         return com.github.krukow.clj_lang.PersistentHashMap.create(nameResolution);
