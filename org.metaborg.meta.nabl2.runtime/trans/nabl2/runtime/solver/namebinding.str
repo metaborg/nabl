@@ -19,33 +19,37 @@ rules
  
   nabl2--solve-fact = nabl2--time-analysis(!"scopegraph",nabl2--solve-scopegraph-fact)
 
-  nabl2--solve-scopegraph-fact: (c@CGDecl(d,s),sol) -> [(sol',[])]
-  where <nabl2--is-ground> c
+  nabl2--solve-scopegraph-fact: (CGDecl(d,s),sol) -> [(sol',[])]
+  where <nabl2--strict(is-NaBL2-Occurrence|"In <Occurrence> <- <Scope>: Occurrence must be ground")> d;
+        <nabl2--strict(is-NaBL2-Scope|"In <Occurrence> <- <Scope>: scope must be ground")> s
   with g := <nabl2--sol-g> sol => g;
        g' := <nabl2--G-with-decl> (g,s,d);
        sol' := <nabl2--sol-with-g(|g')> sol
 
-  nabl2--solve-scopegraph-fact: (c@CGRef(r,s),sol) -> [(sol',[])]
-  where <nabl2--is-ground> c
+  nabl2--solve-scopegraph-fact: (CGRef(r,s),sol) -> [(sol',[])]
+  where <nabl2--strict(is-NaBL2-Occurrence|"In <Occurrence> -> <Scope>: Occurrence must be ground")> r;
+        <nabl2--strict(is-NaBL2-Scope|"In <Occurrence> -> <Scope>: scope must be ground")> s
   with g := <nabl2--sol-g> sol;
        g' := <nabl2--G-with-ref> (g,s,r);
        sol' := <nabl2--sol-with-g(|g')> sol
 
   nabl2--solve-scopegraph-fact: (CGDirectEdge(s,l,s'),sol) -> [(sol',[])]
-  where <nabl2--is-ground> (s,l);
-        <nabl2--is-ground + nabl2--is-var> s'
+  where <nabl2--strict(is-NaBL2-Scope|"In <Scope> ---> <Scope>: first scope must be ground")> s;
+        <nabl2--strict(is-NaBL2-Scope + nabl2--is-var|"In <Scope> ---> <Scope>: second scope must be ground, or a variable")> s'
   with g := <nabl2--sol-g> sol;
        g' := <nabl2--G-with-direct-edge> (g,s,(l,s'));
        sol' := <nabl2--sol-with-g(|g')> sol
 
-  nabl2--solve-scopegraph-fact: (c@CGNamedEdge(r,l,s),sol) -> [(sol',[])]
-  where <nabl2--is-ground> c
+  nabl2--solve-scopegraph-fact: (CGNamedEdge(r,l,s),sol) -> [(sol',[])]
+  where <nabl2--strict(is-NaBL2-Occurrence|"In <Occurrence> ===> <Scope>: Occurrence must be ground")> r;
+        <nabl2--strict(is-NaBL2-Scope|"In <Occurrence> ===> <Scope>: scope must be ground")> s
   with g := <nabl2--sol-g> sol;
        g' := <nabl2--G-with-named-edge> (g,s,(l,r));
        sol' := <nabl2--sol-with-g(|g')> sol
 
-  nabl2--solve-scopegraph-fact: (c@CGAssoc(d,l,s),sol)    -> [(sol',[])]
-  where <nabl2--is-ground> c
+  nabl2--solve-scopegraph-fact: (CGAssoc(d,l,s),sol)    -> [(sol',[])]
+  where <nabl2--strict(is-NaBL2-Occurrence|"In <Occurrence> <=== <Scope>: Occurrence must be ground")> d;
+        <nabl2--strict(is-NaBL2-Scope|"In <Occurrence> <=== <Scope>: scope must be ground")> s
   with g := <nabl2--sol-g> sol;
        g' := <nabl2--G-with-assoc> (g,d,(l,s));
        sol' := <nabl2--sol-with-g(|g')> sol
