@@ -34,17 +34,25 @@ signature
     nabl2_indexOf : AST -> TermIndex
 
   constructors
-    NaBL2 : ScopeGraph * NameResolution * OccurrenceTypes -> NaBL2
+    NaBL2 : ScopeGraph * NameResolution * OccurrenceTypes *
+      (Map(Occurrence, Scope) *   // Declaration-to-scope map
+       Map(Occurrence, Scope)) -> // Reference-to-scope map
+        NaBL2
  
   arrows
     postProcessLinks(List((Label * Scope)), Map(Label, List(Scope))) --> Map(Label, List(Scope))
+    postProcessDecls(Map(Scope, ScopeEntry), List(Scope)) --> Map(Occurrence, Scope)
+    postProcessRefs(Map(Scope, ScopeEntry), List(Scope)) --> Map(Occurrence, Scope)
+    associateOccsWithScope(List(Occurrence), Scope) --> Map(Occurrence, Scope)
  
 rules
 
-  initNaBL2(t) --> NaBL2(SG, NR, OT)
-    where nabl2_scopeGraph(t) => SG;
+  initNaBL2(t) --> NaBL2(SG, NR, OT, (d2s, r2s))
+    where nabl2_scopeGraph(t) => SG@G(scopes, _);
           nabl2_nameResolution(t) => NR;
-          nabl2_occurrenceTypes(t) => OT.
+          nabl2_occurrenceTypes(t) => OT;
+          postProcessDecls(scopes, allkeys(scopes)) --> d2s;
+          postProcessRefs(scopes, allkeys(scopes)) --> r2s.
  
 rules
 
@@ -66,21 +74,25 @@ rules
 
 rules
 
-  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -declsOf-> decls
+  NaBL2 NaBL2(G(scopes,_),_,_,_) |- s:Scope -declsOf-> decls
     where scopes[s] => S(decls,_,_,_).
 
-  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -edgesOf-> postProcessLinks(links, {})
+  NaBL2 NaBL2(G(scopes,_),_,_,_) |- s:Scope -edgesOf-> postProcessLinks(links, {})
     where scopes[s] => S(_,_,links,_).
 
-  NaBL2 NaBL2(_,NR,_) |- o:Occurrence -pathOf-> p
+  NaBL2 NaBL2(_,NR,_,_) |- o:Occurrence -pathOf-> p
     where NR[o] => (_,p).
 
-  NaBL2 NaBL2(_,_,OT) |- o:Occurrence -typeOf-> OT[o].
+  NaBL2 NaBL2(_,_,OT,_) |- o:Occurrence -typeOf-> OT[o].
 
-  NaBL2 NaBL2(G(_, AS), _, _) |- (o, l):(Occurrence * Label) -assocScopeOf-> m[l]
+  NaBL2 NaBL2(G(_, AS), _, _, _) |- (o, l):(Occurrence * Label) -assocScopeOf-> m[l]
   where
     AS[o] => m.
     
+  NaBL2 NaBL2(_, _, _, (d2s, _)) |- o:Occurrence -scopeOfDecl-> d2s[o].
+    
+  NaBL2 NaBL2(_, _, _, (_, r2s)) |- o:Occurrence -scopeOfRef-> r2s[o].
+  
 rules // This should probably be done in the NaBL2 back-end instead of DynSem.
 
   postProcessLinks([], m) --> m.
@@ -93,3 +105,27 @@ rules // This should probably be done in the NaBL2 back-end instead of DynSem.
       otherwise =>
         { l |--> [s], m } => m'
     }.
+
+rules // This should be done in the NaBL2 back-end instead of DynSem.
+
+  postProcessDecls(_, []) --> {}.
+  
+  postProcessDecls(scope_entries, [s|ss]) --> { m , postProcessDecls(scope_entries, ss) }
+  where
+    scope_entries[s] => S(decls, _, _, _);
+    associateOccsWithScope(decls, s) --> m.
+
+rules // This should be done in the NaBL2 back-end instead of DynSem.
+
+  postProcessRefs(_, []) --> {}.
+  
+  postProcessRefs(scope_entries, [s|ss]) --> { m , postProcessRefs(scope_entries, ss) }
+  where
+    scope_entries[s] => S(decls, _, _, _);
+    associateOccsWithScope(decls, s) --> m.
+
+rules // This should be done in the NaBL2 back-end instead of DynSem.
+
+  associateOccsWithScope([], _) --> {}.
+
+  associateOccsWithScope([d|ds], s) --> { d |--> s , associateOccsWithScope(ds, s) }.
