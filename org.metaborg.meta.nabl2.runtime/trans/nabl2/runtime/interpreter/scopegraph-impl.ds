@@ -36,6 +36,9 @@ signature
   constructors
     NaBL2 : ScopeGraph * NameResolution * OccurrenceTypes -> NaBL2
  
+  arrows
+    postProcessLinks(List((Label * Scope)), Map(Label, List(Scope))) --> Map(Label, List(Scope))
+ 
 rules
 
   initNaBL2(t) --> NaBL2(SG, NR, OT)
@@ -66,8 +69,8 @@ rules
   NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -declsOf-> decls
     where scopes[s] => S(decls,_,_,_).
 
-//  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -edgesOf-> links
-//    where scopes[s] => S(_,_,links,_).
+  NaBL2 NaBL2(G(scopes,_),_,_) |- s:Scope -edgesOf-> postProcessLinks(links, {})
+    where scopes[s] => S(_,_,links,_).
 
   NaBL2 NaBL2(_,NR,_) |- o:Occurrence -pathOf-> p
     where NR[o] => (_,p).
@@ -77,3 +80,16 @@ rules
   NaBL2 NaBL2(G(_, AS), _, _) |- (o, l):(Occurrence * Label) -assocScopeOf-> m[l]
   where
     AS[o] => m.
+    
+rules // This should probably be done in the NaBL2 back-end instead of DynSem.
+
+  postProcessLinks([], m) --> m.
+
+  postProcessLinks([(l, s)|lss], m) --> postProcessLinks(lss, m')
+  where
+    case m[l?] of {
+      true =>
+        { l |--> [s|m[l]] , m } => m'
+      otherwise =>
+        { l |--> [s], m } => m'
+    }.

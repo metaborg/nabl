@@ -23,7 +23,7 @@ signature
 
   arrows
     NaBL2 |- Scope -declsOf-> List(Occurrence)
-    NaBL2 |- Scope -edgesOf-> List((Label * List(Scope)))
+    NaBL2 |- Scope -edgesOf-> Map(Label, List(Scope))
 
   arrows
     Name -mkOccurrence-> Occurrence

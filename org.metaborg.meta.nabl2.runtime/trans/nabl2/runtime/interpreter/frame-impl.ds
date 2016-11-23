@@ -99,7 +99,8 @@ rules // initDefault
 signature // initEager helpers
   
   arrows
-    initEagerEdges(List((Label * List(Scope)))) :: H --> Map(Label, Map(Scope, Frame)) :: H
+    initEagerEdges(Map(Label, List(Scope)), List(Label)) :: H -->
+      Map(Label, Map(Scope, Frame)) :: H
     initEagerEdge(List(Scope)) :: H --> Map(Scope, Frame) :: H
 
 rules // initEager takes a scope and recursively traverses its edges to construct frame links
@@ -107,14 +108,15 @@ rules // initEager takes a scope and recursively traverses its edges to construc
   initEager(s) --> initDefault(s, links)
   where
     s -edgesOf-> es;
-    initEagerEdges(es) --> links.
+    allkeys(es) => ls;
+    initEagerEdges(es, ls) --> links.
     
-  initEagerEdges([]) --> {}.
+  initEagerEdges(_, []) --> {}.
   
-  initEagerEdges([(l, ss)|edges]) -->
-    { l |--> link, initEagerEdges(edges) }
+  initEagerEdges(m, [l|ls]) -->
+    { l |--> link, initEagerEdges(m, ls) }
   where
-    initEagerEdge(ss) --> link.
+    initEagerEdge(m[l]) --> link.
 
   initEagerEdge([]) --> {}.
   
