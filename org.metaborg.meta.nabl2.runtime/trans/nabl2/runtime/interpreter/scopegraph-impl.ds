@@ -10,7 +10,7 @@ signature
     Scope : String * String -> Scope
 
   constructors
-    Occurrence : Namespace * AST * TermIndex -> Occurrence
+    Occurrence : Namespace * Name * TermIndex -> Occurrence
  
   sorts TermIndex constructors
     TermIndex : String * Int -> TermIndex
@@ -45,19 +45,19 @@ rules
  
 rules
 
-  t:AST -mkOccurrence-> Occurrence(ns,t,idx)
+  t:Name -mkOccurrence-> Occurrence(ns,t,idx)
     where DefaultNamespace() => ns;
           nabl2_indexOf(t) => idx.
 
-  (ns, t):(String * AST) -mkOccurrence-> Occurrence(ns',t,idx)
+  (ns, t):(String * Name) -mkOccurrence-> Occurrence(ns',t,idx)
     where Namespace(ns) => ns';
           nabl2_indexOf(t) => idx.
 
-  (t, o):(AST * AST) -mkOccurrence-> Occurrence(ns,t,idx)
+  (t, o):(Name * AST) -mkOccurrence-> Occurrence(ns,t,idx)
     where DefaultNamespace() => ns;
           nabl2_indexOf(o) => idx.
 
-  (ns, t, o):(String * AST * AST) -mkOccurrence-> Occurrence(ns',t,idx)
+  (ns, t, o):(String * Name * AST) -mkOccurrence-> Occurrence(ns',t,idx)
     where Namespace(ns) => ns';
           nabl2_indexOf(o) => idx.
 

@@ -3,6 +3,7 @@ module nabl2/runtime/interpreter/scopegraph-api
 signature
 
   sorts
+    Name
     Type
     Scope
     Occurrence
@@ -25,10 +26,10 @@ signature
     NaBL2 |- Scope -edgesOf-> List((Label * List(Scope)))
 
   arrows
-    AST -mkOccurrence-> Occurrence
-    (String * AST) -mkOccurrence-> Occurrence
-    (AST * AST) -mkOccurrence-> Occurrence
-    (String * AST * AST) -mkOccurrence-> Occurrence
+    Name -mkOccurrence-> Occurrence
+    (String * Name) -mkOccurrence-> Occurrence
+    (Name * AST) -mkOccurrence-> Occurrence
+    (String * Name * AST) -mkOccurrence-> Occurrence
 
   arrows
     NaBL2 |- Occurrence -pathOf-> Path
