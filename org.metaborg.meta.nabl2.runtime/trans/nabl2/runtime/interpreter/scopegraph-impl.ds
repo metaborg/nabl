@@ -73,3 +73,7 @@ rules
     where NR[o] => (_,p).
 
   NaBL2 NaBL2(_,_,OT) |- o:Occurrence -typeOf-> OT[o].
+
+  NaBL2 NaBL2(G(_, AS), _, _) |- (o, l):(Occurrence * Label) -assocScopeOf-> m[l]
+  where
+    AS[o] => m.

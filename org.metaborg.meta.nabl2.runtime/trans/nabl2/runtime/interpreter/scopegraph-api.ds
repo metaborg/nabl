@@ -34,8 +34,8 @@ signature
   arrows
     NaBL2 |- Occurrence -pathOf-> Path
     NaBL2 |- Occurrence -typeOf-> Type
-    NaBL2 |- Occurrence -scopeOf-> Scope
-    NaBL2 |- Occurrence -assocScopeOf-> Scope
+//    NaBL2 |- Occurrence -scopeOf-> Scope
+    NaBL2 |- (Occurrence * Label) -assocScopeOf-> Scope
 
   sorts
     NaBL2
