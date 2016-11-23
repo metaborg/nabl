@@ -2,24 +2,20 @@ module nabl2/runtime/interpreter/frame
 
 imports
   nabl2/runtime/interpreter/frame-api
-  nabl2/runtime/interpreter/scopegraph-impl
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
 
 signature
 
-	constructors
-		tt : Unit
-
-	constructors
+  constructors
     Addr : Frame * Occurrence -> Addr
 
-	sorts FrameContainer constructors
-		FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
+  sorts FrameContainer constructors
+    FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
     
   constructors
-    F_ : Int -> Frame {implicit}
-    H_ : Map(Frame, Frame) -> Heap {implicit}
+    F_ : Int -> Frame // {implicit}
+    H_ : Map(Frame, Frame) -> Heap // {implicit}
 
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
@@ -27,16 +23,19 @@ signature
 
 rules
 
+  // Operations on heap
+  
+  initHeap(_) --> H_({}).
+
   // Operations on frames
 
-
-  initFrame(s, ks, slots) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
+  initFrame(s, ks, slots) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
   where
-    fresh => ff.
-    
+    F_(fresh) => ff.
+ 
   H H_(x) |- scopeOf(f) --> s
   where
-  	x[f] => FC_(s, _, _).
+    x[f] => FC_(s, _, _).
   
   // Dynamic address lookup  
   F f |- lookup([D(_, d)]) --> Addr(f, d).
@@ -46,7 +45,7 @@ rules
     H h |- linksOf(f1) --> ks;
     ks[l][s] => f2;
     H h, F f2 |- lookup(p) --> Addr(f3, d).
-    
+ 
   // Fetching and mutating slot values
     
   H h |- get(Addr(f', d)) --> v
@@ -54,10 +53,12 @@ rules
     H h |- slotsOf(f') --> slots;
     slots[d] => v.
 
-  set(Addr(f, d), v) :: H H_(x) --> tt() :: H {f |--> FC_(s, ks, {d |--> v, slots}), x}
+  set(Addr(f, d), v) :: H H_(x) --> v :: H H_({f |--> FC_(s, ks, {d |--> v, slots}), x})
   where
     x[f] => FC_(s, ks, slots).
   
+  mkAddr(f, d) --> Addr(f, d).
+
 rules
   
   H H_(x) |- linksOf(f) --> ks
@@ -89,8 +90,35 @@ rules // Utility function
 
 rules // initDefault
 
-  initDefault(s, ks) :: H H_(x) --> ff :: H { ff |--> FC_(s, ks, slots), x }
+  initDefault(s, ks) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
   where
-    fresh => ff;
+    F_(fresh) => ff;
     s -declsOf-> ds;
     DefaultSlots(ds) --> slots.
+
+signature // initEager helpers
+  
+  arrows
+    initEagerEdges(List((Label * List(Scope)))) :: H --> Map(Label, Map(Scope, Frame)) :: H
+    initEagerEdge(List(Scope)) :: H --> Map(Scope, Frame) :: H
+
+rules // initEager takes a scope and recursively traverses its edges to construct frame links
+
+  initEager(s) --> initDefault(s, links)
+  where
+    s -edgesOf-> es;
+    initEagerEdges(es) --> links.
+    
+  initEagerEdges([]) --> {}.
+  
+  initEagerEdges([(l, ss)|edges]) -->
+    { l |--> link, initEagerEdges(edges) }
+  where
+    initEagerEdge(ss) --> link.
+
+  initEagerEdge([]) --> {}.
+  
+  initEagerEdge([s|ss]) --> { s |--> F, link }
+  where
+    initEager(s) --> F;
+    initEagerEdge(ss) --> link.

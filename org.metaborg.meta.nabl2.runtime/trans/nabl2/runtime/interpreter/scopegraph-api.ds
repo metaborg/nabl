@@ -3,6 +3,7 @@ module nabl2/runtime/interpreter/scopegraph-api
 signature
 
   sorts
+    Name
     Type
     Scope
     Occurrence
@@ -12,21 +13,35 @@ signature
     I     : Label
     Label : String -> Label
 
+  sort aliases
+    Path = List(Step)
+ 
   sorts Step constructors
     D : Scope * Occurrence -> Step
     E : Scope * Label -> Step
-    N : Scope * Label * Occurrence * List(Step)/*Path*/ -> Step
+    N : Scope * Label * Occurrence * Path -> Step
 
   arrows
-    Scope -declsOf-> List(Occurrence)
-    Scope -linksOf-> List((Label * Scope))
+    NaBL2 |- Scope -declsOf-> List(Occurrence)
+    NaBL2 |- Scope -edgesOf-> List((Label * List(Scope)))
 
   arrows
-    AST -mkOccurrence-> Occurrence
-    (String * AST) -mkOccurrence-> Occurrence
-    (AST * AST) -mkOccurrence-> Occurrence
-    (String * AST * AST) -mkOccurrence-> Occurrence
+    Name -mkOccurrence-> Occurrence
+    (String * Name) -mkOccurrence-> Occurrence
+    (Name * AST) -mkOccurrence-> Occurrence
+    (String * Name * AST) -mkOccurrence-> Occurrence
 
   arrows
-    Occurrence -pathOf-> List(Step)/*Path*/
-    Occurrence -typeOf-> Type
+    NaBL2 |- Occurrence -pathOf-> Path
+    NaBL2 |- Occurrence -typeOf-> Type
+    NaBL2 |- Occurrence -scopeOf-> Scope
+    NaBL2 |- Occurrence -assocScopeOf-> Scope
+
+  sorts
+    NaBL2
+
+  components
+    NaBL2 : NaBL2
+
+  arrows
+    initNaBL2(AST) --> NaBL2
