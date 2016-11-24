@@ -76,9 +76,17 @@ rules
 signature // Utility function
   
   arrows
+    initDefaultSlots(Scope, List(Namespace)) --> Map(Occurrence, Val)
     DefaultSlots(List(Occurrence)) --> Map(Occurrence, Val)
 
 rules // Utility function
+
+  initDefaultSlots(_, []) --> {}.
+  
+  initDefaultSlots(s, [ns|namespaces]) --> { slots , initDefaultSlots(s, namespaces) }
+  where
+    (s, ns) -declsOf-> ds;
+    DefaultSlots(ds) --> slots.
 
   DefaultSlots([]) --> {}.
 
@@ -90,37 +98,36 @@ rules // Utility function
 
 rules // initDefault
 
-  initDefault(s, ks) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
+  initDefault(s, ks, namespaces) :: H H_(x) -->
+    ff :: H H_({ ff |--> FC_(s, ks, initDefaultSlots(s, namespaces)), x })
   where
-    F_(fresh) => ff;
-    s -declsOf-> ds;
-    DefaultSlots(ds) --> slots.
+    F_(fresh) => ff.
 
 signature // initEager helpers
   
   arrows
-    initEagerEdges(Map(Label, List(Scope)), List(Label)) :: H -->
+    initEagerEdges(Map(Label, List(Scope)), List(Label), List(Namespace)) :: H -->
       Map(Label, Map(Scope, Frame)) :: H
-    initEagerEdge(List(Scope)) :: H --> Map(Scope, Frame) :: H
+    initEagerEdge(List(Scope), List(Namespace)) :: H --> Map(Scope, Frame) :: H
 
 rules // initEager takes a scope and recursively traverses its edges to construct frame links
 
-  initEager(s) --> initDefault(s, links)
+  initEager(s, namespaces) --> initDefault(s, links, namespaces)
   where
     s -edgesOf-> es;
     allkeys(es) => ls;
-    initEagerEdges(es, ls) --> links.
+    initEagerEdges(es, ls, namespaces) --> links.
     
-  initEagerEdges(_, []) --> {}.
+  initEagerEdges(_, [], _) --> {}.
   
-  initEagerEdges(m, [l|ls]) -->
-    { l |--> link, initEagerEdges(m, ls) }
+  initEagerEdges(m, [l|ls], ns) -->
+    { l |--> link, initEagerEdges(m, ls, ns) }
   where
-    initEagerEdge(m[l]) --> link.
+    initEagerEdge(m[l], ns) --> link.
 
-  initEagerEdge([]) --> {}.
+  initEagerEdge([], _) --> {}.
   
-  initEagerEdge([s|ss]) --> { s |--> F, link }
+  initEagerEdge([s|ss], ns) --> { s |--> F, link }
   where
-    initEager(s) --> F;
-    initEagerEdge(ss) --> link.
+    initEager(s, ns) --> F;
+    initEagerEdge(ss, ns) --> link.

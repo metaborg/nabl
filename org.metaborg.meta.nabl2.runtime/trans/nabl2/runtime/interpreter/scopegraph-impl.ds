@@ -15,7 +15,7 @@ signature
   sorts TermIndex constructors
     TermIndex : String * Int -> TermIndex
  
-  sorts Namespace constructors
+  constructors
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
  
@@ -38,6 +38,10 @@ signature
       (Map(Occurrence, Scope) *   // Declaration-to-scope map
        Map(Occurrence, Scope)) -> // Reference-to-scope map
         NaBL2
+ 
+  arrows // Auxiliary functions
+    filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
+    declOfPath(List(Step)) --> (Scope * Occurrence)
  
   arrows
     postProcessLinks(List((Label * Scope)), Map(Label, List(Scope))) --> Map(Label, List(Scope))
@@ -77,6 +81,9 @@ rules
   NaBL2 NaBL2(G(scopes,_),_,_,_) |- s:Scope -declsOf-> decls
     where scopes[s] => S(decls,_,_,_).
 
+  NaBL2 NaBL2(G(scopes,_),_,_,_) |- (s, ns):(Scope * Namespace) -declsOf-> filterOccsByNamespace(decls, ns)
+    where scopes[s] => S(decls,_,_,_).
+
   NaBL2 NaBL2(G(scopes,_),_,_,_) |- s:Scope -edgesOf-> postProcessLinks(links, {})
     where scopes[s] => S(_,_,links,_).
 
@@ -92,7 +99,29 @@ rules
   NaBL2 NaBL2(_, _, _, (d2s, _)) |- o:Occurrence -scopeOfDecl-> d2s[o].
     
   NaBL2 NaBL2(_, _, _, (_, r2s)) |- o:Occurrence -scopeOfRef-> r2s[o].
+
+  o:Occurrence -declOfRef-> declOfPath(p)
+  where
+    o -pathOf-> p.
+
+rules
+
+  declOfPath([D(s, o)]) --> (s, o).
+
+  declOfPath([_|p]) --> declOfPath(p).
+
+rules
+
+  filterOccsByNamespace([], _) --> [].
   
+  filterOccsByNamespace([o@Occurrence(ns', _, _)|os], ns) --> [o|filterOccsByNamespace(os, ns)]
+  where
+    ns == ns'.
+    
+  filterOccsByNamespace([o@Occurrence(ns', _, _)|os], ns) --> filterOccsByNamespace(os, ns)
+  where
+    ns != ns'.
+
 rules // This should probably be done in the NaBL2 back-end instead of DynSem.
 
   postProcessLinks([], m) --> m.
