@@ -98,7 +98,9 @@ rules // Utility function
 
 rules // initDefault
 
-  initDefault(s, ks, namespaces) :: H H_(x) -->
+  initDefault(s, ks) --> initDefaultNS(s, ks, [DefaultNamespace()]).
+
+  initDefaultNS(s, ks, namespaces) :: H H_(x) -->
     ff :: H H_({ ff |--> FC_(s, ks, initDefaultSlots(s, namespaces)), x })
   where
     F_(fresh) => ff.
@@ -112,7 +114,7 @@ signature // initEager helpers
 
 rules // initEager takes a scope and recursively traverses its edges to construct frame links
 
-  initEager(s, namespaces) --> initDefault(s, links, namespaces)
+  initEager(s, namespaces) --> initDefaultNS(s, links, namespaces)
   where
     s -edgesOf-> es;
     allkeys(es) => ls;

@@ -7,7 +7,6 @@ signature
     Type
     Scope
     Occurrence
-    Namespace
  
   sorts Label constructors
 		P     : Label
@@ -21,6 +20,11 @@ signature
     D : Scope * Occurrence -> Step
     E : Scope * Label -> Step
     N : Scope * Label * Occurrence * Path -> Step
+
+  sorts Namespace constructors
+    DefaultNamespace : Namespace
+    Namespace        : String -> Namespace
+ 
 
   arrows
     NaBL2 |- Scope -declsOf-> List(Occurrence)

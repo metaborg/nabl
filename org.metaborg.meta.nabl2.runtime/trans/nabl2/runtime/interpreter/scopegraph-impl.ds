@@ -14,11 +14,7 @@ signature
  
   sorts TermIndex constructors
     TermIndex : String * Int -> TermIndex
- 
-  constructors
-    DefaultNamespace : Namespace
-    Namespace        : String -> Namespace
- 
+  
   sorts ScopeGraph ScopeEntry constructors
     G : Map(Scope, ScopeEntry) * Map(Occurrence, Map(Label, Scope)) -> ScopeGraph
     S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
