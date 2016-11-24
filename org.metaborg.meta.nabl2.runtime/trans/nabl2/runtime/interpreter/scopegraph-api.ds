@@ -43,7 +43,7 @@ signature
     NaBL2 |- Occurrence -scopeOfDecl-> Scope
     NaBL2 |- Occurrence -scopeOfRef-> Scope
     NaBL2 |- (Occurrence * Label) -assocScopeOf-> Scope
-    NaBL2 |- Occurrence -declOfRef-> (Scope * Occurrence)
+    NaBL2 |- Occurrence -declOfRef-> Occurrence
 
   sorts
     NaBL2

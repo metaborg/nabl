@@ -37,7 +37,7 @@ signature
  
   arrows // Auxiliary functions
     filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
-    declOfPath(List(Step)) --> (Scope * Occurrence)
+    declOfPath(List(Step)) --> Occurrence
  
   arrows
     postProcessLinks(List((Label * Scope)), Map(Label, List(Scope))) --> Map(Label, List(Scope))
@@ -102,7 +102,7 @@ rules
 
 rules
 
-  declOfPath([D(s, o)]) --> (s, o).
+  declOfPath([D(_, o)]) --> o.
 
   declOfPath([_|p]) --> declOfPath(p).
 
@@ -114,7 +114,7 @@ rules
   where
     ns == ns'.
     
-  filterOccsByNamespace([o@Occurrence(ns', _, _)|os], ns) --> filterOccsByNamespace(os, ns)
+  filterOccsByNamespace([Occurrence(ns', _, _)|os], ns) --> filterOccsByNamespace(os, ns)
   where
     ns != ns'.
 
@@ -146,8 +146,8 @@ rules // This should be done in the NaBL2 back-end instead of DynSem.
   
   postProcessRefs(scope_entries, [s|ss]) --> { m , postProcessRefs(scope_entries, ss) }
   where
-    scope_entries[s] => S(decls, _, _, _);
-    associateOccsWithScope(decls, s) --> m.
+    scope_entries[s] => S(_, refs, _, _);
+    associateOccsWithScope(refs, s) --> m.
 
 rules // This should be done in the NaBL2 back-end instead of DynSem.
 

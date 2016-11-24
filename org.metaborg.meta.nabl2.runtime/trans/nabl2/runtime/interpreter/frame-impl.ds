@@ -17,6 +17,9 @@ signature
     F_ : Int -> Frame // {implicit}
     H_ : Map(Frame, Frame) -> Heap // {implicit}
 
+  arrows
+    getScopeOfFirstElem(Path) --> Scope
+
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
 //////////////////////////////
@@ -42,9 +45,15 @@ rules
 
   H h, F f1 |- lookup([E(s, l)|p]) --> Addr(f3, d)
   where
+    getScopeOfFirstElem(p) --> s';
     H h |- linksOf(f1) --> ks;
-    ks[l][s] => f2;
+    ks[l][s'] => f2;
     H h, F f2 |- lookup(p) --> Addr(f3, d).
+ 
+ getScopeOfFirstElem([D(s, _)|_]) --> s.
+ getScopeOfFirstElem([E(s, _)|_]) --> s.
+ getScopeOfFirstElem([N(s, _, _, _)|_]) --> s.
+
  
   // Fetching and mutating slot values
     
