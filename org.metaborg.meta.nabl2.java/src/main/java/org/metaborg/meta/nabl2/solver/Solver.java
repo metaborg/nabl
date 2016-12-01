@@ -1,7 +1,5 @@
 package org.metaborg.meta.nabl2.solver;
 
-import java.io.Serializable;
-
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.terms.ITermFactory;
@@ -10,7 +8,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-public class Solver implements Serializable {
+public class Solver {
 
     private static final long serialVersionUID = -8700904608113913293L;
 
