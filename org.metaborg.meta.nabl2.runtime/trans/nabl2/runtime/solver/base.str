@@ -103,8 +103,6 @@ rules
  
   nabl2--constraint-priority: CTrue() -> 0
   nabl2--constraint-priority: CFalse(_) -> 0
-  nabl2--constraint-priority: CConj(_) -> 0
-  nabl2--constraint-priority: CDisj(_) -> 99
 
 rules
 

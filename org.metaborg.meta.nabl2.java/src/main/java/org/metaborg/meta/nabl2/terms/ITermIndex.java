@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.terms.annotations;
+package org.metaborg.meta.nabl2.terms;
 
 import org.metaborg.meta.nabl2.terms.IAnnotation;
 

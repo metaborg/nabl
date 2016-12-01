@@ -18,6 +18,7 @@
 <modules>
     <module>org.metaborg.meta.lang.nabl</module>
     <module>org.metaborg.meta.lang.nabl.eclipse</module>
+    <module>org.metaborg.meta.nabl2.java</module>
     <module>org.metaborg.meta.nabl2.lang</module>
     <module>org.metaborg.meta.nabl2.lang.eclipse</module>
     <module>org.metaborg.meta.nabl2.lang.test</module>

@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.meta.nabl2.terms.annotations.ITermIndex;
+import org.metaborg.meta.nabl2.terms.ITermIndex;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.ISimpleTerm;
 import org.spoofax.interpreter.terms.IStrategoAppl;

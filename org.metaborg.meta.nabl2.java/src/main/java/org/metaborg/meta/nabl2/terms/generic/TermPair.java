@@ -9,7 +9,7 @@ import org.metaborg.util.iterators.Iterables2;
 @Serial.Structural
 public abstract class TermPair {
 
-    public static Iterable<TermPair> EMPTY = Iterables2.empty();
+    public static final Iterable<TermPair> EMPTY = Iterables2.empty();
 
     public abstract ITerm getFirst();
 
