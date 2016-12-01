@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.terms.generic;
 
 import java.util.LinkedList;
 
-import org.metaborg.meta.nabl2.terms.Annotations;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.IConsTerm;
 import org.metaborg.meta.nabl2.terms.IIntTerm;
@@ -17,11 +16,11 @@ import org.metaborg.meta.nabl2.terms.ITupleTerm;
 public class GenericTermFactory implements ITermFactory {
 
     @Override public IApplTerm newAppl(String op, Iterable<ITerm> args) {
-        return ImmutableApplTerm.of(op, args, Annotations.empty());
+        return ImmutableApplTerm.of(op, args);
     }
 
     @Override public ITupleTerm newTuple(Iterable<ITerm> args) {
-        return ImmutableTupleTerm.of(args, Annotations.empty());
+        return ImmutableTupleTerm.of(args);
     }
 
     @Override public IListTerm newList(Iterable<ITerm> elems) {
@@ -37,23 +36,23 @@ public class GenericTermFactory implements ITermFactory {
     }
 
     @Override public IConsTerm newCons(ITerm head, IListTerm tail) {
-        return ImmutableConsTerm.of(head, tail, Annotations.empty());
+        return ImmutableConsTerm.of(head, tail);
     }
 
     @Override public INilTerm newNil() {
-        return ImmutableNilTerm.of(Annotations.empty());
+        return ImmutableNilTerm.of();
     }
 
     @Override public IStringTerm newString(String value) {
-        return ImmutableStringTerm.of(value, Annotations.empty());
+        return ImmutableStringTerm.of(value);
     }
 
     @Override public IIntTerm newInt(int value) {
-        return ImmutableIntTerm.of(value, Annotations.empty());
+        return ImmutableIntTerm.of(value);
     }
 
     @Override public ITermVar newVar(String resource, String name) {
-        return ImmutableTermVar.of(resource, name, Annotations.empty());
+        return ImmutableTermVar.of(resource, name);
     }
-    
+
 }

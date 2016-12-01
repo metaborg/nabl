@@ -13,11 +13,13 @@ import com.google.common.collect.Iterables;
 @Serial.Structural
 abstract class ApplTerm implements IApplTerm {
 
-    @Override public abstract String getOp();
+    @Value.Parameter @Override public abstract String getOp();
 
-    @Override public abstract Iterable<ITerm> getArgs();
+    @Value.Parameter @Override public abstract Iterable<ITerm> getArgs();
 
-    @Value.Auxiliary @Override public abstract ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
+        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    }
 
     @Value.Lazy @Override public int getArity() {
         return Iterables.size(getArgs());
@@ -35,17 +37,16 @@ abstract class ApplTerm implements IApplTerm {
         return cases.caseAppl(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseAppl(this);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getOp());
         sb.append("(");
         boolean first = true;
-        for(ITerm arg : getArgs()) {
+        for (ITerm arg : getArgs()) {
             if (first) {
                 first = false;
             } else {

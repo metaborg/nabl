@@ -64,7 +64,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     // ------------------------------------------------------------------------------------------------------//
 
     private boolean solve(INamebindingConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchThrows(CheckedCases.of(this::solve, this::solve));
+        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve));
     }
 
     private boolean solve(Decl c) throws UnsatisfiableException {

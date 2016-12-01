@@ -30,7 +30,7 @@ public interface ITerm {
 
     }
 
-    <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<ITerm,T,E> {
 

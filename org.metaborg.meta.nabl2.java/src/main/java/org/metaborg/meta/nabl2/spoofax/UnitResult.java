@@ -9,8 +9,8 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 @Serial.Structural
 public interface UnitResult {
 
-    IStrategoTerm getAST();
+    @Value.Parameter IStrategoTerm getAST();
 
-    Iterable<IConstraint> getConstraints();
+    @Value.Parameter Iterable<IConstraint> getConstraints();
 
 }

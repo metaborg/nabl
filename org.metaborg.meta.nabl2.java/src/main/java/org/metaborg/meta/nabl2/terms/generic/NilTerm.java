@@ -22,13 +22,15 @@ abstract class NilTerm implements INilTerm {
         return 0;
     }
 
-    @Value.Auxiliary @Override public abstract ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
+        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
         return cases.caseList(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(ITerm.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T,E> cases) throws E {
         return cases.caseList(this);
     }
 
@@ -36,7 +38,7 @@ abstract class NilTerm implements INilTerm {
         return cases.caseNil(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseNil(this);
     }
 

@@ -36,15 +36,16 @@ public interface INamebindingConstraint extends IConstraint {
     }
 
 
-    <T,E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
 
-    interface CheckedCases<T,E extends Throwable> extends CheckedFunction1<INamebindingConstraint,T,E> {
+    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<INamebindingConstraint,T,E> {
 
         T caseDecl(Decl decl) throws E;
 
         T caseResolve(Resolve resolve) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<Decl,T,E> onDecl, CheckedFunction1<Resolve,T,E> onResolve) {
+        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<Decl,T,E> onDecl,
+                CheckedFunction1<Resolve,T,E> onResolve) {
             return new CheckedCases<T,E>() {
 
                 @Override public T caseDecl(Decl constraint) throws E {
@@ -56,7 +57,7 @@ public interface INamebindingConstraint extends IConstraint {
                 }
 
                 @Override public T apply(INamebindingConstraint constraint) throws E {
-                    return constraint.matchThrows(this);
+                    return constraint.matchOrThrow(this);
                 }
 
             };

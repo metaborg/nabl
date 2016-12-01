@@ -11,9 +11,9 @@ public abstract class TermPair {
 
     public static final Iterable<TermPair> EMPTY = Iterables2.empty();
 
-    public abstract ITerm getFirst();
+    @Value.Parameter abstract ITerm getFirst();
 
-    public abstract ITerm getSecond();
+    @Value.Parameter public abstract ITerm getSecond();
 
     @Override public String toString() {
         return "<" + getFirst() + "," + getSecond() + ">";

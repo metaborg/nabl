@@ -9,9 +9,9 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 @Serial.Structural
 public abstract class Inequal implements IEqualityConstraint {
 
-    public abstract ITerm getLeft();
+    @Value.Parameter public abstract ITerm getLeft();
 
-    public abstract ITerm getRight();
+    @Value.Parameter public abstract ITerm getRight();
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseInequal(this);
@@ -21,11 +21,11 @@ public abstract class Inequal implements IEqualityConstraint {
         return cases.caseEquality(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseInequal(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(IConstraint.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
         return cases.caseEquality(this);
     }
 

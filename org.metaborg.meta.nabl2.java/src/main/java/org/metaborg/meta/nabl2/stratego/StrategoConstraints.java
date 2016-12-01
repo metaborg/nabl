@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.stratego;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableFalse;
@@ -27,25 +28,31 @@ public class StrategoConstraints {
         List<IConstraint> constraints = Lists.newArrayList();
         for (IStrategoTerm constraint : constraintTerm) {
             constraints.add(StrategoMatchers.<IConstraint> patterns()
-                // @formatter:off
-                .appl0("CTrue", () -> ImmutableTrue.of())
-                .appl1("CFalse", (x) -> ImmutableFalse.of())
-                .appl3("CEqual", (t1,t2,x) -> {
-                    ITerm term1 = strategoCommon.fromStratego(t1);
-                    ITerm term2 = strategoCommon.fromStratego(t2);
-                    return ImmutableEqual.of(term1, term2);
-                })
-                .appl3("CInequal", (t1,t2,x) -> {
-                    ITerm term1 = strategoCommon.fromStratego(t1);
-                    ITerm term2 = strategoCommon.fromStratego(t2);
-                    return ImmutableInequal.of(term1, term2);
-                })
-                .otherwise(() -> ImmutableTrue.of())
-                .match(constraint)
-                // @formatter:on
+                    // @formatter:off
+                    .appl0("CTrue", () -> ImmutableTrue.of())
+                    .appl1("CFalse", (msg) -> ImmutableFalse.of().setOriginatingTerm(originatingTerm(msg)))
+                    .appl3("CEqual", (t1, t2, msg) -> {
+                        ITerm term1 = strategoCommon.fromStratego(t1);
+                        ITerm term2 = strategoCommon.fromStratego(t2);
+                        return ImmutableEqual.of(term1, term2).setOriginatingTerm(originatingTerm(msg));
+                    }).appl3("CInequal", (t1, t2, msg) -> {
+                        ITerm term1 = strategoCommon.fromStratego(t1);
+                        ITerm term2 = strategoCommon.fromStratego(t2);
+                        return ImmutableInequal.of(term1, term2).setOriginatingTerm(originatingTerm(msg));
+                    }).otherwise(() -> ImmutableTrue.of()).match(constraint)
+            // @formatter:on
             );
         }
         return constraints;
+    }
+
+    private Optional<IStrategoTerm> originatingTerm(IStrategoTerm messageTerm) {
+        return StrategoMatchers.<Optional<IStrategoTerm>> patterns()
+                // @formatter:off
+                .appl3("Message", (kind, message, origin) -> Optional.of(origin))
+                .otherwise(() -> Optional.empty())
+                .match(messageTerm);
+                // @formatter:on
     }
 
 }

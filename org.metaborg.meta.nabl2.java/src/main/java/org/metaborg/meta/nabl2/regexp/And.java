@@ -7,11 +7,11 @@ import org.immutables.value.Value;
 @Serial.Structural
 public abstract class And<S> implements IRegExp<S> {
 
-    public abstract IRegExp<S> getLeft();
+    @Value.Parameter public abstract IRegExp<S> getLeft();
 
-    public abstract IRegExp<S> getRight();
+    @Value.Parameter public abstract IRegExp<S> getRight();
 
-    public abstract IRegExpBuilder<S> getBuilder();
+    @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Value.Lazy @Override public boolean isNullable() {
         return getLeft().isNullable() && getRight().isNullable();

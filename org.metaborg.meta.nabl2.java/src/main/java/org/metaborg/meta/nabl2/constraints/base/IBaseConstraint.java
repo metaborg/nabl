@@ -36,7 +36,7 @@ public interface IBaseConstraint extends IConstraint {
     }
 
 
-    <T, E extends Throwable> T matchThrows(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IBaseConstraint,T,E> {
 
@@ -57,7 +57,7 @@ public interface IBaseConstraint extends IConstraint {
                 }
 
                 @Override public T apply(IBaseConstraint base) throws E {
-                    return base.matchThrows(this);
+                    return base.matchOrThrow(this);
                 }
 
             };

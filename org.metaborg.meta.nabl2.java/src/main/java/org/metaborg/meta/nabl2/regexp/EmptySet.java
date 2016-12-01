@@ -7,7 +7,7 @@ import org.immutables.value.Value;
 @Serial.Structural
 abstract class EmptySet<S> implements IRegExp<S> {
 
-    public abstract IRegExpBuilder<S> getBuilder();
+    @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Override public boolean isNullable() {
         return false;

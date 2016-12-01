@@ -1,8 +1,11 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
+import java.util.Iterator;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IAnnotation;
+import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
@@ -10,23 +13,41 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class TermVar implements ITerm, ITermVar {
+public abstract class TermVar implements ITermVar {
 
-    public abstract String getResource();
+    @Value.Parameter @Override public abstract String getResource();
 
-    public abstract String getName();
+    @Value.Parameter @Override public abstract String getName();
 
     public boolean isGround() {
         return false;
     }
 
-    @Value.Auxiliary @Override public abstract ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+    @Override public int getLength() {
+        throw new IllegalStateException();
+    }
 
-    @Override public <T> T match(Cases<T> cases) {
+    @Override public Iterator<ITerm> iterator() {
+        throw new IllegalStateException();
+    }
+
+    @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
+        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    }
+
+    @Override public <T> T match(ITerm.Cases<T> cases) {
         return cases.caseVar(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T,E> cases) throws E {
+        return cases.caseVar(this);
+    }
+
+    @Override public <T> T match(IListTerm.Cases<T> cases) {
+        return cases.caseVar(this);
+    }
+
+    @Override public <T, E extends Throwable> T matchOrThrow(IListTerm.CheckedCases<T,E> cases) throws E {
         return cases.caseVar(this);
     }
 

@@ -7,9 +7,9 @@ import org.immutables.value.Value;
 @Serial.Structural
 abstract class Symbol<S> implements IRegExp<S> {
 
-    public abstract S getSymbol();
+    @Value.Parameter public abstract S getSymbol();
 
-    public abstract IRegExpBuilder<S> getBuilder();
+    @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Override public boolean isNullable() {
         return false;

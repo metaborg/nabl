@@ -1,16 +1,17 @@
 package org.metaborg.meta.nabl2.constraints;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.functions.CheckedFunction1;
+import org.spoofax.interpreter.terms.IStrategoTerm;
 
 public interface IConstraint {
 
-    // IStrategoTerm getProgramPoint()
-    // Iterable<IConstraint> getOriginatingConstraints()
+    Optional<IStrategoTerm> getOriginatingTerm();
 
     <T> T match(Cases<T> function);
 
@@ -47,8 +48,7 @@ public interface IConstraint {
 
     }
 
-
-    <T, E extends Throwable> T matchThrows(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IConstraint,T,E> {
 
@@ -76,7 +76,7 @@ public interface IConstraint {
                 }
 
                 @Override public T apply(IConstraint constraint) throws E {
-                    return constraint.matchThrows(this);
+                    return constraint.matchOrThrow(this);
                 }
 
             };

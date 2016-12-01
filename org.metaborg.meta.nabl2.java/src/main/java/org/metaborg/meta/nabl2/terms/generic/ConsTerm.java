@@ -15,9 +15,9 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 @Serial.Structural
 abstract class ConsTerm implements IConsTerm {
 
-    public abstract ITerm getHead();
+    @Value.Parameter @Override public abstract ITerm getHead();
 
-    public abstract IListTerm getTail();
+    @Value.Parameter @Override public abstract IListTerm getTail();
 
     @Value.Lazy @Override public boolean isGround() {
         return getHead().isGround() && getTail().isGround();
@@ -27,13 +27,15 @@ abstract class ConsTerm implements IConsTerm {
         return 1 + getTail().getLength();
     }
 
-    @Value.Auxiliary @Override public abstract ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
+        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
         return cases.caseList(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(ITerm.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T,E> cases) throws E {
         return cases.caseList(this);
     }
 
@@ -41,7 +43,7 @@ abstract class ConsTerm implements IConsTerm {
         return cases.caseCons(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseCons(this);
     }
 

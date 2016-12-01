@@ -20,5 +20,5 @@ public interface ITermFactory {
     IIntTerm newInt(int value);
 
     ITermVar newVar(String resource, String name);
-    
+
 }

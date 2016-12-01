@@ -11,10 +11,10 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 @Serial.Structural
 public interface InitialResult {
 
-    Iterable<IConstraint> getConstraints();
+    @Value.Parameter Iterable<IConstraint> getConstraints();
 
-    Iterable<IStrategoTerm> getParams();
+    @Value.Parameter Iterable<IStrategoTerm> getParams();
 
-    Optional<IStrategoTerm> getType();
+    @Value.Parameter Optional<IStrategoTerm> getType();
 
 }

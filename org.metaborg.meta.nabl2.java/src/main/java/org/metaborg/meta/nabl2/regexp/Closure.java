@@ -7,9 +7,9 @@ import org.immutables.value.Value;
 @Serial.Structural
 abstract class Closure<S> implements IRegExp<S> {
 
-    public abstract IRegExp<S> getRE();
+    @Value.Parameter public abstract IRegExp<S> getRE();
 
-    public abstract IRegExpBuilder<S> getBuilder();
+    @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Override public boolean isNullable() {
         return true;

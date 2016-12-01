@@ -11,24 +11,25 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 @Serial.Structural
 abstract class IntTerm implements IIntTerm {
 
-    public abstract int getValue();
+    @Value.Parameter @Override public abstract int getValue();
 
     @Override public boolean isGround() {
         return true;
     }
 
-    @Value.Auxiliary @Override public abstract ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
+        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseInt(this);
     }
 
-    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseInt(this);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return Integer.toString(getValue());
     }
 

@@ -132,7 +132,7 @@ public class Terms {
 
     }
 
-    public static <T, E extends Throwable> ITerm.CheckedCases<T,E> casesThrows(
+    public static <T, E extends Throwable> ITerm.CheckedCases<T,E> checkedCases(
         // @formatter:off
         CheckedFunction1<? super IApplTerm, T, E> onAppl,
         CheckedFunction1<? super ITupleTerm, T, E> onTuple,
@@ -169,13 +169,13 @@ public class Terms {
             }
 
             @Override public T apply(ITerm term) throws E {
-                return term.matchThrows(this);
+                return term.matchOrThrow(this);
             }
 
         };
     }
 
-    public static <T, E extends Throwable> CheckedCaseBuilder<T,E> casesThrows() {
+    public static <T, E extends Throwable> CheckedCaseBuilder<T,E> checkedCases() {
         return new CheckedCaseBuilder<>();
     }
 
@@ -218,7 +218,7 @@ public class Terms {
             return this;
         }
 
-        public CheckedCases<T,E> otherwise(CheckedFunction0<T, E> otherwise) {
+        public CheckedCases<T,E> otherwise(CheckedFunction0<T,E> otherwise) {
             return new ITerm.CheckedCases<T,E>() {
 
                 @Override public T caseAppl(IApplTerm appl) throws E {
@@ -246,7 +246,7 @@ public class Terms {
                 }
 
                 @Override public T apply(ITerm t) throws E {
-                    return t.matchThrows(this);
+                    return t.matchOrThrow(this);
                 }
 
             };

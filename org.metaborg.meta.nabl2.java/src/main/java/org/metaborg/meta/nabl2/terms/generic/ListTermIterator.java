@@ -16,7 +16,9 @@ public class ListTermIterator implements Iterator<ITerm> {
     }
 
     @Override public boolean hasNext() {
-        return current.match(ListTerms.cases(cons -> true, nil -> false));
+        return current.match(ListTerms.cases(cons -> true, nil -> false, var -> {
+            throw new IllegalStateException();
+        }));
     }
 
     @Override public ITerm next() {
@@ -25,6 +27,8 @@ public class ListTermIterator implements Iterator<ITerm> {
             return cons.getHead();
         }, nil -> {
             throw new NoSuchElementException();
+        }, var -> {
+            throw new IllegalStateException();
         }));
     }
 

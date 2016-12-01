@@ -71,7 +71,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     private boolean solve(IEqualityConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchThrows(CheckedCases.of(this::solve, this::solve));
+        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve));
     }
 
     private boolean solve(Equal constraint) throws UnsatisfiableException {
@@ -100,7 +100,8 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
             tuple -> termFactory.newTuple(finds(tuple.getArgs())),
             ListTerms.cases(
                 cons -> termFactory.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail())),
-                nil -> nil
+                nil -> nil,
+                this::findVarRep
             ),
             string -> string,
             integer -> integer,
@@ -150,9 +151,9 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         if (leftRep.equals(rightRep)) {
             return unit;
         }
-        return leftRep.matchThrows(Terms.<Unit, UnsatisfiableException> casesThrows(
+        return leftRep.matchOrThrow(Terms.<Unit, UnsatisfiableException> checkedCases(
             // @formatter:off
-            applLeft -> rightRep.matchThrows(Terms.<Unit, UnsatisfiableException>casesThrows()
+            applLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .appl(applRight -> {
                         if (!(applLeft.getOp().equals(applRight.getOp()) && applLeft.getArity() == applRight.getArity())) {
                             throw new UnsatisfiableException();
@@ -162,7 +163,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
                     })
                     .var(var -> unify(var,applLeft))
                     .otherwise(() -> { throw new UnsatisfiableException(); })),
-            tupleLeft -> rightRep.matchThrows(Terms.<Unit, UnsatisfiableException>casesThrows()
+            tupleLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .tuple(tupleRight -> {
                         if (tupleLeft.getArity() != tupleRight.getArity()) {
                             throw new UnsatisfiableException();
@@ -172,7 +173,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
                     })
                     .var(var -> unify(var,tupleLeft))
                     .otherwise(() -> { throw new UnsatisfiableException(); })),
-            listLeft -> rightRep.matchThrows(Terms.<Unit, UnsatisfiableException>casesThrows()
+            listLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .list(listRight -> {
                         if (listLeft.getLength() != listRight.getLength()) {
                             throw new UnsatisfiableException();
@@ -182,7 +183,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
                     })
                     .var(var -> unify(var,listLeft))
                     .otherwise(() -> { throw new UnsatisfiableException(); })),
-            stringLeft -> rightRep.matchThrows(Terms.<Unit, UnsatisfiableException>casesThrows()
+            stringLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .string(stringRight -> {
                         if(!stringLeft.getValue().equals(stringRight.getValue())) {
                             throw new UnsatisfiableException();
@@ -191,7 +192,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
                     })
                     .var(var -> unify(var,stringLeft))
                     .otherwise(() -> { throw new UnsatisfiableException(); })),
-            integerLeft -> rightRep.matchThrows(Terms.<Unit, UnsatisfiableException>casesThrows()
+            integerLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .integer(integerRight -> {
                         if(integerLeft.getValue() != integerRight.getValue()) {
                             throw new UnsatisfiableException();
@@ -200,7 +201,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
                     })
                     .var(var -> unify(var,integerLeft))
                     .otherwise(() -> { throw new UnsatisfiableException(); })),
-            varLeft -> rightRep.matchThrows(Terms.<Unit, UnsatisfiableException>casesThrows()
+            varLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .var(varRight -> {
                         int sizeLeft = sizes.getOrDefault(varLeft, 1);
                         int sizeRight = sizes.getOrDefault(varRight, 1);

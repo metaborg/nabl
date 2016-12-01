@@ -35,7 +35,7 @@ public interface IEqualityConstraint extends IConstraint {
 
     }
 
-    <T, E extends Throwable> T matchThrows(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IEqualityConstraint,T,E> {
 
@@ -56,7 +56,7 @@ public interface IEqualityConstraint extends IConstraint {
                 }
 
                 @Override public T apply(IEqualityConstraint equality) throws E {
-                    return equality.matchThrows(this);
+                    return equality.matchOrThrow(this);
                 }
 
             };

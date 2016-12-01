@@ -16,11 +16,11 @@ public abstract class False implements IBaseConstraint {
         return cases.caseBase(this);
     }
 
-    @Override public <T,E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseFalse(this);
     }
 
-    @Override public <T,E extends Throwable> T matchThrows(IConstraint.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
         return cases.caseBase(this);
     }
 
