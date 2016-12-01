@@ -17,7 +17,7 @@ public abstract class And<S> implements IRegExp<S> {
         return getLeft().isNullable() && getRight().isNullable();
     }
 
-    @Override public <T> T accept(IRegExpFunction<S,T> visitor) {
+    @Override public <T> T match(IRegExpCases<S,T> visitor) {
         return visitor.and(getLeft(), getRight());
     }
 

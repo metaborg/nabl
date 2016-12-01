@@ -6,6 +6,6 @@ imports
 
 context-free syntax
 
-  PrimitiveConstraint.CGoal = [?- [CTerm]]
-  PrimitiveConstraint.CFact = [!- [CTerm]]
+  Constraint.CGoal = [?- [CTerm]]
+  Constraint.CFact = [!- [CTerm]]
 

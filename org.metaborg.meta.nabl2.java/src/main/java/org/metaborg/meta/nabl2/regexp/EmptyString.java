@@ -13,7 +13,7 @@ abstract class EmptyString<S> implements IRegExp<S> {
         return true;
     }
 
-    @Override public <T> T accept(IRegExpFunction<S,T> visitor) {
+    @Override public <T> T match(IRegExpCases<S,T> visitor) {
         return visitor.emptyString();
     }
 

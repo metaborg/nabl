@@ -23,9 +23,9 @@ context-free syntax
   TermIndex.DefaultIndex  =
   TermIndex.IndexFromTerm = <@<Var>>
 
-  PrimitiveConstraint.CTypeOf = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
+  Constraint.CTypeOf = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
-  PrimitiveConstraint.CSetEq  = <<CSet> seteq <CSet> <Message>>
+  Constraint.CSetEq  = <<CSet> seteq <CSet> <Message>>
 
 lexical syntax
 

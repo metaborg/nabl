@@ -1,12 +1,10 @@
 module nabl2/shared/common/CTerms
 
-imports
+sorts
 
-  nabl2/shared/common/ABSTRACT
+  CVar
 
 context-free syntax
-
-  CVar = ABSTRACT
 
   CTerm           = CVar {prefer}
   CTerm.TList     =  <[<{CTerm ","}*>]>         // FIXME Use NaBL2_ prefix

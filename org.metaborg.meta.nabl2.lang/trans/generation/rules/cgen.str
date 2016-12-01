@@ -24,7 +24,7 @@ rules
       -> RDefT(<rule-name> "init",[],[<source-var>],
            Rule(<term-var>, Tuple([<args-var>, <constraint-var>]), strclause*))
     with
-      (str*,constraint) := <clauses-to-str> clause*;
+      (str*,constraint*) := <clauses-to-str> clause*;
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
@@ -34,8 +34,8 @@ rules
         args-str := |[ ~<args-var> := Params(~params-term) ]|;
         debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^ ",<pp-NaBL2-CTerm> ~params-term] end ]|
       end;
-      constraint-term := <constraint-to-term> constraint;
-      constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
+      constraint-list := List(<constraints-to-terms> constraint*);
+      constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
       strclause* := [
         str*,
         With(args-str),
@@ -49,7 +49,7 @@ rules
            Rule(pattern, <constraint-var>, strclause*))
     with
       pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
-      (str*,constraint) := <clauses-to-str> clause*;
+      (str*,constraint*) := <clauses-to-str> clause*;
       params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
       params-string := <strip-as-pattern;pp-stratego-string> params-pattern;
       if Type(type') := type then
@@ -81,8 +81,8 @@ rules
         ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
                                                   " when matching ",~pattern-string, " with ",<pp-NaBL2-Term> ~<term-var>,"."])
       ]|;
-      constraint-term := <constraint-to-term> constraint;
-      constraint-str  := |[ ~<constraint-var> := ~constraint-term ]|;
+      constraint-list := List(<constraints-to-terms> constraint*);
+      constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
       strclause* := [
         With(guarded-args-str),
         With(debug-str),
@@ -98,7 +98,7 @@ rules
 
   clauses-to-str =
     partition(clause-to-str);
-    (map(!With(<id>)),list-to-conj)
+    (map(!With(<id>)),id)
 
   clause-to-str:
     NewScopes(v*) -> str
@@ -120,12 +120,8 @@ rules
 
 rules
  
-  list-to-conj: [] -> CTrue()
-  list-to-conj: [c] -> c 
-  list-to-conj: [c|cs] -> CConj(c, <list-to-conj> cs) 
- 
-  constraint-to-term =
-    explode(explode-guard)
+  constraints-to-terms =
+    map(explode(explode-guard))
  
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)

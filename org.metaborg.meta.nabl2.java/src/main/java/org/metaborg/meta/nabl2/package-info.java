@@ -1,7 +1,6 @@
 @Value.Style(
     // @formatter:off
     typeAbstract = { "*" },
-    typeImmutable = "Immutable*",
     get = { "is*", "get*" },
     allParameters = true,
     with = "set*",

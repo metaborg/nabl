@@ -30,9 +30,7 @@ context-free syntax
         <{RuleClause ","}+>.
   >
 
-  RuleClause = PrimitiveConstraint
-
-  RuleClause = <(<Constraint>)>
+  RuleClause = Constraint
 
   RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 

@@ -6,6 +6,6 @@ public interface IRegExp<S> {
 
     boolean isNullable();
 
-    <T> T accept(IRegExpFunction<S,T> visitor);
+    <T> T match(IRegExpCases<S,T> cases);
 
 }

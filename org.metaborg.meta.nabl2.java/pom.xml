@@ -11,13 +11,23 @@
   <packaging>jar</packaging>
 
   <properties>
-    <immutables-version>2.3.8</immutables-version>
+    <immutables-version>2.3.9</immutables-version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>org.metaborg.util</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.spoofax.terms</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.spoofax.interpreter.core</artifactId>
       <version>${metaborg-version}</version>
     </dependency>
     <dependency>

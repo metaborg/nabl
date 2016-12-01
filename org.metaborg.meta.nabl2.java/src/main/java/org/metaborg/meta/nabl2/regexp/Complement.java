@@ -15,7 +15,7 @@ abstract class Complement<S> implements IRegExp<S> {
         return !getRE().isNullable();
     }
 
-    @Override public <T> T accept(IRegExpFunction<S,T> visitor) {
+    @Override public <T> T match(IRegExpCases<S,T> visitor) {
         return visitor.complement(getRE());
     }
 

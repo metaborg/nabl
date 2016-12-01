@@ -26,3 +26,4 @@ strategies
 
   nabl2--merge-sorted(lt): ([], y*) -> y*
  
+  nabl2--flatten-list = foldr(![], (is-list<+MkSingleton,id); conc)

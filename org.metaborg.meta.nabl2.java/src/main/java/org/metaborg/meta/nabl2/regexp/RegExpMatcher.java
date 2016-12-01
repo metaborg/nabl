@@ -63,7 +63,7 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S> {
             final Object2ObjectMap<S,IRegExp<S>> transitions = new Object2ObjectOpenHashMap<>(derivers.size());
             if (!stateTransitions.containsKey(state)) {
                 for (Deriver<S> deriver : derivers) {
-                    final IRegExp<S> nextState = state.accept(deriver);
+                    final IRegExp<S> nextState = state.match(deriver);
                     ObjectSet<IRegExp<S>> reverseStates;
                     if ((reverseStates = reverseTransitions.get(nextState)) == null) {
                         reverseTransitions.put(nextState, (reverseStates = new ObjectOpenHashSet<>()));

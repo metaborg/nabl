@@ -7,6 +7,6 @@ imports
 
 context-free syntax
 
-  PrimitiveConstraint.CEqual   = [[CTerm] == [CTerm] [Message]]
-  PrimitiveConstraint.CInequal = [[CTerm] != [CTerm] [Message]]
+  Constraint.CEqual   = [[CTerm] == [CTerm] [Message]]
+  Constraint.CInequal = [[CTerm] != [CTerm] [Message]]
 

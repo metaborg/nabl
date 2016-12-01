@@ -1,7 +1,7 @@
 package org.metaborg.meta.nabl2.regexp;
 
 
-public class Reverser<S> implements IRegExpFunction<S,IRegExp<S>> {
+public class Reverser<S> implements IRegExpCases<S,IRegExp<S>> {
 
     private final IRegExpBuilder<S> builder;
 
@@ -26,19 +26,23 @@ public class Reverser<S> implements IRegExpFunction<S,IRegExp<S>> {
     }
 
     @Override public IRegExp<S> closure(IRegExp<S> re) {
-        return builder.closure(re.accept(this));
+        return builder.closure(re.match(this));
     }
 
     @Override public IRegExp<S> or(IRegExp<S> left, IRegExp<S> right) {
-        return builder.or(left.accept(this), right.accept(this));
+        return builder.or(left.match(this), right.match(this));
     }
 
     @Override public IRegExp<S> and(IRegExp<S> left, IRegExp<S> right) {
-        return builder.and(left.accept(this), right.accept(this));
+        return builder.and(left.match(this), right.match(this));
     }
 
     @Override public IRegExp<S> complement(IRegExp<S> re) {
-        return builder.complement(re.accept(this));
+        return builder.complement(re.match(this));
+    }
+
+    @Override public IRegExp<S> apply(IRegExp<S> t) {
+        return t.match(this);
     }
 
 }

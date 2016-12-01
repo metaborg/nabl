@@ -1,9 +1,5 @@
 module nabl2/shared/common/AST
 
-imports
+sorts
 
-  nabl2/shared/common/ABSTRACT
-
-context-free syntax
-
-  TermIndex = ABSTRACT
+  TermIndex

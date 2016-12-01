@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.regexp;
 
+import java.util.function.Supplier;
+
 public final class RegExpBuilder<S> implements IRegExpBuilder<S> {
 
     private final IAlphabet<S> alphabet;
@@ -25,61 +27,26 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S> {
     }
 
     @Override public IRegExp<S> concat(final IRegExp<S> left, final IRegExp<S> right) {
-        return left.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-            @Override public IRegExp<S> emptySet() {
-                return RegExpBuilder.this.emptySet();
-            }
-
-            @Override public IRegExp<S> emptyString() {
-                return right;
-            }
-
-            @Override public IRegExp<S> concat(IRegExp<S> innerLeft, IRegExp<S> innerRight) {
-                return RegExpBuilder.this.concat(innerLeft, RegExpBuilder.this.concat(innerRight, right));
-            }
-
-            @Override public IRegExp<S> defaultValue() {
-                return right.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-                    @Override public IRegExp<S> emptySet() {
-                        return RegExpBuilder.this.emptySet();
-                    }
-
-                    @Override public IRegExp<S> emptyString() {
-                        return left;
-                    }
-
-                    @Override public IRegExp<S> defaultValue() {
-                        return ImmutableConcat.of(left, right, RegExpBuilder.this);
-                    }
-
-                });
-            }
-
-        });
+        // @formatter:off
+        return left.match(new RegExpCases<S,IRegExp<S>>()
+                .emptySet(() -> emptySet())
+                .emptyString(() -> right)
+                .concat((innerLeft,innerRight) -> concat(innerLeft, concat(innerRight, right)))
+                .otherwise(() -> right.match(new RegExpCases<S,IRegExp<S>>()
+                        .emptySet(() -> emptySet())
+                        .emptyString(() -> left)
+                        .otherwise(() -> ImmutableConcat.of(left, right, this)))));
+        // @formatter:on
     }
 
     @Override public IRegExp<S> closure(final IRegExp<S> re) {
-        return re.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-            @Override public IRegExp<S> emptySet() {
-                return RegExpBuilder.this.emptyString();
-            }
-
-            @Override public IRegExp<S> emptyString() {
-                return RegExpBuilder.this.emptyString();
-            }
-
-            @Override public IRegExp<S> closure(IRegExp<S> innerRe) {
-                return ImmutableClosure.of(innerRe, RegExpBuilder.this);
-            }
-
-            @Override public IRegExp<S> defaultValue() {
-                return ImmutableClosure.of(re, RegExpBuilder.this);
-            }
-
-        });
+        // @formatter:off
+        return re.match(new RegExpCases<S,IRegExp<S>>()
+                .emptySet(() -> emptyString())
+                .emptyString(() -> emptyString())
+                .closure((innerRe) -> ImmutableClosure.of(innerRe, this))
+                .otherwise(() -> ImmutableClosure.of(re, this)));
+        // @formatter:on
     }
 
     @Override public IRegExp<S> or(final IRegExp<S> left, final IRegExp<S> right) {
@@ -87,44 +54,18 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S> {
             return left;
         }
         if (compare(left, right) > 0) {
-            return RegExpBuilder.this.or(right, left);
+            return or(right, left);
         }
-        return left.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-            @Override public IRegExp<S> or(IRegExp<S> innerLeft, IRegExp<S> innerRight) {
-                return ImmutableOr.of(innerLeft, RegExpBuilder.this.or(innerRight, right), RegExpBuilder.this);
-            }
-
-            @Override public IRegExp<S> defaultValue() {
-                return left.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-                    @Override public IRegExp<S> emptySet() {
-                        return right;
-                    }
-
-                    @Override public IRegExp<S> complement(IRegExp<S> re) {
-                        final ARegExpFunction<S,IRegExp<S>> outer = this;
-                        return re.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-                            @Override public IRegExp<S> emptySet() {
-                                return left;
-                            }
-
-                            @Override public IRegExp<S> defaultValue() {
-                                return outer.defaultValue();
-                            }
-
-                        });
-                    }
-
-                    @Override public IRegExp<S> defaultValue() {
-                        return ImmutableOr.of(left, right, RegExpBuilder.this);
-                    }
-                });
-
-            }
-
-        });
+        // @formatter:off
+        return left.match(new RegExpCases<S,IRegExp<S>>()
+                .or((innerLeft,innerRight) -> ImmutableOr.of(innerLeft, or(innerRight, right), this))
+                .otherwise(() -> left.match(new RegExpCases<S,IRegExp<S>>()
+                        .emptySet(() -> right)
+                        .complement(innerRe -> innerRe.match(new RegExpCases<S,IRegExp<S>>()
+                                .emptySet(() -> left)
+                                .otherwise(() -> ImmutableOr.of(left, right, this))))
+                        .otherwise(() -> ImmutableOr.of(left, right, this)))));
+        // @formatter:on
     }
 
     @Override public IRegExp<S> and(final IRegExp<S> left, final IRegExp<S> right) {
@@ -132,205 +73,85 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S> {
             return left;
         }
         if (compare(left, right) > 0) {
-            return RegExpBuilder.this.and(right, left);
+            return and(right, left);
         }
-        return left.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-            @Override public IRegExp<S> and(IRegExp<S> innerLeft, IRegExp<S> innerRight) {
-                return ImmutableAnd.of(innerLeft, RegExpBuilder.this.and(innerRight, right), RegExpBuilder.this);
-            }
-
-            @Override public IRegExp<S> defaultValue() {
-                return left.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-                    @Override public IRegExp<S> emptySet() {
-                        return RegExpBuilder.this.emptySet();
-                    }
-
-                    @Override public IRegExp<S> complement(IRegExp<S> re) {
-                        final ARegExpFunction<S,IRegExp<S>> outer = this;
-                        return re.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-                            @Override public IRegExp<S> emptySet() {
-                                return right;
-                            }
-
-                            @Override public IRegExp<S> defaultValue() {
-                                return outer.defaultValue();
-                            }
-
-                        });
-                    }
-
-                    @Override public IRegExp<S> defaultValue() {
-                        return ImmutableAnd.of(left, right, RegExpBuilder.this);
-                    }
-
-                });
-
-            }
-
-        });
+        // @formatter:off
+        return left.match(new RegExpCases<S,IRegExp<S>>()
+                .and((innerLeft,innerRight) -> ImmutableAnd.of(innerLeft, and(innerRight, right), this))
+                .otherwise(() -> left.match(new RegExpCases<S,IRegExp<S>>()
+                        .emptySet(() -> emptySet())
+                        .complement(innerRe -> innerRe.match(new RegExpCases<S,IRegExp<S>>()
+                                .emptySet(() -> right)
+                                .otherwise(() -> ImmutableAnd.of(left, right, this))))
+                        .otherwise(() -> ImmutableAnd.of(left, right, this)))));
+        // @formatter:on
     }
 
     @Override public IRegExp<S> complement(final IRegExp<S> re) {
-        return re.accept(new ARegExpFunction<S,IRegExp<S>>() {
-
-            @Override public IRegExp<S> complement(IRegExp<S> innerRe) {
-                return innerRe;
-            }
-
-            @Override public IRegExp<S> defaultValue() {
-                return ImmutableComplement.of(re, RegExpBuilder.this);
-            }
-
-        });
+        // @formatter:off
+        return re.match(new RegExpCases<S,IRegExp<S>>()
+                .complement(innerRe -> innerRe)
+                .otherwise(() -> ImmutableComplement.of(re, this)));
+        // @formatter:on
     }
 
     private int compare(final IRegExp<S> re1, final IRegExp<S> re2) {
-        return re1.accept(new IRegExpFunction<S,Integer>() {
-
-            @Override public Integer emptySet() {
-                return re1.accept(order) - re2.accept(order);
-            }
-
-            @Override public Integer emptyString() {
-                return re1.accept(order) - re2.accept(order);
-            }
-
-            @Override public Integer symbol(final S s1) {
-                return re2.accept(new ARegExpFunction<S,Integer>() {
-
-                    @Override public Integer symbol(final S s2) {
-                        return alphabet.indexOf(s1) - alphabet.indexOf(s2);
-                    }
-
-                    @Override public Integer defaultValue() {
-                        return re1.accept(order) - re2.accept(order);
-                    }
-
-                });
-            }
-
-            @Override public Integer concat(final IRegExp<S> left1, final IRegExp<S> right1) {
-                return re2.accept(new ARegExpFunction<S,Integer>() {
-
-                    @Override public Integer concat(final IRegExp<S> left2, final IRegExp<S> right2) {
-                        int c = compare(left1, left2);
-                        if (c == 0) {
-                            c = compare(right1, right2);
-                        }
-                        return c;
-                    }
-
-                    @Override public Integer defaultValue() {
-                        return re1.accept(order) - re2.accept(order);
-                    }
-
-                });
-            }
-
-            @Override public Integer closure(final IRegExp<S> innerRe1) {
-                return re2.accept(new ARegExpFunction<S,Integer>() {
-
-                    @Override public Integer closure(final IRegExp<S> innerRe2) {
-                        return compare(innerRe1, innerRe2);
-                    }
-
-                    @Override public Integer defaultValue() {
-                        return re1.accept(order) - re2.accept(order);
-                    }
-
-                });
-            }
-
-            @Override public Integer or(final IRegExp<S> left1, final IRegExp<S> right1) {
-                return re2.accept(new ARegExpFunction<S,Integer>() {
-
-                    @Override public Integer or(final IRegExp<S> left2, final IRegExp<S> right2) {
-                        int c = compare(left1, left2);
-                        if (c == 0) {
-                            c = compare(right1, right2);
-                        }
-                        return c;
-                    }
-
-                    @Override public Integer defaultValue() {
-                        return re1.accept(order) - re2.accept(order);
-                    }
-
-                });
-            }
-
-            @Override public Integer and(final IRegExp<S> left1, final IRegExp<S> right1) {
-                return re2.accept(new ARegExpFunction<S,Integer>() {
-
-                    @Override public Integer and(final IRegExp<S> left2, final IRegExp<S> right2) {
-                        int c = compare(left1, left2);
-                        if (c == 0) {
-                            c = compare(right1, right2);
-                        }
-                        return c;
-                    }
-
-                    @Override public Integer defaultValue() {
-                        return re1.accept(order) - re2.accept(order);
-                    }
-
-                });
-            }
-
-            @Override public Integer complement(final IRegExp<S> innerRe1) {
-                return re2.accept(new ARegExpFunction<S,Integer>() {
-
-                    @Override public Integer complement(final IRegExp<S> innerRe2) {
-                        return compare(innerRe1, innerRe2);
-                    }
-
-                    @Override public Integer defaultValue() {
-                        return re1.accept(order) - re2.accept(order);
-                    }
-
-                });
-            }
-
-        });
+        // @formatter:off
+        Supplier<Integer> defaultValue = () -> (order(re1) - order(re2));
+        return re1.match(new RegExpCases<S,Integer>()
+                .symbol(s1 -> re2.match(new RegExpCases<S,Integer>()
+                        .symbol(s2 -> (alphabet.indexOf(s1) - alphabet.indexOf(s2)))
+                        .otherwise(defaultValue)))
+                .concat((left1,right1) -> re2.match(new RegExpCases<S,Integer>()
+                        .concat((left2,right2) -> {
+                            int c = compare(left1, left2);
+                            if (c == 0) {
+                                c = compare(right1, right2);
+                            }
+                            return c;
+                        })
+                        .otherwise(defaultValue)))
+                .closure(innerRe1 -> re2.match(new RegExpCases<S,Integer>()
+                        .closure(innerRe2 -> compare(innerRe1, innerRe2))
+                        .otherwise(defaultValue)))
+                .or((left1,right1) -> re2.match(new RegExpCases<S,Integer>()
+                        .or((left2,right2) -> {
+                            int c = compare(left1, left2);
+                            if (c == 0) {
+                                c = compare(right1, right2);
+                            }
+                            return c;
+                        })
+                        .otherwise(defaultValue)))
+                .and((left1,right1) -> re2.match(new RegExpCases<S,Integer>()
+                        .and((left2,right2) -> {
+                            int c = compare(left1, left2);
+                            if (c == 0) {
+                                c = compare(right1, right2);
+                            }
+                            return c;
+                        })
+                        .otherwise(defaultValue)))
+                .complement(innerRe1 -> re2.match(new RegExpCases<S,Integer>()
+                        .complement(innerRe2 -> compare(innerRe1, innerRe2))
+                        .otherwise(defaultValue)))
+                .otherwise(defaultValue));
+        // @formatter:on
     }
 
-    private final IRegExpFunction<S,Integer> order = new IRegExpFunction<S,Integer>() {
-
-        @Override public Integer emptySet() {
-            return 1;
-        }
-
-        @Override public Integer emptyString() {
-            return 2;
-        }
-
-        @Override public Integer complement(IRegExp<S> re) {
-            return 3;
-        }
-
-        @Override public Integer closure(IRegExp<S> re) {
-            return 4;
-        }
-
-        @Override public Integer concat(IRegExp<S> left, IRegExp<S> right) {
-            return 5;
-        }
-
-        @Override public Integer symbol(S s) {
-            return 7 + alphabet.indexOf(s);
-        }
-
-        @Override public Integer or(IRegExp<S> left, IRegExp<S> right) {
-            return Math.min(left.accept(this), right.accept(this));
-        }
-
-        @Override public Integer and(IRegExp<S> left, IRegExp<S> right) {
-            return Math.min(left.accept(this), right.accept(this));
-        }
-
-    };
+    private int order(IRegExp<S> re) {
+        // @formatter:off
+        return re.match(RegExpCases.<S,Integer>of(
+            () -> 1,
+            () -> 2,
+            (s) -> (7 + alphabet.indexOf(s)),
+            (left,right) -> 5,
+            (innerRe) -> 4,
+            (left,right) -> Math.min(order(left), order(right)),
+            (left,right) -> Math.min(order(left), order(right)),
+            (innerRe) -> 3
+        ));
+        // @formatter:on
+    }
 
 }

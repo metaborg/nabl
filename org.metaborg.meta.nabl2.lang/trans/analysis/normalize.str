@@ -2,6 +2,7 @@ module analysis/normalize
 
 imports
 
+  signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
 
   signatures/common/-
@@ -117,7 +118,9 @@ rules
 
 rules
 
-  normalize-constraints = topdown(try(normalize-constraint))
+  normalize-constraints =
+    topdown(try(normalize-constraint));
+    topdown(try(CGenInitRule(id,id,flatten-list) + CGenMatchRule(id,id,id,id,flatten-list)))
 
   normalize-constraint:
     CTypeOf(o,ty,prio,msginfo) ->
@@ -125,7 +128,7 @@ rules
 
   normalize-constraint:
     CSetEq(s1,s2,msginfo) ->
-      CConj(CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo))
+      [CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo)]
 
 rules
 

@@ -1,8 +1,8 @@
 module nabl2/shared/common/Identifiers
 
-imports
+sorts
 
-  nabl2/shared/common/ABSTRACT
+  Keyword
 
 lexical syntax
 
@@ -41,8 +41,6 @@ lexical syntax
   TModId         = MetaPrefix [a-zA-Z0-9\_\']* {reject}
   TModId         = Keyword [\']* {reject}
 
-  Keyword        = ABSTRACT
- 
 lexical restrictions
 
   INT          -/- [0-9]

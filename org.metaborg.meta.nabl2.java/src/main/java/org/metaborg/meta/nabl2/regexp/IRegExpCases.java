@@ -1,6 +1,8 @@
 package org.metaborg.meta.nabl2.regexp;
 
-public interface IRegExpFunction<S, T> {
+import java.util.function.Function;
+
+public interface IRegExpCases<S, T> extends Function<IRegExp<S>,T> {
 
     T emptySet();
 

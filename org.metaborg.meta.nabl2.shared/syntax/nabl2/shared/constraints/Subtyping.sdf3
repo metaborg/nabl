@@ -12,6 +12,6 @@ context-free syntax
   TypeVar.TVar = <'<TVarId>> // FIXME Use NaBL2_ prefix
   CTerm        = TypeVar
 
-  PrimitiveConstraint.FSubtype = [[CTerm] <! [CTerm] [Message]]
-  PrimitiveConstraint.CSubtype = [[CTerm] <? [CTerm] [Message]]
+  Constraint.FSubtype = [[CTerm] <! [CTerm] [Message]]
+  Constraint.CSubtype = [[CTerm] <? [CTerm] [Message]]
 

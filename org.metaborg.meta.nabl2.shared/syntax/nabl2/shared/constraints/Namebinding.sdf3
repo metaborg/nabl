@@ -9,18 +9,18 @@ imports
 
 context-free syntax
 
-  PrimitiveConstraint.CGDecl       = [[Occurrence] <- [Scope]]
-  PrimitiveConstraint.CGRef        = [[Occurrence] -> [Scope]]
+  Constraint.CGDecl       = [[Occurrence] <- [Scope]]
+  Constraint.CGRef        = [[Occurrence] -> [Scope]]
 
-  PrimitiveConstraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
+  Constraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
 
 syntax
 
-  PrimitiveConstraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
-  PrimitiveConstraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
-  PrimitiveConstraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
 
-  PrimitiveConstraint-CF.CAssoc       = CTerm-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
+  Constraint-CF.CAssoc       = CTerm-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
 
 
 context-free syntax

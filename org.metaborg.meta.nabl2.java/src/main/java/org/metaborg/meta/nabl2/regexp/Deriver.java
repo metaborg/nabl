@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.regexp;
 
-
-public class Deriver<S> implements IRegExpFunction<S,IRegExp<S>> {
+public class Deriver<S> implements IRegExpCases<S,IRegExp<S>> {
 
     private final S symbol;
     private final IRegExpBuilder<S> builder;
@@ -32,28 +31,32 @@ public class Deriver<S> implements IRegExpFunction<S,IRegExp<S>> {
     }
 
     @Override public IRegExp<S> concat(IRegExp<S> left, IRegExp<S> right) {
-        IRegExp<S> newLeft = builder.concat(left.accept(this), right);
+        IRegExp<S> newLeft = builder.concat(left.match(this), right);
         if (left.isNullable()) {
-            return builder.or(newLeft, right.accept(this));
+            return builder.or(newLeft, right.match(this));
         } else {
             return newLeft;
         }
     }
 
     @Override public IRegExp<S> closure(IRegExp<S> re) {
-        return builder.concat(re.accept(this), builder.closure(re));
+        return builder.concat(re.match(this), builder.closure(re));
     }
 
     @Override public IRegExp<S> or(IRegExp<S> left, IRegExp<S> right) {
-        return builder.or(left.accept(this), right.accept(this));
+        return builder.or(left.match(this), right.match(this));
     }
 
     @Override public IRegExp<S> and(IRegExp<S> left, IRegExp<S> right) {
-        return builder.and(left.accept(this), right.accept(this));
+        return builder.and(left.match(this), right.match(this));
     }
 
     @Override public IRegExp<S> complement(IRegExp<S> re) {
-        return builder.complement(re.accept(this));
+        return builder.complement(re.match(this));
+    }
+
+    @Override public IRegExp<S> apply(IRegExp<S> t) {
+        return t.match(this);
     }
 
 }

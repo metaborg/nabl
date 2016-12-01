@@ -10,13 +10,13 @@ import org.metaborg.util.iterators.Iterables2;
 public abstract class TermPair {
 
     public static Iterable<TermPair> EMPTY = Iterables2.empty();
-    
+
     public abstract ITerm getFirst();
 
     public abstract ITerm getSecond();
 
     @Override public String toString() {
-        return "(" + getFirst() + "," + getSecond() + ")";
+        return "<" + getFirst() + "," + getSecond() + ">";
     }
 
 }

@@ -4,7 +4,9 @@ public interface ITermFactory {
 
     IApplTerm newAppl(String op, Iterable<ITerm> args);
 
+
     ITupleTerm newTuple(Iterable<ITerm> args);
+
 
     IListTerm newList(Iterable<ITerm> elems);
 
@@ -12,8 +14,11 @@ public interface ITermFactory {
 
     INilTerm newNil();
 
+
     IStringTerm newString(String value);
 
     IIntTerm newInt(int value);
 
+    ITermVar newVar(String resource, String name);
+    
 }

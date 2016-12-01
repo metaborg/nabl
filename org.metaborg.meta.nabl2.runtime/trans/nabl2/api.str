@@ -107,11 +107,6 @@ rules // ###### Analysis execution ######
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
 
-  /**
-   * Dummy analysis function for NaBL2.
-   */
-  nabl2-null-analysis = nabl2--null-analysis
-
 
 rules // ###### Custom analysis hooks ######
 

@@ -26,8 +26,7 @@ rules
   nabl2--initial-solution = nabl2--sol-new
 
 	nabl2--solve-ignore-placeholders: (c,sol) -> [(sol,[])]
-	where <is-NaBL2-PrimitiveConstraint;
-	       nabl2--has-placeholder> c
+	where <is-NaBL2-Constraint;nabl2--has-placeholder> c
 
   nabl2--has-placeholder =
     not(?Message(_,_,_));
@@ -100,8 +99,7 @@ rules
          sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
   nabl2--solve-base-constraint = nabl2--solve-junction
 
-  nabl2--solve-junction: (CConj(c*),sol) -> [(sol,c*)]
-  nabl2--solve-junction: (CDisj(c*),sol) -> <map(\ c -> (sol,[c]) \)> c*
+  nabl2--solve-junction = fail
  
   nabl2--constraint-priority: CTrue() -> 0
   nabl2--constraint-priority: CFalse(_) -> 0

@@ -2,7 +2,6 @@ module nabl2/runtime/analysis/Analysis
 
 imports
 
-  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/Resolution
   nabl2/shared/constraints/Base
 

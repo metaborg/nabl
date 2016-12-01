@@ -1,9 +1,14 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
+import java.util.Iterator;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.terms.IAnnotation;
 import org.metaborg.meta.nabl2.terms.INilTerm;
-import org.metaborg.meta.nabl2.terms.ITermFunction;
+import org.metaborg.meta.nabl2.terms.ITerm;
+
+import com.google.common.collect.ImmutableClassToInstanceMap;
 
 @Value.Immutable
 @Serial.Structural
@@ -13,12 +18,34 @@ abstract class NilTerm implements INilTerm {
         return true;
     }
 
-    @Override public int size() {
+    @Override public int getLength() {
         return 0;
     }
 
-    @Override public <T> T apply(ITermFunction<T> visitor) {
-        return visitor.apply(this);
+    @Value.Auxiliary @Override public abstract ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+
+    @Override public <T> T match(ITerm.Cases<T> cases) {
+        return cases.caseList(this);
     }
-    
+
+    @Override public <T, E extends Throwable> T matchThrows(ITerm.CheckedCases<T,E> cases) throws E {
+        return cases.caseList(this);
+    }
+
+    @Override public <T> T match(Cases<T> cases) {
+        return cases.caseNil(this);
+    }
+
+    @Override public <T, E extends Throwable> T matchThrows(CheckedCases<T,E> cases) throws E {
+        return cases.caseNil(this);
+    }
+
+    @Override public Iterator<ITerm> iterator() {
+        return new ListTermIterator(this);
+    }
+
+    @Override public String toString() {
+        return "[]";
+    }
+
 }
