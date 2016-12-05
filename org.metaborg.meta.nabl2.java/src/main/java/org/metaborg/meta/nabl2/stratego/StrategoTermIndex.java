@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.meta.nabl2.terms.ITermIndex;
+import org.metaborg.meta.nabl2.terms.TermIndex;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.ISimpleTerm;
 import org.spoofax.interpreter.terms.IStrategoAppl;
@@ -13,7 +13,7 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.attachments.AbstractTermAttachment;
 import org.spoofax.terms.attachments.TermAttachmentType;
 
-public class StrategoTermIndex extends AbstractTermAttachment implements ITermIndex, Serializable {
+public class StrategoTermIndex extends AbstractTermAttachment implements TermIndex, Serializable {
 
     private static final long serialVersionUID = 5958528158971840392L;
 

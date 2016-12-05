@@ -8,6 +8,7 @@ import org.metaborg.meta.nabl2.constraints.base.ImmutableFalse;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableTrue;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableEqual;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableInequal;
+import org.metaborg.meta.nabl2.constraints.namebinding.*;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
@@ -35,11 +36,32 @@ public class StrategoConstraints {
                         ITerm term1 = strategoCommon.fromStratego(t1);
                         ITerm term2 = strategoCommon.fromStratego(t2);
                         return ImmutableEqual.of(term1, term2).setOriginatingTerm(originatingTerm(msg));
-                    }).appl3("CInequal", (t1, t2, msg) -> {
+                    })
+                    .appl3("CInequal", (t1, t2, msg) -> {
                         ITerm term1 = strategoCommon.fromStratego(t1);
                         ITerm term2 = strategoCommon.fromStratego(t2);
                         return ImmutableInequal.of(term1, term2).setOriginatingTerm(originatingTerm(msg));
-                    }).otherwise(() -> ImmutableTrue.of()).match(constraint)
+                    })
+                    .appl2("CGDecl", (declTerm, scopeTerm) -> {
+                        ITerm decl = strategoCommon.fromStratego(declTerm);
+                        ITerm scope = strategoCommon.fromStratego(scopeTerm);
+                        return ImmutableDecl.of(scope, decl);
+                        
+                    })
+                    .appl3("CGDirectEdge", (s1, l, s2) -> {
+                        ITerm term1 = strategoCommon.fromStratego(s1);
+                        ITerm label = strategoCommon.fromStratego(l);
+                        ITerm term2 = strategoCommon.fromStratego(s2);
+                        return ImmutableDirectEdge.of(term1, label, term2);
+                    })
+                    .appl2("CGRef", (refTerm, scopeTerm) -> {
+                        ITerm ref = strategoCommon.fromStratego(refTerm);
+                        ITerm scope = strategoCommon.fromStratego(scopeTerm);
+                        return ImmutableRef.of(ref, scope);
+                        
+                    })
+                    .otherwise(() -> ImmutableTrue.of())
+            .match(constraint)
             // @formatter:on
             );
         }

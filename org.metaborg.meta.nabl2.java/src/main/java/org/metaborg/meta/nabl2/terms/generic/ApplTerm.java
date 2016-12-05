@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
+import java.util.List;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IAnnotation;
@@ -15,7 +17,7 @@ abstract class ApplTerm implements IApplTerm {
 
     @Value.Parameter @Override public abstract String getOp();
 
-    @Value.Parameter @Override public abstract Iterable<ITerm> getArgs();
+    @Value.Parameter @Override public abstract List<ITerm> getArgs();
 
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
         return ImmutableClassToInstanceMap.<IAnnotation> builder().build();

@@ -10,8 +10,6 @@ import com.google.common.collect.Multimap;
 
 public class Solver {
 
-    private static final long serialVersionUID = -8700904608113913293L;
-
     private final BaseSolver baseSolver;
     private final EqualitySolver equalitySolver;
     private final NamebindingSolver namebindingSolver;

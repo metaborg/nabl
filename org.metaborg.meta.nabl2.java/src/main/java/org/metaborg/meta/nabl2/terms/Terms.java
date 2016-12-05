@@ -10,6 +10,8 @@ import org.metaborg.meta.nabl2.terms.ITerm.CheckedCases;
 
 public class Terms {
 
+    // safe
+
     public static <T> ITerm.Cases<T> cases(
         // @formatter:off
         Function<? super IApplTerm, T> onAppl,
@@ -131,6 +133,8 @@ public class Terms {
         }
 
     }
+
+    // checked
 
     public static <T, E extends Throwable> ITerm.CheckedCases<T,E> checkedCases(
         // @formatter:off
