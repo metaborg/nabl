@@ -13,7 +13,7 @@ rules
   nabl2--solve-constraint =nabl2--time-analysis(!"uninterpreted",nabl2--solve-uninterpreted-constraint)
 
   nabl2--solve-uninterpreted-constraint: (CGoal(t),sol) -> [(sol',[])]
-    where <nabl2--is-ground> t
+//    where <nabl2--is-ground> t
     with sol' := <nabl2--sol-add-u-goal(|t)> sol
 
   nabl2--solve-uninterpreted-constraint: (CFact(t),sol) -> [(sol',[])]

@@ -17,6 +17,9 @@ signature
     F_ : Int -> Frame // {implicit}
     H_ : Map(Frame, Frame) -> Heap // {implicit}
 
+  arrows
+    getScopeOfFirstElem(Path) --> Scope
+
 //////////////////////////////
 // VANILLA FRAMES AND HEAPS //
 //////////////////////////////
@@ -42,9 +45,15 @@ rules
 
   H h, F f1 |- lookup([E(s, l)|p]) --> Addr(f3, d)
   where
+    getScopeOfFirstElem(p) --> s';
     H h |- linksOf(f1) --> ks;
-    ks[l][s] => f2;
+    ks[l][s'] => f2;
     H h, F f2 |- lookup(p) --> Addr(f3, d).
+ 
+ getScopeOfFirstElem([D(s, _)|_]) --> s.
+ getScopeOfFirstElem([E(s, _)|_]) --> s.
+ getScopeOfFirstElem([N(s, _, _, _)|_]) --> s.
+
  
   // Fetching and mutating slot values
     
@@ -76,9 +85,17 @@ rules
 signature // Utility function
   
   arrows
+    initDefaultSlots(Scope, List(Namespace)) --> Map(Occurrence, Val)
     DefaultSlots(List(Occurrence)) --> Map(Occurrence, Val)
 
 rules // Utility function
+
+  initDefaultSlots(_, []) --> {}.
+  
+  initDefaultSlots(s, [ns|namespaces]) --> { slots , initDefaultSlots(s, namespaces) }
+  where
+    (s, ns) -declsOf-> ds;
+    DefaultSlots(ds) --> slots.
 
   DefaultSlots([]) --> {}.
 
@@ -90,35 +107,38 @@ rules // Utility function
 
 rules // initDefault
 
-  initDefault(s, ks) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
+  initDefault(s, ks) --> initDefaultNS(s, ks, [DefaultNamespace()]).
+
+  initDefaultNS(s, ks, namespaces) :: H H_(x) -->
+    ff :: H H_({ ff |--> FC_(s, ks, initDefaultSlots(s, namespaces)), x })
   where
-    F_(fresh) => ff;
-    s -declsOf-> ds;
-    DefaultSlots(ds) --> slots.
+    F_(fresh) => ff.
 
 signature // initEager helpers
   
   arrows
-    initEagerEdges(List((Label * List(Scope)))) :: H --> Map(Label, Map(Scope, Frame)) :: H
-    initEagerEdge(List(Scope)) :: H --> Map(Scope, Frame) :: H
+    initEagerEdges(Map(Label, List(Scope)), List(Label), List(Namespace)) :: H -->
+      Map(Label, Map(Scope, Frame)) :: H
+    initEagerEdge(List(Scope), List(Namespace)) :: H --> Map(Scope, Frame) :: H
 
 rules // initEager takes a scope and recursively traverses its edges to construct frame links
 
-  initEager(s) --> initDefault(s, links)
+  initEager(s, namespaces) --> initDefaultNS(s, links, namespaces)
   where
     s -edgesOf-> es;
-    initEagerEdges(es) --> links.
+    allkeys(es) => ls;
+    initEagerEdges(es, ls, namespaces) --> links.
     
-  initEagerEdges([]) --> {}.
+  initEagerEdges(_, [], _) --> {}.
   
-  initEagerEdges([(l, ss)|edges]) -->
-    { l |--> link, initEagerEdges(edges) }
+  initEagerEdges(m, [l|ls], ns) -->
+    { l |--> link, initEagerEdges(m, ls, ns) }
   where
-    initEagerEdge(ss) --> link.
+    initEagerEdge(m[l], ns) --> link.
 
-  initEagerEdge([]) --> {}.
+  initEagerEdge([], _) --> {}.
   
-  initEagerEdge([s|ss]) --> { s |--> F, link }
+  initEagerEdge([s|ss], ns) --> { s |--> F, link }
   where
-    initEager(s) --> F;
-    initEagerEdge(ss) --> link.
+    initEager(s, ns) --> F;
+    initEagerEdge(ss, ns) --> link.

@@ -230,6 +230,10 @@ rules // NaBL2 sorts
 	type-sort-to-coq:
 		ListSort(sort) -> 
 			Apply(Ref(<coq-list-name>), <type-sort-to-coq> sort)
+
+  type-sort-to-coq:
+    OccurrenceSort() ->
+      Ref("O")
 	
 	type-sort-to-coq:
 		"s" -> Ref("ScopeId")
@@ -244,6 +248,7 @@ rules // NaBL2 sorts
 			?TypeSort() <+
 			?ScopeSort() <+
 			?ListSort(_) <+
+			?OccurrenceSort() <+
 			?"s")
 	
 	term-sort-to-coq:
@@ -666,7 +671,8 @@ rules // Term patterns
 		Op(cname, params) ->
 			<reverse; foldr(!Ref(cname),
 				\ (param, coq_term) ->
-					Apply(coq_term, <term-pattern-to-coq> param) \)> params
+					<term-pattern-to-coq;
+					mbind(\ t' -> Apply(coq_term, t') \)> param \)> params
 	
 	term-pattern-to-coq:
 		List(lst) ->
@@ -706,10 +712,19 @@ rules // Term patterns
 			Apply(Apply(<crefsofscope>, t'), namespace')
 			\)> namespace
 			\)> t
-	
+		
 	term-pattern-to-coq:
 		Str(str) ->
 			str
+		
+  // FIXME: This converts a tuple into a list. Is this what we want?
+	term-pattern-to-coq:
+	  Tuple(xs) ->
+	    <list-pattern-to-coq> xs
+		
+  term-pattern-to-coq:
+    o@Occurrence(_, _, _) ->
+      <occurrence-to-coq> o
 		
 	term-pattern-to-coq:
 		x ->
@@ -723,7 +738,9 @@ rules // Term patterns
 				?TList(_) <+
 				?TListTail(_, _) <+
 				?Declarations(_, _) <+
-				?Var(_))
+				?Var(_) <+
+				?Tuple(_) <+
+				?Occurrence(_, _, _))
 
 rules // Scope patterns
 
@@ -760,6 +777,10 @@ rules // Scope patterns
 
 	scope-pattern-to-coq:
 		Var(s) -> Ref(s)
+
+  scope-pattern-to-coq:
+    o@Occurrence(_, _, _) ->
+      <occurrence-to-coq> o
 
 	scope-pattern-to-coq:
 		x ->
@@ -951,6 +972,20 @@ rules // CGen body
 			\)> lbl
 			\)> x
 	
+	// FIXME: This assumes that constraint goals map onto pre-defined Coq types
+	//        Is this what we want?
+	cgen-clause-to-coq:
+	  CGoal(x) ->
+	   <term-pattern-to-coq;
+	   mbind(\ x -> [x] \)> x
+	
+  // FIXME: This assumes that constraint goals map onto pre-defined Coq types
+  //        Is this what we want?
+  cgen-clause-to-coq:
+    CFact(x) ->
+     <term-pattern-to-coq;
+     mbind(\ x -> [x] \)> x
+  
 	cgen-clause-to-coq:
 		x ->
 			<concat-strings; err>
@@ -970,7 +1005,9 @@ rules // CGen body
 				?CEqual(_, _, _) <+
 				?CSubtype(_, _, _) <+
 				?FSubtype(_, _, _) <+
-				?CSubsetEq(_, _, _))
+				?CSubsetEq(_, _, _) <+
+				?CGoal(_) <+
+				?CFact(_))
 
 rules // Label
 
@@ -1115,7 +1152,6 @@ rules // Joining inductive definitions
 							coq' := <conc> (coq2, [Inductive(inducs2)])
 						)
 			\)> (name1, coq)
-			
 	
 	get-def:
 		(name1, coqdefs) -> (inducs', coqdefs')

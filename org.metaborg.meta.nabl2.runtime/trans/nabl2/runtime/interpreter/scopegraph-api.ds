@@ -21,9 +21,15 @@ signature
     E : Scope * Label -> Step
     N : Scope * Label * Occurrence * Path -> Step
 
+  sorts Namespace constructors
+    DefaultNamespace : Namespace
+    Namespace        : String -> Namespace
+ 
+
   arrows
     NaBL2 |- Scope -declsOf-> List(Occurrence)
-    NaBL2 |- Scope -edgesOf-> List((Label * List(Scope)))
+    NaBL2 |- (Scope * Namespace) -declsOf-> List(Occurrence)
+    NaBL2 |- Scope -edgesOf-> Map(Label, List(Scope))
 
   arrows
     Name -mkOccurrence-> Occurrence
@@ -34,8 +40,10 @@ signature
   arrows
     NaBL2 |- Occurrence -pathOf-> Path
     NaBL2 |- Occurrence -typeOf-> Type
-    NaBL2 |- Occurrence -scopeOf-> Scope
-    NaBL2 |- Occurrence -assocScopeOf-> Scope
+    NaBL2 |- Occurrence -scopeOfDecl-> Scope
+    NaBL2 |- Occurrence -scopeOfRef-> Scope
+    NaBL2 |- (Occurrence * Label) -assocScopeOf-> Scope
+    NaBL2 |- Occurrence -declOfRef-> Occurrence
 
   sorts
     NaBL2
