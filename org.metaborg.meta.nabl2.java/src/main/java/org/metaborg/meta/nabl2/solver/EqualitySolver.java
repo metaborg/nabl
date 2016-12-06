@@ -97,7 +97,6 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         return term.match(Terms.<ITerm> cases(
             // @formatter:off
             appl -> termFactory.newAppl(appl.getOp(), finds(appl.getArgs())),
-            tuple -> termFactory.newTuple(finds(tuple.getArgs())),
             ListTerms.cases(
                 cons -> termFactory.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail())),
                 nil -> nil,
@@ -162,16 +161,6 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
                         return unit;
                     })
                     .var(var -> unify(var,applLeft))
-                    .otherwise(() -> { throw new UnsatisfiableException(); })),
-            tupleLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
-                    .tuple(tupleRight -> {
-                        if (tupleLeft.getArity() != tupleRight.getArity()) {
-                            throw new UnsatisfiableException();
-                        }
-                        unifys(tupleLeft.getArgs(), tupleRight.getArgs());
-                        return unit;
-                    })
-                    .var(var -> unify(var,tupleLeft))
                     .otherwise(() -> { throw new UnsatisfiableException(); })),
             listLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
                     .list(listRight -> {
@@ -243,11 +232,6 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
             // @formatter:off
             applLeft -> right.match(Terms.<Boolean> cases()
                     .appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) && (applLeft.getArity() == applLeft.getArity()) && canUnifys(applLeft.getArgs(), applRight.getArgs())))
-                    .var(varRight -> true)
-                    .otherwise(() -> false)
-            ),
-            tupleLeft -> right.match(Terms.<Boolean> cases()
-                    .tuple(tupleRight -> ((tupleLeft.getArity() == tupleRight.getArity()) && canUnifys(tupleLeft.getArgs(), tupleRight.getArgs())))
                     .var(varRight -> true)
                     .otherwise(() -> false)
             ),

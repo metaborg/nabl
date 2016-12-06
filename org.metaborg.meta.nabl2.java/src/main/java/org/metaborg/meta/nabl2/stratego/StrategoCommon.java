@@ -32,7 +32,6 @@ public class StrategoCommon {
             // @formatter:off
             appl -> strategoTermFactory.makeAppl(strategoTermFactory.makeConstructor(appl.getOp(), appl.getArity()),
                         toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0])),
-            tuple -> strategoTermFactory.makeTuple(toStrategos(tuple.getArgs()).toArray(new IStrategoTerm[0])),
             list -> strategoTermFactory.makeList(toStrategos(list)),
             string -> strategoTermFactory.makeString(string.getValue()),
             integer -> strategoTermFactory.makeInt(integer.getValue()),
@@ -57,7 +56,7 @@ public class StrategoCommon {
                         .appl2(VAR_CTOR, (resource, name) -> termFactory.newVar(Tools.asJavaString(resource),Tools.asJavaString(name)))
                         .otherwise(() -> termFactory.newAppl(appl.getConstructor().getName(), fromStrategos(appl)))
                         .match(appl),
-            tuple -> termFactory.newTuple(fromStrategos(tuple)),
+            tuple -> termFactory.newAppl("",fromStrategos(tuple)),
             list -> termFactory.newList(fromStrategos(list)),
             integer -> termFactory.newInt(integer.intValue()),
             string -> termFactory.newString(string.stringValue())

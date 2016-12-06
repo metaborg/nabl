@@ -11,16 +11,11 @@ import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermFactory;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.ITupleTerm;
 
 public class GenericTermFactory implements ITermFactory {
 
     @Override public IApplTerm newAppl(String op, Iterable<ITerm> args) {
         return ImmutableApplTerm.of(op, args);
-    }
-
-    @Override public ITupleTerm newTuple(Iterable<ITerm> args) {
-        return ImmutableTupleTerm.of(args);
     }
 
     @Override public IListTerm newList(Iterable<ITerm> elems) {

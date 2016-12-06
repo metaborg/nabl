@@ -5,9 +5,6 @@ public interface ITermFactory {
     IApplTerm newAppl(String op, Iterable<ITerm> args);
 
 
-    ITupleTerm newTuple(Iterable<ITerm> args);
-
-
     IListTerm newList(Iterable<ITerm> elems);
 
     IConsTerm newCons(ITerm head, IListTerm tail);

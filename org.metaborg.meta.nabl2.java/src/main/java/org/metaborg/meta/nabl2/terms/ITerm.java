@@ -18,8 +18,6 @@ public interface ITerm {
 
         T caseAppl(IApplTerm appl);
 
-        T caseTuple(ITupleTerm tuple);
-
         T caseList(IListTerm cons);
 
         T caseString(IStringTerm string);
@@ -35,8 +33,6 @@ public interface ITerm {
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<ITerm,T,E> {
 
         T caseAppl(IApplTerm appl) throws E;
-
-        T caseTuple(ITupleTerm tuple) throws E;
 
         T caseList(IListTerm cons) throws E;
 
