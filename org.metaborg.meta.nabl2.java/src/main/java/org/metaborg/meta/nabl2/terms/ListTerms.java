@@ -27,10 +27,6 @@ public class ListTerms {
                 return onVar.apply(var);
             }
 
-            @Override public T apply(IListTerm list) {
-                return list.match(this);
-            }
-
         };
     }
 

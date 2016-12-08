@@ -4,7 +4,6 @@ import java.util.Iterator;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.terms.IAnnotation;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -31,8 +30,8 @@ public abstract class TermVar implements ITermVar {
         throw new IllegalStateException();
     }
 
-    @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
-        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
+        return ImmutableClassToInstanceMap.<Object> builder().build();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

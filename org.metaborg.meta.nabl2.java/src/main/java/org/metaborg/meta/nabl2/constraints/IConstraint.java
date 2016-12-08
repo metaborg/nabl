@@ -7,11 +7,11 @@ import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.functions.CheckedFunction1;
-import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
 
 public interface IConstraint {
 
-    Optional<IStrategoTerm> getOriginatingTerm();
+    Optional<ITerm> getOriginatingTerm();
 
     <T> T match(Cases<T> function);
 

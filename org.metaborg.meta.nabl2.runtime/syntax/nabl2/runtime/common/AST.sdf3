@@ -9,9 +9,3 @@ imports
 context-free syntax
 
   TermIndex.TermIndex = <@<String>:<Int>>
-
-  AstMetadata   = <<TermIndex> <{MetadataEntry "\n"}*>>
-  MetadataEntry = <<MetadataKey> := <CTerm>>
-
-  MetadataKey.Params = <args>
-  MetadataKey.Type   = <type>

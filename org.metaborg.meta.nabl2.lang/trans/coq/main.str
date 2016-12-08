@@ -823,10 +823,10 @@ rules // CGen body
 		[] -> []
 
 	cgen-clause-to-coq:
-		CTrue() -> None()
+		CTrue(_) -> None()
 		
 	cgen-clause-to-coq:
-		CGRef(occ, s) ->
+		CGRef(occ, s, _) ->
 			<occurrence-to-coq;
 			mbind(\ occ' ->
 			<term-pattern-to-coq;
@@ -836,7 +836,7 @@ rules // CGen body
 			\)> occ
 
 	cgen-clause-to-coq:
-		CGDecl(occ, s) ->
+		CGDecl(occ, s, _) ->
 			<occurrence-to-coq;
 			mbind(\ occ' ->
 			<term-pattern-to-coq;
@@ -887,7 +887,7 @@ rules // CGen body
 			\)> name
 	
 	cgen-clause-to-coq:
-		CGDirectEdge(s1, lbl, s2) ->
+		CGDirectEdge(s1, lbl, s2, _) ->
 			<term-pattern-to-coq;
 			mbind(\ s1' ->
 			<label-pattern-to-coq;
@@ -947,7 +947,7 @@ rules // CGen body
 			\)> x
 	
 	cgen-clause-to-coq:
-		CGAssoc(x, lbl, scope) ->
+		CGAssoc(x, lbl, scope, _) ->
 			<occurrence-to-coq;
 			mbind(\ x' ->
 			<label-pattern-to-coq;
@@ -992,15 +992,15 @@ rules // CGen body
 				["Encountered an unexpected clause: ",
 					<write-to-string> x, ". Please report."]
 		where
-			not(?CTrue() <+
-				?CGRef(_, _) <+
+			not(?CTrue(_) <+
+				?CGRef(_, _, _) <+
 				?CResolve(_, _, _) <+
 				?CTypeOf(_, _, _, _) <+
 				?CGenRecurse(_, _, _, _) <+
-				?CGDirectEdge(_, _, _) <+
+				?CGDirectEdge(_, _, _, _) <+
 				?NewScopes(_) <+
 				?CDistinct(_, _) <+
-				?CGAssoc(_, _, _) <+
+				?CGAssoc(_, _, _, _) <+
 				?CAssoc(_, _, _, _) <+
 				?CEqual(_, _, _) <+
 				?CSubtype(_, _, _) <+

@@ -14,10 +14,12 @@ import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint.CheckedC
 import org.metaborg.meta.nabl2.constraints.equality.Inequal;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermFactory;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
+import org.metaborg.meta.nabl2.terms.Terms.CM;
+import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -27,15 +29,12 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     private static final long serialVersionUID = 5222408971798066584L;
 
-    private final ITermFactory termFactory;
-
     private final Set<IEqualityConstraint> defered;
 
     private final Map<ITermVar,ITerm> reps;
     private final Map<ITermVar,Integer> sizes;
 
-    public EqualitySolver(ITermFactory termFactory) {
-        this.termFactory = termFactory;
+    public EqualitySolver() {
         this.defered = Sets.newHashSet();
         this.reps = Maps.newHashMap();
         this.sizes = Maps.newHashMap();
@@ -64,7 +63,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     @Override public void finish() throws UnsatisfiableException {
         for (IEqualityConstraint constraint : defered) {
-            throw new UnsatisfiableException(constraint);
+            throw new UnsatisfiableException("Unexpected unsolved equality.", constraint);
         }
     }
 
@@ -75,7 +74,11 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     }
 
     private boolean solve(Equal constraint) throws UnsatisfiableException {
-        unify(constraint.getLeft(), constraint.getRight());
+        try {
+            unify(constraint.getLeft(), constraint.getRight());
+        } catch (UnsatisfiableException ex) {
+            throw new UnsatisfiableException("Unification failed: " + ex.getMessage(), ex, constraint);
+        }
         return true;
     }
 
@@ -83,7 +86,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         ITerm left = find(constraint.getLeft());
         ITerm right = find(constraint.getRight());
         if (left.equals(right)) {
-            throw new UnsatisfiableException(constraint);
+            throw new UnsatisfiableException("Terms are not inequal.", constraint);
         }
         return !canUnify(left, right);
     }
@@ -94,14 +97,14 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
      * Find representative term.
      */
     public ITerm find(ITerm term) {
-        return term.match(Terms.<ITerm> cases(
+        return term.match(Terms.cases(
             // @formatter:off
-            appl -> termFactory.newAppl(appl.getOp(), finds(appl.getArgs())),
-            ListTerms.cases(
-                cons -> termFactory.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail())),
+            appl -> GenericTerms.newAppl(appl.getOp(), finds(appl.getArgs())),
+            list -> list.match(ListTerms.cases(
+                cons -> GenericTerms.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail())),
                 nil -> nil,
                 this::findVarRep
-            ),
+            )),
             string -> string,
             integer -> integer,
             this::findVarRep
@@ -121,12 +124,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
      * Find representative term, without recursing on subterms.
      */
     private ITerm findShallow(ITerm term) {
-        return term.match(Terms.<ITerm> cases()
-            // @formatter:off
-            .var(this::findVarRep)
-            .otherwise(() -> term)
-            // @formatter:on
-        );
+        return M.var(this::findVarRep).match(term).orElse(term);
     }
 
     private ITerm findVarRep(ITermVar var) {
@@ -149,64 +147,68 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         ITerm rightRep = findShallow(right);
         if (leftRep.equals(rightRep)) {
             return unit;
+        } else if (leftRep.isGround() && rightRep.isGround()) {
+            throw new UnsatisfiableException("Cannot unify different ground terms.");
         }
-        return leftRep.matchOrThrow(Terms.<Unit, UnsatisfiableException> checkedCases(
+        return leftRep.matchOrThrow(Terms.checkedCases(
             // @formatter:off
-            applLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
-                    .appl(applRight -> {
-                        if (!(applLeft.getOp().equals(applRight.getOp()) && applLeft.getArity() == applRight.getArity())) {
-                            throw new UnsatisfiableException();
-                        }
-                        unifys(applLeft.getArgs(), applRight.getArgs());
-                        return unit;
-                    })
-                    .var(var -> unify(var,applLeft))
-                    .otherwise(() -> { throw new UnsatisfiableException(); })),
-            listLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
-                    .list(listRight -> {
-                        if (listLeft.getLength() != listRight.getLength()) {
-                            throw new UnsatisfiableException();
-                        }
-                        unifys(listLeft, listRight);
-                        return unit;
-                    })
-                    .var(var -> unify(var,listLeft))
-                    .otherwise(() -> { throw new UnsatisfiableException(); })),
-            stringLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
-                    .string(stringRight -> {
-                        if(!stringLeft.getValue().equals(stringRight.getValue())) {
-                            throw new UnsatisfiableException();
-                        }
-                        return unit;
-                    })
-                    .var(var -> unify(var,stringLeft))
-                    .otherwise(() -> { throw new UnsatisfiableException(); })),
-            integerLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
-                    .integer(integerRight -> {
-                        if(integerLeft.getValue() != integerRight.getValue()) {
-                            throw new UnsatisfiableException();
-                        }
-                        return unit;
-                    })
-                    .var(var -> unify(var,integerLeft))
-                    .otherwise(() -> { throw new UnsatisfiableException(); })),
-            varLeft -> rightRep.matchOrThrow(Terms.<Unit, UnsatisfiableException>checkedCases()
-                    .var(varRight -> {
-                        int sizeLeft = sizes.getOrDefault(varLeft, 1);
-                        int sizeRight = sizes.getOrDefault(varRight, 1);
-                        if ( sizeLeft > sizeRight) {
-                            reps.put(varRight, varLeft);
-                            sizes.put(varLeft, sizeLeft + sizeRight);
-                        } else {
-                            reps.put(varLeft, varRight);
-                            sizes.put(varRight, sizeLeft + sizeRight);
-                        }
-                        return unit;
-                    })
-                    .otherwise(() -> {
-                        reps.put(varLeft, rightRep);
-                        return unit;
-                    }))
+            applLeft -> CM.cases(
+                            CM.appl(applRight -> {
+                                if (!(applLeft.getOp().equals(applRight.getOp()) && applLeft.getArity() == applRight.getArity())) {
+                                    throw new UnsatisfiableException("Cannot unify different term constructors.");
+                                }
+                                unifys(applLeft.getArgs(), applRight.getArgs());
+                                return unit;
+                            }),
+                            CM.var(varRight -> unify(varRight,applLeft))
+                        ).matchOrThrow(rightRep).orElseThrow(() -> new UnsatisfiableException()),
+            listLeft -> CM.cases(
+                            CM.list(listRight -> {
+                                if (listLeft.getLength() != listRight.getLength()) {
+                                    throw new UnsatisfiableException("Cannot unify lists of different length.");
+                                }
+                                unifys(listLeft, listRight);
+                                return unit;
+                            }),
+                            CM.var(varRight -> unify(varRight,listLeft))
+                        ).matchOrThrow(rightRep).orElseThrow(() -> new UnsatisfiableException()),
+            stringLeft -> CM.cases(
+                              CM.string(stringRight -> {
+                                  if(!stringLeft.getValue().equals(stringRight.getValue())) {
+                                      throw new UnsatisfiableException("Cannot unify different strings.");
+                                  }
+                                  return unit;
+                              }),
+                              CM.var(varRight -> unify(varRight,stringLeft))
+                          ).matchOrThrow(rightRep).orElseThrow(() -> new UnsatisfiableException()),
+
+            integerLeft -> CM.cases(
+                               CM.integer(integerRight -> {
+                                   if(integerLeft.getValue() != integerRight.getValue()) {
+                                       throw new UnsatisfiableException("Cannot unify different integers.");
+                                   }
+                                   return unit;
+                               }),
+                               CM.var(varRight -> unify(varRight,integerLeft))
+                           ).matchOrThrow(rightRep).orElseThrow(() -> new UnsatisfiableException()),
+            varLeft -> M.cases(
+                           M.var(varRight -> {
+                               int sizeLeft = sizes.getOrDefault(varLeft, 1);
+                               int sizeRight = sizes.getOrDefault(varRight, 1);
+                               if ( sizeLeft > sizeRight) {
+                                   reps.put(varRight, varLeft);
+                                   sizes.put(varLeft, sizeLeft + sizeRight);
+                               } else {
+                                   reps.put(varLeft, varRight);
+                                   sizes.put(varRight, sizeLeft + sizeRight);
+                               }
+                               return (Unit)unit;
+                           }),
+                           M.term(termRight -> {
+                               reps.put(varLeft, termRight);
+                               return (Unit)unit;
+                           })
+                       ).match(rightRep).orElseThrow(() -> new IllegalStateException())
             // @formatter:on
         ));
     }
@@ -216,12 +218,12 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         Iterator<ITerm> itRight = rights.iterator();
         while (itLeft.hasNext()) {
             if (!itRight.hasNext()) {
-                throw new UnsatisfiableException();
+                throw new UnsatisfiableException("Cannot unify different number of arguments.");
             }
             unify(itLeft.next(), itRight.next());
         }
         if (itRight.hasNext()) {
-            throw new UnsatisfiableException();
+            throw new UnsatisfiableException("Cannot unify different number of arguments.");
         }
         return unit;
     }
@@ -230,25 +232,22 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     private boolean canUnify(ITerm left, ITerm right) {
         return left.match(Terms.<Boolean> cases(
             // @formatter:off
-            applLeft -> right.match(Terms.<Boolean> cases()
-                    .appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) && (applLeft.getArity() == applLeft.getArity()) && canUnifys(applLeft.getArgs(), applRight.getArgs())))
-                    .var(varRight -> true)
-                    .otherwise(() -> false)
-            ),
-            listLeft -> right.match(Terms.<Boolean> cases()
-                    .list(listRight -> (listLeft.getLength() == listRight.getLength()) && canUnifys(listLeft, listRight))
-                    .var(varRight -> true)
-                    .otherwise(() -> false)
-            ),
-            stringLeft -> right.match(Terms.<Boolean> cases()
-                    .string(stringRight -> stringLeft.getValue().equals(stringRight.getValue()))
-                    .var(varRight -> true)
-                    .otherwise(() -> false)
-            ),
-            integerLeft -> right.match(Terms.<Boolean> cases()
-                    .integer(integerRight -> (integerLeft.getValue() == integerRight.getValue()))
-                    .var(varRight -> false)
-                    .otherwise(() -> false)),
+            applLeft -> M.cases(
+                            M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) && (applLeft.getArity() == applLeft.getArity()) && canUnifys(applLeft.getArgs(), applRight.getArgs()))),
+                            M.var(varRight -> true)
+                        ).match(left).orElse(false),
+            listLeft -> M.cases(
+                            M.list(listRight -> (listLeft.getLength() == listRight.getLength())),
+                            M.var(varRight -> true)
+                        ).match(left).orElse(false),
+            stringLeft -> M.cases(
+                              M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
+                              M.var(varRight -> true)
+                          ).match(left).orElse(false),
+            integerLeft -> M.cases(
+                               M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
+                               M.var(varRight -> true)
+                           ).match(left).orElse(false),
             varLeft -> true
             // @formatter:on
         ));

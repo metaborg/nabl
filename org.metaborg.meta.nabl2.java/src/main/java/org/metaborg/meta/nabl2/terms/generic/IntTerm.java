@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.terms.generic;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.terms.IAnnotation;
 import org.metaborg.meta.nabl2.terms.IIntTerm;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
@@ -17,8 +16,8 @@ abstract class IntTerm implements IIntTerm {
         return true;
     }
 
-    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
-        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
+        return ImmutableClassToInstanceMap.<Object> builder().build();
     }
 
     @Override public <T> T match(Cases<T> cases) {

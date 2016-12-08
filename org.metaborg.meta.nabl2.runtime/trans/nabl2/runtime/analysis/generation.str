@@ -2,6 +2,8 @@ module nabl2/runtime/analysis/generation
 
 imports
 
+  nabl2/api
+
   libspoofax/editor/completion/interface
 
   signatures/nabl2/shared/common/-
@@ -13,7 +15,6 @@ imports
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
-  nabl2/api
 
 signature
 
@@ -105,7 +106,7 @@ rules
       ast-constraint* := [CAstProperty(index, Params(), params)];
       if nabl2-constraint-generation-implicit-traversal-hook then
         <debug> $({implicit} [[ (<pp-NaBL2-Term> subterm*) ^ (<pp-NaBL2-CTerm> params) ]]);
-        subconstraint* := <filter(nabl2--generate-constraint(s|source,args);not(?CTrue()))> subterm*;
+        subconstraint* := <filter(nabl2--generate-constraint(s|source,args);not(?CTrue(_)))> subterm*;
         constraint* := <concat> subconstraint*
       else
         msg := $[Missing constraint generation rule for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];

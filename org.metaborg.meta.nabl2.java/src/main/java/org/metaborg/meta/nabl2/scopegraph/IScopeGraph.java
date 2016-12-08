@@ -1,16 +1,21 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
-import org.metaborg.meta.nabl2.regexp.IRegExp;
-import org.metaborg.meta.nabl2.transitiveclosure.TransitiveClosure;
+import org.metaborg.meta.nabl2.terms.ITermIndex;
 
-public interface IScopeGraph {
+public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Iterable<Scope> getScopes();
+    Iterable<S> getAllScopes();
 
-    Iterable<Occurrence> getDecls(Scope scope);
+    Iterable<O> getDecls(S scope);
 
-    Iterable<Occurrence> getRefs(Scope scope);
+    Iterable<O> getRefs(S scope);
 
-    INameResolution resolve(IRegExp<Label> wf, TransitiveClosure<Label> order);
+    Iterable<S> getDirectEdges(S scope, L label);
+
+    Iterable<S> getAssocs(O decl, L label);
+
+    Iterable<O> getImports(S scope, L label);
+
+    Iterable<O> getAstRefs(ITermIndex index);
     
 }

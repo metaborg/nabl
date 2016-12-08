@@ -4,7 +4,6 @@ import java.util.Iterator;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.terms.IAnnotation;
 import org.metaborg.meta.nabl2.terms.IConsTerm;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -27,8 +26,8 @@ abstract class ConsTerm implements IConsTerm {
         return 1 + getTail().getLength();
     }
 
-    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
-        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
+        return ImmutableClassToInstanceMap.<Object> builder().build();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

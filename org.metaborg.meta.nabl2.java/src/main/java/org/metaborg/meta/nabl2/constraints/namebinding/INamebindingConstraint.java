@@ -18,10 +18,22 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseDirectEdge(DirectEdge directEdge);
 
+        T caseAssoc(Assoc exportEdge);
+
+        T caseImport(Import importEdge);
+
         T caseResolve(Resolve resolve);
 
-        static <T> Cases<T> of(Function<Decl,T> onDecl, Function1<Ref,T> onRef, Function1<DirectEdge,T> onDirectEdge,
-                Function<Resolve,T> onResolve) {
+        static <T> Cases<T> of(
+            // @formatter:off
+            Function<Decl,T> onDecl,
+            Function1<Ref,T> onRef,
+            Function1<DirectEdge,T> onDirectEdge,
+            Function1<Assoc,T> onExportEdge,
+            Function1<Import,T> onImportEdge,
+            Function<Resolve,T> onResolve
+            // @formatter:on
+        ) {
             return new Cases<T>() {
 
                 @Override public T caseDecl(Decl constraint) {
@@ -34,6 +46,14 @@ public interface INamebindingConstraint extends IConstraint {
 
                 @Override public T caseDirectEdge(DirectEdge directEdge) {
                     return onDirectEdge.apply(directEdge);
+                }
+
+                @Override public T caseAssoc(Assoc exportEdge) {
+                    return onExportEdge.apply(exportEdge);
+                }
+
+                @Override public T caseImport(Import importEdge) {
+                    return onImportEdge.apply(importEdge);
                 }
 
                 @Override public T caseResolve(Resolve constraint) {
@@ -59,11 +79,22 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseDirectEdge(DirectEdge directEdge) throws E;
 
+        T caseAssoc(Assoc exportEdge) throws E;
+
+        T caseImport(Import importEdge) throws E;
+
         T caseResolve(Resolve resolve) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<Decl,T,E> onDecl,
-                CheckedFunction1<Ref,T,E> onRef, CheckedFunction1<DirectEdge,T,E> onDirectEdge,
-                CheckedFunction1<Resolve,T,E> onResolve) {
+        static <T, E extends Throwable> CheckedCases<T,E> of(
+            // @formatter:off
+            CheckedFunction1<Decl,T,E> onDecl,
+            CheckedFunction1<Ref,T,E> onRef,
+            CheckedFunction1<DirectEdge,T,E> onDirectEdge,
+            CheckedFunction1<Assoc,T,E> onExportEdge,
+            CheckedFunction1<Import,T,E> onImportEdge,
+            CheckedFunction1<Resolve,T,E> onResolve
+            // @formatter:on
+        ) {
             return new CheckedCases<T,E>() {
 
                 @Override public T caseDecl(Decl constraint) throws E {
@@ -76,6 +107,14 @@ public interface INamebindingConstraint extends IConstraint {
 
                 @Override public T caseDirectEdge(DirectEdge directEdge) throws E {
                     return onDirectEdge.apply(directEdge);
+                }
+
+                @Override public T caseAssoc(Assoc exportEdge) throws E {
+                    return onExportEdge.apply(exportEdge);
+                }
+
+                @Override public T caseImport(Import importEdge) throws E {
+                    return onImportEdge.apply(importEdge);
                 }
 
                 @Override public T caseResolve(Resolve constraint) throws E {
