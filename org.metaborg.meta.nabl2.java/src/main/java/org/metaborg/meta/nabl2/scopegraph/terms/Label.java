@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.scopegraph.terms;
 import java.util.List;
 
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.functions.Function1;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -33,11 +34,16 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     }
 
     public static IMatcher<Label> matcher() {
+        return matcher(l -> l);
+    }
+
+    public static <R> IMatcher<R> matcher(Function1<Label,R> f) {
         return M.cases(
             // @formatter:off
-            M.appl0("P", (t) -> ImmutableLabel.of("P").setAttachments(t.getAttachments())),
-            M.appl0("I", (t) -> ImmutableLabel.of("I").setAttachments(t.getAttachments())),
-            M.appl1(OP, M.stringValue(), (t,l) -> ImmutableLabel.of(l).setAttachments(t.getAttachments()))
+            M.appl0("D", (t) -> f.apply(ImmutableLabel.of("D").setAttachments(t.getAttachments()))),
+            M.appl0("P", (t) -> f.apply(ImmutableLabel.of("P").setAttachments(t.getAttachments()))),
+            M.appl0("I", (t) -> f.apply(ImmutableLabel.of("I").setAttachments(t.getAttachments()))),
+            M.appl1(OP, M.stringValue(), (t,l) -> f.apply(ImmutableLabel.of(l).setAttachments(t.getAttachments())))
             // @formatter:on
         );
     }

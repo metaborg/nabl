@@ -37,6 +37,9 @@ public class SG_get_ast_references extends ScopeGraphPrimitive {
                 }
             }
             IStrategoTerm result;
+            if (decls.isEmpty()) {
+                return false;
+            }
             if (decls.size() == 1) {
                 result = decls.get(0);
             } else {

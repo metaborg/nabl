@@ -4,6 +4,7 @@ import java.time.Duration;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -19,14 +20,14 @@ public class Solver {
     private final EqualitySolver equalitySolver;
     private final NamebindingSolver namebindingSolver;
 
-    private final Multimap<ITerm,String> errors;
-    private final Multimap<ITerm,String> warnings;
-    private final Multimap<ITerm,String> notes;
+    private final Multimap<ITerm, String> errors;
+    private final Multimap<ITerm, String> warnings;
+    private final Multimap<ITerm, String> notes;
 
-    private Solver() {
+    private Solver(ResolutionParameters resolutionParams) {
         this.baseSolver = new BaseSolver();
         this.equalitySolver = new EqualitySolver();
-        this.namebindingSolver = new NamebindingSolver(equalitySolver);
+        this.namebindingSolver = new NamebindingSolver(resolutionParams, equalitySolver);
 
         this.errors = HashMultimap.create();
         this.warnings = HashMultimap.create();
@@ -34,8 +35,12 @@ public class Solver {
     }
 
     private void add(Iterable<IConstraint> constraints) throws UnsatisfiableException {
-        for (IConstraint constraint : constraints) {
-            constraint.matchOrThrow(CheckedCases.of(baseSolver::add, equalitySolver::add, namebindingSolver::add));
+        for(IConstraint constraint : constraints) {
+            try {
+                constraint.matchOrThrow(CheckedCases.of(baseSolver::add, equalitySolver::add, namebindingSolver::add));
+            } catch(UnsatisfiableException e) {
+                addErrors(e);
+            }
         }
     }
 
@@ -44,34 +49,56 @@ public class Solver {
         do {
             progress = false;
             progress |= baseSolver.iterate();
-            progress |= equalitySolver.iterate();
-            progress |= namebindingSolver.iterate();
-        } while (progress);
+            try {
+                progress |= equalitySolver.iterate();
+                progress |= namebindingSolver.iterate();
+            } catch(UnsatisfiableException e) {
+                progress = true;
+                addErrors(e);
+            }
+        } while(progress);
     }
 
     private void finish() throws UnsatisfiableException {
         baseSolver.finish();
-        equalitySolver.finish();
-        namebindingSolver.finish();
+        try {
+            equalitySolver.finish();
+        } catch(UnsatisfiableException e) {
+            addErrors(e);
+        }
+        try {
+            namebindingSolver.finish();
+        } catch(UnsatisfiableException e) {
+            addErrors(e);
+        }
     }
 
-    public static Solution solve(Iterable<IConstraint> constraints) throws UnsatisfiableException {
+    private void addErrors(UnsatisfiableException e) {
+        for(IConstraint c : e.getUnsatCore()) {
+            c.getOriginatingTerm().ifPresent(t -> {
+                errors.put(t, e.getMessage());
+            });
+        }
+    }
+
+    public static Solution solve(ResolutionParameters resolutionParams, Iterable<IConstraint> constraints)
+            throws UnsatisfiableException {
         long t0 = System.nanoTime();
         logger.info(">>> Solving constraints <<<");
-        Solver solver = new Solver();
+        Solver solver = new Solver(resolutionParams);
         try {
             solver.add(constraints);
             solver.iterate();
             solver.finish();
-        } catch (UnsatisfiableException e) {
-            for (IConstraint c : e.getUnsatCore()) {
+        } catch(UnsatisfiableException e) {
+            for(IConstraint c : e.getUnsatCore()) {
                 c.getOriginatingTerm().ifPresent(t -> solver.errors.put(t, e.getMessage()));
             }
         }
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved constraints ({} s) <<<", (Duration.ofNanos(dt).toMillis() / 1000.0));
-        return ImmutableSolution.of(solver.namebindingSolver.getScopeGraph(), solver.namebindingSolver
-                .getNameResolution(), solver.errors, solver.warnings, solver.notes);
+        return ImmutableSolution.of(solver.namebindingSolver.getScopeGraph(),
+                solver.namebindingSolver.getNameResolution(), solver.errors, solver.warnings, solver.notes);
     }
 
 }

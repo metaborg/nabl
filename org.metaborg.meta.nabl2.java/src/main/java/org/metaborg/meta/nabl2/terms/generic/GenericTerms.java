@@ -25,17 +25,19 @@ public class GenericTerms {
 
 
     public static IListTerm newList(Iterable<ITerm> elems) {
+        return newListTail(elems, newNil());
+    }
+
+    public static IListTerm newListTail(Iterable<ITerm> elems, IListTerm list) {
         LinkedList<ITerm> reverse = new LinkedList<>();
         for (ITerm elem : elems) {
             reverse.addFirst(elem);
         }
-        IListTerm list = newNil();
         for (ITerm elem : reverse) {
             list = newCons(elem, list);
         }
         return list;
     }
-
 
     public static IConsTerm newCons(ITerm head, IListTerm tail) {
         return ImmutableConsTerm.of(head, tail);

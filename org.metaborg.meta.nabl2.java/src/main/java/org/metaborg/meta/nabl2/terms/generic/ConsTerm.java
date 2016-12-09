@@ -52,7 +52,7 @@ abstract class ConsTerm implements IConsTerm {
 
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("(");
+        sb.append("[");
         boolean first = true;
         for (ITerm elem : this) {
             if (first) {
@@ -62,7 +62,7 @@ abstract class ConsTerm implements IConsTerm {
             }
             sb.append(elem.toString());
         }
-        sb.append(")");
+        sb.append("]");
         return sb.toString();
     }
 

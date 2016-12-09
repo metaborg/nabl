@@ -6,13 +6,13 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.functions.Function4;
-import org.metaborg.meta.nabl2.regexp.IAlphabet;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
+import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.transitiveclosure.TransitiveClosure;
 import org.metaborg.util.iterators.Iterables2;
@@ -28,18 +28,19 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         INameResolution<S,L,O> {
 
     private final EsopScopeGraph<S,L,O> scopeGraph;
+    private final Set<L> labels;
     private final IRegExp<L> wf;
     private final TransitiveClosure<L> order;
     private final Function4<PSet<O>,PSet<S>,IRegExpMatcher<L>,S,EsopEnv<O>> stagedEnv_L;
 
     private final Map<O,Iterable<O>> resolveCache;
 
-    public EsopNameResolution(EsopScopeGraph<S,L,O> scopeGraph, IAlphabet<L> labels, IRegExp<L> wf,
-            TransitiveClosure<L> order) {
+    public EsopNameResolution(EsopScopeGraph<S,L,O> scopeGraph, IResolutionParameters<L> params) {
         this.scopeGraph = scopeGraph;
-        this.wf = wf;
-        this.order = order;
-        this.stagedEnv_L = stageEnv_L(Sets.newHashSet(labels));
+        this.labels = Sets.newHashSet(params.getLabels());
+        this.wf = params.getPathWf();
+        this.order = params.getSpecificityOrder();
+        this.stagedEnv_L = stageEnv_L(labels);
         this.resolveCache = Maps.newHashMap();
     }
 
@@ -73,6 +74,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if (seenScopes.contains(scope) || re.isEmpty()) {
             return EsopEnv.empty(true);
         }
+        //return env_L(labels, seenImports, seenScopes, re, scope);
         return stagedEnv_L.apply(seenImports, seenScopes, re, scope);
     }
 
@@ -120,6 +122,16 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     // stage environment shadowing call tree
+
+    private EsopEnv<O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRegExpMatcher<L> re, S scope) {
+        EsopEnv<O> env = EsopEnv.empty(true);
+        for (L l : max(L)) {
+            EsopEnv<O> partialEnv = env_L(smaller(L, l), seenImports, seenScopes, re, scope);
+            partialEnv.shadow(env_l(seenImports, seenScopes, re, l, scope));
+            env.union(partialEnv);
+        }
+        return env;
+    }
 
     private Function4<PSet<O>,PSet<S>,IRegExpMatcher<L>,S,EsopEnv<O>> stageEnv_L(Set<L> L) {
         List<Function4<PSet<O>,PSet<S>,IRegExpMatcher<L>,S,EsopEnv<O>>> stagedEnvs = Lists.newArrayList();

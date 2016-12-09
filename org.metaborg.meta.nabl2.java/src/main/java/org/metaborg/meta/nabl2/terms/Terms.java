@@ -327,6 +327,18 @@ public class Terms {
             };
         }
 
+        public static <T> IMatcher<T> casesFix(Function1<IMatcher<T>,Iterable<IMatcher<? extends T>>> f) {
+            return term -> {
+                for (IMatcher<? extends T> matcher : f.apply(casesFix(f))) {
+                    Optional<? extends T> result = matcher.match(term);
+                    if (result.isPresent()) {
+                        return Optional.of(result.get());
+                    }
+                }
+                return Optional.empty();
+            };
+        }
+
     }
 
     @FunctionalInterface

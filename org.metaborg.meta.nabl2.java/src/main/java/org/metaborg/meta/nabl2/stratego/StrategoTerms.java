@@ -35,6 +35,9 @@ public class StrategoTerms {
     private final static String VAR_CTOR = "CVar";
     private final static int VAR_ARITY = 2;
 
+    private final static String TLIST_CTOR = "TList";
+    private final static String TLISTTAIL_CTOR = "TListTail";
+
     private final Iterable<Function2<IStrategoTerm,Attacher,Unit>> attachmentProviders;
 
     private final org.spoofax.interpreter.terms.ITermFactory termFactory;
@@ -49,14 +52,13 @@ public class StrategoTerms {
 
     public IStrategoTerm toStratego(ITerm term) {
         IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm> cases(
-            // @formatter:off
-            appl -> termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()),
+                // @formatter:off
+                appl -> termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()),
                         toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0])),
-            list -> termFactory.makeList(toStrategos(list)),
-            string -> termFactory.makeString(string.getValue()),
-            integer -> termFactory.makeInt(integer.getValue()),
-            var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getName()))
-            // @formatter:on
+                list -> termFactory.makeList(toStrategos(list)), string -> termFactory.makeString(string.getValue()),
+                integer -> termFactory.makeInt(integer.getValue()), var -> termFactory.makeAppl(varCtor,
+                        termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
+        // @formatter:on
         ));
         putAttachments(strategoTerm, term.getAttachments());
         return strategoTerm;
@@ -82,13 +84,11 @@ public class StrategoTerms {
         }
     }
 
-
     public ITerm fromStratego(IStrategoTerm term) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
         ITerm rawTerm = match(term, StrategoTerms.<ITerm> cases(
             // @formatter:off
-            appl ->
-                GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl), attachments),
+            appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl), attachments),
             tuple -> GenericTerms.newAppl("", fromStrategos(tuple), attachments),
             this::fromStrategoList,
             integer -> GenericTerms.newInt(integer.intValue(), attachments),
@@ -99,9 +99,15 @@ public class StrategoTerms {
             other -> { throw new IllegalArgumentException(); }
             // @formatter:on
         ));
-        return M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) -> {
-            return (ITerm) GenericTerms.newVar(resource, name);
-        }).match(rawTerm).orElse(rawTerm);
+        return M.<ITerm> cases(
+            // @formatter:off
+            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) -> {
+                return GenericTerms.newVar(resource, name);
+            }),
+            M.appl1(TLIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs)),
+            M.appl2(TLISTTAIL_CTOR, M.list(), M.list(), (t,xs,ys) -> GenericTerms.newListTail(xs,ys))
+            // @formatter:on
+        ).match(rawTerm).orElse(rawTerm);
     }
 
     private IListTerm fromStrategoList(IStrategoList list) {
@@ -172,17 +178,12 @@ public class StrategoTerms {
     }
 
     public static <T> ICases<T> cases(
-        // @formatter:off
-        Function1<IStrategoAppl,T> onAppl,
-        Function1<IStrategoTuple,T> onTuple,
-        Function1<IStrategoList,T> onList,
-        Function1<IStrategoInt,T> onInt,
-        Function1<IStrategoReal,T> onReal,
-        Function1<IStrategoString,T> onString,
-        Function1<IStrategoRef,T> onRef,
-        Function1<IStrategoPlaceholder,T> onPlaceholder,
-        Function1<IStrategoTerm,T> otherwise
-        // @formatter:on
+            // @formatter:off
+            Function1<IStrategoAppl, T> onAppl, Function1<IStrategoTuple, T> onTuple,
+            Function1<IStrategoList, T> onList, Function1<IStrategoInt, T> onInt, Function1<IStrategoReal, T> onReal,
+            Function1<IStrategoString, T> onString, Function1<IStrategoRef, T> onRef,
+            Function1<IStrategoPlaceholder, T> onPlaceholder, Function1<IStrategoTerm, T> otherwise
+    // @formatter:on
     ) {
         return new ICases<T>() {
 
@@ -246,7 +247,6 @@ public class StrategoTerms {
         public T otherwise(IStrategoTerm term);
 
     }
-
 
     @FunctionalInterface
     public interface Attacher {

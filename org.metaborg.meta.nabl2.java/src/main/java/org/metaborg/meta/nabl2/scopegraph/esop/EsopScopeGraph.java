@@ -4,14 +4,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.meta.nabl2.regexp.IAlphabet;
-import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
+import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.terms.ITermIndex;
-import org.metaborg.meta.nabl2.transitiveclosure.TransitiveClosure;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;
@@ -91,8 +89,8 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return imports.containsKey(scope) ? imports.get(scope).get(label) : Iterables2.empty();
     }
 
-    EsopNameResolution<S,L,O> resolve(IAlphabet<L> labels, IRegExp<L> wf, TransitiveClosure<L> order) {
-        return new EsopNameResolution<S,L,O>(this, labels, wf, order);
+    EsopNameResolution<S,L,O> resolve(IResolutionParameters<L> params) {
+        return new EsopNameResolution<S,L,O>(this, params);
     }
 
     Optional<S> getRefScope(O ref) {

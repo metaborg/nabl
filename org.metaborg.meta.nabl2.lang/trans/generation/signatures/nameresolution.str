@@ -23,8 +23,13 @@ rules
          else
            labelstr* := []
          end
-    with order* := <filter(?Order(<id>));concat> param*;
-         orderstr* := <map(label-order-to-str)> order*
+    with if order*@[_|_] := <filter(?Order(<id>));concat;
+                                    map(\ Lt(l1,l2) -> (l1,l2) \)> param* then
+           orderterm* := <map(explode(injection-to-term))> order*;
+           orderstr* := [ |[ nabl2--custom-label-order = !~List(orderterm*) ]| ]
+         else
+           orderstr* := []
+         end
     with if wf := <getfirst(?WF(<id>))> param* then
            wfterm := <explode(injection-to-term)> wf;
            wfstr* := [ |[ nabl2--custom-labels-wf = !~wfterm  ]| ]
@@ -32,6 +37,3 @@ rules
            wfstr* := []
          end
  
-  label-order-to-str: Lt(l1, l2) -> |[ nabl2--custom-label-lt = ?(~l1',~l2') ]|
-    with l1' := <explode(injection-to-term)> l1
-       ; l2' := <explode(injection-to-term)> l2
