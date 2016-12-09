@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.util.Optional;
+
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
@@ -9,6 +11,6 @@ public interface IProperties<O extends IOccurrence> {
 
     Iterable<ITerm> getDefinedKeys(O decl);
 
-    ITerm getValue(O decl, ITerm kind);
+    Optional<ITerm> getValue(O decl, ITerm key);
 
 }

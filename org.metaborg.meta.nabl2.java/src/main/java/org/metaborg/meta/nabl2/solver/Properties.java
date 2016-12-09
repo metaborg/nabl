@@ -24,8 +24,8 @@ public class Properties implements IProperties<Occurrence> {
         return occurrenceData(occurrence).keySet();
     }
 
-    @Override public ITerm getValue(Occurrence occurrence, ITerm key) {
-        return occurrenceData(occurrence).get(key);
+    @Override public Optional<ITerm> getValue(Occurrence occurrence, ITerm key) {
+        return Optional.ofNullable(occurrenceData(occurrence).get(key));
     }
 
     public Optional<ITerm> putValue(Occurrence occurrence, ITerm key, ITerm value) {

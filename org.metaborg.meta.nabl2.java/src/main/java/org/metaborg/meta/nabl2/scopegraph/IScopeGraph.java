@@ -1,10 +1,12 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
-import org.metaborg.meta.nabl2.terms.ITermIndex;
-
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
     Iterable<S> getAllScopes();
+
+    Iterable<O> getAllDecls();
+
+    Iterable<O> getAllRefs();
 
     Iterable<O> getDecls(S scope);
 
@@ -16,6 +18,4 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     Iterable<O> getImports(S scope, L label);
 
-    Iterable<O> getAstRefs(ITermIndex index);
-    
 }

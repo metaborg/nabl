@@ -9,7 +9,6 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
-import org.metaborg.meta.nabl2.terms.ITermIndex;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;
@@ -26,8 +25,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final Map<S,Multimap<L,O>> imports;
     private final Multimap<S,O> refs;
 
+    private final Set<O> declsIndex;
+    private final Set<O> refsIndex;
     private final Map<O,S> refScopesIndex;
-    private final Multimap<ITermIndex,O> astRefsIndex;
 
     public EsopScopeGraph() {
         this.scopes = Sets.newHashSet();
@@ -37,12 +37,21 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         this.imports = Maps.newHashMap();
         this.refs = HashMultimap.create();
 
+        this.declsIndex = Sets.newHashSet();
+        this.refsIndex = Sets.newHashSet();
         this.refScopesIndex = Maps.newHashMap();
-        this.astRefsIndex = HashMultimap.create();
     }
 
     @Override public Iterable<S> getAllScopes() {
         return scopes;
+    }
+
+    @Override public Iterable<O> getAllDecls() {
+        return declsIndex;
+    }
+
+    @Override public Iterable<O> getAllRefs() {
+        return refsIndex;
     }
 
     @Override public Iterable<O> getDecls(S scope) {
@@ -52,6 +61,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     public void addDecl(S scope, O decl) {
         scopes.add(scope);
         decls.put(scope, decl);
+        declsIndex.add(decl);
     }
 
     @Override public Iterable<O> getRefs(S scope) {
@@ -62,7 +72,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         scopes.add(scope);
         refs.put(scope, ref);
         refScopesIndex.put(ref, scope);
-        astRefsIndex.put(ref.getPosition(), ref);
+        refsIndex.add(ref);
     }
 
     public void addDirectEdge(S sourceScope, L label, S targetScope) {
@@ -95,10 +105,6 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
 
     Optional<S> getRefScope(O ref) {
         return refScopesIndex.containsKey(ref) ? Optional.of(refScopesIndex.get(ref)) : Optional.empty();
-    }
-
-    @Override public Iterable<O> getAstRefs(ITermIndex index) {
-        return astRefsIndex.get(index);
     }
 
 }

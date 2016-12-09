@@ -181,7 +181,7 @@ rules // ###### Analysis results ######
   /**
    * @type node:Term -> List(Occurrence)
    */
-  nabl2-get-ast-refs = nabl2--get-ast-refs
+  nabl2-get-ast-refs = nabl2--get-ast-refs; map(Snd)
 
   /**
    * @param a : Analysis
