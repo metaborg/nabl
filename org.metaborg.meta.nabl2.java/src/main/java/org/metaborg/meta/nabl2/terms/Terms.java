@@ -12,6 +12,7 @@ import org.metaborg.meta.nabl2.functions.Function2;
 import org.metaborg.meta.nabl2.functions.Function3;
 import org.metaborg.meta.nabl2.functions.Function4;
 import org.metaborg.meta.nabl2.functions.Function5;
+import org.metaborg.meta.nabl2.functions.Function6;
 
 import com.google.common.collect.Lists;
 
@@ -184,8 +185,8 @@ public class Terms {
         }
 
 
-        public static <T1, T2, T3> IMatcher<IApplTerm> appl4(String op, IMatcher<? extends T1> m1,
-                IMatcher<? extends T2> m2, IMatcher<T3> m3, IMatcher<T3> m4) {
+        public static <T1, T2, T3, T4> IMatcher<IApplTerm> appl4(String op, IMatcher<? extends T1> m1,
+                IMatcher<? extends T2> m2, IMatcher<T3> m3, IMatcher<T4> m4) {
             return appl4(op, m1, m2, m3, m4, (appl, t1, t2, t3, t4) -> appl);
         }
 
@@ -212,7 +213,7 @@ public class Terms {
                         return Optional.empty();
                     }
                     T3 t3 = o3.get();
-                    Optional<? extends T4> o4 = m4.match(appl.getArgs().get(2));
+                    Optional<? extends T4> o4 = m4.match(appl.getArgs().get(3));
                     if (!o4.isPresent()) {
                         return Optional.empty();
                     }
@@ -222,6 +223,49 @@ public class Terms {
             };
         }
 
+
+        public static <T1, T2, T3, T4, T5> IMatcher<IApplTerm> appl5(String op, IMatcher<? extends T1> m1,
+                IMatcher<? extends T2> m2, IMatcher<T3> m3, IMatcher<T4> m4, IMatcher<T5> m5) {
+            return appl5(op, m1, m2, m3, m4, m5, (appl, t1, t2, t3, t4, t5) -> appl);
+        }
+
+        public static <T1, T2, T3, T4, T5, R> IMatcher<R> appl5(String op, IMatcher<? extends T1> m1,
+                IMatcher<? extends T2> m2, IMatcher<? extends T3> m3, IMatcher<? extends T4> m4, IMatcher<? extends T5> m5,
+                Function6<? super IApplTerm,? super T1,? super T2,? super T3,? super T4,? super T5,? extends R> f) {
+            return term -> {
+                return term.match(Terms.cases(appl -> {
+                    if (!(op.equals(appl.getOp()) && appl.getArity() == 5)) {
+                        return Optional.empty();
+                    }
+                    Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0));
+                    if (!o1.isPresent()) {
+                        return Optional.empty();
+                    }
+                    T1 t1 = o1.get();
+                    Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1));
+                    if (!o2.isPresent()) {
+                        return Optional.empty();
+                    }
+                    T2 t2 = o2.get();
+                    Optional<? extends T3> o3 = m3.match(appl.getArgs().get(2));
+                    if (!o3.isPresent()) {
+                        return Optional.empty();
+                    }
+                    T3 t3 = o3.get();
+                    Optional<? extends T4> o4 = m4.match(appl.getArgs().get(3));
+                    if (!o4.isPresent()) {
+                        return Optional.empty();
+                    }
+                    T4 t4 = o4.get();
+                    Optional<? extends T5> o5 = m5.match(appl.getArgs().get(4));
+                    if (!o5.isPresent()) {
+                        return Optional.empty();
+                    }
+                    T5 t5 = o5.get();
+                    return Optional.of(f.apply(appl, t1, t2, t3, t4, t5));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+            };
+        }
 
         // list
 

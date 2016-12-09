@@ -20,5 +20,7 @@ public interface ISolution {
     IScopeGraph<Scope,Label,Occurrence> getScopeGraph();
 
     INameResolution<Scope,Label,Occurrence> getNameResolution();
-    
+
+    IProperties<Occurrence> getProperties();
+
 }

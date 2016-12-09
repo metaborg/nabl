@@ -8,6 +8,7 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableDecl;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableDirectEdge;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableImport;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutablePropertyOf;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableResolve;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -52,6 +53,9 @@ public class ConstraintTerms {
             }),
             M.appl3("CResolve", M.term(), M.term(), originatingTerm(), (c, ref, decl, origin) -> {
                 return ImmutableResolve.of(ref, decl).setOriginatingTerm(origin);
+            }),
+            M.appl5("CPropertyOf", M.term(), M.term(), M.term(), M.term(), originatingTerm(), (c, decl, key, value, prio, origin) -> {
+                return ImmutablePropertyOf.of(decl,key,value).setOriginatingTerm(origin);
             }),
             M.term(t -> ImmutableTrue.of())
             // @formatter:on

@@ -19,6 +19,8 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract INameResolution<Scope,Label,Occurrence> getNameResolution();
 
+    @Value.Parameter @Override public abstract IProperties<Occurrence> getProperties();
+    
     @Value.Parameter public abstract Multimap<ITerm,String> getErrors();
 
     @Value.Parameter public abstract Multimap<ITerm,String> getWarnings();

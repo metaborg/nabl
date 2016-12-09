@@ -1,7 +1,5 @@
 package org.metaborg.meta.nabl2.constraints.namebinding;
 
-import java.util.function.Function;
-
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.functions.Function1;
@@ -10,7 +8,7 @@ public interface INamebindingConstraint extends IConstraint {
 
     <T> T match(Cases<T> cases);
 
-    interface Cases<T> extends Function<INamebindingConstraint,T> {
+    interface Cases<T> {
 
         T caseDecl(Decl decl);
 
@@ -24,14 +22,17 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseResolve(Resolve resolve);
 
+        T caseProperty(PropertyOf property);
+
         static <T> Cases<T> of(
             // @formatter:off
-            Function<Decl,T> onDecl,
+            Function1<Decl,T> onDecl,
             Function1<Ref,T> onRef,
             Function1<DirectEdge,T> onDirectEdge,
             Function1<Assoc,T> onExportEdge,
             Function1<Import,T> onImportEdge,
-            Function<Resolve,T> onResolve
+            Function1<Resolve,T> onResolve,
+            Function1<PropertyOf,T> onProperty
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -60,8 +61,8 @@ public interface INamebindingConstraint extends IConstraint {
                     return onResolve.apply(constraint);
                 }
 
-                @Override public T apply(INamebindingConstraint constraint) {
-                    return constraint.match(this);
+                @Override public T caseProperty(PropertyOf property) {
+                    return onProperty.apply(property);
                 }
 
             };
@@ -71,7 +72,7 @@ public interface INamebindingConstraint extends IConstraint {
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
 
-    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<INamebindingConstraint,T,E> {
+    interface CheckedCases<T, E extends Throwable> {
 
         T caseDecl(Decl decl) throws E;
 
@@ -85,6 +86,8 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseResolve(Resolve resolve) throws E;
 
+        T caseProperty(PropertyOf property) throws E;
+
         static <T, E extends Throwable> CheckedCases<T,E> of(
             // @formatter:off
             CheckedFunction1<Decl,T,E> onDecl,
@@ -92,7 +95,8 @@ public interface INamebindingConstraint extends IConstraint {
             CheckedFunction1<DirectEdge,T,E> onDirectEdge,
             CheckedFunction1<Assoc,T,E> onExportEdge,
             CheckedFunction1<Import,T,E> onImportEdge,
-            CheckedFunction1<Resolve,T,E> onResolve
+            CheckedFunction1<Resolve,T,E> onResolve,
+            CheckedFunction1<PropertyOf,T,E> onProperty
             // @formatter:on
         ) {
             return new CheckedCases<T,E>() {
@@ -121,8 +125,8 @@ public interface INamebindingConstraint extends IConstraint {
                     return onResolve.apply(constraint);
                 }
 
-                @Override public T apply(INamebindingConstraint constraint) throws E {
-                    return constraint.matchOrThrow(this);
+                @Override public T caseProperty(PropertyOf property) throws E {
+                    return onProperty.apply(property);
                 }
 
             };

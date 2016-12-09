@@ -20,9 +20,9 @@ public class Solver {
     private final EqualitySolver equalitySolver;
     private final NamebindingSolver namebindingSolver;
 
-    private final Multimap<ITerm, String> errors;
-    private final Multimap<ITerm, String> warnings;
-    private final Multimap<ITerm, String> notes;
+    private final Multimap<ITerm,String> errors;
+    private final Multimap<ITerm,String> warnings;
+    private final Multimap<ITerm,String> notes;
 
     private Solver(ResolutionParameters resolutionParams) {
         this.baseSolver = new BaseSolver();
@@ -35,10 +35,10 @@ public class Solver {
     }
 
     private void add(Iterable<IConstraint> constraints) throws UnsatisfiableException {
-        for(IConstraint constraint : constraints) {
+        for (IConstraint constraint : constraints) {
             try {
                 constraint.matchOrThrow(CheckedCases.of(baseSolver::add, equalitySolver::add, namebindingSolver::add));
-            } catch(UnsatisfiableException e) {
+            } catch (UnsatisfiableException e) {
                 addErrors(e);
             }
         }
@@ -52,29 +52,29 @@ public class Solver {
             try {
                 progress |= equalitySolver.iterate();
                 progress |= namebindingSolver.iterate();
-            } catch(UnsatisfiableException e) {
+            } catch (UnsatisfiableException e) {
                 progress = true;
                 addErrors(e);
             }
-        } while(progress);
+        } while (progress);
     }
 
     private void finish() throws UnsatisfiableException {
         baseSolver.finish();
         try {
             equalitySolver.finish();
-        } catch(UnsatisfiableException e) {
+        } catch (UnsatisfiableException e) {
             addErrors(e);
         }
         try {
             namebindingSolver.finish();
-        } catch(UnsatisfiableException e) {
+        } catch (UnsatisfiableException e) {
             addErrors(e);
         }
     }
 
     private void addErrors(UnsatisfiableException e) {
-        for(IConstraint c : e.getUnsatCore()) {
+        for (IConstraint c : e.getUnsatCore()) {
             c.getOriginatingTerm().ifPresent(t -> {
                 errors.put(t, e.getMessage());
             });
@@ -90,15 +90,16 @@ public class Solver {
             solver.add(constraints);
             solver.iterate();
             solver.finish();
-        } catch(UnsatisfiableException e) {
-            for(IConstraint c : e.getUnsatCore()) {
+        } catch (UnsatisfiableException e) {
+            for (IConstraint c : e.getUnsatCore()) {
                 c.getOriginatingTerm().ifPresent(t -> solver.errors.put(t, e.getMessage()));
             }
         }
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved constraints ({} s) <<<", (Duration.ofNanos(dt).toMillis() / 1000.0));
-        return ImmutableSolution.of(solver.namebindingSolver.getScopeGraph(),
-                solver.namebindingSolver.getNameResolution(), solver.errors, solver.warnings, solver.notes);
+        return ImmutableSolution.of(solver.namebindingSolver.getScopeGraph(), solver.namebindingSolver
+                .getNameResolution(), solver.namebindingSolver.getProperties(), solver.errors, solver.warnings,
+                solver.notes);
     }
 
 }

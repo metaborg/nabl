@@ -32,8 +32,8 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     private final Set<IEqualityConstraint> defered;
 
-    private final Map<ITermVar, ITerm> reps;
-    private final Map<ITermVar, Integer> sizes;
+    private final Map<ITermVar,ITerm> reps;
+    private final Map<ITermVar,Integer> sizes;
 
     public EqualitySolver() {
         this.defered = Sets.newHashSet();
@@ -43,25 +43,23 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override
-    public Unit add(IEqualityConstraint constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
+    @Override public Unit add(IEqualityConstraint constraint) throws UnsatisfiableException {
+        if (!solve(constraint)) {
             defered.add(constraint);
         }
         return unit;
     }
 
-    @Override
-    public boolean iterate() throws UnsatisfiableException {
+    @Override public boolean iterate() throws UnsatisfiableException {
         Iterator<IEqualityConstraint> it = defered.iterator();
         boolean progress = false;
-        while(it.hasNext()) {
+        while (it.hasNext()) {
             try {
-                if(solve(it.next())) {
+                if (solve(it.next())) {
                     progress |= true;
                     it.remove();
                 }
-            } catch(UnsatisfiableException e) {
+            } catch (UnsatisfiableException e) {
                 it.remove();
                 throw e;
             }
@@ -69,9 +67,8 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         return progress;
     }
 
-    @Override
-    public void finish() throws UnsatisfiableException {
-        if(!defered.isEmpty()) {
+    @Override public void finish() throws UnsatisfiableException {
+        if (!defered.isEmpty()) {
             throw new UnsatisfiableException("Unexpected unsolved equality.", defered.toArray(new IConstraint[0]));
         }
     }
@@ -85,7 +82,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     private boolean solve(Equal constraint) throws UnsatisfiableException {
         try {
             unify(constraint.getLeft(), constraint.getRight());
-        } catch(UnsatisfiableException ex) {
+        } catch (UnsatisfiableException ex) {
             throw new UnsatisfiableException("Unification failed: " + ex.getMessage(), ex, constraint);
         }
         return true;
@@ -94,7 +91,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     private boolean solve(Inequal constraint) throws UnsatisfiableException {
         ITerm left = find(constraint.getLeft());
         ITerm right = find(constraint.getRight());
-        if(left.equals(right)) {
+        if (left.equals(right)) {
             throw new UnsatisfiableException("Terms are not inequal.", constraint);
         }
         return !canUnify(left, right);
@@ -106,10 +103,8 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
      * Find representative term.
      */
     public ITerm find(ITerm term) {
-        return term
-                .match(Terms
-                        .cases(
-                                // @formatter:off
+        return term.match(Terms.cases(
+                // @formatter:off
                                 appl -> GenericTerms
                                         .newAppl(appl.getOp(),
                                                 finds(appl
@@ -126,7 +121,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     private Iterable<ITerm> finds(Iterable<ITerm> terms) {
         List<ITerm> reps = Lists.newArrayList();
-        for(ITerm term : terms) {
+        for (ITerm term : terms) {
             reps.add(find(term));
         }
         return reps;
@@ -140,7 +135,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     }
 
     private ITerm findVarRep(ITermVar var) {
-        if(!reps.containsKey(var)) {
+        if (!reps.containsKey(var)) {
             return var;
         } else {
             ITerm rep = find(reps.get(var));
@@ -157,9 +152,9 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     public Unit unify(ITerm left, ITerm right) throws UnsatisfiableException {
         ITerm leftRep = findShallow(left);
         ITerm rightRep = findShallow(right);
-        if(leftRep.equals(rightRep)) {
+        if (leftRep.equals(rightRep)) {
             return unit;
-        } else if(leftRep.isGround() && rightRep.isGround()) {
+        } else if (leftRep.isGround() && rightRep.isGround()) {
             throw new UnsatisfiableException("Cannot unify different ground terms.");
         }
         return leftRep.matchOrThrow(Terms.checkedCases(
@@ -217,51 +212,49 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     private Unit unifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) throws UnsatisfiableException {
         Iterator<ITerm> itLeft = lefts.iterator();
         Iterator<ITerm> itRight = rights.iterator();
-        while(itLeft.hasNext()) {
-            if(!itRight.hasNext()) {
+        while (itLeft.hasNext()) {
+            if (!itRight.hasNext()) {
                 throw new UnsatisfiableException("Cannot unify different number of arguments.");
             }
             unify(itLeft.next(), itRight.next());
         }
-        if(itRight.hasNext()) {
+        if (itRight.hasNext()) {
             throw new UnsatisfiableException("Cannot unify different number of arguments.");
         }
         return unit;
     }
 
     private boolean canUnify(ITerm left, ITerm right) {
-        return left
-                .match(Terms.<Boolean>cases(
-                        // @formatter:off
-                        applLeft -> M.cases(
-                                M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp())
-                                        && (applLeft.getArity() == applLeft.getArity())
-                                        && canUnifys(applLeft.getArgs(), applRight.getArgs()))),
-                                M.var(varRight -> true)).match(left).orElse(false),
-                        listLeft -> M
-                                .cases(M.list(
-                                        listRight -> (listLeft.getLength() == listRight.getLength())),
-                                        M
-                                                .var(varRight -> true))
-                                .match(left).orElse(false),
-                        stringLeft -> M
-                                .cases(M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
-                                        M.var(varRight -> true))
-                                .match(left).orElse(false),
-                        integerLeft -> M
-                                .cases(M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
-                                        M.var(varRight -> true))
-                                .match(left).orElse(false),
-                        varLeft -> true
-        // @formatter:on
+        return left.match(Terms.cases(
+            // @formatter:off
+            applLeft -> M.cases(
+                            M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) &&
+                                                 applLeft.getArity() == applLeft.getArity() &&
+                                                 canUnifys(applLeft.getArgs(), applRight.getArgs()))),
+                            M.var(varRight -> true)
+                        ).match(right).orElse(false),
+            listLeft -> M.cases(
+                            M.list(listRight -> (listLeft.getLength() == listRight.getLength())),
+                            M.var(varRight -> true)
+                        ).match(right).orElse(false),
+            stringLeft -> M.cases(
+                              M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
+                              M.var(varRight -> true)
+                          ).match(right).orElse(false),
+            integerLeft -> M.cases(
+                               M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
+                               M.var(varRight -> true)
+                           ).match(right).orElse(false),
+            varLeft -> true
+            // @formatter:on
         ));
     }
 
     private boolean canUnifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) {
         Iterator<ITerm> itLeft = lefts.iterator();
         Iterator<ITerm> itRight = rights.iterator();
-        while(itLeft.hasNext()) {
-            if(!(itRight.hasNext() && canUnify(itLeft.next(), itRight.next()))) {
+        while (itLeft.hasNext()) {
+            if (!(itRight.hasNext() && canUnify(itLeft.next(), itRight.next()))) {
                 return false;
             }
         }
