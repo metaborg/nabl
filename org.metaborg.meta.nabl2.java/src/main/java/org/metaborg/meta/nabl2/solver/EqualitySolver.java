@@ -103,18 +103,18 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
      * Find representative term.
      */
     public ITerm find(ITerm term) {
-        return term.match(Terms.cases(
-                // @formatter:off
-                                appl -> GenericTerms
-                                        .newAppl(appl.getOp(),
+        return term.match(Terms.<ITerm> cases(
+            // @formatter:off
+            appl -> GenericTerms.newAppl(appl.getOp(),
                                                 finds(appl
                                                         .getArgs())),
-                                list -> list
-                                        .match(ListTerms.cases(
-                                                cons -> GenericTerms.newCons(find(cons.getHead()),
-                                                        (IListTerm) find(cons.getTail())),
-                                                nil -> nil, this::findVarRep)),
-                                string -> string, integer -> integer, this::findVarRep
+            list -> list.match(ListTerms.<ITerm>cases(
+                cons -> GenericTerms.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail())),
+                nil -> nil,
+                this::findVarRep)),
+            string -> string,
+            integer -> integer,
+            this::findVarRep
         // @formatter:on
         ));
     }
@@ -157,7 +157,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         } else if (leftRep.isGround() && rightRep.isGround()) {
             throw new UnsatisfiableException("Cannot unify different ground terms.");
         }
-        return leftRep.matchOrThrow(Terms.checkedCases(
+        return leftRep.matchOrThrow(Terms.<Unit,UnsatisfiableException>checkedCases(
                 // @formatter:off
                 applLeft -> CM.cases(CM.appl(applRight -> {
                     if(!(applLeft.getOp().equals(applRight.getOp()) && applLeft.getArity() == applRight.getArity())) {
@@ -225,23 +225,23 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     }
 
     private boolean canUnify(ITerm left, ITerm right) {
-        return left.match(Terms.cases(
+        return left.match(Terms.<Boolean> cases(
             // @formatter:off
-            applLeft -> M.cases(
+            applLeft -> M.<Boolean>cases(
                             M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) &&
                                                  applLeft.getArity() == applLeft.getArity() &&
                                                  canUnifys(applLeft.getArgs(), applRight.getArgs()))),
                             M.var(varRight -> true)
                         ).match(right).orElse(false),
-            listLeft -> M.cases(
+            listLeft -> M.<Boolean>cases(
                             M.list(listRight -> (listLeft.getLength() == listRight.getLength())),
                             M.var(varRight -> true)
                         ).match(right).orElse(false),
-            stringLeft -> M.cases(
+            stringLeft -> M.<Boolean>cases(
                               M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
                               M.var(varRight -> true)
                           ).match(right).orElse(false),
-            integerLeft -> M.cases(
+            integerLeft -> M.<Boolean>cases(
                                M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
                                M.var(varRight -> true)
                            ).match(right).orElse(false),

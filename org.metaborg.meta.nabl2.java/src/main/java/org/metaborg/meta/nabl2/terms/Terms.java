@@ -70,18 +70,18 @@ public class Terms {
         // appl
 
         public static IMatcher<IApplTerm> appl() {
-            return term -> term.match(Terms.cases(Optional::of, Terms::empty, Terms::empty, Terms::empty,
-                    Terms::empty));
-        }
-
-        public static <R> IMatcher<R> appl(Function1<IApplTerm,? extends R> f) {
-            return term -> term.match(Terms.cases(appl -> Optional.of(f.apply(appl)), Terms::empty, Terms::empty,
+            return term -> term.match(Terms.<Optional<IApplTerm>> cases(Optional::of, Terms::empty, Terms::empty,
                     Terms::empty, Terms::empty));
         }
 
+        public static <R> IMatcher<R> appl(Function1<IApplTerm,? extends R> f) {
+            return term -> term.match(Terms.<Optional<R>> cases(appl -> Optional.of(f.apply(appl)), Terms::empty,
+                    Terms::empty, Terms::empty, Terms::empty));
+        }
+
         public static <R> IMatcher<R> appl(String op, Function1<IApplTerm,? extends R> f) {
-            return term -> term.match(Terms.cases(appl -> appl.getOp().equals(op) ? Optional.of(f.apply(appl))
-                    : Optional.empty(), Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+            return term -> term.match(Terms.<Optional<R>> cases(appl -> appl.getOp().equals(op) ? Optional.of(f.apply(
+                    appl)) : Optional.empty(), Terms::empty, Terms::empty, Terms::empty, Terms::empty));
         }
 
 
@@ -91,7 +91,7 @@ public class Terms {
 
         public static <T, R> IMatcher<R> appl0(String op, Function1<? super IApplTerm,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(appl -> {
+                return term.match(Terms.<Optional<R>> cases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
                         return Optional.empty();
                     }
@@ -108,7 +108,7 @@ public class Terms {
         public static <T, R> IMatcher<R> appl1(String op, IMatcher<? extends T> m,
                 Function2<? super IApplTerm,? super T,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(appl -> {
+                return term.match(Terms.<Optional<R>> cases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 1)) {
                         return Optional.empty();
                     }
@@ -131,7 +131,7 @@ public class Terms {
         public static <T1, T2, R> IMatcher<R> appl2(String op, IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
                 Function3<? super IApplTerm,? super T1,? super T2,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(appl -> {
+                return term.match(Terms.<Optional<R>> cases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 2)) {
                         return Optional.empty();
                     }
@@ -160,7 +160,7 @@ public class Terms {
                 IMatcher<? extends T3> m3,
                 Function4<? super IApplTerm,? super T1,? super T2,? super T3,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(appl -> {
+                return term.match(Terms.<Optional<R>> cases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 3)) {
                         return Optional.empty();
                     }
@@ -194,7 +194,7 @@ public class Terms {
                 IMatcher<? extends T2> m2, IMatcher<? extends T3> m3, IMatcher<? extends T4> m4,
                 Function5<? super IApplTerm,? super T1,? super T2,? super T3,? super T4,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(appl -> {
+                return term.match(Terms.<Optional<R>> cases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 4)) {
                         return Optional.empty();
                     }
@@ -230,10 +230,11 @@ public class Terms {
         }
 
         public static <T1, T2, T3, T4, T5, R> IMatcher<R> appl5(String op, IMatcher<? extends T1> m1,
-                IMatcher<? extends T2> m2, IMatcher<? extends T3> m3, IMatcher<? extends T4> m4, IMatcher<? extends T5> m5,
+                IMatcher<? extends T2> m2, IMatcher<? extends T3> m3, IMatcher<? extends T4> m4,
+                IMatcher<? extends T5> m5,
                 Function6<? super IApplTerm,? super T1,? super T2,? super T3,? super T4,? super T5,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(appl -> {
+                return term.match(Terms.<Optional<R>> cases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 5)) {
                         return Optional.empty();
                     }
@@ -270,13 +271,12 @@ public class Terms {
         // list
 
         public static IMatcher<IListTerm> list() {
-            return term -> term.match(Terms.cases(Terms::empty, Optional::of, Terms::empty, Terms::empty,
-                    Terms::empty));
+            return list((l) -> l);
         }
 
         public static <R> IMatcher<R> list(Function1<? super IListTerm,R> f) {
-            return term -> term.match(Terms.cases(Terms::empty, list -> Optional.of(f.apply(list)), Terms::empty,
-                    Terms::empty, Terms::empty));
+            return term -> term.match(Terms.<Optional<R>> cases(Terms::empty, list -> Optional.of(f.apply(list)),
+                    Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static <T> IMatcher<Iterable<? extends T>> listElems(IMatcher<? extends T> m) {
@@ -286,7 +286,7 @@ public class Terms {
         public static <T, R> IMatcher<R> listElems(IMatcher<? extends T> m,
                 Function2<? super IListTerm,Iterable<T>,? extends R> f) {
             return term -> {
-                return term.match(Terms.cases(Terms::empty, list -> {
+                return term.match(Terms.<Optional<R>> cases(Terms::empty, list -> {
                     List<T> ts = Lists.newArrayList();
                     for (ITerm t : list) {
                         Optional<? extends T> o = m.match(t);
@@ -304,56 +304,41 @@ public class Terms {
         // string
 
         public static IMatcher<IStringTerm> string() {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Optional::of, Terms::empty,
-                    Terms::empty));
+            return string(s -> s);
         }
 
         public static <R> IMatcher<R> string(Function1<? super IStringTerm,R> f) {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, string -> Optional.of(f.apply(string)),
-                    Terms::empty, Terms::empty));
+            return term -> term.match(Terms.<Optional<R>> cases(Terms::empty, Terms::empty, string -> Optional.of(f
+                    .apply(string)), Terms::empty, Terms::empty));
         }
 
         public static IMatcher<String> stringValue() {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, string -> Optional.of(string.getValue()),
-                    Terms::empty, Terms::empty));
-        }
-
-        public static IMatcher<IStringTerm> stringValue(String value) {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, string -> string.getValue().equals(value)
-                    ? Optional.of(string) : Optional.empty(), Terms::empty, Terms::empty));
+            return string(s -> s.getValue());
         }
 
         // integer
 
         public static IMatcher<IIntTerm> integer() {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Terms::empty, Optional::of,
-                    Terms::empty));
+            return integer(i -> i);
         }
 
         public static <R> IMatcher<R> integer(Function1<? super IIntTerm,R> f) {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Terms::empty, integer -> Optional.of(f
-                    .apply(integer)), Terms::empty));
+            return term -> term.match(Terms.<Optional<R>> cases(Terms::empty, Terms::empty, Terms::empty,
+                    integer -> Optional.of(f.apply(integer)), Terms::empty));
         }
 
         public static IMatcher<Integer> integerValue() {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Terms::empty, integer -> Optional.of(
-                    integer.getValue()), Terms::empty));
-        }
-
-        public static IMatcher<Integer> integerValue(int value) {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Terms::empty, integer -> (integer
-                    .getValue() == value) ? Optional.of(value) : Optional.empty(), Terms::empty));
+            return integer(i -> i.getValue());
         }
 
         // var
 
         public static IMatcher<ITermVar> var() {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
-                    Optional::of));
+            return var(v -> v);
         }
 
         public static <R> IMatcher<R> var(Function1<? super ITermVar,R> f) {
-            return term -> term.match(Terms.cases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
+            return term -> term.match(Terms.<Optional<R>> cases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
                     var -> Optional.of(f.apply(var))));
         }
 
@@ -434,14 +419,14 @@ public class Terms {
 
         public static <R, E extends Throwable> ICheckedMatcher<R,E> appl(
                 CheckedFunction1<? super IApplTerm,? extends R,? extends E> f) {
-            return term -> term.matchOrThrow(Terms.checkedCases(appl -> Optional.of(f.apply(appl)), Terms::empty,
+            return term -> term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(appl -> Optional.of(f.apply(appl)), Terms::empty,
                     Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static <T, R, E extends Throwable> ICheckedMatcher<R,E> appl0(String op,
                 CheckedFunction1<? super IApplTerm,? extends R,? extends E> f) {
             return term -> {
-                return term.matchOrThrow(Terms.checkedCases(appl -> {
+                return term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
                         return Optional.empty();
                     }
@@ -454,7 +439,7 @@ public class Terms {
                 ICheckedMatcher<? extends T,? extends E> m,
                 CheckedFunction2<? super IApplTerm,? super T,? extends R,? extends E> f) {
             return term -> {
-                return term.matchOrThrow(Terms.checkedCases(appl -> {
+                return term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 1)) {
                         return Optional.empty();
                     }
@@ -472,7 +457,7 @@ public class Terms {
                 ICheckedMatcher<? extends T1,? extends E> m1, ICheckedMatcher<? extends T2,? extends E> m2,
                 CheckedFunction3<? super IApplTerm,? super T1,? super T2,? extends R,? extends E> f) {
             return term -> {
-                return term.matchOrThrow(Terms.checkedCases(appl -> {
+                return term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 2)) {
                         return Optional.empty();
                     }
@@ -496,7 +481,7 @@ public class Terms {
                 ICheckedMatcher<? extends T3,? extends E> m3,
                 CheckedFunction4<? super IApplTerm,? super T1,? super T2,? super T3,? extends R,? extends E> f) {
             return term -> {
-                return term.matchOrThrow(Terms.checkedCases(appl -> {
+                return term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(appl -> {
                     if (!(op.equals(appl.getOp()) && appl.getArity() == 3)) {
                         return Optional.empty();
                     }
@@ -524,7 +509,7 @@ public class Terms {
 
         public static <R, E extends Throwable> ICheckedMatcher<R,E> list(
                 CheckedFunction1<? super IListTerm,? extends R,? extends E> f) {
-            return term -> term.matchOrThrow(Terms.checkedCases(Terms::empty, list -> Optional.of(f.apply(list)),
+            return term -> term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(Terms::empty, list -> Optional.of(f.apply(list)),
                     Terms::empty, Terms::empty, Terms::empty));
         }
 
@@ -532,7 +517,7 @@ public class Terms {
                 ICheckedMatcher<? extends T,? extends E> m,
                 CheckedFunction2<? super IListTerm,Iterable<T>,? extends R,? extends E> f) {
             return term -> {
-                return term.matchOrThrow(Terms.checkedCases(Terms::empty, list -> {
+                return term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(Terms::empty, list -> {
                     List<T> ts = Lists.newArrayList();
                     for (ITerm t : list) {
                         Optional<? extends T> o = m.matchOrThrow(t);
@@ -550,7 +535,7 @@ public class Terms {
 
         public static <R, E extends Throwable> ICheckedMatcher<R,E> integer(
                 CheckedFunction1<IIntTerm,? extends R,? extends E> f) {
-            return term -> term.matchOrThrow(Terms.checkedCases(Terms::empty, Terms::empty, Terms::empty,
+            return term -> term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(Terms::empty, Terms::empty, Terms::empty,
                     string -> Optional.of(f.apply(string)), Terms::empty));
         }
 
@@ -558,7 +543,7 @@ public class Terms {
 
         public static <R, E extends Throwable> ICheckedMatcher<R,E> string(
                 CheckedFunction1<IStringTerm,? extends R,? extends E> f) {
-            return term -> term.matchOrThrow(Terms.checkedCases(Terms::empty, Terms::empty, string -> Optional.of(f
+            return term -> term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(Terms::empty, Terms::empty, string -> Optional.of(f
                     .apply(string)), Terms::empty, Terms::empty));
         }
 
@@ -566,7 +551,7 @@ public class Terms {
 
         public static <R, E extends Throwable> ICheckedMatcher<R,E> var(
                 CheckedFunction1<? super ITermVar,R,? extends E> f) {
-            return term -> term.matchOrThrow(Terms.checkedCases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
+            return term -> term.matchOrThrow(Terms.<Optional<R>,E>checkedCases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
                     var -> Optional.of(f.apply(var))));
         }
 
