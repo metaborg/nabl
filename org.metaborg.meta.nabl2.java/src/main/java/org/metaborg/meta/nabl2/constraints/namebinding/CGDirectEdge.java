@@ -7,14 +7,16 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class Resolve implements INamebindingConstraint {
+public abstract class CGDirectEdge implements INamebindingConstraint {
 
-    @Value.Parameter public abstract ITerm getReference();
+    @Value.Parameter public abstract ITerm getSourceScope();
 
-    @Value.Parameter public abstract ITerm getDeclaration();
+    @Value.Parameter public abstract ITerm getLabel();
+
+    @Value.Parameter public abstract ITerm getTargetScope();
 
     @Override public <T> T match(Cases<T> cases) {
-        return cases.caseResolve(this);
+        return cases.caseDirectEdge(this);
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
@@ -22,7 +24,7 @@ public abstract class Resolve implements INamebindingConstraint {
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
-        return cases.caseResolve(this);
+        return cases.caseDirectEdge(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
@@ -30,7 +32,13 @@ public abstract class Resolve implements INamebindingConstraint {
     }
 
     @Override public String toString() {
-        return getReference() + " |-> " + getDeclaration();
+        StringBuilder sb = new StringBuilder();
+        sb.append(getSourceScope());
+        sb.append("-");
+        sb.append(getLabel());
+        sb.append("->");
+        sb.append(getTargetScope());
+        return sb.toString();
     }
 
 }

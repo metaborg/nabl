@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class False implements IBaseConstraint {
+public abstract class CFalse implements IBaseConstraint {
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseFalse(this);

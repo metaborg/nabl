@@ -7,16 +7,14 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class PropertyOf implements INamebindingConstraint {
+public abstract class CGRef implements INamebindingConstraint {
 
-    @Value.Parameter public abstract ITerm getDeclaration();
+    @Value.Parameter public abstract ITerm getReference();
 
-    @Value.Parameter public abstract ITerm getKey();
-
-    @Value.Parameter public abstract ITerm getValue();
+    @Value.Parameter public abstract ITerm getScope();
 
     @Override public <T> T match(Cases<T> cases) {
-        return cases.caseProperty(this);
+        return cases.caseRef(this);
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
@@ -24,7 +22,7 @@ public abstract class PropertyOf implements INamebindingConstraint {
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
-        return cases.caseProperty(this);
+        return cases.caseRef(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
@@ -32,13 +30,7 @@ public abstract class PropertyOf implements INamebindingConstraint {
     }
 
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getDeclaration());
-        sb.append(".");
-        sb.append(getKey());
-        sb.append(" := ");
-        sb.append(getValue());
-        return sb.toString();
+        return getReference() + " -> " + getScope();
     }
 
 }

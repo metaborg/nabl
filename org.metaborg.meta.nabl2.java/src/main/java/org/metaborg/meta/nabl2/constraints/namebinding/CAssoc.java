@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.constraints.equality;
+package org.metaborg.meta.nabl2.constraints.namebinding;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -7,30 +7,32 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class Equal implements IEqualityConstraint {
+public abstract class CAssoc implements INamebindingConstraint {
 
-    @Value.Parameter public abstract ITerm getLeft();
+    @Value.Parameter public abstract ITerm getDeclaration();
 
-    @Value.Parameter public abstract ITerm getRight();
+    @Value.Parameter public abstract ITerm getLabel();
+
+    @Value.Parameter public abstract ITerm getScope();
 
     @Override public <T> T match(Cases<T> cases) {
-        return cases.caseEqual(this);
+        return cases.caseAssoc(this);
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
-        return cases.caseEquality(this);
+        return cases.caseNamebinding(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
-        return cases.caseEqual(this);
+        return cases.caseAssoc(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
-        return cases.caseEquality(this);
+        return cases.caseNamebinding(this);
     }
 
     @Override public String toString() {
-        return getLeft() + " == " + getRight();
+        return getDeclaration() + " ?=" + getLabel() + "=> " + getScope();
     }
 
 }

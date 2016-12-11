@@ -34,7 +34,7 @@ public class Solver {
         this.notes = HashMultimap.create();
     }
 
-    private void add(Iterable<IConstraint> constraints) throws UnsatisfiableException {
+    private void add(Iterable<IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             try {
                 constraint.matchOrThrow(CheckedCases.of(baseSolver::add, equalitySolver::add, namebindingSolver::add));
@@ -44,7 +44,7 @@ public class Solver {
         }
     }
 
-    private void iterate() throws UnsatisfiableException {
+    private void iterate() {
         boolean progress;
         do {
             progress = false;
@@ -59,7 +59,7 @@ public class Solver {
         } while (progress);
     }
 
-    private void finish() throws UnsatisfiableException {
+    private void finish() {
         baseSolver.finish();
         try {
             equalitySolver.finish();
@@ -86,15 +86,9 @@ public class Solver {
         long t0 = System.nanoTime();
         logger.info(">>> Solving constraints <<<");
         Solver solver = new Solver(resolutionParams);
-        try {
-            solver.add(constraints);
-            solver.iterate();
-            solver.finish();
-        } catch (UnsatisfiableException e) {
-            for (IConstraint c : e.getUnsatCore()) {
-                c.getOriginatingTerm().ifPresent(t -> solver.errors.put(t, e.getMessage()));
-            }
-        }
+        solver.add(constraints);
+        solver.iterate();
+        solver.finish();
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved constraints ({} s) <<<", (Duration.ofNanos(dt).toMillis() / 1000.0));
         return ImmutableSolution.of(solver.namebindingSolver.getScopeGraph(), solver.namebindingSolver

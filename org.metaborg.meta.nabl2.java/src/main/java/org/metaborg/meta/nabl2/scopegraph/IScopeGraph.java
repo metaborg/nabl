@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
+import org.metaborg.meta.nabl2.functions.PartialFunction0;
+
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
     Iterable<S> getAllScopes();
@@ -12,10 +14,10 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     Iterable<O> getRefs(S scope);
 
-    Iterable<S> getDirectEdges(S scope, L label);
+    Iterable<PartialFunction0<S>> getDirectEdges(S scope, L label);
 
     Iterable<S> getAssocs(O decl, L label);
 
-    Iterable<O> getImports(S scope, L label);
+    Iterable<PartialFunction0<O>> getImports(S scope, L label);
 
 }

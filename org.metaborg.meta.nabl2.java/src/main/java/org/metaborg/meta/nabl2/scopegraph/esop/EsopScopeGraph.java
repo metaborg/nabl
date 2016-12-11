@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.meta.nabl2.functions.PartialFunction0;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
@@ -20,9 +21,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
 
     private final Set<S> scopes;
     private final Multimap<S,O> decls;
-    private final Map<S,Multimap<L,S>> directEdges;
+    private final Map<S,Multimap<L,PartialFunction0<S>>> directEdges;
     private final Map<O,Multimap<L,S>> assocs;
-    private final Map<S,Multimap<L,O>> imports;
+    private final Map<S,Multimap<L,PartialFunction0<O>>> imports;
     private final Multimap<S,O> refs;
 
     private final Set<O> declsIndex;
@@ -75,11 +76,11 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         refsIndex.add(ref);
     }
 
-    public void addDirectEdge(S sourceScope, L label, S targetScope) {
+    public void addDirectEdge(S sourceScope, L label, PartialFunction0<S> targetScope) {
         directEdges.computeIfAbsent(sourceScope, s -> HashMultimap.create()).put(label, targetScope);
     }
 
-    @Override public Iterable<S> getDirectEdges(S scope, L label) {
+    @Override public Iterable<PartialFunction0<S>> getDirectEdges(S scope, L label) {
         return directEdges.containsKey(scope) ? directEdges.get(scope).get(label) : Iterables2.empty();
     }
 
@@ -91,11 +92,11 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return assocs.containsKey(decl) ? assocs.get(decl).get(label) : Iterables2.empty();
     }
 
-    public void addImport(S scope, L label, O ref) {
+    public void addImport(S scope, L label, PartialFunction0<O> ref) {
         imports.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, ref);
     }
 
-    @Override public Iterable<O> getImports(S scope, L label) {
+    @Override public Iterable<PartialFunction0<O>> getImports(S scope, L label) {
         return imports.containsKey(scope) ? imports.get(scope).get(label) : Iterables2.empty();
     }
 

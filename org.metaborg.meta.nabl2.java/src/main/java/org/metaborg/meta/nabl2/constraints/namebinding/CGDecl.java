@@ -7,16 +7,14 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Structural
-public abstract class DirectEdge implements INamebindingConstraint {
+public abstract class CGDecl implements INamebindingConstraint {
 
-    @Value.Parameter public abstract ITerm getSourceScope();
+    @Value.Parameter public abstract ITerm getScope();
 
-    @Value.Parameter public abstract ITerm getLabel();
-
-    @Value.Parameter public abstract ITerm getTargetScope();
+    @Value.Parameter public abstract ITerm getDeclaration();
 
     @Override public <T> T match(Cases<T> cases) {
-        return cases.caseDirectEdge(this);
+        return cases.caseDecl(this);
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
@@ -24,7 +22,7 @@ public abstract class DirectEdge implements INamebindingConstraint {
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
-        return cases.caseDirectEdge(this);
+        return cases.caseDecl(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
@@ -32,13 +30,7 @@ public abstract class DirectEdge implements INamebindingConstraint {
     }
 
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getSourceScope());
-        sb.append("-");
-        sb.append(getLabel());
-        sb.append("->");
-        sb.append(getTargetScope());
-        return sb.toString();
+        return getScope() + " -> " + getDeclaration();
     }
 
 }

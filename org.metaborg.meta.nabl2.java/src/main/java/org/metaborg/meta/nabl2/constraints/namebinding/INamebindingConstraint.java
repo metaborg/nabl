@@ -10,58 +10,65 @@ public interface INamebindingConstraint extends IConstraint {
 
     interface Cases<T> {
 
-        T caseDecl(Decl decl);
+        T caseDecl(CGDecl decl);
 
-        T caseRef(Ref ref);
+        T caseRef(CGRef ref);
 
-        T caseDirectEdge(DirectEdge directEdge);
+        T caseDirectEdge(CGDirectEdge directEdge);
 
-        T caseAssoc(Assoc exportEdge);
+        T caseAssoc(CGAssoc assoc);
 
-        T caseImport(Import importEdge);
+        T caseImport(CGImport importEdge);
 
-        T caseResolve(Resolve resolve);
+        T caseResolve(CResolve resolve);
 
-        T caseProperty(PropertyOf property);
+        T caseAssoc(CAssoc assoc);
+
+        T caseProperty(CPropertyOf property);
 
         static <T> Cases<T> of(
             // @formatter:off
-            Function1<Decl,T> onDecl,
-            Function1<Ref,T> onRef,
-            Function1<DirectEdge,T> onDirectEdge,
-            Function1<Assoc,T> onExportEdge,
-            Function1<Import,T> onImportEdge,
-            Function1<Resolve,T> onResolve,
-            Function1<PropertyOf,T> onProperty
+            Function1<CGDecl,T> onDecl,
+            Function1<CGRef,T> onRef,
+            Function1<CGDirectEdge,T> onDirectEdge,
+            Function1<CGAssoc,T> onExportEdge,
+            Function1<CGImport,T> onImportEdge,
+            Function1<CResolve,T> onResolve,
+            Function1<CAssoc,T> onAssoc,
+            Function1<CPropertyOf,T> onProperty
             // @formatter:on
         ) {
             return new Cases<T>() {
 
-                @Override public T caseDecl(Decl constraint) {
+                @Override public T caseDecl(CGDecl constraint) {
                     return onDecl.apply(constraint);
                 }
 
-                @Override public T caseRef(Ref ref) {
+                @Override public T caseRef(CGRef ref) {
                     return onRef.apply(ref);
                 }
 
-                @Override public T caseDirectEdge(DirectEdge directEdge) {
+                @Override public T caseDirectEdge(CGDirectEdge directEdge) {
                     return onDirectEdge.apply(directEdge);
                 }
 
-                @Override public T caseAssoc(Assoc exportEdge) {
+                @Override public T caseAssoc(CGAssoc exportEdge) {
                     return onExportEdge.apply(exportEdge);
                 }
 
-                @Override public T caseImport(Import importEdge) {
+                @Override public T caseImport(CGImport importEdge) {
                     return onImportEdge.apply(importEdge);
                 }
 
-                @Override public T caseResolve(Resolve constraint) {
+                @Override public T caseResolve(CResolve constraint) {
                     return onResolve.apply(constraint);
                 }
 
-                @Override public T caseProperty(PropertyOf property) {
+                @Override public T caseAssoc(CAssoc assoc) {
+                    return onAssoc.apply(assoc);
+                }
+
+                @Override public T caseProperty(CPropertyOf property) {
                     return onProperty.apply(property);
                 }
 
@@ -74,58 +81,65 @@ public interface INamebindingConstraint extends IConstraint {
 
     interface CheckedCases<T, E extends Throwable> {
 
-        T caseDecl(Decl decl) throws E;
+        T caseDecl(CGDecl decl) throws E;
 
-        T caseRef(Ref ref) throws E;
+        T caseRef(CGRef ref) throws E;
 
-        T caseDirectEdge(DirectEdge directEdge) throws E;
+        T caseDirectEdge(CGDirectEdge directEdge) throws E;
 
-        T caseAssoc(Assoc exportEdge) throws E;
+        T caseAssoc(CGAssoc assoc) throws E;
 
-        T caseImport(Import importEdge) throws E;
+        T caseImport(CGImport importEdge) throws E;
 
-        T caseResolve(Resolve resolve) throws E;
+        T caseResolve(CResolve resolve) throws E;
 
-        T caseProperty(PropertyOf property) throws E;
+        T caseAssoc(CAssoc assoc) throws E;
+
+        T caseProperty(CPropertyOf property) throws E;
 
         static <T, E extends Throwable> CheckedCases<T,E> of(
             // @formatter:off
-            CheckedFunction1<Decl,T,E> onDecl,
-            CheckedFunction1<Ref,T,E> onRef,
-            CheckedFunction1<DirectEdge,T,E> onDirectEdge,
-            CheckedFunction1<Assoc,T,E> onExportEdge,
-            CheckedFunction1<Import,T,E> onImportEdge,
-            CheckedFunction1<Resolve,T,E> onResolve,
-            CheckedFunction1<PropertyOf,T,E> onProperty
+            CheckedFunction1<CGDecl,T,E> onDecl,
+            CheckedFunction1<CGRef,T,E> onRef,
+            CheckedFunction1<CGDirectEdge,T,E> onDirectEdge,
+            CheckedFunction1<CGAssoc,T,E> onExportEdge,
+            CheckedFunction1<CGImport,T,E> onImportEdge,
+            CheckedFunction1<CResolve,T,E> onResolve,
+            CheckedFunction1<CAssoc,T,E> onAssoc,
+            CheckedFunction1<CPropertyOf,T,E> onProperty
             // @formatter:on
         ) {
             return new CheckedCases<T,E>() {
 
-                @Override public T caseDecl(Decl constraint) throws E {
+                @Override public T caseDecl(CGDecl constraint) throws E {
                     return onDecl.apply(constraint);
                 }
 
-                @Override public T caseRef(Ref constraint) throws E {
+                @Override public T caseRef(CGRef constraint) throws E {
                     return onRef.apply(constraint);
                 }
 
-                @Override public T caseDirectEdge(DirectEdge directEdge) throws E {
+                @Override public T caseDirectEdge(CGDirectEdge directEdge) throws E {
                     return onDirectEdge.apply(directEdge);
                 }
 
-                @Override public T caseAssoc(Assoc exportEdge) throws E {
+                @Override public T caseAssoc(CGAssoc exportEdge) throws E {
                     return onExportEdge.apply(exportEdge);
                 }
 
-                @Override public T caseImport(Import importEdge) throws E {
+                @Override public T caseImport(CGImport importEdge) throws E {
                     return onImportEdge.apply(importEdge);
                 }
 
-                @Override public T caseResolve(Resolve constraint) throws E {
+                @Override public T caseResolve(CResolve constraint) throws E {
                     return onResolve.apply(constraint);
                 }
 
-                @Override public T caseProperty(PropertyOf property) throws E {
+                @Override public T caseAssoc(CAssoc assoc) throws E {
+                    return onAssoc.apply(assoc);
+                }
+
+                @Override public T caseProperty(CPropertyOf property) throws E {
                     return onProperty.apply(property);
                 }
 

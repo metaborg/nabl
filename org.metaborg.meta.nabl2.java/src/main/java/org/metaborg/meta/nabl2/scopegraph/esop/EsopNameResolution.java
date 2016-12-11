@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.functions.Function4;
+import org.metaborg.meta.nabl2.functions.PartialFunction0;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
@@ -74,7 +75,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if (seenScopes.contains(scope) || re.isEmpty()) {
             return EsopEnv.empty(true);
         }
-        //return env_L(labels, seenImports, seenScopes, re, scope);
+        // return env_L(labels, seenImports, seenScopes, re, scope);
         return stagedEnv_L.apply(seenImports, seenScopes, re, scope);
     }
 
@@ -99,12 +100,25 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     private Optional<Iterable<S>> directScopes(L l, S scope) {
-        return Optional.of(scopeGraph.getDirectEdges(scope, l));
+        List<S> scopes = Lists.newArrayList();
+        for (PartialFunction0<S> getScope : scopeGraph.getDirectEdges(scope, l)) {
+            Optional<S> maybeScope = getScope.apply();
+            if (!maybeScope.isPresent()) {
+                return Optional.empty();
+            }
+            scopes.add(maybeScope.get());
+        }
+        return Optional.of(scopes);
     }
 
     private Optional<Iterable<S>> importScopes(PSet<O> seenImports, L l, S scope) {
         List<S> scopes = Lists.newArrayList();
-        for (O ref : scopeGraph.getImports(scope, l)) {
+        for (PartialFunction0<O> getRef : scopeGraph.getImports(scope, l)) {
+            Optional<O> maybeRef = getRef.apply();
+            if (!maybeRef.isPresent()) {
+                return Optional.empty();
+            }
+            O ref = maybeRef.get();
             if (seenImports.contains(ref)) {
                 continue;
             }
