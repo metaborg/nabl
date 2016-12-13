@@ -4,7 +4,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 public interface FinalResult {
 
 }

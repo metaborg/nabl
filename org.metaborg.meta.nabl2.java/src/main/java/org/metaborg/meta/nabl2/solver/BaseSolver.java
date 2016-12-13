@@ -8,8 +8,6 @@ import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint.CheckedCases;
 
 public class BaseSolver implements ISolverComponent<IBaseConstraint> {
 
-    private static final long serialVersionUID = 1L;
-
     @Override public Unit add(IBaseConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(t -> {
             return unit;

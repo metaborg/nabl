@@ -3,37 +3,36 @@ package org.metaborg.meta.nabl2.solver;
 import java.util.Map;
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.collect.Maps;
 
-public class Properties implements IProperties<Occurrence> {
+public class Properties<T> implements IProperties<T> {
 
-    private final Map<Occurrence,Map<ITerm,ITerm>> data;
+    private final Map<T,Map<ITerm,ITerm>> data;
 
     public Properties() {
         this.data = Maps.newHashMap();
     }
 
-    @Override public Iterable<Occurrence> getAllDecls() {
+    @Override public Iterable<T> getIndices() {
         return data.keySet();
     }
 
-    @Override public Iterable<ITerm> getDefinedKeys(Occurrence occurrence) {
-        return occurrenceData(occurrence).keySet();
+    @Override public Iterable<ITerm> getDefinedKeys(T index) {
+        return indexData(index).keySet();
     }
 
-    @Override public Optional<ITerm> getValue(Occurrence occurrence, ITerm key) {
-        return Optional.ofNullable(occurrenceData(occurrence).get(key));
+    @Override public Optional<ITerm> getValue(T index, ITerm key) {
+        return Optional.ofNullable(indexData(index).get(key));
     }
 
-    public Optional<ITerm> putValue(Occurrence occurrence, ITerm key, ITerm value) {
-        return Optional.ofNullable(occurrenceData(occurrence).put(key, value));
+    public Optional<ITerm> putValue(T index, ITerm key, ITerm value) {
+        return Optional.ofNullable(indexData(index).put(key, value));
     }
 
-    private Map<ITerm,ITerm> occurrenceData(Occurrence occurrence) {
-        return data.computeIfAbsent(occurrence, o -> Maps.newHashMap());
+    private Map<ITerm,ITerm> indexData(T index) {
+        return data.computeIfAbsent(index, o -> Maps.newHashMap());
     }
 
 }

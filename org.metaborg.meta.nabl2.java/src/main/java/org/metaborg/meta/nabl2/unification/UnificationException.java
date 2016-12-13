@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.solver;
+package org.metaborg.meta.nabl2.unification;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
 

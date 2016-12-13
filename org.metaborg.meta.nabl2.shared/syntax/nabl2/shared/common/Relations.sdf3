@@ -1,0 +1,21 @@
+module nabl2/shared/common/Relations
+
+imports
+
+  nabl2/shared/common/Identifiers
+
+context-free syntax
+
+  Reflexivity.Reflexive       = "reflexive"
+  Reflexivity.Irreflexive     = "irreflexive"
+  
+  Symmetry.Symmetric          = "symmetric" 
+  Symmetry.AntiSymmetric      = "anti-symmetric" 
+  
+  Transitivity.Transitive     = "transitive"
+  Transitivity.AntiTransitive = "anti-transitive"
+
+  Relation.Relation           = RelationId
+
+  RelationRef.DefaultRelation =
+  RelationRef                 = Relation

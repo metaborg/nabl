@@ -4,6 +4,7 @@ imports
 
   nabl2/shared/common/AST
   nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
 
 context-free syntax
 

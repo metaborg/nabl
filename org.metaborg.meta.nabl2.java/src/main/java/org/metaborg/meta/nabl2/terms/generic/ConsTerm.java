@@ -11,7 +11,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 abstract class ConsTerm implements IConsTerm {
 
     @Value.Parameter @Override public abstract ITerm getHead();

@@ -29,6 +29,9 @@ lexical syntax
   PropertyId     = [a-z] [a-zA-Z0-9]*
   PropertyId     = Keyword {reject}
 
+  RelationId     = [a-z] [a-zA-Z0-9]*
+  RelationId     = Keyword {reject}
+
   LabelId        = [A-Z]+
   LabelId        = "D" | "I" | "P" {reject}
   LabelId        = Keyword {reject}

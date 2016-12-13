@@ -447,17 +447,17 @@ rules // Normalize type patterns by making "as" patterns into equalities in the 
 			\)> (sterm, body)		
 
 	extract-type-pattern:
-		(TList(ts), body) ->
+		(CList(ts), body) ->
 			<extract-type-pattern-list;
-			mbind(\ (ts', body') -> (TList(ts'), body') \)> (ts, body)
+			mbind(\ (ts', body') -> (CList(ts'), body') \)> (ts, body)
 
 	extract-type-pattern:
-		(TListTail(theads,tl), body) ->
+		(CListTail(theads,tl), body) ->
 			<extract-type-pattern-list;
 			mbind(\ (theads', body0) ->
 			<extract-type-pattern;
 			mbind(\ (tl', body') ->
-			(TListTail(theads', tl'), body')
+			(CListTail(theads', tl'), body')
 			\)> (tl, body)
 			\)> (theads, body)
 
@@ -471,8 +471,8 @@ rules // Normalize type patterns by making "as" patterns into equalities in the 
 			not(?Var(_) <+
 				?Op(_, _) <+
 				?Type(_) <+
-				?TList(_) <+
-				?TListTail(_, _) <+
+				?CList(_) <+
+				?CListTail(_, _) <+
 				?As(_, _))
 	
 rules // Normalize term patterns by making "as" patterns into equalities in the body of a rule
@@ -683,11 +683,11 @@ rules // Term patterns
 			<list-pattern-to-coq(|tail)> heads
 	
 	term-pattern-to-coq:
-		TList(lst) ->
+		CList(lst) ->
 			<list-pattern-to-coq> lst
 			
 	term-pattern-to-coq:
-		TListTail(heads, tail) ->
+		CListTail(heads, tail) ->
 			<list-pattern-to-coq(|tail)> heads
 	
 	term-pattern-to-coq:
@@ -735,8 +735,8 @@ rules // Term patterns
 			not(?Op(_, _) <+
 				?List(_) <+
 				?ListTail(_, _) <+
-				?TList(_) <+
-				?TListTail(_, _) <+
+				?CList(_) <+
+				?CListTail(_, _) <+
 				?Declarations(_, _) <+
 				?Var(_) <+
 				?Tuple(_) <+
@@ -857,7 +857,7 @@ rules // CGen body
 			\)> occ1 
 			
 	cgen-clause-to-coq:
-		CTypeOf(occ, t, _, _) ->
+		CDeclType(occ, t, _, _) ->
 			<occurrence-to-coq;
 			mbind(\ occ' ->
 			<term-pattern-to-coq;
@@ -917,7 +917,7 @@ rules // CGen body
 	
 	// FIXME: Subtyping should be semantic
 	cgen-clause-to-coq:
-		CSubtype(x, y, msg) ->
+		CCheckRel(x, DefaultRelation(), y, msg) ->
 			<term-pattern-to-coq;
 			mbind(\ x' ->
 			<term-pattern-to-coq;
@@ -927,7 +927,7 @@ rules // CGen body
 			\)> x 
 	
 	cgen-clause-to-coq:
-		FSubtype(x, y, msg) ->
+		CBuildRel(x, DefaultRelation(), y, msg) ->
 			<term-pattern-to-coq;
 			mbind(\ x' ->
 			<term-pattern-to-coq;
@@ -995,7 +995,7 @@ rules // CGen body
 			not(?CTrue(_) <+
 				?CGRef(_, _, _) <+
 				?CResolve(_, _, _) <+
-				?CTypeOf(_, _, _, _) <+
+				?CDeclType(_, _, _, _) <+
 				?CGenRecurse(_, _, _, _) <+
 				?CGDirectEdge(_, _, _, _) <+
 				?NewScopes(_) <+
@@ -1003,8 +1003,8 @@ rules // CGen body
 				?CGAssoc(_, _, _, _) <+
 				?CAssoc(_, _, _, _) <+
 				?CEqual(_, _, _) <+
-				?CSubtype(_, _, _) <+
-				?FSubtype(_, _, _) <+
+				?CCheckRel(_, _, _, _) <+
+				?CBuildRel(_, _, _, _) <+
 				?CSubsetEq(_, _, _) <+
 				?CGoal(_) <+
 				?CFact(_))

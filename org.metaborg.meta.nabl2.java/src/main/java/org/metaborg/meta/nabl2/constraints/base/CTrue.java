@@ -5,7 +5,7 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 public abstract class CTrue implements IBaseConstraint {
 
     @Override public <T> T match(Cases<T> cases) {

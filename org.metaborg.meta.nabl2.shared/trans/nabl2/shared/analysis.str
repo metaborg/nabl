@@ -15,6 +15,6 @@ signature
     AnalyzeFinal   : String/* source */ -> AnalysisAction
 
   constructors
-    InitialResult : List(Constraint) * Term/* parameters */  * (Term,Term,Term) /* labels/order/wf */ -> InitialResult
+    InitialResult : List(Constraint) * Term/* parameters */  * (Term,Term,Term) /* labels/order/wf */ * List((Term,List(Term))) /* relation defs */ -> InitialResult
     UnitResult    : Term/* processed ast */ * List(Constraint) -> UnitResult
     FinalResult   : FinalResult

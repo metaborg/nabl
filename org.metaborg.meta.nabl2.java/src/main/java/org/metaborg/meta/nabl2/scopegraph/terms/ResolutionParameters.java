@@ -8,11 +8,15 @@ import org.metaborg.meta.nabl2.regexp.IAlphabet;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpBuilder;
 import org.metaborg.meta.nabl2.regexp.RegExpBuilder;
+import org.metaborg.meta.nabl2.relations.IRelation;
+import org.metaborg.meta.nabl2.relations.IRelation.Reflexivity;
+import org.metaborg.meta.nabl2.relations.IRelation.Symmetry;
+import org.metaborg.meta.nabl2.relations.IRelation.Transitivity;
+import org.metaborg.meta.nabl2.relations.Relation;
+import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.transitiveclosure.SymmetryException;
-import org.metaborg.meta.nabl2.transitiveclosure.TransitiveClosure;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.base.Preconditions;
@@ -20,8 +24,7 @@ import com.google.common.base.Preconditions;
 @Value.Immutable
 public abstract class ResolutionParameters implements IResolutionParameters<Label> {
 
-    @Value.Check
-    protected void check() {
+    @Value.Check protected void check() {
         Preconditions.checkArgument(getLabels().contains(ImmutableLabel.of("D")));
     }
 
@@ -29,7 +32,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
 
     @Value.Parameter @Override public abstract IRegExp<Label> getPathWf();
 
-    @Value.Parameter @Override public abstract TransitiveClosure<Label> getSpecificityOrder();
+    @Value.Parameter @Override public abstract IRelation<Label> getSpecificityOrder();
 
     public static IMatcher<ResolutionParameters> matcher() {
         return term -> M.appl3("", matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
@@ -45,14 +48,15 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         });
     }
 
-    private static IMatcher<TransitiveClosure<Label>> matchOrder() {
+    private static IMatcher<IRelation<Label>> matchOrder() {
         IMatcher<Label> m_label = Label.matcher();
         return M.listElems(M.appl2("", m_label, m_label, (t, l1, l2) -> ImmutableTuple2.of(l1, l2)), (t, ps) -> {
-            TransitiveClosure<Label> order = new TransitiveClosure<>();
+            Relation<Label> order = new Relation<>(Reflexivity.IRREFLEXIVE, Symmetry.ANTI_SYMMETRIC,
+                    Transitivity.TRANSITIVE);
             for (Tuple2<Label,Label> p : ps) {
                 try {
-                    order = order.add(p._1(), p._2());
-                } catch (SymmetryException e) {
+                    order.add(p._1(), p._2());
+                } catch (RelationException e) {
                     throw new IllegalArgumentException(e);
                 }
             }
@@ -81,13 +85,15 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         IAlphabet<Label> labels = new FiniteAlphabet<>(Iterables2.from(D, P, I));
         RegExpBuilder<Label> R = new RegExpBuilder<>(labels);
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(P)), R.closure(R.symbol(I)));
-        TransitiveClosure<Label> order;
+        Relation<Label> order;
         try {
-            order = new TransitiveClosure<Label>().add(D, I).add(I, P);
-        } catch (SymmetryException e) {
+            order = new Relation<Label>(Reflexivity.IRREFLEXIVE, Symmetry.ANTI_SYMMETRIC, Transitivity.TRANSITIVE);
+            order.add(D, I);
+            order.add(I, P);
+        } catch (RelationException e) {
             throw new IllegalStateException(e);
         }
         return ImmutableResolutionParameters.of(labels, wf, order);
     }
-    
+
 }

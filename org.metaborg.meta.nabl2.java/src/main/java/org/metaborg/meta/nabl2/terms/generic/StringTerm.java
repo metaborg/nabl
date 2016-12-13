@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.IStringTerm;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 abstract class StringTerm implements IStringTerm {
 
     @Value.Parameter @Override public abstract String getValue();

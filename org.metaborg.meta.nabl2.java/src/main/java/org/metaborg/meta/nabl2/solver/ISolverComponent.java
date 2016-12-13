@@ -1,11 +1,9 @@
 package org.metaborg.meta.nabl2.solver;
 
-import java.io.Serializable;
-
 import org.metaborg.meta.nabl2.collections.Unit;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 
-public interface ISolverComponent<C extends IConstraint> extends Serializable {
+public interface ISolverComponent<C extends IConstraint> {
 
     /**
      * Add a constraint to the constraint set. Solving can be eagerly done,

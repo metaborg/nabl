@@ -147,60 +147,60 @@ rules // ###### Analysis results ######
    *
    * @type node:Term -> Analysis
    */
-  nabl2-get-ast-analysis = fail
+  nabl2-get-ast-analysis = ![]
 
   /**
    * Get analysis for the given resource
    *
    * @type filename:String -> Analysis
    */
-  nabl2-get-resource-analysis = fail
+  nabl2-get-resource-analysis = ![]
 
   /**
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params = fail
+  nabl2-get-ast-params = nabl2--get-ast-params
 
   /**
    * @param a : Analysis
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params(|a) = fail
+  nabl2-get-ast-params(|a) = nabl2-get-ast-params
 
   /**
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type = fail
+  nabl2-get-ast-type = nabl2--get-ast-type
 
   /**
    * @param a : Analysis
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type(|a) = fail
+  nabl2-get-ast-type(|a) = nabl2-get-ast-type
 
   /**
    * @type node:Term -> List(Occurrence)
    */
-  nabl2-get-ast-refs = nabl2--get-ast-refs; map(Snd)
+  nabl2-get-ast-refs = nabl2--get-ast-resolution; map(Snd)
 
   /**
    * @param a : Analysis
    * @type decl:Occurrence -> Type
    */
-  nabl2-get-type(|a) = fail
+  nabl2-get-type(|a) = nabl2--get-decl-type
 
   /**
    * @param a : Analysis
    * @param prop : String
    * @type decl:Occurrence -> Term
    */
-  nabl2-get-property(|a,prop) = fail
+  nabl2-get-property(|a,prop) = nabl2--get-decl-property(|Property(prop))
 
   /**
    * @param a : Analysis
    * @type ref:Occurrence -> (decl:Occurrence, Path)
    */
-  nabl2-get-resolved-name(|a) = fail
+  nabl2-get-resolved-name(|a) = nabl2--get-ref-resolution
 
 
 
@@ -315,7 +315,7 @@ rules // ###### Scope graphs ######
    *
    * @type node:Term -> Occurrence
    */
-  nabl2-mk-occurrence = fail
+  nabl2-mk-occurrence = nabl2--mk-occurrence
 
   /**
    * Make an occurrence in the specified namespace
@@ -323,7 +323,7 @@ rules // ###### Scope graphs ######
    * @param ns : String
    * @type node:Term -> Occurrence
    */
-  nabl2-mk-occurrence(|ns) = fail
+  nabl2-mk-occurrence(|ns) = nabl2--mk-occurrence(|ns)
 
   /**
    * Make an occurrence in the specified namespace, using an origin term
@@ -332,21 +332,21 @@ rules // ###### Scope graphs ######
    * @param t : Term
    * @type node:Term -> Occurrence
    */
-  nabl2-mk-occurrence(|ns,t) = fail
+  nabl2-mk-occurrence(|ns,t) = nabl2--mk-occurrence(|ns,t)
 
   /**
    * Get namespace of an occurrence
    *
    * @type Occurrence -> Namespace
    */
-  nabl2-get-occurrence-ns = fail
+  nabl2-get-occurrence-ns = nabl2--occurrence-ns
 
   /**
    * Get name of an occurrence
    *
    * @type Occurrence -> Term
    */
-  nabl2-get-occurrence-name = fail
+  nabl2-get-occurrence-name = nabl2--occurrence-name
 
   
 rules // ###### Editor Integration ######
@@ -363,5 +363,5 @@ rules // ###### Editor Integration ######
    *
    * @type (node, position, ast, path, project-path) -> label
    */
-  nabl2-editor-hover = fail
+  nabl2-editor-hover = nabl2--editor-hover
   

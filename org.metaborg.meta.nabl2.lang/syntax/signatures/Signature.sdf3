@@ -4,6 +4,7 @@ imports
 
   signatures/CGen
   signatures/NameResolution
+  signatures/Relations
   signatures/Types
 
 template options

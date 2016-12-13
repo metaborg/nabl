@@ -6,6 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -16,18 +17,24 @@ public class Solver {
 
     private static final ILogger logger = LoggerUtils.logger(Solver.class);
 
+    private final Unifier unifier;
+    private final AstSolver astSolver;
     private final BaseSolver baseSolver;
     private final EqualitySolver equalitySolver;
     private final NamebindingSolver namebindingSolver;
+    private final RelationSolver relationSolver;
 
     private final Multimap<ITerm,String> errors;
     private final Multimap<ITerm,String> warnings;
     private final Multimap<ITerm,String> notes;
 
-    private Solver(ResolutionParameters resolutionParams) {
+    private Solver(ResolutionParameters resolutionParams, Relations relations) {
+        this.unifier = new Unifier();
         this.baseSolver = new BaseSolver();
-        this.equalitySolver = new EqualitySolver();
-        this.namebindingSolver = new NamebindingSolver(resolutionParams, equalitySolver);
+        this.equalitySolver = new EqualitySolver(unifier);
+        this.astSolver = new AstSolver(unifier);
+        this.namebindingSolver = new NamebindingSolver(resolutionParams, unifier);
+        this.relationSolver = new RelationSolver(relations, unifier);
 
         this.errors = HashMultimap.create();
         this.warnings = HashMultimap.create();
@@ -37,7 +44,8 @@ public class Solver {
     private void add(Iterable<IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             try {
-                constraint.matchOrThrow(CheckedCases.of(baseSolver::add, equalitySolver::add, namebindingSolver::add));
+                constraint.matchOrThrow(CheckedCases.of(astSolver::add, baseSolver::add, equalitySolver::add,
+                        namebindingSolver::add, relationSolver::add));
             } catch (UnsatisfiableException e) {
                 addErrors(e);
             }
@@ -49,9 +57,11 @@ public class Solver {
         do {
             progress = false;
             progress |= baseSolver.iterate();
+            progress |= astSolver.iterate();
             try {
                 progress |= equalitySolver.iterate();
                 progress |= namebindingSolver.iterate();
+                progress |= relationSolver.iterate();
             } catch (UnsatisfiableException e) {
                 progress = true;
                 addErrors(e);
@@ -61,6 +71,7 @@ public class Solver {
 
     private void finish() {
         baseSolver.finish();
+        astSolver.finish();
         try {
             equalitySolver.finish();
         } catch (UnsatisfiableException e) {
@@ -68,6 +79,11 @@ public class Solver {
         }
         try {
             namebindingSolver.finish();
+        } catch (UnsatisfiableException e) {
+            addErrors(e);
+        }
+        try {
+            relationSolver.finish();
         } catch (UnsatisfiableException e) {
             addErrors(e);
         }
@@ -81,19 +97,27 @@ public class Solver {
         }
     }
 
-    public static Solution solve(ResolutionParameters resolutionParams, Iterable<IConstraint> constraints)
-            throws UnsatisfiableException {
+    public static Solution solve(ResolutionParameters resolutionParams, Relations relations,
+            Iterable<IConstraint> constraints) throws UnsatisfiableException {
         long t0 = System.nanoTime();
         logger.info(">>> Solving constraints <<<");
-        Solver solver = new Solver(resolutionParams);
+        Solver solver = new Solver(resolutionParams, relations);
         solver.add(constraints);
         solver.iterate();
         solver.finish();
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved constraints ({} s) <<<", (Duration.ofNanos(dt).toMillis() / 1000.0));
-        return ImmutableSolution.of(solver.namebindingSolver.getScopeGraph(), solver.namebindingSolver
-                .getNameResolution(), solver.namebindingSolver.getProperties(), solver.errors, solver.warnings,
-                solver.notes);
+        return ImmutableSolution.of(
+            // @formatter:off
+            solver.astSolver.getProperties(),
+            solver.namebindingSolver.getScopeGraph(),
+            solver.namebindingSolver.getNameResolution(),
+            solver.namebindingSolver.getProperties(),
+            solver.relationSolver.getRelations(),
+            solver.unifier,
+            solver.errors, solver.warnings, solver.notes
+            // @formatter:on
+        );
     }
 
 }

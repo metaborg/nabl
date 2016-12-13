@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 public abstract class CInequal implements IEqualityConstraint {
 
     @Value.Parameter public abstract ITerm getLeft();

@@ -1,0 +1,27 @@
+module signatures/Relations
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Relations
+  nabl2/shared/common/Sorts
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\']
+
+context-free syntax
+
+  Signature.Relations = <
+    relations
+      <{RelationDef "\n"}*>
+  > {longest-match}
+
+  RelationDef.RelationDef = <<Relation> <RelationOptions>>
+
+  RelationOptions = <(<{RelationOption ","}*>)>
+  RelationOptions =                                {ast("[]")}
+
+  RelationOption = Reflexivity
+  RelationOption = Symmetry
+  RelationOption = Transitivity

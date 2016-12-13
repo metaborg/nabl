@@ -1,6 +1,6 @@
-package org.metaborg.meta.nabl2.transitiveclosure;
+package org.metaborg.meta.nabl2.relations;
 
-public class SymmetryException extends Exception {
+public class SymmetryException extends RelationException {
 
     private static final long serialVersionUID = 1L;
 

@@ -7,7 +7,7 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 public interface Args {
 
     @Value.Parameter Iterable<ITerm> getParams();

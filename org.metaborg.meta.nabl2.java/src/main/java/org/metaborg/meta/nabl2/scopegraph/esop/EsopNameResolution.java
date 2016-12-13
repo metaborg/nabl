@@ -10,12 +10,12 @@ import org.metaborg.meta.nabl2.functions.PartialFunction0;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
+import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.transitiveclosure.TransitiveClosure;
 import org.metaborg.util.iterators.Iterables2;
 import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
@@ -31,7 +31,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final EsopScopeGraph<S,L,O> scopeGraph;
     private final Set<L> labels;
     private final IRegExp<L> wf;
-    private final TransitiveClosure<L> order;
+    private final IRelation<L> order;
     private final Function4<PSet<O>,PSet<S>,IRegExpMatcher<L>,S,EsopEnv<O>> stagedEnv_L;
 
     private final Map<O,Iterable<O>> resolveCache;
@@ -137,7 +137,8 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     // stage environment shadowing call tree
 
-    private EsopEnv<O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRegExpMatcher<L> re, S scope) {
+    @SuppressWarnings("unused") private EsopEnv<O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes,
+            IRegExpMatcher<L> re, S scope) {
         EsopEnv<O> env = EsopEnv.empty(true);
         for (L l : max(L)) {
             EsopEnv<O> partialEnv = env_L(smaller(L, l), seenImports, seenScopes, re, scope);

@@ -6,6 +6,8 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.generic.TermIndex;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 
 import com.google.common.collect.Multimap;
 
@@ -21,6 +23,12 @@ public interface ISolution {
 
     INameResolution<Scope,Label,Occurrence> getNameResolution();
 
-    IProperties<Occurrence> getProperties();
+    IProperties<Occurrence> getDeclProperties();
 
+    IProperties<TermIndex> getAstProperties();
+
+    IRelations getRelations();
+
+    IUnifier getUnifier();
+    
 }

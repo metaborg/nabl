@@ -2,7 +2,10 @@ module nabl2/runtime/pp
 
 imports
 
+  libstratego-gpp
+
   libspoofax/editor/completion/interface
+  libspoofax/sdf/pp
 
   nabl2/api
 
@@ -69,5 +72,4 @@ rules // CTerms
   nabl2--actual-CTerm = is-NaBL2-Occurrence
   nabl2--actual-CTerm = is-NaBL2-Scope
   nabl2--actual-CTerm = is-NaBL2-Names
-  nabl2--actual-CTerm = is-NaBL2-TypeVar
   nabl2--actual-CTerm = is-NaBL2-SetExpr

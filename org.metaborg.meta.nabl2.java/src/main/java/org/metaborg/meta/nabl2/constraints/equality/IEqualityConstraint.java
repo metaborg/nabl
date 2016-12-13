@@ -9,7 +9,7 @@ public interface IEqualityConstraint extends IConstraint {
 
     <T> T match(Cases<T> function);
 
-    interface Cases<T> extends Function<IEqualityConstraint,T> {
+    interface Cases<T> {
 
         T caseEqual(CEqual equal);
 
@@ -26,10 +26,6 @@ public interface IEqualityConstraint extends IConstraint {
                     return onInequal.apply(constraint);
                 }
 
-                @Override public T apply(IEqualityConstraint equality) {
-                    return equality.match(this);
-                }
-
             };
         }
 
@@ -37,7 +33,7 @@ public interface IEqualityConstraint extends IConstraint {
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
 
-    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IEqualityConstraint,T,E> {
+    interface CheckedCases<T, E extends Throwable> {
 
         T caseEqual(CEqual equal) throws E;
 
@@ -53,10 +49,6 @@ public interface IEqualityConstraint extends IConstraint {
 
                 @Override public T caseInequal(CInequal constraint) throws E {
                     return onInequal.apply(constraint);
-                }
-
-                @Override public T apply(IEqualityConstraint equality) throws E {
-                    return equality.matchOrThrow(this);
                 }
 
             };

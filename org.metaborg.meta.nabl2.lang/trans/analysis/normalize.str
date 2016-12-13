@@ -123,8 +123,8 @@ rules
     topdown(try(CGenInitRule(id,id,flatten-list) + CGenMatchRule(id,id,id,id,flatten-list)))
 
   normalize-constraint:
-    CTypeOf(o,ty,prio,msginfo) ->
-      CPropertyOf(o,Type(),ty,prio,msginfo)
+    CDeclType(o,ty,prio,msginfo) ->
+      CDeclProperty(o,Type(),ty,prio,msginfo)
 
   normalize-constraint:
     CSetEq(s1,s2,msginfo) ->

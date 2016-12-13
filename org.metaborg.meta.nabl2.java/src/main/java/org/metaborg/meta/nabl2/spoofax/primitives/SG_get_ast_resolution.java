@@ -18,10 +18,10 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 
 import com.google.common.collect.Lists;
 
-public class SG_get_ast_references extends ScopeGraphPrimitive {
+public class SG_get_ast_resolution extends ScopeGraphPrimitive {
 
-    public SG_get_ast_references() {
-        super(SG_get_ast_references.class.getSimpleName(), 0, 0);
+    public SG_get_ast_resolution() {
+        super(SG_get_ast_resolution.class.getSimpleName(), 0, 0);
     }
 
     @Override public boolean call(IScopeGraphContext<?> context, IContext env, Strategy[] strategies,

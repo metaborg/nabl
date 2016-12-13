@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Iterables;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 abstract class ApplTerm implements IApplTerm {
 
     @Value.Parameter @Override public abstract String getOp();

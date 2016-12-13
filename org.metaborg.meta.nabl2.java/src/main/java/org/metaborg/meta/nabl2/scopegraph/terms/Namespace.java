@@ -41,8 +41,8 @@ public abstract class Namespace extends AbstractApplTerm implements INamespace, 
     public static IMatcher<Namespace> matcher() {
         return M.cases(
             // @formatter:off
-            M.appl0("DefaultNamespace", (t) -> ImmutableNamespace.of(Optional.empty()).setAttachments(t.getAttachments())),
-            M.appl1("Namespace", M.stringValue(), (t, ns) -> ImmutableNamespace.of(Optional.of(ns)).setAttachments(t.getAttachments()))
+            M.appl0(OP0, (t) -> ImmutableNamespace.of(Optional.empty()).setAttachments(t.getAttachments())),
+            M.appl1(OP1, M.stringValue(), (t, ns) -> ImmutableNamespace.of(Optional.of(ns)).setAttachments(t.getAttachments()))
             // @formatter:on
         );
     }

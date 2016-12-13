@@ -2,7 +2,7 @@ package org.metaborg.meta.nabl2.scopegraph;
 
 import org.metaborg.meta.nabl2.regexp.IAlphabet;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
-import org.metaborg.meta.nabl2.transitiveclosure.TransitiveClosure;
+import org.metaborg.meta.nabl2.relations.IRelation;
 
 public interface IResolutionParameters<L extends ILabel> {
 
@@ -10,6 +10,6 @@ public interface IResolutionParameters<L extends ILabel> {
     
     IRegExp<L> getPathWf();
     
-    TransitiveClosure<L> getSpecificityOrder();
+    IRelation<L> getSpecificityOrder();
     
 }

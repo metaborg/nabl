@@ -10,12 +10,11 @@ import org.metaborg.meta.nabl2.terms.INilTerm;
 import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.Terms;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class GenericTerms {
-
-    public static final String TUPLE_OP = "";
 
     public static IApplTerm newAppl(String op, Iterable<ITerm> args) {
         return ImmutableApplTerm.of(op, args);
@@ -27,11 +26,11 @@ public class GenericTerms {
 
 
     public static IApplTerm newTuple(Iterable<ITerm> args) {
-        return newAppl(TUPLE_OP, args);
+        return newAppl(Terms.TUPLE_OP, args);
     }
 
     public static IApplTerm newTuple(Iterable<ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
-        return newAppl(TUPLE_OP, args, attachments);
+        return newAppl(Terms.TUPLE_OP, args, attachments);
     }
 
 
