@@ -11,18 +11,18 @@ public interface IEqualityConstraint extends IConstraint {
 
     interface Cases<T> extends Function<IEqualityConstraint,T> {
 
-        T caseEqual(Equal equal);
+        T caseEqual(CEqual equal);
 
-        T caseInequal(Inequal inequal);
+        T caseInequal(CInequal inequal);
 
-        static <T> Cases<T> of(Function<Equal,T> onEqual, Function<Inequal,T> onInequal) {
+        static <T> Cases<T> of(Function<CEqual,T> onEqual, Function<CInequal,T> onInequal) {
             return new Cases<T>() {
 
-                @Override public T caseEqual(Equal constraint) {
+                @Override public T caseEqual(CEqual constraint) {
                     return onEqual.apply(constraint);
                 }
 
-                @Override public T caseInequal(Inequal constraint) {
+                @Override public T caseInequal(CInequal constraint) {
                     return onInequal.apply(constraint);
                 }
 
@@ -39,19 +39,19 @@ public interface IEqualityConstraint extends IConstraint {
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IEqualityConstraint,T,E> {
 
-        T caseEqual(Equal equal) throws E;
+        T caseEqual(CEqual equal) throws E;
 
-        T caseInequal(Inequal inequal) throws E;
+        T caseInequal(CInequal inequal) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<Equal,T,E> onEqual,
-                CheckedFunction1<Inequal,T,E> onInequal) {
+        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CEqual,T,E> onEqual,
+                CheckedFunction1<CInequal,T,E> onInequal) {
             return new CheckedCases<T,E>() {
 
-                @Override public T caseEqual(Equal constraint) throws E {
+                @Override public T caseEqual(CEqual constraint) throws E {
                     return onEqual.apply(constraint);
                 }
 
-                @Override public T caseInequal(Inequal constraint) throws E {
+                @Override public T caseInequal(CInequal constraint) throws E {
                     return onInequal.apply(constraint);
                 }
 

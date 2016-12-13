@@ -1,21 +1,30 @@
 package org.metaborg.meta.nabl2.solver;
 
-import java.io.Serializable;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.metaborg.meta.nabl2.scopegraph.INameResolution;
+import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
+import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
+import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.collect.Multimap;
 
 @Value.Immutable
 @Serial.Version(value = 1L)
-public interface Solution extends Serializable {
+public abstract class Solution implements ISolution {
 
-    @Value.Parameter Multimap<IStrategoTerm,String> getErrors();
+    @Value.Parameter @Override public abstract IScopeGraph<Scope,Label,Occurrence> getScopeGraph();
 
-    @Value.Parameter Multimap<IStrategoTerm,String> getWarnings();
+    @Value.Parameter @Override public abstract INameResolution<Scope,Label,Occurrence> getNameResolution();
 
-    @Value.Parameter Multimap<IStrategoTerm,String> getNotes();
+    @Value.Parameter @Override public abstract IProperties<Occurrence> getProperties();
+    
+    @Value.Parameter public abstract Multimap<ITerm,String> getErrors();
+
+    @Value.Parameter public abstract Multimap<ITerm,String> getWarnings();
+
+    @Value.Parameter public abstract Multimap<ITerm,String> getNotes();
 
 }

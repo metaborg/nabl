@@ -15,11 +15,6 @@ signature
     AnalyzeFinal   : String/* source */ -> AnalysisAction
 
   constructors
-    InitialResult : List(Constraint) * Term/* parameters */ -> InitialResult
+    InitialResult : List(Constraint) * Term/* parameters */  * (Term,Term,Term) /* labels/order/wf */ -> InitialResult
     UnitResult    : Term/* processed ast */ * List(Constraint) -> UnitResult
     FinalResult   : FinalResult
-
-rules
-
-  nabl2--get-resource-analysis = prim("SG_get_resource_analysis")
-  nabl2--get-resource-partial-analysis = prim("SG_get_resource_partial_analysis")

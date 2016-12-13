@@ -1,7 +1,5 @@
 package org.metaborg.meta.nabl2.terms;
 
-import java.util.function.Function;
-
 import org.metaborg.meta.nabl2.functions.CheckedFunction1;
 
 public interface IListTerm extends ITerm, Iterable<ITerm> {
@@ -10,7 +8,7 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
 
     <T> T match(Cases<T> cases);
 
-    interface Cases<T> extends Function<IListTerm,T> {
+    interface Cases<T> {
 
         T caseCons(IConsTerm cons);
 

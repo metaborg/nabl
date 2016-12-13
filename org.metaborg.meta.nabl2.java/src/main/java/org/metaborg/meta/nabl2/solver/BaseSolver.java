@@ -14,15 +14,15 @@ public class BaseSolver implements ISolverComponent<IBaseConstraint> {
         return constraint.matchOrThrow(CheckedCases.of(t -> {
             return unit;
         }, f -> {
-            throw new UnsatisfiableException(f);
+            throw new UnsatisfiableException("False can never be satisfied.",f);
         }));
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException {
+    @Override public boolean iterate() {
         return false;
     }
 
-    @Override public void finish() throws UnsatisfiableException {
+    @Override public void finish() {
     }
 
 }

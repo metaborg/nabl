@@ -3,13 +3,12 @@ package org.metaborg.meta.nabl2.regexp;
 import java.util.Iterator;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 public final class FiniteAlphabet<S> implements IAlphabet<S> {
 
     private final ImmutableList<S> symbols;
 
-    public FiniteAlphabet(ImmutableSet<S> alphabet) {
+    public FiniteAlphabet(Iterable<S> alphabet) {
         this.symbols = ImmutableList.copyOf(alphabet);
     }
 

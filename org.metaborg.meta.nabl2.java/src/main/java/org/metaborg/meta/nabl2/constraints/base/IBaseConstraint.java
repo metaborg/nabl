@@ -11,18 +11,18 @@ public interface IBaseConstraint extends IConstraint {
 
     interface Cases<T> extends Function<IBaseConstraint,T> {
 
-        T caseTrue(True constraint);
+        T caseTrue(CTrue constraint);
 
-        T caseFalse(False constraint);
+        T caseFalse(CFalse constraint);
 
-        static <T> Cases<T> of(Function<True,T> onTrue, Function<False,T> onFalse) {
+        static <T> Cases<T> of(Function<CTrue,T> onTrue, Function<CFalse,T> onFalse) {
             return new Cases<T>() {
 
-                @Override public T caseTrue(True constraint) {
+                @Override public T caseTrue(CTrue constraint) {
                     return onTrue.apply(constraint);
                 }
 
-                @Override public T caseFalse(False constraint) {
+                @Override public T caseFalse(CFalse constraint) {
                     return onFalse.apply(constraint);
                 }
 
@@ -40,19 +40,19 @@ public interface IBaseConstraint extends IConstraint {
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IBaseConstraint,T,E> {
 
-        T caseTrue(True constraint) throws E;
+        T caseTrue(CTrue constraint) throws E;
 
-        T caseFalse(False constraint) throws E;
+        T caseFalse(CFalse constraint) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<True,T,E> onTrue,
-                CheckedFunction1<False,T,E> onFalse) {
+        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CTrue,T,E> onTrue,
+                CheckedFunction1<CFalse,T,E> onFalse) {
             return new CheckedCases<T,E>() {
 
-                @Override public T caseTrue(True constraint) throws E {
+                @Override public T caseTrue(CTrue constraint) throws E {
                     return onTrue.apply(constraint);
                 }
 
-                @Override public T caseFalse(False constraint) throws E {
+                @Override public T caseFalse(CFalse constraint) throws E {
                     return onFalse.apply(constraint);
                 }
 

@@ -1,24 +1,18 @@
 package org.metaborg.meta.nabl2.terms;
 
-import java.util.function.Function;
-
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
-
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public interface ITerm {
 
     boolean isGround();
 
-    ImmutableClassToInstanceMap<IAnnotation> getAnnotations();
+    ImmutableClassToInstanceMap<Object> getAttachments();
 
     <T> T match(Cases<T> cases);
 
-    interface Cases<T> extends Function<ITerm,T> {
+    interface Cases<T> {
 
         T caseAppl(IApplTerm appl);
-
-        T caseTuple(ITupleTerm tuple);
 
         T caseList(IListTerm cons);
 
@@ -32,11 +26,9 @@ public interface ITerm {
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
 
-    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<ITerm,T,E> {
+    interface CheckedCases<T, E extends Throwable> {
 
         T caseAppl(IApplTerm appl) throws E;
-
-        T caseTuple(ITupleTerm tuple) throws E;
 
         T caseList(IListTerm cons) throws E;
 

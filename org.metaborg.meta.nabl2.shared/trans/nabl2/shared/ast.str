@@ -8,8 +8,6 @@ imports
 
 rules // ast indices
 
-  nabl2--get-ast-analysis = prim("SG_get_ast_analysis")
-
   nabl2--index-ast(|source) =
     prim("SG_index_ast", source)
 

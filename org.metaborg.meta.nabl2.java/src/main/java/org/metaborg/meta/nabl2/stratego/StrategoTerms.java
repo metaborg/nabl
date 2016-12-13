@@ -1,154 +1,257 @@
 package org.metaborg.meta.nabl2.stratego;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.List;
 
+import org.metaborg.meta.nabl2.collections.Unit;
+import org.metaborg.meta.nabl2.functions.Function1;
+import org.metaborg.meta.nabl2.functions.Function2;
+import org.metaborg.meta.nabl2.terms.IListTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermIndex;
+import org.metaborg.meta.nabl2.terms.Terms;
+import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
 import org.spoofax.interpreter.terms.IStrategoAppl;
+import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoInt;
 import org.spoofax.interpreter.terms.IStrategoList;
+import org.spoofax.interpreter.terms.IStrategoPlaceholder;
+import org.spoofax.interpreter.terms.IStrategoReal;
+import org.spoofax.interpreter.terms.IStrategoRef;
 import org.spoofax.interpreter.terms.IStrategoString;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.IStrategoTuple;
+import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.jsglr.client.imploder.ImploderAttachment;
+
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class StrategoTerms {
 
-    public static <T> T match(IStrategoTerm term, Cases<T> visitor) {
-        switch (term.getTermType()) {
-        case IStrategoTerm.APPL:
-            return visitor.caseAppl((IStrategoAppl) term);
-        case IStrategoTerm.LIST:
-            return visitor.caseList((IStrategoList) term);
-        case IStrategoTerm.TUPLE:
-            return visitor.caseTuple((IStrategoTuple) term);
-        case IStrategoTerm.INT:
-            return visitor.caseInt((IStrategoInt) term);
-        case IStrategoTerm.STRING:
-            return visitor.caseString((IStrategoString) term);
-        default:
-            throw new IllegalArgumentException("type of " + term + "is not supported.");
+    private final static String VAR_CTOR = "CVar";
+    private final static int VAR_ARITY = 2;
+
+    private final static String TLIST_CTOR = "TList";
+    private final static String TLISTTAIL_CTOR = "TListTail";
+
+    private final Iterable<Function2<IStrategoTerm,Attacher,Unit>> attachmentProviders;
+
+    private final org.spoofax.interpreter.terms.ITermFactory termFactory;
+    private IStrategoConstructor varCtor;
+
+    @SafeVarargs public StrategoTerms(ITermFactory termFactory,
+            Function2<IStrategoTerm,Attacher,Unit>... attachmentProviders) {
+        this.termFactory = termFactory;
+        this.varCtor = termFactory.makeConstructor(VAR_CTOR, VAR_ARITY);
+        this.attachmentProviders = ImmutableList.copyOf(attachmentProviders);
+    }
+
+    public IStrategoTerm toStratego(ITerm term) {
+        IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm> cases(
+                // @formatter:off
+                appl -> termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()),
+                        toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0])),
+                list -> termFactory.makeList(toStrategos(list)), string -> termFactory.makeString(string.getValue()),
+                integer -> termFactory.makeInt(integer.getValue()), var -> termFactory.makeAppl(varCtor,
+                        termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
+        // @formatter:on
+        ));
+        putAttachments(strategoTerm, term.getAttachments());
+        return strategoTerm;
+    }
+
+    public List<IStrategoTerm> toStrategos(Iterable<ITerm> terms) {
+        List<IStrategoTerm> strategoTerms = Lists.newArrayList();
+        for (ITerm term : terms) {
+            strategoTerms.add(toStratego(term));
+        }
+        return strategoTerms;
+    }
+
+    private void putAttachments(IStrategoTerm term, ImmutableClassToInstanceMap<Object> attachments) {
+        ImploderAttachment imploderAttachment = attachments.getInstance(ImploderAttachment.class);
+        if (imploderAttachment != null) {
+            term.putAttachment(imploderAttachment);
+        }
+
+        ITermIndex termIndex = attachments.getInstance(ITermIndex.class);
+        if (termIndex != null) {
+            StrategoTermIndex.put(term, termIndex.getResource(), termIndex.getId());
         }
     }
 
-    public static <T> Cases<T> cases(
-        // @formatter:off
-        Function<? super IStrategoAppl,T> onAppl,
-        Function<? super IStrategoTuple,T> onTuple,
-        Function<? super IStrategoList,T> onList,
-        Function<? super IStrategoInt,T> onInt,
-        Function<? super IStrategoString,T> onString
-        // @formatter:on
+    public ITerm fromStratego(IStrategoTerm term) {
+        ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
+        ITerm rawTerm = match(term, StrategoTerms.<ITerm> cases(
+            // @formatter:off
+            appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl), attachments),
+            tuple -> GenericTerms.newAppl("", fromStrategos(tuple), attachments),
+            this::fromStrategoList,
+            integer -> GenericTerms.newInt(integer.intValue(), attachments),
+            real -> { throw new IllegalArgumentException(); },
+            string -> GenericTerms.newString(string.stringValue(), attachments),
+            ref -> { throw new IllegalArgumentException(); },
+            placeholder -> { throw new IllegalArgumentException(); },
+            other -> { throw new IllegalArgumentException(); }
+            // @formatter:on
+        ));
+        return M.<ITerm> cases(
+            // @formatter:off
+            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) -> {
+                return GenericTerms.newVar(resource, name);
+            }),
+            M.appl1(TLIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs)),
+            M.appl2(TLISTTAIL_CTOR, M.list(), M.list(), (t,xs,ys) -> GenericTerms.newListTail(xs,ys))
+            // @formatter:on
+        ).match(rawTerm).orElse(rawTerm);
+    }
+
+    private IListTerm fromStrategoList(IStrategoList list) {
+        ImmutableClassToInstanceMap<Object> attachments = getAttachments(list);
+        if (list.isEmpty()) {
+            return GenericTerms.newNil(attachments);
+        } else {
+            return GenericTerms.newCons(fromStratego(list.head()), fromStrategoList(list.tail()), attachments);
+        }
+    }
+
+    private Iterable<ITerm> fromStrategos(Iterable<IStrategoTerm> strategoTerms) {
+        List<ITerm> terms = Lists.newArrayList();
+        for (IStrategoTerm strategoTerm : strategoTerms) {
+            terms.add(fromStratego(strategoTerm));
+        }
+        return terms;
+    }
+
+    private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
+        Builder<Object> b = ImmutableClassToInstanceMap.builder();
+
+        StrategoTermIndex termIndex = StrategoTermIndex.get(term);
+        if (termIndex != null) {
+            b.put(ITermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
+        }
+
+        ImploderAttachment imploderAttachment = ImploderAttachment.getCompactPositionAttachment(term, false);
+        if (imploderAttachment != null) {
+            b.put(ImploderAttachment.class, imploderAttachment);
+        }
+
+        Attacher attacher = new Attacher() {
+
+            @Override public <T> void put(Class<T> clazz, T instance) {
+                b.put(clazz, instance);
+            }
+
+        };
+        for (Function2<IStrategoTerm,Attacher,Unit> attachmentProvider : attachmentProviders) {
+            attachmentProvider.apply(term, attacher);
+        }
+
+        return b.build();
+    }
+
+    public static <T> T match(IStrategoTerm term, ICases<T> cases) {
+        switch (term.getTermType()) {
+        case IStrategoTerm.APPL:
+            return cases.caseAppl((IStrategoAppl) term);
+        case IStrategoTerm.LIST:
+            return cases.caseList((IStrategoList) term);
+        case IStrategoTerm.TUPLE:
+            return cases.caseTuple((IStrategoTuple) term);
+        case IStrategoTerm.INT:
+            return cases.caseInt((IStrategoInt) term);
+        case IStrategoTerm.REAL:
+            return cases.caseReal((IStrategoReal) term);
+        case IStrategoTerm.STRING:
+            return cases.caseString((IStrategoString) term);
+        case IStrategoTerm.REF:
+            return cases.caseRef((IStrategoRef) term);
+        case IStrategoTerm.PLACEHOLDER:
+            return cases.casePlaceholder((IStrategoPlaceholder) term);
+        default:
+            return cases.otherwise(term);
+        }
+    }
+
+    public static <T> ICases<T> cases(
+            // @formatter:off
+            Function1<IStrategoAppl, T> onAppl, Function1<IStrategoTuple, T> onTuple,
+            Function1<IStrategoList, T> onList, Function1<IStrategoInt, T> onInt, Function1<IStrategoReal, T> onReal,
+            Function1<IStrategoString, T> onString, Function1<IStrategoRef, T> onRef,
+            Function1<IStrategoPlaceholder, T> onPlaceholder, Function1<IStrategoTerm, T> otherwise
+    // @formatter:on
     ) {
-        return new Cases<T>() {
+        return new ICases<T>() {
 
             @Override public T caseAppl(IStrategoAppl term) {
                 return onAppl.apply(term);
-            }
-
-            @Override public T caseList(IStrategoList term) {
-                return onList.apply(term);
             }
 
             @Override public T caseTuple(IStrategoTuple term) {
                 return onTuple.apply(term);
             }
 
+            @Override public T caseList(IStrategoList term) {
+                return onList.apply(term);
+            }
+
             @Override public T caseInt(IStrategoInt term) {
                 return onInt.apply(term);
+            }
+
+            @Override public T caseReal(IStrategoReal term) {
+                return onReal.apply(term);
             }
 
             @Override public T caseString(IStrategoString term) {
                 return onString.apply(term);
             }
 
-            @Override public T apply(IStrategoTerm term) {
-                return match(term, this);
+            @Override public T caseRef(IStrategoRef term) {
+                return onRef.apply(term);
+            }
+
+            @Override public T casePlaceholder(IStrategoPlaceholder term) {
+                return onPlaceholder.apply(term);
+            }
+
+            @Override public T otherwise(IStrategoTerm term) {
+                return otherwise.apply(term);
             }
 
         };
     }
 
-    public interface Cases<T> extends Function<IStrategoTerm,T> {
+    public interface ICases<T> {
 
-        T caseAppl(IStrategoAppl term);
+        public T caseAppl(IStrategoAppl term);
 
-        T caseTuple(IStrategoTuple term);
+        public T caseList(IStrategoList term);
 
-        T caseList(IStrategoList term);
+        public T caseTuple(IStrategoTuple term);
 
-        T caseInt(IStrategoInt term);
+        public T caseInt(IStrategoInt term);
 
-        T caseString(IStrategoString term);
+        public T caseReal(IStrategoReal term);
+
+        public T caseString(IStrategoString term);
+
+        public T caseRef(IStrategoRef term);
+
+        public T casePlaceholder(IStrategoPlaceholder term);
+
+        public T otherwise(IStrategoTerm term);
 
     }
 
-    public static <T> CaseBuilder<T> cases() {
-        return new CaseBuilder<T>();
-    }
+    @FunctionalInterface
+    public interface Attacher {
 
-    public static class CaseBuilder<T> {
-
-        private Function<? super IStrategoAppl,T> onAppl;
-        private Function<? super IStrategoTuple,T> onTuple;
-        private Function<? super IStrategoList,T> onList;
-        private Function<? super IStrategoInt,T> onInt;
-        private Function<? super IStrategoString,T> onString;
-
-
-        public CaseBuilder<T> appl(Function<? super IStrategoAppl,T> onAppl) {
-            this.onAppl = onAppl;
-            return this;
-        }
-
-        public CaseBuilder<T> tuple(Function<? super IStrategoTuple,T> onTuple) {
-            this.onTuple = onTuple;
-            return this;
-        }
-
-        public CaseBuilder<T> list(Function<? super IStrategoList,T> onList) {
-            this.onList = onList;
-            return this;
-        }
-
-        public CaseBuilder<T> integer(Function<? super IStrategoInt,T> onInt) {
-            this.onInt = onInt;
-            return this;
-        }
-
-        public CaseBuilder<T> string(Function<? super IStrategoString,T> onString) {
-            this.onString = onString;
-            return this;
-        }
-
-        public Cases<T> otherwise(Supplier<T> otherwise) {
-            return new Cases<T>() {
-
-                @Override public T caseAppl(IStrategoAppl term) {
-                    return onAppl != null ? onAppl.apply(term) : otherwise.get();
-                }
-
-                @Override public T caseTuple(IStrategoTuple term) {
-                    return onTuple != null ? onTuple.apply(term) : otherwise.get();
-                }
-
-                @Override public T caseList(IStrategoList term) {
-                    return onList != null ? onList.apply(term) : otherwise.get();
-                }
-
-                @Override public T caseInt(IStrategoInt term) {
-                    return onInt != null ? onInt.apply(term) : otherwise.get();
-                }
-
-                @Override public T caseString(IStrategoString term) {
-                    return onString != null ? onString.apply(term) : otherwise.get();
-                }
-
-                @Override public T apply(IStrategoTerm term) {
-                    return match(term, this);
-                }
-
-            };
-
-        }
+        <T> void put(Class<T> clazz, T instance);
 
     }
 

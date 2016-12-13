@@ -11,7 +11,7 @@ template options
 
 context-free syntax
 
-  Constraint.CTrue   = <true>
+  Constraint.CTrue   = <true <MessagePosition>>
   Constraint.CFalse  = <false <Message>>
 
 lexical syntax

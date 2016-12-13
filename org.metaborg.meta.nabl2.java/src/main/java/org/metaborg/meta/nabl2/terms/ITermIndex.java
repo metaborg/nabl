@@ -1,8 +1,6 @@
 package org.metaborg.meta.nabl2.terms;
 
-import org.metaborg.meta.nabl2.terms.IAnnotation;
-
-public interface ITermIndex extends IAnnotation {
+public interface ITermIndex {
 
     String getResource();
 

@@ -4,7 +4,6 @@ import java.util.Iterator;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.terms.IAnnotation;
 import org.metaborg.meta.nabl2.terms.INilTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
@@ -22,8 +21,8 @@ abstract class NilTerm implements INilTerm {
         return 0;
     }
 
-    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<IAnnotation> getAnnotations() {
-        return ImmutableClassToInstanceMap.<IAnnotation> builder().build();
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
+        return ImmutableClassToInstanceMap.<Object> builder().build();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
