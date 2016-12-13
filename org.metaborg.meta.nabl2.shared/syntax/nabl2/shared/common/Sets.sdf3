@@ -6,10 +6,10 @@ imports
 
 context-free syntax
 
-  SetExpr.EmptySet = <0>                            // FIXME Use NaBL2_ prefix
-  SetExpr.Isect    = <(<CSet> isect <CSet>)> {left} // FIXME Use NaBL2_ prefix
-  SetExpr.Union    = <(<CSet> union <CSet>)> {left} // FIXME Use NaBL2_ prefix
-  SetExpr.Diff     = <(<CSet> minus <CSet>)> {left} // FIXME Use NaBL2_ prefix
+  SetExpr.EmptySet = <0>                       // FIXME Use NaBL2_ prefix
+  SetExpr.Isect    = <(<CSet> isect <CSet>)>   // FIXME Use NaBL2_ prefix
+  SetExpr.Union    = <(<CSet> union <CSet>)>   // FIXME Use NaBL2_ prefix
+  SetExpr.Diff     = <(<CSet> minus <CSet>)>   // FIXME Use NaBL2_ prefix
 
   CSet = SetExpr
 

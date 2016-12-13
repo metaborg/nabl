@@ -31,6 +31,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final EsopScopeGraph<S,L,O> scopeGraph;
     private final Set<L> labels;
     private final IRegExp<L> wf;
+    private final IRegExp<L> any;
     private final IRelation<L> order;
     private final Function4<PSet<O>,PSet<S>,IRegExpMatcher<L>,S,EsopEnv<O>> stagedEnv_L;
 
@@ -41,12 +42,21 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.labels = Sets.newHashSet(params.getLabels());
         this.wf = params.getPathWf();
         this.order = params.getSpecificityOrder();
+        this.any = wf.getBuilder().complement(wf.getBuilder().emptySet());
         this.stagedEnv_L = stageEnv_L(labels);
         this.resolveCache = Maps.newHashMap();
     }
 
     @Override public Iterable<O> resolve(O ref) {
         return tryResolve(ref).orElseGet(() -> Iterables2.empty());
+    }
+
+    @Override public Iterable<O> visible(S scope) {
+        return tryVisible(scope).orElseGet(() -> Iterables2.empty());
+    }
+
+    @Override public Iterable<O> reachable(S scope) {
+        return tryReachable(scope).orElseGet(() -> Iterables2.empty());
     }
 
     public Optional<Iterable<O>> tryResolve(O ref) {
@@ -57,6 +67,16 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             decls.ifPresent(ds -> resolveCache.put(ref, ds));
             return decls;
         }
+    }
+
+    public Optional<Iterable<O>> tryVisible(S scope) {
+        EsopEnv<O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), RegExpMatcher.create(wf), scope);
+        return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
+    }
+
+    public Optional<Iterable<O>> tryReachable(S scope) {
+        EsopEnv<O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), RegExpMatcher.create(any), scope);
+        return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
     private Optional<Iterable<O>> resolve(PSet<O> seenI, O ref) {

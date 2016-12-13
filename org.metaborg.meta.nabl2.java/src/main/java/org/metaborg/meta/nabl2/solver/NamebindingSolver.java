@@ -24,14 +24,19 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
+import org.metaborg.meta.nabl2.scopegraph.terms.Namespace;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
+import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public class NamebindingSolver implements ISolverComponent<INamebindingConstraint> {
@@ -77,15 +82,16 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     @Override public boolean iterate() throws UnsatisfiableException {
+        boolean progress = false;
         if (nameResolution == null) {
+            progress = true;
             nameResolution = new EsopNameResolution<>(scopeGraph, params);
         }
         Iterator<INamebindingConstraint> it = defered.iterator();
-        boolean progress = false;
         while (it.hasNext()) {
             try {
                 if (solve(it.next())) {
-                    progress |= true;
+                    progress = true;
                     it.remove();
                 }
             } catch (UnsatisfiableException e) {
@@ -257,5 +263,43 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     // ------------------------------------------------------------------------------------------------------//
+
+    public IMatcher<Multimap<ITerm,ITerm>> nameSets() {
+        return term -> {
+            if (NamebindingSolver.this.nameResolution == null) {
+                return Optional.empty();
+            }
+            return M.<Optional<Multimap<ITerm,ITerm>>> cases(
+                // @formatter:off
+                M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
+                    Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls(scope);
+                    return Optional.of(makeSet(decls, ns));
+                }),
+                M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
+                    Iterable<Occurrence> refs = NamebindingSolver.this.scopeGraph.getRefs(scope);
+                    return Optional.of(makeSet(refs, ns));
+                }),
+                M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
+                    Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryVisible(scope);
+                    return decls.map(ds -> makeSet(ds, ns));
+                }),
+                M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
+                    Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryReachable(scope);
+                    return decls.map(ds -> makeSet(ds, ns));
+                })
+                // @formatter:on
+            ).match(term).flatMap(o -> o);
+        };
+    }
+
+    private Multimap<ITerm,ITerm> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
+        Multimap<ITerm,ITerm> result = HashMultimap.create();
+        for (Occurrence occurrence : occurrences) {
+            if (!namespace.getName().filter(ns -> !occurrence.getNamespace().equals(namespace)).isPresent()) {
+                result.put(occurrence.getName(), occurrence.getPosition());
+            }
+        }
+        return result;
+    }
 
 }

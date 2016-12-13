@@ -23,6 +23,7 @@ public class Solver {
     private final EqualitySolver equalitySolver;
     private final NamebindingSolver namebindingSolver;
     private final RelationSolver relationSolver;
+    private final SetSolver setSolver;
 
     private final Multimap<ITerm,String> errors;
     private final Multimap<ITerm,String> warnings;
@@ -35,6 +36,7 @@ public class Solver {
         this.astSolver = new AstSolver(unifier);
         this.namebindingSolver = new NamebindingSolver(resolutionParams, unifier);
         this.relationSolver = new RelationSolver(relations, unifier);
+        this.setSolver = new SetSolver(namebindingSolver.nameSets(), unifier);
 
         this.errors = HashMultimap.create();
         this.warnings = HashMultimap.create();
@@ -45,7 +47,7 @@ public class Solver {
         for (IConstraint constraint : constraints) {
             try {
                 constraint.matchOrThrow(CheckedCases.of(astSolver::add, baseSolver::add, equalitySolver::add,
-                        namebindingSolver::add, relationSolver::add));
+                        namebindingSolver::add, relationSolver::add, setSolver::add));
             } catch (UnsatisfiableException e) {
                 addErrors(e);
             }
@@ -62,6 +64,7 @@ public class Solver {
                 progress |= equalitySolver.iterate();
                 progress |= namebindingSolver.iterate();
                 progress |= relationSolver.iterate();
+                progress |= setSolver.iterate();
             } catch (UnsatisfiableException e) {
                 progress = true;
                 addErrors(e);
@@ -84,6 +87,11 @@ public class Solver {
         }
         try {
             relationSolver.finish();
+        } catch (UnsatisfiableException e) {
+            addErrors(e);
+        }
+        try {
+            setSolver.finish();
         } catch (UnsatisfiableException e) {
             addErrors(e);
         }

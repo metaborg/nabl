@@ -8,6 +8,7 @@ import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
+import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
@@ -29,13 +30,16 @@ public interface IConstraint {
 
         T caseRelation(IRelationConstraint constraint);
 
+        T caseSet(ISetConstraint constraint);
+
         static <T> Cases<T> of(
             // @formatter:off
             Function<IAstConstraint,T> onAst,
             Function<IBaseConstraint,T> onBase,
             Function<IEqualityConstraint,T> onEquality,
             Function<INamebindingConstraint,T> onNamebinding,
-            Function<IRelationConstraint,T> onRelation
+            Function<IRelationConstraint,T> onRelation,
+            Function<ISetConstraint,T> onSet
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -60,6 +64,10 @@ public interface IConstraint {
                     return onRelation.apply(constraint);
                 }
 
+                @Override public T caseSet(ISetConstraint constraint) {
+                    return onSet.apply(constraint);
+                }
+
             };
         }
 
@@ -79,13 +87,16 @@ public interface IConstraint {
 
         T caseRelation(IRelationConstraint constraint) throws E;
 
+        T caseSet(ISetConstraint constraint) throws E;
+
         static <T, E extends Throwable> CheckedCases<T,E> of(
             // @formatter:off
             CheckedFunction1<IAstConstraint,T,E> onAst,
             CheckedFunction1<IBaseConstraint,T,E> onBase,
             CheckedFunction1<IEqualityConstraint,T,E> onEquality,
             CheckedFunction1<INamebindingConstraint,T,E> onNamebinding,
-            CheckedFunction1<IRelationConstraint,T,E> onRelation
+            CheckedFunction1<IRelationConstraint,T,E> onRelation,
+            CheckedFunction1<ISetConstraint,T,E> onSet
             // @formatter:on
         ) {
             return new CheckedCases<T,E>() {
@@ -108,6 +119,10 @@ public interface IConstraint {
 
                 @Override public T caseRelation(IRelationConstraint constraint) throws E {
                     return onRelation.apply(constraint);
+                }
+
+                @Override public T caseSet(ISetConstraint constraint) throws E {
+                    return onSet.apply(constraint);
                 }
 
             };

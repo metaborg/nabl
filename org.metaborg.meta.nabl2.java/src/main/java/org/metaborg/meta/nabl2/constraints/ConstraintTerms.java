@@ -15,6 +15,8 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCResolve;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCCheckRelation;
+import org.metaborg.meta.nabl2.constraints.sets.ImmutableCDistinct;
+import org.metaborg.meta.nabl2.constraints.sets.ImmutableCSubsetEq;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -77,6 +79,12 @@ public class ConstraintTerms {
             }),
             M.appl3("CAstProperty", TermIndex.matcher(), M.term(), M.term(), (c, index, key, value) -> {
                 return ImmutableCAstProperty.of(index,key,value).setOriginatingTerm(index);
+            }),
+            M.appl3("CSubsetEq", M.term(), M.term(), originatingTerm(), (c, left, right, origin) -> {
+                return ImmutableCSubsetEq.of(left,right).setOriginatingTerm(origin);
+            }),
+            M.appl2("CDistinct", M.term(), originatingTerm(), (c, set, origin) -> {
+                return ImmutableCDistinct.of(set).setOriginatingTerm(origin);
             }),
             M.term(t -> {
                 ILogger logger = LoggerUtils.logger(ConstraintTerms.class);
