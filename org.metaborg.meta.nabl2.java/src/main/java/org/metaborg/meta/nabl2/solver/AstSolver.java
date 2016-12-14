@@ -28,7 +28,7 @@ public class AstSolver implements ISolverComponent<IAstConstraint> {
     }
 
     @Override public Unit add(IAstConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(p -> {
+        return constraint.matchOrThrow(CheckedCases.<Unit, UnsatisfiableException> of(p -> {
             Optional<ITerm> oldValue = properties.putValue(p.getIndex(), p.getKey(), p.getValue());
             if (oldValue.isPresent()) {
                 try {

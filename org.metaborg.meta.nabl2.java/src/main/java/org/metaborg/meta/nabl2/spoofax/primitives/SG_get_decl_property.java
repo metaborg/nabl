@@ -25,7 +25,7 @@ public class SG_get_decl_property extends ScopeGraphPrimitive {
         StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
         ITerm declTerm = strategoTerms.fromStratego(env.current());
         ITerm key = strategoTerms.fromStratego(terms[0]);
-        return Occurrence.matcher().match(declTerm).flatMap(decl -> {
+        return Occurrence.matcher().match(declTerm).<Boolean>flatMap(decl -> {
             return context.unit(decl.getPosition().getResource()).solution().map(s -> {
                 Optional<ITerm> v = s.getDeclProperties().getValue(decl, key);
                 if (!v.isPresent()) {

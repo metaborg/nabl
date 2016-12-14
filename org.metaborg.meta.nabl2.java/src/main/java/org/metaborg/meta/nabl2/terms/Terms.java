@@ -363,19 +363,6 @@ public class Terms {
                     var -> Optional.of(f.apply(var))));
         }
 
-        // associative list
-
-        public static <K, V, R> IMatcher<R> assocList(IMatcher<? extends K> km, IMatcher<? extends V> vm,
-                Function2<? super ITerm,Map<K,V>,? extends R> f) {
-            return M.listElems(M.tuple2(km, vm, (e, k, v) -> ImmutableTuple2.of(k, v)), (l, ps) -> {
-                Map<K,V> map = Maps.newHashMap();
-                for (Tuple2<? extends K,? extends V> p : ps) {
-                    map.put(p._1(), p._2());
-                }
-                return f.apply(l, map);
-            });
-        }
-
         // cases
 
         @SafeVarargs public static <T> IMatcher<T> cases(IMatcher<? extends T>... matchers) {
