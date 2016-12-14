@@ -17,7 +17,7 @@ rules
 
   normalize =
     normalize-axioms;
-    normalize-type-sigs;
+    normalize-types-sections;
     normalize-term-matches;
     normalize-type-matches;
     normalize-list-matches;
@@ -42,13 +42,14 @@ rules
 
 rules
 
-  normalize-type-sigs = try(sometd(normalize-type-sig))
+  normalize-types-sections = try(sometd(normalize-types-section))
+
+  normalize-types-section:
+    Types(typesig*) -> Constructors(opdecl*)
+    with opdecl* := <map(normalize-type-sig)> typesig*
 
   normalize-type-sig:
-    Types(typesig*) -> Constructors(<normalize-type-sig> typesig*)
-
-  normalize-type-sig:
-    TypeSig(op,a*) -> OpDecl(op,a*,<type-sort>)
+    TypeSig(op,a*) -> OpDecl(op, a*, <type-sort>)
 
 rules
 
