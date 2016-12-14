@@ -33,6 +33,10 @@ rules
 
   // capture the matched term
   normalize-axiom:
+    CGenInitRuleNoConstraint(params,type)
+      -> CGenInitRule(params,type, [])
+
+  normalize-axiom:
     CGenMatchRuleNoConstraint(name,pattern,params,type)
       -> CGenMatchRule(name,pattern,params,type, [])
 

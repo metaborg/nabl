@@ -5,6 +5,10 @@ imports
   nabl2/shared/common/CTerms
   nabl2/shared/common/Messages
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
   Constraint.CEqual   = [[CTerm] == [CTerm] [Message]]

@@ -10,7 +10,7 @@ import org.metaborg.meta.nabl2.constraints.MessageInfo;
 public abstract class CTrue implements IBaseConstraint {
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseTrue(this);
     }

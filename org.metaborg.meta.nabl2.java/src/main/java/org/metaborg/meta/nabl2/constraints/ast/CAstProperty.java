@@ -18,7 +18,7 @@ public abstract class CAstProperty implements IAstConstraint {
     @Value.Parameter public abstract ITerm getValue();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Value.Check public void check() {
         Preconditions.checkArgument(getKey().isGround());
     }

@@ -1,21 +1,29 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.collections.Unit;
 import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
+import org.metaborg.meta.nabl2.constraints.relations.CGlb;
+import org.metaborg.meta.nabl2.constraints.relations.CLub;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.relations.Bounds;
 import org.metaborg.meta.nabl2.relations.Relation;
 import org.metaborg.meta.nabl2.relations.RelationException;
+import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.CM;
+import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class RelationSolver implements ISolverComponent<IRelationConstraint> {
@@ -23,11 +31,14 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     private final Unifier unifier;
     private final Relations relations;
 
+    private final Map<RelationName,Bounds<ITerm>> boundsCache;
+
     private final Set<IRelationConstraint> defered = Sets.newHashSet();
 
     public RelationSolver(Relations relations, Unifier unifier) {
         this.unifier = unifier;
         this.relations = relations;
+        this.boundsCache = Maps.newHashMap();
     }
 
     public IRelations getRelations() {
@@ -64,14 +75,14 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved relation constraint.", Iterables2.empty());
+            return c.getMessageInfo().makeException("Unsolved relation constraint: " + c, Iterables2.empty());
         }).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
     private boolean solve(IRelationConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve));
+        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve, this::solve, this::solve));
     }
 
     private boolean solve(CBuildRelation c) throws UnsatisfiableException {
@@ -111,8 +122,49 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
                     }
                 }
                 return true;
-            }).matchOrThrow(right).orElseThrow(() -> c.getMessageInfo().makeException("Lists must match another list.", Iterables2.empty()));
+            }).matchOrThrow(right).orElseThrow(() -> c.getMessageInfo().makeException("Lists must match another list.",
+                    Iterables2.empty()));
         }).matchOrThrow(left).orElseGet(() -> relation.contains(left, right));
+    }
+
+    private boolean solve(CLub c) throws UnsatisfiableException {
+        ITerm left = unifier.find(c.getLeft());
+        ITerm right = unifier.find(c.getRight());
+        if (!(left.isGround() && right.isGround())) {
+            return false;
+        }
+        Bounds<ITerm> b = boundsCache.computeIfAbsent(c.getRelation(), r -> new Bounds<>(relations.getRelation(c
+                .getRelation())));
+        Optional<ITerm> lub = b.leastUpperBound(left, right);
+        if (!lub.isPresent()) {
+            return false;
+        }
+        try {
+            unifier.unify(c.getResult(), lub.get());
+        } catch (UnificationException ex) {
+            throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+        }
+        return true;
+    }
+
+    private boolean solve(CGlb c) throws UnsatisfiableException {
+        ITerm left = unifier.find(c.getLeft());
+        ITerm right = unifier.find(c.getRight());
+        if (!(left.isGround() && right.isGround())) {
+            return false;
+        }
+        Bounds<ITerm> b = boundsCache.computeIfAbsent(c.getRelation(), r -> new Bounds<>(relations.getRelation(c
+                .getRelation())));
+        Optional<ITerm> lub = b.greatestLowerbound(left, right);
+        if (!lub.isPresent()) {
+            return false;
+        }
+        try {
+            unifier.unify(c.getResult(), lub.get());
+        } catch (UnificationException ex) {
+            throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------------------------------------------//

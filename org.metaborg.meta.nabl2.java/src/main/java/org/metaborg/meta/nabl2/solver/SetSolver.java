@@ -93,7 +93,8 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
         result.putAll(leftSet);
         result.keySet().removeAll(rightSet.keySet());
         if (!result.isEmpty()) {
-            throw constraint.getMessageInfo().makeException(left + " not a subset of, or equal to " + right, result.values());
+            throw constraint.getMessageInfo().makeException(left + " not a subset of, or equal to " + right, result
+                    .values());
         }
         return true;
     }

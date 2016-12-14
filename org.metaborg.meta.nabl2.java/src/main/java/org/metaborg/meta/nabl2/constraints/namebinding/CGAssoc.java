@@ -18,7 +18,7 @@ public abstract class CGAssoc implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getScope();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseAssoc(this);
     }

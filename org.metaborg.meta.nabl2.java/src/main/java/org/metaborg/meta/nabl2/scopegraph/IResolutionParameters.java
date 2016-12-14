@@ -7,9 +7,9 @@ import org.metaborg.meta.nabl2.relations.IRelation;
 public interface IResolutionParameters<L extends ILabel> {
 
     IAlphabet<L> getLabels();
-    
+
     IRegExp<L> getPathWf();
-    
+
     IRelation<L> getSpecificityOrder();
-    
+
 }

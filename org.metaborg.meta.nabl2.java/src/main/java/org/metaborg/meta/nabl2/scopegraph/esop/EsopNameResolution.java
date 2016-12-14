@@ -10,10 +10,8 @@ import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
-import org.metaborg.meta.nabl2.relations.IRelation.Reflexivity;
-import org.metaborg.meta.nabl2.relations.IRelation.Symmetry;
-import org.metaborg.meta.nabl2.relations.IRelation.Transitivity;
 import org.metaborg.meta.nabl2.relations.Relation;
+import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -45,8 +43,10 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.labels = Sets.newHashSet(params.getLabels());
         this.wf = params.getPathWf();
         this.order = params.getSpecificityOrder();
+        assert order.getDescription().equals(
+                RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.noWf = wf.getBuilder().complement(wf.getBuilder().emptySet());
-        this.noOrder = new Relation<>(Reflexivity.IRREFLEXIVE, Symmetry.ANTI_SYMMETRIC, Transitivity.TRANSITIVE);
+        this.noOrder = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
         this.resolveCache = Maps.newHashMap();
     }
 
@@ -160,10 +160,10 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     // stage environment shadowing call tree
 
-    private EsopEnv<O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes,
-            IRelation<L> lt, IRegExpMatcher<L> re, S scope) {
+    private EsopEnv<O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re,
+            S scope) {
         EsopEnv<O> env = EsopEnv.empty(true);
-        for (L l : max(lt,L)) {
+        for (L l : max(lt, L)) {
             EsopEnv<O> partialEnv = env_L(smaller(lt, L, l), seenImports, seenScopes, lt, re, scope);
             partialEnv.shadow(env_l(seenImports, seenScopes, lt, re, l, scope));
             env.union(partialEnv);

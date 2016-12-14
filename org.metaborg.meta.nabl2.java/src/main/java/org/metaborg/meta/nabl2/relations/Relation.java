@@ -1,29 +1,32 @@
 package org.metaborg.meta.nabl2.relations;
 
 import java.util.Collection;
+import java.util.Collections;
+
+import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 public class Relation<T> implements IRelation<T> {
 
-    private final Reflexivity reflexivity;
-    private final Symmetry symmetry;
-    private final Transitivity transitivity;
+    private final RelationDescription description;
     private final Multimap<T,T> smaller;
     private final Multimap<T,T> larger;
 
-    public Relation(Reflexivity reflexivity, Symmetry symmetry, Transitivity transitivity) {
-        this.reflexivity = reflexivity;
-        this.symmetry = symmetry;
-        this.transitivity = transitivity;
+    public Relation(RelationDescription description) {
+        this.description = description;
         this.smaller = HashMultimap.create();
         this.larger = HashMultimap.create();
     }
 
+    @Override public RelationDescription getDescription() {
+        return description;
+    }
+
     public void add(T t1, T t2) throws RelationException {
         if (t1.equals(t2)) {
-            switch (reflexivity) {
+            switch (description.getReflexivity()) {
             case REFLEXIVE:
                 return;
             case IRREFLEXIVE:
@@ -35,7 +38,7 @@ public class Relation<T> implements IRelation<T> {
 
         extend(t1, t2, smaller, larger);
 
-        switch (symmetry) {
+        switch (description.getSymmetry()) {
         case SYMMETRIC:
             extend(t1, t2, larger, smaller);
             break;
@@ -53,7 +56,7 @@ public class Relation<T> implements IRelation<T> {
         larger.put(t1, t2);
         smaller.put(t2, t1);
 
-        switch (transitivity) {
+        switch (description.getTransitivity()) {
         case TRANSITIVE:
             final Collection<T> largerTs = larger.get(t2);
             final Collection<T> smallerTs = smaller.get(t1);
@@ -85,25 +88,25 @@ public class Relation<T> implements IRelation<T> {
         }
     }
 
-    @Override public Iterable<T> smaller(T t) {
+    @Override public Collection<T> smaller(T t) {
         Collection<T> ts = smaller.get(t);
-        if (reflexivity.equals(Reflexivity.REFLEXIVE)) {
+        if (description.getReflexivity().equals(Reflexivity.REFLEXIVE)) {
             ts.add(t);
         }
-        return ts;
+        return Collections.unmodifiableCollection(ts);
     }
 
-    @Override public Iterable<T> larger(T t) {
+    @Override public Collection<T> larger(T t) {
         Collection<T> ts = larger.get(t);
-        if (reflexivity.equals(Reflexivity.REFLEXIVE)) {
+        if (description.getReflexivity().equals(Reflexivity.REFLEXIVE)) {
             ts.add(t);
         }
-        return ts;
+        return Collections.unmodifiableCollection(ts);
     }
 
     @Override public boolean contains(T t1, T t2) {
         if (t1.equals(t2)) {
-            switch (reflexivity) {
+            switch (description.getReflexivity()) {
             case REFLEXIVE:
                 return true;
             case IRREFLEXIVE:

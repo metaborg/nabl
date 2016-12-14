@@ -15,6 +15,8 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCResolve;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCCheckRelation;
+import org.metaborg.meta.nabl2.constraints.relations.ImmutableCGlb;
+import org.metaborg.meta.nabl2.constraints.relations.ImmutableCLub;
 import org.metaborg.meta.nabl2.constraints.sets.ImmutableCDistinct;
 import org.metaborg.meta.nabl2.constraints.sets.ImmutableCSubsetEq;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
@@ -75,6 +77,12 @@ public class ConstraintTerms {
             }),
             M.appl4("CCheckRel", M.term(), RelationName.matcher(), M.term(), MessageInfo.matcher(), (c, term1, rel, term2, origin) -> {
                 return ImmutableCCheckRelation.of(term1, rel, term2, origin);
+            }),
+            M.appl5("CLub", M.term(), RelationName.matcher(), M.term(), M.term(), MessageInfo.matcher(), (c, result, rel, term1, term2, origin) -> {
+                return ImmutableCLub.of(result, rel, term1, term2, origin);
+            }),
+            M.appl5("CGlb", M.term(), RelationName.matcher(), M.term(), M.term(), MessageInfo.matcher(), (c, result, rel, term1, term2, origin) -> {
+                return ImmutableCGlb.of(result, rel, term1, term2, origin);
             }),
             M.appl3("CAstProperty", TermIndex.matcher(), M.term(), M.term(), (c, index, key, value) -> {
                 return ImmutableCAstProperty.of(index,key,value, ImmutableMessageInfo.of(index));

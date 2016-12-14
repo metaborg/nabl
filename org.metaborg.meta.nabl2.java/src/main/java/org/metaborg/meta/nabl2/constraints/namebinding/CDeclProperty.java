@@ -17,7 +17,7 @@ public abstract class CDeclProperty implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getValue();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Value.Check public void check() {
         Preconditions.checkArgument(getKey().isGround());
     }

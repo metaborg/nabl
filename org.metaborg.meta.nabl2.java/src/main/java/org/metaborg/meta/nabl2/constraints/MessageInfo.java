@@ -33,15 +33,28 @@ public abstract class MessageInfo implements IMessageInfo {
     public static MessageInfo of(ITerm term) {
         return ImmutableMessageInfo.of(Kind.ERROR, Optional.empty(), Optional.of(term));
     }
-    
+
     public static IMatcher<MessageInfo> simpleMatcher() {
         return M.term(MessageInfo::of);
     }
 
     public static IMatcher<MessageInfo> matcher() {
-        return M.appl3("Message", kind(), M.term(), origin(), (appl, kind, message, origin) -> {
-            return ImmutableMessageInfo.of(kind, Optional.of(message), origin);
+        return M.appl3("Message", kind(), message(), origin(), (appl, kind, message, origin) -> {
+            return ImmutableMessageInfo.of(kind, message, origin);
         });
+    }
+
+    private static IMatcher<Optional<ITerm>> message() {
+        return M.cases(
+            // @formatter:off
+            M.appl0("Default", (t) -> {
+                return Optional.empty();
+            }),
+            M.term((t) -> {
+                return Optional.of(t);
+            })
+            // @formatter:on
+        );
     }
 
     private static IMatcher<Optional<ITerm>> origin() {

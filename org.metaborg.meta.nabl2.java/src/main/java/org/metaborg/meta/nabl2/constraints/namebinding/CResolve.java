@@ -15,7 +15,7 @@ public abstract class CResolve implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getDeclaration();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseResolve(this);
     }

@@ -29,5 +29,5 @@ public interface ISolution {
     IRelations getRelations();
 
     IUnifier getUnifier();
-    
+
 }

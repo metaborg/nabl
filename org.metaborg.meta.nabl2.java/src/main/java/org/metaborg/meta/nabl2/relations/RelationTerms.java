@@ -4,9 +4,9 @@ import java.util.Map;
 
 import org.metaborg.meta.nabl2.collections.ImmutableTuple2;
 import org.metaborg.meta.nabl2.collections.Tuple2;
-import org.metaborg.meta.nabl2.relations.IRelation.Reflexivity;
-import org.metaborg.meta.nabl2.relations.IRelation.Symmetry;
-import org.metaborg.meta.nabl2.relations.IRelation.Transitivity;
+import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
+import org.metaborg.meta.nabl2.relations.RelationDescription.Symmetry;
+import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.solver.Relations;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -37,7 +37,7 @@ public class RelationTerms {
                 sym = symmetry().match(propTerm).orElse(sym);
                 trans = transitivity().match(propTerm).orElse(trans);
             }
-            return ImmutableTuple2.of(name, new Relation<ITerm>(refl, sym, trans));
+            return ImmutableTuple2.of(name, new Relation<ITerm>(ImmutableRelationDescription.of(refl, sym, trans)));
         });
     }
 

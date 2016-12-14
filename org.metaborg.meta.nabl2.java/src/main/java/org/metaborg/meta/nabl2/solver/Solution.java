@@ -17,18 +17,18 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IProperties<TermIndex> getAstProperties();
-    
+
     @Value.Parameter @Override public abstract IScopeGraph<Scope,Label,Occurrence> getScopeGraph();
 
     @Value.Parameter @Override public abstract INameResolution<Scope,Label,Occurrence> getNameResolution();
 
     @Value.Parameter @Override public abstract IProperties<Occurrence> getDeclProperties();
-    
+
     @Value.Parameter @Override public abstract IRelations getRelations();
 
     @Value.Parameter @Override public abstract IUnifier getUnifier();
- 
-    
+
+
     @Value.Parameter public abstract List<Message> getErrors();
 
     @Value.Parameter public abstract List<Message> getWarnings();

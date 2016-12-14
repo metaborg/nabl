@@ -18,7 +18,7 @@ public abstract class CCheckRelation implements IRelationConstraint {
     @Value.Parameter public abstract ITerm getRight();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseCheck(this);
     }

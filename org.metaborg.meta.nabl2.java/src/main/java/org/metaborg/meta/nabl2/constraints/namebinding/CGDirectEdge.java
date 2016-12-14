@@ -18,7 +18,7 @@ public abstract class CGDirectEdge implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getTargetScope();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseDirectEdge(this);
     }

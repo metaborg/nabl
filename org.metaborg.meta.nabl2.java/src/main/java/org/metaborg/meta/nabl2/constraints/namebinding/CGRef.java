@@ -15,7 +15,7 @@ public abstract class CGRef implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getScope();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
-    
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseRef(this);
     }

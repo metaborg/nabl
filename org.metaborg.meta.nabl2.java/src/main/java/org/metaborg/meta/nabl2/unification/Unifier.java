@@ -96,7 +96,7 @@ public class Unifier implements IUnifier, Serializable {
         if (leftRep.equals(rightRep)) {
             return unit;
         } else if (leftRep.isGround() && rightRep.isGround()) {
-            throw new UnificationException("Cannot unify different ground terms.");
+            throw new UnificationException("Cannot unify " + leftRep + " with " + rightRep);
         }
         return leftRep.matchOrThrow(Terms.<Unit, UnificationException> checkedCases(
             // @formatter:off
