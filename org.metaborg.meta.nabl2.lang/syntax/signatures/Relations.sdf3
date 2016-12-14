@@ -19,11 +19,14 @@ context-free syntax
 
 context-free syntax
 
-  RelationDef.RelationDef = <<{RelationOption ","}*> <Relation> <RelationOps>>
+  RelationDef.RelationDef = <<{RelationOption ","}*> <Relation> <RelationType> <RelationOps>>
 
   RelationOption = Reflexivity
   RelationOption = Symmetry
   RelationOption = Transitivity
+
+  RelationType.TypeSort =
+  RelationType          = <of <SortRef>>
 
   RelationOps = <{<{RelationOp ","}*>}>
   RelationOps = {ast("[]")}
