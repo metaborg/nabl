@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.constraints;
 
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
@@ -10,11 +9,10 @@ import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.functions.CheckedFunction1;
-import org.metaborg.meta.nabl2.terms.ITerm;
 
 public interface IConstraint {
 
-    Optional<ITerm> getOriginatingTerm();
+    MessageInfo getMessageInfo();
 
     <T> T match(Cases<T> function);
 

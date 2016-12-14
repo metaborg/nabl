@@ -1,28 +1,26 @@
 package org.metaborg.meta.nabl2.sets;
 
+import org.metaborg.meta.nabl2.collections.Multibag;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-
 public class SetEvaluator {
 
-    public static IMatcher<Multimap<ITerm,ITerm>> matcher(IMatcher<Multimap<ITerm,ITerm>> elemMatcher) {
+    public static IMatcher<Multibag<ITerm,ITerm>> matcher(IMatcher<Multibag<ITerm,ITerm>> elemMatcher) {
         return M.casesFix(m -> Iterables2.from(
             // @formatter:off
             elemMatcher,
-            M.appl0("EmptySet",(t) -> HashMultimap.create()),
+            M.appl0("EmptySet",(t) -> Multibag.create()),
             M.appl2("Union", m, m, (t, leftSet, rightSet) -> {
-                Multimap<ITerm,ITerm> result = HashMultimap.create(leftSet);
+                Multibag<ITerm,ITerm> result = Multibag.create();
                 result.putAll(leftSet);
                 result.putAll(rightSet);
                 return result;
             }),
             M.appl2("Isect", m, m, (t, leftSet, rightSet) -> {
-                Multimap<ITerm,ITerm> result = HashMultimap.create();
+                Multibag<ITerm,ITerm> result = Multibag.create();
                 result.putAll(leftSet);
                 result.putAll(rightSet);
                 result.keySet().retainAll(rightSet.keySet());
@@ -30,7 +28,8 @@ public class SetEvaluator {
                 return result;
             }),
             M.appl2("Diff", m, m, (t, leftSet, rightSet) -> {
-                Multimap<ITerm,ITerm> result = HashMultimap.create(leftSet);
+                Multibag<ITerm,ITerm> result = Multibag.create();
+                result.putAll(leftSet);
                 result.keySet().removeAll(rightSet.keySet());
                 return result;
             })

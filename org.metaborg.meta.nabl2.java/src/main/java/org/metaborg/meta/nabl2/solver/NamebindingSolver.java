@@ -6,9 +6,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.metaborg.meta.nabl2.collections.Multibag;
 import org.metaborg.meta.nabl2.collections.Unit;
-import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGAssoc;
@@ -33,10 +34,9 @@ import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public class NamebindingSolver implements ISolverComponent<INamebindingConstraint> {
@@ -103,10 +103,10 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         return progress;
     }
 
-    @Override public void finish() throws UnsatisfiableException {
-        if (!defered.isEmpty()) {
-            throw new UnsatisfiableException("Unsolved namebinding constraint.", defered.toArray(new IConstraint[0]));
-        }
+    @Override public Iterable<UnsatisfiableException> finish() {
+        return defered.stream().map(c -> {
+            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty());
+        }).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -199,16 +199,16 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             List<Occurrence> declarations = Lists.newArrayList(decls.get());
             switch (declarations.size()) {
             case 0:
-                throw new UnsatisfiableException(ref + " does not resolve.", r);
+                throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty());
             case 1:
                 try {
                     unifier.unify(r.getDeclaration(), declarations.get(0));
                 } catch (UnificationException ex) {
-                    throw new UnsatisfiableException(ex.getMessage(), ex, r);
+                    throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
                 }
                 return true;
             default:
-                throw new UnsatisfiableException("Resolution of " + ref + " is ambiguous.", r);
+                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty());
             }
         } else {
             return false;
@@ -228,16 +228,18 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocs(decl, label));
         switch (scopes.size()) {
         case 0:
-            throw new UnsatisfiableException(decl + " has no " + label + " associated scope.", a);
+            throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2
+                    .empty());
         case 1:
             try {
                 unifier.unify(a.getScope(), scopes.get(0));
             } catch (UnificationException ex) {
-                throw new UnsatisfiableException(ex.getMessage(), ex, a);
+                throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
             }
             return true;
         default:
-            throw new UnsatisfiableException(decl + " has multiple " + label + " associated scopes.", a);
+            throw a.getMessageInfo().makeException(decl + " has multiple " + label + " associated scopes.", Iterables2
+                    .empty());
         }
     }
 
@@ -256,7 +258,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             try {
                 unifier.unify(c.getValue(), prev.get());
             } catch (UnificationException ex) {
-                throw new UnsatisfiableException(ex.getMessage(), ex, c);
+                throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
             }
         }
         return true;
@@ -264,12 +266,12 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     // ------------------------------------------------------------------------------------------------------//
 
-    public IMatcher<Multimap<ITerm,ITerm>> nameSets() {
+    public IMatcher<Multibag<ITerm,ITerm>> nameSets() {
         return term -> {
             if (NamebindingSolver.this.nameResolution == null) {
                 return Optional.empty();
             }
-            return M.<Optional<Multimap<ITerm,ITerm>>> cases(
+            return M.<Optional<Multibag<ITerm,ITerm>>> cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls(scope);
@@ -286,17 +288,21 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryReachable(scope);
                     return decls.map(ds -> makeSet(ds, ns));
+                    
+                    
                 })
                 // @formatter:on
             ).match(term).flatMap(o -> o);
         };
     }
 
-    private Multimap<ITerm,ITerm> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
-        Multimap<ITerm,ITerm> result = HashMultimap.create();
+    private Multibag<ITerm,ITerm> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
+        Multibag<ITerm,ITerm> result = Multibag.create();
         for (Occurrence occurrence : occurrences) {
             if (!namespace.getName().filter(ns -> !occurrence.getNamespace().equals(namespace)).isPresent()) {
-                result.put(occurrence.getName(), occurrence.getPosition());
+                // FIXME: The position should be the index, but origins seem to
+                // be lost
+                result.put(occurrence.getName(), occurrence.getName());
             }
         }
         return result;

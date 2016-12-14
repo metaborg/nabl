@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
@@ -10,8 +11,7 @@ import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.Lists;
 
 public class Solver {
 
@@ -25,9 +25,9 @@ public class Solver {
     private final RelationSolver relationSolver;
     private final SetSolver setSolver;
 
-    private final Multimap<ITerm,String> errors;
-    private final Multimap<ITerm,String> warnings;
-    private final Multimap<ITerm,String> notes;
+    private final List<Message> errors;
+    private final List<Message> warnings;
+    private final List<Message> notes;
 
     private Solver(ResolutionParameters resolutionParams, Relations relations) {
         this.unifier = new Unifier();
@@ -38,9 +38,9 @@ public class Solver {
         this.relationSolver = new RelationSolver(relations, unifier);
         this.setSolver = new SetSolver(namebindingSolver.nameSets(), unifier);
 
-        this.errors = HashMultimap.create();
-        this.warnings = HashMultimap.create();
-        this.notes = HashMultimap.create();
+        this.errors = Lists.newArrayList();
+        this.warnings = Lists.newArrayList();
+        this.notes = Lists.newArrayList();
     }
 
     private void add(Iterable<IConstraint> constraints) {
@@ -73,35 +73,40 @@ public class Solver {
     }
 
     private void finish() {
-        baseSolver.finish();
-        astSolver.finish();
-        try {
-            equalitySolver.finish();
-        } catch (UnsatisfiableException e) {
-            addErrors(e);
+        for (UnsatisfiableException ex : baseSolver.finish()) {
+            addErrors(ex);
         }
-        try {
-            namebindingSolver.finish();
-        } catch (UnsatisfiableException e) {
-            addErrors(e);
+        for (UnsatisfiableException ex : astSolver.finish()) {
+            addErrors(ex);
         }
-        try {
-            relationSolver.finish();
-        } catch (UnsatisfiableException e) {
-            addErrors(e);
+        for (UnsatisfiableException ex : equalitySolver.finish()) {
+            addErrors(ex);
         }
-        try {
-            setSolver.finish();
-        } catch (UnsatisfiableException e) {
-            addErrors(e);
+        for (UnsatisfiableException ex : namebindingSolver.finish()) {
+            addErrors(ex);
+        }
+        for (UnsatisfiableException ex : relationSolver.finish()) {
+            addErrors(ex);
+        }
+        for (UnsatisfiableException ex : setSolver.finish()) {
+            addErrors(ex);
         }
     }
 
     private void addErrors(UnsatisfiableException e) {
-        for (IConstraint c : e.getUnsatCore()) {
-            c.getOriginatingTerm().ifPresent(t -> {
-                errors.put(t, e.getMessage());
-            });
+        for (ITerm t : e.getProgramPoints()) {
+            ImmutableMessage message = ImmutableMessage.of(t, e.getMessage());
+            switch (e.getKind()) {
+            case ERROR:
+                errors.add(message);
+                break;
+            case WARNING:
+                warnings.add(message);
+                break;
+            case NOTE:
+                notes.add(message);
+                break;
+            }
         }
     }
 

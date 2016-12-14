@@ -23,7 +23,6 @@ rules
     normalize-list-matches;
     normalize-rule-vars;
     normalize-constraints;
-    workaround-remove-NAMEs;
     normalize-messages;
     normalize-indices;
     normalize-rule-names
@@ -130,14 +129,6 @@ rules
   normalize-constraint:
     CSetEq(s1,s2,msginfo) ->
       [CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo)]
-
-rules
-
-  workaround-remove-NAMEs = topdown(try(workaround-remove-NAME))
-
-  // create default error message
-  workaround-remove-NAME:
-    NAME() -> DefaultIndex()
 
 rules
 

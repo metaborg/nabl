@@ -2,9 +2,9 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.collections.Unit;
-import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
@@ -14,6 +14,7 @@ import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.CM;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Sets;
 
@@ -61,10 +62,10 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         return progress;
     }
 
-    @Override public void finish() throws UnsatisfiableException {
-        if (!defered.isEmpty()) {
-            throw new UnsatisfiableException("Unsolved relation constraint.", defered.toArray(new IConstraint[0]));
-        }
+    @Override public Iterable<UnsatisfiableException> finish() {
+        return defered.stream().map(c -> {
+            return c.getMessageInfo().makeException("Unsolved relation constraint.", Iterables2.empty());
+        }).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -85,7 +86,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         try {
             relations.getRelation(c.getRelation()).add(left, right);
         } catch (RelationException e) {
-            throw new UnsatisfiableException(e, c);
+            throw c.getMessageInfo().makeException(e.getMessage(), Iterables2.empty());
         }
         return true;
     }
@@ -100,7 +101,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         return CM.list((leftList) -> {
             return CM.list((rightList) -> {
                 if (leftList.getLength() != rightList.getLength()) {
-                    throw new UnsatisfiableException("Lists have different length", c);
+                    throw c.getMessageInfo().makeException("Lists have different length", Iterables2.empty());
                 }
                 Iterator<ITerm> leftIt = leftList.iterator();
                 Iterator<ITerm> rightIt = rightList.iterator();
@@ -110,7 +111,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
                     }
                 }
                 return true;
-            }).matchOrThrow(right).orElseThrow(() -> new UnsatisfiableException(c));
+            }).matchOrThrow(right).orElseThrow(() -> c.getMessageInfo().makeException("Lists must match another list.", Iterables2.empty()));
         }).matchOrThrow(left).orElseGet(() -> relation.contains(left, right));
     }
 

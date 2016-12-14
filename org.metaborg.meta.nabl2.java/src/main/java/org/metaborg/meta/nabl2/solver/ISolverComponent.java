@@ -26,8 +26,8 @@ public interface ISolverComponent<C extends IConstraint> {
      * Called when none of the solver components can make any more progress. Can
      * be used for final checks, or errors on unsolved constraints.
      * 
-     * @throws UnsatisfiableException
+     * @return UnsatisfiableException
      */
-    void finish() throws UnsatisfiableException;
+    Iterable<UnsatisfiableException> finish();
 
 }

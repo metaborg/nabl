@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.constraints.sets;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -10,6 +11,8 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 public abstract class CDistinct implements ISetConstraint {
 
     @Value.Parameter public abstract ITerm getSet();
+
+    @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseDistinct(this);

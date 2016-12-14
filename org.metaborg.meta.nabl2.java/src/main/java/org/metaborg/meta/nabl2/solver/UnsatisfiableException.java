@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
-import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.MessageInfo.Kind;
+import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.collect.ImmutableList;
 
@@ -8,27 +9,25 @@ public class UnsatisfiableException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableList<IConstraint> unsatCore;
+    private final Kind kind;
+    private final ImmutableList<ITerm> programPoints;
 
-    public UnsatisfiableException(IConstraint... unsatCore) {
-        this((Throwable) null, unsatCore);
+    public UnsatisfiableException(Kind kind, String message, Iterable<ITerm> programPoints) {
+        this(kind, message, null, programPoints);
     }
 
-    public UnsatisfiableException(Throwable cause, IConstraint... unsatCore) {
-        this("Constraints cannot be satisfied.", cause, unsatCore);
-    }
-
-    public UnsatisfiableException(String message, IConstraint... unsatCore) {
-        this(message, null, unsatCore);
-    }
-
-    public UnsatisfiableException(String message, Throwable cause, IConstraint... unsatCore) {
+    public UnsatisfiableException(Kind kind, String message, Throwable cause, Iterable<ITerm> programPoints) {
         super(message, cause);
-        this.unsatCore = ImmutableList.copyOf(unsatCore);
+        this.kind = kind;
+        this.programPoints = ImmutableList.copyOf(programPoints);
     }
 
-    public Iterable<IConstraint> getUnsatCore() {
-        return unsatCore;
+    public Kind getKind() {
+        return kind;
+    }
+
+    public Iterable<ITerm> getProgramPoints() {
+        return programPoints;
     }
 
 }

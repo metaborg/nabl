@@ -11,6 +11,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.util.iterators.Iterables2;
 
 public class AstSolver implements ISolverComponent<IAstConstraint> {
 
@@ -33,7 +34,7 @@ public class AstSolver implements ISolverComponent<IAstConstraint> {
                 try {
                     unifier.unify(oldValue.get(), p.getValue());
                 } catch (UnificationException e) {
-                    throw new UnsatisfiableException(e, p);
+                    throw constraint.getMessageInfo().makeException(e.getMessage(), Iterables2.empty());
                 }
             }
             return unit;
@@ -44,7 +45,8 @@ public class AstSolver implements ISolverComponent<IAstConstraint> {
         return false;
     }
 
-    @Override public void finish() {
+    @Override public Iterable<UnsatisfiableException> finish() {
+        return Iterables2.empty();
     }
 
 }
