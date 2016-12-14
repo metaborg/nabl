@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 
@@ -7,7 +8,9 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.collect.Maps;
 
-public class Properties<T> implements IProperties<T> {
+public class Properties<T> implements IProperties<T>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final Map<T,Map<ITerm,ITerm>> data;
 
