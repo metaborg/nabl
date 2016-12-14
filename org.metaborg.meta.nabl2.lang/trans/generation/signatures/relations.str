@@ -19,7 +19,7 @@ rules
     section* -> [Rules(relstr*)]
     with reldef* := <filter(?Signature(<id>));concat;
                      filter(?Relations(<id>));concat;
-                     map(\ RelationDef(name,opts) -> (name,opts) \)> section*;
+                     map(\ RelationDef(opts,name,_) -> (name,opts) \)> section*;
          if [_|_] := reldef* then
            relterm* := <map(explode(injection-to-term))> reldef*;
            relstr* := [ |[ nabl2--custom-relations = !~List(relterm*) ]| ]

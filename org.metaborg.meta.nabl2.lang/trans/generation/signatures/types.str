@@ -12,28 +12,21 @@ imports
 rules
 
   signature-to-str:
-    Types(typesig*) -> [
-      Signature([Constructors([typedeclstr*])]),
-      Rules(rule*)
+    Constructors(opdecl*) -> [
+      Signature([Constructors([opdeclstr*])])
     ]
-    with typedeclstr* := <map(typesig-to-opdecl)> typesig*
-    with rule* := <map(typesig-to-str)> typesig*
+    with opdeclstr* := <map(opdecl-to-str)> opdecl*
 
-  typesig-to-opdecl:
-    TypeSig(c,a*) -> OpDecl(c,sstr)
+  opdecl-to-str:
+    OpDecl(c,a*,s) -> OpDecl(c,sstr)
     where [] := a*
-    with sstr := ConstType(<type-sort;sort-to-str>)
+    with sstr := ConstType(<sort-to-str> s)
  
-  typesig-to-opdecl:
-    TypeSig(c,a*) -> OpDecl(c,FunType(astr*,sstr))
+  opdecl-to-str:
+    OpDecl(c,a*,s) -> OpDecl(c,FunType(astr*,sstr))
     where [_|_] := a*
-    with sstr := ConstType(<type-sort;sort-to-str>);
-         astr* := <map(Snd;sort-to-str;!ConstType(<id>))> a*
-
-  typesig-to-str:
-    TypeSig(c,a*) -> |[ nabl2--type-sig-of-hook: ~op -> ~args ]|
-    with op := Op(c,<map(!Wld())> a*);
-         args := List(<map(explode(term-to-term))> a*)
+    with sstr := ConstType(<sort-to-str> s);
+         astr* := <map(sort-to-str;!ConstType(<id>))> a*
 
   sort-to-str: SortNoArgs(name) -> SortNoArgs(name)
   sort-to-str: ListSort(arg) -> Sort("List", [<sort-to-str> arg])

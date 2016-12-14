@@ -12,18 +12,15 @@ template options
 
   keyword -/- [a-zA-Z0-9\'\_]
 
-syntax
+context-free syntax
 
 //TypeVar.TVar = <'<TVarId>> // FIXME Use NaBL2_ prefix
 //CTerm        = TypeVar
 
-  Constraint-CF.CBuildRel = CTerm-CF LAYOUT?-CF "<" RelationRef-CF "!"  LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
+  Constraint.CBuildRel = <<CTerm> <RelationBuildOp> <CTerm> <Message>>
 
-  Constraint-CF.CCheckRel = CTerm-CF LAYOUT?-CF "<" RelationRef-CF "?" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
+  Constraint.CCheckRel = <<CTerm> <RelationCheckOp> <CTerm> <Message>>
 
-  Constraint-CF.CLub = CTerm-CF LAYOUT?-CF "is" LAYOUT?-CF LubRelation-CF "lub" "(" LAYOUT?-CF CTerm-CF  LAYOUT?-CF "," LAYOUT?-CF CTerm-CF LAYOUT?-CF ")" LAYOUT?-CF Message-CF
+  Constraint.CLub = <<CTerm> is <RelationLubOpen><CTerm>,<CTerm>) <Message>>
 
-  Constraint-CF.CGlb = CTerm-CF LAYOUT?-CF "is" LAYOUT?-CF LubRelation-CF "glb" "(" LAYOUT?-CF CTerm-CF  LAYOUT?-CF "," LAYOUT?-CF CTerm-CF LAYOUT?-CF ")" LAYOUT?-CF Message-CF
-
-  LubRelation-CF.DefaultRelation =
-  LubRelation-CF.Relation        = RelationId-LEX "."
+  Constraint.CGlb = <<CTerm> is <RelationGlbOpen><CTerm>,<CTerm>) <Message>>

@@ -17,11 +17,25 @@ context-free syntax
       <{RelationDef "\n"}*>
   > {longest-match}
 
-  RelationDef.RelationDef = <<Relation> <RelationOptions>>
+context-free syntax
 
-  RelationOptions = <(<{RelationOption ","}*>)>
-  RelationOptions =                                {ast("[]")}
+  RelationDef.RelationDef = <<{RelationOption ","}*> <Relation> <RelationOps>>
 
   RelationOption = Reflexivity
   RelationOption = Symmetry
   RelationOption = Transitivity
+
+  RelationOps = <{<{RelationOp ","}*>}>
+  RelationOps = {ast("[]")}
+ 
+syntax 
+
+  RelationOp-CF.OpDecl = OpId-LEX "(" LAYOUT?-CF RelationVariances-CF LAYOUT?-CF ")"
+
+  RelationVariance-CF.Invar = "="
+  RelationVariance-CF.Covar = "+" RelationRef-CF
+  RelationVariance-CF.Contravar = "-" RelationRef-CF
+
+context-free syntax
+
+  RelationVariances = {RelationVariance ","}*

@@ -19,3 +19,14 @@ context-free syntax
 
   RelationRef.DefaultRelation =
   RelationRef                 = Relation
+
+syntax
+
+  RelationBuildOp-CF = "<" RelationRef-CF "!"
+  RelationCheckOp-CF = "<" RelationRef-CF "?"
+
+  RelationLubOpen-CF = OpRelation-CF "lub" "("
+  RelationGlbOpen-CF = OpRelation-CF "glb" "("
+
+  OpRelation-CF.DefaultRelation =
+  OpRelation-CF.Relation        = RelationId-LEX "."

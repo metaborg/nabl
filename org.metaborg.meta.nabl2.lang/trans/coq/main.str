@@ -110,8 +110,8 @@ rules // Signatures
  			<cgen-sigs-to-coq> cs
  	
  	sig-to-coq:
- 		Types(ts) ->
- 			<type-sigs-to-coq;
+ 		Constructors(ts) ->
+ 			<opdecls-to-coq;
  			mbind(\ ts' ->
  			[Inductive([Induc("T", None(), Type(),
  				ListDeclBar(ts'))])] \)> ts
@@ -178,20 +178,20 @@ rules	// Constraint generation signatures
 
 rules // Type signatures
 
-	type-sigs-to-coq:
+	opdecls-to-coq:
 		[tsig|tsigs] ->
-			<type-sig-to-coq;
+			<opdecl-to-coq;
 				mbind(\ y ->
-				<type-sigs-to-coq;
+				<opdecls-to-coq;
 				mbind(\ tsigs' ->
 				<cons-if-some> (y, tsigs') \)> tsigs \)> tsig
 
-	type-sigs-to-coq:
+	opdecls-to-coq:
 		[] -> []
 
-  type-sig-to-coq:
-    TypeSig(tname, tparams) -> 
-			<foldr(!<type-sort-to-coq> TypeSort(),
+  opdecl-to-coq:
+    OpDecl(tname, tparams, tsort@TypeSort()) -> 
+			<foldr(!<type-sort-to-coq> tsort,
 					\ (x, y) ->
 						<mbind(\ z ->
 						<type-sort-tuple-to-coq;
@@ -202,13 +202,13 @@ rules // Type signatures
 			ConsDecl(tname, None(),
 				OptType(t)) \)> tparams
 	
-	type-sig-to-coq:
+	opdecl-to-coq:
 		x ->
 			<concat-strings; err>
 				["Encountered unexpected type signature: ",
 					<write-to-string> x, ". Please report."]
 		where
-			not(?TypeSig(_, _))
+			not(?OpDecl(_, _, TypeSort()))
 
 rules // NaBL2 sorts
 
