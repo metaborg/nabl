@@ -3,7 +3,7 @@ package org.metaborg.meta.nabl2.spoofax;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.ConstraintTerms;
-import org.metaborg.meta.nabl2.relations.RelationTerms;
+import org.metaborg.meta.nabl2.relations.terms.Relations;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
@@ -14,8 +14,8 @@ public class ResultTerms {
 
     public static IMatcher<InitialResult> initialOf() {
         return M.appl4("InitialResult", ConstraintTerms.constraints(), args(), ResolutionParameters.matcher(),
-                RelationTerms.relations(), (t, constraints, args, params, relations) -> {
-                    return ImmutableInitialResult.of(constraints, args, params, relations);
+                Relations.matcher(), (t, constraints, args, params, relations) -> {
+                    return (InitialResult)ImmutableInitialResult.of(constraints, args, params, relations);
                 });
     }
 

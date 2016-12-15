@@ -19,26 +19,29 @@ context-free syntax
 
 context-free syntax
 
-  RelationDef.RelationDef = <<{RelationOption ","}*> <Relation> <RelationType> <RelationOps>>
+  RelationDef.RelationDef = <<{RelationOption ","}*> <Relation> <RelationType> <VariancePatterns>>
 
   RelationOption = Reflexivity
   RelationOption = Symmetry
   RelationOption = Transitivity
 
   RelationType.TypeSort =
-  RelationType          = <of <SortRef>>
+  RelationType          = <: <SortRef>>
 
-  RelationOps = <{<{RelationOp ","}*>}>
-  RelationOps = {ast("[]")}
+  VariancePatterns      = <{<{VariancePattern ","}*>}>
+  VariancePatterns      = {ast("[]")}
+ 
+  VariancePattern.List  = <[<Variance>]>
+  VariancePattern.Tuple = <(<{Variance ","}*>)>
  
 syntax 
 
-  RelationOp-CF.OpDecl = OpId-LEX "(" LAYOUT?-CF RelationVariances-CF LAYOUT?-CF ")"
+  VariancePattern-CF.Op   = OpId-LEX "(" LAYOUT?-CF Variances-CF LAYOUT?-CF ")"
 
-  RelationVariance-CF.Invar = "="
-  RelationVariance-CF.Covar = "+" RelationRef-CF
-  RelationVariance-CF.Contravar = "-" RelationRef-CF
+  Variance-CF.Invar     = "="
+  Variance-CF.Covar     = "+" RelationRef-CF
+  Variance-CF.Contravar = "-" RelationRef-CF
 
 context-free syntax
 
-  RelationVariances = {RelationVariance ","}*
+  Variances = {Variance ","}*

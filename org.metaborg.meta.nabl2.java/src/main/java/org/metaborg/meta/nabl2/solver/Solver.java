@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.relations.terms.Relations;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.Unifier;
@@ -29,7 +30,7 @@ public class Solver {
     private final List<Message> warnings;
     private final List<Message> notes;
 
-    private Solver(ResolutionParameters resolutionParams, Relations relations) {
+    private Solver(ResolutionParameters resolutionParams, Relations<ITerm> relations) {
         this.unifier = new Unifier();
         this.baseSolver = new BaseSolver();
         this.equalitySolver = new EqualitySolver(unifier);
@@ -110,7 +111,7 @@ public class Solver {
         }
     }
 
-    public static Solution solve(ResolutionParameters resolutionParams, Relations relations,
+    public static Solution solve(ResolutionParameters resolutionParams, Relations<ITerm> relations,
             Iterable<IConstraint> constraints) throws UnsatisfiableException {
         long t0 = System.nanoTime();
         logger.info(">>> Solving constraints <<<");

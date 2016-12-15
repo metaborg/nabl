@@ -17,7 +17,7 @@ rules
 
   normalize =
     normalize-axioms;
-    normalize-types-sections;
+    normalize-types;
     normalize-term-matches;
     normalize-type-matches;
     normalize-list-matches;
@@ -42,14 +42,30 @@ rules
 
 rules
 
-  normalize-types-sections = try(sometd(normalize-types-section))
+  normalize-types = try(sometd(normalize-types-signature))
+
+  normalize-types-signature: Signature(sig*) -> Signature(sig'*)
+    with sig'* := <map(normalize-types-section <+ MkSingleton);concat> sig*
 
   normalize-types-section:
-    Types(typesig*) -> Constructors(opdecl*)
-    with opdecl* := <map(normalize-type-sig)> typesig*
+    Types(typesig*) -> [ctors,rels]
+    with opdecl* := <map(normalize-type-sig)> typesig*;
+         ctors := Constructors(opdecl*);
+         vardecl* := <filter(where(?TypeSig(_,<not(all(?(Invar(),_)))>)))> typesig*;
+         relop* := <map(normalize-rel-type)> vardecl*;
+         relopt* := [Reflexive(), AntiSymmetric(), Transitive()];
+         listrelop := List(Covar(DefaultRelation()));
+         rels := Relations([RelationDef(relopt*,DefaultRelation(),TypeSort(),[listrelop|relop*])])
 
   normalize-type-sig:
-    TypeSig(op,a*) -> OpDecl(op, a*, <type-sort>)
+    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, <type-sort>)
+
+  normalize-rel-type:
+    TypeSig(op,a*) -> Op(op, <map(Fst;normalize-type-variance)> a*)
+
+  normalize-type-variance: Invar() -> Invar()
+  normalize-type-variance: Covar() -> Covar(DefaultRelation())
+  normalize-type-variance: Contravar() -> Contravar(DefaultRelation())
 
 rules
 

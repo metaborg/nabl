@@ -1,14 +1,37 @@
-package org.metaborg.meta.nabl2.relations;
+package org.metaborg.meta.nabl2.relations.terms;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
 
+import org.metaborg.meta.nabl2.collections.ImmutableTuple2;
+import org.metaborg.meta.nabl2.collections.Tuple2;
+import org.metaborg.meta.nabl2.relations.IRelation;
+import org.metaborg.meta.nabl2.relations.ImmutableRelationDescription;
+import org.metaborg.meta.nabl2.relations.ReflexivityException;
+import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
+import org.metaborg.meta.nabl2.relations.RelationDescription.Symmetry;
+import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
+import org.metaborg.meta.nabl2.relations.RelationException;
+import org.metaborg.meta.nabl2.relations.SymmetryException;
+import org.metaborg.meta.nabl2.relations.TransitivityException;
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
+import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
-public class Relation<T> implements IRelation<T> {
+public class Relation<T> implements IRelation<T>, Serializable {
+
+    private static ILogger logger = LoggerUtils.logger(Relation.class);
+    private static final long serialVersionUID = 42L;
 
     private final RelationDescription description;
     private final Multimap<T,T> smaller;
@@ -117,5 +140,42 @@ public class Relation<T> implements IRelation<T> {
         }
         return larger.get(t1).contains(t2);
     }
+
+    public Optional<T> leastUpperBound(T t1, T t2) {
+        if (!description.equals(RelationDescription.PARTIAL_ORDER)) {
+            logger.warn("Lub must be called on partial-order, ignored.");
+            return Optional.empty();
+        }
+        Set<T> bounds = Sets.newHashSet();
+        bounds.addAll(larger(t1));
+        bounds.retainAll(larger(t2));
+        return bounds.stream().filter(l -> bounds.stream().allMatch(g -> contains(l, g))).findFirst();
+    }
+
+    public Optional<T> greatestLowerbound(T t1, T t2) {
+        if (!description.equals(RelationDescription.PARTIAL_ORDER)) {
+            logger.warn("Glb must be called on partial-order, ignored.");
+            return Optional.empty();
+        }
+        Set<T> bounds = Sets.newHashSet();
+        bounds.addAll(smaller(t1));
+        bounds.retainAll(smaller(t2));
+        return bounds.stream().filter(g -> bounds.stream().allMatch(l -> contains(l, g))).findFirst();
+    }
+
+    public static IMatcher<Tuple2<RelationName,Relation<ITerm>>> matcher() {
+        return M.tuple2(RelationName.matcher(), M.listElems(), (term, name, properties) -> {
+            Reflexivity refl = Reflexivity.NON_REFLEXIVE;
+            Symmetry sym = Symmetry.NON_SYMMETRIC;
+            Transitivity trans = Transitivity.NON_TRANSITIVE;
+            for (ITerm propTerm : properties) {
+                refl = RelationOptions.reflexivity().match(propTerm).orElse(refl);
+                sym = RelationOptions.symmetry().match(propTerm).orElse(sym);
+                trans = RelationOptions.transitivity().match(propTerm).orElse(trans);
+            }
+            return ImmutableTuple2.of(name, new Relation<ITerm>(ImmutableRelationDescription.of(refl, sym, trans)));
+        });
+    }
+
 
 }

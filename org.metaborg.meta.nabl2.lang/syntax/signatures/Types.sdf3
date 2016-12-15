@@ -14,21 +14,19 @@ context-free syntax
   Signature.Types = <
     types
       <{TypeSig "\n"}*>
-  > {longest-match,deprecated("Use constructor section instead.")}
-
-
-context-free syntax
-
-  Signature.Constructors = <
-    constructors
-      <{OpDecl "\n"}*>
-  > {longest-match}
+  > {longest-match, deprecated("Use separate 'constructors' and 'relations' sections instead.")}
 
 syntax
 
-  TypeSig-CF.TypeSig = OpId-LEX "(" LAYOUT?-CF SortRefs-CF LAYOUT?-CF ")"
-  OpDecl-CF.OpDecl   = OpId-LEX "(" LAYOUT?-CF SortRefs-CF LAYOUT?-CF ")"  LAYOUT?-CF":" LAYOUT?-CF Sort-CF
+  TypeSig-CF.TypeSig = OpId-CF "(" LAYOUT?-CF TypeArgs-CF LAYOUT?-CF ")"
 
 context-free syntax
 
-  SortRefs = {SortRef ","}*
+  TypeArgs                = {TypeArg ","}*
+
+  TypeArg                 = <<TypeMod> <SortRef>>
+
+  TypeMod.Invar           =
+  TypeMod.Covar           = "covar"
+  TypeMod.Contravar       = "contravar"
+

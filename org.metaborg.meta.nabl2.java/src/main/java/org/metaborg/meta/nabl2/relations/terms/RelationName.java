@@ -3,8 +3,9 @@ package org.metaborg.meta.nabl2.relations.terms;
 import java.util.List;
 import java.util.Optional;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.scopegraph.INamespace;
+import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
@@ -15,14 +16,15 @@ import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import com.google.common.collect.ImmutableList;
 
 @Value.Immutable
-public abstract class RelationName extends AbstractApplTerm implements INamespace, IApplTerm {
+@Serial.Version(value = 42L)
+public abstract class RelationName extends AbstractApplTerm implements IRelationName, IApplTerm {
 
     private static final String OP1 = "Relation";
     private static final String OP0 = "DefaultRelation";
 
     // INamespace implementation
 
-    @Value.Parameter @Override public abstract Optional<String> getName();
+    @Value.Parameter public abstract Optional<String> getName();
 
     // IApplTerm implementation
 

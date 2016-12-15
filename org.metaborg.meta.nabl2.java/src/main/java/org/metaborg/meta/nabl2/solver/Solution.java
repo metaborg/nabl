@@ -4,11 +4,13 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 
@@ -24,7 +26,7 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IProperties<Occurrence> getDeclProperties();
 
-    @Value.Parameter @Override public abstract IRelations getRelations();
+    @Value.Parameter @Override public abstract IRelations<ITerm> getRelations();
 
     @Value.Parameter @Override public abstract IUnifier getUnifier();
 

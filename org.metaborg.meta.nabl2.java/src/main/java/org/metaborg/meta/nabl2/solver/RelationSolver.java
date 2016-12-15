@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,35 +12,29 @@ import org.metaborg.meta.nabl2.constraints.relations.CGlb;
 import org.metaborg.meta.nabl2.constraints.relations.CLub;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint.CheckedCases;
-import org.metaborg.meta.nabl2.relations.Bounds;
-import org.metaborg.meta.nabl2.relations.Relation;
+import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.relations.RelationException;
-import org.metaborg.meta.nabl2.relations.terms.RelationName;
+import org.metaborg.meta.nabl2.relations.terms.Relations;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.CM;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     private final Unifier unifier;
-    private final Relations relations;
-
-    private final Map<RelationName,Bounds<ITerm>> boundsCache;
+    private final Relations<ITerm> relations;
 
     private final Set<IRelationConstraint> defered = Sets.newHashSet();
 
-    public RelationSolver(Relations relations, Unifier unifier) {
+    public RelationSolver(Relations<ITerm> relations, Unifier unifier) {
         this.unifier = unifier;
         this.relations = relations;
-        this.boundsCache = Maps.newHashMap();
     }
 
-    public IRelations getRelations() {
+    public IRelations<ITerm> getRelations() {
         return relations;
     }
 
@@ -95,7 +88,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
             return false;
         }
         try {
-            relations.getRelation(c.getRelation()).add(left, right);
+            relations.add(c.getRelation(), left, right);
         } catch (RelationException e) {
             throw c.getMessageInfo().makeException(e.getMessage(), Iterables2.empty());
         }
@@ -108,23 +101,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         if (!(left.isGround() && right.isGround())) {
             return false;
         }
-        Relation<ITerm> relation = relations.getRelation(c.getRelation());
-        return CM.list((leftList) -> {
-            return CM.list((rightList) -> {
-                if (leftList.getLength() != rightList.getLength()) {
-                    throw c.getMessageInfo().makeException("Lists have different length", Iterables2.empty());
-                }
-                Iterator<ITerm> leftIt = leftList.iterator();
-                Iterator<ITerm> rightIt = rightList.iterator();
-                while (leftIt.hasNext()) {
-                    if (!relation.contains(leftIt.next(), rightIt.next())) {
-                        return false;
-                    }
-                }
-                return true;
-            }).matchOrThrow(right).orElseThrow(() -> c.getMessageInfo().makeException("Lists must match another list.",
-                    Iterables2.empty()));
-        }).matchOrThrow(left).orElseGet(() -> relation.contains(left, right));
+        return relations.contains(c.getRelation(), left, right);
     }
 
     private boolean solve(CLub c) throws UnsatisfiableException {
@@ -133,9 +110,8 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         if (!(left.isGround() && right.isGround())) {
             return false;
         }
-        Bounds<ITerm> b = boundsCache.computeIfAbsent(c.getRelation(), r -> new Bounds<>(relations.getRelation(c
-                .getRelation())));
-        Optional<ITerm> lub = b.leastUpperBound(left, right);
+
+        Optional<ITerm> lub = relations.leastUpperBound(c.getRelation(), left, right);
         if (!lub.isPresent()) {
             return false;
         }
@@ -153,14 +129,12 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         if (!(left.isGround() && right.isGround())) {
             return false;
         }
-        Bounds<ITerm> b = boundsCache.computeIfAbsent(c.getRelation(), r -> new Bounds<>(relations.getRelation(c
-                .getRelation())));
-        Optional<ITerm> lub = b.greatestLowerbound(left, right);
-        if (!lub.isPresent()) {
+        Optional<ITerm> glb = relations.greatestLowerBound(c.getRelation(), left, right);
+        if (!glb.isPresent()) {
             return false;
         }
         try {
-            unifier.unify(c.getResult(), lub.get());
+            unifier.unify(c.getResult(), glb.get());
         } catch (UnificationException ex) {
             throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
         }

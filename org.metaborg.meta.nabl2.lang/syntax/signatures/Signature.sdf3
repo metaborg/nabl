@@ -6,6 +6,7 @@ imports
   signatures/NameResolution
   signatures/Relations
   signatures/Types
+  signatures/Constructors
 
 template options
 
@@ -16,7 +17,6 @@ context-free syntax
   ModuleSection.Signature = <
     signature <Signature*>
   >
-
 
 lexical syntax
 
