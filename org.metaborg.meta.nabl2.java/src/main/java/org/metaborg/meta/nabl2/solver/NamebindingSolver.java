@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
-import static org.metaborg.meta.nabl2.collections.Unit.unit;
+import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.Iterator;
 import java.util.List;
@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.collections.Multibag;
-import org.metaborg.meta.nabl2.collections.Unit;
 import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGAssoc;
@@ -34,6 +32,8 @@ import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.util.Multibag;
+import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;

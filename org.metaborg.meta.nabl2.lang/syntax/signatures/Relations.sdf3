@@ -31,17 +31,3 @@ context-free syntax
   VariancePatterns      = <{<{VariancePattern ","}*>}>
   VariancePatterns      = {ast("[]")}
  
-  VariancePattern.List  = <[<Variance>]>
-  VariancePattern.Tuple = <(<{Variance ","}*>)>
- 
-syntax 
-
-  VariancePattern-CF.Op   = OpId-LEX "(" LAYOUT?-CF Variances-CF LAYOUT?-CF ")"
-
-  Variance-CF.Invar     = "="
-  Variance-CF.Covar     = "+" RelationRef-CF
-  Variance-CF.Contravar = "-" RelationRef-CF
-
-context-free syntax
-
-  Variances = {Variance ","}*

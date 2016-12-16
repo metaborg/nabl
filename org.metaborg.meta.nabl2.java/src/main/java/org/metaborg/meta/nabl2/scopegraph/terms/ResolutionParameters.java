@@ -1,8 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.collections.ImmutableTuple2;
-import org.metaborg.meta.nabl2.collections.Tuple2;
 import org.metaborg.meta.nabl2.regexp.FiniteAlphabet;
 import org.metaborg.meta.nabl2.regexp.IAlphabet;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
@@ -15,6 +13,8 @@ import org.metaborg.meta.nabl2.relations.terms.Relation;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.base.Preconditions;

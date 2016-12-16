@@ -1,13 +1,12 @@
 package org.metaborg.meta.nabl2.unification;
 
-import static org.metaborg.meta.nabl2.collections.Unit.unit;
+import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.metaborg.meta.nabl2.collections.Unit;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -16,6 +15,7 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.CM;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.util.Unit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

@@ -16,29 +16,29 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class GenericTerms {
 
-    public static IApplTerm newAppl(String op, Iterable<ITerm> args) {
+    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args) {
         return ImmutableApplTerm.of(op, args);
     }
 
-    public static IApplTerm newAppl(String op, Iterable<ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
+    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
         return ImmutableApplTerm.of(op, args).setAttachments(attachments);
     }
 
 
-    public static IApplTerm newTuple(Iterable<ITerm> args) {
+    public static IApplTerm newTuple(Iterable<? extends ITerm> args) {
         return newAppl(Terms.TUPLE_OP, args);
     }
 
-    public static IApplTerm newTuple(Iterable<ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
+    public static IApplTerm newTuple(Iterable<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
         return newAppl(Terms.TUPLE_OP, args, attachments);
     }
 
 
-    public static IListTerm newList(Iterable<ITerm> elems) {
+    public static IListTerm newList(Iterable<? extends ITerm> elems) {
         return newListTail(elems, newNil());
     }
 
-    public static IListTerm newListTail(Iterable<ITerm> elems, IListTerm list) {
+    public static IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list) {
         LinkedList<ITerm> reverse = new LinkedList<>();
         for (ITerm elem : elems) {
             reverse.addFirst(elem);

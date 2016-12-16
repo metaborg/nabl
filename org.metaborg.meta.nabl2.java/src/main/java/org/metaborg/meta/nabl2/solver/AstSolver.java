@@ -1,16 +1,16 @@
 package org.metaborg.meta.nabl2.solver;
 
-import static org.metaborg.meta.nabl2.collections.Unit.unit;
+import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.collections.Unit;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
 public class AstSolver implements ISolverComponent<IAstConstraint> {

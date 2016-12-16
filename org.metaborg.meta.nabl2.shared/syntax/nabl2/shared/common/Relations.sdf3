@@ -30,3 +30,20 @@ syntax
 
   OpRelation-CF.DefaultRelation =
   OpRelation-CF.Relation        = RelationId-LEX "."
+
+context-free syntax
+
+  VariancePattern.ListVariant  = <[<Variance>]>
+  VariancePattern.TupleVariant = <(<{Variance ","}*>)>
+ 
+  Variances = {Variance ","}*
+
+syntax
+
+  VariancePattern-CF.OpVariant = OpId-LEX "(" LAYOUT?-CF Variances-CF LAYOUT?-CF ")"
+
+  Variance-CF.Invar     = "="
+  Variance-CF.Covar     = "+" RelationRef-CF
+  Variance-CF.Contravar = "-" RelationRef-CF
+  
+  

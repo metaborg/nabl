@@ -1,8 +1,8 @@
 package org.metaborg.meta.nabl2.constraints.namebinding;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
-import org.metaborg.meta.nabl2.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 public interface INamebindingConstraint extends IConstraint {
 

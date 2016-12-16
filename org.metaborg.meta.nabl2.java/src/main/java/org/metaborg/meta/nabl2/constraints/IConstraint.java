@@ -8,7 +8,7 @@ import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 public interface IConstraint {
 

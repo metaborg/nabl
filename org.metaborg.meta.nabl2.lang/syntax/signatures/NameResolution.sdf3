@@ -37,5 +37,5 @@ context-free syntax
   NamespaceProperties = <{<{NamespaceProperty ","}*>}>
   NamespaceProperties = {ast("[]")}
   
-  NamespaceProperty.PropertyDef = <<PropertyId> : <SortRef>>
+  NamespaceProperty.PropertyDef = <<PropertyId> <NamespaceType>>
 

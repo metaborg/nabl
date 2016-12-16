@@ -1,10 +1,10 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.functions.Function1;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 @Value.Immutable
 public abstract class Label implements ILabel {

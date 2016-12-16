@@ -1,9 +1,9 @@
 package org.metaborg.meta.nabl2.sets;
 
-import org.metaborg.meta.nabl2.collections.Multibag;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.util.Multibag;
 import org.metaborg.util.iterators.Iterables2;
 
 public class SetEvaluator {

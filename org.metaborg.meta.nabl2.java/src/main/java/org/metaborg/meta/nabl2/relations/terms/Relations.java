@@ -5,27 +5,32 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.collections.Tuple2;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.relations.IVariance;
+import org.metaborg.meta.nabl2.relations.IVariantMatcher;
+import org.metaborg.meta.nabl2.relations.InstantiatedVariantsException;
 import org.metaborg.meta.nabl2.relations.RelationException;
-import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.util.Iterables3;
+import org.metaborg.meta.nabl2.util.Optionals;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 public class Relations<T> implements IRelations<T>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final Map<RelationName,Relation<T>> relations;
+    private final Map<IRelationName,Relation<T>> relations;
+    private final Multimap<IRelationName,IVariantMatcher<T>> variantMatchers;
 
-    public Relations(Map<RelationName,Relation<T>> relations) {
+    public Relations(Map<IRelationName,Relation<T>> relations,
+            Multimap<IRelationName,IVariantMatcher<T>> variantMatchers) {
         this.relations = relations;
+        this.variantMatchers = variantMatchers;
     }
 
-    @Override public Iterable<RelationName> getNames() {
+    @Override public Iterable<IRelationName> getNames() {
         return relations.keySet();
     }
 
@@ -33,19 +38,65 @@ public class Relations<T> implements IRelations<T>, Serializable {
         if (!relations.containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
-        relations.get(name).add(t1, t2);
+        Relation<T> relation = relations.get(name);
+        for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+            if (Optionals.lift(matcher.match(t1), matcher.match(t2), (a1, a2) -> true).isPresent()) {
+                throw new InstantiatedVariantsException(
+                        "Cannot add instantiated pair of variant constructors to the relation: " + t1 + " and " + t2);
+            }
+        }
+        relation.add(t1, t2);
     }
 
     @Override public boolean contains(IRelationName name, T t1, T t2) {
         if (!relations.containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
-        return relations.get(name).contains(t1, t2);
+        Relation<T> relation = relations.get(name);
+        for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+            Optional<Boolean> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
+                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                    T argt1 = arg1.getValue();
+                    T argt2 = arg2.getValue();
+                    return arg1.getVariance().match(IVariance.cases(
+                        // @formatter:off
+                        () -> argt1.equals(argt2),
+                        r -> contains(nameOrDefault(r,name), argt1, argt2),
+                        r -> contains(nameOrDefault(r,name), argt2, argt1)
+                        // @formatter:on
+                    ));
+                }).map(cs -> {
+                    return Lists.newArrayList(cs).stream().allMatch(c -> c);
+                }).orElse(false);
+            });
+            if (contains.isPresent()) {
+                return contains.get();
+            }
+        }
+        return relation.contains(t1, t2);
     }
 
     @Override public Optional<T> leastUpperBound(IRelationName name, T t1, T t2) {
         if (!relations.containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
+        }
+        for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+            Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
+                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                    T argt1 = arg1.getValue();
+                    T argt2 = arg2.getValue();
+                    return arg1.getVariance().match(IVariance.<Optional<T>> cases(
+                        // @formatter:off
+                        () -> argt1.equals(argt2) ? Optional.of(argt1) : Optional.empty(),
+                        r -> leastUpperBound(nameOrDefault(r,name), argt1, argt2),
+                        r -> greatestLowerBound(nameOrDefault(r,name), argt1, argt2)
+                        // @formatter:on
+                    ));
+                }).flatMap(os -> Optionals.sequence(os, args -> matcher.build(args)));
+            });
+            if (contains.isPresent()) {
+                return contains.get();
+            }
         }
         return relations.get(name).leastUpperBound(t1, t2);
     }
@@ -54,17 +105,29 @@ public class Relations<T> implements IRelations<T>, Serializable {
         if (!relations.containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
+        for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+            Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
+                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                    T argt1 = arg1.getValue();
+                    T argt2 = arg2.getValue();
+                    return arg1.getVariance().match(IVariance.<Optional<T>> cases(
+                        // @formatter:off
+                        () -> argt1.equals(argt2) ? Optional.of(argt1) : Optional.empty(),
+                        r -> greatestLowerBound(nameOrDefault(r,name), argt1, argt2),
+                        r -> leastUpperBound(nameOrDefault(r,name), argt1, argt2)
+                        // @formatter:on
+                    ));
+                }).flatMap(os -> Optionals.sequence(os, args -> matcher.build(args)));
+            });
+            if (contains.isPresent()) {
+                return contains.get();
+            }
+        }
         return relations.get(name).greatestLowerbound(t1, t2);
     }
 
-    public static IMatcher<Relations<ITerm>> matcher() {
-        return M.listElems(Relation.matcher(), (t, relations) -> {
-            Map<RelationName,Relation<ITerm>> r = Maps.newHashMap();
-            for (Tuple2<RelationName,Relation<ITerm>> rel : relations) {
-                r.put(rel._1(), rel._2());
-            }
-            return new Relations<>(r);
-        });
+    private IRelationName nameOrDefault(IRelationName name, IRelationName defaultName) {
+        return name.getName().isPresent() ? name : defaultName;
     }
-
+    
 }

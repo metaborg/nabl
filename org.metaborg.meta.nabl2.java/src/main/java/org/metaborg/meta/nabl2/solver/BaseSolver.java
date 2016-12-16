@@ -1,10 +1,10 @@
 package org.metaborg.meta.nabl2.solver;
 
-import static org.metaborg.meta.nabl2.collections.Unit.unit;
+import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import org.metaborg.meta.nabl2.collections.Unit;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
 public class BaseSolver implements ISolverComponent<IBaseConstraint> {

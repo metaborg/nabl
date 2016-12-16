@@ -2,7 +2,7 @@ package org.metaborg.meta.nabl2.terms;
 
 import java.util.function.Function;
 
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 public class ListTerms {
 
