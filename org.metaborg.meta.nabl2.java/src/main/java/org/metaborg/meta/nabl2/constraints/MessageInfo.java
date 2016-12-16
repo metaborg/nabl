@@ -7,6 +7,7 @@ import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.util.iterators.Iterables2;
 
 @Value.Immutable
@@ -24,9 +25,9 @@ public abstract class MessageInfo implements IMessageInfo {
 
     @Value.Parameter public abstract Optional<ITerm> getOrigin();
 
-    @Override public UnsatisfiableException makeException(String defaultMessage, Iterable<ITerm> contextTerms) {
+    @Override public UnsatisfiableException makeException(String defaultMessage, Iterable<ITerm> contextTerms, IUnifier unifier) {
         Iterable<ITerm> programPoints = getOrigin().map(t -> Iterables2.singleton(t)).orElse(contextTerms);
-        String message = getMessage().map(m -> m.toString()).orElse(defaultMessage);
+        String message = getMessage().map(m -> unifier.find(m).toString()).orElse(defaultMessage);
         return new UnsatisfiableException(getKind(), message, programPoints);
     }
 

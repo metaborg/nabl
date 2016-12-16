@@ -108,16 +108,10 @@ public class Unifier implements IUnifier, Serializable {
                     unifys(applLeft.getArgs(), applRight.getArgs());
                     return unit;
                 }),
-                CM.var(varRight -> unify(varRight, applLeft))
+                CM.var(varRight -> unifyVarTermReps(varRight, applLeft))
             ).matchOrThrow(rightRep).orElseThrow(() -> new UnificationException("Failed")),
             listLeft -> CM.cases(
-                CM.list(listRight -> {
-                    if(listLeft.getLength() != listRight.getLength()) {
-                        throw new UnificationException("Cannot unify lists of different length.");
-                    }
-                    unifys(listLeft, listRight);
-                    return unit;
-                }),
+                CM.list(listRight -> unifyListReps(listLeft, listRight)),
                 CM.var(varRight -> unify(varRight, listLeft))
             ).matchOrThrow(rightRep).orElseThrow(() -> new UnificationException("Failed")),
             stringLeft -> CM.cases(
@@ -127,7 +121,7 @@ public class Unifier implements IUnifier, Serializable {
                     }
                     return unit;
                 }),
-                CM.var(varRight -> unify(varRight, stringLeft))
+                CM.var(varRight -> unifyVarTermReps(varRight, stringLeft))
             ).matchOrThrow(rightRep).orElseThrow(() -> new UnificationException("Failed")),
             integerLeft -> CM.cases(
                 CM.integer(integerRight -> {
@@ -136,28 +130,59 @@ public class Unifier implements IUnifier, Serializable {
                     }
                     return unit;
                 }),
-                CM.var(varRight -> unify(varRight, integerLeft))
+                CM.var(varRight -> unifyVarTermReps(varRight, integerLeft))
             ).matchOrThrow(rightRep).orElseThrow(() -> new UnificationException("Failed")),
             varLeft -> M.cases(
-                M.var(varRight -> {
-                    int sizeLeft = sizes.getOrDefault(varLeft, 1);
-                    int sizeRight = sizes.getOrDefault(varRight, 1);
-                    if(sizeLeft > sizeRight) {
-                        reps.put(varRight, varLeft);
-                        sizes.put(varLeft, sizeLeft + sizeRight);
-                    } else {
-                        reps.put(varLeft, varRight);
-                        sizes.put(varRight, sizeLeft + sizeRight);
-                    }
-                    return unit;
-                }),
-                M.term(termRight -> {
-                    reps.put(varLeft, termRight);
-                    return unit;
-                })
+                M.var(varRight -> unifyVarReps(varLeft, varRight)),
+                M.term(termRight -> unifyVarTermReps(varLeft, termRight))
             ).match(rightRep).orElseThrow(() -> new IllegalStateException())
             // @formatter:on
         ));
+    }
+
+    public Unit unifyListReps(IListTerm left, IListTerm right) throws UnificationException {
+        return left.matchOrThrow(ListTerms.<Unit, UnificationException> checkedCases(
+            // @formatter:off
+            consLeft -> CM.cases(
+                CM.cons(consRight -> {
+                    unify(consLeft.getHead(), consRight.getHead());
+                    unifyListReps(consLeft.getTail(), consRight.getTail());
+                    return unit;
+                }),
+                CM.<Unit, UnificationException>var(varRight -> unifyVarTermReps(varRight, consLeft))
+            ).matchOrThrow(right).orElseThrow(() -> new UnificationException("Failed")),
+            nilLeft -> CM.cases(
+                CM.nil(nilRight -> {
+                    return unit;
+                }),
+                CM.<Unit, UnificationException>var(varRight -> unifyVarTermReps(varRight, nilLeft))
+            ).matchOrThrow(right).orElseThrow(() -> new UnificationException("Failed")),
+            varLeft -> CM.cases(
+                CM.var(varRight -> {
+                    return unit;
+                }),
+                CM.<Unit, UnificationException>term(termRight -> unifyVarTermReps(varLeft, termRight))
+            ).matchOrThrow(right).orElseThrow(() -> new UnificationException("Failed"))
+            // @formatter:on
+        ));
+    }
+
+    private Unit unifyVarTermReps(ITermVar var, ITerm term) {
+        reps.put(var, term);
+        return unit;
+    }
+
+    private Unit unifyVarReps(ITermVar varLeft, ITermVar varRight) {
+        int sizeLeft = sizes.getOrDefault(varLeft, 1);
+        int sizeRight = sizes.getOrDefault(varRight, 1);
+        if (sizeLeft > sizeRight) {
+            reps.put(varRight, varLeft);
+            sizes.put(varLeft, sizeLeft + sizeRight);
+        } else {
+            reps.put(varLeft, varRight);
+            sizes.put(varRight, sizeLeft + sizeRight);
+        }
+        return unit;
     }
 
     private Unit unifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) throws UnificationException {
@@ -179,26 +204,44 @@ public class Unifier implements IUnifier, Serializable {
         return left.match(Terms.<Boolean> cases(
             // @formatter:off
             applLeft -> M.<Boolean>cases(
-                            M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) &&
-                                                 applLeft.getArity() == applLeft.getArity() &&
-                                                 canUnifys(applLeft.getArgs(), applRight.getArgs()))),
-                            M.var(varRight -> true)
-                        ).match(right).orElse(false),
+                M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) &&
+                                     applLeft.getArity() == applLeft.getArity() &&
+                                     canUnifys(applLeft.getArgs(), applRight.getArgs()))),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
             listLeft -> M.<Boolean>cases(
-                            M.list(listRight -> (listLeft.getLength() == listRight.getLength())),
-                            M.var(varRight -> true)
-                        ).match(right).orElse(false),
+                M.list(listRight -> canUnifyLists(listLeft, listRight)),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
             stringLeft -> M.<Boolean>cases(
-                              M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
-                              M.var(varRight -> true)
-                          ).match(right).orElse(false),
+                M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
             integerLeft -> M.<Boolean>cases(
-                               M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
-                               M.var(varRight -> true)
-                           ).match(right).orElse(false),
+                M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
             varLeft -> true
             // @formatter:on
         ));
+    }
+
+    public boolean canUnifyLists(IListTerm left, IListTerm right) {
+        return left.match(ListTerms.<Boolean> cases(
+            // @formatter:off
+            consLeft -> M.<Boolean>cases(
+                M.cons(consRight -> (canUnify(consLeft.getHead(), consRight.getHead()) &&
+                                     canUnifyLists(consLeft.getTail(), consRight.getTail()))),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
+            nilLeft -> M.<Boolean>cases(
+                M.nil(nilRight -> true),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
+            varLeft -> true
+            // @formatter:on
+        ));
+
     }
 
     private boolean canUnifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) {

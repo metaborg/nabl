@@ -66,7 +66,7 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unexpected set constraint.", Iterables2.empty());
+            return c.getMessageInfo().makeException("Unexpected set constraint.", Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
     }
 
@@ -94,7 +94,7 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
         result.keySet().removeAll(rightSet.keySet());
         if (!result.isEmpty()) {
             throw constraint.getMessageInfo().makeException(left + " not a subset of, or equal to " + right, result
-                    .values());
+                    .values(), unifier);
         }
         return true;
     }
@@ -117,7 +117,8 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
             }
         }
         if (!duplicates.isEmpty()) {
-            throw constraint.getMessageInfo().makeException(setTerm + " elements are not distinct", duplicates);
+            throw constraint.getMessageInfo().makeException(setTerm + " elements are not distinct", duplicates,
+                    unifier);
         }
         return true;
     }

@@ -17,10 +17,6 @@ abstract class NilTerm implements INilTerm {
         return true;
     }
 
-    @Override public int getLength() {
-        return 0;
-    }
-
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
         return ImmutableClassToInstanceMap.<Object> builder().build();
     }

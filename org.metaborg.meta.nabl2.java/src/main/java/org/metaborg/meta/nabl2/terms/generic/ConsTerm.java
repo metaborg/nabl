@@ -22,10 +22,6 @@ abstract class ConsTerm implements IConsTerm {
         return getHead().isGround() && getTail().isGround();
     }
 
-    @Value.Lazy @Override public int getLength() {
-        return 1 + getTail().getLength();
-    }
-
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
         return ImmutableClassToInstanceMap.<Object> builder().build();
     }

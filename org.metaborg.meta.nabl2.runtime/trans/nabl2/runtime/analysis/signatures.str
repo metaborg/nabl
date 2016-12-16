@@ -28,4 +28,4 @@ rules
 
   nabl2--relations = nabl2--custom-relations <+ nabl2--default-relations
   nabl2--custom-relations = fail
-  nabl2--default-relations = ![(DefaultRelation(),[Reflexive(), AntiSymmetric(), Transitive()],[])]
+  nabl2--default-relations = ![(DefaultRelation(),[Reflexive(), AntiSymmetric(), Transitive()],[ListVariant(Covar(DefaultRelation()))])]

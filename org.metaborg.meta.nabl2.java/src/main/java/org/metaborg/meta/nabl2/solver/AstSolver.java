@@ -34,7 +34,7 @@ public class AstSolver implements ISolverComponent<IAstConstraint> {
                 try {
                     unifier.unify(oldValue.get(), p.getValue());
                 } catch (UnificationException e) {
-                    throw constraint.getMessageInfo().makeException(e.getMessage(), Iterables2.empty());
+                    throw constraint.getMessageInfo().makeException(e.getMessage(), Iterables2.empty(), unifier);
                 }
             }
             return unit;

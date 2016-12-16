@@ -32,7 +32,7 @@ public class Solver {
 
     private Solver(ResolutionParameters resolutionParams, Relations<ITerm> relations) {
         this.unifier = new Unifier();
-        this.baseSolver = new BaseSolver();
+        this.baseSolver = new BaseSolver(unifier);
         this.equalitySolver = new EqualitySolver(unifier);
         this.astSolver = new AstSolver(unifier);
         this.namebindingSolver = new NamebindingSolver(resolutionParams, unifier);

@@ -22,10 +22,6 @@ public abstract class TermVar implements ITermVar {
         return false;
     }
 
-    @Override public int getLength() {
-        throw new IllegalStateException();
-    }
-
     @Override public Iterator<ITerm> iterator() {
         throw new IllegalStateException();
     }

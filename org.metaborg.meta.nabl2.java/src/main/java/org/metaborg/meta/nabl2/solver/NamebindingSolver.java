@@ -105,7 +105,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty());
+            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
     }
 
@@ -199,16 +199,16 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             List<Occurrence> declarations = Lists.newArrayList(decls.get());
             switch (declarations.size()) {
             case 0:
-                throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty());
+                throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty(), unifier);
             case 1:
                 try {
                     unifier.unify(r.getDeclaration(), declarations.get(0));
                 } catch (UnificationException ex) {
-                    throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+                    throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
                 }
                 return true;
             default:
-                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty());
+                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty(), unifier);
             }
         } else {
             return false;
@@ -229,17 +229,17 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         switch (scopes.size()) {
         case 0:
             throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2
-                    .empty());
+                    .empty(), unifier);
         case 1:
             try {
                 unifier.unify(a.getScope(), scopes.get(0));
             } catch (UnificationException ex) {
-                throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+                throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
             }
             return true;
         default:
             throw a.getMessageInfo().makeException(decl + " has multiple " + label + " associated scopes.", Iterables2
-                    .empty());
+                    .empty(), unifier);
         }
     }
 
@@ -258,7 +258,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             try {
                 unifier.unify(c.getValue(), prev.get());
             } catch (UnificationException ex) {
-                throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+                throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
             }
         }
         return true;

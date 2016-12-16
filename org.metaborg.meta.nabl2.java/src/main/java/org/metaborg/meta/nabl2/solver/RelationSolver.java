@@ -68,7 +68,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved relation constraint: " + c, Iterables2.empty());
+            return c.getMessageInfo().makeException("Unsolved relation constraint: " + c, Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
     }
 
@@ -90,7 +90,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         try {
             relations.add(c.getRelation(), left, right);
         } catch (RelationException e) {
-            throw c.getMessageInfo().makeException(e.getMessage(), Iterables2.empty());
+            throw c.getMessageInfo().makeException(e.getMessage(), Iterables2.empty(), unifier);
         }
         return true;
     }
@@ -118,7 +118,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         try {
             unifier.unify(c.getResult(), lub.get());
         } catch (UnificationException ex) {
-            throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+            throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
         }
         return true;
     }
@@ -136,7 +136,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         try {
             unifier.unify(c.getResult(), glb.get());
         } catch (UnificationException ex) {
-            throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+            throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
         }
         return true;
     }
