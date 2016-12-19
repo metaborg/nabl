@@ -1,0 +1,16 @@
+module generation/signatures/functions
+
+imports
+
+  libstrc
+  generation/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+  signatures/common/-
+  signatures/signatures/-
+  util/stratego
+
+rules
+
+  signature-to-str:
+    Functions(_) -> []

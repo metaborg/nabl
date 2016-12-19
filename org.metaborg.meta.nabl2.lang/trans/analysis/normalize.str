@@ -151,8 +151,8 @@ rules
       CDeclProperty(o,Type(),ty,prio,msginfo)
 
   normalize-constraint:
-    CSetEq(s1,s2,msginfo) ->
-      [CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo)]
+    CSetEq(s1,proj,s2,msginfo) ->
+      [CSubsetEq(s1,proj,s2,msginfo),CSubsetEq(s2,proj,s1,msginfo)]
 
 rules
 

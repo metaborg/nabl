@@ -15,12 +15,13 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCResolve;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCCheckRelation;
-import org.metaborg.meta.nabl2.constraints.relations.ImmutableCGlb;
-import org.metaborg.meta.nabl2.constraints.relations.ImmutableCLub;
+import org.metaborg.meta.nabl2.constraints.relations.ImmutableCEvalFunction;
 import org.metaborg.meta.nabl2.constraints.sets.ImmutableCDistinct;
 import org.metaborg.meta.nabl2.constraints.sets.ImmutableCSubsetEq;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
+import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
+import org.metaborg.meta.nabl2.sets.SetTerms;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
@@ -78,20 +79,17 @@ public class ConstraintTerms {
             M.appl4("CCheckRel", M.term(), RelationName.matcher(), M.term(), MessageInfo.matcher(), (c, term1, rel, term2, origin) -> {
                 return ImmutableCCheckRelation.of(term1, rel, term2, origin);
             }),
-            M.appl5("CLub", M.term(), RelationName.matcher(), M.term(), M.term(), MessageInfo.matcher(), (c, result, rel, term1, term2, origin) -> {
-                return ImmutableCLub.of(result, rel, term1, term2, origin);
-            }),
-            M.appl5("CGlb", M.term(), RelationName.matcher(), M.term(), M.term(), MessageInfo.matcher(), (c, result, rel, term1, term2, origin) -> {
-                return ImmutableCGlb.of(result, rel, term1, term2, origin);
+            M.appl4("CEval", M.term(), RelationTerms.functionName(), M.term(), MessageInfo.matcher(), (c, result, fun, term, origin) -> {
+                return ImmutableCEvalFunction.of(result, fun, term, origin);
             }),
             M.appl3("CAstProperty", TermIndex.matcher(), M.term(), M.term(), (c, index, key, value) -> {
                 return ImmutableCAstProperty.of(index,key,value, ImmutableMessageInfo.of(index));
             }),
-            M.appl3("CSubsetEq", M.term(), M.term(), MessageInfo.matcher(), (c, left, right, origin) -> {
-                return ImmutableCSubsetEq.of(left,right, origin);
+            M.appl4("CSubsetEq", M.term(), SetTerms.projection(), M.term(), MessageInfo.matcher(), (c, left, proj, right, origin) -> {
+                return ImmutableCSubsetEq.of(left, right, proj, origin);
             }),
-            M.appl2("CDistinct", M.term(), MessageInfo.matcher(), (c, set, origin) -> {
-                return ImmutableCDistinct.of(set, origin);
+            M.appl3("CDistinct", SetTerms.projection(), M.term(), MessageInfo.matcher(), (c, proj, set, origin) -> {
+                return ImmutableCDistinct.of(set, proj, origin);
             }),
             M.term(t -> {
                 ILogger logger = LoggerUtils.logger(ConstraintTerms.class);

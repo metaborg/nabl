@@ -3,10 +3,11 @@ module signatures/Signature
 imports
 
   signatures/CGen
+  signatures/Constructors
+  signatures/Functions
   signatures/NameResolution
   signatures/Relations
   signatures/Types
-  signatures/Constructors
 
 template options
 

@@ -27,12 +27,12 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Namespace;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.meta.nabl2.util.Multibag;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -105,7 +105,8 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty(), unifier);
+            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty(),
+                    unifier);
         }).collect(Collectors.toList());
     }
 
@@ -208,7 +209,8 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                 }
                 return true;
             default:
-                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty(), unifier);
+                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty(),
+                        unifier);
             }
         } else {
             return false;
@@ -228,8 +230,8 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocs(decl, label));
         switch (scopes.size()) {
         case 0:
-            throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2
-                    .empty(), unifier);
+            throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2.empty(),
+                    unifier);
         case 1:
             try {
                 unifier.unify(a.getScope(), scopes.get(0));
@@ -266,12 +268,12 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     // ------------------------------------------------------------------------------------------------------//
 
-    public IMatcher<Multibag<ITerm,ITerm>> nameSets() {
+    public IMatcher<Set<IElement<ITerm>>> nameSets() {
         return term -> {
             if (NamebindingSolver.this.nameResolution == null) {
                 return Optional.empty();
             }
-            return M.<Optional<Multibag<ITerm,ITerm>>> cases(
+            return M.<Optional<Set<IElement<ITerm>>>> cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls(scope);
@@ -296,16 +298,42 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         };
     }
 
-    private Multibag<ITerm,ITerm> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
-        Multibag<ITerm,ITerm> result = Multibag.create();
+    private Set<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
+        Set<IElement<ITerm>> result = Sets.newHashSet();
         for (Occurrence occurrence : occurrences) {
             if (!namespace.getName().filter(ns -> !occurrence.getNamespace().equals(namespace)).isPresent()) {
-                // FIXME: The position should be the index, but origins seem to
-                // be lost
-                result.put(occurrence.getName(), occurrence.getName());
+                result.add(new OccurrenceElement(occurrence));
             }
         }
         return result;
+    }
+
+    private class OccurrenceElement implements IElement<ITerm> {
+
+        private final Occurrence occurrence;
+
+        public OccurrenceElement(Occurrence occurrence) {
+            this.occurrence = occurrence;
+        }
+
+        @Override public ITerm getValue() {
+            return occurrence;
+        }
+
+        @Override public ITerm getPosition() {
+            return occurrence.getName(); // this should probably be position,
+                                         // but origin information is lost.
+        }
+
+        @Override public Object project(String name) {
+            switch (name) {
+            case "name":
+                return occurrence.getName();
+            default:
+                throw new IllegalArgumentException("Projection " + name + " undefined for occurrences.");
+            }
+        }
+
     }
 
 }

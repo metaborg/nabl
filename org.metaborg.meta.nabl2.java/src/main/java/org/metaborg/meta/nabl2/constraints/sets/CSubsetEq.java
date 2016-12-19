@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.constraints.sets;
 
+import java.util.Optional;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
@@ -13,6 +15,8 @@ public abstract class CSubsetEq implements ISetConstraint {
     @Value.Parameter public abstract ITerm getLeft();
 
     @Value.Parameter public abstract ITerm getRight();
+
+    @Value.Parameter public abstract Optional<String> getProjection();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
 

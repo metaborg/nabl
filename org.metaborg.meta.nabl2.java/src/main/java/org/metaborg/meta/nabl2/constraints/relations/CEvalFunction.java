@@ -4,25 +4,22 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.MessageInfo;
-import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CGlb implements IRelationConstraint {
+public abstract class CEvalFunction implements IRelationConstraint {
 
     @Value.Parameter public abstract ITerm getResult();
 
-    @Value.Parameter public abstract RelationName getRelation();
+    @Value.Parameter public abstract String getFunction();
 
-    @Value.Parameter public abstract ITerm getLeft();
-
-    @Value.Parameter public abstract ITerm getRight();
+    @Value.Parameter public abstract ITerm getTerm();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
 
     @Override public <T> T match(Cases<T> cases) {
-        return cases.caseGlb(this);
+        return cases.caseEval(this);
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
@@ -30,7 +27,7 @@ public abstract class CGlb implements IRelationConstraint {
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
-        return cases.caseGlb(this);
+        return cases.caseEval(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
@@ -41,12 +38,9 @@ public abstract class CGlb implements IRelationConstraint {
         StringBuilder sb = new StringBuilder();
         sb.append(getResult());
         sb.append(" is ");
-        sb.append(getRelation());
-        sb.append(".lub");
-        sb.append(getLeft());
-        sb.append(",");
-        sb.append(getRight());
-        sb.append(")");
+        sb.append(getFunction());
+        sb.append(" of ");
+        sb.append(getTerm());
         return sb.toString();
     }
 

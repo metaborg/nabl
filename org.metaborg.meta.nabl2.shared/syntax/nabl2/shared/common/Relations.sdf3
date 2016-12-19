@@ -25,8 +25,8 @@ syntax
   RelationBuildOp-CF = "<" RelationRef-CF "!"
   RelationCheckOp-CF = "<" RelationRef-CF "?"
 
-  RelationLubOpen-CF = OpRelation-CF "lub" "("
-  RelationGlbOpen-CF = OpRelation-CF "glb" "("
+  RelationFunction-CF.Lub = OpRelation-CF "lub"
+  RelationFunction-CF.Glb = OpRelation-CF "glb"
 
   OpRelation-CF.DefaultRelation =
   OpRelation-CF.Relation        = RelationId-LEX "."
@@ -46,4 +46,8 @@ syntax
   Variance-CF.Covar     = "+" RelationRef-CF
   Variance-CF.Contravar = "-" RelationRef-CF
   
-  
+lexical syntax
+
+  Keyword = "reflexive" | "irreflexive"
+          | "symmetric" | "anti-symmetric"
+          | "transitive" | "anti-transitive"

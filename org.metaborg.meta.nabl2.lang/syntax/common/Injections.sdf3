@@ -15,20 +15,6 @@ template options
 
 context-free syntax
 
-  CVar = Var
-
-syntax
-
-  CTerm-CF.Op         = OpId-LEX "(" LAYOUT?-CF CTerms-CF LAYOUT?-CF ")"
-
-context-free syntax
-
-  CTerms           = {CTerm ","}*
-
-  CTerm.Tuple      = <(<{CTerm ","}*>)>
-  CTerm            = IntTerm
-  CTerm            = StringTerm
-
   Message.DefaultMessage =
 
   TermIndex.DefaultIndex  =
@@ -38,7 +24,9 @@ context-free syntax
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
-  Constraint.CSetEq = <<CSet> seteq <CSet> <Message>>
+syntax
+
+  Constraint-CF.CSetEq = CSet-CF LAYOUT?-CF "seteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
 
 lexical syntax
 

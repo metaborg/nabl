@@ -20,6 +20,11 @@ import com.google.common.collect.Multimap;
 
 public class RelationTerms {
 
+    public enum RelationFunctions {
+        LUB,
+        GLB
+    }
+    
     public static IMatcher<Relations<ITerm>> relations() {
         return M.listElems(relationDef(), (l, defs) -> {
             Map<IRelationName,Relation<ITerm>> relations = Maps.newHashMap();
@@ -51,4 +56,18 @@ public class RelationTerms {
         });
     }
 
+    public static IMatcher<String> functionName() {
+        return M.cases(
+            // @formatter:off
+            M.appl1("Lub", RelationName.matcher(), (t, r) -> relationFunction(r, RelationFunctions.LUB)),
+            M.appl1("Glb", RelationName.matcher(), (t, r) -> relationFunction(r, RelationFunctions.GLB)),
+            M.appl1("Function", M.stringValue(), (t, f) -> f)
+            // @formatter:on
+        );
+    }
+    
+    public static String relationFunction(IRelationName rel, RelationFunctions fun) {
+        return rel.getName().map(n -> n + "." + fun.name()).orElse(fun.name());
+    }
+    
 }

@@ -6,12 +6,8 @@ public class UnificationException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    public UnificationException(ITerm left, ITerm right) {
-        super("Cannot unify " + left + " with " + right);
-    }
-
-    public UnificationException(String message) {
-        super(message);
+    public UnificationException(ITerm t1, ITerm t2) {
+        super("Cannot unify " + t1 + " with " + t2);
     }
 
 }
