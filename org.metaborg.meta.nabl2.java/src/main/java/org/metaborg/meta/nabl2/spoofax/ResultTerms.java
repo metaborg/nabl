@@ -3,8 +3,7 @@ package org.metaborg.meta.nabl2.spoofax;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.ConstraintTerms;
-import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
-import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
+import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -13,10 +12,10 @@ import org.metaborg.util.iterators.Iterables2;
 public class ResultTerms {
 
     public static IMatcher<InitialResult> initialOf() {
-        return M.appl4("InitialResult", ConstraintTerms.constraints(), args(), ResolutionParameters.matcher(),
-                RelationTerms.relations(), (t, constraints, args, params, relations) -> {
-                    return (InitialResult) ImmutableInitialResult.of(constraints, args, params, relations);
-                });
+        return M.appl3("InitialResult", ConstraintTerms.constraints(), args(), SolverConfig.matcher(), (t, constraints,
+                args, config) -> {
+            return (InitialResult) ImmutableInitialResult.of(constraints, args, config);
+        });
     }
 
     public static IMatcher<UnitResult> unitOf() {

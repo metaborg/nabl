@@ -29,8 +29,15 @@ rules
       ]);
       nameresolution-str* := <sections-to-nameresolution-str> section*;
       relation-str* := <sections-to-relation-str> section*;
+      function-str* := <sections-to-function-str> section*;
       section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;
-      module-str := Module(name,[import-str,nameresolution-str*,relation-str*,section-str*])
+      module-str := Module(name,[
+                      import-str,
+                      nameresolution-str*,
+                      relation-str*,
+                      function-str*,
+                      section-str*
+                    ])
 
   language-spec-name = prim("SSL_EXT_language_spec_pp_name") <+ "unknown"
 

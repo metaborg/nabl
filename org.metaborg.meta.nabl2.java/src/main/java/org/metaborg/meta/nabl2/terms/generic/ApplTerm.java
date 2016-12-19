@@ -6,6 +6,9 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.pcollections.HashTreePSet;
+import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Iterables;
@@ -32,6 +35,14 @@ abstract class ApplTerm implements IApplTerm {
             ground &= arg.isGround();
         }
         return ground;
+    }
+
+    @Value.Lazy @Override public PSet<ITermVar> getVars() {
+        PSet<ITermVar> vars = HashTreePSet.empty();
+        for (ITerm arg : getArgs()) {
+            vars = vars.plusAll(arg.getVars());
+        }
+        return vars;
     }
 
     @Override public <T> T match(Cases<T> cases) {

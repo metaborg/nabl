@@ -39,12 +39,19 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     /**************************************************************
      * Least upper bound calculations can be unstable if
      * there are still relation building * constraints unsolved!
+     * 
+     * @param functions2
      **************************************************************/
 
-    public RelationSolver(Relations<ITerm> relations, Unifier unifier) {
+    public RelationSolver(Relations<ITerm> relations, Map<String,Function1<ITerm,Optional<ITerm>>> functions,
+            Unifier unifier) {
         this.unifier = unifier;
         this.relations = relations;
-        this.functions = Maps.newHashMap();
+        this.functions = Maps.newHashMap(functions);
+        addRelationFunctions();
+    }
+
+    private void addRelationFunctions() {
         for (IRelationName relationName : relations.getNames()) {
             String lubName = RelationTerms.relationFunction(relationName, RelationFunctions.LUB);
             Function1<ITerm,Optional<ITerm>> lubFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
@@ -139,7 +146,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
             throw c.getMessageInfo().makeException("Function " + c.getFunction() + " undefined.", Iterables2.empty(),
                     unifier);
         }
-        Optional<ITerm> result = fun.apply(c.getTerm());
+        Optional<ITerm> result = fun.apply(term);
         if (!result.isPresent()) {
             return false;
         }
