@@ -8,12 +8,23 @@ imports
   nabl2/shared/common/Sets
   nabl2/shared/constraints/Base
   common/Terms
-  
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
-  CVar             = Var
+  CVar = Var
 
-  CTerm.Op         = <<OpId>(<{CTerm ","}*>)>
+syntax
+
+  CTerm-CF.Op         = OpId-LEX "(" LAYOUT?-CF CTerms-CF LAYOUT?-CF ")"
+
+context-free syntax
+
+  CTerms           = {CTerm ","}*
+
   CTerm.Tuple      = <(<{CTerm ","}*>)>
   CTerm            = IntTerm
   CTerm            = StringTerm
@@ -23,9 +34,11 @@ context-free syntax
   TermIndex.DefaultIndex  =
   TermIndex.IndexFromTerm = <@<Var>>
 
-  Constraint.CTypeOf = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
+context-free syntax
 
-  Constraint.CSetEq  = <<CSet> seteq <CSet> <Message>>
+  Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
+
+  Constraint.CSetEq = <<CSet> seteq <CSet> <Message>>
 
 lexical syntax
 

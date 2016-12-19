@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.terms;
 
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 public interface IListTerm extends ITerm, Iterable<ITerm> {
 

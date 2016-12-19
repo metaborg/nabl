@@ -45,7 +45,7 @@ rules
     ])
     with (params-op*, params-arrow*, params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> ast;
          (type-op*, type-arrow*, type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> ast;
-         type-con* := <collect-om(type-sig-to-ds)> ast
+         type-con* := <collect-om(opdecl-to-ds)> ast
 
   cgen-sig-to-params-ds:
     CGenSig(Name(name), sort, param*, _) ->
@@ -79,13 +79,13 @@ rules
            arrow-name := $[[rule-name]_[base-name]]
          end
 
-  type-sig-to-ds:
-    TypeSig(name, []) ->
-      NullaryConsDecl(name, <type-sort;sort-to-ds>, NoAnnos())
+  opdecl-to-ds:
+    OpDecl(name, [], s) ->
+      NullaryConsDecl(name, <sort-to-ds> s, NoAnnos())
 
-  type-sig-to-ds:
-    TypeSig(name, arg*) ->
-      ConsDecl(name, <map(Snd;sort-to-ds)> arg*, <type-sort;sort-to-ds>, NoAnnos())
+  opdecl-to-ds:
+    OpDecl(name, arg*, s) ->
+      ConsDecl(name, <map(Snd;sort-to-ds)> arg*, <sort-to-ds> s, NoAnnos())
 
   param-sorts-to-ds: [sort] -> <sort-to-ds> sort
   param-sorts-to-ds: sort* -> <sort-to-ds> TupleSort(sort*)

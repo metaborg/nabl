@@ -29,6 +29,9 @@ lexical syntax
   PropertyId     = [a-z] [a-zA-Z0-9]*
   PropertyId     = Keyword {reject}
 
+  RelationId     = [a-z] [a-zA-Z0-9]*
+  RelationId     = Keyword {reject}
+
   LabelId        = [A-Z]+
   LabelId        = "D" | "I" | "P" {reject}
   LabelId        = Keyword {reject}
@@ -51,6 +54,7 @@ lexical restrictions
   FunId        -/- [a-zA-Z0-9\_\']
   NamespaceId  -/- [a-zA-Z0-9\_\']
   PropertyId   -/- [a-zA-Z0-9\_\']
+  RelationId   -/- [a-zA-Z0-9\_\']
   LabelId      -/- [a-zA-Z0-9\_\']
   TVarId       -/- [a-zA-Z0-9\_\']
   TModId       -/- [a-zA-Z0-9\_\']

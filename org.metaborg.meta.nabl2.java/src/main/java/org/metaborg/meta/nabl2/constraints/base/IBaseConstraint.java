@@ -3,13 +3,13 @@ package org.metaborg.meta.nabl2.constraints.base;
 import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 public interface IBaseConstraint extends IConstraint {
 
     <T> T match(Cases<T> function);
 
-    interface Cases<T> extends Function<IBaseConstraint,T> {
+    interface Cases<T> {
 
         T caseTrue(CTrue constraint);
 
@@ -26,10 +26,6 @@ public interface IBaseConstraint extends IConstraint {
                     return onFalse.apply(constraint);
                 }
 
-                @Override public T apply(IBaseConstraint base) {
-                    return base.match(this);
-                }
-
             };
         }
 
@@ -38,7 +34,7 @@ public interface IBaseConstraint extends IConstraint {
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
 
-    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IBaseConstraint,T,E> {
+    interface CheckedCases<T, E extends Throwable> {
 
         T caseTrue(CTrue constraint) throws E;
 
@@ -54,10 +50,6 @@ public interface IBaseConstraint extends IConstraint {
 
                 @Override public T caseFalse(CFalse constraint) throws E {
                     return onFalse.apply(constraint);
-                }
-
-                @Override public T apply(IBaseConstraint base) throws E {
-                    return base.matchOrThrow(this);
                 }
 
             };

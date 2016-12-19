@@ -4,7 +4,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 abstract class EmptyString<S> implements IRegExp<S> {
 
     @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();

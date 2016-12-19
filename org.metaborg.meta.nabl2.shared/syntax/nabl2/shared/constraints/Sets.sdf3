@@ -6,14 +6,15 @@ imports
   nabl2/shared/common/Sets
   nabl2/shared/common/CTerms
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
   Constraint.CSubsetEq = <<CSet> subseteq <CSet> <Message>>
   Constraint.CDistinct = <distinct <CSet> <Message>>
-  Constraint.CDistinct = <! <CSet> <Message>>                   {deprecated("'! _' is deprecated, use 'distinct _' instead.")}
 
 lexical syntax
 
   Keyword = "subseteq" | "distinct"
-  
-  '!' = {recover,reject}

@@ -7,6 +7,6 @@ sorts
 context-free syntax
 
   CTerm           = CVar {prefer}
-  CTerm.TList     =  <[<{CTerm ","}*>]>         // FIXME Use NaBL2_ prefix
-  CTerm.TListTail =  <[<{CTerm ","}*>|<CTerm>]> // FIXME Use NaBL2_ prefix
-//CTerm.TListConc = <<CTerm> ++ <CTerm>> {left} // FIXME Use NaBL2_ prefix
+  CTerm.CList     =  <[<{CTerm ","}*>]>         // FIXME Use NaBL2_ prefix
+  CTerm.CListTail =  <[<{CTerm ","}*>|<CTerm>]> // FIXME Use NaBL2_ prefix
+//CTerm.CListConc = <<CTerm> ++ <CTerm>> {left} // FIXME Use NaBL2_ prefix

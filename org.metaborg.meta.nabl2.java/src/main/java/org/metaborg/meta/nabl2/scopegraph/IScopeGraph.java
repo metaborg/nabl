@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
-import org.metaborg.meta.nabl2.functions.PartialFunction0;
+import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 

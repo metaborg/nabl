@@ -11,7 +11,7 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 public abstract class TermVar implements ITermVar {
 
     @Value.Parameter @Override public abstract String getResource();

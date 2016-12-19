@@ -16,6 +16,10 @@ template options
 
 context-free syntax
 
+  Rule.CGenInitRuleNoConstraint = <
+    init <CGenParamsTerm> <CGenTypeTerm>.
+  >
+
   Rule.CGenInitRule = <
     init <CGenParamsTerm> <CGenTypeTerm> :=
         <{RuleClause ","}+>.

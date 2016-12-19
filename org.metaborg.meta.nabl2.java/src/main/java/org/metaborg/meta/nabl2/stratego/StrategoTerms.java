@@ -2,9 +2,6 @@ package org.metaborg.meta.nabl2.stratego;
 
 import java.util.List;
 
-import org.metaborg.meta.nabl2.collections.Unit;
-import org.metaborg.meta.nabl2.functions.Function1;
-import org.metaborg.meta.nabl2.functions.Function2;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermIndex;
@@ -12,6 +9,9 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
+import org.metaborg.meta.nabl2.util.Unit;
+import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.Function2;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -35,8 +35,8 @@ public class StrategoTerms {
     private final static String VAR_CTOR = "CVar";
     private final static int VAR_ARITY = 2;
 
-    private final static String TLIST_CTOR = "TList";
-    private final static String TLISTTAIL_CTOR = "TListTail";
+    private final static String LIST_CTOR = "CList";
+    private final static String LISTTAIL_CTOR = "CListTail";
 
     private final Iterable<Function2<IStrategoTerm,Attacher,Unit>> attachmentProviders;
 
@@ -89,7 +89,7 @@ public class StrategoTerms {
         ITerm rawTerm = match(term, StrategoTerms.<ITerm> cases(
             // @formatter:off
             appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl), attachments),
-            tuple -> GenericTerms.newAppl("", fromStrategos(tuple), attachments),
+            tuple -> GenericTerms.newTuple(fromStrategos(tuple), attachments),
             this::fromStrategoList,
             integer -> GenericTerms.newInt(integer.intValue(), attachments),
             real -> { throw new IllegalArgumentException(); },
@@ -101,11 +101,9 @@ public class StrategoTerms {
         ));
         return M.<ITerm> cases(
             // @formatter:off
-            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) -> {
-                return GenericTerms.newVar(resource, name);
-            }),
-            M.appl1(TLIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs)),
-            M.appl2(TLISTTAIL_CTOR, M.list(), M.list(), (t,xs,ys) -> GenericTerms.newListTail(xs,ys))
+            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) -> GenericTerms.newVar(resource, name)),
+            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs)),
+            M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) -> GenericTerms.newListTail(xs, (IListTerm) ys))
             // @formatter:on
         ).match(rawTerm).orElse(rawTerm);
     }

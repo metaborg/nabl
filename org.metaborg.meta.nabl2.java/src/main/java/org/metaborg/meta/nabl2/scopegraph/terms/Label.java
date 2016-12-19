@@ -1,21 +1,13 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
-import java.util.List;
-
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.functions.Function1;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
-import org.metaborg.meta.nabl2.terms.IApplTerm;
-import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 @Value.Immutable
-public abstract class Label extends AbstractApplTerm implements ILabel, IApplTerm {
+public abstract class Label implements ILabel {
 
     private static final String OP = "Label";
 
@@ -25,14 +17,6 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
 
     // IApplTerm implementation
 
-    @Override public String getOp() {
-        return OP;
-    }
-
-    @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(GenericTerms.newString(getName()));
-    }
-
     public static IMatcher<Label> matcher() {
         return matcher(l -> l);
     }
@@ -40,10 +24,10 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     public static <R> IMatcher<R> matcher(Function1<Label,R> f) {
         return M.cases(
             // @formatter:off
-            M.appl0("D", (t) -> f.apply(ImmutableLabel.of("D").setAttachments(t.getAttachments()))),
-            M.appl0("P", (t) -> f.apply(ImmutableLabel.of("P").setAttachments(t.getAttachments()))),
-            M.appl0("I", (t) -> f.apply(ImmutableLabel.of("I").setAttachments(t.getAttachments()))),
-            M.appl1(OP, M.stringValue(), (t,l) -> f.apply(ImmutableLabel.of(l).setAttachments(t.getAttachments())))
+            M.appl0("D", (t) -> f.apply(ImmutableLabel.of("D"))),
+            M.appl0("P", (t) -> f.apply(ImmutableLabel.of("P"))),
+            M.appl0("I", (t) -> f.apply(ImmutableLabel.of("I"))),
+            M.appl1(OP, M.stringValue(), (t,l) -> f.apply(ImmutableLabel.of(l)))
             // @formatter:on
         );
     }

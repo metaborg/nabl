@@ -11,5 +11,5 @@ public interface IRegExpMatcher<S> {
     boolean isFinal();
 
     boolean isEmpty();
-    
+
 }

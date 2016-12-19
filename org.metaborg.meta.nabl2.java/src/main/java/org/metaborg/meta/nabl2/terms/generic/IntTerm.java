@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.IIntTerm;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 @Value.Immutable
-@Serial.Structural
+@Serial.Version(value = 42L)
 abstract class IntTerm implements IIntTerm {
 
     @Value.Parameter @Override public abstract int getValue();

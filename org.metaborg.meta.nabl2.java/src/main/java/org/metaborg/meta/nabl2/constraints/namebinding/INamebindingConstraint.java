@@ -1,8 +1,8 @@
 package org.metaborg.meta.nabl2.constraints.namebinding;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.functions.CheckedFunction1;
-import org.metaborg.meta.nabl2.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 public interface INamebindingConstraint extends IConstraint {
 
@@ -24,7 +24,7 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseAssoc(CAssoc assoc);
 
-        T caseProperty(CPropertyOf property);
+        T caseProperty(CDeclProperty property);
 
         static <T> Cases<T> of(
             // @formatter:off
@@ -35,7 +35,7 @@ public interface INamebindingConstraint extends IConstraint {
             Function1<CGImport,T> onImportEdge,
             Function1<CResolve,T> onResolve,
             Function1<CAssoc,T> onAssoc,
-            Function1<CPropertyOf,T> onProperty
+            Function1<CDeclProperty,T> onProperty
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -68,7 +68,7 @@ public interface INamebindingConstraint extends IConstraint {
                     return onAssoc.apply(assoc);
                 }
 
-                @Override public T caseProperty(CPropertyOf property) {
+                @Override public T caseProperty(CDeclProperty property) {
                     return onProperty.apply(property);
                 }
 
@@ -95,7 +95,7 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseAssoc(CAssoc assoc) throws E;
 
-        T caseProperty(CPropertyOf property) throws E;
+        T caseProperty(CDeclProperty property) throws E;
 
         static <T, E extends Throwable> CheckedCases<T,E> of(
             // @formatter:off
@@ -106,7 +106,7 @@ public interface INamebindingConstraint extends IConstraint {
             CheckedFunction1<CGImport,T,E> onImportEdge,
             CheckedFunction1<CResolve,T,E> onResolve,
             CheckedFunction1<CAssoc,T,E> onAssoc,
-            CheckedFunction1<CPropertyOf,T,E> onProperty
+            CheckedFunction1<CDeclProperty,T,E> onProperty
             // @formatter:on
         ) {
             return new CheckedCases<T,E>() {
@@ -139,7 +139,7 @@ public interface INamebindingConstraint extends IConstraint {
                     return onAssoc.apply(assoc);
                 }
 
-                @Override public T caseProperty(CPropertyOf property) throws E {
+                @Override public T caseProperty(CDeclProperty property) throws E {
                     return onProperty.apply(property);
                 }
 

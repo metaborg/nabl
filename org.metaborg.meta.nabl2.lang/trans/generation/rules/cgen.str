@@ -62,7 +62,10 @@ rules
         ]|;
         metadata-str := |[
           ~<index-var> := <nabl2--get-ast-index> ~<term-var>;
-          rules(AstMetadata: ~<index-var> -> [(Params(), ~<params-var>), (Type(), ~<type-var>)])
+          ~<metadata-var> := [
+            CAstProperty(~<index-var>, Params(), ~<params-var>),
+            CAstProperty(~<index-var>, Type(), ~<type-var>)
+          ]
         ]|;
         debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-Type> ~<type-var>," ]]"] end ]|
       else
@@ -73,7 +76,9 @@ rules
         ]|;
         metadata-str := |[
           ~<index-var> := <nabl2--get-ast-index> ~<term-var>;
-          rules(AstMetadata: ~<index-var> -> [(Params(), ~<params-var>)])
+          ~<metadata-var> := [
+            CAstProperty(~<index-var>, Params(), ~<params-var>)
+          ]
         ]|;
         debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"] end ]|
       end;
@@ -82,7 +87,7 @@ rules
                                                   " when matching ",~pattern-string, " with ",<pp-NaBL2-Term> ~<term-var>,"."])
       ]|;
       constraint-list := List(<constraints-to-terms> constraint*);
-      constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
+      constraint-str  := |[ ~<constraint-var> := <conc;nabl2--flatten-list> (~<metadata-var>, ~constraint-list) ]|;
       strclause* := [
         With(guarded-args-str),
         With(debug-str),

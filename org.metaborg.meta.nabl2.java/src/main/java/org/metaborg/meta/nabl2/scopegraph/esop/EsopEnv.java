@@ -29,6 +29,10 @@ public class EsopEnv<O extends IOccurrence> {
         return res.get(ImmutableSpacedName.of(ref.getNamespace(), ref.getName()));
     }
 
+    public Iterable<O> getAll() {
+        return res.values();
+    }
+
     public void shadow(EsopEnv<O> other) {
         if (!complete) {
             return;

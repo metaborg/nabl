@@ -10,36 +10,35 @@ import org.metaborg.meta.nabl2.terms.INilTerm;
 import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.Terms;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class GenericTerms {
 
-    public static final String TUPLE_OP = "";
-
-    public static IApplTerm newAppl(String op, Iterable<ITerm> args) {
+    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args) {
         return ImmutableApplTerm.of(op, args);
     }
 
-    public static IApplTerm newAppl(String op, Iterable<ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
+    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
         return ImmutableApplTerm.of(op, args).setAttachments(attachments);
     }
 
 
-    public static IApplTerm newTuple(Iterable<ITerm> args) {
-        return newAppl(TUPLE_OP, args);
+    public static IApplTerm newTuple(Iterable<? extends ITerm> args) {
+        return newAppl(Terms.TUPLE_OP, args);
     }
 
-    public static IApplTerm newTuple(Iterable<ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
-        return newAppl(TUPLE_OP, args, attachments);
+    public static IApplTerm newTuple(Iterable<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
+        return newAppl(Terms.TUPLE_OP, args, attachments);
     }
 
 
-    public static IListTerm newList(Iterable<ITerm> elems) {
+    public static IListTerm newList(Iterable<? extends ITerm> elems) {
         return newListTail(elems, newNil());
     }
 
-    public static IListTerm newListTail(Iterable<ITerm> elems, IListTerm list) {
+    public static IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list) {
         LinkedList<ITerm> reverse = new LinkedList<>();
         for (ITerm elem : elems) {
             reverse.addFirst(elem);
