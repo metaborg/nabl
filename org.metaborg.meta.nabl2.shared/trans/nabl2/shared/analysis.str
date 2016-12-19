@@ -15,6 +15,11 @@ signature
     AnalyzeFinal   : String/* source */ -> AnalysisAction
 
   constructors
+    CustomInitial : String/* source */ -> AnalysisAction
+    CustomUnit    : String/* source */ * Term/* ast */ * Term/* initial */ -> AnalysisAction
+    CustomFinal   : String/* source */ * Term/* custom initial */ * Term/* custom final */  -> AnalysisAction
+
+  constructors
     InitialResult : List(Constraint) * Term/* cgen args */ * Term/* config */ -> InitialResult
     UnitResult    : Term/* processed ast */ * List(Constraint) -> UnitResult
     FinalResult   : FinalResult

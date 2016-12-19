@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.spoofax;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.metaborg.meta.nabl2.stratego.StrategoTermIndex;
@@ -14,34 +15,60 @@ public class Actions {
     private final ITermFactory termFactory;
     private final StrategoTerms strategoTerms;
 
-    private final IStrategoConstructor initialAction;
-    private final IStrategoConstructor unitAction;
-    private final IStrategoConstructor finalAction;
+    private final IStrategoConstructor analyzeInitial;
+    private final IStrategoConstructor analyzeUnit;
+    private final IStrategoConstructor analyzeFinal;
+
     private final IStrategoConstructor params;
     private final IStrategoConstructor paramsAndType;
+
+    private final IStrategoConstructor customInitial;
+    private final IStrategoConstructor customUnit;
+    private final IStrategoConstructor customFinal;
 
 
     public Actions(ITermFactory termFactory, StrategoTerms strategoTerms) {
         this.termFactory = termFactory;
-        this.initialAction = termFactory.makeConstructor("AnalyzeInitial", 1);
-        this.unitAction = termFactory.makeConstructor("AnalyzeUnit", 3);
-        this.finalAction = termFactory.makeConstructor("AnalyzeFinal", 1);
+
+        this.analyzeInitial = termFactory.makeConstructor("AnalyzeInitial", 1);
+        this.analyzeUnit = termFactory.makeConstructor("AnalyzeUnit", 3);
+        this.analyzeFinal = termFactory.makeConstructor("AnalyzeFinal", 1);
+
         this.params = termFactory.makeConstructor("Params", 1);
         this.paramsAndType = termFactory.makeConstructor("ParamsAndType", 2);
+
+        this.customInitial = termFactory.makeConstructor("CustomInitial", 1);
+        this.customUnit = termFactory.makeConstructor("CustomUnit", 3);
+        this.customFinal = termFactory.makeConstructor("CustomFinal", 3);
+
         this.strategoTerms = strategoTerms;
     }
 
-    public IStrategoTerm initialOf(String resource) {
-        return termFactory.makeAppl(initialAction, sourceTerm(resource));
+    public IStrategoTerm analyzeInitial(String resource) {
+        return termFactory.makeAppl(analyzeInitial, sourceTerm(resource));
     }
 
-    public IStrategoTerm unitOf(String resource, IStrategoTerm ast, Args args) {
-        return termFactory.makeAppl(unitAction, sourceTerm(resource), ast, args(args));
+    public IStrategoTerm analyzeUnit(String resource, IStrategoTerm ast, Args args) {
+        return termFactory.makeAppl(analyzeUnit, sourceTerm(resource), ast, args(args));
     }
 
-    public IStrategoTerm finalOf(String resource) {
-        return termFactory.makeAppl(finalAction, sourceTerm(resource));
+    public IStrategoTerm analyzeFinal(String resource) {
+        return termFactory.makeAppl(analyzeFinal, sourceTerm(resource));
     }
+
+
+    public IStrategoTerm customInitial(String resource) {
+        return termFactory.makeAppl(customInitial, sourceTerm(resource));
+    }
+
+    public IStrategoTerm customUnit(String resource, IStrategoTerm ast, IStrategoTerm initial) {
+        return termFactory.makeAppl(customUnit, sourceTerm(resource), ast, initial);
+    }
+
+    public IStrategoTerm customFinal(String resource, IStrategoTerm initial, Collection<IStrategoTerm> units) {
+        return termFactory.makeAppl(customFinal, sourceTerm(resource), initial, termFactory.makeList(units));
+    }
+
 
     private IStrategoTerm sourceTerm(String resource) {
         IStrategoString sourceTerm = termFactory.makeString(resource);

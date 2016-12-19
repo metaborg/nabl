@@ -133,7 +133,7 @@ rules // ###### Custom analysis hooks ######
   /**
    * @type Analysis -> CustomFinalResult
    */
-  nalb2-get-custom-analysis = fail
+  nabl2-get-custom-analysis = nabl2--get-custom-analysis
 
   /**
    * @type CustomFinalResult -> Box
@@ -147,14 +147,14 @@ rules // ###### Analysis results ######
    *
    * @type node:Term -> Analysis
    */
-  nabl2-get-ast-analysis = ![]
+  nabl2-get-ast-analysis = nabl2--get-ast-analysis
 
   /**
    * Get analysis for the given resource
    *
    * @type filename:String -> Analysis
    */
-  nabl2-get-resource-analysis = ![]
+  nabl2-get-resource-analysis = nabl2--get-resource-analysis
 
   /**
    * @type node:Term -> Term

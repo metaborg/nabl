@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -13,6 +14,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.spoofax.interpreter.terms.IStrategoTerm;
 
 @Value.Immutable
 @Serial.Version(value = 1L)
@@ -30,6 +32,7 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IUnifier getUnifier();
 
+    public abstract Optional<IStrategoTerm> getCustom();
 
     @Value.Parameter public abstract List<Message> getErrors();
 

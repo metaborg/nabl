@@ -6,7 +6,14 @@ imports
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
+  signatures/nabl2/runtime/common/-
   signatures/nabl2/runtime/constraints/-
+
+signature
+
+  constructors
+
+    AnalysisToken : Analysis
 
 rules
 
@@ -50,6 +57,18 @@ rules
    */
   nabl2--get-decl-type =
     nabl2--get-decl-property(|Type())
+
+rules
+
+  nabl2--get-ast-analysis: term -> a
+    with a := <nabl2--copy-ast-index(|term)> AnalysisToken()
+
+  nabl2--get-resource-analysis: resource -> a
+    with idx := TermIndex(resource,0);
+         a := <nabl2--set-ast-index(|idx)> AnalysisToken()
+
+  nabl2--get-custom-analysis =
+    prim("SG_get_custom_analysis")
 
 rules
 

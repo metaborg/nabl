@@ -11,20 +11,20 @@ import org.metaborg.util.iterators.Iterables2;
 
 public class ResultTerms {
 
-    public static IMatcher<InitialResult> initialOf() {
+    public static IMatcher<ImmutableInitialResult> initialOf() {
         return M.appl3("InitialResult", ConstraintTerms.constraints(), args(), SolverConfig.matcher(), (t, constraints,
                 args, config) -> {
-            return (InitialResult) ImmutableInitialResult.of(constraints, args, config);
+            return ImmutableInitialResult.of(constraints, args, config);
         });
     }
 
-    public static IMatcher<UnitResult> unitOf() {
+    public static IMatcher<ImmutableUnitResult> unitOf() {
         return M.appl2("UnitResult", M.term(), ConstraintTerms.constraints(), (t, ast, constraints) -> {
-            return (UnitResult) ImmutableUnitResult.of(ast, constraints);
+            return ImmutableUnitResult.of(ast, constraints);
         });
     }
 
-    public static IMatcher<FinalResult> finalOf() {
+    public static IMatcher<ImmutableFinalResult> finalOf() {
         return M.appl0("FinalResult", (t) -> {
             return ImmutableFinalResult.of();
         });

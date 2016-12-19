@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
@@ -11,6 +12,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.spoofax.interpreter.terms.IStrategoTerm;
 
 public interface ISolution {
 
@@ -32,4 +34,6 @@ public interface ISolution {
 
     IUnifier getUnifier();
 
+    Optional<IStrategoTerm> getCustom();
+    
 }
