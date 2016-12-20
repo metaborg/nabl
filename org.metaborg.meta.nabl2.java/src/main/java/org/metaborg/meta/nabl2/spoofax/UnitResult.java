@@ -4,18 +4,26 @@ import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.constraints.ConstraintTerms;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
+import org.metaborg.meta.nabl2.terms.Terms.M;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public interface UnitResult {
+public abstract class UnitResult {
 
-    @Value.Parameter ITerm getAST();
+    @Value.Parameter public abstract ITerm getAST();
 
-    @Value.Parameter Iterable<IConstraint> getConstraints();
+    @Value.Parameter public abstract Iterable<IConstraint> getConstraints();
 
-    Optional<IStrategoTerm> getCustomResult();
+    public abstract Optional<ITerm> getCustomResult();
+
+    public static IMatcher<ImmutableUnitResult> matcher() {
+        return M.appl2("UnitResult", M.term(), ConstraintTerms.constraints(), (t, ast, constraints) -> {
+            return ImmutableUnitResult.of(ast, constraints);
+        });
+    }
     
 }

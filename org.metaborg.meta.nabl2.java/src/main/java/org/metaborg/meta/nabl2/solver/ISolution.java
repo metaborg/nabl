@@ -9,10 +9,10 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.spoofax.CustomSolution;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.spoofax.interpreter.terms.IStrategoTerm;
 
 public interface ISolution {
 
@@ -34,6 +34,6 @@ public interface ISolution {
 
     IUnifier getUnifier();
 
-    Optional<IStrategoTerm> getCustom();
-    
+    Optional<CustomSolution> getCustom();
+
 }

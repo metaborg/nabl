@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 
 import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.StrategoTermIndex;
+import org.metaborg.meta.nabl2.stratego.StrategoTerms;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.stratego.Strategy;
@@ -20,7 +21,9 @@ public class SG_get_custom_analysis extends ScopeGraphPrimitive {
             return false;
         }
         return context.unit(strategoIndex.getResource()).solution().flatMap(s -> s.getCustom()).map(s -> {
-            env.setCurrent(s);
+            StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
+            IStrategoTerm a = strategoTerms.toStratego(s.getAnalysis());
+            env.setCurrent(a);
             return true;
         }).orElse(false);
     }

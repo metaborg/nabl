@@ -221,6 +221,16 @@ public class Terms {
             return M.appl3(TUPLE_OP, m1, m2, m3, f);
         }
 
+        public static <T1, T2, T3, T4> IMatcher<IApplTerm> tuple4(IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
+                IMatcher<? extends T3> m3, IMatcher<? extends T4> m4) {
+            return M.appl4(TUPLE_OP, m1, m2, m3, m4);
+        }
+
+        public static <T1, T2, T3, T4, R> IMatcher<R> tuple4(IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
+                IMatcher<? extends T3> m3, IMatcher<? extends T4> m4, Function5<? super IApplTerm,? super T1,? super T2,? super T3,? super T4,R> f) {
+            return M.appl4(TUPLE_OP, m1, m2, m3, m4, f);
+        }
+
         // list
 
         public static IMatcher<IListTerm> list() {

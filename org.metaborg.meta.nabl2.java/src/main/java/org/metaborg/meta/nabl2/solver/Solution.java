@@ -11,10 +11,10 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.spoofax.CustomSolution;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.spoofax.interpreter.terms.IStrategoTerm;
 
 @Value.Immutable
 @Serial.Version(value = 1L)
@@ -32,7 +32,7 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IUnifier getUnifier();
 
-    public abstract Optional<IStrategoTerm> getCustom();
+    public abstract Optional<CustomSolution> getCustom();
 
     @Value.Parameter public abstract List<Message> getErrors();
 
