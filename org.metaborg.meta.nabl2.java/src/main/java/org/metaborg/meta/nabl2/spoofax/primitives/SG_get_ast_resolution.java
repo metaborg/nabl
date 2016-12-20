@@ -30,7 +30,7 @@ public class SG_get_ast_resolution extends ScopeGraphPrimitive {
             for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
                 if (ref.getPosition().equals(index)) {
                     for (Occurrence decl : s.getNameResolution().resolve(ref)) {
-                        entries.add(GenericTerms.newAppl("", Iterables2.from(ref, decl.getName())));
+                        entries.add(GenericTerms.newTuple(Iterables2.from(ref, decl.getName())));
                     }
                 }
             }
