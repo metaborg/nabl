@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +26,9 @@ import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public class RelationSolver implements ISolverComponent<IRelationConstraint> {
@@ -34,7 +37,9 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     private final Relations<ITerm> relations;
     private final Map<String,Function1<ITerm,Optional<ITerm>>> functions;
 
-    private final Set<IRelationConstraint> defered = Sets.newHashSet();
+    private final Multimap<IRelationName,IRelationConstraint> deferedBuilds = HashMultimap.create();
+    private final Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
+    private boolean complete = false;
 
     /**************************************************************
      * Least upper bound calculations can be unstable if
@@ -55,12 +60,12 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         for (IRelationName relationName : relations.getNames()) {
             String lubName = RelationTerms.relationFunction(relationName, RelationFunctions.LUB);
             Function1<ITerm,Optional<ITerm>> lubFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
-                return relations.leastUpperBound(relationName, left, right);
+                return lub(relationName, left, right);
             }))::match;
             functions.put(lubName, lubFun);
             String glbName = RelationTerms.relationFunction(relationName, RelationFunctions.GLB);
             Function1<ITerm,Optional<ITerm>> glbFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
-                return relations.greatestLowerBound(relationName, left, right);
+                return glb(relationName, left, right);
             }))::match;
             functions.put(glbName, glbFun);
         }
@@ -73,16 +78,37 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(IRelationConstraint constraint) throws UnsatisfiableException {
+        return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addOther, this::addOther));
+    }
+
+    private Unit addBuild(CBuildRelation constraint) throws UnsatisfiableException {
         if (!solve(constraint)) {
-            defered.add(constraint);
+            deferedBuilds.put(constraint.getRelation(), constraint);
         }
         return Unit.unit;
 
     }
 
+    private Unit addOther(IRelationConstraint constraint) throws UnsatisfiableException {
+        if (!solve(constraint)) {
+            deferedChecks.add(constraint);
+        }
+        return Unit.unit;
+
+    }
+
+
     @Override public boolean iterate() throws UnsatisfiableException {
-        Iterator<IRelationConstraint> it = defered.iterator();
+        complete = true;
         boolean progress = false;
+        progress |= iterate(deferedBuilds.values());
+        progress |= iterate(deferedChecks);
+        return progress;
+    }
+
+    private boolean iterate(Collection<IRelationConstraint> defered) throws UnsatisfiableException {
+        boolean progress = false;
+        Iterator<IRelationConstraint> it = defered.iterator();
         while (it.hasNext()) {
             try {
                 if (solve(it.next())) {
@@ -98,8 +124,12 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         return progress;
     }
 
+
     @Override public Iterable<UnsatisfiableException> finish() {
-        return defered.stream().map(c -> {
+        Set<IRelationConstraint> unsolved = Sets.newHashSet();
+        unsolved.addAll(deferedBuilds.values());
+        unsolved.addAll(deferedChecks);
+        return unsolved.stream().map(c -> {
             return c.getMessageInfo().makeException("Unsolved relation constraint: " + c, Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
     }
@@ -128,6 +158,9 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     }
 
     private boolean solve(CCheckRelation c) throws UnsatisfiableException {
+        if (!isComplete(c.getRelation())) {
+            return false;
+        }
         ITerm left = unifier.find(c.getLeft());
         ITerm right = unifier.find(c.getRight());
         if (!(left.isGround() && right.isGround())) {
@@ -159,5 +192,17 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     }
 
     // ------------------------------------------------------------------------------------------------------//
+
+    private boolean isComplete(IRelationName name) {
+        return complete && !deferedBuilds.containsKey(name);
+    }
+
+    private Optional<ITerm> lub(IRelationName name, ITerm left, ITerm right) {
+        return isComplete(name) ? relations.leastUpperBound(name, left, right) : Optional.empty();
+    }
+
+    private Optional<ITerm> glb(IRelationName name, ITerm left, ITerm right) {
+        return isComplete(name) ? relations.greatestLowerBound(name, left, right) : Optional.empty();
+    }
 
 }

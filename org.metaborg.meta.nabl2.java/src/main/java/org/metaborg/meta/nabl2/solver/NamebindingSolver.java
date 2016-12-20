@@ -48,7 +48,8 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private EsopNameResolution<Scope,Label,Occurrence> nameResolution = null;
 
-    private final Set<INamebindingConstraint> defered = Sets.newHashSet();
+    private final Set<INamebindingConstraint> deferedBuilds = Sets.newHashSet();
+    private final Set<INamebindingConstraint> deferedChecks = Sets.newHashSet();
 
     public NamebindingSolver(ResolutionParameters params, Unifier unifier) {
         this.unifier = unifier;
@@ -75,18 +76,37 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         if (nameResolution != null) {
             throw new IllegalStateException();
         }
+        return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addBuild, this::addBuild, this::addBuild,
+                this::addBuild, this::addCheck, this::addCheck, this::addCheck));
+    }
+
+    private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
         if (!solve(constraint)) {
-            defered.add(constraint);
+            deferedBuilds.add(constraint);
+        }
+        return unit;
+    }
+
+    private Unit addCheck(INamebindingConstraint constraint) throws UnsatisfiableException {
+        if (!solve(constraint)) {
+            deferedChecks.add(constraint);
         }
         return unit;
     }
 
     @Override public boolean iterate() throws UnsatisfiableException {
         boolean progress = false;
-        if (nameResolution == null) {
-            progress = true;
+        progress |= iterate(deferedBuilds);
+        if (nameResolution == null && deferedBuilds.isEmpty()) {
+            progress |= true;
             nameResolution = new EsopNameResolution<>(scopeGraph, params);
         }
+        progress |= iterate(deferedChecks);
+        return progress;
+    }
+
+    private boolean iterate(Set<INamebindingConstraint> defered) throws UnsatisfiableException {
+        boolean progress = false;
         Iterator<INamebindingConstraint> it = defered.iterator();
         while (it.hasNext()) {
             try {
@@ -104,7 +124,10 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     @Override public Iterable<UnsatisfiableException> finish() {
-        return defered.stream().map(c -> {
+        Set<INamebindingConstraint> unsolved = Sets.newHashSet();
+        unsolved.addAll(deferedBuilds);
+        unsolved.addAll(deferedChecks);
+        return unsolved.stream().map(c -> {
             return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty(),
                     unifier);
         }).collect(Collectors.toList());
