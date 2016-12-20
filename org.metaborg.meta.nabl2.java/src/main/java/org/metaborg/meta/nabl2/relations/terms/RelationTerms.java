@@ -57,7 +57,7 @@ public class RelationTerms {
     }
 
     public static IMatcher<String> functionName() {
-        return M.cases(
+        return M.<String> cases(
             // @formatter:off
             M.appl1("Lub", RelationName.matcher(), (t, r) -> relationFunction(r, RelationFunctions.LUB)),
             M.appl1("Glb", RelationName.matcher(), (t, r) -> relationFunction(r, RelationFunctions.GLB)),

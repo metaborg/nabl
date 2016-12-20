@@ -82,7 +82,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
         }
         for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
             Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
-                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                return (Optional<T>)Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
                     T argt1 = arg1.getValue();
                     T argt2 = arg2.getValue();
                     return arg1.getVariance().match(IVariance.<Optional<T>> cases(
@@ -107,7 +107,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
         }
         for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
             Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
-                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                return (Optional<T>)Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
                     T argt1 = arg1.getValue();
                     T argt2 = arg2.getValue();
                     return arg1.getVariance().match(IVariance.<Optional<T>> cases(
