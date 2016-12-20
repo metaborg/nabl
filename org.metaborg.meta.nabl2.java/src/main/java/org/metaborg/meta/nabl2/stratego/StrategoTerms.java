@@ -82,6 +82,11 @@ public class StrategoTerms {
         if (termIndex != null) {
             StrategoTermIndex.put(term, termIndex.getResource(), termIndex.getId());
         }
+
+        StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
+        if (annotations != null) {
+            termFactory.annotateTerm(term, annotations.getAnnotationList());
+        }
     }
 
     public ITerm fromStratego(IStrategoTerm term) {
@@ -137,6 +142,8 @@ public class StrategoTerms {
         if (imploderAttachment != null) {
             b.put(ImploderAttachment.class, imploderAttachment);
         }
+
+        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(term.getAnnotations()));
 
         Attacher attacher = new Attacher() {
 

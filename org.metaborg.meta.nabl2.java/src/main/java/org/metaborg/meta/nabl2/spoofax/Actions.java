@@ -1,9 +1,9 @@
 package org.metaborg.meta.nabl2.spoofax;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermIndex;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
+import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
@@ -39,7 +39,7 @@ public class Actions {
 
 
     private static ITerm sourceTerm(String resource) {
-        return GenericTerms.newString(resource, ImmutableClassToInstanceMap.builder().put(ITermIndex.class,
+        return GenericTerms.newString(resource, ImmutableClassToInstanceMap.builder().put(TermIndex.class,
                 ImmutableTermIndex.of(resource, 0)).build());
     }
 
