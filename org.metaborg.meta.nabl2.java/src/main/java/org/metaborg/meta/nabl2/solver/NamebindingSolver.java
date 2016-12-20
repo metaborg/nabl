@@ -19,12 +19,14 @@ import org.metaborg.meta.nabl2.constraints.namebinding.CResolve;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
+import org.metaborg.meta.nabl2.scopegraph.IPath;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Namespace;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
+import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.sets.IElement;
@@ -218,9 +220,9 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm).orElseThrow(() -> new TypeException());
-        Optional<Iterable<Occurrence>> decls = nameResolution.tryResolve(ref);
-        if (decls.isPresent()) {
-            List<Occurrence> declarations = Lists.newArrayList(decls.get());
+        Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = nameResolution.tryResolve(ref);
+        if (paths.isPresent()) {
+            List<Occurrence> declarations = Paths.pathsToDecls(paths.get());
             switch (declarations.size()) {
             case 0:
                 throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty(), unifier);
@@ -307,14 +309,12 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryVisible(scope);
-                    return decls.map(ds -> makeSet(ds, ns));
+                    Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
+                    return paths.map(ps -> makeSet(Paths.pathsToDecls(ps), ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryReachable(scope);
-                    return decls.map(ds -> makeSet(ds, ns));
-                    
-                    
+                    Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
+                    return paths.map(ps -> makeSet(Paths.pathsToDecls(ps), ns));
                 })
                 // @formatter:on
             ).match(term).flatMap(o -> o);

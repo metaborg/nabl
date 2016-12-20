@@ -3,7 +3,11 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.scopegraph.IPath;
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
+import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
+import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
@@ -22,12 +26,12 @@ public class SG_get_ref_resolution extends ScopeGraphPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm> flatMap(ref -> {
             return context.unit(ref.getPosition().getResource()).solution().flatMap(s -> {
-                List<Occurrence> decls = Lists.newArrayList(s.getNameResolution().resolve(ref));
-                if (decls.size() != 1) {
+                List<IPath<Scope,Label,Occurrence>> paths = Lists.newArrayList(s.getNameResolution().resolve(ref));
+                if (paths.size() != 1) {
                     return Optional.empty();
                 }
-                Occurrence decl = decls.get(0);
-                ITerm result = GenericTerms.newTuple(Iterables2.from(decl, GenericTerms.newNil()));
+                IPath<Scope,Label,Occurrence> path = paths.get(0);
+                ITerm result = GenericTerms.newTuple(Iterables2.from(path.getDeclaration(), Paths.toTerm(path)));
                 return Optional.of(result);
             });
         });

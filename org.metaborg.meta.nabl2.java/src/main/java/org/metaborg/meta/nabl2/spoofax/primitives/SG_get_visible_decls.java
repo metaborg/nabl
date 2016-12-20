@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -27,7 +28,7 @@ public class SG_get_visible_decls extends ScopeGraphPrimitive {
         }
         return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
             return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                return GenericTerms.newList(s.getNameResolution().visible(scope));
+                return GenericTerms.newList(Paths.pathsToDecls(s.getNameResolution().visible(scope)));
             });
         });
     }

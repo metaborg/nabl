@@ -14,8 +14,12 @@ import org.metaborg.meta.nabl2.relations.terms.Relation;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
+import org.metaborg.meta.nabl2.scopegraph.IPath;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
+import org.metaborg.meta.nabl2.util.Optionals;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.metaborg.util.iterators.Iterables2;
 import org.pcollections.HashTreePSet;
@@ -36,7 +40,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final IRelation<L> order;
     private final IRelation<L> noOrder;
 
-    private final Map<O,Iterable<O>> resolveCache;
+    private final Map<O,Iterable<IPath<S,L,O>>> resolveCache;
 
     public EsopNameResolution(EsopScopeGraph<S,L,O> scopeGraph, IResolutionParameters<L> params) {
         this.scopeGraph = scopeGraph;
@@ -50,92 +54,108 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.resolveCache = Maps.newHashMap();
     }
 
-    @Override public Iterable<O> resolve(O ref) {
+    @Override public Iterable<IPath<S,L,O>> resolve(O ref) {
         return tryResolve(ref).orElseGet(() -> Iterables2.empty());
     }
 
-    @Override public Iterable<O> visible(S scope) {
+    @Override public Iterable<IPath<S,L,O>> visible(S scope) {
         return tryVisible(scope).orElseGet(() -> Iterables2.empty());
     }
 
-    @Override public Iterable<O> reachable(S scope) {
+    @Override public Iterable<IPath<S,L,O>> reachable(S scope) {
         return tryReachable(scope).orElseGet(() -> Iterables2.empty());
     }
 
-    public Optional<Iterable<O>> tryResolve(O ref) {
+    public Optional<Iterable<IPath<S,L,O>>> tryResolve(O ref) {
         if (resolveCache.containsKey(ref)) {
             return Optional.of(resolveCache.get(ref));
         } else {
-            Optional<Iterable<O>> decls = resolve(HashTreePSet.empty(), ref);
-            decls.ifPresent(ds -> resolveCache.put(ref, ds));
-            return decls;
+            Optional<Iterable<IPath<S,L,O>>> paths = resolve(HashTreePSet.empty(), ref);
+            paths.ifPresent(ds -> resolveCache.put(ref, ds));
+            return paths;
         }
     }
 
-    public Optional<Iterable<O>> tryVisible(S scope) {
-        EsopEnv<O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), order, RegExpMatcher.create(wf), scope);
+    public Optional<Iterable<IPath<S,L,O>>> tryVisible(S scope) {
+        EsopEnv<S,L,O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), order, RegExpMatcher.create(wf), scope);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
-    public Optional<Iterable<O>> tryReachable(S scope) {
-        EsopEnv<O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, RegExpMatcher.create(noWf), scope);
+    public Optional<Iterable<IPath<S,L,O>>> tryReachable(S scope) {
+        EsopEnv<S,L,O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, RegExpMatcher.create(noWf),
+                scope);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
-    private Optional<Iterable<O>> resolve(PSet<O> seenI, O ref) {
+    private Optional<Iterable<IPath<S,L,O>>> resolve(PSet<O> seenI, O ref) {
         return scopeGraph.getRefScope(ref).map(scope -> {
-            EsopEnv<O> e = env(seenI.plus(ref), HashTreePSet.empty(), order, RegExpMatcher.create(wf), scope);
-            Iterable<O> decls = e.get(ref);
+            EsopEnv<S,L,O> e = env(seenI.plus(ref), HashTreePSet.empty(), order, RegExpMatcher.create(wf), scope);
+            Iterable<IPath<S,L,O>> paths = e.get(ref);
             if (e.isComplete()) {
-                return Optional.of(decls);
+                return Optional.of(paths);
             } else {
-                return Iterables.isEmpty(decls) ? Optional.<Iterable<O>> empty() : Optional.of(decls);
+                return Iterables.isEmpty(paths) ? Optional.<Iterable<IPath<S,L,O>>> empty() : Optional.of(paths);
             }
         }).orElseGet(() -> Optional.of(Iterables2.empty()));
     }
 
-    private EsopEnv<O> env(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, S scope) {
+    private EsopEnv<S,L,O> env(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re,
+            S scope) {
         if (seenScopes.contains(scope) || re.isEmpty()) {
             return EsopEnv.empty(true);
         }
         return env_L(labels, seenImports, seenScopes, lt, re, scope);
     }
 
-    private EsopEnv<O> env_l(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
+    private EsopEnv<S,L,O> env_l(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
             S scope) {
-        if (l.getName().equals("D")) {
-            if (!re.isAccepting()) {
-                return EsopEnv.empty(true);
-            }
-            Iterable<O> decls = scopeGraph.getDecls(scope);
-            return EsopEnv.of(true, decls);
-        }
-        Optional<Iterable<S>> ds = directScopes(l, scope);
-        Optional<Iterable<S>> is = importScopes(seenImports, l, scope);
-        if (!(ds.isPresent() && is.isPresent())) {
-            return EsopEnv.empty(false);
-        }
-        EsopEnv<O> env = EsopEnv.empty(true);
-        for (S nextScope : Iterables.concat(ds.get(), is.get())) {
-            env.union(env(seenImports, seenScopes.plus(scope), lt, re.match(l), nextScope));
-        }
-        return env;
+        return l.getName().equals("D") ? env_D(seenImports, seenScopes, lt, re, l, scope)
+                : env_nonD(seenImports, seenScopes, lt, re, l, scope);
     }
 
-    private Optional<Iterable<S>> directScopes(L l, S scope) {
-        List<S> scopes = Lists.newArrayList();
-        for (PartialFunction0<S> getScope : scopeGraph.getDirectEdges(scope).get(l)) {
-            Optional<S> maybeScope = getScope.apply();
+    private EsopEnv<S,L,O> env_D(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
+            S scope) {
+        if (!re.isAccepting()) {
+            return EsopEnv.empty(true);
+        }
+        List<IPath<S,L,O>> paths = Lists.newArrayList();
+        for (O decl : scopeGraph.getDecls(scope)) {
+            paths.add(Paths.decl(scope, decl));
+        }
+        return EsopEnv.of(true, paths);
+    }
+
+    private EsopEnv<S,L,O> env_nonD(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
+            S scope) {
+        Function1<S,EsopEnv<S,L,O>> getter = s -> env(seenImports, seenScopes.plus(scope), lt, re.match(l), s);
+        Optional<Iterable<EsopEnv<S,L,O>>> ods = directScopes(l, scope, getter);
+        Optional<Iterable<EsopEnv<S,L,O>>> ois = importScopes(seenImports, l, scope, getter);
+        return Optionals.lift(ods, ois, (ds, is) -> {
+            EsopEnv<S,L,O> env = EsopEnv.empty(true);
+            for (EsopEnv<S,L,O> nextEnv : Iterables.concat(ds, is)) {
+                env.union(nextEnv);
+            }
+            return env;
+        }).orElseGet(() -> EsopEnv.empty(false));
+    }
+
+    private Optional<Iterable<EsopEnv<S,L,O>>> directScopes(L l, S scope, Function1<S,EsopEnv<S,L,O>> getter) {
+        List<EsopEnv<S,L,O>> envs = Lists.newArrayList();
+        for (PartialFunction0<S> nextScope : scopeGraph.getDirectEdges(scope).get(l)) {
+            Optional<S> maybeScope = nextScope.apply();
             if (!maybeScope.isPresent()) {
                 return Optional.empty();
             }
-            scopes.add(maybeScope.get());
+            EsopEnv<S,L,O> env = getter.apply(maybeScope.get());
+            env.map(p -> Paths.direct(scope, l, p));
+            envs.add(env);
         }
-        return Optional.of(scopes);
+        return Optional.of(envs);
     }
 
-    private Optional<Iterable<S>> importScopes(PSet<O> seenImports, L l, S scope) {
-        List<S> scopes = Lists.newArrayList();
+    private Optional<Iterable<EsopEnv<S,L,O>>> importScopes(PSet<O> seenImports, L l, S scope,
+            Function1<S,EsopEnv<S,L,O>> getter) {
+        List<EsopEnv<S,L,O>> envs = Lists.newArrayList();
         for (PartialFunction0<O> getRef : scopeGraph.getImports(scope).get(l)) {
             Optional<O> maybeRef = getRef.apply();
             if (!maybeRef.isPresent()) {
@@ -145,26 +165,28 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             if (seenImports.contains(ref)) {
                 continue;
             }
-            Optional<Iterable<O>> decls = resolve(seenImports, ref);
-            if (!decls.isPresent()) {
+            Optional<Iterable<IPath<S,L,O>>> paths = resolve(seenImports, ref);
+            if (!paths.isPresent()) {
                 return Optional.empty();
             }
-            for (O decl : decls.get()) {
-                for (S nextScope : scopeGraph.getAssocScopes(decl).get(l)) {
-                    scopes.add(nextScope);
+            for (IPath<S,L,O> path : paths.get()) {
+                for (S nextScope : scopeGraph.getAssocScopes(path.getDeclaration()).get(l)) {
+                    EsopEnv<S,L,O> env = getter.apply(nextScope);
+                    env.map(p -> Paths.named(scope, l, ref, path, p));
+                    envs.add(env);
                 }
             }
         }
-        return Optional.of(scopes);
+        return Optional.of(envs);
     }
 
     // stage environment shadowing call tree
 
-    private EsopEnv<O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re,
-            S scope) {
-        EsopEnv<O> env = EsopEnv.empty(true);
+    private EsopEnv<S,L,O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt,
+            IRegExpMatcher<L> re, S scope) {
+        EsopEnv<S,L,O> env = EsopEnv.empty(true);
         for (L l : max(lt, L)) {
-            EsopEnv<O> partialEnv = env_L(smaller(lt, L, l), seenImports, seenScopes, lt, re, scope);
+            EsopEnv<S,L,O> partialEnv = env_L(smaller(lt, L, l), seenImports, seenScopes, lt, re, scope);
             partialEnv.shadow(env_l(seenImports, seenScopes, lt, re, l, scope));
             env.union(partialEnv);
         }
