@@ -1,12 +1,13 @@
 package org.metaborg.meta.nabl2.spoofax.primitives;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.metaborg.meta.nabl2.spoofax.CustomSolution;
 import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
-import org.metaborg.meta.nabl2.stratego.StrategoTermIndex;
-import org.metaborg.meta.nabl2.stratego.StrategoTerms;
-import org.spoofax.interpreter.core.IContext;
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.spoofax.interpreter.core.InterpreterException;
-import org.spoofax.interpreter.stratego.Strategy;
-import org.spoofax.interpreter.terms.IStrategoTerm;
 
 public class SG_get_custom_analysis extends ScopeGraphPrimitive {
 
@@ -14,18 +15,14 @@ public class SG_get_custom_analysis extends ScopeGraphPrimitive {
         super(SG_get_custom_analysis.class.getSimpleName(), 0, 0);
     }
 
-    @Override public boolean call(IScopeGraphContext<?> context, IContext env, Strategy[] strategies,
-            IStrategoTerm[] terms) throws InterpreterException {
-        StrategoTermIndex strategoIndex = StrategoTermIndex.get(env.current());
-        if (strategoIndex == null) {
-            return false;
+    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
+        TermIndex index = term.getAttachments().getInstance(TermIndex.class);
+        if (index == null) {
+            return Optional.empty();
         }
-        return context.unit(strategoIndex.getResource()).solution().flatMap(s -> s.getCustom()).map(s -> {
-            StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
-            IStrategoTerm a = strategoTerms.toStratego(s.getAnalysis());
-            env.setCurrent(a);
-            return true;
-        }).orElse(false);
+        return context.unit(index.getResource()).solution().<CustomSolution> flatMap(s -> s.getCustom()).<ITerm> map(
+                cs -> cs.getAnalysis());
     }
 
 }

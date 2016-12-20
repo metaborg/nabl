@@ -1,6 +1,13 @@
 package org.metaborg.meta.nabl2.spoofax.primitives;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
+import org.metaborg.meta.nabl2.stratego.StrategoTerms;
+import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.util.concurrent.IClosableLock;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -29,12 +36,20 @@ public abstract class ScopeGraphPrimitive extends AbstractPrimitive {
             throw new InterpreterException("Context does not implement IScopeGraphContext");
         }
         final IScopeGraphContext<?> context = (IScopeGraphContext<?>) env.contextObject();
+        StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
+        List<ITerm> termArgs = Arrays.asList(tvars).stream().map(strategoTerms::fromStratego).collect(Collectors
+                .toList());
+        Optional<ITerm> result;
         try (IClosableLock lock = context.guard()) {
-            return call(context, env, svars, tvars);
+            result = call(context, strategoTerms.fromStratego(env.current()), termArgs);
         }
+        return result.map(t -> {
+            env.setCurrent(strategoTerms.toStratego(t));
+            return true;
+        }).orElse(false);
     }
 
-    public abstract boolean call(IScopeGraphContext<?> context, IContext env, Strategy[] svars, IStrategoTerm[] tvars)
+    public abstract Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> termVars)
             throws InterpreterException;
 
 }

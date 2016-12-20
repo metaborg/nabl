@@ -4,11 +4,11 @@ import java.util.List;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermIndex;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
+import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.functions.Function2;
@@ -78,7 +78,7 @@ public class StrategoTerms {
             term.putAttachment(imploderAttachment);
         }
 
-        ITermIndex termIndex = attachments.getInstance(ITermIndex.class);
+        TermIndex termIndex = attachments.getInstance(TermIndex.class);
         if (termIndex != null) {
             StrategoTermIndex.put(term, termIndex.getResource(), termIndex.getId());
         }
@@ -130,7 +130,7 @@ public class StrategoTerms {
 
         StrategoTermIndex termIndex = StrategoTermIndex.get(term);
         if (termIndex != null) {
-            b.put(ITermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
+            b.put(TermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
         }
 
         ImploderAttachment imploderAttachment = ImploderAttachment.getCompactPositionAttachment(term, false);
