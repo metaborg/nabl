@@ -25,5 +25,5 @@ public abstract class UnitResult {
             return ImmutableUnitResult.of(ast, constraints);
         });
     }
-    
+
 }

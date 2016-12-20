@@ -6,16 +6,13 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.HashTreePSet;
-import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Iterables;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class ApplTerm implements IApplTerm {
+abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
 
     @Value.Parameter @Override public abstract String getOp();
 
@@ -29,28 +26,16 @@ abstract class ApplTerm implements IApplTerm {
         return Iterables.size(getArgs());
     }
 
-    @Value.Lazy @Override public boolean isGround() {
-        boolean ground = true;
-        for (ITerm arg : getArgs()) {
-            ground &= arg.isGround();
-        }
-        return ground;
-    }
-
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        PSet<ITermVar> vars = HashTreePSet.empty();
-        for (ITerm arg : getArgs()) {
-            vars = vars.plusAll(arg.getVars());
-        }
-        return vars;
-    }
-
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseAppl(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseAppl(this);
+    }
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
     }
 
     @Override public String toString() {

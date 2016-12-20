@@ -58,7 +58,8 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved (in)equality constraint.", Iterables2.empty(), unifier);
+            return c.getMessageInfo().makeException("Unsolved (in)equality constraint: " + c.find(unifier), Iterables2
+                    .empty(), unifier);
         }).collect(Collectors.toList());
     }
 

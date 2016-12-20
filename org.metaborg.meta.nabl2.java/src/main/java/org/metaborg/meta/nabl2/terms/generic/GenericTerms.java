@@ -20,7 +20,8 @@ public class GenericTerms {
         return ImmutableApplTerm.of(op, args);
     }
 
-    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
+    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
+            ImmutableClassToInstanceMap<Object> attachments) {
         return ImmutableApplTerm.of(op, args).setAttachments(attachments);
     }
 

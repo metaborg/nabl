@@ -128,8 +128,8 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         unsolved.addAll(deferedBuilds);
         unsolved.addAll(deferedChecks);
         return unsolved.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty(),
-                    unifier);
+            return c.getMessageInfo().makeException("Unsolved name resolution constraint: " + c.find(unifier),
+                    Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
     }
 
@@ -250,7 +250,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
         Label label = a.getLabel();
-        List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocs(decl, label));
+        List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocScopes(decl).get(label));
         switch (scopes.size()) {
         case 0:
             throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2.empty(),

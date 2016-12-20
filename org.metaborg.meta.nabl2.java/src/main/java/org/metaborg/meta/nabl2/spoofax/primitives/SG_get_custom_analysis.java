@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.spoofax.CustomSolution;
 import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
@@ -21,8 +20,7 @@ public class SG_get_custom_analysis extends ScopeGraphPrimitive {
         if (index == null) {
             return Optional.empty();
         }
-        return context.unit(index.getResource()).solution().<CustomSolution> flatMap(s -> s.getCustom()).<ITerm> map(
-                cs -> cs.getAnalysis());
+        return context.unit(index.getResource()).customSolution().<ITerm> map(cs -> cs.getAnalysis());
     }
 
 }

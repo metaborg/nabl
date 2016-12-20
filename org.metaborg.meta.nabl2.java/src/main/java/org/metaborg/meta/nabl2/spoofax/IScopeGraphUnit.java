@@ -11,4 +11,6 @@ public interface IScopeGraphUnit extends Serializable {
 
     Optional<Solution> solution();
 
+    Optional<CustomSolution> customSolution();
+
 }

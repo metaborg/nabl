@@ -15,6 +15,7 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 
 public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> implements IScopeGraph<S,L,O> {
@@ -26,9 +27,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final Map<S,Multimap<L,PartialFunction0<O>>> imports;
     private final Multimap<S,O> refs;
 
-    private final Set<O> declsIndex;
-    private final Set<O> refsIndex;
+    private final Map<O,S> declScopesIndex;
     private final Map<O,S> refScopesIndex;
+    private final Map<S,Multimap<L,O>> reverseAssocsIndex;
 
     public EsopScopeGraph() {
         this.scopes = Sets.newHashSet();
@@ -38,9 +39,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         this.imports = Maps.newHashMap();
         this.refs = HashMultimap.create();
 
-        this.declsIndex = Sets.newHashSet();
-        this.refsIndex = Sets.newHashSet();
         this.refScopesIndex = Maps.newHashMap();
+        this.declScopesIndex = Maps.newHashMap();
+        this.reverseAssocsIndex = Maps.newHashMap();
     }
 
     @Override public Iterable<S> getAllScopes() {
@@ -48,11 +49,11 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     }
 
     @Override public Iterable<O> getAllDecls() {
-        return declsIndex;
+        return declScopesIndex.keySet();
     }
 
     @Override public Iterable<O> getAllRefs() {
-        return refsIndex;
+        return refScopesIndex.keySet();
     }
 
     @Override public Iterable<O> getDecls(S scope) {
@@ -62,7 +63,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     public void addDecl(S scope, O decl) {
         scopes.add(scope);
         decls.put(scope, decl);
-        declsIndex.add(decl);
+        declScopesIndex.put(decl, scope);
     }
 
     @Override public Iterable<O> getRefs(S scope) {
@@ -73,39 +74,47 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         scopes.add(scope);
         refs.put(scope, ref);
         refScopesIndex.put(ref, scope);
-        refsIndex.add(ref);
     }
 
     public void addDirectEdge(S sourceScope, L label, PartialFunction0<S> targetScope) {
         directEdges.computeIfAbsent(sourceScope, s -> HashMultimap.create()).put(label, targetScope);
     }
 
-    @Override public Iterable<PartialFunction0<S>> getDirectEdges(S scope, L label) {
-        return directEdges.containsKey(scope) ? directEdges.get(scope).get(label) : Iterables2.empty();
+    @Override public Multimap<L,PartialFunction0<S>> getDirectEdges(S scope) {
+        return Multimaps.unmodifiableMultimap(directEdges.computeIfAbsent(scope, s -> HashMultimap.create()));
     }
 
     public void addAssoc(O decl, L label, S scope) {
         assocs.computeIfAbsent(decl, s -> HashMultimap.create()).put(label, scope);
+        reverseAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, decl);
     }
 
-    @Override public Iterable<S> getAssocs(O decl, L label) {
-        return assocs.containsKey(decl) ? assocs.get(decl).get(label) : Iterables2.empty();
+    @Override public Multimap<L,S> getAssocScopes(O decl) {
+        return Multimaps.unmodifiableMultimap(assocs.computeIfAbsent(decl, s -> HashMultimap.create()));
+    }
+
+    @Override public Multimap<L,O> getAssocDecls(S scope) {
+        return Multimaps.unmodifiableMultimap(reverseAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()));
     }
 
     public void addImport(S scope, L label, PartialFunction0<O> ref) {
         imports.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, ref);
     }
 
-    @Override public Iterable<PartialFunction0<O>> getImports(S scope, L label) {
-        return imports.containsKey(scope) ? imports.get(scope).get(label) : Iterables2.empty();
+    @Override public Multimap<L,PartialFunction0<O>> getImports(S scope) {
+        return Multimaps.unmodifiableMultimap(imports.computeIfAbsent(scope, s -> HashMultimap.create()));
+    }
+
+    @Override public Optional<S> getDeclScope(O decl) {
+        return declScopesIndex.containsKey(decl) ? Optional.of(declScopesIndex.get(decl)) : Optional.empty();
+    }
+
+    @Override public Optional<S> getRefScope(O ref) {
+        return refScopesIndex.containsKey(ref) ? Optional.of(refScopesIndex.get(ref)) : Optional.empty();
     }
 
     EsopNameResolution<S,L,O> resolve(IResolutionParameters<L> params) {
         return new EsopNameResolution<S,L,O>(this, params);
-    }
-
-    Optional<S> getRefScope(O ref) {
-        return refScopesIndex.containsKey(ref) ? Optional.of(refScopesIndex.get(ref)) : Optional.empty();
     }
 
 }

@@ -6,6 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.MessageInfo;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -18,6 +19,11 @@ public abstract class CBuildRelation implements IRelationConstraint {
     @Value.Parameter public abstract ITerm getRight();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
+
+    @Override public IConstraint find(IUnifier unifier) {
+        return ImmutableCBuildRelation.of(unifier.find(getLeft()), getRelation(), unifier.find(getRight()),
+                getMessageInfo());
+    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseBuild(this);

@@ -60,8 +60,7 @@ public class StrategoTerms {
                         termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
         // @formatter:on
         ));
-        putAttachments(strategoTerm, term.getAttachments());
-        return strategoTerm;
+        return putAttachments(strategoTerm, term.getAttachments());
     }
 
     public List<IStrategoTerm> toStrategos(Iterable<ITerm> terms) {
@@ -72,7 +71,7 @@ public class StrategoTerms {
         return strategoTerms;
     }
 
-    private void putAttachments(IStrategoTerm term, ImmutableClassToInstanceMap<Object> attachments) {
+    private IStrategoTerm putAttachments(IStrategoTerm term, ImmutableClassToInstanceMap<Object> attachments) {
         ImploderAttachment imploderAttachment = attachments.getInstance(ImploderAttachment.class);
         if (imploderAttachment != null) {
             term.putAttachment(imploderAttachment);
@@ -85,8 +84,9 @@ public class StrategoTerms {
 
         StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
         if (annotations != null) {
-            termFactory.annotateTerm(term, annotations.getAnnotationList());
+            term = termFactory.annotateTerm(term, annotations.getAnnotationList());
         }
+        return term;
     }
 
     public ITerm fromStratego(IStrategoTerm term) {

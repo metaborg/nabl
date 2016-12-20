@@ -41,6 +41,10 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
 
     // Object implementation
 
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
+
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("@");

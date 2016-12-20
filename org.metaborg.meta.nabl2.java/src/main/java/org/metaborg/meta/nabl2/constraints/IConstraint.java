@@ -8,11 +8,14 @@ import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 public interface IConstraint {
 
     MessageInfo getMessageInfo();
+
+    IConstraint find(IUnifier unifier);
 
     <T> T match(Cases<T> function);
 

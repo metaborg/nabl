@@ -72,6 +72,47 @@ rules
 
 rules
 
+  nabl2--get-all-decls(|a) =
+    prim("SG_get_all_decls", a)
+
+  nabl2--get-all-refs(|a) =
+    prim("SG_get_all_refs", a)
+
+  nabl2--get-all-scopes(|a) =
+    prim("SG_get_all_scopes", a)
+
+  nabl2--get-ref-scope(|a) =
+    prim("SG_get_ref_scope", a)
+
+  nabl2--get-decl-scope(|a) =
+    prim("SG_get_decl_scope", a)
+
+  nabl2--get-scope-decls(|a) =
+    prim("SG_get_scope_refs", a)
+
+  nabl2--get-scope-refs(|a) =
+    prim("SG_get_scope_refs", a)
+
+  nabl2--get-scope-direct-edges(|a) =
+    prim("SG_get_scope_direct_edges", a)
+
+  nabl2--get-scope-named-edges(|a) =
+    prim("SG_get_scope_named_edges", a)
+
+  nabl2--get-decl-assocs(|a) =
+    prim("SG_get_decl_assocs", a)
+
+  nabl2--get-scope-assocs(|a) =
+    prim("SG_get_scope_assocs", a)
+
+  nabl2--get-visible-decls(|a) =
+    prim("SG_get_visible_decls", a)
+
+  nabl2--get-reachable-decls(|a) =
+    prim("SG_get_reachable_decls", a)
+
+rules
+
   nabl2--mk-occurrence        = !Occurrence(DefaultNamespace(),<id>,<nabl2--get-ast-index>)
   nabl2--mk-occurrence(|ns)   = !Occurrence(Namespace(ns),<id>,<nabl2--get-ast-index>)
   nabl2--mk-occurrence(|ns,t) = !Occurrence(Namespace(ns),<id>,<nabl2--get-ast-index> t)

@@ -124,7 +124,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private Optional<Iterable<S>> directScopes(L l, S scope) {
         List<S> scopes = Lists.newArrayList();
-        for (PartialFunction0<S> getScope : scopeGraph.getDirectEdges(scope, l)) {
+        for (PartialFunction0<S> getScope : scopeGraph.getDirectEdges(scope).get(l)) {
             Optional<S> maybeScope = getScope.apply();
             if (!maybeScope.isPresent()) {
                 return Optional.empty();
@@ -136,7 +136,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private Optional<Iterable<S>> importScopes(PSet<O> seenImports, L l, S scope) {
         List<S> scopes = Lists.newArrayList();
-        for (PartialFunction0<O> getRef : scopeGraph.getImports(scope, l)) {
+        for (PartialFunction0<O> getRef : scopeGraph.getImports(scope).get(l)) {
             Optional<O> maybeRef = getRef.apply();
             if (!maybeRef.isPresent()) {
                 return Optional.empty();
@@ -150,7 +150,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 return Optional.empty();
             }
             for (O decl : decls.get()) {
-                for (S nextScope : scopeGraph.getAssocs(decl, l)) {
+                for (S nextScope : scopeGraph.getAssocScopes(decl).get(l)) {
                     scopes.add(nextScope);
                 }
             }

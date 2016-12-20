@@ -24,7 +24,7 @@ public class RelationTerms {
         LUB,
         GLB
     }
-    
+
     public static IMatcher<Relations<ITerm>> relations() {
         return M.listElems(relationDef(), (l, defs) -> {
             Map<IRelationName,Relation<ITerm>> relations = Maps.newHashMap();
@@ -65,9 +65,9 @@ public class RelationTerms {
             // @formatter:on
         );
     }
-    
+
     public static String relationFunction(IRelationName rel, RelationFunctions fun) {
         return rel.getName().map(n -> n + "." + fun.name()).orElse(fun.name());
     }
-    
+
 }

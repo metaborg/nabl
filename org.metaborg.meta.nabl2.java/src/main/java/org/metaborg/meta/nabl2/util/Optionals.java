@@ -35,8 +35,7 @@ public class Optionals {
                 .apply(o1.get(), o2.get(), o3.get(), o4.get(), o5.get())) : Optional.empty();
     }
 
-    public static <T, R> Optional<R> sequence(Iterable<Optional<T>> os,
-            Function1<Iterable<T>,R> f) {
+    public static <T, R> Optional<R> sequence(Iterable<Optional<T>> os, Function1<Iterable<T>,R> f) {
         List<T> ts = Lists.newArrayList();
         for (Optional<? extends T> o : os) {
             if (!o.isPresent()) {

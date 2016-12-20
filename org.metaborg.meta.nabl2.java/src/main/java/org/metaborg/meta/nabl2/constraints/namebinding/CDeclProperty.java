@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 
 import com.google.common.base.Preconditions;
 
@@ -17,6 +18,11 @@ public abstract class CDeclProperty implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getValue();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
+
+    @Override public IConstraint find(IUnifier unifier) {
+        return ImmutableCDeclProperty.of(unifier.find(getDeclaration()), getKey(), unifier.find(getValue()),
+                getMessageInfo());
+    }
 
     @Value.Check public void check() {
         Preconditions.checkArgument(getKey().isGround());

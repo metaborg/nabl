@@ -28,7 +28,8 @@ public abstract class MessageInfo implements IMessageInfo {
     @Override public UnsatisfiableException makeException(String defaultMessage, Iterable<ITerm> contextTerms,
             IUnifier unifier) {
         Iterable<ITerm> programPoints = getOrigin().map(t -> Iterables2.singleton(t)).orElse(contextTerms);
-        String message = getMessage().flatMap(m -> formatMessage().match(unifier.find(m))).orElse(defaultMessage);
+        String message = getMessage().flatMap(m -> formatMessage().match(unifier.find(m))).orElse("") + ". "
+                + defaultMessage;
         return new UnsatisfiableException(getKind(), message, programPoints);
     }
 

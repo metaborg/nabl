@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
@@ -9,7 +8,6 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
-import org.metaborg.meta.nabl2.spoofax.CustomSolution;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.IUnifier;
@@ -33,7 +31,5 @@ public interface ISolution {
     IRelations<ITerm> getRelations();
 
     IUnifier getUnifier();
-
-    Optional<CustomSolution> getCustom();
 
 }

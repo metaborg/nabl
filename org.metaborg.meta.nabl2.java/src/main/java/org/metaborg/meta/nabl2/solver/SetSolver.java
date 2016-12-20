@@ -68,7 +68,8 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unexpected set constraint.", Iterables2.empty(), unifier);
+            return c.getMessageInfo().makeException("Unsolved set constraint: " + c.find(unifier), Iterables2.empty(),
+                    unifier);
         }).collect(Collectors.toList());
     }
 

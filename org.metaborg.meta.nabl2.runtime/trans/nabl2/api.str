@@ -8,47 +8,6 @@ imports
   nabl2/runtime/editor/-
   nabl2/runtime/prelude/-
 
-rules // ###### Custom type operations ######
-
-  /**
-   * Succeed if the term is a type operation that needs to be reduced
-   *
-   * @type Term -> _
-   */
-  nabl2-is-op-hook = fail
-
-  /**
-   * Reduce a type operation. Make sure to implement `nabl2-is-op-hook` for all
-   * constructors that you reduce.
-   *
-   * @param a : Analysis (can be incomplete!)
-   * @type TypeOp -> Type
-   */
-  nabl2-reduce-op-hook(|a) = fail
-
-  /**
-   * Produce an error during type operation reduction.
-   *
-   * @type (Term,String) -> _
-   */
-  nabl2-add-reduce-error = fail
-
-
-  /**
-   * By default the subtyping relation only allows one direct supertype per type.
-   * For types where this strategy succeeds, multiple direct supertypes are allowed.
-   * For example, if you have a built-in bottom or null type, you could use
-   *
-   *     nabl2-allow-multiple-supertypes-hook = ?Bottom()
-   *
-   * or, if multiple inheritance is allowed for all user defined types as well,
-   *
-   *     nabl2-allow-multiple-supertypes-hook = id
-   * 
-   * @type Type -> _
-   */
-  nabl2-allow-multiple-supertypes-hook = fail
-
 rules // ###### Analysis execution ######
 
   /**
@@ -82,33 +41,11 @@ rules // ###### Analysis execution ######
   nabl2-constraint-generation-implicit-traversal-hook = fail
 
   /**
-   * Control whether to resolve unused references. If the strategy succeeds for
-   * its namespace argument, an error is generated if the reference does not resolve.
-   * 
-   * @type ns -> _
-   */
-  nabl2-resolve-unused-references-hook = fail
-
-  /**
-   * Control whether to ambiguous references branch, or result in an error. If the
-   * strategy succeeds for its namespace argument, the solver branches on all
-   * possible resolutions. If the strategy fails, an error is reported.
-   * 
-   * @type ns -> _
-   */
-  nabl2-branch-on-ambiguous-references-hook = fail
-
-  /**
    * Main analysis strategy for NaBL2.
    *
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
-
-  /**
-   * Dummy analysis function for NaBL2.
-   */
-  nabl2-null-analysis = fail
 
 
 rules // ###### Custom analysis hooks ######
@@ -135,10 +72,7 @@ rules // ###### Custom analysis hooks ######
    */
   nabl2-get-custom-analysis = nabl2--get-custom-analysis
 
-  /**
-   * @type CustomFinalResult -> Box
-   */
-  nabl2-prettyprint-custom-analysis-hook = fail
+
 
 rules // ###### Analysis results ######
 
@@ -212,7 +146,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type _ -> List(Occurrences)
    */
-  nabl2-get-all-decls(|a) = fail
+  nabl2-get-all-decls(|a) = nabl2--get-all-decls(|a)
 
   /**
    * Get all references in the scope graph
@@ -220,7 +154,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type _ -> List(Occurrences)
    */
-  nabl2-get-all-refs(|a) = fail
+  nabl2-get-all-refs(|a) = nabl2--get-all-refs(|a)
 
   /**
    * Get all scopes in the scope graph
@@ -228,7 +162,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type _ -> List(Scope)
    */
-  nabl2-get-all-scopes(|a) = fail
+  nabl2-get-all-scopes(|a) = nabl2--get-all-scopes(|a)
 
   /**
    * Get the scope of a reference
@@ -236,7 +170,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type ref:Occurrence -> Scope
    */
-  nabl2-get-ref-scope(|a) = fail
+  nabl2-get-ref-scope(|a) = nabl2--get-ref-scope(|a)
 
   /**
    * Get the scope of a declaration
@@ -244,7 +178,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type decl:Occurrence -> Scope
    */
-  nabl2-get-decl-scope(|a) = fail
+  nabl2-get-decl-scope(|a) = nabl2--get-decl-scope(|a)
 
   /**
    * Get declarations in a scope
@@ -252,7 +186,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-scope-decls(|a) = fail
+  nabl2-get-scope-decls(|a) = nabl2--get-scope-decls(|a)
 
   /**
    * Get references in a scope
@@ -260,7 +194,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-scope-refs(|a) = fail
+  nabl2-get-scope-refs(|a) = nabl2--get-scope-refs(|a)
 
   /**
    * Get direct edges from a scope
@@ -268,7 +202,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List((Label,Scope))
    */
-  nabl2-get-scope-direct-edges(|a) = fail
+  nabl2-get-scope-direct-edges(|a) = nabl2--get-scope-direct-edges(|a)
 
   /**
    * Get named (import) edges from a scope
@@ -276,7 +210,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List((Label,Occurrence))
    */
-  nabl2-get-scope-named-edges(|a) = fail
+  nabl2-get-scope-named-edges(|a) = nabl2--get-scope-named-edges(|a)
 
   /**
    * Get associated scopes of a declaration
@@ -284,7 +218,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type decl:Occurrence -> List((Label,Scope))
    */
-  nabl2-get-decl-assocs(|a) = fail
+  nabl2-get-decl-assocs(|a) = nabl2--get-decl-assocs(|a)
 
   /**
    * Get occurrences associated with a scope
@@ -292,7 +226,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List((Occurrence,Label))
    */
-  nabl2-get-scope-assocs(|a) = fail
+  nabl2-get-scope-assocs(|a) = nabl2--get-scope-assocs(|a)
 
   /**
    * Get visible declarations in scope
@@ -300,7 +234,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-visible-decls(|a) = fail
+  nabl2-get-visible-decls(|a) = nabl2--get-visible-decls(|a)
 
   /**
    * Get reachable declarations in scope
@@ -308,7 +242,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-reachable-decls(|a) = fail
+  nabl2-get-reachable-decls(|a) = nabl2--get-reachable-decls(|a)
 
   /**
    * Make an occurrence in the default namespace

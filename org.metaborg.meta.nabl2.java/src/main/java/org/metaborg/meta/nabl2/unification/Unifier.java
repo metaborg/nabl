@@ -34,9 +34,9 @@ public class Unifier implements IUnifier, Serializable {
     public ITerm find(ITerm term) {
         return term.match(Terms.<ITerm> cases(
             // @formatter:off
-            appl -> GenericTerms.newAppl(appl.getOp(), finds(appl.getArgs())),
+            appl -> GenericTerms.newAppl(appl.getOp(), finds(appl.getArgs()), appl.getAttachments()),
             list -> list.match(ListTerms.<ITerm>cases(
-                cons -> GenericTerms.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail())),
+                cons -> GenericTerms.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail()), cons.getAttachments()),
                 nil -> nil,
                 this::findVarRep)),
             string -> string,
@@ -95,7 +95,7 @@ public class Unifier implements IUnifier, Serializable {
     private boolean unifyTerms(ITerm left, ITerm right) {
         ITerm leftRep = findShallow(left);
         ITerm rightRep = findShallow(right);
-        if (leftRep.equals(rightRep)) {
+        if (leftRep.termEquals(rightRep)) {
             return true;
         } else if (leftRep.isGround() && rightRep.isGround()) {
             return false;

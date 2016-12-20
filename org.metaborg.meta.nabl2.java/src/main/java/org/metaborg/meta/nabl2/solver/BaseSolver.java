@@ -20,7 +20,8 @@ public class BaseSolver implements ISolverComponent<IBaseConstraint> {
         return constraint.matchOrThrow(CheckedCases.of(t -> {
             return unit;
         }, f -> {
-            throw constraint.getMessageInfo().makeException("False can never be satisfied.", Iterables2.empty(), unifier);
+            throw constraint.getMessageInfo().makeException("False can never be satisfied.", Iterables2.empty(),
+                    unifier);
         }));
     }
 

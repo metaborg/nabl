@@ -41,13 +41,6 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     private final Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
     private boolean complete = false;
 
-    /**************************************************************
-     * Least upper bound calculations can be unstable if
-     * there are still relation building * constraints unsolved!
-     * 
-     * @param functions2
-     **************************************************************/
-
     public RelationSolver(Relations<ITerm> relations, Map<String,Function1<ITerm,Optional<ITerm>>> functions,
             Unifier unifier) {
         this.unifier = unifier;
@@ -78,6 +71,9 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(IRelationConstraint constraint) throws UnsatisfiableException {
+        if (complete) {
+            throw new IllegalStateException("Cannot add constraints after iteration started.");
+        }
         return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addOther, this::addOther));
     }
 
@@ -130,7 +126,8 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         unsolved.addAll(deferedBuilds.values());
         unsolved.addAll(deferedChecks);
         return unsolved.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved relation constraint: " + c, Iterables2.empty(), unifier);
+            return c.getMessageInfo().makeException("Unsolved relation constraint: " + c.find(unifier), Iterables2
+                    .empty(), unifier);
         }).collect(Collectors.toList());
     }
 
