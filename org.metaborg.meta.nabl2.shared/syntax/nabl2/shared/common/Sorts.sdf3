@@ -11,9 +11,10 @@ template options
 context-free syntax
 
   Sort.SortNoArgs     = SortId
-  Sort.TypeSort       = "type"
+  Sort.TypeSort       = "type" {deprecated("Deprecated: Use sort 'Type' instead.")}
 
   SortRef                = Sort
+  SortRef.TermSort       = "term"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
   SortRef.Var            = SortVarId
@@ -25,5 +26,5 @@ lexical syntax
 
   SortVarId = VarId
 
-  SortId    = "List" | "Occurrence" | "Scope" | "Type" {reject}
-  SortVarId = "scope" | "occurrence" | "type" {reject}
+  SortId    = "List" | "Occurrence" | "Scope" {reject}
+  SortVarId = "scope" | "occurrence" | "type" | "term" {reject}

@@ -4,275 +4,174 @@ imports
 
   libjava-front
   dynsem/-
+  signatures/common/-
+  signatures/modules/-
   signatures/rules/-
   signatures/signatures/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
 
 rules
 
   generate-java-operators(|native-pkg,term-pkg,native-dir):
-    ast@Module(name,_) -> [params-result*,type-result*,init-result*]
-    with params-result* := <collect-om(cgen-sig-to-params-java(|native-pkg,term-pkg,native-dir))> ast;
-         type-result* := <collect-om(cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir))> ast;
-         init-result* := <collect-one(init-to-java(|native-pkg,term-pkg,native-dir))<+![]> ast
+    ast@Module(name,_) -> result*
+    with result* := <concat> [
+      <collect-om(cgen-sig-to-params-java(|native-pkg,term-pkg,native-dir))> ast,
+      <collect-om(cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir))> ast,
+      <collect-om(ns-to-type-java(|native-pkg,term-pkg,native-dir))> ast,
+      <collect-om(ns-to-prop-javas(|native-pkg,term-pkg,native-dir));concat> ast,
+      <collect-one(init-to-java(|native-pkg,term-pkg,native-dir))<+![]> ast
+    ]
 
   cgen-sig-to-params-java(|native-pkg,term-pkg,native-dir):
-    CGenSig(Name(name), sort, param*, _) -> (filename, source)
+    CGenSig(Name(name), sort, param*, _) -> result
     with src-sort := <sort-to-ds> sort;
          src-name := <ds-sort-to-string> src-sort;
          target-name := <param-sorts-to-ds;ds-sort-to-string> param*;
          op-name := <cgen-op-name(|name,src-sort)> "paramsOf";
-         (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "PARAMS_METADATA", target-name);
-         filename := $[[native-dir]/[class-name].java];
-         source := <pp-java-string> java-ast
+         stmts := bstm* |[
+           TermIndex index = term.getAttachments().getInstance(TermIndex.class);
+           if (index == null) {
+             throw new IllegalArgumentException("Primitive must be called on an AST node.");
+           }
+           Optional<ITerm> params = solution.getAstProperties().getValue(index, GenericTerms.newAppl("Params", Iterables2.empty()));
+           if (!params.isPresent()) {
+             throw new NoSuchElementException();
+           }
+           return params.get();
+         ]|;
+         result := <native-java(|native-pkg, native-dir, term-pkg, op-name, src-name, target-name)> stmts
 
   cgen-sig-to-type-java(|native-pkg,term-pkg,native-dir):
-    CGenSig(Name(name), sort, _, Type(tsort)) -> (filename, source)
+    CGenSig(Name(name), sort, _, Type(tsort)) -> result
     with type-sort := <sort-to-ds> tsort;
          src-sort := <sort-to-ds> sort;
          src-name := <ds-sort-to-string> src-sort;
          target-name := <ds-sort-to-string> type-sort;
          op-name := <cgen-op-name(|name,src-sort)> "typeOf";
-         (class-name, java-ast) := <metadata-java> (native-pkg, term-pkg, op-name, src-name, "TYPE_METADATA", target-name);
-         filename := $[[native-dir]/[class-name].java];
-         source := <pp-java-string> java-ast
+         stmts := bstm* |[
+           TermIndex index = term.getAttachments().getInstance(TermIndex.class);
+           if (index == null) {
+             throw new IllegalArgumentException("Primitive must be called on an AST node.");
+           }
+           Optional<ITerm> type = solution.getAstProperties().getValue(index, GenericTerms.newAppl("Type", Iterables2.empty()));
+           if (!type.isPresent()) {
+             throw new NoSuchElementException();
+           }
+           return type.get();
+         ]|;
+         result := <native-java(|native-pkg, native-dir, term-pkg, op-name, src-name, target-name)> stmts
 
-  metadata-java: (native-pkg, term-pkg, op-name, src-name, metadata-name, target-name) -> (class-name, compilation-unit |[
-    package ~x:native-pkg;
+  ns-to-type-java(|native-pkg,term-pkg,native-dir):
+    NamespaceDef(Namespace(name), Type(type-sort), _) -> result
+    with source-name := <sort-to-ds;ds-sort-to-string> OccurrenceSort();
+         target-name := <sort-to-ds;ds-sort-to-string> type-sort;
+         op-name := $[nabl2_typeOf[name]];
+         stmts := bstm* |[
+           Optional<Occurrence> decl = Occurrence.matcher().match(term);
+           if (!decl.isPresent()) {
+             throw new IllegalArgumentException("Declaration occurrence expected."); 
+           }
+           Optional<ITerm> type = solution.getDeclProperties().getValue(decl.get(), GenericTerms.newAppl("Type", Iterables2.empty()));
+           if (!type.isPresent()) {
+             throw new NoSuchElementException();
+           }
+           return type.get();
+         ]|;
+         result := <native-java(|native-pkg, native-dir, term-pkg, op-name, source-name, target-name)> stmts
 
-    import ~x:term-pkg.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
-    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.scopegraph.context.IScopeGraphUnit;
-    import org.metaborg.scopegraph.indices.TermIndex;
-    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
-    import org.spoofax.interpreter.terms.IStrategoTerm;
+  ns-to-prop-javas(|native-pkg,term-pkg,native-dir):
+    NamespaceDef(Namespace(name), _, prop*) -> result*
+    with result* := <map(ns-to-prop-java(|native-pkg,term-pkg,native-dir,name))> prop*
 
-    import com.oracle.truffle.api.dsl.NodeChild;
-    import com.oracle.truffle.api.dsl.Specialization;
-    import com.oracle.truffle.api.source.SourceSection;
-
-    @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~x:class-name extends TermBuild {
-
-        public ~x:class-name(SourceSection source) {
-            super(source);
-        }
-
-        @Specialization
-        public ~x:target-name doGet(~x:src-name term) {
-            ISpoofaxScopeGraphContext<?> context =
-              (ISpoofaxScopeGraphContext<?>) getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
-            TermIndex index = TermIndex.get(term.getStrategoTerm());
-            IScopeGraphUnit unit = context.unit(index.resource());
-            IStrategoTerm key = (IStrategoTerm) getContext().readProperty(DynSemRunner.~x:metadata-name, null);
-            IStrategoTerm result = unit.astMetadata().get(index, key);
-            return ~x:target-name.create(result);
-        }
-
-        public static TermBuild create(SourceSection source, TermBuild term) {
-            return ~x:nodegen-name.create(source, term);
-        }
-
-    }
-  ]|)
-  with class-name := $[[op-name]_1];
-       nodegen-name := $[[class-name]NodeGen]
+  ns-to-prop-java(|native-pkg,term-pkg,native-dir,ns):
+    PropertyDef(name, prop-sort) -> result
+    with source-name := <sort-to-ds;ds-sort-to-string> OccurrenceSort();
+         target-name := <sort-to-ds;ds-sort-to-string> prop-sort;
+         op-name := $[nabl2_[name]Of[ns]];
+         stmts := bstm* |[
+           Optional<Occurrence> decl = Occurrence.matcher().match(term);
+           if (!decl.isPresent()) {
+             throw new IllegalArgumentException("Declaration occurrence expected."); 
+           }
+           Optional<ITerm> prop = solution.getDeclProperties().getValue(decl.get(),
+               GenericTerms.newAppl("Property", Iterables2.empty(GenericTerms.newString(~x:name))));
+           if (!prop.isPresent()) {
+             throw new NoSuchElementException();
+           }
+           return prop.get();
+         ]|;
+         result := <native-java(|native-pkg, native-dir, term-pkg, op-name, source-name, target-name)> stmts
 
   init-to-java(|native-pkg,term-pkg,native-dir):
-    CGenInitRule(_, _, _) -> [(g-filename, g-source),
-                              (r-filename, r-source),
-                              (ot-filename, ot-source),
-                              (i-filename, i-source)]
-    with (g-class-name, g-ast) := <scopegraph-operator> (native-pkg, term-pkg);
-         g-filename := $[[native-dir]/[g-class-name].java];
-         g-source := <pp-java-string> g-ast;
-         (r-class-name, r-ast) := <nameresolution-operator> (native-pkg, term-pkg);
-         r-filename := $[[native-dir]/[r-class-name].java];
-         r-source := <pp-java-string> r-ast;
-         (i-class-name, i-ast) := <index-operator> (native-pkg, term-pkg);
-         i-filename := $[[native-dir]/[i-class-name].java];
-         i-source := <pp-java-string> i-ast;
-         (ot-class-name, ot-ast) := <otypes-operator> (native-pkg, term-pkg);
-         ot-filename := $[[native-dir]/[ot-class-name].java];
-         ot-source := <pp-java-string> ot-ast
+    CGenInitRule(_, _, _) -> result*
+    with result* := [
+      <termindex-java(|native-pkg,term-pkg,native-dir)>
+    ]
+ 
+  termindex-java(|native-pkg,term-pkg,native-dir):
+    _ -> result
+    with source-name := <sort-to-ds;ds-sort-to-string> TermSort();
+         target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("TermIndex");
+         op-name := "nabl2_indexOf";
+         stmts := bstm* |[
+           TermIndex index = term.getAttachments().getInstance(TermIndex.class);
+           if (index == null) {
+             throw new IllegalArgumentException("Primitive must be called on an AST node.");
+           }
+           return index;
+         ]|;
+         result := <native-java(|native-pkg, native-dir, term-pkg, op-name, source-name, target-name)> stmts
 
-  scopegraph-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
-    package ~x:native-pkg;
+  native-java(|pkg, pkg-dir, term-pkg, op-name, source-name, target-name): stmts -> (file-name, <pp-java-string> compilation-unit |[
+    package ~x:pkg;
+
+    import java.util.NoSuchElementException;
+    import java.util.Optional;
+    import java.util.function.Supplier;
 
     import ~x:term-pkg.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
+    import org.metaborg.meta.lang.dynsem.interpreter.nabl2.NaBL2TermBuild;
     import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.meta.lang.dynsem.interpreter.terms.ITerm;
-    import org.metaborg.scopegraph.context.IScopeGraphUnit;
-    import org.metaborg.scopegraph.indices.TermIndex;
-    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
+    import org.metaborg.meta.nabl2.scopegraph.terms.*;
+    import org.metaborg.meta.nabl2.solver.ISolution;
+    import org.metaborg.meta.nabl2.terms.*;
+    import org.metaborg.meta.nabl2.terms.generic.*;
+    import org.metaborg.util.iterators.Iterables2;
     import org.spoofax.interpreter.terms.IStrategoTerm;
 
     import com.oracle.truffle.api.dsl.NodeChild;
     import com.oracle.truffle.api.dsl.Specialization;
     import com.oracle.truffle.api.source.SourceSection;
 
+    @SuppressWarnings("unused")
     @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~x:class-name extends TermBuild
-    {
-      public ~x:class-name(SourceSection source)
-      {
+    public abstract class ~x:class-name extends NaBL2TermBuild<~x:source-name,~x:target-name> {
+
+      public ~x:class-name(SourceSection source) {
         super(source);
       }
 
-      @Specialization public IScopeGraphTerm doGet(ITerm term)
-      {
-        ISpoofaxScopeGraphContext<?> context =
-            (ISpoofaxScopeGraphContext<?>)getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
-        TermIndex index = TermIndex.get(term.getStrategoTerm());
-        IScopeGraphUnit unit = context.unit(index.resource());
-        IStrategoTerm scopeGraph = unit.scopeGraph().strategoTerm();
-        return IScopeGraphTerm.create(scopeGraph);
+      @Specialization public ~x:target-name doGet(~x:source-name term) { 
+        return super.doGet(term);
       }
 
-      public static TermBuild create(SourceSection source, TermBuild term)
-      {
+      @Override protected ITerm eval(ITerm term, ISolution solution) {
+        ~bstm*:stmts
+      }
+
+      @Override
+      protected ~x:target-name build(IStrategoTerm term) {
+        return ~x:target-name.create(term);
+      }
+
+      public static TermBuild create(SourceSection source, TermBuild term) {
         return ~x:nodegen-name.create(source, term);
       }
+
     }
   ]|)
-  with class-name := "nabl2_scopeGraph_1";
-       nodegen-name := $[[class-name]NodeGen]
-
-  nameresolution-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
-    package ~x:native-pkg;
-
-    import ~x:term-pkg.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
-    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.meta.lang.dynsem.interpreter.terms.ITerm;
-    import org.metaborg.scopegraph.context.IScopeGraphUnit;
-    import org.metaborg.scopegraph.indices.TermIndex;
-    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
-    import org.spoofax.interpreter.core.Tools;
-    import org.spoofax.interpreter.terms.IStrategoTerm;
-
-    import com.oracle.truffle.api.dsl.NodeChild;
-    import com.oracle.truffle.api.dsl.Specialization;
-    import com.oracle.truffle.api.source.SourceSection;
-
-    @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~x:class-name extends TermBuild
-    {
-      public ~x:class-name(SourceSection source)
-      {
-        super(source);
-      }
-
-      @Specialization public com.github.krukow.clj_lang.IPersistentMap<IOccurrenceTerm,Tuple_IOccurrenceTerm_List_IStepTerm> doGet(ITerm term)
-      {
-        ISpoofaxScopeGraphContext<?> context =
-            (ISpoofaxScopeGraphContext<?>)getContext().readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
-        TermIndex index = TermIndex.get(term.getStrategoTerm());
-        IScopeGraphUnit unit = context.unit(index.resource());
-        IStrategoTerm nameResolutionTerm = unit.nameResolution().strategoTerm();
-        assert Tools.isTermList(nameResolutionTerm);
-        java.util.Map<IOccurrenceTerm, Tuple_IOccurrenceTerm_List_IStepTerm> nameResolution =
-            new java.util.HashMap<IOccurrenceTerm, Tuple_IOccurrenceTerm_List_IStepTerm>();
-        for(IStrategoTerm entry : nameResolutionTerm)
-        { 
-          assert Tools.isTermTuple(entry) && entry.getSubtermCount() == 2;
-          nameResolution.put(IOccurrenceTerm.create(entry.getSubterm(0)), Tuple_IOccurrenceTerm_List_IStepTerm.create(entry.getSubterm(1)));
-        }
-        return com.github.krukow.clj_lang.PersistentHashMap.create(nameResolution);
-      }
-
-      public static TermBuild create(SourceSection source, TermBuild term)
-      {
-        return ~x:nodegen-name.create(source, term);
-      }
-    }
-  ]|)
-  with class-name := "nabl2_nameResolution_1";
-       nodegen-name := $[[class-name]NodeGen]
-
-  index-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
-    package ~x:native-pkg;
-
-    import ~x:term-pkg.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.meta.lang.dynsem.interpreter.terms.ITerm;
-    import org.metaborg.scopegraph.indices.TermIndex;
-
-    import com.oracle.truffle.api.dsl.NodeChild;
-    import com.oracle.truffle.api.dsl.Specialization;
-    import com.oracle.truffle.api.source.SourceSection;
-
-    @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~x:class-name extends TermBuild
-    {
-      public ~x:class-name(SourceSection source)
-      {
-        super(source);
-      }
-
-      @Specialization public ITermIndexTerm doGet(ITerm term)
-      {
-        TermIndex index = TermIndex.get(term.getStrategoTerm());
-        return new TermIndex_2_Term(index.resource(), index.nodeId());
-      }
-
-      public static TermBuild create(SourceSection source, TermBuild term)
-      {
-        return ~x:nodegen-name.create(source, term);
-      }
-    }
-  ]|)
-  with class-name := "nabl2_indexOf_1";
-       nodegen-name := $[[class-name]NodeGen]
-
-  otypes-operator: (native-pkg, term-pkg) -> (class-name, compilation-unit |[
-    package ~x:native-pkg;
-
-    import java.util.Map.Entry;
-
-    import ~x:term-pkg.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
-    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.meta.lang.dynsem.interpreter.terms.ITerm;
-    import org.metaborg.scopegraph.context.IScopeGraphUnit;
-    import org.metaborg.scopegraph.indices.TermIndex;
-    import org.metaborg.spoofax.core.context.scopegraph.ISpoofaxScopeGraphContext;
-    import org.spoofax.interpreter.terms.IStrategoTerm;
-
-    import com.oracle.truffle.api.dsl.NodeChild;
-    import com.oracle.truffle.api.dsl.Specialization;
-    import com.oracle.truffle.api.source.SourceSection;
-
-    @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~x:class-name extends TermBuild
-    {
-      public ~x:class-name(SourceSection source)
-      {
-        super(source);
-      }
-
-      @Specialization public com.github.krukow.clj_lang.IPersistentMap<IOccurrenceTerm, ITypeTerm> doGet(ITerm term)
-      {
-        ISpoofaxScopeGraphContext<?> context = (ISpoofaxScopeGraphContext<?>) getContext()
-                .readProperty(DynSemRunner.SPOOFAX_CONTEXT_PROP, null);
-        TermIndex index = TermIndex.get(term.getStrategoTerm());
-        IScopeGraphUnit unit = context.unit(index.resource());
-        java.util.Map<IOccurrenceTerm, ITypeTerm> entries =
-          new java.util.HashMap<IOccurrenceTerm, ITypeTerm>();
-        for(Entry<IStrategoTerm, IStrategoTerm> entry : unit.occurrenceTypes().get()) {
-            IOccurrenceTerm occurrence = IOccurrenceTerm.create(entry.getKey());
-            ITypeTerm type = ITypeTerm.create(entry.getValue());
-            entries.put(occurrence, type);
-        }
-        return com.github.krukow.clj_lang.PersistentHashMap.create(entries);
-      }
-
-      public static TermBuild create(SourceSection source, TermBuild term)
-      {
-        return ~x:nodegen-name.create(source, term);
-      }
-    }
-  ]|)
-  with class-name := "nabl2_occurrenceTypes_1";
-       nodegen-name := $[[class-name]NodeGen]
+  with
+    class-name   := $[[op-name]_1];
+    nodegen-name := $[[class-name]NodeGen];
+    file-name    := $[[pkg-dir]/[class-name].java]

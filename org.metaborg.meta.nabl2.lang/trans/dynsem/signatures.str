@@ -27,37 +27,66 @@ rules
       ]),
       Signatures([
         NativeOperators([
-          params-op*,
-          type-op*
+          ast-params-op*,
+          ast-type-op*,
+          ns-type-op*,
+          ns-prop-op*
         ]),
         ArrowDeclarations([
-          params-arrow*,
-          type-arrow*
+          ast-params-arrow*,
+          ast-type-arrow*,
+          ns-type-arrow*,
+          ns-prop-arrow*
         ]),
         Constructors([
           type-con*
         ])
       ]),
       Rules([
-        params-rule*,
-        type-rule*
+        ast-params-rule*,
+        ast-type-rule*,
+        ns-type-rule*,
+        ns-prop-rule*
       ])
     ])
-    with (params-op*, params-arrow*, params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> ast;
-         (type-op*, type-arrow*, type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> ast;
+    with (ast-params-op*, ast-params-arrow*, ast-params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> ast;
+         (ast-type-op*, ast-type-arrow*, ast-type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> ast;
+         (ns-type-op*, ns-type-arrow*, ns-type-rule*) := <collect-om(ns-to-type-ds);unzip3> ast;
+         (ns-prop-op*, ns-prop-arrow*, ns-prop-rule*) := <collect-om(ns-to-prop-dss);concat;unzip3> ast;
          type-con* := <collect-om(opdecl-to-ds)> ast
 
   cgen-sig-to-params-ds:
     CGenSig(Name(name), sort, param*, _) ->
-      <native-op-ds(|name)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
+      <cgen-op-ds(|name)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
 
   cgen-sig-to-type-ds:
-    CGenSig(Name(name), sort, _, Type(tsort)) ->
-      <native-op-ds(|name)>  (<sort-to-ds> sort, "typeOf", <sort-to-ds> tsort)
+    CGenSig(Name(name), sort, _, Type(type-sort)) -> result
+    with result := <cgen-op-ds(|name)> (<sort-to-ds> sort, "typeOf", <sort-to-ds> type-sort)
+
+  ns-to-type-ds:
+    NamespaceDef(Namespace(name), Type(type-sort), _) -> result
+    with result := <ns-op-ds(|name)> (<sort-to-ds> OccurrenceSort(), "typeOf", <sort-to-ds> type-sort)
+
+  ns-to-prop-dss:
+    NamespaceDef(Namespace(name), _, prop*) -> result*
+    with result* := <map(ns-to-prop-ds(|name))> prop*
+
+  ns-to-prop-ds(|ns):
+    PropertyDef(name, prop-sort) -> result
+    with result := <ns-op-ds(|ns)> (<sort-to-ds> OccurrenceSort(), $[[name]Of], <sort-to-ds> prop-sort)
+
+rules
 
   unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
 
-  native-op-ds(|rule-name): (src-sort, base-name, target-sort) -> (op, arrow, rule)
+  ns-op-ds(|namespace): (src-sort, base-name, target-sort) -> (op, arrow, rule)
+    with op-name := $[nabl2_[base-name][namespace]];
+         op := NativeOpDecl(op-name, [src-sort], target-sort);
+         arrow-name := $[[base-name][namespace]];
+         arrow := ArrowDecl(NoArrowROs(),src-sort,NoArrowRWs(),arrow-name,target-sort,NoArrowRWs());
+         rule := Axiom(Relation(NoReads(),Source(Cast(VarRef("t"),src-sort)),NamedDynamic(arrow-name),Target(Con(op-name, [VarRef("t")]))))
+
+  cgen-op-ds(|rule-name): (src-sort, base-name, target-sort) -> (op, arrow, rule)
     with op-name := <cgen-op-name(|rule-name, src-sort)> base-name;
          op := NativeOpDecl(op-name, [src-sort], target-sort);
          arrow-name := <cgen-arrow-name(|rule-name)> base-name;
@@ -95,7 +124,7 @@ rules
   sort-to-ds: TupleSort(arg*) -> TupleSort(<map(sort-to-ds)> arg*)
   sort-to-ds: Var(_) -> <fatal-err(|"Not supported in DynSem")>
 
+  sort-to-ds: TermSort() -> SimpleSort("AST")
   sort-to-ds: ScopeSort() -> SimpleSort("Scope")
   sort-to-ds: OccurrenceSort() -> SimpleSort("Occurrence")
   sort-to-ds: TypeSort() -> SimpleSort("Type")
-
