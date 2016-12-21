@@ -1,4 +1,4 @@
-module nabl2/runtime/interpreter/frame
+module nabl2/runtime/interpreter/frame-impl
 
 imports
   nabl2/runtime/interpreter/frame-api
