@@ -1,0 +1,16 @@
+module generation/dynsem/constructors
+
+imports
+
+  signatures/signatures/-
+  generation/dynsem/-
+
+rules
+
+  opdecl-to-ds:
+    OpDecl(name, [], s) ->
+      NullaryConsDecl(name, <sort-to-ds> s, NoAnnos())
+
+  opdecl-to-ds:
+    OpDecl(name, arg*, s) ->
+      ConsDecl(name, <map(Snd;sort-to-ds)> arg*, <sort-to-ds> s, NoAnnos())

@@ -1,9 +1,9 @@
-module generation/signatures/relations
+module generation/cgen/signatures/relations
 
 imports
 
   libstrc
-  generation/-
+  generation/cgen/-
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   signatures/common/-

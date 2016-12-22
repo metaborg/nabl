@@ -1,11 +1,11 @@
-module generation/modules/module
+module generation/cgen/modules/module
 
 imports
 
   libstrc
   signatures/modules/-
-  generation/-
-  generation/signatures/-
+  generation/cgen/-
+  generation/cgen/signatures/-
 
 rules
 

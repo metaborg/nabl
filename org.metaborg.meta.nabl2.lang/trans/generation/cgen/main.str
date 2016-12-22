@@ -1,12 +1,12 @@
-module generation/main
+module generation/cgen/main
 
 imports
 
   libstrc
-  generation/-
-  generation/modules/-
-  generation/rules/-
-  generation/signatures/-
+  generation/cgen/-
+  generation/cgen/modules/-
+  generation/cgen/rules/-
+  generation/cgen/signatures/-
   util/src-gen
 
 rules

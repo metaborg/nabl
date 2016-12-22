@@ -1,10 +1,10 @@
-module generation/signatures/nameresolution
+module generation/cgen/signatures/nameresolution
 
 imports
 
   libstrc
   nabl2shared
-  generation/-
+  generation/cgen/-
   signatures/signatures/-
   util/stratego
 

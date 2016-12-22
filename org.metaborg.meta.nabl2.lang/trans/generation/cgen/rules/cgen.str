@@ -1,4 +1,4 @@
-module generation/rules/cgen
+module generation/cgen/rules/cgen
 
 imports
 
@@ -9,7 +9,7 @@ imports
   signatures/common/-
   signatures/rules/-
 
-  generation/-
+  generation/cgen/-
   util/stratego
 
 rules

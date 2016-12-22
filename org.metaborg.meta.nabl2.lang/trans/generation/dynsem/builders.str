@@ -1,11 +1,11 @@
-module dynsem/main
+module generation/dynsem/builders
 
 imports
 
   libjava-front
   libspoofax/core/language
   util/src-gen
-  dynsem/-
+  generation/dynsem/-
   signatures/-
  
 rules

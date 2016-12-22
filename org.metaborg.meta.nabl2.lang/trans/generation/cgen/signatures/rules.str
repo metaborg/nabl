@@ -1,4 +1,4 @@
-module generation/signatures/rules
+module generation/cgen/signatures/rules
 
 imports
 

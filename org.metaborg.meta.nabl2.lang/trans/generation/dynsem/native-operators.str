@@ -1,0 +1,60 @@
+module generation/dynsem/native-operators
+
+imports
+
+  libjava-front
+
+rules
+
+  native-java(|pkg, pkg-dir, term-pkg, op-name, source-name, target-name): stmts -> (file-name, <pp-java-string> compilation-unit |[
+    package ~x:pkg;
+
+    import java.util.NoSuchElementException;
+    import java.util.Optional;
+    import java.util.function.Supplier;
+
+    import ~x:term-pkg.*;
+    import org.metaborg.meta.lang.dynsem.interpreter.nabl2.NaBL2TermBuild;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.meta.nabl2.scopegraph.terms.*;
+    import org.metaborg.meta.nabl2.solver.ISolution;
+    import org.metaborg.meta.nabl2.terms.*;
+    import org.metaborg.meta.nabl2.terms.generic.*;
+    import org.metaborg.util.iterators.Iterables2;
+    import org.spoofax.interpreter.terms.IStrategoTerm;
+
+    import com.oracle.truffle.api.dsl.NodeChild;
+    import com.oracle.truffle.api.dsl.Specialization;
+    import com.oracle.truffle.api.source.SourceSection;
+
+    @SuppressWarnings("unused")
+    @NodeChild(value = "term", type = TermBuild.class)
+    public abstract class ~x:class-name extends NaBL2TermBuild<~x:source-name,~x:target-name> {
+
+      public ~x:class-name(SourceSection source) {
+        super(source);
+      }
+
+      @Specialization public ~x:target-name doGet(~x:source-name term) { 
+        return super.doGet(term);
+      }
+
+      @Override protected ITerm eval(ITerm term, ISolution solution) {
+        ~bstm*:stmts
+      }
+
+      @Override
+      protected ~x:target-name build(IStrategoTerm term) {
+        return ~x:target-name.create(term);
+      }
+
+      public static TermBuild create(SourceSection source, TermBuild term) {
+        return ~x:nodegen-name.create(source, term);
+      }
+
+    }
+  ]|)
+  with
+    class-name   := $[[op-name]_1];
+    nodegen-name := $[[class-name]NodeGen];
+    file-name    := $[[pkg-dir]/[class-name].java]

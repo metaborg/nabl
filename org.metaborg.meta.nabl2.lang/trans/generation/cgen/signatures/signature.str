@@ -1,9 +1,9 @@
-module generation/signatures/signature
+module generation/cgen/signatures/signature
 
 imports
 
   signatures/signatures/-
-  generation/signatures/-
+  generation/cgen/signatures/-
 
 rules
 

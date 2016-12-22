@@ -1,11 +1,11 @@
-module generation/injections
+module generation/cgen/injections
 
 imports
 
   nabl2shared
   
   signatures/common/-
-  generation/-
+  generation/cgen/-
   util/-
  
 rules

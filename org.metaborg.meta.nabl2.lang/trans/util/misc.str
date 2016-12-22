@@ -1,0 +1,5 @@
+module util/misc
+
+rules
+
+  unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])

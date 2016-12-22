@@ -58,7 +58,7 @@ rules
          rels := Relations([RelationDef(relopt*,DefaultRelation(),TypeSort(),[listrelop|relop*])])
 
   normalize-type-sig:
-    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, <type-sort>)
+    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, TypeSort())
 
   normalize-rel-type:
     TypeSig(op,a*) -> OpVariant(op, <map(Fst;normalize-type-variance)> a*)
