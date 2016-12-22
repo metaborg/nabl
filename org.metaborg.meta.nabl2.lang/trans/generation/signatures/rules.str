@@ -1,0 +1,11 @@
+module generation/signatures/rules
+
+imports
+
+  signatures/signatures/-
+
+rules
+
+  signature-to-str:
+    CGen(_) -> []
+

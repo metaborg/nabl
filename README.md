@@ -1,3 +1,7 @@
+[![Build status](http://buildfarm.metaborg.org/job/metaborg/job/nabl/job/master/badge/icon)](http://buildfarm.metaborg.org/job/metaborg/job/nabl/job/master/)
+<!-- note that the branchname is not automatically updated in this badge -->
+
+
 # NaBL: A Meta-Language for Declarative Name Binding and Scope Rules
 
 In Spoofax, name bindings are specified in NaBL.

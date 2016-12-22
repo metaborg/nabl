@@ -1,0 +1,17 @@
+module nabl2/runtime/common/AST
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/runtime/common/Native
+  nabl2/runtime/analysis/Generation
+
+context-free syntax
+
+  TermIndex.TermIndex = <@<String>:<Int>>
+
+  AstMetadata   = <<TermIndex> <{MetadataEntry "\n"}*>>
+  MetadataEntry = <<MetadataKey> := <CTerm>>
+
+  MetadataKey.Params = <args>
+  MetadataKey.Type   = <type>

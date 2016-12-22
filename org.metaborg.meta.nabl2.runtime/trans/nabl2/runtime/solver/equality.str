@@ -2,71 +2,90 @@ module nabl2/runtime/solver/equality
 
 imports
 
-  nabl2shared
+  signatures/nabl2/shared/constraints/-
+  nabl2/shared/-
+
+  nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
 
 rules
-  
-  do-not-unify = fail // use to guard special constructors from accidental unification
-  
-  solve-constraint: (CEqual(t,t',msginfo),sol-wm) -> [(sol-wm',[])]
-  where <do-not-unify> t + <do-not-unify> t'
-  with msg := "Unifying subtitutions is forbidden"
-     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+ 
+  nabl2--solve-constraint = nabl2--time-analysis(!"equality",nabl2--solve-equality-constraint) 
+ 
+  nabl2--solve-equality-constraint: (CEqual(t1,t2,msginfo),sol) -> [(sol,[])]
+  where <nabl2--term-eq> (t1,t2)
 
-  solve-constraint: (CEqual(t1,t2,_),sol-wm) -> [(sol-wm,[])]
-  where <term-eq> (t1,t2)
-
-  solve-constraint: (CEqual(t,v@Var(_),msginfo),sol-wm) -> [(sol-wm,[CEqual(v,t,msginfo)])]
-  where <not(is-var)> t
-
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
-  where <var-occurs> (v,t)
-  with msg := [v," occurs in ",t]
-     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+  nabl2--solve-equality-constraint: (CEqual(v,t,msginfo),sol) -> [(sol',[])]
+  where <nabl2--is-var> v;
+        <not(nabl2--var-occurs)> (v,t);
+        <nabl2--is-reduced> t
+  with sol' := <nabl2--sol-apply-s(|[(v,t)])> sol
   
-  solve-constraint: (CEqual(v@Var(_),t,msginfo),sol-wm) -> [(sol-wm',[])]
-  where <not(var-occurs)> (v,t)
-      ; <is-reduced> t
-  with sol-wm' := <sol-wm-apply-s(|[(v,t)])> sol-wm
-  
-  solve-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol-wm) -> [(sol-wm',[])]
-  where <not(is-op)> t1
-      ; <not(is-op)> t2
-      ; ( <not(term-eq)> (c1,c2) 
+  nabl2--solve-equality-constraint: (CEqual(t,v,msginfo),sol) -> [(sol,[CEqual(v,t,msginfo)])]
+  where <not(nabl2--is-var)> t;
+        <nabl2--is-var> v
+
+  nabl2--solve-equality-constraint: (CEqual(v,t,msginfo),sol) -> [(sol',[])]
+  where <nabl2--is-var> v;
+        <nabl2--var-occurs> (v,t)
+  with msg := [v," occurs in ",t];
+       sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
+ 
+  nabl2--solve-equality-constraint: (CEqual(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
+  where <not(nabl2-is-op-hook)> t1;
+        <not(nabl2-is-op-hook)> t2;
+        ( <not(nabl2--term-eq)> (c1,c2) 
        <+ <(length,length);not(eq)> (a1,a2)
         )
-  with msg := <default-unify-error(|t1,t2)>
-     ; sol-wm' := <add-message(detail-message(|msg)|msginfo)> sol-wm
+  with msg := <nabl2--default-unify-error(|t1,t2)>;
+       sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
 
-  solve-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol-wm) -> [(sol-wm,C*)]
-  where <not(is-op)> t1;
+  nabl2--solve-equality-constraint: (CEqual(t1@c#(a1),t2@c#(a2),msginfo),sol) -> [(sol,C*)]
+  where <not(nabl2-is-op-hook)> t1;
         <(length,length);eq> (a1,a2)
-  with msg := <default-unify-error(|t1,t2)>;
-       msginfo' := <default-message(|msg)> msginfo;
-       C* := <zip(!CEqual(<Fst>,<Snd>,msginfo'))> (a1,a2)
+  with msg := <nabl2--default-unify-error(|t1,t2)>;
+       msginfo' := <nabl2--default-message(|msg)> msginfo;
+       C* := <zip(\ (t1,t2) -> CEqual(t1,t2,msginfo') \)> (a1,a2)
 
-
-  solve-constraint: (CInequal(t1,t2,msginfo),sol-wm) -> [(sol-wm',[])]
-  where <is-ground> t1;
-        <is-ground> t2
-  with ( <term-eq> (t1,t2)
-       < msg := [t1," and ",t2," are equal"];
-         <add-message(detail-message(|msg)|msginfo)> sol-wm
-       + !sol-wm
-       ) => sol-wm'
+  nabl2--default-unify-error(|t1,t2) = !["Cannot not unify ",t1," with ",t2]
 
 
 rules
 
-  constraint-priority: CEqual(_,_,_) -> 0
-  constraint-priority: CInequal(_,_,_) -> 99
+  nabl2--solve-equality-constraint: (CInequal(t1@c1#(a1),t2@c2#(a2),msginfo),sol) -> [(sol',[])]
+  where if <eq> (t1,t2) then
+          msg := [t1," and ",t2," are equal"];
+          sol' := <nabl2--add-message(nabl2--detail-message(|msg)|msginfo)> sol
+        else if <nabl2--not-unifiable> (t1,t2) then
+          sol' := sol
+        end end
+
+  nabl2--not-unifiable: (t1@c1#(a1),t2@c2#(a2)) -> <id>
+  where <not(nabl2-is-op-hook; nabl2--is-var)> t1;
+        <not(nabl2-is-op-hook; nabl2--is-var)> t2;
+      ( <not(eq)> (c1,c2)
+     <+ <not((length,length);eq)> (a1,a2)
+     <+ <zip;getfirst(nabl2--not-unifiable)> (a1,a2)
+      )
+
 
 rules
 
-  default-unify-error(|t1,t2) = !["Cannot not unify ",t1," with ",t2]
+  nabl2--postprocess-constraint = nabl2--postprocess-equality-constraint
 
-  constraint-message: CEqual(t1,t2,msginfo) -> <default-message(|<default-unify-error(|t1,t2)>)> msginfo
-  constraint-message: CInequal(t1,t2,msginfo) -> <default-message(|["Terms ",t1," and ",t2,"cannot be equal"])> msginfo
+  nabl2--postprocess-equality-constraint: (CEqual(t1,t2,msginfo), sol) -> sol'
+  with msg := ["Failed to check if ",t1," and ",t2," are equal"];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+  nabl2--postprocess-equality-constraint: (CInequal(t1,t2,msginfo), sol) -> sol'
+  with msg := ["Failed to check if ",t1," and ",t2," are inequal"];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+
+rules
+
+  nabl2--constraint-priority: CEqual(_,_,_) -> 1
+  nabl2--constraint-priority: CInequal(_,_,_) -> 99
+

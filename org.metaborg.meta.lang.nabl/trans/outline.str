@@ -3,22 +3,24 @@ module outline
 imports
 	
 	libstrc
-  signatures/NameBindingLanguage-sig
-  runtime/editor/outline-library
-  runtime/editor/origins
+  signatures/-
+  signatures/core/-
+  signatures/terms/-
+  libspoofax/editor/outline
 
 rules
   
+  editor-outline:
+    (node, position, ast, path, project-path) -> outline
+    where
+      outline := <outline> ast
+  
   outline = simple-label-outline(to-outline-label)
+  
+rules
   
   to-outline-label:
   	Module(name, _) -> name
-  	
-  // to-outline-label:
-  // 	Imports(_) -> "imports"
-  	
-  // to-outline-label:
-  // 	Properties(_) -> "properties"
   	
   to-outline-label:
   	r@Bindings(_) -> "binding rules"

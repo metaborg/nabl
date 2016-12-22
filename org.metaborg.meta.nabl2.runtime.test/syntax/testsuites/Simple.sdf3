@@ -1,0 +1,5 @@
+module testsuites/Simple
+
+context-free syntax
+
+  Test.FalseFails = "false fails"

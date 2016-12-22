@@ -1,0 +1,14 @@
+module nabl2/shared/common/CTerms
+
+imports
+
+  nabl2/shared/common/ABSTRACT
+
+context-free syntax
+
+  CVar = ABSTRACT
+
+  CTerm           = CVar {prefer}
+  CTerm.TList     =  <[<{CTerm ","}*>]>         // FIXME Use NaBL2_ prefix
+  CTerm.TListTail =  <[<{CTerm ","}*>|<CTerm>]> // FIXME Use NaBL2_ prefix
+  CTerm.TListConc = <<CTerm> ++ <CTerm>> {left} // FIXME Use NaBL2_ prefix

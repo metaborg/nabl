@@ -2,7 +2,7 @@ module nabl2/runtime/solver/solution
 
 imports
 
-  nabl2shared
+  nabl2/shared/-
   nabl2/runtime/common/-
   nabl2/runtime/prelude/-
   nabl2/runtime/solver/-
@@ -11,41 +11,51 @@ imports
 
 rules
  
-  sol-new =
-    ts := <initial-subtype-relation>;
-    !Sol(<G-new>,[],[],[],ts)
+  nabl2--sol-new = ![
+    ScopeGraph(<nabl2--G-new>),
+    NameResolution([]),
+    FullNameResolution([]),
+    Properties([]),
+    Substitution([]),
+    SubtypeRelation(<nabl2--initial-subtype-relation>),
+    Uninterpreted([],[]),
+    Errors([]),
+    Warnings([]),
+    Notes([])
+  ]
 
-  sol-g = ?Sol(<id>,_,_,_,_) 
-  sol-r = ?Sol(_,<id>,_,_,_) 
-  sol-p = ?Sol(_,_,<id>,_,_)
-  sol-s = ?Sol(_,_,_,<id>,_)
-  sol-x = ?Sol(_,_,_,_,<id>)
+  nabl2--sol-g       = fetch-elem(?ScopeGraph(<id>))
+  nabl2--sol-r       = fetch-elem(?NameResolution(<id>))
+  nabl2--sol-fr      = fetch-elem(?FullNameResolution(<id>))
+  nabl2--sol-p       = fetch-elem(?Properties(<id>))
+  nabl2--sol-s       = fetch-elem(?Substitution(<id>))
+  nabl2--sol-x       = fetch-elem(?SubtypeRelation(<id>))
+  nabl2--sol-u-goals = fetch-elem(?Uninterpreted(<id>,_))
+  nabl2--sol-u-facts = fetch-elem(?Uninterpreted(_,<id>))
+  nabl2--sol-e       = fetch-elem(?Errors(<id>))
+  nabl2--sol-w       = fetch-elem(?Warnings(<id>))
+  nabl2--sol-n       = fetch-elem(?Notes(<id>))
  
-  sol-with-g(|g):
-    Sol(_,r*,p*,s*,x*) -> Sol(g,r*,p*,s*,x*)
+  nabl2--sol-with-g(|g) = fetch(ScopeGraph(!g))
 
-  sol-apply-s(|s'):
-    Sol(g,r*,p*,s*,x*) -> Sol(g',r'*,p'*,s'*,x*)
-    where g'  := <S-apply(is-var)> (s',g)
-        ; r'* := <S-apply(is-var)> (s',r*)
-        ; p'* := <S-apply(is-var)> (s',p*)
-        ; s'* := <S-compose(is-var)> (s',s*)
-        ; x'* := <S-apply(is-var)> (s',x*)
+  nabl2--sol-apply-s(|s') =
+    map(Substitution(<nabl2--S-compose(nabl2--is-var)> (s',<id>)) <+ <nabl2--S-apply(nabl2--is-var)> (s',<id>))
 
-  sol-set-p(|p,ty):
-    Sol(g,r*,p*,s*,x*) -> Sol(g,r*,p'*,s*,x*)
-  with p'* := <set(!ty|p)> p*
+  nabl2--sol-add-p(|o,key,val) = fetch(Properties(nabl2--update(nabl2--set(!val|key),![]|o)))
 
-  sol-set-x(|x'*):
-    Sol(g,r*,p*,s*,_) -> Sol(g,r*,p*,s*,x'*)
+  nabl2--sol-set-x(|x*) = fetch(SubtypeRelation(!x*))
 
-  sol-add-r(|r'*):
-    Sol(g,r*,p*,s*,x*) -> Sol(g,[r'*,r*],p*,s*,x*)
+  nabl2--sol-set-r(|r,d) = fetch(NameResolution(nabl2--set(!d|r)))
 
-  sol-set-r(|r,d):
-    Sol(g,r*,p*,s*,x*) -> Sol(g,r'*,p*,s*,x*)
-  with <set(!d|r)> r* => r'*
+  nabl2--sol-set-fr(|fr*) = fetch(FullNameResolution(!fr*))
 
-rules
+  nabl2--sol-set-fr(|r,d*) = fetch(FullNameResolution(nabl2--set(!d*|r)))
 
-  sol-wm-apply-s(|s) = fmap(sol-apply-s(|s)) ; fmap-messages(<S-apply(is-var)> (s,<id>))
+  nabl2--sol-add-u-goal(|g) = fetch(Uninterpreted(![g|<id>],id))
+  nabl2--sol-add-u-fact(|f) = fetch(Uninterpreted(id,![f|<id>]))
+
+  nabl2--sol-add-error(|msg) = fetch(Errors(nabl2--set-add(nabl2--message-eq|msg)))
+  nabl2--sol-add-warning(|msg) = fetch(Warnings(nabl2--set-add(nabl2--message-eq|msg)))
+  nabl2--sol-add-note(|msg) = fetch(Notes(nabl2--set-add(nabl2--message-eq|msg)))
+
+  nabl2--is-erronious = fetch(?Errors([_|_]))

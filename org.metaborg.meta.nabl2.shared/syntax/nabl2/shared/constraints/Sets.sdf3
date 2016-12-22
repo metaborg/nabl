@@ -1,0 +1,19 @@
+module nabl2/shared/constraints/Sets
+
+imports
+
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Sets
+  nabl2/shared/common/CTerms
+
+context-free syntax
+
+  PrimitiveConstraint.CSubsetEq = <<CSet> subseteq <CSet> <Message>>
+  PrimitiveConstraint.CDistinct = <distinct <CSet> <Message>>
+  PrimitiveConstraint.CDistinct = <! <CSet> <Message>>                   {deprecated("'! _' is deprecated, use 'distinct _' instead.")}
+
+lexical syntax
+
+  Keyword = "subseteq" | "distinct"
+  
+  '!' = {recover,reject}

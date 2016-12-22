@@ -2,41 +2,49 @@ module nabl2/runtime/solver/subtyping
 
 imports
 
-  nabl2shared
+  nabl2/shared/-
 
+  nabl2/runtime/analysis/-
   nabl2/runtime/common/-
   nabl2/runtime/solver/-
 
 rules
 
-  solve-constraint: (f@FSubtype(ty1,ty2,msginfo),sol-wm) -> [(sol-wm',[])]
-  where <is-ground> (ty1,ty2)
-  with <fromWM;sol-x> sol-wm => x*
-     ; ( <extend-subtype-relation(|x*)> (ty1,ty2) => x'*
-       < <fmap(sol-set-x(|x'*))> sol-wm
-       + msg := ["Setting ",ty1," as a subtype of ",ty2," creates a cycle in the subtyping relation"]
-       ; <add-message(detail-message(|msg)|msginfo)> sol-wm
-       ) => sol-wm'
+  nabl2--solve-constraint =nabl2--time-analysis(!"subtype",nabl2--solve-subtype-constraint)
 
-  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [res]
-  where ty1* := <is-list+(is-tuple;TupleToList)> ty1
-      ; ty2* := <is-list+(is-tuple;TupleToList)> ty2
-  with ( <(length,length);eq> (ty1*,ty2*)
-       < msg := [ty1*," not a subtype of ",ty2*]
-       ; msginfo' := <detail-message(|msg)> msginfo
-       ; !(sol-wm, <zip;map(!CSubtype(<Fst>,<Snd>,msginfo'))> (ty1*,ty2*))
-       + msg := ["Cannot check subtyping for lists ",ty1*," and ",ty2*," of different length."]
-       ; !(<add-message(detail-message(|msg)|msginfo)> sol-wm, [])
-       ) => res
+  nabl2--solve-subtype-constraint: (f@FSubtype(ty1,ty2,msginfo),sol) -> [(sol',[])]
+  where <nabl2--is-ground> (ty1,ty2)
+  with <nabl2--sol-x> sol => x*
+     ; ( <nabl2--extend-subtype-relation(|x*)> (ty1,ty2) => x'*
+       < <nabl2--sol-set-x(|x'*)> sol
+       + msg := ["Setting ",ty1," as a subtype of ",ty2," creates invalid subtype relation."];
+         <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+       ) => sol'
 
-  solve-constraint: (CSubtype(ty1,ty2,msginfo),sol-wm) -> [(sol-wm,[])]
-  where <is-ground> (ty1,ty2)
-      ; <fromWM;sol-x> sol-wm => x*
-      ; <is-subtype(|x*)> (ty1,ty2)
+  nabl2--solve-subtype-constraint: (CSubtype(ty1,ty2,msginfo),sol) -> [(sol,[])]
+  where <nabl2--is-ground> (ty1,ty2);
+        x* := <nabl2--sol-x> sol;
+        <nabl2--is-subtype(|x*)> (ty1,ty2)
 
+rules
 
-  constraint-priority: FSubtype(_,_,_) -> 5
-  constraint-priority: CSubtype(_,_,_) -> 6
+  nabl2--postprocess-constraint = nabl2--postprocess-subtype-constraint
 
-  constraint-message: FSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to set ",ty1," as subtype of ",ty2])> msginfo
-  constraint-message: CSubtype(ty1,ty2,msginfo) -> <default-message(|["Failed to check if ",ty1," is subtype of ",ty2])> msginfo
+  nabl2--postprocess-subtype-constraint: (FSubtype(ty1,ty2,msginfo), sol) -> sol'
+  with msg := ["Failed to set ",ty1," is a subtype of ",ty2];
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+  nabl2--postprocess-subtype-constraint: (CSubtype(ty1,ty2,msginfo), sol) -> sol'
+  with if <nabl2--is-ground> ty1;
+          <nabl2--is-ground> ty2 then
+         msg := [ty1," is not a subtype of ",ty2]
+       else
+         msg := ["Failed to check if ",ty1," is a subtype of ",ty2]
+       end;
+       sol' := <nabl2--add-message(nabl2--default-message(|msg)|msginfo)> sol
+
+rules
+
+  nabl2--constraint-priority: FSubtype(_,_,_) -> 3
+  nabl2--constraint-priority: CSubtype(_,_,_) -> 4
+

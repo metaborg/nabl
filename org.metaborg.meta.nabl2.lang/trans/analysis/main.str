@@ -2,28 +2,21 @@ module analysis/main
 
 imports
 
-  libstratego-sglr // for amb(_)
-
+  signatures/-
   analysis/-
   pp
 
 rules
 
-  editor-analyze:
-    (source-ast,_,_) -> result
-    with
-      result := <analyze> source-ast
-      
-  analyze =
-    ?ast;
-    analyzed-ast := <normalize> ast;
-    error* := <collect-messages(analysis-error)> analyzed-ast;
-    warning* := <collect-messages(analysis-warning)> analyzed-ast;
-    note* := <collect-messages(analysis-note)> analyzed-ast;
-    !(analyzed-ast, error*, warning*, note*)
+  analyze: (ast,path,project-path) -> (ast',[name-error*],[],[])
+    with name-error* := <check-module-name> (ast, path);
+         ast'   := <normalize> ast
+  
+  check-module-name: (Module(name,_), path) -> error*
+    with filename := <remove-extension> path;
+         if <string-ends-with(|$[/[name]])> $[/[filename]] then
+           error* := []
+         else
+           error* := [(name,$[Module name [name] does not agree with filename [filename]])]
+         end
  
-  collect-messages(s) =  collect-all(s ; (is-list<+MkSingleton)) ; concat
- 
-  analysis-error = fail
-  analysis-warning = fail
-  analysis-note = fail

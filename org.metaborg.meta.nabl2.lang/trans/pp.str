@@ -10,15 +10,9 @@ imports
 
 rules
 
-  pp-NaBL2Lang-string =
-    parenthesize-NaBL2Lang
-    ; prettyprint-NaBL2Lang-start-symbols
-    ; !V([], <id>)
-    ; box2text-string(|120)
-      
-  pp-partial-NaBL2Lang-string =
-    parenthesize-NaBL2Lang
-    ; prettyprint-NaBL2Lang
-    ; !V([], <id>)
-    ; box2text-string(|120)
- 
+  editor-format:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext      := <get-extension> path;
+      filename := <guarantee-extension(|$[pp.[ext]])> path;
+      result   := <pp-NaBL2-string> Module($[[name].pp],section*)

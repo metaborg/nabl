@@ -1,0 +1,4 @@
+---
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}

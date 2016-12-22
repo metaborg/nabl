@@ -2,10 +2,10 @@ module nabl2/runtime/common/vars
 
 imports
 
-  nabl2shared
+  nabl2/shared/-
 
 rules
   
-  reduce-op(|sol-wm) = fail
-  is-reduced = where(collect-all(is-op) => [])
+  nabl2-reduce-op-hook(|sol) = fail
 
+  nabl2--is-reduced = where(collect-all(nabl2-is-op-hook) => [])

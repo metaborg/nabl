@@ -1,0 +1,10 @@
+module nabl2/runtime/solver/Subtyping
+
+imports
+
+  nabl2/shared/common/CTerms
+
+context-free syntax
+
+  SubtypeRelation      = {SubtypeEntry "\n"}*
+  SubtypeEntry         = [[CTerm] <: [{CTerm ","}*]]

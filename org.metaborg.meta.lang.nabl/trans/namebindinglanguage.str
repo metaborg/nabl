@@ -2,21 +2,15 @@ module namebindinglanguage
 
 imports
 
-	libstratego-lib
-	libstratego-gpp
-	libstratego-aterm
-  signatures/NameBindingLanguage-sig
-  stratego/metaborg
+  libspoofax/core/language
   runtime/analysis/-
   runtime/nabl/-
   runtime/task/-
   runtime/index/-
-  runtime/tmpl/-
   runtime/properties/-
   runtime/types/-
-  runtime/editor/-
+  
   outline
-
   names/analysis/names
   analysis/-
 	generation/-
@@ -42,11 +36,6 @@ rules // Editor services
     (node, position, ast, path, project-path) -> proposals
     where
     	proposals := <analysis-propose-completions(|<language>, project-path)> ast
-
-  editor-outline:
-    (node, position, ast, path, project-path) -> outline
-    where
-      outline := <outline> ast
 
 rules // Debugging
 

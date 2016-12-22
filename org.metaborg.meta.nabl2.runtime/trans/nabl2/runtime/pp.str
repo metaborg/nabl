@@ -2,32 +2,93 @@ module nabl2/runtime/pp
 
 imports
 
-  nabl2shared
-  nabl2/runtime/prelude/-
+  libspoofax/editor/completion/interface
+
+  nabl2/api
+
+  pp/nabl2/shared/common/-
+  pp/nabl2/shared/constraints/-
+  nabl2/shared/-
+
   pp/nabl2/runtime/analysis/-
   pp/nabl2/runtime/common/-
   pp/nabl2/runtime/solver/-
+  pp/-
 
 rules
 
-  pp-Term           = pp(prettyprint-Term)
-  pp-Constraint     = pp(prettyprint-Constraint)
-  pp-Env            = pp(prettyprint-Env)
-  pp-Var            = pp(prettyprint-Var)
-  pp-TypeTerm       = pp(prettyprint-TypeTerm)
-  pp-LabelRE        = pp(prettyprint-LabelRE)
-  pp-Label          = pp(prettyprint-AnyLabel)
-  pp-Labels         = pp(prettyprint-List(prettyprint-AnyLabel))
-  pp-Scope          = pp(prettyprint-Scope)
-  pp-Scopes         = pp(prettyprint-List(prettyprint-Scope))
-  pp-Occurrence     = pp(prettyprint-Occurrence)
-  pp-Occurrences    = pp(prettyprint-List(prettyprint-Occurrence))
-  pp-FullResolveds  = pp(prettyprint-FullResolveds)
+  parenthesize-NaBL2      = parenthesize-NaBL2Runtime
 
-  pp-MessageContent = pp(prettyprint-MessageContent)
+  pp-NaBL2-CTerm          = pp-NaBL2(prettyprint-NaBL2-CTerm)
+  pp-NaBL2-Type           = pp-NaBL2(prettyprint-NaBL2-CTerm)
+  pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term)
+  pp-NaBL2-CGenArgs       = pp-NaBL2(prettyprint-NaBL2-CGenArgs)
+  pp-NaBL2-Constraint     = pp-NaBL2(prettyprint-NaBL2-Constraint)
+  pp-NaBL2-Env            = pp-NaBL2(prettyprint-NaBL2-Env)
+  pp-NaBL2-CVar           = pp-NaBL2(prettyprint-NaBL2-CVar)
+  pp-NaBL2-LabelRE        = pp-NaBL2(prettyprint-NaBL2-LabelRE)
+  pp-NaBL2-Label          = pp-NaBL2(prettyprint-NaBL2-AnyLabel)
+  pp-NaBL2-Labels         = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-AnyLabel))
+  pp-NaBL2-Scope          = pp-NaBL2(prettyprint-NaBL2-Scope)
+  pp-NaBL2-Scopes         = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-Scope))
+  pp-NaBL2-Occurrence     = pp-NaBL2(prettyprint-NaBL2-Occurrence)
+  pp-NaBL2-Occurrences    = pp-NaBL2(prettyprint-NaBL2-List(prettyprint-NaBL2-Occurrence))
+  pp-NaBL2-FullResolveds  = pp-NaBL2(prettyprint-NaBL2-FullResolveds)
 
-  prettyprint-object   = prettyprint-Scope
-  prettyprint-object   = prettyprint-Occurrence
-  
-  prettyprint-TypeTerm = prettyprint-Term
+  pp-NaBL2-MessageContent = pp-NaBL2(prettyprint-NaBL2-MessageContent)
+
+rules // Special rules
+
+  prettyprint-NaBL2-Name:
+    _ -> [S("?")]
+    where is-SDF-placeholder
+
+  prettyprint-NaBL2-Int =
+    ![S(<is-int;int-to-string>)]
+
+  prettyprint-NaBL2-Real =
+    ![S(<is-real;real-to-string(|2)>)]
+
+  prettyprint-NaBL2-List(pp): t -> [ H( [SOpt(HS(),"0")]
+                                      , [S("["),t',S("]")] ) ]
+    where is-list
+    with t' := <pp-H-list(pp|",")> t
+
+rules // Terms
+
+  prettyprint-NaBL2-primitive = ![S(<is-int;int-to-string>)]
+  prettyprint-NaBL2-primitive = ![S(<is-real;real-to-string(|2)>)]
+  prettyprint-NaBL2-primitive = ![S($["[<is-string>]"])]
+
+
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-primitive
+  prettyprint-NaBL2-Term = prettyprint-NaBL2-List(prettyprint-NaBL2-Term)
+  prettyprint-NaBL2-Term: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                        , [S(c),S("("),a',S(")")] ) ]
+    with a' := <pp-H-list(prettyprint-NaBL2-Term|",")> a*
+
+rules // CTerms
+
+  prettyprint-NaBL2-CTerm = prettyprint-NaBL2-primitive
+  prettyprint-NaBL2-CTerm = prettyprint-NaBL2-List(prettyprint-NaBL2-CTerm)
+  prettyprint-NaBL2-CTerm: c#(a*) -> [ H( [SOpt(HS(),"0")]
+                                        , [S(c),S("("),a',S(")")] ) ]
+    where not(nabl2--actual-CTerm)
+    with a' := <pp-H-list(prettyprint-NaBL2-CTerm|",")> a*
+
+  nabl2--actual-CTerm = is-NaBL2-CVar
+  nabl2--actual-CTerm = is-NaBL2-CTerm
+  nabl2--actual-CTerm = is-NaBL2-Occurrence
+  nabl2--actual-CTerm = is-NaBL2-Scope
+  nabl2--actual-CTerm = is-NaBL2-Names
+  nabl2--actual-CTerm = is-NaBL2-TypeVar
+  nabl2--actual-CTerm = is-NaBL2-SetExpr
+
+rules // Custom analysis
+
+  prettyprint-NaBL2-CustomAnalysis =
+    where(not(is-NaBL2-CustomAnalysis));
+  ( nabl2-prettyprint-custom-analysis-hook
+ <+ prettyprint-NaBL2-CTerm
+  )
 

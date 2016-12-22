@@ -17,7 +17,7 @@ rules
     (selected, position, ast@Module(name, _), path, project-path) -> (filename, result)
     with
       filename   := $[src-gen/names/[<guarantee-extension(|"str")> name]]
-    ; str-module := <module-to-str> ast
+    ; {|CurrentModule : rules(CurrentModule := name); str-module := <module-to-str> ast |}
     with
        result := <pp-stratego-string> str-module
     <+ <bottomup(try(not(is-string) ; not(is-list) ; not(pp-stratego-string) ; debug(!"cannot pp ")))> str-module
