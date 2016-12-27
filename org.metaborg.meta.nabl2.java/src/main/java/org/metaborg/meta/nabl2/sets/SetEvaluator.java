@@ -14,7 +14,7 @@ import com.google.common.collect.Sets;
 public class SetEvaluator {
 
     public static <T> IMatcher<Set<IElement<T>>> matcher(IMatcher<Set<IElement<T>>> elemMatcher) {
-        return M.casesFix(m -> Iterables2.from(
+        return M.<Set<IElement<T>>> casesFix(m -> Iterables2.from(
             // @formatter:off
             elemMatcher,
             M.appl0("EmptySet",(t) -> Sets.newHashSet()),
@@ -32,7 +32,7 @@ public class SetEvaluator {
                 result.putAll(rightProj);
                 result.keySet().retainAll(rightProj.keySet());
                 result.keySet().retainAll(leftProj.keySet());
-                return Sets.newHashSet(result.values());
+                return (Set<IElement<T>>)Sets.newHashSet(result.values());
             }),
             M.appl3("Lsect", m, SetTerms.projection(), m, (t, leftSet, proj, rightSet) -> {
                 Multimap<Object,IElement<T>> leftProj = project(leftSet, proj);
@@ -40,7 +40,7 @@ public class SetEvaluator {
                 Multimap<Object,IElement<T>> result = HashMultimap.create();
                 result.putAll(leftProj);
                 result.keySet().retainAll(rightProj.keySet());
-                return Sets.newHashSet(result.values());
+                return (Set<IElement<T>>)Sets.newHashSet(result.values());
             }),
             M.appl3("Diff", m, SetTerms.projection(), m, (t, leftSet, proj, rightSet) -> {
                 Multimap<Object,IElement<T>> leftProj = project(leftSet, proj);
@@ -48,7 +48,7 @@ public class SetEvaluator {
                 Multimap<Object,IElement<T>> result = HashMultimap.create();
                 result.putAll(leftProj);
                 result.keySet().removeAll(rightProj.keySet());
-                return Sets.newHashSet(result.values());
+                return (Set<IElement<T>>)Sets.newHashSet(result.values());
             })
             // @formatter:on
         ));

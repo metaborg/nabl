@@ -13,48 +13,45 @@ signature
     Occurrence : Namespace * Name * TermIndex -> Occurrence
  
   sorts TermIndex constructors
-    TermIndex : String * Int -> TermIndex
-  
-  sorts ScopeGraph ScopeEntry constructors
-    G : Map(Scope, ScopeEntry) * Map(Occurrence, Map(Label, Scope)) -> ScopeGraph
-    S : List(Occurrence) * List(Occurrence) * List((Label * Scope)) * List((Label * Occurrence)) -> ScopeEntry
+    TermIndex : String * Int -> TermIndex 
+ 
+  sorts ScopeGraph ScopeEntry OccurrenceEntry constructors
+    G : Map(Scope, ScopeEntry)            // scopes
+      * Map(Occurrence, OccurrenceEntry)  // decls
+      * Map(Occurrence, OccurrenceEntry)  // refs
+      -> ScopeGraph
 
+    S : List(Occurrence)             // decls
+      * List(Occurrence)             // refs
+      * Map(Label, List(Scope))      // direct edges
+      * Map(Label, List(Occurrence)) // import edges
+      -> ScopeEntry
+
+    O : List(Scope)             // occurrence scope
+      * Map(Label, List(Scope)) // assoc scopes
+      ->  OccurrenceEntry
+ 
   sort aliases
     NameResolution = Map(Occurrence, (Occurrence * Path))
-    OccurrenceTypes = Map(Occurrence, Type)
-
+    DeclTypes      = Map(Occurrence, Type)
+ 
+  sorts Property constructors
+    Type     : Property
+    Params   : Property
+    Property : String -> Property
+ 
   native operators
-    nabl2_scopeGraph : AST -> ScopeGraph
-    nabl2_nameResolution : AST -> NameResolution
-    nabl2_occurrenceTypes : AST -> OccurrenceTypes
+    nabl2_init    : AST -> NaBL2
     nabl2_indexOf : AST -> TermIndex
 
   constructors
-    NaBL2 : ScopeGraph * NameResolution * OccurrenceTypes *
-      (Map(Occurrence, Scope) *   // Declaration-to-scope map
-       Map(Occurrence, Scope)) -> // Reference-to-scope map
-        NaBL2
- 
-  arrows // Auxiliary functions
-    filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
-    declOfPath(List(Step)) --> Occurrence
- 
-  arrows
-    postProcessLinks(List((Label * Scope)), Map(Label, List(Scope))) --> Map(Label, List(Scope))
-    postProcessDecls(Map(Scope, ScopeEntry), List(Scope)) --> Map(Occurrence, Scope)
-    postProcessRefs(Map(Scope, ScopeEntry), List(Scope)) --> Map(Occurrence, Scope)
-    associateOccsWithScope(List(Occurrence), Scope) --> Map(Occurrence, Scope)
+    NaBL2 : ScopeGraph * NameResolution * DeclTypes -> NaBL2
  
 rules
 
-  initNaBL2(t) --> NaBL2(SG, NR, OT, (d2s, r2s))
-    where nabl2_scopeGraph(t) => SG@G(scopes, _);
-          nabl2_nameResolution(t) => NR;
-          nabl2_occurrenceTypes(t) => OT;
-          postProcessDecls(scopes, allkeys(scopes)) --> d2s;
-          postProcessRefs(scopes, allkeys(scopes)) --> r2s.
+  initNaBL2(t) --> nabl2_init(t).
  
-rules
+rules // occurrences
 
   t:Name -mkOccurrence-> Occurrence(ns,t,idx)
     where DefaultNamespace() => ns;
@@ -72,85 +69,35 @@ rules
     where Namespace(ns) => ns';
           nabl2_indexOf(o) => idx.
 
-rules
+  namespaceOf(Occurrence(ns,_,_)) --> ns.
 
-  NaBL2 NaBL2(G(scopes,_),_,_,_) |- s:Scope -declsOf-> decls
-    where scopes[s] => S(decls,_,_,_).
+  nameOf(Occurrence(_,n,_)) --> n.
 
-  NaBL2 NaBL2(G(scopes,_),_,_,_) |- (s, ns):(Scope * Namespace) -declsOf-> filterOccsByNamespace(decls, ns)
-    where scopes[s] => S(decls,_,_,_).
+rules // scope graph
 
-  NaBL2 NaBL2(G(scopes,_),_,_,_) |- s:Scope -edgesOf-> postProcessLinks(links, {})
-    where scopes[s] => S(_,_,links,_).
+  NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -declsOf-> ds
+    where ss[s] => S(ds,_,_,_).
 
-  NaBL2 NaBL2(_,NR,_,_) |- o:Occurrence -pathOf-> p
-    where NR[o] => (_,p).
+  NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -edgesOf-> es
+    where ss[s] => S(_,_,es,_).
 
-  NaBL2 NaBL2(_,_,OT,_) |- o:Occurrence -typeOf-> OT[o].
+  NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -importsOf-> ir
+    where ss[s] => S(_,_,_,ir).
 
-  NaBL2 NaBL2(G(_, AS), _, _, _) |- (o, l):(Occurrence * Label) -assocScopeOf-> m[l]
-  where
-    AS[o] => m.
-    
-  NaBL2 NaBL2(_, _, _, (d2s, _)) |- o:Occurrence -scopeOfDecl-> d2s[o].
-    
-  NaBL2 NaBL2(_, _, _, (_, r2s)) |- o:Occurrence -scopeOfRef-> r2s[o].
 
-  o:Occurrence -declOfRef-> declOfPath(p)
-  where
-    o -pathOf-> p.
+  NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -scopeOfDecl-> s
+    where ds[d] => O([s],_).
 
-rules
+  NaBL2 NaBL2(G(_,_,rs),_,_) |- r:Occurrence -scopeOfRef-> s
+    where rs[r] => O([s],_).
 
-  declOfPath([D(_, o)]) --> o.
+  NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -assocsOf-> as
+    where ds[d] => O(_,as).
 
-  declOfPath([_|p]) --> declOfPath(p).
+  NaBL2 NaBL2(_,_,dt) |- o:Occurrence -typeOf-> t
+    where dt[o] => t.
 
-rules
+rules // name resolution
 
-  filterOccsByNamespace([], _) --> [].
-  
-  filterOccsByNamespace([o@Occurrence(ns', _, _)|os], ns) --> [o|filterOccsByNamespace(os, ns)]
-  where
-    ns == ns'.
-    
-  filterOccsByNamespace([Occurrence(ns', _, _)|os], ns) --> filterOccsByNamespace(os, ns)
-  where
-    ns != ns'.
-
-rules // This should probably be done in the NaBL2 back-end instead of DynSem.
-
-  postProcessLinks([], m) --> m.
-
-  postProcessLinks([(l, s)|lss], m) --> postProcessLinks(lss, m')
-  where
-    case m[l?] of {
-      true =>
-        { l |--> [s|m[l]] , m } => m'
-      otherwise =>
-        { l |--> [s], m } => m'
-    }.
-
-rules // This should be done in the NaBL2 back-end instead of DynSem.
-
-  postProcessDecls(_, []) --> {}.
-  
-  postProcessDecls(scope_entries, [s|ss]) --> { m , postProcessDecls(scope_entries, ss) }
-  where
-    scope_entries[s] => S(decls, _, _, _);
-    associateOccsWithScope(decls, s) --> m.
-
-rules // This should be done in the NaBL2 back-end instead of DynSem.
-
-  postProcessRefs(_, []) --> {}.
-  
-  postProcessRefs(scope_entries, [s|ss]) --> { m , postProcessRefs(scope_entries, ss) }
-  where
-    scope_entries[s] => S(_, refs, _, _);
-    associateOccsWithScope(refs, s) --> m.
-
-rules // This should be done in the NaBL2 back-end instead of DynSem.
-
-  associateOccsWithScope([], _) --> {}.
-
-  associateOccsWithScope([d|ds], s) --> { d |--> s , associateOccsWithScope(ds, s) }.
+  NaBL2 NaBL2(_,nr,_) |- r:Occurrence -pathOf-> p
+    where nr[r] => (_, p).

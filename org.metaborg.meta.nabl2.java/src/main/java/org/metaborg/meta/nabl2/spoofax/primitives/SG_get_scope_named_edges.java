@@ -7,12 +7,11 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
-import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
+import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
-import org.metaborg.util.iterators.Iterables2;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -39,7 +38,7 @@ public class SG_get_scope_named_edges extends ScopeGraphPrimitive {
                 List<ITerm> edgeTerms = Lists.newArrayList();
                 for (Map.Entry<Label,PartialFunction0<Occurrence>> edge : edges.entries()) {
                     edge.getValue().apply().ifPresent(ref -> {
-                        edgeTerms.add(GenericTerms.newTuple(Iterables2.from(edge.getKey(), ref)));
+                        edgeTerms.add(GenericTerms.newTuple(edge.getKey(), ref));
                     });
                 }
                 return GenericTerms.newList(edgeTerms);

@@ -5,11 +5,10 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
-import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
+import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
-import org.metaborg.util.iterators.Iterables2;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -31,7 +30,7 @@ public class SG_get_ast_resolution extends ScopeGraphPrimitive {
             for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
                 if (ref.getPosition().equals(index)) {
                     for (Occurrence decl : Paths.pathsToDecls(s.getNameResolution().resolve(ref))) {
-                        entries.add(GenericTerms.newTuple(Iterables2.from(ref, decl.getName())));
+                        entries.add(GenericTerms.newTuple(ref, decl.getName()));
                     }
                 }
             }

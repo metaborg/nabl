@@ -324,7 +324,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     private Set<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
         Set<IElement<ITerm>> result = Sets.newHashSet();
         for (Occurrence occurrence : occurrences) {
-            if (!namespace.getName().filter(ns -> !occurrence.getNamespace().equals(namespace)).isPresent()) {
+            if (namespace.getName().isEmpty() || namespace.equals(occurrence.getNamespace())) {
                 result.add(new OccurrenceElement(occurrence));
             }
         }

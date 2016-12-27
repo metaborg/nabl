@@ -7,11 +7,10 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
-import org.metaborg.meta.nabl2.spoofax.IScopeGraphContext;
+import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
-import org.metaborg.util.iterators.Iterables2;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -37,7 +36,7 @@ public class SG_get_decl_assocs extends ScopeGraphPrimitive {
                 Multimap<Label,Scope> assocs = s.getScopeGraph().getAssocScopes(decl);
                 List<ITerm> assocTerms = Lists.newArrayList();
                 for (Map.Entry<Label,Scope> assoc : assocs.entries()) {
-                    assocTerms.add(GenericTerms.newTuple(Iterables2.from(assoc.getKey(), assoc.getValue())));
+                    assocTerms.add(GenericTerms.newTuple(assoc.getKey(), assoc.getValue()));
                 }
                 return GenericTerms.newList(assocTerms);
             });

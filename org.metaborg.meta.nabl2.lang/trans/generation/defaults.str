@@ -5,6 +5,11 @@ imports
   signatures/nabl2/shared/common/-
   signatures/common/-
 
+signature
+  constructors
+    LabelSort : Sort
+    StepSort : Sort
+
 rules
 
   index-var      = !Var("nabl2_index")

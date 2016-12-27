@@ -30,6 +30,7 @@ rules
 
   sort-to-str: SortNoArgs(name) -> SortNoArgs(name)
   sort-to-str: ListSort(arg) -> Sort("List", [<sort-to-str> arg])
+  sort-to-str: MapSort(key,value) -> <sort-to-str> ListSort(TupleSort([key,value]))
   sort-to-str: TupleSort(arg*) -> SortTuple(<map(sort-to-str)> arg*)
   sort-to-str: Var(name) -> Var(name)
 

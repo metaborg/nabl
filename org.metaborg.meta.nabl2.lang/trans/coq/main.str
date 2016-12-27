@@ -3,7 +3,7 @@ module coq/main
 imports
 	libstrc
 	libstratego-gpp
-  util/src-gen
+  util/-
   analysis/normalize
   analysis/signatures
     
@@ -54,7 +54,7 @@ rules
     (_, _, ast, path, project-path) -> (filename, result)
     with
     	Module(name, decls) := ast;
-      filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
+      filename := <src-gen-file(|project-path, "nabl2", ".v")> name;
       // Pre-processing
       decls' := <explicate-wildcards> decls;
       imps := <filter(?Imports(<id>)); concat> decls';

@@ -20,7 +20,7 @@ context-free syntax
   SortRef.Var            = SortVarId
   SortRef.TupleSort      = <(<{SortRef "*"}*>)>
   SortRef.ListSort       = <List(<SortRef>)>
- 
+  SortRef.MapSort        = <Map(<SortRef>, <SortRef>)>
  
 lexical syntax
 

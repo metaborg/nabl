@@ -2,6 +2,7 @@ module nabl2/runtime/interpreter/frame-impl
 
 imports
   nabl2/runtime/interpreter/frame-api
+  nabl2/runtime/interpreter/util
 
 // FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
 

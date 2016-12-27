@@ -13,7 +13,6 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
 
@@ -101,18 +100,18 @@ public class Paths {
         return path.match(new ICases<Scope,Label,Occurrence,IListTerm>() {
 
             @Override public IListTerm caseDirect(Scope scope, Label label, IPath<Scope,Label,Occurrence> tail) {
-                ITerm step = GenericTerms.newAppl("E", Iterables2.from(scope, label));
+                ITerm step = GenericTerms.newAppl("E", scope, label);
                 return GenericTerms.newCons(step, toTerm(tail));
             }
 
             @Override public IListTerm caseNamed(Scope scope, Label label, Occurrence ref,
                     IPath<Scope,Label,Occurrence> inner, IPath<Scope,Label,Occurrence> tail) {
-                ITerm step = GenericTerms.newAppl("N", Iterables2.from(scope, label, ref, toTerm(inner)));
+                ITerm step = GenericTerms.newAppl("N", scope, label, ref, toTerm(inner));
                 return GenericTerms.newCons(step, toTerm(tail));
             }
 
             @Override public IListTerm caseDecl(Scope scope, Occurrence decl) {
-                ITerm step = GenericTerms.newAppl("D", Iterables2.from(scope, decl));
+                ITerm step = GenericTerms.newAppl("D", scope, decl);
                 return GenericTerms.newCons(step, GenericTerms.newNil());
             }
 

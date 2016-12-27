@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.spoofax;
+package org.metaborg.meta.nabl2.spoofax.analysis;
 
 import java.util.Optional;
 
