@@ -34,7 +34,7 @@ public class SG_get_scope_named_edges extends ScopeGraphPrimitive {
         }
         return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
             return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                Multimap<Label,PartialFunction0<Occurrence>> edges = s.getScopeGraph().getImports(scope);
+                Multimap<Label,PartialFunction0<Occurrence>> edges = s.getScopeGraph().getImportRefs(scope);
                 List<ITerm> edgeTerms = Lists.newArrayList();
                 for (Map.Entry<Label,PartialFunction0<Occurrence>> edge : edges.entries()) {
                     edge.getValue().apply().ifPresent(ref -> {

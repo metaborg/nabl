@@ -41,7 +41,7 @@ rules
 
 rules
          
-  cgen-sig-to-params-java(|term-pkg,native-pkg,java-dir):
+  cgen-sig-to-params-java(|term-pkg,nabl2-pkg,java-dir):
     CGenSig(Name(name), sort, param*, _) -> result
     with src-sort := <sort-to-ds> sort;
          src-name := <ds-sort-to-string> src-sort;
@@ -50,9 +50,9 @@ rules
          stmts := bstm* |[
            return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), "Params"));
          ]|;
-         result := <native-java(|term-pkg,native-pkg,op-name,src-name,target-name,java-dir)> stmts
+         result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
 
-  cgen-sig-to-type-java(|term-pkg,native-pkg,java-dir):
+  cgen-sig-to-type-java(|term-pkg,nabl2-pkg,java-dir):
     CGenSig(Name(name), sort, _, Type(tsort)) -> result
     with type-sort := <sort-to-ds> tsort;
          src-sort := <sort-to-ds> sort;
@@ -62,7 +62,7 @@ rules
          stmts := bstm* |[
            return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), "Type"));
          ]|;
-         result := <native-java(|term-pkg,native-pkg,op-name,src-name,target-name,java-dir)> stmts
+         result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
 
   param-sorts-to-ds: [sort] -> <sort-to-ds> sort
   param-sorts-to-ds: sort* -> <sort-to-ds> TupleSort(sort*)

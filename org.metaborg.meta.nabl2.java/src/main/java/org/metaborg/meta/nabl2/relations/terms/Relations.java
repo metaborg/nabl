@@ -92,7 +92,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
                         r -> greatestLowerBound(nameOrDefault(r,name), argt1, argt2)
                         // @formatter:on
                     ));
-                }).flatMap(os -> Optionals.sequence(os, args -> matcher.build(args)));
+                }).flatMap(Optionals::sequence).map(matcher::build);
             });
             if (contains.isPresent()) {
                 return contains.get();
@@ -117,7 +117,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
                         r -> leastUpperBound(nameOrDefault(r,name), argt1, argt2)
                         // @formatter:on
                     ));
-                }).flatMap(os -> Optionals.sequence(os, args -> matcher.build(args)));
+                }).flatMap(Optionals::sequence).map(matcher::build);
             });
             if (contains.isPresent()) {
                 return contains.get();

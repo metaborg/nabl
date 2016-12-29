@@ -14,9 +14,6 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     Iterable<O> getAllRefs();
 
-    Optional<S> getRefScope(O ref);
-
-    Optional<S> getDeclScope(O decl);
 
     Iterable<O> getDecls(S scope);
 
@@ -24,10 +21,14 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     Multimap<L,PartialFunction0<S>> getDirectEdges(S scope);
 
+    Multimap<L,PartialFunction0<O>> getImportRefs(S scope);
+
+
+    Optional<S> getDeclScope(O decl);
+
     Multimap<L,S> getAssocScopes(O decl);
 
-    Multimap<L,O> getAssocDecls(S scope);
 
-    Multimap<L,PartialFunction0<O>> getImports(S scope);
+    Optional<S> getRefScope(O ref);
 
 }

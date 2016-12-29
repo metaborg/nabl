@@ -8,17 +8,17 @@ imports
 
 rules
 
-  init-javas(|term-pkg,native-pkg,java-dir): _ -> [result]
+  init-javas(|term-pkg,nabl2-pkg,java-dir): _ -> [result]
     with source-name := <sort-to-ds;ds-sort-to-string> TermSort();
          target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("NaBL2");
          op-name := "nabl2_init";
          stmts := bstm* |[
            return INaBL2Term.create(getSolution());
          ]|;
-         result := <native-java(|term-pkg, native-pkg, op-name, source-name, target-name,java-dir)> stmts
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
 
 
-  termindex-javas(|term-pkg,native-pkg,java-dir): _ -> [result]
+  termindex-javas(|term-pkg,nabl2-pkg,java-dir): _ -> [result]
     with source-name := <sort-to-ds;ds-sort-to-string> TermSort();
          target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("TermIndex");
          op-name := "nabl2_indexOf";
@@ -26,7 +26,7 @@ rules
            StrategoTermIndex index = getTermIndex(term.getStrategoTerm());
            return new TermIndex_2_Term(index.getResource(), index.getId());
          ]|;
-         result := <native-java(|term-pkg, native-pkg, op-name, source-name, target-name,java-dir)> stmts
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
 
 rules
 

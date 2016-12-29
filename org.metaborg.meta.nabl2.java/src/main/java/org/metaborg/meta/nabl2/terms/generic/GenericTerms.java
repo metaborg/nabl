@@ -44,6 +44,10 @@ public class GenericTerms {
     }
 
 
+    public static IListTerm newList(ITerm... elems) {
+        return newList(Iterables2.from(elems));
+    }
+
     public static IListTerm newList(Iterable<? extends ITerm> elems) {
         return newListTail(elems, newNil());
     }

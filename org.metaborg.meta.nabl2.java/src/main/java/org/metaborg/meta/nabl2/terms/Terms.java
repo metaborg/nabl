@@ -258,7 +258,7 @@ public class Terms {
                     for (ITerm t : list) {
                         os.add(m.match(t));
                     }
-                    return Optionals.sequence(os, ts -> (R) f.apply(list, (Iterable<T>) ts));
+                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, (Iterable<T>) ts));
                 }, Terms::empty, Terms::empty, Terms::empty));
             };
         }

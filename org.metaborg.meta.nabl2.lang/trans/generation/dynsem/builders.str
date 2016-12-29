@@ -19,13 +19,13 @@ rules
            project-name := <lookup> (MavenArtifactId(), ds-options);
            generated-pkg := <lookup> (TopPkg(), ds-options);
            term-pkg := <lookup> (TermPkg(), ds-options);
-           native-pkg := <lookup> (NativePkg(), ds-options);
+           nabl2-pkg := <lookup> (NativePkg(), ds-options);
            java-dir := <lookup> (JavaGenDirAbs(), ds-options)
          then
            src-gen-dir := <src-gen-dir(|project-path, "nabl2")>;
            ds-result* := <generate-dynsem-signatures(|lang-name);
                           map((path-prepend(|src-gen-dir),id))> ast;
-           java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,native-pkg,project-dir,java-dir)> ast;
+           java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir)> ast;
            result := <unzip> [ds-result*,java-result*]
          else
            result := None()
@@ -54,10 +54,10 @@ rules
            project-name := <lookup> (MavenArtifactId(), ds-options);
            generated-pkg := <lookup> (TopPkg(), ds-options);
            term-pkg := <lookup> (TermPkg(), ds-options);
-           native-pkg := <lookup> (NativePkg(), ds-options);
+           nabl2-pkg := <lookup> (NativePkg(), ds-options);
            java-dir := <lookup> (JavaGenDirAbs(), ds-options)
          then
-           java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,native-pkg,project-dir,java-dir)> ast;
+           java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir)> ast;
            result := <unzip> java-result*
          else
            result := None()

@@ -54,6 +54,14 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.resolveCache = Maps.newHashMap();
     }
 
+    @Override public Iterable<S> getAllScopes() {
+        return scopeGraph.getAllScopes();
+    }
+    
+    @Override public Iterable<O> getAllRefs() {
+        return scopeGraph.getAllRefs();
+    }
+    
     @Override public Iterable<IPath<S,L,O>> resolve(O ref) {
         return tryResolve(ref).orElseGet(() -> Iterables2.empty());
     }
@@ -156,7 +164,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private Optional<Iterable<EsopEnv<S,L,O>>> importScopes(PSet<O> seenImports, L l, S scope,
             Function1<S,EsopEnv<S,L,O>> getter) {
         List<EsopEnv<S,L,O>> envs = Lists.newArrayList();
-        for (PartialFunction0<O> getRef : scopeGraph.getImports(scope).get(l)) {
+        for (PartialFunction0<O> getRef : scopeGraph.getImportRefs(scope).get(l)) {
             Optional<O> maybeRef = getRef.apply();
             if (!maybeRef.isPresent()) {
                 return Optional.empty();

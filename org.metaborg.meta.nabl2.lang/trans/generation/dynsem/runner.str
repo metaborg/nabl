@@ -8,20 +8,21 @@ imports
 
 rules
 
-  runner-files(|lang-name,project-name,generated-pkg,project-dir,java-dir): _ -> [
+  runner-files(|lang-name,project-name,generated-pkg,nabl2-pkg,project-dir,java-dir): _ -> [
     (runner-file, runner-java),
     (launch-file, lauch-xml)
   ]
-  with generated-dir := <pkg-to-dir> generated-pkg;
-       runner-name := $[[lang-name]Runner];
+  with nabl2-dir := <pkg-to-dir> nabl2-pkg;
+       runner-name := $[nabl2_Runner];
        entrypoint-name := $[[lang-name]EntryPoint];
-       runner-rel-file := $[[generated-dir]/[runner-name].java];
+       runner-rel-file := $[[nabl2-dir]/[runner-name].java];
        runner-file := $[[java-dir]/[runner-rel-file]];
        empty-size := "[0]";
        runner-java :=
 $[
-package [generated-pkg];
+package [nabl2-pkg];
 
+import [generated-pkg].[entrypoint-name];
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
@@ -69,7 +70,7 @@ $[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
   </mapAttribute>
   <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
   <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
-  <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="[generated-pkg].[runner-name]"/>
+  <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="[nabl2-pkg].[runner-name]"/>
   <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="${resource_loc}"/>
   <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="[project-name]"/>
   <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>

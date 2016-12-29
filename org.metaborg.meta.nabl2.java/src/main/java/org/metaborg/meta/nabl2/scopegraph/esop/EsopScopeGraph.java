@@ -23,25 +23,25 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final Set<S> scopes;
     private final Multimap<S,O> decls;
     private final Map<S,Multimap<L,PartialFunction0<S>>> directEdges;
-    private final Map<O,Multimap<L,S>> assocs;
-    private final Map<S,Multimap<L,PartialFunction0<O>>> imports;
+    private final Map<S,Multimap<L,PartialFunction0<O>>> importRefs;
     private final Multimap<S,O> refs;
+    private final Map<O,Multimap<L,S>> assocScopes;
 
+    private final Set<PartialFunction0<S>> varScopes;
     private final Map<O,S> declScopesIndex;
     private final Map<O,S> refScopesIndex;
-    private final Map<S,Multimap<L,O>> reverseAssocsIndex;
 
     public EsopScopeGraph() {
         this.scopes = Sets.newHashSet();
         this.decls = HashMultimap.create();
         this.directEdges = Maps.newHashMap();
-        this.assocs = Maps.newHashMap();
-        this.imports = Maps.newHashMap();
+        this.assocScopes = Maps.newHashMap();
+        this.importRefs = Maps.newHashMap();
         this.refs = HashMultimap.create();
 
+        this.varScopes = Sets.newHashSet();
         this.refScopesIndex = Maps.newHashMap();
         this.declScopesIndex = Maps.newHashMap();
-        this.reverseAssocsIndex = Maps.newHashMap();
     }
 
     @Override public Iterable<S> getAllScopes() {
@@ -55,6 +55,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     @Override public Iterable<O> getAllRefs() {
         return refScopesIndex.keySet();
     }
+
 
     @Override public Iterable<O> getDecls(S scope) {
         return decls.containsKey(scope) ? decls.get(scope) : Iterables2.empty();
@@ -77,7 +78,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     }
 
     public void addDirectEdge(S sourceScope, L label, PartialFunction0<S> targetScope) {
+        scopes.add(sourceScope);
         directEdges.computeIfAbsent(sourceScope, s -> HashMultimap.create()).put(label, targetScope);
+        varScopes.add(targetScope);
     }
 
     @Override public Multimap<L,PartialFunction0<S>> getDirectEdges(S scope) {
@@ -85,29 +88,28 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     }
 
     public void addAssoc(O decl, L label, S scope) {
-        assocs.computeIfAbsent(decl, s -> HashMultimap.create()).put(label, scope);
-        reverseAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, decl);
-    }
-
-    @Override public Multimap<L,S> getAssocScopes(O decl) {
-        return Multimaps.unmodifiableMultimap(assocs.computeIfAbsent(decl, s -> HashMultimap.create()));
-    }
-
-    @Override public Multimap<L,O> getAssocDecls(S scope) {
-        return Multimaps.unmodifiableMultimap(reverseAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()));
+        scopes.add(scope);
+        assocScopes.computeIfAbsent(decl, s -> HashMultimap.create()).put(label, scope);
     }
 
     public void addImport(S scope, L label, PartialFunction0<O> ref) {
-        imports.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, ref);
+        scopes.add(scope);
+        importRefs.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, ref);
     }
 
-    @Override public Multimap<L,PartialFunction0<O>> getImports(S scope) {
-        return Multimaps.unmodifiableMultimap(imports.computeIfAbsent(scope, s -> HashMultimap.create()));
+    @Override public Multimap<L,PartialFunction0<O>> getImportRefs(S scope) {
+        return Multimaps.unmodifiableMultimap(importRefs.computeIfAbsent(scope, s -> HashMultimap.create()));
     }
+
 
     @Override public Optional<S> getDeclScope(O decl) {
         return declScopesIndex.containsKey(decl) ? Optional.of(declScopesIndex.get(decl)) : Optional.empty();
     }
+
+    @Override public Multimap<L,S> getAssocScopes(O decl) {
+        return Multimaps.unmodifiableMultimap(assocScopes.computeIfAbsent(decl, s -> HashMultimap.create()));
+    }
+
 
     @Override public Optional<S> getRefScope(O ref) {
         return refScopesIndex.containsKey(ref) ? Optional.of(refScopesIndex.get(ref)) : Optional.empty();

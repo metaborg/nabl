@@ -26,11 +26,25 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     // IApplTerm implementation
 
     @Value.Lazy @Override public String getOp() {
-        return OP;
+        switch (getName()) {
+        case "D":
+        case "P":
+        case "I":
+            return getName();
+        default:
+            return OP;
+        }
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of((ITerm) GenericTerms.newString(getName()));
+        switch (getName()) {
+        case "D":
+        case "P":
+        case "I":
+            return ImmutableList.of();
+        default:
+            return ImmutableList.of((ITerm) GenericTerms.newString(getName()));
+        }
     }
 
     public static IMatcher<Label> matcher() {

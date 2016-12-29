@@ -5,7 +5,7 @@ imports
   nabl2/runtime/interpreter/scopegraph-api
 
 signature
- 
+
   constructors
     Scope : String * String -> Scope
 
@@ -15,21 +15,24 @@ signature
   sorts TermIndex constructors
     TermIndex : String * Int -> TermIndex 
  
-  sorts ScopeGraph ScopeEntry OccurrenceEntry constructors
-    G : Map(Scope, ScopeEntry)            // scopes
-      * Map(Occurrence, OccurrenceEntry)  // decls
-      * Map(Occurrence, OccurrenceEntry)  // refs
+  sorts ScopeGraph ScopeEntry DeclEntry RefEntry constructors
+    G : Map(Scope, ScopeEntry)     // scopes
+      * Map(Occurrence, DeclEntry) // decls
+      * Map(Occurrence, RefEntry)  // refs
       -> ScopeGraph
 
-    S : List(Occurrence)             // decls
-      * List(Occurrence)             // refs
-      * Map(Label, List(Scope))      // direct edges
-      * Map(Label, List(Occurrence)) // import edges
-      -> ScopeEntry
+    SE : List(Occurrence)             // decls
+       * List(Occurrence)             // refs
+       * Map(Label, List(Scope))      // direct edges
+       * Map(Label, List(Occurrence)) // import edges
+       -> ScopeEntry
 
-    O : List(Scope)             // occurrence scope
-      * Map(Label, List(Scope)) // assoc scopes
-      ->  OccurrenceEntry
+    DE : List(Scope)             // decl scope
+       * Map(Label, List(Scope)) // assoc scopes
+       -> DeclEntry
+ 
+    RE : List(Scope)             // ref scope
+       -> RefEntry
  
   sort aliases
     NameResolution = Map(Occurrence, (Occurrence * Path))
@@ -76,23 +79,49 @@ rules // occurrences
 rules // scope graph
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -declsOf-> ds
-    where ss[s] => S(ds,_,_,_).
+    where case ss[s?] of {
+      true =>
+        ss[s] => SE(ds,_,_,_)
+      false =>
+        [] => ds
+    }.
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -edgesOf-> es
-    where ss[s] => S(_,_,es,_).
+    where case ss[s?] of {
+      true =>
+        ss[s] => SE(_,_,es,_)
+      false =>
+        {} => es
+    }.
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -importsOf-> ir
-    where ss[s] => S(_,_,_,ir).
+    where case ss[s?] of {
+      true =>
+        ss[s] => SE(_,_,_,ir)
+      false =>
+        {} => ir
+    }.
 
 
   NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -scopeOfDecl-> s
-    where ds[d] => O([s],_).
-
-  NaBL2 NaBL2(G(_,_,rs),_,_) |- r:Occurrence -scopeOfRef-> s
-    where rs[r] => O([s],_).
+    where case ds[d?] of {
+      true =>
+        ds[d] => DE([s],_)
+    }.
 
   NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -assocsOf-> as
-    where ds[d] => O(_,as).
+    where case ds[d?] of {
+      true =>
+        ds[d] => DE(_,as)
+      false =>
+        {} => as
+    }.
+
+  NaBL2 NaBL2(G(_,_,rs),_,_) |- r:Occurrence -scopeOfRef-> s
+    where case rs[r?] of {
+      true =>
+        rs[r] => RE([s])
+    }.
 
   NaBL2 NaBL2(_,_,dt) |- o:Occurrence -typeOf-> t
     where dt[o] => t.

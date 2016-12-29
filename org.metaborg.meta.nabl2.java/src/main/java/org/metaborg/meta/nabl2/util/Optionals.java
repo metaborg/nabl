@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.util;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.functions.Function2;
 import org.metaborg.meta.nabl2.util.functions.Function3;
 import org.metaborg.meta.nabl2.util.functions.Function4;
@@ -35,7 +34,7 @@ public class Optionals {
                 .apply(o1.get(), o2.get(), o3.get(), o4.get(), o5.get())) : Optional.empty();
     }
 
-    public static <T, R> Optional<R> sequence(Iterable<Optional<T>> os, Function1<Iterable<T>,R> f) {
+    public static <T> Optional<Iterable<T>> sequence(Iterable<Optional<T>> os) {
         List<T> ts = Lists.newArrayList();
         for (Optional<? extends T> o : os) {
             if (!o.isPresent()) {
@@ -43,7 +42,15 @@ public class Optionals {
             }
             ts.add(o.get());
         }
-        return Optional.of(f.apply(ts));
+        return Optional.of(ts);
+    }
+
+    public static <T> Iterable<T> filter(Iterable<Optional<T>> os) {
+        List<T> ts = Lists.newArrayList();
+        for (Optional<? extends T> o : os) {
+            o.ifPresent(ts::add);
+        }
+        return ts;
     }
 
 }

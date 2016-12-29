@@ -29,7 +29,7 @@ rules
 
 rules
 
-  ns-to-type-java(|term-pkg,native-pkg,java-dir):
+  ns-to-type-java(|term-pkg,nabl2-pkg,java-dir):
     NamespaceDef(Namespace(name), Type(type-sort), _) -> result
     with source-name := <sort-to-ds;ds-sort-to-string> OccurrenceSort();
          target-name := <sort-to-ds;ds-sort-to-string> type-sort;
@@ -45,13 +45,13 @@ rules
            }
            return type.get();
          ]|;
-         result := <native-java(|term-pkg, native-pkg, op-name, source-name, target-name, java-dir)> stmts
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name, java-dir)> stmts
 
-  ns-to-prop-javas(|term-pkg,native-pkg,java-dir):
+  ns-to-prop-javas(|term-pkg,nabl2-pkg,java-dir):
     NamespaceDef(Namespace(name), _, prop*) -> result*
-    with result* := <map(ns-to-prop-java(|term-pkg,native-pkg,java-dir,name))> prop*
+    with result* := <map(ns-to-prop-java(|term-pkg,nabl2-pkg,java-dir,name))> prop*
 
-  ns-to-prop-java(|term-pkg,native-pkg,java-dir,ns):
+  ns-to-prop-java(|term-pkg,nabl2-pkg,java-dir,ns):
     PropertyDef(name, prop-sort) -> result
     with source-name := <sort-to-ds;ds-sort-to-string> OccurrenceSort();
          target-name := <sort-to-ds;ds-sort-to-string> prop-sort;
@@ -68,4 +68,4 @@ rules
            }
            return prop.get();
          ]|;
-         result := <native-java(|term-pkg, native-pkg, op-name, source-name, target-name,java-dir)> stmts
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts

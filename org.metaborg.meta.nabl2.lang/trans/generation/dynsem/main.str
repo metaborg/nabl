@@ -53,21 +53,21 @@ rules
 
 rules
 
-  generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,native-pkg,project-dir,java-dir):
+  generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir):
     ast@Module(name,_) -> result*
     with result* := <concat> [
-      <collect-om(cgen-sig-to-params-java(|term-pkg,native-pkg,java-dir))> ast,
-      <collect-om(cgen-sig-to-type-java(|term-pkg,native-pkg,java-dir))> ast,
-    //<collect-om(ns-to-type-java(|term-pkg,native-pkg,java-dir))> ast,
-    //<collect-om(ns-to-prop-javas(|term-pkg,native-pkg,java-dir));concat> ast,
-      <collect-one(init-to-java(|lang-name,project-name,generated-pkg,term-pkg,native-pkg,project-dir,java-dir))<+![]> ast
+      <collect-om(cgen-sig-to-params-java(|term-pkg,nabl2-pkg,java-dir))> ast,
+      <collect-om(cgen-sig-to-type-java(|term-pkg,nabl2-pkg,java-dir))> ast,
+    //<collect-om(ns-to-type-java(|term-pkg,nabl2-pkg,java-dir))> ast,
+    //<collect-om(ns-to-prop-javas(|term-pkg,nabl2-pkg,java-dir));concat> ast,
+      <collect-one(init-to-java(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir))<+![]> ast
     ]
 
-  init-to-java(|lang-name,project-name,generated-pkg,term-pkg,native-pkg,project-dir,java-dir):
+  init-to-java(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir):
     CGenInitRule(_, _, _) -> result*
     with result* := <concat> [
-      <runner-files(|lang-name,project-name,generated-pkg,project-dir,java-dir)>,
-      <termindex-javas(|term-pkg,native-pkg,java-dir)>,
-      <init-javas(|term-pkg,native-pkg,java-dir)>
+      <runner-files(|lang-name,project-name,generated-pkg,nabl2-pkg,project-dir,java-dir)>,
+      <termindex-javas(|term-pkg,nabl2-pkg,java-dir)>,
+      <init-javas(|term-pkg,nabl2-pkg,java-dir)>
     ]
  

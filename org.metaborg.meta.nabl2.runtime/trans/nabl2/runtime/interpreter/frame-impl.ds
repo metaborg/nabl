@@ -93,10 +93,11 @@ rules // Utility function
 
   initDefaultSlots(_, []) --> {}.
   
-  initDefaultSlots(s, [ns|namespaces]) --> { slots , initDefaultSlots(s, namespaces) }
+  initDefaultSlots(s, [ns|namespaces]) --> slots + tail
   where
     (s, ns) -declsOf-> ds;
-    DefaultSlots(ds) --> slots.
+    DefaultSlots(ds) --> slots;
+    initDefaultSlots(s, namespaces) --> tail.
 
   DefaultSlots([]) --> {}.
 
@@ -133,9 +134,10 @@ rules // initEager takes a scope and recursively traverses its edges to construc
   initEagerEdges(_, [], _) --> {}.
   
   initEagerEdges(m, [l|ls], ns) -->
-    { l |--> link, initEagerEdges(m, ls, ns) }
+    { l |--> link, tail }
   where
-    initEagerEdge(m[l], ns) --> link.
+    initEagerEdge(m[l], ns) --> link;
+    initEagerEdges(m, ls, ns) --> tail.
 
   initEagerEdge([], _) --> {}.
   

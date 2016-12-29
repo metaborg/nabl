@@ -53,8 +53,11 @@ public class StrategoTerms {
     public IStrategoTerm toStratego(ITerm term) {
         IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm> cases(
                 // @formatter:off
-                appl -> termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()),
-                        toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0])),
+                appl -> {
+                    IStrategoTerm[] args = toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0]);
+                    return appl.getOp().equals(Terms.TUPLE_OP) ? termFactory.makeTuple(args) :
+                                termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), args);
+                },
                 list -> termFactory.makeList(toStrategos(list)), string -> termFactory.makeString(string.getValue()),
                 integer -> termFactory.makeInt(integer.getValue()), var -> termFactory.makeAppl(varCtor,
                         termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
