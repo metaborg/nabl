@@ -18,6 +18,7 @@ rules
   normalize =
     normalize-axioms;
     normalize-types;
+    normalize-constructors;
     normalize-term-matches;
     normalize-type-matches;
     normalize-list-matches;
@@ -66,6 +67,13 @@ rules
   normalize-type-variance: Invar() -> Invar()
   normalize-type-variance: Covar() -> Covar(DefaultRelation())
   normalize-type-variance: Contravar() -> Contravar(DefaultRelation())
+
+rules
+
+  normalize-constructors = try(sometd(normalize-opdecl))
+
+  normalize-opdecl:
+    NullaryOpDecl(op,sort) -> OpDecl(op, [], sort)
 
 rules
 

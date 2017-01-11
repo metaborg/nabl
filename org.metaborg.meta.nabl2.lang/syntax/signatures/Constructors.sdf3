@@ -16,10 +16,5 @@ context-free syntax
       <{OpDecl "\n"}*>
   > {longest-match}
 
-syntax
-
-  OpDecl-CF.OpDecl   = OpId-LEX "(" LAYOUT?-CF SortRefs-CF LAYOUT?-CF ")"  LAYOUT?-CF ":" LAYOUT?-CF Sort-CF
-
-context-free syntax
-
-  SortRefs = {SortRef ","}*
+  OpDecl.OpDecl        = [[OpId] : [{SortRef "*"}*] -> [Sort]]
+  OpDecl.NullaryOpDecl = [[OpId] : [Sort]]
