@@ -2,6 +2,7 @@ module analysis/normalize
 
 imports
 
+  signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
 
   signatures/common/-
@@ -16,7 +17,8 @@ rules
 
   normalize =
     normalize-axioms;
-    normalize-type-sigs;
+    normalize-types;
+    normalize-constructors;
     normalize-term-matches;
     normalize-type-matches;
     normalize-list-matches;
@@ -32,15 +34,46 @@ rules
 
   // capture the matched term
   normalize-axiom:
+    CGenInitRuleNoConstraint(params,type)
+      -> CGenInitRule(params,type, [])
+
+  normalize-axiom:
     CGenMatchRuleNoConstraint(name,pattern,params,type)
       -> CGenMatchRule(name,pattern,params,type, [])
 
 rules
 
-  normalize-type-sigs = try(sometd(normalize-type-sig))
-  
+  normalize-types = try(sometd(normalize-types-signature))
+
+  normalize-types-signature: Signature(sig*) -> Signature(sig'*)
+    with sig'* := <map(normalize-types-section <+ MkSingleton);concat> sig*
+
+  normalize-types-section:
+    Types(typesig*) -> [ctors,rels]
+    with opdecl* := <map(normalize-type-sig)> typesig*;
+         ctors := Constructors(opdecl*);
+         vardecl* := <filter(where(?TypeSig(_,<not(all(?(Invar(),_)))>)))> typesig*;
+         relop* := <map(normalize-rel-type)> vardecl*;
+         relopt* := [Reflexive(), AntiSymmetric(), Transitive()];
+         listrelop := ListVariant(Covar(DefaultRelation()));
+         rels := Relations([RelationDef(relopt*,DefaultRelation(),TypeSort(),[listrelop|relop*])])
+
   normalize-type-sig:
-    OpNoArgs(x) -> Op(x,[])
+    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, TypeSort())
+
+  normalize-rel-type:
+    TypeSig(op,a*) -> OpVariant(op, <map(Fst;normalize-type-variance)> a*)
+
+  normalize-type-variance: Invar() -> Invar()
+  normalize-type-variance: Covar() -> Covar(DefaultRelation())
+  normalize-type-variance: Contravar() -> Contravar(DefaultRelation())
+
+rules
+
+  normalize-constructors = try(sometd(normalize-opdecl))
+
+  normalize-opdecl:
+    NullaryOpDecl(op,sort) -> OpDecl(op, [], sort)
 
 rules
 
@@ -117,15 +150,17 @@ rules
 
 rules
 
-  normalize-constraints = topdown(try(normalize-constraint))
+  normalize-constraints =
+    topdown(try(normalize-constraint));
+    topdown(try(CGenInitRule(id,id,flatten-list) + CGenMatchRule(id,id,id,id,flatten-list)))
 
   normalize-constraint:
-    CTypeOf(o,ty,prio,msginfo) ->
-      CPropertyOf(o,Type(),ty,prio,msginfo)
+    CDeclType(o,ty,prio,msginfo) ->
+      CDeclProperty(o,Type(),ty,prio,msginfo)
 
   normalize-constraint:
-    CSetEq(s1,s2,msginfo) ->
-      CConj(CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo))
+    CSetEq(s1,proj,s2,msginfo) ->
+      [CSubsetEq(s1,proj,s2,msginfo),CSubsetEq(s2,proj,s1,msginfo)]
 
 rules
 

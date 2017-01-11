@@ -1,0 +1,69 @@
+module generation/dynsem/ds-lib
+
+imports
+
+  libspoofax/core/language
+  signatures/nabl2/shared/common/-
+  generation/defaults
+
+signature
+  constructors
+    JavaGenDirAbs   : DSOpt
+    MavenArtifactId : DSOpt
+    GenProject      : DSOpt
+    LangName        : DSOpt
+    TopPkg          : DSOpt
+    TermPkg         : DSOpt
+    NativePkg       : DSOpt
+
+    Module            : String * List(DSSection) -> DSModule
+    Imports           : List(DSImport) -> DSSection
+    Import            : String -> DSImport
+    ArrowDecl         : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
+    NoArrowROs        : DSArrowROs
+    NoArrowRWs        : DSArrowRWs
+    SimpleSort        : String -> DSSort
+    TupleSort         : List(Sort) -> DSSort
+    ListSort          : Sort -> DSSort
+    NativeOpDecl      : String * List(DSSort) * DSSort -> DSNativeOpDecl
+    Axiom             : DSRelation -> DSRule
+    Relation          : DSReads * DSSource * DSName * DSTarget -> DSRelation
+    NoReads           : DSReads
+    Source            : DSTerm -> DSSource
+    Target            : DSTerm -> DSTarget
+    NamedDynamic      : String -> DSName
+    Signatures        : List(DSSignature) -> DSSection
+    NativeOperators   : List(DSNativeOpDecl) -> DSSignature
+    ArrowDeclarations : List(DSArrowDecl) -> DSSignature
+    Constructors      : List(DSConsDecl) -> DSSignature
+    NullaryConsDecl   : String * DSSort * DSAnnos -> DSConsDecl
+    ConsDecl          : String * List(DSSort) * DSSort * DSAnnos -> DSConsDecl
+    NoAnnos           : DSAnnos
+    Rules             : List(DSRule) -> DSSection
+    Cast              : DSVar * DSSort -> DSTerm
+    Con               : String * List(DSTerm) -> DSTerm
+    VarRef            : String -> DSTerm
+
+rules
+
+  is-ds-active        = <is-language-active> "ds"
+  call-ds(|s)         = call-in-language(|"ds",s)
+  ds-get-options      = call-ds(|"ds-to-interp-get-options")
+  ds-pp-module        = call-ds(|"pp-dynsem-string")
+  ds-sort-to-string   = call-ds(|"ds-to-interp-terms-types-name")
+
+rules
+  
+  sort-to-ds: SortNoArgs(name) -> SimpleSort(name)
+  sort-to-ds: ListSort(arg) -> ListSort(<sort-to-ds> arg)
+  sort-to-ds: MapSort(key,value) -> MapSort(<sort-to-ds> key, <sort-to-ds> value)
+  sort-to-ds: TupleSort(arg*) -> TupleSort(<map(sort-to-ds)> arg*)
+  sort-to-ds: Var(_) -> <fatal-err(|"Sort not supported in DynSem")>
+
+  sort-to-ds: TermSort() -> SimpleSort("AST")
+  sort-to-ds: ScopeSort() -> SimpleSort("Scope")
+  sort-to-ds: OccurrenceSort() -> SimpleSort("Occurrence")
+  sort-to-ds: TypeSort() -> SimpleSort("Type")
+
+  sort-to-ds: LabelSort() -> SimpleSort("Label")
+  sort-to-ds: StepSort() -> SimpleSort("Step")

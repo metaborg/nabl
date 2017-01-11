@@ -1,0 +1,23 @@
+module nabl2/shared/constraints/Relations
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Relations
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+//TypeVar.TVar = <'<TVarId>> // FIXME Use NaBL2_ prefix
+//CTerm        = TypeVar
+
+  Constraint.CBuildRel = <<CTerm> <RelationBuildOp> <CTerm> <Message>>
+
+  Constraint.CCheckRel = <<CTerm> <RelationCheckOp> <CTerm> <Message>>
+
+  FunctionRef = RelationFunction

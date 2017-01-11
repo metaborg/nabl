@@ -10,22 +10,21 @@ template options
 
 context-free syntax
 
-  Sort.SortNoArgs        = SortId
+  Sort.SortNoArgs     = SortId
+  Sort.TypeSort       = "type" {deprecated("Deprecated: Use sort 'Type' instead.")}
 
-  SortRef.Var            = SortVarId
-  SortRef.SortNoArgs     = SortId
+  SortRef                = Sort
+  SortRef.TermSort       = "term"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
-  SortRef.TypeSort       = "type"
-  SortRef.TypeSort       = "*"                                 {deprecated("'*' is deprecated, use 'type' instead")}
+  SortRef.Var            = SortVarId
   SortRef.TupleSort      = <(<{SortRef "*"}*>)>
   SortRef.ListSort       = <List(<SortRef>)>
- 
- 
+  SortRef.MapSort        = <Map(<SortRef>, <SortRef>)>
  
 lexical syntax
 
   SortVarId = VarId
 
-  SortId    = "List" | "Occurrence" | "Scope" | "Type" {reject}
-  SortVarId = "scope" | "occurrence" | "type" {reject}
+  SortId    = "List" | "Occurrence" | "Scope" {reject}
+  SortVarId = "scope" | "occurrence" | "type" | "term" {reject}

@@ -1,0 +1,18 @@
+module generation/cgen/injections
+
+imports
+
+  nabl2shared
+  
+  signatures/common/-
+  generation/cgen/-
+  util/-
+ 
+rules
+
+  injection-to-term(e) = term-to-term(e)
+  injection-to-term(e):
+    IndexFromTerm(t) -> Term |[ <nabl2--get-ast-index> ~t ]|
+ 
+
+  injection-to-pattern(e) = pattern-to-pattern(e)

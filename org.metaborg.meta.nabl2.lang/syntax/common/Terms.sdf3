@@ -17,14 +17,15 @@ context-free syntax
   VarOrWld  = Wld
 
   Pattern          = VarOrWld
-  Pattern.Op       = <<OpId>(<{Pattern ","}*>)>
   Pattern.List     = <[<{Pattern ","}*>]>
   Pattern.ListTail = <[<{Pattern ","}*>|<Pattern>]>
   Pattern.Tuple    = <(<{Pattern ","}*>)>
   Pattern.As       = <<VarOrWld>@<Pattern>>
+  Pattern          = OpTerm
   Pattern          = IntTerm
   Pattern          = StringTerm
 
+  Patterns         = {Pattern ","}*
 
 context-free syntax
 
@@ -32,6 +33,8 @@ context-free syntax
 
 syntax
  
+  OpTerm-CF.Op      = OpId-LEX "(" LAYOUT?-CF Patterns-CF LAYOUT?-CF  ")"
+
   StringTerm-CF.Str = "\"" StringContent-LEX "\""
  
 lexical syntax

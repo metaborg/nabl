@@ -1,9 +1,0 @@
-module nabl2runtime
-
-imports
-
-  nabl2/runtime/interpreter/scopegraph-api
-  nabl2/runtime/interpreter/scopegraph-impl
-
-  nabl2/runtime/interpreter/frame-api
-  nabl2/runtime/interpreter/frame-impl

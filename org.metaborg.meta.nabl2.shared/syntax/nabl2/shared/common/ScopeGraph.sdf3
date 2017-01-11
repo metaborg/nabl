@@ -2,15 +2,16 @@ module nabl2/shared/common/ScopeGraph
 
 imports
 
-  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/AST
   nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
 
+sorts
+
+  Scope
+
 context-free syntax
 
-
-  Scope                          = ABSTRACT
   Scope                          = CVar
   CTerm                          = Scope
 

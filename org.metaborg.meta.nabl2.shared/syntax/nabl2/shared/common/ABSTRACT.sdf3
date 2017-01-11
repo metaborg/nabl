@@ -1,5 +1,0 @@
-module nabl2/shared/common/ABSTRACT
-
-lexical syntax
-
-  ABSTRACT = []

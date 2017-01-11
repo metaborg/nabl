@@ -1,0 +1,68 @@
+module generation/dynsem/rules
+
+imports
+
+  signatures/rules/-
+  signatures/signatures/-
+  generation/defaults
+  generation/dynsem/-
+
+rules
+
+  cgen-sig-to-params-ds:
+    CGenSig(Name(name), sort, param*, _) ->
+      <cgen-op-ds(|name)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
+
+  cgen-sig-to-type-ds:
+    CGenSig(Name(name), sort, _, Type(type-sort)) -> result
+    with result := <cgen-op-ds(|name)> (<sort-to-ds> sort, "typeOf", <sort-to-ds> type-sort)
+
+  cgen-op-ds(|rule-name): (src-sort, base-name, target-sort) -> (op, arrow, rule)
+    with op-name := <cgen-op-name(|rule-name, src-sort)> base-name;
+         op := NativeOpDecl(op-name, [src-sort], target-sort);
+         arrow-name := <cgen-arrow-name(|rule-name)> base-name;
+         arrow := ArrowDecl(NoArrowROs(),src-sort,NoArrowRWs(),arrow-name,target-sort,NoArrowRWs());
+         rule := Axiom(Relation(NoReads(),Source(Cast(VarRef("t"),src-sort)),NamedDynamic(arrow-name),Target(Con(op-name, [VarRef("t")]))))
+
+  cgen-op-name(|rule-name,sort): base-name -> op-name
+    with sort-name := <ds-sort-to-string> sort;
+         if default-rule-name => rule-name then
+           op-name := $[nabl2_[base-name][sort-name]]
+         else
+           op-name := $[nabl2_[rule-name]_[base-name][sort-name]]
+         end
+
+  cgen-arrow-name(|rule-name): base-name -> arrow-name
+    with if default-rule-name => rule-name then
+           arrow-name := $[[base-name]]
+         else
+           arrow-name := $[[rule-name]_[base-name]]
+         end
+
+rules
+         
+  cgen-sig-to-params-java(|term-pkg,nabl2-pkg,java-dir):
+    CGenSig(Name(name), sort, param*, _) -> result
+    with src-sort := <sort-to-ds> sort;
+         src-name := <ds-sort-to-string> src-sort;
+         target-name := <param-sorts-to-ds;ds-sort-to-string> param*;
+         op-name := <cgen-op-name(|name,src-sort)> "paramsOf";
+         stmts := bstm* |[
+           return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), "Params"));
+         ]|;
+         result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
+
+  cgen-sig-to-type-java(|term-pkg,nabl2-pkg,java-dir):
+    CGenSig(Name(name), sort, _, Type(tsort)) -> result
+    with type-sort := <sort-to-ds> tsort;
+         src-sort := <sort-to-ds> sort;
+         src-name := <ds-sort-to-string> src-sort;
+         target-name := <ds-sort-to-string> type-sort;
+         op-name := <cgen-op-name(|name,src-sort)> "typeOf";
+         stmts := bstm* |[
+           return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), "Type"));
+         ]|;
+         result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
+
+  param-sorts-to-ds: [sort] -> <sort-to-ds> sort
+  param-sorts-to-ds: sort* -> <sort-to-ds> TupleSort(sort*)

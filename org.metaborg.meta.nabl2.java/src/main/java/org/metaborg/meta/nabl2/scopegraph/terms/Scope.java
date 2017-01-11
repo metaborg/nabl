@@ -1,0 +1,52 @@
+package org.metaborg.meta.nabl2.scopegraph.terms;
+
+import java.util.List;
+
+import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.terms.IApplTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
+import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
+import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+
+import com.google.common.collect.ImmutableList;
+
+@Value.Immutable
+public abstract class Scope extends AbstractApplTerm implements IScope, IApplTerm {
+
+    private static final String OP = "Scope";
+
+    // IScope implementation
+
+    @Value.Parameter @Override public abstract String getResource();
+
+    @Value.Parameter @Override public abstract String getName();
+
+    // IApplTerm implementation
+
+    @Override public String getOp() {
+        return OP;
+    }
+
+    @Value.Lazy @Override public List<ITerm> getArgs() {
+        return ImmutableList.of(GenericTerms.newString(getResource()), GenericTerms.newString(getName()));
+    }
+
+    public static IMatcher<Scope> matcher() {
+        return M.appl2("Scope", M.stringValue(), M.stringValue(), (t, resource, name) -> ImmutableScope.of(resource,
+                name).setAttachments(t.getAttachments()));
+    }
+
+    // Object implementation
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
+
+    @Override public String toString() {
+        return super.toString();
+    }
+
+}

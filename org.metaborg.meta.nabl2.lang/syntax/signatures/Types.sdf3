@@ -14,14 +14,19 @@ context-free syntax
   Signature.Types = <
     types
       <{TypeSig "\n"}*>
-  > {longest-match}
+  > {longest-match, deprecated("Use separate 'constructors' and 'relations' sections instead.")}
 
-  TypeSig.TypeSig   = <<OpId>(<{TypeArg ","}*>)>
+syntax
+
+  TypeSig-CF.TypeSig = OpId-CF "(" LAYOUT?-CF TypeArgs-CF LAYOUT?-CF ")"
 
 context-free syntax
 
+  TypeArgs                = {TypeArg ","}*
+
   TypeArg                 = <<TypeMod> <SortRef>>
 
-  TypeMod.None            =
-  TypeMod.OpNoArgs        = TModId
+  TypeMod.Invar           =
+  TypeMod.Covar           = "covar"
+  TypeMod.Contravar       = "contravar"
 

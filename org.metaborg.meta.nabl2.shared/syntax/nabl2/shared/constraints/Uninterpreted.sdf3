@@ -4,8 +4,12 @@ imports
 
   nabl2/shared/common/CTerms
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
-  PrimitiveConstraint.CGoal = [?- [CTerm]]
-  PrimitiveConstraint.CFact = [!- [CTerm]]
+  Constraint.CGoal = [?- [CTerm]]
+  Constraint.CFact = [!- [CTerm]]
 

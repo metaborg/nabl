@@ -11,20 +11,15 @@ signature
  
   constructors
     AnalyzeInitial : String/* source */ -> AnalysisAction
-    AnalyzeUnit    : String/* source */ * Term/* ast */ * Term/* initial solution */ -> AnalysisAction
-    AnalyzeFinal   : String/* source */ * Term/* initial solution */ * List(Term/* unit solution */) -> AnalysisAction
+    AnalyzeUnit    : String/* source */ * Term/* ast */ * Term/* parameters */ -> AnalysisAction
+    AnalyzeFinal   : String/* source */ -> AnalysisAction
 
   constructors
-    InitialResult : Term/* initial solution */ -> InitialResult
-    UnitResult    : Term/* processed ast */ * Term/* unit solution */ -> UnitResult
-    FinalResult   : List(EditorMessage) * List(EditorMessage) * List(EditorMessage) * Term /* final solution */ -> FinalResult
+    CustomInitial : String/* source */ -> AnalysisAction
+    CustomUnit    : String/* source */ * Term/* ast */ * Term/* initial */ -> AnalysisAction
+    CustomFinal   : String/* source */ * Term/* custom initial */ * Term/* custom final */  -> AnalysisAction
 
-rules
-
-  nabl2--get-resource-analysis = prim("SG_get_resource_analysis")
-  nabl2--get-resource-partial-analysis = prim("SG_get_resource_partial_analysis")
-
-  nabl2--null-analysis: AnalyzeInitial(_) -> InitialResult(None())
-  nabl2--null-analysis: AnalyzeUnit(_,ast,_) -> UnitResult(ast,None())
-  nabl2--null-analysis: AnalyzeFinal(source,_,_) -> FinalResult([],[],[],None())
-  nabl2--null-analysis = fatal-err(|"Unknown analysis action.")
+  constructors
+    InitialResult : List(Constraint) * Term/* cgen args */ * Term/* config */ -> InitialResult
+    UnitResult    : Term/* processed ast */ * List(Constraint) -> UnitResult
+    FinalResult   : FinalResult

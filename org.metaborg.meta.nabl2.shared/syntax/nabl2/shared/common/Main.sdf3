@@ -2,7 +2,6 @@ module nabl2/shared/common/Main
 
 imports
 
-  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/AST
   nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers

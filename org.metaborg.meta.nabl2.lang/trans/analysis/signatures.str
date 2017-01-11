@@ -17,7 +17,7 @@ rules
 			sigs := <filter(?Signature(<id>)); concat> ds;
 			rs := <filter(?Rules(<id>)); concat> ds;
 			// Extract signature information
-			type_sigs := <filter(?Types(<id>)); concat> sigs;
+			type_sigs := <filter(?Constructors(<id>)); concat> sigs;
 			rule_sigs := <filter(?CGen(<id>)); concat> sigs;
 			// Iterate over all rules, extract sub-term annotation signatures
 			subterm_sigs := 

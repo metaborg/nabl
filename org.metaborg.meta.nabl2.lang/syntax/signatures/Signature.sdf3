@@ -3,7 +3,10 @@ module signatures/Signature
 imports
 
   signatures/CGen
+  signatures/Constructors
+  signatures/Functions
   signatures/NameResolution
+  signatures/Relations
   signatures/Types
 
 template options
@@ -15,7 +18,6 @@ context-free syntax
   ModuleSection.Signature = <
     signature <Signature*>
   >
-
 
 lexical syntax
 

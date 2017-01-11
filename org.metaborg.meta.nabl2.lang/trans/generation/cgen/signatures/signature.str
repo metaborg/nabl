@@ -1,0 +1,12 @@
+module generation/cgen/signatures/signature
+
+imports
+
+  signatures/signatures/-
+  generation/cgen/signatures/-
+
+rules
+
+  section-to-str:
+    Signature(s*) -> <mapconcat(signature-to-str;(is-list<+MkSingleton))> s*
+
