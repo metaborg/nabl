@@ -58,7 +58,8 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved (in)equality constraint.", Iterables2.empty());
+            return c.getMessageInfo().makeException("Unsolved (in)equality constraint: " + c.find(unifier), Iterables2
+                    .empty(), unifier);
         }).collect(Collectors.toList());
     }
 
@@ -75,7 +76,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
             unifier.unify(left, right);
         } catch (UnificationException ex) {
             throw constraint.getMessageInfo().makeException("Cannot unify " + left + " with " + right, Iterables2
-                    .empty());
+                    .empty(), unifier);
         }
         return true;
     }
@@ -84,7 +85,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         ITerm left = unifier.find(constraint.getLeft());
         ITerm right = unifier.find(constraint.getRight());
         if (left.equals(right)) {
-            throw constraint.getMessageInfo().makeException("Terms are not inequal.", Iterables2.empty());
+            throw constraint.getMessageInfo().makeException("Terms are not inequal.", Iterables2.empty(), unifier);
         }
         return !unifier.canUnify(left, right);
     }

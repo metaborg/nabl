@@ -49,6 +49,12 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         );
     }
 
+    // Object implementation
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
+
     @Override public String toString() {
         return super.toString();
     }

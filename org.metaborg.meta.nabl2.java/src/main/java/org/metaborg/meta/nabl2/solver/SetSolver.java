@@ -13,25 +13,27 @@ import org.metaborg.meta.nabl2.constraints.sets.CDistinct;
 import org.metaborg.meta.nabl2.constraints.sets.CSubsetEq;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.sets.SetEvaluator;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.meta.nabl2.util.Multibag;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public class SetSolver implements ISolverComponent<ISetConstraint> {
 
-    private final IMatcher<Multibag<ITerm,ITerm>> evaluator;
+    private final IMatcher<Set<IElement<ITerm>>> evaluator;
     private final Unifier unifier;
 
     private final Set<ISetConstraint> defered;
 
-    public SetSolver(IMatcher<Multibag<ITerm,ITerm>> elems, Unifier unifier) {
+    public SetSolver(IMatcher<Set<IElement<ITerm>>> elems, Unifier unifier) {
         this.evaluator = SetEvaluator.matcher(elems);
         this.unifier = unifier;
         this.defered = Sets.newHashSet();
@@ -66,7 +68,8 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unexpected set constraint.", Iterables2.empty());
+            return c.getMessageInfo().makeException("Unsolved set constraint: " + c.find(unifier), Iterables2.empty(),
+                    unifier);
         }).collect(Collectors.toList());
     }
 
@@ -82,19 +85,22 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
         if (!left.isGround() && right.isGround()) {
             return false;
         }
-        Optional<Multibag<ITerm,ITerm>> maybeLeftSet = evaluator.match(left);
-        Optional<Multibag<ITerm,ITerm>> maybeRightSet = evaluator.match(right);
+        Optional<Set<IElement<ITerm>>> maybeLeftSet = evaluator.match(left);
+        Optional<Set<IElement<ITerm>>> maybeRightSet = evaluator.match(right);
         if (!(maybeLeftSet.isPresent() && maybeRightSet.isPresent())) {
             return false;
         }
-        Multibag<ITerm,ITerm> leftSet = maybeLeftSet.get();
-        Multibag<ITerm,ITerm> rightSet = maybeRightSet.get();
-        Multibag<ITerm,ITerm> result = Multibag.create();
-        result.putAll(leftSet);
-        result.keySet().removeAll(rightSet.keySet());
+        Multimap<Object,IElement<ITerm>> leftProj = SetEvaluator.project(maybeLeftSet.get(), constraint
+                .getProjection());
+        Multimap<Object,IElement<ITerm>> rightProj = SetEvaluator.project(maybeRightSet.get(), constraint
+                .getProjection());
+        Multimap<Object,IElement<ITerm>> result = HashMultimap.create();
+        result.putAll(leftProj);
+        result.keySet().removeAll(rightProj.keySet());
         if (!result.isEmpty()) {
-            throw constraint.getMessageInfo().makeException(left + " not a subset of, or equal to " + right, result
-                    .values());
+            List<ITerm> positions = result.values().stream().map(e -> e.getPosition()).collect(Collectors.toList());
+            throw constraint.getMessageInfo().makeException(left + " not a subset of, or equal to " + right, positions,
+                    unifier);
         }
         return true;
     }
@@ -104,20 +110,22 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
         if (!setTerm.isGround()) {
             return false;
         }
-        Optional<Multibag<ITerm,ITerm>> maybeSet = evaluator.match(setTerm);
+        Optional<Set<IElement<ITerm>>> maybeSet = evaluator.match(setTerm);
         if (!(maybeSet.isPresent())) {
             return false;
         }
-        Multibag<ITerm,ITerm> set = maybeSet.get();
+        Multimap<Object,IElement<ITerm>> proj = SetEvaluator.project(maybeSet.get(), constraint.getProjection());
         List<ITerm> duplicates = Lists.newArrayList();
-        for (ITerm key : set.keySet()) {
-            Collection<ITerm> values = set.get(key);
+        for (Object key : proj.keySet()) {
+            Collection<IElement<ITerm>> values = proj.get(key);
             if (values.size() > 1) {
-                duplicates.addAll(values);
+                List<ITerm> positions = values.stream().map(e -> e.getPosition()).collect(Collectors.toList());
+                duplicates.addAll(positions);
             }
         }
         if (!duplicates.isEmpty()) {
-            throw constraint.getMessageInfo().makeException(setTerm + " elements are not distinct", duplicates);
+            throw constraint.getMessageInfo().makeException(setTerm + " elements are not distinct", duplicates,
+                    unifier);
         }
         return true;
     }

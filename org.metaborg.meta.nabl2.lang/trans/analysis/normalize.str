@@ -54,14 +54,14 @@ rules
          vardecl* := <filter(where(?TypeSig(_,<not(all(?(Invar(),_)))>)))> typesig*;
          relop* := <map(normalize-rel-type)> vardecl*;
          relopt* := [Reflexive(), AntiSymmetric(), Transitive()];
-         listrelop := List(Covar(DefaultRelation()));
+         listrelop := ListVariant(Covar(DefaultRelation()));
          rels := Relations([RelationDef(relopt*,DefaultRelation(),TypeSort(),[listrelop|relop*])])
 
   normalize-type-sig:
-    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, <type-sort>)
+    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, TypeSort())
 
   normalize-rel-type:
-    TypeSig(op,a*) -> Op(op, <map(Fst;normalize-type-variance)> a*)
+    TypeSig(op,a*) -> OpVariant(op, <map(Fst;normalize-type-variance)> a*)
 
   normalize-type-variance: Invar() -> Invar()
   normalize-type-variance: Covar() -> Covar(DefaultRelation())
@@ -151,8 +151,8 @@ rules
       CDeclProperty(o,Type(),ty,prio,msginfo)
 
   normalize-constraint:
-    CSetEq(s1,s2,msginfo) ->
-      [CSubsetEq(s1,s2,msginfo),CSubsetEq(s2,s1,msginfo)]
+    CSetEq(s1,proj,s2,msginfo) ->
+      [CSubsetEq(s1,proj,s2,msginfo),CSubsetEq(s2,proj,s1,msginfo)]
 
 rules
 

@@ -9,8 +9,8 @@ imports
  
   analysis/main
   completion
-  generation/main
-  dynsem/main
+  generation/cgen/main
+  generation/dynsem/main
   signature-extraction/main
   coq/main
   pp

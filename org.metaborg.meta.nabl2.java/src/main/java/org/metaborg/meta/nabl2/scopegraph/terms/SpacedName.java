@@ -13,7 +13,7 @@ public abstract class SpacedName {
 
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
-        getNamespace().getName().ifPresent(ns -> sb.append(ns));
+        sb.append(getNamespace().getName());
         sb.append('{');
         sb.append(getName());
         sb.append('}');

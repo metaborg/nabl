@@ -2,7 +2,13 @@ module generation/defaults
 
 imports
 
+  signatures/nabl2/shared/common/-
   signatures/common/-
+
+signature
+  constructors
+    LabelSort : Sort
+    StepSort : Sort
 
 rules
 
@@ -14,8 +20,6 @@ rules
   args-var       = !Var("nabl2_args")
   constraint-var = !Var("nabl2_constraint")
   metadata-var   = !Var("nabl2_metadata")
-
-  type-sort      = !SortNoArgs("Type")
 
   default-rule-name = !"default"
  

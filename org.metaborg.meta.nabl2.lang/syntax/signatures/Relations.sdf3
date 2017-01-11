@@ -26,8 +26,11 @@ context-free syntax
   RelationOption = Transitivity
 
   RelationType.TypeSort =
-  RelationType          = <: <SortRef>>
+  RelationType          = <: <SortRef> * <SortRef>>
 
   VariancePatterns      = <{<{VariancePattern ","}*>}>
   VariancePatterns      = {ast("[]")}
  
+ lexical syntax
+ 
+  Keyword = "relations"

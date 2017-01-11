@@ -12,7 +12,7 @@ import com.google.common.collect.Iterables;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class ApplTerm implements IApplTerm {
+abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
 
     @Value.Parameter @Override public abstract String getOp();
 
@@ -26,20 +26,16 @@ abstract class ApplTerm implements IApplTerm {
         return Iterables.size(getArgs());
     }
 
-    @Value.Lazy @Override public boolean isGround() {
-        boolean ground = true;
-        for (ITerm arg : getArgs()) {
-            ground &= arg.isGround();
-        }
-        return ground;
-    }
-
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseAppl(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
         return cases.caseAppl(this);
+    }
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
     }
 
     @Override public String toString() {

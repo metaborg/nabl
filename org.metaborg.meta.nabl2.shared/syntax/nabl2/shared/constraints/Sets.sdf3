@@ -10,10 +10,10 @@ template options
 
   keyword -/- [a-zA-Z0-9\'\_]
 
-context-free syntax
+syntax
 
-  Constraint.CSubsetEq = <<CSet> subseteq <CSet> <Message>>
-  Constraint.CDistinct = <distinct <CSet> <Message>>
+  Constraint-CF.CSubsetEq = CSet-CF LAYOUT?-CF "subseteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
+  Constraint-CF.CDistinct = "distinct" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
 
 lexical syntax
 

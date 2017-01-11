@@ -6,6 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.MessageInfo;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -18,6 +19,11 @@ public abstract class CGDirectEdge implements INamebindingConstraint {
     @Value.Parameter public abstract ITerm getTargetScope();
 
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
+
+    @Override public IConstraint find(IUnifier unifier) {
+        return ImmutableCGDirectEdge.of(unifier.find(getSourceScope()), getLabel(), unifier.find(getTargetScope()),
+                getMessageInfo());
+    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseDirectEdge(this);

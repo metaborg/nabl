@@ -7,6 +7,8 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.pcollections.HashTreePSet;
+import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
@@ -22,8 +24,8 @@ public abstract class TermVar implements ITermVar {
         return false;
     }
 
-    @Override public int getLength() {
-        throw new IllegalStateException();
+    @Value.Lazy @Override public PSet<ITermVar> getVars() {
+        return HashTreePSet.singleton(this);
     }
 
     @Override public Iterator<ITerm> iterator() {

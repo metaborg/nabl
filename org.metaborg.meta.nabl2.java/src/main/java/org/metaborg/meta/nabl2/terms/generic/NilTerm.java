@@ -6,6 +6,9 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.INilTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.pcollections.HashTreePSet;
+import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
@@ -17,8 +20,8 @@ abstract class NilTerm implements INilTerm {
         return true;
     }
 
-    @Override public int getLength() {
-        return 0;
+    @Value.Lazy @Override public PSet<ITermVar> getVars() {
+        return HashTreePSet.empty();
     }
 
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {

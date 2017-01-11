@@ -2,6 +2,8 @@ module nabl2/runtime/analysis/main
 
 imports
 
+  nabl2/api
+ 
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
@@ -14,14 +16,16 @@ imports
 rules
 
   nabl2--analyze(pre):
-    AnalyzeInitial(resource) -> InitialResult(C,params,(labels,wf,order),rel*)
+    AnalyzeInitial(resource) -> InitialResult(C, params, config)
     with <debug> $[Initializing [resource]];
       labels := <nabl2--labels>;
       wf := <nabl2--labels-wf>;
       order := <nabl2--label-order>;
+      res-params := (labels,wf,order);
       rel* := <nabl2--relations>;
+      fun* := <nabl2--functions>;
+      config := (res-params, rel*, fun*);
       (params,C) := <nabl2--generate-constraint-init(|resource)> resource
-
 
   nabl2--analyze(pre):
     AnalyzeUnit(resource,ast,args) -> UnitResult(ast',constraint*)
@@ -36,9 +40,20 @@ rules
     where <nabl2--is-empty-ast> ast
     with constraint* := [CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> resource))]
  
-
   nabl2--analyze(pre):
     AnalyzeFinal(resource) -> FinalResult()
 
 
-  nabl2--is-empty-ast = is-tuple; ?()
+  nabl2--analyze(pre):
+    CustomInitial(resource) -> result
+    where result := <nabl2-custom-analysis-init-hook> resource
+
+  nabl2--analyze(pre):
+    CustomUnit(resource,ast,initial) -> result
+    where result := <nabl2-custom-analysis-unit-hook> (resource, ast, initial)
+
+  nabl2--analyze(pre):
+    CustomFinal(resource,initial,unit*) -> result
+    where result := <nabl2-custom-analysis-final-hook(|resource)> (resource, initial, unit*)
+
+  nabl2--is-empty-ast = ?()

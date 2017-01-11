@@ -19,20 +19,22 @@ import org.metaborg.meta.nabl2.constraints.namebinding.CResolve;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
+import org.metaborg.meta.nabl2.scopegraph.IPath;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Namespace;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
+import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.meta.nabl2.util.Multibag;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -48,7 +50,8 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private EsopNameResolution<Scope,Label,Occurrence> nameResolution = null;
 
-    private final Set<INamebindingConstraint> defered = Sets.newHashSet();
+    private final Set<INamebindingConstraint> deferedBuilds = Sets.newHashSet();
+    private final Set<INamebindingConstraint> deferedChecks = Sets.newHashSet();
 
     public NamebindingSolver(ResolutionParameters params, Unifier unifier) {
         this.unifier = unifier;
@@ -75,18 +78,37 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         if (nameResolution != null) {
             throw new IllegalStateException();
         }
+        return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addBuild, this::addBuild, this::addBuild,
+                this::addBuild, this::addCheck, this::addCheck, this::addCheck));
+    }
+
+    private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
         if (!solve(constraint)) {
-            defered.add(constraint);
+            deferedBuilds.add(constraint);
+        }
+        return unit;
+    }
+
+    private Unit addCheck(INamebindingConstraint constraint) throws UnsatisfiableException {
+        if (!solve(constraint)) {
+            deferedChecks.add(constraint);
         }
         return unit;
     }
 
     @Override public boolean iterate() throws UnsatisfiableException {
         boolean progress = false;
-        if (nameResolution == null) {
-            progress = true;
+        progress |= iterate(deferedBuilds);
+        if (nameResolution == null && deferedBuilds.isEmpty()) {
+            progress |= true;
             nameResolution = new EsopNameResolution<>(scopeGraph, params);
         }
+        progress |= iterate(deferedChecks);
+        return progress;
+    }
+
+    private boolean iterate(Set<INamebindingConstraint> defered) throws UnsatisfiableException {
+        boolean progress = false;
         Iterator<INamebindingConstraint> it = defered.iterator();
         while (it.hasNext()) {
             try {
@@ -104,8 +126,12 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     @Override public Iterable<UnsatisfiableException> finish() {
-        return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved name resolution constraint.", Iterables2.empty());
+        Set<INamebindingConstraint> unsolved = Sets.newHashSet();
+        unsolved.addAll(deferedBuilds);
+        unsolved.addAll(deferedChecks);
+        return unsolved.stream().map(c -> {
+            return c.getMessageInfo().makeException("Unsolved name resolution constraint: " + c.find(unifier),
+                    Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
     }
 
@@ -194,21 +220,22 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm).orElseThrow(() -> new TypeException());
-        Optional<Iterable<Occurrence>> decls = nameResolution.tryResolve(ref);
-        if (decls.isPresent()) {
-            List<Occurrence> declarations = Lists.newArrayList(decls.get());
+        Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = nameResolution.tryResolve(ref);
+        if (paths.isPresent()) {
+            List<Occurrence> declarations = Paths.pathsToDecls(paths.get());
             switch (declarations.size()) {
             case 0:
-                throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty());
+                throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty(), unifier);
             case 1:
                 try {
                     unifier.unify(r.getDeclaration(), declarations.get(0));
                 } catch (UnificationException ex) {
-                    throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+                    throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
                 }
                 return true;
             default:
-                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty());
+                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty(),
+                        unifier);
             }
         } else {
             return false;
@@ -225,21 +252,21 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
         Label label = a.getLabel();
-        List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocs(decl, label));
+        List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocScopes(decl).get(label));
         switch (scopes.size()) {
         case 0:
-            throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2
-                    .empty());
+            throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2.empty(),
+                    unifier);
         case 1:
             try {
                 unifier.unify(a.getScope(), scopes.get(0));
             } catch (UnificationException ex) {
-                throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+                throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
             }
             return true;
         default:
             throw a.getMessageInfo().makeException(decl + " has multiple " + label + " associated scopes.", Iterables2
-                    .empty());
+                    .empty(), unifier);
         }
     }
 
@@ -258,7 +285,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             try {
                 unifier.unify(c.getValue(), prev.get());
             } catch (UnificationException ex) {
-                throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty());
+                throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
             }
         }
         return true;
@@ -266,12 +293,12 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     // ------------------------------------------------------------------------------------------------------//
 
-    public IMatcher<Multibag<ITerm,ITerm>> nameSets() {
+    public IMatcher<Set<IElement<ITerm>>> nameSets() {
         return term -> {
             if (NamebindingSolver.this.nameResolution == null) {
                 return Optional.empty();
             }
-            return M.<Optional<Multibag<ITerm,ITerm>>> cases(
+            return M.<Optional<Set<IElement<ITerm>>>> cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls(scope);
@@ -282,30 +309,54 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryVisible(scope);
-                    return decls.map(ds -> makeSet(ds, ns));
+                    Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
+                    return paths.map(ps -> makeSet(Paths.pathsToDecls(ps), ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Iterable<Occurrence>> decls = NamebindingSolver.this.nameResolution.tryReachable(scope);
-                    return decls.map(ds -> makeSet(ds, ns));
-                    
-                    
+                    Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
+                    return paths.map(ps -> makeSet(Paths.pathsToDecls(ps), ns));
                 })
                 // @formatter:on
             ).match(term).flatMap(o -> o);
         };
     }
 
-    private Multibag<ITerm,ITerm> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
-        Multibag<ITerm,ITerm> result = Multibag.create();
+    private Set<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
+        Set<IElement<ITerm>> result = Sets.newHashSet();
         for (Occurrence occurrence : occurrences) {
-            if (!namespace.getName().filter(ns -> !occurrence.getNamespace().equals(namespace)).isPresent()) {
-                // FIXME: The position should be the index, but origins seem to
-                // be lost
-                result.put(occurrence.getName(), occurrence.getName());
+            if (namespace.getName().isEmpty() || namespace.equals(occurrence.getNamespace())) {
+                result.add(new OccurrenceElement(occurrence));
             }
         }
         return result;
+    }
+
+    private class OccurrenceElement implements IElement<ITerm> {
+
+        private final Occurrence occurrence;
+
+        public OccurrenceElement(Occurrence occurrence) {
+            this.occurrence = occurrence;
+        }
+
+        @Override public ITerm getValue() {
+            return occurrence;
+        }
+
+        @Override public ITerm getPosition() {
+            return occurrence.getName(); // this should probably be position,
+                                         // but origin information is lost.
+        }
+
+        @Override public Object project(String name) {
+            switch (name) {
+            case "name":
+                return occurrence.getName();
+            default:
+                throw new IllegalArgumentException("Projection " + name + " undefined for occurrences.");
+            }
+        }
+
     }
 
 }

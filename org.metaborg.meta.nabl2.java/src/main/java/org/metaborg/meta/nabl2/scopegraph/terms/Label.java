@@ -1,13 +1,21 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import java.util.List;
+
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
+import org.metaborg.meta.nabl2.terms.IApplTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
+import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 
+import com.google.common.collect.ImmutableList;
+
 @Value.Immutable
-public abstract class Label implements ILabel {
+public abstract class Label extends AbstractApplTerm implements ILabel, IApplTerm {
 
     private static final String OP = "Label";
 
@@ -16,6 +24,28 @@ public abstract class Label implements ILabel {
     @Value.Parameter @Override public abstract String getName();
 
     // IApplTerm implementation
+
+    @Value.Lazy @Override public String getOp() {
+        switch (getName()) {
+        case "D":
+        case "P":
+        case "I":
+            return getName();
+        default:
+            return OP;
+        }
+    }
+
+    @Value.Lazy @Override public List<ITerm> getArgs() {
+        switch (getName()) {
+        case "D":
+        case "P":
+        case "I":
+            return ImmutableList.of();
+        default:
+            return ImmutableList.of((ITerm) GenericTerms.newString(getName()));
+        }
+    }
 
     public static IMatcher<Label> matcher() {
         return matcher(l -> l);
@@ -33,6 +63,10 @@ public abstract class Label implements ILabel {
     }
 
     // Object implementation
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
 
     @Override public String toString() {
         return super.toString();

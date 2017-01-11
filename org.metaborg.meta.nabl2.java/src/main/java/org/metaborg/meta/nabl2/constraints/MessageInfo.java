@@ -7,6 +7,7 @@ import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.util.iterators.Iterables2;
 
 @Value.Immutable
@@ -24,10 +25,37 @@ public abstract class MessageInfo implements IMessageInfo {
 
     @Value.Parameter public abstract Optional<ITerm> getOrigin();
 
-    @Override public UnsatisfiableException makeException(String defaultMessage, Iterable<ITerm> contextTerms) {
+    @Override public UnsatisfiableException makeException(String defaultMessage, Iterable<ITerm> contextTerms,
+            IUnifier unifier) {
         Iterable<ITerm> programPoints = getOrigin().map(t -> Iterables2.singleton(t)).orElse(contextTerms);
-        String message = getMessage().map(m -> m.toString()).orElse(defaultMessage);
+        String message = getMessage().flatMap(m -> formatMessage().match(unifier.find(m))).orElse("") + ". "
+                + defaultMessage;
         return new UnsatisfiableException(getKind(), message, programPoints);
+    }
+
+    private IMatcher<String> formatMessage() {
+        return M.cases(
+            // @formatter:off
+            M.appl1("Formatted", M.listElems(formatMessagePart()), (t, ps) -> {
+                StringBuilder sb = new StringBuilder();
+                for(String s : ps) {
+                    sb.append(s);
+                }
+                return sb.toString();
+            }),
+            M.term(t -> t.toString())
+            // @formatter:on
+        );
+    }
+
+    private IMatcher<String> formatMessagePart() {
+        return M.cases(
+            // @formatter:off
+            M.appl1("Text", M.stringValue(), (t,s) -> s),
+            M.appl1("Term", M.term(), (t,s) -> s.toString()),
+            M.term(t -> t.toString())
+            // @formatter:on
+        );
     }
 
     public static MessageInfo of(ITerm term) {

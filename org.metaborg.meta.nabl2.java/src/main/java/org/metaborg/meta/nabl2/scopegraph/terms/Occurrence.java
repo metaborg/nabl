@@ -43,12 +43,15 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
         });
     }
 
-
     // Object implementation
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
 
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
-        getNamespace().getName().ifPresent(ns -> sb.append(ns));
+        sb.append(getNamespace().getName());
         sb.append("{");
         sb.append(getName());
         sb.append(" ");

@@ -7,6 +7,8 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IConsTerm;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
@@ -22,8 +24,8 @@ abstract class ConsTerm implements IConsTerm {
         return getHead().isGround() && getTail().isGround();
     }
 
-    @Value.Lazy @Override public int getLength() {
-        return 1 + getTail().getLength();
+    @Value.Lazy @Override public PSet<ITermVar> getVars() {
+        return getHead().getVars().plusAll(getTail().getVars());
     }
 
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {

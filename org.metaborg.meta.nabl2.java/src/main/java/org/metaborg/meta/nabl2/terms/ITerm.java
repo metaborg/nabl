@@ -1,10 +1,18 @@
 package org.metaborg.meta.nabl2.terms;
 
+import org.pcollections.PSet;
+
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public interface ITerm {
 
     boolean isGround();
+
+    PSet<ITermVar> getVars();
+
+    default boolean termEquals(ITerm other) {
+        return equals(other);
+    }
 
     ImmutableClassToInstanceMap<Object> getAttachments();
 

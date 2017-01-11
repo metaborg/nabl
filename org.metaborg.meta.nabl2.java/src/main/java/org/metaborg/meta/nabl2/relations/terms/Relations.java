@@ -82,7 +82,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
         }
         for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
             Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
-                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                return (Optional<T>) Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
                     T argt1 = arg1.getValue();
                     T argt2 = arg2.getValue();
                     return arg1.getVariance().match(IVariance.<Optional<T>> cases(
@@ -92,7 +92,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
                         r -> greatestLowerBound(nameOrDefault(r,name), argt1, argt2)
                         // @formatter:on
                     ));
-                }).flatMap(os -> Optionals.sequence(os, args -> matcher.build(args)));
+                }).flatMap(Optionals::sequence).map(matcher::build);
             });
             if (contains.isPresent()) {
                 return contains.get();
@@ -107,7 +107,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
         }
         for (IVariantMatcher<T> matcher : variantMatchers.get(name)) {
             Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
-                return Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
+                return (Optional<T>) Iterables3.zipStrict(args1, args2, (arg1, arg2) -> {
                     T argt1 = arg1.getValue();
                     T argt2 = arg2.getValue();
                     return arg1.getVariance().match(IVariance.<Optional<T>> cases(
@@ -117,7 +117,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
                         r -> leastUpperBound(nameOrDefault(r,name), argt1, argt2)
                         // @formatter:on
                     ));
-                }).flatMap(os -> Optionals.sequence(os, args -> matcher.build(args)));
+                }).flatMap(Optionals::sequence).map(matcher::build);
             });
             if (contains.isPresent()) {
                 return contains.get();
@@ -129,5 +129,5 @@ public class Relations<T> implements IRelations<T>, Serializable {
     private IRelationName nameOrDefault(IRelationName name, IRelationName defaultName) {
         return name.getName().isPresent() ? name : defaultName;
     }
-    
+
 }

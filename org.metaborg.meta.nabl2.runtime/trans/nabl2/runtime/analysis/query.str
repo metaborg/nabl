@@ -6,7 +6,14 @@ imports
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
+  signatures/nabl2/runtime/common/-
   signatures/nabl2/runtime/constraints/-
+
+signature
+
+  constructors
+
+    AnalysisToken : Analysis
 
 rules
 
@@ -50,6 +57,59 @@ rules
    */
   nabl2--get-decl-type =
     nabl2--get-decl-property(|Type())
+
+rules
+
+  nabl2--get-ast-analysis: term -> a
+    with a := <nabl2--copy-ast-index(|term)> AnalysisToken()
+
+  nabl2--get-resource-analysis: resource -> a
+    with idx := TermIndex(resource,0);
+         a := <nabl2--set-ast-index(|idx)> AnalysisToken()
+
+  nabl2--get-custom-analysis =
+    prim("SG_get_custom_analysis")
+
+rules
+
+  nabl2--get-all-decls(|a) =
+    prim("SG_get_all_decls", a)
+
+  nabl2--get-all-refs(|a) =
+    prim("SG_get_all_refs", a)
+
+  nabl2--get-all-scopes(|a) =
+    prim("SG_get_all_scopes", a)
+
+  nabl2--get-ref-scope(|a) =
+    prim("SG_get_ref_scope", a)
+
+  nabl2--get-decl-scope(|a) =
+    prim("SG_get_decl_scope", a)
+
+  nabl2--get-scope-decls(|a) =
+    prim("SG_get_scope_refs", a)
+
+  nabl2--get-scope-refs(|a) =
+    prim("SG_get_scope_refs", a)
+
+  nabl2--get-scope-direct-edges(|a) =
+    prim("SG_get_scope_direct_edges", a)
+
+  nabl2--get-scope-named-edges(|a) =
+    prim("SG_get_scope_named_edges", a)
+
+  nabl2--get-decl-assocs(|a) =
+    prim("SG_get_decl_assocs", a)
+
+  nabl2--get-scope-assocs(|a) =
+    prim("SG_get_scope_assocs", a)
+
+  nabl2--get-visible-decls(|a) =
+    prim("SG_get_visible_decls", a)
+
+  nabl2--get-reachable-decls(|a) =
+    prim("SG_get_reachable_decls", a)
 
 rules
 

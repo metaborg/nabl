@@ -3,7 +3,7 @@ module coq/main
 imports
 	libstrc
 	libstratego-gpp
-  util/src-gen
+  util/-
   analysis/normalize
   analysis/signatures
     
@@ -54,7 +54,7 @@ rules
     (_, _, ast, path, project-path) -> (filename, result)
     with
     	Module(name, decls) := ast;
-      filename := <create-src-gen(|project-path, "nabl2", ".v")> name;
+      filename := <src-gen-file(|project-path, "nabl2", ".v")> name;
       // Pre-processing
       decls' := <explicate-wildcards> decls;
       imps := <filter(?Imports(<id>)); concat> decls';
@@ -334,13 +334,13 @@ rules // Rule normalization
 	normalize-clause:
 		c -> [c]
 		where
-			not(?CSubsetEq(_, _, _))
+			not(?CSubsetEq(_, _, _, _))
 			
 	normalize-clause:
-		CSubsetEq(set1, set2, error_msg) ->
+		CSubsetEq(set1, proj, set2, error_msg) ->
 			[CEqual(Var(var1), set1, DefaultMessage()),
 			 CEqual(Var(var2), set2, DefaultMessage()),
-			 CSubsetEq(Var(var1), Var(var2), error_msg)]
+			 CSubsetEq(Var(var1), proj, Var(var2), error_msg)]
 		where
 			var1 := <newname> "set";
 			var2 := <newname> "set"
@@ -905,7 +905,7 @@ rules // CGen body
 	
 	// FIXME: do we need this information in Coq?
 	cgen-clause-to-coq:
-		CDistinct(_, _) -> None()
+		CDistinct(_, _, _) -> None()
 	
 	cgen-clause-to-coq:
 		CEqual(x, y, _) ->
@@ -937,7 +937,7 @@ rules // CGen body
 			\)> x
 			
 	cgen-clause-to-coq:
-		CSubsetEq(x, y, msg) ->
+		CSubsetEq(x, proj, y, msg) ->
 			<term-pattern-to-coq;
 			mbind(\ x' ->
 			<term-pattern-to-coq;
@@ -999,13 +999,13 @@ rules // CGen body
 				?CGenRecurse(_, _, _, _) <+
 				?CGDirectEdge(_, _, _, _) <+
 				?NewScopes(_) <+
-				?CDistinct(_, _) <+
+				?CDistinct(_, _, _) <+
 				?CGAssoc(_, _, _, _) <+
 				?CAssoc(_, _, _, _) <+
 				?CEqual(_, _, _) <+
 				?CCheckRel(_, _, _, _) <+
 				?CBuildRel(_, _, _, _) <+
-				?CSubsetEq(_, _, _) <+
+				?CSubsetEq(_, _, _, _) <+
 				?CGoal(_) <+
 				?CFact(_))
 

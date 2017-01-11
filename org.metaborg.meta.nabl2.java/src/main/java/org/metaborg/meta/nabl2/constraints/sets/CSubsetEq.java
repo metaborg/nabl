@@ -1,10 +1,13 @@
 package org.metaborg.meta.nabl2.constraints.sets;
 
+import java.util.Optional;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -14,7 +17,14 @@ public abstract class CSubsetEq implements ISetConstraint {
 
     @Value.Parameter public abstract ITerm getRight();
 
+    @Value.Parameter public abstract Optional<String> getProjection();
+
     @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
+
+    @Override public IConstraint find(IUnifier unifier) {
+        return ImmutableCSubsetEq.of(unifier.find(getLeft()), unifier.find(getRight()), getProjection(),
+                getMessageInfo());
+    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseSubsetEq(this);

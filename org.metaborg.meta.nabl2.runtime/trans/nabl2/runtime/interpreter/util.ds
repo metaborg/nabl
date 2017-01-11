@@ -1,0 +1,49 @@
+module nabl2/runtime/interpreter/util
+
+imports
+
+  nabl2/runtime/interpreter/scopegraph-api
+
+signature
+
+  arrows // Auxiliary functions
+    filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
+    declOfPath(List(Step)) --> Occurrence
+    NaBL2 |- (Scope * Namespace) -declsOf-> List(Occurrence)
+    NaBL2 |- Occurrence -declOfRef-> Occurrence
+    NaBL2 |- (Occurrence * Label) -assocScopeOf-> Scope
+
+rules
+
+  filterOccsByNamespace([], _) --> [].
+  
+  filterOccsByNamespace([o|os], ns) --> [o|filterOccsByNamespace(os, ns)]
+  where
+    ns == namespaceOf(o).
+    
+  filterOccsByNamespace([o|os], ns) --> filterOccsByNamespace(os, ns)
+  where
+    ns != namespaceOf(o).
+    
+rules    
+ 
+  o:Occurrence -declOfRef-> declOfPath(p)
+  where
+    o -pathOf-> p.
+
+rules
+
+  declOfPath([D(_, o)]) --> o.
+
+  declOfPath([_|p]) --> declOfPath(p).
+
+rules
+
+  (s, ns):(Scope * Namespace) -declsOf-> decls'
+    where s -declsOf-> decls;
+          filterOccsByNamespace(decls, ns) => decls'.
+
+  (d, l):(Occurrence * Label) -assocScopeOf-> s
+  where
+    d -assocsOf-> as;
+    as[l] => [s].

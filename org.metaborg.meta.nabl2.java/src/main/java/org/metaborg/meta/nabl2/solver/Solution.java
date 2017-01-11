@@ -30,7 +30,6 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IUnifier getUnifier();
 
-
     @Value.Parameter public abstract List<Message> getErrors();
 
     @Value.Parameter public abstract List<Message> getWarnings();

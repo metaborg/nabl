@@ -46,13 +46,11 @@ public class Relation<T> implements IRelation<T>, Serializable {
             case REFLEXIVE:
                 return;
             case IRREFLEXIVE:
-                throw new ReflexivityException();
+                throw new ReflexivityException("Adding <" + t1 + "," + t2 + "> violates irreflexivity");
             case NON_REFLEXIVE:
                 break;
             }
         }
-
-        extend(t1, t2, smaller, larger);
 
         switch (description.getSymmetry()) {
         case SYMMETRIC:
@@ -60,12 +58,14 @@ public class Relation<T> implements IRelation<T>, Serializable {
             break;
         case ANTI_SYMMETRIC:
             if (contains(t2, t1) && !t1.equals(t2)) {
-                throw new SymmetryException();
+                throw new SymmetryException("Adding <" + t1 + "," + t2 + "> violates anti-symmetry");
             }
             break;
         case NON_SYMMETRIC:
             break;
         }
+
+        extend(t1, t2, smaller, larger);
     }
 
 
@@ -91,12 +91,12 @@ public class Relation<T> implements IRelation<T>, Serializable {
         case ANTI_TRANSITIVE:
             for (T t : smaller.get(t2)) {
                 if (contains(t1, t)) {
-                    throw new TransitivityException();
+                    throw new TransitivityException("Adding <" + t1 + "," + t2 + "> violates anti-transitivity");
                 }
             }
             for (T t : larger.get(t1)) {
                 if (contains(t, t2)) {
-                    throw new TransitivityException();
+                    throw new TransitivityException("Adding <" + t1 + "," + t2 + "> violates anti-transitivity");
                 }
             }
             break;

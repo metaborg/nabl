@@ -1,6 +1,10 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
+import java.util.Optional;
+
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
+
+import com.google.common.collect.Multimap;
 
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
@@ -10,14 +14,21 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     Iterable<O> getAllRefs();
 
+
     Iterable<O> getDecls(S scope);
 
     Iterable<O> getRefs(S scope);
 
-    Iterable<PartialFunction0<S>> getDirectEdges(S scope, L label);
+    Multimap<L,PartialFunction0<S>> getDirectEdges(S scope);
 
-    Iterable<S> getAssocs(O decl, L label);
+    Multimap<L,PartialFunction0<O>> getImportRefs(S scope);
 
-    Iterable<PartialFunction0<O>> getImports(S scope, L label);
+
+    Optional<S> getDeclScope(O decl);
+
+    Multimap<L,S> getAssocScopes(O decl);
+
+
+    Optional<S> getRefScope(O ref);
 
 }

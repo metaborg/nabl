@@ -4,8 +4,6 @@ import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 public interface IListTerm extends ITerm, Iterable<ITerm> {
 
-    int getLength();
-
     <T> T match(Cases<T> cases);
 
     interface Cases<T> {

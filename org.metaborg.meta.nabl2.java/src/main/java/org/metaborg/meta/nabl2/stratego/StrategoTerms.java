@@ -4,11 +4,11 @@ import java.util.List;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermIndex;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
+import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.functions.Function2;
@@ -53,15 +53,17 @@ public class StrategoTerms {
     public IStrategoTerm toStratego(ITerm term) {
         IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm> cases(
                 // @formatter:off
-                appl -> termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()),
-                        toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0])),
+                appl -> {
+                    IStrategoTerm[] args = toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0]);
+                    return appl.getOp().equals(Terms.TUPLE_OP) ? termFactory.makeTuple(args) :
+                                termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), args);
+                },
                 list -> termFactory.makeList(toStrategos(list)), string -> termFactory.makeString(string.getValue()),
                 integer -> termFactory.makeInt(integer.getValue()), var -> termFactory.makeAppl(varCtor,
                         termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
         // @formatter:on
         ));
-        putAttachments(strategoTerm, term.getAttachments());
-        return strategoTerm;
+        return putAttachments(strategoTerm, term.getAttachments());
     }
 
     public List<IStrategoTerm> toStrategos(Iterable<ITerm> terms) {
@@ -72,16 +74,22 @@ public class StrategoTerms {
         return strategoTerms;
     }
 
-    private void putAttachments(IStrategoTerm term, ImmutableClassToInstanceMap<Object> attachments) {
+    private IStrategoTerm putAttachments(IStrategoTerm term, ImmutableClassToInstanceMap<Object> attachments) {
         ImploderAttachment imploderAttachment = attachments.getInstance(ImploderAttachment.class);
         if (imploderAttachment != null) {
             term.putAttachment(imploderAttachment);
         }
 
-        ITermIndex termIndex = attachments.getInstance(ITermIndex.class);
+        TermIndex termIndex = attachments.getInstance(TermIndex.class);
         if (termIndex != null) {
             StrategoTermIndex.put(term, termIndex.getResource(), termIndex.getId());
         }
+
+        StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
+        if (annotations != null) {
+            term = termFactory.annotateTerm(term, annotations.getAnnotationList());
+        }
+        return term;
     }
 
     public ITerm fromStratego(IStrategoTerm term) {
@@ -130,13 +138,15 @@ public class StrategoTerms {
 
         StrategoTermIndex termIndex = StrategoTermIndex.get(term);
         if (termIndex != null) {
-            b.put(ITermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
+            b.put(TermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
         }
 
         ImploderAttachment imploderAttachment = ImploderAttachment.getCompactPositionAttachment(term, false);
         if (imploderAttachment != null) {
             b.put(ImploderAttachment.class, imploderAttachment);
         }
+
+        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(term.getAnnotations()));
 
         Attacher attacher = new Attacher() {
 
