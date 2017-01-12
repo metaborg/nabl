@@ -39,6 +39,8 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private static final long serialVersionUID = 42L;
 
+    private static final boolean useStaging = true;
+
     private final EsopScopeGraph<S,L,O> scopeGraph;
     private final Set<L> labels;
     private final IRegExp<L> wf;
@@ -47,6 +49,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final IRelation<L> noOrder;
 
     transient private Map<O,Iterable<IPath<S,L,O>>> resolveCache;
+    transient private Map<IRelation<L>,EnvL<S,L,O>> stagedEnv_L;
 
     public EsopNameResolution(EsopScopeGraph<S,L,O> scopeGraph, IResolutionParameters<L> params) {
         this.scopeGraph = scopeGraph;
@@ -57,11 +60,12 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.noWf = wf.getBuilder().complement(wf.getBuilder().emptySet());
         this.noOrder = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
-        initCaches();
+        initTransients();
     }
 
-    private void initCaches() {
+    private void initTransients() {
         this.resolveCache = Maps.newHashMap();
+        this.stagedEnv_L = Maps.newHashMap();
     }
 
     @Override public Iterable<S> getAllScopes() {
@@ -200,6 +204,13 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private EsopEnv<S,L,O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt,
             IRegExpMatcher<L> re, S scope) {
+        return useStaging
+                ? stagedEnv_L.computeIfAbsent(lt, lo -> stageEnv_L(L, lt)).apply(seenImports, seenScopes, re, scope)
+                : unstagedEnv_L(L, seenImports, seenScopes, lt, re, scope);
+    }
+
+    private EsopEnv<S,L,O> unstagedEnv_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt,
+            IRegExpMatcher<L> re, S scope) {
         EsopEnv<S,L,O> env = EsopEnv.empty(true);
         for(L l : max(lt, L)) {
             EsopEnv<S,L,O> partialEnv = env_L(smaller(lt, L, l), seenImports, seenScopes, lt, re, scope);
@@ -207,6 +218,25 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             env.union(partialEnv);
         }
         return env;
+    }
+
+    private EnvL<S,L,O> stageEnv_L(Set<L> L, IRelation<L> lt) {
+        List<EnvL<S,L,O>> stagedEnvs = Lists.newArrayList();
+        for(L l : max(lt, L)) {
+            EnvL<S,L,O> smallerEnv = stageEnv_L(smaller(lt, L, l), lt);
+            stagedEnvs.add((seenImports, seenScopes, re, scope) -> {
+                EsopEnv<S,L,O> env = smallerEnv.apply(seenImports, seenScopes, re, scope);
+                env.shadow(env_l(seenImports, seenScopes, lt, re, l, scope));
+                return env;
+            });
+        }
+        return (seenImports, seenScopes, re, scope) -> {
+            EsopEnv<S,L,O> env = EsopEnv.empty(true);
+            for(EnvL<S,L,O> stagedEnv : stagedEnvs) {
+                env.union(stagedEnv.apply(seenImports, seenScopes, re, scope));
+            }
+            return env;
+        };
     }
 
     private Set<L> max(IRelation<L> lt, Set<L> L) {
@@ -240,7 +270,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        initCaches();
+        initTransients();
     }
 
 }
