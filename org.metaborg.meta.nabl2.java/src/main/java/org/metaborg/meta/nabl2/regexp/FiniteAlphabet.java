@@ -1,10 +1,13 @@
 package org.metaborg.meta.nabl2.regexp;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import com.google.common.collect.ImmutableList;
 
-public final class FiniteAlphabet<S> implements IAlphabet<S> {
+public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final ImmutableList<S> symbols;
 

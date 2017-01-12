@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +34,9 @@ public class VariantMatchers {
         return new ListVariant(ImmutableCovariant.of(ImmutableRelationName.of(Optional.empty())));
     }
 
-    private static class ListVariant implements IVariantMatcher<ITerm> {
+    private static class ListVariant implements IVariantMatcher<ITerm>, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private final IVariance variance;
 
@@ -41,10 +44,10 @@ public class VariantMatchers {
             this.variance = variance;
         }
 
-        @Override public Optional<Iterable<IVariantMatcher.Arg<ITerm>>> match(ITerm t) {
+        @Override public Optional<Iterable<Arg<ITerm>>> match(ITerm t) {
             return M.list(list -> {
                 List<IVariantMatcher.Arg<ITerm>> args = Lists.newArrayList();
-                for (ITerm arg : list) {
+                for(ITerm arg : list) {
                     args.add(ImmutableArg.of(variance, arg));
                 }
                 return (Iterable<IVariantMatcher.Arg<ITerm>>) args;
@@ -57,7 +60,9 @@ public class VariantMatchers {
 
     }
 
-    private static class OpVariant implements IVariantMatcher<ITerm> {
+    private static class OpVariant implements IVariantMatcher<ITerm>, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private final String op;
         private final ImmutableList<IVariance> variances;
@@ -67,8 +72,8 @@ public class VariantMatchers {
             this.variances = ImmutableList.copyOf(variances);
         }
 
-        @Override public Optional<Iterable<IVariantMatcher.Arg<ITerm>>> match(ITerm t) {
-            return M.appl(op, appl -> Iterables3.<IVariance, ITerm, IVariantMatcher.Arg<ITerm>> zipStrict(variances,
+        @Override public Optional<Iterable<Arg<ITerm>>> match(ITerm t) {
+            return M.appl(op, appl -> Iterables3.<IVariance, ITerm, IVariantMatcher.Arg<ITerm>>zipStrict(variances,
                     appl.getArgs(), (v, a) -> {
                         return (IVariantMatcher.Arg<ITerm>) ImmutableArg.of(v, a);
                     })).match(t).flatMap(o -> o);
@@ -81,7 +86,9 @@ public class VariantMatchers {
     }
 
     @Value.Immutable
-    static abstract class Arg implements IVariantMatcher.Arg<ITerm> {
+    static abstract class Arg implements IVariantMatcher.Arg<ITerm>, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         @Value.Parameter @Override public abstract IVariance getVariance();
 

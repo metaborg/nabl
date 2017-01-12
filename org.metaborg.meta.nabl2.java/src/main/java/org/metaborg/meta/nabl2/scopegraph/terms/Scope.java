@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.scopegraph.terms;
 
 import java.util.List;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
@@ -14,6 +15,7 @@ import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import com.google.common.collect.ImmutableList;
 
 @Value.Immutable
+@Serial.Version(value = 42L)
 public abstract class Scope extends AbstractApplTerm implements IScope, IApplTerm {
 
     private static final String OP = "Scope";

@@ -1,5 +1,9 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,8 +34,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence> implements
-        INameResolution<S,L,O> {
+public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
+        implements INameResolution<S,L,O>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final EsopScopeGraph<S,L,O> scopeGraph;
     private final Set<L> labels;
@@ -40,7 +46,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final IRelation<L> order;
     private final IRelation<L> noOrder;
 
-    private final Map<O,Iterable<IPath<S,L,O>>> resolveCache;
+    transient private Map<O,Iterable<IPath<S,L,O>>> resolveCache;
 
     public EsopNameResolution(EsopScopeGraph<S,L,O> scopeGraph, IResolutionParameters<L> params) {
         this.scopeGraph = scopeGraph;
@@ -51,17 +57,21 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.noWf = wf.getBuilder().complement(wf.getBuilder().emptySet());
         this.noOrder = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
+        initCaches();
+    }
+
+    private void initCaches() {
         this.resolveCache = Maps.newHashMap();
     }
 
     @Override public Iterable<S> getAllScopes() {
         return scopeGraph.getAllScopes();
     }
-    
+
     @Override public Iterable<O> getAllRefs() {
         return scopeGraph.getAllRefs();
     }
-    
+
     @Override public Iterable<IPath<S,L,O>> resolve(O ref) {
         return tryResolve(ref).orElseGet(() -> Iterables2.empty());
     }
@@ -75,7 +85,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     public Optional<Iterable<IPath<S,L,O>>> tryResolve(O ref) {
-        if (resolveCache.containsKey(ref)) {
+        if(resolveCache.containsKey(ref)) {
             return Optional.of(resolveCache.get(ref));
         } else {
             Optional<Iterable<IPath<S,L,O>>> paths = resolve(HashTreePSet.empty(), ref);
@@ -90,8 +100,8 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     public Optional<Iterable<IPath<S,L,O>>> tryReachable(S scope) {
-        EsopEnv<S,L,O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, RegExpMatcher.create(noWf),
-                scope);
+        EsopEnv<S,L,O> env =
+                env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, RegExpMatcher.create(noWf), scope);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
@@ -99,17 +109,17 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return scopeGraph.getRefScope(ref).map(scope -> {
             EsopEnv<S,L,O> e = env(seenI.plus(ref), HashTreePSet.empty(), order, RegExpMatcher.create(wf), scope);
             Iterable<IPath<S,L,O>> paths = e.get(ref);
-            if (e.isComplete()) {
+            if(e.isComplete()) {
                 return Optional.of(paths);
             } else {
-                return Iterables.isEmpty(paths) ? Optional.<Iterable<IPath<S,L,O>>> empty() : Optional.of(paths);
+                return Iterables.isEmpty(paths) ? Optional.<Iterable<IPath<S,L,O>>>empty() : Optional.of(paths);
             }
         }).orElseGet(() -> Optional.of(Iterables2.empty()));
     }
 
     private EsopEnv<S,L,O> env(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re,
             S scope) {
-        if (seenScopes.contains(scope) || re.isEmpty()) {
+        if(seenScopes.contains(scope) || re.isEmpty()) {
             return EsopEnv.empty(true);
         }
         return env_L(labels, seenImports, seenScopes, lt, re, scope);
@@ -123,11 +133,11 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private EsopEnv<S,L,O> env_D(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
             S scope) {
-        if (!re.isAccepting()) {
+        if(!re.isAccepting()) {
             return EsopEnv.empty(true);
         }
         List<IPath<S,L,O>> paths = Lists.newArrayList();
-        for (O decl : scopeGraph.getDecls(scope)) {
+        for(O decl : scopeGraph.getDecls(scope)) {
             paths.add(Paths.decl(scope, decl));
         }
         return EsopEnv.of(true, paths);
@@ -140,7 +150,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         Optional<Iterable<EsopEnv<S,L,O>>> ois = importScopes(seenImports, l, scope, getter);
         return Optionals.lift(ods, ois, (ds, is) -> {
             EsopEnv<S,L,O> env = EsopEnv.empty(true);
-            for (EsopEnv<S,L,O> nextEnv : Iterables.concat(ds, is)) {
+            for(EsopEnv<S,L,O> nextEnv : Iterables.concat(ds, is)) {
                 env.union(nextEnv);
             }
             return env;
@@ -149,9 +159,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private Optional<Iterable<EsopEnv<S,L,O>>> directScopes(L l, S scope, Function1<S,EsopEnv<S,L,O>> getter) {
         List<EsopEnv<S,L,O>> envs = Lists.newArrayList();
-        for (PartialFunction0<S> nextScope : scopeGraph.getDirectEdges(scope).get(l)) {
+        for(PartialFunction0<S> nextScope : scopeGraph.getDirectEdges(scope).get(l)) {
             Optional<S> maybeScope = nextScope.apply();
-            if (!maybeScope.isPresent()) {
+            if(!maybeScope.isPresent()) {
                 return Optional.empty();
             }
             EsopEnv<S,L,O> env = getter.apply(maybeScope.get());
@@ -164,21 +174,21 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private Optional<Iterable<EsopEnv<S,L,O>>> importScopes(PSet<O> seenImports, L l, S scope,
             Function1<S,EsopEnv<S,L,O>> getter) {
         List<EsopEnv<S,L,O>> envs = Lists.newArrayList();
-        for (PartialFunction0<O> getRef : scopeGraph.getImportRefs(scope).get(l)) {
+        for(PartialFunction0<O> getRef : scopeGraph.getImportRefs(scope).get(l)) {
             Optional<O> maybeRef = getRef.apply();
-            if (!maybeRef.isPresent()) {
+            if(!maybeRef.isPresent()) {
                 return Optional.empty();
             }
             O ref = maybeRef.get();
-            if (seenImports.contains(ref)) {
+            if(seenImports.contains(ref)) {
                 continue;
             }
             Optional<Iterable<IPath<S,L,O>>> paths = resolve(seenImports, ref);
-            if (!paths.isPresent()) {
+            if(!paths.isPresent()) {
                 return Optional.empty();
             }
-            for (IPath<S,L,O> path : paths.get()) {
-                for (S nextScope : scopeGraph.getAssocScopes(path.getDeclaration()).get(l)) {
+            for(IPath<S,L,O> path : paths.get()) {
+                for(S nextScope : scopeGraph.getAssocScopes(path.getDeclaration()).get(l)) {
                     EsopEnv<S,L,O> env = getter.apply(nextScope);
                     env.map(p -> Paths.named(scope, l, ref, path, p));
                     envs.add(env);
@@ -188,12 +198,10 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return Optional.of(envs);
     }
 
-    // stage environment shadowing call tree
-
     private EsopEnv<S,L,O> env_L(Set<L> L, PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt,
             IRegExpMatcher<L> re, S scope) {
         EsopEnv<S,L,O> env = EsopEnv.empty(true);
-        for (L l : max(lt, L)) {
+        for(L l : max(lt, L)) {
             EsopEnv<S,L,O> partialEnv = env_L(smaller(lt, L, l), seenImports, seenScopes, lt, re, scope);
             partialEnv.shadow(env_l(seenImports, seenScopes, lt, re, l, scope));
             env.union(partialEnv);
@@ -203,9 +211,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private Set<L> max(IRelation<L> lt, Set<L> L) {
         Set<L> maxL = Sets.newHashSet();
-        tryNext: for (L l : L) {
-            for (L larger : lt.larger(l)) {
-                if (L.contains(larger)) {
+        tryNext: for(L l : L) {
+            for(L larger : lt.larger(l)) {
+                if(L.contains(larger)) {
                     continue tryNext;
                 }
             }
@@ -216,12 +224,23 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private Set<L> smaller(IRelation<L> lt, Set<L> L, L l) {
         Set<L> smallerL = Sets.newHashSet();
-        for (L smaller : lt.smaller(l)) {
-            if (L.contains(smaller)) {
+        for(L smaller : lt.smaller(l)) {
+            if(L.contains(smaller)) {
                 smallerL.add(smaller);
             }
         }
         return smallerL;
+    }
+
+    // serialization
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        initCaches();
     }
 
 }

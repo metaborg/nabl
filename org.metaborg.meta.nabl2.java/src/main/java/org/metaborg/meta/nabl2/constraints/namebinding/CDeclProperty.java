@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.constraints.namebinding;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.MessageInfo;
@@ -9,6 +10,7 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 import com.google.common.base.Preconditions;
 
 @Value.Immutable
+@Serial.Version(value = 42L)
 public abstract class CDeclProperty implements INamebindingConstraint {
 
     @Value.Parameter

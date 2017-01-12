@@ -1,5 +1,9 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -18,7 +22,10 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 
-public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> implements IScopeGraph<S,L,O> {
+public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
+        implements IScopeGraph<S,L,O>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final Set<S> scopes;
     private final Multimap<S,O> decls;
@@ -27,9 +34,8 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final Multimap<S,O> refs;
     private final Map<O,Multimap<L,S>> assocScopes;
 
-    private final Set<PartialFunction0<S>> varScopes;
-    private final Map<O,S> declScopesIndex;
-    private final Map<O,S> refScopesIndex;
+    transient private Map<O,S> declScopesIndex;
+    transient private Map<O,S> refScopesIndex;
 
     public EsopScopeGraph() {
         this.scopes = Sets.newHashSet();
@@ -38,8 +44,10 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         this.assocScopes = Maps.newHashMap();
         this.importRefs = Maps.newHashMap();
         this.refs = HashMultimap.create();
+        initIndices();
+    }
 
-        this.varScopes = Sets.newHashSet();
+    private void initIndices() {
         this.refScopesIndex = Maps.newHashMap();
         this.declScopesIndex = Maps.newHashMap();
     }
@@ -80,7 +88,6 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     public void addDirectEdge(S sourceScope, L label, PartialFunction0<S> targetScope) {
         scopes.add(sourceScope);
         directEdges.computeIfAbsent(sourceScope, s -> HashMultimap.create()).put(label, targetScope);
-        varScopes.add(targetScope);
     }
 
     @Override public Multimap<L,PartialFunction0<S>> getDirectEdges(S scope) {
@@ -117,6 +124,23 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
 
     EsopNameResolution<S,L,O> resolve(IResolutionParameters<L> params) {
         return new EsopNameResolution<S,L,O>(this, params);
+    }
+
+    // serialization
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        initIndices();
+        for(Map.Entry<S,O> entry : decls.entries()) {
+            declScopesIndex.put(entry.getValue(), entry.getKey());
+        }
+        for(Map.Entry<S,O> entry : refs.entries()) {
+            refScopesIndex.put(entry.getValue(), entry.getKey());
+        }
     }
 
 }

@@ -1,8 +1,11 @@
 package org.metaborg.meta.nabl2.regexp;
 
+import java.io.Serializable;
 import java.util.function.Supplier;
 
-public final class RegExpBuilder<S> implements IRegExpBuilder<S> {
+public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final IAlphabet<S> alphabet;
 

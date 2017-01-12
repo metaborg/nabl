@@ -1,10 +1,12 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.scopegraph.INamespace;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
+@Serial.Version(value = 42L)
 public abstract class SpacedName {
 
     @Value.Parameter public abstract INamespace getNamespace();

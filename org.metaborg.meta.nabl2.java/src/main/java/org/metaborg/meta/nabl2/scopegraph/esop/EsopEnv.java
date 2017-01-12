@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
+import java.io.Serializable;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
@@ -13,7 +14,9 @@ import org.metaborg.meta.nabl2.util.functions.Function1;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-class EsopEnv<S extends IScope, L extends ILabel, O extends IOccurrence> {
+class EsopEnv<S extends IScope, L extends ILabel, O extends IOccurrence> implements Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private boolean complete;
     private Multimap<SpacedName,IPath<S,L,O>> res;

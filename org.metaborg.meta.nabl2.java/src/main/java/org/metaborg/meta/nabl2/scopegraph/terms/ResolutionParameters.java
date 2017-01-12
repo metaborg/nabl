@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.regexp.FiniteAlphabet;
 import org.metaborg.meta.nabl2.regexp.IAlphabet;
@@ -20,6 +21,7 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.base.Preconditions;
 
 @Value.Immutable
+@Serial.Version(value = 42L)
 public abstract class ResolutionParameters implements IResolutionParameters<Label> {
 
     @Value.Check protected void check() {

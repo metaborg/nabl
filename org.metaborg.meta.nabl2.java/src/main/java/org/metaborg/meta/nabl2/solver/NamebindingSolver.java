@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGAssoc;
@@ -36,6 +38,7 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
+import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
@@ -75,7 +78,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(INamebindingConstraint constraint) throws UnsatisfiableException {
-        if (nameResolution != null) {
+        if(nameResolution != null) {
             throw new IllegalStateException();
         }
         return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addBuild, this::addBuild, this::addBuild,
@@ -83,14 +86,14 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
-        if (!solve(constraint)) {
+        if(!solve(constraint)) {
             deferedBuilds.add(constraint);
         }
         return unit;
     }
 
     private Unit addCheck(INamebindingConstraint constraint) throws UnsatisfiableException {
-        if (!solve(constraint)) {
+        if(!solve(constraint)) {
             deferedChecks.add(constraint);
         }
         return unit;
@@ -99,7 +102,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     @Override public boolean iterate() throws UnsatisfiableException {
         boolean progress = false;
         progress |= iterate(deferedBuilds);
-        if (nameResolution == null && deferedBuilds.isEmpty()) {
+        if(nameResolution == null && deferedBuilds.isEmpty()) {
             progress |= true;
             nameResolution = new EsopNameResolution<>(scopeGraph, params);
         }
@@ -110,13 +113,13 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     private boolean iterate(Set<INamebindingConstraint> defered) throws UnsatisfiableException {
         boolean progress = false;
         Iterator<INamebindingConstraint> it = defered.iterator();
-        while (it.hasNext()) {
+        while(it.hasNext()) {
             try {
-                if (solve(it.next())) {
+                if(solve(it.next())) {
                     progress = true;
                     it.remove();
                 }
-            } catch (UnsatisfiableException e) {
+            } catch(UnsatisfiableException e) {
                 progress = true;
                 it.remove();
                 throw e;
@@ -144,11 +147,11 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private boolean solve(CGDecl c) throws UnsatisfiableException {
         ITerm declTerm = unifier.find(c.getDeclaration());
-        if (!declTerm.isGround()) {
+        if(!declTerm.isGround()) {
             return false;
         }
         ITerm scopeTerm = unifier.find(c.getScope());
-        if (!scopeTerm.isGround()) {
+        if(!scopeTerm.isGround()) {
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
@@ -159,11 +162,11 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private boolean solve(CGRef c) throws UnsatisfiableException {
         ITerm refTerm = unifier.find(c.getReference());
-        if (!refTerm.isGround()) {
+        if(!refTerm.isGround()) {
             return false;
         }
         ITerm scopeTerm = unifier.find(c.getScope());
-        if (!scopeTerm.isGround()) {
+        if(!scopeTerm.isGround()) {
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm).orElseThrow(() -> new TypeException());
@@ -174,23 +177,22 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private boolean solve(CGDirectEdge de) throws UnsatisfiableException {
         ITerm sourceScopeTerm = unifier.find(de.getSourceScope());
-        if (!sourceScopeTerm.isGround()) {
+        if(!sourceScopeTerm.isGround()) {
             return false;
         }
         ITerm targetScopeTerm = de.getTargetScope();
         Scope sourceScope = Scope.matcher().match(sourceScopeTerm).orElseThrow(() -> new TypeException());
-        scopeGraph.addDirectEdge(sourceScope, de.getLabel(), () -> Optional.of(unifier.find(targetScopeTerm)).filter(
-                ITerm::isGround).map(ts -> Scope.matcher().match(ts).orElseThrow(() -> new TypeException())));
+        scopeGraph.addDirectEdge(sourceScope, de.getLabel(), ImmutableLazyScope.of(targetScopeTerm, unifier));
         return true;
     }
 
     private boolean solve(CGAssoc ee) throws UnsatisfiableException {
         ITerm declTerm = unifier.find(ee.getDeclaration());
-        if (!declTerm.isGround()) {
+        if(!declTerm.isGround()) {
             return false;
         }
         ITerm scopeTerm = unifier.find(ee.getScope());
-        if (!scopeTerm.isGround()) {
+        if(!scopeTerm.isGround()) {
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
@@ -201,41 +203,40 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private boolean solve(CGImport ie) throws UnsatisfiableException {
         ITerm scopeTerm = unifier.find(ie.getScope());
-        if (!scopeTerm.isGround()) {
+        if(!scopeTerm.isGround()) {
             return false;
         }
         ITerm refTerm = unifier.find(ie.getReference());
         Scope scope = Scope.matcher().match(scopeTerm).orElseThrow(() -> new TypeException());
-        scopeGraph.addImport(scope, ie.getLabel(), () -> Optional.of(unifier.find(refTerm)).filter(ITerm::isGround).map(
-                rt -> Occurrence.matcher().match(rt).orElseThrow(() -> new TypeException())));
+        scopeGraph.addImport(scope, ie.getLabel(), ImmutableLazyOccurrence.of(refTerm, unifier));
         return true;
     }
 
     private boolean solve(CResolve r) throws UnsatisfiableException {
-        if (nameResolution == null) {
+        if(nameResolution == null) {
             return false;
         }
         ITerm refTerm = unifier.find(r.getReference());
-        if (!refTerm.isGround()) {
+        if(!refTerm.isGround()) {
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm).orElseThrow(() -> new TypeException());
         Optional<Iterable<IPath<Scope,Label,Occurrence>>> paths = nameResolution.tryResolve(ref);
-        if (paths.isPresent()) {
+        if(paths.isPresent()) {
             List<Occurrence> declarations = Paths.pathsToDecls(paths.get());
-            switch (declarations.size()) {
-            case 0:
-                throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty(), unifier);
-            case 1:
-                try {
-                    unifier.unify(r.getDeclaration(), declarations.get(0));
-                } catch (UnificationException ex) {
-                    throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
-                }
-                return true;
-            default:
-                throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.", Iterables2.empty(),
-                        unifier);
+            switch(declarations.size()) {
+                case 0:
+                    throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty(), unifier);
+                case 1:
+                    try {
+                        unifier.unify(r.getDeclaration(), declarations.get(0));
+                    } catch(UnificationException ex) {
+                        throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
+                    }
+                    return true;
+                default:
+                    throw r.getMessageInfo().makeException("Resolution of " + ref + " is ambiguous.",
+                            Iterables2.empty(), unifier);
             }
         } else {
             return false;
@@ -243,62 +244,95 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     private boolean solve(CAssoc a) throws UnsatisfiableException {
-        if (nameResolution == null) {
+        if(nameResolution == null) {
             return false;
         }
         ITerm declTerm = unifier.find(a.getDeclaration());
-        if (!declTerm.isGround()) {
+        if(!declTerm.isGround()) {
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
         Label label = a.getLabel();
         List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocScopes(decl).get(label));
-        switch (scopes.size()) {
-        case 0:
-            throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.", Iterables2.empty(),
-                    unifier);
-        case 1:
-            try {
-                unifier.unify(a.getScope(), scopes.get(0));
-            } catch (UnificationException ex) {
-                throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
-            }
-            return true;
-        default:
-            throw a.getMessageInfo().makeException(decl + " has multiple " + label + " associated scopes.", Iterables2
-                    .empty(), unifier);
+        switch(scopes.size()) {
+            case 0:
+                throw a.getMessageInfo().makeException(decl + " has no " + label + " associated scope.",
+                        Iterables2.empty(), unifier);
+            case 1:
+                try {
+                    unifier.unify(a.getScope(), scopes.get(0));
+                } catch(UnificationException ex) {
+                    throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
+                }
+                return true;
+            default:
+                throw a.getMessageInfo().makeException(decl + " has multiple " + label + " associated scopes.",
+                        Iterables2.empty(), unifier);
         }
     }
 
     private boolean solve(CDeclProperty c) throws UnsatisfiableException {
         ITerm declTerm = unifier.find(c.getDeclaration());
-        if (!declTerm.isGround()) {
+        if(!declTerm.isGround()) {
             return false;
         }
         ITerm keyTerm = unifier.find(c.getKey());
-        if (!keyTerm.isGround()) {
+        if(!keyTerm.isGround()) {
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
         Optional<ITerm> prev = properties.putValue(decl, keyTerm, c.getValue());
-        if (prev.isPresent()) {
+        if(prev.isPresent()) {
             try {
                 unifier.unify(c.getValue(), prev.get());
-            } catch (UnificationException ex) {
+            } catch(UnificationException ex) {
                 throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
             }
         }
         return true;
     }
 
+    // the two Lazy* classes below are used in place of direct lambda's because lambda's capture the lexical context,
+    // and trip up serialization
+
+    @Value.Immutable
+    @Serial.Version(value = 42L)
+    abstract static class LazyScope implements PartialFunction0<Scope> {
+
+        @Value.Parameter public abstract ITerm getTerm();
+
+        @Value.Parameter public abstract Unifier getUnifier();
+
+        @Override public Optional<Scope> apply() {
+            return Optional.of(getUnifier().find(getTerm())).filter(ITerm::isGround)
+                    .map(t -> Scope.matcher().match(t).orElseThrow(() -> new TypeException()));
+        }
+
+    }
+
+    @Value.Immutable
+    @Serial.Version(value = 42L)
+    abstract static class LazyOccurrence implements PartialFunction0<Occurrence> {
+
+        @Value.Parameter public abstract ITerm getTerm();
+
+        @Value.Parameter public abstract Unifier getUnifier();
+
+        @Override public Optional<Occurrence> apply() {
+            return Optional.of(getUnifier().find(getTerm())).filter(ITerm::isGround)
+                    .map(t -> Occurrence.matcher().match(t).orElseThrow(() -> new TypeException()));
+        }
+
+    }
+
     // ------------------------------------------------------------------------------------------------------//
 
     public IMatcher<Set<IElement<ITerm>>> nameSets() {
         return term -> {
-            if (NamebindingSolver.this.nameResolution == null) {
+            if(NamebindingSolver.this.nameResolution == null) {
                 return Optional.empty();
             }
-            return M.<Optional<Set<IElement<ITerm>>>> cases(
+            return M.<Optional<Set<IElement<ITerm>>>>cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls(scope);
@@ -323,15 +357,15 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
 
     private Set<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
         Set<IElement<ITerm>> result = Sets.newHashSet();
-        for (Occurrence occurrence : occurrences) {
-            if (namespace.getName().isEmpty() || namespace.equals(occurrence.getNamespace())) {
+        for(Occurrence occurrence : occurrences) {
+            if(namespace.getName().isEmpty() || namespace.equals(occurrence.getNamespace())) {
                 result.add(new OccurrenceElement(occurrence));
             }
         }
         return result;
     }
 
-    private class OccurrenceElement implements IElement<ITerm> {
+    private static class OccurrenceElement implements IElement<ITerm> {
 
         private final Occurrence occurrence;
 
@@ -349,11 +383,11 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         }
 
         @Override public Object project(String name) {
-            switch (name) {
-            case "name":
-                return occurrence.getName();
-            default:
-                throw new IllegalArgumentException("Projection " + name + " undefined for occurrences.");
+            switch(name) {
+                case "name":
+                    return occurrence.getName();
+                default:
+                    throw new IllegalArgumentException("Projection " + name + " undefined for occurrences.");
             }
         }
 

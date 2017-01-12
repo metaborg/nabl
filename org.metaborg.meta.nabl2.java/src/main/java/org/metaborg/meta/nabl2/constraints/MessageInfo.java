@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.constraints;
 
 import java.util.Optional;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -11,6 +12,7 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.util.iterators.Iterables2;
 
 @Value.Immutable
+@Serial.Version(value = 42L)
 public abstract class MessageInfo implements IMessageInfo {
 
     public enum Kind {
