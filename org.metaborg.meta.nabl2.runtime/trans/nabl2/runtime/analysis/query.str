@@ -88,7 +88,7 @@ rules
     prim("SG_get_decl_scope", a)
 
   nabl2--get-scope-decls(|a) =
-    prim("SG_get_scope_refs", a)
+    prim("SG_get_scope_decls", a)
 
   nabl2--get-scope-refs(|a) =
     prim("SG_get_scope_refs", a)

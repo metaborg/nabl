@@ -34,6 +34,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final Multimap<S,O> refs;
     private final Map<O,Multimap<L,S>> assocScopes;
 
+    transient private Map<S,Multimap<L,O>> scopeAssocsIndex;
     transient private Map<O,S> declScopesIndex;
     transient private Map<O,S> refScopesIndex;
 
@@ -48,6 +49,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     }
 
     private void initIndices() {
+        this.scopeAssocsIndex = Maps.newHashMap();
         this.refScopesIndex = Maps.newHashMap();
         this.declScopesIndex = Maps.newHashMap();
     }
@@ -97,6 +99,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     public void addAssoc(O decl, L label, S scope) {
         scopes.add(scope);
         assocScopes.computeIfAbsent(decl, s -> HashMultimap.create()).put(label, scope);
+        scopeAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, decl);
     }
 
     public void addImport(S scope, L label, PartialFunction0<O> ref) {
@@ -108,6 +111,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return Multimaps.unmodifiableMultimap(importRefs.computeIfAbsent(scope, s -> HashMultimap.create()));
     }
 
+    @Override public Multimap<L,O> getAssocDecls(S scope) {
+        return Multimaps.unmodifiableMultimap(scopeAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()));
+    }
 
     @Override public Optional<S> getDeclScope(O decl) {
         return declScopesIndex.containsKey(decl) ? Optional.of(declScopesIndex.get(decl)) : Optional.empty();
@@ -135,6 +141,12 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
         initIndices();
+        for(Map.Entry<O,Multimap<L,S>> entry : assocScopes.entrySet()) {
+            for(Map.Entry<L,S> innerEntry : entry.getValue().entries()) {
+                scopeAssocsIndex.computeIfAbsent(innerEntry.getValue(), s -> HashMultimap.create())
+                        .put(innerEntry.getKey(), entry.getKey());
+            }
+        }
         for(Map.Entry<S,O> entry : decls.entries()) {
             declScopesIndex.put(entry.getValue(), entry.getKey());
         }

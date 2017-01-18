@@ -23,6 +23,8 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     Multimap<L,PartialFunction0<O>> getImportRefs(S scope);
 
+    Multimap<L,O> getAssocDecls(S scope);
+
 
     Optional<S> getDeclScope(O decl);
 

@@ -17,10 +17,10 @@ public class SG_get_custom_analysis extends ScopeGraphPrimitive {
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
             throws InterpreterException {
         TermIndex index = term.getAttachments().getInstance(TermIndex.class);
-        if (index == null) {
+        if(index == null) {
             return Optional.empty();
         }
-        return context.unit(index.getResource()).customSolution().<ITerm> map(cs -> cs.getAnalysis());
+        return context.unit(index.getResource()).customSolution().map(cs -> cs.getAnalysis());
     }
 
 }
