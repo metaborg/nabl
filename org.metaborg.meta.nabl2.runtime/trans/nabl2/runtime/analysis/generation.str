@@ -27,33 +27,22 @@ rules // top-level functions that are called during analysis
   nabl2-debug-constraint-generation-hook = fail
 
   nabl2--generate-constraint-init(|source) = nabl2--strict(
-    ?ast;
-    {| NewScope, NewVar:
-	    scope-counter := <new-counter>;
-	    var-counter   := <new-counter>;
-	    rules( NewScope: _ -> <next-counter> scope-counter
-	           NewVar:   _ -> <next-counter> var-counter
-	         );
-      <nabl2--generate-constraint-init-rule(|source)> ast
-	  |}
+    nabl2--generate-constraint-init-rule(|source)
   )
 
   nabl2--generate-constraint-file(|source,params) = nabl2--strict(
-    ?ast;
-    {| NewScope, NewVar:
-	    scope-counter := <new-counter>;
-	    var-counter   := <new-counter>;
-	    rules( NewScope: _ -> <next-counter> scope-counter
-	           NewVar:   _ -> <next-counter> var-counter
-	         );
-      <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|source,params)> ast
-	  |}
+    nabl2--generate-constraint(nabl2--generate-constraint-default-rule|source,params)
   )
 
 rules
 
-  nabl2--new-var(|source)   = (is-string <+ !"v") => n ; !CVar(source,$[[n]'[<NewVar;int-to-string>]])
-  nabl2--new-scope(|source) = (is-string <+ !"s") => n ; !Scope(source,$[[n]'[<NewScope;int-to-string>]])
+  nabl2--new-var(|source): n -> CVar(source,n')
+    with n' := <nabl2--fresh> (source, <is-string <+ !"v"> n)
+
+  nabl2--new-scope(|source): n -> Scope(source,n')
+    with n' := <nabl2--fresh> (source, <is-string <+ !"s"> n)
+
+rules
 
   // signatures of the generated rules
   nabl2--generate-constraint-init-rule(|source) = fail

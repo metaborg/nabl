@@ -33,7 +33,7 @@ public abstract class TermVar implements ITermVar {
     }
 
     @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
-        return ImmutableClassToInstanceMap.<Object> builder().build();
+        return ImmutableClassToInstanceMap.<Object>builder().build();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
