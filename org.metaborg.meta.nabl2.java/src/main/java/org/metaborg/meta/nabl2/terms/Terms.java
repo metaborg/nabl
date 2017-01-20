@@ -67,6 +67,10 @@ public class Terms {
             return term -> Optional.of(f.apply(term));
         }
 
+        public static <T,R> IMatcher<R> term(IMatcher<? extends T> m, Function2<? super ITerm,? super T,R> f) {
+            return term -> m.match(term).map(t -> f.apply(term, t));
+        }
+
         // appl
 
         public static IMatcher<IApplTerm> appl() {

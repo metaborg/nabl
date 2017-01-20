@@ -10,7 +10,6 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 
 import com.google.common.collect.ImmutableList;
 
@@ -26,7 +25,7 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
 
     @Value.Parameter @Override public abstract ITerm getName();
 
-    @Value.Parameter @Override public abstract TermIndex getPosition();
+    @Value.Parameter @Override public abstract OccurrenceIndex getIndex();
 
     // IApplTerm implementation
 
@@ -35,13 +34,12 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(getNamespace(), getName(), getPosition());
+        return ImmutableList.of(getNamespace(), getName(), getIndex());
     }
 
     public static IMatcher<Occurrence> matcher() {
-        return M.appl3("Occurrence", Namespace.matcher(), M.term(), TermIndex.matcher(), (t, namespace, name,
-                termIndex) -> {
-            return ImmutableOccurrence.of(namespace, name, termIndex).setAttachments(t.getAttachments());
+        return M.appl3("Occurrence", Namespace.matcher(), M.term(), OccurrenceIndex.matcher(), (t, namespace, name, index) -> {
+            return ImmutableOccurrence.of(namespace, name, index).setAttachments(t.getAttachments());
         });
     }
 
@@ -57,7 +55,7 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
         sb.append("{");
         sb.append(getName());
         sb.append(" ");
-        sb.append(getPosition());
+        sb.append(getIndex());
         sb.append("}");
         return sb.toString();
     }

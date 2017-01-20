@@ -111,11 +111,11 @@ rules
   nabl2--pp-flat-term: c#(a*) -> $[[c]([as])] 
     where not(is-list)
     with as := <map(!"_");separate-by(|",");concat-strings> a*
-  
+
   nabl2--pp-flat-term: c#(a*) -> ${[{as}]} 
     where is-list
     with as := <map(!"_");separate-by(|",");concat-strings> a*
-  
+
   nabl2--pp-flat-args: Params(a*) -> $[^ ([p])]
     with if <is-tuple> a* then
       p := <TupleToList;map(!"_");separate-by(|",");concat-strings> a*
@@ -125,7 +125,7 @@ rules
 
   nabl2--pp-flat-args: ParamsAndType(a*,_) -> $[[p] : _]
     with p := <nabl2--pp-flat-args> Params(a*)
-  
+
   nabl2--pp-term-sig: a* -> ${[{a'}]}
     where is-list
     with a' := <map(nabl2--pp-term-sig);separate-by(|",");concat-strings> a*

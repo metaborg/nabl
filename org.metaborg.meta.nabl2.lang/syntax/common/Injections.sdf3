@@ -17,8 +17,11 @@ context-free syntax
 
   Message.DefaultMessage =
 
-  TermIndex.DefaultIndex  =
-  TermIndex.IndexFromTerm = <@<Var>>
+  TermIndex.DefaultTermIndex =
+  TermIndex.TermIndexFrom    = <@<Var>>
+
+  OccurrenceIndex.DefaultOccurrenceIndex =
+  OccurrenceIndex.OccurrenceIndexFrom    = <@<Var>>
 
 context-free syntax
 

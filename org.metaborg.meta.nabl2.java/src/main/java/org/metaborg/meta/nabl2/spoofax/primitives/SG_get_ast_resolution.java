@@ -28,7 +28,7 @@ public class SG_get_ast_resolution extends ScopeGraphPrimitive {
         return context.unit(index.getResource()).solution().<ITerm> flatMap(s -> {
             List<ITerm> entries = Lists.newArrayList();
             for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
-                if (ref.getPosition().equals(index)) {
+                if (ref.getIndex().equals(index)) {
                     for (Occurrence decl : Paths.pathsToDecls(s.getNameResolution().resolve(ref))) {
                         entries.add(GenericTerms.newTuple(ref, decl.getName()));
                     }

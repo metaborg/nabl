@@ -24,7 +24,7 @@ public class SG_get_ref_resolution extends ScopeGraphPrimitive {
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
             throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm> flatMap(ref -> {
-            return context.unit(ref.getPosition().getResource()).solution().flatMap(s -> {
+            return context.unit(ref.getIndex().getResource()).solution().flatMap(s -> {
                 List<IPath<Scope,Label,Occurrence>> paths = Lists.newArrayList(s.getNameResolution().resolve(ref));
                 if (paths.size() != 1) {
                     return Optional.empty();
