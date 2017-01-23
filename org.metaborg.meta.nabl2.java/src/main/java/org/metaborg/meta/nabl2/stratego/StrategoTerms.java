@@ -97,33 +97,29 @@ public class StrategoTerms {
 
     public ITerm fromStratego(IStrategoTerm term) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
-        ITerm rawTerm = match(term, FROM_STRATEGO).setAttachments(attachments);
-        return FROM_STRATEGO_SPECIAL.match(rawTerm).orElse(rawTerm);
+        ITerm rawTerm = match(term, StrategoTerms.<ITerm> cases(
+            // @formatter:off
+            appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
+            tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
+            this::fromStrategoList,
+            integer -> GenericTerms.newInt(integer.intValue()),
+            real -> { throw new IllegalArgumentException(); },
+            string -> GenericTerms.newString(string.stringValue()),
+            ref -> { throw new IllegalArgumentException(); },
+            placeholder -> { throw new IllegalArgumentException(); },
+            other -> { throw new IllegalArgumentException(); }
+            // @formatter:on
+        )).setAttachments(attachments);
+        return M.<ITerm> cases(
+            // @formatter:off
+            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
+                    GenericTerms.newVar(resource, name).setAttachments(v.getAttachments())),
+            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).setAttachments(t.getAttachments())),
+            M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
+                    GenericTerms.newListTail(xs, (IListTerm) ys).setAttachments(t.getAttachments()))
+            // @formatter:on
+        ).match(rawTerm).orElse(rawTerm);
     }
-
-    private final ICases<ITerm> FROM_STRATEGO = StrategoTerms.<ITerm> cases(
-        // @formatter:off
-        appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
-        tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
-        this::fromStrategoList,
-        integer -> GenericTerms.newInt(integer.intValue()),
-        real -> { throw new IllegalArgumentException(); },
-        string -> GenericTerms.newString(string.stringValue()),
-        ref -> { throw new IllegalArgumentException(); },
-        placeholder -> { throw new IllegalArgumentException(); },
-        other -> { throw new IllegalArgumentException(); }
-        // @formatter:on
-    );
-    
-    private final IMatcher<ITerm> FROM_STRATEGO_SPECIAL = M.<ITerm> cases(
-        // @formatter:off
-        M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
-                GenericTerms.newVar(resource, name).setAttachments(v.getAttachments())),
-        M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).setAttachments(t.getAttachments())),
-        M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
-                GenericTerms.newListTail(xs, (IListTerm) ys).setAttachments(t.getAttachments()))
-        // @formatter:on
-    );
 
     private IListTerm fromStrategoList(IStrategoList list) {
         Deque<ITerm> terms = new ArrayDeque<>();
