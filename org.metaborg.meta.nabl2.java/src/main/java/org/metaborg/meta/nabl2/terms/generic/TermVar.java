@@ -32,7 +32,7 @@ public abstract class TermVar implements ITermVar {
         throw new IllegalStateException();
     }
 
-    @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
+    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
         return ImmutableClassToInstanceMap.<Object>builder().build();
     }
 

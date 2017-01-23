@@ -16,6 +16,8 @@ public interface ITerm {
 
     ImmutableClassToInstanceMap<Object> getAttachments();
 
+    ITerm setAttachments(ImmutableClassToInstanceMap<Object> value);
+
     <T> T match(Cases<T> cases);
 
     interface Cases<T> {
@@ -32,7 +34,7 @@ public interface ITerm {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 

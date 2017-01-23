@@ -1,10 +1,13 @@
 package org.metaborg.meta.nabl2.stratego;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms;
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
@@ -94,35 +97,47 @@ public class StrategoTerms {
 
     public ITerm fromStratego(IStrategoTerm term) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
-        ITerm rawTerm = match(term, StrategoTerms.<ITerm> cases(
-            // @formatter:off
-            appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl), attachments),
-            tuple -> GenericTerms.newTuple(fromStrategos(tuple), attachments),
-            this::fromStrategoList,
-            integer -> GenericTerms.newInt(integer.intValue(), attachments),
-            real -> { throw new IllegalArgumentException(); },
-            string -> GenericTerms.newString(string.stringValue(), attachments),
-            ref -> { throw new IllegalArgumentException(); },
-            placeholder -> { throw new IllegalArgumentException(); },
-            other -> { throw new IllegalArgumentException(); }
-            // @formatter:on
-        ));
-        return M.<ITerm> cases(
-            // @formatter:off
-            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) -> GenericTerms.newVar(resource, name)),
-            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs)),
-            M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) -> GenericTerms.newListTail(xs, (IListTerm) ys))
-            // @formatter:on
-        ).match(rawTerm).orElse(rawTerm);
+        ITerm rawTerm = match(term, FROM_STRATEGO).setAttachments(attachments);
+        return FROM_STRATEGO_SPECIAL.match(rawTerm).orElse(rawTerm);
     }
 
+    private final ICases<ITerm> FROM_STRATEGO = StrategoTerms.<ITerm> cases(
+        // @formatter:off
+        appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
+        tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
+        this::fromStrategoList,
+        integer -> GenericTerms.newInt(integer.intValue()),
+        real -> { throw new IllegalArgumentException(); },
+        string -> GenericTerms.newString(string.stringValue()),
+        ref -> { throw new IllegalArgumentException(); },
+        placeholder -> { throw new IllegalArgumentException(); },
+        other -> { throw new IllegalArgumentException(); }
+        // @formatter:on
+    );
+    
+    private final IMatcher<ITerm> FROM_STRATEGO_SPECIAL = M.<ITerm> cases(
+        // @formatter:off
+        M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
+                GenericTerms.newVar(resource, name).setAttachments(v.getAttachments())),
+        M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).setAttachments(t.getAttachments())),
+        M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
+                GenericTerms.newListTail(xs, (IListTerm) ys).setAttachments(t.getAttachments()))
+        // @formatter:on
+    );
+
     private IListTerm fromStrategoList(IStrategoList list) {
-        ImmutableClassToInstanceMap<Object> attachments = getAttachments(list);
-        if (list.isEmpty()) {
-            return GenericTerms.newNil(attachments);
-        } else {
-            return GenericTerms.newCons(fromStratego(list.head()), fromStrategoList(list.tail()), attachments);
+        Deque<ITerm> terms = new ArrayDeque<>();
+        Deque<ImmutableClassToInstanceMap<Object>> attachments = new ArrayDeque<>();
+        while (!list.isEmpty()) {
+            terms.push(fromStratego(list.head()));
+            attachments.push(getAttachments(list));
+            list = list.tail();
         }
+        IListTerm newList = GenericTerms.newNil(getAttachments(list));
+        while(!terms.isEmpty()) {
+            newList = GenericTerms.newCons(terms.pop(), newList, attachments.pop());
+        }
+        return newList;
     }
 
     private Iterable<ITerm> fromStrategos(Iterable<IStrategoTerm> strategoTerms) {
