@@ -47,7 +47,7 @@ rules // modules
                , ImportWildcard("runtime/properties")
                , ImportWildcard("runtime/types")
                , ImportWildcard("runtime/relations")
-               , ImportWildcard("runtime/editor")
+               , Import("libspoofax/term/origin")
                ]
 
   import-to-str:
