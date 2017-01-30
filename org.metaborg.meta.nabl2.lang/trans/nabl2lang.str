@@ -13,6 +13,7 @@ imports
   generation/dynsem/main
   signature-extraction/main
   coq/main
+  outline
   pp
  
  
