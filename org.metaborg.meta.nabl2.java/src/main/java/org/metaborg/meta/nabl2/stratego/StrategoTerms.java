@@ -7,7 +7,6 @@ import java.util.List;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
@@ -55,16 +54,18 @@ public class StrategoTerms {
 
     public IStrategoTerm toStratego(ITerm term) {
         IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm> cases(
-                // @formatter:off
-                appl -> {
-                    IStrategoTerm[] args = toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0]);
-                    return appl.getOp().equals(Terms.TUPLE_OP) ? termFactory.makeTuple(args) :
-                                termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), args);
-                },
-                list -> termFactory.makeList(toStrategos(list)), string -> termFactory.makeString(string.getValue()),
-                integer -> termFactory.makeInt(integer.getValue()), var -> termFactory.makeAppl(varCtor,
-                        termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
-        // @formatter:on
+            // @formatter:off
+            appl -> {
+                IStrategoTerm[] args = toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0]);
+                return appl.getOp().equals(Terms.TUPLE_OP)
+                        ? termFactory.makeTuple(args)
+                        : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), args);
+            },
+            list -> termFactory.makeList(toStrategos(list)), string ->
+                    termFactory.makeString(string.getValue()),
+            integer -> termFactory.makeInt(integer.getValue()), var ->
+                    termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
+            // @formatter:on
         ));
         return putAttachments(strategoTerm, term.getAttachments());
     }
@@ -152,7 +153,7 @@ public class StrategoTerms {
             b.put(TermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
         }
 
-        ImploderAttachment imploderAttachment = ImploderAttachment.getCompactPositionAttachment(term, false);
+        ImploderAttachment imploderAttachment = ImploderAttachment.get(term);
         if (imploderAttachment != null) {
             b.put(ImploderAttachment.class, imploderAttachment);
         }
