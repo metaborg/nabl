@@ -22,7 +22,7 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     private final Unifier unifier;
 
-    private final Set<IEqualityConstraint> defered;
+    private final Set<CInequal> defered;
 
     public EqualitySolver(Unifier unifier) {
         this.unifier = unifier;
@@ -32,14 +32,11 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(IEqualityConstraint constraint) throws UnsatisfiableException {
-        if (!solve(constraint)) {
-            defered.add(constraint);
-        }
-        return unit;
+        return constraint.matchOrThrow(CheckedCases.of(this::add, this::add));
     }
 
     @Override public boolean iterate() throws UnsatisfiableException {
-        Iterator<IEqualityConstraint> it = defered.iterator();
+        Iterator<CInequal> it = defered.iterator();
         boolean progress = false;
         while (it.hasNext()) {
             try {
@@ -58,16 +55,26 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     @Override public Iterable<UnsatisfiableException> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved (in)equality constraint: " + c.find(unifier), Iterables2
+            return c.getMessageInfo().makeException("Unsolved inequality constraint: " + c.find(unifier), Iterables2
                     .empty(), unifier);
         }).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------------------------------------//
-
-    private boolean solve(IEqualityConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve));
+ 
+    private Unit add(CEqual constraint) throws UnsatisfiableException {
+        solve(constraint);
+        return unit;
     }
+
+    private Unit add(CInequal constraint) throws UnsatisfiableException {
+        if (!solve(constraint)) {
+            defered.add(constraint);
+        }
+        return unit;
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
 
     private boolean solve(CEqual constraint) throws UnsatisfiableException {
         ITerm left = unifier.find(constraint.getLeft());

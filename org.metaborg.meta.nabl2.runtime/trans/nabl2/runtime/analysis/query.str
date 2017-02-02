@@ -114,6 +114,14 @@ rules
 
 rules
 
+  nabl2--get-symbolic-facts(|a) =
+    prim("SG_get_symbolic_facts", a)
+
+  nabl2--get-symbolic-goals(|a) =
+    prim("SG_get_symbolic_goals", a)
+
+rules
+
   /* FIXME : Indices, origins, and occurrences are brittle
    *
    * - Should it be possible to get anaysis from an occurrence?

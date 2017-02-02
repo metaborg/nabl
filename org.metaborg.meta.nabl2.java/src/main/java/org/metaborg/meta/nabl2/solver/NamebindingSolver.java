@@ -85,20 +85,6 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                 this::addBuild, this::addCheck, this::addCheck, this::addCheck));
     }
 
-    private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
-            deferedBuilds.add(constraint);
-        }
-        return unit;
-    }
-
-    private Unit addCheck(INamebindingConstraint constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
-            deferedChecks.add(constraint);
-        }
-        return unit;
-    }
-
     @Override public boolean iterate() throws UnsatisfiableException {
         boolean progress = false;
         progress |= iterate(deferedBuilds);
@@ -136,6 +122,39 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             return c.getMessageInfo().makeException("Unsolved name resolution constraint: " + c.find(unifier),
                     Iterables2.empty(), unifier);
         }).collect(Collectors.toList());
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
+
+    private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
+        if(!solve(constraint)) {
+            deferedBuilds.add(constraint);
+        }
+        return unit;
+    }
+
+    private Unit addCheck(CResolve constraint) throws UnsatisfiableException {
+        unifier.addActive(constraint.getDeclaration());
+        if(!solve(constraint)) {
+            deferedChecks.add(constraint);
+        }
+        return unit;
+    }
+
+    private Unit addCheck(CAssoc constraint) throws UnsatisfiableException {
+        unifier.addActive(constraint.getScope());
+        if(!solve(constraint)) {
+            deferedChecks.add(constraint);
+        }
+        return unit;
+    }
+
+    private Unit addCheck(CDeclProperty constraint) throws UnsatisfiableException {
+        unifier.addActive(constraint.getValue());
+        if(!solve(constraint)) {
+            deferedChecks.add(constraint);
+        }
+        return unit;
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -229,6 +248,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                     throw r.getMessageInfo().makeException(ref + " does not resolve.", Iterables2.empty(), unifier);
                 case 1:
                     try {
+                        unifier.removeActive(r.getDeclaration());
                         unifier.unify(r.getDeclaration(), declarations.get(0));
                     } catch(UnificationException ex) {
                         throw r.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
@@ -260,6 +280,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
                         Iterables2.empty(), unifier);
             case 1:
                 try {
+                    unifier.removeActive(a.getScope());
                     unifier.unify(a.getScope(), scopes.get(0));
                 } catch(UnificationException ex) {
                     throw a.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
@@ -281,6 +302,7 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm).orElseThrow(() -> new TypeException());
+        unifier.removeActive(c.getValue());
         Optional<ITerm> prev = properties.putValue(decl, keyTerm, c.getValue());
         if(prev.isPresent()) {
             try {

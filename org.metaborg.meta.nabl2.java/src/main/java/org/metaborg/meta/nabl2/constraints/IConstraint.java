@@ -6,8 +6,10 @@ import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
+import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
+import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
@@ -33,6 +35,10 @@ public interface IConstraint {
 
         T caseSet(ISetConstraint constraint);
 
+        T caseSym(ISymbolicConstraint constraint);
+
+        T casePoly(IPolyConstraint constraint);
+
         static <T> Cases<T> of(
             // @formatter:off
             Function<IAstConstraint,T> onAst,
@@ -40,7 +46,9 @@ public interface IConstraint {
             Function<IEqualityConstraint,T> onEquality,
             Function<INamebindingConstraint,T> onNamebinding,
             Function<IRelationConstraint,T> onRelation,
-            Function<ISetConstraint,T> onSet
+            Function<ISetConstraint,T> onSet,
+            Function<ISymbolicConstraint,T> onSym,
+            Function<IPolyConstraint,T> onPoly
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -69,6 +77,14 @@ public interface IConstraint {
                     return onSet.apply(constraint);
                 }
 
+                @Override public T caseSym(ISymbolicConstraint constraint) {
+                    return onSym.apply(constraint);
+                }
+                
+                @Override public T casePoly(IPolyConstraint constraint) {
+                    return onPoly.apply(constraint);
+                }
+                
             };
         }
 
@@ -90,6 +106,10 @@ public interface IConstraint {
 
         T caseSet(ISetConstraint constraint) throws E;
 
+        T caseSym(ISymbolicConstraint cFact) throws E;
+
+        T casePoly(IPolyConstraint constraint) throws E;
+
         static <T, E extends Throwable> CheckedCases<T,E> of(
             // @formatter:off
             CheckedFunction1<IAstConstraint,T,E> onAst,
@@ -97,7 +117,9 @@ public interface IConstraint {
             CheckedFunction1<IEqualityConstraint,T,E> onEquality,
             CheckedFunction1<INamebindingConstraint,T,E> onNamebinding,
             CheckedFunction1<IRelationConstraint,T,E> onRelation,
-            CheckedFunction1<ISetConstraint,T,E> onSet
+            CheckedFunction1<ISetConstraint,T,E> onSet,
+            CheckedFunction1<ISymbolicConstraint,T,E> onSym,
+            CheckedFunction1<IPolyConstraint,T,E> onPoly
             // @formatter:on
         ) {
             return new CheckedCases<T,E>() {
@@ -126,6 +148,14 @@ public interface IConstraint {
                     return onSet.apply(constraint);
                 }
 
+                @Override public T caseSym(ISymbolicConstraint constraint) throws E {
+                    return onSym.apply(constraint);
+                }
+                
+                @Override public T casePoly(IPolyConstraint constraint) throws E {
+                    return onPoly.apply(constraint);
+                }
+                
             };
         }
 

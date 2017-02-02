@@ -282,7 +282,26 @@ rules // ###### Scope graphs ######
    */
   nabl2-get-occurrence-name = nabl2--occurrence-name
 
+
+rules // ###### Symbolic Constraints ######
   
+  /**
+   * Get symbolic facts
+   *
+   * @param a : Analysis
+   * @type _ -> List(Term)
+   */
+  nabl2-get-symbolic-facts(|a) = nabl2--get-symbolic-facts(|a)
+
+  /**
+   * Get symbolic goals
+   *
+   * @param a : Analysis
+   * @type _ -> List(Term)
+   */
+  nabl2-get-symbolic-goals(|a) = nabl2--get-symbolic-goals(|a)
+
+
 rules // ###### Editor Integration ######
 
   /**

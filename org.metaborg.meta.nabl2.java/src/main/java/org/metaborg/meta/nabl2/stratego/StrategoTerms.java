@@ -153,7 +153,7 @@ public class StrategoTerms {
             b.put(TermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
         }
 
-        ImploderAttachment imploderAttachment = ImploderAttachment.get(term);
+        ImploderAttachment imploderAttachment = ImploderAttachment.getCompactPositionAttachment(term, false);
         if (imploderAttachment != null) {
             b.put(ImploderAttachment.class, imploderAttachment);
         }

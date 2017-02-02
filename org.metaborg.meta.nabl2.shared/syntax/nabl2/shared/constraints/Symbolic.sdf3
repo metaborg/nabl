@@ -1,4 +1,4 @@
-module nabl2/shared/constraints/Uninterpreted
+module nabl2/shared/constraints/Symbolic
 
 imports
 

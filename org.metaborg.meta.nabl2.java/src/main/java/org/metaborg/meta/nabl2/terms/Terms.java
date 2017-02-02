@@ -24,11 +24,13 @@ public class Terms {
     // SAFE
 
     public static <T> ITerm.Cases<T> cases(
-            // @formatter:off
-            Function1<? super IApplTerm, ? extends T> onAppl, Function1<? super IListTerm, ? extends T> onList,
-            Function1<? super IStringTerm, ? extends T> onString, Function1<? super IIntTerm, ? extends T> onInt,
-            Function1<? super ITermVar, ? extends T> onVar
-    // @formatter:on
+        // @formatter:off
+        Function1<? super IApplTerm, ? extends T> onAppl,
+        Function1<? super IListTerm, ? extends T> onList,
+        Function1<? super IStringTerm, ? extends T> onString,
+        Function1<? super IIntTerm, ? extends T> onInt,
+        Function1<? super ITermVar, ? extends T> onVar
+        // @formatter:on
     ) {
         return new ITerm.Cases<T>() {
 

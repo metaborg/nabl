@@ -2,6 +2,8 @@ package org.metaborg.meta.nabl2.terms;
 
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
+
 public interface IListTerm extends ITerm, Iterable<ITerm> {
 
     <T> T match(Cases<T> cases);
@@ -27,5 +29,7 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
         T caseVar(ITermVar var) throws E;
 
     }
+
+    IListTerm setAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

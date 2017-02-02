@@ -13,11 +13,15 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDirectEdge;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImport;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCResolve;
+import org.metaborg.meta.nabl2.constraints.poly.ImmutableCGeneralize;
+import org.metaborg.meta.nabl2.constraints.poly.ImmutableCInstantiate;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCCheckRelation;
 import org.metaborg.meta.nabl2.constraints.relations.ImmutableCEvalFunction;
 import org.metaborg.meta.nabl2.constraints.sets.ImmutableCDistinct;
 import org.metaborg.meta.nabl2.constraints.sets.ImmutableCSubsetEq;
+import org.metaborg.meta.nabl2.constraints.sym.ImmutableCFact;
+import org.metaborg.meta.nabl2.constraints.sym.ImmutableCGoal;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -29,6 +33,8 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 public class ConstraintTerms {
+
+    private final static ILogger logger = LoggerUtils.logger(ConstraintTerms.class);
 
     public static IMatcher<Iterable<IConstraint>> constraints() {
         return M.listElems(constraint(), (l, cs) -> cs);
@@ -91,8 +97,19 @@ public class ConstraintTerms {
             M.appl3("CDistinct", SetTerms.projection(), M.term(), MessageInfo.matcher(), (c, proj, set, origin) -> {
                 return ImmutableCDistinct.of(set, proj, origin);
             }),
+            M.appl2("CFact", M.term(), MessageInfo.simpleMatcher(), (c, fact, origin) -> {
+                return ImmutableCFact.of(fact, origin);
+            }),
+            M.appl2("CGoal", M.term(), MessageInfo.simpleMatcher(), (c, goal, origin) -> {
+                return ImmutableCGoal.of(goal, origin);
+            }),
+            M.appl3("CGen", M.term(), M.term(), MessageInfo.matcher(), (c, scheme, type, origin) -> {
+                return ImmutableCGeneralize.of(scheme, type, origin);
+            }),
+            M.appl3("CInst", M.term(), M.term(), MessageInfo.matcher(), (c, type, scheme, origin) -> {
+                return ImmutableCInstantiate.of(type, scheme, origin);
+            }),
             M.term(t -> {
-                ILogger logger = LoggerUtils.logger(ConstraintTerms.class);
                 logger.warn("Ignoring constraint: {}", t);
                 return ImmutableCTrue.of(ImmutableMessageInfo.of(t));
             })

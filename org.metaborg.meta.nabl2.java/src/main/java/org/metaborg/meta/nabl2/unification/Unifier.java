@@ -13,8 +13,10 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 
 public class Unifier implements IUnifier, Serializable {
 
@@ -22,10 +24,12 @@ public class Unifier implements IUnifier, Serializable {
 
     private final Map<ITermVar,ITerm> reps;
     private final Map<ITermVar,Integer> sizes;
+    private final Multiset<ITermVar> activeVars;
 
     public Unifier() {
         this.reps = Maps.newHashMap();
         this.sizes = Maps.newHashMap();
+        this.activeVars = HashMultiset.create();
     }
 
     /**
@@ -152,6 +156,7 @@ public class Unifier implements IUnifier, Serializable {
 
     private boolean unifyVarTerm(ITermVar var, ITerm term) {
         reps.put(var, term);
+        updateActive(var, term);
         return true;
     }
 
@@ -161,9 +166,11 @@ public class Unifier implements IUnifier, Serializable {
         if (sizeLeft > sizeRight) {
             reps.put(varRight, varLeft);
             sizes.put(varLeft, sizeLeft + sizeRight);
+            updateActive(varRight, varLeft);
         } else {
             reps.put(varLeft, varRight);
             sizes.put(varRight, sizeLeft + sizeRight);
+            updateActive(varLeft, varRight);
         }
         return true;
     }
@@ -240,5 +247,45 @@ public class Unifier implements IUnifier, Serializable {
         return !itRight.hasNext();
     }
 
+    /**
+     * Test if any variables in term are in the active set.
+     */
+    public boolean isActive(ITerm term) {
+        for (ITermVar var : find(term).getVars()) {
+            if (activeVars.contains(var)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+    /**
+     * Add variables in term to active set.
+     */
+    public void addActive(ITerm term) {
+        for (ITermVar var : find(term).getVars()) {
+            activeVars.add(var);
+        }
+    }
+    
+    /**
+     * Remove variables in term from active set.
+     */
+    public void removeActive(ITerm term) {
+        for (ITermVar var : find(term).getVars()) {
+            activeVars.remove(var);
+        }
+    }
+ 
+    private void updateActive(ITermVar var, ITerm term) {
+        if (!activeVars.contains(var)) {
+            //return;
+        }
+        int n = activeVars.count(var);
+        for (ITermVar v : term.getVars()) {
+            activeVars.add(v, n);
+        }
+        activeVars.remove(var, n);
+    }
+    
 }

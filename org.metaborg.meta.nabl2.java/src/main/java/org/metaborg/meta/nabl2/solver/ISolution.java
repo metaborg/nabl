@@ -30,6 +30,8 @@ public interface ISolution {
 
     IRelations<ITerm> getRelations();
 
+    ISymbolicConstraints getSymbolic();
+    
     IUnifier getUnifier();
 
 }

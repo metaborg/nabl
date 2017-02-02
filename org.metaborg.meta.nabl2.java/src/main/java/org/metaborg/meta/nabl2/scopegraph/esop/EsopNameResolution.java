@@ -273,4 +273,8 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         initTransients();
     }
 
+    // counters
+    
+    
+    
 }

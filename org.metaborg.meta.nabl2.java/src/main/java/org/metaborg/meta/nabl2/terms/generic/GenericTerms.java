@@ -17,6 +17,10 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class GenericTerms {
 
+    public static final IApplTerm EMPTY_TUPLE = newTuple();
+
+    public static final IListTerm EMPTY_LIST = newNil();
+ 
     public static IApplTerm newAppl(String op, ITerm... args) {
         return ImmutableApplTerm.of(op, Iterables2.from(args));
     }

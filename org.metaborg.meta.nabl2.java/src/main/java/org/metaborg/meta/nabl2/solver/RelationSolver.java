@@ -74,10 +74,10 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
         if (complete) {
             throw new IllegalStateException("Cannot add constraints after iteration started.");
         }
-        return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addOther, this::addOther));
+        return constraint.matchOrThrow(CheckedCases.of(this::add, this::add, this::add));
     }
 
-    private Unit addBuild(CBuildRelation constraint) throws UnsatisfiableException {
+    private Unit add(CBuildRelation constraint) throws UnsatisfiableException {
         if (!solve(constraint)) {
             deferedBuilds.put(constraint.getRelation(), constraint);
         }
@@ -85,7 +85,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     }
 
-    private Unit addOther(IRelationConstraint constraint) throws UnsatisfiableException {
+    private Unit add(CCheckRelation constraint) throws UnsatisfiableException {
         if (!solve(constraint)) {
             deferedChecks.add(constraint);
         }
@@ -93,6 +93,14 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     }
 
+    private Unit add(CEvalFunction constraint) throws UnsatisfiableException {
+        unifier.addActive(constraint.getResult());
+        if (!solve(constraint)) {
+            deferedChecks.add(constraint);
+        }
+        return Unit.unit;
+
+    }
 
     @Override public boolean iterate() throws UnsatisfiableException {
         complete = true;
@@ -181,6 +189,7 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
             return false;
         }
         try {
+            unifier.removeActive(c.getResult());
             unifier.unify(c.getResult(), result.get());
         } catch (UnificationException ex) {
             throw c.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
