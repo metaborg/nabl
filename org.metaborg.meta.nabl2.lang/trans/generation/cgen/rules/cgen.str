@@ -119,10 +119,6 @@ rules
                    with n := Str(<var-name> v)
                  \})> v*
 
-  clause-to-str:
-    IndexSublist(list,sublist) -> str
-    with str := |[ <nabl2--index-sublist(|~list)> ~sublist ]|
-
 rules
  
   constraints-to-terms =

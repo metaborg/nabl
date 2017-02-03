@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.stratego;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -84,15 +85,20 @@ public class StrategoTerms {
             term.putAttachment(imploderAttachment);
         }
 
-        TermIndex termIndex = attachments.getInstance(TermIndex.class);
-        if (termIndex != null) {
-            StrategoTermIndex.put(term, termIndex.getResource(), termIndex.getId());
-        }
+        List<IStrategoTerm> annos = Lists.newArrayList();
 
         StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
         if (annotations != null) {
-            term = termFactory.annotateTerm(term, annotations.getAnnotationList());
+            annos.addAll(annotations.getAnnotationList());
         }
+
+        TermIndex termIndex = attachments.getInstance(TermIndex.class);
+        if (termIndex != null) {
+            annos.add(StrategoTermIndex.of(termIndex.getResource(), termIndex.getId(), termFactory));
+        }
+
+        term = termFactory.copyAttachments(term, termFactory.annotateTerm(term, termFactory.makeList(annos)));
+
         return term;
     }
 
@@ -148,17 +154,21 @@ public class StrategoTerms {
     private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
         Builder<Object> b = ImmutableClassToInstanceMap.builder();
 
-        StrategoTermIndex termIndex = StrategoTermIndex.get(term);
-        if (termIndex != null) {
-            b.put(TermIndex.class, ImmutableTermIndex.of(termIndex.getResource(), termIndex.getId()));
-        }
-
         ImploderAttachment imploderAttachment = ImploderAttachment.getCompactPositionAttachment(term, false);
         if (imploderAttachment != null) {
             b.put(ImploderAttachment.class, imploderAttachment);
         }
 
-        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(term.getAnnotations()));
+        List<IStrategoTerm> annos = Lists.newArrayList();
+        for (IStrategoTerm anno : term.getAnnotations()) {
+            Optional<StrategoTermIndex> index = StrategoTermIndex.match(anno, termFactory);
+            if (index.isPresent()) {
+                b.put(TermIndex.class, ImmutableTermIndex.of(index.get().getResource(), index.get().getId()));
+            } else {
+                annos.add(anno);
+            }
+        }
+        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(annos));
 
         Attacher attacher = new Attacher() {
 
@@ -198,12 +208,17 @@ public class StrategoTerms {
     }
 
     public static <T> ICases<T> cases(
-            // @formatter:off
-            Function1<IStrategoAppl, T> onAppl, Function1<IStrategoTuple, T> onTuple,
-            Function1<IStrategoList, T> onList, Function1<IStrategoInt, T> onInt, Function1<IStrategoReal, T> onReal,
-            Function1<IStrategoString, T> onString, Function1<IStrategoRef, T> onRef,
-            Function1<IStrategoPlaceholder, T> onPlaceholder, Function1<IStrategoTerm, T> otherwise
-    // @formatter:on
+        // @formatter:off
+        Function1<IStrategoAppl, T> onAppl,
+        Function1<IStrategoTuple, T> onTuple,
+        Function1<IStrategoList, T> onList,
+        Function1<IStrategoInt, T> onInt,
+        Function1<IStrategoReal, T> onReal,
+        Function1<IStrategoString, T> onString,
+        Function1<IStrategoRef, T> onRef,
+        Function1<IStrategoPlaceholder, T> onPlaceholder,
+        Function1<IStrategoTerm, T> otherwise
+        // @formatter:on
     ) {
         return new ICases<T>() {
 

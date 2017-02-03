@@ -98,8 +98,7 @@ rules
 rules
 
   normalize-list-matches =
-    bottomup(try(normalize-list-match));
-    try(sometd(normalize-sublist-index))
+    bottomup(try(normalize-list-match))
 
   normalize-list-match:
     ListTail(xs*,ListTail(ys*,tl)) -> ListTail([xs*,ys*],tl)
@@ -107,22 +106,6 @@ rules
   normalize-list-match:
     ListTail(xs*,List(ys*)) -> List([xs*,ys*])
 
-  normalize-sublist-index:
-    CGenMatchRule(name,pattern,params,type,clause*)
-      -> CGenMatchRule(name,pattern',params,type,[clause'*,clause*])
-    with pattern' := <bottomup(try({\
-                        ListTail(xs,tail) -> As(listvar,ListTail(xs,tail'))
-                        with listvar := Var(<newname> "nabl2__list");
-                             if As(_,_) := tail then
-                               tail' := tail
-                             else
-                               tail' := As(Var(<newname> "nabl2__sublist"),tail)
-                             end
-                      \}))> pattern;
-         clause'* := <collect-all(\
-                        As(listvar,ListTail(_,As(sublistvar,_))) -> IndexSublist(listvar,sublistvar)
-                      \)> pattern'
- 
 rules
 
   normalize-rule-vars = 

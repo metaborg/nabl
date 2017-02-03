@@ -1,52 +1,62 @@
 package org.metaborg.meta.nabl2.stratego;
 
-import org.metaborg.meta.nabl2.ScopeGraphException;
+import java.util.Arrays;
+
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
-import org.spoofax.terms.visitor.AStrategoTermVisitor;
-import org.spoofax.terms.visitor.StrategoTermVisitee;
+import org.spoofax.interpreter.terms.ITermFactory;
 
 public class StrategoTermIndices {
 
-    public static void indexTerm(final String resource, final IStrategoTerm term) {
-        StrategoTermVisitee.topdown(new AStrategoTermVisitor() {
-
-            private int currentId = 0;
-
-            @Override public boolean visit(IStrategoList list) {
-                visit((IStrategoTerm) list);
-                currentId += list.size();
-                return true;
-            }
-
-            @Override public boolean visit(IStrategoTerm term) {
-                StrategoTermIndex.put(term, resource, ++currentId);
-                return true;
-            }
-
-        }, term);
+    private final ITermFactory termFactory;
+    private final String resource;
+    private int currentId;
+ 
+    public StrategoTermIndices(String resource, ITermFactory termFactory) {
+        super();
+        this.termFactory = termFactory;
+        this.resource = resource;
+        this.currentId = 0;
     }
 
-    public static void indexSublist(IStrategoTerm list, IStrategoTerm sublist) throws ScopeGraphException {
-        if (!list.isList()) {
-            throw new ScopeGraphException("List term is not a list.");
+    private IStrategoTerm indexTerm(final IStrategoTerm term) {
+        IStrategoList annos = makeAnnos(term);
+        IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm> cases(
+            appl -> termFactory.makeAppl(appl.getConstructor(), indexTerms(appl.getAllSubterms())),
+            tuple -> termFactory.makeTuple(tuple.getAllSubterms()),
+            list -> indexList(list),
+            integer -> integer,
+            real -> real,
+            string -> string,
+            ref -> ref,
+            placeholder -> placeholder,
+            other -> other
+        ));
+        return termFactory.copyAttachments(term, termFactory.annotateTerm(result, annos));
+    }
+ 
+    private IStrategoList indexList(final IStrategoList list) {
+        IStrategoList annos = makeAnnos(list);
+        IStrategoTerm result;
+        if (list.isEmpty()) {
+            result = termFactory.makeList(new IStrategoTerm[0], annos);
+        } else {
+            result = termFactory.makeListCons(indexTerm(list.head()), indexList(list.tail()), annos);
         }
-        if (!sublist.isList()) {
-            throw new ScopeGraphException("Sublist term is not a list.");
-        }
-        int listCount = list.getSubtermCount();
-        int sublistCount = sublist.getSubtermCount();
-        if (sublistCount > listCount) {
-            throw new ScopeGraphException("Sublist cannot be longer than original list.");
-        }
-
-        StrategoTermIndex index = StrategoTermIndex.get(list);
-        if (index == null) {
-            throw new ScopeGraphException("List has no index.");
-        }
-
-        int skip = listCount - sublistCount;
-        StrategoTermIndex.put(sublist, index.getResource(), index.getId() + skip);
+        return (IStrategoList) termFactory.copyAttachments(list, termFactory.annotateTerm(result, annos));
     }
 
+    private IStrategoTerm[] indexTerms(final IStrategoTerm[] terms) {
+        return Arrays.asList(terms).stream().map(this::indexTerm).toArray(n -> new IStrategoTerm[n]);
+    }
+
+    private IStrategoList makeAnnos(IStrategoTerm term) {
+        IStrategoTerm index = StrategoTermIndex.of(resource, ++currentId, termFactory);
+        return termFactory.makeListCons(index, term.getAnnotations());
+    }
+
+    public static IStrategoTerm indexTerm(IStrategoTerm term, String resource, ITermFactory termFactory) {
+        return new StrategoTermIndices(resource, termFactory).indexTerm(term);
+    }
+ 
 }

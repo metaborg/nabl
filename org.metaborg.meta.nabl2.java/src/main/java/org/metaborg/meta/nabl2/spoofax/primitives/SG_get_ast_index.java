@@ -14,12 +14,10 @@ public class SG_get_ast_index extends AbstractPrimitive {
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        StrategoTermIndex index = StrategoTermIndex.get(env.current());
-        if (index == null) {
-            return false;
-        }
-        env.setCurrent(index.toTerm(env.getFactory()));
-        return true;
+        return StrategoTermIndex.get(env.current(), env.getFactory()).map(index -> {
+            env.setCurrent(index);
+            return true;
+        }).orElse(false);
     }
 
 }

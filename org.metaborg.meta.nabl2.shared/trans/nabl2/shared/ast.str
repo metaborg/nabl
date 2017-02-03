@@ -11,9 +11,6 @@ rules // ast indices
   nabl2--index-ast(|source) =
     prim("SG_index_ast", source)
 
-  nabl2--index-sublist(|list) =
-    prim("SG_index_sublist", list)
-
   nabl2--get-ast-index =
     ?t ; prim("SG_get_ast_index") ; nabl2--copy-origin(|t)
 
@@ -22,16 +19,9 @@ rules // ast indices
 
   nabl2--copy-ast-index(|from) =
     nabl2--set-ast-index(|<nabl2--get-ast-index> from)
- <+ with(<warn(|"Cannot copy ast index from ")> from)
-
-  nabl2--try-copy-ast-index(|from) =
-    try(nabl2--set-ast-index(|<nabl2--get-ast-index> from))
 
   nabl2--preserve-ast-index(s) =
-    ?t; s; nabl2--copy-ast-index(|t)
-
-  nabl2--try-preserve-ast-index(s) =
-    ?t; s; nabl2--try-copy-ast-index(|t)
+    ?t; s; try(nabl2--copy-ast-index(|t))
 
   nabl2--ast-eq =
     where((nabl2--get-ast-index,nabl2--get-ast-index);eq);

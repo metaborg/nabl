@@ -3,10 +3,8 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 import org.metaborg.meta.nabl2.stratego.StrategoTermIndex;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
-import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.Strategy;
-import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
 public class SG_set_ast_index extends AbstractPrimitive {
@@ -16,14 +14,10 @@ public class SG_set_ast_index extends AbstractPrimitive {
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        IStrategoTerm indexTerm = tvars[0];
-        if (!Tools.isTermAppl(indexTerm)) {
-            throw new InterpreterException("Not a valid index term.");
-        }
-        if (!StrategoTermIndex.put(env.current(), (IStrategoAppl) indexTerm)) {
-            throw new InterpreterException("Not a valid index term.");
-        }
-        return true;
+        return StrategoTermIndex.match(tvars[0], env.getFactory()).map(index -> {
+            env.setCurrent(index.put(env.current(), env.getFactory()));
+            return true;
+        }).orElseThrow(() -> new InterpreterException("Term argument is not a TermIndex"));
     }
 
 }

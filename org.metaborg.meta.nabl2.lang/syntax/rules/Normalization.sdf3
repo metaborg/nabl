@@ -7,5 +7,3 @@ imports
 context-free syntax
 
   RuleClause.NewVars      = <new vars <{CVar " "}+>>
-
-  RuleClause.IndexSublist = <from list <CVar> index sublist <CVar>>

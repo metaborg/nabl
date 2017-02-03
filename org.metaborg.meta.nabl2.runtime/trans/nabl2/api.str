@@ -302,6 +302,43 @@ rules // ###### Symbolic Constraints ######
   nabl2-get-symbolic-goals(|a) = nabl2--get-symbolic-goals(|a)
 
 
+rules // ###### AST Indices ######
+
+  /**
+   * Get AST index. Fails if term has no index.
+   *
+   * @type Term -> TermIndex
+   */
+  nabl2-get-ast-index = nabl2--get-ast-index
+
+  /**
+   * Set AST index on a term. Throws an exception of the index argument
+   * is not a valid index.
+   *
+   * @param index : Termindex
+   * @type Term -> Term
+   */
+  nabl2-set-ast-index(|index) = nabl2--set-ast-index(|index)
+
+  /**
+   * Copy AST index from one term to another. Fails if the source has no
+   * index.
+   *
+   * @param from : Termindex
+   * @type Term -> Term
+   */
+  nabl2-copy-ast-index(|from) = nabl2--copy-ast-index(|from)
+
+  /**
+   * Execute a strategy and copy the index of the input term to the output
+   * term. If the original term has no index, the result of applying s is
+   * returned unchanged. Thus, failure behaviour of s is preserved.
+   *
+   * @param from : Termindex
+   * @type Term -> Term
+   */
+  nabl2-preserve-ast-index(s) = nabl2--preserve-ast-index(s)
+
 rules // ###### Editor Integration ######
 
   /**
