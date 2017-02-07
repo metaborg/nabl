@@ -24,7 +24,7 @@ rules // ast indices
     ?t; s; try(nabl2--copy-ast-index(|t))
 
   nabl2--ast-eq =
-    where((nabl2--get-ast-index,nabl2--get-ast-index);eq);
+    where((nabl2--get-ast-index,nabl2--get-ast-index) < eq + id);
     where(eq)
 
 rules // origins
