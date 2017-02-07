@@ -52,7 +52,7 @@ public abstract class MessageInfo implements IMessageInfo {
     }
 
     private IMatcher<String> formatMessagePart() {
-        return M.cases(
+        return M.<String> cases(
             // @formatter:off
             M.appl1("Text", M.stringValue(), (t,s) -> s),
             M.appl1("Term", M.term(), (t,s) -> TermSimplifier.simplify(s).toString()),
