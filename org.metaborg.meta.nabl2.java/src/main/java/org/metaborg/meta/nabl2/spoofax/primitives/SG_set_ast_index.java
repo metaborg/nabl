@@ -16,10 +16,13 @@ public class SG_set_ast_index extends AbstractPrimitive {
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        if (Tools.isTermAppl(tvars[0])) {
+        if (!Tools.isTermAppl(tvars[0])) {
             throw new InterpreterException("Term argument is not a TermIndex");
         }
         StrategoTermIndex termIndex = StrategoTermIndex.TYPE.fromTerm((IStrategoAppl)tvars[0]);
+        if (termIndex == null) {
+            throw new InterpreterException("Term argument is not a TermIndex");
+        }
         env.current().putAttachment(termIndex);
         return true;
     }
