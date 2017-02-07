@@ -1,16 +1,16 @@
 package org.metaborg.meta.nabl2.terms;
 
-import java.util.function.Function;
-
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
+import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.Function2;
 
 public class ListTerms {
 
     public static <T> IListTerm.Cases<T> cases(
         // @formatter:off
-        Function<? super IConsTerm,T> onCons,
-        Function<? super INilTerm,T> onNil,
-        Function<? super ITermVar,T> onVar
+        Function1<? super IConsTerm,T> onCons,
+        Function1<? super INilTerm,T> onNil,
+        Function1<? super ITermVar,T> onVar
         // @formatter:on
     ) {
         return new IListTerm.Cases<T>() {
@@ -25,6 +25,30 @@ public class ListTerms {
 
             @Override public T caseVar(ITermVar var) {
                 return onVar.apply(var);
+            }
+
+        };
+    }
+
+    public static <T> IListTerm.Cases<T> casesFix(
+        // @formatter:off
+        Function2<IListTerm.Cases<T>, ? super IConsTerm, ? extends T> onCons,
+        Function2<IListTerm.Cases<T>, ? super INilTerm, ? extends T> onNil,
+        Function2<IListTerm.Cases<T>, ? super ITermVar, ? extends T> onVar
+        // @formatter:on
+    ) {
+        return new IListTerm.Cases<T>() {
+
+            @Override public T caseCons(IConsTerm cons) {
+                return onCons.apply(this, cons);
+            }
+
+            @Override public T caseNil(INilTerm nil) {
+                return onNil.apply(this, nil);
+            }
+
+            @Override public T caseVar(ITermVar var) {
+                return onVar.apply(this, var);
             }
 
         };

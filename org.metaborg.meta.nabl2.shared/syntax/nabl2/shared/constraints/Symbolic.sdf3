@@ -3,6 +3,7 @@ module nabl2/shared/constraints/Symbolic
 imports
 
   nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
 
 template options
 
@@ -10,6 +11,6 @@ template options
 
 context-free syntax
 
-  Constraint.CGoal = [?- [CTerm]]
-  Constraint.CFact = [!- [CTerm]]
+  Constraint.CGoal = [?- [CTerm] [MessagePosition]]
+  Constraint.CFact = [!- [CTerm] [MessagePosition]]
 

@@ -20,39 +20,35 @@ public class StrategoTermIndices {
     }
 
     private IStrategoTerm indexTerm(final IStrategoTerm term) {
-        IStrategoList annos = makeAnnos(term);
         IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm> cases(
-            appl -> termFactory.makeAppl(appl.getConstructor(), indexTerms(appl.getAllSubterms())),
-            tuple -> termFactory.makeTuple(tuple.getAllSubterms()),
+            appl -> termFactory.makeAppl(appl.getConstructor(), indexTerms(appl.getAllSubterms()), appl.getAnnotations()),
+            tuple -> termFactory.makeTuple(tuple.getAllSubterms(), tuple.getAnnotations()),
             list -> indexList(list),
-            integer -> integer,
-            real -> real,
-            string -> string,
-            ref -> ref,
-            placeholder -> placeholder,
-            other -> other
+            integer -> termFactory.makeInt(integer.intValue()),
+            real -> termFactory.makeReal(real.realValue()),
+            string -> termFactory.makeString(string.stringValue())
         ));
-        return termFactory.copyAttachments(term, termFactory.annotateTerm(result, annos));
+        termFactory.copyAttachments(term, result);
+        assert StrategoTermIndex.get(result) == null;
+        StrategoTermIndex.put(result, resource, ++currentId);
+        return result;
     }
  
     private IStrategoList indexList(final IStrategoList list) {
-        IStrategoList annos = makeAnnos(list);
-        IStrategoTerm result;
+        IStrategoList result;
         if (list.isEmpty()) {
-            result = termFactory.makeList(new IStrategoTerm[0], annos);
+            result = termFactory.makeList(new IStrategoTerm[0], list.getAnnotations());
         } else {
-            result = termFactory.makeListCons(indexTerm(list.head()), indexList(list.tail()), annos);
+            result = termFactory.makeListCons(indexTerm(list.head()), indexList(list.tail()), list.getAnnotations());
         }
-        return (IStrategoList) termFactory.copyAttachments(list, termFactory.annotateTerm(result, annos));
+        termFactory.copyAttachments(list, result);
+        assert StrategoTermIndex.get(result) == null;
+        StrategoTermIndex.put(result, resource, ++currentId);
+        return result;
     }
 
     private IStrategoTerm[] indexTerms(final IStrategoTerm[] terms) {
         return Arrays.asList(terms).stream().map(this::indexTerm).toArray(n -> new IStrategoTerm[n]);
-    }
-
-    private IStrategoList makeAnnos(IStrategoTerm term) {
-        IStrategoTerm index = StrategoTermIndex.of(resource, ++currentId, termFactory);
-        return termFactory.makeListCons(index, term.getAnnotations());
     }
 
     public static IStrategoTerm indexTerm(IStrategoTerm term, String resource, ITermFactory termFactory) {

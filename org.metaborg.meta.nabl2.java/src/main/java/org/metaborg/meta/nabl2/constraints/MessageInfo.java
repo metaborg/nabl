@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
+import org.metaborg.meta.nabl2.spoofax.TermSimplifier;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -54,8 +55,8 @@ public abstract class MessageInfo implements IMessageInfo {
         return M.cases(
             // @formatter:off
             M.appl1("Text", M.stringValue(), (t,s) -> s),
-            M.appl1("Term", M.term(), (t,s) -> s.toString()),
-            M.term(t -> t.toString())
+            M.appl1("Term", M.term(), (t,s) -> TermSimplifier.simplify(s).toString()),
+            M.term(t -> TermSimplifier.simplify(t).toString())
             // @formatter:on
         );
     }

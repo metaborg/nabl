@@ -339,6 +339,13 @@ rules // ###### AST Indices ######
    */
   nabl2-preserve-ast-index(s) = nabl2--preserve-ast-index(s)
 
+  /**
+   * Check if two nodes are the same term, and have the same AST position.
+   *
+   * @type (Term,Term) -> _
+   */
+  nabl2-ast-eq = nabl2--ast-eq
+
 rules // ###### Editor Integration ######
 
   /**

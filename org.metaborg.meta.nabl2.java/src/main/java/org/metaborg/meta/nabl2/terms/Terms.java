@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.terms;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction2;
@@ -34,8 +35,8 @@ public class Terms {
     ) {
         return new ITerm.Cases<T>() {
 
-            @Override public T caseAppl(IApplTerm applTerm) {
-                return onAppl.apply(applTerm);
+            @Override public T caseAppl(IApplTerm appl) {
+                return onAppl.apply(appl);
             }
 
             @Override public T caseList(IListTerm list) {
@@ -52,6 +53,40 @@ public class Terms {
 
             @Override public T caseVar(ITermVar var) {
                 return onVar.apply(var);
+            }
+
+        };
+    }
+
+    public static <T> ITerm.Cases<T> casesFix(
+        // @formatter:off
+        Function2<ITerm.Cases<T>, ? super IApplTerm, ? extends T> onAppl,
+        Function2<ITerm.Cases<T>, ? super IListTerm, ? extends T> onList,
+        Function2<ITerm.Cases<T>, ? super IStringTerm, ? extends T> onString,
+        Function2<ITerm.Cases<T>, ? super IIntTerm, ? extends T> onInt,
+        Function2<ITerm.Cases<T>, ? super ITermVar, ? extends T> onVar
+        // @formatter:on
+    ) {
+        return new ITerm.Cases<T>() {
+
+            @Override public T caseAppl(IApplTerm appl) {
+                return onAppl.apply(this, appl);
+            }
+
+            @Override public T caseList(IListTerm list) {
+                return onList.apply(this, list);
+            }
+
+            @Override public T caseString(IStringTerm string) {
+                return onString.apply(this, string);
+            }
+
+            @Override public T caseInt(IIntTerm integer) {
+                return onInt.apply(this, integer);
+            }
+
+            @Override public T caseVar(ITermVar var) {
+                return onVar.apply(this, var);
             }
 
         };
@@ -326,7 +361,7 @@ public class Terms {
                     var -> Optional.of(f.apply(var))));
         }
 
-        // cases
+        // optionals
 
         public static <R> IMatcher<R> flatten(IMatcher<Optional<R>> m) {
             return term -> m.match(term).flatMap(o -> o);
@@ -358,6 +393,20 @@ public class Terms {
             };
         }
 
+        public static Function1<ITerm,ITerm> sometd(IMatcher<ITerm> m) {
+            return term -> m.match(term).orElseGet(() -> term.match(Terms.<ITerm>cases(
+                (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> sometd(m).apply(arg))::iterator, appl.getAttachments()),
+                (list) -> list.match(ListTerms.<IListTerm> cases(
+                    (cons) -> GenericTerms.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
+                    (nil) -> nil,
+                    (var) -> var
+                )),
+                (string) -> string,
+                (integer) -> integer,
+                (var) -> var
+            )));
+        }
+ 
     }
 
     @FunctionalInterface

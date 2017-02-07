@@ -975,14 +975,14 @@ rules // CGen body
 	// FIXME: This assumes that constraint goals map onto pre-defined Coq types
 	//        Is this what we want?
 	cgen-clause-to-coq:
-	  CGoal(x) ->
+	  CGoal(x,_) ->
 	   <term-pattern-to-coq;
 	   mbind(\ x -> [x] \)> x
 	
   // FIXME: This assumes that constraint goals map onto pre-defined Coq types
   //        Is this what we want?
   cgen-clause-to-coq:
-    CFact(x) ->
+    CFact(x,_) ->
      <term-pattern-to-coq;
      mbind(\ x -> [x] \)> x
   
@@ -1006,8 +1006,8 @@ rules // CGen body
 				?CCheckRel(_, _, _, _) <+
 				?CBuildRel(_, _, _, _) <+
 				?CSubsetEq(_, _, _, _) <+
-				?CGoal(_) <+
-				?CFact(_))
+				?CGoal(_,_) <+
+				?CFact(_,_))
 
 rules // Label
 

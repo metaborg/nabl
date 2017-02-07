@@ -36,16 +36,17 @@ public class Unifier implements IUnifier, Serializable {
      * Find representative term.
      */
     public ITerm find(ITerm term) {
-        return term.match(Terms.<ITerm> cases(
+        return term.match(Terms.<ITerm>casesFix(
             // @formatter:off
-            appl -> GenericTerms.newAppl(appl.getOp(), finds(appl.getArgs()), appl.getAttachments()),
-            list -> list.match(ListTerms.<ITerm>cases(
-                cons -> GenericTerms.newCons(find(cons.getHead()), (IListTerm) find(cons.getTail()), cons.getAttachments()),
-                nil -> nil,
-                this::findVarRep)),
-            string -> string,
-            integer -> integer,
-            this::findVarRep
+            (tf, appl) -> GenericTerms.newAppl(appl.getOp(), finds(appl.getArgs()), appl.getAttachments()),
+            (tf, list) -> list.match(ListTerms.<ITerm>casesFix(
+                (lf, cons) -> GenericTerms.newCons(cons.getHead().match(tf), (IListTerm) cons.getTail().match(lf), cons.getAttachments()),
+                (lf, nil) -> nil,
+                (lf, var) -> findVarRep(var)
+            )),
+            (tf, string) -> string,
+            (tf, integer) -> integer,
+            (tf, var) -> findVarRep(var)
             // @formatter:on
         ));
     }
@@ -155,6 +156,9 @@ public class Unifier implements IUnifier, Serializable {
     }
 
     private boolean unifyVarTerm(ITermVar var, ITerm term) {
+        if (term.getVars().contains(var)) {
+            return false;
+        }
         reps.put(var, term);
         updateActive(var, term);
         return true;

@@ -13,11 +13,8 @@ import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.poly.Forall;
 import org.metaborg.meta.nabl2.poly.ImmutableForall;
-import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.ListTerms;
-import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.unification.UnificationException;
@@ -132,26 +129,16 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
         scheme.getTypeVars().stream().forEach(v -> {
             mapping.put(v, GenericTerms.newVar(v.getResource(), fresh.apply(v.getResource(), v.getName())));
         });
-        ITerm type = substTerm(scheme.getType(), mapping);
+        ITerm type = subst(scheme.getType(), mapping);
         return type;
     }
 
-    private ITerm substTerm(ITerm term, Map<ITermVar, ITermVar> mapping) {
-        return term.match(Terms.<ITerm>cases(
-            appl -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> substTerm(arg, mapping))::iterator, appl.getAttachments()),
-            list -> substList(list, mapping),
-            string -> string,
-            integer -> integer,
-            var -> mapping.getOrDefault(var, var).setAttachments(var.getAttachments())
-        ));
+    private ITerm subst(ITerm term, Map<ITermVar, ITermVar> mapping) {
+        return M.sometd(
+            // @formatter:off
+            M.var(var -> mapping.getOrDefault(var, var).setAttachments(var.getAttachments()))
+            // @formatter:on
+        ).apply(term);
     }
     
-    private IListTerm substList(IListTerm term, Map<ITermVar, ITermVar> mapping) {
-        return term.match(ListTerms.<IListTerm> cases(
-            cons -> GenericTerms.newCons(substTerm(cons.getHead(), mapping), substList(cons.getTail(), mapping), cons.getAttachments()),
-            nil -> nil,
-            var -> mapping.getOrDefault(var, var).setAttachments(var.getAttachments())
-        ));
-    }
-
 }
