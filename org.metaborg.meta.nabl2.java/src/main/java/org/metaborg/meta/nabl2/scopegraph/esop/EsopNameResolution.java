@@ -44,7 +44,6 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final EsopScopeGraph<S,L,O> scopeGraph;
     private final Set<L> labels;
     private final IRegExp<L> wf;
-    private final IRegExp<L> noWf;
     private final IRelation<L> order;
     private final IRelation<L> noOrder;
 
@@ -58,7 +57,6 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.order = params.getSpecificityOrder();
         assert order.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
-        this.noWf = wf.getBuilder().complement(wf.getBuilder().emptySet());
         this.noOrder = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
         initTransients();
     }
@@ -105,7 +103,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     public Optional<Iterable<IPath<S,L,O>>> tryReachable(S scope) {
         EsopEnv<S,L,O> env =
-                env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, RegExpMatcher.create(noWf), scope);
+                env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, RegExpMatcher.create(wf), scope);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
