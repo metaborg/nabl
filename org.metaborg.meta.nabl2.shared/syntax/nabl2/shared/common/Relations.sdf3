@@ -4,6 +4,10 @@ imports
 
   nabl2/shared/common/Identifiers
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
   Reflexivity.Reflexive       = "reflexive"

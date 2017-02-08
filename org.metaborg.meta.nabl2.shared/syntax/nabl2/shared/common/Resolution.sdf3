@@ -5,16 +5,22 @@ imports
   nabl2/shared/common/Identifiers
   nabl2/shared/common/ScopeGraph
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
   Label.Label = LabelId
  
   PathLabel   = Label
-  PathLabel.P = PLabelId
-  PathLabel.I = ILabelId
+  PathLabel   = BuiltinPathLabel
+  
+  BuiltinPathLabel.P = "P"
+  BuiltinPathLabel.I = "I"
  
-  AnyLabel    = PathLabel
-  AnyLabel.D  = DLabelId
+  AnyLabel          = PathLabel
+  BuiltinAnyLabel.D = "D"
  
 context-free syntax
 
@@ -35,3 +41,8 @@ context-free priorities
   > LabelRE.Concat
   > LabelRE.And
   > LabelRE.Or
+
+context-free restrictions
+
+  BuiltinPathLabel -/- [a-zA-Z0-9\_\']
+  BuiltinAnyLabel  -/- [a-zA-Z0-9\_\']

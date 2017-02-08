@@ -5,6 +5,10 @@ imports
   nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 syntax
 
   SetExpr-CF.EmptySet = "0"                               // FIXME Use NaBL2_ prefix
