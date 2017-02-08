@@ -36,8 +36,14 @@ lexical syntax
   ProjectionId   = Keyword {reject}
 
   LabelId        = [A-Z]+
-  LabelId        = "D" | "I" | "P" {reject}
+  LabelId        = DLabelId {reject}
+  LabelId        = PLabelId {reject}
+  LabelId        = ILabelId {reject}
   LabelId        = Keyword {reject}
+
+  DLabelId       = "D"
+  ILabelId       = "I"
+  PLabelId       = "P"
 
 //TVarId         = [A-Za-z] [a-zA-Z0-9\_]*
 //TVarId         = MetaPrefix [a-zA-Z0-9\_\']* {reject}
@@ -56,5 +62,8 @@ lexical restrictions
   ProjectionId -/- [a-zA-Z0-9\_\']
   FunctionId   -/- [a-zA-Z0-9\_\']
   LabelId      -/- [a-zA-Z0-9\_\']
+  DLabelId     -/- [a-zA-Z0-9\_\']
+  PLabelId     -/- [a-zA-Z0-9\_\']
+  ILabelId     -/- [a-zA-Z0-9\_\']
 //TVarId       -/- [a-zA-Z0-9\_\']
 

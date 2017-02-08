@@ -10,11 +10,11 @@ context-free syntax
   Label.Label = LabelId
  
   PathLabel   = Label
-  PathLabel.P = "P"
-  PathLabel.I = "I"
+  PathLabel.P = PLabelId
+  PathLabel.I = ILabelId
  
   AnyLabel    = PathLabel
-  AnyLabel.D  = "D"
+  AnyLabel.D  = DLabelId
  
 context-free syntax
 
