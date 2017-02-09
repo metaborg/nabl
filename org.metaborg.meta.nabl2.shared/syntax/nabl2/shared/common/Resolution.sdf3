@@ -20,6 +20,8 @@ context-free syntax
   BuiltinPathLabel.I = "I"
  
   AnyLabel          = PathLabel
+  AnyLabel          = BuiltinAnyLabel
+
   BuiltinAnyLabel.D = "D"
  
 context-free syntax
