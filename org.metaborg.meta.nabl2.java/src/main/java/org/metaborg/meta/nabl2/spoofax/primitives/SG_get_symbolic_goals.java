@@ -25,7 +25,7 @@ public class SG_get_symbolic_goals extends ScopeGraphPrimitive {
             return Optional.empty();
         }
         return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-            return GenericTerms.newList(s.getSymbolic().getGoals());
+            return GenericTerms.newList(s.getSymbolic().getGoals().stream().map(s.getUnifier()::find)::iterator);
         });
     }
 

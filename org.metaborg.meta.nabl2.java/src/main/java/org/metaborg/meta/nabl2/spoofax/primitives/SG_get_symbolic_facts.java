@@ -25,7 +25,7 @@ public class SG_get_symbolic_facts extends ScopeGraphPrimitive {
             return Optional.empty();
         }
         return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-            return GenericTerms.newList(s.getSymbolic().getFacts());
+            return GenericTerms.newList(s.getSymbolic().getFacts().stream().map(s.getUnifier()::find)::iterator);
         });
     }
 

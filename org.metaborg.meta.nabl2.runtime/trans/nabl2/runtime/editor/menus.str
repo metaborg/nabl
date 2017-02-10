@@ -1,0 +1,21 @@
+module nabl2/runtime/editor/menus
+
+imports
+
+  nabl2/runtime/prelude/-
+  nabl2/runtime/pp
+  nabl2/api
+  signatures/nabl2/runtime/common/-
+ 
+rules
+
+  nabl2--show-uninterpreted-constraints:
+    (node, position, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path;
+         analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+         facts := <nabl2-get-symbolic-facts(|analysis)>;
+         goals := <nabl2-get-symbolic-goals(|analysis)>;
+         result := [
+           ("facts", facts),
+           ("goals", goals)
+         ]

@@ -4,6 +4,8 @@ menus
 
   menu: "Analysis"
 
+    action: "Show Uninterpreted Constraints" = nabl2--show-uninterpreted-constraints (meta) (openeditor)
+
 /*
     action: "Show File Analysis"                        = nabl2--show-file-analysis (meta) (realtime) (openeditor)
     action: "Show File Analysis ATerm"                  = nabl2--show-file-analysis-aterm (meta) (realtime) (openeditor)
