@@ -123,18 +123,18 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
             return false;
         }
         Multimap<Object, IElement<ITerm>> proj = SetEvaluator.project(maybeSet.get(), constraint.getProjection());
-        List<Object> singletons = Lists.newArrayList();
+        List<IElement<ITerm>> duplicates = Lists.newArrayList();
         for(Object key : proj.keySet()) {
-            if(proj.get(key).size() <= 1) {
-                singletons.add(key);
+            Collection<IElement<ITerm>> values = proj.get(key);
+            if(values.size() > 1) {
+                duplicates.addAll(values);
             }
         }
-        proj.removeAll(singletons);
-        if(!proj.isEmpty()) {
+        if(!duplicates.isEmpty()) {
             MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP))
                 .append(" has duplicates in ").append(constraint.getSet()).build();
             throw new UnsatisfiableException(
-                makeMessages(constraint.getMessageInfo().withDefault(content), proj.values()));
+                makeMessages(constraint.getMessageInfo().withDefault(content), duplicates));
         }
         return true;
     }
