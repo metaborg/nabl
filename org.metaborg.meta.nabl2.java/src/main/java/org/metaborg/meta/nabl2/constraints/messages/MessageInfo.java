@@ -1,33 +1,47 @@
-package org.metaborg.meta.nabl2.constraints;
-
-import java.util.Optional;
+package org.metaborg.meta.nabl2.constraints.messages;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
-import org.metaborg.meta.nabl2.spoofax.TermSimplifier;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class MessageInfo implements IMessageInfo {
 
-    public enum Kind {
-        ERROR,
-        WARNING,
-        NOTE
+    @Value.Parameter @Override public abstract MessageKind getKind();
+
+    @Value.Parameter @Override public abstract IMessageContent getContent();
+
+    @Value.Parameter @Override public abstract ITerm getOriginTerm();
+
+    @Override public IMessageInfo withDefault(IMessageContent defaultContent) {
+        return ImmutableMessageInfo.of(getKind(), getContent().withDefault(defaultContent), getOriginTerm());
     }
 
-    @Value.Parameter public abstract Kind getKind();
+    public static IMatcher<MessageInfo> matcher() {
+        return M.appl3("Message", MessageKind.matcher(), MessageContent.matcher(), M.term(),
+            (appl, kind, message, origin) -> {
+                return ImmutableMessageInfo.of(kind, message, origin);
+            });
+    }
 
-    @Value.Parameter public abstract Optional<ITerm> getMessage();
+    public static IMatcher<MessageInfo> matcherOnlyOriginTerm() {
+        return M.term(MessageInfo::of);
+    }
 
-    @Value.Parameter public abstract Optional<ITerm> getOrigin();
+    public static MessageInfo of(ITerm originTerm) {
+        return ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), originTerm);
+    }
 
+    @Override public String toString() {
+        return getKind().name().toLowerCase() + " " + getContent().toString() + " " + TermIndex.get(getOriginTerm());
+    }
+
+    /*
+    
     @Override public UnsatisfiableException makeException(String defaultMessage, Iterable<ITerm> contextTerms,
             IUnifier unifier) {
         Iterable<ITerm> programPoints = getOrigin().map(t -> Iterables2.singleton(t)).orElse(contextTerms);
@@ -110,5 +124,7 @@ public abstract class MessageInfo implements IMessageInfo {
             // @formatter:on
         );
     }
+
+*/
 
 }

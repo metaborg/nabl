@@ -10,11 +10,13 @@ import org.metaborg.meta.nabl2.constraints.equality.CEqual;
 import org.metaborg.meta.nabl2.constraints.equality.CInequal;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Sets;
 
@@ -38,13 +40,13 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     @Override public boolean iterate() throws UnsatisfiableException {
         Iterator<CInequal> it = defered.iterator();
         boolean progress = false;
-        while (it.hasNext()) {
+        while(it.hasNext()) {
             try {
-                if (solve(it.next())) {
+                if(solve(it.next())) {
                     progress = true;
                     it.remove();
                 }
-            } catch (UnsatisfiableException e) {
+            } catch(UnsatisfiableException e) {
                 progress = true;
                 it.remove();
                 throw e;
@@ -53,22 +55,22 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         return progress;
     }
 
-    @Override public Iterable<UnsatisfiableException> finish() {
+    @Override public Iterable<IMessageInfo> finish() {
         return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved inequality constraint: " + c.find(unifier), Iterables2
-                    .empty(), unifier);
+            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
+            return c.getMessageInfo().withDefault(content);
         }).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------------------------------------//
- 
+
     private Unit add(CEqual constraint) throws UnsatisfiableException {
         solve(constraint);
         return unit;
     }
 
     private Unit add(CInequal constraint) throws UnsatisfiableException {
-        if (!solve(constraint)) {
+        if(!solve(constraint)) {
             defered.add(constraint);
         }
         return unit;
@@ -81,9 +83,10 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         ITerm right = unifier.find(constraint.getRight());
         try {
             unifier.unify(left, right);
-        } catch (UnificationException ex) {
-            throw constraint.getMessageInfo().makeException("Cannot unify " + left + " with " + right, Iterables2
-                    .empty(), unifier);
+        } catch(UnificationException ex) {
+            MessageContent content =
+                MessageContent.builder().append("Cannot unify ").append(left).append(" with ").append(right).build();
+            throw new UnsatisfiableException(constraint.getMessageInfo().withDefault(content));
         }
         return true;
     }
@@ -91,8 +94,11 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
     private boolean solve(CInequal constraint) throws UnsatisfiableException {
         ITerm left = unifier.find(constraint.getLeft());
         ITerm right = unifier.find(constraint.getRight());
-        if (left.equals(right)) {
-            throw constraint.getMessageInfo().makeException("Terms are not inequal.", Iterables2.empty(), unifier);
+        if(left.equals(right)) {
+            MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
+                .append(constraint.getRight().toString()).append(" must be inequal, but both resolve to ")
+                .append(constraint.getLeft()).build();
+            throw new UnsatisfiableException(constraint.getMessageInfo().withDefault(content));
         }
         return !unifier.canUnify(left, right);
     }

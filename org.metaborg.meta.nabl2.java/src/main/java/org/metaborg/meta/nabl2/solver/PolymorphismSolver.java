@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
@@ -21,7 +23,6 @@ import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function2;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -40,13 +41,11 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override
-    public Unit add(IPolyConstraint constraint) throws UnsatisfiableException {
+    @Override public Unit add(IPolyConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(this::add, this::add));
     }
 
-    @Override
-    public boolean iterate() throws UnsatisfiableException {
+    @Override public boolean iterate() throws UnsatisfiableException {
         Iterator<IPolyConstraint> it = defered.iterator();
         boolean progress = false;
         while(it.hasNext()) {
@@ -64,16 +63,14 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
         return progress;
     }
 
-    @Override
-    public Iterable<UnsatisfiableException> finish() {
-        return defered.stream().map(c -> {
-            return c.getMessageInfo().makeException("Unsolved poly constraint: " + c.find(unifier), Iterables2.empty(),
-                    unifier);
-        }).collect(Collectors.toList());
+    @Override public Iterable<IMessageInfo> finish() {
+        return defered.stream().map(
+            c -> c.getMessageInfo().withDefault(MessageContent.builder().append("Unsolved: ").append(c.pp()).build()))
+            .collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------------------------------------//
- 
+
     private Unit add(CGeneralize gen) throws UnsatisfiableException {
         defered.add(gen);
         unifier.addActive(gen.getScheme());
@@ -102,14 +99,14 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
             unifier.removeActive(gen.getScheme());
             unifier.unify(gen.getScheme(), scheme);
         } catch(UnificationException ex) {
-            throw gen.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
+            throw new UnsatisfiableException(gen.getMessageInfo().withDefault(ex.getMessageContent()));
         }
         return true;
     }
 
     private boolean solve(CInstantiate inst) throws UnsatisfiableException {
         ITerm schemeTerm = unifier.find(inst.getScheme());
-        if (M.var(v -> {
+        if(M.var(v -> {
             return unifier.isActive(v);
         }).match(schemeTerm).orElse(false)) {
             return false;
@@ -119,7 +116,7 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
             unifier.removeActive(inst.getType());
             unifier.unify(inst.getType(), type);
         } catch(UnificationException ex) {
-            throw inst.getMessageInfo().makeException(ex.getMessage(), Iterables2.empty(), unifier);
+            throw new UnsatisfiableException(inst.getMessageInfo().withDefault(ex.getMessageContent()));
         }
         return true;
     }
@@ -140,5 +137,5 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
             // @formatter:on
         ).apply(term);
     }
-    
+
 }

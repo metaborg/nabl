@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -54,4 +55,10 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
         return sb.toString();
     }
 
+    // static
+    
+    public static Optional<TermIndex> get(ITerm term) {
+        return Optional.ofNullable(term.getAttachments().getInstance(TermIndex.class));
+    }
+    
 }

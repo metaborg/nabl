@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.util.List;
 
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -14,15 +15,9 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 
 public interface ISolution {
 
-    List<Message> getErrors();
+    IScopeGraph<Scope, Label, Occurrence> getScopeGraph();
 
-    List<Message> getWarnings();
-
-    List<Message> getNotes();
-
-    IScopeGraph<Scope,Label,Occurrence> getScopeGraph();
-
-    INameResolution<Scope,Label,Occurrence> getNameResolution();
+    INameResolution<Scope, Label, Occurrence> getNameResolution();
 
     IProperties<Occurrence> getDeclProperties();
 
@@ -31,7 +26,9 @@ public interface ISolution {
     IRelations<ITerm> getRelations();
 
     ISymbolicConstraints getSymbolic();
-    
+
     IUnifier getUnifier();
+
+    List<IMessageInfo> getMessages();
 
 }

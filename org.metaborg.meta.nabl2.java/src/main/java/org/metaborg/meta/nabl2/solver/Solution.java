@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -20,9 +21,9 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IProperties<TermIndex> getAstProperties();
 
-    @Value.Parameter @Override public abstract IScopeGraph<Scope,Label,Occurrence> getScopeGraph();
+    @Value.Parameter @Override public abstract IScopeGraph<Scope, Label, Occurrence> getScopeGraph();
 
-    @Value.Parameter @Override public abstract INameResolution<Scope,Label,Occurrence> getNameResolution();
+    @Value.Parameter @Override public abstract INameResolution<Scope, Label, Occurrence> getNameResolution();
 
     @Value.Parameter @Override public abstract IProperties<Occurrence> getDeclProperties();
 
@@ -32,10 +33,6 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract ISymbolicConstraints getSymbolic();
 
-    @Value.Parameter public abstract List<Message> getErrors();
-
-    @Value.Parameter public abstract List<Message> getWarnings();
-
-    @Value.Parameter public abstract List<Message> getNotes();
+    @Value.Parameter public abstract List<IMessageInfo> getMessages();
 
 }

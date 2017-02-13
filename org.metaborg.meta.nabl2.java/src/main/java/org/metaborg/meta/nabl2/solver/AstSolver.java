@@ -6,6 +6,9 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.ImmutableMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageKind;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.UnificationException;
@@ -28,13 +31,14 @@ public class AstSolver implements ISolverComponent<IAstConstraint> {
     }
 
     @Override public Unit add(IAstConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.<Unit, UnsatisfiableException> of(p -> {
+        return constraint.matchOrThrow(CheckedCases.<Unit, UnsatisfiableException>of(p -> {
             Optional<ITerm> oldValue = properties.putValue(p.getIndex(), p.getKey(), p.getValue());
-            if (oldValue.isPresent()) {
+            if(oldValue.isPresent()) {
                 try {
                     unifier.unify(oldValue.get(), p.getValue());
-                } catch (UnificationException e) {
-                    throw constraint.getMessageInfo().makeException(e.getMessage(), Iterables2.empty(), unifier);
+                } catch(UnificationException e) {
+                    throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
+                        constraint.getMessageInfo().getOriginTerm()));
                 }
             }
             return unit;
@@ -45,7 +49,7 @@ public class AstSolver implements ISolverComponent<IAstConstraint> {
         return false;
     }
 
-    @Override public Iterable<UnsatisfiableException> finish() {
+    @Override public Iterable<IMessageInfo> finish() {
         return Iterables2.empty();
     }
 

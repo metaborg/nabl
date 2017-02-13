@@ -1,13 +1,13 @@
 package org.metaborg.meta.nabl2.solver;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.util.Unit;
 
 public interface ISolverComponent<C extends IConstraint> {
 
     /**
-     * Add a constraint to the constraint set. Solving can be eagerly done,
-     * instead of waiting for iterate calls.
+     * Add a constraint to the constraint set. Solving can be eagerly done, instead of waiting for iterate calls.
      *
      * @param constraint
      * @throws UnsatisfiableException
@@ -23,11 +23,11 @@ public interface ISolverComponent<C extends IConstraint> {
     boolean iterate() throws UnsatisfiableException;
 
     /**
-     * Called when none of the solver components can make any more progress. Can
-     * be used for final checks, or errors on unsolved constraints.
+     * Called when none of the solver components can make any more progress. Can be used for final checks, or errors on
+     * unsolved constraints.
      * 
      * @return UnsatisfiableException
      */
-    Iterable<UnsatisfiableException> finish();
+    Iterable<IMessageInfo> finish();
 
 }

@@ -15,7 +15,7 @@ public interface IBaseConstraint extends IConstraint {
 
         T caseFalse(CFalse constraint);
 
-        static <T> Cases<T> of(Function<CTrue,T> onTrue, Function<CFalse,T> onFalse) {
+        static <T> Cases<T> of(Function<CTrue, T> onTrue, Function<CFalse, T> onFalse) {
             return new Cases<T>() {
 
                 @Override public T caseTrue(CTrue constraint) {
@@ -32,7 +32,7 @@ public interface IBaseConstraint extends IConstraint {
     }
 
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 
@@ -40,9 +40,9 @@ public interface IBaseConstraint extends IConstraint {
 
         T caseFalse(CFalse constraint) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CTrue,T,E> onTrue,
-                CheckedFunction1<CFalse,T,E> onFalse) {
-            return new CheckedCases<T,E>() {
+        static <T, E extends Throwable> CheckedCases<T, E> of(CheckedFunction1<CTrue, T, E> onTrue,
+            CheckedFunction1<CFalse, T, E> onFalse) {
+            return new CheckedCases<T, E>() {
 
                 @Override public T caseTrue(CTrue constraint) throws E {
                     return onTrue.apply(constraint);

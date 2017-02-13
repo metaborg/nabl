@@ -395,6 +395,7 @@ public class Terms {
 
         public static Function1<ITerm,ITerm> sometd(IMatcher<ITerm> m) {
             return term -> m.match(term).orElseGet(() -> term.match(Terms.<ITerm>cases(
+                // @formatter:off
                 (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> sometd(m).apply(arg))::iterator, appl.getAttachments()),
                 (list) -> list.match(ListTerms.<IListTerm> cases(
                     (cons) -> GenericTerms.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
@@ -404,7 +405,27 @@ public class Terms {
                 (string) -> string,
                 (integer) -> integer,
                 (var) -> var
+                // @formatter:on
             )));
+        }
+ 
+        public static Function1<ITerm,ITerm> somebu(IMatcher<ITerm> m) {
+            return term -> {
+                ITerm next = term.match(Terms.<ITerm>cases(
+                    // @formatter:off
+                    (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> somebu(m).apply(arg))::iterator, appl.getAttachments()),
+                    (list) -> list.match(ListTerms.<IListTerm> cases(
+                        (cons) -> GenericTerms.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
+                        (nil) -> nil,
+                        (var) -> var
+                    )),
+                    (string) -> string,
+                    (integer) -> integer,
+                    (var) -> var
+                    // @formatter:on
+                ));
+                return m.match(next).orElse(next);
+            };
         }
  
     }

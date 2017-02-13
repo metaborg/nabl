@@ -4,6 +4,7 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.Set;
 
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -22,8 +23,7 @@ public class SymbolicSolver implements ISolverComponent<ISymbolicConstraint> {
         this.goals = Sets.newHashSet();
     }
 
-    @Override
-    public Unit add(ISymbolicConstraint constraint) throws UnsatisfiableException {
+    @Override public Unit add(ISymbolicConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(fact -> {
             facts.add(fact.getFact());
             return unit;
@@ -33,13 +33,11 @@ public class SymbolicSolver implements ISolverComponent<ISymbolicConstraint> {
         }));
     }
 
-    @Override
-    public boolean iterate() {
+    @Override public boolean iterate() {
         return false;
     }
 
-    @Override
-    public Iterable<UnsatisfiableException> finish() {
+    @Override public Iterable<IMessageInfo> finish() {
         return Iterables2.empty();
     }
 

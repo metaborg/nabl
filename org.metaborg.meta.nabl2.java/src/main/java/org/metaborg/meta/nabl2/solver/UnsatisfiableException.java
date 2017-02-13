@@ -1,7 +1,8 @@
 package org.metaborg.meta.nabl2.solver;
 
-import org.metaborg.meta.nabl2.constraints.MessageInfo.Kind;
-import org.metaborg.meta.nabl2.terms.ITerm;
+import java.util.Arrays;
+
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 
 import com.google.common.collect.ImmutableList;
 
@@ -9,25 +10,37 @@ public class UnsatisfiableException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    private final Kind kind;
-    private final ImmutableList<ITerm> programPoints;
+    private final ImmutableList<IMessageInfo> messages;
 
-    public UnsatisfiableException(Kind kind, String message, Iterable<ITerm> programPoints) {
-        this(kind, message, null, programPoints);
+    public UnsatisfiableException(IMessageInfo... messages) {
+        this(null, Arrays.asList(messages));
     }
 
-    public UnsatisfiableException(Kind kind, String message, Throwable cause, Iterable<ITerm> programPoints) {
-        super(message, cause);
-        this.kind = kind;
-        this.programPoints = ImmutableList.copyOf(programPoints);
+    public UnsatisfiableException(Throwable cause, IMessageInfo... messages) {
+        this(cause, Arrays.asList(messages));
     }
 
-    public Kind getKind() {
-        return kind;
+    public UnsatisfiableException(Iterable<IMessageInfo> messages) {
+        this(null, messages);
     }
 
-    public Iterable<ITerm> getProgramPoints() {
-        return programPoints;
+    public UnsatisfiableException(Throwable cause, Iterable<IMessageInfo> messages) {
+        super("", cause);
+        this.messages = ImmutableList.copyOf(messages);
+        assert !this.messages.isEmpty();
+    }
+
+    public ImmutableList<IMessageInfo> getMessages() {
+        return messages;
+    }
+
+    @Override public String getMessage() {
+        StringBuilder sb = new StringBuilder();
+        messages.stream().forEach(m -> {
+            sb.append(m.toString());
+            sb.append("\n");
+        });
+        return sb.toString();
     }
 
 }

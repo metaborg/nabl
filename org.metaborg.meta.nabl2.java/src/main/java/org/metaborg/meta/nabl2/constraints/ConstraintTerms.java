@@ -5,6 +5,7 @@ import org.metaborg.meta.nabl2.constraints.base.ImmutableCFalse;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCInequal;
+import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCDeclProperty;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGAssoc;
@@ -41,9 +42,9 @@ public class ConstraintTerms {
     }
 
     public static IMatcher<IConstraint> constraint() {
-        return M.cases(
+        return M.<IConstraint>cases(
             // @formatter:off
-            M.appl1("CTrue", MessageInfo.simpleMatcher(), (c, origin) -> {
+            M.appl1("CTrue", MessageInfo.matcherOnlyOriginTerm(), (c, origin) -> {
                 return ImmutableCTrue.of(origin);
             }),
             M.appl1("CFalse", MessageInfo.matcher(), (c, origin) -> {
@@ -55,19 +56,19 @@ public class ConstraintTerms {
             M.appl3("CInequal", M.term(), M.term(), MessageInfo.matcher(), (c, term1, term2, origin) -> {
                 return ImmutableCInequal.of(term1, term2, origin);
             }),
-            M.appl3("CGDecl", M.term(), M.term(), MessageInfo.simpleMatcher(), (c, decl, scope, origin) -> {
+            M.appl3("CGDecl", M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, decl, scope, origin) -> {
                 return ImmutableCGDecl.of(scope, decl, origin);
             }),
-            M.appl4("CGDirectEdge", M.term(), Label.matcher(), M.term(), MessageInfo.simpleMatcher(), (c, scope1, label, scope2, origin) -> {
+            M.appl4("CGDirectEdge", M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, scope1, label, scope2, origin) -> {
                 return ImmutableCGDirectEdge.of(scope1, label, scope2, origin);
             }),
-            M.appl4("CGAssoc", M.term(), Label.matcher(), M.term(), MessageInfo.simpleMatcher(), (c, decl, label, scope, origin) -> {
+            M.appl4("CGAssoc", M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, decl, label, scope, origin) -> {
                 return ImmutableCGAssoc.of(decl, label, scope, origin);
             }),
-            M.appl4("CGNamedEdge", M.term(), Label.matcher(), M.term(), MessageInfo.simpleMatcher(), (c, ref, label, scope, origin) -> {
+            M.appl4("CGNamedEdge", M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, ref, label, scope, origin) -> {
                 return ImmutableCGImport.of(scope, label, ref, origin);
             }),
-            M.appl3("CGRef", M.term(), M.term(), MessageInfo.simpleMatcher(), (c, ref, scope, origin) -> {
+            M.appl3("CGRef", M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, ref, scope, origin) -> {
                 return ImmutableCGRef.of(ref, scope, origin);
             }),
             M.appl3("CResolve", M.term(), M.term(), MessageInfo.matcher(), (c, ref, decl, origin) -> {
@@ -89,7 +90,7 @@ public class ConstraintTerms {
                 return ImmutableCEvalFunction.of(result, fun, term, origin);
             }),
             M.appl3("CAstProperty", TermIndex.matcher(), M.term(), M.term(), (c, index, key, value) -> {
-                return ImmutableCAstProperty.of(index, key, value, ImmutableMessageInfo.of(index));
+                return ImmutableCAstProperty.of(index, key, value, MessageInfo.of(index));
             }),
             M.appl4("CSubsetEq", M.term(), SetTerms.projection(), M.term(), MessageInfo.matcher(), (c, left, proj, right, origin) -> {
                 return ImmutableCSubsetEq.of(left, right, proj, origin);
@@ -97,10 +98,10 @@ public class ConstraintTerms {
             M.appl3("CDistinct", SetTerms.projection(), M.term(), MessageInfo.matcher(), (c, proj, set, origin) -> {
                 return ImmutableCDistinct.of(set, proj, origin);
             }),
-            M.appl2("CFact", M.term(), MessageInfo.simpleMatcher(), (c, fact, origin) -> {
+            M.appl2("CFact", M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, fact, origin) -> {
                 return ImmutableCFact.of(fact, origin);
             }),
-            M.appl2("CGoal", M.term(), MessageInfo.simpleMatcher(), (c, goal, origin) -> {
+            M.appl2("CGoal", M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, goal, origin) -> {
                 return ImmutableCGoal.of(goal, origin);
             }),
             M.appl3("CGen", M.term(), M.term(), MessageInfo.matcher(), (c, scheme, type, origin) -> {
@@ -111,7 +112,7 @@ public class ConstraintTerms {
             }),
             M.term(t -> {
                 logger.warn("Ignoring constraint: {}", t);
-                return ImmutableCTrue.of(ImmutableMessageInfo.of(t));
+                return ImmutableCTrue.of(MessageInfo.of(t));
             })
             // @formatter:on
         );

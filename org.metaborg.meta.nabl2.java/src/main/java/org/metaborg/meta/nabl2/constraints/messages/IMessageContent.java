@@ -1,0 +1,14 @@
+package org.metaborg.meta.nabl2.constraints.messages;
+
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.util.functions.Function1;
+
+public interface IMessageContent {
+
+    IMessageContent apply(Function1<ITerm, ITerm> f);
+
+    IMessageContent withDefault(IMessageContent defaultContent);
+
+    String toString(String resource);
+
+}
