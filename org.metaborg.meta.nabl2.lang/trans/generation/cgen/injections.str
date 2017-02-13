@@ -5,7 +5,10 @@ imports
   nabl2shared
   
   signatures/common/-
+  signatures/rules/-
+  signatures/nabl2/shared/constraints/-
   generation/cgen/-
+  generation/-
   util/-
  
 rules
@@ -13,6 +16,8 @@ rules
   injection-to-term(e) = term-to-term(e)
   injection-to-term(e):
     TermIndexFrom(t) -> Term |[ <nabl2--get-ast-index> ~t ]|
+  injection-to-term(e):
+    NAMEWithOrigin() -> Term |[ <try(nabl2--copy-origin(|~<term-var>))> NAME() ]|
   injection-to-term(e):
     OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of> ~t ]|
  

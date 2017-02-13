@@ -10,6 +10,7 @@ imports
   signatures/rules/-
 
   generation/cgen/-
+  generation/-
   util/stratego
 
 rules
@@ -108,14 +109,14 @@ rules
   clause-to-str:
     NewScopes(v*) -> str
     with str := <mapseq({\
-                   v -> |[ ~v := <nabl2--new-scope(|~<source-var>)> ~n ]|
+                   v -> |[ ~v := <nabl2--new-scope(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
                    with n := Str(<var-name> v)
                  \})> v*
  
   clause-to-str:
     NewVars(v*) -> str
     with str := <mapseq({\
-                   v -> |[ ~v := <nabl2--new-var(|~<source-var>)> ~n ]|
+                   v -> |[ ~v := <nabl2--new-var(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
                    with n := Str(<var-name> v)
                  \})> v*
 

@@ -7,3 +7,6 @@ imports
 context-free syntax
 
   RuleClause.NewVars      = <new vars <{CVar " "}+>>
+
+  // not for parsing, just used in normalization and term explosion
+  InjectionPlaceholder.NAMEWithOrigin = "NAME"

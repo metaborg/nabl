@@ -154,6 +154,10 @@ rules
     DefaultMessage() ->
       Message(Error(),Default(),DefaultTermIndex())
 
+  normalize-message:
+    Message(kind,msg,NAME()) ->
+      Message(kind,msg,NAMEWithOrigin())
+
 rules
 
   normalize-indices = topdown(try(normalize-occurrence-index <+ normalize-default-index))
