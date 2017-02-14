@@ -15,7 +15,7 @@ public class SG_index_ast extends AbstractPrimitive {
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        env.setCurrent(StrategoTermIndices.indexTerm(env.current(), Tools.asJavaString(tvars[0]), env.getFactory()));
+        env.setCurrent(StrategoTermIndices.index(env.current(), Tools.asJavaString(tvars[0]), env.getFactory()));
         return true;
     }
 

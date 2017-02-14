@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.spoofax.primitives;
 
-import org.metaborg.meta.nabl2.stratego.StrategoTermIndex;
+import org.metaborg.meta.nabl2.stratego.StrategoTermIndices;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -14,12 +14,10 @@ public class SG_get_ast_index extends AbstractPrimitive {
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        StrategoTermIndex termIndex = StrategoTermIndex.get(env.current());
-        if (termIndex == null) {
-            return false;
-        }
-        env.setCurrent(termIndex.toTerm(env.getFactory()));
-        return true;
+        return StrategoTermIndices.get(env.current()).map(index -> {
+            env.setCurrent(StrategoTermIndices.build(index, env.getFactory()));
+            return true;
+        }).orElse(false);
     }
 
 }

@@ -23,9 +23,8 @@ rules // ast indices
   nabl2--preserve-ast-index(s) =
     ?t; s; try(nabl2--copy-ast-index(|t))
 
-  nabl2--ast-eq =
-    where((nabl2--get-ast-index,nabl2--get-ast-index) < eq + id);
-    where(eq)
+  nabl2--erase-ast-indices =
+    prim("SG_erase_ast_indices")
 
 rules // origins
 

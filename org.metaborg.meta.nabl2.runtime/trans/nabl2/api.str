@@ -334,17 +334,17 @@ rules // ###### AST Indices ######
    * term. If the original term has no index, the result of applying s is
    * returned unchanged. Thus, failure behaviour of s is preserved.
    *
-   * @param from : Termindex
    * @type Term -> Term
    */
   nabl2-preserve-ast-index(s) = nabl2--preserve-ast-index(s)
 
   /**
-   * Check if two nodes are the same term, and have the same AST position.
+   * Erase AST indices from a term, preserving other annotations and
+   * attachments.
    *
-   * @type (Term,Term) -> _
+   * @type Term -> Term
    */
-  nabl2-ast-eq = nabl2--ast-eq
+  nabl2-erase-ast-indices = nabl2--erase-ast-indices
 
 rules // ###### Editor Integration ######
 
