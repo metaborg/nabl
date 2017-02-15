@@ -13,7 +13,7 @@ import com.google.common.collect.Iterables;
 public abstract class AbstractApplTerm implements IApplTerm {
 
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
-        return ImmutableClassToInstanceMap.<Object> builder().build();
+        return ImmutableClassToInstanceMap.<Object>builder().build();
     }
 
     @Value.Lazy @Override public int getArity() {
@@ -22,7 +22,7 @@ public abstract class AbstractApplTerm implements IApplTerm {
 
     @Value.Lazy @Override public boolean isGround() {
         boolean ground = true;
-        for (ITerm arg : getArgs()) {
+        for(ITerm arg : getArgs()) {
             ground &= arg.isGround();
         }
         return ground;
@@ -30,7 +30,7 @@ public abstract class AbstractApplTerm implements IApplTerm {
 
     @Value.Lazy @Override public PSet<ITermVar> getVars() {
         PSet<ITermVar> vars = HashTreePSet.empty();
-        for (ITerm arg : getArgs()) {
+        for(ITerm arg : getArgs()) {
             vars = vars.plusAll(arg.getVars());
         }
         return vars;
@@ -40,27 +40,37 @@ public abstract class AbstractApplTerm implements IApplTerm {
         return cases.caseAppl(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
         return cases.caseAppl(this);
     }
 
     @Override public boolean equals(Object other) {
-        if (!(other instanceof IApplTerm)) {
+        if(!(other instanceof IApplTerm)) {
             return false;
         }
         IApplTerm that = (IApplTerm) other;
-        if (!getOp().equals(that.getOp())) {
+        if(!getOp().equals(that.getOp())) {
             return false;
         }
-        if (getArity() != getArity()) {
+        if(getArity() != getArity()) {
             return false;
         }
-        for (int i = 0; i < getArity(); i++) {
-            if (!getArgs().get(i).termEquals(that.getArgs().get(i))) {
+        for(int i = 0; i < getArity(); i++) {
+            if(!getArgs().get(i).termEquals(that.getArgs().get(i))) {
                 return false;
             }
         }
         return true;
+    }
+
+    @Value.Lazy @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + getOp().hashCode();
+        for(ITerm arg : getArgs()) {
+            result = prime * result + arg.hashCode();
+        }
+        return result;
     }
 
     @Override public String toString() {
@@ -68,8 +78,8 @@ public abstract class AbstractApplTerm implements IApplTerm {
         sb.append(getOp());
         sb.append("(");
         boolean first = true;
-        for (ITerm arg : getArgs()) {
-            if (first) {
+        for(ITerm arg : getArgs()) {
+            if(first) {
                 first = false;
             } else {
                 sb.append(",");

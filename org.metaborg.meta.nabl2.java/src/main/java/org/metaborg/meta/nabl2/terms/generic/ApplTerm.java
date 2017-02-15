@@ -38,6 +38,10 @@ abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
         return super.equals(other);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getOp());

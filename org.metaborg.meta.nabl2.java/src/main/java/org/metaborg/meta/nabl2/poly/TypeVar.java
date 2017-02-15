@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.poly;
 
 import java.util.List;
-import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -16,15 +15,13 @@ import com.google.common.collect.ImmutableList;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class Forall extends AbstractApplTerm implements IApplTerm {
+public abstract class TypeVar extends AbstractApplTerm implements IApplTerm {
 
-    private static final String OP = "Forall";
+    private static final String OP = "TVar";
 
     // IOccurrence implementation
 
-    @Value.Parameter public abstract Set<TypeVar> getTypeVars();
-
-    @Value.Parameter public abstract ITerm getType();
+    @Value.Parameter public abstract String getName();
 
     // IApplTerm implementation
 
@@ -33,13 +30,12 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        ITerm vars = GenericTerms.newList(getTypeVars());
-        return ImmutableList.of(vars, getType());
+        return ImmutableList.of(GenericTerms.newString(getName()));
     }
 
-    public static IMatcher<Forall> matcher() {
-        return M.appl2(OP, M.listElems(TypeVar.matcher()), M.term(), (t, vars, type) -> {
-            return ImmutableForall.of(vars, type).setAttachments(t.getAttachments());
+    public static IMatcher<TypeVar> matcher() {
+        return M.appl1(OP, M.stringValue(), (t, name) -> {
+            return ImmutableTypeVar.of(name).setAttachments(t.getAttachments());
         });
     }
 
@@ -54,12 +50,7 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
     }
 
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("forall");
-        sb.append(getTypeVars());
-        sb.append(".");
-        sb.append(getType());
-        return sb.toString();
+        return "'" + getName();
     }
 
 }

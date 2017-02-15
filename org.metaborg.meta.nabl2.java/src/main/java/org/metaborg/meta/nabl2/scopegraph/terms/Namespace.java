@@ -50,6 +50,10 @@ public abstract class Namespace extends AbstractApplTerm implements INamespace, 
         return super.equals(other);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
     @Override public String toString() {
         return super.toString();
     }

@@ -4,6 +4,7 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,14 +16,15 @@ import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.poly.Forall;
 import org.metaborg.meta.nabl2.poly.ImmutableForall;
+import org.metaborg.meta.nabl2.poly.ImmutableTypeVar;
+import org.metaborg.meta.nabl2.poly.TypeVar;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.meta.nabl2.util.functions.Function2;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -30,10 +32,10 @@ import com.google.common.collect.Sets;
 public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
 
     private final Unifier unifier;
-    private final Function2<String, String, String> fresh;
+    private final Function1<String, ITermVar> fresh;
     private final Set<IPolyConstraint> defered;
 
-    public PolymorphismSolver(Unifier unifier, Function2<String, String, String> fresh) {
+    public PolymorphismSolver(Unifier unifier, Function1<String, ITermVar> fresh) {
         this.unifier = unifier;
         this.fresh = fresh;
         this.defered = Sets.newHashSet();
@@ -94,7 +96,7 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
         if(unifier.isActive(type)) {
             return false;
         }
-        ITerm scheme = type.getVars().isEmpty() ? type : ImmutableForall.of(type.getVars(), type);
+        ITerm scheme = generalize(type);
         try {
             unifier.removeActive(gen.getScheme());
             unifier.unify(gen.getScheme(), scheme);
@@ -104,6 +106,16 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
         return true;
     }
 
+    private ITerm generalize(ITerm type) {
+        Map<ITermVar,TypeVar> subst = Maps.newHashMap();
+        int c = 0;
+        for(ITermVar var : type.getVars()) {
+            subst.put(var, ImmutableTypeVar.of("T"+(++c)));
+        }
+        ITerm scheme = subst.isEmpty() ? type : ImmutableForall.of(subst.values(), subst(type, subst));
+        return scheme;
+    }
+    
     private boolean solve(CInstantiate inst) throws UnsatisfiableException {
         ITerm schemeTerm = unifier.find(inst.getScheme());
         if(M.var(v -> {
@@ -122,20 +134,20 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
     }
 
     private ITerm instantiate(Forall scheme) {
-        Map<ITermVar, ITermVar> mapping = Maps.newHashMap();
+        Map<TypeVar, ITermVar> mapping = Maps.newHashMap();
         scheme.getTypeVars().stream().forEach(v -> {
-            mapping.put(v, GenericTerms.newVar(v.getResource(), fresh.apply(v.getResource(), v.getName())));
+            mapping.put(v, fresh.apply(v.getName()));
         });
         ITerm type = subst(scheme.getType(), mapping);
         return type;
     }
 
-    private ITerm subst(ITerm term, Map<ITermVar, ITermVar> mapping) {
+    private ITerm subst(ITerm term, Map<? extends ITerm, ? extends ITerm> subst) {
         return M.sometd(
             // @formatter:off
-            M.var(var -> mapping.getOrDefault(var, var).setAttachments(var.getAttachments()))
+            t -> subst.containsKey(t) ? Optional.of(subst.get(t)) : Optional.empty()
             // @formatter:on
         ).apply(term);
     }
-
+ 
 }

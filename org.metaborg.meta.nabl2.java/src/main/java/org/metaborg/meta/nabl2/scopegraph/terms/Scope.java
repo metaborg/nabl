@@ -47,6 +47,10 @@ public abstract class Scope extends AbstractApplTerm implements IScope, IApplTer
         return super.equals(other);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
     @Override public String toString() {
         return "#" + getResource() + "-" + getName();
     }

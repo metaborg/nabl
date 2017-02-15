@@ -46,6 +46,10 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
         return super.equals(other);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("@");

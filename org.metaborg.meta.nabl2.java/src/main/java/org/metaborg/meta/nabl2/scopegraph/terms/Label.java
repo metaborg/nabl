@@ -70,6 +70,10 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
         return super.equals(other);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
     @Override public String toString() {
         return super.toString();
     }

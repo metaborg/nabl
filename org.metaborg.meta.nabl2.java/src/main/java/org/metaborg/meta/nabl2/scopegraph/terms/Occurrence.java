@@ -49,6 +49,10 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
         return super.equals(other);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getNamespace().getName());

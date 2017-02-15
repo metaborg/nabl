@@ -6,8 +6,9 @@ import java.util.List;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.meta.nabl2.util.functions.Function2;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -33,7 +34,7 @@ public class Solver {
 
     private final List<IMessageInfo> messages;
 
-    private Solver(SolverConfig config, Function2<String, String, String> fresh) {
+    private Solver(SolverConfig config, Function1<String, ITermVar> fresh) {
         this.unifier = new Unifier();
         this.components = Lists.newArrayList();
 
@@ -81,7 +82,7 @@ public class Solver {
         }
     }
 
-    public static Solution solve(SolverConfig config, Function2<String, String, String> fresh,
+    public static Solution solve(SolverConfig config, Function1<String, ITermVar> fresh,
         Iterable<IConstraint> constraints) throws UnsatisfiableException {
         final int n = Iterables.size(constraints);
         long t0 = System.nanoTime();
