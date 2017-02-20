@@ -53,6 +53,10 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S> {
     }
 
     public static <S> IRegExpMatcher<S> create(final IRegExp<S> initial) {
+        return factory(initial).create();
+    }
+    
+    public static <S> Factory<S> factory(final IRegExp<S> initial) {
         final List<Deriver<S>> derivers = Lists.newArrayList();
         for (S symbol : initial.getBuilder().getAlphabet()) {
             derivers.add(new Deriver<S>(symbol, initial.getBuilder()));
@@ -98,7 +102,13 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S> {
             }
         }
 
-        return new RegExpMatcher<>(initial, stateTransitions, nonFinal);
+        return () -> new RegExpMatcher<>(initial, stateTransitions, nonFinal);
     }
 
+    public interface Factory<S> {
+        
+        IRegExpMatcher<S> create();
+        
+    }
+ 
 }

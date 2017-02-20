@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class SetSolver implements ISolverComponent<ISetConstraint> {
+public class SetSolver extends AbstractSolverComponent<ISetConstraint> {
 
     private static final String NAME_OP = "NAME";
 
@@ -47,6 +47,10 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
         this.defered = Sets.newHashSet();
     }
 
+    @Override public Class<ISetConstraint> getConstraintClass() {
+        return ISetConstraint.class;
+    }
+
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(ISetConstraint constraint) throws UnsatisfiableException {
@@ -58,26 +62,22 @@ public class SetSolver implements ISolverComponent<ISetConstraint> {
 
     @Override public boolean iterate() throws UnsatisfiableException {
         Iterator<ISetConstraint> it = defered.iterator();
-        boolean progress = false;
         while(it.hasNext()) {
             try {
                 if(solve(it.next())) {
-                    progress = true;
                     it.remove();
+                    return true;
                 }
             } catch(UnsatisfiableException e) {
-                progress = true;
                 it.remove();
                 throw e;
             }
         }
-        return progress;
+        return false;
     }
 
-    @Override public Iterable<IMessageInfo> finish() {
-        return defered.stream().map(
-            c -> c.getMessageInfo().withDefault(MessageContent.builder().append("Unsolved: ").append(c.pp()).build()))
-            .collect(Collectors.toList());
+    @Override public Iterable<ISetConstraint> finish() {
+        return defered;
     }
 
     // ------------------------------------------------------------------------------------------------------//

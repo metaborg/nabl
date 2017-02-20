@@ -5,9 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
@@ -32,7 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class RelationSolver implements ISolverComponent<IRelationConstraint> {
+public class RelationSolver extends AbstractSolverComponent<IRelationConstraint> {
 
     private final Unifier unifier;
     private final Relations<ITerm> relations;
@@ -67,6 +65,10 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     public IRelations<ITerm> getRelations() {
         return relations;
+    }
+
+    @Override public Class<IRelationConstraint> getConstraintClass() {
+        return IRelationConstraint.class;
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -105,38 +107,33 @@ public class RelationSolver implements ISolverComponent<IRelationConstraint> {
 
     @Override public boolean iterate() throws UnsatisfiableException {
         complete = true;
-        boolean progress = false;
-        progress |= iterate(deferedBuilds.values());
-        progress |= iterate(deferedChecks);
-        return progress;
+        if(iterate(deferedBuilds.values())) {
+            return true;
+        }
+        return iterate(deferedChecks);
     }
 
     private boolean iterate(Collection<IRelationConstraint> defered) throws UnsatisfiableException {
-        boolean progress = false;
         Iterator<IRelationConstraint> it = defered.iterator();
         while(it.hasNext()) {
             try {
                 if(solve(it.next())) {
-                    progress = true;
                     it.remove();
+                    return true;
                 }
             } catch(UnsatisfiableException e) {
-                progress = true;
                 it.remove();
                 throw e;
             }
         }
-        return progress;
+        return false;
     }
 
-    @Override public Iterable<IMessageInfo> finish() {
+    @Override public Iterable<IRelationConstraint> finish() {
         Set<IRelationConstraint> unsolved = Sets.newHashSet();
         unsolved.addAll(deferedBuilds.values());
         unsolved.addAll(deferedChecks);
-        return unsolved.stream().map(c -> {
-            MessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-            return c.getMessageInfo().withDefault(content);
-        }).collect(Collectors.toList());
+        return unsolved;
     }
 
     // ------------------------------------------------------------------------------------------------------//

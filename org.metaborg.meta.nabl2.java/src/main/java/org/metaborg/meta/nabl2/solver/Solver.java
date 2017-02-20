@@ -2,10 +2,15 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.functions.Function1;
@@ -14,6 +19,8 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 public class Solver {
 
@@ -21,78 +28,126 @@ public class Solver {
 
     private final Unifier unifier;
 
-    private final List<ISolverComponent<?>> components;
+    private final Map<Class<? extends IConstraint>, ISolverComponent<?>> components;
     private final AstSolver astSolver;
-    private final BaseSolver baseSolver;
-    private final EqualitySolver equalitySolver;
     private final NamebindingSolver namebindingSolver;
     private final RelationSolver relationSolver;
-    private final SetSolver setSolver;
     private final SymbolicSolver symSolver;
-    private final PolymorphismSolver polySolver;
 
-
+    private final Set<IConstraint> unsolved;
     private final List<IMessageInfo> messages;
 
     private Solver(SolverConfig config, Function1<String, ITermVar> fresh) {
         this.unifier = new Unifier();
-        this.components = Lists.newArrayList();
+        this.components = Maps.newHashMap();
+        this.unsolved = Sets.newHashSet();
 
-        components.add(this.baseSolver = new BaseSolver());
-        components.add(this.equalitySolver = new EqualitySolver(unifier));
-        components.add(this.astSolver = new AstSolver(unifier));
-        components.add(this.namebindingSolver = new NamebindingSolver(config.getResolutionParams(), unifier));
-        components.add(this.relationSolver = new RelationSolver(config.getRelations(), config.getFunctions(), unifier));
-        components.add(this.setSolver = new SetSolver(namebindingSolver.nameSets(), unifier));
-        components.add(this.symSolver = new SymbolicSolver());
-        components.add(this.polySolver = new PolymorphismSolver(unifier, fresh));
+        addComponent(new BaseSolver());
+        addComponent(new EqualitySolver(unifier));
+        addComponent(this.astSolver = new AstSolver(unifier));
+        addComponent(this.namebindingSolver = new NamebindingSolver(config.getResolutionParams(), unifier));
+        addComponent(this.relationSolver = new RelationSolver(config.getRelations(), config.getFunctions(), unifier));
+        addComponent(new SetSolver(namebindingSolver.nameSets(), unifier));
+        addComponent(this.symSolver = new SymbolicSolver());
+        addComponent(new PolymorphismSolver(unifier, fresh));
 
         this.messages = Lists.newArrayList();
     }
 
-    private void add(Iterable<IConstraint> constraints) {
+    private void addComponent(ISolverComponent<?> component) {
+        components.put(component.getConstraintClass(), component);
+    }
+
+    private Optional<ISolverComponent<IConstraint>> findComponent(Class<? extends IConstraint> constraintClass) {
+        Optional<ISolverComponent<IConstraint>> result =
+            Optional.ofNullable(components.computeIfAbsent(constraintClass, cc -> {
+                for(Entry<Class<? extends IConstraint>, ISolverComponent<?>> entry : components.entrySet()) {
+                    if(entry.getKey().isAssignableFrom(cc)) {
+                        return entry.getValue();
+                    }
+                }
+                return null;
+            }));
+        result.ifPresent(component -> components.put(constraintClass, component));
+        return result;
+    }
+
+    private void add(Iterable<IConstraint> constraints) throws InterruptedException {
         for(IConstraint constraint : constraints) {
-            try {
-                constraint.matchOrThrow(CheckedCases.of(astSolver::add, baseSolver::add, equalitySolver::add,
-                    namebindingSolver::add, relationSolver::add, setSolver::add, symSolver::add, polySolver::add));
-            } catch(UnsatisfiableException e) {
-                messages.addAll(e.getMessages());
+            if(Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException();
+            }
+            Optional<ISolverComponent<IConstraint>> maybeComponent = findComponent(constraint.getClass());
+            if(maybeComponent.isPresent()) {
+                ISolverComponent<IConstraint> component = maybeComponent.get();
+                component.getTimer().start();
+                try {
+                    component.add(constraint);
+                } catch(UnsatisfiableException e) {
+                    messages.addAll(e.getMessages());
+                } finally {
+                    component.getTimer().stop();
+                }
+            } else {
+                unsolved.add(constraint);
             }
         }
     }
 
-    private void iterate() {
-        boolean progress;
-        do {
-            progress = false;
-            for(ISolverComponent<?> component : components) {
+    private void iterate() throws InterruptedException {
+        outer: while(true) {
+            if(Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException();
+            }
+            for(ISolverComponent<?> component : components.values()) {
+                component.getTimer().start();
                 try {
-                    progress |= component.iterate();
+                    if(component.iterate()) {
+                        continue outer;
+                    }
                 } catch(UnsatisfiableException e) {
-                    progress = true;
                     messages.addAll(e.getMessages());
+                } finally {
+                    component.getTimer().stop();
                 }
             }
-        } while(progress);
+            return;
+        }
     }
 
-    private void finish() {
-        for(ISolverComponent<?> component : components) {
-            messages.addAll(Lists.newArrayList(component.finish()));
+    private void finish(boolean errorsOnUnsolved) throws InterruptedException {
+        for(ISolverComponent<?> component : components.values()) {
+            if(Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException();
+            }
+            component.getTimer().start();
+            try {
+                unsolved.addAll(Lists.newArrayList(component.finish()));
+            } finally {
+                component.getTimer().stop();
+            }
+        }
+        if(errorsOnUnsolved) {
+            unsolved.stream().forEach(c -> {
+                IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
+                messages.add(c.getMessageInfo().withDefault(content));
+            });
         }
     }
 
     public static Solution solve(SolverConfig config, Function1<String, ITermVar> fresh,
-        Iterable<IConstraint> constraints) throws UnsatisfiableException {
+        Iterable<IConstraint> constraints) throws UnsatisfiableException, InterruptedException {
         final int n = Iterables.size(constraints);
         long t0 = System.nanoTime();
         logger.info(">>> Solving {} constraints <<<", n);
         Solver solver = new Solver(config, fresh);
         solver.add(constraints);
         solver.iterate();
-        solver.finish();
+        solver.finish(true);
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved {} constraints in {} seconds <<<", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
+        logger.info("    * namebinding : {} seconds <<<", (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
+        logger.info("    * relations   : {} seconds <<<", (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
         return ImmutableSolution.of(
             // @formatter:off
             solver.astSolver.getProperties(),

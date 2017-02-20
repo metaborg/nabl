@@ -6,11 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
@@ -45,7 +43,7 @@ import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class NamebindingSolver implements ISolverComponent<INamebindingConstraint> {
+public class NamebindingSolver extends AbstractSolverComponent<INamebindingConstraint> {
 
     private final Unifier unifier;
     private final ResolutionParameters params;
@@ -64,6 +62,10 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
         this.properties = new Properties<>();
     }
 
+    @Override public Class<INamebindingConstraint> getConstraintClass() {
+        return INamebindingConstraint.class;
+    }
+    
     public IScopeGraph<Scope, Label, Occurrence> getScopeGraph() {
         return scopeGraph;
     }
@@ -87,41 +89,36 @@ public class NamebindingSolver implements ISolverComponent<INamebindingConstrain
     }
 
     @Override public boolean iterate() throws UnsatisfiableException {
-        boolean progress = false;
-        progress |= iterate(deferedBuilds);
+        if(iterate(deferedBuilds)) {
+            return true;
+        }
         if(nameResolution == null && deferedBuilds.isEmpty()) {
-            progress |= true;
             nameResolution = new EsopNameResolution<>(scopeGraph, params);
         }
-        progress |= iterate(deferedChecks);
-        return progress;
+        return iterate(deferedChecks);
     }
 
     private boolean iterate(Set<INamebindingConstraint> defered) throws UnsatisfiableException {
-        boolean progress = false;
         Iterator<INamebindingConstraint> it = defered.iterator();
         while(it.hasNext()) {
             try {
                 if(solve(it.next())) {
-                    progress = true;
                     it.remove();
+                    return true;
                 }
             } catch(UnsatisfiableException e) {
-                progress = true;
                 it.remove();
                 throw e;
             }
         }
-        return progress;
+        return false;
     }
 
-    @Override public Iterable<IMessageInfo> finish() {
+    @Override public Iterable<INamebindingConstraint> finish() {
         Set<INamebindingConstraint> unsolved = Sets.newHashSet();
         unsolved.addAll(deferedBuilds);
         unsolved.addAll(deferedChecks);
-        return unsolved.stream().map(
-            c -> c.getMessageInfo().withDefault(MessageContent.builder().append("Unsolved: ").append(c.pp()).build()))
-            .collect(Collectors.toList());
+        return unsolved;
     }
 
     // ------------------------------------------------------------------------------------------------------//

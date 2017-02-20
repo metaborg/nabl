@@ -6,10 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
-import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
@@ -29,7 +26,7 @@ import org.metaborg.meta.nabl2.util.functions.Function1;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
+public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint> {
 
     private final Unifier unifier;
     private final Function1<String, ITermVar> fresh;
@@ -41,6 +38,10 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
         this.defered = Sets.newHashSet();
     }
 
+    @Override public Class<IPolyConstraint> getConstraintClass() {
+        return IPolyConstraint.class;
+    }
+
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(IPolyConstraint constraint) throws UnsatisfiableException {
@@ -49,26 +50,22 @@ public class PolymorphismSolver implements ISolverComponent<IPolyConstraint> {
 
     @Override public boolean iterate() throws UnsatisfiableException {
         Iterator<IPolyConstraint> it = defered.iterator();
-        boolean progress = false;
         while(it.hasNext()) {
             try {
                 if(solve(it.next())) {
-                    progress = true;
                     it.remove();
+                    return true;
                 }
             } catch(UnsatisfiableException e) {
-                progress = true;
                 it.remove();
                 throw e;
             }
         }
-        return progress;
+        return false;
     }
 
-    @Override public Iterable<IMessageInfo> finish() {
-        return defered.stream().map(
-            c -> c.getMessageInfo().withDefault(MessageContent.builder().append("Unsolved: ").append(c.pp()).build()))
-            .collect(Collectors.toList());
+    @Override public Iterable<IPolyConstraint> finish() {
+        return defered;
     }
 
     // ------------------------------------------------------------------------------------------------------//

@@ -1,10 +1,17 @@
 package org.metaborg.meta.nabl2.solver;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.util.Unit;
+import org.metaborg.util.time.AggregateTimer;
 
 public interface ISolverComponent<C extends IConstraint> {
+
+    /**
+     * Return the class of constraints solved by this component.
+     * 
+     * @return Class of constraints
+     */
+    Class<C> getConstraintClass();
 
     /**
      * Add a constraint to the constraint set. Solving can be eagerly done, instead of waiting for iterate calls.
@@ -23,11 +30,13 @@ public interface ISolverComponent<C extends IConstraint> {
     boolean iterate() throws UnsatisfiableException;
 
     /**
-     * Called when none of the solver components can make any more progress. Can be used for final checks, or errors on
-     * unsolved constraints.
+     * Called when none of the solver components can make any more progress. Can be used for final checks, but should
+     * normally not contribute to inference that can affect other components of the solver.
      * 
-     * @return UnsatisfiableException
+     * @return Unsolved constraints
      */
-    Iterable<IMessageInfo> finish();
+    Iterable<? extends C> finish();
+
+    AggregateTimer getTimer();
 
 }

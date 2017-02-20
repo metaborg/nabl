@@ -4,14 +4,11 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.equality.CEqual;
 import org.metaborg.meta.nabl2.constraints.equality.CInequal;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint.CheckedCases;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.UnificationException;
@@ -20,7 +17,7 @@ import org.metaborg.meta.nabl2.util.Unit;
 
 import com.google.common.collect.Sets;
 
-public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
+public class EqualitySolver extends AbstractSolverComponent<IEqualityConstraint> {
 
     private final Unifier unifier;
 
@@ -31,6 +28,10 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
         this.defered = Sets.newHashSet();
     }
 
+    @Override public Class<IEqualityConstraint> getConstraintClass() {
+        return IEqualityConstraint.class;
+    }
+    
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(IEqualityConstraint constraint) throws UnsatisfiableException {
@@ -39,27 +40,22 @@ public class EqualitySolver implements ISolverComponent<IEqualityConstraint> {
 
     @Override public boolean iterate() throws UnsatisfiableException {
         Iterator<CInequal> it = defered.iterator();
-        boolean progress = false;
         while(it.hasNext()) {
             try {
                 if(solve(it.next())) {
-                    progress = true;
                     it.remove();
+                    return true;
                 }
             } catch(UnsatisfiableException e) {
-                progress = true;
                 it.remove();
                 throw e;
             }
         }
-        return progress;
+        return false;
     }
 
-    @Override public Iterable<IMessageInfo> finish() {
-        return defered.stream().map(c -> {
-            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-            return c.getMessageInfo().withDefault(content);
-        }).collect(Collectors.toList());
+    @Override public Iterable<CInequal> finish() {
+        return defered;
     }
 
     // ------------------------------------------------------------------------------------------------------//

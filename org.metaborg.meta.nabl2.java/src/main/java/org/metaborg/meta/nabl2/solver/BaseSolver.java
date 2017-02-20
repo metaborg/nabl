@@ -4,16 +4,19 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint.CheckedCases;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.util.iterators.Iterables2;
 
-public class BaseSolver implements ISolverComponent<IBaseConstraint> {
+public class BaseSolver extends AbstractSolverComponent<IBaseConstraint> {
 
     public BaseSolver() {
     }
 
+    @Override public Class<IBaseConstraint> getConstraintClass() {
+        return IBaseConstraint.class;
+    }
+    
     @Override public Unit add(IBaseConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(t -> {
             return unit;
@@ -26,7 +29,7 @@ public class BaseSolver implements ISolverComponent<IBaseConstraint> {
         return false;
     }
 
-    @Override public Iterable<IMessageInfo> finish() {
+    @Override public Iterable<IBaseConstraint> finish() {
         return Iterables2.empty();
     }
 

@@ -17,7 +17,7 @@ public class ListTermIterator implements Iterator<ITerm> {
 
     @Override public boolean hasNext() {
         return current.match(ListTerms.cases(cons -> true, nil -> false, var -> {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Cannot iterate over a non-ground list.");
         }));
     }
 
@@ -28,7 +28,7 @@ public class ListTermIterator implements Iterator<ITerm> {
         }, nil -> {
             throw new NoSuchElementException();
         }, var -> {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Cannot iterate over a non-ground list.");
         }));
     }
 
