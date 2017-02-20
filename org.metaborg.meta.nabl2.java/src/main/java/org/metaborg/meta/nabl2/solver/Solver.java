@@ -107,6 +107,7 @@ public class Solver {
                     }
                 } catch(UnsatisfiableException e) {
                     messages.addAll(e.getMessages());
+                    continue outer;
                 } finally {
                     component.getTimer().stop();
                 }
