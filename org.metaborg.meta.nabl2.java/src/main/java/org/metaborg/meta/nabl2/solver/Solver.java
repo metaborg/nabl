@@ -58,18 +58,18 @@ public class Solver {
         components.put(component.getConstraintClass(), component);
     }
 
-    private Optional<ISolverComponent<IConstraint>> findComponent(Class<? extends IConstraint> constraintClass) {
-        Optional<ISolverComponent<IConstraint>> result =
-            Optional.ofNullable(components.computeIfAbsent(constraintClass, cc -> {
-                for(Entry<Class<? extends IConstraint>, ISolverComponent<?>> entry : components.entrySet()) {
-                    if(entry.getKey().isAssignableFrom(cc)) {
-                        return entry.getValue();
-                    }
+    @SuppressWarnings({ "unchecked", "rawtypes" }) private Optional<ISolverComponent<IConstraint>>
+        findComponent(Class<? extends IConstraint> constraintClass) {
+        ISolverComponent component;
+        if((component = components.get(constraintClass)) == null) {
+            for(Entry<Class<? extends IConstraint>, ISolverComponent<?>> entry : components.entrySet()) {
+                if(entry.getKey().isAssignableFrom(constraintClass)) {
+                    component = entry.getValue();
+                    break;
                 }
-                return null;
-            }));
-        result.ifPresent(component -> components.put(constraintClass, component));
-        return result;
+            }
+        }
+        return Optional.ofNullable(component);
     }
 
     private void add(Iterable<IConstraint> constraints) throws InterruptedException {
@@ -146,8 +146,10 @@ public class Solver {
         solver.finish(true);
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved {} constraints in {} seconds <<<", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
-        logger.info("    * namebinding : {} seconds <<<", (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
-        logger.info("    * relations   : {} seconds <<<", (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
+        logger.info("    * namebinding : {} seconds <<<",
+            (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
+        logger.info("    * relations   : {} seconds <<<",
+            (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
         return ImmutableSolution.of(
             // @formatter:off
             solver.astSolver.getProperties(),
