@@ -7,6 +7,6 @@ imports
 
 language
 
-  extensions : nabl2runtimetest
+  extensions : nabl2test
 
   provider : target/metaborg/stratego.ctree

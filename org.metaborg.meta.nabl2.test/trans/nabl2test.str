@@ -1,4 +1,4 @@
-module nabl2runtimetest
+module nabl2test
 
 imports
   

@@ -1,5 +1,5 @@
 module simple
 
-language NaBL2RuntimeTest
+language NaBL2Test
 
 test false fails [[ false fails ]] 1 error

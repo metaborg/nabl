@@ -5,7 +5,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>org.metaborg.meta.nabl2.runtime.test</artifactId>
+  <artifactId>org.metaborg.meta.nabl2.test</artifactId>
   <packaging>spoofax-language</packaging>
 
   <parent>
@@ -82,7 +82,7 @@
           </execution>
         </executions>
         <configuration>
-          <languageUnderTest>org.metaborg:org.metaborg.meta.nabl2.runtime.test:${metaborg-version}</languageUnderTest>
+          <languageUnderTest>org.metaborg:org.metaborg.meta.nabl2.test:${metaborg-version}</languageUnderTest>
         </configuration>
       </plugin>
     </plugins>
