@@ -96,7 +96,7 @@ public class EqualitySolver extends AbstractSolverComponent<IEqualityConstraint>
 
     @Override public Collection<IEqualityConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
         List<IEqualityConstraint> constraints = Lists.newArrayList();
-        for(ITermVar var : unifier.getActiveVars()) {
+        for(ITermVar var : unifier.getAllVars()) {
             constraints.add(ImmutableCEqual.of(var, unifier.find(var), messageInfo));
         }
         return constraints;

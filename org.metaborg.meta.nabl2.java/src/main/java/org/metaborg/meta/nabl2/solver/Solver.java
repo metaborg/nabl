@@ -102,23 +102,21 @@ public class Solver {
     }
 
     private void finishIncremental() throws InterruptedException {
-        for(ISolverComponent<?> component : components.values()) {
-            if(Thread.interrupted()) {
-                throw new InterruptedException();
-            }
-            component.getTimer().start();
-            try {
-                unsolved.addAll(Lists.newArrayList(component.finish()));
-            } finally {
-                component.getTimer().stop();
-            }
-        }
+        finishComponents();
         messages.stream().forEach(messageInfo -> {
             unsolved.add(ImmutableCFalse.of(messageInfo));
         });
     }
 
     private void finishFinal() throws InterruptedException {
+        finishComponents();
+        unsolved.stream().forEach(c -> {
+            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
+            messages.add(c.getMessageInfo().withDefault(content));
+        });
+    }
+
+    private void finishComponents() throws InterruptedException {
         for(ISolverComponent<?> component : components.values()) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
@@ -130,12 +128,8 @@ public class Solver {
                 component.getTimer().stop();
             }
         }
-        unsolved.stream().forEach(c -> {
-            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-            messages.add(c.getMessageInfo().withDefault(content));
-        });
     }
-
+    
     public static Iterable<IConstraint> solveIncremental(SolverConfig config, IncrementalSolverConfig incrementalConfig,
         Function1<String, ITermVar> fresh, Iterable<IConstraint> constraints)
         throws UnsatisfiableException, InterruptedException {

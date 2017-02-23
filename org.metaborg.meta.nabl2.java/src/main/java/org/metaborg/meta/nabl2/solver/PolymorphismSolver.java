@@ -34,6 +34,8 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
     private final Function1<String, ITermVar> fresh;
     private final Set<IPolyConstraint> defered;
 
+    private boolean complete = false;
+
     public PolymorphismSolver(Unifier unifier, Function1<String, ITermVar> fresh) {
         this.unifier = unifier;
         this.fresh = fresh;
@@ -51,6 +53,7 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
     }
 
     @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
+        complete = true;
         return doIterate(defered, this::solve);
     }
 
@@ -79,6 +82,9 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
     }
 
     private boolean solve(CGeneralize gen) throws UnsatisfiableException {
+        if(!complete) {
+            return false;
+        }
         ITerm type = unifier.find(gen.getType());
         if(unifier.isActive(type)) {
             return false;
@@ -104,10 +110,11 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
     }
 
     private boolean solve(CInstantiate inst) throws UnsatisfiableException {
+        if(!complete) {
+            return false;
+        }
         ITerm schemeTerm = unifier.find(inst.getScheme());
-        if(M.var(v -> {
-            return unifier.isActive(v);
-        }).match(schemeTerm).orElse(false)) {
+        if(unifier.isActive(schemeTerm)) {
             return false;
         }
         ITerm type = Forall.matcher().match(schemeTerm).map(scheme -> instantiate(scheme)).orElse(schemeTerm);
@@ -138,9 +145,9 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
     }
 
     // ------------------------------------------------------------------------------------------------------//
-    
+
     @Override public Collection<IPolyConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
         return Collections.emptySet();
     }
-    
+
 }
