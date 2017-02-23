@@ -2,11 +2,13 @@ package org.metaborg.meta.nabl2.solver;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
@@ -48,20 +50,8 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
         return constraint.matchOrThrow(CheckedCases.of(this::add, this::add));
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException {
-        Iterator<IPolyConstraint> it = defered.iterator();
-        while(it.hasNext()) {
-            try {
-                if(solve(it.next())) {
-                    it.remove();
-                    return true;
-                }
-            } catch(UnsatisfiableException e) {
-                it.remove();
-                throw e;
-            }
-        }
-        return false;
+    @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
+        return doIterate(defered, this::solve);
     }
 
     @Override public Iterable<IPolyConstraint> finish() {
@@ -104,15 +94,15 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
     }
 
     private ITerm generalize(ITerm type) {
-        Map<ITermVar,TypeVar> subst = Maps.newHashMap();
+        Map<ITermVar, TypeVar> subst = Maps.newHashMap();
         int c = 0;
         for(ITermVar var : type.getVars()) {
-            subst.put(var, ImmutableTypeVar.of("T"+(++c)));
+            subst.put(var, ImmutableTypeVar.of("T" + (++c)));
         }
         ITerm scheme = subst.isEmpty() ? type : ImmutableForall.of(subst.values(), subst(type, subst));
         return scheme;
     }
-    
+
     private boolean solve(CInstantiate inst) throws UnsatisfiableException {
         ITerm schemeTerm = unifier.find(inst.getScheme());
         if(M.var(v -> {
@@ -146,5 +136,11 @@ public class PolymorphismSolver extends AbstractSolverComponent<IPolyConstraint>
             // @formatter:on
         ).apply(term);
     }
- 
+
+    // ------------------------------------------------------------------------------------------------------//
+    
+    @Override public Collection<IPolyConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
+        return Collections.emptySet();
+    }
+    
 }

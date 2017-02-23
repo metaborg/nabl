@@ -42,7 +42,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private final EsopScopeGraph<S,L,O> scopeGraph;
     private final Set<L> labels;
-    private final RegExpMatcher.Factory<L> wf;
+    private final IRegExpMatcher<L> wf;
     private final IRelation<L> order;
     private final IRelation<L> noOrder;
 
@@ -52,7 +52,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     public EsopNameResolution(EsopScopeGraph<S,L,O> scopeGraph, IResolutionParameters<L> params) {
         this.scopeGraph = scopeGraph;
         this.labels = Sets.newHashSet(params.getLabels());
-        this.wf = RegExpMatcher.factory(params.getPathWf());
+        this.wf = RegExpMatcher.create(params.getPathWf());
         this.order = params.getSpecificityOrder();
         assert order.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
@@ -96,19 +96,19 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     public Optional<Iterable<IPath<S,L,O>>> tryVisible(S scope) {
-        EsopEnv<S,L,O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), order, wf.create(), scope);
+        EsopEnv<S,L,O> env = env(HashTreePSet.empty(), HashTreePSet.empty(), order, wf, scope);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
     public Optional<Iterable<IPath<S,L,O>>> tryReachable(S scope) {
         EsopEnv<S,L,O> env =
-                env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, wf.create(), scope);
+                env(HashTreePSet.empty(), HashTreePSet.empty(), noOrder, wf, scope);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
     private Optional<Iterable<IPath<S,L,O>>> resolve(PSet<O> seenI, O ref) {
         return scopeGraph.getRefScope(ref).map(scope -> {
-            EsopEnv<S,L,O> e = env(seenI.plus(ref), HashTreePSet.empty(), order, wf.create(), scope);
+            EsopEnv<S,L,O> e = env(seenI.plus(ref), HashTreePSet.empty(), order, wf, scope);
             Iterable<IPath<S,L,O>> paths = e.get(ref);
             if(e.isComplete()) {
                 return Optional.of(paths);

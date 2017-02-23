@@ -2,22 +2,29 @@ package org.metaborg.meta.nabl2.solver;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.sym.ImmutableCFact;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class SymbolicSolver extends AbstractSolverComponent<ISymbolicConstraint> {
 
+    private final Unifier unifier;
     private final Set<ITerm> facts;
     private final Set<ITerm> goals;
 
-    public SymbolicSolver() {
+    public SymbolicSolver(Unifier unifier) {
+        this.unifier = unifier;
         this.facts = Sets.newHashSet();
         this.goals = Sets.newHashSet();
     }
@@ -36,12 +43,11 @@ public class SymbolicSolver extends AbstractSolverComponent<ISymbolicConstraint>
         }));
     }
 
-    @Override public boolean iterate() {
-        return false;
-    }
-
-    @Override public Iterable<ISymbolicConstraint> finish() {
-        return Iterables2.empty();
+    @Override public Collection<ISymbolicConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
+        List<ISymbolicConstraint> constraints = Lists.newArrayList();
+        facts.stream().map(unifier::find).forEach(fact -> constraints.add(ImmutableCFact.of(fact, messageInfo)));
+        goals.stream().map(unifier::find).forEach(goal -> constraints.add(ImmutableCFact.of(goal, messageInfo)));
+        return constraints;
     }
 
     public ISymbolicConstraints get() {

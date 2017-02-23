@@ -6,8 +6,8 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -18,7 +18,7 @@ public abstract class CDistinct implements ISetConstraint {
 
     @Value.Parameter public abstract Optional<String> getProjection();
 
-    @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
+    @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseDistinct(this);

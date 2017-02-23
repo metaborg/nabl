@@ -2,19 +2,24 @@ package org.metaborg.meta.nabl2.solver;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.equality.CEqual;
 import org.metaborg.meta.nabl2.constraints.equality.CInequal;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class EqualitySolver extends AbstractSolverComponent<IEqualityConstraint> {
@@ -31,27 +36,15 @@ public class EqualitySolver extends AbstractSolverComponent<IEqualityConstraint>
     @Override public Class<IEqualityConstraint> getConstraintClass() {
         return IEqualityConstraint.class;
     }
-    
+
     // ------------------------------------------------------------------------------------------------------//
 
     @Override public Unit add(IEqualityConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(this::add, this::add));
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException {
-        Iterator<CInequal> it = defered.iterator();
-        while(it.hasNext()) {
-            try {
-                if(solve(it.next())) {
-                    it.remove();
-                    return true;
-                }
-            } catch(UnsatisfiableException e) {
-                it.remove();
-                throw e;
-            }
-        }
-        return false;
+    @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
+        return doIterate(defered, this::solve);
     }
 
     @Override public Iterable<CInequal> finish() {
@@ -100,5 +93,13 @@ public class EqualitySolver extends AbstractSolverComponent<IEqualityConstraint>
     }
 
     // ------------------------------------------------------------------------------------------------------//
+
+    @Override public Collection<IEqualityConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
+        List<IEqualityConstraint> constraints = Lists.newArrayList();
+        for(ITermVar var : unifier.getActiveVars()) {
+            constraints.add(ImmutableCEqual.of(var, unifier.find(var), messageInfo));
+        }
+        return constraints;
+    }
 
 }

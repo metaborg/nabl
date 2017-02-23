@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.regexp;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -11,7 +12,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 
-public class RegExpMatcher<S> implements IRegExpMatcher<S> {
+public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final IRegExp<S> state;
     private final Object2ObjectMap<IRegExp<S>,Object2ObjectMap<S,IRegExp<S>>> stateTransitions;
@@ -53,10 +56,6 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S> {
     }
 
     public static <S> IRegExpMatcher<S> create(final IRegExp<S> initial) {
-        return factory(initial).create();
-    }
-    
-    public static <S> Factory<S> factory(final IRegExp<S> initial) {
         final List<Deriver<S>> derivers = Lists.newArrayList();
         for (S symbol : initial.getBuilder().getAlphabet()) {
             derivers.add(new Deriver<S>(symbol, initial.getBuilder()));
@@ -102,13 +101,7 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S> {
             }
         }
 
-        return () -> new RegExpMatcher<>(initial, stateTransitions, nonFinal);
+        return new RegExpMatcher<>(initial, stateTransitions, nonFinal);
     }
 
-    public interface Factory<S> {
-        
-        IRegExpMatcher<S> create();
-        
-    }
- 
 }

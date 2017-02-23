@@ -35,7 +35,7 @@ public class Actions {
         return GenericTerms.newAppl("CustomFinal", sourceTerm(resource), initial, GenericTerms.newList(units));
     }
 
-    private static ITerm sourceTerm(String resource) {
+    public static ITerm sourceTerm(String resource) {
         ImploderAttachment origin = ImploderAttachment.createCompactPositionAttachment(resource, 0, 0, 0, 0);
         ImmutableTermIndex index = ImmutableTermIndex.of(resource, 0);
         return GenericTerms.newString(resource, ImmutableClassToInstanceMap.builder().put(TermIndex.class, index)

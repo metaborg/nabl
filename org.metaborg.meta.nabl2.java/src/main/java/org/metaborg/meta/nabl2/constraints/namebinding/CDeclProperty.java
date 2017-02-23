@@ -4,8 +4,8 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.base.Preconditions;
@@ -22,7 +22,7 @@ public abstract class CDeclProperty implements INamebindingConstraint {
 
     @Value.Parameter public abstract int getPriority();
 
-    @Value.Parameter @Override public abstract MessageInfo getMessageInfo();
+    @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
     @Value.Check public void check() {
         Preconditions.checkArgument(getKey().isGround());

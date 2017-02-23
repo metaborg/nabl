@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.unification;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,10 @@ public class Unifier implements IUnifier, Serializable {
         this.activeVars = HashMultiset.create();
     }
 
+    @Override public Iterable<ITermVar> getAllVars() {
+        return Collections.unmodifiableSet(reps.keySet());
+    }
+    
     /**
      * Find representative term.
      */
@@ -281,6 +286,10 @@ public class Unifier implements IUnifier, Serializable {
         }
     }
  
+    public Iterable<ITermVar> getActiveVars() {
+        return Collections.unmodifiableSet(activeVars.elementSet());
+    }
+    
     private void updateActive(ITermVar var, ITerm term) {
         if (!activeVars.contains(var)) {
             //return;

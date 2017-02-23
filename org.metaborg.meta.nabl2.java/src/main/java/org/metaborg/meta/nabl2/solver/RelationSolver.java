@@ -1,7 +1,5 @@
 package org.metaborg.meta.nabl2.solver;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -24,6 +22,7 @@ import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -105,35 +104,16 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
 
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException {
+    @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
         complete = true;
-        if(iterate(deferedBuilds.values())) {
-            return true;
-        }
-        return iterate(deferedChecks);
-    }
-
-    private boolean iterate(Collection<IRelationConstraint> defered) throws UnsatisfiableException {
-        Iterator<IRelationConstraint> it = defered.iterator();
-        while(it.hasNext()) {
-            try {
-                if(solve(it.next())) {
-                    it.remove();
-                    return true;
-                }
-            } catch(UnsatisfiableException e) {
-                it.remove();
-                throw e;
-            }
-        }
-        return false;
+        boolean progress = false;
+        progress |= doIterate(deferedBuilds.values(), this::solve);
+        progress |= doIterate(deferedChecks, this::solve);
+        return progress;
     }
 
     @Override public Iterable<IRelationConstraint> finish() {
-        Set<IRelationConstraint> unsolved = Sets.newHashSet();
-        unsolved.addAll(deferedBuilds.values());
-        unsolved.addAll(deferedChecks);
-        return unsolved;
+        return Iterables2.fromConcat(deferedBuilds.values(), deferedChecks);
     }
 
     // ------------------------------------------------------------------------------------------------------//

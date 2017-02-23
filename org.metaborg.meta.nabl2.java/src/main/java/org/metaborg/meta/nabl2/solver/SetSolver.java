@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.solver;
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -60,20 +59,8 @@ public class SetSolver extends AbstractSolverComponent<ISetConstraint> {
         return unit;
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException {
-        Iterator<ISetConstraint> it = defered.iterator();
-        while(it.hasNext()) {
-            try {
-                if(solve(it.next())) {
-                    it.remove();
-                    return true;
-                }
-            } catch(UnsatisfiableException e) {
-                it.remove();
-                throw e;
-            }
-        }
-        return false;
+    @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
+        return doIterate(defered, this::solve);
     }
 
     @Override public Iterable<ISetConstraint> finish() {

@@ -2,10 +2,14 @@ package org.metaborg.meta.nabl2.solver;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.ast.ImmutableCAstProperty;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.ImmutableMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageKind;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -13,7 +17,8 @@ import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.util.iterators.Iterables2;
+
+import com.google.common.collect.Lists;
 
 public class AstSolver extends AbstractSolverComponent<IAstConstraint> {
 
@@ -48,12 +53,16 @@ public class AstSolver extends AbstractSolverComponent<IAstConstraint> {
         }));
     }
 
-    @Override public boolean iterate() {
-        return false;
+    @Override public Collection<IAstConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
+        List<IAstConstraint> constraints = Lists.newArrayList();
+        for (TermIndex index : properties.getIndices()) {
+            for (ITerm key : properties.getDefinedKeys(index)) {
+                properties.getValue(index, key).map(unifier::find).ifPresent(value -> {
+                    constraints.add(ImmutableCAstProperty.of(index, key, value, messageInfo));
+                });
+            }
+        }
+        return constraints;
     }
-
-    @Override public Iterable<IAstConstraint> finish() {
-        return Iterables2.empty();
-    }
-
+    
 }
