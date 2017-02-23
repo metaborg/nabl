@@ -4,9 +4,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.terms.ITermIndex;
-import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;

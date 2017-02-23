@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.terms.generic;
+package org.metaborg.meta.nabl2.stratego;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,10 +7,12 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermIndex;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
+import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 @Value.Immutable
@@ -36,7 +38,7 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     }
 
     public static IMatcher<TermIndex> matcher() {
-        return M.appl2("TermIndex", M.stringValue(), M.integerValue(), (t, resource, id) -> ImmutableTermIndex.of(
+        return M.appl2(OP, M.stringValue(), M.integerValue(), (t, resource, id) -> ImmutableTermIndex.of(
                 resource, id).setAttachments(t.getAttachments()));
     }
 
@@ -60,9 +62,13 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     }
 
     // static
-    
+ 
     public static Optional<TermIndex> get(ITerm term) {
-        return Optional.ofNullable(term.getAttachments().getInstance(TermIndex.class));
+        return get(term.getAttachments());
+    }
+    
+    public static Optional<TermIndex> get(ClassToInstanceMap<Object> attachments) {
+        return Optional.ofNullable(attachments.getInstance(TermIndex.class));
     }
     
 }

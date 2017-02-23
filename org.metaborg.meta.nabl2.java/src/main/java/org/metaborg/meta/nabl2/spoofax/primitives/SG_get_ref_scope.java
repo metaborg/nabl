@@ -6,8 +6,8 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.spoofax.interpreter.core.InterpreterException;
 
 public class SG_get_ref_scope extends ScopeGraphPrimitive {
@@ -21,14 +21,12 @@ public class SG_get_ref_scope extends ScopeGraphPrimitive {
         if (terms.size() != 1) {
             throw new InterpreterException("Need one term argument: analysis");
         }
-        TermIndex index = terms.get(0).getAttachments().getInstance(TermIndex.class);
-        if (index == null) {
-            return Optional.empty();
-        }
-        return Occurrence.matcher().match(term).<ITerm> flatMap(ref -> {
-            return context.unit(index.getResource()).solution().<ITerm> flatMap(s -> {
-                Optional<Scope> ss = s.getScopeGraph().getRefScope(ref);
-                return ss.flatMap(Optional::<ITerm> of);
+        return TermIndex.get(terms.get(0)).flatMap(index -> {
+            return Occurrence.matcher().match(term).<ITerm> flatMap(ref -> {
+                return context.unit(index.getResource()).solution().<ITerm> flatMap(s -> {
+                    Optional<Scope> ss = s.getScopeGraph().getRefScope(ref);
+                    return ss.flatMap(Optional::<ITerm> of);
+                });
             });
         });
     }

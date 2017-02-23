@@ -1,10 +1,11 @@
 package org.metaborg.meta.nabl2.spoofax.analysis;
 
+import org.metaborg.meta.nabl2.stratego.ImmutableTermIndex;
+import org.metaborg.meta.nabl2.stratego.ImmutableTermOrigin;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
+import org.metaborg.meta.nabl2.stratego.TermOrigin;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
-import org.spoofax.jsglr.client.imploder.ImploderAttachment;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Iterables;
@@ -36,10 +37,12 @@ public class Actions {
     }
 
     public static ITerm sourceTerm(String resource) {
-        ImploderAttachment origin = ImploderAttachment.createCompactPositionAttachment(resource, 0, 0, 0, 0);
-        ImmutableTermIndex index = ImmutableTermIndex.of(resource, 0);
-        return GenericTerms.newString(resource, ImmutableClassToInstanceMap.builder().put(TermIndex.class, index)
-                .put(ImploderAttachment.class, origin).build());
+        TermIndex index = ImmutableTermIndex.of(resource, 0);
+        TermOrigin origin = ImmutableTermOrigin.of(resource, 0, 0, 0, 0, 0, 0);
+        return GenericTerms.newString(resource, ImmutableClassToInstanceMap.builder()
+            .put(TermIndex.class, index)
+            .put(TermOrigin.class, origin)
+            .build());
     }
 
     private static ITerm args(Args args) {

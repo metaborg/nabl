@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.terms;
+package org.metaborg.meta.nabl2.stratego;
 
 public interface ITermIndex {
 

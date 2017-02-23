@@ -8,9 +8,9 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -28,20 +28,18 @@ public class SG_get_scope_named_edges extends ScopeGraphPrimitive {
         if (terms.size() != 1) {
             throw new InterpreterException("Need one term argument: analysis");
         }
-        TermIndex index = terms.get(0).getAttachments().getInstance(TermIndex.class);
-        if (index == null) {
-            return Optional.empty();
-        }
-        return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
-            return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                Multimap<Label,PartialFunction0<Occurrence>> edges = s.getScopeGraph().getImportRefs(scope);
-                List<ITerm> edgeTerms = Lists.newArrayList();
-                for (Map.Entry<Label,PartialFunction0<Occurrence>> edge : edges.entries()) {
-                    edge.getValue().apply().ifPresent(ref -> {
-                        edgeTerms.add(GenericTerms.newTuple(edge.getKey(), ref));
-                    });
-                }
-                return GenericTerms.newList(edgeTerms);
+        return TermIndex.get(terms.get(0)).flatMap(index -> {
+            return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
+                return context.unit(index.getResource()).solution().<ITerm> map(s -> {
+                    Multimap<Label,PartialFunction0<Occurrence>> edges = s.getScopeGraph().getImportRefs(scope);
+                    List<ITerm> edgeTerms = Lists.newArrayList();
+                    for (Map.Entry<Label,PartialFunction0<Occurrence>> edge : edges.entries()) {
+                        edge.getValue().apply().ifPresent(ref -> {
+                            edgeTerms.add(GenericTerms.newTuple(edge.getKey(), ref));
+                        });
+                    }
+                    return GenericTerms.newList(edgeTerms);
+                });
             });
         });
     }

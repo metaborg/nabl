@@ -8,9 +8,9 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -27,18 +27,16 @@ public class SG_get_scope_assocs extends ScopeGraphPrimitive {
         if(terms.size() != 1) {
             throw new InterpreterException("Need one term argument: analysis");
         }
-        TermIndex index = terms.get(0).getAttachments().getInstance(TermIndex.class);
-        if(index == null) {
-            return Optional.empty();
-        }
-        return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
-            return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                Multimap<Label,Occurrence> assocs = s.getScopeGraph().getAssocDecls(scope);
-                List<ITerm> assocTerms = Lists.newArrayList();
-                for(Map.Entry<Label,Occurrence> assoc : assocs.entries()) {
-                    assocTerms.add(GenericTerms.newTuple(assoc.getValue(), assoc.getKey()));
-                }
-                return GenericTerms.newList(assocTerms);
+        return TermIndex.get(terms.get(0)).flatMap(index -> {
+            return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
+                return context.unit(index.getResource()).solution().<ITerm>map(s -> {
+                    Multimap<Label,Occurrence> assocs = s.getScopeGraph().getAssocDecls(scope);
+                    List<ITerm> assocTerms = Lists.newArrayList();
+                    for(Map.Entry<Label,Occurrence> assoc : assocs.entries()) {
+                        assocTerms.add(GenericTerms.newTuple(assoc.getValue(), assoc.getKey()));
+                    }
+                    return GenericTerms.newList(assocTerms);
+                });
             });
         });
     }

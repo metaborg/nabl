@@ -3,11 +3,11 @@ package org.metaborg.meta.nabl2.spoofax;
 import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableScope;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.stratego.ImmutableTermIndex;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.terms.generic.ImmutableTermIndex;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 
 public class TermSimplifier {
 

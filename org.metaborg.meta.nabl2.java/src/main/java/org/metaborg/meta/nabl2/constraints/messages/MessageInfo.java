@@ -2,10 +2,10 @@ package org.metaborg.meta.nabl2.constraints.messages;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

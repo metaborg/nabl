@@ -27,9 +27,9 @@ import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.sets.SetTerms;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 

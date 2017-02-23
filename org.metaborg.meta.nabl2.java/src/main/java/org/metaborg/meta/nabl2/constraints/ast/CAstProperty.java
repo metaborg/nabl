@@ -6,8 +6,8 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 
 import com.google.common.base.Preconditions;
 

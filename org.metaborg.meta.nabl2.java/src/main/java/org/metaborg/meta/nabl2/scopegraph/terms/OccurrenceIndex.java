@@ -4,12 +4,12 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.metaborg.meta.nabl2.scopegraph.IOccurrenceIndex;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TermIndex;
 import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
