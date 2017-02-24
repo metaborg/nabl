@@ -2,4 +2,26 @@ module simple
 
 language NaBL2Test
 
-test false fails [[ false fails ]] 1 error
+test false fails [[
+  false
+]] 1 error
+
+test true succeeds [[
+  true
+]] 0 errors
+
+test resolve same name in same scope [[
+  resolve [[x]] to [[x]] in same scope
+]] 0 errors 
+
+test resolve different names in same scope [[
+  resolve [[x]] to [[y]] in same scope
+]] 1 errors 
+
+test resolve same name different namespace in same scope [[
+  resolve ns1 [[x]] to ns2 [[x]] in same scope
+]] 1 errors 
+
+test resolve ambiguous in same scope [[
+  resolve x to x or x in same scope
+]] 1 errors

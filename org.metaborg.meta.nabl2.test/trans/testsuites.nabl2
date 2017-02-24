@@ -6,4 +6,4 @@ imports
 
 rules
 
-  init ^ () := true.
+  init ^ ().

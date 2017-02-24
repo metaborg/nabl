@@ -6,5 +6,33 @@ imports
 
 rules
 
-  [[ FalseFails() ^ () ]] :=
+  [[ False() ^ () ]] :=
     false.
+
+  [[ True() ^ () ]] :=
+    true.
+
+  [[ ResolveXToXInSameScope(x1,x2) ^ () ]] :=
+    new s,
+    {x1} -> s,
+    {x2} <- s,
+    {x1} |-> d.
+
+  [[ ResolveXToYInSameScope(x,y) ^ () ]] :=
+    new s,
+    {x} -> s,
+    {y} <- s,
+    {x} |-> d.
+
+  [[ ResolveNs1XToNs2XInSameScope(x1,x2) ^ () ]] :=
+    new s,
+    Ns1{x1} -> s,
+    Ns2{x2} <- s,
+    Ns1{x1} |-> d.
+
+  [[ ResolveXToXOrXInSameScope(x1,x2,x3) ^ () ]] :=
+    new s,
+    {x1} -> s,
+    {x2} <- s,
+    {x3} <- s,
+    {x1} |-> d.
