@@ -8,15 +8,16 @@ import java.util.Set;
 import org.metaborg.meta.nabl2.constraints.equality.CEqual;
 import org.metaborg.meta.nabl2.constraints.equality.CInequal;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
+import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint.Cases;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
+import org.metaborg.meta.nabl2.constraints.equality.ImmutableCInequal;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.solver.Solver;
 import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 
@@ -44,13 +45,23 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
 
     @Override protected Iterable<IEqualityConstraint> doFinish(IMessageInfo messageInfo) {
         List<IEqualityConstraint> constraints = Lists.newArrayList();
-        constraints.addAll(defered);
-        if(isPartial()) {
-            for(ITermVar var : unifier().getAllVars()) {
-                constraints.add(ImmutableCEqual.of(var, unifier().find(var), messageInfo));
-            }
-        }
+        defered.stream().map(this::find).forEach(constraints::add);
         return constraints;
+    }
+
+    private IEqualityConstraint find(IEqualityConstraint constraint) {
+        return constraint.match(Cases.<IEqualityConstraint>of(
+            // @formatter:off
+            eq -> ImmutableCEqual.of(
+                    unifier().find(eq.getLeft()),
+                    unifier().find(eq.getRight()),
+                    eq.getMessageInfo().apply(unifier()::find)),
+            ineq -> ImmutableCInequal.of(
+                    unifier().find(ineq.getLeft()),
+                    unifier().find(ineq.getRight()),
+                    ineq.getMessageInfo().apply(unifier()::find))
+            // @formatter:on
+        ));
     }
 
     // ------------------------------------------------------------------------------------------------------//

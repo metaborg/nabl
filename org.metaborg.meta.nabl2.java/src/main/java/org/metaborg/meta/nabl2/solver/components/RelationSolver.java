@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -11,6 +12,9 @@ import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CEvalFunction;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.relations.ImmutableCBuildRelation;
+import org.metaborg.meta.nabl2.constraints.relations.ImmutableCCheckRelation;
+import org.metaborg.meta.nabl2.constraints.relations.ImmutableCEvalFunction;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.relations.RelationException;
@@ -25,9 +29,9 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -114,7 +118,32 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     }
 
     @Override protected Iterable<IRelationConstraint> doFinish(IMessageInfo messageInfo) {
-        return Iterables2.fromConcat(deferedBuilds.values(), deferedChecks);
+        List<IRelationConstraint> constraints = Lists.newArrayList();
+        deferedBuilds.values().stream().map(this::find).forEach(constraints::add);
+        deferedChecks.stream().map(this::find).forEach(constraints::add);
+        return constraints;
+    }
+
+    private IRelationConstraint find(IRelationConstraint constraint) {
+        return constraint.match(IRelationConstraint.Cases.<IRelationConstraint>of(
+            // @formatter:off
+            build -> ImmutableCBuildRelation.of(
+                        unifier().find(build.getLeft()),
+                        build.getRelation(),
+                        unifier().find(build.getRight()),
+                        build.getMessageInfo().apply(unifier()::find)),
+            check -> ImmutableCCheckRelation.of(
+                        unifier().find(check.getLeft()),
+                        check.getRelation(),
+                        unifier().find(check.getRight()),
+                        check.getMessageInfo().apply(unifier()::find)),
+            eval -> ImmutableCEvalFunction.of(
+                        unifier().find(eval.getResult()),
+                        eval.getFunction(),
+                        unifier().find(eval.getTerm()),
+                        eval.getMessageInfo().apply(unifier()::find))
+            // @formatter:on
+        ));
     }
 
     // ------------------------------------------------------------------------------------------------------//

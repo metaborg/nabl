@@ -15,6 +15,8 @@ import org.metaborg.meta.nabl2.constraints.sets.CDistinct;
 import org.metaborg.meta.nabl2.constraints.sets.CSubsetEq;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.sets.ImmutableCDistinct;
+import org.metaborg.meta.nabl2.constraints.sets.ImmutableCSubsetEq;
 import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.sets.SetEvaluator;
 import org.metaborg.meta.nabl2.solver.Solver;
@@ -64,7 +66,23 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
     }
 
     @Override protected Iterable<ISetConstraint> doFinish(IMessageInfo messageInfo) {
-        return defered;
+        return defered.stream().map(this::find).collect(Collectors.toList());
+    }
+
+    private ISetConstraint find(ISetConstraint constraint) {
+        return constraint.match(ISetConstraint.Cases.of(
+            // @formatter:off
+            subseteq -> ImmutableCSubsetEq.of(
+                            unifier().find(subseteq.getLeft()),
+                            unifier().find(subseteq.getRight()),
+                            subseteq.getProjection(),
+                            subseteq.getMessageInfo().apply(unifier()::find)),
+            distinct -> ImmutableCDistinct.of(
+                            unifier().find(distinct.getSet()),
+                            distinct.getProjection(),
+                            distinct.getMessageInfo().apply(unifier()::find))
+            // @formatter:on
+        ));
     }
 
     // ------------------------------------------------------------------------------------------------------//

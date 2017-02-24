@@ -20,6 +20,13 @@ import org.metaborg.meta.nabl2.constraints.namebinding.CGRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.CResolve;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCDeclProperty;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGAssoc;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDecl;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDirectEdge;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImport;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCResolve;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IPath;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -45,7 +52,6 @@ import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -105,10 +111,58 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     }
 
     @Override protected Iterable<INamebindingConstraint> doFinish(IMessageInfo messageInfo) {
-        return Iterables2.fromConcat(deferedBuilds, deferedChecks);
+        List<INamebindingConstraint> constraints = Lists.newArrayList();
+        deferedBuilds.stream().map(this::find).forEach(constraints::add);
+        deferedChecks.stream().map(this::find).forEach(constraints::add);
+        return constraints;
     }
 
-    // ------------------------------------------------------------------------------------------------------//
+    private INamebindingConstraint find(INamebindingConstraint constraint) {
+        return constraint.match(INamebindingConstraint.Cases.<INamebindingConstraint>of(
+            // @formatter:off
+            decl -> ImmutableCGDecl.of(
+                        unifier().find(decl.getScope()),
+                        unifier().find(decl.getDeclaration()),
+                        decl.getMessageInfo().apply(unifier()::find)),
+            ref -> ImmutableCGRef.of(
+                        unifier().find(ref.getReference()),
+                        unifier().find(ref.getScope()),
+                        ref.getMessageInfo().apply(unifier()::find)),
+            edge -> ImmutableCGDirectEdge.of(
+                        unifier().find(edge.getSourceScope()),
+                        edge.getLabel(),
+                        unifier().find(edge.getTargetScope()),
+                        edge.getMessageInfo().apply(unifier()::find)),
+            exp -> ImmutableCGAssoc.of(
+                        unifier().find(exp.getDeclaration()),
+                        exp.getLabel(),
+                        unifier().find(exp.getScope()),
+                        exp.getMessageInfo().apply(unifier()::find)),
+            imp -> ImmutableCGImport.of(
+                        unifier().find(imp.getScope()),
+                        imp.getLabel(),
+                        unifier().find(imp.getReference()),
+                        imp.getMessageInfo().apply(unifier()::find)),
+            res -> ImmutableCResolve.of(
+                        unifier().find(res.getReference()),
+                        unifier().find(res.getDeclaration()),
+                        res.getMessageInfo().apply(unifier()::find)),
+            assoc -> ImmutableCGAssoc.of(
+                        unifier().find(assoc.getDeclaration()),
+                        assoc.getLabel(),
+                        unifier().find(assoc.getScope()),
+                        assoc.getMessageInfo().apply(unifier()::find)),
+            prop -> ImmutableCDeclProperty.of(
+                        unifier().find(prop.getDeclaration()),
+                        prop.getKey(),
+                        unifier().find(prop.getValue()),
+                        prop.getPriority(),
+                        prop.getMessageInfo().apply(unifier()::find))
+            // @formatter:on
+        ));
+    }
+    
+     // ------------------------------------------------------------------------------------------------------//
 
     private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
         if(isPartial() || !solve(constraint)) {

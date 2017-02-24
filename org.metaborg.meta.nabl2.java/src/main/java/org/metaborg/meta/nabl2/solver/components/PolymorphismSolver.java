@@ -5,12 +5,15 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.poly.ImmutableCGeneralize;
+import org.metaborg.meta.nabl2.constraints.poly.ImmutableCInstantiate;
 import org.metaborg.meta.nabl2.poly.Forall;
 import org.metaborg.meta.nabl2.poly.ImmutableForall;
 import org.metaborg.meta.nabl2.poly.ImmutableTypeVar;
@@ -50,7 +53,22 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     }
 
     @Override protected Iterable<IPolyConstraint> doFinish(IMessageInfo messageInfo) {
-        return defered;
+        return defered.stream().map(this::find).collect(Collectors.toList());
+    }
+
+    private IPolyConstraint find(IPolyConstraint constraint) {
+        return constraint.match(IPolyConstraint.Cases.of(
+            // @formatter:off
+            gen -> ImmutableCGeneralize.of(
+                        unifier().find(gen.getScheme()),
+                        unifier().find(gen.getType()),
+                        gen.getMessageInfo().apply(unifier()::find)),
+            inst -> ImmutableCInstantiate.of(
+                        unifier().find(inst.getType()),
+                        unifier().find(inst.getScheme()),
+                        inst.getMessageInfo().apply(unifier()::find))
+            // @formatter:on
+        ));
     }
 
     // ------------------------------------------------------------------------------------------------------//

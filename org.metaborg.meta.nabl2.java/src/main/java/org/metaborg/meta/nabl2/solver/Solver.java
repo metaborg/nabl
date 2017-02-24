@@ -7,6 +7,7 @@ import java.util.Set;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCFalse;
+import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
@@ -48,7 +49,6 @@ public class Solver {
     private final SymbolicSolver symbolicSolver;
     private final PolymorphismSolver polySolver;
 
-    private final Set<IConstraint> unsolved;
     private final List<IMessageInfo> messages;
 
     private Solver(SolverConfig config, Function1<String, ITermVar> fresh, SolverMode mode) {
@@ -66,7 +66,6 @@ public class Solver {
         this.components.add(symbolicSolver = new SymbolicSolver(this));
         this.components.add(polySolver = new PolymorphismSolver(this));
 
-        this.unsolved = Sets.newHashSet();
         this.messages = Lists.newArrayList();
     }
 
@@ -119,7 +118,8 @@ public class Solver {
         } while(progress);
     }
 
-    private void finish(IMessageInfo messageInfo) throws InterruptedException {
+    private Iterable<IConstraint> finish(IMessageInfo messageInfo) throws InterruptedException {
+        Set<IConstraint> unsolved = Sets.newHashSet();
         for(SolverComponent<?> component : components) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
@@ -134,16 +134,17 @@ public class Solver {
         switch(mode) {
             case PARTIAL:
                 messages.stream().forEach(mi -> {
-                    unsolved.add(ImmutableCFalse.of(mi));
+                    unsolved.add(ImmutableCFalse.of(mi.apply(unifier::find)));
                 });
                 break;
             case TOTAL:
                 unsolved.stream().forEach(c -> {
                     IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-                    messages.add(c.getMessageInfo().withDefault(content));
+                    messages.add(c.getMessageInfo().apply(unifier::find).withDefault(content));
                 });
                 break;
         }
+        return unsolved;
     }
 
     public static Iterable<IConstraint> solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
@@ -161,14 +162,20 @@ public class Solver {
         Solver solver = new Solver(config, fresh, SolverMode.PARTIAL);
         solver.add(constraints);
         solver.iterate();
-        solver.finish(messageInfo);
+        List<IConstraint> unsolved = Lists.newArrayList();
+        Iterables.addAll(unsolved, solver.finish(messageInfo));
+        for(ITerm activeTerm : activeTerms) {
+            activeTerm.getVars().stream().forEach(var -> {
+                unsolved.add(ImmutableCEqual.of(var, unifier.find(var), messageInfo));
+            });
+        }
 
-        final int n1 = solver.unsolved.size();
+        final int n1 = Iterables.size(unsolved);
         long dt = System.nanoTime() - t0;
         logger.info(">>> Reduced {} to {} constraints in {} seconds <<<", n0, n1,
             (Duration.ofNanos(dt).toMillis() / 1000.0));
 
-        return solver.unsolved;
+        return unsolved;
     }
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,

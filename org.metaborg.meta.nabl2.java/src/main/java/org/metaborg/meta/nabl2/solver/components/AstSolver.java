@@ -37,18 +37,22 @@ public class AstSolver extends SolverComponent<IAstConstraint> {
     }
 
     @Override protected Unit doAdd(IAstConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.<Unit, UnsatisfiableException>of(p -> {
-            Optional<ITerm> oldValue = properties.putValue(p.getIndex(), p.getKey(), p.getValue());
-            if(oldValue.isPresent()) {
-                try {
-                    unifier().unify(oldValue.get(), p.getValue());
-                } catch(UnificationException e) {
-                    throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
-                        constraint.getMessageInfo().getOriginTerm()));
+        return constraint.matchOrThrow(CheckedCases.<Unit, UnsatisfiableException>of(
+            // @formatter:off
+            p -> {
+                Optional<ITerm> oldValue = properties.putValue(p.getIndex(), p.getKey(), p.getValue());
+                if(oldValue.isPresent()) {
+                    try {
+                        unifier().unify(oldValue.get(), p.getValue());
+                    } catch(UnificationException e) {
+                        throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
+                            constraint.getMessageInfo().getOriginTerm()));
+                    }
                 }
+                return unit;
             }
-            return unit;
-        }));
+            // @formatter:on
+        ));
     }
 
     @Override protected Iterable<? extends IAstConstraint> doFinish(IMessageInfo messageInfo)

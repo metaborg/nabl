@@ -44,7 +44,8 @@ public abstract class CAstProperty implements IAstConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getIndex()).append(".").append(getKey()).append(" := ").append(getValue()).build();
+        return MessageContent.builder().append(getIndex()).append(".").append(getKey()).append(" := ")
+            .append(getValue()).build();
     }
 
     @Override public String toString() {

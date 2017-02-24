@@ -45,8 +45,8 @@ public abstract class CDeclProperty implements INamebindingConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getDeclaration()).append(".").append(getKey()).append(" := ").append(getValue())
-            .build();
+        return MessageContent.builder().append(getDeclaration()).append(".").append(getKey()).append(" := ")
+            .append(getValue()).build();
     }
 
     @Override public String toString() {
