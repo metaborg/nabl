@@ -1,8 +1,7 @@
-package org.metaborg.meta.nabl2.solver;
+package org.metaborg.meta.nabl2.solver.components;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -10,30 +9,30 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.sym.ImmutableCFact;
+import org.metaborg.meta.nabl2.constraints.sym.ImmutableCGoal;
+import org.metaborg.meta.nabl2.solver.ISymbolicConstraints;
+import org.metaborg.meta.nabl2.solver.ImmutableSymbolicConstraints;
+import org.metaborg.meta.nabl2.solver.Solver;
+import org.metaborg.meta.nabl2.solver.SolverComponent;
+import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class SymbolicSolver extends AbstractSolverComponent<ISymbolicConstraint> {
+public class SymbolicSolver extends SolverComponent<ISymbolicConstraint> {
 
-    private final Unifier unifier;
     private final Set<ITerm> facts;
     private final Set<ITerm> goals;
 
-    public SymbolicSolver(Unifier unifier) {
-        this.unifier = unifier;
+    public SymbolicSolver(Solver solver) {
+        super(solver);
         this.facts = Sets.newHashSet();
         this.goals = Sets.newHashSet();
     }
 
-    @Override public Class<ISymbolicConstraint> getConstraintClass() {
-        return ISymbolicConstraint.class;
-    }
-
-    @Override public Unit add(ISymbolicConstraint constraint) throws UnsatisfiableException {
+    @Override protected Unit doAdd(ISymbolicConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(fact -> {
             facts.add(fact.getFact());
             return unit;
@@ -43,10 +42,13 @@ public class SymbolicSolver extends AbstractSolverComponent<ISymbolicConstraint>
         }));
     }
 
-    @Override public Collection<ISymbolicConstraint> getNormalizedConstraints(IMessageInfo messageInfo) {
+    @Override protected Iterable<? extends ISymbolicConstraint> doFinish(IMessageInfo messageInfo)
+        throws InterruptedException {
         List<ISymbolicConstraint> constraints = Lists.newArrayList();
-        facts.stream().map(unifier::find).forEach(fact -> constraints.add(ImmutableCFact.of(fact, messageInfo)));
-        goals.stream().map(unifier::find).forEach(goal -> constraints.add(ImmutableCFact.of(goal, messageInfo)));
+        if(isPartial()) {
+            facts.stream().map(unifier()::find).forEach(fact -> constraints.add(ImmutableCFact.of(fact, messageInfo)));
+            goals.stream().map(unifier()::find).forEach(goal -> constraints.add(ImmutableCGoal.of(goal, messageInfo)));
+        }
         return constraints;
     }
 

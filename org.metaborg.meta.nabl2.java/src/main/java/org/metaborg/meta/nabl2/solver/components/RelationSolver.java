@@ -1,9 +1,10 @@
-package org.metaborg.meta.nabl2.solver;
+package org.metaborg.meta.nabl2.solver.components;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
@@ -16,10 +17,12 @@ import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms.RelationFunctions;
 import org.metaborg.meta.nabl2.relations.terms.Relations;
+import org.metaborg.meta.nabl2.solver.Solver;
+import org.metaborg.meta.nabl2.solver.SolverComponent;
+import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
-import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
@@ -29,9 +32,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class RelationSolver extends AbstractSolverComponent<IRelationConstraint> {
+public class RelationSolver extends SolverComponent<IRelationConstraint> {
 
-    private final Unifier unifier;
     private final Relations<ITerm> relations;
     private final Map<String, Function1<ITerm, Optional<ITerm>>> functions;
 
@@ -39,9 +41,9 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
     private final Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
     private boolean complete = false;
 
-    public RelationSolver(Relations<ITerm> relations, Map<String, Function1<ITerm, Optional<ITerm>>> functions,
-        Unifier unifier) {
-        this.unifier = unifier;
+    public RelationSolver(Solver solver, Relations<ITerm> relations,
+        Map<String, Function1<ITerm, Optional<ITerm>>> functions) {
+        super(solver);
         this.relations = relations;
         this.functions = Maps.newHashMap(functions);
         addRelationFunctions();
@@ -66,13 +68,9 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
         return relations;
     }
 
-    @Override public Class<IRelationConstraint> getConstraintClass() {
-        return IRelationConstraint.class;
-    }
-
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override public Unit add(IRelationConstraint constraint) throws UnsatisfiableException {
+    @Override protected Unit doAdd(IRelationConstraint constraint) throws UnsatisfiableException {
         if(complete) {
             throw new IllegalStateException("Cannot add constraints after iteration started.");
         }
@@ -80,7 +78,7 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
     }
 
     private Unit add(CBuildRelation constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
+        if(isPartial() || !solve(constraint)) {
             deferedBuilds.put(constraint.getRelation(), constraint);
         }
         return Unit.unit;
@@ -88,7 +86,7 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
     }
 
     private Unit add(CCheckRelation constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
+        if(isPartial() || !solve(constraint)) {
             deferedChecks.add(constraint);
         }
         return Unit.unit;
@@ -96,15 +94,18 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
     }
 
     private Unit add(CEvalFunction constraint) throws UnsatisfiableException {
-        unifier.addActive(constraint.getResult());
-        if(!solve(constraint)) {
+        unifier().addActive(constraint.getResult());
+        if(isPartial() || !solve(constraint)) {
             deferedChecks.add(constraint);
         }
         return Unit.unit;
 
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
+    @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
+        if(isPartial()) {
+            return false;
+        }
         complete = true;
         boolean progress = false;
         progress |= doIterate(deferedBuilds.values(), this::solve);
@@ -112,7 +113,7 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
         return progress;
     }
 
-    @Override public Iterable<IRelationConstraint> finish() {
+    @Override protected Iterable<IRelationConstraint> doFinish(IMessageInfo messageInfo) {
         return Iterables2.fromConcat(deferedBuilds.values(), deferedChecks);
     }
 
@@ -123,11 +124,11 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
     }
 
     private boolean solve(CBuildRelation c) throws UnsatisfiableException {
-        ITerm left = unifier.find(c.getLeft());
+        ITerm left = unifier().find(c.getLeft());
         if(!left.isGround()) {
             return false;
         }
-        ITerm right = unifier.find(c.getRight());
+        ITerm right = unifier().find(c.getRight());
         if(!right.isGround()) {
             return false;
         }
@@ -143,8 +144,8 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
         if(!isComplete(c.getRelation())) {
             return false;
         }
-        ITerm left = unifier.find(c.getLeft());
-        ITerm right = unifier.find(c.getRight());
+        ITerm left = unifier().find(c.getLeft());
+        ITerm right = unifier().find(c.getRight());
         if(!(left.isGround() && right.isGround())) {
             return false;
         }
@@ -152,7 +153,7 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
     }
 
     private boolean solve(CEvalFunction c) throws UnsatisfiableException {
-        ITerm term = unifier.find(c.getTerm());
+        ITerm term = unifier().find(c.getTerm());
         if(!term.isGround()) {
             return false;
         }
@@ -166,8 +167,8 @@ public class RelationSolver extends AbstractSolverComponent<IRelationConstraint>
             return false;
         }
         try {
-            unifier.removeActive(c.getResult());
-            unifier.unify(c.getResult(), result.get());
+            unifier().removeActive(c.getResult());
+            unifier().unify(c.getResult(), result.get());
         } catch(UnificationException ex) {
             throw new UnsatisfiableException(c.getMessageInfo().withDefault(ex.getMessageContent()));
         }

@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.solver;
+package org.metaborg.meta.nabl2.solver.components;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
@@ -17,11 +17,13 @@ import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.sets.SetEvaluator;
+import org.metaborg.meta.nabl2.solver.Solver;
+import org.metaborg.meta.nabl2.solver.SolverComponent;
+import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
@@ -31,39 +33,37 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class SetSolver extends AbstractSolverComponent<ISetConstraint> {
+public class SetSolver extends SolverComponent<ISetConstraint> {
 
     private static final String NAME_OP = "NAME";
 
     private final IMatcher<Set<IElement<ITerm>>> evaluator;
-    private final Unifier unifier;
 
     private final Set<ISetConstraint> defered;
 
-    public SetSolver(IMatcher<Set<IElement<ITerm>>> elems, Unifier unifier) {
+    public SetSolver(Solver solver, IMatcher<Set<IElement<ITerm>>> elems) {
+        super(solver);
         this.evaluator = SetEvaluator.matcher(elems);
-        this.unifier = unifier;
         this.defered = Sets.newHashSet();
-    }
-
-    @Override public Class<ISetConstraint> getConstraintClass() {
-        return ISetConstraint.class;
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override public Unit add(ISetConstraint constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
+    @Override protected Unit doAdd(ISetConstraint constraint) throws UnsatisfiableException {
+        if(isPartial() || !solve(constraint)) {
             defered.add(constraint);
         }
         return unit;
     }
 
-    @Override public boolean iterate() throws UnsatisfiableException, InterruptedException {
+    @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
+        if(isPartial()) {
+            return false;
+        }
         return doIterate(defered, this::solve);
     }
 
-    @Override public Iterable<ISetConstraint> finish() {
+    @Override protected Iterable<ISetConstraint> doFinish(IMessageInfo messageInfo) {
         return defered;
     }
 
@@ -74,8 +74,8 @@ public class SetSolver extends AbstractSolverComponent<ISetConstraint> {
     }
 
     private boolean solve(CSubsetEq constraint) throws UnsatisfiableException {
-        ITerm left = unifier.find(constraint.getLeft());
-        ITerm right = unifier.find(constraint.getRight());
+        ITerm left = unifier().find(constraint.getLeft());
+        ITerm right = unifier().find(constraint.getRight());
         if(!left.isGround() && right.isGround()) {
             return false;
         }
@@ -101,7 +101,7 @@ public class SetSolver extends AbstractSolverComponent<ISetConstraint> {
     }
 
     private boolean solve(CDistinct constraint) throws UnsatisfiableException {
-        ITerm setTerm = unifier.find(constraint.getSet());
+        ITerm setTerm = unifier().find(constraint.getSet());
         if(!setTerm.isGround()) {
             return false;
         }
