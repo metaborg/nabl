@@ -1,0 +1,19 @@
+module testsuites/Simple
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.False = <false>
+
+  Test.True = <true>
+  
+  Test.ResolveXToXInSameScope = <resolve <X> to <X> in same scope> 
+
+  Test.ResolveXToYInSameScope = <resolve <X> to <Y> in same scope> 
+
+  Test.ResolveNs1XToNs2XInSameScope = <resolve ns1 <X> to ns2 <X> in same scope>
+
+  Test.ResolveXToXOrXInSameScope = <resolve <X> to <X> or <X> in same scope> 

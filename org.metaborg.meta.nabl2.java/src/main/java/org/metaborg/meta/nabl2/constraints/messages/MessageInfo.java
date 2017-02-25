@@ -6,6 +6,7 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -19,6 +20,10 @@ public abstract class MessageInfo implements IMessageInfo {
 
     @Override public IMessageInfo withDefault(IMessageContent defaultContent) {
         return ImmutableMessageInfo.of(getKind(), getContent().withDefault(defaultContent), getOriginTerm());
+    }
+
+    @Override public IMessageInfo apply(Function1<ITerm, ITerm> f) {
+        return ImmutableMessageInfo.copyOf(this).setContent(getContent().apply(f));
     }
 
     public static IMatcher<MessageInfo> matcher() {
