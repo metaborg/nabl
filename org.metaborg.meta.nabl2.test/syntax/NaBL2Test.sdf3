@@ -4,6 +4,7 @@ imports
 
   Layout
   testsuites/Simple
+  testsuites/Problems
 
 context-free start-symbols
   

@@ -12,6 +12,16 @@ rules
   [[ True() ^ () ]] :=
     true.
 
+rules
+
+  [[ CannotUnifyRecursive() ^ () ]] :=
+    ty == (ty,ty).
+
+  [[ NestedTailsAreNil() ^ () ]] :=
+    [|[|[]]] == [].
+
+rules
+
   [[ ResolveXToXInSameScope(x1,x2) ^ () ]] :=
     new s,
     {x1} -> s,

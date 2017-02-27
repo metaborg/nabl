@@ -2,6 +2,8 @@ module simple
 
 language NaBL2Test
 
+//-------------------------------
+
 test false fails [[
   false
 ]] 1 error
@@ -9,6 +11,18 @@ test false fails [[
 test true succeeds [[
   true
 ]] 0 errors
+
+//-------------------------------
+
+test cannot unfiy recursive [[
+  cannot unify recursive
+]] 1 error
+
+test nested tails are nil [[
+  nested tails are nil
+]] 0 errors
+
+//-------------------------------
 
 test resolve same name in same scope [[
   resolve [[x]] to [[x]] in same scope

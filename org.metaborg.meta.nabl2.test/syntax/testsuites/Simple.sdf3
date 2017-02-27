@@ -10,6 +10,14 @@ context-free syntax
 
   Test.True = <true>
   
+context-free syntax
+
+  Test.CannotUnifyRecursive = <cannot unify recursive>
+
+  Test.NestedTailsAreNil = <nested tails are nil>
+
+context-free syntax
+  
   Test.ResolveXToXInSameScope = <resolve <X> to <X> in same scope> 
 
   Test.ResolveXToYInSameScope = <resolve <X> to <Y> in same scope> 
