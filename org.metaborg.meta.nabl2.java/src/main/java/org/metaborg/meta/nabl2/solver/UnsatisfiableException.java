@@ -6,6 +6,9 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 
 import com.google.common.collect.ImmutableList;
 
+/**
+ * Exception thrown if some constraints cannot be satisfied.
+ */
 public class UnsatisfiableException extends Exception {
 
     private static final long serialVersionUID = 1L;

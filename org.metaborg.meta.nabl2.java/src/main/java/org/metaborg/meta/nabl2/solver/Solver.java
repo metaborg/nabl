@@ -149,7 +149,7 @@ public class Solver {
 
     public static Iterable<IConstraint> solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
         Function1<String, ITermVar> fresh, Iterable<IConstraint> constraints, IMessageInfo messageInfo)
-        throws UnsatisfiableException, InterruptedException {
+        throws SolverException, InterruptedException {
         final int n0 = Iterables.size(constraints);
         long t0 = System.nanoTime();
         logger.info(">>> Reducing {} constraints <<<", n0);
@@ -160,10 +160,14 @@ public class Solver {
         }
 
         Solver solver = new Solver(config, fresh, SolverMode.PARTIAL);
-        solver.add(constraints);
-        solver.iterate();
         List<IConstraint> unsolved = Lists.newArrayList();
-        Iterables.addAll(unsolved, solver.finish(messageInfo));
+        try {
+            solver.add(constraints);
+            solver.iterate();
+            Iterables.addAll(unsolved, solver.finish(messageInfo));
+        } catch (RuntimeException ex) {
+            throw new SolverException("Internal solver error.", ex);
+        }
         for(ITerm activeTerm : activeTerms) {
             activeTerm.getVars().stream().forEach(var -> {
                 unsolved.add(ImmutableCEqual.of(var, unifier.find(var), messageInfo));
@@ -180,15 +184,19 @@ public class Solver {
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
         Iterable<IConstraint> constraints, IMessageInfo messageInfo)
-        throws UnsatisfiableException, InterruptedException {
+        throws SolverException, InterruptedException {
         final int n = Iterables.size(constraints);
         long t0 = System.nanoTime();
         logger.info(">>> Solving {} constraints <<<", n);
 
         Solver solver = new Solver(config, fresh, SolverMode.TOTAL);
-        solver.add(constraints);
-        solver.iterate();
-        solver.finish(messageInfo);
+        try {
+            solver.add(constraints);
+            solver.iterate();
+            solver.finish(messageInfo);
+        } catch (RuntimeException ex) {
+            throw new SolverException("Internal solver error.", ex);
+        }
 
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved {} constraints in {} seconds <<<", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
