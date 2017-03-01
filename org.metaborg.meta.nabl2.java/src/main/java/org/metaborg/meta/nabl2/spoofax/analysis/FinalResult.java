@@ -14,6 +14,8 @@ public abstract class FinalResult {
 
     public abstract Optional<ITerm> getCustomResult();
 
+    public abstract FinalResult setCustomResult(Optional<ITerm> customResult);
+
     public static IMatcher<ImmutableFinalResult> matcher() {
         return M.appl0("FinalResult", (t) -> {
             return ImmutableFinalResult.of();

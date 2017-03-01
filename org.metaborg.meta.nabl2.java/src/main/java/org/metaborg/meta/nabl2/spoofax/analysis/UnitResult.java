@@ -20,6 +20,8 @@ public abstract class UnitResult {
 
     public abstract Optional<ITerm> getCustomResult();
 
+    public abstract UnitResult setCustomResult(Optional<ITerm> customResult);
+
     public static IMatcher<ImmutableUnitResult> matcher() {
         return M.appl2("UnitResult", M.term(), ConstraintTerms.constraints(), (t, ast, constraints) -> {
             return ImmutableUnitResult.of(ast, constraints);

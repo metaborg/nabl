@@ -23,6 +23,8 @@ public abstract class InitialResult {
 
     public abstract Optional<ITerm> getCustomResult();
 
+    public abstract InitialResult setCustomResult(Optional<ITerm> customResult);
+
     public static IMatcher<ImmutableInitialResult> matcher() {
         return M.appl3("InitialResult", ConstraintTerms.constraints(), Args.matcher(), SolverConfig.matcher(), (t, constraints,
                 args, config) -> {
