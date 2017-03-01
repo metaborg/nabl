@@ -113,7 +113,12 @@ public abstract class MessageContent implements IMessageContent {
             // @formatter:off
             M.appl0("Default", t -> ImmutableDefaultMessage.of()),
             M.appl1("Formatted", M.listElems(partMatcher()), (t, ps) -> ImmutableCompoundMessage.of(ps)),
-            partMatcher()
+            partMatcher(),
+            M.string(s -> ImmutableTextMessage.of(s.getValue())),
+            M.term(t -> ImmutableCompoundMessage.of(Iterables2.from(
+                ImmutableTermMessage.of(t),
+                ImmutableTextMessage.of(" (error message was malformed)")
+            )))
             // @formatter:on
         );
     }
