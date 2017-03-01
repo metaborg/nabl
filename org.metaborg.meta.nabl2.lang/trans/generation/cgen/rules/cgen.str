@@ -102,6 +102,36 @@ rules
  
 rules
 
+  rule-to-str:
+    FunDef(name,arg*,clause*)
+      -> RDefT(<fun-name> name,[],[<source-var>,<term-var>],
+           Rule(<args-var>, <constraint-var>, strclause*))
+    with
+      args-pattern := <explode(injection-to-pattern)> Tuple([arg*]);
+      args-string := Str(<pp-stratego-string> args-pattern);
+      args-str := |[ ~args-pattern := ~<args-var> ]|;
+      guarded-args-str := |[
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-term> ~<args-var>," in call to ",~Str(name)])
+      ]|;
+      debug-str := |[
+        if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [" << ",~Str(name),"(",<nabl2--pp-flat-term> ~<args-var>,") >>"] end
+      ]|;
+      (str*,constraint*) := <clauses-to-str> clause*;
+      constraint-list := List(<constraints-to-terms> constraint*);
+      constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
+      strclause* := [
+        With(guarded-args-str),
+        With(debug-str),
+        str*,
+        With(constraint-str)
+      ]
+ 
+  fun-name =
+    !$[nabl2--constraint-function-[<id>]]
+ 
+
+rules
+
   clauses-to-str =
     partition(clause-to-str);
     (map(!With(<id>)),id)
@@ -127,6 +157,7 @@ rules
  
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)
+  explode-guard(e) = funcall-to-term(e)
 
   cgenrecurse-to-term(e):
     CGenRecurse(Name(name),v,params,type) -> App(recurse-str,v)
@@ -139,4 +170,12 @@ rules
         recurse-arg := Term |[ Params(~params-term) ]|
       end;
       recurse-str := CallT(SVar("nabl2--generate-constraint"),
-          [SVar(<rule-name> name)],[<source-var>,recurse-arg])
+          [SVar(<rule-name> name)],[Str(name),<source-var>,recurse-arg])
+
+  funcall-to-term(e):
+    FunCall(name,arg*) -> App(fun-str,args-term)
+    with
+      args-term := Tuple(<map(e)> arg*);
+      fun-str := CallT(SVar(<fun-name> name),
+          [],[<source-var>,<term-var>])
+

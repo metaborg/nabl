@@ -1,0 +1,34 @@
+module testsuites/cgen
+
+imports
+
+  signatures/testsuites/-
+
+rules
+
+  [[ CallFunctionNoArgs() ^ () ]] :=
+    NoArgsFunction<< >>.
+
+  NoArgsFunction<< >> := false | note.
+
+  [[ CallFunctionOneArgs() ^ () ]] :=
+    OneArgFunction<< 42 >>.
+
+  OneArgFunction<< _ >> := false | note.
+
+rules
+
+  [[ WildcardParam(t) ^ () ]] :=
+    WildcardParam[[ t ^ (42) ]].
+
+  WildcardParam[[ t ^ (_) ]] := false | note.
+
+
+  [[ WildcardType(t) ^ () ]] :=
+    WildcardType[[ t ^ () : 42 ]].
+
+  WildcardType[[ t ^ () : _ ]] := false | note.
+
+
+  [[ WildcardConstraint() ^ () ]] :=
+    _ == 42, false | note.

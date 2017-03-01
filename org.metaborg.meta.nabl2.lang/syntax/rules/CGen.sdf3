@@ -7,7 +7,9 @@ imports
   nabl2/shared/constraints/Base
 
   common/Identifiers
+  common/Injections
   common/Terms
+  rules/Functions
   rules/Rules
 
 template options
@@ -34,11 +36,11 @@ context-free syntax
         <{RuleClause ","}+>.
   >
 
-  RuleClause = Constraint
-
+  RuleClause             = Constraint
+  RuleClause             = NewScopes
+  RuleClause             = FunCall
   RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
-  RuleClause.NewScopes   = <new <{CVar " "}+>>
 
 context-free syntax
 
@@ -52,8 +54,3 @@ context-free syntax
   CGenTypePattern.NoType  =
   CGenTypePattern.Type    = <: <CTerm>>
 
-lexical syntax
-
-  Keyword = "new"
-
- 

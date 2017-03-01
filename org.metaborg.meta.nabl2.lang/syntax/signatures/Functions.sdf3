@@ -31,4 +31,4 @@ context-free syntax
 
 lexical syntax
 
-  Keyword = "functions"
+  SectionKeyword = "functions"

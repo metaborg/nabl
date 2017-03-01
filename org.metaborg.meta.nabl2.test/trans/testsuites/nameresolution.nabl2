@@ -1,24 +1,8 @@
-module testsuites/simple
+module testsuites/nameresolution
 
 imports
 
   signatures/testsuites/-
-
-rules
-
-  [[ False() ^ () ]] :=
-    false.
-
-  [[ True() ^ () ]] :=
-    true.
-
-rules
-
-  [[ CannotUnifyRecursive() ^ () ]] :=
-    ty == (ty,ty).
-
-  [[ NestedTailsAreNil() ^ () ]] :=
-    [|[|[]]] == [].
 
 rules
 

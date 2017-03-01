@@ -15,7 +15,8 @@ template options
 
 context-free syntax
 
-  CVar = Var
+  CVar      = Var
+  CVar.CWld = <_>
 
 syntax
 

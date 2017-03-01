@@ -1,4 +1,4 @@
-module testsuites/Problems
+module testsuites/KnownProblems
 
 imports
 

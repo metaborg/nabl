@@ -126,6 +126,13 @@ rules
          used-var* := <all-vars> clause*;
          free-var* := <diff> (used-var*, bound-var*)
 
+  normalize-free-vars:
+    FunDef(name,arg*,clause*)
+      -> FunDef(name,arg*,[NewVars(free-var*),clause*])
+    with new-var* := <clauses-new-vars> clause*;
+         used-var* := <all-vars> clause*;
+         free-var* := <diff> (used-var*, [<term-var>,arg*,new-var*])
+
   clauses-new-vars =
     filter(clause-new-vars); concat
 

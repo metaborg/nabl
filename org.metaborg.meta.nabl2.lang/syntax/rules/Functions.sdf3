@@ -1,0 +1,31 @@
+module rules/Functions
+
+imports
+ 
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/constraints/Base
+
+  common/Identifiers
+  common/Injections
+  common/Terms
+  rules/Rules
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Rule.FunDef = [
+    [RuleId] << [{CVar ","}*] >> :=
+        [{FunClause ","}+].
+  ]
+
+  FunClause = Constraint
+  FunClause = FunCall
+  FunClause = NewScopes
+
+context-free syntax
+
+  FunCall.FunCall = [[RuleId] << [{CTerm ","}*] >>]

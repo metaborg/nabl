@@ -4,6 +4,7 @@ imports
 
   common/Identifiers
   rules/CGen
+  rules/Functions
 
 template options
 

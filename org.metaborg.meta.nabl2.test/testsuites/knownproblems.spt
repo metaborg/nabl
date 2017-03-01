@@ -1,4 +1,4 @@
-module problems
+module knownproblems
 
 language NaBL2Test
 

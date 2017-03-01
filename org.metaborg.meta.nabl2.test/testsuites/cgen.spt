@@ -1,0 +1,27 @@
+module cgen
+
+language NaBL2Test
+
+//-------------------------------
+
+test call function with no args succeeds [[
+  call function with no args
+]] 1 note
+
+test call function with one arg succeeds [[
+  call function with one arg
+]] 1 note
+
+//-------------------------------
+
+test wildcard param succeeds [[
+  wildcard parameter on X
+]] 1 note
+
+test wildcard type succeeds [[
+  wildcard type on X
+]] 1 note
+
+test wildcard constraint succeeds [[
+  wildcard constraint
+]] 1 note

@@ -1,0 +1,19 @@
+module testsuites/CGen
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.CallFunctionNoArgs = <call function with no args>
+
+  Test.CallFunctionOneArgs = <call function with one arg>
+
+context-free syntax
+
+  Test.WildcardParam = <wildcard parameter on <X>>
+
+  Test.WildcardType = <wildcard type on <X>>
+
+  Test.WildcardConstraint = <wildcard constraint>

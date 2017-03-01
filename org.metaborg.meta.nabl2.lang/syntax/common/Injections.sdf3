@@ -23,6 +23,8 @@ context-free syntax
   OccurrenceIndex.DefaultOccurrenceIndex =
   OccurrenceIndex.OccurrenceIndexFrom    = <@<Var>>
 
+  NewScopes.NewScopes = <new <{CVar " "}+>>
+
 context-free syntax
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
@@ -33,4 +35,4 @@ syntax
 
 lexical syntax
 
-  Keyword = "seteq"
+  Keyword = "seteq" | "new"

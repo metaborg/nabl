@@ -1,0 +1,13 @@
+module testsuites/equality
+
+imports
+
+  signatures/testsuites/-
+
+rules
+
+  [[ CannotUnifyRecursive() ^ () ]] :=
+    ty == (ty,ty).
+
+  [[ NestedTailsAreNil() ^ () ]] :=
+    [|[|[]]] == [].

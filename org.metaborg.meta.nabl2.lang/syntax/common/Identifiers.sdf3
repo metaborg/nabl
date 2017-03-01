@@ -7,7 +7,7 @@ imports
 lexical syntax
 
   RuleId = [a-zA-Z] [a-zA-Z0-9]*
-  RuleId = [iI]"nit" | [dD]"efault" {reject}
+  RuleId = "init" | "default" {case-insensitive, reject}
 
 lexical restrictions
 

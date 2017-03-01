@@ -1,0 +1,13 @@
+module testsuites/base
+
+imports
+
+  signatures/testsuites/-
+
+rules
+
+  [[ False() ^ () ]] :=
+    false.
+
+  [[ True() ^ () ]] :=
+    true.
