@@ -42,6 +42,8 @@ exports:
   directory: trans
   includes: "**/*.ds2v"
 language:
+  sdf:
+    sdf2table: c
   stratego:
     format: ctree
     args:
