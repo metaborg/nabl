@@ -4,6 +4,7 @@ imports
 
   nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
+  nabl2/shared/common/Resolution
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Sets
   nabl2/shared/constraints/Base
@@ -25,13 +26,18 @@ context-free syntax
 
   NewScopes.NewScopes = <new <{CVar " "}+>>
 
-context-free syntax
+  LabelRE.Option = <<LabelRE>?>
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
 syntax
 
   Constraint-CF.CSetEq = CSet-CF LAYOUT?-CF "seteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
+
+context-free priorities
+
+    LabelRE.Option // aka, the same as LabelRE.Closure
+  > LabelRE.Concat
 
 lexical syntax
 

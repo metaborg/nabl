@@ -18,6 +18,7 @@ rules
   normalize =
     normalize-axioms;
     normalize-types;
+    normalize-regex;
     normalize-constructors;
     normalize-term-matches;
     normalize-type-matches;
@@ -67,6 +68,13 @@ rules
   normalize-type-variance: Invar() -> Invar()
   normalize-type-variance: Covar() -> Covar(DefaultRelation())
   normalize-type-variance: Contravar() -> Contravar(DefaultRelation())
+
+rules
+
+  normalize-regex = try(sometd(normalize-option))
+
+  normalize-option:
+    Option(re) -> Or(Epsilon(),re)
 
 rules
 
