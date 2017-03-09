@@ -49,7 +49,10 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
         defered.stream().map(this::find).forEach(constraints::add);
         if(isPartial()) {
             for(ITermVar var : unifier().getActiveVars()) {
-                constraints.add(ImmutableCEqual.of(var, unifier().find(var), messageInfo));
+                final ITerm rep = unifier().find(var);
+                if(!rep.equals(var)) {
+                    constraints.add(ImmutableCEqual.of(var, rep, messageInfo));
+                }
             }
         }
         return constraints;

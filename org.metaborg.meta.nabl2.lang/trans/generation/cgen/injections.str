@@ -15,7 +15,7 @@ rules
 
   injection-to-term(e) = term-to-term(e)
   injection-to-term(e):
-    CWld() -> Term |[ <nabl2--new-var(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ]|
+    CWld() -> Term |[ <nabl2--new-var(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> "_" ]|
   injection-to-term(e):
     TermIndexFrom(t) -> Term |[ <nabl2--get-ast-index> ~t ]|
   injection-to-term(e):
