@@ -11,11 +11,9 @@ import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 public class SG_get_scope_named_edges extends ScopeGraphPrimitive {
 
@@ -24,19 +22,16 @@ public class SG_get_scope_named_edges extends ScopeGraphPrimitive {
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
-        if (terms.size() != 1) {
+        throws InterpreterException {
+        if(terms.size() != 1) {
             throw new InterpreterException("Need one term argument: analysis");
         }
         return TermIndex.get(terms.get(0)).flatMap(index -> {
-            return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
-                return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                    Multimap<Label,PartialFunction0<Occurrence>> edges = s.getScopeGraph().getImportRefs(scope);
+            return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
+                return context.unit(index.getResource()).solution().<ITerm>map(s -> {
                     List<ITerm> edgeTerms = Lists.newArrayList();
-                    for (Map.Entry<Label,PartialFunction0<Occurrence>> edge : edges.entries()) {
-                        edge.getValue().apply().ifPresent(ref -> {
-                            edgeTerms.add(GenericTerms.newTuple(edge.getKey(), ref));
-                        });
+                    for(Map.Entry<Label, Occurrence> edge : s.getScopeGraph().getImportEdges().get(scope)) {
+                        edgeTerms.add(GenericTerms.newTuple(edge.getKey(), edge.getValue()));
                     }
                     return GenericTerms.newList(edgeTerms);
                 });

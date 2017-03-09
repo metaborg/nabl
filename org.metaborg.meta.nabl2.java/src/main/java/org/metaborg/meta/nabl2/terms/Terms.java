@@ -1,10 +1,12 @@
 package org.metaborg.meta.nabl2.terms;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.metaborg.meta.nabl2.util.Optionals;
+import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction2;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction3;
@@ -15,6 +17,7 @@ import org.metaborg.meta.nabl2.util.functions.Function3;
 import org.metaborg.meta.nabl2.util.functions.Function4;
 import org.metaborg.meta.nabl2.util.functions.Function5;
 import org.metaborg.meta.nabl2.util.functions.Function6;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
 
@@ -425,6 +428,41 @@ public class Terms {
                     // @formatter:on
                 ));
                 return m.match(next).orElse(next);
+            };
+        }
+ 
+        public static <R> Function1<ITerm,Collection<R>> collecttd(IMatcher<? extends R> m) {
+            return term -> {
+                List<R> results = Lists.newArrayList();
+                M.<Unit>casesFix(f -> Iterables2.<IMatcher<? extends Unit>>from(
+                    // @formatter:off
+                    t -> m.match(t).map(r -> {
+                        results.add(r);
+                        return Unit.unit;
+                    }),
+                    t -> Optional.of(t.match(Terms.<Unit>cases(
+                        (appl) -> {
+                            for(ITerm arg : appl.getArgs()) {
+                                f.match(arg);
+                            }
+                            return Unit.unit;
+                        },
+                        (list) -> list.match(ListTerms.<Unit> cases(
+                            (cons) -> {
+                                f.match(cons.getHead());
+                                f.match(cons.getTail());
+                                return Unit.unit;
+                            },
+                            (nil) -> Unit.unit,
+                            (var) -> Unit.unit
+                        )),
+                        (string) -> Unit.unit,
+                        (integer) -> Unit.unit,
+                        (var) -> Unit.unit
+                    )))
+                    // @formatter:on
+                )).match(term);
+                return results;
             };
         }
  

@@ -1,8 +1,10 @@
 package org.metaborg.meta.nabl2.spoofax.primitives;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
@@ -10,10 +12,12 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public class SG_get_scope_refs extends ScopeGraphPrimitive {
+import com.google.common.collect.Lists;
 
-    public SG_get_scope_refs() {
-        super(SG_get_scope_refs.class.getSimpleName(), 0, 1);
+public class SG_get_scope_direct_edges_inv extends ScopeGraphPrimitive {
+
+    public SG_get_scope_direct_edges_inv() {
+        super(SG_get_scope_direct_edges_inv.class.getSimpleName(), 0, 1);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
@@ -24,7 +28,11 @@ public class SG_get_scope_refs extends ScopeGraphPrimitive {
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
                 return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                    return GenericTerms.newList(s.getScopeGraph().getRefs().inverse().get(scope));
+                    List<ITerm> edgeTerms = Lists.newArrayList();
+                    for(Map.Entry<Label, Scope> edge : s.getScopeGraph().getDirectEdges().inverse().get(scope)) {
+                        edgeTerms.add(GenericTerms.newTuple(edge.getKey(), edge.getValue()));
+                    }
+                    return GenericTerms.newList(edgeTerms);
                 });
             });
         });

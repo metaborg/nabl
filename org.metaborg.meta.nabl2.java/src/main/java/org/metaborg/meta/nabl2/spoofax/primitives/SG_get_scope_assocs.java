@@ -14,7 +14,6 @@ import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 public class SG_get_scope_assocs extends ScopeGraphPrimitive {
 
@@ -23,16 +22,15 @@ public class SG_get_scope_assocs extends ScopeGraphPrimitive {
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
+        throws InterpreterException {
         if(terms.size() != 1) {
             throw new InterpreterException("Need one term argument: analysis");
         }
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
                 return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                    Multimap<Label,Occurrence> assocs = s.getScopeGraph().getAssocDecls(scope);
                     List<ITerm> assocTerms = Lists.newArrayList();
-                    for(Map.Entry<Label,Occurrence> assoc : assocs.entries()) {
+                    for(Map.Entry<Label, Occurrence> assoc : s.getScopeGraph().getAssocEdges().inverse().get(scope)) {
                         assocTerms.add(GenericTerms.newTuple(assoc.getValue(), assoc.getKey()));
                     }
                     return GenericTerms.newList(assocTerms);

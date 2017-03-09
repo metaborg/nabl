@@ -18,6 +18,7 @@ import org.metaborg.meta.nabl2.solver.Solver;
 import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 
@@ -46,6 +47,11 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
     @Override protected Iterable<IEqualityConstraint> doFinish(IMessageInfo messageInfo) {
         List<IEqualityConstraint> constraints = Lists.newArrayList();
         defered.stream().map(this::find).forEach(constraints::add);
+        if(isPartial()) {
+            for(ITermVar var : unifier().getActiveVars()) {
+                constraints.add(ImmutableCEqual.of(var, unifier().find(var), messageInfo));
+            }
+        }
         return constraints;
     }
 

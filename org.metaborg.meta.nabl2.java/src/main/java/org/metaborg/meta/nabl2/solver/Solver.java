@@ -7,10 +7,10 @@ import java.util.Set;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCFalse;
-import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.components.AstSolver;
 import org.metaborg.meta.nabl2.solver.components.BaseSolver;
 import org.metaborg.meta.nabl2.solver.components.EqualitySolver;
@@ -21,9 +21,11 @@ import org.metaborg.meta.nabl2.solver.components.SetSolver;
 import org.metaborg.meta.nabl2.solver.components.SymbolicSolver;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -136,15 +138,15 @@ public class Solver {
                 messages.stream().forEach(mi -> {
                     unsolved.add(ImmutableCFalse.of(mi.apply(unifier::find)));
                 });
-                break;
+                return unsolved;
             case TOTAL:
+            default:
                 unsolved.stream().forEach(c -> {
                     IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
                     messages.add(c.getMessageInfo().apply(unifier::find).withDefault(content));
                 });
-                break;
+                return Iterables2.empty();
         }
-        return unsolved;
     }
 
     public static Iterable<IConstraint> solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
@@ -154,24 +156,19 @@ public class Solver {
         long t0 = System.nanoTime();
         logger.info(">>> Reducing {} constraints <<<", n0);
 
-        final Unifier unifier = new Unifier();
+        Solver solver = new Solver(config, fresh, SolverMode.PARTIAL);
         for(ITerm activeTerm : activeTerms) {
-            unifier.addActive(activeTerm);
+            solver.unifier.addActive(activeTerm);
+            solver.namebindingSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
         }
 
-        Solver solver = new Solver(config, fresh, SolverMode.PARTIAL);
         List<IConstraint> unsolved = Lists.newArrayList();
         try {
             solver.add(constraints);
             solver.iterate();
             Iterables.addAll(unsolved, solver.finish(messageInfo));
-        } catch (RuntimeException ex) {
+        } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
-        }
-        for(ITerm activeTerm : activeTerms) {
-            activeTerm.getVars().stream().forEach(var -> {
-                unsolved.add(ImmutableCEqual.of(var, unifier.find(var), messageInfo));
-            });
         }
 
         final int n1 = Iterables.size(unsolved);
@@ -183,8 +180,7 @@ public class Solver {
     }
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
-        Iterable<IConstraint> constraints, IMessageInfo messageInfo)
-        throws SolverException, InterruptedException {
+        Iterable<IConstraint> constraints, IMessageInfo messageInfo) throws SolverException, InterruptedException {
         final int n = Iterables.size(constraints);
         long t0 = System.nanoTime();
         logger.info(">>> Solving {} constraints <<<", n);
@@ -194,7 +190,7 @@ public class Solver {
             solver.add(constraints);
             solver.iterate();
             solver.finish(messageInfo);
-        } catch (RuntimeException ex) {
+        } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
 

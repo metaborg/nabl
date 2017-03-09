@@ -1,158 +1,154 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
-import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.meta.nabl2.util.collections.BagMultimap;
+import org.metaborg.meta.nabl2.util.collections.HashBagMultimap;
+import org.metaborg.meta.nabl2.util.collections.HashFunction;
+import org.metaborg.meta.nabl2.util.collections.HashRelation3;
+import org.metaborg.meta.nabl2.util.collections.HashSet;
+import org.metaborg.meta.nabl2.util.collections.IFunction;
+import org.metaborg.meta.nabl2.util.collections.IRelation3;
+import org.metaborg.meta.nabl2.util.collections.ISet;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 
 public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements IScopeGraph<S,L,O>, Serializable {
+    implements IScopeGraph<S, L, O>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final Set<S> scopes;
-    private final Multimap<S,O> decls;
-    private final Map<S,Multimap<L,PartialFunction0<S>>> directEdges;
-    private final Map<S,Multimap<L,PartialFunction0<O>>> importRefs;
-    private final Multimap<S,O> refs;
-    private final Map<O,Multimap<L,S>> assocScopes;
+    private final ISet.Mutable<S> allScopes;
+    private final ISet.Mutable<O> allDecls;
+    private final ISet.Mutable<O> allRefs;
 
-    transient private Map<S,Multimap<L,O>> scopeAssocsIndex;
-    transient private Map<O,S> declScopesIndex;
-    transient private Map<O,S> refScopesIndex;
+    private final IFunction.Mutable<O, S> decls;
+    private final IFunction.Mutable<O, S> refs;
+    private final IRelation3.Mutable<S, L, S> directEdges;
+    private final IRelation3.Mutable<O, L, S> assocEdges;
+    private final IRelation3.Mutable<S, L, O> importEdges;
+
+    private final Multiset<S> activeScopes;
+    private final BagMultimap<S, L> activeEdges;
 
     public EsopScopeGraph() {
-        this.scopes = Sets.newHashSet();
-        this.decls = HashMultimap.create();
-        this.directEdges = Maps.newHashMap();
-        this.assocScopes = Maps.newHashMap();
-        this.importRefs = Maps.newHashMap();
-        this.refs = HashMultimap.create();
-        initIndices();
+        this.allScopes = HashSet.create();
+        this.allDecls = HashSet.create();
+        this.allRefs = HashSet.create();
+
+        this.decls = HashFunction.create();
+        this.refs = HashFunction.create();
+        this.directEdges = HashRelation3.create();
+        this.assocEdges = HashRelation3.create();
+        this.importEdges = HashRelation3.create();
+
+        this.activeScopes = HashMultiset.create();
+        this.activeEdges = HashBagMultimap.create();
     }
 
-    private void initIndices() {
-        this.scopeAssocsIndex = Maps.newHashMap();
-        this.refScopesIndex = Maps.newHashMap();
-        this.declScopesIndex = Maps.newHashMap();
+    // -----------------------
+
+    @Override public ISet<S> getAllScopes() {
+        return allScopes;
     }
 
-    @Override public Iterable<S> getAllScopes() {
-        return scopes;
+    @Override public ISet<O> getAllDecls() {
+        return allDecls;
     }
 
-    @Override public Iterable<O> getAllDecls() {
-        return declScopesIndex.keySet();
-    }
-
-    @Override public Iterable<O> getAllRefs() {
-        return refScopesIndex.keySet();
+    @Override public ISet<O> getAllRefs() {
+        return allRefs;
     }
 
 
-    @Override public Iterable<O> getDecls(S scope) {
-        return decls.containsKey(scope) ? decls.get(scope) : Iterables2.empty();
+    @Override public IFunction<O, S> getDecls() {
+        return decls;
     }
+
+    @Override public IFunction<O, S> getRefs() {
+        return refs;
+    }
+
+    @Override public IRelation3<S, L, S> getDirectEdges() {
+        return directEdges;
+    }
+
+    @Override public IRelation3<O, L, S> getAssocEdges() {
+        return assocEdges;
+    }
+
+    @Override public IRelation3<S, L, O> getImportEdges() {
+        return importEdges;
+    }
+
+    // -----------------------
 
     public void addDecl(S scope, O decl) {
-        scopes.add(scope);
-        decls.put(scope, decl);
-        declScopesIndex.put(decl, scope);
-    }
-
-    @Override public Iterable<O> getRefs(S scope) {
-        return refs.containsKey(scope) ? refs.get(scope) : Iterables2.empty();
+        allScopes.add(scope);
+        allDecls.add(decl);
+        decls.put(decl, scope);
     }
 
     public void addRef(O ref, S scope) {
-        scopes.add(scope);
-        refs.put(scope, ref);
-        refScopesIndex.put(ref, scope);
+        allScopes.add(scope);
+        allRefs.add(ref);
+        refs.put(ref, scope);
     }
 
-    public void addDirectEdge(S sourceScope, L label, PartialFunction0<S> targetScope) {
-        scopes.add(sourceScope);
-        directEdges.computeIfAbsent(sourceScope, s -> HashMultimap.create()).put(label, targetScope);
-    }
-
-    @Override public Multimap<L,PartialFunction0<S>> getDirectEdges(S scope) {
-        return Multimaps.unmodifiableMultimap(directEdges.computeIfAbsent(scope, s -> HashMultimap.create()));
+    public void addDirectEdge(S sourceScope, L label, S targetScope) {
+        allScopes.add(sourceScope);
+        directEdges.put(sourceScope, label, targetScope);
     }
 
     public void addAssoc(O decl, L label, S scope) {
-        scopes.add(scope);
-        assocScopes.computeIfAbsent(decl, s -> HashMultimap.create()).put(label, scope);
-        scopeAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, decl);
+        allScopes.add(scope);
+        allDecls.add(decl);
+        assocEdges.put(decl, label, scope);
     }
 
-    public void addImport(S scope, L label, PartialFunction0<O> ref) {
-        scopes.add(scope);
-        importRefs.computeIfAbsent(scope, s -> HashMultimap.create()).put(label, ref);
+    public void addImport(S scope, L label, O ref) {
+        allScopes.add(scope);
+        allRefs.add(ref);
+        importEdges.put(scope, label, ref);
     }
 
-    @Override public Multimap<L,PartialFunction0<O>> getImportRefs(S scope) {
-        return Multimaps.unmodifiableMultimap(importRefs.computeIfAbsent(scope, s -> HashMultimap.create()));
+    // ------------------------------------
+
+    EsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params) {
+        return new EsopNameResolution<S, L, O>(this, params);
     }
 
-    @Override public Multimap<L,O> getAssocDecls(S scope) {
-        return Multimaps.unmodifiableMultimap(scopeAssocsIndex.computeIfAbsent(scope, s -> HashMultimap.create()));
+    // active scopes
+
+    public void addActiveScope(S scope) {
+        activeScopes.add(scope);
     }
 
-    @Override public Optional<S> getDeclScope(O decl) {
-        return declScopesIndex.containsKey(decl) ? Optional.of(declScopesIndex.get(decl)) : Optional.empty();
+    public void addActiveScope(S scope, L label) {
+        activeEdges.put(scope, label);
     }
 
-    @Override public Multimap<L,S> getAssocScopes(O decl) {
-        return Multimaps.unmodifiableMultimap(assocScopes.computeIfAbsent(decl, s -> HashMultimap.create()));
+    public void removeActiveScope(S scope) {
+        activeScopes.remove(scope);
     }
 
+    public void removeActiveScope(S scope, L label) {
+        activeEdges.remove(scope, label);
 
-    @Override public Optional<S> getRefScope(O ref) {
-        return refScopesIndex.containsKey(ref) ? Optional.of(refScopesIndex.get(ref)) : Optional.empty();
     }
 
-    EsopNameResolution<S,L,O> resolve(IResolutionParameters<L> params) {
-        return new EsopNameResolution<S,L,O>(this, params);
+    public boolean isScopeActive(S scope) {
+        return activeScopes.contains(scope);
     }
 
-    // serialization
-
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-    }
-
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        initIndices();
-        for(Map.Entry<O,Multimap<L,S>> entry : assocScopes.entrySet()) {
-            for(Map.Entry<L,S> innerEntry : entry.getValue().entries()) {
-                scopeAssocsIndex.computeIfAbsent(innerEntry.getValue(), s -> HashMultimap.create())
-                        .put(innerEntry.getKey(), entry.getKey());
-            }
-        }
-        for(Map.Entry<S,O> entry : decls.entries()) {
-            declScopesIndex.put(entry.getValue(), entry.getKey());
-        }
-        for(Map.Entry<S,O> entry : refs.entries()) {
-            refScopesIndex.put(entry.getValue(), entry.getKey());
-        }
+    public boolean isScopeActive(S scope, L label) {
+        return activeEdges.get(scope).contains(label);
     }
 
 }

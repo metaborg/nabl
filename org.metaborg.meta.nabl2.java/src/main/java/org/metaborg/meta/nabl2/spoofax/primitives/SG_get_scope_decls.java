@@ -24,7 +24,7 @@ public class SG_get_scope_decls extends ScopeGraphPrimitive {
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
                 return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                    return GenericTerms.newList(s.getScopeGraph().getDecls(scope));
+                    return GenericTerms.newList(s.getScopeGraph().getDecls().inverse().get(scope));
                 });
             });
         });

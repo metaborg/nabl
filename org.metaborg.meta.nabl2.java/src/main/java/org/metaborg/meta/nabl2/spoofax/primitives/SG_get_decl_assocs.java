@@ -14,7 +14,6 @@ import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 public class SG_get_decl_assocs extends ScopeGraphPrimitive {
 
@@ -30,9 +29,8 @@ public class SG_get_decl_assocs extends ScopeGraphPrimitive {
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return Occurrence.matcher().match(term).<ITerm> flatMap(decl -> {
                 return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                    Multimap<Label,Scope> assocs = s.getScopeGraph().getAssocScopes(decl);
                     List<ITerm> assocTerms = Lists.newArrayList();
-                    for (Map.Entry<Label,Scope> assoc : assocs.entries()) {
+                    for (Map.Entry<Label,Scope> assoc : s.getScopeGraph().getAssocEdges().get(decl)) {
                         assocTerms.add(GenericTerms.newTuple(assoc.getKey(), assoc.getValue()));
                     }
                     return GenericTerms.newList(assocTerms);

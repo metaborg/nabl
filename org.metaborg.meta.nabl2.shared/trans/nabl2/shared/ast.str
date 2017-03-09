@@ -12,7 +12,7 @@ rules // ast indices
     prim("SG_index_ast", source)
 
   nabl2--get-ast-index =
-    ?t ; prim("SG_get_ast_index") ; nabl2--copy-origin(|t)
+    ?t ; prim("SG_get_ast_index") ; try(nabl2--copy-origin(|t))
 
   nabl2--set-ast-index(|index) =
     prim("SG_set_ast_index",index)
@@ -30,13 +30,6 @@ rules // origins
 
   nabl2--copy-origin(|from) =
     origin-location-offset-set(|<origin-location-offset> from)
- <+ with(<is-list <+ warn(|"Cannot copy origin from ")> from)
-
-  nabl2--try-copy-origin(|from) =
-    try(origin-location-offset-set(|<origin-location-offset> from))
 
   nabl2--preserve-origin(s) =
     ?t; s; nabl2--copy-origin(|t)
-
-  nabl2--try-preserve-origin(s) =
-    ?t; s; nabl2--try-copy-origin(|t)

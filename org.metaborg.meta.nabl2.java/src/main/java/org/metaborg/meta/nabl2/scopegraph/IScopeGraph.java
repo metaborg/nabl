@@ -1,36 +1,26 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
-import java.util.Optional;
-
-import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
-
-import com.google.common.collect.Multimap;
+import org.metaborg.meta.nabl2.util.collections.IFunction;
+import org.metaborg.meta.nabl2.util.collections.IRelation3;
+import org.metaborg.meta.nabl2.util.collections.ISet;
 
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Iterable<S> getAllScopes();
+    ISet<S> getAllScopes();
 
-    Iterable<O> getAllDecls();
+    ISet<O> getAllDecls();
 
-    Iterable<O> getAllRefs();
-
-
-    Iterable<O> getDecls(S scope);
-
-    Iterable<O> getRefs(S scope);
-
-    Multimap<L,PartialFunction0<S>> getDirectEdges(S scope);
-
-    Multimap<L,PartialFunction0<O>> getImportRefs(S scope);
-
-    Multimap<L,O> getAssocDecls(S scope);
+    ISet<O> getAllRefs();
 
 
-    Optional<S> getDeclScope(O decl);
+    IFunction<O, S> getDecls();
 
-    Multimap<L,S> getAssocScopes(O decl);
+    IFunction<O, S> getRefs();
 
+    IRelation3<S, L, S> getDirectEdges();
 
-    Optional<S> getRefScope(O ref);
+    IRelation3<O, L, S> getAssocEdges();
+
+    IRelation3<S, L, O> getImportEdges();
 
 }
