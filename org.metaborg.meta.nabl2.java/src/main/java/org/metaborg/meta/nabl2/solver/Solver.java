@@ -28,6 +28,8 @@ import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -40,6 +42,8 @@ public class Solver {
     final SolverMode mode;
     final Function1<String, ITermVar> fresh;
     final Unifier unifier;
+    final ICancel cancel;
+    final IProgress progress;
 
     private final List<SolverComponent<?>> components;
     private final BaseSolver baseSolver;
@@ -53,10 +57,12 @@ public class Solver {
 
     private final List<IMessageInfo> messages;
 
-    private Solver(SolverConfig config, Function1<String, ITermVar> fresh, SolverMode mode) {
+    private Solver(SolverConfig config, Function1<String, ITermVar> fresh, SolverMode mode, IProgress progress, ICancel cancel) {
         this.mode = mode;
         this.fresh = fresh;
         this.unifier = new Unifier();
+        this.cancel = cancel;
+        this.progress = progress;
 
         this.components = Lists.newArrayList();
         this.components.add(baseSolver = new BaseSolver(this));
@@ -72,10 +78,10 @@ public class Solver {
     }
 
     private void add(Iterable<IConstraint> constraints) throws InterruptedException {
+        final int n = Iterables.size(constraints);
+        progress.setWorkRemaining(n+1);
         for(IConstraint constraint : constraints) {
-            if(Thread.currentThread().isInterrupted()) {
-                throw new InterruptedException();
-            }
+            cancel.throwIfCancelled();
             try {
                 constraint.matchOrThrow(CheckedCases.of(
                     // @formatter:off
@@ -104,9 +110,7 @@ public class Solver {
         do {
             progress = false;
             for(SolverComponent<?> component : components) {
-                if(Thread.currentThread().isInterrupted()) {
-                    throw new InterruptedException();
-                }
+                cancel.throwIfCancelled();
                 component.getTimer().start();
                 try {
                     progress |= component.iterate();
@@ -123,9 +127,7 @@ public class Solver {
     private Iterable<IConstraint> finish(IMessageInfo messageInfo) throws InterruptedException {
         Set<IConstraint> unsolved = Sets.newHashSet();
         for(SolverComponent<?> component : components) {
-            if(Thread.interrupted()) {
-                throw new InterruptedException();
-            }
+            cancel.throwIfCancelled();
             component.getTimer().start();
             try {
                 unsolved.addAll(Lists.newArrayList(component.finish(messageInfo)));
@@ -150,13 +152,13 @@ public class Solver {
     }
 
     public static Iterable<IConstraint> solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
-        Function1<String, ITermVar> fresh, Iterable<IConstraint> constraints, IMessageInfo messageInfo)
+        Function1<String, ITermVar> fresh, Iterable<IConstraint> constraints, IMessageInfo messageInfo, IProgress progress, ICancel cancel)
         throws SolverException, InterruptedException {
         final int n0 = Iterables.size(constraints);
         long t0 = System.nanoTime();
         logger.info(">>> Reducing {} constraints <<<", n0);
 
-        Solver solver = new Solver(config, fresh, SolverMode.PARTIAL);
+        Solver solver = new Solver(config, fresh, SolverMode.PARTIAL, progress, cancel);
         for(ITerm activeTerm : activeTerms) {
             solver.unifier.addActive(activeTerm);
             solver.namebindingSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
@@ -180,12 +182,12 @@ public class Solver {
     }
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
-        Iterable<IConstraint> constraints, IMessageInfo messageInfo) throws SolverException, InterruptedException {
+        Iterable<IConstraint> constraints, IMessageInfo messageInfo, IProgress progress, ICancel cancel) throws SolverException, InterruptedException {
         final int n = Iterables.size(constraints);
         long t0 = System.nanoTime();
         logger.info(">>> Solving {} constraints <<<", n);
 
-        Solver solver = new Solver(config, fresh, SolverMode.TOTAL);
+        Solver solver = new Solver(config, fresh, SolverMode.TOTAL, progress, cancel);
         try {
             solver.add(constraints);
             solver.iterate();

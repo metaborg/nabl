@@ -17,12 +17,12 @@ public class BaseSolver extends SolverComponent<IBaseConstraint> {
     }
 
     @Override protected Unit doAdd(IBaseConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(t -> {
-            return unit;
-        }, f -> {
+        constraint.matchOrThrow(CheckedCases.of(t -> unit, f -> {
             throw new UnsatisfiableException(
                 constraint.getMessageInfo().withDefault(MessageContent.of("False can never be satisfied.")));
         }));
+        work();
+        return unit;
     }
 
 }

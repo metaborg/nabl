@@ -33,13 +33,15 @@ public class SymbolicSolver extends SolverComponent<ISymbolicConstraint> {
     }
 
     @Override protected Unit doAdd(ISymbolicConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(fact -> {
+        constraint.matchOrThrow(CheckedCases.of(fact -> {
             facts.add(fact.getFact());
             return unit;
         }, goal -> {
             goals.add(goal.getGoal());
             return unit;
         }));
+        work();
+        return unit;
     }
 
     @Override protected Iterable<? extends ISymbolicConstraint> doFinish(IMessageInfo messageInfo)

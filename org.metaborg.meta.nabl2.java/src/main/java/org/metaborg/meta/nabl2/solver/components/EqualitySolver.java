@@ -74,12 +74,15 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
 
     private Unit add(CEqual constraint) throws UnsatisfiableException {
         solve(constraint);
+        work();
         return unit;
     }
 
     private Unit add(CInequal constraint) throws UnsatisfiableException {
         if(!solve(constraint)) {
             defered.add(constraint);
+        } else {
+            work();
         }
         return unit;
     }

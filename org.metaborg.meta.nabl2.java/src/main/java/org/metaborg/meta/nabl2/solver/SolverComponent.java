@@ -26,6 +26,14 @@ public abstract class SolverComponent<C extends IConstraint> {
         return solver.unifier;
     }
 
+    final void throwIfCancelled() throws InterruptedException {
+        solver.cancel.throwIfCancelled();
+    }
+
+    final protected void work() {
+        solver.progress.work(1);
+    }
+
     final protected Function1<String, ITermVar> fresh() {
         return solver.fresh;
     }
@@ -58,17 +66,16 @@ public abstract class SolverComponent<C extends IConstraint> {
         return false;
     }
 
-    protected static <C extends IConstraint> boolean doIterate(Iterable<C> constraints,
-        CheckedPredicate1<C, UnsatisfiableException> solve) throws UnsatisfiableException, InterruptedException {
-        Iterator<C> it = constraints.iterator();
+    final protected <CC extends C> boolean doIterate(Iterable<CC> constraints,
+        CheckedPredicate1<CC, UnsatisfiableException> solve) throws UnsatisfiableException, InterruptedException {
+        Iterator<CC> it = constraints.iterator();
         boolean progress = false;
         while(it.hasNext()) {
-            if(Thread.interrupted()) {
-                throw new InterruptedException();
-            }
+            throwIfCancelled();
             try {
                 if(solve.test(it.next())) {
                     progress = true;
+                    work();
                     it.remove();
                 }
             } catch(UnsatisfiableException e) {

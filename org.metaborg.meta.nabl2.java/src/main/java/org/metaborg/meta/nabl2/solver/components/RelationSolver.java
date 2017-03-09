@@ -84,6 +84,8 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     private Unit add(CBuildRelation constraint) throws UnsatisfiableException {
         if(isPartial() || !solve(constraint)) {
             deferedBuilds.put(constraint.getRelation(), constraint);
+        } else {
+            work();
         }
         return Unit.unit;
 
@@ -92,6 +94,8 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     private Unit add(CCheckRelation constraint) throws UnsatisfiableException {
         if(isPartial() || !solve(constraint)) {
             deferedChecks.add(constraint);
+        } else {
+            work();
         }
         return Unit.unit;
 
@@ -101,6 +105,8 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         unifier().addActive(constraint.getResult());
         if(isPartial() || !solve(constraint)) {
             deferedChecks.add(constraint);
+        } else {
+            work();
         }
         return Unit.unit;
 

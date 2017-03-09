@@ -5,6 +5,7 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.constraints.ast.CAstProperty;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.ast.ImmutableCAstProperty;
@@ -40,19 +41,25 @@ public class AstSolver extends SolverComponent<IAstConstraint> {
         return constraint.matchOrThrow(CheckedCases.<Unit, UnsatisfiableException>of(
             // @formatter:off
             p -> {
-                Optional<ITerm> oldValue = properties.putValue(p.getIndex(), p.getKey(), p.getValue());
-                if(oldValue.isPresent()) {
-                    try {
-                        unifier().unify(oldValue.get(), p.getValue());
-                    } catch(UnificationException e) {
-                        throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
-                            constraint.getMessageInfo().getOriginTerm()));
-                    }
-                }
+                solve(p);
+                work();
                 return unit;
             }
             // @formatter:on
         ));
+    }
+
+    private void solve(CAstProperty constraint) throws UnsatisfiableException {
+        Optional<ITerm> oldValue =
+            properties.putValue(constraint.getIndex(), constraint.getKey(), constraint.getValue());
+        if(oldValue.isPresent()) {
+            try {
+                unifier().unify(oldValue.get(), constraint.getValue());
+            } catch(UnificationException e) {
+                throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
+                    constraint.getMessageInfo().getOriginTerm()));
+            }
+        }
     }
 
     @Override protected Iterable<? extends IAstConstraint> doFinish(IMessageInfo messageInfo)

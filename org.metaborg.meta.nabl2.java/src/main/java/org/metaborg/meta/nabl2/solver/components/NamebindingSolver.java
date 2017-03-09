@@ -131,6 +131,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             for(Map.Entry<Label, ITerm> entry : relation.get(scope)) {
                 if(f.apply(scope, entry.getKey(), entry.getValue())) {
                     removed.add(entry);
+                    work();
                     progress |= true;
                 }
             }
@@ -201,6 +202,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
         if(!solve(constraint)) {
             unsolvedBuilds.add(constraint);
+        } else {
+            work();
         }
         return unit;
     }
@@ -209,6 +212,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         unifier().addActive(constraint.getDeclaration());
         if(!solve(constraint)) {
             unsolvedChecks.add(constraint);
+        } else {
+            work();
         }
         return unit;
     }
@@ -217,6 +222,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         unifier().addActive(constraint.getScope());
         if(!solve(constraint)) {
             unsolvedChecks.add(constraint);
+        } else {
+            work();
         }
         return unit;
     }
@@ -225,6 +232,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         unifier().addActive(constraint.getValue());
         if(!solve(constraint)) {
             unsolvedChecks.add(constraint);
+        } else {
+            work();
         }
         return unit;
     }

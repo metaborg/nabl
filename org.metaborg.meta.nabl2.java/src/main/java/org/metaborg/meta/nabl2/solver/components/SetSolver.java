@@ -54,6 +54,8 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
     @Override protected Unit doAdd(ISetConstraint constraint) throws UnsatisfiableException {
         if(isPartial() || !solve(constraint)) {
             defered.add(constraint);
+        } else {
+            work();
         }
         return unit;
     }
