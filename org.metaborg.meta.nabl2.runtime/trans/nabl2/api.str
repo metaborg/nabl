@@ -205,6 +205,14 @@ rules // ###### Scope graphs ######
   nabl2-get-scope-direct-edges(|a) = nabl2--get-scope-direct-edges(|a)
 
   /**
+   * Get inverse direct edges from a scope
+   *
+   * @param a : Analysis
+   * @type Scope -> List((Label,Scope))
+   */
+  nabl2-get-scope-direct-edges-inv(|a) = nabl2--get-scope-direct-edges-inv(|a)
+
+  /**
    * Get named (import) edges from a scope
    *
    * @param a : Analysis

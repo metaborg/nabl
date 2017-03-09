@@ -97,6 +97,9 @@ rules
   nabl2--get-scope-direct-edges(|a) =
     prim("SG_get_scope_direct_edges", a)
 
+  nabl2--get-scope-direct-edges-inv(|a) =
+    prim("SG_get_scope_direct_edges_inv", a)
+
   nabl2--get-scope-named-edges(|a) =
     prim("SG_get_scope_named_edges", a)
 
