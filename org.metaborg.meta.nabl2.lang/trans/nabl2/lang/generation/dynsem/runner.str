@@ -1,0 +1,79 @@
+module nabl2/lang/generation/dynsem/runner
+
+imports
+
+  signatures/nabl2/lang/signatures/-
+  signatures/nabl2/shared/common/-
+  nabl2/lang/generation/dynsem/-
+
+rules
+
+  runner-files(|lang-name,project-name,generated-pkg,nabl2-pkg,project-dir,java-dir): _ -> [
+    (runner-file, runner-java),
+    (launch-file, lauch-xml)
+  ]
+  with nabl2-dir := <pkg-to-dir> nabl2-pkg;
+       runner-name := $[nabl2_Runner];
+       entrypoint-name := $[[lang-name]EntryPoint];
+       runner-rel-file := $[[nabl2-dir]/[runner-name].java];
+       runner-file := $[[java-dir]/[runner-rel-file]];
+       empty-size := "[0]";
+       runner-java :=
+$[
+package [nabl2-pkg];
+
+import [generated-pkg].[entrypoint-name];
+import org.apache.commons.vfs2.FileObject;
+import org.metaborg.core.MetaborgException;
+import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunner;
+import org.metaborg.meta.lang.dynsem.interpreter.DynSemRunnerModule;
+import org.metaborg.spoofax.core.Spoofax;
+
+import com.google.inject.Module;
+
+public class [runner-name] extends DynSemRunner {
+
+  public [runner-name](Spoofax S) throws MetaborgException {
+    super(S, "[lang-name]", new [entrypoint-name]());
+  }
+ 
+  public static void main(String... args) {
+        if(args.length < 1) {
+            System.err.println("Usage: "+[runner-name].class.getName()+" FILES");
+            return;
+        }
+        try(Spoofax S = new Spoofax(new DynSemRunnerModule(), new Module[empty-size])) {
+          DynSemRunner runner = new [runner-name](S);
+          for(String fileName : args) {
+            FileObject file = S.resourceService.resolve(fileName);
+            Object result = runner.run(file, System.in, System.out, System.err);
+            System.out.println(result);
+          }
+        } catch (MetaborgException e) {
+            e.printStackTrace(System.err);
+        }
+    }
+}
+]
+  with launch-file := $[[project-dir]/[lang-name] (Core).launch];
+       lauch-xml :=
+$[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+  <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+    <listEntry value="/[project-name]/src/main/java/[runner-rel-file]"/>
+  </listAttribute>
+  <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+    <listEntry value="1"/>
+  </listAttribute>
+  <mapAttribute key="org.eclipse.debug.core.environmentVariables">
+    <mapEntry key="SPOOFAXPATH" value="${workspace_project_locations}"/>
+  </mapAttribute>
+  <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+  <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
+  <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="[nabl2-pkg].[runner-name]"/>
+  <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="${resource_loc}"/>
+  <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="[project-name]"/>
+  <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
+  <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-ea"/>
+</launchConfiguration>
+]

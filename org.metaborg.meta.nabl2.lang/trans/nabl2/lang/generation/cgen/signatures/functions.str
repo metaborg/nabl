@@ -1,0 +1,29 @@
+module nabl2/lang/generation/cgen/signatures/functions
+
+imports
+
+  libstrc
+  generation/cgen/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/signatures/-
+  nabl2/lang/util/stratego
+
+rules
+
+  signature-to-str:
+    Functions(_) -> []
+
+  sections-to-function-str:
+    section* -> [Rules(funstr*)]
+    with fundef* := <filter(?Signature(<id>));concat;
+                     filter(?Functions(<id>));concat;
+                     map(\ FunctionDef(name,sort,case*) -> (name,case*) \);
+                     topdown(try(\ Var(name) -> "CVar"#(["",name]) \))> section*;
+         if [_|_] := fundef* then
+           funterm* := <map(explode(injection-to-term))> fundef*;
+           funstr* := [ |[ nabl2--custom-functions = !~List(funterm*) ]| ]
+         else
+           funstr* := []
+         end

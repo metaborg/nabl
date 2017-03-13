@@ -1,0 +1,12 @@
+module nabl2/lang/rules/Normalization
+
+imports
+
+  nabl2/shared/common/CTerms
+
+context-free syntax
+
+  RuleClause.NewVars      = <new vars <{CVar " "}+>>
+
+  // not for parsing, just used in normalization and term explosion
+  InjectionPlaceholder.NAMEWithOrigin = "NAME"

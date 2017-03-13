@@ -1,0 +1,26 @@
+module nabl2/lang/rules/Rules
+
+imports
+
+  nabl2/lang/common/Identifiers
+  nabl2/lang/rules/CGen
+  nabl2/lang/rules/Functions
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  ModuleSection.Rules = <
+    rules
+ 
+      <{Rule "\n"}*>
+  > {longest-match}
+
+  RuleName.NoName      =
+  RuleName.Name        = RuleId
+
+lexical syntax
+
+  SectionKeyword = "rules"

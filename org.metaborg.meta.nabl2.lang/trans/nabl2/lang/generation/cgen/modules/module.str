@@ -1,0 +1,56 @@
+module nabl2/lang/generation/cgen/modules/module
+
+imports
+
+  libstrc
+  signatures/nabl2/lang/modules/-
+  nabl2/lang/generation/cgen/-
+  nabl2/lang/generation/cgen/signatures/-
+
+rules
+
+  module-to-str:
+    Module(name,section*) ->
+      module-str
+    with
+      import-str := Imports([
+        Import("signatures/nabl2/shared/-"),
+        Import("signatures/nabl2/shared/common/-"),
+        Import("signatures/nabl2/shared/constraints/-"),
+        Import("nabl2/shared/-"),
+        Import("signatures/nabl2/runtime/-"),
+        Import("signatures/nabl2/runtime/analysis/-"),
+        Import("signatures/nabl2/runtime/common/-"),
+        Import("signatures/nabl2/runtime/constraints/-"),
+        Import("nabl2/runtime/-"),
+        Import("nabl2/runtime/analysis/-"),
+        Import("nabl2/runtime/prelude/-"),
+        Import("nabl2/runtime/stdlib/-")
+      ]);
+      nameresolution-str* := <sections-to-nameresolution-str> section*;
+      relation-str* := <sections-to-relation-str> section*;
+      function-str* := <sections-to-function-str> section*;
+      section-str* := <mapconcat(section-to-str;(is-list<+MkSingleton))> section*;
+      module-str := Module(name,[
+                      import-str,
+                      nameresolution-str*,
+                      relation-str*,
+                      function-str*,
+                      section-str*
+                    ])
+
+  language-spec-name = prim("SSL_EXT_language_spec_pp_name") <+ "unknown"
+
+rules
+
+  section-to-str:
+    Imports(import*) -> Imports(import'*)
+    with
+      import'* := <map(import-to-str)> import*
+  
+  import-to-str:
+    Import(_) -> <id>
+    
+  import-to-str:
+    ImportWildcard(name) -> Import($[[name]/-])
+

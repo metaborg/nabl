@@ -1,0 +1,32 @@
+module nabl2/lang/signatures/Types
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Sorts
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\']
+
+context-free syntax
+
+  Signature.Types = <
+    types
+      <{TypeSig "\n"}*>
+  > {longest-match, deprecated("Use separate 'constructors' and 'relations' sections instead.")}
+
+syntax
+
+  TypeSig-CF.TypeSig = OpId-CF "(" LAYOUT?-CF TypeArgs-CF LAYOUT?-CF ")"
+
+context-free syntax
+
+  TypeArgs                = {TypeArg ","}*
+
+  TypeArg                 = <<TypeMod> <SortRef>>
+
+  TypeMod.Invar           =
+  TypeMod.Covar           = "covar"
+  TypeMod.Contravar       = "contravar"
+

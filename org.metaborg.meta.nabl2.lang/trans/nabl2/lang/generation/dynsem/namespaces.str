@@ -1,0 +1,71 @@
+module nabl2/lang/generation/dynsem/namespaces
+
+imports
+
+  signatures/nabl2/lang/signatures/-
+  signatures/nabl2/shared/common/-
+  nabl2/lang/generation/dynsem/-
+
+rules
+
+  ns-to-type-ds:
+    NamespaceDef(Namespace(name), Type(type-sort), _) -> result
+    with result := <ns-op-ds(|name)> (<sort-to-ds> OccurrenceSort(), "typeOf", <sort-to-ds> type-sort)
+
+  ns-to-prop-dss:
+    NamespaceDef(Namespace(name), _, prop*) -> result*
+    with result* := <map(ns-to-prop-ds(|name))> prop*
+
+  ns-to-prop-ds(|ns):
+    PropertyDef(name, prop-sort) -> result
+    with result := <ns-op-ds(|ns)> (<sort-to-ds> OccurrenceSort(), $[[name]Of], <sort-to-ds> prop-sort)
+
+  ns-op-ds(|namespace): (src-sort, base-name, target-sort) -> (op, arrow, rule)
+    with op-name := $[nabl2_[base-name][namespace]];
+         op := NativeOpDecl(op-name, [src-sort], target-sort);
+         arrow-name := $[[base-name][namespace]];
+         arrow := ArrowDecl(NoArrowROs(),src-sort,NoArrowRWs(),arrow-name,target-sort,NoArrowRWs());
+         rule := Axiom(Relation(NoReads(),Source(Cast(VarRef("t"),src-sort)),NamedDynamic(arrow-name),Target(Con(op-name, [VarRef("t")]))))
+
+rules
+
+  ns-to-type-java(|term-pkg,nabl2-pkg,java-dir):
+    NamespaceDef(Namespace(name), Type(type-sort), _) -> result
+    with source-name := <sort-to-ds;ds-sort-to-string> OccurrenceSort();
+         target-name := <sort-to-ds;ds-sort-to-string> type-sort;
+         op-name := $[nabl2_typeOf[name]];
+         stmts := bstm* |[
+           Optional<Occurrence> decl = Occurrence.matcher().match(term);
+           if (!decl.isPresent()) {
+             throw new IllegalArgumentException("Declaration occurrence expected."); 
+           }
+           Optional<ITerm> type = solution.getDeclProperties().getValue(decl.get(), GenericTerms.newAppl("Type", Iterables2.empty()));
+           if (!type.isPresent()) {
+             throw new NoSuchElementException();
+           }
+           return type.get();
+         ]|;
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name, java-dir)> stmts
+
+  ns-to-prop-javas(|term-pkg,nabl2-pkg,java-dir):
+    NamespaceDef(Namespace(name), _, prop*) -> result*
+    with result* := <map(ns-to-prop-java(|term-pkg,nabl2-pkg,java-dir,name))> prop*
+
+  ns-to-prop-java(|term-pkg,nabl2-pkg,java-dir,ns):
+    PropertyDef(name, prop-sort) -> result
+    with source-name := <sort-to-ds;ds-sort-to-string> OccurrenceSort();
+         target-name := <sort-to-ds;ds-sort-to-string> prop-sort;
+         op-name := $[nabl2_[name]Of[ns]];
+         stmts := bstm* |[
+           Optional<Occurrence> decl = Occurrence.matcher().match(term);
+           if (!decl.isPresent()) {
+             throw new IllegalArgumentException("Declaration occurrence expected."); 
+           }
+           Optional<ITerm> prop = solution.getDeclProperties().getValue(decl.get(),
+               GenericTerms.newAppl("Property", Iterables2.empty(GenericTerms.newString(~x:name))));
+           if (!prop.isPresent()) {
+             throw new NoSuchElementException();
+           }
+           return prop.get();
+         ]|;
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts

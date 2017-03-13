@@ -1,0 +1,39 @@
+module nabl2/lang/generation/cgen/signatures/constructors
+
+imports
+
+  libstrc
+  nabl2/lang/generation/cgen/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/signatures/-
+  nabl2/lang/util/stratego
+
+rules
+
+  signature-to-str:
+    Constructors(opdecl*) -> [
+      Signature([Constructors([opdeclstr*])])
+    ]
+    with opdeclstr* := <map(opdecl-to-str)> opdecl*
+
+  opdecl-to-str:
+    OpDecl(c,a*,s) -> OpDecl(c,sstr)
+    where [] := a*
+    with sstr := ConstType(<sort-to-str> s)
+ 
+  opdecl-to-str:
+    OpDecl(c,a*,s) -> OpDecl(c,FunType(astr*,sstr))
+    where [_|_] := a*
+    with sstr := ConstType(<sort-to-str> s);
+         astr* := <map(sort-to-str;!ConstType(<id>))> a*
+
+  sort-to-str: SortNoArgs(name) -> SortNoArgs(name)
+  sort-to-str: ListSort(arg) -> Sort("List", [<sort-to-str> arg])
+  sort-to-str: MapSort(key,value) -> <sort-to-str> ListSort(TupleSort([key,value]))
+  sort-to-str: TupleSort(arg*) -> SortTuple(<map(sort-to-str)> arg*)
+  sort-to-str: Var(name) -> Var(name)
+
+  sort-to-str: ScopeSort() -> SortNoArgs("Scope") // FIXME Use NaBL2_ prefix
+  sort-to-str: OccurrenceSort() -> SortNoArgs("Occurrence") // FIXME Use NaBL2_ prefix
+  sort-to-str: TypeSort() -> SortNoArgs("Type") // FIXME Use NaBL2_ prefix

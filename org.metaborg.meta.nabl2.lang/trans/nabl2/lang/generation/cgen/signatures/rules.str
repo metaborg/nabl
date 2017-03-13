@@ -1,0 +1,11 @@
+module nabl2/lang/generation/cgen/signatures/rules
+
+imports
+
+  signatures/nabl2/lang/signatures/-
+
+rules
+
+  signature-to-str:
+    CGen(_) -> []
+

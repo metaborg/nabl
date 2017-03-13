@@ -1,0 +1,28 @@
+module nabl2/lang/generation/cgen/signatures/relations
+
+imports
+
+  libstrc
+  nabl2/lang/generation/cgen/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/signatures/-
+  nabl2/lang/util/stratego
+
+rules
+
+  signature-to-str:
+    Relations(_) -> []
+
+  sections-to-relation-str:
+    section* -> [Rules(relstr*)]
+    with reldef* := <filter(?Signature(<id>));concat;
+                     filter(?Relations(<id>));concat;
+                     map(\ RelationDef(opt*,name,sort,var*) -> (name,opt*,var*) \)> section*;
+         if [_|_] := reldef* then
+           relterm* := <map(explode(injection-to-term))> reldef*;
+           relstr* := [ |[ nabl2--custom-relations = !~List(relterm*) ]| ]
+         else
+           relstr* := []
+         end

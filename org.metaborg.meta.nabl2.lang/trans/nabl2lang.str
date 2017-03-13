@@ -7,14 +7,14 @@ imports
 
   nabl2shared
  
-  analysis/main
-  completion
-  generation/cgen/main
-  generation/dynsem/main
-  signature-extraction/main
-  coq/main
-  outline
-  pp
+  nabl2/lang/analysis/main
+  nabl2/lang/completion
+  nabl2/lang/generation/cgen/main
+  nabl2/lang/generation/dynsem/main
+  nabl2/lang/signature-extraction/main
+  nabl2/lang/coq/main
+  nabl2/lang/outline
+  nabl2/lang/pp
  
  
 rules

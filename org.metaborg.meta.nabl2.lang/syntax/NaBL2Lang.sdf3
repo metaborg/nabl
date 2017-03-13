@@ -4,10 +4,10 @@ imports
 
   NaBL2Shared
 
-  common/Main
-  modules/Module
-  signatures/Signature
-  rules/Rules
+  nabl2/lang/common/Main
+  nabl2/lang/modules/Module
+  nabl2/lang/signatures/Signature
+  nabl2/lang/rules/Rules
 
 context-free start-symbols
 
