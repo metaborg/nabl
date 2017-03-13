@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.constraints.ConstraintTerms;
+import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -26,7 +26,7 @@ public abstract class InitialResult {
     public abstract InitialResult setCustomResult(Optional<ITerm> customResult);
 
     public static IMatcher<ImmutableInitialResult> matcher() {
-        return M.appl3("InitialResult", ConstraintTerms.constraints(), Args.matcher(), SolverConfig.matcher(), (t, constraints,
+        return M.appl3("InitialResult", M.listElems(Constraints.matcher()), Args.matcher(), SolverConfig.matcher(), (t, constraints,
                 args, config) -> {
             return ImmutableInitialResult.of(constraints, args, config);
         });

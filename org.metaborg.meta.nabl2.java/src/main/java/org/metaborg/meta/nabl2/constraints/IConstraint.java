@@ -12,7 +12,9 @@ import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
+import org.pcollections.PSet;
 
 public interface IConstraint {
 
@@ -20,6 +22,8 @@ public interface IConstraint {
 
     IMessageContent pp();
 
+    PSet<ITermVar> getVars();
+    
     <T> T match(Cases<T> function);
 
     interface Cases<T> {

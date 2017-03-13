@@ -48,8 +48,8 @@ public class SymbolicSolver extends SolverComponent<ISymbolicConstraint> {
         throws InterruptedException {
         List<ISymbolicConstraint> constraints = Lists.newArrayList();
         if(isPartial()) {
-            facts.stream().map(unifier()::find).forEach(fact -> constraints.add(ImmutableCFact.of(fact, messageInfo)));
-            goals.stream().map(unifier()::find).forEach(goal -> constraints.add(ImmutableCGoal.of(goal, messageInfo)));
+            facts.stream().forEach(fact -> constraints.add(ImmutableCFact.of(fact, messageInfo)));
+            goals.stream().forEach(goal -> constraints.add(ImmutableCGoal.of(goal, messageInfo)));
         }
         return constraints;
     }

@@ -68,7 +68,7 @@ public class AstSolver extends SolverComponent<IAstConstraint> {
         if(isPartial()) {
             for(TermIndex index : properties.getIndices()) {
                 for(ITerm key : properties.getDefinedKeys(index)) {
-                    properties.getValue(index, key).map(unifier()::find).ifPresent(value -> {
+                    properties.getValue(index, key).ifPresent(value -> {
                         constraints.add(ImmutableCAstProperty.of(index, key, value, messageInfo));
                     });
                 }

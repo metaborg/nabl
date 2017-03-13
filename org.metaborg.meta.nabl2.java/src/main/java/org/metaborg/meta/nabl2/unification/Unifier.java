@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
@@ -14,25 +15,29 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 
-import com.google.common.collect.HashMultiset;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multiset;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 
-public class Unifier implements IUnifier, Serializable {
+public class Unifier<D> implements IUnifier, Serializable {
 
     private static final long serialVersionUID = 42L;
 
     private final Map<ITermVar, ITerm> reps;
     private final Map<ITermVar, Integer> sizes;
-    private final Multiset<ITermVar> activeVars;
+
+    private final SetMultimap<ITermVar, D> activeVars;
+    private final Set<ITermVar> frozenVars;
 
     public Unifier() {
         this.reps = Maps.newHashMap();
         this.sizes = Maps.newHashMap();
-        this.activeVars = HashMultiset.create();
+        this.activeVars = HashMultimap.create();
+        this.frozenVars = Sets.newHashSet();
     }
 
-    @Override public Iterable<ITermVar> getAllVars() {
+    @Override public Set<ITermVar> getAllVars() {
         return Collections.unmodifiableSet(reps.keySet());
     }
 
@@ -238,10 +243,13 @@ public class Unifier implements IUnifier, Serializable {
     /**
      * Test if any variables in term are in the active set.
      */
-    public boolean isActive(ITerm term) {
+    public boolean isActive(ITerm term, @SuppressWarnings("unchecked") D... excludedDeps) {
+        Set<D> excludedDepList = Sets.newHashSet(excludedDeps);
         for(ITermVar var : find(term).getVars()) {
-            if(activeVars.contains(var)) {
-                return true;
+            for(D dep : activeVars.get(var)) {
+                if(!excludedDepList.contains(dep)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -250,34 +258,52 @@ public class Unifier implements IUnifier, Serializable {
     /**
      * Add variables in term to active set.
      */
-    public void addActive(ITerm term) {
+    public void addActive(ITerm term, D dep) {
         for(ITermVar var : find(term).getVars()) {
-            activeVars.add(var);
+            if(frozenVars.contains(var)) {
+                throw new IllegalArgumentException("Re-activating frozen " + var);
+            }
+            activeVars.put(var, dep);
         }
     }
 
     /**
      * Remove variables in term from active set.
      */
-    public void removeActive(ITerm term) {
+    public void removeActive(ITerm term, D dep) {
         for(ITermVar var : find(term).getVars()) {
-            activeVars.remove(var);
+            activeVars.remove(var, dep);
         }
     }
 
-    public Iterable<ITermVar> getActiveVars() {
-        return Collections.unmodifiableSet(activeVars.elementSet());
+    public Set<ITermVar> getActiveVars() {
+        return Collections.unmodifiableSet(activeVars.keySet());
     }
 
     private void updateActive(ITermVar var, ITerm term) {
-        if(!activeVars.contains(var)) {
-            // return;
+        if(frozenVars.contains(var)) {
+            throw new IllegalArgumentException("Updating frozen " + var);
         }
-        int n = activeVars.count(var);
-        for(ITermVar v : term.getVars()) {
-            activeVars.add(v, n);
+        if(!activeVars.containsKey(var)) {
+            return;
         }
-        activeVars.remove(var, n);
+        final Set<D> n = activeVars.get(var);
+        for(ITermVar newVar : term.getVars()) {
+            if(frozenVars.contains(newVar)) {
+                throw new IllegalArgumentException("Re-activating frozen " + newVar + " on update of " + var);
+            }
+            activeVars.putAll(newVar, n);
+        }
+        activeVars.removeAll(var);
+    }
+
+    public void freeze(ITerm term) {
+        for(ITermVar var : find(term).getVars()) {
+            if(activeVars.containsKey(var)) {
+                throw new IllegalArgumentException("Freezing active " + var);
+            }
+            frozenVars.add(var);
+        }
     }
 
 }

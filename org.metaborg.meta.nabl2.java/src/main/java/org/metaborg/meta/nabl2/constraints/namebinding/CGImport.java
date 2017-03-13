@@ -8,6 +8,8 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.pcollections.PSet;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -21,6 +23,10 @@ public abstract class CGImport implements INamebindingConstraint {
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
+    @Override public PSet<ITermVar> getVars() {
+        return getScope().getVars().plusAll(getReference().getVars());
+    }
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseImport(this);
     }
@@ -29,11 +35,11 @@ public abstract class CGImport implements INamebindingConstraint {
         return cases.caseNamebinding(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
         return cases.caseImport(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T, E> cases) throws E {
         return cases.caseNamebinding(this);
     }
 

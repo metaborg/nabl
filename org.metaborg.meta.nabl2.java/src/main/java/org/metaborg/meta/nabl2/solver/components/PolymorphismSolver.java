@@ -5,15 +5,12 @@ import static org.metaborg.meta.nabl2.util.Unit.unit;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint.CheckedCases;
-import org.metaborg.meta.nabl2.constraints.poly.ImmutableCGeneralize;
-import org.metaborg.meta.nabl2.constraints.poly.ImmutableCInstantiate;
 import org.metaborg.meta.nabl2.poly.Forall;
 import org.metaborg.meta.nabl2.poly.ImmutableForall;
 import org.metaborg.meta.nabl2.poly.ImmutableTypeVar;
@@ -27,6 +24,8 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -53,35 +52,21 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     }
 
     @Override protected Iterable<IPolyConstraint> doFinish(IMessageInfo messageInfo) {
-        return defered.stream().map(this::find).collect(Collectors.toList());
-    }
-
-    private IPolyConstraint find(IPolyConstraint constraint) {
-        return constraint.match(IPolyConstraint.Cases.of(
-            // @formatter:off
-            gen -> ImmutableCGeneralize.of(
-                        unifier().find(gen.getScheme()),
-                        unifier().find(gen.getType()),
-                        gen.getMessageInfo().apply(unifier()::find)),
-            inst -> ImmutableCInstantiate.of(
-                        unifier().find(inst.getType()),
-                        unifier().find(inst.getScheme()),
-                        inst.getMessageInfo().apply(unifier()::find))
-            // @formatter:on
-        ));
+        return defered;
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
     private Unit add(CGeneralize gen) throws UnsatisfiableException {
+        unifier().addActive(gen.getScheme(), gen);
         defered.add(gen);
-        unifier().addActive(gen.getScheme());
         return unit;
     }
 
     private Unit add(CInstantiate inst) throws UnsatisfiableException {
+        unifier().addActive(inst.getType(), inst);
+        unifier().addActive(inst.getScheme(), inst);
         defered.add(inst);
-        unifier().addActive(inst.getType());
         return unit;
     }
 
@@ -99,9 +84,11 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         if(unifier().isActive(type)) {
             return false;
         }
+        unifier().freeze(type);
         ITerm scheme = generalize(type);
         try {
-            unifier().removeActive(gen.getScheme());
+            unifier().removeActive(gen.getScheme(), gen); // before `unify`, so that we don't cause an error chain if
+                                                          // that fails
             unifier().unify(gen.getScheme(), scheme);
         } catch(UnificationException ex) {
             throw new UnsatisfiableException(gen.getMessageInfo().withDefault(ex.getMessageContent()));
@@ -110,7 +97,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     }
 
     private ITerm generalize(ITerm type) {
-        Map<ITermVar, TypeVar> subst = Maps.newHashMap();
+        BiMap<ITermVar, TypeVar> subst = HashBiMap.create();
         int c = 0;
         for(ITermVar var : type.getVars()) {
             subst.put(var, ImmutableTypeVar.of("T" + (++c)));
@@ -123,13 +110,21 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         if(!complete) {
             return false;
         }
-        ITerm schemeTerm = unifier().find(inst.getScheme());
-        if(unifier().isActive(schemeTerm)) {
+        ITerm scheme = unifier().find(inst.getScheme());
+        if(unifier().isActive(scheme, inst)) {
             return false;
         }
-        ITerm type = Forall.matcher().match(schemeTerm).map(scheme -> instantiate(scheme)).orElse(schemeTerm);
+        unifier().removeActive(scheme, inst);
+        final Optional<Forall> forall = Forall.matcher().match(scheme);
+        final ITerm type;
+        if(forall.isPresent()) {
+            type = instantiate(forall.get());
+        } else {
+            type = scheme;
+        }
         try {
-            unifier().removeActive(inst.getType());
+            unifier().removeActive(inst.getType(), inst); // before `unify`, so that we don't cause an error chain if
+                                                          // that fails
             unifier().unify(inst.getType(), type);
         } catch(UnificationException ex) {
             throw new UnsatisfiableException(inst.getMessageInfo().withDefault(ex.getMessageContent()));

@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
@@ -9,7 +10,6 @@ import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.CheckedPredicate1;
 import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.time.AggregateTimer;
 
 public abstract class SolverComponent<C extends IConstraint> {
@@ -22,7 +22,7 @@ public abstract class SolverComponent<C extends IConstraint> {
         this.timer = new AggregateTimer();
     }
 
-    final protected Unifier unifier() {
+    final protected Unifier<IConstraint> unifier() {
         return solver.unifier;
     }
 
@@ -91,7 +91,7 @@ public abstract class SolverComponent<C extends IConstraint> {
     }
 
     protected Iterable<? extends C> doFinish(IMessageInfo messageInfo) throws InterruptedException {
-        return Iterables2.empty();
+        return Collections.emptySet();
     }
 
 }

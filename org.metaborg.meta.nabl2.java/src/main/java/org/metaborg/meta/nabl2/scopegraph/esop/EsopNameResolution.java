@@ -118,20 +118,22 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private EsopEnv<S, L, O> env(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re,
         S scope) {
-        if(seenScopes.contains(scope) || re.isEmpty()) {
-            return EsopEnv.empty(true);
-        }
         if(scopeGraph.isScopeActive(scope)) {
             return EsopEnv.empty(false);
         }
+        if(seenScopes.contains(scope) || re.isEmpty()) {
+            return EsopEnv.empty(true);
+        }
+        scopeGraph.freezeScope(scope);
         return env_L(labels, seenImports, seenScopes, lt, re, scope);
     }
 
     private EsopEnv<S, L, O> env_l(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
         S scope) {
-        if(scopeGraph.isScopeActive(scope, l)) {
+        if(scopeGraph.isEdgeActive(scope, l)) {
             return EsopEnv.empty(false);
         }
+        scopeGraph.freezeEdge(scope, l);
         return l.getName().equals("D") ? env_D(seenImports, seenScopes, lt, re, l, scope)
             : env_nonD(seenImports, seenScopes, lt, re, l, scope);
     }
@@ -184,7 +186,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 return Optional.empty();
             }
             for(IPath<S, L, O> path : paths.get()) {
-                for(S nextScope : scopeGraph.getAssocEdges().get(path.getDeclaration(), l)) {
+                O decl = path.getDeclaration();
+                scopeGraph.freezeEdge(decl, l);
+                for(S nextScope : scopeGraph.getAssocEdges().get(decl, l)) {
                     EsopEnv<S, L, O> env = getter.apply(nextScope);
                     env.map(p -> Paths.named(scope, l, ref, path, p));
                     envs.add(env);

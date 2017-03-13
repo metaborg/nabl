@@ -16,6 +16,9 @@ public class Fresh implements Serializable {
     }
 
     public String fresh(String base) {
+        // to prevent accidental name clashes, ensure the base contains no dashes,
+        // and then use dashes as our connecting character.
+        base = base.replaceAll("-", "_");
         int k = counters.getOrDefault(base, 0) + 1;
         counters.put(base, k);
         return base + "-" + k;

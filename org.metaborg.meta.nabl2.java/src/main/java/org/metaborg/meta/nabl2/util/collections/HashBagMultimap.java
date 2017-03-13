@@ -1,8 +1,10 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
@@ -18,14 +20,35 @@ public class HashBagMultimap<K, V> implements BagMultimap<K, V>, Serializable {
         this.data = data;
     }
 
+    @Override public Set<K> keySet() {
+        return data.keySet();
+    }
+
     @Override public void put(K key, V value) {
         data.computeIfAbsent(key, k -> HashMultiset.create()).add(value);
     }
 
-    @Override public void remove(K key, V value) {
+    @Override public void putAll(K key, Collection<V> values) {
+        data.computeIfAbsent(key, k -> HashMultiset.create()).addAll(values);
+    }
+
+    @Override public boolean remove(K key, V value) {
         if(data.containsKey(key)) {
-            data.get(key).remove(value);
+            return data.get(key).remove(value);
         }
+        return false;
+    }
+
+    @Override public boolean removeAll(K key) {
+        Multiset<V> elems = data.remove(key);
+        return elems != null && !elems.isEmpty();
+    }
+
+    @Override public boolean removeAll(K key, Collection<V> values) {
+        if(data.containsKey(key)) {
+            return data.get(key).removeAll(values);
+        }
+        return false;
     }
 
     @Override public boolean containsKey(K key) {

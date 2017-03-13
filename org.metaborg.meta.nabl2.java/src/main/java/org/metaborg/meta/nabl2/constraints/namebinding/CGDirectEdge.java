@@ -8,6 +8,8 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.pcollections.PSet;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -18,6 +20,10 @@ public abstract class CGDirectEdge implements INamebindingConstraint {
     @Value.Parameter public abstract Label getLabel();
 
     @Value.Parameter public abstract ITerm getTargetScope();
+
+    @Override public PSet<ITermVar> getVars() {
+        return getSourceScope().getVars().plusAll(getTargetScope().getVars());
+    }
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
