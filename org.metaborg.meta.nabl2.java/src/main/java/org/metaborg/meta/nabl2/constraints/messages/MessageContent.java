@@ -19,7 +19,7 @@ public abstract class MessageContent implements IMessageContent {
     @Override public abstract MessageContent apply(Function1<ITerm, ITerm> f);
 
     @Override public IMessageContent withDefault(IMessageContent defaultContent) {
-        return ImmutableCompoundMessage.of(Iterables2.from(this, of(" ("), defaultContent, of(")")));
+        return this;
     }
 
     @Value.Immutable
