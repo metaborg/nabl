@@ -35,11 +35,11 @@ exports:
 - language: EditorService
   directory: src-gen
   includes: "**/*.esv"
-placeholder:
-  prefix: "$"
 language:
   sdf:
     sdf2table: c
+    placeholder:
+      prefix: "$"
   stratego:
     format: ctree
     args:
