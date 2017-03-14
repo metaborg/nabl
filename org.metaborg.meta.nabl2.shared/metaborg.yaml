@@ -8,7 +8,6 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
   source:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
-pretty-print: NaBL2
 exports:
 - language: ATerm
   directory: src-gen/syntax
@@ -30,6 +29,7 @@ exports:
 language:
   sdf:
     sdf2table: c
+    pretty-print: NaBL2
   stratego:
     format: ctree
     args:
