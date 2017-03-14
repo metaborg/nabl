@@ -9,6 +9,7 @@ imports
   signatures/nabl2/shared/constraints/-
   generation/nabl2/lang/cgen/-
   generation/nabl2/lang/-
+  nabl2/lang/generation/-
   nabl2/lang/util/-
  
 rules
