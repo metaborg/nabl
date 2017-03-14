@@ -17,15 +17,15 @@ context-free syntax
   VarOrWld  = Wld
 
   Pattern          = VarOrWld
-  Pattern.List     = <[<{Pattern ","}*>]>
-  Pattern.ListTail = <[<{Pattern ","}*>|<Pattern>]>
-  Pattern.Tuple    = <(<{Pattern ","}*>)>
+  Pattern.List     = <[<{Pattern ", "}*>]>
+  Pattern.ListTail = <[<{Pattern ", "}*> | <Pattern>]>
+  Pattern.Tuple    = <(<{Pattern ", "}*>)>
   Pattern.As       = <<VarOrWld>@<Pattern>>
   Pattern          = OpTerm
   Pattern          = IntTerm
   Pattern          = StringTerm
 
-  Patterns         = {Pattern ","}*
+  Patterns         = {Pattern ", "}*
 
 context-free syntax
 

@@ -9,7 +9,7 @@ context-free syntax
   Module.Module = <
     module <ModuleId>
 
-    <{ModuleSection "\n"}*>
+    <{ModuleSection "\n\n"}*>
   >
  
   ModuleSection.Imports = <

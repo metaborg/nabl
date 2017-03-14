@@ -16,7 +16,7 @@ context-free syntax
       <{CGenSig "\n"}*>
   >
   
-  CGenSig.CGenSig = <<RuleName> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
+  CGenSig.CGenSig = <<RuleName>[[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
  
   CGenSigParams   = <^ (<{SortRef ","}*>)>
 
