@@ -21,14 +21,12 @@ public class HashRelation2<K, V> implements IRelation2.Mutable<K, V>, Serializab
         return new HashRelation2<>(bwd, fwd);
     }
 
-    @Override public void put(K key, V value) {
-        fwd.put(key, value);
-        bwd.put(value, key);
+    @Override public boolean put(K key, V value) {
+        return fwd.put(key, value) || bwd.put(value, key);
     }
 
-    @Override public void remove(K key, V value) {
-        fwd.remove(key, value);
-        bwd.remove(value, key);
+    @Override public boolean remove(K key, V value) {
+        return fwd.remove(key, value) || bwd.remove(value, key);
     }
 
     @Override public boolean containsKey(K key) {

@@ -9,7 +9,7 @@ public interface IRelation3<K, L, V> {
     ISet<K> keySet();
 
     ISet<V> valueSet();
-    
+
     boolean containsKey(K key);
 
     boolean containsEntry(K key, L label, V value);
@@ -22,9 +22,9 @@ public interface IRelation3<K, L, V> {
 
     interface Mutable<K, L, V> extends IRelation3<K, L, V> {
 
-        void put(K key, L label, V value);
+        boolean put(K key, L label, V value);
 
-        void remove(K key, L label, V value);
+        boolean remove(K key, L label, V value);
 
     }
 
