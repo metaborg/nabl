@@ -13,9 +13,9 @@ import org.pcollections.PSet;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CGImport implements INamebindingConstraint {
+public abstract class CGImport<S extends ITerm> implements INamebindingConstraint {
 
-    @Value.Parameter public abstract ITerm getScope();
+    @Value.Parameter public abstract S getScope();
 
     @Value.Parameter public abstract Label getLabel();
 

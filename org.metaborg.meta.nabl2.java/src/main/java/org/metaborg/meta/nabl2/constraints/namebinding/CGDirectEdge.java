@@ -13,9 +13,9 @@ import org.pcollections.PSet;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CGDirectEdge implements INamebindingConstraint {
+public abstract class CGDirectEdge<S extends ITerm> implements INamebindingConstraint {
 
-    @Value.Parameter public abstract ITerm getSourceScope();
+    @Value.Parameter public abstract S getSourceScope();
 
     @Value.Parameter public abstract Label getLabel();
 
