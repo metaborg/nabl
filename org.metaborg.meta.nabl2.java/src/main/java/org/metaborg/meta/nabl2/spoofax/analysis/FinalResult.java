@@ -12,11 +12,11 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 @Serial.Version(value = 42L)
 public abstract class FinalResult {
 
-    public abstract Optional<ITerm> getCustomResult();
+    @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 
-    public abstract FinalResult setCustomResult(Optional<ITerm> customResult);
+    public abstract FinalResult setCustomResult(Optional<? extends ITerm> customResult);
 
-    public static IMatcher<ImmutableFinalResult> matcher() {
+    public static IMatcher<FinalResult> matcher() {
         return M.appl0("FinalResult", (t) -> {
             return ImmutableFinalResult.of();
         });

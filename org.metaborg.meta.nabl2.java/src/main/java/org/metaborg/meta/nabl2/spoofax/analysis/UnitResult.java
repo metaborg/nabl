@@ -18,11 +18,11 @@ public abstract class UnitResult {
 
     @Value.Parameter public abstract Iterable<IConstraint> getConstraints();
 
-    public abstract Optional<ITerm> getCustomResult();
+    @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 
-    public abstract UnitResult setCustomResult(Optional<ITerm> customResult);
+    public abstract UnitResult setCustomResult(Optional<? extends ITerm> customResult);
 
-    public static IMatcher<ImmutableUnitResult> matcher() {
+    public static IMatcher<UnitResult> matcher() {
         return M.appl2("UnitResult", M.term(), M.listElems(Constraints.matcher()), (t, ast, constraints) -> {
             return ImmutableUnitResult.of(ast, constraints);
         });

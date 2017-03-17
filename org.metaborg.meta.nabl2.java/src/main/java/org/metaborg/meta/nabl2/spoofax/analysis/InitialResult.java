@@ -21,15 +21,15 @@ public abstract class InitialResult {
 
     @Value.Parameter public abstract SolverConfig getConfig();
 
-    public abstract Optional<ITerm> getCustomResult();
+    @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 
-    public abstract InitialResult setCustomResult(Optional<ITerm> customResult);
+    public abstract InitialResult setCustomResult(Optional<? extends ITerm> customResult);
 
-    public static IMatcher<ImmutableInitialResult> matcher() {
-        return M.appl3("InitialResult", M.listElems(Constraints.matcher()), Args.matcher(), SolverConfig.matcher(), (t, constraints,
-                args, config) -> {
-            return ImmutableInitialResult.of(constraints, args, config);
-        });
+    public static IMatcher<InitialResult> matcher() {
+        return M.appl3("InitialResult", M.listElems(Constraints.matcher()), Args.matcher(), SolverConfig.matcher(),
+            (t, constraints, args, config) -> {
+                return ImmutableInitialResult.of(constraints, args, config);
+            });
     }
 
 }
