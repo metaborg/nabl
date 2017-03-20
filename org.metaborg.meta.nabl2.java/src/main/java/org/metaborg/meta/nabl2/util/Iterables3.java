@@ -2,6 +2,8 @@ package org.metaborg.meta.nabl2.util;
 
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.metaborg.meta.nabl2.util.functions.Function2;
 
@@ -13,9 +15,9 @@ public class Iterables3 {
 
         private final Iterable<? extends T1> ts1;
         private final Iterable<? extends T2> ts2;
-        private final Function2<T1,T2,R> f;
+        private final Function2<T1, T2, R> f;
 
-        public Zip2Iterable(Iterable<? extends T1> ts1, Iterable<? extends T2> ts2, Function2<T1,T2,R> f) {
+        public Zip2Iterable(Iterable<? extends T1> ts1, Iterable<? extends T2> ts2, Function2<T1, T2, R> f) {
             this.ts1 = ts1;
             this.ts2 = ts2;
             this.f = f;
@@ -40,17 +42,21 @@ public class Iterables3 {
     }
 
     public static <T1, T2, R> Iterable<R> zip(Iterable<? extends T1> ts1, Iterable<? extends T2> ts2,
-            Function2<T1,T2,R> f) {
-        return new Zip2Iterable<R,T1,T2>(ts1, ts2, f);
+        Function2<T1, T2, R> f) {
+        return new Zip2Iterable<R, T1, T2>(ts1, ts2, f);
     }
 
     public static <T1, T2, R> Optional<Iterable<R>> zipStrict(Iterable<? extends T1> ts1, Iterable<? extends T2> ts2,
-            Function2<T1,T2,R> f) {
-        if (Iterables.size(ts1) != Iterables.size(ts2)) {
+        Function2<T1, T2, R> f) {
+        if(Iterables.size(ts1) != Iterables.size(ts2)) {
             return Optional.empty();
         } else {
-            return Optional.of(new Zip2Iterable<R,T1,T2>(ts1, ts2, f));
+            return Optional.of(new Zip2Iterable<R, T1, T2>(ts1, ts2, f));
         }
+    }
+
+    public static <T> Stream<T> stream(Iterable<T> iterable) {
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
 }

@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 public class HashSet<E> implements ISet.Mutable<E>, Serializable {
 
@@ -23,6 +24,10 @@ public class HashSet<E> implements ISet.Mutable<E>, Serializable {
 
     @Override public void remove(E elem) {
         elems.remove(elem);
+    }
+
+    @Override public Stream<E> stream() {
+        return elems.stream();
     }
 
     @Override public Iterator<E> iterator() {

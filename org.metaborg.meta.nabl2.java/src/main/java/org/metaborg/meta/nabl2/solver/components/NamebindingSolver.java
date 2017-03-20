@@ -27,6 +27,7 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImport;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.RefCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
@@ -64,6 +65,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private final Set<CGDirectEdge<Scope>> incompleteDirectEdges;
     private final Set<CGImport<Scope>> incompleteImportEdges;
     private final Set<INamebindingConstraint> unsolvedChecks;
+
+    private final RefCounter<Scope, Label> scopeCounter;
+    private final RefCounter<Occurrence, Label> assocCounter;
 
     private EsopNameResolution<Scope, Label, Occurrence> nameResolution = null;
 

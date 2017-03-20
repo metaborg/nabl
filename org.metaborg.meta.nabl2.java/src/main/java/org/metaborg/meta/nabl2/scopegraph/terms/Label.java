@@ -19,7 +19,14 @@ import com.google.common.collect.ImmutableList;
 @Serial.Version(value = 42L)
 public abstract class Label extends AbstractApplTerm implements ILabel, IApplTerm {
 
+    private static final String D_OP = "D";
+    private static final String I_OP = "I";
+    private static final String P_OP = "P";
     private static final String OP = "Label";
+
+    public static final Label D = ImmutableLabel.of(D_OP);
+    public static final Label P = ImmutableLabel.of(P_OP);
+    public static final Label I = ImmutableLabel.of(I_OP);
 
     // ILabel implementation
 
@@ -28,24 +35,24 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     // IApplTerm implementation
 
     @Value.Lazy @Override public String getOp() {
-        switch (getName()) {
-        case "D":
-        case "P":
-        case "I":
-            return getName();
-        default:
-            return OP;
+        switch(getName()) {
+            case D_OP:
+            case P_OP:
+            case I_OP:
+                return getName();
+            default:
+                return OP;
         }
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        switch (getName()) {
-        case "D":
-        case "P":
-        case "I":
-            return ImmutableList.of();
-        default:
-            return ImmutableList.of((ITerm) GenericTerms.newString(getName()));
+        switch(getName()) {
+            case D_OP:
+            case P_OP:
+            case I_OP:
+                return ImmutableList.of();
+            default:
+                return ImmutableList.of((ITerm) GenericTerms.newString(getName()));
         }
     }
 
@@ -53,12 +60,12 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
         return matcher(l -> l);
     }
 
-    public static <R> IMatcher<R> matcher(Function1<Label,R> f) {
+    public static <R> IMatcher<R> matcher(Function1<Label, R> f) {
         return M.cases(
             // @formatter:off
-            M.appl0("D", (t) -> f.apply(ImmutableLabel.of("D"))),
-            M.appl0("P", (t) -> f.apply(ImmutableLabel.of("P"))),
-            M.appl0("I", (t) -> f.apply(ImmutableLabel.of("I"))),
+            M.appl0(D_OP, (t) -> f.apply(ImmutableLabel.of(D_OP))),
+            M.appl0(P_OP, (t) -> f.apply(ImmutableLabel.of(P_OP))),
+            M.appl0(I_OP, (t) -> f.apply(ImmutableLabel.of(I_OP))),
             M.appl1(OP, M.stringValue(), (t,l) -> f.apply(ImmutableLabel.of(l)))
             // @formatter:on
         );

@@ -24,19 +24,26 @@ public class HashFunction<K, V> implements IFunction.Mutable<K, V>, Serializable
         return new HashInverseFunction<>(bwd, fwd);
     }
 
-    @Override public void put(K key, V value) {
-        if(fwd.containsKey(key) && !value.equals(fwd.get(key))) {
-            throw new IllegalArgumentException("Already in domain.");
+    @Override public boolean put(K key, V value) {
+        if(fwd.containsKey(key)) {
+            if(value.equals(fwd.get(key))) {
+                return false;
+            } else {
+                throw new IllegalArgumentException("Already in domain.");
+            }
         }
         fwd.put(key, value);
         bwd.put(value, key);
+        return true;
     }
 
-    @Override public void remove(K key) {
+    @Override public boolean remove(K key) {
         V value = fwd.remove(key);
         if(value != null) {
             bwd.remove(value, key);
+            return true;
         }
+        return false;
     }
 
     @Override public boolean containsKey(K key) {

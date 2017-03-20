@@ -46,16 +46,22 @@ public class Unifier<D> implements IUnifier, Serializable {
      */
     public ITerm find(ITerm term) {
         // @formatter:off
-        return term.match(Terms.<ITerm>casesFix(
-            (tf, appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> arg.match(tf)).collect(Collectors.toList()), appl.getAttachments()),
-            (tf, list) -> list.match(ListTerms.<IListTerm>casesFix(
-                (lf, cons) -> GenericTerms.newCons(cons.getHead().match(tf), cons.getTail().match(lf), cons.getAttachments()),
-                (lf, nil) -> nil,
-                (lf, var) -> (IListTerm) findVarRep(var)
-            )),
-            (tf, string) -> string,
-            (tf, integer) -> integer,
-            (tf, var) -> findVarRep(var)
+        return term.isGround() ? term : term.match(Terms.<ITerm>cases(
+            (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(this::find).collect(Collectors.toList()), appl.getAttachments()),
+            (list) -> find(list),
+            (string) -> string,
+            (integer) -> integer,
+            (var) -> findVarRep(var)
+        ));
+        // @formatter:on
+    }
+
+    public IListTerm find(IListTerm list) {
+        // @formatter:off
+        return list.isGround() ? list : list.match(ListTerms.<IListTerm>cases(
+            (cons) -> GenericTerms.newCons(find(cons.getHead()), find(cons.getTail()), cons.getAttachments()),
+            (nil) -> nil,
+            (var) -> (IListTerm) findVarRep(var)
         ));
         // @formatter:on
     }

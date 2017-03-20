@@ -18,9 +18,9 @@ public interface IInverseFunction<K, V> {
 
     interface Mutable<K, V> extends IInverseFunction<K, V> {
 
-        void put(K key, V value);
+        boolean put(K key, V value);
 
-        void remove(K key, V value);
+        boolean remove(K key, V value);
 
     }
 

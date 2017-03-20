@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
-import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
+import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -26,7 +26,7 @@ public class SG_get_ast_resolution extends ScopeGraphPrimitive {
                 List<ITerm> entries = Lists.newArrayList();
                 for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
                     if (ref.getIndex().equals(index)) {
-                        for (Occurrence decl : Paths.pathsToDecls(s.getNameResolution().resolve(ref))) {
+                        for (Occurrence decl : Paths.resolutionPathsToDecls(s.getNameResolution().resolve(ref))) {
                             entries.add(GenericTerms.newTuple(ref, decl.getName()));
                         }
                     }

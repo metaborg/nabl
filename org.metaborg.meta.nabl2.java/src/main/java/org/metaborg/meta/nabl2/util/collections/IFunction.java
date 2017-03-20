@@ -20,9 +20,9 @@ public interface IFunction<K, V> {
 
     interface Mutable<K, V> extends IFunction<K, V> {
 
-        void put(K key, V value);
+        boolean put(K key, V value);
 
-        void remove(K key);
+        boolean remove(K key);
 
     }
 

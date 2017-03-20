@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
-import org.metaborg.meta.nabl2.scopegraph.IPath;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
-import org.metaborg.meta.nabl2.scopegraph.terms.Paths;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.terms.IListTerm;
@@ -79,9 +79,9 @@ public class InterpreterTerms {
     private static ITerm nameresolution(INameResolution<Scope, Label, Occurrence> nameResolution) {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence ref : nameResolution.getAllRefs()) {
-            List<IPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));
+            List<IResolutionPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));
             if(paths.size() == 1) {
-                IPath<Scope, Label, Occurrence> path = paths.get(0);
+                IResolutionPath<Scope, Label, Occurrence> path = paths.get(0);
                 ITerm value = GenericTerms.newTuple(path.getDeclaration(), Paths.toTerm(path));
                 entries.put(ref, value);
             } else {

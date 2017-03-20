@@ -23,17 +23,23 @@ public class HashInverseFunction<K, V> implements IInverseFunction.Mutable<K, V>
         return new HashFunction<>(bwd, fwd);
     }
 
-    @Override public void put(K key, V value) {
+    @Override public boolean put(K key, V value) {
         if(bwd.containsKey(value)) {
             throw new IllegalArgumentException();
         }
-        fwd.put(key, value);
-        bwd.put(value, key);
+        if(fwd.put(key, value)) {
+            bwd.put(value, key);
+            return true;
+        }
+        return false;
     }
 
-    @Override public void remove(K key, V value) {
-        fwd.remove(key, value);
-        bwd.remove(value);
+    @Override public boolean remove(K key, V value) {
+        if(fwd.remove(key, value)) {
+            bwd.remove(value);
+            return true;
+        }
+        return false;
     }
 
     @Override public boolean containsKey(K key) {
