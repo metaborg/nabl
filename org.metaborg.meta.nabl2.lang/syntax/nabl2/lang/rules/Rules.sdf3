@@ -15,7 +15,7 @@ context-free syntax
   ModuleSection.Rules = <
     rules
  
-      <{Rule "\n"}*>
+      <{Rule "\n\n"}*>
   > {longest-match}
 
   RuleName.NoName      =
