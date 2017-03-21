@@ -38,7 +38,7 @@
     <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>org.metaborg.meta.lang.spt</artifactId>
-      <version>${metaborg-baseline-version}</version>
+      <version>${metaborg-version}</version>
       <type>spoofax-language</type>
       <scope>test</scope>
     </dependency>
