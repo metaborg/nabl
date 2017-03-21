@@ -15,8 +15,8 @@ template options
 
 context-free syntax
 
-  CVar.Var  = VarId
-  CVar.CWld = <_>
+  CVar.Var = VarId
+  CVar.Wld = <_>
 
 syntax
 
@@ -24,8 +24,8 @@ syntax
 
 context-free syntax
 
-  CTerms           = {CTerm ","}*
+  CTerms      = {CTerm ","}*
 
-  CTerm.Tuple      = <(<{CTerm ","}*>)>
-  CTerm            = IntTerm
-  CTerm            = StringTerm
+  CTerm.Tuple = <(<{CTerm ","}*>)>
+  CTerm       = IntTerm
+  CTerm       = StringTerm

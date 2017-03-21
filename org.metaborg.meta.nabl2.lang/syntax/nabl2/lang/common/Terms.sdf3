@@ -20,7 +20,7 @@ context-free syntax
   Pattern.List     = <[<{Pattern ","}*>]>
   Pattern.ListTail = <[<{Pattern ","}*>|<Pattern>]>
   Pattern.Tuple    = <(<{Pattern ","}*>)>
-  Pattern.As       = <<VarOrWld>@<Pattern>>
+  Pattern.As       = <<Var>@<Pattern>>
   Pattern          = OpTerm
   Pattern          = IntTerm
   Pattern          = StringTerm

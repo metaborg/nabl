@@ -22,12 +22,12 @@ context-free syntax
 
   FunctionDef.FunctionDef = <<Function> <FunctionType> <FunctionCases>>
 
-  FunctionType          = [: [SortRef] -> [SortRef]]
+  FunctionType  = [: [SortRef] -> [SortRef]]
 
-  FunctionCases      = <{<{FunctionCase ","}*>}>
-  FunctionCases      = {ast("[]")}
+  FunctionCases = <{<{FunctionCase ","}*>}>
+  FunctionCases = {ast("[]")}
  
-  FunctionCase       = [[CTerm] -> [CTerm]]
+  FunctionCase  = [[CTerm] -> [CTerm]]
 
 lexical syntax
 

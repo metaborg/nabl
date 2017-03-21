@@ -17,6 +17,7 @@ rules
 
   normalize =
     normalize-axioms;
+    normalize-wildcards;
     normalize-types;
     normalize-regex;
     normalize-constructors;
@@ -41,6 +42,20 @@ rules
   normalize-axiom:
     CGenMatchRuleNoConstraint(name,pattern,params,type)
       -> CGenMatchRule(name,pattern,params,type, [])
+
+rules
+
+  normalize-wildcards =
+    try(sometd(
+      Rules(map(wlds-to-vars))
+    + Functions(map(FunctionDef(id,id,map(wlds-to-vars))))
+    ))
+
+  wlds-to-vars = {| NextVar:
+    with(var-counter := <new-counter>);
+    rules(NextVar: _ -> Var($[nabl2_wld[<next-counter;int-to-string> var-counter]]));
+    topdown(try(\ Wld() -> <debug;NextVar;debug> \))
+  |}
 
 rules
 
