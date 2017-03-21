@@ -116,6 +116,8 @@ rules
 
   normalize-new-scope = CGenMatchRule(id,id,id,id,normalize-new-scope-clauses)
 
+  normalize-new-scope = FunDef(id,id,normalize-new-scope-clauses)
+
   normalize-new-scope-clauses: clause* -> [scope-clause*,other-clause*]
     where (new-scopes*@[_|_],other-clause*) := <partition(\ NewScopes(s*) -> s* \)> clause*
     with scope-clause* := <concat;map(\ s -> CEqual(s,NewScope(<var-name> s),DefaultMessage()) \)> new-scopes*
