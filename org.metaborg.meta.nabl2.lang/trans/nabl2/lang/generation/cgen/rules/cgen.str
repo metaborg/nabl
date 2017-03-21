@@ -47,7 +47,7 @@ rules
   rule-to-str:
     CGenMatchRule(Name(name),pattern,params,type,clause*)
       -> RDefT(<rule-name> name,[],[<source-var>,<args-var>],
-           Rule(pattern, <constraint-var>, strclause*))
+           Rule(As(<term-var>,pattern), <constraint-var>, strclause*))
     with
       pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
       (str*,constraint*) := <clauses-to-str> clause*;
@@ -136,13 +136,6 @@ rules
     partition(clause-to-str);
     (map(!With(<id>)),id)
 
-  clause-to-str:
-    NewScopes(v*) -> str
-    with str := <mapseq({\
-                   v -> |[ ~v := <nabl2--new-scope(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
-                   with n := Str(<var-name> v)
-                 \})> v*
- 
   clause-to-str:
     NewVars(v*) -> str
     with str := <mapseq({\

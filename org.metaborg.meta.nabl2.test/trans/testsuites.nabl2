@@ -9,11 +9,11 @@ signature
   functions
   
     projectFirst: Term -> Term {
-      (fst, snd) -> fst
+      (fst, _) -> fst
     }
 
     projectSecond: Term -> Term {
-      (fst, snd) -> snd
+      (_, snd) -> snd
     }
 
 rules

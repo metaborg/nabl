@@ -10,3 +10,4 @@ context-free syntax
 
   // not for parsing, just used in normalization and term explosion
   InjectionPlaceholder.NAMEWithOrigin = "NAME"
+  InjectionPlaceholder.NewScope = <new scope <CVar>>

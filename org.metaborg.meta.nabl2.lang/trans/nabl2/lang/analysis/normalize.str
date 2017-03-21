@@ -21,9 +21,8 @@ rules
     normalize-types;
     normalize-regex;
     normalize-constructors;
-    normalize-term-matches;
-    normalize-type-matches;
-    normalize-list-matches;
+    normalize-arg-matches;
+    normalize-new-scopes;
     normalize-rule-vars;
     normalize-constraints;
     normalize-messages;
@@ -54,7 +53,7 @@ rules
   wlds-to-vars = {| NextVar:
     with(var-counter := <new-counter>);
     rules(NextVar: _ -> Var($[nabl2_wld[<next-counter;int-to-string> var-counter]]));
-    topdown(try(\ Wld() -> <debug;NextVar;debug> \))
+    topdown(try(\ Wld() -> <NextVar> \))
   |}
 
 rules
@@ -100,16 +99,7 @@ rules
 
 rules
 
-  normalize-term-matches = try(sometd(normalize-term-match))
-
-  // capture the matched term
-  normalize-term-match:
-    CGenMatchRule(name,pattern,params,type,clause*)
-      -> CGenMatchRule(name,As(<term-var>, pattern),params,type,clause*)
-
-rules
-
-  normalize-type-matches = try(sometd(normalize-type-match))
+  normalize-arg-matches = try(sometd(normalize-type-match))
 
   // replace type terms with a variable and an equality constraint
   normalize-type-match:
@@ -120,14 +110,15 @@ rules
 
 rules
 
-  normalize-list-matches =
-    bottomup(try(normalize-list-match))
+  normalize-new-scopes = try(sometd(normalize-new-scope))
 
-  normalize-list-match:
-    ListTail(xs*,ListTail(ys*,tl)) -> ListTail([xs*,ys*],tl)
- 
-  normalize-list-match:
-    ListTail(xs*,List(ys*)) -> List([xs*,ys*])
+  normalize-new-scope = CGenInitRule(id,id,normalize-new-scope-clauses)
+
+  normalize-new-scope = CGenMatchRule(id,id,id,id,normalize-new-scope-clauses)
+
+  normalize-new-scope-clauses: clause* -> [scope-clause*,other-clause*]
+    where (new-scopes*@[_|_],other-clause*) := <partition(\ NewScopes(s*) -> s* \)> clause*
+    with scope-clause* := <concat;map(\ s -> CEqual(s,NewScope(<var-name> s),DefaultMessage()) \)> new-scopes*
 
 rules
 
