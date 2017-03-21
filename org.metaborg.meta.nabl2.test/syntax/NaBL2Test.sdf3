@@ -6,6 +6,7 @@ imports
   testsuites/Base
   testsuites/CGen
   testsuites/Equality
+  testsuites/Functions
   testsuites/NameResolution
   testsuites/KnownProblems
 

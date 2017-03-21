@@ -1,0 +1,9 @@
+module functions
+
+language NaBL2Test
+
+//-------------------------------
+
+test pair projection function [[
+  pair projection function
+]] 0 error

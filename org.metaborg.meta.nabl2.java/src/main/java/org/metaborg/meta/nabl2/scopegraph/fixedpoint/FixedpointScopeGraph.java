@@ -10,15 +10,12 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.util.collections.BagMultimap;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
 import org.metaborg.meta.nabl2.util.collections.HashRelation3;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multiset;
 import com.google.common.collect.Queues;
 
 public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
@@ -32,8 +29,6 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
 
     private final IPathResolver<S, L, O> resolver;
 
-    private final Map<S, Boolean> scopeActive;
-
     public FixedpointScopeGraph(IPathResolver<S, L, O> resolver) {
         this.decls = HashFunction.create();
         this.refs = HashFunction.create();
@@ -41,7 +36,6 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
         this.exports = HashRelation3.create();
         this.imports = HashRelation3.create();
         this.resolver = resolver;
-        this.scopeActive = Maps.newHashMap();
     }
 
     // ------------------------------------------------------------

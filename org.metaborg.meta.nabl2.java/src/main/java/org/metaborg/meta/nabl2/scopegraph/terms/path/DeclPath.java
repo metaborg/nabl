@@ -6,7 +6,9 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
+import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
+import org.metaborg.util.iterators.Iterables2;
 import org.pcollections.PSequence;
 import org.pcollections.PSet;
 
@@ -30,4 +32,8 @@ abstract class DeclPath<S extends IScope, L extends ILabel, O extends IOccurrenc
         return getPath().getLabels();
     }
 
+    @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
+        return Iterables2.empty();
+    }
+    
 }

@@ -4,6 +4,18 @@ imports
 
   testsuites/-
 
+signature
+
+  functions
+  
+    projectFirst: Term -> Term {
+      (fst, snd) -> fst
+    }
+
+    projectSecond: Term -> Term {
+      (fst, snd) -> snd
+    }
+
 rules
 
   init ^ ().

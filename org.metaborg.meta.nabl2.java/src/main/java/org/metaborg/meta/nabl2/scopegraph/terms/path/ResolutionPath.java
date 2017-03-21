@@ -45,4 +45,8 @@ abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOcc
         return getPath().getLabels();
     }
 
+    @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
+        return getPath().getImportPaths();
+    }
+    
 }

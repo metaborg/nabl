@@ -2,7 +2,8 @@
 id: org.metaborg:org.metaborg.meta.nabl2.test:${metaborgVersion}
 name: NaBL2Test
 metaborgVersion: 2.2.0-SNAPSHOT
-metaborgBaselineVersion: 2.1.0
+metaborgBaselineVersion: 2.2.0-SNAPSHOT
+#metaborgBaselineVersion: 2.1.0
 dependencies:
   compile:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}

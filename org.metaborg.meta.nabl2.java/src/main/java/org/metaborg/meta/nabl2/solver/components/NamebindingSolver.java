@@ -27,7 +27,7 @@ import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImport;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
-import org.metaborg.meta.nabl2.scopegraph.RefCounter;
+import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
@@ -66,8 +66,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private final Set<CGImport<Scope>> incompleteImportEdges;
     private final Set<INamebindingConstraint> unsolvedChecks;
 
-    private final RefCounter<Scope, Label> scopeCounter;
-    private final RefCounter<Occurrence, Label> assocCounter;
+    private final OpenCounter<Scope, Label> scopeCounter;
 
     private EsopNameResolution<Scope, Label, Occurrence> nameResolution = null;
 
@@ -81,6 +80,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         this.incompleteDirectEdges = Sets.newHashSet();
         this.incompleteImportEdges = Sets.newHashSet();
         this.unsolvedChecks = Sets.newHashSet();
+
+        this.scopeCounter = new OpenCounter<>();
     }
 
     public IScopeGraph<Scope, Label, Occurrence> getScopeGraph() {
@@ -97,7 +98,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     public void addActive(Iterable<Scope> scopes) {
         for(Scope scope : scopes) {
-            scopeGraph.addActiveScope(scope);
+            scopeCounter.addAll(scope, params.getLabels().symbols());
         }
     }
 
@@ -118,7 +119,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         progress |= doIterate(incompleteImportEdges, this::solveImportEdge);
         if(!isResolutionStarted() && unsolvedBuilds.isEmpty()) {
             progress |= true;
-            nameResolution = new EsopNameResolution<>(scopeGraph, params);
+            scopeCounter.setComplete();
+            nameResolution = new EsopNameResolution<>(scopeGraph, params, scopeCounter);
         }
         progress |= doIterate(unsolvedChecks, this::solve);
         return progress;
@@ -213,7 +215,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         }
         Scope sourceScope = Scope.matcher().match(sourceScopeTerm)
             .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
-        scopeGraph.addActiveEdge(sourceScope, c.getLabel());
+        scopeCounter.add(sourceScope, c.getLabel());
         CGDirectEdge<Scope> cc =
             ImmutableCGDirectEdge.of(sourceScope, c.getLabel(), c.getTargetScope(), c.getMessageInfo());
         if(!solveDirectEdge(cc)) {
@@ -229,7 +231,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         }
         Scope scope = Scope.matcher().match(scopeTerm)
             .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
-        scopeGraph.addActiveEdge(scope, c.getLabel());
+        scopeCounter.add(scope, c.getLabel());
         CGImport<Scope> cc = ImmutableCGImport.of(scope, c.getLabel(), c.getReference(), c.getMessageInfo());
         if(!solveImportEdge(cc)) {
             incompleteImportEdges.add(cc);
@@ -261,7 +263,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         Scope targetScope = Scope.matcher().match(targetScopeTerm)
             .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
         scopeGraph.addDirectEdge(c.getSourceScope(), c.getLabel(), targetScope);
-        scopeGraph.removeActiveEdge(c.getSourceScope(), c.getLabel());
+        scopeCounter.remove(c.getSourceScope(), c.getLabel());
         return true;
     }
 
@@ -273,7 +275,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         Occurrence ref = Occurrence.matcher().match(refTerm)
             .orElseThrow(() -> new TypeException("Expected an occurrence as third argument to " + c));
         scopeGraph.addImport(c.getScope(), c.getLabel(), ref);
-        scopeGraph.removeActiveEdge(c.getScope(), c.getLabel());
+        scopeCounter.remove(c.getScope(), c.getLabel());
         return true;
     }
 
@@ -296,16 +298,16 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             switch(declarations.size()) {
                 case 0:
                     throw new UnsatisfiableException(r.getMessageInfo()
-                        .withDefault(MessageContent.builder().append(ref).append(" does not resolve.").build()));
+                        .withDefaultContent(MessageContent.builder().append(ref).append(" does not resolve.").build()));
                 case 1:
                     try {
                         unifier().unify(r.getDeclaration(), declarations.get(0));
                     } catch(UnificationException ex) {
-                        throw new UnsatisfiableException(r.getMessageInfo().withDefault(ex.getMessageContent()));
+                        throw new UnsatisfiableException(r.getMessageInfo().withDefaultContent(ex.getMessageContent()));
                     }
                     return true;
                 default:
-                    throw new UnsatisfiableException(r.getMessageInfo().withDefault(MessageContent.builder()
+                    throw new UnsatisfiableException(r.getMessageInfo().withDefaultContent(MessageContent.builder()
                         .append("Resolution of ").append(ref).append(" is ambiguous.").build()));
             }
         } else {
@@ -328,17 +330,17 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         unifier().removeActive(a.getScope(), a); // before `unify`, so that we don't cause an error chain if that fails
         switch(scopes.size()) {
             case 0:
-                throw new UnsatisfiableException(a.getMessageInfo().withDefault(MessageContent.builder().append(decl)
+                throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder().append(decl)
                     .append(" has no ").append(label).append(" associated scope.").build()));
             case 1:
                 try {
                     unifier().unify(a.getScope(), scopes.get(0));
                 } catch(UnificationException ex) {
-                    throw new UnsatisfiableException(a.getMessageInfo().withDefault(ex.getMessageContent()));
+                    throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(ex.getMessageContent()));
                 }
                 return true;
             default:
-                throw new UnsatisfiableException(a.getMessageInfo().withDefault(MessageContent.builder().append(decl)
+                throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder().append(decl)
                     .append(" has multiple ").append(label).append(" associated scope.").build()));
         }
     }
@@ -356,7 +358,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             try {
                 unifier().unify(c.getValue(), prev.get());
             } catch(UnificationException ex) {
-                throw new UnsatisfiableException(c.getMessageInfo().withDefault(ex.getMessageContent()));
+                throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(ex.getMessageContent()));
             }
         }
         return true;

@@ -68,17 +68,4 @@ public class ReachabilityResolution<S extends IScope, L extends ILabel, O extend
         return resolution;
     }
 
-    
-    public boolean isScopeStable(S scope) {
-        return isScopeOpen(scope)
-            && resolver.scopePaths().get(scope).stream().map(Map.Entry::getValue).noneMatch(this::isScopeOpen);
-    }
-
-    public boolean isEdgeStable(S scope, L label) {
-        return isEdgeOpen(scope, label)
-            && resolver.scopePaths().get(scope).stream().filter(e -> e.getKey().getLabels().get(0).equals(label))
-                .map(Map.Entry::getValue).noneMatch(this::isScopeOpen);
-    }
-
-    
 }

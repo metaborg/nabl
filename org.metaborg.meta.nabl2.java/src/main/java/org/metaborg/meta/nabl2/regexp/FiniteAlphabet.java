@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.regexp;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
@@ -24,10 +25,14 @@ public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
     }
 
     @Override public int indexOf(S s) {
-        if (!contains(s)) {
+        if(!contains(s)) {
             throw new IllegalArgumentException("Symbol not in alphabet.");
         }
         return symbols.indexOf(s);
+    }
+
+    @Override public List<S> symbols() {
+        return symbols;
     }
 
 }
