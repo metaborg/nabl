@@ -12,18 +12,18 @@ template options
 syntax
 
   MessageContent-CF.Formatted = "$[" MessageContentPart-CF* "]"
-  MessageContent-CF.Text      = StringTerm-CF
-  MessageContent-CF.Term      = CTerm-CF                                  {avoid}
+  MessageContent-CF           = StringTerm-CF
 
   MessageContentPart-CF.Term  = "[" LAYOUT?-CF CTerm-CF LAYOUT?-CF "]"
-  MessageContentPart-CF.Text  = MessageText-LEX
+  MessageContentPart-CF.Text  = MessageChars-LEX
 
 lexical syntax
 
-  MessageText = ~[\[\]\t\r\n]+
+  MessageChars = MessageChar+
+  MessageChar  = ~[\[\]\\\t\r\n]
+  MessageChar  = "\\[" | "\\]" | "\\\\"
 
 lexical restrictions
 
-  MessageText -/- ~[\[\]]
-  MessageText -/- [\t\r\n]
+  MessageChars -/- ~[\[\]]
 

@@ -42,7 +42,7 @@ rules
   term-to-term(e) = List(map(e))
   term-to-term(e) = ListTail(map(e),e)
   term-to-term(e) = Tuple(map(e))
-  term-to-term(e) = Str(id)
+  term-to-term(e) = Str(unescape-string)
   term-to-term(e) = Int(id)
   
   pattern-to-pattern(e) = Wld()
@@ -61,3 +61,7 @@ rules
   is-var = ?Var(_)
 
   all-vars = collect-all(is-var)
+
+  unescape-string =
+    string-replace(|"\\\"","\"");
+    string-replace(|"\\\\","\\")

@@ -12,7 +12,7 @@ context-free syntax
 
   Var.Var   = VarId
   Wld.Wld   = "_"
-  
+
   VarOrWld  = Var
   VarOrWld  = Wld
 
@@ -35,13 +35,15 @@ syntax
  
   OpTerm-CF.Op      = OpId-LEX "(" LAYOUT?-CF Patterns-CF LAYOUT?-CF  ")"
 
-  StringTerm-CF.Str = "\"" StringContent-LEX "\""
+  StringTerm-CF.Str = "\"" StringChars-LEX "\""
  
 lexical syntax
 
-  StringContent = StringChar*
-  StringChar    = ~[\"\t\r\n]
+  StringChars   = StringChar*
+  StringChar    = ~[\"\\\t\r\n]
+  StringChar    =  "\\\"" | "\\\\"
 
 lexical restrictions
 
-  StringChar -/- [\t\r\n]
+  StringChars -/- ~[\"]
+

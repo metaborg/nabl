@@ -72,6 +72,11 @@ public abstract class MessageContent implements IMessageContent {
             return ImmutableCompoundMessage.of(getParts().stream().map(p -> p.apply(f)).collect(Collectors.toList()));
         }
 
+        @Override public IMessageContent withDefault(IMessageContent defaultContent) {
+            return ImmutableCompoundMessage
+                .of(getParts().stream().map(p -> p.withDefault(defaultContent)).collect(Collectors.toList()));
+        }
+
         @Override public String toString(String resource) {
             StringBuilder sb = new StringBuilder();
             getParts().stream().forEach(p -> sb.append(p.toString(resource)));
@@ -111,10 +116,10 @@ public abstract class MessageContent implements IMessageContent {
     public static IMatcher<MessageContent> matcher() {
         return M.<MessageContent>cases(
             // @formatter:off
-            M.appl0("Default", t -> ImmutableDefaultMessage.of()),
+            M.appl0("Default", (t) -> ImmutableDefaultMessage.of()),
             M.appl1("Formatted", M.listElems(partMatcher()), (t, ps) -> ImmutableCompoundMessage.of(ps)),
-            partMatcher(),
             M.string(s -> ImmutableTextMessage.of(s.getValue())),
+            partMatcher(),
             M.term(t -> ImmutableCompoundMessage.of(Iterables2.from(
                 ImmutableTermMessage.of(t),
                 ImmutableTextMessage.of(" (error message was malformed)")
@@ -127,6 +132,7 @@ public abstract class MessageContent implements IMessageContent {
         return M.<MessageContent>cases(
             // @formatter:off
             M.appl1("Text", M.stringValue(), (t,s) -> ImmutableTextMessage.of(s)),
+            M.appl1("Term", M.appl0("MSG"), (t,s) -> ImmutableDefaultMessage.of()),
             M.appl1("Term", M.term(), (t,s) -> ImmutableTermMessage.of(s))
             // @formatter:on
         );
