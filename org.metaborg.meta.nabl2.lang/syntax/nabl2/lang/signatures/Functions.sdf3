@@ -24,7 +24,7 @@ context-free syntax
 
   FunctionType          = [: [SortRef] -> [SortRef]]
 
-  FunctionCases      = <{<{FunctionCase ", "}*>}>
+  FunctionCases      = <{<{FunctionCase ","}*>}>
   FunctionCases      = {ast("[]")}
  
   FunctionCase       = [[CTerm] -> [CTerm]]

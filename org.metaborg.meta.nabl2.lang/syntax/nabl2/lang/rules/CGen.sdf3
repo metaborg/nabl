@@ -24,29 +24,29 @@ context-free syntax
 
   Rule.CGenInitRule = <
     init <CGenParamsTerm> <CGenTypeTerm> :=
-      <{RuleClause ",\n"}+>.
+        <{RuleClause ","}+>.
   >
 
   Rule.CGenMatchRuleNoConstraint = <
-    <RuleName>[[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]].
+    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
   >
 
   Rule.CGenMatchRule = <
-    <RuleName>[[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
-        <{RuleClause ",\n"}+>.
+    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+        <{RuleClause ","}+>.
   >
 
   RuleClause             = Constraint
   RuleClause             = NewScopes
   RuleClause             = FunCall
-  RuleClause.CGenRecurse = <<RuleName>[[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
 
 context-free syntax
 
-  CGenParamsTerm.Tuple    = <^ (<{CTerm ", "}*>)>
+  CGenParamsTerm.Tuple    = <^ (<{CTerm ","}*>)>
 
-  CGenParamsPattern.Tuple = <^ (<{VarOrWld ", "}*>)>
+  CGenParamsPattern.Tuple = <^ (<{VarOrWld ","}*>)>
 
   CGenTypeTerm.NoType     =
   CGenTypeTerm.Type       = <: <CTerm>>

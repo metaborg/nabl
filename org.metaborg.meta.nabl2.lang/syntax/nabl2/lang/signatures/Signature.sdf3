@@ -16,8 +16,7 @@ template options
 context-free syntax
 
   ModuleSection.Signature = <
-    signature 
-      <Signature*>
+    signature <Signature*>
   >
 
 lexical syntax

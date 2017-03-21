@@ -16,5 +16,5 @@ context-free syntax
       <{OpDecl "\n"}*>
   > {longest-match}
 
-  OpDecl.OpDecl        = [[OpId] : [{SortRef " * "}*] -> [Sort]]
+  OpDecl.OpDecl        = [[OpId] : [{SortRef "*"}*] -> [Sort]]
   OpDecl.NullaryOpDecl = [[OpId] : [Sort]]
