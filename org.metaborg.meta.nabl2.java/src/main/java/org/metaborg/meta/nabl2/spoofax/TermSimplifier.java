@@ -16,15 +16,15 @@ public class TermSimplifier {
             // @formatter:off
             M.var(var -> {
                 String r = (resource ==  null || var.getResource().equals(resource)) ? "" : var.getResource();
-                return GenericTerms.newVar(r, var.getName()).setAttachments(var.getAttachments());  
+                return GenericTerms.newVar(r, var.getName()).withAttachments(var.getAttachments());  
             }),
             t -> Scope.matcher().match(t).map(s -> {
                 String r = (resource == null || s.getResource().equals(resource)) ? "" : s.getResource();
-                return ImmutableScope.of(r, s.getName()).setAttachments(t.getAttachments());
+                return ImmutableScope.of(r, s.getName()).withAttachments(t.getAttachments());
             }),
             t -> TermIndex.matcher().match(t).map(i -> {
                 String r = (resource == null || i.getResource().equals(resource)) ? "" : i.getResource();
-                return ImmutableTermIndex.of(r, i.getId()).setAttachments(t.getAttachments());
+                return ImmutableTermIndex.of(r, i.getId()).withAttachments(t.getAttachments());
             }),
             Occurrence.matcher()
             // @formatter:on

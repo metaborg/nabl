@@ -14,7 +14,7 @@ public abstract class FinalResult {
 
     @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 
-    public abstract FinalResult setCustomResult(Optional<? extends ITerm> customResult);
+    public abstract FinalResult withCustomResult(Optional<? extends ITerm> customResult);
 
     public static IMatcher<FinalResult> matcher() {
         return M.appl0("FinalResult", (t) -> {

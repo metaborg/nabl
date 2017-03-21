@@ -16,7 +16,7 @@ public interface ITerm {
 
     ImmutableClassToInstanceMap<Object> getAttachments();
 
-    ITerm setAttachments(ImmutableClassToInstanceMap<Object> value);
+    ITerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
     <T> T match(Cases<T> cases);
 

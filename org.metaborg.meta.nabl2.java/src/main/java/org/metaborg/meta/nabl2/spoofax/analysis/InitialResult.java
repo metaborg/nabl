@@ -23,7 +23,7 @@ public abstract class InitialResult {
 
     @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 
-    public abstract InitialResult setCustomResult(Optional<? extends ITerm> customResult);
+    public abstract InitialResult withCustomResult(Optional<? extends ITerm> customResult);
 
     public static IMatcher<InitialResult> matcher() {
         return M.appl3("InitialResult", M.listElems(Constraints.matcher()), Args.matcher(), SolverConfig.matcher(),

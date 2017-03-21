@@ -31,7 +31,7 @@ public class GenericTerms {
 
     public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
             ImmutableClassToInstanceMap<Object> attachments) {
-        return ImmutableApplTerm.of(op, args).setAttachments(attachments);
+        return ImmutableApplTerm.of(op, args).withAttachments(attachments);
     }
 
 
@@ -72,7 +72,7 @@ public class GenericTerms {
     }
 
     public static IConsTerm newCons(ITerm head, IListTerm tail, ImmutableClassToInstanceMap<Object> attachments) {
-        return ImmutableConsTerm.of(head, tail).setAttachments(attachments);
+        return ImmutableConsTerm.of(head, tail).withAttachments(attachments);
     }
 
 
@@ -81,7 +81,7 @@ public class GenericTerms {
     }
 
     public static INilTerm newNil(ImmutableClassToInstanceMap<Object> attachments) {
-        return ImmutableNilTerm.of().setAttachments(attachments);
+        return ImmutableNilTerm.of().withAttachments(attachments);
     }
 
 
@@ -90,7 +90,7 @@ public class GenericTerms {
     }
 
     public static IStringTerm newString(String value, ImmutableClassToInstanceMap<Object> attachments) {
-        return ImmutableStringTerm.of(value).setAttachments(attachments);
+        return ImmutableStringTerm.of(value).withAttachments(attachments);
     }
 
 
@@ -99,7 +99,7 @@ public class GenericTerms {
     }
 
     public static IIntTerm newInt(int value, ImmutableClassToInstanceMap<Object> attachments) {
-        return ImmutableIntTerm.of(value).setAttachments(attachments);
+        return ImmutableIntTerm.of(value).withAttachments(attachments);
     }
 
 

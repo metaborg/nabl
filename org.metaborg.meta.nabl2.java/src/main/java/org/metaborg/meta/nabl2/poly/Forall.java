@@ -39,7 +39,7 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
 
     public static IMatcher<Forall> matcher() {
         return M.appl2(OP, M.listElems(TypeVar.matcher()), M.term(), (t, vars, type) -> {
-            return ImmutableForall.of(vars, type).setAttachments(t.getAttachments());
+            return ImmutableForall.of(vars, type).withAttachments(t.getAttachments());
         });
     }
 

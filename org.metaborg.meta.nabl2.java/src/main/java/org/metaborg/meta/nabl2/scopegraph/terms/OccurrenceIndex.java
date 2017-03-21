@@ -45,8 +45,8 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
     }
 
     @Override
-    public OccurrenceIndex setAttachments(ImmutableClassToInstanceMap<Object> value) {
-        return new OccurrenceIndex(resource, (IApplTerm) term.setAttachments(value));
+    public OccurrenceIndex withAttachments(ImmutableClassToInstanceMap<Object> value) {
+        return new OccurrenceIndex(resource, (IApplTerm) term.withAttachments(value));
     }
     
     public String getOp() {

@@ -30,6 +30,6 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
 
     }
 
-    IListTerm setAttachments(ImmutableClassToInstanceMap<Object> value);
+    IListTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

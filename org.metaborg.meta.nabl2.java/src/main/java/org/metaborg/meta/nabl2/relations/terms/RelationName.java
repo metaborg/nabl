@@ -43,8 +43,8 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
     public static IMatcher<RelationName> matcher() {
         return M.cases(
             // @formatter:off
-            M.appl0(OP0, (t) -> ImmutableRelationName.of(Optional.empty()).setAttachments(t.getAttachments())),
-            M.appl1(OP1, M.stringValue(), (t, ns) -> ImmutableRelationName.of(Optional.of(ns)).setAttachments(t.getAttachments()))
+            M.appl0(OP0, (t) -> ImmutableRelationName.of(Optional.empty()).withAttachments(t.getAttachments())),
+            M.appl1(OP1, M.stringValue(), (t, ns) -> ImmutableRelationName.of(Optional.of(ns)).withAttachments(t.getAttachments()))
             // @formatter:on
         );
     }

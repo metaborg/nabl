@@ -99,14 +99,14 @@ public class StrategoTerms {
             real -> { throw new IllegalArgumentException(); },
             string -> GenericTerms.newString(string.stringValue())
             // @formatter:on
-            )).setAttachments(attachments);
+            )).withAttachments(attachments);
         return M.<ITerm>cases(
             // @formatter:off
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
-                    GenericTerms.newVar(resource, name).setAttachments(v.getAttachments())),
-            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).setAttachments(t.getAttachments())),
+                    GenericTerms.newVar(resource, name).withAttachments(v.getAttachments())),
+            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).withAttachments(t.getAttachments())),
             M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
-                    GenericTerms.newListTail(xs, (IListTerm) ys).setAttachments(t.getAttachments()))
+                    GenericTerms.newListTail(xs, (IListTerm) ys).withAttachments(t.getAttachments()))
             // @formatter:on
         ).match(rawTerm).orElse(rawTerm);
     }

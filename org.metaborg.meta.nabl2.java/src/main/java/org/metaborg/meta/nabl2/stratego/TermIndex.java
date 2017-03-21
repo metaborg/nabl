@@ -39,7 +39,7 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
 
     public static IMatcher<TermIndex> matcher() {
         return M.appl2(OP, M.stringValue(), M.integerValue(), (t, resource, id) -> ImmutableTermIndex.of(
-                resource, id).setAttachments(t.getAttachments()));
+                resource, id).withAttachments(t.getAttachments()));
     }
 
     // Object implementation

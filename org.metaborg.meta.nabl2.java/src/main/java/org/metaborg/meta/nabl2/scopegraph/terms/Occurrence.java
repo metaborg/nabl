@@ -39,7 +39,7 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
 
     public static IMatcher<Occurrence> matcher() {
         return M.appl3("Occurrence", Namespace.matcher(), M.term(), OccurrenceIndex.matcher(), (t, namespace, name, index) -> {
-            return ImmutableOccurrence.of(namespace, name, index).setAttachments(t.getAttachments());
+            return ImmutableOccurrence.of(namespace, name, index).withAttachments(t.getAttachments());
         });
     }
 

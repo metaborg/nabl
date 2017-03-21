@@ -20,7 +20,7 @@ public abstract class UnitResult {
 
     @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 
-    public abstract UnitResult setCustomResult(Optional<? extends ITerm> customResult);
+    public abstract UnitResult withCustomResult(Optional<? extends ITerm> customResult);
 
     public static IMatcher<UnitResult> matcher() {
         return M.appl2("UnitResult", M.term(), M.listElems(Constraints.matcher()), (t, ast, constraints) -> {
