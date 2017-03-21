@@ -132,7 +132,7 @@ public abstract class MessageContent implements IMessageContent {
         return M.<MessageContent>cases(
             // @formatter:off
             M.appl1("Text", M.stringValue(), (t,s) -> ImmutableTextMessage.of(s)),
-            M.appl1("Term", M.appl0("MSG"), (t,s) -> ImmutableDefaultMessage.of()),
+            M.appl1("Term", M.appl0("CAUSE"), (t,s) -> ImmutableDefaultMessage.of()),
             M.appl1("Term", M.term(), (t,s) -> ImmutableTermMessage.of(s))
             // @formatter:on
         );

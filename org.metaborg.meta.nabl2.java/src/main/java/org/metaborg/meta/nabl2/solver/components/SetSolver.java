@@ -97,7 +97,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
             MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP)).append(" not in ")
                 .append(constraint.getRight()).build();
             throw new UnsatisfiableException(
-                makeMessages(constraint.getMessageInfo().withDefault(content), result.values()));
+                makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values()));
         }
         return true;
     }
@@ -123,7 +123,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
             MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP))
                 .append(" has duplicates in ").append(constraint.getSet()).build();
             throw new UnsatisfiableException(
-                makeMessages(constraint.getMessageInfo().withDefault(content), duplicates));
+                makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates));
         }
         return true;
     }

@@ -91,7 +91,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
                                                           // that fails
             unifier().unify(gen.getScheme(), scheme);
         } catch(UnificationException ex) {
-            throw new UnsatisfiableException(gen.getMessageInfo().withDefault(ex.getMessageContent()));
+            throw new UnsatisfiableException(gen.getMessageInfo().withDefaultContent(ex.getMessageContent()));
         }
         return true;
     }
@@ -127,7 +127,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
                                                           // that fails
             unifier().unify(inst.getType(), type);
         } catch(UnificationException ex) {
-            throw new UnsatisfiableException(inst.getMessageInfo().withDefault(ex.getMessageContent()));
+            throw new UnsatisfiableException(inst.getMessageInfo().withDefaultContent(ex.getMessageContent()));
         }
         return true;
     }

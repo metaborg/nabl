@@ -18,12 +18,12 @@ public abstract class MessageInfo implements IMessageInfo {
 
     @Value.Parameter @Override public abstract ITerm getOriginTerm();
 
-    @Override public IMessageInfo withDefault(IMessageContent defaultContent) {
+    @Override public IMessageInfo withDefaultContent(IMessageContent defaultContent) {
         return ImmutableMessageInfo.of(getKind(), getContent().withDefault(defaultContent), getOriginTerm());
     }
 
     @Override public IMessageInfo apply(Function1<ITerm, ITerm> f) {
-        return ImmutableMessageInfo.copyOf(this).setContent(getContent().apply(f));
+        return this.withContent(getContent().apply(f));
     }
 
     public static IMatcher<MessageInfo> matcher() {

@@ -17,6 +17,7 @@ import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms.RelationFunctions;
 import org.metaborg.meta.nabl2.relations.terms.Relations;
+import org.metaborg.meta.nabl2.solver.FunctionUndefinedException;
 import org.metaborg.meta.nabl2.solver.Solver;
 import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
@@ -141,7 +142,7 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         try {
             relations.add(c.getRelation(), left, right);
         } catch(RelationException e) {
-            throw new UnsatisfiableException(c.getMessageInfo().withDefault(MessageContent.of(e.getMessage())));
+            throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(MessageContent.of(e.getMessage())));
         }
         return true;
     }
@@ -165,18 +166,18 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         }
         Function1<ITerm, Optional<ITerm>> fun = functions.get(c.getFunction());
         if(fun == null) {
-            throw new UnsatisfiableException(
-                c.getMessageInfo().withDefault(MessageContent.of("Function " + c.getFunction() + " undefined.")));
+            throw new FunctionUndefinedException("Function " + c.getFunction() + " undefined.");
         }
         Optional<ITerm> result = fun.apply(term);
         if(!result.isPresent()) {
             return false;
         }
         try {
-            unifier().removeActive(c.getResult(), c); // before `unify`, so that we don't cause an error chain if that fails
+            unifier().removeActive(c.getResult(), c); // before `unify`, so that we don't cause an error chain if that
+                                                      // fails
             unifier().unify(c.getResult(), result.get());
         } catch(UnificationException ex) {
-            throw new UnsatisfiableException(c.getMessageInfo().withDefault(ex.getMessageContent()));
+            throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(ex.getMessageContent()));
         }
         return true;
     }

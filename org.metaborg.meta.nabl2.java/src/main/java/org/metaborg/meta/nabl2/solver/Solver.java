@@ -147,7 +147,7 @@ public class Solver {
             default:
                 unsolved.stream().forEach(c -> {
                     IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-                    messages.add(c.getMessageInfo().withDefault(content));
+                    messages.add(c.getMessageInfo().withDefaultContent(content));
                 });
         }
         unsolved = unsolved.stream().map(c -> Constraints.find(c, unifier)).collect(Collectors.toSet());

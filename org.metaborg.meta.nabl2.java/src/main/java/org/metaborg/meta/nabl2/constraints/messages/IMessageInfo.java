@@ -11,7 +11,9 @@ public interface IMessageInfo {
 
     ITerm getOriginTerm();
 
-    IMessageInfo withDefault(IMessageContent defaultContent);
+    IMessageInfo withDefaultContent(IMessageContent defaultContent);
+
+    IMessageInfo withContent(IMessageContent content);
 
     IMessageInfo apply(Function1<ITerm, ITerm> f);
 }

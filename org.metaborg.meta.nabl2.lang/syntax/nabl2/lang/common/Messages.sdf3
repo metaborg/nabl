@@ -17,6 +17,8 @@ syntax
   MessageContentPart-CF.Term  = "[" LAYOUT?-CF CTerm-CF LAYOUT?-CF "]"
   MessageContentPart-CF.Text  = MessageChars-LEX
 
+  CTerm-CF.CAUSE = "CAUSE"
+
 lexical syntax
 
   MessageChars = MessageChar+
@@ -26,4 +28,3 @@ lexical syntax
 lexical restrictions
 
   MessageChars -/- ~[\[\]]
-

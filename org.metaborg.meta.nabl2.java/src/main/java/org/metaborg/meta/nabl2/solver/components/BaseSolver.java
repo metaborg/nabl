@@ -19,7 +19,7 @@ public class BaseSolver extends SolverComponent<IBaseConstraint> {
     @Override protected Unit doAdd(IBaseConstraint constraint) throws UnsatisfiableException {
         constraint.matchOrThrow(CheckedCases.of(t -> unit, f -> {
             throw new UnsatisfiableException(
-                constraint.getMessageInfo().withDefault(MessageContent.of("False can never be satisfied.")));
+                constraint.getMessageInfo().withDefaultContent(MessageContent.of("False can never be satisfied.")));
         }));
         work();
         return unit;
