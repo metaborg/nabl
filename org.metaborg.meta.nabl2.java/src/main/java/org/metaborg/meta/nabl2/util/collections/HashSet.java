@@ -38,4 +38,7 @@ public class HashSet<E> implements ISet.Mutable<E>, Serializable {
         return new HashSet<>(new java.util.HashSet<>());
     }
 
+    @Override public String toString() {
+        return elems.toString();
+    }
 }

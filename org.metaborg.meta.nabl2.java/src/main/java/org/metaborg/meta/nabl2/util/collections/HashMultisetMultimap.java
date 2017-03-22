@@ -61,4 +61,8 @@ public class HashMultisetMultimap<K, V> implements MultisetMultimap<K, V>, Seria
         return new HashMultisetMultimap<>(new HashMap<>());
     }
 
+    @Override public String toString() {
+        return data.toString();
+    }
+
 }

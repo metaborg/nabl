@@ -74,4 +74,8 @@ public class HashFunction<K, V> implements IFunction.Mutable<K, V>, Serializable
         return new HashFunction<>(new HashMap<>(), HashMultimap.create());
     }
 
+    @Override public String toString() {
+        return fwd.toString();
+    }
+
 }

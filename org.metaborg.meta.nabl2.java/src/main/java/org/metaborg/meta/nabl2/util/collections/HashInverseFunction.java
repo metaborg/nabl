@@ -70,4 +70,8 @@ public class HashInverseFunction<K, V> implements IInverseFunction.Mutable<K, V>
         return new HashInverseFunction<>(HashMultimap.create(), new HashMap<>());
     }
 
+    @Override public String toString() {
+        return fwd.toString();
+    }
+
 }

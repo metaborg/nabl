@@ -65,4 +65,8 @@ public class HashRelation2<K, V> implements IRelation2.Mutable<K, V>, Serializab
         return new HashRelation2<>(HashMultimap.create(), HashMultimap.create());
     }
 
+    @Override public String toString() {
+        return fwd.toString();
+    }
+
 }

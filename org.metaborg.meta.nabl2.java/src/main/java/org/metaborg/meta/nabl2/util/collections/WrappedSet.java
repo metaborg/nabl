@@ -35,4 +35,8 @@ public class WrappedSet<E> implements ISet.Mutable<E> {
         return new WrappedSet<>(elems);
     }
 
+    @Override public String toString() {
+        return elems.toString();
+    }
+
 }

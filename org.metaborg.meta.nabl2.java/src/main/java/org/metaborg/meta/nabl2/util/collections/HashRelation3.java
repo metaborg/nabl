@@ -71,4 +71,7 @@ public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Seri
         return new HashRelation3<>(new HashMap<>(), new HashMap<>());
     }
 
+    @Override public String toString() {
+        return fwd.toString();
+    }
 }
