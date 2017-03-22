@@ -17,6 +17,7 @@ rules
 
   normalize =
     normalize-axioms;
+    normalize-rule-names;
     normalize-wildcards;
     normalize-types;
     normalize-regex;
@@ -40,6 +41,13 @@ rules
   normalize-axiom:
     CGenMatchRuleNoConstraint(rdef,pattern,params,type)
       -> CGenMatchRule(rdef,pattern,params,type, [])
+
+rules
+
+  normalize-rule-names = try(sometd(normalize-rule-name))
+
+  normalize-rule-name:
+    NameNoArgs(name) -> Name(name,[])
 
 rules
 

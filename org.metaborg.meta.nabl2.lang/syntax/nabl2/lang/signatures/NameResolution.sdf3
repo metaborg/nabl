@@ -15,18 +15,18 @@ context-free syntax
 
   Signature.NameResolution = <
     name resolution
-      <{NameResolutionParam "\n"}*>
+      <{NameResolutionParam "\n\n"}*>
   > {longest-match}
 
   NameResolutionParam.Labels     = <labels <PathLabel*>>
-  NameResolutionParam.Order      = <order <{LabelOrder ","}*>>
+  NameResolutionParam.Order      = <order <{LabelOrder ",\n"}*>>
   NameResolutionParam.WF         = <well-formedness <LabelRE>>
 
 context-free syntax
 
   Signature.Namespaces = <
     namespaces
-      <{NamespaceDef "\n"}*>
+      <{NamespaceDef "\n\n"}*>
   > {longest-match}
 
   NamespaceDef.NamespaceDef = <<Namespace> <NamespaceType> <NamespaceProperties>>
@@ -34,8 +34,7 @@ context-free syntax
   NamespaceType.NoType  =
   NamespaceType.Type    = <: <SortRef>>
 
-  NamespaceProperties = <{<{NamespaceProperty ","}*>}>
+  NamespaceProperties = <{ <{NamespaceProperty ",\n"}*> }>
   NamespaceProperties = {ast("[]")}
   
   NamespaceProperty.PropertyDef = <<PropertyId> : <SortRef>>
-

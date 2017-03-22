@@ -2,9 +2,9 @@ module nabl2/lang/rules/Rules
 
 imports
 
-  nabl2/lang/common/Identifiers
   nabl2/lang/rules/CGen
   nabl2/lang/rules/Functions
+  nabl2/lang/rules/Names
 
 template options
 
@@ -15,7 +15,8 @@ context-free syntax
   ModuleSection.Rules = <
     rules
  
-      <{Rule "\n"}*>
+      <{Rule "\n\n"}*>
+
   > {longest-match}
 
 lexical syntax

@@ -18,8 +18,8 @@ template options
 context-free syntax
 
   Rule.FunDef = [
-    [RuleId] << [{CVar ","}*] >> :=
-        [{FunClause ","}+].
+    [RuleId] << [{CVar ", "}*] >> :=
+        [{FunClause ",\n"}+].
   ]
 
   FunClause  = Constraint
@@ -30,4 +30,4 @@ context-free syntax
 
 context-free syntax
 
-  FunCall.FunCall = [[RuleId] << [{CTerm ","}*] >>]
+  FunCall.FunCall = [[RuleId] << [{CTerm ", "}*] >>]

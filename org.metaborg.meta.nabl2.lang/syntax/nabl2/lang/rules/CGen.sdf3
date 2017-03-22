@@ -10,29 +10,8 @@ imports
   nabl2/lang/common/Injections
   nabl2/lang/common/Terms
   nabl2/lang/rules/Rules
+  nabl2/lang/rules/Names
 
-template options
-
-  keyword -/- [a-zA-Z0-9\']
-
-context-free syntax
-
-  CGenRuleDef.NoName =
-  CGenRuleDef.Name   = <<RuleId><CGenRuleParams>>
-
-  CGenRuleParams = {ast("[]")}
-  CGenRuleParams = <(<{RuleId ","}*>)>
-
-context-free syntax
-
-  CGenRuleRefTop.NoName =
-  CGenRuleRefTop.Name   = <<RuleId><CGenRuleArgs>>
-
-  CGenRuleRef.NoName = "default"
-  CGenRuleRef.Name   = <<RuleId><CGenRuleArgs>>
-
-  CGenRuleArgs = {ast("[]")}
-  CGenRuleArgs = <(<{CGenRuleRef ","}*>)>
 
 
 context-free syntax
@@ -43,7 +22,7 @@ context-free syntax
 
   Rule.CGenInitRule = <
     init <CGenParamsTerm> <CGenTypeTerm> :=
-        <{RuleClause ","}+>.
+        <{RuleClause ",\n"}+>.
   >
 
   Rule.CGenMatchRuleNoConstraint = <
@@ -52,7 +31,7 @@ context-free syntax
 
   Rule.CGenMatchRule = <
     <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
-        <{RuleClause ","}+>.
+        <{RuleClause ",\n"}+>.
   >
 
   RuleClause             = Constraint
@@ -62,9 +41,9 @@ context-free syntax
 
 context-free syntax
 
-  CGenParamsTerm.Tuple    = <^ (<{CTerm ","}*>)>
+  CGenParamsTerm.Tuple    = <^ (<{CTerm ", "}*>)>
 
-  CGenParamsPattern.Tuple = <^ (<{VarOrWld ","}*>)>
+  CGenParamsPattern.Tuple = <^ (<{VarOrWld ", "}*>)>
 
   CGenTypeTerm.NoType     =
   CGenTypeTerm.Type       = <: <CTerm>>

@@ -18,7 +18,7 @@ context-free syntax
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
   SortRef.Var            = SortVarId
-  SortRef.TupleSort      = <(<{SortRef "*"}*>)>
+  SortRef.TupleSort      = <(<{SortRef " * "}*>)>
   SortRef.ListSort       = <List(<SortRef>)>
   SortRef.MapSort        = <Map(<SortRef>, <SortRef>)>
  

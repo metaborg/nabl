@@ -11,6 +11,7 @@ template options
 context-free syntax
 
   CTerm           = CVar {prefer}
-  CTerm.CList     =  <[<{CTerm ","}*>]>         // FIXME Use NaBL2_ prefix
-  CTerm.CListTail =  <[<{CTerm ","}*>|<CTerm>]> // FIXME Use NaBL2_ prefix
-//CTerm.CListConc = <<CTerm> ++ <CTerm>> {left} // FIXME Use NaBL2_ prefix
+  CTerm.CList     = <[<{CTerm ", "}*>]>
+  CTerm.CListTail = <[<{CTerm ", "}*>|<CTerm>]>
+
+  CTerms          = <<{CTerm ", "}*>>

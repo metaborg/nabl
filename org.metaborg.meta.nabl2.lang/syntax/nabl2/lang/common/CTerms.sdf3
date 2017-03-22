@@ -24,8 +24,7 @@ syntax
 
 context-free syntax
 
-  CTerms      = {CTerm ","}*
+  CTerm.Tuple = <(<{CTerms ", "}*>)>
 
-  CTerm.Tuple = <(<{CTerm ","}*>)>
   CTerm       = IntTerm
   CTerm       = StringTerm

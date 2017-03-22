@@ -14,12 +14,12 @@ context-free syntax
 
   Signature.Relations = <
     relations
-      <{RelationDef "\n"}*>
+      <{RelationDef "\n\n"}*>
   > {longest-match}
 
 context-free syntax
 
-  RelationDef.RelationDef = <<{RelationOption ","}*> <Relation> <RelationType> <VariancePatterns>>
+  RelationDef.RelationDef = <<{RelationOption ", "}*> <Relation> <RelationType> <VariancePatterns>>
 
   RelationOption = Reflexivity
   RelationOption = Symmetry
@@ -28,7 +28,7 @@ context-free syntax
   RelationType.TypeSort =
   RelationType          = <: <SortRef> * <SortRef>>
 
-  VariancePatterns      = <{<{VariancePattern ","}*>}>
+  VariancePatterns      = <{ <{VariancePattern ",\n"}*> }>
   VariancePatterns      = {ast("[]")}
  
  lexical syntax

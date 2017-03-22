@@ -22,7 +22,7 @@ syntax
 
 context-free syntax
 
-  TypeArgs                = {TypeArg ","}*
+  TypeArgs                = <<{TypeArg ", "}*>>
 
   TypeArg                 = <<TypeMod> <SortRef>>
 

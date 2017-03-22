@@ -15,7 +15,7 @@ context-free syntax
 
   Signature.Functions = <
     functions
-      <{FunctionDef "\n"}*>
+      <{FunctionDef "\n\n"}*>
   > {longest-match}
 
 context-free syntax
@@ -24,7 +24,10 @@ context-free syntax
 
   FunctionType  = [: [SortRef] -> [SortRef]]
 
-  FunctionCases = <{<{FunctionCase ","}*>}>
+  FunctionCases = <
+    { <{FunctionCase ",\n"}*>
+    }
+  >
   FunctionCases = {ast("[]")}
  
   FunctionCase  = [[CTerm] -> [CTerm]]
