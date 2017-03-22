@@ -188,11 +188,6 @@ rules
   normalize-occurrence-index:
     Occurrence(ns,name,DefaultOccurrenceIndex()) ->
       Occurrence(ns,name,OccurrenceIndexFrom(name))
-    where <is-var> name
-
-  // get index from matched term
-  normalize-default-index:
-    DefaultOccurrenceIndex() -> OccurrenceIndexFrom(<term-var>)
 
   // get index from matched term
   normalize-default-index:
