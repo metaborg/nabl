@@ -217,10 +217,11 @@ public class Solver {
 
         long dt = System.nanoTime() - t0;
         logger.info(">>> Solved {} constraints in {} seconds <<<", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
-        logger.info("    * namebinding : {} seconds <<<",
+        logger.info("    * namebinding : {} seconds",
             (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
-        logger.info("    * relations   : {} seconds <<<",
+        logger.info("    * relations   : {} seconds",
             (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
+        logger.info("    * unsolved    : {}", unsolved.size());
 
         return ImmutableSolution.of(
             // @formatter:off

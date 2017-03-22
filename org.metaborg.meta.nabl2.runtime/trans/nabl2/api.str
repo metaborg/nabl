@@ -78,6 +78,15 @@ rules // ###### Analysis results ######
   nabl2-get-resource-analysis = nabl2--get-resource-analysis
 
   /**
+   * Test if analysis has errors
+   *
+   * Fails if there are no errors, succeeds otherwise.
+   *
+   * @type Analysis -> _
+   */
+  nabl2-analysis-has-errors = nabl2--analysis-has-errors
+
+  /**
    * @type node:Term -> Term
    */
   nabl2-get-ast-params = nabl2--get-ast-params
