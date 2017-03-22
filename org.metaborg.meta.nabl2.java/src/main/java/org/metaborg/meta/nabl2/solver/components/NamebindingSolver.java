@@ -129,7 +129,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     @Override protected Iterable<INamebindingConstraint> doFinish(IMessageInfo messageInfo) {
         Iterable<INamebindingConstraint> graphConstraints =
             isPartial() ? scopeGraphConstraints(messageInfo) : Iterables2.empty();
-        return Iterables2.fromConcat(unsolvedBuilds, unsolvedChecks, graphConstraints);
+        return Iterables2.fromConcat(Iterables2.from(unsolvedBuilds, unsolvedChecks, incompleteDirectEdges,
+            incompleteImportEdges, graphConstraints));
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -330,8 +331,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         unifier().removeActive(a.getScope(), a); // before `unify`, so that we don't cause an error chain if that fails
         switch(scopes.size()) {
             case 0:
-                throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder().append(decl)
-                    .append(" has no ").append(label).append(" associated scope.").build()));
+                throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder()
+                    .append(decl).append(" has no ").append(label).append(" associated scope.").build()));
             case 1:
                 try {
                     unifier().unify(a.getScope(), scopes.get(0));
@@ -340,8 +341,8 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 }
                 return true;
             default:
-                throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder().append(decl)
-                    .append(" has multiple ").append(label).append(" associated scope.").build()));
+                throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder()
+                    .append(decl).append(" has multiple ").append(label).append(" associated scope.").build()));
         }
     }
 
