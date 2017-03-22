@@ -25,3 +25,13 @@ test wildcard type succeeds [[
 test wildcard constraint succeeds [[
   wildcard constraint
 ]] 1 note
+
+//-------------------------------
+
+test higher-order call on empty list [[
+  higher-order call on list
+]] 0 notes
+
+test higher-order call on non-empty list [[
+  higher-order call on list x, x, x
+]] 3 notes

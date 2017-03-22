@@ -18,9 +18,6 @@ context-free syntax
       <{Rule "\n"}*>
   > {longest-match}
 
-  RuleName.NoName      =
-  RuleName.Name        = RuleId
-
 lexical syntax
 
   SectionKeyword = "rules"

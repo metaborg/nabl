@@ -9,12 +9,27 @@ imports
   nabl2/lang/common/Identifiers
   nabl2/lang/common/Injections
   nabl2/lang/common/Terms
-  nabl2/lang/rules/Functions
   nabl2/lang/rules/Rules
 
 template options
 
   keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  CGenName.NoName =
+  CGenName.Name   = RuleId
+
+  CGenDef.Name    = RuleId
+
+  CGenRef.NoName  = "default"
+  CGenRef.Name    = RuleId
+
+  CGenDefs = {ast("[]")}
+  CGenDefs = <(<{CGenDef ","}*>)>
+
+  CGenRefs = {ast("[]")}
+  CGenRefs = <(<{CGenRef ","}*>)>
 
 context-free syntax
 
@@ -28,18 +43,17 @@ context-free syntax
   >
 
   Rule.CGenMatchRuleNoConstraint = <
-    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
+    <CGenName><CGenDefs> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
   >
 
   Rule.CGenMatchRule = <
-    <RuleName> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+    <CGenName><CGenDefs> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
         <{RuleClause ","}+>.
   >
 
   RuleClause             = Constraint
   RuleClause             = NewScopes
-  RuleClause             = FunCall
-  RuleClause.CGenRecurse = <<RuleName> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  RuleClause.CGenRecurse = <<CGenName><CGenRefs> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
 
 context-free syntax

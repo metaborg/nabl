@@ -1,6 +1,7 @@
 module nabl2/lang/coq/query
 
 imports
+  signatures/nabl2/shared/common/-
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
   nabl2/lang/coq/util/mbind-err

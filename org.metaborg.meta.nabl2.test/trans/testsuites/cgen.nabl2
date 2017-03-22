@@ -32,3 +32,10 @@ rules
 
   [[ WildcardConstraint() ^ () ]] :=
     _ == 42, false | note.
+
+rules
+
+  [[ CallRuleHOOnList(ts) ^ () ]] :=
+    Map0(CallRuleHOOnList)[[ ts ^ () ]].
+
+  CallRuleHOOnList[[ t ^ () ]] := false | note.

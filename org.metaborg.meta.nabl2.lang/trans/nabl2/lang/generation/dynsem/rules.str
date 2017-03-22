@@ -10,11 +10,11 @@ imports
 rules
 
   cgen-sig-to-params-ds:
-    CGenSig(Name(name), sort, param*, _) ->
+    CGenSig(Name(name), [], sort, param*, _) ->
       <cgen-op-ds(|name)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
 
   cgen-sig-to-type-ds:
-    CGenSig(Name(name), sort, _, Type(type-sort)) -> result
+    CGenSig(Name(name), [], sort, _, Type(type-sort)) -> result
     with result := <cgen-op-ds(|name)> (<sort-to-ds> sort, "typeOf", <sort-to-ds> type-sort)
 
   cgen-op-ds(|rule-name): (src-sort, base-name, target-sort) -> (op, arrow, rule)
@@ -42,7 +42,7 @@ rules
 rules
          
   cgen-sig-to-params-java(|term-pkg,nabl2-pkg,java-dir):
-    CGenSig(Name(name), sort, param*, _) -> result
+    CGenSig(Name(name), [], sort, param*, _) -> result
     with src-sort := <sort-to-ds> sort;
          src-name := <ds-sort-to-string> src-sort;
          target-name := <param-sorts-to-ds;ds-sort-to-string> param*;
@@ -53,7 +53,7 @@ rules
          result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
 
   cgen-sig-to-type-java(|term-pkg,nabl2-pkg,java-dir):
-    CGenSig(Name(name), sort, _, Type(tsort)) -> result
+    CGenSig(Name(name), [], sort, _, Type(tsort)) -> result
     with type-sort := <sort-to-ds> tsort;
          src-sort := <sort-to-ds> sort;
          src-name := <ds-sort-to-string> src-sort;

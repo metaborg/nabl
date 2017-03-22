@@ -22,9 +22,11 @@ context-free syntax
         [{FunClause ","}+].
   ]
 
-  FunClause = Constraint
-  FunClause = FunCall
-  FunClause = NewScopes
+  FunClause  = Constraint
+  FunClause  = FunCall
+  FunClause  = NewScopes
+
+  RuleClause = FunCall
 
 context-free syntax
 

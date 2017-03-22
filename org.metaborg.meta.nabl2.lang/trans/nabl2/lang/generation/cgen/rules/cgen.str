@@ -22,9 +22,10 @@ rules
 
   rule-to-str:
     CGenInitRule(params,type,clause*)
-      -> RDefT(<rule-name> "init",[],[<source-var>],
+      -> RDefT(<init-strategy-name>, [], trmargs,
            Rule(<term-var>, Tuple([<args-var>, <constraint-var>]), strclause*))
     with
+      trmargs := [<source-var>];
       (str*,constraint*) := <clauses-to-str> clause*;
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
@@ -45,10 +46,12 @@ rules
       ]
  
   rule-to-str:
-    CGenMatchRule(Name(name),pattern,params,type,clause*)
-      -> RDefT(<rule-name> name,[],[<source-var>,<args-var>],
+    CGenMatchRule(name,defs,pattern,params,type,clause*)
+      -> RDefT(<strategy-name> name,strargs,trmargs,
            Rule(As(<term-var>,pattern), <constraint-var>, strclause*))
     with
+      strargs := <map(\ r -> SVar(<strategy-name> r) \)> defs;
+      trmargs := [<source-var>,<args-var>];
       pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
       (str*,constraint*) := <clauses-to-str> clause*;
       params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
@@ -68,7 +71,7 @@ rules
             CAstProperty(~<index-var>, Type(), ~<type-var>)
           ]
         ]|;
-        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-Type> ~<type-var>," ]]"] end ]|
+        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(<rule-name> name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-Type> ~<type-var>," ]]"] end ]|
       else
         args-pattern := Term |[ Params(~params-pattern) ]|;
         args-string := Str($[^ [params-string]]);
@@ -81,7 +84,7 @@ rules
             CAstProperty(~<index-var>, Params(), ~<params-var>)
           ]
         ]|;
-        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"] end ]|
+        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(<rule-name> name)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"] end ]|
       end;
       guarded-args-str := |[
         ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
@@ -96,17 +99,21 @@ rules
         With(metadata-str),
         With(constraint-str)
       ]
- 
-  rule-name =
-    !$[nabl2--generate-constraint-[<id>]-rule]
+
+  rule-name: NoName()   -> <default-rule-name>
+  rule-name: Name(name) -> name
+
+  init-strategy-name = !$[nabl2--generate-constraint-init-rule]
+  strategy-name      = !$[nabl2--generate-constraint-[<rule-name>]-rule]
  
 rules
 
   rule-to-str:
     FunDef(name,arg*,clause*)
-      -> RDefT(<fun-name> name,[],[<source-var>,<term-var>],
+      -> RDefT(<fun-name> name,[],trmargs,
            Rule(<args-var>, <constraint-var>, strclause*))
     with
+      trmargs := [<source-var>,<term-var>];
       args-pattern := <explode(injection-to-pattern)> Tuple([arg*]);
       args-string := Str(<pp-stratego-string> args-pattern);
       args-str := |[ ~args-pattern := ~<args-var> ]|;
@@ -153,8 +160,9 @@ rules
   explode-guard(e) = funcall-to-term(e)
 
   cgenrecurse-to-term(e):
-    CGenRecurse(Name(name),v,params,type) -> App(recurse-str,v)
+    CGenRecurse(name,refs,v,params,type) -> App(recurse-str,v)
     with
+      strrefs := <map(\ r -> CallNoArgs(SVar(<strategy-name> r)) \)> refs;
       params-term := <e> params;
       if Type(type') := type then
         type-term := <e> type';
@@ -162,8 +170,8 @@ rules
       else
         recurse-arg := Term |[ Params(~params-term) ]|
       end;
-      recurse-str := CallT(SVar("nabl2--generate-constraint"),
-          [SVar(<rule-name> name)],[Str(name),<source-var>,recurse-arg])
+      rule-str := CallT(SVar(<strategy-name> name),strrefs,[<source-var>,recurse-arg]);
+      recurse-str := CallT(SVar("nabl2--generate-constraint"),[rule-str],[Str(<rule-name> name),<source-var>,<args-var>])
 
   funcall-to-term(e):
     FunCall(name,arg*) -> App(fun-str,args-term)

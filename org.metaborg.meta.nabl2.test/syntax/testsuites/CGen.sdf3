@@ -17,3 +17,7 @@ context-free syntax
   Test.WildcardType = <wildcard type on <X>>
 
   Test.WildcardConstraint = <wildcard constraint>
+
+context-free syntax
+
+  Test.CallRuleHOOnList = <higher-order call on list <{X ","}*>>

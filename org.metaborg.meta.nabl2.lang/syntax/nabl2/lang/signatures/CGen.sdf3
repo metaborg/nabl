@@ -4,6 +4,7 @@ imports
 
   nabl2/shared/common/Sorts
   nabl2/lang/rules/Rules
+  nabl2/lang/rules/CGen
 
 template options
 
@@ -16,7 +17,7 @@ context-free syntax
       <{CGenSig "\n"}*>
   >
   
-  CGenSig.CGenSig = <<RuleName> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
+  CGenSig.CGenSig = <<CGenName><CGenDefs> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
  
   CGenSigParams   = <^ (<{SortRef ","}*>)>
 

@@ -24,7 +24,7 @@ rules
   injection-to-term(e):
     Text(str) -> Term |[ Text(~(<unescape-message;e> str)) ]|
   injection-to-term(e):
-    NewScope(n) -> <debug> Term |[ <nabl2--new-scope(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~(<e> n) ]|
+    NewScope(n) -> Term |[ <nabl2--new-scope(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~(<e> n) ]|
 
 
   injection-to-pattern(e) = pattern-to-pattern(e)

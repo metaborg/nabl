@@ -144,7 +144,7 @@ rules	// Constraint generation signatures
 		[] -> []
 
 	cgen-sig-to-coq:
-		CGenSig(name, trsort, ssorts, tysort) ->
+		CGenSig(name, [], trsort, ssorts, tysort) ->
 			x''
 			with
 			x'':=
@@ -174,7 +174,7 @@ rules	// Constraint generation signatures
 			<concat-strings; err> ["Encountered an unexpected constraint generation signature: ",
 				<write-to-string> x, ". Please report."]
 		where
-			not(?CGenSig(_, _, _, _))
+			not(?CGenSig(_, [], _, _, _))
 
 rules // Type signatures
 
@@ -293,7 +293,7 @@ rules // Rule normalization
   			\)> (spattern, body)
   
   normalize-rule:
-  	CGenMatchRule(name, term_pattern, spattern, tpattern, body) ->
+  	CGenMatchRule(name, [], term_pattern, spattern, tpattern, body) ->
   		<extract-term-pattern;
   			mbind(\ (term_pattern', body0) ->
   			<extract-scope-patterns;
@@ -302,7 +302,7 @@ rules // Rule normalization
   			mbind(\ (tpattern', body2) ->
   			<normalize-body;
   			mbind(\ body' ->
-  			CGenMatchRule(name, term_pattern', spattern', tpattern', body')
+  			CGenMatchRule(name, [], term_pattern', spattern', tpattern', body')
   			\)> body2
   			\)> (tpattern, body1)
   			\)> (spattern, body0)
@@ -315,7 +315,7 @@ rules // Rule normalization
   				<write-to-string> x, ". Please report."]
   	where
   		not(?CGenInitRule(_, _, _) <+
-  			?CGenMatchRule(_, _, _, _, _))
+  			?CGenMatchRule(_, [], _, _, _, _))
 
 	// Iterate through clauses of body to look for normalization opportunities
 	normalize-body:
@@ -561,7 +561,7 @@ rules // Rules
 			coq
 	
 	rule-to-coq:
-		(r@CGenMatchRule(name, trpattern, spattern, typattern, body), coq) ->
+		(r@CGenMatchRule(name, [], trpattern, spattern, typattern, body), coq) ->
 			<collect-all(\ Var(x) -> Bind(x) \);
 			mbind(\ var_names ->
 			<rule-name-from-term-pattern;
@@ -611,7 +611,7 @@ rules // Rules
 		where
 			not(!r;
 				?CGenInitRule(_, _, _) <+
-				?CGenMatchRule(_, _, _, _, _))
+				?CGenMatchRule(_, [], _, _, _, _))
 
 	// Converts a None() to a ListDeclBar if necessary,
 	// and appends the constructor
@@ -867,7 +867,7 @@ rules // CGen body
 			\)> occ
 	
 	cgen-clause-to-coq:
-		CGenRecurse(name, trpattern, spatterns, typattern) ->
+		CGenRecurse(name, [], trpattern, spatterns, typattern) ->
 			<get-name;
 			mbind(\ name' ->
 			<term-pattern-to-coq;
@@ -996,7 +996,7 @@ rules // CGen body
 				?CGRef(_, _, _) <+
 				?CResolve(_, _, _) <+
 				?CDeclType(_, _, _, _) <+
-				?CGenRecurse(_, _, _, _) <+
+				?CGenRecurse(_, [], _, _, _) <+
 				?CGDirectEdge(_, _, _, _) <+
 				?NewScopes(_) <+
 				?CDistinct(_, _, _) <+
