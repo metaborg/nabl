@@ -2,17 +2,17 @@ package org.metaborg.meta.nabl2.scopegraph;
 
 import java.util.Collection;
 
-import org.metaborg.meta.nabl2.util.collections.BagMultimap;
-import org.metaborg.meta.nabl2.util.collections.HashBagMultimap;
+import org.metaborg.meta.nabl2.util.collections.MultisetMultimap;
+import org.metaborg.meta.nabl2.util.collections.HashMultisetMultimap;
 
 public class OpenCounter<S, L> {
 
     private boolean complete;
-    private final BagMultimap<S, L> open;
+    private final MultisetMultimap<S, L> open;
 
     public OpenCounter() {
         this.complete = false;
-        this.open = HashBagMultimap.create();
+        this.open = HashMultisetMultimap.create();
     }
 
 

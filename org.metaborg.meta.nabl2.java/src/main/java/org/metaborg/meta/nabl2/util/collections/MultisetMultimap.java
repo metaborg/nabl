@@ -5,7 +5,7 @@ import java.util.Set;
 
 import com.google.common.collect.Multiset;
 
-public interface BagMultimap<K, V> {
+public interface MultisetMultimap<K, V> {
 
     Set<K> keySet();
     

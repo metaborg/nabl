@@ -36,13 +36,17 @@ public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Seri
     }
 
     @Override public boolean put(K key, L label, V value) {
-        return fwd.computeIfAbsent(key, k -> HashMultimap.create()).put(label, value)
-            || bwd.computeIfAbsent(value, v -> HashMultimap.create()).put(label, key);
+        if(fwd.computeIfAbsent(key, k -> HashMultimap.create()).put(label, value)) {
+            bwd.computeIfAbsent(value, v -> HashMultimap.create()).put(label, key);
+            return true;
+        }
+        return false;
     }
 
     @Override public boolean remove(K key, L label, V value) {
-        if(fwd.containsKey(key)) {
-            return fwd.get(key).remove(label, value) || bwd.get(value).remove(label, key);
+        if(fwd.containsKey(key) && fwd.get(key).remove(label, value)) {
+            bwd.get(value).remove(label, key);
+            return true;
         }
         return false;
     }

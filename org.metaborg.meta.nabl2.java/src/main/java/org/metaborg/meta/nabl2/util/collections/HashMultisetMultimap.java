@@ -10,13 +10,13 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
 
-public class HashBagMultimap<K, V> implements BagMultimap<K, V>, Serializable {
+public class HashMultisetMultimap<K, V> implements MultisetMultimap<K, V>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
     private final Map<K, Multiset<V>> data;
 
-    private HashBagMultimap(Map<K, Multiset<V>> data) {
+    private HashMultisetMultimap(Map<K, Multiset<V>> data) {
         this.data = data;
     }
 
@@ -33,22 +33,16 @@ public class HashBagMultimap<K, V> implements BagMultimap<K, V>, Serializable {
     }
 
     @Override public boolean remove(K key, V value) {
-        if(data.containsKey(key)) {
-            return data.get(key).remove(value);
-        }
-        return false;
+        return data.containsKey(key) && data.get(key).remove(value);
     }
 
     @Override public boolean removeAll(K key) {
-        Multiset<V> elems = data.remove(key);
+        final Multiset<V> elems = data.remove(key);
         return elems != null && !elems.isEmpty();
     }
 
     @Override public boolean removeAll(K key, Collection<V> values) {
-        if(data.containsKey(key)) {
-            return data.get(key).removeAll(values);
-        }
-        return false;
+        return data.containsKey(key) && data.get(key).removeAll(values);
     }
 
     @Override public boolean containsKey(K key) {
@@ -63,8 +57,8 @@ public class HashBagMultimap<K, V> implements BagMultimap<K, V>, Serializable {
         return Multisets.unmodifiableMultiset(data.containsKey(key) ? data.get(key) : HashMultiset.create());
     }
 
-    public static <K, V> BagMultimap<K, V> create() {
-        return new HashBagMultimap<>(new HashMap<>());
+    public static <K, V> MultisetMultimap<K, V> create() {
+        return new HashMultisetMultimap<>(new HashMap<>());
     }
 
 }
