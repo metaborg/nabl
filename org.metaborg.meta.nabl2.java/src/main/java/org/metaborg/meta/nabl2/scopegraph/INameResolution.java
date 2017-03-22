@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
+import java.io.Serializable;
+
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.util.iterators.Iterables2;
@@ -17,29 +19,34 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
     Iterable<IDeclPath<S, L, O>> reachable(S scope);
 
     static <S extends IScope, L extends ILabel, O extends IOccurrence> INameResolution<S, L, O> empty() {
-        return new INameResolution<S, L, O>() {
+        return new EmptyNameResolution<S, L, O>();
+    }
 
-            @Override public Iterable<S> getAllScopes() {
-                return Iterables2.empty();
-            }
+    static class EmptyNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
+        implements INameResolution<S, L, O>, Serializable {
 
-            @Override public Iterable<O> getAllRefs() {
-                return Iterables2.empty();
-            }
+        private static final long serialVersionUID = 42L;
 
-            @Override public Iterable<IResolutionPath<S, L, O>> resolve(O ref) {
-                return Iterables2.empty();
-            }
+        @Override public Iterable<S> getAllScopes() {
+            return Iterables2.empty();
+        }
 
-            @Override public Iterable<IDeclPath<S, L, O>> visible(S scope) {
-                return Iterables2.empty();
-            }
+        @Override public Iterable<O> getAllRefs() {
+            return Iterables2.empty();
+        }
 
-            @Override public Iterable<IDeclPath<S, L, O>> reachable(S scope) {
-                return Iterables2.empty();
-            }
+        @Override public Iterable<IResolutionPath<S, L, O>> resolve(O ref) {
+            return Iterables2.empty();
+        }
 
-        };
+        @Override public Iterable<IDeclPath<S, L, O>> visible(S scope) {
+            return Iterables2.empty();
+        }
+
+        @Override public Iterable<IDeclPath<S, L, O>> reachable(S scope) {
+            return Iterables2.empty();
+        }
+
     }
 
 }

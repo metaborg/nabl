@@ -1,11 +1,14 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
+import java.io.Serializable;
 import java.util.Collection;
 
-import org.metaborg.meta.nabl2.util.collections.MultisetMultimap;
 import org.metaborg.meta.nabl2.util.collections.HashMultisetMultimap;
+import org.metaborg.meta.nabl2.util.collections.MultisetMultimap;
 
-public class OpenCounter<S, L> {
+public class OpenCounter<S, L> implements Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private boolean complete;
     private final MultisetMultimap<S, L> open;
