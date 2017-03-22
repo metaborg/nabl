@@ -17,19 +17,23 @@ template options
 
 context-free syntax
 
-  CGenName.NoName =
-  CGenName.Name   = RuleId
+  CGenRuleDef.NoName =
+  CGenRuleDef.Name   = <<RuleId><CGenRuleParams>>
 
-  CGenDef.Name    = RuleId
+  CGenRuleParams = {ast("[]")}
+  CGenRuleParams = <(<{RuleId ","}*>)>
 
-  CGenRef.NoName  = "default"
-  CGenRef.Name    = RuleId
+context-free syntax
 
-  CGenDefs = {ast("[]")}
-  CGenDefs = <(<{CGenDef ","}*>)>
+  CGenRuleRefTop.NoName =
+  CGenRuleRefTop.Name   = <<RuleId><CGenRuleArgs>>
 
-  CGenRefs = {ast("[]")}
-  CGenRefs = <(<{CGenRef ","}*>)>
+  CGenRuleRef.NoName = "default"
+  CGenRuleRef.Name   = <<RuleId><CGenRuleArgs>>
+
+  CGenRuleArgs = {ast("[]")}
+  CGenRuleArgs = <(<{CGenRuleRef ","}*>)>
+
 
 context-free syntax
 
@@ -43,17 +47,17 @@ context-free syntax
   >
 
   Rule.CGenMatchRuleNoConstraint = <
-    <CGenName><CGenDefs> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
+    <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
   >
 
   Rule.CGenMatchRule = <
-    <CGenName><CGenDefs> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+    <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
         <{RuleClause ","}+>.
   >
 
   RuleClause             = Constraint
   RuleClause             = NewScopes
-  RuleClause.CGenRecurse = <<CGenName><CGenRefs> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  RuleClause.CGenRecurse = <<CGenRuleRefTop> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
 
 context-free syntax

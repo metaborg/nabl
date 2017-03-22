@@ -4,6 +4,7 @@ imports
 
   signatures/nabl2/shared/common/-
   signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/rules/-
 
 signature
   constructors
@@ -23,3 +24,5 @@ rules
 
   default-rule-name = !"default"
  
+  rdef-name: NoName()     -> <default-rule-name>
+  rdef-name: Name(name,_) -> name

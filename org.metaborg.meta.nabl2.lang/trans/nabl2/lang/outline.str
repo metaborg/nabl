@@ -38,10 +38,9 @@ rules
     with params' := <pp-H-list(prettyprint-NaBL2-CVar|",") <+ pp-one-Z(prettyprint-completion-aux)> params
 
   prettyprint-rule-label:
-      _ -> [ H([SOpt(HS(), "0")], [name', S(" [[ "), pattern', S(" "), params', S(" "), type', S(" ]]")]) ]
-    where ?CGenMatchRuleNoConstraint(name, defs, pattern, params, type) + ?CGenMatchRule(name, defs, pattern, params, type, _)
-    with name' := <pp-one-Z(prettyprint-NaBL2-CGenName) <+ pp-one-Z(prettyprint-completion-aux)> name
-    with defs' := <pp-one-Z(prettyprint-NaBL2-CGenDefs) <+ pp-one-Z(prettyprint-completion-aux)> defs
+      _ -> [ H([SOpt(HS(), "0")], [rdef', S(" [[ "), pattern', S(" "), params', S(" "), type', S(" ]]")]) ]
+    where ?CGenMatchRuleNoConstraint(rdef, pattern, params, type) + ?CGenMatchRule(rdef, pattern, params, type, _)
+    with rdef' := <pp-one-Z(prettyprint-NaBL2-CGenRuleDef) <+ pp-one-Z(prettyprint-completion-aux)> rdef
     with pattern' := <pp-one-Z(prettyprint-NaBL2-Pattern) <+ pp-one-Z(prettyprint-completion-aux)> pattern
     with params' := <pp-one-Z(prettyprint-NaBL2-CGenParamsPattern) <+ pp-one-Z(prettyprint-completion-aux)> params
     with type' := <pp-one-Z(prettyprint-NaBL2-CGenTypePattern) <+ pp-one-Z(prettyprint-completion-aux)> type

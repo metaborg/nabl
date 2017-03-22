@@ -38,8 +38,8 @@ rules
       -> CGenInitRule(params,type, [])
 
   normalize-axiom:
-    CGenMatchRuleNoConstraint(name,defs,pattern,params,type)
-      -> CGenMatchRule(name,defs,pattern,params,type, [])
+    CGenMatchRuleNoConstraint(rdef,pattern,params,type)
+      -> CGenMatchRule(rdef,pattern,params,type, [])
 
 rules
 
@@ -102,8 +102,8 @@ rules
 
   // replace type terms with a variable and an equality constraint
   normalize-type-match:
-    CGenMatchRule(name,defs,pattern,param,Type(type),clause*)
-      -> CGenMatchRule(name,defs,pattern,param,Type(<type-var>),
+    CGenMatchRule(rdef,pattern,param,Type(type),clause*)
+      -> CGenMatchRule(rdef,pattern,param,Type(<type-var>),
              [CEqual(<type-var>,type,DefaultMessage()),clause*])
     where <not(is-var)> type
 
@@ -113,7 +113,7 @@ rules
 
   normalize-new-scope = CGenInitRule(id,id,normalize-new-scope-clauses)
 
-  normalize-new-scope = CGenMatchRule(id,id,id,id,id,normalize-new-scope-clauses)
+  normalize-new-scope = CGenMatchRule(id,id,id,id,normalize-new-scope-clauses)
 
   normalize-new-scope = FunDef(id,id,normalize-new-scope-clauses)
 
@@ -134,8 +134,8 @@ rules
          free-var* := <diff> (used-var*, [<term-var>,new-var*])
 
   normalize-free-vars:
-    CGenMatchRule(name,defs,pattern,params,type,clause*)
-      -> CGenMatchRule(name,defs,pattern,params,type,[NewVars(free-var*),clause*])
+    CGenMatchRule(rdef,pattern,params,type,clause*)
+      -> CGenMatchRule(rdef,pattern,params,type,[NewVars(free-var*),clause*])
     with new-var* := <clauses-new-vars> clause*;
          bound-var* := <all-vars> (pattern,params,type,new-var*);
          used-var* := <all-vars> clause*;
@@ -157,7 +157,7 @@ rules
 
   normalize-constraints =
     topdown(try(normalize-constraint));
-    topdown(try(CGenInitRule(id,id,flatten-list) + CGenMatchRule(id,id,id,id,id,flatten-list)))
+    topdown(try(CGenInitRule(id,id,flatten-list) + CGenMatchRule(id,id,id,id,flatten-list)))
 
   normalize-constraint:
     CDeclType(o,ty,prio,msginfo) ->

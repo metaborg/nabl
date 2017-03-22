@@ -12,10 +12,10 @@ imports
 rules // Name projection/normalization
 
 	get-name:
-		Name(x) -> x
+		Name(x,rs) -> $[[x]_[<length;int-to-string> rs]]
 
 	get-name:
-		NoName() -> "Default"
+		NoName() -> "Default_0"
 
 	get-name:
 		x ->
@@ -23,7 +23,7 @@ rules // Name projection/normalization
 				["Encountered an unexpected name kind: ",
 					<write-to-string> x, ". Please report."]
 		where
-			not(?Name(_) <+ ?NoName())
+			not(?Name(_,_) <+ ?NoName())
 
 	// Following DynSem's sort name projection conventions (dynsem/trans/lib-ds.str)
 	get-sort-name:

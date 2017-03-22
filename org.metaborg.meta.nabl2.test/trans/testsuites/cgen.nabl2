@@ -39,3 +39,11 @@ rules
     Map0(CallRuleHOOnList)[[ ts ^ () ]].
 
   CallRuleHOOnList[[ t ^ () ]] := false | note.
+
+rules
+
+  Lala [[ L(xs) ^ () ]] :=
+    Lala(Map0)[[ xs ^ () ]].
+
+  Lala(X)[[ xs ^ () ]] :=
+    Map0(default)[[ xs ^ () ]].
