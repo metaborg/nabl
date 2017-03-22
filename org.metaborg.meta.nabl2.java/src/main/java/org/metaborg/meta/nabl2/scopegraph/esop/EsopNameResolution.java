@@ -135,7 +135,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private EsopEnv<S, L, O> env_l(PSet<O> seenImports, PSet<S> seenScopes, IRelation<L> lt, IRegExpMatcher<L> re, L l,
         S scope) {
-        if(scopeCounter.isOpen(scope, labelD)) {
+        if(scopeCounter.isOpen(scope, l)) {
             return EsopEnv.empty(false);
         }
         return l.equals(labelD) ? env_D(seenImports, seenScopes, lt, re, scope)
