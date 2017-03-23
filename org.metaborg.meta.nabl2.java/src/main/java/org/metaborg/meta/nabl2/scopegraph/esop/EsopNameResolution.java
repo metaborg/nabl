@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
@@ -104,18 +105,19 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     public Optional<Iterable<IDeclPath<S, L, O>>> tryVisible(S scope) {
-        EsopEnv<S, L, O> env = env(HashTreePSet.empty(), order, wf, Paths.empty(scope));
+        EsopEnv<S, L, O> env = env(HashTreePSet.empty(), order, wf, Paths.empty(scope), decl -> true);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
     public Optional<Iterable<IDeclPath<S, L, O>>> tryReachable(S scope) {
-        EsopEnv<S, L, O> env = env(HashTreePSet.empty(), noOrder, wf, Paths.empty(scope));
+        EsopEnv<S, L, O> env = env(HashTreePSet.empty(), noOrder, wf, Paths.empty(scope), decl -> true);
         return env.isComplete() ? Optional.of(env.getAll()) : Optional.empty();
     }
 
     private Optional<Iterable<IResolutionPath<S, L, O>>> resolve(PSet<O> seenI, O ref) {
         return scopeGraph.getRefs().get(ref).map(scope -> {
-            EsopEnv<S, L, O> e = env(seenI.plus(ref), order, wf, Paths.empty(scope));
+            EsopEnv<S, L, O> e =
+                env(seenI.plus(ref), order, wf, Paths.empty(scope), decl -> IOccurrence.match(ref, decl));
             Iterable<IResolutionPath<S, L, O>> paths = e.get(ref);
             if(e.isComplete()) {
                 return Optional.of(paths);
@@ -126,38 +128,42 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }).orElseGet(() -> Optional.of(Iterables2.empty()));
     }
 
-    private EsopEnv<S, L, O> env(PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path) {
+    private EsopEnv<S, L, O> env(PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
+        Predicate<O> filter) {
         if(re.isEmpty()) {
             return EsopEnv.empty(true);
         }
-        return env_L(labels, seenImports, lt, re, path);
+        return env_L(labels, seenImports, lt, re, path, filter);
     }
 
     private EsopEnv<S, L, O> env_l(PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
-        IScopePath<S, L, O> path) {
+        IScopePath<S, L, O> path, Predicate<O> filter) {
         if(scopeCounter.isOpen(path.getTarget(), l)) {
             return EsopEnv.empty(false);
         }
-        return l.equals(labelD) ? env_D(seenImports, lt, re, path) : env_nonD(seenImports, lt, re, l, path);
+        return l.equals(labelD) ? env_D(seenImports, lt, re, path, filter)
+            : env_nonD(seenImports, lt, re, l, path, filter);
     }
 
-    private EsopEnv<S, L, O> env_D(PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re,
-        IScopePath<S, L, O> path) {
+    private EsopEnv<S, L, O> env_D(PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
+        Predicate<O> filter) {
         if(!re.isAccepting()) {
             return EsopEnv.empty(true);
         }
         List<IDeclPath<S, L, O>> paths = Lists.newArrayList();
         for(O decl : scopeGraph.getDecls().inverse().get(path.getTarget())) {
-            paths.add(Paths.decl(path, decl));
+            if(filter.test(decl)) {
+                paths.add(Paths.decl(path, decl));
+            }
         }
         return EsopEnv.of(true, paths);
     }
 
     private EsopEnv<S, L, O> env_nonD(PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
-        IScopePath<S, L, O> path) {
-        Function1<IScopePath<S, L, O>, EsopEnv<S, L, O>> getter = p -> env(seenImports, lt, re.match(l), p);
-        Optional<Iterable<EsopEnv<S, L, O>>> ods = directScopes(l, path, getter);
-        Optional<Iterable<EsopEnv<S, L, O>>> ois = importScopes(seenImports, l, path, getter);
+        IScopePath<S, L, O> path, Predicate<O> filter) {
+        Function1<IScopePath<S, L, O>, EsopEnv<S, L, O>> getter = p -> env(seenImports, lt, re.match(l), p, filter);
+        Optional<Iterable<EsopEnv<S, L, O>>> ods = directScopes(l, path, filter, getter);
+        Optional<Iterable<EsopEnv<S, L, O>>> ois = importScopes(seenImports, l, path, filter, getter);
         return Optionals.lift(ods, ois, (ds, is) -> {
             EsopEnv<S, L, O> env = EsopEnv.empty(true);
             for(EsopEnv<S, L, O> nextEnv : Iterables.concat(ds, is)) {
@@ -167,7 +173,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }).orElseGet(() -> EsopEnv.empty(false));
     }
 
-    private Optional<Iterable<EsopEnv<S, L, O>>> directScopes(L l, IScopePath<S, L, O> path,
+    private Optional<Iterable<EsopEnv<S, L, O>>> directScopes(L l, IScopePath<S, L, O> path, Predicate<O> filter,
         Function1<IScopePath<S, L, O>, EsopEnv<S, L, O>> getter) {
         List<EsopEnv<S, L, O>> envs = Lists.newArrayList();
         for(S nextScope : scopeGraph.getDirectEdges().get(path.getTarget(), l)) {
@@ -177,7 +183,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     private Optional<Iterable<EsopEnv<S, L, O>>> importScopes(PSet<O> seenImports, L l, IScopePath<S, L, O> path,
-        Function1<IScopePath<S, L, O>, EsopEnv<S, L, O>> getter) {
+        Predicate<O> filter, Function1<IScopePath<S, L, O>, EsopEnv<S, L, O>> getter) {
         List<EsopEnv<S, L, O>> envs = Lists.newArrayList();
         for(O ref : scopeGraph.getImportEdges().get(path.getTarget(), l)) {
             if(seenImports.contains(ref)) {
@@ -190,7 +196,8 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             for(IResolutionPath<S, L, O> importPath : paths.get()) {
                 O decl = importPath.getDeclaration();
                 for(S nextScope : scopeGraph.getAssocEdges().get(decl, l)) {
-                    Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope)).map(getter::apply).ifPresent(envs::add);
+                    Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope)).map(getter::apply)
+                        .ifPresent(envs::add);
                 }
             }
         }
@@ -198,17 +205,18 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     private EsopEnv<S, L, O> env_L(Set<L> L, PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re,
-        IScopePath<S, L, O> path) {
-        return useStaging ? stagedEnv_L.computeIfAbsent(lt, lo -> stageEnv_L(L, lt)).apply(seenImports, re, path)
-            : unstagedEnv_L(L, seenImports, lt, re, path);
+        IScopePath<S, L, O> path, Predicate<O> filter) {
+        return useStaging
+            ? stagedEnv_L.computeIfAbsent(lt, lo -> stageEnv_L(L, lt)).apply(seenImports, re, path, filter)
+            : unstagedEnv_L(L, seenImports, lt, re, path, filter);
     }
 
     private EsopEnv<S, L, O> unstagedEnv_L(Set<L> L, PSet<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re,
-        IScopePath<S, L, O> path) {
+        IScopePath<S, L, O> path, Predicate<O> filter) {
         EsopEnv<S, L, O> env = EsopEnv.empty(true);
         for(L l : max(lt, L)) {
-            EsopEnv<S, L, O> partialEnv = env_L(smaller(lt, L, l), seenImports, lt, re, path);
-            partialEnv.shadow(env_l(seenImports, lt, re, l, path));
+            EsopEnv<S, L, O> partialEnv = env_L(smaller(lt, L, l), seenImports, lt, re, path, filter);
+            partialEnv.shadow(env_l(seenImports, lt, re, l, path, filter));
             env.union(partialEnv);
         }
         return env;
@@ -218,16 +226,16 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         List<EnvL<S, L, O>> stagedEnvs = Lists.newArrayList();
         for(L l : max(lt, L)) {
             EnvL<S, L, O> smallerEnv = stageEnv_L(smaller(lt, L, l), lt);
-            stagedEnvs.add((seenImports, re, path) -> {
-                EsopEnv<S, L, O> env = smallerEnv.apply(seenImports, re, path);
-                env.shadow(env_l(seenImports, lt, re, l, path));
+            stagedEnvs.add((seenImports, re, path, filter) -> {
+                EsopEnv<S, L, O> env = smallerEnv.apply(seenImports, re, path, filter);
+                env.shadow(env_l(seenImports, lt, re, l, path, filter));
                 return env;
             });
         }
-        return (seenImports, re, path) -> {
+        return (seenImports, re, path, filter) -> {
             EsopEnv<S, L, O> env = EsopEnv.empty(true);
             for(EnvL<S, L, O> stagedEnv : stagedEnvs) {
-                env.union(stagedEnv.apply(seenImports, re, path));
+                env.union(stagedEnv.apply(seenImports, re, path, filter));
             }
             return env;
         };
