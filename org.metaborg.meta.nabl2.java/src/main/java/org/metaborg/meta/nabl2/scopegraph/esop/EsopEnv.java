@@ -12,8 +12,6 @@ import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableSpacedName;
 import org.metaborg.meta.nabl2.scopegraph.terms.SpacedName;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.util.Optionals;
-import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -46,19 +44,6 @@ class EsopEnv<S extends IScope, L extends ILabel, O extends IOccurrence> impleme
 
     public Iterable<IDeclPath<S, L, O>> getAll() {
         return res.values();
-    }
-
-    public void map(Function1<IDeclPath<S, L, O>, IDeclPath<S, L, O>> f) {
-        for(SpacedName sn : res.keySet()) {
-            res.replaceValues(sn, res.get(sn).stream().map(f::apply).collect(Collectors.toSet()));
-        }
-    }
-
-    public void filter(PartialFunction1<IDeclPath<S, L, O>, IDeclPath<S, L, O>> f) {
-        for(SpacedName sn : res.keySet()) {
-            res.replaceValues(sn,
-                res.get(sn).stream().map(f::apply).flatMap(Optionals::stream).collect(Collectors.toSet()));
-        }
     }
 
     public void shadow(EsopEnv<S, L, O> other) {
