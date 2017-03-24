@@ -13,3 +13,21 @@ context-free syntax
   Test.ResolveNs1XToNs2XInSameScope = <resolve ns1 <X> to ns2 <X> in same scope>
 
   Test.ResolveXToXOrXInSameScope = <resolve <X> to <X> or <X> in same scope>
+
+context-free syntax
+
+  Test.ResolveXToXInParentScope = <resolve <X> to <X> in parent scope>
+
+  Test.ResolveXToXOrXInParentScopes = <resolve <X> to <X> and <X> in parent scopes>
+
+  Test.ResolveXToXInImportScopeNotInParentScope = <resolve <X> to <X> in import scope over <X> parent scope>
+
+context-free syntax
+
+  Test.ResolveXViaY = <resolve <X> via <Y> in <Y> { <X> }>
+
+  Test.ResolveXViaYAndZ = <resolve <X> via <Y> where <Y> imports <Z> in <Z> { <X> }>
+
+context-free syntax
+
+  Test.ResolveYViaTypeOfX = <resolve <Y> via type of <X> in <X> { <Y> } >
