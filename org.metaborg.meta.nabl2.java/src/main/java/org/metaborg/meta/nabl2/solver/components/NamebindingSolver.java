@@ -109,7 +109,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             throw new IllegalStateException("Adding constraints after resolution has started.");
         }
         return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addBuild, this::addBuild, this::addBuild,
-            this::addBuild, this::add, this::add, this::add));
+                this::addBuild, this::add, this::add, this::add));
     }
 
     @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
@@ -128,9 +128,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     @Override protected Iterable<INamebindingConstraint> doFinish(IMessageInfo messageInfo) {
         Iterable<INamebindingConstraint> graphConstraints =
-            isPartial() ? scopeGraphConstraints(messageInfo) : Iterables2.empty();
+                isPartial() ? scopeGraphConstraints(messageInfo) : Iterables2.empty();
         return Iterables2.fromConcat(Iterables2.from(unsolvedBuilds, unsolvedChecks, incompleteDirectEdges,
-            incompleteImportEdges, graphConstraints));
+                incompleteImportEdges, graphConstraints));
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -178,7 +178,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     private boolean solve(INamebindingConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve, this::solve, this::solve, this::solve,
-            this::solve, this::solve, this::solve));
+                this::solve, this::solve, this::solve));
     }
 
     private boolean solve(CGDecl c) {
@@ -188,9 +188,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Scope scope = Scope.matcher().match(scopeTerm)
-            .orElseThrow(() -> new TypeException("Expected a scope as first agument to " + c));
+                .orElseThrow(() -> new TypeException("Expected a scope as first agument to " + c));
         Occurrence decl = Occurrence.matcher().match(declTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as second argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected an occurrence as second argument to " + c));
         scopeGraph.addDecl(scope, decl);
         return true;
     }
@@ -202,9 +202,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         Scope scope = Scope.matcher().match(scopeTerm)
-            .orElseThrow(() -> new TypeException("Expected a scope as second argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected a scope as second argument to " + c));
         scopeGraph.addRef(ref, scope);
         return true;
     }
@@ -215,10 +215,10 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Scope sourceScope = Scope.matcher().match(sourceScopeTerm)
-            .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
         scopeCounter.add(sourceScope, c.getLabel());
         CGDirectEdge<Scope> cc =
-            ImmutableCGDirectEdge.of(sourceScope, c.getLabel(), c.getTargetScope(), c.getMessageInfo());
+                ImmutableCGDirectEdge.of(sourceScope, c.getLabel(), c.getTargetScope(), c.getMessageInfo());
         if(!solveDirectEdge(cc)) {
             incompleteDirectEdges.add(cc);
         }
@@ -231,7 +231,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Scope scope = Scope.matcher().match(scopeTerm)
-            .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
         scopeCounter.add(scope, c.getLabel());
         CGImport<Scope> cc = ImmutableCGImport.of(scope, c.getLabel(), c.getReference(), c.getMessageInfo());
         if(!solveImportEdge(cc)) {
@@ -248,9 +248,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Scope scope = Scope.matcher().match(scopeTerm)
-            .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
         Occurrence decl = Occurrence.matcher().match(declTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         scopeGraph.addAssoc(decl, c.getLabel(), scope);
         return true;
     }
@@ -262,7 +262,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Scope targetScope = Scope.matcher().match(targetScopeTerm)
-            .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
         scopeGraph.addDirectEdge(c.getSourceScope(), c.getLabel(), targetScope);
         scopeCounter.remove(c.getSourceScope(), c.getLabel());
         return true;
@@ -274,7 +274,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as third argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected an occurrence as third argument to " + c));
         scopeGraph.addImport(c.getScope(), c.getLabel(), ref);
         scopeCounter.remove(c.getScope(), c.getLabel());
         return true;
@@ -290,16 +290,16 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        Optional<Iterable<IResolutionPath<Scope, Label, Occurrence>>> paths = nameResolution.tryResolve(ref);
+                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
+        Optional<Set<IResolutionPath<Scope, Label, Occurrence>>> paths = nameResolution.tryResolve(ref);
         if(paths.isPresent()) {
             List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths.get());
             unifier().removeActive(r.getDeclaration(), r); // before `unify`, so that we don't cause an error chain if
                                                            // that fails
             switch(declarations.size()) {
                 case 0:
-                    throw new UnsatisfiableException(r.getMessageInfo()
-                        .withDefaultContent(MessageContent.builder().append(ref).append(" does not resolve.").build()));
+                    throw new UnsatisfiableException(r.getMessageInfo().withDefaultContent(
+                            MessageContent.builder().append(ref).append(" does not resolve.").build()));
                 case 1:
                     try {
                         unifier().unify(r.getDeclaration(), declarations.get(0));
@@ -309,7 +309,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                     return true;
                 default:
                     throw new UnsatisfiableException(r.getMessageInfo().withDefaultContent(MessageContent.builder()
-                        .append("Resolution of ").append(ref).append(" is ambiguous.").build()));
+                            .append("Resolution of ").append(ref).append(" is ambiguous.").build()));
             }
         } else {
             return false;
@@ -325,14 +325,14 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
+                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
         Label label = a.getLabel();
         List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocEdges().get(decl, label));
         unifier().removeActive(a.getScope(), a); // before `unify`, so that we don't cause an error chain if that fails
         switch(scopes.size()) {
             case 0:
                 throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder()
-                    .append(decl).append(" has no ").append(label).append(" associated scope.").build()));
+                        .append(decl).append(" has no ").append(label).append(" associated scope.").build()));
             case 1:
                 try {
                     unifier().unify(a.getScope(), scopes.get(0));
@@ -342,7 +342,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 return true;
             default:
                 throw new UnsatisfiableException(a.getMessageInfo().withDefaultContent(MessageContent.builder()
-                    .append(decl).append(" has multiple ").append(label).append(" associated scope.").build()));
+                        .append(decl).append(" has multiple ").append(label).append(" associated scope.").build()));
         }
     }
 
@@ -352,7 +352,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return false;
         }
         Occurrence decl = Occurrence.matcher().match(declTerm)
-            .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
+                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         unifier().removeActive(c.getValue(), c); // before `unify`, so that we don't cause an error chain if that fails
         Optional<ITerm> prev = properties.putValue(decl, c.getKey(), c.getValue());
         if(prev.isPresent()) {
@@ -418,11 +418,11 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Iterable<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
+                    Optional<Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Iterable<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
+                    Optional<Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 })
                 // @formatter:on

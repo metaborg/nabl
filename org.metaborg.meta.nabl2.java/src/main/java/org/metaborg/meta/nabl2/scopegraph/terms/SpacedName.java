@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.scopegraph.terms;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.scopegraph.INamespace;
+import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -20,6 +21,10 @@ public abstract class SpacedName {
         sb.append(getName());
         sb.append('}');
         return sb.toString();
+    }
+
+    public static SpacedName of(IOccurrence occurrence) {
+        return ImmutableSpacedName.of(occurrence.getNamespace(), occurrence.getName());
     }
 
 }

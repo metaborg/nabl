@@ -19,7 +19,7 @@ public interface IStep<S extends IScope, L extends ILabel, O extends IOccurrence
         T caseN(S source, L label, IResolutionPath<S, L, O> importPath, S target);
 
         static <S extends IScope, L extends ILabel, O extends IOccurrence, T> ICases<S, L, O, T>
-            of(Function3<S, L, S, T> onE, Function4<S, L, IResolutionPath<S, L, O>, S, T> onN) {
+                of(Function3<S, L, S, T> onE, Function4<S, L, IResolutionPath<S, L, O>, S, T> onN) {
             return new ICases<S, L, O, T>() {
 
                 @Override public T caseE(S source, L label, S target) {

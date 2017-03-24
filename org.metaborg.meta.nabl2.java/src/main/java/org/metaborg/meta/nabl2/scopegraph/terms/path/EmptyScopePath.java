@@ -21,7 +21,7 @@ import com.google.common.collect.Iterators;
 @Value.Immutable
 @Serial.Version(value = 42L)
 abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements IScopePath<S, L, O> {
+        implements IScopePath<S, L, O> {
 
     @Value.Parameter public abstract S getScope();
 
@@ -64,6 +64,14 @@ abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOcc
             return false;
         IScopePath<?, ?, ?> other = (IScopePath<?, ?, ?>) obj;
         return Iterators.size(other.iterator()) == 0;
+    }
+
+    @Override public String toString(boolean includeSource, boolean includeTarget) {
+        return (includeSource && includeTarget) ? getScope().toString() : "";
+    }
+
+    @Override public String toString() {
+        return toString(true, true);
     }
 
 }

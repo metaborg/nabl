@@ -1,19 +1,21 @@
 package org.metaborg.meta.nabl2.util.collections;
 
+import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
 
 public final class PSets {
 
-    public static <T> boolean intersect(PSet<T> left, T intf, PSet<T> right) {
+    public static <T> PSet<T> intersection(PSet<T> left, PSet<T> right) {
         if(left.size() > right.size()) {
-            return intersect(right, intf, left);
+            return intersection(right, left);
         }
-        for(T t : left) {
-            if(!t.equals(intf) && right.contains(t)) {
-                return true;
+        PSet<T> isect = HashTreePSet.empty();
+        for(T elem : left) {
+            if(right.contains(elem)) {
+                isect = isect.plus(elem);
             }
         }
-        return false;
+        return isect;
     }
 
 }

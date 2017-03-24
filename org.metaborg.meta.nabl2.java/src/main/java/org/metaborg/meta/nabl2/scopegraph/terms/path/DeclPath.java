@@ -35,5 +35,14 @@ abstract class DeclPath<S extends IScope, L extends ILabel, O extends IOccurrenc
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
         return Iterables2.empty();
     }
-    
+
+    @Override public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getPath());
+        sb.append(Paths.PATH_SEPERATOR);
+        sb.append("D");
+        sb.append(getDeclaration());
+        return sb.toString();
+    }
+
 }

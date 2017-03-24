@@ -22,7 +22,7 @@ import com.google.common.collect.Iterators;
 @Value.Immutable
 @Serial.Version(value = 42L)
 abstract class NStep<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements IStep<S, L, O>, IScopePath<S, L, O> {
+        implements IStep<S, L, O>, IScopePath<S, L, O> {
 
     @Value.Parameter @Override public abstract S getSource();
 
@@ -54,6 +54,28 @@ abstract class NStep<S extends IScope, L extends ILabel, O extends IOccurrence>
 
     @Override public <T> T match(IStep.ICases<S, L, O, T> cases) {
         return cases.caseN(getSource(), getLabel(), getImportPath(), getTarget());
+    }
+
+    @Override public String toString(boolean includeTo, boolean includeFrom) {
+        StringBuilder sb = new StringBuilder();
+        if(includeFrom) {
+            sb.append(getSource());
+            sb.append(Paths.PATH_SEPERATOR);
+        }
+        sb.append("N(");
+        sb.append(getLabel());
+        sb.append(",");
+        sb.append(getImportPath());
+        sb.append(")");
+        if(includeTo) {
+            sb.append(Paths.PATH_SEPERATOR);
+            sb.append(getTarget());
+        }
+        return sb.toString();
+    }
+
+    @Override public String toString() {
+        return toString(true, true);
     }
 
 }

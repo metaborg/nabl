@@ -15,7 +15,7 @@ import org.pcollections.PSet;
 @Value.Immutable
 @Serial.Version(value = 42L)
 abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements IResolutionPath<S, L, O> {
+        implements IResolutionPath<S, L, O> {
 
     @Value.Parameter @Override public abstract O getReference();
 
@@ -48,5 +48,17 @@ abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOcc
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
         return getPath().getImportPaths();
     }
-    
+
+    @Override public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getReference());
+        sb.append("R");
+        sb.append(Paths.PATH_SEPERATOR);
+        sb.append(getPath());
+        sb.append(Paths.PATH_SEPERATOR);
+        sb.append("D");
+        sb.append(getDeclaration());
+        return sb.toString();
+    }
+
 }

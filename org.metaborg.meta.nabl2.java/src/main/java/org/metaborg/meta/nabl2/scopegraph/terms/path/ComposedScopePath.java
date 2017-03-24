@@ -22,7 +22,7 @@ import com.google.common.collect.Iterators;
 @Value.Immutable
 @Serial.Version(value = 42L)
 abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements IScopePath<S, L, O> {
+        implements IScopePath<S, L, O> {
 
     @Value.Parameter public abstract IScopePath<S, L, O> getLeft();
 
@@ -32,7 +32,7 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;
         }
-        if(PSets.intersect(getLeft().getScopes(), getLeft().getTarget(), getRight().getScopes())) {
+        if(!PSets.intersection(getLeft().getScopes(), getRight().getScopes()).minus(getLeft().getTarget()).isEmpty()) {
             return null;
         }
         return this;
@@ -81,6 +81,18 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
             return false;
         IScopePath<?, ?, ?> other = (IScopePath<?, ?, ?>) obj;
         return Iterators.elementsEqual(this.iterator(), other.iterator());
+    }
+
+    @Override public String toString(boolean includeSource, boolean includeTarget) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getLeft().toString(includeSource, true));
+        sb.append(Paths.PATH_SEPERATOR);
+        sb.append(getRight().toString(false, includeTarget));
+        return sb.toString();
+    }
+
+    @Override public String toString() {
+        return toString(true, true);
     }
 
 }

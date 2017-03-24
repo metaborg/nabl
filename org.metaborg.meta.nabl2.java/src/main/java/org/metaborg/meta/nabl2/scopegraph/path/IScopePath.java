@@ -11,4 +11,6 @@ public interface IScopePath<S extends IScope, L extends ILabel, O extends IOccur
 
     S getTarget();
 
+    String toString(boolean includeSource, boolean includeTarget);
+
 }
