@@ -32,6 +32,10 @@ abstract class NStep<S extends IScope, L extends ILabel, O extends IOccurrence>
 
     @Value.Parameter @Override public abstract S getTarget();
 
+    @Value.Lazy @Override public int size() {
+        return 1;
+    }
+
     @Value.Lazy @Override public PSet<O> getImports() {
         return getImportPath().getImports().plus(getImportPath().getReference());
     }

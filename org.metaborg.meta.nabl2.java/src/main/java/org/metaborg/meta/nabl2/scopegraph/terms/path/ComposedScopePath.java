@@ -18,6 +18,7 @@ import org.pcollections.PSet;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.math.IntMath;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -38,12 +39,16 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         return this;
     }
 
-    @Override public S getSource() {
+    @Value.Lazy @Override public S getSource() {
         return getLeft().getSource();
     }
 
-    @Override public S getTarget() {
+    @Value.Lazy @Override public S getTarget() {
         return getRight().getTarget();
+    }
+
+    @Value.Lazy @Override public int size() {
+        return getLeft().size() + getRight().size();
     }
 
     @Value.Lazy @Override public PSet<O> getImports() {
@@ -67,11 +72,7 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
     }
 
     @Override public int hashCode() {
-        int result = 1;
-        for(IStep<S, L, O> step : this) {
-            result = 31 * result + step.hashCode();
-        }
-        return result;
+        return getLeft().hashCode() + (IntMath.pow(31, getLeft().size()) * getRight().hashCode());
     }
 
     @Override public boolean equals(Object obj) {
@@ -80,6 +81,10 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         if(!(obj instanceof IScopePath<?, ?, ?>))
             return false;
         IScopePath<?, ?, ?> other = (IScopePath<?, ?, ?>) obj;
+        if(!getSource().equals(other.getSource()))
+            return false;
+        if(!getTarget().equals(other.getTarget()))
+            return false;
         return Iterators.elementsEqual(this.iterator(), other.iterator());
     }
 

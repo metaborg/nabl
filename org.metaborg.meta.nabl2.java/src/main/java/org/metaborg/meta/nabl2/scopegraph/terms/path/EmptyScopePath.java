@@ -33,6 +33,10 @@ abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOcc
         return getScope();
     }
 
+    @Value.Lazy @Override public int size() {
+        return 0;
+    }
+
     @Value.Lazy @Override public PSet<O> getImports() {
         return HashTreePSet.empty();
     }
@@ -54,7 +58,7 @@ abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOcc
     }
 
     @Override public int hashCode() {
-        return 1;
+        return 0;
     }
 
     @Override public boolean equals(Object obj) {
@@ -63,6 +67,10 @@ abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOcc
         if(!(obj instanceof IScopePath<?, ?, ?>))
             return false;
         IScopePath<?, ?, ?> other = (IScopePath<?, ?, ?>) obj;
+        if(!getScope().equals(other.getSource()))
+            return false;
+        if(!getScope().equals(other.getTarget()))
+            return false;
         return Iterators.size(other.iterator()) == 0;
     }
 

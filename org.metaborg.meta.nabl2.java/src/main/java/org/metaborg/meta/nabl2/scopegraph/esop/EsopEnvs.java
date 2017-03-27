@@ -117,16 +117,21 @@ public class EsopEnvs {
                 if(filter.shortCircuit() && !paths.isEmpty()) {
                     return true;
                 }
-                if(_envs.isEmpty()) {
-                    return true;
+                Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
+                while(it.hasNext()) {
+                    IEsopEnv<S, L, O, P> env = it.next();
+                    boolean progress = env.getAll().map(ps -> {
+                        // be careful not to self-shadow, therefore first add paths, then add shadow tokens
+                        ps.stream().filter(p -> !shadowed.contains(filter.matchToken(p))).forEach(paths::add);
+                        ps.stream().map(p -> filter.matchToken(p)).forEach(shadowed::add);
+                        it.remove();
+                        return true;
+                    }).orElse(false);
+                    if(!progress) {
+                        return false;
+                    }
                 }
-                return _envs.peek().getAll().map(ps -> {
-                    // be careful not to self-shadow, therefore first add paths, then add shadow tokens
-                    ps.stream().filter(p -> !shadowed.contains(filter.matchToken(p))).forEach(paths::add);
-                    ps.stream().map(p -> filter.matchToken(p)).forEach(shadowed::add);
-                    _envs.pop();
-                    return done();
-                }).orElse(false);
+                return true;
             }
 
             @Override public Optional<Set<P>> getAll() {
