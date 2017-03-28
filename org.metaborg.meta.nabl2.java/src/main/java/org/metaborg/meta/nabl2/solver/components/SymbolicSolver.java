@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.solver.components;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.List;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
@@ -18,7 +17,6 @@ import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.Unit;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class SymbolicSolver extends SolverComponent<ISymbolicConstraint> {
@@ -44,9 +42,9 @@ public class SymbolicSolver extends SolverComponent<ISymbolicConstraint> {
         return unit;
     }
 
-    @Override protected Iterable<? extends ISymbolicConstraint> doFinish(IMessageInfo messageInfo)
-        throws InterruptedException {
-        List<ISymbolicConstraint> constraints = Lists.newArrayList();
+    @Override protected Set<? extends ISymbolicConstraint> doFinish(IMessageInfo messageInfo)
+            throws InterruptedException {
+        Set<ISymbolicConstraint> constraints = Sets.newHashSet();
         if(isPartial()) {
             facts.stream().forEach(fact -> constraints.add(ImmutableCFact.of(fact, messageInfo)));
             goals.stream().forEach(goal -> constraints.add(ImmutableCGoal.of(goal, messageInfo)));

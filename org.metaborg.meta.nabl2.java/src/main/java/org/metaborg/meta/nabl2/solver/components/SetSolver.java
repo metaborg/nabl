@@ -65,7 +65,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
         return doIterate(defered, this::solve);
     }
 
-    @Override protected Iterable<ISetConstraint> doFinish(IMessageInfo messageInfo) {
+    @Override protected Set<? extends ISetConstraint> doFinish(IMessageInfo messageInfo) {
         return defered;
     }
 
@@ -87,17 +87,17 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
             return false;
         }
         Multimap<Object, IElement<ITerm>> leftProj =
-            SetEvaluator.project(maybeLeftSet.get(), constraint.getProjection());
+                SetEvaluator.project(maybeLeftSet.get(), constraint.getProjection());
         Multimap<Object, IElement<ITerm>> rightProj =
-            SetEvaluator.project(maybeRightSet.get(), constraint.getProjection());
+                SetEvaluator.project(maybeRightSet.get(), constraint.getProjection());
         Multimap<Object, IElement<ITerm>> result = HashMultimap.create();
         result.putAll(leftProj);
         result.keySet().removeAll(rightProj.keySet());
         if(!result.isEmpty()) {
             MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP)).append(" not in ")
-                .append(constraint.getRight()).build();
+                    .append(constraint.getRight()).build();
             throw new UnsatisfiableException(
-                makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values()));
+                    makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values()));
         }
         return true;
     }
@@ -121,9 +121,9 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
         }
         if(!duplicates.isEmpty()) {
             MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP))
-                .append(" has duplicates in ").append(constraint.getSet()).build();
+                    .append(" has duplicates in ").append(constraint.getSet()).build();
             throw new UnsatisfiableException(
-                makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates));
+                    makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates));
         }
         return true;
     }
@@ -138,8 +138,8 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
         } else {
             ITerm es = GenericTerms.newList(elements.stream().map(e -> e.getValue()).collect(Collectors.toList()));
             Function1<ITerm, ITerm> f = M.sometd(M.appl0(NAME_OP, a -> es));
-            return Iterables2.singleton(
-                ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f), template.getOriginTerm()));
+            return Iterables2.singleton(ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f),
+                    template.getOriginTerm()));
         }
     }
 

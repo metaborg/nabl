@@ -1,8 +1,8 @@
 package org.metaborg.meta.nabl2.solver;
 
-import java.util.List;
+import java.util.Set;
 
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -29,6 +29,8 @@ public interface ISolution {
 
     IUnifier getUnifier();
 
-    List<IMessageInfo> getMessages();
+    IMessages getMessages();
+
+    Set<IConstraint> getUnsolvedConstraints();
 
 }

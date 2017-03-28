@@ -2,8 +2,8 @@ package org.metaborg.meta.nabl2.solver.components;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.ast.CAstProperty;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
@@ -22,7 +22,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class AstSolver extends SolverComponent<IAstConstraint> {
 
@@ -51,20 +51,19 @@ public class AstSolver extends SolverComponent<IAstConstraint> {
 
     private void solve(CAstProperty constraint) throws UnsatisfiableException {
         Optional<ITerm> oldValue =
-            properties.putValue(constraint.getIndex(), constraint.getKey(), constraint.getValue());
+                properties.putValue(constraint.getIndex(), constraint.getKey(), constraint.getValue());
         if(oldValue.isPresent()) {
             try {
                 unifier().unify(oldValue.get(), constraint.getValue());
             } catch(UnificationException e) {
                 throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
-                    constraint.getMessageInfo().getOriginTerm()));
+                        constraint.getMessageInfo().getOriginTerm()));
             }
         }
     }
 
-    @Override protected Iterable<? extends IAstConstraint> doFinish(IMessageInfo messageInfo)
-        throws InterruptedException {
-        List<IAstConstraint> constraints = Lists.newArrayList();
+    @Override protected Set<? extends IAstConstraint> doFinish(IMessageInfo messageInfo) throws InterruptedException {
+        Set<IAstConstraint> constraints = Sets.newHashSet();
         if(isPartial()) {
             for(TermIndex index : properties.getIndices()) {
                 for(ITerm key : properties.getDefinedKeys(index)) {

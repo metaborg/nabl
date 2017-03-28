@@ -51,7 +51,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         return doIterate(defered, this::solve);
     }
 
-    @Override protected Iterable<IPolyConstraint> doFinish(IMessageInfo messageInfo) {
+    @Override protected Set<? extends IPolyConstraint> doFinish(IMessageInfo messageInfo) {
         return defered;
     }
 

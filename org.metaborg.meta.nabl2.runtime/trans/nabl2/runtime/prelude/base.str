@@ -19,6 +19,14 @@ rules
   nabl2--log(|n)  = nabl2--log(id|n)
   nabl2--log(s)   = nabl2--log(s|"")
 
+  // missing from standard library
+  /**
+   * Logs the specified message as a debug.
+   *
+   * @type a -> a
+   */
+  dbg-msg(|msg : String) =
+    log(|Debug(), msg)
 
   nabl2--assert(s) = with(s <+ debug(!"Assert failed"))
 

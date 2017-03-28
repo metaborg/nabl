@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.spoofax.analysis;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -16,7 +17,7 @@ public abstract class UnitResult {
 
     @Value.Parameter public abstract ITerm getAST();
 
-    @Value.Parameter public abstract Iterable<IConstraint> getConstraints();
+    @Value.Parameter public abstract Set<IConstraint> getConstraints();
 
     @Value.Auxiliary public abstract Optional<ITerm> getCustomResult();
 

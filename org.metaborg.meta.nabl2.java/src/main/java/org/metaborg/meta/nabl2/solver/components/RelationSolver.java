@@ -26,11 +26,10 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 public class RelationSolver extends SolverComponent<IRelationConstraint> {
@@ -38,12 +37,12 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     private final Relations<ITerm> relations;
     private final Map<String, Function1<ITerm, Optional<ITerm>>> functions;
 
-    private final Multimap<IRelationName, IRelationConstraint> deferedBuilds = HashMultimap.create();
+    private final SetMultimap<IRelationName, IRelationConstraint> deferedBuilds = HashMultimap.create();
     private final Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
     private boolean complete = false;
 
     public RelationSolver(Solver solver, Relations<ITerm> relations,
-        Map<String, Function1<ITerm, Optional<ITerm>>> functions) {
+            Map<String, Function1<ITerm, Optional<ITerm>>> functions) {
         super(solver);
         this.relations = relations;
         this.functions = Maps.newHashMap(functions);
@@ -120,8 +119,11 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         return progress;
     }
 
-    @Override protected Iterable<IRelationConstraint> doFinish(IMessageInfo messageInfo) {
-        return Iterables2.fromConcat(deferedBuilds.values(), deferedChecks);
+    @Override protected Set<? extends IRelationConstraint> doFinish(IMessageInfo messageInfo) {
+        Set<IRelationConstraint> unsolved = Sets.newHashSet();
+        unsolved.addAll(deferedBuilds.values());
+        unsolved.addAll(deferedChecks);
+        return unsolved;
     }
 
     // ------------------------------------------------------------------------------------------------------//

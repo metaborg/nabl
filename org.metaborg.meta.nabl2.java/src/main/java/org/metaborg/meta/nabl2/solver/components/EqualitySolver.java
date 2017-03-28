@@ -38,7 +38,7 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
         return doIterate(defered, this::solve);
     }
 
-    @Override protected Iterable<CInequal> doFinish(IMessageInfo messageInfo) {
+    @Override protected Set<? extends IEqualityConstraint> doFinish(IMessageInfo messageInfo) {
         return defered;
     }
 
@@ -67,8 +67,8 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
         try {
             unifier().unify(left, right);
         } catch(UnificationException ex) {
-            MessageContent content =
-                MessageContent.builder().append("Cannot unify ").append(left).append(" with ").append(right).build();
+            MessageContent content = MessageContent.builder().append("Cannot unify ").append(left).append(" with ")
+                    .append(right).build();
             throw new UnsatisfiableException(constraint.getMessageInfo().withDefaultContent(content));
         }
         return true;
@@ -79,8 +79,8 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
         ITerm right = unifier().find(constraint.getRight());
         if(left.equals(right)) {
             MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
-                .append(constraint.getRight().toString()).append(" must be inequal, but both resolve to ")
-                .append(constraint.getLeft()).build();
+                    .append(constraint.getRight().toString()).append(" must be inequal, but both resolve to ")
+                    .append(constraint.getLeft()).build();
             throw new UnsatisfiableException(constraint.getMessageInfo().withDefaultContent(content));
         }
         return !unifier().canUnify(left, right);

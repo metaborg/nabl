@@ -1,10 +1,10 @@
 package org.metaborg.meta.nabl2.solver;
 
-import java.util.List;
+import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -33,6 +33,8 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract ISymbolicConstraints getSymbolic();
 
-    @Value.Parameter public abstract List<IMessageInfo> getMessages();
+    @Value.Parameter public abstract IMessages getMessages();
+
+    @Value.Parameter @Override public abstract Set<IConstraint> getUnsolvedConstraints();
 
 }

@@ -16,44 +16,37 @@ imports
 rules
 
   nabl2--analyze(pre):
-    AnalyzeInitial(resource) -> InitialResult(C, params, config)
-    with <debug> $[Initializing [resource]];
-      labels := <nabl2--labels>;
-      wf := <nabl2--labels-wf>;
-      order := <nabl2--label-order>;
-      res-params := (labels,wf,order);
-      rel* := <nabl2--relations>;
-      fun* := <nabl2--functions>;
-      config := (res-params, rel*, fun*);
-      (params,C) := <nabl2--generate-constraint-init(|resource)> resource
+      AnalyzeInitial(resource) -> InitialResult(C, params, config)
+    with dbg-msg(|$[Initializing [resource]]);
+         labels := <nabl2--labels>;
+         wf := <nabl2--labels-wf>;
+         order := <nabl2--label-order>;
+         res-params := (labels,wf,order);
+         rel* := <nabl2--relations>;
+         fun* := <nabl2--functions>;
+         config := (res-params, rel*, fun*);
+         (params,C) := <nabl2--generate-constraint-init(|resource)> resource
 
   nabl2--analyze(pre):
-    AnalyzeUnit(resource,ast,args) -> UnitResult(ast',constraint*)
-    where not(<nabl2--is-empty-ast> ast)
-    with <debug> $[Preprocessing AST [resource]];
-      ast' := <pre;nabl2--index-ast(|resource)> ast
-    with <debug> $[Generating constraints [resource]];
-      constraint* := <nabl2--generate-constraint-file(|resource,args)> ast'
+      AnalyzeUnit(resource,ast,args) -> UnitResult(ast',constraint*)
+    with dbg-msg(|$[Preprocessing AST [resource]]);
+         ast' := <pre;nabl2--index-ast(|resource)> ast;
+         dbg-msg(|$[Generating constraints [resource]]);
+         constraint* := <nabl2--generate-constraint-file(|resource,args)> ast'
 
   nabl2--analyze(pre):
-    AnalyzeUnit(resource,ast,_) -> UnitResult(ast,constraint*)
-    where <nabl2--is-empty-ast> ast
-    with constraint* := [CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> resource))]
- 
-  nabl2--analyze(pre):
-    AnalyzeFinal(resource) -> FinalResult()
+      AnalyzeFinal(resource) -> FinalResult()
 
 
   nabl2--analyze(pre):
-    CustomInitial(resource) -> result
+      CustomInitial(resource) -> result
     where result := <nabl2-custom-analysis-init-hook> resource
 
   nabl2--analyze(pre):
-    CustomUnit(resource,ast,initial) -> result
+      CustomUnit(resource,ast,initial) -> result
     where result := <nabl2-custom-analysis-unit-hook> (resource, ast, initial)
 
   nabl2--analyze(pre):
-    CustomFinal(resource,initial,unit*) -> result
+      CustomFinal(resource,initial,unit*) -> result
     where result := <nabl2-custom-analysis-final-hook(|resource)> (resource, initial, unit*)
 
-  nabl2--is-empty-ast = ?()

@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.spoofax.analysis;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -15,7 +16,7 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 @Serial.Version(value = 42L)
 public abstract class InitialResult {
 
-    @Value.Parameter public abstract Iterable<IConstraint> getConstraints();
+    @Value.Parameter public abstract Set<IConstraint> getConstraints();
 
     @Value.Parameter public abstract Args getArgs();
 
@@ -27,9 +28,9 @@ public abstract class InitialResult {
 
     public static IMatcher<InitialResult> matcher() {
         return M.appl3("InitialResult", M.listElems(Constraints.matcher()), Args.matcher(), SolverConfig.matcher(),
-            (t, constraints, args, config) -> {
-                return ImmutableInitialResult.of(constraints, args, config);
-            });
+                (t, constraints, args, config) -> {
+                    return ImmutableInitialResult.of(constraints, args, config);
+                });
     }
 
 }

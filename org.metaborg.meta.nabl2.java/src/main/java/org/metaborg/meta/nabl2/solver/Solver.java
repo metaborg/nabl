@@ -9,9 +9,7 @@ import java.util.stream.Collectors;
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
-import org.metaborg.meta.nabl2.constraints.base.ImmutableCFalse;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
-import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
@@ -27,6 +25,8 @@ import org.metaborg.meta.nabl2.solver.components.SymbolicSolver;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
@@ -59,10 +59,10 @@ public class Solver {
     private final SymbolicSolver symbolicSolver;
     private final PolymorphismSolver polySolver;
 
-    private final List<IMessageInfo> messages;
+    private final Messages messages;
 
     private Solver(SolverConfig config, Function1<String, ITermVar> fresh, SolverMode mode, IProgress progress,
-        ICancel cancel) {
+            ICancel cancel) {
         this.mode = mode;
         this.fresh = fresh;
         this.unifier = new Unifier<>();
@@ -79,12 +79,27 @@ public class Solver {
         this.components.add(symbolicSolver = new SymbolicSolver(this));
         this.components.add(polySolver = new PolymorphismSolver(this));
 
-        this.messages = Lists.newArrayList();
+        this.messages = new Messages();
     }
 
-    private void add(Iterable<IConstraint> constraints) throws InterruptedException {
-        final int n = Iterables.size(constraints);
-        progress.setWorkRemaining(n + 1);
+    private void addAll(Collection<PartialSolution> partialSolutions, IMessageInfo messageInfo)
+            throws InterruptedException {
+        for(PartialSolution partialSolution : partialSolutions) {
+            messages.addAll(partialSolution.getMessages());
+            IUnifier otherUnifier = partialSolution.getUnifier();
+            for(ITermVar var : otherUnifier.getAllVars()) {
+                try {
+                    unifier.unify(var, otherUnifier.find(var));
+                } catch(UnificationException ex) {
+                    messages.add(messageInfo.withDefaultContent(ex.getMessageContent()));
+                }
+            }
+            addAll(partialSolution.getUnsolvedConstraints());
+        }
+    }
+
+    private void addAll(Collection<IConstraint> constraints) throws InterruptedException {
+        progress.setWorkRemaining(constraints.size() + 1);
         for(IConstraint constraint : constraints) {
             cancel.throwIfCancelled();
             try {
@@ -129,49 +144,26 @@ public class Solver {
         } while(progress);
     }
 
-    private Iterable<IConstraint> finish(IMessageInfo messageInfo) throws InterruptedException {
+    private Set<IConstraint> finish(IMessageInfo messageInfo) throws InterruptedException {
         Set<IConstraint> unsolved = Sets.newHashSet();
         for(SolverComponent<?> component : components) {
             cancel.throwIfCancelled();
             component.getTimer().start();
             try {
-                Iterables.addAll(unsolved, component.finish(messageInfo));
+                unsolved.addAll(component.finish(messageInfo));
             } finally {
                 component.getTimer().stop();
             }
         }
-        switch(mode) {
-            case PARTIAL:
-                messages.stream().map(ImmutableCFalse::of).forEach(unsolved::add);
-            case TOTAL:
-            default:
-                unsolved.stream().forEach(c -> {
-                    IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-                    messages.add(c.getMessageInfo().withDefaultContent(content));
-                });
-        }
-        unsolved = unsolved.stream().map(c -> Constraints.find(c, unifier)).collect(Collectors.toSet());
-        // this must be added after unification, because we want to retain the active variable on the left
-        if(SolverMode.PARTIAL.equals(mode)) {
-            for(ITermVar var : unifier.getActiveVars()) {
-                final ITerm rep = unifier.find(var);
-                if(!rep.equals(var)) {
-                    unsolved.add(ImmutableCEqual.of(var, rep, messageInfo));
-                }
-            }
-        }
-        return unsolved;
+        return unsolved.stream().map(c -> Constraints.find(c, unifier)).collect(Collectors.toSet());
     }
 
-    private void check(Collection<IConstraint> unsolved) {
-    }
-
-    public static Iterable<IConstraint> solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
-        Function1<String, ITermVar> fresh, Iterable<IConstraint> constraints, IMessageInfo messageInfo,
-        IProgress progress, ICancel cancel) throws SolverException, InterruptedException {
-        final int n0 = Iterables.size(constraints);
+    public static PartialSolution solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
+            Function1<String, ITermVar> fresh, Collection<IConstraint> constraints, IMessageInfo messageInfo,
+            IProgress progress, ICancel cancel) throws SolverException, InterruptedException {
+        final int n0 = constraints.size();
         long t0 = System.nanoTime();
-        logger.info(">>> Reducing {} constraints <<<", n0);
+        logger.debug("Incremental solving {} constraints.", n0);
 
         Solver solver = new Solver(config, fresh, SolverMode.PARTIAL, progress, cancel);
         for(ITerm activeTerm : activeTerms) {
@@ -179,49 +171,53 @@ public class Solver {
             solver.namebindingSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
         }
 
-        List<IConstraint> unsolved = Lists.newArrayList();
+        Set<IConstraint> unsolved = Sets.newHashSet();
         try {
-            solver.add(constraints);
+            solver.addAll(constraints);
             solver.iterate();
             Iterables.addAll(unsolved, solver.finish(messageInfo));
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
-        solver.check(unsolved);
 
         final int n1 = Iterables.size(unsolved);
         long dt = System.nanoTime() - t0;
-        logger.info(">>> Reduced {} to {} constraints in {} seconds <<<", n0, n1,
-            (Duration.ofNanos(dt).toMillis() / 1000.0));
+        logger.debug("Reduced {} to {} constraints in {}s.", n0, n1, (Duration.ofNanos(dt).toMillis() / 1000.0));
 
-        return unsolved;
+        return ImmutablePartialSolution.of(
+            // @formatter:off
+            constraints,
+            solver.unifier,
+            solver.messages
+            // @formatter:on
+        );
     }
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
-        Iterable<IConstraint> constraints, IMessageInfo messageInfo, IProgress progress, ICancel cancel)
-        throws SolverException, InterruptedException {
+            Collection<IConstraint> constraints, Collection<PartialSolution> partialSolutions, IMessageInfo messageInfo,
+            IProgress progress, ICancel cancel) throws SolverException, InterruptedException {
         final int n = Iterables.size(constraints);
         long t0 = System.nanoTime();
-        logger.info(">>> Solving {} constraints <<<", n);
+        logger.debug("Solving {} constraints.", n);
 
         Solver solver = new Solver(config, fresh, SolverMode.TOTAL, progress, cancel);
         List<IConstraint> unsolved = Lists.newArrayList();
         try {
-            solver.add(constraints);
+            solver.addAll(partialSolutions, messageInfo);
+            solver.addAll(constraints);
             solver.iterate();
             Iterables.addAll(unsolved, solver.finish(messageInfo));
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
-        solver.check(unsolved);
 
         long dt = System.nanoTime() - t0;
-        logger.info(">>> Solved {} constraints in {} seconds <<<", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
-        logger.info("    * namebinding : {} seconds",
-            (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
-        logger.info("    * relations   : {} seconds",
-            (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
-        logger.info("    * unsolved    : {}", unsolved.size());
+        logger.debug("Solved {} constraints in {}s.", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
+        logger.debug(" * namebinding : {}s",
+                (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
+        logger.debug(" * relations   : {}s",
+                (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
+        logger.debug(" * unsolved    : {}", unsolved.size());
 
         return ImmutableSolution.of(
             // @formatter:off
@@ -232,9 +228,17 @@ public class Solver {
             solver.relationSolver.getRelations(),
             solver.unifier,
             solver.symbolicSolver.get(),
-            solver.messages
+            solver.messages,
+            unsolved
             // @formatter:on
         );
+    }
+
+    public static Set<IMessageInfo> unsolvedErrors(Collection<IConstraint> constraints) {
+        return constraints.stream().map(c -> {
+            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
+            return c.getMessageInfo().withDefaultContent(content);
+        }).collect(Collectors.toSet());
     }
 
 }

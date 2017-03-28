@@ -50,7 +50,6 @@ import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -126,11 +125,16 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return progress;
     }
 
-    @Override protected Iterable<INamebindingConstraint> doFinish(IMessageInfo messageInfo) {
-        Iterable<INamebindingConstraint> graphConstraints =
-                isPartial() ? scopeGraphConstraints(messageInfo) : Iterables2.empty();
-        return Iterables2.fromConcat(Iterables2.from(unsolvedBuilds, unsolvedChecks, incompleteDirectEdges,
-                incompleteImportEdges, graphConstraints));
+    @Override protected Set<? extends INamebindingConstraint> doFinish(IMessageInfo messageInfo) {
+        Set<INamebindingConstraint> constraints = Sets.newHashSet();
+        if(isPartial()) {
+            addScopeGraphConstraints(constraints, messageInfo);
+        }
+        constraints.addAll(unsolvedBuilds);
+        constraints.addAll(unsolvedChecks);
+        constraints.addAll(incompleteDirectEdges);
+        constraints.addAll(incompleteImportEdges);
+        return constraints;
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -371,8 +375,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return nameResolution != null;
     }
 
-    private Iterable<INamebindingConstraint> scopeGraphConstraints(IMessageInfo messageInfo) {
-        List<INamebindingConstraint> constraints = Lists.newArrayList();
+    private void addScopeGraphConstraints(Set<INamebindingConstraint> constraints, IMessageInfo messageInfo) {
         for(Scope scope : scopeGraph.getAllScopes()) {
             for(Occurrence decl : scopeGraph.getDecls().inverse().get(scope)) {
                 constraints.add(ImmutableCGDecl.of(scope, decl, messageInfo));
@@ -397,7 +400,6 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 }
             }
         }
-        return constraints;
     }
 
     // ------------------------------------------------------------------------------------------------------//

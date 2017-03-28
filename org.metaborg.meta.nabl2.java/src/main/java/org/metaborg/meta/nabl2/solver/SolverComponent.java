@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
@@ -67,7 +68,7 @@ public abstract class SolverComponent<C extends IConstraint> {
     }
 
     final protected <CC extends C> boolean doIterate(Iterable<CC> constraints,
-        CheckedPredicate1<CC, UnsatisfiableException> solve) throws UnsatisfiableException, InterruptedException {
+            CheckedPredicate1<CC, UnsatisfiableException> solve) throws UnsatisfiableException, InterruptedException {
         Iterator<CC> it = constraints.iterator();
         boolean progress = false;
         while(it.hasNext()) {
@@ -86,11 +87,11 @@ public abstract class SolverComponent<C extends IConstraint> {
         return progress;
     }
 
-    final Iterable<? extends C> finish(IMessageInfo messageInfo) throws InterruptedException {
+    final Set<? extends C> finish(IMessageInfo messageInfo) throws InterruptedException {
         return doFinish(messageInfo);
     }
 
-    protected Iterable<? extends C> doFinish(IMessageInfo messageInfo) throws InterruptedException {
+    protected Set<? extends C> doFinish(IMessageInfo messageInfo) throws InterruptedException {
         return Collections.emptySet();
     }
 
