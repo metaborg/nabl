@@ -10,11 +10,11 @@ public interface IRelation3<K, L, V> {
 
     ISet<V> valueSet();
 
-    boolean containsKey(K key);
+    boolean contains(K key);
 
-    boolean containsEntry(K key, L label, V value);
+    boolean contains(K key, L label);
 
-    boolean containsValue(V value);
+    boolean contains(K key, L label, V value);
 
     ISet<Map.Entry<L, V>> get(K key);
 
@@ -23,6 +23,10 @@ public interface IRelation3<K, L, V> {
     interface Mutable<K, L, V> extends IRelation3<K, L, V> {
 
         boolean put(K key, L label, V value);
+
+        boolean remove(K key);
+
+        boolean remove(K key, L label);
 
         boolean remove(K key, L label, V value);
 

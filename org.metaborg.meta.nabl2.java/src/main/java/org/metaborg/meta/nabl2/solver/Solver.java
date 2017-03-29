@@ -22,6 +22,7 @@ import org.metaborg.meta.nabl2.solver.components.PolymorphismSolver;
 import org.metaborg.meta.nabl2.solver.components.RelationSolver;
 import org.metaborg.meta.nabl2.solver.components.SetSolver;
 import org.metaborg.meta.nabl2.solver.components.SymbolicSolver;
+import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;

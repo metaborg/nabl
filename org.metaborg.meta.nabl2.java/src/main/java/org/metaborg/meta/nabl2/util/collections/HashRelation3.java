@@ -3,6 +3,8 @@ package org.metaborg.meta.nabl2.util.collections;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
@@ -23,22 +25,48 @@ public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Seri
         return new HashRelation3<>(bwd, fwd);
     }
 
-    @Override public boolean containsKey(K key) {
+    @Override public boolean contains(K key) {
         return fwd.containsKey(key) && !fwd.get(key).isEmpty();
     }
 
-    @Override public boolean containsEntry(K key, L label, V value) {
-        return fwd.containsKey(key) && fwd.get(key).containsEntry(label, value);
+    @Override public boolean contains(K key, L label) {
+        return fwd.containsKey(key) && fwd.get(key).containsKey(label) && !fwd.get(key).isEmpty();
     }
 
-    @Override public boolean containsValue(V value) {
-        return bwd.containsKey(value) && !bwd.get(value).isEmpty();
+    @Override public boolean contains(K key, L label, V value) {
+        return fwd.containsKey(key) && fwd.get(key).containsEntry(label, value);
     }
 
     @Override public boolean put(K key, L label, V value) {
         if(fwd.computeIfAbsent(key, k -> HashMultimap.create()).put(label, value)) {
             bwd.computeIfAbsent(value, v -> HashMultimap.create()).put(label, key);
             return true;
+        }
+        return false;
+    }
+
+    @Override public boolean remove(K key) {
+        if(fwd.containsKey(key)) {
+            Set<Entry<L, V>> entries = fwd.remove(key).entries();
+            if(!entries.isEmpty()) {
+                for(Map.Entry<L, V> entry : entries) {
+                    bwd.get(entry.getValue()).remove(entry.getKey(), key);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override public boolean remove(K key, L label) {
+        if(fwd.containsKey(key)) {
+            Set<V> values = fwd.get(key).removeAll(label);
+            if(!values.isEmpty()) {
+                for(V value : values) {
+                    bwd.get(value).remove(label, key);
+                }
+                return true;
+            }
         }
         return false;
     }
@@ -74,4 +102,5 @@ public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Seri
     @Override public String toString() {
         return fwd.toString();
     }
+
 }

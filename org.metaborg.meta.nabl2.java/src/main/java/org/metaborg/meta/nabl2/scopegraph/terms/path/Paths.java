@@ -17,7 +17,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.util.Iterables3;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
 
@@ -92,11 +92,11 @@ public final class Paths {
 
 
     public static List<Occurrence> declPathsToDecls(Iterable<IDeclPath<Scope, Label, Occurrence>> paths) {
-        return Iterables3.stream(paths).map(IDeclPath::getDeclaration).collect(Collectors.toList());
+        return Iterables2.stream(paths).map(IDeclPath::getDeclaration).collect(Collectors.toList());
     }
 
     public static List<Occurrence> resolutionPathsToDecls(Iterable<IResolutionPath<Scope, Label, Occurrence>> paths) {
-        return Iterables3.stream(paths).map(IResolutionPath::getDeclaration).collect(Collectors.toList());
+        return Iterables2.stream(paths).map(IResolutionPath::getDeclaration).collect(Collectors.toList());
     }
 
 }

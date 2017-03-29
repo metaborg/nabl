@@ -12,7 +12,7 @@ import org.metaborg.meta.nabl2.util.collections.HashRelation3;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 
 public class ReachabilityResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements IPathResolver<S, L, O> {
+        implements IPathResolver<S, L, O> {
 
     /**
      * Fixed-point name resolution algorithms
@@ -43,8 +43,8 @@ public class ReachabilityResolution<S extends IScope, L extends ILabel, O extend
     }
 
     @Override public boolean add(IResolutionPath<S, L, O> path) {
-        if(!resolution.containsEntry(path.getReference(), path, path.getDeclaration())
-            && !wf.match(path.getLabels()).isEmpty()) {
+        if(!resolution.contains(path.getReference(), path, path.getDeclaration())
+                && !wf.match(path.getLabels()).isEmpty()) {
             resolution.put(path.getReference(), path, path.getDeclaration());
             return true;
         }
@@ -52,8 +52,8 @@ public class ReachabilityResolution<S extends IScope, L extends ILabel, O extend
     }
 
     @Override public boolean add(IScopePath<S, L, O> path) {
-        if(!reachability.containsEntry(path.getSource(), path, path.getTarget())
-            && wf.match(path.getLabels()).isAccepting()) {
+        if(!reachability.contains(path.getSource(), path, path.getTarget())
+                && wf.match(path.getLabels()).isAccepting()) {
             reachability.put(path.getSource(), path, path.getTarget());
             return true;
         }

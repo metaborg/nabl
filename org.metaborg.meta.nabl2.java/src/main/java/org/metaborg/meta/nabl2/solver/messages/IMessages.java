@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.solver;
+package org.metaborg.meta.nabl2.solver.messages;
 
 import java.util.Set;
 

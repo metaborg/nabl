@@ -28,13 +28,19 @@ public abstract class MessageInfo implements IMessageInfo {
 
     public static IMatcher<MessageInfo> matcher() {
         return M.appl3("Message", MessageKind.matcher(), MessageContent.matcher(), M.term(),
-            (appl, kind, message, origin) -> {
-                return ImmutableMessageInfo.of(kind, message, origin);
-            });
+                (appl, kind, message, origin) -> {
+                    return ImmutableMessageInfo.of(kind, message, origin);
+                });
     }
 
     public static IMatcher<MessageInfo> matcherOnlyOriginTerm() {
         return M.term(MessageInfo::of);
+    }
+
+    public static IMatcher<MessageInfo> matcherEditorMessage(MessageKind kind) {
+        return M.tuple2(M.term(), MessageContent.matcher(), (t, origin, message) -> {
+            return ImmutableMessageInfo.of(kind, message, origin);
+        });
     }
 
     public static MessageInfo of(ITerm originTerm) {

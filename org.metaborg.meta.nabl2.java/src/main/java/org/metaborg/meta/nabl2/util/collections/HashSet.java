@@ -18,6 +18,14 @@ public class HashSet<E> implements ISet.Mutable<E>, Serializable {
         return elems.contains(elem);
     }
 
+    @Override public boolean isEmpty() {
+        return elems.isEmpty();
+    }
+
+    @Override public int size() {
+        return elems.size();
+    }
+
     @Override public void add(E elem) {
         elems.add(elem);
     }

@@ -12,7 +12,8 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
-import org.metaborg.meta.nabl2.util.Iterables3;
+import org.metaborg.meta.nabl2.util.Optionals;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -44,13 +45,13 @@ public class VariantMatchers {
             this.variance = variance;
         }
 
-        @Override public Optional<Iterable<Arg<ITerm>>> match(ITerm t) {
+        @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
             return M.list(list -> {
                 List<IVariantMatcher.Arg<ITerm>> args = Lists.newArrayList();
                 for(ITerm arg : list) {
                     args.add(ImmutableArg.of(variance, arg));
                 }
-                return (Iterable<IVariantMatcher.Arg<ITerm>>) args;
+                return (List<IVariantMatcher.Arg<ITerm>>) args;
             }).match(t);
         }
 
@@ -72,11 +73,14 @@ public class VariantMatchers {
             this.variances = ImmutableList.copyOf(variances);
         }
 
-        @Override public Optional<Iterable<Arg<ITerm>>> match(ITerm t) {
-            return M.appl(op, appl -> Iterables3.<IVariance, ITerm, IVariantMatcher.Arg<ITerm>>zipStrict(variances,
-                    appl.getArgs(), (v, a) -> {
+        @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
+            return M.appl(op, appl -> {
+                return Optionals.when(variances.size() == appl.getArity()).map(eq -> {
+                    return (List<Arg<ITerm>>) Lists.newArrayList(Iterables2.zip(variances, appl.getArgs(), (v, a) -> {
                         return (IVariantMatcher.Arg<ITerm>) ImmutableArg.of(v, a);
-                    })).match(t).flatMap(o -> o);
+                    }));
+                });
+            }).match(t).flatMap(o -> o);
         }
 
         @Override public ITerm build(Iterable<? extends ITerm> ts) {
