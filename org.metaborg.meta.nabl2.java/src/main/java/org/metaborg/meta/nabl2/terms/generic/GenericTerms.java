@@ -20,7 +20,7 @@ public class GenericTerms {
     public static final IApplTerm EMPTY_TUPLE = newTuple();
 
     public static final IListTerm EMPTY_LIST = newNil();
- 
+
     public static IApplTerm newAppl(String op, ITerm... args) {
         return ImmutableApplTerm.of(op, Iterables2.from(args));
     }
@@ -58,10 +58,10 @@ public class GenericTerms {
 
     public static IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list) {
         LinkedList<ITerm> reverse = new LinkedList<>();
-        for (ITerm elem : elems) {
+        for(ITerm elem : elems) {
             reverse.addFirst(elem);
         }
-        for (ITerm elem : reverse) {
+        for(ITerm elem : reverse) {
             list = newCons(elem, list);
         }
         return list;
@@ -105,6 +105,15 @@ public class GenericTerms {
 
     public static ITermVar newVar(String resource, String name) {
         return ImmutableTermVar.of(resource, name);
+    }
+
+
+    public static ITerm lock(ITerm term) {
+        return TermLock.of(term);
+    }
+
+    public static IListTerm lock(IListTerm term) {
+        return TermLock.of(term);
     }
 
 }

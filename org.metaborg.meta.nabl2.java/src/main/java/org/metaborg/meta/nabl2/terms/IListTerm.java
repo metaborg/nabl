@@ -16,6 +16,10 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
 
         T caseVar(ITermVar var);
 
+        default T caseLock(IListTerm list) {
+            return list.match(this);
+        }
+
     }
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
@@ -27,6 +31,10 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
         T caseNil(INilTerm nil) throws E;
 
         T caseVar(ITermVar var) throws E;
+
+        default T caseLock(IListTerm list) throws E {
+            return list.matchOrThrow(this);
+        }
 
     }
 

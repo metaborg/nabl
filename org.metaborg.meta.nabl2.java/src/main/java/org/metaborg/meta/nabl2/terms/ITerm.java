@@ -32,6 +32,10 @@ public interface ITerm {
 
         T caseVar(ITermVar var);
 
+        default T caseLock(ITerm term) {
+            return term.match(this);
+        }
+
     }
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E;
@@ -47,6 +51,10 @@ public interface ITerm {
         T caseInt(IIntTerm integer) throws E;
 
         T caseVar(ITermVar var) throws E;
+
+        default T caseLock(ITerm term) throws E {
+            return term.matchOrThrow(this);
+        }
 
     }
 

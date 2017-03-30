@@ -27,6 +27,9 @@ import com.google.common.collect.Lists;
 
 public class StrategoTerms {
 
+    private final static String LOCK_CTOR = "CLock";
+    private final static int LOCK_ARITY = 1;
+
     private final static String VAR_CTOR = "CVar";
     private final static int VAR_ARITY = 2;
 
@@ -35,10 +38,12 @@ public class StrategoTerms {
 
     private final org.spoofax.interpreter.terms.ITermFactory termFactory;
     private final IStrategoConstructor varCtor;
+    private final IStrategoConstructor lockCtor;
 
     public StrategoTerms(ITermFactory termFactory) {
         this.termFactory = termFactory;
         this.varCtor = termFactory.makeConstructor(VAR_CTOR, VAR_ARITY);
+        this.lockCtor = termFactory.makeConstructor(LOCK_CTOR, LOCK_ARITY);
     }
 
     public IStrategoTerm toStratego(ITerm term) {
@@ -53,7 +58,8 @@ public class StrategoTerms {
             list -> termFactory.makeList(toStrategos(list)),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
-            var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
+            var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName())),
+            locked -> termFactory.makeAppl(lockCtor, toStratego(locked))
             // @formatter:on
         ));
         return putAttachments(strategoTerm, term.getAttachments());
@@ -81,7 +87,7 @@ public class StrategoTerms {
         StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
         if(annotations != null) {
             term = termFactory.copyAttachments(term,
-                termFactory.annotateTerm(term, termFactory.makeList(annotations.getAnnotationList())));
+                    termFactory.annotateTerm(term, termFactory.makeList(annotations.getAnnotationList())));
         }
 
         return term;
@@ -90,7 +96,7 @@ public class StrategoTerms {
     public ITerm fromStratego(IStrategoTerm term) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
         ITerm rawTerm = match(term,
-            StrategoTerms.<ITerm>cases(
+                StrategoTerms.<ITerm>cases(
             // @formatter:off
             appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
             tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
@@ -99,14 +105,16 @@ public class StrategoTerms {
             real -> { throw new IllegalArgumentException(); },
             string -> GenericTerms.newString(string.stringValue())
             // @formatter:on
-            )).withAttachments(attachments);
+                )).withAttachments(attachments);
         return M.<ITerm>cases(
             // @formatter:off
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
                     GenericTerms.newVar(resource, name).withAttachments(v.getAttachments())),
             M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).withAttachments(t.getAttachments())),
             M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
-                    GenericTerms.newListTail(xs, (IListTerm) ys).withAttachments(t.getAttachments()))
+                    GenericTerms.newListTail(xs, (IListTerm) ys).withAttachments(t.getAttachments())),
+            M.appl1(LOCK_CTOR, M.term(), (l, t) ->
+                    GenericTerms.lock(t))
             // @formatter:on
         ).match(rawTerm).orElse(rawTerm);
     }

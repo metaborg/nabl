@@ -33,6 +33,45 @@ public class Terms {
         Function1<? super IListTerm, ? extends T> onList,
         Function1<? super IStringTerm, ? extends T> onString,
         Function1<? super IIntTerm, ? extends T> onInt,
+        Function1<? super ITermVar, ? extends T> onVar,
+        Function1<? super ITerm, ? extends T> onLock
+        // @formatter:on
+    ) {
+        return new ITerm.Cases<T>() {
+
+            @Override public T caseAppl(IApplTerm appl) {
+                return onAppl.apply(appl);
+            }
+
+            @Override public T caseList(IListTerm list) {
+                return onList.apply(list);
+            }
+
+            @Override public T caseString(IStringTerm string) {
+                return onString.apply(string);
+            }
+
+            @Override public T caseInt(IIntTerm integer) {
+                return onInt.apply(integer);
+            }
+
+            @Override public T caseVar(ITermVar var) {
+                return onVar.apply(var);
+            }
+            
+            @Override public T caseLock(ITerm term) {
+                return onLock.apply(term);
+            }
+
+        };
+    }
+
+    public static <T> ITerm.Cases<T> cases(
+        // @formatter:off
+        Function1<? super IApplTerm, ? extends T> onAppl,
+        Function1<? super IListTerm, ? extends T> onList,
+        Function1<? super IStringTerm, ? extends T> onString,
+        Function1<? super IIntTerm, ? extends T> onInt,
         Function1<? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
@@ -56,6 +95,45 @@ public class Terms {
 
             @Override public T caseVar(ITermVar var) {
                 return onVar.apply(var);
+            }
+            
+        };
+    }
+
+    public static <T> ITerm.Cases<T> casesFix(
+        // @formatter:off
+        Function2<ITerm.Cases<T>, ? super IApplTerm, ? extends T> onAppl,
+        Function2<ITerm.Cases<T>, ? super IListTerm, ? extends T> onList,
+        Function2<ITerm.Cases<T>, ? super IStringTerm, ? extends T> onString,
+        Function2<ITerm.Cases<T>, ? super IIntTerm, ? extends T> onInt,
+        Function2<ITerm.Cases<T>, ? super ITermVar, ? extends T> onVar,
+        Function2<ITerm.Cases<T>, ? super ITerm, ? extends T> onLock
+        // @formatter:on
+    ) {
+        return new ITerm.Cases<T>() {
+
+            @Override public T caseAppl(IApplTerm appl) {
+                return onAppl.apply(this, appl);
+            }
+
+            @Override public T caseList(IListTerm list) {
+                return onList.apply(this, list);
+            }
+
+            @Override public T caseString(IStringTerm string) {
+                return onString.apply(this, string);
+            }
+
+            @Override public T caseInt(IIntTerm integer) {
+                return onInt.apply(this, integer);
+            }
+
+            @Override public T caseVar(ITermVar var) {
+                return onVar.apply(this, var);
+            }
+
+            @Override public T caseLock(ITerm term) {
+                return onLock.apply(this, term);
             }
 
         };
@@ -115,7 +193,7 @@ public class Terms {
 
         public static IMatcher<IApplTerm> appl() {
             return term -> term.match(Terms.<Optional<IApplTerm>>cases(Optional::of, Terms::empty, Terms::empty,
-                    Terms::empty, Terms::empty));
+                    Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static <R> IMatcher<R> appl(String op, Function1<IApplTerm, R> f) {
