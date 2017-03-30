@@ -71,6 +71,11 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
         );
     }
 
+    @Override
+    protected Label check() {
+        return this;
+    }
+
     // Object implementation
 
     @Override public boolean equals(Object other) {

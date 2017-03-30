@@ -2,8 +2,10 @@ package org.metaborg.meta.nabl2.solver.components;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.equality.CEqual;
 import org.metaborg.meta.nabl2.constraints.equality.CInequal;
@@ -19,6 +21,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.UnificationResult;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.meta.nabl2.util.Unit;
 
 import com.google.common.collect.Sets;
@@ -41,7 +44,7 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
     }
 
     @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
-        return doIterate(defered, this::solve);
+        return doIterateAndAdd(defered, this::solve);
     }
 
     @Override protected Set<? extends IEqualityConstraint> doFinish(IMessageInfo messageInfo) {
@@ -51,45 +54,47 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     private Unit add(CEqual constraint) throws UnsatisfiableException {
-        solve(constraint);
-        work();
+        defered.addAll(Optionals.ifThenElse(solve(constraint), cc -> {
+            work();
+            return cc;
+        }, () -> Collections.singleton(constraint)));
         return unit;
     }
 
     private Unit add(CInequal constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
-            defered.add(constraint);
-        } else {
+        defered.addAll(Optionals.ifThenElse(solve(constraint), cc -> {
             work();
-        }
+            return cc;
+        }, () -> Collections.singleton(constraint)));
         return unit;
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private boolean solve(IEqualityConstraint constraint) throws UnsatisfiableException {
+    private Optional<Set<IEqualityConstraint>> solve(IEqualityConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(IEqualityConstraint.CheckedCases.of(this::solve, this::solve));
     }
 
-    private boolean solve(CEqual constraint) throws UnsatisfiableException {
+    private Optional<Set<IEqualityConstraint>> solve(CEqual constraint) throws UnsatisfiableException {
         ITerm left = unifier.find(constraint.getLeft());
         ITerm right = unifier.find(constraint.getRight());
         try {
             final UnificationResult result = unifier.unify(left, right);
-            tracker().updateActive(result.getSubstituted());
-            for(Entry<ITerm, ITerm> entry : result.getResidual()) {
-                // be careful not to add directly, or we create an infinite loop here
-                defered.add(ImmutableCEqual.of(entry.getKey(), entry.getValue(), constraint.getMessageInfo()));
+            if(result.getSubstituted().isEmpty() && !result.getResidual().isEmpty()) {
+                return Optional.empty(); // no progress was made
             }
+            tracker().updateActive(result.getSubstituted());
+            return Optional.of(result.getResidual().stream()
+                    .map(entry -> ImmutableCEqual.of(entry.getKey(), entry.getValue(), constraint.getMessageInfo()))
+                    .collect(Collectors.toSet()));
         } catch(UnificationException ex) {
             MessageContent content = MessageContent.builder().append("Cannot unify ").append(left).append(" with ")
                     .append(right).build();
             throw new UnsatisfiableException(constraint.getMessageInfo().withDefaultContent(content));
         }
-        return true;
     }
 
-    private boolean solve(CInequal constraint) throws UnsatisfiableException {
+    private Optional<Set<IEqualityConstraint>> solve(CInequal constraint) throws UnsatisfiableException {
         ITerm left = unifier.find(constraint.getLeft());
         ITerm right = unifier.find(constraint.getRight());
         if(left.equals(right)) {
@@ -98,7 +103,7 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
                     .append(constraint.getLeft()).build();
             throw new UnsatisfiableException(constraint.getMessageInfo().withDefaultContent(content));
         }
-        return !unifier.canUnify(left, right);
+        return unifier.canUnify(left, right) ? Optional.empty() : Optional.of(Collections.emptySet());
     }
 
 }

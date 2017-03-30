@@ -33,45 +33,6 @@ public class Terms {
         Function1<? super IListTerm, ? extends T> onList,
         Function1<? super IStringTerm, ? extends T> onString,
         Function1<? super IIntTerm, ? extends T> onInt,
-        Function1<? super ITermVar, ? extends T> onVar,
-        Function1<? super ITerm, ? extends T> onLock
-        // @formatter:on
-    ) {
-        return new ITerm.Cases<T>() {
-
-            @Override public T caseAppl(IApplTerm appl) {
-                return onAppl.apply(appl);
-            }
-
-            @Override public T caseList(IListTerm list) {
-                return onList.apply(list);
-            }
-
-            @Override public T caseString(IStringTerm string) {
-                return onString.apply(string);
-            }
-
-            @Override public T caseInt(IIntTerm integer) {
-                return onInt.apply(integer);
-            }
-
-            @Override public T caseVar(ITermVar var) {
-                return onVar.apply(var);
-            }
-            
-            @Override public T caseLock(ITerm term) {
-                return onLock.apply(term);
-            }
-
-        };
-    }
-
-    public static <T> ITerm.Cases<T> cases(
-        // @formatter:off
-        Function1<? super IApplTerm, ? extends T> onAppl,
-        Function1<? super IListTerm, ? extends T> onList,
-        Function1<? super IStringTerm, ? extends T> onString,
-        Function1<? super IIntTerm, ? extends T> onInt,
         Function1<? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
@@ -95,45 +56,6 @@ public class Terms {
 
             @Override public T caseVar(ITermVar var) {
                 return onVar.apply(var);
-            }
-            
-        };
-    }
-
-    public static <T> ITerm.Cases<T> casesFix(
-        // @formatter:off
-        Function2<ITerm.Cases<T>, ? super IApplTerm, ? extends T> onAppl,
-        Function2<ITerm.Cases<T>, ? super IListTerm, ? extends T> onList,
-        Function2<ITerm.Cases<T>, ? super IStringTerm, ? extends T> onString,
-        Function2<ITerm.Cases<T>, ? super IIntTerm, ? extends T> onInt,
-        Function2<ITerm.Cases<T>, ? super ITermVar, ? extends T> onVar,
-        Function2<ITerm.Cases<T>, ? super ITerm, ? extends T> onLock
-        // @formatter:on
-    ) {
-        return new ITerm.Cases<T>() {
-
-            @Override public T caseAppl(IApplTerm appl) {
-                return onAppl.apply(this, appl);
-            }
-
-            @Override public T caseList(IListTerm list) {
-                return onList.apply(this, list);
-            }
-
-            @Override public T caseString(IStringTerm string) {
-                return onString.apply(this, string);
-            }
-
-            @Override public T caseInt(IIntTerm integer) {
-                return onInt.apply(this, integer);
-            }
-
-            @Override public T caseVar(ITermVar var) {
-                return onVar.apply(this, var);
-            }
-
-            @Override public T caseLock(ITerm term) {
-                return onLock.apply(this, term);
             }
 
         };
@@ -193,7 +115,7 @@ public class Terms {
 
         public static IMatcher<IApplTerm> appl() {
             return term -> term.match(Terms.<Optional<IApplTerm>>cases(Optional::of, Terms::empty, Terms::empty,
-                    Terms::empty, Terms::empty, Terms::empty));
+                    Terms::empty, Terms::empty));
         }
 
         public static <R> IMatcher<R> appl(String op, Function1<IApplTerm, R> f) {
@@ -475,40 +397,36 @@ public class Terms {
         }
 
         public static Function1<ITerm, ITerm> sometd(IMatcher<ITerm> m) {
-            return term -> m.match(term)
-                    .orElseGet(
-                            () -> term
-                                    .match(Terms
-                                            .<ITerm>cases(
-                // @formatter:off
-                (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> sometd(m).apply(arg))::iterator, appl.getAttachments()),
+            // @formatter:off
+            return term -> m.match(term).orElseGet(() -> term.match(Terms.<ITerm>cases(
+                (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> sometd(m).apply(arg))::iterator),
                 (list) -> list.match(ListTerms.<IListTerm> cases(
-                    (cons) -> GenericTerms.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
+                    (cons) -> GenericTerms.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail())),
                     (nil) -> nil,
                     (var) -> var
                 )),
                 (string) -> string,
                 (integer) -> integer,
                 (var) -> var
-                // @formatter:on
-                            )));
+            )));
+            // @formatter:on
         }
 
         public static Function1<ITerm, ITerm> somebu(IMatcher<ITerm> m) {
             return term -> {
+                // @formatter:off
                 ITerm next = term.match(Terms.<ITerm>cases(
-                    // @formatter:off
-                    (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> somebu(m).apply(arg))::iterator, appl.getAttachments()),
+                    (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> somebu(m).apply(arg))::iterator),
                     (list) -> list.match(ListTerms.<IListTerm> cases(
-                        (cons) -> GenericTerms.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
+                        (cons) -> GenericTerms.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail())),
                         (nil) -> nil,
                         (var) -> var
                     )),
                     (string) -> string,
                     (integer) -> integer,
                     (var) -> var
-                    // @formatter:on
                 ));
+                // @formatter:on
                 return m.match(next).orElse(next);
             };
         }
@@ -546,6 +464,18 @@ public class Terms {
                 )).match(term);
                 return results;
             };
+        }
+
+        // metadata
+
+        @SuppressWarnings("unchecked") public static <R extends ITerm> IMatcher<R>
+                preserveAttachments(IMatcher<R> matcher) {
+            return t -> matcher.match(t).map(r -> (R) r.withAttachments(t.getAttachments()));
+        }
+
+        @SuppressWarnings("unchecked") public static <R extends ITerm> IMatcher<R>
+                preserveLocking(IMatcher<R> matcher) {
+            return t -> matcher.match(t).map(r -> t.isLocked() ? (R) r.withLocked(true) : r);
         }
 
     }

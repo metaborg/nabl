@@ -24,6 +24,10 @@ public abstract class TermVar implements ITermVar {
         return false;
     }
 
+    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
+        return false;
+    }
+    
     @Value.Lazy @Override public PSet<ITermVar> getVars() {
         return HashTreePSet.singleton(this);
     }
@@ -53,7 +57,15 @@ public abstract class TermVar implements ITermVar {
     }
 
     @Override public String toString() {
-        return "?" + getResource() + "-" + getName();
+        StringBuilder sb = new StringBuilder();
+        if(isLocked()) {
+            sb.append(".");
+        }
+        sb.append("?");
+        sb.append(getResource());
+        sb.append("-");
+        sb.append(getName());
+        return sb.toString();
     }
 
 }

@@ -23,16 +23,30 @@ abstract class ConsTerm implements IConsTerm {
 
     @Value.Parameter @Override public abstract IListTerm getTail();
 
+    @Value.Check public ConsTerm check() {
+        if(isLocked() && !getHead().isLocked()) {
+            return ImmutableConsTerm.copyOf(this).withHead(getHead().withLocked(true));
+        }
+        if(isLocked() && !getTail().isLocked()) {
+            return ImmutableConsTerm.copyOf(this).withTail(getTail().withLocked(true));
+        }
+        return this;
+    }
+
     @Value.Lazy @Override public boolean isGround() {
         return getHead().isGround() && getTail().isGround();
     }
 
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        return getHead().getVars().plusAll(getTail().getVars());
+    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
+        return false;
     }
 
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
         return ImmutableClassToInstanceMap.<Object>builder().build();
+    }
+
+    @Value.Lazy @Override public PSet<ITermVar> getVars() {
+        return getHead().getVars().plusAll(getTail().getVars());
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

@@ -46,6 +46,8 @@ public class StrategoTerms {
         this.lockCtor = termFactory.makeConstructor(LOCK_CTOR, LOCK_ARITY);
     }
 
+    // to
+
     public IStrategoTerm toStratego(ITerm term) {
         IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm>cases(
             // @formatter:off
@@ -58,11 +60,14 @@ public class StrategoTerms {
             list -> termFactory.makeList(toStrategos(list)),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
-            var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName())),
-            locked -> termFactory.makeAppl(lockCtor, toStratego(locked))
+            var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
             // @formatter:on
         ));
-        return putAttachments(strategoTerm, term.getAttachments());
+        strategoTerm = putAttachments(strategoTerm, term.getAttachments());
+        if(term.isLocked()) {
+            strategoTerm = termFactory.makeAppl(lockCtor, strategoTerm);
+        }
+        return strategoTerm;
     }
 
     public List<IStrategoTerm> toStrategos(Iterable<ITerm> terms) {
@@ -93,30 +98,36 @@ public class StrategoTerms {
         return term;
     }
 
-    public ITerm fromStratego(IStrategoTerm term) {
-        ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
-        ITerm rawTerm = match(term,
+    // from
+
+    public ITerm fromStratego(IStrategoTerm sterm) {
+        ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
+        ITerm term = match(sterm,
                 StrategoTerms.<ITerm>cases(
-            // @formatter:off
-            appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
-            tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
-            this::fromStrategoList,
-            integer -> GenericTerms.newInt(integer.intValue()),
-            real -> { throw new IllegalArgumentException(); },
-            string -> GenericTerms.newString(string.stringValue())
-            // @formatter:on
+                    // @formatter:off
+                    appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
+                    tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
+                    this::fromStrategoList,
+                    integer -> GenericTerms.newInt(integer.intValue()),
+                    real -> { throw new IllegalArgumentException(); },
+                    string -> GenericTerms.newString(string.stringValue())
+                    // @formatter:on
                 )).withAttachments(attachments);
-        return M.<ITerm>cases(
+        // do not use M.preserveAttachments here, because the locked state will be overwritten immediately
+        // we must deal with locked and attachments seperately
+        term = M.preserveAttachments(M.<ITerm>cases(
             // @formatter:off
-            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
-                    GenericTerms.newVar(resource, name).withAttachments(v.getAttachments())),
-            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).withAttachments(t.getAttachments())),
-            M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
-                    GenericTerms.newListTail(xs, (IListTerm) ys).withAttachments(t.getAttachments())),
             M.appl1(LOCK_CTOR, M.term(), (l, t) ->
-                    GenericTerms.lock(t))
+                    t.withLocked(true)),
+            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
+                    GenericTerms.newVar(resource, name)),
+            M.appl1(LIST_CTOR, M.list(), (t,xs) ->
+                    GenericTerms.newList(xs)),
+            M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
+                    GenericTerms.newListTail(xs, (IListTerm) ys))
             // @formatter:on
-        ).match(rawTerm).orElse(rawTerm);
+        )).match(term).orElse(term);
+        return term;
     }
 
     private IListTerm fromStrategoList(IStrategoList list) {

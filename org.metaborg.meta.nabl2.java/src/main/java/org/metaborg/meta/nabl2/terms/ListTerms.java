@@ -85,7 +85,7 @@ public class ListTerms {
 
     public static String toString(IListTerm list) {
         return list
-            .match(cases(cons -> toStringTail(cons.getHead(), cons.getTail()), nil -> "[]", var -> var.toString()));
+                .match(cases(cons -> toStringTail(cons.getHead(), cons.getTail()), nil -> "[]", var -> var.toString()));
     }
 
     private static String toStringTail(ITerm head, IListTerm tail) {

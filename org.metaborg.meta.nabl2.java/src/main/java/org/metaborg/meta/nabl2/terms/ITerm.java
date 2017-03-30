@@ -8,6 +8,10 @@ public interface ITerm {
 
     boolean isGround();
 
+    boolean isLocked();
+
+    ITerm withLocked(boolean locked);
+
     PSet<ITermVar> getVars();
 
     default boolean termEquals(ITerm other) {
@@ -17,6 +21,7 @@ public interface ITerm {
     ImmutableClassToInstanceMap<Object> getAttachments();
 
     ITerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+
 
     <T> T match(Cases<T> cases);
 

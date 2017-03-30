@@ -36,9 +36,9 @@ public class Unifier implements IUnifier, Serializable {
     /**
      * Find representative term.
      */
-    public ITerm find(ITerm term) {
+    public ITerm find(final ITerm term) {
         // @formatter:off
-        return term.isGround() ? term : term.match(Terms.<ITerm>cases(
+        ITerm rep = term.isGround() ? term : term.match(Terms.cases(
             (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(this::find).collect(Collectors.toList()), appl.getAttachments()),
             (list) -> find(list),
             (string) -> string,
@@ -46,16 +46,24 @@ public class Unifier implements IUnifier, Serializable {
             (var) -> findVarRep(var)
         ));
         // @formatter:on
+        if(term.isLocked()) {
+            rep = rep.withLocked(true);
+        }
+        return rep;
     }
 
     public IListTerm find(IListTerm list) {
         // @formatter:off
-        return list.isGround() ? list : list.match(ListTerms.<IListTerm>cases(
+        IListTerm rep = list.isGround() ? list : list.match(ListTerms.cases(
             (cons) -> GenericTerms.newCons(find(cons.getHead()), find(cons.getTail()), cons.getAttachments()),
             (nil) -> nil,
             (var) -> (IListTerm) findVarRep(var)
         ));
         // @formatter:on
+        if(list.isLocked()) {
+            rep = rep.withLocked(true);
+        }
+        return rep;
     }
 
     private ITerm findVarRep(ITermVar var) {
@@ -72,7 +80,11 @@ public class Unifier implements IUnifier, Serializable {
      * Find representative term, without recursing on subterms.
      */
     private ITerm findShallow(ITerm term) {
-        return M.var(this::findVarRepShallow).match(term).orElse(term);
+        ITerm rep = M.var(this::findVarRepShallow).match(term).orElse(term);
+        if(term.isLocked()) {
+            rep = rep.withLocked(true);
+        }
+        return rep;
     }
 
     private ITerm findVarRepShallow(ITermVar var) {
@@ -132,7 +144,7 @@ public class Unifier implements IUnifier, Serializable {
                         M.term(termRight -> unifyVarTerm(varLeft, termRight, result))
                     ).match(listRight).orElse(false)
                 ))),
-                M.var(varRight -> unifyTerms(varRight, listLeft, result))
+                M.var(varRight -> unifyVarTerm(varRight, listLeft, result))
             ).match(rightRep).orElse(false),
             stringLeft -> M.<Boolean>cases(
                 M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
@@ -143,6 +155,7 @@ public class Unifier implements IUnifier, Serializable {
                 M.var(varRight -> unifyVarTerm(varRight, integerLeft, result))
             ).match(rightRep).orElse(false),
             varLeft -> M.cases(
+                // match var before term, or term will always match
                 M.var(varRight -> unifyVars(varLeft, varRight, result)),
                 M.term(termRight -> unifyVarTerm(varLeft, termRight, result))
             ).match(rightRep).orElse(false)
@@ -154,22 +167,39 @@ public class Unifier implements IUnifier, Serializable {
         if(term.getVars().contains(var)) {
             return false;
         }
-        reps.put(var, term);
-        result.addSubstituted(var);
+        if(var.isLocked()) {
+            result.addResidual(var, term);
+        } else {
+            reps.put(var, term);
+            result.addSubstituted(var);
+        }
         return true;
     }
 
     private boolean unifyVars(ITermVar varLeft, ITermVar varRight, UnificationResult result) {
-        int sizeLeft = sizes.getOrDefault(varLeft, 1);
-        int sizeRight = sizes.getOrDefault(varRight, 1);
-        if(sizeLeft > sizeRight) {
-            reps.put(varRight, varLeft);
-            sizes.put(varLeft, sizeLeft + sizeRight);
-            result.addSubstituted(varRight);
+        if(varLeft.isLocked() && varRight.isLocked()) {
+            result.addResidual(varLeft, varRight);
         } else {
-            reps.put(varLeft, varRight);
-            sizes.put(varRight, sizeLeft + sizeRight);
-            result.addSubstituted(varLeft);
+            final boolean swap;
+            if(varLeft.isLocked()) {
+                swap = true;
+            } else if(varRight.isLocked()) {
+                swap = false;
+            } else {
+                final int sizeLeft = sizes.getOrDefault(varLeft, 1);
+                final int sizeRight = sizes.getOrDefault(varRight, 1);
+                swap = sizeLeft > sizeRight;
+            }
+            final ITermVar var = swap ? varRight : varLeft;
+            final ITermVar with = swap ? varLeft : varRight;
+            {
+                int sizeLeft = sizes.getOrDefault(var, 1);
+                int sizeRight = sizes.getOrDefault(with, 1);
+                sizes.put(with, sizeLeft + sizeRight);
+                reps.put(var, with);
+                result.addSubstituted(var);
+            }
+
         }
         return true;
     }

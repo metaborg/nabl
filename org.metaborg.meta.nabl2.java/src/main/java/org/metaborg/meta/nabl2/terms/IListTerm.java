@@ -22,9 +22,9 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E;
 
-    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IListTerm,T,E> {
+    interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IListTerm, T, E> {
 
         T caseCons(IConsTerm cons) throws E;
 
@@ -39,5 +39,7 @@ public interface IListTerm extends ITerm, Iterable<ITerm> {
     }
 
     IListTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+
+    @Override IListTerm withLocked(boolean locked);
 
 }

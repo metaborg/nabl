@@ -36,6 +36,14 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.isGround();
     }
 
+    @Override public boolean isLocked() {
+        return term.isLocked();
+    }
+
+    @Override public OccurrenceIndex withLocked(boolean locked) {
+        return new OccurrenceIndex(resource, term.withLocked(locked));
+    }
+
     public PSet<ITermVar> getVars() {
         return term.getVars();
     }

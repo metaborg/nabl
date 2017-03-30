@@ -37,8 +37,12 @@ public abstract class Scope extends AbstractApplTerm implements IScope, IApplTer
     }
 
     public static IMatcher<Scope> matcher() {
-        return M.appl2("Scope", M.stringValue(), M.stringValue(),
-                (t, resource, name) -> ImmutableScope.of(resource, name).withAttachments(t.getAttachments()));
+        return M.preserveAttachments(M.appl2("Scope", M.stringValue(), M.stringValue(),
+                (t, resource, name) -> ImmutableScope.of(resource, name)));
+    }
+
+    @Override protected Scope check() {
+        return this;
     }
 
     // Object implementation

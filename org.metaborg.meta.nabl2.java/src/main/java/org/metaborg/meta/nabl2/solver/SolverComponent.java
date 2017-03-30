@@ -1,7 +1,9 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
@@ -10,8 +12,11 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.VarTracker;
 import org.metaborg.meta.nabl2.util.Unit;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.util.functions.CheckedPredicate1;
 import org.metaborg.util.time.AggregateTimer;
+
+import com.google.common.collect.Sets;
 
 public abstract class SolverComponent<C extends IConstraint> {
 
@@ -75,22 +80,33 @@ public abstract class SolverComponent<C extends IConstraint> {
         return false;
     }
 
-    final protected <CC extends C> boolean doIterate(Iterable<CC> constraints,
+    final protected <CC extends C> boolean doIterate(Collection<CC> constraints,
             CheckedPredicate1<CC, UnsatisfiableException> solve) throws UnsatisfiableException, InterruptedException {
+        return doIterateAndAdd(constraints, c -> solve.test(c) ? Optional.of(Collections.emptySet()) : Optional.empty());
+    }
+
+    final protected <CC extends C> boolean doIterateAndAdd(Collection<CC> constraints,
+            CheckedFunction1<CC, Optional<? extends Collection<C>>, UnsatisfiableException> solve)
+            throws UnsatisfiableException, InterruptedException {
+        Collection<C> newConstraints = Sets.newHashSet();
         Iterator<CC> it = constraints.iterator();
         boolean progress = false;
         while(it.hasNext()) {
             throwIfCancelled();
             try {
-                if(solve.test(it.next())) {
-                    progress = true;
+                progress |= solve.apply(it.next()).map(cc -> {
                     work();
                     it.remove();
-                }
+                    newConstraints.addAll(cc);
+                    return true;
+                }).orElse(false);
             } catch(UnsatisfiableException e) {
                 it.remove();
                 throw e;
             }
+        }
+        for(C newConstraint : newConstraints) {
+            add(newConstraint);
         }
         return progress;
     }

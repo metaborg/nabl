@@ -38,8 +38,12 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     }
 
     public static IMatcher<TermIndex> matcher() {
-        return M.appl2(OP, M.stringValue(), M.integerValue(), (t, resource, id) -> ImmutableTermIndex.of(
-                resource, id).withAttachments(t.getAttachments()));
+        return M.preserveAttachments(M.appl2(OP, M.stringValue(), M.integerValue(),
+                (t, resource, id) -> ImmutableTermIndex.of(resource, id)));
+    }
+
+    @Override protected TermIndex check() {
+        return this;
     }
 
     // Object implementation
@@ -62,13 +66,13 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     }
 
     // static
- 
+
     public static Optional<TermIndex> get(ITerm term) {
         return get(term.getAttachments());
     }
-    
+
     public static Optional<TermIndex> get(ClassToInstanceMap<Object> attachments) {
         return Optional.ofNullable(attachments.getInstance(TermIndex.class));
     }
-    
+
 }

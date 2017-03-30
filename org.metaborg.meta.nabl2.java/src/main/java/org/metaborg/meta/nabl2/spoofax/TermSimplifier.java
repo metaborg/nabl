@@ -12,23 +12,23 @@ import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 public class TermSimplifier {
 
     public static ITerm focus(String resource, ITerm term) {
-        return M.somebu(M.cases(
+        return M.somebu(M.preserveAttachments(M.cases(
             // @formatter:off
             M.var(var -> {
                 String r = (resource ==  null || var.getResource().equals(resource)) ? "" : var.getResource();
-                return GenericTerms.newVar(r, var.getName()).withAttachments(var.getAttachments());  
+                return GenericTerms.newVar(r, var.getName());
             }),
             t -> Scope.matcher().match(t).map(s -> {
                 String r = (resource == null || s.getResource().equals(resource)) ? "" : s.getResource();
-                return ImmutableScope.of(r, s.getName()).withAttachments(t.getAttachments());
+                return ImmutableScope.of(r, s.getName());
             }),
             t -> TermIndex.matcher().match(t).map(i -> {
                 String r = (resource == null || i.getResource().equals(resource)) ? "" : i.getResource();
-                return ImmutableTermIndex.of(r, i.getId()).withAttachments(t.getAttachments());
+                return ImmutableTermIndex.of(r, i.getId());
             }),
             Occurrence.matcher()
             // @formatter:on
-        )).apply(term);
+        ))).apply(term);
     }
 
 }

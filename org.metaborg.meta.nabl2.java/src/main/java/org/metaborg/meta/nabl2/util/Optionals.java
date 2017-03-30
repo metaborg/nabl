@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.util.functions.Function0;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.functions.Function2;
 import org.metaborg.meta.nabl2.util.functions.Function3;
 import org.metaborg.meta.nabl2.util.functions.Function4;
@@ -62,6 +64,10 @@ public class Optionals {
 
     public static Optional<?> when(boolean cond) {
         return cond ? Optional.of(cond) : Optional.empty();
+    }
+
+    public static <T, R> R ifThenElse(Optional<T> opt, Function1<T, R> _then, Function0<R> _else) {
+        return opt.isPresent() ? _then.apply(opt.get()) : _else.apply();
     }
 
     public static <T> Stream<T> stream(Optional<T> opt) {

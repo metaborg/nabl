@@ -8,7 +8,6 @@ import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.Iterables;
 
 public abstract class AbstractApplTerm implements IApplTerm {
 
@@ -16,8 +15,14 @@ public abstract class AbstractApplTerm implements IApplTerm {
         return ImmutableClassToInstanceMap.<Object>builder().build();
     }
 
+    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
+        return false;
+    }
+
+    @Value.Check protected abstract IApplTerm check();
+
     @Value.Lazy @Override public int getArity() {
-        return Iterables.size(getArgs());
+        return getArgs().size();
     }
 
     @Value.Lazy @Override public boolean isGround() {

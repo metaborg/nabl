@@ -15,3 +15,7 @@ context-free syntax
   CTerm.CListTail = <[<{CTerm ", "}*>|<CTerm>]>
 
   CTerms          = <<{CTerm ", "}*>>
+
+syntax
+
+  CTerm-CF.CLock  = "." CTerm-CF

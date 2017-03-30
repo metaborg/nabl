@@ -34,9 +34,13 @@ public abstract class TypeVar extends AbstractApplTerm implements IApplTerm {
     }
 
     public static IMatcher<TypeVar> matcher() {
-        return M.appl1(OP, M.stringValue(), (t, name) -> {
-            return ImmutableTypeVar.of(name).withAttachments(t.getAttachments());
-        });
+        return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> {
+            return ImmutableTypeVar.of(name);
+        }));
+    }
+
+    @Override protected TypeVar check() {
+        return this;
     }
 
     // Object implementation

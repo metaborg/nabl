@@ -11,3 +11,7 @@ test cannot unfiy recursive [[
 test nested tails are nil [[
   nested tails are nil
 ]] 0 errors
+
+test inferring locked fails [[
+  do not infer locked
+]] 1 error

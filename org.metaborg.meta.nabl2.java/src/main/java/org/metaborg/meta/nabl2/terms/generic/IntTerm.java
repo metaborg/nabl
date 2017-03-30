@@ -19,6 +19,10 @@ abstract class IntTerm implements IIntTerm {
         return true;
     }
 
+    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
+        return false;
+    }
+    
     @Value.Lazy @Override public PSet<ITermVar> getVars() {
         return HashTreePSet.empty();
     }

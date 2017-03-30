@@ -9,3 +9,5 @@ context-free syntax
   Test.CannotUnifyRecursive = <cannot unify recursive>
 
   Test.NestedTailsAreNil = <nested tails are nil>
+
+  Test.DoNotInferLocked = <do not infer locked>

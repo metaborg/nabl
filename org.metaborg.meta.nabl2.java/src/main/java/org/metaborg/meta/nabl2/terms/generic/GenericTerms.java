@@ -34,7 +34,6 @@ public class GenericTerms {
         return ImmutableApplTerm.of(op, args).withAttachments(attachments);
     }
 
-
     public static IApplTerm newTuple(ITerm... args) {
         return newAppl(Terms.TUPLE_OP, args);
     }
@@ -105,15 +104,6 @@ public class GenericTerms {
 
     public static ITermVar newVar(String resource, String name) {
         return ImmutableTermVar.of(resource, name);
-    }
-
-
-    public static ITerm lock(ITerm term) {
-        return TermLock.of(term);
-    }
-
-    public static IListTerm lock(IListTerm term) {
-        return TermLock.of(term);
     }
 
 }
