@@ -11,6 +11,7 @@ import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.ast.ImmutableCAstProperty;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.ImmutableMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.MessageKind;
 import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.solver.Properties;
@@ -19,7 +20,6 @@ import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 
 import com.google.common.collect.Sets;
@@ -53,12 +53,8 @@ public class AstSolver extends SolverComponent<IAstConstraint> {
         Optional<ITerm> oldValue =
                 properties.putValue(constraint.getIndex(), constraint.getKey(), constraint.getValue());
         if(oldValue.isPresent()) {
-            try {
-                unifier().unify(oldValue.get(), constraint.getValue());
-            } catch(UnificationException e) {
-                throw new UnsatisfiableException(ImmutableMessageInfo.of(MessageKind.ERROR, e.getMessageContent(),
-                        constraint.getMessageInfo().getOriginTerm()));
-            }
+            unify(oldValue.get(), constraint.getValue(), ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(),
+                    constraint.getMessageInfo().getOriginTerm()));
         }
     }
 

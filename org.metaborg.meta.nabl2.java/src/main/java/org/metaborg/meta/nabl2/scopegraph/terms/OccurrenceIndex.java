@@ -44,11 +44,10 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.getAttachments();
     }
 
-    @Override
-    public OccurrenceIndex withAttachments(ImmutableClassToInstanceMap<Object> value) {
+    @Override public OccurrenceIndex withAttachments(ImmutableClassToInstanceMap<Object> value) {
         return new OccurrenceIndex(resource, (IApplTerm) term.withAttachments(value));
     }
-    
+
     public String getOp() {
         return term.getOp();
     }
@@ -65,7 +64,7 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.match(cases);
     }
 
-    public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
+    public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
         return term.matchOrThrow(cases);
     }
 

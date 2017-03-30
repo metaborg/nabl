@@ -21,11 +21,7 @@ public abstract class AbstractApplTerm implements IApplTerm {
     }
 
     @Value.Lazy @Override public boolean isGround() {
-        boolean ground = true;
-        for(ITerm arg : getArgs()) {
-            ground &= arg.isGround();
-        }
-        return ground;
+        return getArgs().stream().allMatch(ITerm::isGround);
     }
 
     @Value.Lazy @Override public PSet<ITermVar> getVars() {

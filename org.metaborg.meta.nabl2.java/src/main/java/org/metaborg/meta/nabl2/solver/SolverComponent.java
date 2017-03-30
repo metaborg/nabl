@@ -6,11 +6,11 @@ import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.unification.VarTracker;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.CheckedPredicate1;
-import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.time.AggregateTimer;
 
 public abstract class SolverComponent<C extends IConstraint> {
@@ -23,10 +23,6 @@ public abstract class SolverComponent<C extends IConstraint> {
         this.timer = new AggregateTimer();
     }
 
-    final protected Unifier<IConstraint> unifier() {
-        return solver.unifier;
-    }
-
     final void throwIfCancelled() throws InterruptedException {
         solver.cancel.throwIfCancelled();
     }
@@ -35,8 +31,20 @@ public abstract class SolverComponent<C extends IConstraint> {
         solver.progress.work(1);
     }
 
-    final protected Function1<String, ITermVar> fresh() {
-        return solver.fresh;
+    final protected ITermVar fresh(String base) {
+        return solver.fresh(base);
+    }
+
+    final protected VarTracker<IConstraint> tracker() {
+        return solver.tracker;
+    }
+
+    final protected ITerm find(ITerm term) {
+        return solver.find(term);
+    }
+
+    final protected void unify(ITerm left, ITerm right, IMessageInfo message) throws UnsatisfiableException {
+        solver.unify(left, right, message);
     }
 
     final public AggregateTimer getTimer() {

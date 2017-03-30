@@ -21,7 +21,6 @@ import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 
 import com.google.common.collect.BiMap;
@@ -58,14 +57,14 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     private Unit add(CGeneralize gen) throws UnsatisfiableException {
-        unifier().addActive(gen.getScheme(), gen);
+        tracker().addActive(gen.getScheme(), gen);
         defered.add(gen);
         return unit;
     }
 
     private Unit add(CInstantiate inst) throws UnsatisfiableException {
-        unifier().addActive(inst.getType(), inst);
-        unifier().addActive(inst.getScheme(), inst);
+        tracker().addActive(inst.getType(), inst);
+        tracker().addActive(inst.getScheme(), inst);
         defered.add(inst);
         return unit;
     }
@@ -80,19 +79,15 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         if(!complete) {
             return false;
         }
-        ITerm type = unifier().find(gen.getType());
-        if(unifier().isActive(type)) {
+        ITerm type = find(gen.getType());
+        if(tracker().isActive(type)) {
             return false;
         }
-        unifier().freeze(type);
+        tracker().freeze(type);
         ITerm scheme = generalize(type);
-        try {
-            unifier().removeActive(gen.getScheme(), gen); // before `unify`, so that we don't cause an error chain if
-                                                          // that fails
-            unifier().unify(gen.getScheme(), scheme);
-        } catch(UnificationException ex) {
-            throw new UnsatisfiableException(gen.getMessageInfo().withDefaultContent(ex.getMessageContent()));
-        }
+        tracker().removeActive(gen.getScheme(), gen); // before `unify`, so that we don't cause an error chain if
+                                                      // that fails
+        unify(gen.getScheme(), scheme, gen.getMessageInfo());
         return true;
     }
 
@@ -110,11 +105,11 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         if(!complete) {
             return false;
         }
-        ITerm scheme = unifier().find(inst.getScheme());
-        if(unifier().isActive(scheme, inst)) {
+        ITerm scheme = find(inst.getScheme());
+        if(tracker().isActive(scheme, inst)) {
             return false;
         }
-        unifier().removeActive(scheme, inst);
+        tracker().removeActive(scheme, inst);
         final Optional<Forall> forall = Forall.matcher().match(scheme);
         final ITerm type;
         if(forall.isPresent()) {
@@ -122,20 +117,16 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         } else {
             type = scheme;
         }
-        try {
-            unifier().removeActive(inst.getType(), inst); // before `unify`, so that we don't cause an error chain if
-                                                          // that fails
-            unifier().unify(inst.getType(), type);
-        } catch(UnificationException ex) {
-            throw new UnsatisfiableException(inst.getMessageInfo().withDefaultContent(ex.getMessageContent()));
-        }
+        tracker().removeActive(inst.getType(), inst); // before `unify`, so that we don't cause an error chain if
+                                                      // that fails
+        unify(inst.getType(), type, inst.getMessageInfo());
         return true;
     }
 
     private ITerm instantiate(Forall scheme) {
         Map<TypeVar, ITermVar> mapping = Maps.newHashMap();
         scheme.getTypeVars().stream().forEach(v -> {
-            mapping.put(v, fresh().apply(v.getName()));
+            mapping.put(v, fresh(v.getName()));
         });
         ITerm type = subst(scheme.getType(), mapping);
         return type;

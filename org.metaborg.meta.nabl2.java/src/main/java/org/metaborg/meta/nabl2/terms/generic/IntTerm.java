@@ -24,14 +24,14 @@ abstract class IntTerm implements IIntTerm {
     }
 
     @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
-        return ImmutableClassToInstanceMap.<Object> builder().build();
+        return ImmutableClassToInstanceMap.<Object>builder().build();
     }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseInt(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
         return cases.caseInt(this);
     }
 

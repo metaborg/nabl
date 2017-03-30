@@ -23,7 +23,6 @@ import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 
@@ -98,7 +97,7 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     }
 
     private Unit add(CEvalFunction constraint) throws UnsatisfiableException {
-        unifier().addActive(constraint.getResult(), constraint);
+        tracker().addActive(constraint.getResult(), constraint);
         if(isPartial() || !solve(constraint)) {
             deferedChecks.add(constraint);
         } else {
@@ -133,11 +132,11 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     }
 
     private boolean solve(CBuildRelation c) throws UnsatisfiableException {
-        ITerm left = unifier().find(c.getLeft());
+        ITerm left = find(c.getLeft());
         if(!left.isGround()) {
             return false;
         }
-        ITerm right = unifier().find(c.getRight());
+        ITerm right = find(c.getRight());
         if(!right.isGround()) {
             return false;
         }
@@ -153,8 +152,8 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         if(!isComplete(c.getRelation())) {
             return false;
         }
-        ITerm left = unifier().find(c.getLeft());
-        ITerm right = unifier().find(c.getRight());
+        ITerm left = find(c.getLeft());
+        ITerm right = find(c.getRight());
         if(!(left.isGround() && right.isGround())) {
             return false;
         }
@@ -162,7 +161,7 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     }
 
     private boolean solve(CEvalFunction c) throws UnsatisfiableException {
-        ITerm term = unifier().find(c.getTerm());
+        ITerm term = find(c.getTerm());
         if(!term.isGround()) {
             return false;
         }
@@ -174,13 +173,9 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         if(!result.isPresent()) {
             return false;
         }
-        try {
-            unifier().removeActive(c.getResult(), c); // before `unify`, so that we don't cause an error chain if that
-                                                      // fails
-            unifier().unify(c.getResult(), result.get());
-        } catch(UnificationException ex) {
-            throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(ex.getMessageContent()));
-        }
+        tracker().removeActive(c.getResult(), c); // before `unify`, so that we don't cause an error chain if that
+                                                  // fails
+        unify(c.getResult(), result.get(), c.getMessageInfo());
         return true;
     }
 

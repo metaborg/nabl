@@ -15,26 +15,18 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
 
-public class Unifier<D> implements IUnifier, Serializable {
+public class Unifier implements IUnifier, Serializable {
 
     private static final long serialVersionUID = 42L;
 
     private final Map<ITermVar, ITerm> reps;
     private final Map<ITermVar, Integer> sizes;
 
-    private final SetMultimap<ITermVar, D> activeVars;
-    private final Set<ITermVar> frozenVars;
-
     public Unifier() {
         this.reps = Maps.newHashMap();
         this.sizes = Maps.newHashMap();
-        this.activeVars = HashMultimap.create();
-        this.frozenVars = Sets.newHashSet();
     }
 
     @Override public Set<ITermVar> getAllVars() {
@@ -98,13 +90,15 @@ public class Unifier<D> implements IUnifier, Serializable {
      * 
      * @return Unified term
      */
-    public void unify(ITerm left, ITerm right) throws UnificationException {
-        if(!unifyTerms(left, right)) {
+    public UnificationResult unify(ITerm left, ITerm right) throws UnificationException {
+        final UnificationResult result = new UnificationResult();
+        if(!unifyTerms(left, right, result)) {
             throw new UnificationException(find(left), find(right));
         }
+        return result;
     }
 
-    private boolean unifyTerms(ITerm left, ITerm right) {
+    private boolean unifyTerms(ITerm left, ITerm right, UnificationResult result) {
         ITerm leftRep = findShallow(left);
         ITerm rightRep = findShallow(right);
         if(leftRep.termEquals(rightRep)) {
@@ -112,75 +106,75 @@ public class Unifier<D> implements IUnifier, Serializable {
         } else if(leftRep.isGround() && rightRep.isGround()) {
             return false;
         }
+        // @formatter:off
         return leftRep.match(Terms.<Boolean>cases(
-            // @formatter:off
             applLeft -> M.<Boolean>cases(
                 M.appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
                                     applLeft.getArity() == applRight.getArity() &&
-                                    unifys(applLeft.getArgs(), applRight.getArgs())),
-                M.var(varRight -> unifyVarTerm(varRight, applLeft))
+                                    unifys(applLeft.getArgs(), applRight.getArgs(), result)),
+                M.var(varRight -> unifyVarTerm(varRight, applLeft, result))
             ).match(rightRep).orElse(false),
             listLeft -> M.<Boolean>cases(
                 M.list(listRight -> listLeft.match(ListTerms.<Boolean> cases(
                     consLeft -> M.<Boolean> cases(
                         M.cons(consRight -> {
-                            return unifyTerms(consLeft.getHead(), consRight.getHead()) &&
-                                   unifyTerms(consLeft.getTail(), consRight.getTail());
+                            return unifyTerms(consLeft.getHead(), consRight.getHead(), result) &&
+                                   unifyTerms(consLeft.getTail(), consRight.getTail(), result);
                         }),
-                        M.var(varRight -> unifyVarTerm(varRight, consLeft))
+                        M.var(varRight -> unifyVarTerm(varRight, consLeft, result))
                     ).match(listRight).orElse(false),
                     nilLeft -> M.<Boolean> cases(
                         M.nil(nilRight -> true),
-                        M.var(varRight -> unifyVarTerm(varRight, nilLeft))
+                        M.var(varRight -> unifyVarTerm(varRight, nilLeft, result))
                     ).match(listRight).orElse(false),
                     varLeft -> M.<Boolean> cases(
-                        M.var(varRight -> unifyVars(varLeft, varRight)),
-                        M.term(termRight -> unifyVarTerm(varLeft, termRight))
+                        M.var(varRight -> unifyVars(varLeft, varRight, result)),
+                        M.term(termRight -> unifyVarTerm(varLeft, termRight, result))
                     ).match(listRight).orElse(false)
                 ))),
-                M.var(varRight -> unifyTerms(varRight, listLeft))
+                M.var(varRight -> unifyTerms(varRight, listLeft, result))
             ).match(rightRep).orElse(false),
             stringLeft -> M.<Boolean>cases(
                 M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
-                M.var(varRight -> unifyVarTerm(varRight, stringLeft))
+                M.var(varRight -> unifyVarTerm(varRight, stringLeft, result))
             ).match(rightRep).orElse(false),
             integerLeft -> M.<Boolean>cases(
                 M.integer(integerRight -> integerLeft.getValue() != integerRight.getValue()),
-                M.var(varRight -> unifyVarTerm(varRight, integerLeft))
+                M.var(varRight -> unifyVarTerm(varRight, integerLeft, result))
             ).match(rightRep).orElse(false),
             varLeft -> M.cases(
-                M.var(varRight -> unifyVars(varLeft, varRight)),
-                M.term(termRight -> unifyVarTerm(varLeft, termRight))
+                M.var(varRight -> unifyVars(varLeft, varRight, result)),
+                M.term(termRight -> unifyVarTerm(varLeft, termRight, result))
             ).match(rightRep).orElse(false)
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
-    private boolean unifyVarTerm(ITermVar var, ITerm term) {
+    private boolean unifyVarTerm(ITermVar var, ITerm term, UnificationResult result) {
         if(term.getVars().contains(var)) {
             return false;
         }
         reps.put(var, term);
-        updateActive(var, term);
+        result.addSubstituted(var);
         return true;
     }
 
-    private boolean unifyVars(ITermVar varLeft, ITermVar varRight) {
+    private boolean unifyVars(ITermVar varLeft, ITermVar varRight, UnificationResult result) {
         int sizeLeft = sizes.getOrDefault(varLeft, 1);
         int sizeRight = sizes.getOrDefault(varRight, 1);
         if(sizeLeft > sizeRight) {
             reps.put(varRight, varLeft);
             sizes.put(varLeft, sizeLeft + sizeRight);
-            updateActive(varRight, varLeft);
+            result.addSubstituted(varRight);
         } else {
             reps.put(varLeft, varRight);
             sizes.put(varRight, sizeLeft + sizeRight);
-            updateActive(varLeft, varRight);
+            result.addSubstituted(varLeft);
         }
         return true;
     }
 
-    private boolean unifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) {
+    private boolean unifys(Iterable<ITerm> lefts, Iterable<ITerm> rights, UnificationResult result) {
         Iterator<ITerm> itLeft = lefts.iterator();
         Iterator<ITerm> itRight = rights.iterator();
         boolean success = true;
@@ -188,7 +182,7 @@ public class Unifier<D> implements IUnifier, Serializable {
             if(!itRight.hasNext()) {
                 return false;
             }
-            success &= unifyTerms(itLeft.next(), itRight.next());
+            success &= unifyTerms(itLeft.next(), itRight.next(), result);
         }
         if(itRight.hasNext()) {
             return false;
@@ -198,8 +192,9 @@ public class Unifier<D> implements IUnifier, Serializable {
 
 
     public boolean canUnify(ITerm left, ITerm right) {
-        return left.match(
-            Terms.<Boolean>cases(
+        return left
+                .match(Terms
+                        .<Boolean>cases(
             // @formatter:off
             applLeft -> M.<Boolean>cases(
                 M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) &&
@@ -232,7 +227,7 @@ public class Unifier<D> implements IUnifier, Serializable {
             ).match(right).orElse(false),
             varLeft -> true
             // @formatter:on
-            ));
+        ));
     }
 
     private boolean canUnifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) {
@@ -244,72 +239,6 @@ public class Unifier<D> implements IUnifier, Serializable {
             }
         }
         return !itRight.hasNext();
-    }
-
-    /**
-     * Test if any variables in term are in the active set.
-     */
-    public boolean isActive(ITerm term, @SuppressWarnings("unchecked") D... excludedDeps) {
-        Set<D> excludedDepList = Sets.newHashSet(excludedDeps);
-        for(ITermVar var : find(term).getVars()) {
-            for(D dep : activeVars.get(var)) {
-                if(!excludedDepList.contains(dep)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Add variables in term to active set.
-     */
-    public void addActive(ITerm term, D dep) {
-        for(ITermVar var : find(term).getVars()) {
-            if(frozenVars.contains(var)) {
-                throw new IllegalArgumentException("Re-activating frozen " + var);
-            }
-            activeVars.put(var, dep);
-        }
-    }
-
-    /**
-     * Remove variables in term from active set.
-     */
-    public void removeActive(ITerm term, D dep) {
-        for(ITermVar var : find(term).getVars()) {
-            activeVars.remove(var, dep);
-        }
-    }
-
-    public Set<ITermVar> getActiveVars() {
-        return Collections.unmodifiableSet(activeVars.keySet());
-    }
-
-    private void updateActive(ITermVar var, ITerm term) {
-        if(frozenVars.contains(var)) {
-            throw new IllegalArgumentException("Updating frozen " + var);
-        }
-        if(!activeVars.containsKey(var)) {
-            return;
-        }
-        final Set<D> n = activeVars.get(var);
-        for(ITermVar newVar : term.getVars()) {
-            if(frozenVars.contains(newVar)) {
-                throw new IllegalArgumentException("Re-activating frozen " + newVar + " on update of " + var);
-            }
-            activeVars.putAll(newVar, n);
-        }
-        activeVars.removeAll(var);
-    }
-
-    public void freeze(ITerm term) {
-        for(ITermVar var : find(term).getVars()) {
-            if(activeVars.containsKey(var)) {
-                throw new IllegalArgumentException("Freezing active " + var);
-            }
-            frozenVars.add(var);
-        }
     }
 
 }

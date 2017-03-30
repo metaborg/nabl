@@ -76,8 +76,8 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
     }
 
     private boolean solve(CSubsetEq constraint) throws UnsatisfiableException {
-        ITerm left = unifier().find(constraint.getLeft());
-        ITerm right = unifier().find(constraint.getRight());
+        ITerm left = find(constraint.getLeft());
+        ITerm right = find(constraint.getRight());
         if(!left.isGround() && right.isGround()) {
             return false;
         }
@@ -103,7 +103,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
     }
 
     private boolean solve(CDistinct constraint) throws UnsatisfiableException {
-        ITerm setTerm = unifier().find(constraint.getSet());
+        ITerm setTerm = find(constraint.getSet());
         if(!setTerm.isGround()) {
             return false;
         }

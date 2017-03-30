@@ -10,6 +10,8 @@ import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
+import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
+import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
@@ -29,6 +31,7 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.unification.VarTracker;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
@@ -45,8 +48,9 @@ public class Solver {
     private static final ILogger logger = LoggerUtils.logger(Solver.class);
 
     final SolverMode mode;
-    final Function1<String, ITermVar> fresh;
-    final Unifier<IConstraint> unifier;
+    private final Function1<String, ITermVar> fresh;
+    private final Unifier unifier;
+    final VarTracker<IConstraint> tracker;
     final ICancel cancel;
     final IProgress progress;
 
@@ -66,13 +70,14 @@ public class Solver {
             ICancel cancel) {
         this.mode = mode;
         this.fresh = fresh;
-        this.unifier = new Unifier<>();
+        this.unifier = new Unifier();
+        this.tracker = new VarTracker<>(unifier);
         this.cancel = cancel;
         this.progress = progress;
 
         this.components = Lists.newArrayList();
         this.components.add(baseSolver = new BaseSolver(this));
-        this.components.add(equalitySolver = new EqualitySolver(this));
+        this.components.add(equalitySolver = new EqualitySolver(this, unifier));
         this.components.add(astSolver = new AstSolver(this));
         this.components.add(namebindingSolver = new NamebindingSolver(this, config.getResolutionParams()));
         this.components.add(relationSolver = new RelationSolver(this, config.getRelations(), config.getFunctions()));
@@ -82,6 +87,8 @@ public class Solver {
 
         this.messages = new Messages();
     }
+
+    // --- solver life cycle ---
 
     private void addAll(Collection<PartialSolution> partialSolutions, IMessageInfo messageInfo)
             throws InterruptedException {
@@ -159,6 +166,8 @@ public class Solver {
         return unsolved.stream().map(c -> Constraints.find(c, unifier)).collect(Collectors.toSet());
     }
 
+    // --- static interface to solver ---
+
     public static PartialSolution solveIncremental(SolverConfig config, Iterable<ITerm> activeTerms,
             Function1<String, ITermVar> fresh, Collection<IConstraint> constraints, IMessageInfo messageInfo,
             IProgress progress, ICancel cancel) throws SolverException, InterruptedException {
@@ -168,7 +177,7 @@ public class Solver {
 
         Solver solver = new Solver(config, fresh, SolverMode.PARTIAL, progress, cancel);
         for(ITerm activeTerm : activeTerms) {
-            solver.unifier.addActive(activeTerm, ImmutableCTrue.of(messageInfo));
+            solver.tracker.addActive(activeTerm, ImmutableCTrue.of(messageInfo));
             solver.namebindingSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
         }
 
@@ -240,6 +249,21 @@ public class Solver {
             IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
             return c.getMessageInfo().withDefaultContent(content);
         }).collect(Collectors.toSet());
+    }
+
+    // --- internals for use by solver components ---
+
+    final ITermVar fresh(String base) {
+        return fresh.apply(base);
+    }
+
+    final ITerm find(ITerm term) {
+        return unifier.find(term);
+    }
+
+    final void unify(ITerm left, ITerm right, IMessageInfo message) throws UnsatisfiableException {
+        // cast to fix visibility of add
+        ((SolverComponent<IEqualityConstraint>) equalitySolver).add(ImmutableCEqual.of(left, right, message));
     }
 
 }

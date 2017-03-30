@@ -20,7 +20,7 @@ public abstract class TermVar implements ITermVar {
 
     @Value.Parameter @Override public abstract String getName();
 
-    public boolean isGround() {
+    @Override public boolean isGround() {
         return false;
     }
 
@@ -40,7 +40,7 @@ public abstract class TermVar implements ITermVar {
         return cases.caseVar(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T, E> cases) throws E {
         return cases.caseVar(this);
     }
 
@@ -48,7 +48,7 @@ public abstract class TermVar implements ITermVar {
         return cases.caseVar(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(IListTerm.CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(IListTerm.CheckedCases<T, E> cases) throws E {
         return cases.caseVar(this);
     }
 

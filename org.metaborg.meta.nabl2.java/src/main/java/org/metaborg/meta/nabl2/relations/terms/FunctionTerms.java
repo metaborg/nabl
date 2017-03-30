@@ -16,26 +16,26 @@ import com.google.common.collect.Maps;
 
 public class FunctionTerms {
 
-    public static IMatcher<Map<String,Function1<ITerm,Optional<ITerm>>>> functions() {
+    public static IMatcher<Map<String, Function1<ITerm, Optional<ITerm>>>> functions() {
         return M.listElems(function(), (l, funDefs) -> {
-            Map<String,Function1<ITerm,Optional<ITerm>>> functions = Maps.newHashMap();
-            for (Tuple2<String,Function1<ITerm,Optional<ITerm>>> funDef : funDefs) {
+            Map<String, Function1<ITerm, Optional<ITerm>>> functions = Maps.newHashMap();
+            for(Tuple2<String, Function1<ITerm, Optional<ITerm>>> funDef : funDefs) {
                 functions.put(funDef._1(), funDef._2());
             }
             return functions;
         });
     }
 
-    private static IMatcher<Tuple2<String,Function1<ITerm,Optional<ITerm>>>> function() {
+    private static IMatcher<Tuple2<String, Function1<ITerm, Optional<ITerm>>>> function() {
         return M.tuple2(functionName(), M.listElems(functionCase()), (t, name, cases) -> {
-            Function1<ITerm,Optional<ITerm>> f = term -> eval(cases, term);
+            Function1<ITerm, Optional<ITerm>> f = term -> eval(cases, term);
             return ImmutableTuple2.of(name, f);
         });
     }
 
-    private static IMatcher<Tuple2<ITerm,ITerm>> functionCase() {
+    private static IMatcher<Tuple2<ITerm, ITerm>> functionCase() {
         return M.tuple2(M.term(), M.term(), (t, t1, t2) -> {
-            if (!t1.getVars().containsAll(t2.getVars())) {
+            if(!t1.getVars().containsAll(t2.getVars())) {
                 throw new IllegalStateException("Function case is not closed.");
             }
             return ImmutableTuple2.of(t1, t2);
@@ -46,17 +46,17 @@ public class FunctionTerms {
         return M.appl1("Function", M.stringValue(), (t, n) -> n);
     }
 
-    private static Optional<ITerm> eval(Iterable<Tuple2<ITerm,ITerm>> cases, ITerm term) {
-        if (!term.isGround()) {
+    private static Optional<ITerm> eval(Iterable<Tuple2<ITerm, ITerm>> cases, ITerm term) {
+        if(!term.isGround()) {
             throw new IllegalStateException("Term argument must be ground.");
         }
-        for (Tuple2<ITerm,ITerm> c : cases) {
-            Unifier<?> unifier = new Unifier<>();
+        for(Tuple2<ITerm, ITerm> c : cases) {
+            Unifier unifier = new Unifier();
             try {
                 unifier.unify(c._1(), term);
                 ITerm result = unifier.find(c._2());
                 return Optional.of(result);
-            } catch (UnificationException e) {
+            } catch(UnificationException e) {
             }
         }
         return Optional.empty();
