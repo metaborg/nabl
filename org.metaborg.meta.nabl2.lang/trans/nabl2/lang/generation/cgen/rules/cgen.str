@@ -35,11 +35,15 @@ rules
         args-str := |[ ~<args-var> := Params(~params-term) ]|;
         debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^ ",<pp-NaBL2-CTerm> ~params-term] end ]|
       end;
+        metadata-str := |[
+          ~<index-var> := <nabl2--get-ast-index> ~<term-var>
+        ]|;
       constraint-list := List(<constraints-to-terms> constraint*);
       constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
       strclause* := [
         str*,
         With(args-str),
+        With(metadata-str),
         With(constraint-str),
         With(debug-str)
       ]
