@@ -60,8 +60,8 @@ public class Optionals {
         return os.filter(Optional::isPresent).map(Optional::get);
     }
 
-    public static Optional<?> when(boolean cond) {
-        return cond ? Optional.of(cond) : Optional.empty();
+    public static Optional<Unit> when(boolean cond) {
+        return cond ? Optional.of(Unit.unit) : Optional.empty();
     }
 
     public static <T> Stream<T> stream(Optional<T> opt) {
