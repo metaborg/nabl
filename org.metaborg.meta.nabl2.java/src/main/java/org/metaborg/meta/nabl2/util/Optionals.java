@@ -62,8 +62,8 @@ public class Optionals {
         return os.filter(Optional::isPresent).map(Optional::get);
     }
 
-    public static Optional<?> when(boolean cond) {
-        return cond ? Optional.of(cond) : Optional.empty();
+    public static Optional<Unit> when(boolean cond) {
+        return cond ? Optional.of(Unit.unit) : Optional.empty();
     }
 
     public static <T, R> R ifThenElse(Optional<T> opt, Function1<T, R> _then, Function0<R> _else) {
