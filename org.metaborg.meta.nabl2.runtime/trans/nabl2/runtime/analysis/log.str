@@ -1,0 +1,15 @@
+module nabl2/runtime/analysis/log 
+
+rules
+
+  nabl2--debug(|msg) =
+    prim("SG_log_debug",msg)
+
+  nabl2--info(|msg) =
+    prim("SG_log_info",msg)
+
+  nabl2--warn(|msg) =
+    prim("SG_log_warn",msg)
+
+  nabl2--error(|msg) =
+    prim("SG_log_error",msg)

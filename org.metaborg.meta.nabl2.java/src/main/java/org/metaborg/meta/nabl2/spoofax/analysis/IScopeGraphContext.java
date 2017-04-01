@@ -14,4 +14,6 @@ public interface IScopeGraphContext<U extends IScopeGraphUnit> {
     /** Get all units in this context */
     Collection<U> units();
 
+    boolean debug();
+    
 }
