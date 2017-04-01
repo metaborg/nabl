@@ -20,6 +20,8 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 @Serial.Version(value = 1L)
 public abstract class Solution implements ISolution {
 
+    @Value.Parameter @Override public abstract SolverConfig getConfig();
+
     @Value.Parameter @Override public abstract IProperties<TermIndex> getAstProperties();
 
     @Value.Parameter @Override public abstract IScopeGraph<Scope, Label, Occurrence> getScopeGraph();

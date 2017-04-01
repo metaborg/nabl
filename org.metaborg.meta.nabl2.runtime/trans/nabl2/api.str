@@ -11,23 +11,6 @@ imports
 rules // ###### Analysis execution ######
 
   /**
-   * Control the logging of analysis phases. If the strategy succeeds (id),
-   * analysis shows the main steps, if it fails (fail) analysis is silent.
-   *
-   * @type _ -> _
-   */
-  nabl2-debug-analysis-hook = fail
-
-  /**
-   * Control the logging of constraint generation. If the strategy succeeds (id),
-   * constraint generation is logged, if it fails (fail) constraint generation
-   * is silent.
-   *
-   * @type _ -> _
-   */
-  nabl2-debug-constraint-generation-hook = fail
-
-  /**
    * Provide a general strategy for pretty-printing object language
    * terms in error messages. To make sure constraint variables in terms
    * are printed correctly, inject `nabl2-prettyprint-terms` into your own

@@ -16,6 +16,11 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 
 public interface ISolution {
 
+    /**
+     * @return The configuration used for this solution
+     */
+    SolverConfig getConfig();
+
     IScopeGraph<Scope, Label, Occurrence> getScopeGraph();
 
     INameResolution<Scope, Label, Occurrence> getNameResolution();
