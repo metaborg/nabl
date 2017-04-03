@@ -8,7 +8,12 @@ rules
 
   [[ ScopeOccurrencesAreEqual(x1,x2) ^ () ]] :=
     new s,
-    {x1 @ s} == {x2 @ s}.
+    ScopeOccurrencesAreEqual[[ x1 ^ (s) : x1' ]],
+    ScopeOccurrencesAreEqual[[ x2 ^ (s) : x2' ]],
+    x1' == x2'.
+
+  ScopeOccurrencesAreEqual[[ x ^ (s) : {x @ s} ]].
+
 
   [[ OccurrenceOfXInVarScope(x) ^ () ]] :=
     {x @ s} == _.
