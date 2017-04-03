@@ -16,6 +16,7 @@ imports
   nabl2/lang/outline
   nabl2/lang/pp
  
+  completion/completion
  
 rules
 

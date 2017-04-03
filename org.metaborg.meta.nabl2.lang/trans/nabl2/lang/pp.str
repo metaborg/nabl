@@ -16,3 +16,8 @@ rules
       ext      := <get-extension> path;
       filename := <guarantee-extension(|$[pp.[ext]])> path;
       result   := <pp-NaBL2-string> Module($[[name].pp],section*)
+
+rules
+
+  construct-textual-change =
+    construct-textual-change(pp-partial-NaBL2-string, parenthesize, override-reconstruction, resugar)
