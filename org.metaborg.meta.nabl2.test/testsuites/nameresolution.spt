@@ -4,6 +4,16 @@ language NaBL2Test
 
 //-------------------------------
 
+test scope occurrences are equal [[
+  scope occurrences of x and x are equal
+]] 0 errors
+
+test occurrence indexed in var scope fails [[
+  occurrence of x in var scope
+]] analysis fails
+
+//-------------------------------
+
 test resolve same name in same scope [[
   resolve [[x]] to [[x]] in same scope
 ]] 0 errors

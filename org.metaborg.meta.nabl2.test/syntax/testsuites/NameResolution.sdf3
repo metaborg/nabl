@@ -6,6 +6,12 @@ imports
 
 context-free syntax
 
+  Test.ScopeOccurrencesAreEqual = <scope occurrences of <X> and <X> are equal>
+
+  Test.OccurrenceOfXInVarScope = <occurrence of <X> in var scope>
+
+context-free syntax
+
   Test.ResolveXToXInSameScope = <resolve <X> to <X> in same scope>
 
   Test.ResolveXToYInSameScope = <resolve <X> to <Y> in same scope>

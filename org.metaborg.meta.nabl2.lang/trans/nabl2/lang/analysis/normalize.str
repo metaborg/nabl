@@ -23,7 +23,6 @@ rules
     normalize-regex;
     normalize-constructors;
     normalize-arg-matches;
-    normalize-new-scopes;
     normalize-rule-vars;
     normalize-constraints;
     normalize-messages;
@@ -113,21 +112,6 @@ rules
     CGenMatchRule(rdef,pattern,param,Type(type),clause*)
       -> CGenMatchRule(rdef,pattern,param,Type(<type-var>),
              [CEqual(<type-var>,type,DefaultMessage()),clause*])
-    where <not(is-var)> type
-
-rules
-
-  normalize-new-scopes = try(sometd(normalize-new-scope))
-
-  normalize-new-scope = CGenInitRule(id,id,normalize-new-scope-clauses)
-
-  normalize-new-scope = CGenMatchRule(id,id,id,id,normalize-new-scope-clauses)
-
-  normalize-new-scope = FunDef(id,id,normalize-new-scope-clauses)
-
-  normalize-new-scope-clauses: clause* -> [scope-clause*,other-clause*]
-    where (new-scopes*@[_|_],other-clause*) := <partition(\ NewScopes(s*) -> s* \)> clause*
-    with scope-clause* := <concat;map(\ s -> CEqual(s,NewScope(<var-name> s),DefaultMessage()) \)> new-scopes*
 
 rules
 

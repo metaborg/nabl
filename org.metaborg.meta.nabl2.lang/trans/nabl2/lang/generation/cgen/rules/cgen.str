@@ -155,6 +155,13 @@ rules
                    with n := Str(<var-name> v)
                  \})> v*
 
+  clause-to-str:
+    NewScopes(s*) -> str
+    with str := <mapseq({\
+                   s -> |[ ~s := <nabl2--new-scope(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
+                   with n := Str(<var-name> s)
+                 \})> s*
+
 rules
  
   constraints-to-terms =

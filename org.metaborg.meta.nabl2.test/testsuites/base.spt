@@ -11,4 +11,3 @@ test false fails [[
 test true succeeds [[
   true
 ]] 0 errors
-

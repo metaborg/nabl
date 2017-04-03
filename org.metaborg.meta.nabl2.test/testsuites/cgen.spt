@@ -35,3 +35,9 @@ test higher-order call on empty list [[
 test higher-order call on non-empty list [[
   higher-order call on list x, x, x
 ]] 3 notes
+
+//-------------------------------
+
+test new scope as type [[
+  new scope as type on x
+]] analysis succeeds

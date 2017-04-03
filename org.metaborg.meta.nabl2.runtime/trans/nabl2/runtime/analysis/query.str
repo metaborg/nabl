@@ -156,12 +156,13 @@ rules
 rules
 
   nabl2--occurrence-index-of(|default-index) =
-    if is-NaBL2-Scope; nabl2--is-ground then
-      id
+    if nabl2--is-ground then
+      is-NaBL2-Scope
+   <+ nabl2--get-ast-index
+   <+ !default-index
     else
-      nabl2--get-ast-index <+ !default-index
+      fatal-err(|"Cannot get an index of non-ground ")
     end
- 
 
 rules
 

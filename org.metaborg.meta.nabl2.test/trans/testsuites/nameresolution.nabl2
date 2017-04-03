@@ -6,6 +6,15 @@ imports
 
 rules
 
+  [[ ScopeOccurrencesAreEqual(x1,x2) ^ () ]] :=
+    new s,
+    {x1 @ s} == {x2 @ s}.
+
+  [[ OccurrenceOfXInVarScope(x) ^ () ]] :=
+    {x @ s} == _.
+
+rules
+
   [[ ResolveXToXInSameScope(xr,xd) ^ () ]] :=
     new s,
     {xr} -> s,

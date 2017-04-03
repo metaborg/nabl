@@ -39,3 +39,11 @@ rules
     Map0(CallRuleHOOnList)[[ ts ^ () ]].
 
   CallRuleHOOnList[[ t ^ () ]] := false | note.
+
+rules
+
+  [[ NewScopeAsType(x) ^ () ]] :=
+    NewScopeAsType[[ x ^ () : _ ]].
+    
+  NewScopeAsType[[ x ^ () : s ]] :=
+    new s.
