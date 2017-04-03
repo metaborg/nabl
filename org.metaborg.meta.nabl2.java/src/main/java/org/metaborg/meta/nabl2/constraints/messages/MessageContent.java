@@ -1,11 +1,11 @@
 package org.metaborg.meta.nabl2.constraints.messages;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.spoofax.TermSimplifier;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -32,8 +32,8 @@ public abstract class MessageContent implements IMessageContent {
             return ImmutableTermMessage.of(f.apply(getTerm()));
         }
 
-        @Override public String toString(String resource) {
-            return TermSimplifier.focus(resource, getTerm()).toString();
+        @Override public String toString(Function<ITerm,String> pp) {
+            return pp.apply(getTerm());
         }
 
         @Override public String toString() {
@@ -52,7 +52,7 @@ public abstract class MessageContent implements IMessageContent {
             return this;
         }
 
-        @Override public String toString(String resource) {
+        @Override public String toString(Function<ITerm,String> pp) {
             return getText();
         }
 
@@ -77,9 +77,9 @@ public abstract class MessageContent implements IMessageContent {
                 .of(getParts().stream().map(p -> p.withDefault(defaultContent)).collect(Collectors.toList()));
         }
 
-        @Override public String toString(String resource) {
+        @Override public String toString(Function<ITerm,String> pp) {
             StringBuilder sb = new StringBuilder();
-            getParts().stream().forEach(p -> sb.append(p.toString(resource)));
+            getParts().stream().forEach(p -> sb.append(p.toString(pp)));
             return sb.toString();
         }
 
@@ -103,7 +103,7 @@ public abstract class MessageContent implements IMessageContent {
             return defaultContent;
         }
 
-        @Override public String toString(String resource) {
+        @Override public String toString(Function<ITerm,String> pp) {
             return toString();
         }
 

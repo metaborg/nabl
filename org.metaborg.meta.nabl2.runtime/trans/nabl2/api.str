@@ -28,6 +28,29 @@ rules // ###### Analysis execution ######
   nabl2-debug-constraint-generation-hook = fail
 
   /**
+   * Provide a general strategy for pretty-printing object language
+   * terms in error messages. To make sure constraint variables in terms
+   * are printed correctly, inject `nabl2-prettyprint-terms` into your own
+   * prettyprinting strategies.
+   * 
+   * Example:
+   *   nabl2-prettyprint-hook    = prettyprint-YOURLANG-Type
+   *   prettyprint-YOURLANG-Type = nabl2-prettyprint-terms
+   *
+   * @type Term -> Box
+   */
+  nabl2-prettyprint-hook = fail
+
+  /**
+   * Strategy that prettyprints special NaBL2 constructors. Can be used to
+   * inject into pretty-printing rules of the object language, to enable
+   * pretty-printing of variables, scopes, and occurrences.
+   * 
+   * @type Term -> Box
+   */
+  nabl2-prettyprint-terms = fail
+
+  /**
    * Main analysis strategy for NaBL2.
    *
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST

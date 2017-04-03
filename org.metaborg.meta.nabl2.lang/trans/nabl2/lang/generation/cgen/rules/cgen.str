@@ -30,7 +30,7 @@ rules
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
         args-str := |[ ~<args-var> := ParamsAndType(~params-term,~type-term) ]|;
-        debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^ ",<pp-NaBL2-CTerm> ~params-term," : ",<pp-NaBL2-Type> ~type-term] end ]|
+        debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^ ",<pp-NaBL2-CTerm> ~params-term," : ",<pp-NaBL2-objlangterm> ~type-term] end ]|
       else
         args-str := |[ ~<args-var> := Params(~params-term) ]|;
         debug-str := Strat |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> ["init ^ ",<pp-NaBL2-CTerm> ~params-term] end ]|
@@ -74,7 +74,7 @@ rules
             CAstProperty(~<index-var>, Type(), ~<type-var>)
           ]
         ]|;
-        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-Type> ~<type-var>," ]]"] end ]|
+        debug-str := |[ if nabl2-debug-constraint-generation-hook then <concat-strings;debug> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-objlangterm> ~<type-var>," ]]"] end ]|
       else
         args-pattern := Term |[ Params(~params-pattern) ]|;
         args-string := Str($[^ [params-string]]);
