@@ -9,7 +9,7 @@ imports
 
 context-free syntax
 
-  Scope.Scope = <scope-<String>-<String>>
+  Scope.Scope = <#<String>-<String>>
 
   OccurrenceIndex = TermIndex
   OccurrenceIndex = <@<Scope>>

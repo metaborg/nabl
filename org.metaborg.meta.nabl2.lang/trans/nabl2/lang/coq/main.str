@@ -126,7 +126,7 @@ rules // Signatures
  				<write-to-string> x, ". Please report."]
  		where
  			not(?CGen(_) <+
- 				?Types(_) <+
+ 				?Constructors(_) <+
  				?NameResolution(_))
 
 rules	// Constraint generation signatures

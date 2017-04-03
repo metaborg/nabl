@@ -7,7 +7,6 @@ imports
   nabl2/lang/signatures/Functions
   nabl2/lang/signatures/NameResolution
   nabl2/lang/signatures/Relations
-  nabl2/lang/signatures/Types
 
 template options
 
