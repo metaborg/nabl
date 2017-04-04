@@ -17,3 +17,11 @@ test get all decls (1) [[
 test get all decls (3) [[
   get all x x x decls
 ]] run get-all-decls to 3
+
+test get direct edges [[
+  get direct edges from x to x
+]] run get-direct-edges
+
+test get import edges [[
+  get import edges from x to x
+]] run get-import-edges

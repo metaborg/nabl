@@ -259,13 +259,14 @@ rules // ###### Scope graphs ######
    * Get associated declarations of a scope
    *
    * @param a : Analysis
-   * @type decl:Occurrence -> List((Label,Scope))
-   * @type (decl:Occurrence,Label) -> List(Scope)
+   * @type Scope -> List((Label,decl:Occurrence))
+   * @type (Scope,Label) -> List(decl:Occurrence)
    */
   nabl2-get-assoc-edges-inv(|a) = nabl2--get-export-edges-inv(|a)
   nabl2-get-scope-assocs(|a) =
-    nabl2--deprecated(|"Use nabl2-get-assoc-edges-inv(|a) instead of nabl2-get-scope-assocs(|a)");
-    nabl2-get-assoc-edges-inv(|a)
+    nabl2--deprecated(|"Use nabl2-get-assoc-edges-inv(|a) instead of nabl2-get-scope-assocs(|a). NB The new strategy returns pairs of (Label,Occurrence) instead of (Occurrence,Label).");
+    nabl2-get-assoc-edges-inv(|a);
+    map(Swap)
 
   /**
    * Get visible declarations in scope

@@ -4,7 +4,9 @@ imports
 
   nabl2/api
   nabl2/runtime/prelude/base
+  signatures/nabl2/shared/constraints/-
   signatures/testsuites/api/-
+  testsuites/assert
  
 rules
 
@@ -18,4 +20,26 @@ rules
     nx := <length> xs;
     (s) := <nabl2-get-ast-params(|a)> xs;
     decls := <nabl2-get-all-decls(|a)> s;
-    nd := <length> decls
+    <length> decls
+
+  get-direct-edges =
+    ?GetDirectEdges(x1,x2);
+    a := <nabl2-get-ast-analysis>;
+    (s1) := <nabl2-get-ast-params(|a)> x1;
+    (s2) := <nabl2-get-ast-params(|a)> x2;
+
+    <assert-equals(nabl2-get-direct-edges(|a)|[(P(),s1)])> s2;
+    <assert-equals(nabl2-get-direct-edges(|a)|[s1])> (s2,P());
+    <assert-equals(nabl2-get-direct-edges-inv(|a)|[(P(),s2)])> s1;
+    <assert-equals(nabl2-get-direct-edges-inv(|a)|[s2])> (s1,P())
+
+  get-import-edges =
+    ?GetImportEdges(xs,xi);
+    a := <nabl2-get-ast-analysis>;
+    (s) := <nabl2-get-ast-params(|a)> xs;
+    r := <nabl2-mk-occurrence> xi;
+
+    <assert-equals(nabl2-get-import-edges(|a)|[(I(),r)])> s;
+    <assert-equals(nabl2-get-import-edges(|a)|[r])> (s,I());
+    <assert-equals(nabl2-get-import-edges-inv(|a)|[(I(),s)])> r;
+    <assert-equals(nabl2-get-import-edges-inv(|a)|[s])> (r,I())

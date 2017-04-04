@@ -5,6 +5,18 @@ rules
   [[ GetAllDecls(xs) ^ () ]] :=
     new s,
     Map1(GetAllDecls)[[ xs ^ (s) ]].
-
   GetAllDecls[[ x ^ (s) ]] :=
     {x} <- s.
+
+  [[ GetDirectEdges(x1,x2) ^ () ]] :=
+    new s1 s2,
+    s2 ---> s1,
+    GetDirectEdges[[ x1 ^ (s1) ]],
+    GetDirectEdges[[ x2 ^ (s2) ]].
+  GetDirectEdges[[ _ ^ (s) ]].
+
+  [[ GetImportEdges(xs,xi) ^ () ]] :=
+    new s,
+    {xi} <=== s,
+    GetImportEdges[[ xs ^ (s) ]].
+  GetImportEdges[[ _ ^ (s) ]].
