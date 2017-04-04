@@ -1,4 +1,4 @@
-module testsuites/equality
+module testsuites/unification/rules
 
 imports
 

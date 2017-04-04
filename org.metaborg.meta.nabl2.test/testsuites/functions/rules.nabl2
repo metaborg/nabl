@@ -1,4 +1,4 @@
-module testsuites/functions
+module testsuites/functions/rules
 
 imports
 

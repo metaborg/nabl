@@ -1,4 +1,4 @@
-module testsuites/Equality
+module testsuites/unification/Syntax
 
 imports
 

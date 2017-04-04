@@ -1,4 +1,4 @@
-module equality
+module unification
 
 language NaBL2Test
 

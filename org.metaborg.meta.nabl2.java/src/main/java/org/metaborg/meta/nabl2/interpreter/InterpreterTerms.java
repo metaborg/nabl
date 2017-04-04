@@ -59,7 +59,7 @@ public class InterpreterTerms {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence decl : scopeGraph.getAllDecls()) {
             ITerm scope = scopeGraph.getDecls().get(decl).map(s -> newList(s)).orElse(newNil());
-            ITerm assocs = multimap(scopeGraph.getAssocEdges().get(decl));
+            ITerm assocs = multimap(scopeGraph.getExportEdges().get(decl));
             ITerm entry = newAppl("DE", scope, assocs);
             entries.put(decl, entry);
         }

@@ -1,0 +1,21 @@
+module testsuites/api/util
+
+imports
+
+  nabl2/api
+  nabl2/runtime/prelude/base
+  signatures/testsuites/api/-
+ 
+rules
+
+  false-has-errors =
+    nabl2-get-ast-analysis;
+    nabl2-analysis-has-errors
+
+  get-all-decls =
+    ?GetAllDecls(xs);
+    a := <nabl2-get-ast-analysis>;
+    nx := <debug;length> xs;
+    (s) := <nabl2-get-ast-params(|a)> xs;
+    decls := <nabl2-get-all-decls(|a)> s;
+    nd := <length> decls

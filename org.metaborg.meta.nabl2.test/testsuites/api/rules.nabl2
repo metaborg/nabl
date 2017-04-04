@@ -1,0 +1,10 @@
+module testsuites/api/rules
+
+rules
+
+  [[ GetAllDecls(xs) ^ () ]] :=
+    new s,
+    Map1(GetAllDecls)[[ xs ^ (s) ]].
+
+  GetAllDecls[[ x ^ (s) ]] :=
+    {x} <- s.

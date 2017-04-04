@@ -1,0 +1,19 @@
+module api
+
+language NaBL2Test
+
+test false has errors [[
+  false
+]] run false-has-errors
+
+test get all decls (0) [[
+  get all decls
+]] run get-all-decls to 0
+
+test get all decls (1) [[
+  get all x decls
+]] run get-all-decls to 1
+
+test get all decls (3) [[
+  get all x x x decls
+]] run get-all-decls to 3

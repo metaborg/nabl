@@ -1,4 +1,4 @@
-module testsuites/nameresolution
+module testsuites/name-resolution/rules
 
 imports
 
@@ -17,6 +17,13 @@ rules
 
   [[ OccurrenceOfXInVarScope(x) ^ () ]] :=
     {x @ s} == _.
+
+  [[ ResolveXToScopeOccurrenceX(xr,xd) ^ () ]] :=
+    {xd @ s1} <- s1,
+    s2 -P-> s1,
+    {xr} -> s2,
+    {xr} |-> _,
+    new s1 s2.
 
 rules
 

@@ -331,7 +331,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
         Label label = a.getLabel();
-        List<Scope> scopes = Lists.newArrayList(scopeGraph.getAssocEdges().get(decl, label));
+        List<Scope> scopes = Lists.newArrayList(scopeGraph.getExportEdges().get(decl, label));
         unifier().removeActive(a.getScope(), a); // before `unify`, so that we don't cause an error chain if that fails
         switch(scopes.size()) {
             case 0:
@@ -389,7 +389,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             for(Map.Entry<Label, Occurrence> edge : scopeGraph.getImportEdges().get(scope)) {
                 constraints.add(ImmutableCGImport.of(scope, edge.getKey(), edge.getValue(), messageInfo));
             }
-            for(Map.Entry<Label, Occurrence> edge : scopeGraph.getAssocEdges().inverse().get(scope)) {
+            for(Map.Entry<Label, Occurrence> edge : scopeGraph.getExportEdges().inverse().get(scope)) {
                 constraints.add(ImmutableCGAssoc.of(edge.getValue(), edge.getKey(), scope, messageInfo));
             }
             for(Occurrence decl : properties.getIndices()) {

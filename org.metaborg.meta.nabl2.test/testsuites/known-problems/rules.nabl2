@@ -1,4 +1,4 @@
-module testsuites/knownproblems
+module testsuites/known-problems/rules
 
 imports
 

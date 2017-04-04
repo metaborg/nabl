@@ -196,7 +196,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 return env.getAll().map(paths -> {
                     List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
                     for(IResolutionPath<S, L, O> importPath : paths) {
-                        for(S nextScope : scopeGraph.getAssocEdges().get(importPath.getDeclaration(), l)) {
+                        for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
                             Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
                                     .map(getter::apply).ifPresent(importEnvs::add);
                         }

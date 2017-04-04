@@ -1,4 +1,4 @@
-module testsuites/KnownProblems
+module testsuites/known-problems/Syntax
 
 imports
 

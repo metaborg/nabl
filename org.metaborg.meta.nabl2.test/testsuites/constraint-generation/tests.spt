@@ -1,4 +1,4 @@
-module cgen
+module constraint-generation
 
 language NaBL2Test
 

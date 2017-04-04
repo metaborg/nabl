@@ -1,4 +1,4 @@
-module testsuites/Functions
+module testsuites/functions/Syntax
 
 imports
 

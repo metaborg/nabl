@@ -1,4 +1,4 @@
-module testsuites/CGen
+module testsuites/constraint-generation/Syntax
 
 imports
 

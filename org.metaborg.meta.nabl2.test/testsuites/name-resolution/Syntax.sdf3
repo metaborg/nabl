@@ -1,4 +1,4 @@
-module testsuites/NameResolution
+module testsuites/name-resolution/Syntax
 
 imports
 
@@ -9,6 +9,8 @@ context-free syntax
   Test.ScopeOccurrencesAreEqual = <scope occurrences of <X> and <X> are equal>
 
   Test.OccurrenceOfXInVarScope = <occurrence of <X> in var scope>
+
+  Test.ResolveXToScopeOccurrenceX = <resolve <X> to scope occurrence <X>>
 
 context-free syntax
 

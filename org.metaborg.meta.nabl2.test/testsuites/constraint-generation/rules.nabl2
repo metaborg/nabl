@@ -1,4 +1,4 @@
-module testsuites/cgen
+module testsuites/constraint-generation/rules
 
 imports
 

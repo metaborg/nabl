@@ -1,0 +1,9 @@
+module testsuites/api/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.GetAllDecls = <get all <{X " "}*> decls>
