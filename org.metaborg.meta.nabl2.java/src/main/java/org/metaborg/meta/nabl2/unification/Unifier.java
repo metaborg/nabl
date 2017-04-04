@@ -107,44 +107,44 @@ public class Unifier<D> implements IUnifier, Serializable {
     private boolean unifyTerms(ITerm left, ITerm right) {
         ITerm leftRep = findShallow(left);
         ITerm rightRep = findShallow(right);
-        if(leftRep.termEquals(rightRep)) {
+        if(leftRep.equals(rightRep)) {
             return true;
         } else if(leftRep.isGround() && rightRep.isGround()) {
             return false;
         }
-        return leftRep.match(Terms.<Boolean>cases(
-            // @formatter:off
-            applLeft -> M.<Boolean>cases(
+        // @formatter:off
+        return leftRep.match(Terms.cases(
+            applLeft -> M.cases(
                 M.appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
                                     applLeft.getArity() == applRight.getArity() &&
                                     unifys(applLeft.getArgs(), applRight.getArgs())),
                 M.var(varRight -> unifyVarTerm(varRight, applLeft))
             ).match(rightRep).orElse(false),
-            listLeft -> M.<Boolean>cases(
-                M.list(listRight -> listLeft.match(ListTerms.<Boolean> cases(
-                    consLeft -> M.<Boolean> cases(
+            listLeft -> M.cases(
+                M.list(listRight -> listLeft.match(ListTerms.cases(
+                    consLeft -> M.cases(
                         M.cons(consRight -> {
                             return unifyTerms(consLeft.getHead(), consRight.getHead()) &&
                                    unifyTerms(consLeft.getTail(), consRight.getTail());
                         }),
                         M.var(varRight -> unifyVarTerm(varRight, consLeft))
                     ).match(listRight).orElse(false),
-                    nilLeft -> M.<Boolean> cases(
+                    nilLeft -> M.cases(
                         M.nil(nilRight -> true),
                         M.var(varRight -> unifyVarTerm(varRight, nilLeft))
                     ).match(listRight).orElse(false),
-                    varLeft -> M.<Boolean> cases(
+                    varLeft -> M.cases(
                         M.var(varRight -> unifyVars(varLeft, varRight)),
                         M.term(termRight -> unifyVarTerm(varLeft, termRight))
                     ).match(listRight).orElse(false)
                 ))),
                 M.var(varRight -> unifyTerms(varRight, listLeft))
             ).match(rightRep).orElse(false),
-            stringLeft -> M.<Boolean>cases(
+            stringLeft -> M.cases(
                 M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
                 M.var(varRight -> unifyVarTerm(varRight, stringLeft))
             ).match(rightRep).orElse(false),
-            integerLeft -> M.<Boolean>cases(
+            integerLeft -> M.cases(
                 M.integer(integerRight -> integerLeft.getValue() != integerRight.getValue()),
                 M.var(varRight -> unifyVarTerm(varRight, integerLeft))
             ).match(rightRep).orElse(false),
@@ -152,8 +152,8 @@ public class Unifier<D> implements IUnifier, Serializable {
                 M.var(varRight -> unifyVars(varLeft, varRight)),
                 M.term(termRight -> unifyVarTerm(varLeft, termRight))
             ).match(rightRep).orElse(false)
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
     private boolean unifyVarTerm(ITermVar var, ITerm term) {
@@ -198,23 +198,22 @@ public class Unifier<D> implements IUnifier, Serializable {
 
 
     public boolean canUnify(ITerm left, ITerm right) {
-        return left.match(
-            Terms.<Boolean>cases(
-            // @formatter:off
-            applLeft -> M.<Boolean>cases(
+        // @formatter:off
+        return left.match(Terms.cases(
+            applLeft -> M.cases(
                 M.appl(applRight -> (applLeft.getOp().equals(applRight.getOp()) &&
                                      applLeft.getArity() == applLeft.getArity() &&
                                      canUnifys(applLeft.getArgs(), applRight.getArgs()))),
                 M.var(varRight -> true)
             ).match(right).orElse(false),
-            listLeft -> M.<Boolean>cases(
-                M.list(listRight -> listLeft.match(ListTerms.<Boolean> cases(
-                    consLeft -> M.<Boolean>cases(
+            listLeft -> M.cases(
+                M.list(listRight -> listLeft.match(ListTerms.cases(
+                    consLeft -> M.cases(
                         M.cons(consRight -> (canUnify(consLeft.getHead(), consRight.getHead()) &&
                                              canUnify(consLeft.getTail(), consRight.getTail()))),
                         M.var(varRight -> true)
                     ).match(listRight).orElse(false),
-                    nilLeft -> M.<Boolean>cases(
+                    nilLeft -> M.cases(
                         M.nil(nilRight -> true),
                         M.var(varRight -> true)
                     ).match(listRight).orElse(false),
@@ -222,17 +221,17 @@ public class Unifier<D> implements IUnifier, Serializable {
                 ))),
                 M.var(varRight -> true)
             ).match(right).orElse(false),
-            stringLeft -> M.<Boolean>cases(
+            stringLeft -> M.cases(
                 M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
                 M.var(varRight -> true)
             ).match(right).orElse(false),
-            integerLeft -> M.<Boolean>cases(
+            integerLeft -> M.cases(
                 M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
                 M.var(varRight -> true)
             ).match(right).orElse(false),
             varLeft -> true
-            // @formatter:on
-            ));
+        ));
+        // @formatter:on
     }
 
     private boolean canUnifys(Iterable<ITerm> lefts, Iterable<ITerm> rights) {

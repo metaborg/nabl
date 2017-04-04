@@ -36,7 +36,8 @@ public class StrategoTermIndices {
         }
 
         private IStrategoTerm index(final IStrategoTerm term) {
-            IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm>cases(
+            IStrategoTerm result = StrategoTerms.match(term,
+                    StrategoTerms.<IStrategoTerm>cases(
                 // @formatter:off
                 appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
                 tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
@@ -45,7 +46,7 @@ public class StrategoTermIndices {
                 real -> termFactory.makeReal(real.realValue()),
                 string -> termFactory.makeString(string.stringValue())
                 // @formatter:on
-            ));
+                    ));
             assert !get(result).isPresent();
             result = put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
             termFactory.copyAttachments(term, result);
@@ -87,7 +88,8 @@ public class StrategoTermIndices {
         }
 
         private IStrategoTerm erase(final IStrategoTerm term) {
-            IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm>cases(
+            IStrategoTerm result = StrategoTerms.match(term,
+                    StrategoTerms.<IStrategoTerm>cases(
                 // @formatter:off
                 appl -> termFactory.makeAppl(appl.getConstructor(), erase(appl.getAllSubterms()), appl.getAnnotations()),
                 tuple -> termFactory.makeTuple(erase(tuple.getAllSubterms()), tuple.getAnnotations()),
@@ -96,7 +98,7 @@ public class StrategoTermIndices {
                 real -> termFactory.makeReal(real.realValue()),
                 string -> termFactory.makeString(string.stringValue())
                 // @formatter:on
-            ));
+                    ));
             result = remove(result, termFactory);
             termFactory.copyAttachments(term, result);
             assert !get(result).isPresent();
@@ -134,13 +136,16 @@ public class StrategoTermIndices {
         return Optional.empty();
     }
 
-    public static IStrategoTerm put(ITermIndex index, IStrategoTerm term, ITermFactory factory) {
-        return factory.annotateTerm(term,
-            factory.makeListCons(build(index, factory), removeFromAnnoList(term.getAnnotations(), factory)));
+    public static <T extends IStrategoTerm> T put(ITermIndex index, T term, ITermFactory factory) {
+        @SuppressWarnings({ "unchecked" }) T result = (T) factory.annotateTerm(term,
+                factory.makeListCons(build(index, factory), removeFromAnnoList(term.getAnnotations(), factory)));
+        return result;
     }
 
-    public static IStrategoTerm remove(IStrategoTerm term, ITermFactory factory) {
-        return factory.annotateTerm(term, removeFromAnnoList(term.getAnnotations(), factory));
+    public static <T extends IStrategoTerm> T remove(T term, ITermFactory factory) {
+        @SuppressWarnings({ "unchecked" }) T result =
+                (T) factory.annotateTerm(term, removeFromAnnoList(term.getAnnotations(), factory));
+        return result;
     }
 
     // index terms
@@ -164,7 +169,7 @@ public class StrategoTermIndices {
 
     private static IStrategoList removeFromAnnoList(IStrategoList list, ITermFactory factory) {
         return factory.makeList(Arrays.asList(list.getAllSubterms()).stream().filter(term -> !match(term).isPresent())
-            .collect(Collectors.toList()));
+                .collect(Collectors.toList()));
     }
 
 }
