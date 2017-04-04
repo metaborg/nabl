@@ -77,11 +77,11 @@ public class GenericTerms {
 
 
     public static INilTerm newNil() {
-        return ImmutableNilTerm.of();
+        return ImmutableNilTerm.builder().build();
     }
 
     public static INilTerm newNil(ImmutableClassToInstanceMap<Object> attachments) {
-        return ImmutableNilTerm.of().withAttachments(attachments);
+        return ImmutableNilTerm.builder().attachments(attachments).build();
     }
 
 

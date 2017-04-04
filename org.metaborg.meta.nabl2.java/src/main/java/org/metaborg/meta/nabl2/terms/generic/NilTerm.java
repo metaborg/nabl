@@ -11,7 +11,7 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
 
-@Value.Immutable
+@Value.Immutable(builder = true)
 @Serial.Version(value = 42L)
 abstract class NilTerm extends AbstractTerm implements INilTerm {
 

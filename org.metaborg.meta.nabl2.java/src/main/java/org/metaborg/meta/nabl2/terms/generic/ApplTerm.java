@@ -29,6 +29,14 @@ abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
         return cases.caseAppl(this);
     }
 
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
+
     @Override public String toString() {
         return super.toString();
     }

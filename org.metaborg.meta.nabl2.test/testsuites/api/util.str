@@ -15,7 +15,7 @@ rules
   get-all-decls =
     ?GetAllDecls(xs);
     a := <nabl2-get-ast-analysis>;
-    nx := <debug;length> xs;
+    nx := <length> xs;
     (s) := <nabl2-get-ast-params(|a)> xs;
     decls := <nabl2-get-all-decls(|a)> s;
     nd := <length> decls
