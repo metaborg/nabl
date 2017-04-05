@@ -2,5 +2,5 @@ module nabl2/runtime/analysis/Main
 
 imports
 
+  nabl2/runtime/analysis/Debug
   nabl2/runtime/analysis/Generation
-

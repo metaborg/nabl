@@ -27,6 +27,8 @@ rules
   pp-NaBL2-Constraint     = pp-NaBL2(prettyprint-NaBL2-Constraint)
   pp-NaBL2-CVar           = pp-NaBL2(prettyprint-NaBL2-CVar)
 
+  pp-NaBL2-AnalysisResult = pp-NaBL2(prettyprint-NaBL2-AnalysisResult)
+
 rules
 
   pp-NaBL2-objlangterm    = pp-NaBL2(
@@ -42,6 +44,8 @@ rules
 
   nabl2-prettyprint-terms =
     prettyprint-NaBL2-CVar
+ <+ prettyprint-NaBL2-CList
+ <+ nabl2--actual-CTerm; prettyprint-NaBL2-CTerm
  <+ prettyprint-NaBL2-Scope
  <+ prettyprint-NaBL2-Occurrence
 
@@ -68,7 +72,6 @@ rules // Terms
   prettyprint-NaBL2-primitive = ![S(<is-real;real-to-string(|2)>)]
   prettyprint-NaBL2-primitive = ![S($["[<is-string>]"])]
 
-
   prettyprint-NaBL2-Term = prettyprint-NaBL2-primitive
   prettyprint-NaBL2-Term = prettyprint-NaBL2-List(prettyprint-NaBL2-Term)
   prettyprint-NaBL2-Term: c#(a*) -> [ H( [SOpt(HS(),"0")]
@@ -85,6 +88,7 @@ rules // CTerms
     with a' := <pp-H-list(prettyprint-NaBL2-CTerm|",")> a*
 
   nabl2--actual-CTerm = is-NaBL2-CVar
+  nabl2--actual-CTerm = is-NaBL2-CList
   nabl2--actual-CTerm = is-NaBL2-CTerm
   nabl2--actual-CTerm = is-NaBL2-Occurrence
   nabl2--actual-CTerm = is-NaBL2-Scope

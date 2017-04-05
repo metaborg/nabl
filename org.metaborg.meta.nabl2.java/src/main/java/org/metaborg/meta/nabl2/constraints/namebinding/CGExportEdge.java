@@ -13,7 +13,7 @@ import org.pcollections.PSet;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CGAssoc implements INamebindingConstraint {
+public abstract class CGExportEdge implements INamebindingConstraint {
 
     @Value.Parameter public abstract ITerm getDeclaration();
 

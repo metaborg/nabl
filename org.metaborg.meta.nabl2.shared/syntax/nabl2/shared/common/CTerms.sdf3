@@ -11,7 +11,10 @@ template options
 context-free syntax
 
   CTerm           = CVar {prefer}
-  CTerm.CList     = <[<{CTerm ", "}*>]>
-  CTerm.CListTail = <[<{CTerm ", "}*>|<CTerm>]>
+  CTerm           = CList
 
   CTerms          = <<{CTerm ", "}*>>
+
+  CList           = CVar
+  CList.CList     = <[<{CTerm ", "}*>]>
+  CList.CListTail = <[<{CTerm ", "}*>|<CList>]>

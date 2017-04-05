@@ -2,6 +2,7 @@ module nabl2/runtime/editor/menus
 
 imports
 
+  nabl2/runtime/analysis/debug
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
   nabl2/api
@@ -10,7 +11,7 @@ imports
 rules
 
   nabl2--show-uninterpreted-constraints:
-    (node, position, ast, path, project-path) -> (filename, result)
+    (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path;
          analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]];
          facts := <nabl2-get-symbolic-facts(|analysis)>;
@@ -19,3 +20,17 @@ rules
            ("facts", facts),
            ("goals", goals)
          ]
+
+  nabl2--debug-file-constraints:
+    (_, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"constraints.txt")> path;
+         analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+         constraints := <nabl2--debug-constraints(|analysis)>
+    with result := <pp-NaBL2-AnalysisResult> constraints
+
+  nabl2--debug-project-constraints:
+    (_, _, _, path, project-path) -> (filename, result)
+    with filename := $[[project-path]/constraints.txt];
+         analysis := <nabl2-get-resource-analysis> project-path;
+         constraints := <nabl2--debug-constraints(|analysis)>
+    with result := <pp-NaBL2-AnalysisResult> constraints

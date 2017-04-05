@@ -10,7 +10,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
 
@@ -33,7 +33,7 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        ITerm vars = GenericTerms.newList(getTypeVars());
+        ITerm vars = TB.newList(getTypeVars());
         return ImmutableList.of(vars, getType());
     }
 

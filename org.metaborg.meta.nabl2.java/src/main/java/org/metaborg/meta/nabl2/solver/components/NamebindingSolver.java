@@ -11,19 +11,19 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGDecl;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGDirectEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGImport;
+import org.metaborg.meta.nabl2.constraints.namebinding.CGExportEdge;
+import org.metaborg.meta.nabl2.constraints.namebinding.CGImportEdge;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGRef;
 import org.metaborg.meta.nabl2.constraints.namebinding.CResolve;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCDeclProperty;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDecl;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDirectEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImport;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGExportEdge;
+import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImportEdge;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -62,7 +62,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     private final Set<INamebindingConstraint> unsolvedBuilds;
     private final Set<CGDirectEdge<Scope>> incompleteDirectEdges;
-    private final Set<CGImport<Scope>> incompleteImportEdges;
+    private final Set<CGImportEdge<Scope>> incompleteImportEdges;
     private final Set<INamebindingConstraint> unsolvedChecks;
 
     private final OpenCounter<Scope, Label> scopeCounter;
@@ -229,7 +229,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return true;
     }
 
-    private boolean solve(CGImport<?> c) {
+    private boolean solve(CGImportEdge<?> c) {
         ITerm scopeTerm = unifier().find(c.getScope());
         if(!scopeTerm.isGround()) {
             return false;
@@ -237,7 +237,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         Scope scope = Scope.matcher().match(scopeTerm)
                 .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
         scopeCounter.add(scope, c.getLabel());
-        CGImport<Scope> cc = ImmutableCGImport.of(scope, c.getLabel(), c.getReference(), c.getMessageInfo());
+        CGImportEdge<Scope> cc = ImmutableCGImportEdge.of(scope, c.getLabel(), c.getReference(), c.getMessageInfo());
         if(!solveImportEdge(cc)) {
             incompleteImportEdges.add(cc);
 
@@ -245,7 +245,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return true;
     }
 
-    private boolean solve(CGAssoc c) {
+    private boolean solve(CGExportEdge c) {
         ITerm scopeTerm = unifier().find(c.getScope());
         ITerm declTerm = unifier().find(c.getDeclaration());
         if(!(scopeTerm.isGround() && declTerm.isGround())) {
@@ -272,7 +272,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return true;
     }
 
-    private boolean solveImportEdge(CGImport<Scope> c) {
+    private boolean solveImportEdge(CGImportEdge<Scope> c) {
         ITerm refTerm = unifier().find(c.getReference());
         if(!refTerm.isGround()) {
             return false;
@@ -387,10 +387,10 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 constraints.add(ImmutableCGDirectEdge.of(scope, edge.getKey(), edge.getValue(), messageInfo));
             }
             for(Map.Entry<Label, Occurrence> edge : scopeGraph.getImportEdges().get(scope)) {
-                constraints.add(ImmutableCGImport.of(scope, edge.getKey(), edge.getValue(), messageInfo));
+                constraints.add(ImmutableCGImportEdge.of(scope, edge.getKey(), edge.getValue(), messageInfo));
             }
             for(Map.Entry<Label, Occurrence> edge : scopeGraph.getExportEdges().inverse().get(scope)) {
-                constraints.add(ImmutableCGAssoc.of(edge.getValue(), edge.getKey(), scope, messageInfo));
+                constraints.add(ImmutableCGExportEdge.of(edge.getValue(), edge.getKey(), scope, messageInfo));
             }
             for(Occurrence decl : properties.getIndices()) {
                 for(ITerm key : properties.getDefinedKeys(decl)) {

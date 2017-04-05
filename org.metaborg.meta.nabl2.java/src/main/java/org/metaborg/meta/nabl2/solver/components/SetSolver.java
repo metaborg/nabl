@@ -23,7 +23,7 @@ import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
@@ -94,7 +94,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
         result.putAll(leftProj);
         result.keySet().removeAll(rightProj.keySet());
         if(!result.isEmpty()) {
-            MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP)).append(" not in ")
+            MessageContent content = MessageContent.builder().append(TB.newAppl(NAME_OP)).append(" not in ")
                     .append(constraint.getRight()).build();
             throw new UnsatisfiableException(
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values()));
@@ -120,7 +120,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
             }
         }
         if(!duplicates.isEmpty()) {
-            MessageContent content = MessageContent.builder().append(GenericTerms.newAppl(NAME_OP))
+            MessageContent content = MessageContent.builder().append(TB.newAppl(NAME_OP))
                     .append(" has duplicates in ").append(constraint.getSet()).build();
             throw new UnsatisfiableException(
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates));
@@ -136,7 +136,7 @@ public class SetSolver extends SolverComponent<ISetConstraint> {
                 return ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f), e.getPosition());
             }).collect(Collectors.toList());
         } else {
-            ITerm es = GenericTerms.newList(elements.stream().map(e -> e.getValue()).collect(Collectors.toList()));
+            ITerm es = TB.newList(elements.stream().map(e -> e.getValue()).collect(Collectors.toList()));
             Function1<ITerm, ITerm> f = M.sometd(M.appl0(NAME_OP, a -> es));
             return Iterables2.singleton(ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f),
                     template.getOriginTerm()));

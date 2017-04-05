@@ -13,7 +13,7 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -39,16 +39,16 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends ScopeGrap
                     M.term(sourceMatcher, (t, source) -> {
                         List<ITerm> edgeTerms = Lists.newArrayList();
                         for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
-                            edgeTerms.add(GenericTerms.newTuple(edge.getKey(), edge.getValue()));
+                            edgeTerms.add(TB.newTuple(edge.getKey(), edge.getValue()));
                         }
-                        return GenericTerms.newList(edgeTerms);
+                        return TB.newList(edgeTerms);
                     }),
                     M.tuple2(sourceMatcher, Label.matcher(), (t, source, label) -> {
                         List<ITerm> targetTerms = Lists.newArrayList();
                         for(ITerm target : edges.get(source, label)) {
                             targetTerms.add(target);
                         }
-                        return GenericTerms.newList(targetTerms);
+                        return TB.newList(targetTerms);
                     })
                     // @formatter:on
                 ).match(term);

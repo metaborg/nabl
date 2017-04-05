@@ -12,8 +12,9 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.Ref;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -33,27 +34,31 @@ public class StrategoTerms {
     private final static int VAR_ARITY = 2;
 
     private final static String LIST_CTOR = "CList";
+
     private final static String LISTTAIL_CTOR = "CListTail";
+    private final static int LISTTAIL_ARITY = 2;
 
     private final org.spoofax.interpreter.terms.ITermFactory termFactory;
     private final IStrategoConstructor varCtor;
+    private final IStrategoConstructor listTailCtor;
 
     public StrategoTerms(ITermFactory termFactory) {
         this.termFactory = termFactory;
         this.varCtor = termFactory.makeConstructor(VAR_CTOR, VAR_ARITY);
+        this.listTailCtor = termFactory.makeConstructor(LISTTAIL_CTOR, LISTTAIL_ARITY);
     }
 
     public IStrategoTerm toStratego(ITerm term) {
         IStrategoTerm strategoTerm = term.match(Terms.cases(
             // @formatter:off
             appl -> {
-                List<IStrategoTerm> args = appl.getArgs().stream().map(this::toStratego).collect(Collectors.toList());
+                List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
                 IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
                 return appl.getOp().equals(Terms.TUPLE_OP)
                         ? termFactory.makeTuple(argArray)
                         : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), argArray);
             },
-            list -> toStrategoList(list),
+            list ->  toStrategoList(list),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
             var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
@@ -62,15 +67,50 @@ public class StrategoTerms {
         return putAttachments(strategoTerm, term.getAttachments());
     }
 
-    public IStrategoList toStrategoList(IListTerm list) {
-        IStrategoList strategoList = list.match(ListTerms.cases(
-            // @formatter:off
-            cons -> termFactory.makeListCons(toStratego(cons.getHead()), toStrategoList(cons.getTail())),
-            nil -> termFactory.makeList(),
-            var -> { throw new IllegalArgumentException(); }
-            // @formatter:on
-        ));
-        return putAttachments(strategoList, list.getAttachments());
+    public IStrategoTerm toStrategoList(IListTerm list) {
+        final Deque<IStrategoTerm> terms = new ArrayDeque<>();
+        final Deque<ImmutableClassToInstanceMap<Object>> attachments = new ArrayDeque<>();
+        final Ref<IStrategoTerm> varTail = new Ref<>();
+
+        while(list != null) {
+            attachments.push(list.getAttachments());
+            list = list.match(ListTerms.<IListTerm>cases(
+                // @formatter:off
+                cons -> {
+                    terms.push(toStratego(cons.getHead()));
+                    return cons.getTail();
+                },
+                nil -> {
+                    return null;
+                },
+                var -> {
+                    // add extra attachment for extra tail constructor
+                    attachments.addLast(attachments.getLast());
+                    varTail.set(toStratego(var));
+                    return null;
+                }
+                // @formatter:on
+            ));
+        }
+
+        IStrategoList builder = termFactory.makeList();
+        putAttachments(builder, attachments.pop());
+        while(!terms.isEmpty()) {
+            builder = termFactory.makeListCons(terms.pop(), builder);
+            putAttachments(builder, attachments.pop());
+        }
+
+        if(varTail.get() == null) {
+            return builder;
+        } else {
+            if(builder.isEmpty()) {
+                return varTail.get();
+            } else {
+                IStrategoTerm strategoList = termFactory.makeAppl(listTailCtor, builder, varTail.get());
+                putAttachments(strategoList, attachments.pop());
+                return strategoList;
+            }
+        }
     }
 
     private <T extends IStrategoTerm> T putAttachments(T term, ImmutableClassToInstanceMap<Object> attachments) {
@@ -99,21 +139,21 @@ public class StrategoTerms {
         ITerm rawTerm = match(term,
                 StrategoTerms.<ITerm>cases(
             // @formatter:off
-            appl -> GenericTerms.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
-            tuple -> GenericTerms.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            appl -> TB.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            tuple -> TB.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
             this::fromStrategoList,
-            integer -> GenericTerms.newInt(integer.intValue()),
-            real -> { throw new IllegalArgumentException(); },
-            string -> GenericTerms.newString(string.stringValue())
+            integer -> TB.newInt(integer.intValue()),
+            real -> { throw new IllegalArgumentException("Real values are not supported."); },
+            string -> TB.newString(string.stringValue())
             // @formatter:on
                 )).withAttachments(attachments);
         return M.<ITerm>cases(
             // @formatter:off
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
-                    GenericTerms.newVar(resource, name).withAttachments(v.getAttachments())),
-            M.appl1(LIST_CTOR, M.list(), (t,xs) -> GenericTerms.newList(xs).withAttachments(t.getAttachments())),
+                    TB.newVar(resource, name).withAttachments(v.getAttachments())),
+            M.appl1(LIST_CTOR, M.list(), (t,xs) -> TB.newList(xs).withAttachments(t.getAttachments())),
             M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
-                    GenericTerms.newListTail(xs, (IListTerm) ys).withAttachments(t.getAttachments()))
+                    TB.newListTail(xs, (IListTerm) ys).withAttachments(t.getAttachments()))
             // @formatter:on
         ).match(rawTerm).orElse(rawTerm);
     }
@@ -126,9 +166,9 @@ public class StrategoTerms {
             attachments.push(getAttachments(list));
             list = list.tail();
         }
-        IListTerm newList = GenericTerms.newNil(getAttachments(list));
+        IListTerm newList = TB.newNil(getAttachments(list));
         while(!terms.isEmpty()) {
-            newList = GenericTerms.newCons(terms.pop(), newList, attachments.pop());
+            newList = TB.newCons(terms.pop(), newList, attachments.pop());
         }
         return newList;
     }

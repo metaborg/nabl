@@ -9,12 +9,18 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableList;
 
 public abstract class MessageContent implements IMessageContent {
+
+    private static final String TERM = "Term";
+    private static final String TEXT = "Text";
+    private static final String DEFAULT = "Default";
+    private static final String FORMATTED = "Formatted";
 
     @Override public abstract MessageContent apply(Function1<ITerm, ITerm> f);
 
@@ -32,7 +38,11 @@ public abstract class MessageContent implements IMessageContent {
             return ImmutableTermMessage.of(f.apply(getTerm()));
         }
 
-        @Override public String toString(Function<ITerm,String> pp) {
+        @Override public ITerm build() {
+            return TB.newAppl(TERM, getTerm());
+        }
+
+        @Override public String toString(Function<ITerm, String> pp) {
             return pp.apply(getTerm());
         }
 
@@ -52,7 +62,11 @@ public abstract class MessageContent implements IMessageContent {
             return this;
         }
 
-        @Override public String toString(Function<ITerm,String> pp) {
+        @Override public ITerm build() {
+            return TB.newAppl(TEXT, TB.newString(getText()));
+        }
+
+        @Override public String toString(Function<ITerm, String> pp) {
             return getText();
         }
 
@@ -74,10 +88,15 @@ public abstract class MessageContent implements IMessageContent {
 
         @Override public IMessageContent withDefault(IMessageContent defaultContent) {
             return ImmutableCompoundMessage
-                .of(getParts().stream().map(p -> p.withDefault(defaultContent)).collect(Collectors.toList()));
+                    .of(getParts().stream().map(p -> p.withDefault(defaultContent)).collect(Collectors.toList()));
         }
 
-        @Override public String toString(Function<ITerm,String> pp) {
+        @Override public ITerm build() {
+            List<ITerm> parts = getParts().stream().map(IMessageContent::build).collect(Collectors.toList());
+            return TB.newAppl(FORMATTED, (ITerm) TB.newList(parts));
+        }
+
+        @Override public String toString(Function<ITerm, String> pp) {
             StringBuilder sb = new StringBuilder();
             getParts().stream().forEach(p -> sb.append(p.toString(pp)));
             return sb.toString();
@@ -103,7 +122,11 @@ public abstract class MessageContent implements IMessageContent {
             return defaultContent;
         }
 
-        @Override public String toString(Function<ITerm,String> pp) {
+        @Override public ITerm build() {
+            return TB.newAppl(DEFAULT);
+        }
+
+        @Override public String toString(Function<ITerm, String> pp) {
             return toString();
         }
 
@@ -116,8 +139,8 @@ public abstract class MessageContent implements IMessageContent {
     public static IMatcher<MessageContent> matcher() {
         return M.<MessageContent>cases(
             // @formatter:off
-            M.appl0("Default", (t) -> ImmutableDefaultMessage.of()),
-            M.appl1("Formatted", M.listElems(partMatcher()), (t, ps) -> ImmutableCompoundMessage.of(ps)),
+            M.appl0(DEFAULT, (t) -> ImmutableDefaultMessage.of()),
+            M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> ImmutableCompoundMessage.of(ps)),
             M.string(s -> ImmutableTextMessage.of(s.getValue())),
             partMatcher(),
             M.term(t -> ImmutableCompoundMessage.of(Iterables2.from(
@@ -131,9 +154,8 @@ public abstract class MessageContent implements IMessageContent {
     public static IMatcher<MessageContent> partMatcher() {
         return M.<MessageContent>cases(
             // @formatter:off
-            M.appl1("Text", M.stringValue(), (t,s) -> ImmutableTextMessage.of(s)),
-            M.appl1("Term", M.appl0("CAUSE"), (t,s) -> ImmutableDefaultMessage.of()),
-            M.appl1("Term", M.term(), (t,s) -> ImmutableTermMessage.of(s))
+            M.appl1(TEXT, M.stringValue(), (t,s) -> ImmutableTextMessage.of(s)),
+            M.appl1(TERM, M.term(), (t,s) -> ImmutableTermMessage.of(s))
             // @formatter:on
         );
     }

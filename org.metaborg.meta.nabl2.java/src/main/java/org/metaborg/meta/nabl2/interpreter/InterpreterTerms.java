@@ -1,9 +1,9 @@
 package org.metaborg.meta.nabl2.interpreter;
 
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newAppl;
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newList;
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newNil;
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newTuple;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newAppl;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newList;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newNil;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newTuple;
 
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -82,7 +82,7 @@ public class InterpreterTerms {
             List<IResolutionPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));
             if(paths.size() == 1) {
                 IResolutionPath<Scope, Label, Occurrence> path = paths.get(0);
-                ITerm value = GenericTerms.newTuple(path.getDeclaration(), Paths.toTerm(path));
+                ITerm value = TB.newTuple(path.getDeclaration(), Paths.toTerm(path));
                 entries.put(ref, value);
             } else {
                 logger.warn("Can only convert a single path, {} has multipe.", ref);

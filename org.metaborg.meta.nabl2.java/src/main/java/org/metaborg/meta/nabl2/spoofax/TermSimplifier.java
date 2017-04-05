@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.stratego.ImmutableTermIndex;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 public class TermSimplifier {
 
@@ -16,7 +16,7 @@ public class TermSimplifier {
             // @formatter:off
             M.var(var -> {
                 String r = (resource ==  null || var.getResource().equals(resource)) ? "" : var.getResource();
-                return GenericTerms.newVar(r, var.getName()).withAttachments(var.getAttachments());  
+                return TB.newVar(r, var.getName()).withAttachments(var.getAttachments());
             }),
             t -> Scope.matcher().match(t).map(s -> {
                 String r = (resource == null || s.getResource().equals(resource)) ? "" : s.getResource();

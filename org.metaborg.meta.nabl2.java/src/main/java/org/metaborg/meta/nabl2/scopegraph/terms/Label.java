@@ -10,7 +10,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
@@ -52,7 +52,7 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
             case I_OP:
                 return ImmutableList.of();
             default:
-                return ImmutableList.of((ITerm) GenericTerms.newString(getName()));
+                return ImmutableList.of((ITerm) TB.newString(getName()));
         }
     }
 

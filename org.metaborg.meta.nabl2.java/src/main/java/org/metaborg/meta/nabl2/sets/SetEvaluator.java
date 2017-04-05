@@ -24,7 +24,7 @@ public class SetEvaluator {
                 result.addAll(rightSet);
                 return (Set<IElement<T>>)result;
             }),
-            M.appl3("Isect", m, SetTerms.projection(), m, (t, leftSet, proj, rightSet) -> {
+            M.appl3("Isect", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> {
                 Multimap<Object,IElement<T>> leftProj = project(leftSet, proj);
                 Multimap<Object,IElement<T>> rightProj = project(rightSet, proj);
                 Multimap<Object,IElement<T>> result = HashMultimap.create();
@@ -34,7 +34,7 @@ public class SetEvaluator {
                 result.keySet().retainAll(leftProj.keySet());
                 return (Set<IElement<T>>)Sets.newHashSet(result.values());
             }),
-            M.appl3("Lsect", m, SetTerms.projection(), m, (t, leftSet, proj, rightSet) -> {
+            M.appl3("Lsect", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> {
                 Multimap<Object,IElement<T>> leftProj = project(leftSet, proj);
                 Multimap<Object,IElement<T>> rightProj = project(rightSet, proj);
                 Multimap<Object,IElement<T>> result = HashMultimap.create();
@@ -42,7 +42,7 @@ public class SetEvaluator {
                 result.keySet().retainAll(rightProj.keySet());
                 return (Set<IElement<T>>)Sets.newHashSet(result.values());
             }),
-            M.appl3("Diff", m, SetTerms.projection(), m, (t, leftSet, proj, rightSet) -> {
+            M.appl3("Diff", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> {
                 Multimap<Object,IElement<T>> leftProj = project(leftSet, proj);
                 Multimap<Object,IElement<T>> rightProj = project(rightSet, proj);
                 Multimap<Object,IElement<T>> result = HashMultimap.create();

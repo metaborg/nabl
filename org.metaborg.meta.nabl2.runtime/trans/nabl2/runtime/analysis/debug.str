@@ -1,0 +1,6 @@
+module nabl2/runtime/analysis/debug
+
+rules
+
+  nabl2--debug-constraints(|a) =
+    prim("SG_debug_constraints", a)

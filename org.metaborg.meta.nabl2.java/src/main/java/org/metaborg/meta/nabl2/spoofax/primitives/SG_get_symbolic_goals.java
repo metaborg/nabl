@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 public class SG_get_symbolic_goals extends ScopeGraphPrimitive {
@@ -22,7 +22,7 @@ public class SG_get_symbolic_goals extends ScopeGraphPrimitive {
         }
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                return GenericTerms.newList(s.getSymbolic().getGoals().stream().map(s.getUnifier()::find)::iterator);
+                return TB.newList(s.getSymbolic().getGoals().stream().map(s.getUnifier()::find)::iterator);
             });
         });
     }

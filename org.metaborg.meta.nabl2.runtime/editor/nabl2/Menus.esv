@@ -4,16 +4,12 @@ menus
 
   menu: "Analysis"
 
-    action: "Show Uninterpreted Constraints" = nabl2--show-uninterpreted-constraints (meta) (openeditor)
-
-/*
-    action: "Show File Analysis"                        = nabl2--show-file-analysis (meta) (realtime) (openeditor)
-    action: "Show File Analysis ATerm"                  = nabl2--show-file-analysis-aterm (meta) (realtime) (openeditor)
-    action: "Show File Uninterpreted Constraints ATerm" = nabl2--show-file-uninterpreted-constraints-aterm (meta) (realtime) (openeditor)
+    action: "Debug file constraints"    = nabl2--debug-file-constraints (meta) (realtime) (openeditor)
 
     separator
 
-    action: "Show Project Analysis"                        = nabl2--show-project-analysis (meta) (realtime) (openeditor)
-    action: "Show Project Analysis ATerm"                  = nabl2--show-project-analysis-aterm (meta) (realtime) (openeditor)
-    action: "Show Project Uninterpreted Constraints ATerm" = nabl2--show-project-uninterpreted-constraints-aterm (meta) (realtime) (openeditor)
-*/
+    action: "Debug project constraints"    = nabl2--debug-project-constraints (meta) (realtime) (openeditor)
+
+    separator
+
+    action: "Show symbolic constraints" = nabl2--show-uninterpreted-constraints (meta) (openeditor)

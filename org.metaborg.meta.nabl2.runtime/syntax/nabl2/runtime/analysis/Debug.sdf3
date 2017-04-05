@@ -1,0 +1,10 @@
+module nabl2/runtime/analysis/Debug
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/constraints/Base
+
+context-free syntax
+
+  AnalysisResult.Constraints = <<{Constraint "\n"}*>>

@@ -13,7 +13,7 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -47,7 +47,7 @@ public class Unifier<D> implements IUnifier, Serializable {
     public ITerm find(ITerm term) {
         // @formatter:off
         return term.isGround() ? term : term.match(Terms.<ITerm>cases(
-            (appl) -> GenericTerms.newAppl(appl.getOp(), appl.getArgs().stream().map(this::find).collect(Collectors.toList()), appl.getAttachments()),
+            (appl) -> TB.newAppl(appl.getOp(), appl.getArgs().stream().map(this::find).collect(Collectors.toList()), appl.getAttachments()),
             (list) -> find(list),
             (string) -> string,
             (integer) -> integer,
@@ -59,7 +59,7 @@ public class Unifier<D> implements IUnifier, Serializable {
     public IListTerm find(IListTerm list) {
         // @formatter:off
         return list.isGround() ? list : list.match(ListTerms.<IListTerm>cases(
-            (cons) -> GenericTerms.newCons(find(cons.getHead()), find(cons.getTail()), cons.getAttachments()),
+            (cons) -> TB.newCons(find(cons.getHead()), find(cons.getTail()), cons.getAttachments()),
             (nil) -> nil,
             (var) -> (IListTerm) findVarRep(var)
         ));

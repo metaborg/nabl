@@ -11,6 +11,8 @@ public interface IMessageContent {
 
     IMessageContent withDefault(IMessageContent defaultContent);
 
-    String toString(Function<ITerm,String> pp);
+    ITerm build();
+
+    String toString(Function<ITerm, String> pp);
 
 }

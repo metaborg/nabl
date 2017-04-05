@@ -10,7 +10,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
 
@@ -32,7 +32,7 @@ public abstract class Namespace extends AbstractApplTerm implements INamespace, 
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) GenericTerms.newString(getName()));
+        return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) TB.newString(getName()));
     }
 
     public static IMatcher<Namespace> matcher() {

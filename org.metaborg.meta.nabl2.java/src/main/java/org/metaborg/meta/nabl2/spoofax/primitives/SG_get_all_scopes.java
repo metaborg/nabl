@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 public class SG_get_all_scopes extends ScopeGraphPrimitive {
@@ -22,7 +22,7 @@ public class SG_get_all_scopes extends ScopeGraphPrimitive {
         }
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                return GenericTerms.newList(s.getScopeGraph().getAllScopes());
+                return TB.newList(s.getScopeGraph().getAllScopes());
             });
         });
     }

@@ -10,7 +10,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -34,7 +34,7 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(GenericTerms.newString(getResource()), GenericTerms.newInt(getId()));
+        return ImmutableList.of(TB.newString(getResource()), TB.newInt(getId()));
     }
 
     public static IMatcher<TermIndex> matcher() {

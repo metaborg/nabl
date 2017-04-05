@@ -15,7 +15,7 @@ import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
-public class GenericTerms {
+public class TB {
 
     public static final IApplTerm EMPTY_TUPLE = newTuple();
 

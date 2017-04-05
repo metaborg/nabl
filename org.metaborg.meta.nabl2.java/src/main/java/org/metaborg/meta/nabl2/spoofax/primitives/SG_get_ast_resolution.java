@@ -8,7 +8,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -27,14 +27,14 @@ public class SG_get_ast_resolution extends ScopeGraphPrimitive {
                 for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
                     if (ref.getIndex().equals(index)) {
                         for (Occurrence decl : Paths.resolutionPathsToDecls(s.getNameResolution().resolve(ref))) {
-                            entries.add(GenericTerms.newTuple(ref, decl.getName()));
+                            entries.add(TB.newTuple(ref, decl.getName()));
                         }
                     }
                 }
                 if (entries.isEmpty()) {
                     return Optional.empty();
                 }
-                return Optional.of(GenericTerms.newList(entries));
+                return Optional.of(TB.newList(entries));
             });
         });
     }
