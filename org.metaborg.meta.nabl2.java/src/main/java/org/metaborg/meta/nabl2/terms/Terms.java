@@ -250,6 +250,10 @@ public class Terms {
             return M.appl(TUPLE_OP, f);
         }
 
+        public static <R> IMatcher<R> tuple0(Function1<? super IApplTerm, R> f) {
+            return M.appl0(TUPLE_OP, f);
+        }
+
         public static <T> IMatcher<IApplTerm> tuple1(IMatcher<? extends T> m) {
             return M.appl1(TUPLE_OP, m);
         }

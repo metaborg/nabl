@@ -20,4 +20,10 @@ public interface IScopeGraphUnit extends Serializable {
 
     Fresh fresh();
 
+    /**
+     * Check if the solution returned is for this resource exactly,
+     * or if this unit is just a part of it.
+     */
+    boolean isPrimary();
+
 }

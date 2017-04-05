@@ -24,7 +24,7 @@ public class SG_debug_scope_graph extends ScopeGraphPrimitive {
         }
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             final IScopeGraphUnit unit = context.unit(index.getResource());
-            return unit.solution().map(sol -> {
+            return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
                 return TermSimplifier.focus(unit.resource(),
                         ScopeGraphTerms.build(sol.getScopeGraph(), sol.getDeclProperties(), sol.getUnifier()));
             });

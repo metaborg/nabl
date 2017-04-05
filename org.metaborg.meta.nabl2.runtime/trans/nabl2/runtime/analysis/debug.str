@@ -13,3 +13,9 @@ rules
 
   nabl2--debug-unifier(|a) =
     prim("SG_debug_unifier", a)
+
+  nabl2--debug-symbolic-constraints(|a) =
+    prim("SG_debug_symbolic_constraints", a)
+
+  nabl2--focus-term(|a) =
+    prim("SG_focus_term", a)

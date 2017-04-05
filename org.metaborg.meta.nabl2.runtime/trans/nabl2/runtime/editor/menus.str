@@ -54,17 +54,9 @@ rules
 
   nabl2--debug-project-result(s|ext):
     (_, _, _, _, project-path) -> (filename, result)
-    with filename := $[[project-path]/project.[ext]];
+    with filename := $[[project-path]/[ext]];
          analysis := <nabl2-get-resource-analysis> project-path
     with ( s(|analysis)
          < pp-NaBL2-AnalysisResult
          + !"(no result)"
          ) => result
-
-rules
-
-  nabl2--debug-symbolic-constraints(|analysis) =
-    !SymbolicConstraints(
-      <nabl2-get-symbolic-facts(|analysis)>
-    , <nabl2-get-symbolic-goals(|analysis)>
-    )
