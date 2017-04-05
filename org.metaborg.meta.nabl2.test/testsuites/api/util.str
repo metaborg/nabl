@@ -27,7 +27,6 @@ rules
     a := <nabl2-get-ast-analysis>;
     (s1) := <nabl2-get-ast-params(|a)> x1;
     (s2) := <nabl2-get-ast-params(|a)> x2;
-
     <assert-equals(nabl2-get-direct-edges(|a)|[(P(),s1)])> s2;
     <assert-equals(nabl2-get-direct-edges(|a)|[s1])> (s2,P());
     <assert-equals(nabl2-get-direct-edges-inv(|a)|[(P(),s2)])> s1;
@@ -38,8 +37,17 @@ rules
     a := <nabl2-get-ast-analysis>;
     (s) := <nabl2-get-ast-params(|a)> xs;
     r := <nabl2-mk-occurrence> xi;
-
     <assert-equals(nabl2-get-import-edges(|a)|[(I(),r)])> s;
     <assert-equals(nabl2-get-import-edges(|a)|[r])> (s,I());
     <assert-equals(nabl2-get-import-edges-inv(|a)|[(I(),s)])> r;
     <assert-equals(nabl2-get-import-edges-inv(|a)|[s])> (r,I())
+
+  get-assoc-edges =
+    ?GetAssocEdges(xs,xi);
+    a := <nabl2-get-ast-analysis>;
+    (s) := <nabl2-get-ast-params(|a)> xs;
+    d := <nabl2-mk-occurrence> xi;
+    <assert-equals(nabl2-get-assoc-edges(|a)|[(I(),s)])> d;
+    <assert-equals(nabl2-get-assoc-edges(|a)|[s])> (d,I());
+    <assert-equals(nabl2-get-assoc-edges-inv(|a)|[(I(),d)])> s;
+    <assert-equals(nabl2-get-assoc-edges-inv(|a)|[d])> (s,I())

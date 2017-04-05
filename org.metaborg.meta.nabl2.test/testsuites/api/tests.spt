@@ -25,3 +25,7 @@ test get direct edges [[
 test get import edges [[
   get import edges from x to x
 ]] run get-import-edges
+
+test get assoc edges [[
+  get assoc edges from x to x
+]] run get-assoc-edges

@@ -20,3 +20,9 @@ rules
     {xi} <=== s,
     GetImportEdges[[ xs ^ (s) ]].
   GetImportEdges[[ _ ^ (s) ]].
+
+  [[ GetAssocEdges(xs,xi) ^ () ]] :=
+    new s,
+    {xi} ===> s,
+    GetAssocEdges[[ xs ^ (s) ]].
+  GetAssocEdges[[ _ ^ (s) ]].

@@ -11,3 +11,5 @@ context-free syntax
   Test.GetDirectEdges = <get direct edges from <X> to <X>>
 
   Test.GetImportEdges = <get import edges from <X> to <X>>
+
+  Test.GetAssocEdges = <get assoc edges from <X> to <X>>
