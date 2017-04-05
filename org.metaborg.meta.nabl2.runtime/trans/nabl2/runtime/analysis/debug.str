@@ -7,3 +7,9 @@ rules
 
   nabl2--debug-scope-graph(|a) =
     prim("SG_debug_scope_graph", a)
+
+  nabl2--debug-name-resolution(|a) =
+    prim("SG_debug_name_resolution", a)
+
+  nabl2--debug-unifier(|a) =
+    prim("SG_debug_unifier", a)

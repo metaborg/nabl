@@ -17,11 +17,11 @@ public class SG_get_symbolic_facts extends ScopeGraphPrimitive {
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        if (terms.size() != 1) {
+        if(terms.size() != 1) {
             throw new InterpreterException("Need one term argument: analysis");
         }
         return TermIndex.get(terms.get(0)).flatMap(index -> {
-            return context.unit(index.getResource()).solution().<ITerm> map(s -> {
+            return context.unit(index.getResource()).solution().map(s -> {
                 return TB.newList(s.getSymbolic().getFacts().stream().map(s.getUnifier()::find)::iterator);
             });
         });

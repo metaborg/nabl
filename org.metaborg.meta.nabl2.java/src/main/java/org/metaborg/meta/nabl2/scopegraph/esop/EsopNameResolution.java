@@ -78,23 +78,23 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.stagedEnv_L = Maps.newHashMap();
     }
 
-    @Override public Iterable<S> getAllScopes() {
-        return scopeGraph.getAllScopes();
+    @Override public Set<S> getAllScopes() {
+        return scopeGraph.getAllScopes().asSet();
     }
 
-    @Override public Iterable<O> getAllRefs() {
-        return scopeGraph.getAllRefs();
+    @Override public Set<O> getAllRefs() {
+        return scopeGraph.getAllRefs().asSet();
     }
 
-    @Override public Iterable<IResolutionPath<S, L, O>> resolve(O ref) {
+    @Override public Set<IResolutionPath<S, L, O>> resolve(O ref) {
         return tryResolve(ref).orElse(Collections.emptySet());
     }
 
-    @Override public Iterable<IDeclPath<S, L, O>> visible(S scope) {
+    @Override public Set<IDeclPath<S, L, O>> visible(S scope) {
         return tryVisible(scope).orElse(Collections.emptySet());
     }
 
-    @Override public Iterable<IDeclPath<S, L, O>> reachable(S scope) {
+    @Override public Set<IDeclPath<S, L, O>> reachable(S scope) {
         return tryReachable(scope).orElse(Collections.emptySet());
     }
 

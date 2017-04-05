@@ -1,6 +1,8 @@
 package org.metaborg.meta.nabl2.util.collections;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class WrappedSet<E> implements ISet.Mutable<E> {
@@ -29,6 +31,10 @@ public class WrappedSet<E> implements ISet.Mutable<E> {
 
     @Override public void remove(E elem) {
         elems.remove(elem);
+    }
+
+    @Override public Set<E> asSet() {
+        return Collections.unmodifiableSet(elems);
     }
 
     @Override public Stream<E> stream() {
