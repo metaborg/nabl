@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.spoofax.TermSimplifier;
@@ -10,7 +9,6 @@ import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 public class SG_debug_constraints extends ScopeGraphPrimitive {
@@ -26,9 +24,7 @@ public class SG_debug_constraints extends ScopeGraphPrimitive {
         }
         return TermIndex.get(terms.get(0)).map(index -> {
             IScopeGraphUnit unit = context.unit(index.getResource());
-            List<ITerm> constraints = unit.constraints().stream().map(Constraints::build)
-                    .map(c -> TermSimplifier.focus(unit.resource(), c)).collect(Collectors.toList());
-            return TB.newAppl("Constraints", (ITerm) TB.newList(constraints));
+            return TermSimplifier.focus(unit.resource(), Constraints.build(unit.constraints()));
         });
     }
 

@@ -5,10 +5,12 @@ menus
   menu: "Analysis"
 
     action: "Debug file constraints"    = nabl2--debug-file-constraints (meta) (realtime) (openeditor)
+    action: "Debug file scope graph"    = nabl2--debug-file-scope-graph (meta) (realtime) (openeditor)
 
     separator
 
     action: "Debug project constraints"    = nabl2--debug-project-constraints (meta) (realtime) (openeditor)
+    action: "Debug project scope graph"    = nabl2--debug-project-scope-graph (meta) (realtime) (openeditor)
 
     separator
 

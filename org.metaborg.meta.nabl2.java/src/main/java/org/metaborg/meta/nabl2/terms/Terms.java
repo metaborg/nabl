@@ -118,11 +118,11 @@ public class Terms {
                     Terms::empty, Terms::empty));
         }
 
-        public static <R> IMatcher<R> appl(String op, Function1<IApplTerm, R> f) {
+        public static <R> IMatcher<R> appl(String op, Function1<? super IApplTerm, R> f) {
             return flatten(appl(appl -> appl.getOp().equals(op) ? Optional.of(f.apply(appl)) : Optional.empty()));
         }
 
-        public static <R> IMatcher<R> appl(Function1<IApplTerm, R> f) {
+        public static <R> IMatcher<R> appl(Function1<? super IApplTerm, R> f) {
             return term -> term.match(Terms.<Optional<R>>cases(appl -> Optional.of(f.apply(appl)), Terms::empty,
                     Terms::empty, Terms::empty, Terms::empty));
         }
@@ -245,6 +245,18 @@ public class Terms {
         }
 
         // tuple
+
+        public static <R> IMatcher<R> tuple(Function1<? super IApplTerm, R> f) {
+            return M.appl(TUPLE_OP, f);
+        }
+
+        public static <T> IMatcher<IApplTerm> tuple1(IMatcher<? extends T> m) {
+            return M.appl1(TUPLE_OP, m);
+        }
+
+        public static <T, R> IMatcher<R> tuple1(IMatcher<? extends T> m, Function2<? super IApplTerm, ? super T, R> f) {
+            return M.appl1(TUPLE_OP, m, f);
+        }
 
         public static <T1, T2> IMatcher<IApplTerm> tuple2(IMatcher<? extends T1> m1, IMatcher<? extends T2> m2) {
             return M.appl2(TUPLE_OP, m1, m2);
@@ -418,7 +430,9 @@ public class Terms {
 
         public static Function1<ITerm, ITerm> somebu(IMatcher<ITerm> m) {
             return term -> {
-                ITerm next = term.match(Terms.<ITerm>cases(
+                ITerm next =
+                        term.match(
+                                Terms.<ITerm>cases(
                     // @formatter:off
                     (appl) -> TB.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> somebu(m).apply(arg))::iterator, appl.getAttachments()),
                     (list) -> list.match(ListTerms.<IListTerm> cases(

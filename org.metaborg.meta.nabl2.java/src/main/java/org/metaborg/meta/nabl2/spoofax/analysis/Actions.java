@@ -8,7 +8,6 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.Iterables;
 
 public class Actions {
 
@@ -17,7 +16,7 @@ public class Actions {
     }
 
     public static ITerm analyzeUnit(String resource, ITerm ast, Args args) {
-        return TB.newAppl("AnalyzeUnit", sourceTerm(resource), ast, args(args));
+        return TB.newAppl("AnalyzeUnit", sourceTerm(resource), ast, Args.build(args));
     }
 
     public static ITerm analyzeFinal(String resource) {
@@ -39,25 +38,8 @@ public class Actions {
     public static ITerm sourceTerm(String resource) {
         TermIndex index = ImmutableTermIndex.of(resource, 0);
         TermOrigin origin = ImmutableTermOrigin.of(resource, 0, 0, 0, 0, 0, 0);
-        return TB.newString(resource, ImmutableClassToInstanceMap.builder()
-            .put(TermIndex.class, index)
-            .put(TermOrigin.class, origin)
-            .build());
-    }
-
-    private static ITerm args(Args args) {
-        Iterable<ITerm> paramTerms = args.getParams();
-        ITerm paramsTerm;
-        if(Iterables.size(paramTerms) == 1) {
-            paramsTerm = Iterables.getOnlyElement(paramTerms);
-        } else {
-            paramsTerm = TB.newTuple(paramTerms);
-        }
-        return args.getType()
-                // @formatter:off
-                .map(typeTerm -> TB.newAppl("ParamsAndType", paramsTerm, typeTerm))
-                .orElseGet(() -> TB.newAppl("Params", paramsTerm));
-                // @formatter:on
+        return TB.newString(resource, ImmutableClassToInstanceMap.builder().put(TermIndex.class, index)
+                .put(TermOrigin.class, origin).build());
     }
 
 }

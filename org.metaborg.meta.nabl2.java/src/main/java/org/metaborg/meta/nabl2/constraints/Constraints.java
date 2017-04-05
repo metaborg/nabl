@@ -1,6 +1,9 @@
 package org.metaborg.meta.nabl2.constraints;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.ast.AstConstraints;
 import org.metaborg.meta.nabl2.constraints.base.BaseConstraints;
@@ -50,6 +53,11 @@ public class Constraints {
             PolyConstraints::build
             // @formatter:on
         ));
+    }
+
+    public static ITerm build(Collection<IConstraint> constraints) {
+        List<ITerm> constraintTerms = constraints.stream().map(Constraints::build).collect(Collectors.toList());
+        return TB.newAppl("Constraints", (ITerm) TB.newList(constraintTerms));
     }
 
     public static ITerm buildPriority(int prio) {

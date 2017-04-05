@@ -3,8 +3,63 @@ module nabl2/runtime/analysis/Debug
 imports
 
   nabl2/shared/common/CTerms
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Resolution
   nabl2/shared/constraints/Base
 
 context-free syntax
 
-  AnalysisResult.Constraints = <<{Constraint "\n"}*>>
+  AnalysisResult.Constraints = <
+    constraints {
+      <{Constraint "\n"}*>
+    }
+  >
+
+context-free syntax
+
+  AnalysisResult.ScopeGraph = <
+    scope graph {
+      <{ScopeEntry "\n"}*>
+    }
+  >
+
+  ScopeEntry.Scope = <
+    scope <Scope> {
+      <{ScopePartEntry "\n"}*>
+    }
+  >
+
+  ScopePartEntry.Decls = <
+    declarations {
+      <{DeclEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.Refs = <
+    references {
+      <{RefEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.DirectEdges = <
+    direct edges {
+      <{DirectEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.ImportEdges = <
+    import edges {
+      <{ImportEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.AssocEdges = <
+    associated declarations {
+      <{AssocEntry "\n"}*>
+    }
+  >
+
+  DeclEntry.Decl         = <<Occurrence><DeclType>>
+  RefEntry.Ref           = <<Occurrence>>
+  DirectEntry.DirectEdge = [[PathLabel] ~ [Scope]]
+  ImportEntry.ImportEdge = [[PathLabel] ~ [Occurrence]]
+  AssocEntry.AssocEdge   = [[PathLabel] ~ [Occurrence]]
+
+  DeclType.Type   = < : <CTerm>>
+  DeclType.NoType = <>

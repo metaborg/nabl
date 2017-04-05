@@ -4,3 +4,6 @@ rules
 
   nabl2--debug-constraints(|a) =
     prim("SG_debug_constraints", a)
+
+  nabl2--debug-scope-graph(|a) =
+    prim("SG_debug_scope_graph", a)
