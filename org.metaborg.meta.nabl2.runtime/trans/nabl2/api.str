@@ -73,7 +73,7 @@ rules // ###### Custom analysis hooks ######
    * @type _ -> _
    */
   nabl2-custom-analysis-info-msg(|msg) =
-    nabl2--resolution-info-msg(|msg)
+    nabl2--custom-info-msg(|msg)
 
   /**
    * Use for logging a message and a term during custom analysis. The
@@ -83,7 +83,7 @@ rules // ###### Custom analysis hooks ######
    * @type Term -> _
    */
   nabl2-custom-analysis-info(|msg) =
-    nabl2--resolution-info(|msg)
+    nabl2--custom-info(|msg)
 
 rules // ###### Analysis results ######
 

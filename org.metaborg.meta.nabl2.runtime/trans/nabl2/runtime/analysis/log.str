@@ -22,6 +22,16 @@ rules
   < log(|Info(), msg, <id>)
   + id
 
+  nabl2--custom-info-msg(|msg) =
+    where(nabl2--is-debug-custom-enabled)
+  < log(|Info(), msg)
+  + id
+
+  nabl2--custom-info(|msg) =
+    where(nabl2--is-debug-custom-enabled)
+  < log(|Info(), msg, <id>)
+  + id
+
   nabl2--warn(|msg) =
     warn-msg(|msg)
 
@@ -33,3 +43,6 @@ rules
 
   nabl2--is-debug-resolution-enabled =
     prim("SG_is_debug_resolution_enabled")
+
+  nabl2--is-debug-custom-enabled =
+    prim("SG_is_debug_custom_enabled")
