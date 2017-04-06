@@ -1,0 +1,11 @@
+module testsuites/known-problems/rules
+
+imports
+
+  signatures/testsuites/-
+
+rules
+
+  [[ GeneralizeListTail() ^ () ]] :=
+    s genOf ["x"|tl],
+    ["x"|["y"]] instOf s.

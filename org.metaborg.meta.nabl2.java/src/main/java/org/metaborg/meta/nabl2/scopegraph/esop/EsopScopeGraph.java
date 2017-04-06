@@ -69,7 +69,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return directEdges;
     }
 
-    @Override public IRelation3<O, L, S> getAssocEdges() {
+    @Override public IRelation3<O, L, S> getExportEdges() {
         return assocEdges;
     }
 

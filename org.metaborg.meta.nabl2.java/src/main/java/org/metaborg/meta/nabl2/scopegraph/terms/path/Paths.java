@@ -16,7 +16,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
@@ -71,8 +71,8 @@ public final class Paths {
     // -------------------------------------------
 
     public static IListTerm toTerm(IResolutionPath<Scope, Label, Occurrence> path) {
-        ITerm dstep = GenericTerms.newAppl("D", path.getPath().getTarget(), path.getDeclaration());
-        return GenericTerms.newListTail(toTerm(path.getPath()), GenericTerms.newList(dstep));
+        ITerm dstep = TB.newAppl("D", path.getPath().getTarget(), path.getDeclaration());
+        return TB.newListTail(toTerm(path.getPath()), TB.newList(dstep));
     }
 
     public static IListTerm toTerm(IScopePath<Scope, Label, Occurrence> path) {
@@ -80,12 +80,12 @@ public final class Paths {
         for(IStep<Scope, Label, Occurrence> step : path) {
             steps.add(step.match(IStep.ICases.of(
                 // @formatter:off
-                (source, label, target) -> GenericTerms.newAppl("E", source, label),
-                (source, label, importPath, target) -> GenericTerms.newAppl("N", source, label, importPath.getReference(), toTerm(importPath))
+                (source, label, target) -> TB.newAppl("E", source, label),
+                (source, label, importPath, target) -> TB.newAppl("N", source, label, importPath.getReference(), toTerm(importPath))
                 // @formatter:on
             )));
         }
-        return GenericTerms.newList(steps);
+        return TB.newList(steps);
     }
 
     // -------------------------------------------

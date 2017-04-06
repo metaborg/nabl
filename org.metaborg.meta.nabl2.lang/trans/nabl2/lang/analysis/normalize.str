@@ -19,11 +19,9 @@ rules
     normalize-axioms;
     normalize-rule-names;
     normalize-wildcards;
-    normalize-types;
     normalize-regex;
     normalize-constructors;
     normalize-arg-matches;
-    normalize-new-scopes;
     normalize-rule-vars;
     normalize-constraints;
     normalize-messages;
@@ -65,33 +63,6 @@ rules
 
 rules
 
-  normalize-types = try(sometd(normalize-types-signature))
-
-  normalize-types-signature: Signature(sig*) -> Signature(sig'*)
-    with sig'* := <map(normalize-types-section <+ MkSingleton);concat> sig*
-
-  normalize-types-section:
-    Types(typesig*) -> [ctors,rels]
-    with opdecl* := <map(normalize-type-sig)> typesig*;
-         ctors := Constructors(opdecl*);
-         vardecl* := <filter(where(?TypeSig(_,<not(all(?(Invar(),_)))>)))> typesig*;
-         relop* := <map(normalize-rel-type)> vardecl*;
-         relopt* := [Reflexive(), AntiSymmetric(), Transitive()];
-         listrelop := ListVariant(Covar(DefaultRelation()));
-         rels := Relations([RelationDef(relopt*,DefaultRelation(),TypeSort(),[listrelop|relop*])])
-
-  normalize-type-sig:
-    TypeSig(op,a*) -> OpDecl(op, <map(Snd)> a*, TypeSort())
-
-  normalize-rel-type:
-    TypeSig(op,a*) -> OpVariant(op, <map(Fst;normalize-type-variance)> a*)
-
-  normalize-type-variance: Invar() -> Invar()
-  normalize-type-variance: Covar() -> Covar(DefaultRelation())
-  normalize-type-variance: Contravar() -> Contravar(DefaultRelation())
-
-rules
-
   normalize-regex = try(sometd(normalize-option))
 
   normalize-option:
@@ -113,21 +84,6 @@ rules
     CGenMatchRule(rdef,pattern,param,Type(type),clause*)
       -> CGenMatchRule(rdef,pattern,param,Type(<type-var>),
              [CEqual(<type-var>,type,DefaultMessage()),clause*])
-    where <not(is-var)> type
-
-rules
-
-  normalize-new-scopes = try(sometd(normalize-new-scope))
-
-  normalize-new-scope = CGenInitRule(id,id,normalize-new-scope-clauses)
-
-  normalize-new-scope = CGenMatchRule(id,id,id,id,normalize-new-scope-clauses)
-
-  normalize-new-scope = FunDef(id,id,normalize-new-scope-clauses)
-
-  normalize-new-scope-clauses: clause* -> [scope-clause*,other-clause*]
-    where (new-scopes*@[_|_],other-clause*) := <partition(\ NewScopes(s*) -> s* \)> clause*
-    with scope-clause* := <concat;map(\ s -> CEqual(s,NewScope(<var-name> s),DefaultMessage()) \)> new-scopes*
 
 rules
 

@@ -19,7 +19,7 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
 
     IRelation3<S, L, S> getDirectEdges();
 
-    IRelation3<O, L, S> getAssocEdges();
+    IRelation3<O, L, S> getExportEdges();
 
     IRelation3<S, L, O> getImportEdges();
 

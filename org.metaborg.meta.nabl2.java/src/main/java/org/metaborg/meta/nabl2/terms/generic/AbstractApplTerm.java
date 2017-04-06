@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
+import java.util.Objects;
+
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -7,22 +9,18 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
+public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm {
 
-public abstract class AbstractApplTerm implements IApplTerm {
+    @Value.Parameter @Override public abstract String getOp();
 
-    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
-        return ImmutableClassToInstanceMap.<Object>builder().build();
-    }
-
-    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
-        return false;
+    @Value.Lazy @Override public int getArity() {
+        return getArgs().size();
     }
 
     @Value.Check protected abstract IApplTerm check();
 
-    @Value.Lazy @Override public int getArity() {
-        return getArgs().size();
+    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
+        return false;
     }
 
     @Value.Lazy @Override public boolean isGround() {
@@ -45,7 +43,14 @@ public abstract class AbstractApplTerm implements IApplTerm {
         return cases.caseAppl(this);
     }
 
+    @Override public int hashCode() {
+        return Objects.hash(getOp(), getArgs());
+    }
+
     @Override public boolean equals(Object other) {
+        if(other == null) {
+            return false;
+        }
         if(!(other instanceof IApplTerm)) {
             return false;
         }
@@ -57,21 +62,11 @@ public abstract class AbstractApplTerm implements IApplTerm {
             return false;
         }
         for(int i = 0; i < getArity(); i++) {
-            if(!getArgs().get(i).termEquals(that.getArgs().get(i))) {
+            if(!getArgs().get(i).equals(that.getArgs().get(i))) {
                 return false;
             }
         }
         return true;
-    }
-
-    @Value.Lazy @Override public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + getOp().hashCode();
-        for(ITerm arg : getArgs()) {
-            result = prime * result + arg.hashCode();
-        }
-        return result;
     }
 
     @Override public String toString() {

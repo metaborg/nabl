@@ -4,20 +4,20 @@ signature
 
   constraint generator
 
-    Map0     [[ List(a) ^ ()        ]]
-    Map0(X)  [[ List(a) ^ ()        ]]
-    Map0T    [[ List(a) ^ () : Type ]]
-    Map0T(X) [[ List(a) ^ () : Type ]]
+    Map0     [[ list(a) ^ ()     ]]
+    Map0(X)  [[ list(a) ^ ()     ]]
+    Map0T    [[ list(a) ^ () : t ]]
+    Map0T(X) [[ list(a) ^ () : t ]]
 
-    Map1     [[ List(a) ^ (b)        ]]
-    Map1(X)  [[ List(a) ^ (b)        ]]
-    Map1T    [[ List(a) ^ (b) : Type ]]
-    Map1T(X) [[ List(a) ^ (b) : Type ]]
+    Map1     [[ list(a) ^ (b)     ]]
+    Map1(X)  [[ list(a) ^ (b)     ]]
+    Map1T    [[ list(a) ^ (b) : t ]]
+    Map1T(X) [[ list(a) ^ (b) : t ]]
 
-    Map2     [[ List(a) ^ (b,c)        ]]
-    Map2(X)  [[ List(a) ^ (b,c)        ]]
-    Map2T    [[ List(a) ^ (b,c) : Type ]]
-    Map2T(X) [[ List(a) ^ (b,c) : Type ]]
+    Map2     [[ list(a) ^ (b,c)     ]]
+    Map2(X)  [[ list(a) ^ (b,c)     ]]
+    Map2T    [[ list(a) ^ (b,c) : t ]]
+    Map2T(X) [[ list(a) ^ (b,c) : t ]]
 
 rules
 

@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.util.collections;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface ISet<E> extends Iterable<E> {
@@ -9,6 +10,8 @@ public interface ISet<E> extends Iterable<E> {
     boolean isEmpty();
 
     int size();
+
+    Set<E> asSet();
 
     Stream<E> stream();
 

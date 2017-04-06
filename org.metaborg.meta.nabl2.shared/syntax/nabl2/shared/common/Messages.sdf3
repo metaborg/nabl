@@ -9,6 +9,10 @@ template options
 
   keyword -/- [a-zA-Z0-9\'\_]
 
+sorts
+
+  MessageContent
+
 context-free syntax
 
   Message.Message        = <| <MessageKind> <MessageContent> <MessagePosition>>
@@ -17,7 +21,4 @@ context-free syntax
   MessageKind.Warning    = <warning>
   MessageKind.Note       = <note>
 
-  MessageContent.Default =
-
   MessagePosition        = TermIndex
- 

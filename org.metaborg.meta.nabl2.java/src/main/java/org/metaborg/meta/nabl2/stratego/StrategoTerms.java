@@ -1,16 +1,20 @@
 package org.metaborg.meta.nabl2.stratego;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.Ref;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -23,7 +27,6 @@ import org.spoofax.interpreter.terms.ITermFactory;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
-import com.google.common.collect.Lists;
 
 public class StrategoTerms {
 
@@ -34,30 +37,35 @@ public class StrategoTerms {
     private final static int VAR_ARITY = 2;
 
     private final static String LIST_CTOR = "CList";
+
     private final static String LISTTAIL_CTOR = "CListTail";
+    private final static int LISTTAIL_ARITY = 2;
 
     private final org.spoofax.interpreter.terms.ITermFactory termFactory;
     private final IStrategoConstructor varCtor;
+    private final IStrategoConstructor listTailCtor;
     private final IStrategoConstructor lockCtor;
 
     public StrategoTerms(ITermFactory termFactory) {
         this.termFactory = termFactory;
         this.varCtor = termFactory.makeConstructor(VAR_CTOR, VAR_ARITY);
+        this.listTailCtor = termFactory.makeConstructor(LISTTAIL_CTOR, LISTTAIL_ARITY);
         this.lockCtor = termFactory.makeConstructor(LOCK_CTOR, LOCK_ARITY);
     }
 
     // to
 
     public IStrategoTerm toStratego(ITerm term) {
-        IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm>cases(
+        IStrategoTerm strategoTerm = term.match(Terms.cases(
             // @formatter:off
             appl -> {
-                IStrategoTerm[] args = toStrategos(appl.getArgs()).toArray(new IStrategoTerm[0]);
+                List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
+                IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
                 return appl.getOp().equals(Terms.TUPLE_OP)
-                        ? termFactory.makeTuple(args)
-                        : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), args);
+                        ? termFactory.makeTuple(argArray)
+                        : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), argArray);
             },
-            list -> termFactory.makeList(toStrategos(list)),
+            list ->  toStrategoList(list),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
             var -> termFactory.makeAppl(varCtor, termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()))
@@ -70,15 +78,54 @@ public class StrategoTerms {
         return strategoTerm;
     }
 
-    public List<IStrategoTerm> toStrategos(Iterable<ITerm> terms) {
-        List<IStrategoTerm> strategoTerms = Lists.newArrayList();
-        for(ITerm term : terms) {
-            strategoTerms.add(toStratego(term));
+    // NB. This function does not preserve locks, it depends on toStratego for that. 
+    private IStrategoTerm toStrategoList(IListTerm list) {
+        final Deque<IStrategoTerm> terms = new ArrayDeque<>();
+        final Deque<ImmutableClassToInstanceMap<Object>> attachments = new ArrayDeque<>();
+        final Ref<IStrategoTerm> varTail = new Ref<>();
+
+        IListTerm current = list;
+        while(current != null) {
+            attachments.push(current.getAttachments());
+            current = current.match(ListTerms.<IListTerm>cases(
+                // @formatter:off
+                cons -> {
+                    terms.push(toStratego(cons.getHead()));
+                    return cons.getTail();
+                },
+                nil -> {
+                    return null;
+                },
+                var -> {
+                    varTail.set(toStratego(var));
+                    return null;
+                }
+                // @formatter:on
+            ));
         }
-        return strategoTerms;
+
+        IStrategoList builder = termFactory.makeList();
+        putAttachments(builder, attachments.pop());
+        while(!terms.isEmpty()) {
+            builder = termFactory.makeListCons(terms.pop(), builder);
+            putAttachments(builder, attachments.pop());
+        }
+
+        final IStrategoTerm strategoList;
+        if(varTail.get() == null) {
+            strategoList = builder;
+        } else {
+            if(builder.isEmpty()) {
+                strategoList = varTail.get();
+            } else {
+                strategoList = termFactory.makeAppl(listTailCtor, builder, varTail.get());
+                putAttachments(strategoList, list.getAttachments());
+            }
+        }
+        return strategoList;
     }
 
-    private IStrategoTerm putAttachments(IStrategoTerm term, ImmutableClassToInstanceMap<Object> attachments) {
+    private <T extends IStrategoTerm> T putAttachments(T term, ImmutableClassToInstanceMap<Object> attachments) {
         Optional<TermOrigin> origin = TermOrigin.get(attachments);
         if(origin.isPresent()) {
             term.putAttachment(origin.get().toImploderAttachment());
@@ -91,8 +138,9 @@ public class StrategoTerms {
 
         StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
         if(annotations != null) {
-            term = termFactory.copyAttachments(term,
+            @SuppressWarnings({ "unchecked" }) T result = (T) termFactory.copyAttachments(term,
                     termFactory.annotateTerm(term, termFactory.makeList(annotations.getAnnotationList())));
+            term = result;
         }
 
         return term;
@@ -102,29 +150,26 @@ public class StrategoTerms {
 
     public ITerm fromStratego(IStrategoTerm sterm) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
-        ITerm term = match(sterm,
-                StrategoTerms.<ITerm>cases(
-                    // @formatter:off
-                    appl -> GenericTerms.newAppl(appl.getConstructor().getName(), fromStrategos(appl)),
-                    tuple -> GenericTerms.newTuple(fromStrategos(tuple)),
-                    this::fromStrategoList,
-                    integer -> GenericTerms.newInt(integer.intValue()),
-                    real -> { throw new IllegalArgumentException(); },
-                    string -> GenericTerms.newString(string.stringValue())
-                    // @formatter:on
-                )).withAttachments(attachments);
-        // do not use M.preserveAttachments here, because the locked state will be overwritten immediately
-        // we must deal with locked and attachments seperately
-        term = M.preserveAttachments(M.<ITerm>cases(
+        // @formatter:off
+        ITerm term = match(sterm, StrategoTerms.cases(
+            appl -> TB.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            tuple -> TB.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            this::fromStrategoList,
+            integer -> TB.newInt(integer.intValue()),
+            real -> { throw new IllegalArgumentException("Real values are not supported."); },
+            string -> TB.newString(string.stringValue())
+        )).withAttachments(attachments);
+        // @formatter:on
+        term = M.preserveAttachments(M.cases(
             // @formatter:off
             M.appl1(LOCK_CTOR, M.term(), (l, t) ->
                     t.withLocked(true)),
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
-                    GenericTerms.newVar(resource, name)),
+                    TB.newVar(resource, name)),
             M.appl1(LIST_CTOR, M.list(), (t,xs) ->
-                    GenericTerms.newList(xs)),
+                    TB.newList(xs)),
             M.appl2(LISTTAIL_CTOR, M.list(), M.term(), (t,xs,ys) ->
-                    GenericTerms.newListTail(xs, (IListTerm) ys))
+                    TB.newListTail(xs, (IListTerm) ys))
             // @formatter:on
         )).match(term).orElse(term);
         return term;
@@ -138,19 +183,11 @@ public class StrategoTerms {
             attachments.push(getAttachments(list));
             list = list.tail();
         }
-        IListTerm newList = GenericTerms.newNil(getAttachments(list));
+        IListTerm newList = TB.newNil(getAttachments(list));
         while(!terms.isEmpty()) {
-            newList = GenericTerms.newCons(terms.pop(), newList, attachments.pop());
+            newList = TB.newCons(terms.pop(), newList, attachments.pop());
         }
         return newList;
-    }
-
-    private Iterable<ITerm> fromStrategos(Iterable<IStrategoTerm> strategoTerms) {
-        List<ITerm> terms = Lists.newArrayList();
-        for(IStrategoTerm strategoTerm : strategoTerms) {
-            terms.add(fromStratego(strategoTerm));
-        }
-        return terms;
     }
 
     private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
@@ -168,6 +205,8 @@ public class StrategoTerms {
 
         return b.build();
     }
+
+    // matching
 
     public static <T> T match(IStrategoTerm term, ICases<T> cases) {
         switch(term.getTermType()) {

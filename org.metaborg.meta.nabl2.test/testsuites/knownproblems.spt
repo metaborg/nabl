@@ -1,7 +1,0 @@
-module knownproblems
-
-language NaBL2Test
-
-test generalize list tail [[
-  generalize list tail
-]] analysis fails

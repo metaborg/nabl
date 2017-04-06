@@ -11,7 +11,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -56,7 +56,7 @@ public class VariantMatchers {
         }
 
         @Override public ITerm build(Iterable<? extends ITerm> ts) {
-            return GenericTerms.newList(ts);
+            return TB.newList(ts);
         }
 
     }
@@ -84,7 +84,7 @@ public class VariantMatchers {
         }
 
         @Override public ITerm build(Iterable<? extends ITerm> ts) {
-            return GenericTerms.newAppl(op, ts);
+            return TB.newAppl(op, ts);
         }
 
     }

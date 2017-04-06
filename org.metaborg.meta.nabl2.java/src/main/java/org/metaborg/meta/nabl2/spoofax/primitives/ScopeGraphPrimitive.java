@@ -39,7 +39,7 @@ public abstract class ScopeGraphPrimitive extends AbstractPrimitive {
         StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
         List<ITerm> termArgs = Arrays.asList(tvars).stream().map(strategoTerms::fromStratego).collect(Collectors
                 .toList());
-        Optional<ITerm> result;
+        Optional<? extends ITerm> result;
         try (IClosableLock lock = context.guard()) {
             result = call(context, strategoTerms.fromStratego(env.current()), termArgs);
         }
@@ -49,7 +49,7 @@ public abstract class ScopeGraphPrimitive extends AbstractPrimitive {
         }).orElse(false);
     }
 
-    public abstract Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> termVars)
+    public abstract Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> termVars)
             throws InterpreterException;
 
 }

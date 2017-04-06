@@ -9,7 +9,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
 
@@ -30,7 +30,7 @@ public abstract class TypeVar extends AbstractApplTerm implements IApplTerm {
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(GenericTerms.newString(getName()));
+        return ImmutableList.of(TB.newString(getName()));
     }
 
     public static IMatcher<TypeVar> matcher() {

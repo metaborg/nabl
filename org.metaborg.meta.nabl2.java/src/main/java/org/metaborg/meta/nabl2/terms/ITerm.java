@@ -14,10 +14,6 @@ public interface ITerm {
 
     PSet<ITermVar> getVars();
 
-    default boolean termEquals(ITerm other) {
-        return equals(other);
-    }
-
     ImmutableClassToInstanceMap<Object> getAttachments();
 
     ITerm withAttachments(ImmutableClassToInstanceMap<Object> value);

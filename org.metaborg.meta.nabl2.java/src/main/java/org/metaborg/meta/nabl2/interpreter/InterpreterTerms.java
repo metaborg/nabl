@@ -1,9 +1,9 @@
 package org.metaborg.meta.nabl2.interpreter;
 
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newAppl;
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newList;
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newNil;
-import static org.metaborg.meta.nabl2.terms.generic.GenericTerms.newTuple;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newAppl;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newList;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newNil;
+import static org.metaborg.meta.nabl2.terms.generic.TB.newTuple;
 
 import java.util.List;
 import java.util.Map;
@@ -17,9 +17,10 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.solver.ISolution;
+import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -59,7 +60,7 @@ public class InterpreterTerms {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence decl : scopeGraph.getAllDecls()) {
             ITerm scope = scopeGraph.getDecls().get(decl).map(s -> newList(s)).orElse(newNil());
-            ITerm assocs = multimap(scopeGraph.getAssocEdges().get(decl));
+            ITerm assocs = multimap(scopeGraph.getExportEdges().get(decl));
             ITerm entry = newAppl("DE", scope, assocs);
             entries.put(decl, entry);
         }
@@ -82,7 +83,7 @@ public class InterpreterTerms {
             List<IResolutionPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));
             if(paths.size() == 1) {
                 IResolutionPath<Scope, Label, Occurrence> path = paths.get(0);
-                ITerm value = GenericTerms.newTuple(path.getDeclaration(), Paths.toTerm(path));
+                ITerm value = TB.newTuple(path.getDeclaration(), Paths.toTerm(path));
                 entries.put(ref, value);
             } else {
                 logger.warn("Can only convert a single path, {} has multipe.", ref);
@@ -92,10 +93,9 @@ public class InterpreterTerms {
     }
 
     private static ITerm declTypes(IProperties<Occurrence> declProperties, IUnifier unifier) {
-        ITerm key = newAppl("Type");
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence decl : declProperties.getIndices()) {
-            declProperties.getValue(decl, key).map(unifier::find).ifPresent(type -> {
+            declProperties.getValue(decl, AnalysisTerms.TYPE_KEY).map(unifier::find).ifPresent(type -> {
                 entries.put(decl, unifier.find(type));
             });
         }

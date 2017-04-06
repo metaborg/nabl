@@ -1,0 +1,9 @@
+module testsuites/functions/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.PairProjectionFunction = <pair projection function>

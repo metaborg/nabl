@@ -12,12 +12,14 @@ template options
 syntax
 
   MessageContent-CF.Formatted = "$[" MessageContentPart-CF* "]"
-  MessageContent-CF           = StringTerm-CF
 
-  MessageContentPart-CF.Term  = "[" LAYOUT?-CF CTerm-CF LAYOUT?-CF "]"
-  MessageContentPart-CF.Text  = MessageChars-LEX
+context-free syntax
 
-  CTerm-CF.CAUSE = "CAUSE"
+  MessageContent.Default  =
+  MessageContent          = StringTerm
+
+  MessageContentPart.Term = <[<CTerm>]>
+  MessageContentPart.Text = MessageChars
 
 lexical syntax
 

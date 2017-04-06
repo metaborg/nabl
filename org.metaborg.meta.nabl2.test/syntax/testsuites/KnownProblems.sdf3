@@ -1,9 +1,0 @@
-module testsuites/KnownProblems
-
-imports
-
-  Identifiers
-
-context-free syntax
-
-  Test.GeneralizeListTail = <generalize list tail>

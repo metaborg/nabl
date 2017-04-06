@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 public class SG_get_scope_decls extends ScopeGraphPrimitive {
@@ -24,7 +24,7 @@ public class SG_get_scope_decls extends ScopeGraphPrimitive {
         return TermIndex.get(terms.get(0)).flatMap(index -> {
             return Scope.matcher().match(term).<ITerm> flatMap(scope -> {
                 return context.unit(index.getResource()).solution().<ITerm> map(s -> {
-                    return GenericTerms.newList(s.getScopeGraph().getDecls().inverse().get(scope));
+                    return TB.newList(s.getScopeGraph().getDecls().inverse().get(scope));
                 });
             });
         });

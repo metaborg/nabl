@@ -1,0 +1,27 @@
+module testsuites/constraint-generation/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.CallFunctionNoArgs = <call function with no args>
+
+  Test.CallFunctionOneArgs = <call function with one arg>
+
+context-free syntax
+
+  Test.WildcardParam = <wildcard parameter on <X>>
+
+  Test.WildcardType = <wildcard type on <X>>
+
+  Test.WildcardConstraint = <wildcard constraint>
+
+context-free syntax
+
+  Test.CallRuleHOOnList = <higher-order call on list <{X ","}*>>
+
+context-free syntax
+
+  Test.NewScopeAsType = <new scope as type on <X>>

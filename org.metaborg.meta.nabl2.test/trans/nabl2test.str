@@ -2,13 +2,22 @@ module nabl2test
 
 imports
   
-  analysis
+  nabl2/api
+  testsuites/nabl2test
   pp
+
+rules // Analysis
+
+  editor-analyze = nabl2-analyze(id)
 
 rules // Debugging
   
-  debug-show-aterm:
-    (node, _, _, path, project-path) -> (filename, result)
-    with
-      filename := <guarantee-extension(|"aterm")> path
-    ; result   := node
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path
+       ; result   := ast
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := ast

@@ -23,6 +23,12 @@ context-free syntax
   AnyLabel          = BuiltinAnyLabel
 
   BuiltinAnyLabel.D = "D"
+
+  Path = <[<{Step " "}*>]>
+
+  Step.D = <<Scope> D <Occurrence>>
+  Step.E = <<Scope> E(<PathLabel>)>
+  Step.N = <<Scope> N(<PathLabel>,<Occurrence>,<Path>)>
  
 context-free syntax
 

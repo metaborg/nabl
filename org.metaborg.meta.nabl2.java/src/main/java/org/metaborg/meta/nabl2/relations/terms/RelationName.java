@@ -11,7 +11,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.GenericTerms;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
 
@@ -35,7 +35,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
     @Value.Lazy @Override public List<ITerm> getArgs() {
         return getName()
             // @formatter:off
-            .map(name -> ImmutableList.of((ITerm)GenericTerms.newString(name)))
+            .map(name -> ImmutableList.of((ITerm)TB.newString(name)))
             .orElseGet(() -> ImmutableList.of());
             // @formatter:on
     }

@@ -1,0 +1,9 @@
+module pp
+
+imports nabl2/lang/pp
+
+rules
+
+  pp-partial-NaBL2Lang-string = pp-partial-NaBL2-string
+
+  pp-partial-NaBL2Lang-string(|sort) = pp-partial-NaBL2-string(|sort)

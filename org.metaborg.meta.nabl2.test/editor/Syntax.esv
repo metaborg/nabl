@@ -12,6 +12,7 @@ language
 
 menus
   
-  menu: "Syntax" (openeditor)
+  menu: "AST" (openeditor)
     
-    action: "Show parsed AST" = debug-show-aterm (source)
+    action: "Show parsed AST"   = debug-show-aterm (source)
+    action: "Show analyzed AST" = debug-show-analyzed

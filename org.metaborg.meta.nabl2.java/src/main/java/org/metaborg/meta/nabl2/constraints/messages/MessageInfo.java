@@ -6,11 +6,14 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class MessageInfo implements IMessageInfo {
+
+    private static final String OP = "Message";
 
     @Value.Parameter @Override public abstract MessageKind getKind();
 
@@ -27,14 +30,22 @@ public abstract class MessageInfo implements IMessageInfo {
     }
 
     public static IMatcher<MessageInfo> matcher() {
-        return M.appl3("Message", MessageKind.matcher(), MessageContent.matcher(), M.term(),
-                (appl, kind, message, origin) -> {
-                    return ImmutableMessageInfo.of(kind, message, origin);
-                });
+        return M.appl3(OP, MessageKind.matcher(), MessageContent.matcher(), M.term(), (appl, kind, message, origin) -> {
+            return ImmutableMessageInfo.of(kind, message, origin);
+        });
     }
 
     public static IMatcher<MessageInfo> matcherOnlyOriginTerm() {
         return M.term(MessageInfo::of);
+    }
+
+    public static ITerm build(IMessageInfo messageInfo) {
+        return TB.newAppl(OP, MessageKind.build(messageInfo.getKind()), messageInfo.getContent().build(),
+                messageInfo.getOriginTerm());
+    }
+
+    public static ITerm buildOnlyOriginTerm(IMessageInfo messageInfo) {
+        return messageInfo.getOriginTerm();
     }
 
     public static IMatcher<MessageInfo> matcherEditorMessage(MessageKind kind) {

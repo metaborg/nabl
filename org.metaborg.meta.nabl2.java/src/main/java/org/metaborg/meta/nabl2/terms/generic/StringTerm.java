@@ -7,11 +7,9 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class StringTerm implements IStringTerm {
+abstract class StringTerm extends AbstractTerm implements IStringTerm {
 
     @Value.Parameter @Override public abstract String getValue();
 
@@ -27,16 +25,30 @@ abstract class StringTerm implements IStringTerm {
         return HashTreePSet.empty();
     }
 
-    @Value.Default @Value.Auxiliary @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
-        return ImmutableClassToInstanceMap.<Object> builder().build();
-    }
-
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseString(this);
     }
 
-    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
         return cases.caseString(this);
+    }
+
+    @Override public int hashCode() {
+        return getValue().hashCode();
+    }
+
+    @Override public boolean equals(Object other) {
+        if(other == null) {
+            return false;
+        }
+        if(!(other instanceof IStringTerm)) {
+            return false;
+        }
+        IStringTerm that = (IStringTerm) other;
+        if(!getValue().equals(that.getValue())) {
+            return false;
+        }
+        return true;
     }
 
     @Override public String toString() {

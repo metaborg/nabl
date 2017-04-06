@@ -1,0 +1,43 @@
+module constraint-generation
+
+language NaBL2Test
+
+//-------------------------------
+
+test call function with no args succeeds [[
+  call function with no args
+]] 1 note
+
+test call function with one arg succeeds [[
+  call function with one arg
+]] 1 note
+
+//-------------------------------
+
+test wildcard param succeeds [[
+  wildcard parameter on X
+]] 1 note
+
+test wildcard type succeeds [[
+  wildcard type on X
+]] 1 note
+
+test wildcard constraint succeeds [[
+  wildcard constraint
+]] 1 note
+
+//-------------------------------
+
+test higher-order call on empty list [[
+  higher-order call on list
+]] 0 notes
+
+test higher-order call on non-empty list [[
+  higher-order call on list x, x, x
+]] 3 notes
+
+//-------------------------------
+
+test new scope as type [[
+  new scope as type on x
+]] analysis succeeds

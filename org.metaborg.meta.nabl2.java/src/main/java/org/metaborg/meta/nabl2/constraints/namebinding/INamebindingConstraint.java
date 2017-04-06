@@ -16,9 +16,9 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseDirectEdge(CGDirectEdge<?> directEdge);
 
-        T caseAssoc(CGAssoc assoc);
+        T caseAssoc(CGExportEdge assoc);
 
-        T caseImport(CGImport<?> importEdge);
+        T caseImport(CGImportEdge<?> importEdge);
 
         T caseResolve(CResolve resolve);
 
@@ -31,8 +31,8 @@ public interface INamebindingConstraint extends IConstraint {
             Function1<CGDecl,T> onDecl,
             Function1<CGRef,T> onRef,
             Function1<CGDirectEdge<?>,T> onDirectEdge,
-            Function1<CGAssoc,T> onExportEdge,
-            Function1<CGImport<?>,T> onImportEdge,
+            Function1<CGExportEdge,T> onExportEdge,
+            Function1<CGImportEdge<?>,T> onImportEdge,
             Function1<CResolve,T> onResolve,
             Function1<CAssoc,T> onAssoc,
             Function1<CDeclProperty,T> onProperty
@@ -52,11 +52,11 @@ public interface INamebindingConstraint extends IConstraint {
                     return onDirectEdge.apply(directEdge);
                 }
 
-                @Override public T caseAssoc(CGAssoc exportEdge) {
+                @Override public T caseAssoc(CGExportEdge exportEdge) {
                     return onExportEdge.apply(exportEdge);
                 }
 
-                @Override public T caseImport(CGImport<?> importEdge) {
+                @Override public T caseImport(CGImportEdge<?> importEdge) {
                     return onImportEdge.apply(importEdge);
                 }
 
@@ -87,9 +87,9 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseDirectEdge(CGDirectEdge<?> directEdge) throws E;
 
-        T caseAssoc(CGAssoc assoc) throws E;
+        T caseAssoc(CGExportEdge assoc) throws E;
 
-        T caseImport(CGImport<?> importEdge) throws E;
+        T caseImport(CGImportEdge<?> importEdge) throws E;
 
         T caseResolve(CResolve resolve) throws E;
 
@@ -102,8 +102,8 @@ public interface INamebindingConstraint extends IConstraint {
             CheckedFunction1<CGDecl,T,E> onDecl,
             CheckedFunction1<CGRef,T,E> onRef,
             CheckedFunction1<CGDirectEdge<?>,T,E> onDirectEdge,
-            CheckedFunction1<CGAssoc,T,E> onExportEdge,
-            CheckedFunction1<CGImport<?>,T,E> onImportEdge,
+            CheckedFunction1<CGExportEdge,T,E> onExportEdge,
+            CheckedFunction1<CGImportEdge<?>,T,E> onImportEdge,
             CheckedFunction1<CResolve,T,E> onResolve,
             CheckedFunction1<CAssoc,T,E> onAssoc,
             CheckedFunction1<CDeclProperty,T,E> onProperty
@@ -123,11 +123,11 @@ public interface INamebindingConstraint extends IConstraint {
                     return onDirectEdge.apply(directEdge);
                 }
 
-                @Override public T caseAssoc(CGAssoc exportEdge) throws E {
+                @Override public T caseAssoc(CGExportEdge exportEdge) throws E {
                     return onExportEdge.apply(exportEdge);
                 }
 
-                @Override public T caseImport(CGImport<?> importEdge) throws E {
+                @Override public T caseImport(CGImportEdge<?> importEdge) throws E {
                     return onImportEdge.apply(importEdge);
                 }
 

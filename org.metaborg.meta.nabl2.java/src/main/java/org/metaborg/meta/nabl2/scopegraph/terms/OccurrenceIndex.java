@@ -48,38 +48,38 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.getVars();
     }
 
-    public ImmutableClassToInstanceMap<Object> getAttachments() {
+    @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
         return term.getAttachments();
     }
 
     @Override public OccurrenceIndex withAttachments(ImmutableClassToInstanceMap<Object> value) {
-        return new OccurrenceIndex(resource, (IApplTerm) term.withAttachments(value));
+        return new OccurrenceIndex(resource, term.withAttachments(value));
     }
 
-    public String getOp() {
+    @Override public String getOp() {
         return term.getOp();
     }
 
-    public int getArity() {
+    @Override public int getArity() {
         return term.getArity();
     }
 
-    public List<ITerm> getArgs() {
+    @Override public List<ITerm> getArgs() {
         return term.getArgs();
     }
 
-    public <T> T match(Cases<T> cases) {
+    @Override public <T> T match(Cases<T> cases) {
         return term.match(cases);
     }
 
-    public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
+    @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
         return term.matchOrThrow(cases);
     }
 
     // Object
 
-    @Override public boolean equals(Object obj) {
-        return term.equals(obj);
+    @Override public boolean equals(Object other) {
+        return term.equals(other);
     }
 
     @Override public int hashCode() {

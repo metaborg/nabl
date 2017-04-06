@@ -78,23 +78,23 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.stagedEnv_L = Maps.newHashMap();
     }
 
-    @Override public Iterable<S> getAllScopes() {
-        return scopeGraph.getAllScopes();
+    @Override public Set<S> getAllScopes() {
+        return scopeGraph.getAllScopes().asSet();
     }
 
-    @Override public Iterable<O> getAllRefs() {
-        return scopeGraph.getAllRefs();
+    @Override public Set<O> getAllRefs() {
+        return scopeGraph.getAllRefs().asSet();
     }
 
-    @Override public Iterable<IResolutionPath<S, L, O>> resolve(O ref) {
+    @Override public Set<IResolutionPath<S, L, O>> resolve(O ref) {
         return tryResolve(ref).orElse(Collections.emptySet());
     }
 
-    @Override public Iterable<IDeclPath<S, L, O>> visible(S scope) {
+    @Override public Set<IDeclPath<S, L, O>> visible(S scope) {
         return tryVisible(scope).orElse(Collections.emptySet());
     }
 
-    @Override public Iterable<IDeclPath<S, L, O>> reachable(S scope) {
+    @Override public Set<IDeclPath<S, L, O>> reachable(S scope) {
         return tryReachable(scope).orElse(Collections.emptySet());
     }
 
@@ -196,7 +196,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 return env.getAll().map(paths -> {
                     List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
                     for(IResolutionPath<S, L, O> importPath : paths) {
-                        for(S nextScope : scopeGraph.getAssocEdges().get(importPath.getDeclaration(), l)) {
+                        for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
                             Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
                                     .map(getter::apply).ifPresent(importEnvs::add);
                         }

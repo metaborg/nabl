@@ -1,0 +1,15 @@
+module testsuites/api/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.GetAllDecls = <get all <{X " "}*> decls>
+
+  Test.GetDirectEdges = <get direct edges from <X> to <X>>
+
+  Test.GetImportEdges = <get import edges from <X> to <X>>
+
+  Test.GetAssocEdges = <get assoc edges from <X> to <X>>
