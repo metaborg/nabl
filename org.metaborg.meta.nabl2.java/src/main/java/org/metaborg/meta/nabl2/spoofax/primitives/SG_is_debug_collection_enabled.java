@@ -7,15 +7,15 @@ import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public class SG_is_debug_enabled extends ScopeGraphPrimitive {
+public class SG_is_debug_collection_enabled extends ScopeGraphPrimitive {
 
-    public SG_is_debug_enabled() {
-        super(SG_is_debug_enabled.class.getSimpleName(), 0, 0);
+    public SG_is_debug_collection_enabled() {
+        super(SG_is_debug_collection_enabled.class.getSimpleName(), 0, 0);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return context.debug() ? Optional.of(term) : Optional.empty();
+        return context.config().debug().collection() ? Optional.of(term) : Optional.empty();
     }
 
 }

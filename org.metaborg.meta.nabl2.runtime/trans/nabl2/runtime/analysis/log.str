@@ -2,14 +2,16 @@ module nabl2/runtime/analysis/log
 
 rules
 
-  nabl2--debug(|msg) =
-    prim("SG_log_debug",msg)
-
-  nabl2--info(|msg) =
-    prim("SG_log_info",msg)
+  nabl2--collection-info(|msg) =
+    where(nabl2--is-debug-collection-enabled)
+  < log(|Info(), msg)
+  + id
 
   nabl2--warn(|msg) =
-    prim("SG_log_warn",msg)
+    warn-msg(|msg)
 
   nabl2--error(|msg) =
-    prim("SG_log_error",msg)
+    err-msg(|msg)
+
+  nabl2--is-debug-collection-enabled =
+    prim("SG_is_debug_collection_enabled")

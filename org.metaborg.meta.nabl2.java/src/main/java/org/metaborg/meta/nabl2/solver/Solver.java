@@ -31,8 +31,8 @@ import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.config.NaBL2DebugConfig;
 import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -50,7 +50,7 @@ public class Solver {
     final Unifier<IConstraint> unifier;
     final ICancel cancel;
     final IProgress progress;
-    final Level debugLevel;
+    final NaBL2DebugConfig debugConfig;
 
     private final List<SolverComponent<?>> components;
     private final BaseSolver baseSolver;
@@ -65,14 +65,14 @@ public class Solver {
     private final Messages messages;
 
     private Solver(SolverConfig config, Function1<String, ITermVar> fresh, SolverMode mode, IProgress progress,
-            ICancel cancel, Level debugLevel) {
+            ICancel cancel, NaBL2DebugConfig debugConfig) {
         this.config = config;
         this.mode = mode;
         this.fresh = fresh;
         this.unifier = new Unifier<>();
         this.cancel = cancel;
         this.progress = progress;
-        this.debugLevel = debugLevel;
+        this.debugConfig = debugConfig;
 
         this.components = Lists.newArrayList();
         this.components.add(baseSolver = new BaseSolver(this));
@@ -173,12 +173,15 @@ public class Solver {
 
     public static PartialSolution solveIncremental(SolverConfig config, Iterable<ITerm> interfaceTerms,
             Function1<String, ITermVar> fresh, Collection<IConstraint> constraints, IMessageInfo messageInfo,
-            IProgress progress, ICancel cancel, Level debugLevel) throws SolverException, InterruptedException {
+            IProgress progress, ICancel cancel, NaBL2DebugConfig debugConfig)
+            throws SolverException, InterruptedException {
         final int n0 = constraints.size();
         long t0 = System.nanoTime();
-        logger.log(debugLevel, "Incremental solving {} constraints.", n0);
+        if(debugConfig.resolution()) {
+            logger.info("Incremental solving {} constraints.", n0);
+        }
 
-        Solver solver = new Solver(config, fresh, SolverMode.PARTIAL, progress, cancel, debugLevel);
+        Solver solver = new Solver(config, fresh, SolverMode.PARTIAL, progress, cancel, debugConfig);
         for(ITerm activeTerm : interfaceTerms) {
             solver.unifier.addActive(activeTerm, ImmutableCTrue.of(messageInfo));
             solver.namebindingSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
@@ -193,9 +196,11 @@ public class Solver {
             throw new SolverException("Internal solver error.", ex);
         }
 
-        final int n1 = Iterables.size(unsolved);
+        final int n1 = unsolved.size();
         long dt = System.nanoTime() - t0;
-        logger.log(debugLevel, "Reduced {} to {} constraints in {}s.", n0, n1, (Duration.ofNanos(dt).toMillis() / 1000.0));
+        if(debugConfig.resolution() || debugConfig.timing()) {
+            logger.info("Reduced {} to {} constraints in {}s.", n0, n1, (Duration.ofNanos(dt).toMillis() / 1000.0));
+        }
 
         return ImmutablePartialSolution.of(
             // @formatter:off
@@ -210,12 +215,16 @@ public class Solver {
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
             Collection<IConstraint> constraints, Collection<PartialSolution> partialSolutions, IMessageInfo messageInfo,
-            IProgress progress, ICancel cancel, Level debugLevel) throws SolverException, InterruptedException {
-        final int n = Iterables.size(constraints);
+            IProgress progress, ICancel cancel, NaBL2DebugConfig debugConfig)
+            throws SolverException, InterruptedException {
+        final int n = constraints.size() + partialSolutions.stream().map(PartialSolution::getResidualConstraints)
+                .map(Collection::size).reduce(1, (i, j) -> i + j);
         long t0 = System.nanoTime();
-        logger.log(debugLevel, "Solving {} constraints.", n);
+        if(debugConfig.resolution()) {
+            logger.info("Solving {} constraints.", n, partialSolutions.size());
+        }
 
-        Solver solver = new Solver(config, fresh, SolverMode.TOTAL, progress, cancel, debugLevel);
+        Solver solver = new Solver(config, fresh, SolverMode.TOTAL, progress, cancel, debugConfig);
         List<IConstraint> unsolved = Lists.newArrayList();
         try {
             solver.addAll(partialSolutions, messageInfo);
@@ -227,12 +236,14 @@ public class Solver {
         }
 
         long dt = System.nanoTime() - t0;
-        logger.log(debugLevel, "Solved {} constraints in {}s.", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
-        logger.log(debugLevel, " * namebinding : {}s",
-                (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
-        logger.log(debugLevel, " * relations   : {}s",
-                (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
-        logger.log(debugLevel, " * unsolved    : {}", unsolved.size());
+        if(debugConfig.resolution() || debugConfig.timing()) {
+            logger.info("Solved {} constraints in {}s.", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
+            logger.info(" * namebinding : {}s",
+                    (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
+            logger.info(" * relations   : {}s",
+                    (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
+            logger.info(" * unsolved    : {}", unsolved.size());
+        }
 
         return ImmutableSolution.of(
             // @formatter:off
