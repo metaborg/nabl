@@ -2,9 +2,24 @@ module nabl2/runtime/analysis/log
 
 rules
 
-  nabl2--collection-info(|msg) =
+  nabl2--collection-info-msg(|msg) =
     where(nabl2--is-debug-collection-enabled)
   < log(|Info(), msg)
+  + id
+
+  nabl2--collection-info(|msg) =
+    where(nabl2--is-debug-collection-enabled)
+  < log(|Info(), msg, <id>)
+  + id
+
+  nabl2--resolution-info-msg(|msg) =
+    where(nabl2--is-debug-resolution-enabled)
+  < log(|Info(), msg)
+  + id
+
+  nabl2--resolution-info(|msg) =
+    where(nabl2--is-debug-resolution-enabled)
+  < log(|Info(), msg, <id>)
   + id
 
   nabl2--warn(|msg) =
@@ -15,3 +30,6 @@ rules
 
   nabl2--is-debug-collection-enabled =
     prim("SG_is_debug_collection_enabled")
+
+  nabl2--is-debug-resolution-enabled =
+    prim("SG_is_debug_resolution_enabled")

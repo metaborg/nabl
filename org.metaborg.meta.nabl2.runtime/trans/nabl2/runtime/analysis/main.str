@@ -17,7 +17,7 @@ rules
 
   nabl2--analyze(pre):
       AnalyzeInitial(resource) -> InitialResult(C, params, config)
-    with nabl2--collection-info(|$[Initializing [resource]]);
+    with nabl2--collection-info-msg(|$[Initializing [resource]]);
          labels := <nabl2--labels>;
          wf := <nabl2--labels-wf>;
          order := <nabl2--label-order>;
@@ -29,9 +29,9 @@ rules
 
   nabl2--analyze(pre):
       AnalyzeUnit(resource,ast,args) -> UnitResult(ast',constraint*)
-    with nabl2--collection-info(|$[Preprocessing AST [resource]]);
+    with nabl2--collection-info-msg(|$[Preprocessing AST [resource]]);
          ast' := <pre;nabl2--index-ast(|resource)> ast;
-         nabl2--collection-info(|$[Generating constraints [resource]]);
+         nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          constraint* := <nabl2--generate-constraint-file(|resource,args)> ast'
 
   nabl2--analyze(pre):
