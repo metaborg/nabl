@@ -87,6 +87,13 @@ rules // ###### Custom analysis hooks ######
   nabl2-custom-analysis-info(|msg) =
     nabl2--custom-info(|msg)
 
+  /**
+   * Test if logging for custom analysis is enabled. Can be used to prevent
+   * computation of messages that are not going to be displayed.
+   */
+  nabl2-is-custom-analysis-info-enabled =
+    nabl2--is-debug-custom-enabled
+
 rules // ###### Analysis results ######
 
   /**
