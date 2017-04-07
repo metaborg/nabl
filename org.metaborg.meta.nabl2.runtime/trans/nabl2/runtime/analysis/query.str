@@ -52,6 +52,9 @@ rules
   nabl2--get-decl-property(|key) =
     prim("SG_get_decl_property",key)
 
+  nabl2--get-decl-property-by-name(|name) =
+    nabl2--get-decl-property(|Property(name))
+
   /**
    * @param key : Term
    * @type decl:Occurrence -> Type

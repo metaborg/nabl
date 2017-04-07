@@ -16,9 +16,10 @@ imports
 rules
 
   section-to-str:
-    Rules(rule*) -> Rules(rule-str*)
+    Rules(rule*) -> Rules([pp-str*, rule-str*])
     with
-      rule-str* := <map(rule-to-str)> rule*
+      rule-str* := <map(rule-to-str)> rule*;
+      pp-str*   := <getfirst(?CGenInitRule(_,_,_));pp-rules <+ ![]> rule*
 
   rule-to-str:
     CGenInitRule(params,type,clause*)
@@ -189,3 +190,14 @@ rules
     with
       args-term := Tuple(<map(e)> arg*);
       fun-str := Call(SVar(<fun-name> name),[])
+
+rules
+
+  pp-language-spec-name = prim("pp_language_spec_name")
+
+  pp-rules =
+    pp-name := <pp-language-spec-name>;
+    ![ SDefT($[prettyprint-[pp-name]],[],[DefaultVarDec("sort")],CallT(SVar("prettyprint-NaBL2-api-term"),[],[Var("sort")]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Scope],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Occurrence],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+     ]

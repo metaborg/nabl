@@ -2,6 +2,8 @@ module nabl2/api
 
 imports
 
+  pp/nabl2/API-pp
+
   nabl2/shared/-
   nabl2/runtime/-
   nabl2/runtime/analysis/-
@@ -13,12 +15,12 @@ rules // ###### Analysis execution ######
   /**
    * Provide a general strategy for pretty-printing object language
    * terms in error messages. To make sure constraint variables in terms
-   * are printed correctly, inject `nabl2-prettyprint-terms` into your own
+   * are printed correctly, inject `nabl2-prettyprint-term` into your own
    * prettyprinting strategies.
    * 
    * Example:
    *   nabl2-prettyprint-hook    = prettyprint-YOURLANG-Type
-   *   prettyprint-YOURLANG-Type = nabl2-prettyprint-terms
+   *   prettyprint-YOURLANG-Type = nabl2-prettyprint-term
    *
    * @type Term -> Box
    */
@@ -31,7 +33,7 @@ rules // ###### Analysis execution ######
    * 
    * @type Term -> Box
    */
-  nabl2-prettyprint-terms = fail
+  nabl2-prettyprint-term = fail
 
   /**
    * Main analysis strategy for NaBL2.
@@ -148,7 +150,7 @@ rules // ###### Analysis results ######
    * @param prop : String
    * @type decl:Occurrence -> Term
    */
-  nabl2-get-property(|a,prop) = nabl2--get-decl-property(|Property(prop))
+  nabl2-get-property(|a,prop) = nabl2--get-decl-property-by-name(|prop)
 
   /**
    * @param a : Analysis

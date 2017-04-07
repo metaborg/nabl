@@ -1,0 +1,11 @@
+module nabl2/API
+
+imports
+
+  nabl2/shared/common/ScopeGraph
+
+sorts
+
+  NaBL2Scope
+  NaBL2Occurrence
+
