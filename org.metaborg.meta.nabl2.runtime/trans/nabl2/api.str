@@ -2,6 +2,8 @@ module nabl2/api
 
 imports
 
+  pp/nabl2/API-pp
+
   nabl2/shared/-
   nabl2/runtime/-
   nabl2/runtime/analysis/-
@@ -13,12 +15,12 @@ rules // ###### Analysis execution ######
   /**
    * Provide a general strategy for pretty-printing object language
    * terms in error messages. To make sure constraint variables in terms
-   * are printed correctly, inject `nabl2-prettyprint-terms` into your own
+   * are printed correctly, inject `nabl2-prettyprint-term` into your own
    * prettyprinting strategies.
    * 
    * Example:
    *   nabl2-prettyprint-hook    = prettyprint-YOURLANG-Type
-   *   prettyprint-YOURLANG-Type = nabl2-prettyprint-terms
+   *   prettyprint-YOURLANG-Type = nabl2-prettyprint-term
    *
    * @type Term -> Box
    */
@@ -31,7 +33,7 @@ rules // ###### Analysis execution ######
    * 
    * @type Term -> Box
    */
-  nabl2-prettyprint-terms = fail
+  nabl2-prettyprint-term = fail
 
   /**
    * Main analysis strategy for NaBL2.
@@ -65,7 +67,25 @@ rules // ###### Custom analysis hooks ######
    */
   nabl2-get-custom-analysis = nabl2--get-custom-analysis
 
+  /**
+   * Use for logging a message during custom analysis. The message
+   * printing is subject to the NaBL2 debug settings for resolution.
+   *
+   * @param msg : String
+   * @type _ -> _
+   */
+  nabl2-custom-analysis-info-msg(|msg) =
+    nabl2--custom-info-msg(|msg)
 
+  /**
+   * Use for logging a message and a term during custom analysis. The
+   * message printing is subject to the NaBL2 debug settings for resolution.
+   *
+   * @param msg : String
+   * @type Term -> _
+   */
+  nabl2-custom-analysis-info(|msg) =
+    nabl2--custom-info(|msg)
 
 rules // ###### Analysis results ######
 
@@ -130,7 +150,7 @@ rules // ###### Analysis results ######
    * @param prop : String
    * @type decl:Occurrence -> Term
    */
-  nabl2-get-property(|a,prop) = nabl2--get-decl-property(|Property(prop))
+  nabl2-get-property(|a,prop) = nabl2--get-decl-property-by-name(|prop)
 
   /**
    * @param a : Analysis
@@ -206,9 +226,6 @@ rules // ###### Scope graphs ######
    * @type (Scope,Label) -> List(Scope)
    */
   nabl2-get-direct-edges(|a) = nabl2--get-direct-edges(|a)
-  nabl2-get-scope-direct-edges(|a) =
-    nabl2--deprecated(|"Use nabl2-get-direct-edges(|a) instead of nabl2-get-scope-direct-edges(|a)");
-    nabl2-get-direct-edges(|a)
 
   /**
    * Get inverse direct edges from a scope
@@ -218,9 +235,6 @@ rules // ###### Scope graphs ######
    * @type (Scope,Label) -> List(Scope)
    */
   nabl2-get-direct-edges-inv(|a) = nabl2--get-direct-edges-inv(|a)
-  nabl2-get-scope-direct-edges-inv(|a) =
-    nabl2--deprecated(|"Use nabl2-get-direct-edges-inv(|a) instead of nabl2-get-scope-direct-edges-inv(|a)");
-    nabl2-get-direct-edges-inv(|a)
 
   /**
    * Get import edges from a scope
@@ -230,9 +244,6 @@ rules // ###### Scope graphs ######
    * @type (Scope,Label) -> List(ref:Occurrence)
    */
   nabl2-get-import-edges(|a) = nabl2--get-import-edges(|a)
-  nabl2-get-scope-named-edges(|a) =
-    nabl2--deprecated(|"Use nabl2-get-import-edges(|a) instead of nabl2-get-scope-named-edges(|a)");
-    nabl2-get-import-edges(|a)
 
   /**
    * Get inverse import edges from a reference
@@ -251,9 +262,6 @@ rules // ###### Scope graphs ######
    * @type (decl:Occurrence,Label) -> List(Scope)
    */
   nabl2-get-assoc-edges(|a) = nabl2--get-export-edges(|a)
-  nabl2-get-decl-assocs(|a) =
-    nabl2--deprecated(|"Use nabl2-get-assoc-edges(|a) instead of nabl2-get-decl-assocs(|a)");
-    nabl2-get-assoc-edges(|a)
  
   /**
    * Get associated declarations of a scope
@@ -263,10 +271,6 @@ rules // ###### Scope graphs ######
    * @type (Scope,Label) -> List(decl:Occurrence)
    */
   nabl2-get-assoc-edges-inv(|a) = nabl2--get-export-edges-inv(|a)
-  nabl2-get-scope-assocs(|a) =
-    nabl2--deprecated(|"Use nabl2-get-assoc-edges-inv(|a) instead of nabl2-get-scope-assocs(|a). NB The new strategy returns pairs of (Label,Occurrence) instead of (Occurrence,Label).");
-    nabl2-get-assoc-edges-inv(|a);
-    map(Swap)
 
   /**
    * Get visible declarations in scope

@@ -42,12 +42,10 @@ rules
    <+ prettyprint-NaBL2-CTerm
   )
 
-  nabl2-prettyprint-terms =
+  nabl2-prettyprint-term =
     prettyprint-NaBL2-CVar
  <+ prettyprint-NaBL2-CList
  <+ nabl2--actual-CTerm; prettyprint-NaBL2-CTerm
- <+ prettyprint-NaBL2-Scope
- <+ prettyprint-NaBL2-Occurrence
 
 rules // Special rules
 
@@ -94,3 +92,13 @@ rules // CTerms
   nabl2--actual-CTerm = is-NaBL2-Scope
   nabl2--actual-CTerm = is-NaBL2-Names
   nabl2--actual-CTerm = is-NaBL2-SetExpr
+
+rules
+
+  prettyprint-NaBL2-api-term =
+    nabl2-prettyprint-term
+
+  prettyprint-NaBL2-api-term(|sort) =
+    where(<string-starts-with(|"NaBL2")> sort);
+    nabl2-prettyprint-term
+

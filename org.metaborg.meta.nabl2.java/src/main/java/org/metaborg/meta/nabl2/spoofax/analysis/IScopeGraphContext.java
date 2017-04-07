@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.spoofax.analysis;
 import java.util.Collection;
 
 import org.metaborg.util.concurrent.IClosableLock;
+import org.metaborg.util.config.NaBL2Config;
 
 public interface IScopeGraphContext<U extends IScopeGraphUnit> {
 
@@ -14,6 +15,6 @@ public interface IScopeGraphContext<U extends IScopeGraphUnit> {
     /** Get all units in this context */
     Collection<U> units();
 
-    boolean debug();
+    NaBL2Config config();
     
 }

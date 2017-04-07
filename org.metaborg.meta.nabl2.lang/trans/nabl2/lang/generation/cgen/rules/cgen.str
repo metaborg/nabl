@@ -16,9 +16,10 @@ imports
 rules
 
   section-to-str:
-    Rules(rule*) -> Rules(rule-str*)
+    Rules(rule*) -> Rules([pp-str*, rule-str*])
     with
-      rule-str* := <map(rule-to-str)> rule*
+      rule-str* := <map(rule-to-str)> rule*;
+      pp-str*   := <getfirst(?CGenInitRule(_,_,_));pp-rules <+ ![]> rule*
 
   rule-to-str:
     CGenInitRule(params,type,clause*)
@@ -30,10 +31,10 @@ rules
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
         args-str := |[ ~<args-var> := ParamsAndType(~params-term,~type-term) ]|;
-        debug-str := Strat |[ nabl2--debug(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term," : ",<pp-NaBL2-objlangterm> ~type-term]) ]|
+        debug-str := Strat |[ nabl2--collection-info-msg(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term," : ",<pp-NaBL2-objlangterm> ~type-term]) ]|
       else
         args-str := |[ ~<args-var> := Params(~params-term) ]|;
-        debug-str := Strat |[ nabl2--debug(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term]) ]|
+        debug-str := Strat |[ nabl2--collection-info-msg(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term]) ]|
       end;
         metadata-str := |[
           ~<index-var> := <nabl2--get-ast-index> ~<term-var>
@@ -74,7 +75,7 @@ rules
             CAstProperty(~<index-var>, Type(), ~<type-var>)
           ]
         ]|;
-        debug-str := |[ nabl2--debug(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-objlangterm> ~<type-var>," ]]"]) ]|
+        debug-str := |[ nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-objlangterm> ~<type-var>," ]]"]) ]|
       else
         args-pattern := Term |[ Params(~params-pattern) ]|;
         args-string := Str($[^ [params-string]]);
@@ -87,7 +88,7 @@ rules
             CAstProperty(~<index-var>, Params(), ~<params-var>)
           ]
         ]|;
-        debug-str := |[ nabl2--debug(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"]) ]|
+        debug-str := |[ nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"]) ]|
       end;
       guarded-args-str := |[
         ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
@@ -125,7 +126,7 @@ rules
       guarded-args-str := |[
         ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-term> ~<args-var>," in call to ",~Str(name)])
       ]|;
-      debug-str := |[ nabl2--debug(|<concat-strings> [" << ",~Str(name),"(",<nabl2--pp-flat-term> ~<args-var>,") >>"]) ]|;
+      debug-str := |[ nabl2--collection-info-msg(|<concat-strings> [" << ",~Str(name),"(",<nabl2--pp-flat-term> ~<args-var>,") >>"]) ]|;
       (str*,constraint*) := <clauses-to-str> clause*;
       constraint-list := List(<constraints-to-terms> constraint*);
       constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
@@ -189,3 +190,14 @@ rules
     with
       args-term := Tuple(<map(e)> arg*);
       fun-str := Call(SVar(<fun-name> name),[])
+
+rules
+
+  pp-language-spec-name = prim("pp_language_spec_name")
+
+  pp-rules =
+    pp-name := <pp-language-spec-name>;
+    ![ SDefT($[prettyprint-[pp-name]],[],[DefaultVarDec("sort")],CallT(SVar("prettyprint-NaBL2-api-term"),[],[Var("sort")]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Scope],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Occurrence],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+     ]
