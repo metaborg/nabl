@@ -32,12 +32,6 @@ rules
   < log(|Info(), msg, <id>)
   + id
 
-  nabl2--warn(|msg) =
-    warn-msg(|msg)
-
-  nabl2--error(|msg) =
-    err-msg(|msg)
-
   nabl2--is-debug-collection-enabled =
     prim("SG_is_debug_collection_enabled")
 
