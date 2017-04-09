@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.Terms;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
@@ -23,11 +24,11 @@ public final class VarTracker<D> {
     }
 
     /**
-     * Test if any variables in term are in the active set.
+     * Test if any unlocked variables in term are in the active set.
      */
     public boolean isActive(ITerm term, @SuppressWarnings("unchecked") D... excludedDeps) {
         Set<D> excludedDepList = Sets.newHashSet(excludedDeps);
-        for(ITermVar var : unifier.find(term).getVars()) {
+        for(ITermVar var : Terms.unlockedVars(unifier.find(term))) {
             for(D dep : activeVars.get(var)) {
                 if(!excludedDepList.contains(dep)) {
                     return true;
@@ -41,7 +42,7 @@ public final class VarTracker<D> {
      * Add variables in term to active set.
      */
     public void addActive(ITerm term, D dep) {
-        for(ITermVar var : unifier.find(term).getVars()) {
+        for(ITermVar var : Terms.unlockedVars(unifier.find(term))) {
             if(frozenVars.contains(var)) {
                 throw new IllegalArgumentException("Re-activating frozen " + var);
             }
@@ -53,7 +54,7 @@ public final class VarTracker<D> {
      * Remove variables in term from active set.
      */
     public void removeActive(ITerm term, D dep) {
-        for(ITermVar var : unifier.find(term).getVars()) {
+        for(ITermVar var : Terms.unlockedVars(unifier.find(term))) {
             activeVars.remove(var, dep);
         }
     }
@@ -64,11 +65,11 @@ public final class VarTracker<D> {
 
     public void updateActive(Set<ITermVar> substituted) {
         for(ITermVar var : substituted) {
-            updateActive(var, unifier.find(var));
+            updateActive(var);
         }
     }
 
-    private void updateActive(ITermVar var, ITerm term) {
+    private void updateActive(ITermVar var) {
         if(frozenVars.contains(var)) {
             throw new IllegalArgumentException("Updating frozen " + var);
         }
@@ -76,7 +77,7 @@ public final class VarTracker<D> {
             return;
         }
         final Set<D> n = activeVars.get(var);
-        for(ITermVar newVar : term.getVars()) {
+        for(ITermVar newVar : Terms.unlockedVars(unifier.find(var))) {
             if(frozenVars.contains(newVar)) {
                 throw new IllegalArgumentException("Re-activating frozen " + newVar + " on update of " + var);
             }
@@ -86,7 +87,7 @@ public final class VarTracker<D> {
     }
 
     public void freeze(ITerm term) {
-        for(ITermVar var : unifier.find(term).getVars()) {
+        for(ITermVar var : Terms.unlockedVars(unifier.find(term))) {
             if(activeVars.containsKey(var)) {
                 throw new IllegalArgumentException("Freezing active " + var);
             }

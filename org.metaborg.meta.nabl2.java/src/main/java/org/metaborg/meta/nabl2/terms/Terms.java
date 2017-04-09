@@ -3,6 +3,8 @@ package org.metaborg.meta.nabl2.terms;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.Optionals;
@@ -740,6 +742,12 @@ public class Terms {
 
     private static <T> Optional<T> empty(ITerm term) {
         return Optional.empty();
+    }
+
+    // vars
+
+    public static Set<ITermVar> unlockedVars(ITerm term) {
+        return term.getVars().stream().filter(v -> !v.isLocked()).collect(Collectors.toSet());
     }
 
 }

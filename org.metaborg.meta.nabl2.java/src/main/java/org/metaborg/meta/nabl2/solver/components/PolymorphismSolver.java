@@ -20,6 +20,7 @@ import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.util.Unit;
 
@@ -94,7 +95,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     private ITerm generalize(ITerm type) {
         BiMap<ITermVar, TypeVar> subst = HashBiMap.create();
         int c = 0;
-        for(ITermVar var : type.getVars()) {
+        for(ITermVar var : Terms.unlockedVars(type)) {
             subst.put(var, ImmutableTypeVar.of("T" + (++c)));
         }
         ITerm scheme = subst.isEmpty() ? type : ImmutableForall.of(subst.values(), subst(type, subst));
