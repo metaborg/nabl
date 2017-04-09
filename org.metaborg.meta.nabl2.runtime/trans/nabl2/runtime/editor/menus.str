@@ -54,7 +54,7 @@ rules
 
   nabl2--debug-project-result(s|ext):
     (_, _, _, _, project-path) -> (filename, result)
-    with filename := $[[project-path]/[ext]];
+    with filename := $[[project-path]/project.[ext]];
          analysis := <nabl2-get-resource-analysis> project-path
     with ( s(|analysis)
          < pp-NaBL2-AnalysisResult
