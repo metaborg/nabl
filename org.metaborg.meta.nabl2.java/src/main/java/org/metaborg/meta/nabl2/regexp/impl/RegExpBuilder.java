@@ -1,7 +1,11 @@
-package org.metaborg.meta.nabl2.regexp;
+package org.metaborg.meta.nabl2.regexp.impl;
 
 import java.io.Serializable;
 import java.util.function.Supplier;
+
+import org.metaborg.meta.nabl2.regexp.IAlphabet;
+import org.metaborg.meta.nabl2.regexp.IRegExp;
+import org.metaborg.meta.nabl2.regexp.IRegExpBuilder;
 
 public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
 
@@ -53,40 +57,48 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
     }
 
     @Override public IRegExp<S> or(final IRegExp<S> left, final IRegExp<S> right) {
-        if (left.equals(right)) {
+        if(left.equals(right)) {
             return left;
         }
-        if (compare(left, right) > 0) {
-            return or(right, left);
-        }
         // @formatter:off
+        Supplier<IRegExp<S>> otherwise = () -> right.match(new RegExpCases<S,IRegExp<S>>()
+                .or((innerLeft, innerRight) ->
+                        (compare(left, innerLeft) > 0)
+                                ? or(innerLeft, or(left, innerRight))
+                                : ImmutableOr.of(left, ImmutableOr.of(innerLeft, innerRight, this), this))
+                .otherwise(() -> {
+                    return (compare(left, right) > 0) ? or(right, left) : ImmutableOr.of(left, right, this);
+                }));
         return left.match(new RegExpCases<S,IRegExp<S>>()
-                .or((innerLeft,innerRight) -> ImmutableOr.of(innerLeft, or(innerRight, right), this))
-                .otherwise(() -> left.match(new RegExpCases<S,IRegExp<S>>()
-                        .emptySet(() -> right)
-                        .complement(innerRe -> innerRe.match(new RegExpCases<S,IRegExp<S>>()
-                                .emptySet(() -> left)
-                                .otherwise(() -> ImmutableOr.of(left, right, this))))
-                        .otherwise(() -> ImmutableOr.of(left, right, this)))));
+                .emptySet(() -> right)
+                .or((innerLeft, innerRight) -> or(innerLeft, or(innerRight, right)))
+                .complement(innerRe -> innerRe.match(new RegExpCases<S,IRegExp<S>>()
+                        .emptySet(() -> left)
+                        .otherwise(otherwise)))
+                .otherwise(otherwise));
         // @formatter:on
     }
 
     @Override public IRegExp<S> and(final IRegExp<S> left, final IRegExp<S> right) {
-        if (left.equals(right)) {
+        if(left.equals(right)) {
             return left;
         }
-        if (compare(left, right) > 0) {
-            return and(right, left);
-        }
         // @formatter:off
+        Supplier<IRegExp<S>> otherwise = () -> right.match(new RegExpCases<S,IRegExp<S>>()
+                .and((innerLeft, innerRight) ->
+                        (compare(left, innerLeft) > 0)
+                                ? and(innerLeft, and(left, innerRight))
+                                : ImmutableAnd.of(left, ImmutableAnd.of(innerLeft, innerRight, this), this))
+                .otherwise(() -> {
+                    return (compare(left, right) > 0) ? and(right, left) : ImmutableAnd.of(left, right, this);
+                }));
         return left.match(new RegExpCases<S,IRegExp<S>>()
-                .and((innerLeft,innerRight) -> ImmutableAnd.of(innerLeft, and(innerRight, right), this))
-                .otherwise(() -> left.match(new RegExpCases<S,IRegExp<S>>()
-                        .emptySet(() -> emptySet())
-                        .complement(innerRe -> innerRe.match(new RegExpCases<S,IRegExp<S>>()
-                                .emptySet(() -> right)
-                                .otherwise(() -> ImmutableAnd.of(left, right, this))))
-                        .otherwise(() -> ImmutableAnd.of(left, right, this)))));
+                .emptySet(() -> emptySet())
+                .and((innerLeft, innerRight) -> and(innerLeft, and(innerRight, right)))
+                .complement(innerRe -> innerRe.match(new RegExpCases<S,IRegExp<S>>()
+                        .emptySet(() -> right)
+                        .otherwise(otherwise)))
+                .otherwise(otherwise));
         // @formatter:on
     }
 
@@ -102,11 +114,11 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
         // @formatter:off
         Supplier<Integer> defaultValue = () -> (order(re1) - order(re2));
         return re1.match(new RegExpCases<S,Integer>()
-                .symbol(s1 -> re2.match(new RegExpCases<S,Integer>()
-                        .symbol(s2 -> (alphabet.indexOf(s1) - alphabet.indexOf(s2)))
-                        .otherwise(defaultValue)))
-                .concat((left1,right1) -> re2.match(new RegExpCases<S,Integer>()
-                        .concat((left2,right2) -> {
+//                .symbol(s1 -> re2.match(new RegExpCases<S,Integer>()
+//                        .symbol(s2 -> (alphabet.indexOf(s1) - alphabet.indexOf(s2)))
+//                        .otherwise(defaultValue)))
+                .concat((left1, right1) -> re2.match(new RegExpCases<S,Integer>()
+                        .concat((left2, right2) -> {
                             int c = compare(left1, left2);
                             if (c == 0) {
                                 c = compare(right1, right2);
@@ -117,8 +129,8 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
                 .closure(innerRe1 -> re2.match(new RegExpCases<S,Integer>()
                         .closure(innerRe2 -> compare(innerRe1, innerRe2))
                         .otherwise(defaultValue)))
-                .or((left1,right1) -> re2.match(new RegExpCases<S,Integer>()
-                        .or((left2,right2) -> {
+                .or((left1, right1) -> re2.match(new RegExpCases<S,Integer>()
+                        .or((left2, right2) -> {
                             int c = compare(left1, left2);
                             if (c == 0) {
                                 c = compare(right1, right2);
@@ -126,8 +138,8 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
                             return c;
                         })
                         .otherwise(defaultValue)))
-                .and((left1,right1) -> re2.match(new RegExpCases<S,Integer>()
-                        .and((left2,right2) -> {
+                .and((left1, right1) -> re2.match(new RegExpCases<S,Integer>()
+                        .and((left2, right2) -> {
                             int c = compare(left1, left2);
                             if (c == 0) {
                                 c = compare(right1, right2);
@@ -145,14 +157,14 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
     private int order(IRegExp<S> re) {
         // @formatter:off
         return re.match(RegExpCases.<S,Integer>of(
-            () -> 1,
-            () -> 2,
-            (s) -> (7 + alphabet.indexOf(s)),
-            (left,right) -> 5,
-            (innerRe) -> 4,
-            (left,right) -> Math.min(order(left), order(right)),
-            (left,right) -> Math.min(order(left), order(right)),
-            (innerRe) -> 3
+            ()            -> 1,
+            ()            -> 2,
+            (s)           -> (8 + alphabet.indexOf(s)),
+            (left, right) -> 4,
+            (innerRe)     -> 5,
+            (left, right) -> 6,
+            (left, right) -> 6,
+            (innerRe)     -> 7
         ));
         // @formatter:on
     }

@@ -2,11 +2,11 @@ package org.metaborg.meta.nabl2.scopegraph.terms;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.regexp.FiniteAlphabet;
 import org.metaborg.meta.nabl2.regexp.IAlphabet;
 import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpBuilder;
-import org.metaborg.meta.nabl2.regexp.RegExpBuilder;
+import org.metaborg.meta.nabl2.regexp.impl.FiniteAlphabet;
+import org.metaborg.meta.nabl2.regexp.impl.RegExpBuilder;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationException;
@@ -78,7 +78,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
     }
 
     public static ResolutionParameters getDefault() {
-        IAlphabet<Label> labels = new FiniteAlphabet<>(Iterables2.from(Label.D, Label.P, Label.I));
+        IAlphabet<Label> labels = new FiniteAlphabet<>(Label.D, Label.P, Label.I);
         RegExpBuilder<Label> R = new RegExpBuilder<>(labels);
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(Label.P)), R.closure(R.symbol(Label.I)));
         Relation<Label> order;

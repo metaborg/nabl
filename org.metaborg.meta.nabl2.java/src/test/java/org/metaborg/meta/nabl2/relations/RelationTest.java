@@ -1,18 +1,13 @@
-package org.metaborg.meta.nabl2.regexp;
+package org.metaborg.meta.nabl2.relations;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.metaborg.meta.nabl2.relations.ImmutableRelationDescription;
-import org.metaborg.meta.nabl2.relations.ReflexivityException;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Symmetry;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
-import org.metaborg.meta.nabl2.relations.RelationException;
-import org.metaborg.meta.nabl2.relations.SymmetryException;
-import org.metaborg.meta.nabl2.relations.TransitivityException;
 
 import com.google.common.collect.Iterables;
 
