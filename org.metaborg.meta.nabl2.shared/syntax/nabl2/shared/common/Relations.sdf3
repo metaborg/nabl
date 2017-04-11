@@ -55,3 +55,5 @@ lexical syntax
   Keyword = "reflexive" | "irreflexive"
           | "symmetric" | "anti-symmetric"
           | "transitive" | "anti-transitive"
+
+  FunctionId = "lub" | "glb" {reject}
