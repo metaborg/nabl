@@ -114,9 +114,6 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
         // @formatter:off
         Supplier<Integer> defaultValue = () -> (order(re1) - order(re2));
         return re1.match(new RegExpCases<S,Integer>()
-//                .symbol(s1 -> re2.match(new RegExpCases<S,Integer>()
-//                        .symbol(s2 -> (alphabet.indexOf(s1) - alphabet.indexOf(s2)))
-//                        .otherwise(defaultValue)))
                 .concat((left1, right1) -> re2.match(new RegExpCases<S,Integer>()
                         .concat((left2, right2) -> {
                             int c = compare(left1, left2);
