@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,9 +30,7 @@ public class FunctionTerms {
 
     private static IMatcher<Tuple2<String, PartialFunction1<ITerm, ITerm>>> function() {
         return M.tuple2(functionName(), M.listElems(functionCase()), (t, name, cases) -> {
-            PartialFunction1<ITerm, ITerm> f =
-                    (PartialFunction1<ITerm, ITerm> & Serializable) term -> eval(cases, term);
-            return ImmutableTuple2.of(name, f);
+            return ImmutableTuple2.of(name, new Eval(cases));
         });
     }
 
@@ -48,20 +47,32 @@ public class FunctionTerms {
         return M.appl1("Function", M.stringValue(), (t, n) -> n);
     }
 
-    private static Optional<ITerm> eval(Iterable<Tuple2<ITerm, ITerm>> cases, ITerm term) {
-        if(!term.isGround()) {
-            throw new IllegalStateException("Term argument must be ground.");
+    private static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
+        private static final long serialVersionUID = 42L;
+
+        private final List<Tuple2<ITerm, ITerm>> cases;
+
+        private Eval(List<Tuple2<ITerm, ITerm>> cases) {
+            this.cases = cases;
         }
-        for(Tuple2<ITerm, ITerm> c : cases) {
-            Unifier<?> unifier = new Unifier<>();
-            try {
-                unifier.unify(c._1(), term);
-                ITerm result = unifier.find(c._2());
-                return Optional.of(result);
-            } catch(UnificationException e) {
+
+        @Override public Optional<ITerm> apply(ITerm term) {
+            if(!term.isGround()) {
+                throw new IllegalStateException("Term argument must be ground.");
             }
+            for(Tuple2<ITerm, ITerm> c : cases) {
+                Unifier<?> unifier = new Unifier<>();
+                try {
+                    unifier.unify(c._1(), term);
+                    ITerm result = unifier.find(c._2());
+                    return Optional.of(result);
+                } catch(UnificationException e) {
+                }
+            }
+            return Optional.empty();
+
         }
-        return Optional.empty();
+
     }
 
 }
