@@ -23,7 +23,7 @@ rules
          target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("TermIndex");
          op-name := "nabl2_indexOf";
          stmts := bstm* |[
-           StrategoTermIndex index = getTermIndex(term.getStrategoTerm());
+           TermIndex index = getTermIndex(term.getStrategoTerm());
            return new TermIndex_2_Term(index.getResource(), index.getId());
          ]|;
          result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
