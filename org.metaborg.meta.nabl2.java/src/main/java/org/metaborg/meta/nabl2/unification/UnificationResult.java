@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.unification;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,7 +11,8 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-public final class UnificationResult {
+public final class UnificationResult implements Serializable {
+    private static final long serialVersionUID = 42L;
 
     private final Set<ITermVar> substituted;
     private final SetMultimap<ITerm, ITerm> residual;

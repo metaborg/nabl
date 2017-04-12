@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.unification;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
@@ -11,7 +12,8 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-public final class VarTracker<D> {
+public final class VarTracker<D> implements Serializable {
+    private static final long serialVersionUID = 42L;
 
     private final SetMultimap<ITermVar, D> activeVars;
     private final Set<ITermVar> frozenVars;
