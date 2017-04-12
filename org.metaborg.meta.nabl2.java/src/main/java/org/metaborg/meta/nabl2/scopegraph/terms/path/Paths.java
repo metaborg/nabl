@@ -27,13 +27,13 @@ public final class Paths {
 
     // --------------------------------
 
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IScopePath<S, L, O> direct(S source,
-            L label, S target) {
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IStep<S, L, O> direct(S source, L label,
+            S target) {
         return ImmutableEStep.of(source, label, target);
     }
 
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IScopePath<S, L, O> named(S source,
-            L label, IResolutionPath<S, L, O> importPath, S target) {
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IStep<S, L, O> named(S source, L label,
+            IResolutionPath<S, L, O> importPath, S target) {
         return ImmutableNStep.of(source, label, importPath, target);
     }
 

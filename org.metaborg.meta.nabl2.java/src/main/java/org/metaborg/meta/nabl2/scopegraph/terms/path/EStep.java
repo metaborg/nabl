@@ -8,7 +8,6 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
-import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.path.IStep;
 import org.metaborg.util.iterators.Iterables2;
 import org.pcollections.HashTreePSet;
@@ -20,8 +19,7 @@ import com.google.common.collect.Iterators;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class EStep<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements IStep<S, L, O>, IScopePath<S, L, O> {
+abstract class EStep<S extends IScope, L extends ILabel, O extends IOccurrence> implements IStep<S, L, O> {
 
     @Value.Parameter @Override public abstract S getSource();
 

@@ -1,0 +1,17 @@
+on new step s1 -l-> s2:
+  new path s1 ->> s2
+  for every path s0 ->> s1:
+    new path s0 ->> s2
+    for every path s1 ->> s2:
+      new path s1 ->> s2
+      new path s0 ->> s2
+
+on new path s1 ->> s2:
+  for every x_i -> s1:
+    for every s2 -> x_j:
+      new path x_i |-> x_j
+      
+on new path x_i |-> x_j:
+  for every s1 =l=> x_i:
+    for every x_j =l=> s2:
+      new step s1 -l-> s2
