@@ -18,17 +18,17 @@ import com.google.common.collect.Maps;
 
 public class FunctionTerms {
 
-    public static IMatcher<Map<String, PartialFunction1<ITerm, ITerm>>> functions() {
+    public static IMatcher<Map<String, Eval>> functions() {
         return M.listElems(function(), (l, funDefs) -> {
-            Map<String, PartialFunction1<ITerm, ITerm>> functions = Maps.newHashMap();
-            for(Tuple2<String, PartialFunction1<ITerm, ITerm>> funDef : funDefs) {
+            Map<String, Eval> functions = Maps.newHashMap();
+            for(Tuple2<String, Eval> funDef : funDefs) {
                 functions.put(funDef._1(), funDef._2());
             }
             return functions;
         });
     }
 
-    private static IMatcher<Tuple2<String, PartialFunction1<ITerm, ITerm>>> function() {
+    private static IMatcher<Tuple2<String, Eval>> function() {
         return M.tuple2(functionName(), M.listElems(functionCase()), (t, name, cases) -> {
             return ImmutableTuple2.of(name, new Eval(cases));
         });
@@ -47,7 +47,7 @@ public class FunctionTerms {
         return M.appl1("Function", M.stringValue(), (t, n) -> n);
     }
 
-    private static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
+    public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
         private static final long serialVersionUID = 42L;
 
         private final List<Tuple2<ITerm, ITerm>> cases;
