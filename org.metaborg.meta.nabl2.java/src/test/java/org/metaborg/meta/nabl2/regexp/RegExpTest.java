@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.metaborg.meta.nabl2.regexp.impl.FiniteAlphabet;
+import org.metaborg.meta.nabl2.regexp.impl.RegExpBuilder;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;

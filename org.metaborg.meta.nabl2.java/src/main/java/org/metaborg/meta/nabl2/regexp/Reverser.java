@@ -1,7 +1,7 @@
 package org.metaborg.meta.nabl2.regexp;
 
 
-public class Reverser<S> implements IRegExpCases<S,IRegExp<S>> {
+public class Reverser<S> implements IRegExp.ICases<S, IRegExp<S>> {
 
     private final IRegExpBuilder<S> builder;
 

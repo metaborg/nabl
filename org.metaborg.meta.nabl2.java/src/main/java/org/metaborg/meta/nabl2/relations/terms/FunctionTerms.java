@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -8,7 +10,7 @@ import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
@@ -16,20 +18,19 @@ import com.google.common.collect.Maps;
 
 public class FunctionTerms {
 
-    public static IMatcher<Map<String, Function1<ITerm, Optional<ITerm>>>> functions() {
+    public static IMatcher<Map<String, PartialFunction1<ITerm, ITerm>>> functions() {
         return M.listElems(function(), (l, funDefs) -> {
-            Map<String, Function1<ITerm, Optional<ITerm>>> functions = Maps.newHashMap();
-            for(Tuple2<String, Function1<ITerm, Optional<ITerm>>> funDef : funDefs) {
+            Map<String, PartialFunction1<ITerm, ITerm>> functions = Maps.newHashMap();
+            for(Tuple2<String, PartialFunction1<ITerm, ITerm>> funDef : funDefs) {
                 functions.put(funDef._1(), funDef._2());
             }
             return functions;
         });
     }
 
-    private static IMatcher<Tuple2<String, Function1<ITerm, Optional<ITerm>>>> function() {
+    private static IMatcher<Tuple2<String, PartialFunction1<ITerm, ITerm>>> function() {
         return M.tuple2(functionName(), M.listElems(functionCase()), (t, name, cases) -> {
-            Function1<ITerm, Optional<ITerm>> f = term -> eval(cases, term);
-            return ImmutableTuple2.of(name, f);
+            return ImmutableTuple2.of(name, new Eval(cases));
         });
     }
 
@@ -46,20 +47,32 @@ public class FunctionTerms {
         return M.appl1("Function", M.stringValue(), (t, n) -> n);
     }
 
-    private static Optional<ITerm> eval(Iterable<Tuple2<ITerm, ITerm>> cases, ITerm term) {
-        if(!term.isGround()) {
-            throw new IllegalStateException("Term argument must be ground.");
+    private static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
+        private static final long serialVersionUID = 42L;
+
+        private final List<Tuple2<ITerm, ITerm>> cases;
+
+        private Eval(List<Tuple2<ITerm, ITerm>> cases) {
+            this.cases = cases;
         }
-        for(Tuple2<ITerm, ITerm> c : cases) {
-            Unifier unifier = new Unifier();
-            try {
-                unifier.unify(c._1(), term);
-                ITerm result = unifier.find(c._2());
-                return Optional.of(result);
-            } catch(UnificationException e) {
+
+        @Override public Optional<ITerm> apply(ITerm term) {
+            if(!term.isGround()) {
+                throw new IllegalStateException("Term argument must be ground.");
             }
+            for(Tuple2<ITerm, ITerm> c : cases) {
+                Unifier unifier = new Unifier();
+                try {
+                    unifier.unify(c._1(), term);
+                    ITerm result = unifier.find(c._2());
+                    return Optional.of(result);
+                } catch(UnificationException e) {
+                }
+            }
+            return Optional.empty();
+
         }
-        return Optional.empty();
+
     }
 
 }

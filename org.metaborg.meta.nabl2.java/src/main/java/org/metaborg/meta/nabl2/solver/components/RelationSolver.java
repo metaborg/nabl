@@ -24,7 +24,7 @@ import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -34,14 +34,14 @@ import com.google.common.collect.Sets;
 public class RelationSolver extends SolverComponent<IRelationConstraint> {
 
     private final Relations<ITerm> relations;
-    private final Map<String, Function1<ITerm, Optional<ITerm>>> functions;
+    private final Map<String, PartialFunction1<ITerm, ITerm>> functions;
 
     private final SetMultimap<IRelationName, IRelationConstraint> deferedBuilds = HashMultimap.create();
     private final Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
     private boolean complete = false;
 
     public RelationSolver(Solver solver, Relations<ITerm> relations,
-            Map<String, Function1<ITerm, Optional<ITerm>>> functions) {
+            Map<String, PartialFunction1<ITerm, ITerm>> functions) {
         super(solver);
         this.relations = relations;
         this.functions = Maps.newHashMap(functions);
@@ -51,12 +51,12 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
     private void addRelationFunctions() {
         for(IRelationName relationName : relations.getNames()) {
             String lubName = RelationTerms.relationFunction(relationName, RelationFunctions.LUB);
-            Function1<ITerm, Optional<ITerm>> lubFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
+            PartialFunction1<ITerm, ITerm> lubFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
                 return lub(relationName, left, right);
             }))::match;
             functions.put(lubName, lubFun);
             String glbName = RelationTerms.relationFunction(relationName, RelationFunctions.GLB);
-            Function1<ITerm, Optional<ITerm>> glbFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
+            PartialFunction1<ITerm, ITerm> glbFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
                 return glb(relationName, left, right);
             }))::match;
             functions.put(glbName, glbFun);
@@ -165,7 +165,7 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         if(!term.isGround()) {
             return false;
         }
-        Function1<ITerm, Optional<ITerm>> fun = functions.get(c.getFunction());
+        PartialFunction1<ITerm, ITerm> fun = functions.get(c.getFunction());
         if(fun == null) {
             throw new FunctionUndefinedException("Function " + c.getFunction() + " undefined.");
         }

@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.regexp;
 
-public class Deriver<S> implements IRegExpCases<S,IRegExp<S>> {
+public class Deriver<S> implements IRegExp.ICases<S, IRegExp<S>> {
 
     private final S symbol;
     private final IRegExpBuilder<S> builder;
@@ -23,7 +23,7 @@ public class Deriver<S> implements IRegExpCases<S,IRegExp<S>> {
     }
 
     @Override public IRegExp<S> symbol(S s) {
-        if (s.equals(symbol)) {
+        if(s.equals(symbol)) {
             return builder.emptyString();
         } else {
             return builder.emptySet();
@@ -32,7 +32,7 @@ public class Deriver<S> implements IRegExpCases<S,IRegExp<S>> {
 
     @Override public IRegExp<S> concat(IRegExp<S> left, IRegExp<S> right) {
         IRegExp<S> newLeft = builder.concat(left.match(this), right);
-        if (left.isNullable()) {
+        if(left.isNullable()) {
             return builder.or(newLeft, right.match(this));
         } else {
             return newLeft;
