@@ -1,9 +1,11 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
@@ -58,12 +60,12 @@ public class HashFunction<K, V> implements IFunction.Mutable<K, V>, Serializable
         return bwd.containsEntry(value, key);
     }
 
-    @Override public ISet<K> keySet() {
-        return WrappedSet.of(fwd.keySet());
+    @Override public Set<K> keySet() {
+        return Collections.unmodifiableSet(fwd.keySet());
     }
 
-    @Override public ISet<V> valueSet() {
-        return WrappedSet.of(bwd.keySet());
+    @Override public Set<V> valueSet() {
+        return Collections.unmodifiableSet(bwd.keySet());
     }
 
     @Override public Optional<V> get(K key) {

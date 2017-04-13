@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -79,20 +80,20 @@ public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Seri
         return false;
     }
 
-    @Override public ISet<K> keySet() {
-        return WrappedSet.of(fwd.keySet());
+    @Override public Set<K> keySet() {
+        return Collections.unmodifiableSet(fwd.keySet());
     }
 
-    @Override public ISet<V> valueSet() {
-        return WrappedSet.of(bwd.keySet());
+    @Override public Set<V> valueSet() {
+        return Collections.unmodifiableSet(bwd.keySet());
     }
 
-    @Override public ISet<V> get(K key, L label) {
-        return fwd.containsKey(key) ? WrappedSet.of(fwd.get(key).get(label)) : HashSet.create();
+    @Override public Set<V> get(K key, L label) {
+        return fwd.containsKey(key) ? Collections.unmodifiableSet(fwd.get(key).get(label)) : Collections.emptySet();
     }
 
-    @Override public ISet<Map.Entry<L, V>> get(K key) {
-        return fwd.containsKey(key) ? WrappedSet.of(fwd.get(key).entries()) : HashSet.create();
+    @Override public Set<Map.Entry<L, V>> get(K key) {
+        return fwd.containsKey(key) ? Collections.unmodifiableSet(fwd.get(key).entries()) : Collections.emptySet();
     }
 
     public static <K, L, V> HashRelation3<K, L, V> create() {

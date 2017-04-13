@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.util.collections;
 
+import java.util.Set;
+
 public interface IInverseFunction<K, V> {
 
     IFunction<V, K> inverse();
@@ -10,11 +12,11 @@ public interface IInverseFunction<K, V> {
 
     boolean containsValue(V value);
 
-    ISet<K> keySet();
+    Set<K> keySet();
 
-    ISet<V> valueSet();
+    Set<V> valueSet();
 
-    ISet<V> get(K key);
+    Set<V> get(K key);
 
     interface Mutable<K, V> extends IInverseFunction<K, V> {
 

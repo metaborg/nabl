@@ -1,3 +1,5 @@
+=== fixed point path generation ===
+
 on new step s1 -l-> s2:
   new path s1 ->> s2
   for every path s0 ->> s1:
@@ -15,3 +17,15 @@ on new path x_i |-> x_j:
   for every s1 =l=> x_i:
     for every x_j =l=> s2:
       new step s1 -l-> s2
+
+=== path resolving ===
+
+paths can be added, and later removed
+
+I think that a path that is removed will never be added again,
+so there is no need to keep a set of deleted paths
+
+we need to be careful about paths that are currently in the queue
+if part of that path is an import path that gets removed, we should not
+accidently keep that path around
+- actually, if we want to have ESOP behaviour, we may want different behaviour

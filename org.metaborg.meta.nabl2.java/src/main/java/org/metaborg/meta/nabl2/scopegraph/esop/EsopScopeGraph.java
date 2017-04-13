@@ -1,6 +1,8 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -10,19 +12,19 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
 import org.metaborg.meta.nabl2.util.collections.HashRelation3;
-import org.metaborg.meta.nabl2.util.collections.HashSet;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
-import org.metaborg.meta.nabl2.util.collections.ISet;
+
+import com.google.common.collect.Sets;
 
 public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements IScopeGraph<S, L, O>, Serializable {
+        implements IScopeGraph<S, L, O>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final ISet.Mutable<S> allScopes;
-    private final ISet.Mutable<O> allDecls;
-    private final ISet.Mutable<O> allRefs;
+    private final Set<S> allScopes;
+    private final Set<O> allDecls;
+    private final Set<O> allRefs;
 
     private final IFunction.Mutable<O, S> decls;
     private final IFunction.Mutable<O, S> refs;
@@ -31,9 +33,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final IRelation3.Mutable<S, L, O> importEdges;
 
     public EsopScopeGraph() {
-        this.allScopes = HashSet.create();
-        this.allDecls = HashSet.create();
-        this.allRefs = HashSet.create();
+        this.allScopes = Sets.newHashSet();
+        this.allDecls = Sets.newHashSet();
+        this.allRefs = Sets.newHashSet();
 
         this.decls = HashFunction.create();
         this.refs = HashFunction.create();
@@ -44,16 +46,16 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
 
     // -----------------------
 
-    @Override public ISet<S> getAllScopes() {
-        return allScopes;
+    @Override public Set<S> getAllScopes() {
+        return Collections.unmodifiableSet(allScopes);
     }
 
-    @Override public ISet<O> getAllDecls() {
-        return allDecls;
+    @Override public Set<O> getAllDecls() {
+        return Collections.unmodifiableSet(allDecls);
     }
 
-    @Override public ISet<O> getAllRefs() {
-        return allRefs;
+    @Override public Set<O> getAllRefs() {
+        return Collections.unmodifiableSet(allRefs);
     }
 
 

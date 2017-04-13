@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.util.Optional;
+import java.util.Set;
 
 public interface IFunction<K, V> {
 
@@ -12,9 +13,9 @@ public interface IFunction<K, V> {
 
     boolean containsValue(V value);
 
-    ISet<K> keySet();
+    Set<K> keySet();
 
-    ISet<V> valueSet();
+    Set<V> valueSet();
 
     Optional<V> get(K key);
 

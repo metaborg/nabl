@@ -79,11 +79,11 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     @Override public Set<S> getAllScopes() {
-        return scopeGraph.getAllScopes().asSet();
+        return scopeGraph.getAllScopes();
     }
 
     @Override public Set<O> getAllRefs() {
-        return scopeGraph.getAllRefs().asSet();
+        return scopeGraph.getAllRefs();
     }
 
     @Override public Set<IResolutionPath<S, L, O>> resolve(O ref) {

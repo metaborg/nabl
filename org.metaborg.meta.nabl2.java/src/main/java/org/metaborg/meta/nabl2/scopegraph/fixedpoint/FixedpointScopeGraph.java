@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.scopegraph.fixedpoint;
 
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
@@ -30,19 +29,17 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     private final IRelation3.Mutable<O, L, S> exports;
     private final IRelation3.Mutable<O, L, S> imports;
 
-    private final IRelation3.Mutable<S, IScopePath<S, L, O>, S> reachability;
-    private final IRelation3.Mutable<O, IResolutionPath<S, L, O>, O> resolution;
+    private final ScopePaths<S, L, O> paths;
 
-    private final IPathObserver<S, L, O> resolver;
+    private final IPathResolver<S, L, O> resolver;
 
-    public FixedpointScopeGraph(IPathObserver<S, L, O> resolver) {
+    public FixedpointScopeGraph(IPathResolver<S, L, O> resolver) {
         this.decls = HashFunction.create();
         this.refs = HashFunction.create();
         this.edges = HashRelation3.create();
         this.exports = HashRelation3.create();
         this.imports = HashRelation3.create();
-        this.reachability = HashRelation3.create();
-        this.resolution = HashRelation3.create();
+        this.paths = new ScopePaths<>();
         this.resolver = resolver;
     }
 
@@ -51,9 +48,9 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     public boolean addDecl(S scope, O decl) {
         // forall scope' ->> scope, ref -> scope', if ref ~ decl then ref |-> decl
         if(decls.put(decl, scope)) {
-            for(Map.Entry<IScopePath<S, L, O>, S> pathAndScope : resolver.scopePaths().inverse().get(scope)) {
-                for(O ref : refs.inverse().get(pathAndScope.getValue())) {
-                    Paths.resolve(ref, pathAndScope.getKey(), decl).ifPresent(this::addResolution);
+            for(IScopePath<S, L, O> path : resolver.scopePaths().inverse().get(scope)) {
+                for(O ref : refs.inverse().get(path.getSource())) {
+                    Paths.resolve(ref, path, decl).ifPresent(this::addResolution);
                 }
             }
             return true;
@@ -64,9 +61,9 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     public boolean addRef(O ref, S scope) {
         // forall scope ->> scope', forall scope' -> decl, if ref ~ decl then new ref |-> decl
         if(refs.put(ref, scope)) {
-            for(Map.Entry<IScopePath<S, L, O>, S> pathAndScope : resolver.scopePaths().get(scope)) {
-                for(O decl : decls.inverse().get(pathAndScope.getValue())) {
-                    Paths.resolve(ref, pathAndScope.getKey(), decl).ifPresent(this::addResolution);
+            for(IScopePath<S, L, O> path : resolver.scopePaths().get(scope)) {
+                for(O decl : decls.inverse().get(path.getTarget())) {
+                    Paths.resolve(ref, path, decl).ifPresent(this::addResolution);
                 }
             }
             return true;
@@ -86,9 +83,9 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     public boolean addImport(S scope, L label, O ref) {
         // forall ref |-> decl, decl =label=> scope', new scope..scope'
         if(imports.put(ref, label, scope)) {
-            for(Map.Entry<IResolutionPath<S, L, O>, O> pathAndDecl : resolver.resolutionPaths().get(ref)) {
-                for(S exp : exports.get(pathAndDecl.getValue(), label)) {
-                    addStep(Paths.named(scope, label, pathAndDecl.getKey(), exp));
+            for(IResolutionPath<S, L, O> path : resolver.resolutionPaths().get(ref)) {
+                for(S exp : exports.get(path.getDeclaration(), label)) {
+                    addStep(Paths.named(scope, label, path, exp));
                 }
             }
             return true;
@@ -99,9 +96,9 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     public boolean addExport(O decl, L label, S scope) {
         // forall ref |-> decl, scope' =label=> ref, new scope'..scope
         if(imports.put(decl, label, scope)) {
-            for(Map.Entry<IResolutionPath<S, L, O>, O> pathAndRef : resolver.resolutionPaths().inverse().get(decl)) {
-                for(S imp : imports.get(pathAndRef.getValue(), label)) {
-                    addStep(Paths.named(imp, label, pathAndRef.getKey(), scope));
+            for(IResolutionPath<S, L, O> path : resolver.resolutionPaths().inverse().get(decl)) {
+                for(S imp : imports.get(path.getReference(), label)) {
+                    addStep(Paths.named(imp, label, path, scope));
                 }
             }
             return true;
@@ -138,22 +135,22 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     }
 
     private void workStep(IStep<S, L, O> step, Queue<IScopePath<S, L, O>> scopePathQueue) {
-        if(reachability.put(step.getSource(), step, step.getTarget())) {
+        if(paths.add(step)) {
             // forall source' ->> source, target ->> target', new source' ->> target'
             // NB. also take identity cases (scope ->> scope) into account
-            for(Entry<IScopePath<S, L, O>, S> leftEntry : resolver.scopePaths().inverse().get(step.getSource())) {
-                final Optional<IScopePath<S, L, O>> maybeLeft = Paths.append(leftEntry.getKey(), step);
+            for(IScopePath<S, L, O> leftInclusivePath : paths.inverse().get(step.getSource())) {
+                final Optional<IScopePath<S, L, O>> maybeLeft = Paths.append(leftInclusivePath, step);
                 maybeLeft.ifPresent(scopePathQueue::add);
-                for(Entry<IScopePath<S, L, O>, S> rightEntry : resolver.scopePaths().get(step.getTarget())) {
-                    Paths.append(step, rightEntry.getKey()).ifPresent(scopePathQueue::add);
-                    maybeLeft.ifPresent(left -> Paths.append(left, rightEntry.getKey()).ifPresent(scopePathQueue::add));
+                for(IScopePath<S, L, O> rightPath : paths.get(step.getTarget())) {
+                    Paths.append(step, rightPath).ifPresent(scopePathQueue::add);
+                    maybeLeft.ifPresent(left -> Paths.append(left, rightPath).ifPresent(scopePathQueue::add));
                 }
             }
         }
     }
 
     private void workScopePath(IScopePath<S, L, O> path, Queue<IResolutionPath<S, L, O>> resolutionPathQueue) {
-        if(reachability.put(path.getSource(), path, path.getTarget())) {
+        if(resolver.add(path)) {
             // forall ref -> source, target -> decl, if ref ~ decl then new ref |-> decl
             for(O ref : refs.inverse().get(path.getSource())) {
                 for(O decl : decls.inverse().get(path.getTarget())) {
@@ -164,7 +161,7 @@ public class FixedpointScopeGraph<S extends IScope, L extends ILabel, O extends 
     }
 
     private void workResolutionPath(IResolutionPath<S, L, O> path, Queue<IStep<S, L, O>> stepQueue) {
-        if(resolution.put(path.getReference(), path, path.getDeclaration())) {
+        if(resolver.add(path)) {
             for(Entry<L, S> labelAndSource : imports.get(path.getReference())) {
                 for(S target : exports.get(path.getDeclaration(), labelAndSource.getKey())) {
                     stepQueue.add(Paths.named(labelAndSource.getValue(), labelAndSource.getKey(), path, target));

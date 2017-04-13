@@ -1,8 +1,10 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
@@ -54,16 +56,16 @@ public class HashInverseFunction<K, V> implements IInverseFunction.Mutable<K, V>
         return fwd.containsEntry(key, value);
     }
 
-    @Override public ISet<K> keySet() {
-        return WrappedSet.of(fwd.keySet());
+    @Override public Set<K> keySet() {
+        return Collections.unmodifiableSet(fwd.keySet());
     }
 
-    @Override public ISet<V> valueSet() {
-        return WrappedSet.of(bwd.keySet());
+    @Override public Set<V> valueSet() {
+        return Collections.unmodifiableSet(bwd.keySet());
     }
 
-    @Override public ISet<V> get(K key) {
-        return WrappedSet.of(fwd.get(key));
+    @Override public Set<V> get(K key) {
+        return Collections.unmodifiableSet(fwd.get(key));
     }
 
     public static <K, V> HashInverseFunction<K, V> create() {
