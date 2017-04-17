@@ -38,6 +38,8 @@ context-free priorities
 
     LabelRE.Option // aka, the same as LabelRE.Closure
   > LabelRE.Concat
+  > LabelRE.And
+  > LabelRE.Or
 
 lexical syntax
 
