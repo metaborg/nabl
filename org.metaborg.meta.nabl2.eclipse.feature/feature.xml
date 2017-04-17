@@ -2,9 +2,9 @@
 <feature
   id="org.metaborg.meta.nabl2.eclipse.feature"
   label="nabl2 language Eclipse plugin"
-  version="2.2.0.qualifier"
+  version="2.2.0"
   >
-  <plugin id="org.metaborg.meta.nabl2.lang.eclipse" version="2.2.0.qualifier" unpack="true" />
-  <plugin id="org.metaborg.meta.nabl2.shared.eclipse" version="2.2.0.qualifier" unpack="true" />
-  <plugin id="org.metaborg.meta.nabl2.runtime.eclipse" version="2.2.0.qualifier" unpack="true" />
+  <plugin id="org.metaborg.meta.nabl2.lang.eclipse" version="2.2.0" unpack="true" />
+  <plugin id="org.metaborg.meta.nabl2.shared.eclipse" version="2.2.0" unpack="true" />
+  <plugin id="org.metaborg.meta.nabl2.runtime.eclipse" version="2.2.0" unpack="true" />
 </feature>
