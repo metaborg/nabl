@@ -11,5 +11,6 @@ context-free syntax
   MessageContent.Formatted = {MessageContent ""}*
   MessageContent.Text      = String
   MessageContent.Term      = CTerm
+  MessageContent.Default   = "(default)"
 
   MessagePosition.NoIndex  = <@->

@@ -1,0 +1,67 @@
+module nabl2/lang/util/stratego
+
+imports
+
+  libstrc
+
+rules
+
+  mapseq(s): [x|x*] -> |[ ~str ; ~str* ]|
+    with str := <s> x;
+         str* := <mapseq(s)> x*
+
+  mapseq(s): [x] -> <s> x
+
+  mapseq(s): [] -> |[ id ]|
+  
+  explode(g) = g(explode(g)) <+ explode-generic(g)
+
+  explode-generic(g): s -> Str(s)
+    where is-string
+
+  explode-generic(g): i -> Int(<int-to-string> i)
+    where is-int
+
+  explode-generic(g): t* -> List(t'*)
+    where is-list
+    with
+      t'* := <map(explode(g))> t*
+
+  explode-generic(g): t -> Tuple(t'*)
+    where is-tuple
+    with
+      t* := <TupleToList> t;
+      t'* := <map(explode(g))> t*
+
+  explode-generic(g): c#(t*) -> Op(c,t'*)
+    with
+      t'* := <map(explode(g))> t*
+
+  term-to-term(e) = Var(id)
+  term-to-term(e) = Op(id,map(e))
+  term-to-term(e) = List(map(e))
+  term-to-term(e) = ListTail(map(e),e)
+  term-to-term(e) = Tuple(map(e))
+  term-to-term(e) = Str(unescape-string)
+  term-to-term(e) = Int(id)
+  
+  pattern-to-pattern(e) = Wld()
+  pattern-to-pattern(e) = term-to-term(e)
+
+  outermost-term-pattern(s) = As(id,outermost-term-pattern(s))
+  outermost-term-pattern(s) = not(?As(_,_)) ; s
+
+  outermost-list-pattern = outermost-term-pattern(?List(_) + ?ListTail(_,_))
+
+  strip-as-pattern = bottomup(try(?As(_,<id>)))
+
+  var-name:
+    Var(name) -> name 
+ 
+  is-var = ?Var(_)
+
+  all-vars = collect-all(is-var)
+
+  unescape-string =
+    string-replace(|"\\\"","\"");
+    string-replace(|"\\\\","\\")

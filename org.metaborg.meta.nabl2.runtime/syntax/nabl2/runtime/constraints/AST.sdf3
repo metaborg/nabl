@@ -1,0 +1,14 @@
+module nabl2/runtime/constraints/AST
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+
+context-free syntax
+
+  Constraint.CAstProperty =  [[TermIndex].[AstProperty] := [CTerm]]
+
+  AstProperty.Type     = "type"
+  AstProperty.Params   = "params"

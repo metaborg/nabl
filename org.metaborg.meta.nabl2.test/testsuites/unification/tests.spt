@@ -1,0 +1,13 @@
+module unification
+
+language NaBL2Test
+
+//-------------------------------
+
+test cannot unfiy recursive [[
+  cannot unify recursive
+]] 1 error
+
+test nested tails are nil [[
+  nested tails are nil
+]] 0 errors

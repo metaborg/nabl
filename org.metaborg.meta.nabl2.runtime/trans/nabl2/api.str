@@ -2,103 +2,38 @@ module nabl2/api
 
 imports
 
+  pp/nabl2/API-pp
+
   nabl2/shared/-
   nabl2/runtime/-
   nabl2/runtime/analysis/-
-  nabl2/runtime/common/-
   nabl2/runtime/editor/-
   nabl2/runtime/prelude/-
-  nabl2/runtime/solver/-
-
-rules // ###### Custom type operations ######
-
-  /**
-   * Succeed if the term is a type operation that needs to be reduced
-   *
-   * @type Term -> _
-   */
-  nabl2-is-op-hook = fail
-
-  /**
-   * Reduce a type operation. Make sure to implement `nabl2-is-op-hook` for all
-   * constructors that you reduce.
-   *
-   * @param a : Analysis (can be incomplete!)
-   * @type TypeOp -> Type
-   */
-  nabl2-reduce-op-hook(|a) = fail
-
-  /**
-   * Produce an error during type operation reduction.
-   *
-   * @type (Term,String) -> _
-   */
-  nabl2-add-reduce-error = nabl2--add-reduce-error
-
-
-  /**
-   * By default the subtyping relation only allows one direct supertype per type.
-   * For types where this strategy succeeds, multiple direct supertypes are allowed.
-   * For example, if you have a built-in bottom or null type, you could use
-   *
-   *     nabl2-allow-multiple-supertypes-hook = ?Bottom()
-   *
-   * or, if multiple inheritance is allowed for all user defined types as well,
-   *
-   *     nabl2-allow-multiple-supertypes-hook = id
-   * 
-   * @type Type -> _
-   */
-  nabl2-allow-multiple-supertypes-hook = fail
 
 rules // ###### Analysis execution ######
 
   /**
-   * Control the logging of analysis phases. If the strategy succeeds (id),
-   * analysis shows the main steps, if it fails (fail) analysis is silent.
-   *
-   * @type _ -> _
-   */
-  nabl2-debug-analysis-hook = fail
-
-  /**
-   * Control the logging of constraint generation. If the strategy succeeds (id),
-   * constraint generation is logged, if it fails (fail) constraint generation
-   * is silent.
-   *
-   * @type _ -> _
-   */
-  nabl2-debug-constraint-generation-hook = fail
-
-  /**
-   * Control implicit traversal of the constraint generation. If the stragegy
-   * succeeds (id), children are implicitly traversed if no rule for a constructor
-   * is defined. If it fails, children are not traversed implicitly, and a warning
-   * is generated.
+   * Provide a general strategy for pretty-printing object language
+   * terms in error messages. To make sure constraint variables in terms
+   * are printed correctly, inject `nabl2-prettyprint-term` into your own
+   * prettyprinting strategies.
    * 
-   * Implicit traversal only works if the node does not have a type parameter. A
-   * warning is always generated when there is no rule for a typed node.
+   * Example:
+   *   nabl2-prettyprint-hook    = prettyprint-YOURLANG-Type
+   *   prettyprint-YOURLANG-Type = nabl2-prettyprint-term
    *
-   * @type _ -> _
+   * @type Term -> Box
    */
-  nabl2-constraint-generation-implicit-traversal-hook = fail
+  nabl2-prettyprint-hook = fail
 
   /**
-   * Control whether to resolve unused references. If the strategy succeeds for
-   * its namespace argument, an error is generated if the reference does not resolve.
+   * Strategy that prettyprints special NaBL2 constructors. Can be used to
+   * inject into pretty-printing rules of the object language, to enable
+   * pretty-printing of variables, scopes, and occurrences.
    * 
-   * @type ns -> _
+   * @type Term -> Box
    */
-  nabl2-resolve-unused-references-hook = fail
-
-  /**
-   * Control whether to ambiguous references branch, or result in an error. If the
-   * strategy succeeds for its namespace argument, the solver branches on all
-   * possible resolutions. If the strategy fails, an error is reported.
-   * 
-   * @type ns -> _
-   */
-  nabl2-branch-on-ambiguous-references-hook = fail
+  nabl2-prettyprint-term = fail
 
   /**
    * Main analysis strategy for NaBL2.
@@ -106,11 +41,6 @@ rules // ###### Analysis execution ######
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
-
-  /**
-   * Dummy analysis function for NaBL2.
-   */
-  nabl2-null-analysis = nabl2--null-analysis
 
 
 rules // ###### Custom analysis hooks ######
@@ -135,12 +65,34 @@ rules // ###### Custom analysis hooks ######
   /**
    * @type Analysis -> CustomFinalResult
    */
-  nalb2-get-custom-analysis = nabl2--get-custom-analysis
+  nabl2-get-custom-analysis = nabl2--get-custom-analysis
 
   /**
-   * @type CustomFinalResult -> Box
+   * Use for logging a message during custom analysis. The message
+   * printing is subject to the NaBL2 debug settings for resolution.
+   *
+   * @param msg : String
+   * @type _ -> _
    */
-  nabl2-prettyprint-custom-analysis-hook = fail
+  nabl2-custom-analysis-info-msg(|msg) =
+    nabl2--custom-info-msg(|msg)
+
+  /**
+   * Use for logging a message and a term during custom analysis. The
+   * message printing is subject to the NaBL2 debug settings for resolution.
+   *
+   * @param msg : String
+   * @type Term -> _
+   */
+  nabl2-custom-analysis-info(|msg) =
+    nabl2--custom-info(|msg)
+
+  /**
+   * Test if logging for custom analysis is enabled. Can be used to prevent
+   * computation of messages that are not going to be displayed.
+   */
+  nabl2-is-custom-analysis-info-enabled =
+    nabl2--is-debug-custom-enabled
 
 rules // ###### Analysis results ######
 
@@ -159,54 +111,59 @@ rules // ###### Analysis results ######
   nabl2-get-resource-analysis = nabl2--get-resource-analysis
 
   /**
+   * Test if analysis has errors
+   *
+   * Fails if there are no errors, succeeds otherwise.
+   *
+   * @type Analysis -> _
+   */
+  nabl2-analysis-has-errors = nabl2--analysis-has-errors
+
+  /**
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params =
-    where(a := <nabl2--get-ast-analysis>);
-    nabl2--get-ast-params(|a)
+  nabl2-get-ast-params = nabl2--get-ast-params
 
   /**
    * @param a : Analysis
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params(|a) = nabl2--get-ast-params(|a)
+  nabl2-get-ast-params(|a) = nabl2-get-ast-params
 
   /**
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type =
-    where(a := <nabl2--get-ast-analysis>);
-    nabl2--get-ast-type(|a)
+  nabl2-get-ast-type = nabl2--get-ast-type
 
   /**
    * @param a : Analysis
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type(|a) = nabl2--get-ast-type(|a)
+  nabl2-get-ast-type(|a) = nabl2-get-ast-type
 
   /**
    * @type node:Term -> List(Occurrence)
    */
-  nabl2-get-ast-refs = nabl2--get-ast-refs
+  nabl2-get-ast-refs = nabl2--get-ast-resolution; map(Snd)
 
   /**
    * @param a : Analysis
    * @type decl:Occurrence -> Type
    */
-  nabl2-get-type(|a) = nabl2--get-type(|a)
+  nabl2-get-type(|a) = nabl2--get-decl-type
 
   /**
    * @param a : Analysis
    * @param prop : String
    * @type decl:Occurrence -> Term
    */
-  nabl2-get-property(|a,prop) = nabl2--get-property(|a,prop)
+  nabl2-get-property(|a,prop) = nabl2--get-decl-property-by-name(|prop)
 
   /**
    * @param a : Analysis
    * @type ref:Occurrence -> (decl:Occurrence, Path)
    */
-  nabl2-get-resolved-name(|a) = nabl2--get-resolved-name(|a)
+  nabl2-get-resolved-name(|a) = nabl2--get-ref-resolution
 
 
 
@@ -218,7 +175,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type _ -> List(Occurrences)
    */
-  nabl2-get-all-decls(|a) = <nabl2--sol-g;nabl2--G-decls> a
+  nabl2-get-all-decls(|a) = nabl2--get-all-decls(|a)
 
   /**
    * Get all references in the scope graph
@@ -226,7 +183,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type _ -> List(Occurrences)
    */
-  nabl2-get-all-refs(|a) = <nabl2--sol-g;nabl2--G-refs> a
+  nabl2-get-all-refs(|a) = nabl2--get-all-refs(|a)
 
   /**
    * Get all scopes in the scope graph
@@ -234,7 +191,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type _ -> List(Scope)
    */
-  nabl2-get-all-scopes(|a) = <nabl2--sol-g;nabl2--G-scopes> a
+  nabl2-get-all-scopes(|a) = nabl2--get-all-scopes(|a)
 
   /**
    * Get the scope of a reference
@@ -242,7 +199,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type ref:Occurrence -> Scope
    */
-  nabl2-get-ref-scope(|a) = <nabl2--G-ref-scope> (<nabl2--sol-g> a, <id>)
+  nabl2-get-ref-scope(|a) = nabl2--get-ref-scope(|a)
 
   /**
    * Get the scope of a declaration
@@ -250,7 +207,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type decl:Occurrence -> Scope
    */
-  nabl2-get-decl-scope(|a) = <nabl2--G-decl-scope> (<nabl2--sol-g> a, <id>)
+  nabl2-get-decl-scope(|a) = nabl2--get-decl-scope(|a)
 
   /**
    * Get declarations in a scope
@@ -258,47 +215,69 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-scope-decls(|a) = <nabl2--G-decls> (<nabl2--sol-g> a, <id>)
+  nabl2-get-scope-decls(|a) = nabl2--get-scope-decls(|a)
 
   /**
    * Get references in a scope
    *
    * @param a : Analysis
-   * @type Scope -> List(Occurrence)
+   * @type Scope -> List(ref:Occurrence)
    */
-  nabl2-get-scope-refs(|a) = <nabl2--G-refs> (<nabl2--sol-g> a, <id>)
+  nabl2-get-scope-refs(|a) = nabl2--get-scope-refs(|a)
 
   /**
    * Get direct edges from a scope
    *
    * @param a : Analysis
    * @type Scope -> List((Label,Scope))
+   * @type (Scope,Label) -> List(Scope)
    */
-  nabl2-get-scope-direct-edges(|a) = <nabl2--G-direct-edges> (<nabl2--sol-g> a, <id>)
+  nabl2-get-direct-edges(|a) = nabl2--get-direct-edges(|a)
 
   /**
-   * Get named (import) edges from a scope
+   * Get inverse direct edges from a scope
    *
    * @param a : Analysis
-   * @type Scope -> List((Label,Occurrence))
+   * @type Scope -> List((Label,Scope))
+   * @type (Scope,Label) -> List(Scope)
    */
-  nabl2-get-scope-named-edges(|a) = <nabl2--G-named-edges> (<nabl2--sol-g> a, <id>)
+  nabl2-get-direct-edges-inv(|a) = nabl2--get-direct-edges-inv(|a)
+
+  /**
+   * Get import edges from a scope
+   *
+   * @param a : Analysis
+   * @type Scope -> List((Label,ref:Occurrence))
+   * @type (Scope,Label) -> List(ref:Occurrence)
+   */
+  nabl2-get-import-edges(|a) = nabl2--get-import-edges(|a)
+
+  /**
+   * Get inverse import edges from a reference
+   *
+   * @param a : Analysis
+   * @type ref:Occurrence -> List((Label,Scope))
+   * @type (ref:Occurrence,Label) -> List(Scope)
+   */
+  nabl2-get-import-edges-inv(|a) = nabl2--get-import-edges-inv(|a)
 
   /**
    * Get associated scopes of a declaration
    *
    * @param a : Analysis
    * @type decl:Occurrence -> List((Label,Scope))
+   * @type (decl:Occurrence,Label) -> List(Scope)
    */
-  nabl2-get-decl-assocs(|a) = <nabl2--G-assocs> (<nabl2--sol-g> a, <id>)
-
+  nabl2-get-assoc-edges(|a) = nabl2--get-export-edges(|a)
+ 
   /**
-   * Get occurrences associated with a scope
+   * Get associated declarations of a scope
    *
    * @param a : Analysis
-   * @type Scope -> List((Occurrence,Label))
+   * @type Scope -> List((Label,decl:Occurrence))
+   * @type (Scope,Label) -> List(decl:Occurrence)
    */
-  nabl2-get-scope-assocs(|a) = <nabl2--G-scope-assocs> (<nabl2--sol-g> a, <id>)
+  nabl2-get-assoc-edges-inv(|a) = nabl2--get-export-edges-inv(|a)
 
   /**
    * Get visible declarations in scope
@@ -306,7 +285,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-visible-decls(|a) = nabl2--visibles(|<nabl2--sol-g> a)
+  nabl2-get-visible-decls(|a) = nabl2--get-visible-decls(|a)
 
   /**
    * Get reachable declarations in scope
@@ -314,7 +293,7 @@ rules // ###### Scope graphs ######
    * @param a : Analysis
    * @type Scope -> List(Occurrence)
    */
-  nabl2-get-reachable-decls(|a) = nabl2--reachables(|<nabl2--sol-g> a)
+  nabl2-get-reachable-decls(|a) = nabl2--get-reachable-decls(|a)
 
   /**
    * Make an occurrence in the default namespace
@@ -354,7 +333,71 @@ rules // ###### Scope graphs ######
    */
   nabl2-get-occurrence-name = nabl2--occurrence-name
 
+
+rules // ###### Symbolic Constraints ######
   
+  /**
+   * Get symbolic facts
+   *
+   * @param a : Analysis
+   * @type _ -> List(Term)
+   */
+  nabl2-get-symbolic-facts(|a) = nabl2--get-symbolic-facts(|a)
+
+  /**
+   * Get symbolic goals
+   *
+   * @param a : Analysis
+   * @type _ -> List(Term)
+   */
+  nabl2-get-symbolic-goals(|a) = nabl2--get-symbolic-goals(|a)
+
+
+
+rules // ###### AST Indices ######
+
+  /**
+   * Get AST index. Fails if term has no index.
+   *
+   * @type Term -> TermIndex
+   */
+  nabl2-get-ast-index = nabl2--get-ast-index
+
+  /**
+   * Set AST index on a term. Throws an exception of the index argument
+   * is not a valid index.
+   *
+   * @param index : Termindex
+   * @type Term -> Term
+   */
+  nabl2-set-ast-index(|index) = nabl2--set-ast-index(|index)
+
+  /**
+   * Copy AST index from one term to another. Fails if the source has no
+   * index.
+   *
+   * @param from : Termindex
+   * @type Term -> Term
+   */
+  nabl2-copy-ast-index(|from) = nabl2--copy-ast-index(|from)
+
+  /**
+   * Execute a strategy and copy the index of the input term to the output
+   * term. If the original term has no index, the result of applying s is
+   * returned unchanged. Thus, failure behaviour of s is preserved.
+   *
+   * @type Term -> Term
+   */
+  nabl2-preserve-ast-index(s) = nabl2--preserve-ast-index(s)
+
+  /**
+   * Erase AST indices from a term, preserving other annotations and
+   * attachments.
+   *
+   * @type Term -> Term
+   */
+  nabl2-erase-ast-indices = nabl2--erase-ast-indices
+
 rules // ###### Editor Integration ######
 
   /**

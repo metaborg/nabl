@@ -11,19 +11,8 @@ template options
 
 context-free syntax
 
-  PrimitiveConstraint.CTrue   = <true>
-  PrimitiveConstraint.CFalse  = <false <Message>>
-
-  Constraint         = PrimitiveConstraint
-  Constraint.CConj   = [[Constraint],[Constraint]] {right}
-  Constraint.CDisj   = [[Constraint];[Constraint]] {right}
-
-  Constraint         = [([Constraint])] {bracket}
-
-context-free priorities
-
-  Constraint.CConj >
-  Constraint.CDisj
+  Constraint.CTrue   = <true <MessagePosition>>
+  Constraint.CFalse  = <false <Message>>
 
 lexical syntax
 

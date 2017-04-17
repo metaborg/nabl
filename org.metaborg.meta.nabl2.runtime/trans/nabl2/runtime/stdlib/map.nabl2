@@ -4,39 +4,77 @@ signature
 
   constraint generator
 
-    Map1  [[ List(a) ^ (b)        ]]
-    Map1T [[ List(a) ^ (b) : type ]]
+    Map0     [[ list(a) ^ ()     ]]
+    Map0(X)  [[ list(a) ^ ()     ]]
+    Map0T    [[ list(a) ^ () : t ]]
+    Map0T(X) [[ list(a) ^ () : t ]]
 
-    Map2  [[ List(a) ^ (b,c)        ]]
-    Map2T [[ List(a) ^ (b,c) : type ]]
+    Map1     [[ list(a) ^ (b)     ]]
+    Map1(X)  [[ list(a) ^ (b)     ]]
+    Map1T    [[ list(a) ^ (b) : t ]]
+    Map1T(X) [[ list(a) ^ (b) : t ]]
 
-rules
-
-  Map1[[ [x|xs] ^ (s) ]] :=
-    [[ x ^ (s) ]],
-    Map1[[ xs ^ (s) ]].
-
-  Map1[[ [] ^ (s) ]].
-
-
-  Map1T[[ [x|xs] ^ (s) : [ty|tys] ]] :=
-    [[ x ^ (s) : ty ]],
-    Map1T[[ xs ^ (s) : tys ]].
-
-  Map1T[[ [] ^ (s) : [] ]].
-
+    Map2     [[ list(a) ^ (b,c)     ]]
+    Map2(X)  [[ list(a) ^ (b,c)     ]]
+    Map2T    [[ list(a) ^ (b,c) : t ]]
+    Map2T(X) [[ list(a) ^ (b,c) : t ]]
 
 rules
 
-  Map2[[ [x|xs] ^ (s1,s2) ]] :=
-    [[ x ^ (s1,s2) ]],
-    Map2[[ xs ^ (s1,s2) ]].
+  Map0[[ xs ^ () ]] := Map0(default)[[ xs ^ () ]].
 
-  Map2[[ [] ^ (s1,s2) ]].
+  Map0(X)[[ [x|xs] ^ () ]] :=
+    X[[ x ^ () ]],
+    Map0(X)[[ xs ^ () ]].
 
+  Map0(X)[[ [] ^ () ]].
 
-  Map2T[[ [x|xs] ^ (s1,s2) : [ty|tys] ]] :=
-    [[ x ^ (s1,s2) : ty ]],
-    Map2T[[ xs ^ (s1,s2) : tys ]].
+rules
 
-  Map2T[[ [] ^ (s1,s2) : [] ]].
+  Map0T[[ xs ^ (s) : tys ]] := Map0T(default)[[ xs ^ (s) : tys ]].
+
+  Map0T(X)[[ [x|xs] ^ (s) : [ty|tys] ]] :=
+    X[[ x ^ (s) : ty ]],
+    Map0T(X)[[ xs ^ (s) : tys ]].
+
+  Map0T(X)[[ [] ^ (s) : [] ]].
+
+rules
+
+  Map1[[ xs ^ (s) ]] := Map1(default)[[ xs ^ (s) ]].
+
+  Map1(X)[[ [x|xs] ^ (s) ]] :=
+    X[[ x ^ (s) ]],
+    Map1(X)[[ xs ^ (s) ]].
+
+  Map1(X)[[ [] ^ (s) ]].
+
+rules
+
+  Map1T[[ xs ^ (s) : tys ]] := Map1T(default)[[ xs ^ (s) : tys ]].
+
+  Map1T(X)[[ [x|xs] ^ (s) : [ty|tys] ]] :=
+    X[[ x ^ (s) : ty ]],
+    Map1T(X)[[ xs ^ (s) : tys ]].
+
+  Map1T(X)[[ [] ^ (s) : [] ]].
+
+rules
+
+  Map2[[ xs ^ (s1,s2) ]] := Map2(default)[[ xs ^ (s1,s2) ]].
+
+  Map2(X)[[ [x|xs] ^ (s1,s2) ]] :=
+    X[[ x ^ (s1,s2) ]],
+    Map2(X)[[ xs ^ (s1,s2) ]].
+
+  Map2(X)[[ [] ^ (s1,s2) ]].
+
+rules
+
+  Map2T[[ xs ^ (s1,s2) : tys ]] := Map2T(default)[[ xs ^ (s1,s2) : tys ]].
+
+  Map2T(X)[[ [x|xs] ^ (s1,s2) : [ty|tys] ]] :=
+    X[[ x ^ (s1,s2) : ty ]],
+    Map2T(X)[[ xs ^ (s1,s2) : tys ]].
+
+  Map2T(X)[[ [] ^ (s1,s2) : [] ]].

@@ -1,0 +1,9 @@
+module nabl2/lang/analysis/rules
+
+imports
+
+  nabl2/lang/analysis/-
+
+  signatures/nabl2/lang/modules/-
+
+rules

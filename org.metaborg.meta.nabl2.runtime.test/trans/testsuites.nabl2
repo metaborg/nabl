@@ -1,9 +1,0 @@
-module testsuites
-
-imports
-
-  testsuites/-
-
-rules
-
-  init ^ () := true.

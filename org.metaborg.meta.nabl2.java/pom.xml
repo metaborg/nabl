@@ -1,0 +1,91 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.metaborg</groupId>
+    <artifactId>parent.java</artifactId>
+    <version>2.2.0-SNAPSHOT</version>
+    <relativePath>../releng/parent/java</relativePath>
+  </parent>
+  <artifactId>org.metaborg.meta.nabl2.java</artifactId>
+  <packaging>jar</packaging>
+
+  <properties>
+    <immutables-version>2.4.4</immutables-version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.util</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.spoofax.terms</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.spoofax.interpreter.core</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>it.unimi.dsi</groupId>
+      <artifactId>fastutil</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.pcollections</groupId>
+      <artifactId>pcollections</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <version>${immutables-version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>serial</artifactId>
+      <version>${immutables-version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.bsc.maven</groupId>
+        <artifactId>maven-processor-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <developers>
+    <developer>
+      <name>Hendrik van Antwerpen</name>
+      <email>h.vanantwerpen@tudelft.nl</email>
+      <organization>Delft University of Technology</organization>
+      <organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
+    </developer>
+  </developers>
+
+</project>

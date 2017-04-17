@@ -9,4 +9,4 @@ language
 
   on save               : generate-str
   on save               : generate-dynsem-ds
-  on save               : extract-sigs
+//on save               : extract-sigs

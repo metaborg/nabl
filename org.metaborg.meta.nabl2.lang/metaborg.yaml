@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
 name: NaBL2Lang
-metaborgVersion: 2.1.0
+metaborgVersion: 2.2.0-SNAPSHOT
 dependencies:
   compile:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
@@ -16,12 +16,30 @@ generates:
   directory: src-gen/nabl2
 - language: ds
   directory: src-gen/nabl2
-pretty-print: NaBL2
-placeholder:
-  prefix: "$"
+exports:
+- language: ATerm
+  directory: src-gen/syntax
+- language: SDF
+  directory: src-gen/syntax
+  includes: "**/*.sdf"
+- language: TemplateLang
+  directory: syntax
+  includes: "**/*.sdf3"
+- language: Stratego-Sugar
+  directory: trans
+  includes: "**/*.str"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes: "**/*.str"
+- language: EditorService
+  directory: src-gen
+  includes: "**/*.esv"
 language:
   sdf:
     sdf2table: c
+    pretty-print: NaBL2
+    placeholder:
+      prefix: "$"
   stratego:
     format: ctree
     args:

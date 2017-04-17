@@ -1,0 +1,76 @@
+module name-resolution
+
+language NaBL2Test
+
+//-------------------------------
+
+test scope occurrences are equal [[
+  scope occurrences of x and x are equal
+]] 0 errors
+
+test occurrence indexed in var scope fails [[
+  occurrence of x in var scope
+]] analysis fails
+
+test resolve to scope occurrence succeeds [[
+  resolve [[x]] to scope occurrence [[x]]
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+test resolve same name in same scope [[
+  resolve [[x]] to [[x]] in same scope
+]] 0 errors
+   resolve #1 to #2 
+
+test resolve different names in same scope [[
+  resolve x to y in same scope
+]] 1 error
+   error like "does not resolve"
+
+test resolve same name different namespace in same scope [[
+  resolve ns1 x to ns2 x in same scope
+]] 1 error
+   error like "does not resolve"
+
+test resolve ambiguous in same scope [[
+  resolve x to x or x in same scope
+]] 1 error
+   error like "ambiguous"
+
+//-------------------------------
+
+test resolve in parent scope [[
+  resolve [[x]] to [[x]] in parent scope
+]] 0 errors
+   resolve #1 to #2
+
+test resolve ambiguous in parent scopes [[
+  resolve x to x and x in parent scopes
+]] 1 error
+   error like "ambiguous"
+
+test resolve import over parent [[
+  resolve [[x]] to [[x]] in import scope over x parent scope
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+test resolve in imported scope  [[
+  resolve [[x]] via y in y { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+test resolve in transitively imported scope  [[
+  resolve [[x]] via y where y imports z in z { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+test resolve via scope in type [[
+  resolve [[y]] via type of x in x { [[y]] } 
+]] 0 errors
+   resolve #1 to #2

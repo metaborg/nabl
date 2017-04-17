@@ -1,0 +1,16 @@
+module testsuites/known-problems/rules
+
+imports
+
+  signatures/testsuites/-
+
+rules
+
+  [[ GeneralizeListTail() ^ () ]] :=
+    s genOf ["x"|tl],
+    ["x"|["y"]] instOf s.
+
+  [[ NewOnParameter(t) ^ () ]] :=
+    NewOnParameter[[ t ^ (s) ]].
+  NewOnParameter[[ t ^ (s) ]] :=
+    new s.

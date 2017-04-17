@@ -1,0 +1,113 @@
+module nabl2/lang/analysis/signatures
+
+imports
+
+  signatures/nabl2/lang/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/signatures/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/common/-
+  
+rules
+
+	module-extract-signatures:
+		Module(_, ds) -> (type_sigs, rule_sigs, subterm_sigs)
+		with
+			// Signatures and rules
+			sigs := <filter(?Signature(<id>)); concat> ds;
+			rs := <filter(?Rules(<id>)); concat> ds;
+			// Extract signature information
+			type_sigs := <filter(?Constructors(<id>)); concat> sigs;
+			rule_sigs := <filter(?CGen(<id>)); concat> sigs;
+			// Iterate over all rules, extract sub-term annotation signatures
+			subterm_sigs := 
+				<map(extract-rule-sigs); concat; nub> rs
+
+	extract-rule-sigs:
+		CGenInitRule(_, _, _) -> []
+		
+	extract-rule-sigs:
+		CGenMatchRule(Name(_,[]), match, scopes, types, body) ->
+			term_sigs
+		with
+			term_sigs := <extract-term-sigs(|body)> match
+	
+	extract-rule-sigs:
+		x ->
+			[]
+		where
+			not(!x; ?CGenMatchRule(Name(_,[]), As(_, Op(_, _)), _, _, _))
+	
+	// Term signature extraction
+	
+	extract-term-sigs(|body):
+		As(_, x) -> <extract-term-sigs(|body)> x
+	
+	extract-term-sigs(|body):
+		Var(x) -> []
+		with
+			<conc-strings; debug> ("WARNING: Rule matches on naked variable: ", x)
+	
+	extract-term-sigs(|body):
+		Wld() -> []
+		with
+			<debug> "WARNING: Rule matches on naked wilcard!"
+	
+	extract-term-sigs(|body):
+		Op(c, args) -> <conc> ([((c, arity), sigs)], ts')
+		with
+			arity := <length> args;
+			sigs := <map(extract-body-sigs(|args)); concat> body;
+			ts' := <map(extract-subterm-sigs(|body)); concat> args
+	
+	extract-term-sigs(|body):
+		ListTail(hd, tl) -> <map(extract-subterm-sigs(|body)); concat> hd
+	
+	extract-term-sigs(|body):
+		List(l) -> <map(extract-subterm-sigs(|body)); concat> l
+	
+	// Sub-term signature extraction:
+	extract-subterm-sigs(|body):
+		As(_, _) -> []
+		
+	extract-subterm-sigs(|body):
+		Var(_) -> []
+		
+	extract-subterm-sigs(|body):
+		t@Op(c, args) -> <extract-term-sigs(|body)> t
+	
+	extract-subterm-sigs(|body):
+		Wld() -> []
+	
+	extract-subterm-sigs(|body):
+		ListTail(hd, tl) -> <map(extract-subterm-sigs(|body)); concat> hd
+	
+	extract-subterm-sigs(|body):
+		List(l) -> <map(extract-subterm-sigs(|body)); concat> l
+
+	extract-subterm-sigs(|body):
+		Str(_) -> []
+	
+	extract-subterm-sigs(|body):
+		Int(_) -> []
+	
+	// Body signature extraction
+		
+	extract-body-sigs(|args):
+		CGenRecurse(Name(name,[]), x, _, _) -> r
+		with
+			(i := <get-index0(my-match(|x))> args; r := [(name, i)]) <+
+				(r := [])
+	
+	extract-body-sigs(|args):
+		x -> []
+		with
+			not(!x; ?CGenRecurse(Name(_,[]), Var(_), _, _))
+
+	// If the term is syntactically equal
+	my-match(|x):
+		x -> 1
+		
+	// If the term is an "as" abstraction
+	my-match(|x):
+		As(x, _) -> 1

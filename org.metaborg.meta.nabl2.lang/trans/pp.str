@@ -1,18 +1,9 @@
 module pp
 
-imports
-
-  libstratego-gpp
-
-  nabl2shared
-
-  pp/-
+imports nabl2/lang/pp
 
 rules
 
-  editor-format:
-    (node, position, Module(name,section*), path, project-path) -> (filename, result)
-    with
-      ext      := <get-extension> path;
-      filename := <guarantee-extension(|$[pp.[ext]])> path;
-      result   := <pp-NaBL2-string> Module($[[name].pp],section*)
+  pp-partial-NaBL2Lang-string = pp-partial-NaBL2-string
+
+  pp-partial-NaBL2Lang-string(|sort) = pp-partial-NaBL2-string(|sort)

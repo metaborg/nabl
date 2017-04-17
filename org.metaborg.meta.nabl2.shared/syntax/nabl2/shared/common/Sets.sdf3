@@ -3,16 +3,27 @@ module nabl2/shared/common/Sets
 imports
 
   nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+syntax
+
+  SetExpr-CF.EmptySet = "0"                               // FIXME Use NaBL2_ prefix
+  SetExpr-CF.Union    = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "union" LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
+  SetExpr-CF.Isect    = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "isect" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
+  SetExpr-CF.Diff     = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "minus" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
+  SetExpr-CF.Lsect    = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "lsect" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
+
+  SetProj-CF.NoProjection =
+  SetProj-CF.Projection   = "/" ProjectionId-LEX
 
 context-free syntax
-
-  SetExpr.EmptySet = <0>                            // FIXME Use NaBL2_ prefix
-  SetExpr.Isect    = <(<CSet> isect <CSet>)> {left} // FIXME Use NaBL2_ prefix
-  SetExpr.Union    = <(<CSet> union <CSet>)> {left} // FIXME Use NaBL2_ prefix
-  SetExpr.Diff     = <(<CSet> minus <CSet>)> {left} // FIXME Use NaBL2_ prefix
 
   CSet = SetExpr
 
 lexical syntax
 
-  Keyword = "isect" | "union" | "minus"
+  Keyword = "isect" | "union" | "minus" | "lsect"

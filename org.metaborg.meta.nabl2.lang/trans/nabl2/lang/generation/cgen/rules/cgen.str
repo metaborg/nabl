@@ -1,0 +1,203 @@
+module nabl2/lang/generation/cgen/rules/cgen
+
+imports
+
+  libstrc
+
+  signatures/nabl2/shared/constraints/-
+ 
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/rules/-
+
+  nabl2/lang/generation/cgen/-
+  nabl2/lang/generation/-
+  nabl2/lang/util/stratego
+
+rules
+
+  section-to-str:
+    Rules(rule*) -> Rules([pp-str*, rule-str*])
+    with
+      rule-str* := <map(rule-to-str)> rule*;
+      pp-str*   := <getfirst(?CGenInitRule(_,_,_));pp-rules <+ ![]> rule*
+
+  rule-to-str:
+    CGenInitRule(params,type,clause*)
+      -> RDefT(<init-strategy-name>, [], [],
+           Rule(As(<term-var>,<source-var>), Tuple([<args-var>, <constraint-var>]), strclause*))
+    with
+      (str*,constraint*) := <clauses-to-str> clause*;
+      params-term := <explode(injection-to-term)> params;
+      if Type(type') := type then
+        type-term := <explode(injection-to-term)> type';
+        args-str := |[ ~<args-var> := ParamsAndType(~params-term,~type-term) ]|;
+        debug-str := Strat |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term," : ",<pp-NaBL2-objlangterm> ~type-term]) end ]|
+      else
+        args-str := |[ ~<args-var> := Params(~params-term) ]|;
+        debug-str := Strat |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term]) end ]|
+      end;
+        metadata-str := |[
+          ~<index-var> := <nabl2--get-ast-index> ~<term-var>
+        ]|;
+      constraint-list := List(<constraints-to-terms> constraint*);
+      constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
+      strclause* := [
+        str*,
+        With(args-str),
+        With(metadata-str),
+        With(constraint-str),
+        With(debug-str)
+      ]
+ 
+  rule-to-str:
+    CGenMatchRule(rdef,pattern,params,type,clause*)
+      -> RDefT(<rdef-strategy-name> rdef,<rdef-strategy-params> rdef,[],
+           Rule(Wld(), <constraint-var>, strclause*))
+    with
+      match1 := |[ ?(~<source-var>, ~<term-var>, ~<args-var>) ]|;
+      match2 := |[ ~pattern := ~<term-var> ]|;
+      pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
+      (str*,constraint*) := <clauses-to-str> clause*;
+      params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
+      params-string := <strip-as-pattern;pp-stratego-string> params-pattern;
+      if Type(type') := type then
+        type-pattern := As(<type-var>,<explode(injection-to-pattern)> type');
+        type-string :=  <strip-as-pattern;pp-stratego-string> type-pattern;
+        args-pattern := Term |[ ParamsAndType(~params-pattern,~type-pattern) ]|;
+        args-string := Str($[^ [params-string] : [type-string]]);
+        args-str := |[
+          ~args-pattern := ~<args-var>
+        ]|;
+        metadata-str := |[
+          ~<index-var> := <nabl2--get-ast-index> ~<term-var>;
+          ~<metadata-var> := [
+            CAstProperty(~<index-var>, Params(), ~<params-var>),
+            CAstProperty(~<index-var>, Type(), ~<type-var>)
+          ]
+        ]|;
+        debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-objlangterm> ~<type-var>," ]]"]) end ]|
+      else
+        args-pattern := Term |[ Params(~params-pattern) ]|;
+        args-string := Str($[^ [params-string]]);
+        args-str := |[
+          ~args-pattern := ~<args-var>
+        ]|;
+        metadata-str := |[
+          ~<index-var> := <nabl2--get-ast-index> ~<term-var>;
+          ~<metadata-var> := [
+            CAstProperty(~<index-var>, Params(), ~<params-var>)
+          ]
+        ]|;
+        debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"]) end ]|
+      end;
+      guarded-args-str := |[
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
+                                                  " when matching ",~pattern-string, " with ",<pp-NaBL2-Term> ~<term-var>,"."])
+      ]|;
+      constraint-list := List(<constraints-to-terms> constraint*);
+      constraint-str  := |[ ~<constraint-var> := <conc;nabl2--flatten-list> (~<metadata-var>, ~constraint-list) ]|;
+      strclause* := [
+        With(match1),
+        Where(match2),
+        With(guarded-args-str),
+        With(debug-str),
+        str*,
+        With(metadata-str),
+        With(constraint-str)
+      ]
+
+  init-strategy-name = !$[nabl2--generate-constraint-init-rule]
+
+  rdef-strategy-name = !$[nabl2--generate-constraint-[<rdef-name>]-rule]
+
+  rdef-strategy-params: NoName() -> []
+  rdef-strategy-params: Name(_,rs) -> <map(\ r -> SVar(<rdef-strategy-name> Name(r,[])) \)> rs
+ 
+rules
+
+  rule-to-str:
+    FunDef(name,arg*,clause*)
+      -> RDefT(<fun-name> name,[],[],
+           Rule(Tuple([<source-var>,<term-var>,<args-var>]), <constraint-var>, strclause*))
+    with
+      args-pattern := <explode(injection-to-pattern)> Tuple([arg*]);
+      args-string := Str(<pp-stratego-string> args-pattern);
+      args-str := |[ ~args-pattern := ~<args-var> ]|;
+      guarded-args-str := |[
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-term> ~<args-var>," in call to ",~Str(name)])
+      ]|;
+      debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [" << ",~Str(name),"(",<nabl2--pp-flat-term> ~<args-var>,") >>"]) end ]|;
+      (str*,constraint*) := <clauses-to-str> clause*;
+      constraint-list := List(<constraints-to-terms> constraint*);
+      constraint-str  := |[ ~<constraint-var> := <nabl2--flatten-list> ~constraint-list ]|;
+      strclause* := [
+        With(guarded-args-str),
+        With(debug-str),
+        str*,
+        With(constraint-str)
+      ]
+ 
+  fun-name =
+    !$[nabl2--constraint-function-[<id>]]
+ 
+
+rules
+
+  clauses-to-str =
+    partition(clause-to-str);
+    (map(!With(<id>)),id)
+
+  clause-to-str:
+    NewVars(v*) -> str
+    with str := <mapseq({\
+                   v -> |[ ~v := <nabl2--new-var(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
+                   with n := Str(<var-name> v)
+                 \})> v*
+
+  clause-to-str:
+    NewScopes(s*) -> str
+    with str := <mapseq({\
+                   s -> |[ ~s := <nabl2--new-scope(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
+                   with n := Str(<var-name> s)
+                 \})> s*
+
+rules
+ 
+  constraints-to-terms =
+    map(explode(explode-guard))
+ 
+  explode-guard(e) = injection-to-term(e)
+  explode-guard(e) = cgenrecurse-to-term(e)
+  explode-guard(e) = funcall-to-term(e)
+
+  cgenrecurse-to-term(e):
+    CGenRecurse(rref,v,params,type) -> App(recurse-str,Tuple([<source-var>,v,recurse-arg]))
+    with
+      params-term := <e> params;
+      if Type(type') := type then
+        type-term := <e> type';
+        recurse-arg := Term |[ ParamsAndType(~params-term,~type-term) ]|
+      else
+        recurse-arg := Term |[ Params(~params-term) ]|
+      end;
+      recurse-str := CallT(SVar("nabl2--generate-constraint"),[<rdef-strategy-call> rref],[Str(<rdef-name> rref)])
+
+  rdef-strategy-call: NoName()      -> CallNoArgs(SVar(<rdef-strategy-name> NoName()))
+  rdef-strategy-call: rdef@Name(name,rs) -> Call(SVar(<rdef-strategy-name> rdef), <map(rdef-strategy-call)> rs)
+
+  funcall-to-term(e):
+    FunCall(name,arg*) -> App(fun-str,Tuple([<source-var>,<term-var>,args-term]))
+    with
+      args-term := Tuple(<map(e)> arg*);
+      fun-str := Call(SVar(<fun-name> name),[])
+
+rules
+
+  pp-language-spec-name = prim("pp_language_spec_name")
+
+  pp-rules =
+    pp-name := <pp-language-spec-name>;
+    ![ SDefT($[prettyprint-[pp-name]],[],[DefaultVarDec("sort")],CallT(SVar("prettyprint-NaBL2-api-term"),[],[Var("sort")]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Scope],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Occurrence],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+     ]

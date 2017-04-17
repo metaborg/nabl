@@ -1,0 +1,11 @@
+module testsuites/functions/rules
+
+imports
+
+  signatures/testsuites/-
+
+rules
+
+  [[ PairProjectionFunction() ^ () ]] :=
+    1 is projectFirst of (1,2),
+    2 is projectSecond of (1,2).

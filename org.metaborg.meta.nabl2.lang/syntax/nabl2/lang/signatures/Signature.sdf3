@@ -1,0 +1,25 @@
+module nabl2/lang/signatures/Signature
+
+imports
+
+  nabl2/lang/signatures/CGen
+  nabl2/lang/signatures/Constructors
+  nabl2/lang/signatures/Functions
+  nabl2/lang/signatures/NameResolution
+  nabl2/lang/signatures/Relations
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  ModuleSection.Signature = <
+    signature
+      <{Signature "\n\n"}*>
+  >
+
+lexical syntax
+
+  SectionKeyword = "signature"
+

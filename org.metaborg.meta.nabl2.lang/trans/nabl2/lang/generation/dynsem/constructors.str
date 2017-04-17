@@ -1,0 +1,16 @@
+module nabl2/lang/generation/dynsem/constructors
+
+imports
+
+  signatures/nabl2/lang/signatures/-
+  nabl2/lang/generation/dynsem/-
+
+rules
+
+  opdecl-to-ds:
+    OpDecl(name, [], s) -> result
+    with result := NullaryConsDecl(name, <sort-to-ds> s, NoAnnos())
+
+  opdecl-to-ds:
+    OpDecl(name, arg*, s) -> result
+    with result := ConsDecl(name, <map(sort-to-ds)> arg*, <sort-to-ds> s, NoAnnos())

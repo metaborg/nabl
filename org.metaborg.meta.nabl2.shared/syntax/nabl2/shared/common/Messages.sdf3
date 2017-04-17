@@ -2,13 +2,16 @@ module nabl2/shared/common/Messages
 
 imports
 
-  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/AST
   nabl2/shared/common/CTerms
 
 template options
 
   keyword -/- [a-zA-Z0-9\'\_]
+
+sorts
+
+  MessageContent
 
 context-free syntax
 
@@ -18,7 +21,4 @@ context-free syntax
   MessageKind.Warning    = <warning>
   MessageKind.Note       = <note>
 
-  MessageContent.Default =
-
   MessagePosition        = TermIndex
- 

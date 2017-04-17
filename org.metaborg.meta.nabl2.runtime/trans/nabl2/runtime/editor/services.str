@@ -2,15 +2,19 @@ module nabl2/runtime/editor/services
 
 imports
 
+  nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
   nabl2/api
-  
+  signatures/nabl2/runtime/common/-
+
 rules
 
-  nabl2--editor-resolve: (node, position, ast, path, project-path) -> decl
-    where decl := <nabl2-get-ast-refs;Hd> node
+  nabl2--editor-resolve: (node, _, _, _, _) -> decl
+    where decl := <nabl2-get-ast-refs> node
 
-  nabl2--editor-hover: (node, position, ast, path, project-path) -> label
-    where type := <nabl2-get-ast-type;pp-NaBL2-Type;nabl2--xmlencode> node
-    with  label := $[Type: [type]]
+  nabl2--editor-hover: (node, _, _, path, project-path) -> label
+    with analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+    where type := <nabl2-get-ast-type(|analysis)> node
+    with typetext := <nabl2--focus-term(|analysis);pp-NaBL2-objlangterm;nabl2--xmlencode> type;
+         label := $[Type: [typetext]]

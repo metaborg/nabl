@@ -1,0 +1,53 @@
+module nabl2/lang/rules/CGen
+
+imports
+ 
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/constraints/Base
+
+  nabl2/lang/common/Identifiers
+  nabl2/lang/common/Injections
+  nabl2/lang/common/Terms
+  nabl2/lang/rules/Rules
+  nabl2/lang/rules/Names
+
+
+
+context-free syntax
+
+  Rule.CGenInitRuleNoConstraint = <
+    init <CGenParamsTerm> <CGenTypeTerm>.
+  >
+
+  Rule.CGenInitRule = <
+    init <CGenParamsTerm> <CGenTypeTerm> :=
+        <{RuleClause ",\n"}+>.
+  >
+
+  Rule.CGenMatchRuleNoConstraint = <
+    <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
+  >
+
+  Rule.CGenMatchRule = <
+    <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
+        <{RuleClause ",\n"}+>.
+  >
+
+  RuleClause             = Constraint
+  RuleClause             = NewScopes
+  RuleClause.CGenRecurse = <<CGenRuleRefTop> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+
+
+context-free syntax
+
+  CGenParamsTerm.Tuple    = <^ (<{CTerm ", "}*>)>
+
+  CGenParamsPattern.Tuple = <^ (<{VarOrWld ", "}*>)>
+
+  CGenTypeTerm.NoType     =
+  CGenTypeTerm.Type       = <: <CTerm>>
+
+  CGenTypePattern.NoType  =
+  CGenTypePattern.Type    = <: <CTerm>>
+

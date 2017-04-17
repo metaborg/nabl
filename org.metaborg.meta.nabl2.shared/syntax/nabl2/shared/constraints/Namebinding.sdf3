@@ -7,20 +7,24 @@ imports
   nabl2/shared/common/Resolution
   nabl2/shared/common/ScopeGraph
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
-  PrimitiveConstraint.CGDecl       = [[Occurrence] <- [Scope]]
-  PrimitiveConstraint.CGRef        = [[Occurrence] -> [Scope]]
+  Constraint.CGDecl       = [[Occurrence] <- [Scope] [MessagePosition]]
+  Constraint.CGRef        = [[Occurrence] -> [Scope] [MessagePosition]]
 
-  PrimitiveConstraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
+  Constraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
 
 syntax
 
-  PrimitiveConstraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF
-  PrimitiveConstraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF
-  PrimitiveConstraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF
+  Constraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF LAYOUT?-CF MessagePosition-CF
+  Constraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF MessagePosition-CF
+  Constraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF LAYOUT?-CF MessagePosition-CF
 
-  PrimitiveConstraint-CF.CAssoc       = CTerm-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
+  Constraint-CF.CAssoc       = CTerm-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
 
 
 context-free syntax
@@ -41,4 +45,3 @@ context-free syntax
 lexical syntax
 
   Keyword = "NAME"
-

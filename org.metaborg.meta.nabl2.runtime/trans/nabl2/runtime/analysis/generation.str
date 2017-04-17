@@ -2,6 +2,8 @@ module nabl2/runtime/analysis/generation
 
 imports
 
+  nabl2/api
+
   libspoofax/editor/completion/interface
 
   signatures/nabl2/shared/common/-
@@ -9,10 +11,10 @@ imports
   nabl2/shared/-
 
   signatures/nabl2/runtime/common/-
+  signatures/nabl2/runtime/constraints/-
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
-  nabl2/api
 
 signature
 
@@ -25,100 +27,72 @@ rules // top-level functions that are called during analysis
   nabl2-debug-constraint-generation-hook = fail
 
   nabl2--generate-constraint-init(|source) = nabl2--strict(
-    ?ast;
-    {| NewScope, NewVar:
-	    scope-counter := <new-counter>;
-	    var-counter   := <new-counter>;
-	    rules( NewScope: _ -> <next-counter> scope-counter
-	           NewVar:   _ -> <next-counter> var-counter
-	         );
-      <nabl2--generate-constraint-init-rule(|source)> ast
-	  |}
+    <nabl2--generate-constraint-init-rule(|)> source
   )
 
-  nabl2--generate-constraint-file(|source,params) = nabl2--strict(
-    ?ast;
-    {| NewScope, NewVar, AstMetadata:
-	    scope-counter := <new-counter>;
-	    var-counter   := <new-counter>;
-	    rules( NewScope: _ -> <next-counter> scope-counter
-	           NewVar:   _ -> <next-counter> var-counter
-	         );
-      C := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|source,params)> ast;
-      metadata := <nabl2--get-generated-metadata>;
-      !(C, metadata)
-	  |}
-  )
-
-  nabl2--get-generated-metadata = nabl2--strict(
-    dr-all-keys(|"AstMetadata");
-    map(!(<id>,<AstMetadata>))
- <+ ![]
+  nabl2--generate-constraint-file(|source,args) = ?term; nabl2--strict(
+    <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
   )
 
 rules
 
-  nabl2--new-var(|source)   = (is-string <+ !"v") => n ; !CVar(source,$[[n]'[<NewVar;int-to-string>]])
-  nabl2--new-scope(|source) = (is-string <+ !"s") => n ; !Scope(source,$[[n]'[<NewScope;int-to-string>]])
+  nabl2--new-var(|source): n -> CVar(source,n')
+    with n' := <nabl2--fresh> (source, <is-string <+ !"v"> n)
+
+  nabl2--new-scope(|source): n -> Scope(source,n')
+    with n' := <nabl2--fresh> (source, <is-string <+ !"s"> n)
+
+rules
 
   // signatures of the generated rules
-  nabl2--generate-constraint-init-rule(|source) = fail
-  nabl2--generate-constraint-default-rule(|source,params) = fail
+  nabl2--generate-constraint-init-rule = fail
+  nabl2--generate-constraint-default-rule(|) = fail
 
   // error throwing wrappers for recursive invocations
-  nabl2--generate-constraint(s|source,args) =
+  nabl2--generate-constraint(s|name) =
     nabl2--error-no-index
- <+ nabl2--generate-constraint-placeholder(|source,args)
- <+ (where(!1 => x);s(|source,args)) // this is freaky, but otherwise the next call fails sometimes
- <+ nabl2--generate-constraint-missing(s|source,args)
+ <+ nabl2--generate-constraint-placeholder
+ <+ s
+ <+ nabl2--generate-constraint-missing(|name)
 
-  nabl2--error-no-index: term -> constraint
-    where not(nabl2--get-ast-index)
+  nabl2--error-no-index:
+      (source,term,args) -> constraint*
+    where <not(nabl2--get-ast-index)> term
     with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]];
          if nabl2-debug-constraint-generation-hook then
            warn(|msg)
          end;
-         constraint := CFalse(Message(Error(),msg,NoIndex()))
+         constraint* := [CFalse(Message(Error(),msg,NoIndex()))]
 
-  nabl2--generate-constraint-placeholder(|source,args): term -> CTrue()
+  nabl2--generate-constraint-placeholder:
+      (source,term,args) -> constraint*
     where <is-SDF-placeholder> term
     with index := <nabl2--get-ast-index> term;
          if ParamsAndType(params,type) := args then
-           rules(AstMetadata: index -> [(Params(), params), (Type(), type)])
+           constraint* := [CAstProperty(index, Params(), params),
+                           CAstProperty(index, Type(), type)]
          else if Params(params) := args then
-           rules(AstMetadata: index -> [(Params(), params)])
+           constraint* := [CAstProperty(index, Params(), params)]
          end end
 
-  nabl2--generate-constraint-missing(s|source,args): term@_#(subterm*) -> constraint
+  nabl2--generate-constraint-missing(|name):
+      (source,term,args) -> <conc> (ast-constraint*, constraint*)
     with index := <nabl2--get-ast-index> term;
     if ParamsAndType(params,type) := args then
-      rules(AstMetadata: index -> [(Params(), params), (Type(), type)]);
-      if nabl2-constraint-generation-implicit-traversal-hook then
-        msg := $[Cannot do typed implicit traversal for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
-        if nabl2-debug-constraint-generation-hook then
-          warn(|msg)
-        end;
-        constraint := CFalse(Message(Warning(),msg,index))
-      else
-        msg := $[Missing constraint generation rule for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
-        if nabl2-debug-constraint-generation-hook then
-          warn(|msg)
-        end;
-        constraint := CFalse(Message(Warning(),msg,index))
-      end
+      ast-constraint* := [CAstProperty(index, Params(), params),
+                          CAstProperty(index, Type(), type)];
+      msg := ${Missing constraint generation rule: {name} [[ {<nabl2--pp-flat-term> term} {<nabl2--pp-flat-args> args} ]]};
+      if nabl2-debug-constraint-generation-hook then
+        warn(|msg)
+      end;
+      constraint* := [CFalse(Message(Warning(),msg,index))]
     else if Params(params) := args then
-      rules(AstMetadata: index -> [(Params(), params)]);
-      if nabl2-constraint-generation-implicit-traversal-hook then
-        <debug> $({implicit} [[ (<pp-NaBL2-Term> subterm*) ^ (<pp-NaBL2-CTerm> params) ]]);
-        subconstraint* := <filter(nabl2--generate-constraint(s|source,args);not(?CTrue()))> subterm*;
-        constraint := <foldr(!CTrue(),\ (c,acc) -> CConj(c,acc) \)> subconstraint*
-      else
-        msg := $[Missing constraint generation rule for [<nabl2--pp-flat-term> term] [<nabl2--pp-flat-args> args]];
-        if nabl2-debug-constraint-generation-hook then
-          warn(|msg)
-        end;
-        constraint := CFalse(Message(Warning(),msg,index))
-      end
+      ast-constraint* := [CAstProperty(index, Params(), params)];
+      msg := ${Missing constraint generation rule: {name} [[ {<nabl2--pp-flat-term> term} {<nabl2--pp-flat-args> args} ]]};
+      if nabl2-debug-constraint-generation-hook then
+        warn(|msg)
+      end;
+      constraint* := [CFalse(Message(Warning(),msg,index))]
     end end
 
 rules
@@ -126,11 +100,11 @@ rules
   nabl2--pp-flat-term: c#(a*) -> $[[c]([as])] 
     where not(is-list)
     with as := <map(!"_");separate-by(|",");concat-strings> a*
-  
+
   nabl2--pp-flat-term: c#(a*) -> ${[{as}]} 
     where is-list
     with as := <map(!"_");separate-by(|",");concat-strings> a*
-  
+
   nabl2--pp-flat-args: Params(a*) -> $[^ ([p])]
     with if <is-tuple> a* then
       p := <TupleToList;map(!"_");separate-by(|",");concat-strings> a*
@@ -140,7 +114,7 @@ rules
 
   nabl2--pp-flat-args: ParamsAndType(a*,_) -> $[[p] : _]
     with p := <nabl2--pp-flat-args> Params(a*)
-  
+
   nabl2--pp-term-sig: a* -> ${[{a'}]}
     where is-list
     with a' := <map(nabl2--pp-term-sig);separate-by(|",");concat-strings> a*

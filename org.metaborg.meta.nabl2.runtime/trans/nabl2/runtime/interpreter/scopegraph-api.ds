@@ -25,25 +25,27 @@ signature
     DefaultNamespace : Namespace
     Namespace        : String -> Namespace
  
-
-  arrows
-    NaBL2 |- Scope -declsOf-> List(Occurrence)
-    NaBL2 |- (Scope * Namespace) -declsOf-> List(Occurrence)
-    NaBL2 |- Scope -edgesOf-> Map(Label, List(Scope))
-
-  arrows
-    Name -mkOccurrence-> Occurrence
-    (String * Name) -mkOccurrence-> Occurrence
-    (Name * AST) -mkOccurrence-> Occurrence
+  arrows // occurrences
+    Name                  -mkOccurrence-> Occurrence
+    (String * Name)       -mkOccurrence-> Occurrence
+    (Name * AST)          -mkOccurrence-> Occurrence
     (String * Name * AST) -mkOccurrence-> Occurrence
 
-  arrows
-    NaBL2 |- Occurrence -pathOf-> Path
-    NaBL2 |- Occurrence -typeOf-> Type
+    namespaceOf(Occurrence) --> Namespace
+    nameOf(Occurrence) --> Name
+
+  arrows // scope graph
+    NaBL2 |- Scope -declsOf-> List(Occurrence)
+    NaBL2 |- Scope -edgesOf-> Map(Label, List(Scope))
+    NaBL2 |- Scope -importsOf-> Map(Label, List(Occurrence))
+
     NaBL2 |- Occurrence -scopeOfDecl-> Scope
     NaBL2 |- Occurrence -scopeOfRef-> Scope
-    NaBL2 |- (Occurrence * Label) -assocScopeOf-> Scope
-    NaBL2 |- Occurrence -declOfRef-> Occurrence
+    NaBL2 |- Occurrence -assocsOf-> Map(Label, List(Scope))
+    NaBL2 |- Occurrence -typeOf-> Type
+
+  arrows // name resolution
+    NaBL2 |- Occurrence -pathOf-> Path
 
   sorts
     NaBL2

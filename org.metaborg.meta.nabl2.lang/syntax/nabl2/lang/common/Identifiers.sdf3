@@ -1,0 +1,14 @@
+module nabl2/lang/common/Identifiers
+
+imports
+
+  nabl2/shared/common/Identifiers
+
+lexical syntax
+
+  RuleId = [a-zA-Z] [a-zA-Z0-9]*
+  RuleId = "init" | "default" {case-insensitive, reject}
+
+lexical restrictions
+
+  RuleId -/- [a-zA-Z0-9]

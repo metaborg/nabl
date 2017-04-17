@@ -1,0 +1,19 @@
+module nabl2/shared/constraints/Polymorphism
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  Constraint.CGen  = [[CTerm] genOf [CTerm] [Message]]
+  Constraint.CInst = [[CTerm] instOf [CTerm] [Message]]
+
+lexical syntax
+
+  Keyword = "genOf" | "instOf"

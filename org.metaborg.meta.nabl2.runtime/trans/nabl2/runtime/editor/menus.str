@@ -2,48 +2,61 @@ module nabl2/runtime/editor/menus
 
 imports
 
-  nabl2/shared/-
+  nabl2/runtime/analysis/debug
+  nabl2/runtime/prelude/-
+  nabl2/runtime/pp
+  nabl2/api
+  signatures/nabl2/runtime/analysis/-
+  signatures/nabl2/runtime/common/-
+ 
+rules
 
-  signatures/nabl2/runtime/solver/-
-  nabl2/runtime/analysis/-
-  nabl2/runtime/solver/-
+  nabl2--debug-file-constraints =
+    nabl2--debug-file-result(nabl2--debug-constraints|"constraints")
+
+  nabl2--debug-file-scope-graph =
+    nabl2--debug-file-result(nabl2--debug-scope-graph|"scope-graph")
+
+  nabl2--debug-file-name-resolution =
+    nabl2--debug-file-result(nabl2--debug-name-resolution|"name-resolution")
+
+  nabl2--debug-file-unifier =
+    nabl2--debug-file-result(nabl2--debug-unifier|"unifier")
+
+  nabl2--debug-file-symbolic-constraints =
+    nabl2--debug-file-result(nabl2--debug-symbolic-constraints|"symbolic")
+
+  nabl2--debug-file-result(s|ext):
+    (_, _, _, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|ext)> path;
+         analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+    with ( s(|analysis)
+         < pp-NaBL2-AnalysisResult
+         + !"(no result)"
+         ) => result
 
 rules
 
-  nabl2--show-file-analysis: (_, _, _, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"analysis.txt")> path;
-         analysis := <nabl2--get-resource-partial-analysis <+ nabl2--get-resource-analysis> $[[project-path]/[path]]
-       < result := <pp-NaBL2-Analysis> analysis
-       + result := "(no file analysis found)"
+  nabl2--debug-project-constraints =
+    nabl2--debug-project-result(nabl2--debug-constraints|"constraints")
 
-  nabl2--show-file-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"analysis.aterm")> path;
-         result := <nabl2--get-resource-partial-analysis <+ nabl2--get-resource-analysis> $[[project-path]/[path]]
-      <+ result := None()
+  nabl2--debug-project-scope-graph =
+    nabl2--debug-project-result(nabl2--debug-scope-graph|"scope-graph")
 
-  nabl2--show-file-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"uninterpreted-constraints.aterm")> path;
-         analysis := <nabl2--get-resource-analysis> $[[project-path]/[path]]
-       < goals := <nabl2--sol-u-goals> analysis;
-         facts := <nabl2--sol-u-facts> analysis;
-         result := ("Goals"#([goals]),"Facts"#([facts]))
-       + result := None()
+  nabl2--debug-project-name-resolution =
+    nabl2--debug-project-result(nabl2--debug-name-resolution|"name-resolution")
 
+  nabl2--debug-project-unifier =
+    nabl2--debug-project-result(nabl2--debug-unifier|"unifier")
 
-  nabl2--show-project-analysis: (_, _, _, _, project-path) -> (filename, result)
-    with filename := $[[project-path]/analysis.txt];
-         analysis := <nabl2--get-resource-analysis> project-path
-       < result := <pp-NaBL2-Analysis> analysis
-       + result := "(no project analysis found)"
+  nabl2--debug-project-symbolic-constraints =
+    nabl2--debug-project-result(nabl2--debug-symbolic-constraints|"symbolic")
 
-  nabl2--show-project-analysis-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := $[[project-path]/analysis.aterm]
-       ; result := <nabl2--get-resource-analysis> project-path
-      <+ result := None()
-
-  nabl2--show-project-uninterpreted-constraints-aterm: (_, _, _, path, project-path) -> (filename, result)
-    with filename := $[[project-path]/uninterpreted-constraints.aterm];
-         analysis := <nabl2--get-resource-analysis> project-path
-       < goals := <nabl2--sol-u-goals> analysis
-       ; facts := <nabl2--sol-u-facts> analysis
-       + result := None()
+  nabl2--debug-project-result(s|ext):
+    (_, _, _, _, project-path) -> (filename, result)
+    with filename := $[[project-path]/project.[ext]];
+         analysis := <nabl2-get-resource-analysis> project-path
+    with ( s(|analysis)
+         < pp-NaBL2-AnalysisResult
+         + !"(no result)"
+         ) => result

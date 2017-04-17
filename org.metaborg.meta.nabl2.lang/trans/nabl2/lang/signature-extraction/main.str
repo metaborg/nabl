@@ -1,0 +1,14 @@
+module nabl2/lang/signature-extraction/main
+
+imports
+  libstrc
+  nabl2/lang/analysis/signatures
+  nabl2/lang/util/-
+
+rules
+
+  extract-sigs:
+    (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
+    with
+      filename := <src-gen-file(|project-path, "nabl2", ".nabl2sig")> name;
+      result := <module-extract-signatures> ast

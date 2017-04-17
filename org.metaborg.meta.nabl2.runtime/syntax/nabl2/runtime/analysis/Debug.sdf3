@@ -1,0 +1,105 @@
+module nabl2/runtime/analysis/Debug
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Resolution
+  nabl2/shared/constraints/Base
+
+context-free syntax
+
+  AnalysisResult.Constraints = <
+    constraints {
+      <{Constraint "\n"}*>
+    }
+  >
+
+context-free syntax
+
+  AnalysisResult.ScopeGraph = <
+    scope graph {
+      <{ScopeEntry "\n"}*>
+    }
+  >
+
+  ScopeEntry.Scope = <
+    scope <Scope> {
+      <{ScopePartEntry "\n"}*>
+    }
+  >
+
+  ScopePartEntry.Decls = <
+    declarations {
+      <{DeclEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.Refs = <
+    references {
+      <{RefEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.DirectEdges = <
+    direct edges {
+      <{DirectEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.ImportEdges = <
+    import edges {
+      <{ImportEntry "\n"}*>
+    }
+  >
+  ScopePartEntry.AssocEdges = <
+    associated declarations {
+      <{AssocEntry "\n"}*>
+    }
+  >
+
+  DeclEntry.Decl         = <<Occurrence><DeclType>>
+  RefEntry.Ref           = <<Occurrence>>
+  DirectEntry.DirectEdge = [[PathLabel] ~ [Scope]]
+  ImportEntry.ImportEdge = [[PathLabel] ~ [Occurrence]]
+  AssocEntry.AssocEdge   = [[PathLabel] ~ [Occurrence]]
+
+  DeclType.Type   = < : <CTerm>>
+  DeclType.NoType = <>
+
+context-free syntax
+
+  AnalysisResult.Unifier = <
+    unifier {
+      <{UnifierEntry "\n"}*>
+    }
+  >
+
+  UnifierEntry = <<CVar> := <CTerm>>
+
+context-free syntax
+
+  AnalysisResult.NameResolution = <
+    name resolution {
+      <{ResolutionEntry "\n"}*>
+    }
+  >
+
+  ResolutionEntry = <<Occurrence> <ResolutionResult>>
+
+  ResolutionResult.NoResolution = <(does not resolve)>
+  ResolutionResult.Resolution = [
+    |-> [{ResolutionPath "\n"}*]
+  ]
+
+  ResolutionPath = <
+    <Occurrence> via <Path>
+  >
+
+context-free syntax
+
+  AnalysisResult.SymbolicConstraints = <
+    facts {
+      <{CTerm "\n"}*>
+    }
+    goals {
+      <{CTerm "\n"}*>
+    }
+  >

@@ -1,0 +1,11 @@
+module testsuites/known-problems/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.GeneralizeListTail = <generalize list tail>
+
+  Test.NewOnParameter = <use new on parameter <E>>

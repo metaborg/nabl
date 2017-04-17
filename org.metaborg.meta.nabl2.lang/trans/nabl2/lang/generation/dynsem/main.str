@@ -1,0 +1,73 @@
+module nabl2/lang/generation/dynsem/main
+
+imports
+
+  nabl2/lang/generation/dynsem/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  nabl2/lang/util/-
+
+rules
+
+  generate-dynsem-signatures(|langname):
+    ast@Module(name,_) -> [(filename, source)]
+    with filename := $[[name].ds];
+         ds-ast := <module-to-ds(|langname)> ast;
+         source := <ds-pp-module> ds-ast
+
+  module-to-ds(|langname):
+    ast@Module(name,_) -> Module(name,[
+      Imports([
+        Import("nabl2/runtime/interpreter/scopegraph-api"),
+        Import($[ds-signatures/[langname]-sig])
+      ]),
+      Signatures([
+        NativeOperators([
+          ast-params-op*,
+          ast-type-op*
+        //ns-type-op*,
+        //ns-prop-op*
+        ]),
+        ArrowDeclarations([
+          ast-params-arrow*,
+          ast-type-arrow*
+        //ns-type-arrow*,
+        //ns-prop-arrow*
+        ]),
+        Constructors([
+          type-con*
+        ])
+      ]),
+      Rules([
+        ast-params-rule*,
+        ast-type-rule*
+      //ns-type-rule*,
+      //ns-prop-rule*
+      ])
+    ])
+    with (ast-params-op*, ast-params-arrow*, ast-params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> ast;
+         (ast-type-op*, ast-type-arrow*, ast-type-rule*) := <collect-om(cgen-sig-to-type-ds);unzip3> ast;
+       //(ns-type-op*, ns-type-arrow*, ns-type-rule*) := <collect-om(ns-to-type-ds);unzip3> ast;
+       //(ns-prop-op*, ns-prop-arrow*, ns-prop-rule*) := <collect-om(ns-to-prop-dss);concat;unzip3> ast;
+         type-con* := <collect-om(opdecl-to-ds)> ast
+
+rules
+
+  generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir):
+    ast@Module(name,_) -> result*
+    with result* := <concat> [
+      <collect-om(cgen-sig-to-params-java(|term-pkg,nabl2-pkg,java-dir))> ast,
+      <collect-om(cgen-sig-to-type-java(|term-pkg,nabl2-pkg,java-dir))> ast,
+    //<collect-om(ns-to-type-java(|term-pkg,nabl2-pkg,java-dir))> ast,
+    //<collect-om(ns-to-prop-javas(|term-pkg,nabl2-pkg,java-dir));concat> ast,
+      <collect-one(init-to-java(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir))<+![]> ast
+    ]
+
+  init-to-java(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir):
+    CGenInitRule(_, _, _) -> result*
+    with result* := <concat> [
+      <runner-files(|lang-name,project-name,generated-pkg,nabl2-pkg,project-dir,java-dir)>,
+      <termindex-javas(|term-pkg,nabl2-pkg,java-dir)>,
+      <init-javas(|term-pkg,nabl2-pkg,java-dir)>
+    ]
+ 

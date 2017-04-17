@@ -1,0 +1,13 @@
+module base
+
+language NaBL2Test
+
+//-------------------------------
+
+test false fails [[
+  false
+]] 1 error
+
+test true succeeds [[
+  true
+]] 0 errors

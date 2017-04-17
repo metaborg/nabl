@@ -1,0 +1,31 @@
+module nabl2/lang/rules/Names
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/lang/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+syntax
+
+  CGenRuleDef-CF.NoName     =
+  CGenRuleDef-CF.NameNoArgs = RuleId-LEX
+  CGenRuleDef-CF.Name       = RuleId-LEX "(" LAYOUT?-CF RuleIds-CF LAYOUT?-CF ")"
+
+
+  CGenRuleRefTop-CF.NoName     =
+  CGenRuleRefTop-CF.NameNoArgs = RuleId-LEX
+  CGenRuleRefTop-CF.Name       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+
+  CGenRuleRef-CF.NoName     = "default"
+  CGenRuleRef-CF.NameNoArgs = RuleId-LEX
+  CGenRuleRef-CF.Name       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+
+context-free syntax
+
+  RuleIds = <<{RuleId ", "}*>>
+  
+  CGenRuleRefs = <<{CGenRuleRef ", "}*>>

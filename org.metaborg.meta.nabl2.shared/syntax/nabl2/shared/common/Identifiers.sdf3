@@ -1,8 +1,8 @@
 module nabl2/shared/common/Identifiers
 
-imports
+sorts
 
-  nabl2/shared/common/ABSTRACT
+  Keyword
 
 lexical syntax
 
@@ -17,9 +17,6 @@ lexical syntax
   OpId           = [A-Z] [a-zA-Z0-9\_]*
   OpId           = Keyword {reject}
 
-  FunId          = [a-z] [a-zA-Z0-9\_]*
-  FunId          = Keyword {reject}
-
   SortId         = [A-Z] [a-zA-Z0-9\_]*
   SortId         = Keyword {reject}
 
@@ -29,20 +26,25 @@ lexical syntax
   PropertyId     = [a-z] [a-zA-Z0-9]*
   PropertyId     = Keyword {reject}
 
+  RelationId     = [a-z] [a-zA-Z0-9]*
+  RelationId     = Keyword {reject}
+
+  FunctionId     = [a-z] [a-zA-Z0-9]*
+  FunctionId     = Keyword {reject}
+
+  ProjectionId   = [a-z] [a-zA-Z0-9]*
+  ProjectionId   = Keyword {reject}
+
   LabelId        = [A-Z]+
-  LabelId        = "D" | "I" | "P" {reject}
+  LabelId        = BuiltinLabel {reject}
   LabelId        = Keyword {reject}
 
-  TVarId         = [A-Za-z] [a-zA-Z0-9\_]*
-  TVarId         = MetaPrefix [a-zA-Z0-9\_\']* {reject}
-  TVarId         = Keyword [\']* {reject}
+  BuiltinLabel   = "D" | "I" | "P"
 
-  TModId         = [a-z] [a-zA-Z0-9\_]*
-  TModId         = MetaPrefix [a-zA-Z0-9\_\']* {reject}
-  TModId         = Keyword [\']* {reject}
+//TVarId         = [A-Za-z] [a-zA-Z0-9\_]*
+//TVarId         = MetaPrefix [a-zA-Z0-9\_\']* {reject}
+//TVarId         = Keyword [\']* {reject}
 
-  Keyword        = ABSTRACT
- 
 lexical restrictions
 
   INT          -/- [0-9]
@@ -50,10 +52,12 @@ lexical restrictions
   VarId        -/- [a-zA-Z0-9\_\']
   OpId         -/- [a-zA-Z0-9\_\']
   SortId       -/- [a-zA-Z0-9\_\']
-  FunId        -/- [a-zA-Z0-9\_\']
   NamespaceId  -/- [a-zA-Z0-9\_\']
   PropertyId   -/- [a-zA-Z0-9\_\']
+  RelationId   -/- [a-zA-Z0-9\_\']
+  ProjectionId -/- [a-zA-Z0-9\_\']
+  FunctionId   -/- [a-zA-Z0-9\_\']
   LabelId      -/- [a-zA-Z0-9\_\']
-  TVarId       -/- [a-zA-Z0-9\_\']
-  TModId       -/- [a-zA-Z0-9\_\']
+  BuiltinLabel -/- [a-zA-Z0-9\_\']
+//TVarId       -/- [a-zA-Z0-9\_\']
 

@@ -1,0 +1,22 @@
+module nabl2/lang/analysis/main
+
+imports
+
+  signatures/nabl2/lang/-
+  nabl2/lang/analysis/-
+  nabl2/lang/pp
+
+rules
+
+  analyze: (ast,path,project-path) -> (ast',[name-error*],[],[])
+    with name-error* := <check-module-name> (ast, path);
+         ast'   := <normalize> ast
+  
+  check-module-name: (Module(name,_), path) -> error*
+    with filename := <remove-extension> path;
+         if <string-ends-with(|$[/[name]])> $[/[filename]] then
+           error* := []
+         else
+           error* := [(name,$[module nabl2/lang/name [name] does not agree with filename [filename]])]
+         end
+ 

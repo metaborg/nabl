@@ -1,0 +1,59 @@
+module nabl2/shared/common/Relations
+
+imports
+
+  nabl2/shared/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  Reflexivity.Reflexive       = "reflexive"
+  Reflexivity.Irreflexive     = "irreflexive"
+  
+  Symmetry.Symmetric          = "symmetric" 
+  Symmetry.AntiSymmetric      = "anti-symmetric" 
+  
+  Transitivity.Transitive     = "transitive"
+  Transitivity.AntiTransitive = "anti-transitive"
+
+  Relation.Relation           = RelationId
+
+  RelationRef.DefaultRelation =
+  RelationRef                 = Relation
+
+syntax
+
+  RelationBuildOp-CF = "<" RelationRef-CF "!"
+  RelationCheckOp-CF = "<" RelationRef-CF "?"
+
+  RelationFunction-CF.Lub = OpRelation-CF "lub"
+  RelationFunction-CF.Glb = OpRelation-CF "glb"
+
+  OpRelation-CF.DefaultRelation =
+  OpRelation-CF.Relation        = RelationId-LEX "."
+
+context-free syntax
+
+  VariancePattern.ListVariant  = <[<Variance>]>
+  VariancePattern.TupleVariant = <(<{Variance ","}*>)>
+ 
+  Variances = {Variance ","}*
+
+syntax
+
+  VariancePattern-CF.OpVariant = OpId-LEX "(" LAYOUT?-CF Variances-CF LAYOUT?-CF ")"
+
+  Variance-CF.Invar     = "="
+  Variance-CF.Covar     = "+" RelationRef-CF
+  Variance-CF.Contravar = "-" RelationRef-CF
+  
+lexical syntax
+
+  Keyword = "reflexive" | "irreflexive"
+          | "symmetric" | "anti-symmetric"
+          | "transitive" | "anti-transitive"
+
+  FunctionId = "lub" | "glb" {reject}

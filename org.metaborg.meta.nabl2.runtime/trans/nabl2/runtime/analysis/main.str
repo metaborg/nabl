@@ -3,150 +3,50 @@ module nabl2/runtime/analysis/main
 imports
 
   nabl2/api
-  
+ 
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
 
   signatures/nabl2/runtime/analysis/-
-  signatures/nabl2/runtime/solver/-
   nabl2/runtime/analysis/-
-  nabl2/runtime/common/-
   nabl2/runtime/prelude/-
-  nabl2/runtime/solver/-
 
 
 rules
 
   nabl2--analyze(pre):
-    AnalyzeInitial(resource) -> InitialResult(result')
-    with nabl2--analysis-step(!$[Initializing [resource]],
-      (params,C) := <nabl2--generate-constraint-init(|resource)> resource;
-      result := [Params(params),Constraint(C)]
-    )
-    with nabl2--analysis-step(!$[Custom initial analysis [resource]],
-      if custom := <nabl2-custom-analysis-init-hook> resource then
-        result' := <nabl2--set-custom-analysis(|custom)> result
-      else
-        result' := result
-      end
-    )
+      AnalyzeInitial(resource) -> InitialResult(C, params, config)
+    with nabl2--collection-info-msg(|$[Initializing [resource]]);
+         labels := <nabl2--labels>;
+         wf := <nabl2--labels-wf>;
+         order := <nabl2--label-order>;
+         res-params := (labels,wf,order);
+         rel* := <nabl2--relations>;
+         fun* := <nabl2--functions>;
+         config := (res-params, rel*, fun*);
+         (params,C) := <nabl2--generate-constraint-init(|resource)> resource
+
+  nabl2--analyze(pre):
+      AnalyzeUnit(resource,ast,args) -> UnitResult(ast',constraint*)
+    with nabl2--collection-info-msg(|$[Preprocessing AST [resource]]);
+         ast' := <pre;nabl2--index-ast(|resource)> ast;
+         nabl2--collection-info-msg(|$[Generating constraints [resource]]);
+         constraint* := <nabl2--generate-constraint-file(|resource,args)> ast'
+
+  nabl2--analyze(pre):
+      AnalyzeFinal(resource) -> FinalResult()
 
 
   nabl2--analyze(pre):
-    AnalyzeUnit(resource,ast,initial) -> UnitResult(ast',result')
-    where not(<nabl2--is-empty-ast> ast)
-    with nabl2--analysis-step(!$[Preprocessing AST [resource]],
-      params := <getfirst(?Params(<id>))> initial;
-      ast' := <pre;nabl2--index-ast(|resource)> ast
-    )
-    with nabl2--analysis-step(!$[Generating constraints [resource]],
-      (rawC,metadata) := <nabl2--generate-constraint-file(|resource,params)> ast';
-      C := <nabl2--normalize-constraint> rawC;
-      result := [Constraint(C),AstMetadata(metadata)]
-    )
-    with nabl2--analysis-step(!$[Custom unit analysis [resource]],
-      custom-initial := <nabl2--get-custom-analysis <+ !None()> initial;
-      if custom := <nabl2-custom-analysis-unit-hook> (resource, ast', custom-initial) then
-        result' := <nabl2--set-custom-analysis(|custom)> result
-      else
-        result' := result
-      end
-    )
+      CustomInitial(resource) -> result
+    where result := <nabl2-custom-analysis-init-hook> resource
 
   nabl2--analyze(pre):
-    AnalyzeUnit(resource,ast,_) -> UnitResult(ast,[Constraint(C), AstMetadata([])])
-    where <nabl2--is-empty-ast> ast
-    with C := CFalse(Message(Warning(),"Empty file was not parsed.",<nabl2--get-ast-index> resource))
- 
+      CustomUnit(resource,ast,initial) -> result
+    where result := <nabl2-custom-analysis-unit-hook> (resource, ast, initial)
 
   nabl2--analyze(pre):
-    AnalyzeFinal(resource,initial,unit*) -> FinalResult(error*,warning*,note*,analysis)
-    with nabl2--analysis-step(!"Normalizing constraints",
-      C  := <getfirst(?Constraint(<id>))> initial;
-      C* := <map(getfirst(?Constraint(<id>)))> unit*;
-      C' := <nabl2--normalize-constraint> CConj([C|C*]);
-      metadata := <mapconcat(getfirst(?AstMetadata(<id>)))> unit*
-    )
-    with nabl2--analysis-step(!"Solving constraints",
-    {| AnalysisTiming:
-      lo* := <join(nabl2--label-lt)> (<nabl2--labels>,<nabl2--labels>);
-      sol0 := <nabl2--initial-solution>;
-      sol1* := <nabl2--solve-facts> [(sol0,[C'])];
-      sol2* := <map(({ sol1, g:
-        ?sol1;
-        g := <nabl2--sol-g> sol1;
-        ![ InitialScopeGraph(g)
-         , AstMetadata(metadata)
-         | sol1
-         ]
-      },id))> sol1*;
-      sol3* := <nabl2--solve-constraints> sol2*;
-      sol4* := <map(Fst)> sol3*; // discard constraint part
-      timing := <nabl2--get-analysis-timing;qsort(where((Snd;Snd,Snd;Snd);gt))>
-    |})
-    where nabl2--analysis-step(!"Processing solutions",
-    with(
-      (good,bad) := <partition(not(nabl2--is-erronious));(length,length)> sol4*;
-      try(nabl2-debug-analysis-hook; <debug> $[Found [<int-to-string> good] correct and [<int-to-string> bad] erronious solutions.])
-    );
-    where(
-      sol := <Hd> sol4*
-    ))
-    with nabl2--analysis-step(!$[Custom final analysis [resource]],
-      custom-initial := <nabl2--get-custom-analysis <+ !None()> initial;
-      custom-unit* := <filter(nabl2--get-custom-analysis)> unit*;
-      if custom-result := <nabl2-custom-analysis-final-hook(|sol)> (resource, custom-initial, custom-unit*) then
-        if (custom-error*, custom-warning*, custom-note*, custom-analysis) := custom-result then
-          sol'1 := <foldr(!sol  ,\ (msg,sol) -> <nabl2--sol-add-error(|msg)> sol \)> custom-error*;
-          sol'2 := <foldr(!sol'1,\ (msg,sol) -> <nabl2--sol-add-warning(|msg)> sol \)> custom-error*;
-          sol'3 := <foldr(!sol'2,\ (msg,sol) -> <nabl2--sol-add-note(|msg)> sol \)> custom-error*;
-          sol' := <nabl2--set-custom-analysis(|custom-analysis)> sol'3
-        else
-          <warn(|"Expected 4-tuple (error*,warning*,note*,custom-analysis) from custom final analysis, got:")> custom-result;
-          sol' := sol
-        end
-      else
-        sol' := <switch !(custom-initial, custom-unit*)
-          case ?(None(), [])     : !sol
-          case ?(None(), custom) : <nabl2--set-custom-analysis(|custom)> sol
-          case ?(custom, [])     : <nabl2--set-custom-analysis(|custom)> sol
-          case ?custom           : <nabl2--set-custom-analysis(|custom)> sol
-        end>
-      end
-    )
-    with(
-      error* := <nabl2--sol-e;nabl2--mapv(nabl2--xmlencode)> sol';
-      warning* := <nabl2--sol-w;nabl2--mapv(nabl2--xmlencode)> sol';
-      note* := <nabl2--sol-n;nabl2--mapv(nabl2--xmlencode)> sol';
-      analysis := [ Constraint(C')
-                  , ResolutionParams(<nabl2--labels>,<nabl2--labels-wf>,lo*)
-                  , Timing(timing)
-                  , AlternativeSolutions(<(Tl<+![]);map-with-index(id)> sol4*)
-                  | sol'
-                  ]
-    )
+      CustomFinal(resource,initial,unit*) -> result
+    where result := <nabl2-custom-analysis-final-hook(|resource)> (resource, initial, unit*)
 
-
-  nabl2--is-empty-ast = is-tuple; ?()
-
-  nabl2--analysis-step(msg,s) =
-    where(not(nabl2-debug-analysis-hook));
-    s
-
-  nabl2--analysis-step(msg,s) =
-    where(nabl2-debug-analysis-hook);
-    with(msg := <msg>; <debug> $[>>> [msg]]);
-    measure-time(s,with(<debug> $[<<< [msg] (finished in [<cputime-to-seconds;real-to-string(|2)>]s)]))
-
-  nabl2--time-analysis(key,s) =
-    measure-time(s,?time');
-    where(
-      key := <key>;
-      (count,time) := <key;AnalysisTiming <+ !(0,0.0)> key;
-      rules(AnalysisTiming : key -> (<inc> count, <add> (time,time'))))
-
-  nabl2--get-analysis-timing =
-    dr-all-keys(|"AnalysisTiming");
-    map(!(<id>,<AnalysisTiming;(id,cputime-to-seconds)>))
- <+ ![]

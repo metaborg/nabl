@@ -1,0 +1,12 @@
+module nabl2/lang/generation/cgen/signatures/signature
+
+imports
+
+  signatures/nabl2/lang/signatures/-
+  nabl2/lang/generation/cgen/signatures/-
+
+rules
+
+  section-to-str:
+    Signature(s*) -> <mapconcat(signature-to-str;(is-list<+MkSingleton))> s*
+

@@ -1,0 +1,37 @@
+module nabl2/lang/signatures/Functions
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Functions
+  nabl2/shared/common/Sorts
+  nabl2/lang/common/CTerms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\']
+
+context-free syntax
+
+  Signature.Functions = <
+    functions
+      <{FunctionDef "\n\n"}*>
+  > {longest-match}
+
+context-free syntax
+
+  FunctionDef.FunctionDef = <<Function> <FunctionType> <FunctionCases>>
+
+  FunctionType  = [: [SortRef] -> [SortRef]]
+
+  FunctionCases = <
+    { <{FunctionCase ",\n"}*>
+    }
+  >
+  FunctionCases = {ast("[]")}
+ 
+  FunctionCase  = [[CTerm] -> [CTerm]]
+
+lexical syntax
+
+  SectionKeyword = "functions"

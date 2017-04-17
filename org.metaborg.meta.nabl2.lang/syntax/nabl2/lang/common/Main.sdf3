@@ -1,0 +1,11 @@
+module nabl2/lang/common/Main
+
+imports
+
+  nabl2/lang/common/CTerms
+  nabl2/lang/common/Identifiers
+  nabl2/lang/common/Injections
+  nabl2/lang/common/Layout
+  nabl2/lang/common/Messages
+  nabl2/lang/common/Terms
+

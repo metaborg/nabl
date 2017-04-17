@@ -13,3 +13,8 @@ language
   line comment  : "//"
   block comment : "/*" * "*/"
   fences        : [[ ]] ( ) { } [ ]
+
+views
+
+  outline view  : editor-outline
+    expand to level: 3

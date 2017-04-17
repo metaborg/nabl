@@ -2,19 +2,25 @@ module nabl2/shared/common/ScopeGraph
 
 imports
 
-  nabl2/shared/common/ABSTRACT
   nabl2/shared/common/AST
   nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+sorts
+
+  Scope
+  OccurrenceIndex
+
 context-free syntax
 
-
-  Scope                          = ABSTRACT
   Scope                          = CVar
   CTerm                          = Scope
 
-  Occurrence.Occurrence          = <<NamespaceRef>{<CTerm> <TermIndex>}> // FIXME Use NaBL2_ prefix
+  Occurrence.Occurrence          = <<NamespaceRef>{<CTerm> <OccurrenceIndex>}> // FIXME Use NaBL2_ prefix
   Occurrence                     = CVar
   CTerm                          = Occurrence
 

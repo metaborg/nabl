@@ -1,0 +1,16 @@
+module nabl2/shared/constraints/Symbolic
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  Constraint.CGoal = [?- [CTerm] [MessagePosition]]
+  Constraint.CFact = [!- [CTerm] [MessagePosition]]
+

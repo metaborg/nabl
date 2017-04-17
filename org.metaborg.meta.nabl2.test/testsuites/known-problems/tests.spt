@@ -1,0 +1,11 @@
+module known-problems
+
+language NaBL2Test
+
+test generalize list tail [[
+  generalize list tail
+]] analysis fails
+
+test cannot use new on parameter [[
+  use new on parameter
+]] analysis fails

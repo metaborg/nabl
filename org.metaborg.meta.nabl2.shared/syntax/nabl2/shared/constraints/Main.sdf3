@@ -4,9 +4,11 @@ imports
 
   nabl2/shared/constraints/Base
   nabl2/shared/constraints/Equality
+  nabl2/shared/constraints/Functions
   nabl2/shared/constraints/Namebinding
+  nabl2/shared/constraints/Polymorphism
   nabl2/shared/constraints/Properties
+  nabl2/shared/constraints/Relations
   nabl2/shared/constraints/Sets
-  nabl2/shared/constraints/Subtyping
-  nabl2/shared/constraints/Uninterpreted
+  nabl2/shared/constraints/Symbolic
 

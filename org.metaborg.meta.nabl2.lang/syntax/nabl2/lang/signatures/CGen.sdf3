@@ -1,0 +1,26 @@
+module nabl2/lang/signatures/CGen
+
+imports
+
+  nabl2/shared/common/Sorts
+  nabl2/lang/rules/Names
+  nabl2/lang/rules/CGen
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Signature.CGen = <
+    constraint generator
+      <{CGenSig "\n"}*>
+
+  >
+  
+  CGenSig.CGenSig = <<CGenRuleDef> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
+ 
+  CGenSigParams   = <^ (<{SortRef ", "}*>)>
+
+  CGenSigType.NoType = <>
+  CGenSigType.Type   = <: <SortRef>>

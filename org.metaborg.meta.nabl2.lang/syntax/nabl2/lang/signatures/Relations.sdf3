@@ -1,0 +1,36 @@
+module nabl2/lang/signatures/Relations
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Relations
+  nabl2/shared/common/Sorts
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\']
+
+context-free syntax
+
+  Signature.Relations = <
+    relations
+      <{RelationDef "\n\n"}*>
+  > {longest-match}
+
+context-free syntax
+
+  RelationDef.RelationDef = <<{RelationOption ", "}*> <Relation> <RelationType> <VariancePatterns>>
+
+  RelationOption = Reflexivity
+  RelationOption = Symmetry
+  RelationOption = Transitivity
+
+  RelationType.TypeSort =
+  RelationType          = <: <SortRef> * <SortRef>>
+
+  VariancePatterns      = <{ <{VariancePattern ",\n"}*> }>
+  VariancePatterns      = {ast("[]")}
+ 
+ lexical syntax
+ 
+  Keyword = "relations"

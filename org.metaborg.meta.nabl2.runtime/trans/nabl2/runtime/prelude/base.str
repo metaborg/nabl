@@ -19,10 +19,9 @@ rules
   nabl2--log(|n)  = nabl2--log(id|n)
   nabl2--log(s)   = nabl2--log(s|"")
 
+  nabl2--assert(s) = nabl2--assert(s|"Assert failed")
 
-  nabl2--assert(s) = with(s <+ debug(!"Assert failed"))
-
-  nabl2--assert(s|msg) = with(s <+ debug(!msg))
+  nabl2--assert(s|msg) = with(s <+ fatal-err(|msg))
 
 
   nabl2--strict(s) = nabl2--strict(s|"Failure in strict mode")

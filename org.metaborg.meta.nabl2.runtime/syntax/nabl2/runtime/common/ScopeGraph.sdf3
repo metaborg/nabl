@@ -9,29 +9,7 @@ imports
 
 context-free syntax
 
-  Scope.Scope = <scope [<String>-<String>]>
-  
-  ScopeGraph.G = <
-    scope graph {
-      <{ScopeEntry "\n"}*>
-      assocs = <{AssocEntry "\n"}*>
-    }
-  >
- 
-  ScopeEntry = <<Scope> = <ScopeDef>>
- 
-  ScopeDef.S = <
-    {
-      decls        = <{Occurrence ",\n"}*>
-      refs         = <{Occurrence ",\n"}*>
-      direct edges = <{DirectEdgeEntry ",\n"}*>
-      named edges  = <{NamedEdgeEntry ",\n"}*>
-    }
-  >
- 
-  DirectEdgeEntry = <<PathLabel>/<Scope>>
-  NamedEdgeEntry = <<PathLabel>/<Occurrence>>
+  Scope.Scope = <#<String>-<String>>
 
-  AssocEntry = <<Occurrence> : <{AssocValue ", "}*>>
-  AssocValue = <<PathLabel>/<Scope>>
-
+  OccurrenceIndex = TermIndex
+  OccurrenceIndex = <@<Scope>>

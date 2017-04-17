@@ -1,9 +1,0 @@
-module common/Main
-
-imports
-
-  common/Identifiers
-  common/Injections
-  common/Layout
-  common/Messages
-

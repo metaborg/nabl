@@ -1,0 +1,49 @@
+module nabl2/lang/common/Terms
+
+imports
+
+  nabl2/shared/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  Var.Var   = VarId
+  Wld.Wld   = "_"
+
+  VarOrWld  = Var
+  VarOrWld  = Wld
+
+  Pattern          = VarOrWld
+  Pattern.List     = <[<{Pattern ", "}*>]>
+  Pattern.ListTail = <[<{Pattern ", "}*>|<Pattern>]>
+  Pattern.Tuple    = <(<{Pattern ", "}*>)>
+  Pattern.As       = <<Var>@<Pattern>>
+  Pattern          = OpTerm
+  Pattern          = IntTerm
+  Pattern          = StringTerm
+
+  Patterns         = <<{Pattern ", "}*>>
+
+context-free syntax
+
+  IntTerm.Int = INT
+
+syntax
+ 
+  OpTerm-CF.Op      = OpId-LEX "(" LAYOUT?-CF Patterns-CF LAYOUT?-CF  ")"
+
+  StringTerm-CF.Str = "\"" StringChars-LEX "\""
+ 
+lexical syntax
+
+  StringChars   = StringChar*
+  StringChar    = ~[\"\\\t\r\n]
+  StringChar    =  "\\\"" | "\\\\"
+
+lexical restrictions
+
+  StringChars -/- ~[\"]
+

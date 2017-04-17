@@ -1,0 +1,76 @@
+module nabl2/lang/generation/dynsem/native-operators
+
+imports
+
+  libjava-front
+  nabl2/lang/generation/dynsem/-
+  signatures/nabl2/shared/common/-
+
+rules
+
+  init-javas(|term-pkg,nabl2-pkg,java-dir): _ -> [result]
+    with source-name := <sort-to-ds;ds-sort-to-string> TermSort();
+         target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("NaBL2");
+         op-name := "nabl2_init";
+         stmts := bstm* |[
+           return INaBL2Term.create(getSolution());
+         ]|;
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
+
+
+  termindex-javas(|term-pkg,nabl2-pkg,java-dir): _ -> [result]
+    with source-name := <sort-to-ds;ds-sort-to-string> TermSort();
+         target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("TermIndex");
+         op-name := "nabl2_indexOf";
+         stmts := bstm* |[
+           TermIndex index = getTermIndex(term.getStrategoTerm());
+           return new TermIndex_2_Term(index.getResource(), index.getId());
+         ]|;
+         result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
+
+rules
+
+  native-java(|term-pkg, pkg, op-name, source-name, target-name, java-dir): stmts -> (file-name, <pp-java-string> compilation-unit |[
+    package ~x:pkg;
+
+    import java.util.NoSuchElementException;
+    import java.util.Optional;
+    import java.util.function.Supplier;
+
+    import ~x:term-pkg.*;
+    import org.metaborg.meta.lang.dynsem.interpreter.nabl2.NaBL2TermBuild;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.meta.nabl2.interpreter.*;
+    import org.metaborg.meta.nabl2.stratego.*;
+    import org.metaborg.meta.nabl2.terms.*;
+    import org.metaborg.meta.nabl2.terms.generic.*;
+    import org.spoofax.interpreter.terms.IStrategoTerm;
+
+    import com.oracle.truffle.api.dsl.NodeChild;
+    import com.oracle.truffle.api.dsl.Specialization;
+    import com.oracle.truffle.api.source.SourceSection;
+
+    @SuppressWarnings("unused")
+    @NodeChild(value = "term", type = TermBuild.class)
+    public abstract class ~x:class-name extends NaBL2TermBuild {
+
+      public ~x:class-name(SourceSection source) {
+        super(source);
+      }
+
+      @Specialization public ~x:target-name doGet(~x:source-name term) {
+        ~bstm*:stmts
+      }
+
+      public static TermBuild create(SourceSection source, TermBuild term) {
+        return ~x:nodegen-name.create(source, term);
+      }
+
+    }
+  ]|)
+  with
+    class-name   := $[[op-name]_1];
+    nodegen-name := $[[class-name]NodeGen];
+    file-name    := $[[java-dir]/[<pkg-to-dir> pkg]/[class-name].java]
+
+  pkg-to-dir = string-replace(|".","/")

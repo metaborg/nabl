@@ -1,0 +1,20 @@
+module nabl2/lang/signatures/Constructors
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Sorts
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\']
+
+context-free syntax
+
+  Signature.Constructors = <
+    constructors
+      <{OpDecl "\n"}*>
+  > {longest-match}
+
+  OpDecl.OpDecl        = [[OpId] : [{SortRef " * "}*] -> [Sort]]
+  OpDecl.NullaryOpDecl = [[OpId] : [Sort]]

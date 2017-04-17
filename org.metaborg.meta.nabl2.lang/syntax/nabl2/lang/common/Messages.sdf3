@@ -1,0 +1,32 @@
+module nabl2/lang/common/Messages
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/lang/common/Terms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+syntax
+
+  MessageContent-CF.Formatted = "$[" MessageContentPart-CF* "]"
+
+context-free syntax
+
+  MessageContent.Default  =
+  MessageContent          = StringTerm
+
+  MessageContentPart.Term = <[<CTerm>]>
+  MessageContentPart.Text = MessageChars
+
+lexical syntax
+
+  MessageChars = MessageChar+
+  MessageChar  = ~[\[\]\\\t\r\n]
+  MessageChar  = "\\[" | "\\]" | "\\\\"
+
+lexical restrictions
+
+  MessageChars -/- ~[\[\]]

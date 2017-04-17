@@ -1,0 +1,64 @@
+module nabl2/lang/generation/dynsem/builders
+
+imports
+
+  libjava-front
+  libspoofax/core/language
+  nabl2/lang/util/-
+  nabl2/lang/generation/dynsem/-
+  signatures/nabl2/lang/-
+ 
+rules
+
+  generate-all-dynsem:
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    with if is-ds-active;
+           ds-options := <ds-get-options> (path, project-path);
+           lang-name := <lookup> (LangName(), ds-options);
+           project-dir := <lookup> (GenProject(), ds-options);
+           project-name := <lookup> (MavenArtifactId(), ds-options);
+           generated-pkg := <lookup> (TopPkg(), ds-options);
+           term-pkg := <lookup> (TermPkg(), ds-options);
+           nabl2-pkg := <lookup> (NativePkg(), ds-options);
+           java-dir := <lookup> (JavaGenDirAbs(), ds-options)
+         then
+           src-gen-dir := <src-gen-dir(|project-path, "nabl2")>;
+           ds-result* := <generate-dynsem-signatures(|lang-name);
+                          map((path-prepend(|src-gen-dir),id))> ast;
+           java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir)> ast;
+           result := <unzip> [ds-result*,java-result*]
+         else
+           result := None()
+         end
+
+  generate-dynsem-ds:
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    with if is-ds-active;
+           ds-options := <ds-get-options> (path, project-path);
+           langname := <lookup> (LangName(), ds-options);
+           src-gen-dir := <src-gen-dir(|project-path, "nabl2")>
+         then
+           ds-result* := <generate-dynsem-signatures(|langname);
+                          map((path-prepend(|src-gen-dir),id))> ast;
+           result := <unzip> ds-result*
+         else
+           result := None()
+         end
+
+  generate-dynsem-java:
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    with if is-ds-active;
+           ds-options := <ds-get-options> (path, project-path);
+           lang-name := <lookup> (LangName(), ds-options);
+           project-dir := <lookup> (GenProject(), ds-options);
+           project-name := <lookup> (MavenArtifactId(), ds-options);
+           generated-pkg := <lookup> (TopPkg(), ds-options);
+           term-pkg := <lookup> (TermPkg(), ds-options);
+           nabl2-pkg := <lookup> (NativePkg(), ds-options);
+           java-dir := <lookup> (JavaGenDirAbs(), ds-options)
+         then
+           java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir)> ast;
+           result := <unzip> java-result*
+         else
+           result := None()
+         end

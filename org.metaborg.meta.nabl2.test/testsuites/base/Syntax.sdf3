@@ -1,0 +1,12 @@
+module testsuites/base/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.False = <false>
+
+  Test.True = <true>
+  

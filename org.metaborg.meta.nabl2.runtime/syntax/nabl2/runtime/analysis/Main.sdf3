@@ -2,7 +2,5 @@ module nabl2/runtime/analysis/Main
 
 imports
 
-  nabl2/runtime/analysis/Analysis
-  nabl2/runtime/analysis/EditorMessages
+  nabl2/runtime/analysis/Debug
   nabl2/runtime/analysis/Generation
-

@@ -1,0 +1,9 @@
+module Identifiers
+
+lexical syntax
+
+  X = [Xx]
+  Y = [Yy]
+  Z = [Zz]
+
+  E = ""

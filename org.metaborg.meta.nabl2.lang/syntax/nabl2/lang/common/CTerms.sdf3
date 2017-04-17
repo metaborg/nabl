@@ -1,0 +1,30 @@
+module nabl2/lang/common/CTerms
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Sets
+  nabl2/shared/constraints/Base
+  nabl2/lang/common/Terms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  CVar.Var = VarId
+  CVar.Wld = <_>
+
+syntax
+
+  CTerm-CF.Op    = OpId-LEX "(" LAYOUT?-CF CTerms-CF LAYOUT?-CF ")"
+
+context-free syntax
+
+  CTerm.Tuple = <(<{CTerm ", "}*>)>
+
+  CTerm       = IntTerm
+  CTerm       = StringTerm

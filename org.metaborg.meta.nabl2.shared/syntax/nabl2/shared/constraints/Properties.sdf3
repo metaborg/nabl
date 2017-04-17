@@ -9,9 +9,13 @@ imports
   nabl2/shared/constraints/Base
   nabl2/shared/constraints/Equality
 
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
 context-free syntax
 
-  PrimitiveConstraint.CPropertyOf = [[Occurrence].[Property] := [CTerm] [ConstraintPriority] [Message]]
+  Constraint.CDeclProperty = [[Occurrence].[Property] := [CTerm] [ConstraintPriority] [Message]]
  
   Property.Property = PropertyId
   Property.Type     = "type"
