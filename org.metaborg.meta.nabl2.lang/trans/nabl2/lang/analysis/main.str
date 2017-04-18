@@ -4,7 +4,7 @@ imports
 
   signatures/nabl2/lang/-
   nabl2/lang/analysis/-
-  nabl2/lang/pp
+  pp
 
 rules
 

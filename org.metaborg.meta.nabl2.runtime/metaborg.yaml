@@ -42,7 +42,7 @@ exports:
   includes: "**/*.ds2v"
 language:
   sdf:
-    sdf2table: c
+    enabled: false
     pretty-print: NaBL2
   stratego:
     format: ctree

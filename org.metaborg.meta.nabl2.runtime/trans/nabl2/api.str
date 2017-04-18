@@ -4,8 +4,10 @@ imports
 
   pp/nabl2/API-pp
 
-  nabl2/shared/-
-  nabl2/runtime/-
+  nabl2/shared/main
+  nabl2/shared/ast
+
+  nabl2/runtime/main
   nabl2/runtime/analysis/-
   nabl2/runtime/editor/-
   nabl2/runtime/prelude/-

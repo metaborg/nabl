@@ -1,0 +1,9 @@
+module nabl2/lang/Main
+
+imports
+
+  nabl2/lang/common/Main
+  nabl2/lang/modules/Module
+  nabl2/lang/rules/Rules
+  nabl2/lang/signatures/Signature
+

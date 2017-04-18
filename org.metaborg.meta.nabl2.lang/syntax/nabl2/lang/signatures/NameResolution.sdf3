@@ -18,7 +18,7 @@ context-free syntax
       <{NameResolutionParam "\n\n"}*>
   > {longest-match}
 
-  NameResolutionParam.Labels     = <labels <PathLabel*>>
+  NameResolutionParam.Labels     = <labels <{PathLabel " "}*>>
   NameResolutionParam.Order      = <order <{LabelOrder ",\n"}*>>
   NameResolutionParam.WF         = <well-formedness <LabelRE>>
 

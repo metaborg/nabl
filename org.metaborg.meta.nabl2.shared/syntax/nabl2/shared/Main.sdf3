@@ -1,4 +1,4 @@
-module NaBL2Shared
+module nabl2/shared/Main
 
 imports
 

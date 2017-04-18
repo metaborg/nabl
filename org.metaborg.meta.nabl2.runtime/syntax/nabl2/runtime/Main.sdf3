@@ -1,4 +1,4 @@
-module NaBL2Runtime
+module nabl2/runtime/Main
 
 imports
 
