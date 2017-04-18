@@ -8,6 +8,7 @@
 /target
 /trans/*.pp.generated.str
 /lib/*.generated.*
+/.polyglot.metaborg.yaml
 
 /.classpath
 /.project

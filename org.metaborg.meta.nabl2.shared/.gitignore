@@ -3,6 +3,7 @@
 /bin
 /target
 /.cache
+/.polyglot.metaborg.yaml
 
 # Eclipse
 /.project
