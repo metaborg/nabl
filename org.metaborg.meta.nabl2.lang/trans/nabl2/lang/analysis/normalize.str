@@ -19,7 +19,7 @@ rules
     normalize-axioms;
     normalize-rule-names;
     normalize-wildcards;
-    normalize-regex;
+    normalize-regexes;
     normalize-constructors;
     normalize-arg-matches;
     normalize-rule-vars;
@@ -63,10 +63,13 @@ rules
 
 rules
 
-  normalize-regex = try(sometd(normalize-option))
+  normalize-regexes = try(sometd(normalize-regex))
 
-  normalize-option:
+  normalize-regex:
     Option(re) -> Or(Epsilon(),re)
+
+  normalize-regex:
+    ConcatDot(re1,re2) -> Concat(re1,re2)
 
 rules
 

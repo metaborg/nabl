@@ -26,7 +26,8 @@ context-free syntax
 
   NewScopes.NewScopes = <new <{CVar " "}+>>
 
-  LabelRE.Option = <<LabelRE>?>
+  LabelRE.Option    = <<LabelRE>?>
+  LabelRE.ConcatDot = <<LabelRE>.<LabelRE>>     {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
@@ -36,8 +37,8 @@ syntax
 
 context-free priorities
 
-    LabelRE.Option // aka, the same as LabelRE.Closure
-  > LabelRE.Concat
+    { LabelRE.Option LabelRE.Closure }
+  > { LabelRE.Concat LabelRE.ConcatDot }
   > LabelRE.And
   > LabelRE.Or
 
