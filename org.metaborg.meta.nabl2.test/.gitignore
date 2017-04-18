@@ -2,6 +2,7 @@
 /bin
 /src-gen
 /target
+/.polyglot.metaborg.yaml
 
 /.classpath
 /.project

@@ -3,7 +3,7 @@ module nabl2/lang/generation/cgen/signatures/nameresolution
 imports
 
   libstrc
-  nabl2shared
+  nabl2/shared/main
   nabl2/lang/generation/cgen/-
   signatures/nabl2/lang/signatures/-
   nabl2/lang/util/stratego

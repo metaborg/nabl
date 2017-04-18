@@ -2,17 +2,14 @@ module NaBL2Lang
 
 imports
 
-  NaBL2Shared
-
-  nabl2/lang/common/Main
-  nabl2/lang/modules/Module
-  nabl2/lang/signatures/Signature
-  nabl2/lang/rules/Rules
+  nabl2/shared/Main
+  nabl2/lang/Main
+  nabl2/lang/modules/Module // not transitively visible
 
 context-free start-symbols
 
   Start
-  
+
 context-free syntax
 
   Start = Module

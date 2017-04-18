@@ -4,10 +4,4 @@ imports
 
   libstratego-lib
 
-  signatures/nabl2/shared/common/-
-  signatures/nabl2/shared/constraints/-
-
-  pp/nabl2/shared/common/-
-  pp/nabl2/shared/constraints/-
-
-  nabl2/shared/-
+  nabl2/shared/main

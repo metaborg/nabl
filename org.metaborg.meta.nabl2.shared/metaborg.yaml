@@ -28,7 +28,7 @@ exports:
   includes: "**/*.esv"
 language:
   sdf:
-    sdf2table: c
+    enabled: false
     pretty-print: NaBL2
   stratego:
     format: ctree
