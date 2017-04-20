@@ -25,11 +25,39 @@ rules
 
 rules
 
-  Sig[[ NameResolution(_) ^ (s) ]]. // TODO
+  Sig[[ NameResolution(nameresparams) ^ (s) ]] :=
+    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "name resolution parameters must be specified in module with init rule",
+    Map1(Sig)[[ nameresparams ^ (s) ]].
+
+  Sig[[ Labels(labels) ^ (s) ]] :=
+    Map1(LabelDef)[[ labels ^ (s) ]].
+
+  Sig[[ Order(orders) ^ (s) ]] :=
+    Map1(LabelOrder)[[ orders ^ (s) ]].
+
+  Sig[[ WF(re) ^ (s) ]] :=
+    WellFormednessMarker{()} <- s,
+    LabelRE[[ re ^ (s) ]].
+
+rules
+
+  Sig[[ Namespaces(namespacedefs) ^ (s) ]] :=
+    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "namespaces must be specified in module with init rule",
+    Map1(Sig)[[ namespacedefs ^ (s) ]].
+
+  Sig[[ NamespaceDef(ns,type,properties) ^ (s) ]] :=
+    NamespaceDef[[ ns ^ (s) ]]
+    // TODO: type
+    // TODO: properties
+    .
 
 rules 
 
   Sig[[ Relations(relsigs) ^ (s) ]] :=
+    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "relations must be specified in module with init rule",
     Map1(Sig)[[ relsigs ^ (s) ]].
 
   Sig[[ RelationDef(opts,rel,type,variances) ^ (s) ]] :=
@@ -41,6 +69,8 @@ rules
 rules
 
   Sig[[ Functions(funsigs) ^ (s) ]] :=
+    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "functions must be specified in module with init rule",
     Map1(Sig)[[ funsigs ^ (s) ]].
 
   Sig[[ FunctionDef(fun,type,cases) ^ (s) ]] :=

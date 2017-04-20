@@ -7,14 +7,46 @@ imports
   signatures/nabl2/lang/rules/-
   signatures/nabl2/lang/signatures/-
 
+signature
+
+  namespaces
+    Mod
+    Var
+    Label
+    Ns
+    Rule
+
+    InitMarker
+    WellFormednessMarker
+
+  name resolution
+    labels C // composition
+           P // parent
+           L // local only, prevents going over C edges
+    order D < P,
+          D < L
+    well-formedness P*.(C|C.C)? | (P|L)*
+
 rules
 
   init ^ (s) :=
-    new s.
+    new s,
+    distinct/name V(s)/InitMarker | error "Multiple definitions for 'init' found." @NAMES.
 
   [[ Module(name, sections) ^ (s) ]] :=
-    Map1[[ sections ^ (s) ]].
+    Mod{name} <- s,
+    new s_mod,
+    s_mod -C-> s,
+    s -C-> s_mod,
+    Map1[[ sections ^ (s_mod) ]],
+    distinct/name V(s)/WellFormednessMarker | error "Multiple definitions for 'well-formedness' found." @NAMES.
 
 rules
 
-  [[ Imports(_) ^ (s) ]]. // TODO
+  [[ Imports(imports) ^ (s) ]] :=
+    Map1[[ imports ^ (s) ]].
+
+  [[ ImportWildcard(_) ^ (s) ]]. // TODO
+
+  [[ Import(name) ^ (s) ]] :=
+    Mod{name} -> s.

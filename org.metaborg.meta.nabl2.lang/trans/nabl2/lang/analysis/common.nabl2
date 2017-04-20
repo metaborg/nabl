@@ -10,11 +10,83 @@ rules // Message
 
   MessagePosition[[ _ ^ (_) ]]. // TODO
 
-rules // Properties
+rules // properties
 
   Property[[ Property(name) ^ (s) ]]. // TODO
 
   Property[[ Type() ^ (s) ]].
+
+rules // name resolution
+
+  NamespaceDef[[ Namespace(name) ^ (s) ]] :=
+    Ns{name} <- s.
+
+  NamespaceRef[[ DefaultNamespace() ^ (s) ]].
+
+  NamespaceRef[[ Namespace(name) ^ (s) ]] :=
+    Ns{name} -> s,
+    Ns{name} |-> _.
+
+  CTerm(Var)[[ Occurrence(ns,name,pos) ^ (s) ]] :=
+    NamespaceRef[[ ns ^ (s) ]],
+    CTerm(Var)[[ name ^ (s) ]]
+    // TODO: pos
+    .
+
+rules //labels
+
+  LabelDef[[ l@P() ^ (s) ]] :=
+    Label{l} <- s.
+
+  LabelDef[[ l@I() ^ (s) ]] :=
+    Label{l} <- s.
+
+  LabelDef[[ Label(name) ^ (s) ]] :=
+    Label{name} <- s.
+
+  LabelRef[[ D() ^ (s) ]].
+
+  LabelRef[[ l@P() ^ (s) ]] :=
+    Label{l} -> s,
+    Label{l} |-> _.
+
+  LabelRef[[ l@I() ^ (s) ]] :=
+    Label{l} -> s,
+    Label{l} |-> _.
+
+  LabelRef[[ Label(name) ^ (s) ]] :=
+    Label{name} -> s,
+    Label{name} |-> _.
+
+  LabelOrder[[ Lt(label1,label2) ^ (s) ]] :=
+    LabelRef[[ label1 ^ (s) ]],
+    LabelRef[[ label2 ^ (s) ]].
+
+rules // label regexp
+
+  LabelRE[[ Empty() ^ (s) ]].
+
+  LabelRE[[ Epsilon() ^ (s) ]].
+
+  LabelRE[[ l@D() ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+  LabelRE[[ l@P() ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+  LabelRE[[ l@I() ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+  LabelRE[[ l@Label(_) ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+
+  LabelRE[[ Closure(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
+
+  LabelRE[[ Concat(re1,re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelRE[[ And(re1,re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelRE[[ Or(re1,re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
 
 rules // CSet
 
@@ -77,10 +149,6 @@ rules // CTerm
 
   CTerm(Var)[[ CLock(term) ^ (s) ]] :=
     CTerm(Var)[[ term ^ (s) ]].
-
-  CTerm(Var)[[ Occurrence(_,_,_) ^ (s) ]]. // TODO
-
-  CTerm(Var)[[ Scope(_,_) ^ (s) ]]. // TODO
 
 rules // Term & Pattern
 

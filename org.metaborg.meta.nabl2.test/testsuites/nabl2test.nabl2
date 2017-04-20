@@ -12,6 +12,10 @@ imports
 
 signature
 
+  namespaces
+    Ns1
+    Ns2
+
   name resolution
     labels P I
     order D < I, D < P, I < P

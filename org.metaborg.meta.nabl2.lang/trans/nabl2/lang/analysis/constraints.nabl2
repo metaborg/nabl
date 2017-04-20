@@ -41,16 +41,19 @@ rules
 
   Clause[[ CGDirectEdge(scope1,label,scope2,pos) ^ (s) ]] :=
     CTerm[[ scope1 ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
     CTerm[[ scope2 ^ (s) ]],
     MessagePosition[[ pos ^ (s) ]].
  
   Clause[[ CGNamedEdge(ref,label,scope,pos) ^ (s) ]] :=
     CTerm[[ ref ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
     CTerm[[ scope ^ (s) ]],
     MessagePosition[[ pos ^ (s) ]].
  
   Clause[[ CGAssoc(decl,label,scope,pos) ^ (s) ]] :=
     CTerm[[ decl ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
     CTerm[[ scope ^ (s) ]],
     MessagePosition[[ pos ^ (s) ]].
   
@@ -63,6 +66,7 @@ rules
   
   Clause[[ CAssoc(decl,label,scope,msg) ^ (s) ]] :=
     CTerm[[ decl ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
     CTerm[[ scope ^ (s) ]],
     Message[[ msg ^ (s) ]].
   
