@@ -1,0 +1,50 @@
+module nabl2/lang/analysis/signatures
+
+imports
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+rules
+
+  [[ Signature(signatures) ^ (s) ]] :=
+    Map1(Sig)[[ signatures ^ (s) ]].
+
+rules
+
+  Sig[[ CGen(rulesigs) ^ (s) ]] :=
+    Map1(Sig)[[ rulesigs ^ (s) ]].
+
+  Sig[[ CGenSig(def, sort, params, type) ^ (s) ]].
+
+rules 
+
+  Sig[[ Constructors(_) ^ (_) ]]. // TODO
+
+rules
+
+  Sig[[ NameResolution(_) ^ (s) ]]. // TODO
+
+rules 
+
+  Sig[[ Relations(relsigs) ^ (s) ]] :=
+    Map1(Sig)[[ relsigs ^ (s) ]].
+
+  Sig[[ RelationDef(opts,rel,type,variances) ^ (s) ]] :=
+    RelationDef[[ rel ^ (s) ]]
+    // TODO: type
+    // TODO: variances
+    .
+
+rules
+
+  Sig[[ Functions(funsigs) ^ (s) ]] :=
+    Map1(Sig)[[ funsigs ^ (s) ]].
+
+  Sig[[ FunctionDef(fun,type,cases) ^ (s) ]] :=
+    FunctionDef[[ fun ^ (s) ]]
+    // TODO: type
+    // TODO: cases
+    .

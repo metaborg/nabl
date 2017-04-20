@@ -1,6 +1,11 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.IConsTerm;
@@ -11,9 +16,9 @@ import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.Lists;
 
 public class TB {
 
@@ -22,14 +27,14 @@ public class TB {
     public static final IListTerm EMPTY_LIST = newNil();
 
     public static IApplTerm newAppl(String op, ITerm... args) {
-        return ImmutableApplTerm.of(op, Iterables2.from(args));
+        return ImmutableApplTerm.of(op, Arrays.asList(args));
     }
 
-    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args) {
+    public static IApplTerm newAppl(String op, Collection<? extends ITerm> args) {
         return ImmutableApplTerm.of(op, args);
     }
 
-    public static IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
+    public static IApplTerm newAppl(String op, Collection<? extends ITerm> args,
             ImmutableClassToInstanceMap<Object> attachments) {
         return ImmutableApplTerm.of(op, args).withAttachments(attachments);
     }
@@ -38,30 +43,62 @@ public class TB {
         return newAppl(Terms.TUPLE_OP, args);
     }
 
-    public static IApplTerm newTuple(Iterable<? extends ITerm> args) {
+    public static IApplTerm newTuple(Collection<? extends ITerm> args) {
         return newAppl(Terms.TUPLE_OP, args);
     }
 
-    public static IApplTerm newTuple(Iterable<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
+    public static IApplTerm newTuple(Collection<? extends ITerm> args, ImmutableClassToInstanceMap<Object> attachments) {
         return newAppl(Terms.TUPLE_OP, args, attachments);
     }
 
 
     public static IListTerm newList(ITerm... elems) {
-        return newList(Iterables2.from(elems));
+        return newList(Arrays.asList(elems));
     }
 
-    public static IListTerm newList(Iterable<? extends ITerm> elems) {
+    public static IListTerm newList(Collection<? extends ITerm> elems) {
         return newListTail(elems, newNil());
     }
 
-    public static IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list) {
-        LinkedList<ITerm> reverse = new LinkedList<>();
-        for(ITerm elem : elems) {
-            reverse.addFirst(elem);
+    public static IListTerm newList(Collection<? extends ITerm> elems,
+            List<ImmutableClassToInstanceMap<Object>> attachments) {
+        if(attachments != null && attachments.size() != elems.size() + 1) {
+            throw new IllegalArgumentException(
+                    "Number of attachments does not correspond to number of elements in the list.");
         }
-        for(ITerm elem : reverse) {
-            list = newCons(elem, list);
+        LinkedList<ITerm> elemsQueue = Lists.newLinkedList(elems);
+        LinkedList<ImmutableClassToInstanceMap<Object>> attachmentsQueue =
+                attachments != null ? Lists.newLinkedList(attachments) : null;
+        IListTerm list = newNil();
+        if(attachments != null) {
+            list = list.withAttachments(attachmentsQueue.removeLast());
+        }
+        return newListTail(elemsQueue, list, attachmentsQueue);
+    }
+
+    public static IListTerm newListTail(Collection<? extends ITerm> elems, IListTerm list) {
+        return newListTail(elems, list, null);
+    }
+
+    public static IListTerm newListTail(Collection<? extends ITerm> elems, IListTerm list,
+            @Nullable List<ImmutableClassToInstanceMap<Object>> attachments) {
+        if(attachments != null && attachments.size() != elems.size()) {
+            throw new IllegalArgumentException(
+                    "Number of attachments does not correspond to number of elements in the list.");
+        }
+        LinkedList<ITerm> elemsQueue = Lists.newLinkedList(elems);
+        LinkedList<ImmutableClassToInstanceMap<Object>> attachmentsQueue =
+                attachments != null ? Lists.newLinkedList(attachments) : null;
+        return newListTail(elemsQueue, list, attachmentsQueue);
+    }
+
+    private static IListTerm newListTail(LinkedList<? extends ITerm> elems, IListTerm list,
+            @Nullable LinkedList<ImmutableClassToInstanceMap<Object>> attachments) {
+        while(!elems.isEmpty()) {
+            list = TB.newCons(elems.removeLast(), list);
+            if(attachments != null) {
+                list = list.withAttachments(attachments.removeLast());
+            }
         }
         return list;
     }

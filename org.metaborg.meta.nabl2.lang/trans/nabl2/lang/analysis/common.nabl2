@@ -1,0 +1,123 @@
+module nabl2/lang/analysis/common
+
+imports
+
+  signatures/nabl2/lang/common/-
+
+rules // Message
+
+  Message[[ Message(_,_,_) ^ (_) ]]. // TODO
+
+  MessagePosition[[ _ ^ (_) ]]. // TODO
+
+rules // Properties
+
+  Property[[ Property(name) ^ (s) ]]. // TODO
+
+  Property[[ Type() ^ (s) ]].
+
+rules // CSet
+
+  CSet[[ _ ^ (_) ]]. // TODO
+
+  Projection[[ _ ^ (_) ]]. // TODO
+
+rules
+
+  RelationDef[[ Relation(name) ^ (s) ]] :=
+    Rel{name} <- s.
+
+  RelationRef[[ DefaultRelation() ^ (s) ]].
+
+  RelationRef[[ Relation(name) ^ (s) ]] :=
+    Rel{name} -> s,
+    Rel{name} |-> d.
+
+  FunctionDef[[ Function(name) ^ (s) ]] :=
+    Fun{name} <- s.
+
+  FunctionRef[[ Function(name) ^ (s) ]] :=
+    Fun{name} -> s,
+    Fun{name} |-> d.
+
+  FunctionRef[[ Lub(rel) ^ (s) ]] :=
+    // TODO: does the relation qualify for lub?
+    RelationRef[[ rel ^ (s) ]].
+
+  FunctionRef[[ Glb(rel) ^ (s) ]] :=
+    // TODO: does the relation qualify for glb?
+    RelationRef[[ rel ^ (s) ]].
+
+rules // CTerm
+
+  CTerm[[ t ^ (s) ]] :=
+    CTerm(VarRef)[[ t ^ (s) ]].
+
+  CTerm(Var)[[ CList(terms) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]].
+
+  CTerm(Var)[[ CListTail(terms, tail) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]],
+    CTerm(Var)[[ tail ^ (s) ]].
+
+  CTerm(Var)[[ Tuple(terms) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]].
+
+  CTerm(Var)[[ Op(name, terms) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]].
+
+  CTerm(Var)[[ Str(_) ^ (s) ]].
+
+  CTerm(Var)[[ Int(_) ^ (s) ]].
+
+  CTerm(Var)[[ v@Var(_) ^ (s) ]] :=
+    Var[[ v ^ (s) ]].
+
+  CTerm(Var)[[ Wld() ^ (s) ]].
+
+  CTerm(Var)[[ CLock(term) ^ (s) ]] :=
+    CTerm(Var)[[ term ^ (s) ]].
+
+  CTerm(Var)[[ Occurrence(_,_,_) ^ (s) ]]. // TODO
+
+  CTerm(Var)[[ Scope(_,_) ^ (s) ]]. // TODO
+
+rules // Term & Pattern
+
+  Term(Var)[[ List(terms) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]].
+
+  Term(Var)[[ ListTail(terms, tail) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]],
+    Term(Var)[[ tail ^ (s) ]].
+
+  Term(Var)[[ Tuple(terms) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]].
+
+  Term(Var)[[ Op(name, terms) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]].
+
+  Term(Var)[[ Str(_) ^ (s) ]].
+
+  Term(Var)[[ Int(_) ^ (s) ]].
+
+  Term(Var)[[ As(v, term) ^ (s) ]] :=
+    Var[[ v ^ (s) ]],
+    Term(Var)[[ term ^ (s) ]].
+
+  Term(Var)[[ v@Var(_) ^ (s) ]] :=
+    Var[[ v ^ (s) ]].
+
+  Term(Var)[[ Wld() ^ (s) ]].
+
+rules
+  
+  ScopeVarDecl[[ Var(name) ^ (s) ]] :=
+    Var{name @s} <- s.
+
+  VarDecl[[ Var(name) ^ (s) ]] :=
+    Var{name} <- s.
+  
+  VarRef[[ Var(name) ^ (s) ]] :=
+    Var{name} -> s,
+    Var{name} |-> _.

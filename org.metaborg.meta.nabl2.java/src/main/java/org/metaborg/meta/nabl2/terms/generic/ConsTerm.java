@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.terms.generic;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
-import java.util.Iterator;
 import java.util.Objects;
 
 import org.immutables.serial.Serial;
@@ -58,10 +57,6 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
 
     @Override public <T, E extends Throwable> T matchOrThrow(IListTerm.CheckedCases<T, E> cases) throws E {
         return cases.caseCons(this);
-    }
-
-    @Override public Iterator<ITerm> iterator() {
-        return new ListTermIterator(this);
     }
 
     @Override public int hashCode() {

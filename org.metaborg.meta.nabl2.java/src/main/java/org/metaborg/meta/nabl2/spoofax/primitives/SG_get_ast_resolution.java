@@ -13,29 +13,27 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-public class SG_get_ast_resolution extends ScopeGraphPrimitive {
+public class SG_get_ast_resolution extends AstPrimitive {
 
     public SG_get_ast_resolution() {
         super(SG_get_ast_resolution.class.getSimpleName(), 0, 0);
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
+    @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, List<ITerm> terms)
             throws InterpreterException {
-        return TermIndex.get(term).flatMap(index -> {
-            return context.unit(index.getResource()).solution().<ITerm> flatMap(s -> {
-                List<ITerm> entries = Lists.newArrayList();
-                for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
-                    if (ref.getIndex().equals(index)) {
-                        for (Occurrence decl : Paths.resolutionPathsToDecls(s.getNameResolution().resolve(ref))) {
-                            entries.add(TB.newTuple(ref, decl.getName()));
-                        }
+        return context.unit(index.getResource()).solution().<ITerm>flatMap(s -> {
+            List<ITerm> entries = Lists.newArrayList();
+            for(Occurrence ref : s.getScopeGraph().getAllRefs()) {
+                if(ref.getIndex().equals(index)) {
+                    for(Occurrence decl : Paths.resolutionPathsToDecls(s.getNameResolution().resolve(ref))) {
+                        entries.add(TB.newTuple(ref, decl.getName()));
                     }
                 }
-                if (entries.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(TB.newList(entries));
-            });
+            }
+            if(entries.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(TB.newList(entries));
         });
     }
 

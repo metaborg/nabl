@@ -21,11 +21,15 @@ import org.metaborg.meta.nabl2.util.functions.Function5;
 import org.metaborg.meta.nabl2.util.functions.Function6;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Lists;
 
 public class Terms {
 
     public static final String TUPLE_OP = "";
+
+    public static final ImmutableClassToInstanceMap<Object> NO_ATTACHMENTS =
+            ImmutableClassToInstanceMap.builder().build();
 
     // SAFE
 
@@ -313,11 +317,15 @@ public class Terms {
             return listElems(m, (t, ts) -> ts);
         }
 
+        public static <R> IMatcher<R> listElems(Function2<? super IListTerm, ? super List<ITerm>, R> f) {
+            return listElems(M.term(), f);
+        }
+
         public static <T, R> IMatcher<R> listElems(IMatcher<T> m, Function2<? super IListTerm, ? super List<T>, R> f) {
             return term -> {
                 return term.match(Terms.<Optional<R>>cases(Terms::empty, list -> {
                     List<Optional<T>> os = Lists.newArrayList();
-                    for(ITerm t : list) {
+                    for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t));
                     }
                     return Optionals.sequence(os).map(ts -> (R) f.apply(list, Lists.newArrayList(ts)));
@@ -329,6 +337,18 @@ public class Terms {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.of(f.apply(cons)),
                         nil -> Optional.empty(), var -> Optional.empty()));
+            }, Terms::empty, Terms::empty, Terms::empty));
+
+        }
+
+        public static <THd, TTl, R> IMatcher<R> cons(IMatcher<? extends THd> mhd, IMatcher<? extends TTl> mtl,
+                Function3<? super IConsTerm, ? super THd, ? super TTl, R> f) {
+            return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, list -> {
+                return list.match(ListTerms.<Optional<R>>cases(cons -> {
+                    Optional<? extends THd> ohd = mhd.match(cons.getHead());
+                    Optional<? extends TTl> otl = mtl.match(cons.getTail());
+                    return Optionals.lift(ohd, otl, (thd, ttl) -> f.apply(cons, thd, ttl));
+                }, Terms::empty, Terms::empty));
             }, Terms::empty, Terms::empty, Terms::empty));
 
         }
@@ -417,7 +437,10 @@ public class Terms {
         public static Function1<ITerm, ITerm> sometd(IMatcher<ITerm> m) {
             // @formatter:off
             return term -> m.match(term).orElseGet(() -> term.match(Terms.cases(
-                (appl) -> TB.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> sometd(m).apply(arg))::iterator, appl.getAttachments()),
+                (appl) -> {
+                    List<ITerm> args = appl.getArgs().stream().map(arg -> sometd(m).apply(arg)).collect(Collectors.toList());
+                    return TB.newAppl(appl.getOp(), args, appl.getAttachments());
+                },
                 (list) -> list.match(ListTerms.<IListTerm> cases(
                     (cons) -> TB.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
                     (nil) -> nil,
@@ -432,11 +455,12 @@ public class Terms {
 
         public static Function1<ITerm, ITerm> somebu(IMatcher<ITerm> m) {
             return term -> {
-                ITerm next =
-                        term.match(
-                                Terms.<ITerm>cases(
+                ITerm next = term.match(Terms.<ITerm>cases(
                     // @formatter:off
-                    (appl) -> TB.newAppl(appl.getOp(), appl.getArgs().stream().map(arg -> somebu(m).apply(arg))::iterator, appl.getAttachments()),
+                    (appl) -> {
+                        List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(Collectors.toList());
+                        return TB.newAppl(appl.getOp(), args, appl.getAttachments());
+                    },
                     (list) -> list.match(ListTerms.<IListTerm> cases(
                         (cons) -> TB.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
                         (nil) -> nil,
@@ -658,7 +682,7 @@ public class Terms {
             return term -> {
                 return term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty, list -> {
                     List<T> ts = Lists.newArrayList();
-                    for(ITerm t : list) {
+                    for(ITerm t : ListTerms.iterable(list)) {
                         Optional<? extends T> o = m.matchOrThrow(t);
                         if(!o.isPresent()) {
                             return Optional.empty();

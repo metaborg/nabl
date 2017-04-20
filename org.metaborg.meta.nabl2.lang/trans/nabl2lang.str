@@ -19,10 +19,6 @@ imports
  
   completion/completion
  
-rules
-
-  editor-analyze = analyze
- 
 rules // Debugging
   
   // Prints the abstract syntax ATerm of a selection.

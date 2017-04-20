@@ -2,17 +2,28 @@ module nabl2/lang/analysis/main
 
 imports
 
-  signatures/nabl2/lang/-
+  nabl2/api
+  nabl2runtime
+
+  signatures/nabl2/lang/modules/-
   nabl2/lang/analysis/-
-  pp
 
 rules
 
-  analyze: (ast,path,project-path) -> (ast',[name-error*],[],[])
-    with name-error* := <check-module-name> (ast, path);
-         ast'   := <normalize> ast
+  editor-analyze = nabl2-analyze(normalize)
+
+  nabl2-custom-analysis-unit-hook:
+      (resource, ast, _) -> [module-name-error*]
+    with module-name-error* := <check-module-name> (ast, resource)
   
-  check-module-name: (Module(name,_), path) -> error*
+  nabl2-custom-analysis-final-hook(|a):
+      (resource, _, module-errors*) -> (error*, [], [], ())
+    with error* := <flatten-list> module-errors*
+
+rules
+
+  check-module-name:
+      (Module(name,_), path) -> error*
     with filename := <remove-extension> path;
          if <string-ends-with(|$[/[name]])> $[/[filename]] then
            error* := []

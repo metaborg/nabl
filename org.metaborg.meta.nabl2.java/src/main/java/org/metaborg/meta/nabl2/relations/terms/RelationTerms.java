@@ -43,7 +43,7 @@ public class RelationTerms {
     }
 
     private static IMatcher<Relation<ITerm>> relationFromOptions() {
-        return M.list(properties -> {
+        return M.listElems((l, properties) -> {
             Reflexivity refl = Reflexivity.NON_REFLEXIVE;
             Symmetry sym = Symmetry.NON_SYMMETRIC;
             Transitivity trans = Transitivity.NON_TRANSITIVE;

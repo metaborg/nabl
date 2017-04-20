@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.spoofax.analysis;
 
+import java.util.Collection;
+
+import org.metaborg.meta.nabl2.stratego.ConstraintTerms;
 import org.metaborg.meta.nabl2.stratego.ImmutableTermIndex;
 import org.metaborg.meta.nabl2.stratego.ImmutableTermOrigin;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
@@ -16,7 +19,7 @@ public class Actions {
     }
 
     public static ITerm analyzeUnit(String resource, ITerm ast, Args args) {
-        return TB.newAppl("AnalyzeUnit", sourceTerm(resource), ast, Args.build(args));
+        return TB.newAppl("AnalyzeUnit", sourceTerm(resource), ast, ConstraintTerms.explicate(Args.build(args)));
     }
 
     public static ITerm analyzeFinal(String resource) {
@@ -31,7 +34,7 @@ public class Actions {
         return TB.newAppl("CustomUnit", sourceTerm(resource), ast, initial);
     }
 
-    public static ITerm customFinal(String resource, ITerm initial, Iterable<ITerm> units) {
+    public static ITerm customFinal(String resource, ITerm initial, Collection<ITerm> units) {
         return TB.newAppl("CustomFinal", sourceTerm(resource), initial, TB.newList(units));
     }
 

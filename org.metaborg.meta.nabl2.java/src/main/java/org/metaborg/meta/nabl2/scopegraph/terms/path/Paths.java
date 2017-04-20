@@ -72,10 +72,14 @@ public final class Paths {
 
     public static IListTerm toTerm(IResolutionPath<Scope, Label, Occurrence> path) {
         ITerm dstep = TB.newAppl("D", path.getPath().getTarget(), path.getDeclaration());
-        return TB.newListTail(toTerm(path.getPath()), TB.newList(dstep));
+        return TB.newListTail(toTerms(path.getPath()), TB.newList(dstep));
     }
 
     public static IListTerm toTerm(IScopePath<Scope, Label, Occurrence> path) {
+        return TB.newList(toTerms(path));
+    }
+
+    private static List<ITerm> toTerms(IScopePath<Scope, Label, Occurrence> path) {
         List<ITerm> steps = Lists.newArrayList();
         for(IStep<Scope, Label, Occurrence> step : path) {
             steps.add(step.match(IStep.ICases.of(
@@ -85,7 +89,7 @@ public final class Paths {
                 // @formatter:on
             )));
         }
-        return TB.newList(steps);
+        return steps;
     }
 
     // -------------------------------------------

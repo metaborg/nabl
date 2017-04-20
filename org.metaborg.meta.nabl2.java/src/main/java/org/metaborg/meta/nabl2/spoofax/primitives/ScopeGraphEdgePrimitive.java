@@ -19,22 +19,18 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends ScopeGraphPrimitive {
+public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisPrimitive {
 
     public ScopeGraphEdgePrimitive(String name) {
         super(name, 0, 1);
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
+    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
             throws InterpreterException {
-        if(terms.size() != 1) {
-            throw new InterpreterException("Need one term argument: analysis");
-        }
-        return TermIndex.get(terms.get(0)).flatMap(index -> {
-            return context.unit(index.getResource()).solution().flatMap(sol -> {
-                final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.getScopeGraph());
-                final IMatcher<S> sourceMatcher = getSourceMatcher();
-                return M.<ITerm>cases(
+        return context.unit(index.getResource()).solution().flatMap(sol -> {
+            final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.getScopeGraph());
+            final IMatcher<S> sourceMatcher = getSourceMatcher();
+            return M.<ITerm>cases(
                     // @formatter:off
                     M.term(sourceMatcher, (t, source) -> {
                         List<ITerm> edgeTerms = Lists.newArrayList();
@@ -51,13 +47,12 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends ScopeGrap
                         return TB.newList(targetTerms);
                     })
                     // @formatter:on
-                ).match(term);
-            });
+            ).match(term);
         });
     }
 
     protected abstract IMatcher<S> getSourceMatcher();
 
-    protected abstract IRelation3<S,Label,? extends ITerm> getEdges(IScopeGraph<Scope, Label, Occurrence> scopeGraph);
-    
+    protected abstract IRelation3<S, Label, ? extends ITerm> getEdges(IScopeGraph<Scope, Label, Occurrence> scopeGraph);
+
 }

@@ -13,7 +13,6 @@ imports
   nabl2/lang/rules/Names
 
 
-
 context-free syntax
 
   Rule.CGenInitRuleNoConstraint = <

@@ -7,6 +7,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.stratego.ConstraintTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -24,9 +25,10 @@ public abstract class UnitResult {
     public abstract UnitResult withCustomResult(Optional<? extends ITerm> customResult);
 
     public static IMatcher<UnitResult> matcher() {
-        return M.appl2("UnitResult", M.term(), M.listElems(Constraints.matcher()), (t, ast, constraints) -> {
-            return ImmutableUnitResult.of(ast, constraints);
-        });
+        return M.appl2("UnitResult", M.term(), ConstraintTerms.specialize(M.listElems(Constraints.matcher())),
+                (t, ast, constraints) -> {
+                    return ImmutableUnitResult.of(ast, constraints);
+                });
     }
 
 }

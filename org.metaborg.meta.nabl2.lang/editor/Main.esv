@@ -2,6 +2,10 @@ module Main
 
 imports
 
-  Menus
   Lang
   Syntax
+  Analysis
+
+  Menus1
+  nabl2/Menus
+  Menus2

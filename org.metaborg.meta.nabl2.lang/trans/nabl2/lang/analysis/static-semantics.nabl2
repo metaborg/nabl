@@ -1,0 +1,20 @@
+module nabl2/lang/analysis/static-semantics
+
+imports
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+rules
+
+  init ^ (s) :=
+    new s.
+
+  [[ Module(name, sections) ^ (s) ]] :=
+    Map1[[ sections ^ (s) ]].
+
+rules
+
+  [[ Imports(_) ^ (s) ]]. // TODO

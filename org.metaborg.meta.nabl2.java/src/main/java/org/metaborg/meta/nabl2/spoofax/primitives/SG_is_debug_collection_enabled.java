@@ -4,18 +4,19 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
-import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
+import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.interpreter.terms.ITermFactory;
 
-public class SG_is_debug_collection_enabled extends ScopeGraphPrimitive {
+public class SG_is_debug_collection_enabled extends ScopeGraphContextPrimitive {
 
     public SG_is_debug_collection_enabled() {
         super(SG_is_debug_collection_enabled.class.getSimpleName(), 0, 0);
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
+    @Override public Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm term,
+            List<IStrategoTerm> termVars, ITermFactory factory) throws InterpreterException {
         return context.config().debug().collection() ? Optional.of(term) : Optional.empty();
     }
-
+    
 }

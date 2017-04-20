@@ -8,7 +8,7 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public class SG_analysis_has_errors extends ScopeGraphPrimitive {
+public class SG_analysis_has_errors extends ScopeGraphContextPrimitive {
 
     public SG_analysis_has_errors() {
         super(SG_analysis_has_errors.class.getSimpleName(), 0, 0);

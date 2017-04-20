@@ -1,0 +1,9 @@
+module Analysis
+
+imports
+
+  nabl2/References
+
+language
+
+  observer              : editor-analyze (constraint) (multifile)

@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.terms;
 
+import org.metaborg.meta.nabl2.terms.generic.ListTermIterator;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.util.functions.Function1;
@@ -109,6 +110,10 @@ public class ListTerms {
         ));
         sb.append("]");
         return sb.toString();
+    }
+
+    public static Iterable<ITerm> iterable(IListTerm list) {
+        return () -> new ListTermIterator(list);
     }
 
 }

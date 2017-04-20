@@ -1,0 +1,111 @@
+module nabl2/lang/analysis/constraints
+
+imports
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+rules
+
+  Clause[[ CTrue(pos) ^ (s) ]] :=
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CFalse(msg) ^ (s) ]] :=
+    Message[[ msg ^ (s) ]].
+
+rules
+
+  Clause[[ CEqual(term1, term2, msg) ^ (s) ]] :=
+    CTerm[[ term1 ^ (s) ]],
+    CTerm[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+  Clause[[ CInequal(term1, term2, msg) ^ (s) ]] :=
+    CTerm[[ term1 ^ (s) ]],
+    CTerm[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+rules 
+ 
+  Clause[[ CGDecl(decl,scope,pos) ^ (s) ]] :=
+    CTerm[[ decl ^ (s) ]],
+    CTerm[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CGRef(ref,scope,pos) ^ (s) ]] :=
+    CTerm[[ ref ^ (s) ]],
+    CTerm[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CGDirectEdge(scope1,label,scope2,pos) ^ (s) ]] :=
+    CTerm[[ scope1 ^ (s) ]],
+    CTerm[[ scope2 ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+ 
+  Clause[[ CGNamedEdge(ref,label,scope,pos) ^ (s) ]] :=
+    CTerm[[ ref ^ (s) ]],
+    CTerm[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+ 
+  Clause[[ CGAssoc(decl,label,scope,pos) ^ (s) ]] :=
+    CTerm[[ decl ^ (s) ]],
+    CTerm[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+  
+rules 
+
+  Clause[[ CResolve(ref,decl,msg) ^ (s) ]] :=
+    CTerm[[ ref ^ (s) ]],
+    CTerm[[ decl ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+  
+  Clause[[ CAssoc(decl,label,scope,msg) ^ (s) ]] :=
+    CTerm[[ decl ^ (s) ]],
+    CTerm[[ scope ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+  
+  Clause[[ CDeclProperty(decl,prop,value,prio,msg) ^ (s) ]] :=
+    CTerm[[ decl ^ (s) ]],
+    Property[[ prop ^ (s) ]],
+    CTerm[[ value ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+rules
+
+  Clause[[ CDistinct(proj,set,msg) ^ (s) ]] :=
+    CSet[[ set ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CSubsetEq(set1,proj,set2,msg) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    CSet[[ set2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+rules
+
+  Clause[[ CBuildRel(term1,rel,term2,msg) ^ (s) ]] :=
+    CTerm[[ term1 ^ (s) ]],
+    RelationRef[[ rel ^ (s) ]],
+    CTerm[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CCheckRel(term1,rel,term2,msg) ^ (s) ]] :=
+    CTerm[[ term1 ^ (s) ]],
+    RelationRef[[ rel ^ (s) ]],
+    CTerm[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CEval(result,fun,term,msg) ^ (s) ]] :=
+    CTerm[[ result ^ (s) ]],
+    FunctionRef[[ fun ^ (s) ]],
+    CTerm[[ term ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+rules
+
+  Clause[[ CGen(_,_,_) ^ (_) ]]. // TODO
+
+  Clause[[ CInst(_,_,_) ^ (_) ]]. // TODO
+ 

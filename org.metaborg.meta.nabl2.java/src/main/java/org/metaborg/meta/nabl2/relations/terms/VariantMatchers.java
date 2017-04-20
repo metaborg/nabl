@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,7 +47,7 @@ public class VariantMatchers {
         }
 
         @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
-            return M.list(list -> {
+            return M.listElems((l, list) -> {
                 List<IVariantMatcher.Arg<ITerm>> args = Lists.newArrayList();
                 for(ITerm arg : list) {
                     args.add(ImmutableArg.of(variance, arg));
@@ -55,7 +56,7 @@ public class VariantMatchers {
             }).match(t);
         }
 
-        @Override public ITerm build(Iterable<? extends ITerm> ts) {
+        @Override public ITerm build(Collection<? extends ITerm> ts) {
             return TB.newList(ts);
         }
 
@@ -83,7 +84,7 @@ public class VariantMatchers {
             }).match(t).flatMap(o -> o);
         }
 
-        @Override public ITerm build(Iterable<? extends ITerm> ts) {
+        @Override public ITerm build(Collection<? extends ITerm> ts) {
             return TB.newAppl(op, ts);
         }
 

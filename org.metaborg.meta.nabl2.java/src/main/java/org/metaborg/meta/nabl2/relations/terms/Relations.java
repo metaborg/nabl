@@ -14,6 +14,7 @@ import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 public class Relations<T> implements IRelations<T>, Serializable {
@@ -92,7 +93,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
                             r -> greatestLowerBound(nameOrDefault(r,name), argt1, argt2)
                             // @formatter:on
                         ));
-                    })).map(matcher::build);
+                    })).map(args -> matcher.build(Lists.newArrayList(args)));
                 });
             });
             if(contains.isPresent()) {
@@ -120,7 +121,7 @@ public class Relations<T> implements IRelations<T>, Serializable {
                             r -> leastUpperBound(nameOrDefault(r,name), argt1, argt2)
                             // @formatter:on
                         ));
-                    })).map(matcher::build);
+                    })).map(args -> matcher.build(Lists.newArrayList(args)));
                 });
             });
             if(contains.isPresent()) {

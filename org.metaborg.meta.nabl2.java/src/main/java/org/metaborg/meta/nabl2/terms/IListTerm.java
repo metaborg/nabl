@@ -4,7 +4,7 @@ import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
-public interface IListTerm extends ITerm, Iterable<ITerm> {
+public interface IListTerm extends ITerm {
 
     <T> T match(Cases<T> cases);
 

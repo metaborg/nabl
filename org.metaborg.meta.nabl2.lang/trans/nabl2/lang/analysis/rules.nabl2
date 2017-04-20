@@ -1,0 +1,66 @@
+module nabl2/lang/analysis/rules
+
+imports
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+rules // constraint generation rules
+
+  [[ Rules(rules) ^ (s) ]] :=
+    Map1(Rule)[[ rules ^ (s) ]].
+
+  Rule[[ CGenInitRule(params, type, clauses) ^ (s) ]].
+ 
+  Rule[[ CGenMatchRule(def, pattern, params, type, clauses) ^ (s) ]] :=
+    new s_rule,
+    s_rule ---> s,
+    RuleDef[[ def ^ (s, s_rule) ]],
+    Term(ScopeVarDecl)[[ pattern ^ (s_rule) ]],
+    RuleParams[[ params ^ (s) ]],
+    RuleType[[ type ^ (s) ]],
+    Map1(Clause)[[ clauses ^ (s_rule) ]].
+ 
+  RuleParams[[ Tuple(params) ^ (s) ]] :=
+    Map1(Term(ScopeVarDecl))[[ params ^ (s) ]].
+ 
+  RuleType[[ NoType() ^ (s) ]]. 
+
+  RuleType[[ Type(type) ^ (s) ]] :=
+    Term(ScopeVarDecl)[[ type ^ (s) ]].
+ 
+  RuleDef[[ NoName() ^ (s, _) ]].
+
+  RuleDef[[ Name(name, params) ^ (s_rule, s_params) ]] :=
+    Rule{name @s_rule} <- s_rule,
+    Map1(RuleDefParam)[[ params ^ (s_params) ]].
+
+  RuleDefParam[[ name ^ (s) ]] :=
+    Rule{name @s} <- s.
+
+  RuleRef[[ NoName() ^ (s) ]].
+
+  RuleRef[[ Name(name, args) ^ (s) ]] :=
+    Rule{name} -> s,
+    Rule{name} |-> _,
+    Map1(RuleRef)[[ args ^ (s) ]].
+
+rules
+
+  Clause[[ CGenRecurse(ref, var, params, type) ^ (s) ]] :=
+    RuleRef[[ ref ^ (s) ]],
+    Term(VarRef)[[ var ^ (s) ]].
+ 
+  Clause[[ NewScopes(scopes) ^ (s) ]] :=
+    Map1(ScopeVarDecl)[[ scopes ^ (s) ]].
+ 
+  Clause[[ NewVars(vars) ^ (s) ]] :=
+    Map1(ScopeVarDecl)[[ vars ^ (s) ]].
+ 
+rules // constraint generation functions
+
+  Rule[[ FunDef(_,_,_) ^ (_) ]]. // TODO
+
+  Clause[[ FunCall(_,_) ^ (_) ]]. // TODO

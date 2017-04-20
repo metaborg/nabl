@@ -11,7 +11,7 @@ import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public abstract class ScopeGraphLogPrimitive extends ScopeGraphPrimitive {
+public abstract class ScopeGraphLogPrimitive extends ScopeGraphContextPrimitive {
     private static final ILogger logger = LoggerUtils.logger("org.metaborg.meta.nabl2");
 
     public ScopeGraphLogPrimitive(String name) {
@@ -27,9 +27,9 @@ public abstract class ScopeGraphLogPrimitive extends ScopeGraphPrimitive {
     }
 
     protected abstract Level level(IScopeGraphContext<?> context);
-    
+
     protected boolean fatal() {
         return false;
     }
-    
+
 }

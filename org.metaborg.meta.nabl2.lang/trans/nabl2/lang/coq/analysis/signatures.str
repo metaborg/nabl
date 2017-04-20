@@ -1,4 +1,4 @@
-module nabl2/lang/analysis/signatures
+module nabl2/lang/coq/analysis/signatures
 
 imports
 

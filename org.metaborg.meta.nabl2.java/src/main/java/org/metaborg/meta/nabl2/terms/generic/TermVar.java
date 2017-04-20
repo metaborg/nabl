@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
-import java.util.Iterator;
 import java.util.Objects;
 
 import org.immutables.serial.Serial;
@@ -29,10 +28,6 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
     
     @Value.Lazy @Override public PSet<ITermVar> getVars() {
         return HashTreePSet.singleton(this);
-    }
-
-    @Override public Iterator<ITerm> iterator() {
-        throw new IllegalStateException();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

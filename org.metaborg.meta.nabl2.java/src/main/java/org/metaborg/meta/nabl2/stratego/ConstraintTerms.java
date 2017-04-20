@@ -1,0 +1,165 @@
+package org.metaborg.meta.nabl2.stratego;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.metaborg.meta.nabl2.terms.IListTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.ListTerms;
+import org.metaborg.meta.nabl2.terms.Terms;
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
+import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.util.Ref;
+
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.Lists;
+
+public class ConstraintTerms {
+
+    private final static String LIST_CTOR = "CList";
+    private final static String LISTTAIL_CTOR = "CListTail";
+    private final static String LOCK_CTOR = "CLock";
+    private final static String QUOTE_CTOR = "CQuote";
+    private final static String VAR_CTOR = "CVar";
+
+    /**
+     * Specialize appl's of NaBL2 constructors for variables and lists to actual variables and lists.
+     */
+    public static ITerm specialize(ITerm term) {
+        // fromStratego
+        term = term.match(Terms.cases(
+            // @formatter:off
+            appl -> {
+                List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(Collectors.toList());
+                return TB.newAppl(appl.getOp(), args);
+            },
+            list -> specializeList(list),
+            string -> string,
+            integer -> integer,
+            var -> { throw new IllegalArgumentException("Term is already specialized."); }
+            // @formatter:on
+        )).withAttachments(term.getAttachments());
+        term = M.<ITerm>cases(
+            // @formatter:off
+            M.appl1(LOCK_CTOR, M.term(), (l, t) ->
+                    t.withLocked(true)),
+            M.appl1(QUOTE_CTOR, M.term(), (q, t) ->
+                    t),
+            M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
+                    TB.newVar(resource, name)),
+            M.appl1(LIST_CTOR, M.list(), (t, xs) ->
+                    xs),
+            M.appl2(LISTTAIL_CTOR, M.listElems(), M.term(), (t, xs, ys) ->
+                    TB.newListTail(xs, (IListTerm) ys))
+            // @formatter:on
+        ).match(term).orElse(term);
+        return term;
+    }
+
+    private static IListTerm specializeList(IListTerm list) {
+        // fromStrategoList
+        final List<ITerm> terms = Lists.newArrayList();
+        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final Ref<ITermVar> varTail = new Ref<>();
+        while(list != null) {
+            list = list.match(ListTerms.cases(
+                // @formatter:off
+                cons -> {
+                    terms.add(specialize(cons.getHead()));
+                    attachments.add(cons.getAttachments());
+                    return cons.getTail();
+                },
+                nil -> {
+                    attachments.add(nil.getAttachments());
+                    return null;
+                },
+                var -> {
+                    varTail.set(var);
+                    return null;
+                }
+                // @formatter:on
+            ));
+        }
+        if(varTail.get() != null) {
+            return TB.newListTail(terms, varTail.get(), attachments);
+        } else {
+            return TB.newList(terms, attachments);
+        }
+    }
+
+    public static <R> IMatcher<R> specialize(IMatcher<R> m) {
+        return t -> m.match(specialize(t));
+    }
+
+    /**
+     * Encode variables and lists in NaBL2 constructors.
+     */
+    public static ITerm explicate(ITerm term) {
+        return explicate(term, false);
+    }
+
+    private static ITerm explicate(ITerm term, final boolean wasLocked) {
+        final boolean isLocked = wasLocked || term.isLocked();
+        term = term.match(Terms.cases(
+            // @formatter:off
+            appl -> {
+                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg, isLocked)).collect(Collectors.toList());
+                return TB.newAppl(appl.getOp(), args);
+            },
+            list -> explicateList(list, isLocked),
+            string -> string,
+            integer -> integer,
+            var -> {
+                List<ITerm> args = Arrays.asList(TB.newString(var.getResource()), TB.newString(var.getName()));
+                return TB.newAppl(VAR_CTOR, args);
+            }
+            // @formatter:on
+        )).withAttachments(term.getAttachments());
+        // FIXME: Quoting is not restored ATM, so two round-trips could cause
+        // problems when AST contains special constructors.
+        if(!wasLocked && isLocked) {
+            term = TB.newAppl(LOCK_CTOR, term);
+        }
+        return term;
+    }
+
+    private static ITerm explicateList(IListTerm list, final boolean wasLocked) {
+        // toStrategoList
+        final List<ITerm> terms = Lists.newArrayList();
+        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final Ref<ITermVar> varTail = new Ref<>();
+        while(list != null) {
+            list = list.match(ListTerms.cases(
+                // @formatter:off
+                cons -> {
+                    terms.add(explicate(cons.getHead()));
+                    attachments.add(cons.getAttachments());
+                    return cons.getTail();
+                },
+                nil -> {
+                    attachments.add(nil.getAttachments());
+                    return null;
+                },
+                var -> {
+                    varTail.set(var);
+                    return null;
+                }
+                // @formatter:on
+            ));
+        }
+        list = TB.newList(terms, attachments);
+        if(varTail.get() != null) {
+            return TB.newAppl(LISTTAIL_CTOR, Arrays.asList(list, varTail.get()));
+        } else {
+            return list;
+        }
+    }
+
+    public static <R> IMatcher<R> explicate(IMatcher<R> m) {
+        return t -> m.match(explicate(t));
+    }
+
+}

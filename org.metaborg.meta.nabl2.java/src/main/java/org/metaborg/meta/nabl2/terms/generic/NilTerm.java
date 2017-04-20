@@ -1,7 +1,5 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
-import java.util.Iterator;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IListTerm;
@@ -41,10 +39,6 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
 
     @Override public <T, E extends Throwable> T matchOrThrow(IListTerm.CheckedCases<T, E> cases) throws E {
         return cases.caseNil(this);
-    }
-
-    @Override public Iterator<ITerm> iterator() {
-        return new ListTermIterator(this);
     }
 
     @Override public int hashCode() {

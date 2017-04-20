@@ -39,7 +39,7 @@ public class Optionals {
                 ? Optional.of(f.apply(o1.get(), o2.get(), o3.get(), o4.get(), o5.get())) : Optional.empty();
     }
 
-    public static <T> Optional<Iterable<T>> sequence(Iterable<Optional<T>> os) {
+    public static <T> Optional<List<T>> sequence(Iterable<Optional<T>> os) {
         List<T> ts = Lists.newArrayList();
         for(Optional<? extends T> o : os) {
             if(!o.isPresent()) {
@@ -50,7 +50,7 @@ public class Optionals {
         return Optional.of(ts);
     }
 
-    public static <T> Iterable<T> filter(Iterable<Optional<T>> os) {
+    public static <T> List<T> filter(Iterable<Optional<T>> os) {
         List<T> ts = Lists.newArrayList();
         for(Optional<? extends T> o : os) {
             o.ifPresent(ts::add);

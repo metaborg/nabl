@@ -15,18 +15,18 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-public class SG_get_ref_resolution extends ScopeGraphPrimitive {
+public class SG_get_ref_resolution extends ScopeGraphContextPrimitive {
 
     public SG_get_ref_resolution() {
         super(SG_get_ref_resolution.class.getSimpleName(), 0, 0);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-        throws InterpreterException {
+            throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm>flatMap(ref -> {
             return context.unit(ref.getIndex().getResource()).solution().flatMap(s -> {
                 List<IResolutionPath<Scope, Label, Occurrence>> paths =
-                    Lists.newArrayList(s.getNameResolution().resolve(ref));
+                        Lists.newArrayList(s.getNameResolution().resolve(ref));
                 if(paths.size() != 1) {
                     return Optional.empty();
                 }

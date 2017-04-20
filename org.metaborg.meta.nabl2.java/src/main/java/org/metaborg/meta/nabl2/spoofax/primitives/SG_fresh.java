@@ -11,14 +11,14 @@ import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public class SG_fresh extends ScopeGraphPrimitive {
+public class SG_fresh extends ScopeGraphContextPrimitive {
 
     public SG_fresh() {
         super(SG_fresh.class.getSimpleName(), 0, 0);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-        throws InterpreterException {
+            throws InterpreterException {
         // @formatter:off
         return M.<Tuple2<String,String>>cases(
             M.string(s -> ImmutableTuple2.of(s.getValue(), "")),

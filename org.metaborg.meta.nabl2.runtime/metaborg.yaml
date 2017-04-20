@@ -3,6 +3,7 @@ id: org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
 name: NaBL2Runtime
 metaborgVersion: 2.3.0-SNAPSHOT
 metaborgBaselineVersion: 2.2.0
+
 dependencies:
   compile:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
@@ -12,16 +13,20 @@ dependencies:
   source:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
+
 exports:
 - language: SDF
   directory: src-gen/syntax
   includes: "**/*.sdf"
+
 - language: TemplateLang
   directory: syntax
   includes: "**/*.sdf3"
+
 - language: Stratego-Sugar
   directory: trans
   includes: "**/*.str"
+
 - language: Stratego-Sugar
   directory: src-gen
   includes: "**/*.str"
@@ -29,18 +34,26 @@ exports:
 - language: Stratego-Sugar
   directory: src-gen/nabl2
   includes: "**/*.str"
+
 - language: EditorService
   directory: editor
   includes: "**/*.esv"
 - language: EditorService
   directory: src-gen
   includes: "**/*.esv"
+
 - language: ds
   directory: trans
   includes: "**/*.ds"
+
+- language: NaBL2Lang
+  directory: trans
+  includes: "**/*.nabl2"
+
 - language: dynsem2coq
   directory: trans
   includes: "**/*.ds2v"
+
 language:
   sdf:
     enabled: false
