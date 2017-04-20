@@ -94,7 +94,7 @@ rules // CSet
 
   Projection[[ _ ^ (_) ]]. // TODO
 
-rules
+rules // relations
 
   RelationDef[[ Relation(name) ^ (s) ]] :=
     Rel{name} <- s.
@@ -103,14 +103,27 @@ rules
 
   RelationRef[[ Relation(name) ^ (s) ]] :=
     Rel{name} -> s,
-    Rel{name} |-> d.
+    Rel{name} |-> _.
+
+  VariancePattern[[ OpVariant(name,variances) ^ (s) ]] :=
+    Map1(Variance)[[ variances ^ (s) ]].
+
+  Variance[[ Invar() ^ (s) ]].
+
+  Variance[[ Covar(rel) ^ (s) ]] :=
+    RelationRef[[ rel ^ (s) ]].
+
+  Variance[[ Contravar(rel) ^ (s) ]] :=
+    RelationRef[[ rel ^ (s) ]].
+
+rules // functions
 
   FunctionDef[[ Function(name) ^ (s) ]] :=
     Fun{name} <- s.
 
   FunctionRef[[ Function(name) ^ (s) ]] :=
     Fun{name} -> s,
-    Fun{name} |-> d.
+    Fun{name} |-> _.
 
   FunctionRef[[ Lub(rel) ^ (s) ]] :=
     // TODO: does the relation qualify for lub?

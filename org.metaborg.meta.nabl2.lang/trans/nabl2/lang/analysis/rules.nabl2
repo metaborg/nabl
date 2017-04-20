@@ -13,7 +13,11 @@ rules // constraint generation rules
     Map1(Rule)[[ rules ^ (s) ]].
 
   Rule[[ CGenInitRule(params, type, clauses) ^ (s) ]] :=
-    InitMarker{()} <- s.
+    InitMarker{()} <- s,
+    new s_rule,
+    s_rule ---> s,
+    RuleType[[ type ^ (s_rule) ]],
+    Map1(Clause)[[ clauses ^ (s_rule) ]].
  
   Rule[[ CGenMatchRule(def, pattern, params, type, clauses) ^ (s) ]] :=
     new s_rule,

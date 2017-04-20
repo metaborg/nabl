@@ -60,11 +60,10 @@ rules
     InitMarker{()} |-> _ | error "relations must be specified in module with init rule",
     Map1(Sig)[[ relsigs ^ (s) ]].
 
-  Sig[[ RelationDef(opts,rel,type,variances) ^ (s) ]] :=
-    RelationDef[[ rel ^ (s) ]]
+  Sig[[ RelationDef(opts,rel,type,variancepatterns) ^ (s) ]] :=
+    RelationDef[[ rel ^ (s) ]],
     // TODO: type
-    // TODO: variances
-    .
+    Map1(VariancePattern)[[ variancepatterns ^ (s) ]].
 
 rules
 
@@ -74,7 +73,12 @@ rules
     Map1(Sig)[[ funsigs ^ (s) ]].
 
   Sig[[ FunctionDef(fun,type,cases) ^ (s) ]] :=
-    FunctionDef[[ fun ^ (s) ]]
+    FunctionDef[[ fun ^ (s) ]],
     // TODO: type
-    // TODO: cases
-    .
+    Map0(FunctionCase)[[ cases ^ () ]].
+
+  FunctionCase[[ (arg, result) ^ () ]] :=
+    new s_case,
+    Term(ScopeVarDecl)[[ arg ^ (s_case) ]],
+    Term(VarRef)[[ result ^ (s_case) ]].
+ 
