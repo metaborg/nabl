@@ -10,7 +10,7 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgBaselineVersion}
   source:
-  - org.metaborg:meta.lib.spoofax:${metaborgBaselineVersion}
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.lang.coq:${metaborgVersion}

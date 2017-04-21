@@ -8,7 +8,7 @@ dependencies:
   # org.metaborg:org.metaborg.meta.lang.stratego:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
   source:
-  - org.metaborg:meta.lib.spoofax:${metaborgBaselineVersion}
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
 exports:
 - language: ATerm
   directory: src-gen/syntax
