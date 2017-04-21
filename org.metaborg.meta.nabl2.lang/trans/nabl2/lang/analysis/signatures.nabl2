@@ -10,25 +10,34 @@ imports
 rules
 
   [[ Signature(signatures) ^ (s_mod, s_root) ]] :=
-    Map1(Sig)[[ signatures ^ (s_mod) ]].
+    Map2(Sig)[[ signatures ^ (s_mod, s_root) ]].
 
 rules
 
-  Sig[[ CGen(rulesigs) ^ (s) ]] :=
-    Map1(Sig)[[ rulesigs ^ (s) ]].
+  Sig[[ CGen(rulesigs) ^ (s_mod, s_root) ]] :=
+    Map1(Sig)[[ rulesigs ^ (s_root) ]].
 
   Sig[[ CGenSig(def, sort, params, type) ^ (s) ]].
 
 rules 
 
-  Sig[[ Constructors(_) ^ (_) ]]. // TODO
+  Sig[[ Sorts(sorts) ^ (s_mod, s_root) ]] :=
+    Map1(SortDef)[[ sorts ^ (s_root) ]].
+
+  Sig[[ Constructors(cons) ^ (s_mod, s_root) ]] :=
+    Map1(Sig)[[ cons ^ (s_root) ]].
+
+  Sig[[ OpDecl(name,sorts,sort) ^ (s) ]] :=
+    Cons{name} <- s,
+    Map1(SortRef)[[ sorts ^ (s) ]],
+    SortRef[[ sort ^ (s) ]].
 
 rules
 
-  Sig[[ NameResolution(nameresparams) ^ (s) ]] :=
-    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+  Sig[[ NameResolution(nameresparams) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
     InitMarker{()} |-> _ | error "name resolution parameters must be specified in module with init rule",
-    Map1(Sig)[[ nameresparams ^ (s) ]].
+    Map1(Sig)[[ nameresparams ^ (s_root) ]].
 
   Sig[[ Labels(labels) ^ (s) ]] :=
     Map1(LabelDef)[[ labels ^ (s) ]].
@@ -42,10 +51,10 @@ rules
 
 rules
 
-  Sig[[ Namespaces(namespacedefs) ^ (s) ]] :=
-    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+  Sig[[ Namespaces(namespacedefs) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
     InitMarker{()} |-> _ | error "namespaces must be specified in module with init rule",
-    Map1(Sig)[[ namespacedefs ^ (s) ]].
+    Map1(Sig)[[ namespacedefs ^ (s_root) ]].
 
   Sig[[ NamespaceDef(ns,type,properties) ^ (s) ]] :=
     NamespaceDef[[ ns ^ (s) ]]
@@ -55,10 +64,10 @@ rules
 
 rules 
 
-  Sig[[ Relations(relsigs) ^ (s) ]] :=
-    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+  Sig[[ Relations(relsigs) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
     InitMarker{()} |-> _ | error "relations must be specified in module with init rule",
-    Map1(Sig)[[ relsigs ^ (s) ]].
+    Map1(Sig)[[ relsigs ^ (s_root) ]].
 
   Sig[[ RelationDef(opts,rel,type,variancepatterns) ^ (s) ]] :=
     RelationDef[[ rel ^ (s) ]],
@@ -67,10 +76,10 @@ rules
 
 rules
 
-  Sig[[ Functions(funsigs) ^ (s) ]] :=
-    new s_init, s_init -L-> s, InitMarker{()} -> s_init,
+  Sig[[ Functions(funsigs) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
     InitMarker{()} |-> _ | error "functions must be specified in module with init rule",
-    Map1(Sig)[[ funsigs ^ (s) ]].
+    Map1(Sig)[[ funsigs ^ (s_root) ]].
 
   Sig[[ FunctionDef(fun,type,cases) ^ (s) ]] :=
     FunctionDef[[ fun ^ (s) ]],

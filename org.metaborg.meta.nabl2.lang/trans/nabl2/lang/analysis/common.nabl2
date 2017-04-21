@@ -10,6 +10,33 @@ rules // Message
 
   MessagePosition[[ _ ^ (_) ]]. // TODO
 
+rules // sorts
+
+  SortDef[[ SortNoArgs(name) ^ (s) ]] :=
+    Sort{name @s} <- s.
+
+  SortRef[[ SortNoArgs(name) ^ (s) ]] :=
+    Sort{name} -> s,
+    Sort{name} |-> _.
+ 
+  SortRef[[ TermSort() ^ (s) ]].
+
+  SortRef[[ OccurrenceSort() ^ (s) ]].
+
+  SortRef[[ ScopeSort() ^ (s) ]].
+
+  SortRef[[ Var(name) ^ (s) ]].
+ 
+  SortRef[[ TupleSort(sorts) ^ (s) ]] :=
+    Map1(SortRef)[[ sorts ^ (s) ]].
+
+  SortRef[[ ListSort(sort) ^ (s) ]] :=
+    SortRef[[ sort ^ (s) ]].
+
+  SortRef[[ MapSort(keysort,valuesort) ^ (s) ]] :=
+    SortRef[[ keysort ^ (s) ]],
+    SortRef[[ valuesort ^ (s) ]].
+
 rules // properties
 
   Property[[ Property(name) ^ (s) ]]. // TODO

@@ -12,6 +12,9 @@ imports
 rules
 
   signature-to-str:
+    Sorts(sort*) -> []
+
+  signature-to-str:
     Constructors(opdecl*) -> [
       Signature([Constructors([opdeclstr*])])
     ]
