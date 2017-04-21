@@ -1,8 +1,8 @@
-module nabl2/lang/generation/dynsem/main
+module nabl2/integration/dynsem/generation/main
 
 imports
 
-  nabl2/lang/generation/dynsem/-
+  nabl2/integration/dynsem/generation/-
   signatures/nabl2/lang/modules/-
   signatures/nabl2/lang/rules/-
   nabl2/lang/util/-

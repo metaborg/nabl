@@ -2,7 +2,7 @@ module nabl2/lang/signature-extraction/main
 
 imports
   libstrc
-  nabl2/lang/analysis/signatures
+  nabl2/integration/coq/analysis/signatures
   nabl2/lang/util/-
 
 rules

@@ -1,4 +1,4 @@
-module nabl2/lang/coq/phases/explicate-wildcards
+module nabl2/integration/coq/phases/explicate-wildcards
 
 imports
 	nabl2/lang/util/-

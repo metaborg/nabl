@@ -1,4 +1,4 @@
-module nabl2/lang/coq/main
+module nabl2/integration/coq/main
 
 imports
 	libstrc
@@ -14,12 +14,12 @@ imports
   signatures/nabl2/lang/rules/-
   
   // Coq imports:
-  nabl2/lang/coq/analysis/signatures
-  nabl2/lang/coq/analysis/explicate-wildcards
-  nabl2/lang/coq/analysis/dependencies
-  nabl2/lang/coq/util/maybe-list
-  nabl2/lang/coq/util/mbind-err
-  nabl2/lang/coq/query
+  nabl2/integration/coq/analysis/signatures
+  nabl2/integration/coq/analysis/explicate-wildcards
+  nabl2/integration/coq/analysis/dependencies
+  nabl2/integration/coq/util/maybe-list
+  nabl2/integration/coq/util/mbind-err
+  nabl2/integration/coq/query
   signatures/Vernacular-sig
   signatures/Gallina-sig
   signatures/Options-sig

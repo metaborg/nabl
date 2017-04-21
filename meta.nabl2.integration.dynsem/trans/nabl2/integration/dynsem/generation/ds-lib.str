@@ -1,4 +1,4 @@
-module nabl2/lang/generation/dynsem/ds-lib
+module nabl2/integration/dynsem/generation/ds-lib
 
 imports
 

@@ -1,4 +1,4 @@
-module nabl2/lang/coq/util/maybe-list
+module nabl2/integration/coq/util/maybe-list
 
 rules // Custom operations for Maybe lists
 

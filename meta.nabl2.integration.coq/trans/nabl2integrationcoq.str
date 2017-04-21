@@ -1,2 +1,7 @@
-module nabl2inegrationcoq
+module nabl2integrationcoq
 
+imports
+
+  libstratego-lib
+
+  nabl2/integration/coq/-

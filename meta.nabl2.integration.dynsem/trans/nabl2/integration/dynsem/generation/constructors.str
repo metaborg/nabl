@@ -1,9 +1,9 @@
-module nabl2/lang/generation/dynsem/constructors
+module nabl2/integration/dynsem/generation/constructors
 
 imports
 
   signatures/nabl2/lang/signatures/-
-  nabl2/lang/generation/dynsem/-
+  nabl2/integration/dynsem/generation/-
 
 rules
 
