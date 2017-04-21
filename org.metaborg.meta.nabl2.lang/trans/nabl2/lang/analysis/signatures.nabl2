@@ -17,7 +17,16 @@ rules
   Sig[[ CGen(rulesigs) ^ (s_mod, s_root) ]] :=
     Map1(Sig)[[ rulesigs ^ (s_root) ]].
 
-  Sig[[ CGenSig(def, sort, params, type) ^ (s) ]].
+  Sig[[ CGenSig(def, sort, params, type) ^ (s) ]] :=
+    // TODO: def
+    SortRef[[ sort ^ (s) ]],
+    Map1(SortRef)[[ params ^ (s) ]],
+    CGenSigType[[ type ^ (s) ]].
+
+  CGenSigType[[ NoType() ^ (s) ]].
+
+  CGenSigType[[ Type(sort) ^ (s) ]] :=
+    SortRef[[ sort ^ (s) ]].
 
 rules 
 
@@ -57,10 +66,15 @@ rules
     Map1(Sig)[[ namespacedefs ^ (s_root) ]].
 
   Sig[[ NamespaceDef(ns,type,properties) ^ (s) ]] :=
-    NamespaceDef[[ ns ^ (s) ]]
-    // TODO: type
+    NamespaceDef[[ ns ^ (s) ]],
+    NamespaceType[[ type ^ (s) ]]
     // TODO: properties
     .
+
+  NamespaceType[[ NoType() ^ (s) ]].
+
+  NamespaceType[[ Type(sort) ^ (s) ]] :=
+    SortRef[[ sort ^ (s) ]].
 
 rules 
 
@@ -71,8 +85,12 @@ rules
 
   Sig[[ RelationDef(opts,rel,type,variancepatterns) ^ (s) ]] :=
     RelationDef[[ rel ^ (s) ]],
-    // TODO: type
+    RelationType[[ type ^ (s) ]],
     Map1(VariancePattern)[[ variancepatterns ^ (s) ]].
+
+  RelationType[[ (sort1,sort2) ^ (s) ]] :=
+    SortRef[[ sort1 ^ (s) ]],
+    SortRef[[ sort2 ^ (s) ]].
 
 rules
 
@@ -83,11 +101,16 @@ rules
 
   Sig[[ FunctionDef(fun,type,cases) ^ (s) ]] :=
     FunctionDef[[ fun ^ (s) ]],
-    // TODO: type
-    Map0(FunctionCase)[[ cases ^ () ]].
+    FunctionType[[ type ^ (s) ]],
+    Map1(FunctionCase)[[ cases ^ (s) ]].
 
-  FunctionCase[[ (arg, result) ^ () ]] :=
+  FunctionCase[[ (arg, result) ^ (s) ]] :=
     new s_case,
-    Term(ScopeVarDecl)[[ arg ^ (s_case) ]],
-    Term(VarRef)[[ result ^ (s_case) ]].
+    s_case ---> s,
+    CTerm(ScopeVarDecl)[[ arg ^ (s_case) ]],
+    CTerm(VarRef)[[ result ^ (s_case) ]].
+ 
+  FunctionType[[ (param_sort,result_sort)  ^ (s) ]] :=
+    SortRef[[ param_sort ^ (s) ]],
+    SortRef[[ result_sort ^ (s) ]].
  

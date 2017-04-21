@@ -22,6 +22,6 @@ context-free syntax
 syntax
 
   CTerm-CF.CLock  = "." CTerm-CF {prefer}
-
   CList-CF.CLock  = "." CList-CF
 
+  CTerm-CF.CQuote = "`" CTerm-CF

@@ -113,7 +113,7 @@ rules // Signatures
  		Constructors(ts) ->
  			<opdecls-to-coq;
  			mbind(\ ts' ->
- 			[Inductive([Induc("T", None(), Type(),
+ 			[Inductive([Induc("Type", None(), Type(),
  				ListDeclBar(ts'))])] \)> ts
 
 	sig-to-coq:
@@ -190,7 +190,7 @@ rules // Type signatures
 		[] -> []
 
   opdecl-to-coq:
-    OpDecl(tname, tparams, tsort@TypeSort()) -> 
+    OpDecl(tname, tparams, tsort@SortNoArgs("Type")) -> 
 			<foldr(!<type-sort-to-coq> tsort,
 					\ (x, y) ->
 						<mbind(\ z ->
@@ -208,22 +208,17 @@ rules // Type signatures
 				["Encountered unexpected type signature: ",
 					<write-to-string> x, ". Please report."]
 		where
-			not(?OpDecl(_, _, TypeSort()))
+			not(?OpDecl(_, _, SortNoArgs("Type")))
 
 rules // NaBL2 sorts
 
 	type-sort-tuple-to-coq:
 		tuple@(_, sort) ->
 			<type-sort-to-coq> sort
-		where
-			<TupleToList> tuple // FIXME: This works around a bug in the Stratego interpreter where terms of arity 2 are matched as if they were tuples
 
 	type-sort-to-coq:
 		SortNoArgs(name) -> Ref(name)
 	
-	type-sort-to-coq:
-		TypeSort() -> Ref("T")
-
 	type-sort-to-coq:
 		ScopeSort() -> Ref("ScopeId")
 	
@@ -245,7 +240,6 @@ rules // NaBL2 sorts
 					<write-to-string> x, ". Please report."]
 	where
 		not(?SortNoArgs(_) <+
-			?TypeSort() <+
 			?ScopeSort() <+
 			?ListSort(_) <+
 			?OccurrenceSort() <+

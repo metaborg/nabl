@@ -23,11 +23,11 @@ signature
 
   functions
   
-    projectFirst: Term -> Term {
+    projectFirst: term -> term {
       (fst, _) -> fst
     }
 
-    projectSecond: Term -> Term {
+    projectSecond: term -> term {
       (_, snd) -> snd
     }
 

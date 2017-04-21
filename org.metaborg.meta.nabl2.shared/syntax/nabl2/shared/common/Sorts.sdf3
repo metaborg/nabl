@@ -16,6 +16,7 @@ context-free syntax
   SortRef.TermSort       = "term"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
+  SortRef.StringSort     = "string"
   SortRef.Var            = SortVarId
   SortRef.TupleSort      = <(<{SortRef " * "}*>)>
   SortRef.ListSort       = <list(<SortRef>)>
@@ -25,4 +26,4 @@ lexical syntax
 
   SortVarId = VarId
 
-  SortVarId = "term" | "scope" | "occurrence" | "type" | "list" | "map" {reject}
+  SortVarId = "term" | "string" | "scope" | "occurrence" | "type" | "list" | "map" {reject}

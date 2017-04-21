@@ -32,6 +32,8 @@ rules
          astr* := <map(sort-to-str;!ConstType(<id>))> a*
 
   sort-to-str: SortNoArgs(name) -> SortNoArgs(name)
+  sort-to-str: TermSort() -> SortNoArgs("Term")
+  sort-to-str: StringSort() -> SortNoArgs("String")
   sort-to-str: ListSort(arg) -> Sort("List", [<sort-to-str> arg])
   sort-to-str: MapSort(key,value) -> <sort-to-str> ListSort(TupleSort([key,value]))
   sort-to-str: TupleSort(arg*) -> SortTuple(<map(sort-to-str)> arg*)
@@ -39,4 +41,3 @@ rules
 
   sort-to-str: ScopeSort() -> SortNoArgs("Scope") // FIXME Use NaBL2_ prefix
   sort-to-str: OccurrenceSort() -> SortNoArgs("Occurrence") // FIXME Use NaBL2_ prefix
-  sort-to-str: TypeSort() -> SortNoArgs("Type") // FIXME Use NaBL2_ prefix

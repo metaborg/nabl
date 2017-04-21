@@ -21,9 +21,13 @@ rules // sorts
  
   SortRef[[ TermSort() ^ (s) ]].
 
+  SortRef[[ StringSort() ^ (s) ]].
+
   SortRef[[ OccurrenceSort() ^ (s) ]].
 
   SortRef[[ ScopeSort() ^ (s) ]].
+
+  SortRef[[ StringSort() ^ (s) ]].
 
   SortRef[[ Var(name) ^ (s) ]].
  
@@ -33,9 +37,9 @@ rules // sorts
   SortRef[[ ListSort(sort) ^ (s) ]] :=
     SortRef[[ sort ^ (s) ]].
 
-  SortRef[[ MapSort(keysort,valuesort) ^ (s) ]] :=
-    SortRef[[ keysort ^ (s) ]],
-    SortRef[[ valuesort ^ (s) ]].
+  SortRef[[ MapSort(key_sort,value_sort) ^ (s) ]] :=
+    SortRef[[ key_sort ^ (s) ]],
+    SortRef[[ value_sort ^ (s) ]].
 
 rules // properties
 
@@ -171,6 +175,8 @@ rules // relations
     Rel{name} |-> _ | error $[[name] cannot be resolved to a relation].
 
   VariancePattern[[ OpVariant(name,variances) ^ (s) ]] :=
+    Cons{name} -> s,
+    Cons{name} |-> _,
     Map1(Variance)[[ variances ^ (s) ]].
 
   Variance[[ Invar() ^ (s) ]].
@@ -214,6 +220,8 @@ rules // CTerm
     Map1(CTerm(Var))[[ terms ^ (s) ]].
 
   CTerm(Var)[[ Op(name, terms) ^ (s) ]] :=
+    Cons{name} -> s,
+    Cons{name} |-> _,
     Map1(CTerm(Var))[[ terms ^ (s) ]].
 
   CTerm(Var)[[ Str(_) ^ (s) ]].
