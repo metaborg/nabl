@@ -3,7 +3,8 @@ module nabl2/lang/analysis/main
 imports
 
   nabl2/api
-  nabl2/runtime/main
+  nabl2/shared/main
+  nabl2runtime
 
   signatures/nabl2/lang/modules/-
   nabl2/lang/analysis/-
