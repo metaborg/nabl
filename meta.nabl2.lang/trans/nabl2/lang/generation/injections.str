@@ -1,4 +1,4 @@
-module nabl2/lang/generation/cgen/injections
+module nabl2/lang/generation/injections
 
 imports
 

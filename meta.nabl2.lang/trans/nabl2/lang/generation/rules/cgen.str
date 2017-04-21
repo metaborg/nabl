@@ -1,4 +1,4 @@
-module nabl2/lang/generation/cgen/rules/cgen
+module nabl2/lang/generation/rules/cgen
 
 imports
 
@@ -9,7 +9,7 @@ imports
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
 
-  nabl2/lang/generation/cgen/-
+  nabl2/lang/generation/-
   nabl2/lang/generation/-
   nabl2/lang/util/stratego
 

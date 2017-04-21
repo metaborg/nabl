@@ -1,9 +1,9 @@
-module nabl2/lang/generation/cgen/signatures/constructors
+module nabl2/lang/generation/signatures/constructors
 
 imports
 
   libstrc
-  nabl2/lang/generation/cgen/-
+  nabl2/lang/generation/-
   signatures/nabl2/shared/common/-
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/signatures/-

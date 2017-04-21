@@ -1,11 +1,11 @@
-module nabl2/lang/generation/cgen/modules/module
+module nabl2/lang/generation/modules/module
 
 imports
 
   libstrc
   signatures/nabl2/lang/modules/-
-  nabl2/lang/generation/cgen/-
-  nabl2/lang/generation/cgen/signatures/-
+  nabl2/lang/generation/-
+  nabl2/lang/generation/signatures/-
 
 rules
 

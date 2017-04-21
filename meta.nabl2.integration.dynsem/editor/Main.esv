@@ -2,7 +2,15 @@ module Main
 
 language
 
+  context  : none
   provider : target/metaborg/stratego.ctree
+  on save  : generate-dynsem-ds
 
-  context : none
+menus
+
+  menu: "DynSem Integration" (openeditor) (meta) (realtime)
+
+    action: "Generate All DynSem"   = generate-all-dynsem
+    action: "Generate DynSem Rules" = generate-dynsem-ds
+    action: "Generate DynSem Java"  = generate-dynsem-java
 

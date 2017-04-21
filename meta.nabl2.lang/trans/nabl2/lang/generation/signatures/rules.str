@@ -1,4 +1,4 @@
-module nabl2/lang/generation/cgen/signatures/rules
+module nabl2/lang/generation/signatures/rules
 
 imports
 

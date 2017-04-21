@@ -22,7 +22,7 @@ rules
            nabl2-pkg := <lookup> (NativePkg(), ds-options);
            java-dir := <lookup> (JavaGenDirAbs(), ds-options)
          then
-           src-gen-dir := <src-gen-dir(|project-path, "nabl2")>;
+           src-gen-dir := <src-gen-dir(|project-path, "nabl2/dynsem")>;
            ds-result* := <generate-dynsem-signatures(|lang-name);
                           map((path-prepend(|src-gen-dir),id))> ast;
            java-result* := <generate-java-operators(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir)> ast;
@@ -36,7 +36,7 @@ rules
     with if is-ds-active;
            ds-options := <ds-get-options> (path, project-path);
            langname := <lookup> (LangName(), ds-options);
-           src-gen-dir := <src-gen-dir(|project-path, "nabl2")>
+           src-gen-dir := <src-gen-dir(|project-path, "nabl2/dynsem")>
          then
            ds-result* := <generate-dynsem-signatures(|langname);
                           map((path-prepend(|src-gen-dir),id))> ast;

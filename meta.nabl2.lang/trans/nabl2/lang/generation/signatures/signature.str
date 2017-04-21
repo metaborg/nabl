@@ -1,9 +1,9 @@
-module nabl2/lang/generation/cgen/signatures/signature
+module nabl2/lang/generation/signatures/signature
 
 imports
 
   signatures/nabl2/lang/signatures/-
-  nabl2/lang/generation/cgen/signatures/-
+  nabl2/lang/generation/signatures/-
 
 rules
 

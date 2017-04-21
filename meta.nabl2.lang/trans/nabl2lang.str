@@ -8,10 +8,7 @@ imports
   nabl2/shared/main
  
   nabl2/lang/analysis/main
-  nabl2/lang/generation/cgen/main
-  nabl2/lang/generation/dynsem/main
-  nabl2/lang/signature-extraction/main
-  nabl2/lang/coq/main
+  nabl2/lang/generation/main
 
   completion
   outline

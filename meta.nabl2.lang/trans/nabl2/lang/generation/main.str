@@ -1,12 +1,12 @@
-module nabl2/lang/generation/cgen/main
+module nabl2/lang/generation/main
 
 imports
 
   libstrc
-  nabl2/lang/generation/cgen/-
-  nabl2/lang/generation/cgen/modules/-
-  nabl2/lang/generation/cgen/rules/-
-  nabl2/lang/generation/cgen/signatures/-
+  nabl2/lang/generation/-
+  nabl2/lang/generation/modules/-
+  nabl2/lang/generation/rules/-
+  nabl2/lang/generation/signatures/-
   nabl2/lang/util/-
 
 rules
@@ -14,7 +14,7 @@ rules
   generate-str:
     (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
     with
-      filename   := <src-gen-file(|project-path, "nabl2", ".str")> name;
+      filename   := <src-gen-file(|project-path, "nabl2/collection", ".str")> name;
       module-str := <module-to-str> ast;
       result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
  
