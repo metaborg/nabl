@@ -2,10 +2,10 @@ module nabl2/lang/analysis/constraints
 
 imports
 
+  signatures/nabl2/shared/constraints/-
   signatures/nabl2/lang/common/-
-  signatures/nabl2/lang/modules/-
-  signatures/nabl2/lang/rules/-
-  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/common
 
 rules
 
@@ -79,11 +79,13 @@ rules
 rules
 
   Clause[[ CDistinct(proj,set,msg) ^ (s) ]] :=
+    Projection[[ proj ^ () ]],
     CSet[[ set ^ (s) ]],
     Message[[ msg ^ (s) ]].
 
   Clause[[ CSubsetEq(set1,proj,set2,msg) ^ (s) ]] :=
     CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
     CSet[[ set2 ^ (s) ]],
     Message[[ msg ^ (s) ]].
 
@@ -109,7 +111,22 @@ rules
  
 rules
 
-  Clause[[ CGen(_,_,_) ^ (_) ]]. // TODO
+  Clause[[ CGen(scheme,term,msg) ^ (s) ]] :=
+    CTerm[[ scheme ^ (s) ]],
+    CTerm[[ term ^ (s) ]],
+    Message[[ msg ^ (s) ]].
 
-  Clause[[ CInst(_,_,_) ^ (_) ]]. // TODO
+  Clause[[ CInst(term,scheme,msg) ^ (s) ]] :=
+    CTerm[[ term ^ (s) ]],
+    CTerm[[ scheme ^ (s) ]],
+    Message[[ msg ^ (s) ]].
  
+rules
+
+  Clause[[ CFact(term,pos) ^ (s) ]] :=
+    CTerm[[ term ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CGoal(term,pos) ^ (s) ]] :=
+    CTerm[[ term ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].

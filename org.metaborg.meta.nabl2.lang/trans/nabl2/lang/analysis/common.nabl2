@@ -25,13 +25,29 @@ rules // name resolution
 
   NamespaceRef[[ Namespace(name) ^ (s) ]] :=
     Ns{name} -> s,
-    Ns{name} |-> _.
+    Ns{name} |-> _ | error $[Namespace [name] not defined].
 
   CTerm(Var)[[ Occurrence(ns,name,pos) ^ (s) ]] :=
     NamespaceRef[[ ns ^ (s) ]],
     CTerm(Var)[[ name ^ (s) ]]
     // TODO: pos
     .
+
+  CSet[[ Declarations(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+  CSet[[ References(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+  CSet[[ Visibles(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+  CSet[[ Reachables(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
 
 rules //labels
 
@@ -48,15 +64,15 @@ rules //labels
 
   LabelRef[[ l@P() ^ (s) ]] :=
     Label{l} -> s,
-    Label{l} |-> _.
+    Label{l} |-> _ | error $[P cannot be resolved to a label].
 
   LabelRef[[ l@I() ^ (s) ]] :=
     Label{l} -> s,
-    Label{l} |-> _.
+    Label{l} |-> _ | error $[I cannot be resolved to a label].
 
   LabelRef[[ Label(name) ^ (s) ]] :=
     Label{name} -> s,
-    Label{name} |-> _.
+    Label{name} |-> _ | error $[[name] cannot be resolved to a label].
 
   LabelOrder[[ Lt(label1,label2) ^ (s) ]] :=
     LabelRef[[ label1 ^ (s) ]],
@@ -90,9 +106,31 @@ rules // label regexp
 
 rules // CSet
 
-  CSet[[ _ ^ (_) ]]. // TODO
+  CSet[[ EmptySet() ^ (s) ]].
 
-  Projection[[ _ ^ (_) ]]. // TODO
+  CSet[[ Union(set1,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    CSet[[ set2 ^ (s) ]].
+
+  CSet[[ Isect(set1,proj,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]].
+
+  CSet[[ Diff(set1,proj,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]].
+
+  CSet[[ Lsect(set1,proj,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]].
+
+  Projection[[ NoProjection() ^ () ]].
+
+  Projection[[ Projection(name) ^ () ]] :=
+    name == "name" | error $[[name] is not a valid projection].
 
 rules // relations
 
@@ -103,7 +141,7 @@ rules // relations
 
   RelationRef[[ Relation(name) ^ (s) ]] :=
     Rel{name} -> s,
-    Rel{name} |-> _.
+    Rel{name} |-> _ | error $[[name] cannot be resolved to a relation].
 
   VariancePattern[[ OpVariant(name,variances) ^ (s) ]] :=
     Map1(Variance)[[ variances ^ (s) ]].
@@ -123,7 +161,7 @@ rules // functions
 
   FunctionRef[[ Function(name) ^ (s) ]] :=
     Fun{name} -> s,
-    Fun{name} |-> _.
+    Fun{name} |-> _ | error $[[name] does not resolve to a function].
 
   FunctionRef[[ Lub(rel) ^ (s) ]] :=
     // TODO: does the relation qualify for lub?
@@ -201,4 +239,4 @@ rules
   
   VarRef[[ Var(name) ^ (s) ]] :=
     Var{name} -> s,
-    Var{name} |-> _.
+    Var{name} |-> _ | error $[[name] does not resolve to a variable].

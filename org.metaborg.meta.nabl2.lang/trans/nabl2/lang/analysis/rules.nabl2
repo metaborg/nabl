@@ -2,27 +2,27 @@ module nabl2/lang/analysis/rules
 
 imports
 
-  signatures/nabl2/lang/common/-
-  signatures/nabl2/lang/modules/-
   signatures/nabl2/lang/rules/-
-  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/common
+  nabl2/lang/analysis/constraints
 
 rules // constraint generation rules
 
-  [[ Rules(rules) ^ (s) ]] :=
-    Map1(Rule)[[ rules ^ (s) ]].
+  [[ Rules(rules) ^ (s_mod, s_root) ]] :=
+    Map2(Rule)[[ rules ^ (s_mod, s_root) ]].
 
-  Rule[[ CGenInitRule(params, type, clauses) ^ (s) ]] :=
-    InitMarker{()} <- s,
+  Rule[[ CGenInitRule(params, type, clauses) ^ (s_mod, s_root) ]] :=
+    InitMarker{()} <- s_mod,
     new s_rule,
-    s_rule ---> s,
+    s_rule ---> s_mod,
     RuleType[[ type ^ (s_rule) ]],
     Map1(Clause)[[ clauses ^ (s_rule) ]].
  
-  Rule[[ CGenMatchRule(def, pattern, params, type, clauses) ^ (s) ]] :=
+  Rule[[ CGenMatchRule(def, pattern, params, type, clauses) ^ (s_mod, s_root) ]] :=
     new s_rule,
-    s_rule ---> s,
-    RuleDef[[ def ^ (s, s_rule) ]],
+    s_rule ---> s_mod,
+    RuleDef[[ def ^ (s_root, s_rule) ]],
     Term(ScopeVarDecl)[[ pattern ^ (s_rule) ]],
     RuleParams[[ params ^ (s_rule) ]],
     RuleType[[ type ^ (s_rule) ]],
@@ -36,7 +36,7 @@ rules // constraint generation rules
   RuleType[[ Type(type) ^ (s) ]] :=
     Term(ScopeVarDecl)[[ type ^ (s) ]].
  
-  RuleDef[[ NoName() ^ (s, _) ]].
+  RuleDef[[ NoName() ^ (s_rule, s_params) ]].
 
   RuleDef[[ Name(name, params) ^ (s_rule, s_params) ]] :=
     Rule{name @s_rule} <- s_rule,
@@ -66,6 +66,6 @@ rules
  
 rules // constraint generation functions
 
-  Rule[[ FunDef(_,_,_) ^ (_) ]]. // TODO
+  Rule[[ FunDef(_,_,_) ^ (_,_) ]]. // TODO
 
   Clause[[ FunCall(_,_) ^ (_) ]]. // TODO

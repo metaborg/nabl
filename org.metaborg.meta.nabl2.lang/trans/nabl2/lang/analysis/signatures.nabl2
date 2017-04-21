@@ -3,14 +3,14 @@ module nabl2/lang/analysis/signatures
 imports
 
   signatures/nabl2/lang/common/-
-  signatures/nabl2/lang/modules/-
-  signatures/nabl2/lang/rules/-
   signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/common
 
 rules
 
-  [[ Signature(signatures) ^ (s) ]] :=
-    Map1(Sig)[[ signatures ^ (s) ]].
+  [[ Signature(signatures) ^ (s_mod, s_root) ]] :=
+    Map1(Sig)[[ signatures ^ (s_mod) ]].
 
 rules
 

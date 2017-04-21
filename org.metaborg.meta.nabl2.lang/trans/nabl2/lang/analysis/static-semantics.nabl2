@@ -2,10 +2,12 @@ module nabl2/lang/analysis/static-semantics
 
 imports
 
-  signatures/nabl2/lang/common/-
   signatures/nabl2/lang/modules/-
-  signatures/nabl2/lang/rules/-
-  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/common
+  nabl2/lang/analysis/constraints
+  nabl2/lang/analysis/rules
+  nabl2/lang/analysis/signatures
 
 signature
 
@@ -33,20 +35,21 @@ rules
     new s,
     distinct/name V(s)/InitMarker | error "Multiple definitions for 'init' found." @NAMES.
 
-  [[ Module(name, sections) ^ (s) ]] :=
-    Mod{name} <- s,
+  [[ Module(name, sections) ^ (s_root) ]] :=
+    Mod{name} <- s_root,
     new s_mod,
-    s_mod -C-> s,
-    s -C-> s_mod,
-    Map1[[ sections ^ (s_mod) ]],
-    distinct/name V(s)/WellFormednessMarker | error "Multiple definitions for 'well-formedness' found." @NAMES.
+    s_mod -C-> s_root,
+    s_root -C-> s_mod,
+    Map2[[ sections ^ (s_mod, s_root) ]],
+    distinct/name V(s_mod)/WellFormednessMarker | error "Multiple definitions for 'well-formedness' found." @NAMES.
 
 rules
 
-  [[ Imports(imports) ^ (s) ]] :=
-    Map1[[ imports ^ (s) ]].
+  [[ Imports(imports) ^ (s_mod, s_root) ]] :=
+    Map2[[ imports ^ (s_mod, s_root) ]].
 
-  [[ ImportWildcard(_) ^ (s) ]]. // TODO
+  [[ ImportWildcard(_) ^ (s_mod, s_root) ]] :=
+    false | note "Unable to resolve wildcard imports during static analysis".
 
-  [[ Import(name) ^ (s) ]] :=
-    Mod{name} -> s.
+  [[ Import(name) ^ (s_mod, s_root) ]] :=
+    Mod{name} -> s_root.

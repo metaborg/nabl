@@ -12,6 +12,9 @@ dependencies:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
+runtime:
+  nabl2:
+    debug: analysis
 language:
   stratego:
     format: ctree
