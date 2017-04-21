@@ -16,8 +16,8 @@ import org.spoofax.interpreter.terms.ITermFactory;
 
 public abstract class AstPrimitive extends ScopeGraphContextPrimitive {
 
-    public AstPrimitive(String name, int svars, int tvars) {
-        super(name, svars, tvars);
+    public AstPrimitive(String name, int tvars) {
+        super(name, 0, tvars);
     }
 
     @Override public Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,

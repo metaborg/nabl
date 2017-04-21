@@ -16,7 +16,7 @@ import com.google.common.collect.Lists;
 public class SG_get_ast_resolution extends AstPrimitive {
 
     public SG_get_ast_resolution() {
-        super(SG_get_ast_resolution.class.getSimpleName(), 0, 0);
+        super(SG_get_ast_resolution.class.getSimpleName(), 0);
     }
 
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, List<ITerm> terms)

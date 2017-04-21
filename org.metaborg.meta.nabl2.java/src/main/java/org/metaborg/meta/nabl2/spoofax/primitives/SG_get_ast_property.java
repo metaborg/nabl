@@ -11,7 +11,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 public class SG_get_ast_property extends AstPrimitive {
 
     public SG_get_ast_property() {
-        super(SG_get_ast_property.class.getSimpleName(), 0, 1);
+        super(SG_get_ast_property.class.getSimpleName(), 1);
     }
 
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, List<ITerm> terms)
