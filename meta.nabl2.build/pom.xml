@@ -16,21 +16,19 @@
   </parent>
 
   <modules>
-    <module>../org.metaborg.meta.nabl2.eclipse.feature</module>
-    <module>../org.metaborg.meta.nabl2.eclipse.site</module>
-    <module>../org.metaborg.meta.nabl2.examples</module>
-    <module>../org.metaborg.meta.nabl2.integration.coq</module>
-    <module>../org.metaborg.meta.nabl2.integration.coq.eclipse</module>
-    <module>../org.metaborg.meta.nabl2.integration.dynsem</module>
-    <module>../org.metaborg.meta.nabl2.integration.dynsem.eclipse</module>
-    <module>../org.metaborg.meta.nabl2.java</module>
-    <module>../org.metaborg.meta.nabl2.lang</module>
-    <module>../org.metaborg.meta.nabl2.lang.eclipse</module>
-    <module>../org.metaborg.meta.nabl2.runtime</module>
-    <module>../org.metaborg.meta.nabl2.runtime.eclipse</module>
-    <module>../org.metaborg.meta.nabl2.shared</module>
-    <module>../org.metaborg.meta.nabl2.shared.eclipse</module>
-    <module>../org.metaborg.meta.nabl2.test</module>
+    <module>../meta.nabl2.examples</module>
+    <module>../meta.nabl2.integration.coq</module>
+    <module>../meta.nabl2.integration.coq.eclipse</module>
+    <module>../meta.nabl2.integration.dynsem</module>
+    <module>../meta.nabl2.integration.dynsem.eclipse</module>
+    <module>../meta.nabl2.java</module>
+    <module>../meta.nabl2.lang</module>
+    <module>../meta.nabl2.lang.eclipse</module>
+    <module>../meta.nabl2.runtime</module>
+    <module>../meta.nabl2.runtime.eclipse</module>
+    <module>../meta.nabl2.shared</module>
+    <module>../meta.nabl2.shared.eclipse</module>
+    <module>../meta.nabl2.test</module>
   </modules>
 
   <repositories>
