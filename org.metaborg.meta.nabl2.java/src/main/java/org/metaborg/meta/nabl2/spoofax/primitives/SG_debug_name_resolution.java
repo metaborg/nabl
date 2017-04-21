@@ -10,13 +10,13 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public class SG_debug_name_resolution extends AnalysisPrimitive {
+public class SG_debug_name_resolution extends AnalysisNoTermPrimitive {
 
     public SG_debug_name_resolution() {
-        super(SG_debug_name_resolution.class.getSimpleName(), 0, 1);
+        super(SG_debug_name_resolution.class.getSimpleName());
     }
 
-    @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
+    @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index)
             throws InterpreterException {
         final IScopeGraphUnit unit = context.unit(index.getResource());
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {

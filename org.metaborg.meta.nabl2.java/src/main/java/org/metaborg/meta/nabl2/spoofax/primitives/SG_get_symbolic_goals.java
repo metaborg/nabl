@@ -12,7 +12,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 public class SG_get_symbolic_goals extends AnalysisPrimitive {
 
     public SG_get_symbolic_goals() {
-        super(SG_get_symbolic_goals.class.getSimpleName(), 0, 1);
+        super(SG_get_symbolic_goals.class.getSimpleName());
     }
 
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)

@@ -13,9 +13,9 @@ import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
-public abstract class AnalysisPrimitive extends ScopeGraphContextPrimitive {
+public abstract class AnalysisNoTermPrimitive extends ScopeGraphContextPrimitive {
 
-    public AnalysisPrimitive(String name) {
+    public AnalysisNoTermPrimitive(String name) {
         super(name, 0, 1);
     }
 
@@ -27,12 +27,11 @@ public abstract class AnalysisPrimitive extends ScopeGraphContextPrimitive {
         TermIndex index = StrategoTermIndices.get(sterms.get(0))
                 .orElseThrow(() -> new IllegalArgumentException("Not a valid analysis term."));
         StrategoTerms strategoTerms = new StrategoTerms(factory);
-        ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
-        Optional<? extends ITerm> result = call(context, index, term);
+        Optional<? extends ITerm> result = call(context, index);
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }
 
-    public abstract Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
+    public abstract Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index)
             throws InterpreterException;
 
 }

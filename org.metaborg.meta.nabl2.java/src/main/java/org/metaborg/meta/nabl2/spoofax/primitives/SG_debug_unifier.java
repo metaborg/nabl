@@ -10,13 +10,13 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.UnifierTerms;
 import org.spoofax.interpreter.core.InterpreterException;
 
-public class SG_debug_unifier extends AnalysisPrimitive {
+public class SG_debug_unifier extends AnalysisNoTermPrimitive {
 
     public SG_debug_unifier() {
-        super(SG_debug_unifier.class.getSimpleName(), 0, 1);
+        super(SG_debug_unifier.class.getSimpleName());
     }
 
-    @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
+    @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index)
             throws InterpreterException {
         final IScopeGraphUnit unit = context.unit(index.getResource());
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {

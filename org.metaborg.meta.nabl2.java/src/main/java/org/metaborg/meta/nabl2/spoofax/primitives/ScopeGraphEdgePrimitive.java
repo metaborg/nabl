@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisPrimitive {
 
     public ScopeGraphEdgePrimitive(String name) {
-        super(name, 0, 1);
+        super(name);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)

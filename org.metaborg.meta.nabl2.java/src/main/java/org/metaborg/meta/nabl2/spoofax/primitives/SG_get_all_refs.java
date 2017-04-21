@@ -11,7 +11,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 public class SG_get_all_refs extends AnalysisPrimitive {
 
     public SG_get_all_refs() {
-        super(SG_get_all_refs.class.getSimpleName(), 0, 1);
+        super(SG_get_all_refs.class.getSimpleName());
     }
 
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)

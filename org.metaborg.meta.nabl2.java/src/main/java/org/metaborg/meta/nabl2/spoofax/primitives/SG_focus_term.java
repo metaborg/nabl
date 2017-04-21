@@ -12,7 +12,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 public class SG_focus_term extends AnalysisPrimitive {
 
     public SG_focus_term() {
-        super(SG_focus_term.class.getSimpleName(), 0, 1);
+        super(SG_focus_term.class.getSimpleName());
     }
 
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
