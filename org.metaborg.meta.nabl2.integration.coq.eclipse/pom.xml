@@ -4,18 +4,18 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>org.metaborg.meta.nabl2.lang.eclipse</artifactId>
+  <artifactId>org.metaborg.meta.nabl2.integration.coq.eclipse</artifactId>
   <packaging>eclipse-plugin</packaging>
 
   <parent>
     <groupId>org.metaborg</groupId>
-    <artifactId>parent.eclipse.language.meta</artifactId>
+    <artifactId>parent.eclipse.language</artifactId>
     <version>2.3.0-SNAPSHOT</version>
-    <relativePath>../../releng/parent/eclipse/language/meta</relativePath>
+    <relativePath>../../releng/parent/eclipse/language</relativePath>
   </parent>
 
   <properties>
-    <lang.unpack.artifactId>org.metaborg.meta.nabl2.lang</lang.unpack.artifactId>
+    <lang.unpack.artifactId>org.metaborg.meta.nabl2.integration.coq</lang.unpack.artifactId>
   </properties>
 
   <dependencies>

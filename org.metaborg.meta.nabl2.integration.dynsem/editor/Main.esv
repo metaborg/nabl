@@ -1,0 +1,8 @@
+module Main
+
+language
+
+  provider : target/metaborg/stratego.ctree
+
+  context : none
+

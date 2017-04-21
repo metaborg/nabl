@@ -15,20 +15,22 @@
     <relativePath />
   </parent>
 
-<modules>
-    <module>org.metaborg.meta.lang.nabl</module>
-    <module>org.metaborg.meta.lang.nabl.eclipse</module>
-    <module>org.metaborg.meta.nabl2.java</module>
-    <module>org.metaborg.meta.nabl2.lang</module>
-    <module>org.metaborg.meta.nabl2.lang.eclipse</module>
-    <module>org.metaborg.meta.nabl2.lang.test</module>
-    <module>org.metaborg.meta.nabl2.runtime</module>
-    <module>org.metaborg.meta.nabl2.runtime.eclipse</module>
-    <module>org.metaborg.meta.nabl2.runtime.test</module>
-    <module>org.metaborg.meta.nabl2.shared</module>
-    <module>org.metaborg.meta.nabl2.shared.eclipse</module>
-    <module>org.metaborg.meta.nabl2.eclipse.feature</module>
-    <module>org.metaborg.meta.nabl2.eclipse.site</module>
+  <modules>
+    <module>../org.metaborg.meta.nabl2.eclipse.feature</module>
+    <module>../org.metaborg.meta.nabl2.eclipse.site</module>
+    <module>../org.metaborg.meta.nabl2.examples</module>
+    <module>../org.metaborg.meta.nabl2.integration.coq</module>
+    <module>../org.metaborg.meta.nabl2.integration.coq.eclipse</module>
+    <module>../org.metaborg.meta.nabl2.integration.dynsem</module>
+    <module>../org.metaborg.meta.nabl2.integration.dynsem.eclipse</module>
+    <module>../org.metaborg.meta.nabl2.java</module>
+    <module>../org.metaborg.meta.nabl2.lang</module>
+    <module>../org.metaborg.meta.nabl2.lang.eclipse</module>
+    <module>../org.metaborg.meta.nabl2.runtime</module>
+    <module>../org.metaborg.meta.nabl2.runtime.eclipse</module>
+    <module>../org.metaborg.meta.nabl2.shared</module>
+    <module>../org.metaborg.meta.nabl2.shared.eclipse</module>
+    <module>../org.metaborg.meta.nabl2.test</module>
   </modules>
 
   <repositories>

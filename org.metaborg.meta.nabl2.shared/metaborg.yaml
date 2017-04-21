@@ -5,10 +5,10 @@ metaborgVersion: 2.3.0-SNAPSHOT
 metaborgBaselineVersion: 2.2.0
 dependencies:
   compile:
-  # org.metaborg:org.metaborg.meta.lang.stratego:${metaborgVersion}
-  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  # org.metaborg:org.metaborg.meta.lang.stratego:${metaborgBaselineVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
   source:
-  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+  - org.metaborg:meta.lib.spoofax:${metaborgBaselineVersion}
 exports:
 - language: ATerm
   directory: src-gen/syntax
