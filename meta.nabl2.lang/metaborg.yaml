@@ -30,6 +30,7 @@ exports:
   includes:
   ## NaBL2
   - "nabl2/**/*.str"
+  - "nabl2/**/*.meta"
 - language: NaBL2Lang
   directory: trans
   includes:
