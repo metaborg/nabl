@@ -1,0 +1,5 @@
+module nabl2/integration/dynsem
+
+imports
+
+  nabl2/integration/dynsem/generation/main

@@ -236,6 +236,8 @@ rules // CTerm
   CTerm(Var)[[ CLock(term) ^ (s) ]] :=
     CTerm(Var)[[ term ^ (s) ]].
 
+  CTerm(Var)[[ CQuote(_) ^ (s) ]].
+
 rules // Term & Pattern
 
   Term(Var)[[ List(terms) ^ (s) ]] :=

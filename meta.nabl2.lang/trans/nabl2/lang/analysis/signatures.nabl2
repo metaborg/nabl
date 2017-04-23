@@ -19,7 +19,7 @@ rules
 
   Sig[[ CGenSig(def, sort, params, type) ^ (s) ]] :=
     // TODO: def
-    SortRef[[ sort ^ (s) ]],
+    // TODO: sort (AST sort)
     Map1(SortRef)[[ params ^ (s) ]],
     CGenSigType[[ type ^ (s) ]].
 

@@ -58,10 +58,10 @@ exports:
   directory: src-gen
   includes:
   - "ds-signatures/nabl2/**/*.str"
-  # Dynsem2Coq
-- language: dynsem2coq
+  # DynSem
+- language: ds
   directory: trans
-  includes: "**/*.ds2v"
+  includes: "**/*.ds"
 
 language:
   sdf:

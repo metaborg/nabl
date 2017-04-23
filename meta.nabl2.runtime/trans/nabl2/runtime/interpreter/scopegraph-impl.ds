@@ -109,12 +109,12 @@ rules // scope graph
         ds[d] => DE([s],_)
     }.
 
-  NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -assocsOf-> as
+  NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -assocsOf-> s
     where case ds[d?] of {
       true =>
-        ds[d] => DE(_,as)
+        ds[d] => DE(_,s)
       false =>
-        {} => as
+        {} => s
     }.
 
   NaBL2 NaBL2(G(_,_,rs),_,_) |- r:Occurrence -scopeOfRef-> s

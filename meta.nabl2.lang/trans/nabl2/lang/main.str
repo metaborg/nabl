@@ -1,0 +1,7 @@
+module nabl2/lang/main
+
+imports
+
+  nabl2/lang/analysis/main
+  nabl2/lang/generation/main
+  nabl2/lang/util/main

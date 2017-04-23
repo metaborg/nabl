@@ -45,5 +45,5 @@ rules
 
   (d, l):(Occurrence * Label) -assocScopeOf-> s
   where
-    d -assocsOf-> as;
-    as[l] => [s].
+    d -assocsOf-> assocs;
+    assocs[l] => [s].
