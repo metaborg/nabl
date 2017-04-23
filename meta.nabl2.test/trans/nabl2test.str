@@ -3,6 +3,7 @@ module nabl2test
 imports
   
   nabl2/api
+  nabl2/runtime
   testsuites/nabl2test
   pp
 
