@@ -32,8 +32,10 @@ rules
 
   nabl2-analysis-has-errors = nabl2--analysis-has-errors
 
+  nabl2-get-ast-params     = nabl2--get-ast-params
   nabl2-get-ast-params(|a) = nabl2--get-ast-params
 
+  nabl2-get-ast-type     = nabl2--get-ast-type
   nabl2-get-ast-type(|a) = nabl2--get-ast-type
 
   nabl2-get-ast-refs = nabl2--get-ast-resolution; map(Snd)
