@@ -38,7 +38,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
 
     public static IMatcher<ResolutionParameters> matcher() {
         return term -> M.appl3("", matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
-            RegExpBuilder<Label> builder = new RegExpBuilder<Label>(labels);
+            RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
             return matchWf(builder).match(wfTerm)
                 .<ResolutionParameters>map(wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
         }).match(term).flatMap(o -> o);
@@ -83,7 +83,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(Label.P)), R.closure(R.symbol(Label.I)));
         Relation<Label> order;
         try {
-            order = new Relation<Label>(RelationDescription.STRICT_PARTIAL_ORDER);
+            order = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
             order.add(Label.D, Label.I);
             order.add(Label.I, Label.P);
         } catch(RelationException e) {

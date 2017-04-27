@@ -52,7 +52,7 @@ public class RelationTerms {
                 sym = RelationOptions.symmetry().match(propTerm).orElse(sym);
                 trans = RelationOptions.transitivity().match(propTerm).orElse(trans);
             }
-            return new Relation<ITerm>(ImmutableRelationDescription.of(refl, sym, trans));
+            return new Relation<>(ImmutableRelationDescription.of(refl, sym, trans));
         });
     }
 
