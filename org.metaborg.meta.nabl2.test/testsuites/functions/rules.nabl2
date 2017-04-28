@@ -2,7 +2,7 @@ module testsuites/functions/rules
 
 imports
 
-  signatures/testsuites/-
+  signatures/testsuites/functions/-
 
 rules
 

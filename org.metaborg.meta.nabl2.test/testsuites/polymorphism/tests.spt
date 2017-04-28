@@ -1,0 +1,9 @@
+module polymorphism
+
+language NaBL2Test
+
+//-------------------------------
+
+test generalize and instantiate [[
+  generalize and instantiate
+]] 0 errors

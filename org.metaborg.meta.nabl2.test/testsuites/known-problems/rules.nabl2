@@ -2,7 +2,7 @@ module testsuites/known-problems/rules
 
 imports
 
-  signatures/testsuites/-
+  signatures/testsuites/known-problems/-
 
 rules
 
