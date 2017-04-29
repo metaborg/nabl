@@ -15,11 +15,11 @@ public final class PolyConstraints {
     public static IMatcher<IPolyConstraint> matcher() {
         return M.<IPolyConstraint>cases(
             // @formatter:off
-            M.appl3(C_GEN, M.term(), M.term(), MessageInfo.matcher(), (c, scheme, type, origin) -> {
-                return ImmutableCGeneralize.of(scheme, type, origin);
+            M.appl4(C_GEN, M.term(), M.var(), M.term(), MessageInfo.matcher(), (c, scheme, genVars, type, origin) -> {
+                return ImmutableCGeneralize.of(scheme, genVars, type, origin);
             }),
-            M.appl3(C_INST, M.term(), M.term(), MessageInfo.matcher(), (c, type, scheme, origin) -> {
-                return ImmutableCInstantiate.of(type, scheme, origin);
+            M.appl4(C_INST, M.term(), M.var(), M.term(), MessageInfo.matcher(), (c, type, instVars, scheme, origin) -> {
+                return ImmutableCInstantiate.of(type, instVars, scheme, origin);
             })
             // @formatter:on
         );
@@ -39,10 +39,12 @@ public final class PolyConstraints {
             // @formatter:off
             gen -> ImmutableCGeneralize.of(
                         unifier.find(gen.getScheme()),
+                        gen.getGenVars(),
                         unifier.find(gen.getType()),
                         gen.getMessageInfo().apply(unifier::find)),
             inst -> ImmutableCInstantiate.of(
                         unifier.find(inst.getType()),
+                        inst.getInstVars(),
                         unifier.find(inst.getScheme()),
                         inst.getMessageInfo().apply(unifier::find))
             // @formatter:on

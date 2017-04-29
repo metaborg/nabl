@@ -18,12 +18,12 @@ rules
   normalize =
     normalize-axioms;
     normalize-rule-names;
+    normalize-constraints;
     normalize-wildcards;
     normalize-regex;
     normalize-constructors;
     normalize-arg-matches;
     normalize-rule-vars;
-    normalize-constraints;
     normalize-messages;
     normalize-indices
 
@@ -126,6 +126,14 @@ rules
   normalize-constraint:
     CDeclType(o,ty,prio,msginfo) ->
       CDeclProperty(o,Type(),ty,prio,msginfo)
+
+  normalize-constraint:
+    CGen(t1,t2,msginfo) ->
+      CGen(t1,Wld(),t2,msginfo)
+
+  normalize-constraint:
+    CInst(t1,t2,msginfo) ->
+      CInst(t1,Wld(),t2,msginfo)
 
   normalize-constraint:
     CSetEq(s1,proj,s2,msginfo) ->

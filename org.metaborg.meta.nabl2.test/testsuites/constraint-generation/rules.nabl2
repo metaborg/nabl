@@ -2,7 +2,7 @@ module testsuites/constraint-generation/rules
 
 imports
 
-  signatures/testsuites/-
+  signatures/testsuites/constraint-generation/-
 
 rules
 

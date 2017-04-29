@@ -1,0 +1,9 @@
+module testsuites/polymorphism/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.GenInst = <generalize and instantiate>
