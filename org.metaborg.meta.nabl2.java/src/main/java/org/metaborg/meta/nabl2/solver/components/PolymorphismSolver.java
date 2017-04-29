@@ -18,7 +18,6 @@ import org.metaborg.meta.nabl2.poly.TypeVar;
 import org.metaborg.meta.nabl2.solver.Solver;
 import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
-import org.metaborg.meta.nabl2.stratego.StrategoTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -98,7 +97,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
             unifier().removeActive(gen.getScheme(), gen); // before `unify`, so that we don't cause an error chain if
                                                           // that fails
             unifier().unify(gen.getScheme(), scheme);
-            unifier().unify(gen.getGenVars(), TB.newList(StrategoTerms.explodeVars(subst.keySet())));
+            unifier().unify(gen.getGenVars(), TB.newList(subst.keySet()));
         } catch(UnificationException ex) {
             throw new UnsatisfiableException(gen.getMessageInfo().withDefaultContent(ex.getMessageContent()));
         }
@@ -130,7 +129,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
             unifier().removeActive(inst.getType(), inst); // before `unify`, so that we don't cause an error chain if
                                                           // that fails
             unifier().unify(inst.getType(), type);
-            unifier().unify(inst.getInstVars(), TB.newList(StrategoTerms.explodeVars(subst.values())));
+            unifier().unify(inst.getInstVars(), TB.newList(subst.values()));
         } catch(UnificationException ex) {
             throw new UnsatisfiableException(inst.getMessageInfo().withDefaultContent(ex.getMessageContent()));
         }

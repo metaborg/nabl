@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.stratego;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -29,7 +27,6 @@ import org.spoofax.interpreter.terms.ITermFactory;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
-import com.google.common.collect.Lists;
 
 public class StrategoTerms {
 
@@ -271,14 +268,6 @@ public class StrategoTerms {
 
         <T> void put(Class<T> clazz, T instance);
 
-    }
-
-    public static List<ITerm> explodeVars(Collection<ITermVar> vars) {
-        List<ITerm> varTerms = Lists.newArrayList();
-        for(ITermVar var : vars) {
-            varTerms.add(TB.newAppl(VAR_CTOR, TB.newString(var.getResource()), TB.newString(var.getName())));
-        }
-        return varTerms;
     }
 
 }
