@@ -20,7 +20,7 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
     Set<IDeclPath<S, L, O>> reachable(S scope);
 
     static <S extends IScope, L extends ILabel, O extends IOccurrence> INameResolution<S, L, O> empty() {
-        return new EmptyNameResolution<S, L, O>();
+        return new EmptyNameResolution<>();
     }
 
     static class EmptyNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
