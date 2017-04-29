@@ -9,10 +9,10 @@ template options
 
   keyword -/- [a-zA-Z0-9\'\_]
 
-context-free syntax
+syntax
 
-  Constraint.CGen  = [[CTerm] genOf [CTerm] [Message]]
-  Constraint.CInst = [[CTerm] instOf [CTerm] [Message]]
+  Constraint-CF.CGen  = CTerm-CF LAYOUT?-CF "genOf" "(" LAYOUT?-CF CVar-CF LAYOUT?-CF ")" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
+  Constraint-CF.CInst = CTerm-CF LAYOUT?-CF "instOf" "(" LAYOUT?-CF CVar-CF LAYOUT?-CF ")" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
 
 lexical syntax
 

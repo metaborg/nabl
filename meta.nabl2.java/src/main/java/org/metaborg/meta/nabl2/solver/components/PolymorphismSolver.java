@@ -20,12 +20,10 @@ import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.Unit;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -85,52 +83,48 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
             return false;
         }
         tracker().freeze(type);
-        ITerm scheme = generalize(type);
+        final Map<ITermVar, TypeVar> subst = Maps.newLinkedHashMap();
+        final ITerm scheme;
+        {
+            int c = 0;
+            for(ITermVar var : type.getVars()) {
+                subst.put(var, ImmutableTypeVar.of("T" + (++c)));
+            }
+            scheme = subst.isEmpty() ? type : ImmutableForall.of(subst.values(), subst(type, subst));
+        }
         tracker().removeActive(gen.getScheme(), gen); // before `unify`, so that we don't cause an error chain if
                                                       // that fails
         unify(gen.getScheme(), scheme, gen.getMessageInfo());
+        unify(gen.getGenVars(), TB.newList(subst.keySet()), gen.getMessageInfo());
         return true;
-    }
-
-    private ITerm generalize(ITerm type) {
-        BiMap<ITermVar, TypeVar> subst = HashBiMap.create();
-        int c = 0;
-        for(ITermVar var : Terms.unlockedVars(type)) {
-            subst.put(var, ImmutableTypeVar.of("T" + (++c)));
-        }
-        ITerm scheme = subst.isEmpty() ? type : ImmutableForall.of(subst.values(), subst(type, subst));
-        return scheme;
     }
 
     private boolean solve(CInstantiate inst) throws UnsatisfiableException {
         if(!complete) {
             return false;
         }
-        ITerm scheme = find(inst.getScheme());
-        if(tracker().isActive(scheme, inst)) {
+        ITerm schemeTerm = find(inst.getScheme());
+        if(tracker().isActive(schemeTerm, inst)) {
             return false;
         }
-        tracker().removeActive(scheme, inst);
-        final Optional<Forall> forall = Forall.matcher().match(scheme);
+        tracker().removeActive(schemeTerm, inst);
+        final Optional<Forall> forall = Forall.matcher().match(schemeTerm);
         final ITerm type;
+        final Map<TypeVar, ITermVar> subst = Maps.newLinkedHashMap();
         if(forall.isPresent()) {
-            type = instantiate(forall.get());
+            final Forall scheme = forall.get();
+            scheme.getTypeVars().stream().forEach(v -> {
+                subst.put(v, fresh(v.getName()));
+            });
+            type = subst(scheme.getType(), subst);
         } else {
-            type = scheme;
+            type = schemeTerm;
         }
         tracker().removeActive(inst.getType(), inst); // before `unify`, so that we don't cause an error chain if
                                                       // that fails
         unify(inst.getType(), type, inst.getMessageInfo());
+        unify(inst.getInstVars(), TB.newList(subst.values()), inst.getMessageInfo());
         return true;
-    }
-
-    private ITerm instantiate(Forall scheme) {
-        Map<TypeVar, ITermVar> mapping = Maps.newHashMap();
-        scheme.getTypeVars().stream().forEach(v -> {
-            mapping.put(v, fresh(v.getName()));
-        });
-        ITerm type = subst(scheme.getType(), mapping);
-        return type;
     }
 
     private ITerm subst(ITerm term, Map<? extends ITerm, ? extends ITerm> subst) {

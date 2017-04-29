@@ -8,6 +8,7 @@ imports
   testsuites/functions/-
   testsuites/known-problems/-
   testsuites/name-resolution/-
+  testsuites/polymorphism/-
   testsuites/unification/-
 
 signature

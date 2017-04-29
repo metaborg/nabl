@@ -2,8 +2,8 @@ package org.metaborg.meta.nabl2.spoofax.analysis;
 
 import java.util.Collection;
 
+import org.metaborg.meta.nabl2.config.NaBL2Config;
 import org.metaborg.util.concurrent.IClosableLock;
-import org.metaborg.util.config.NaBL2Config;
 
 public interface IScopeGraphContext<U extends IScopeGraphUnit> {
 

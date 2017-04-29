@@ -8,6 +8,7 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.pcollections.PSet;
 
 @Value.Immutable
@@ -15,6 +16,8 @@ import org.pcollections.PSet;
 public abstract class CGeneralize implements IPolyConstraint {
 
     @Value.Parameter public abstract ITerm getScheme();
+
+    @Value.Parameter public abstract ITermVar getGenVars();
 
     @Value.Parameter public abstract ITerm getType();
 
@@ -41,7 +44,8 @@ public abstract class CGeneralize implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getScheme()).append(" genOf ").append(getType()).build();
+        return MessageContent.builder().append(getScheme()).append(" genOf(").append(TB.newList(getGenVars()))
+                .append(") ").append(getType()).build();
     }
 
     @Override public String toString() {

@@ -31,6 +31,9 @@ context-free syntax
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
+  Constraint.CGen  = [[CTerm] genOf [CTerm] [Message]]
+  Constraint.CInst = [[CTerm] instOf [CTerm] [Message]]
+
 syntax
 
   Constraint-CF.CSetEq = CSet-CF LAYOUT?-CF "seteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF

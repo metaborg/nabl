@@ -8,3 +8,9 @@
 /.settings
 
 .polyglot.metaborg.yaml
+
+*.constraints
+*.scope-graph
+*.name-resolution
+*.unifier
+*.symbolic

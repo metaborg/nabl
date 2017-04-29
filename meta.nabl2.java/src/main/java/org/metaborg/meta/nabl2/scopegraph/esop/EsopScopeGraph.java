@@ -118,8 +118,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     // ------------------------------------
 
     EsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter) {
-        return new EsopNameResolution<S, L, O>(this, params, scopeCounter);
+        return new EsopNameResolution<>(this, params, scopeCounter);
     }
-
 
 }

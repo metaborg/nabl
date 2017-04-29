@@ -10,6 +10,7 @@ imports
   testsuites/functions/Syntax
   testsuites/name-resolution/Syntax
   testsuites/known-problems/Syntax
+  testsuites/polymorphism/Syntax
   testsuites/unification/Syntax
 
 context-free start-symbols
