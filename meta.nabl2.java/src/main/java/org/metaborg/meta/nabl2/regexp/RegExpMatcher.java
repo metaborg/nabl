@@ -1,29 +1,27 @@
 package org.metaborg.meta.nabl2.regexp;
 
 import java.io.Serializable;
+import java.util.Deque;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
-
-import it.unimi.dsi.fastutil.Stack;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 
 public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
     private final IRegExp<S> state;
-    private final Object2ObjectMap<IRegExp<S>,Object2ObjectMap<S,IRegExp<S>>> stateTransitions;
-    private final ObjectSet<IRegExp<S>> nonFinal;
+    private final Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions;
+    private final Set<IRegExp<S>> nonFinal;
     private final IAlphabet<S> alphabet;
 
-    private RegExpMatcher(IRegExp<S> state,
-            Object2ObjectMap<IRegExp<S>,Object2ObjectMap<S,IRegExp<S>>> stateTransitions,
-            ObjectSet<IRegExp<S>> nonFinal) {
+    private RegExpMatcher(IRegExp<S> state, Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions,
+            Set<IRegExp<S>> nonFinal) {
         this.state = state;
         this.stateTransitions = stateTransitions;
         this.nonFinal = nonFinal;
@@ -61,19 +59,19 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
             derivers.add(new Deriver<>(symbol, initial.getBuilder()));
         }
 
-        final Object2ObjectMap<IRegExp<S>,Object2ObjectMap<S,IRegExp<S>>> stateTransitions = new Object2ObjectOpenHashMap<>();
-        final Object2ObjectMap<IRegExp<S>,ObjectSet<IRegExp<S>>> reverseTransitions = new Object2ObjectOpenHashMap<>();
-        final Stack<IRegExp<S>> worklist = new ObjectArrayList<>();
+        final Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions = Maps.newHashMap();
+        final Map<IRegExp<S>, Set<IRegExp<S>>> reverseTransitions = Maps.newHashMap();
+        final Deque<IRegExp<S>> worklist = Queues.newArrayDeque();
         worklist.push(initial);
         while (!worklist.isEmpty()) {
             final IRegExp<S> state = worklist.pop();
-            final Object2ObjectMap<S,IRegExp<S>> transitions = new Object2ObjectOpenHashMap<>(derivers.size());
+            final Map<S, IRegExp<S>> transitions = Maps.newHashMapWithExpectedSize(derivers.size());
             if (!stateTransitions.containsKey(state)) {
                 for (Deriver<S> deriver : derivers) {
                     final IRegExp<S> nextState = state.match(deriver);
-                    ObjectSet<IRegExp<S>> reverseStates;
+                    Set<IRegExp<S>> reverseStates;
                     if ((reverseStates = reverseTransitions.get(nextState)) == null) {
-                        reverseTransitions.put(nextState, (reverseStates = new ObjectOpenHashSet<>()));
+                        reverseTransitions.put(nextState, (reverseStates = Sets.newHashSet()));
                     }
                     reverseStates.add(state);
                     transitions.put(deriver.getSymbol(), nextState);
@@ -83,7 +81,7 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
             }
         }
 
-        final ObjectSet<IRegExp<S>> nonFinal = new ObjectOpenHashSet<>();
+        final Set<IRegExp<S>> nonFinal = Sets.newHashSet();
         for (IRegExp<S> state : stateTransitions.keySet()) {
             if (state.isNullable()) {
                 worklist.push(state);

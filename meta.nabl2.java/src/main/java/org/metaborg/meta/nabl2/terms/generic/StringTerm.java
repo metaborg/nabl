@@ -4,8 +4,8 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.HashTreePSet;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -21,8 +21,8 @@ abstract class StringTerm extends AbstractTerm implements IStringTerm {
         return false;
     }
     
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        return HashTreePSet.empty();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of();
     }
 
     @Override public <T> T match(Cases<T> cases) {

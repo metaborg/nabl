@@ -9,7 +9,8 @@ import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -21,8 +22,8 @@ public abstract class CGDirectEdge<S extends ITerm> implements INamebindingConst
 
     @Value.Parameter public abstract ITerm getTargetScope();
 
-    @Override public PSet<ITermVar> getVars() {
-        return getSourceScope().getVars().plusAll(getTargetScope().getVars());
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return getSourceScope().getVars().__insertAll(getTargetScope().getVars());
     }
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();

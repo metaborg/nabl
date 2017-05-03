@@ -1,8 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Set;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -15,16 +13,16 @@ import org.metaborg.meta.nabl2.util.collections.HashRelation3;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 
-import com.google.common.collect.Sets;
+import io.usethesource.capsule.Set;
 
 public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IScopeGraph<S, L, O>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final Set<S> allScopes;
-    private final Set<O> allDecls;
-    private final Set<O> allRefs;
+    private final Set.Transient<S> allScopes;
+    private final Set.Transient<O> allDecls;
+    private final Set.Transient<O> allRefs;
 
     private final IFunction.Mutable<O, S> decls;
     private final IFunction.Mutable<O, S> refs;
@@ -33,9 +31,9 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     private final IRelation3.Mutable<S, L, O> importEdges;
 
     public EsopScopeGraph() {
-        this.allScopes = Sets.newHashSet();
-        this.allDecls = Sets.newHashSet();
-        this.allRefs = Sets.newHashSet();
+        this.allScopes = Set.Transient.of();
+        this.allDecls = Set.Transient.of();
+        this.allRefs = Set.Transient.of();
 
         this.decls = HashFunction.create();
         this.refs = HashFunction.create();
@@ -46,16 +44,16 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
 
     // -----------------------
 
-    @Override public Set<S> getAllScopes() {
-        return Collections.unmodifiableSet(allScopes);
+    @Override public Set.Immutable<S> getAllScopes() {
+        return Set.Immutable.<S>of().__insertAll(allScopes);
     }
 
-    @Override public Set<O> getAllDecls() {
-        return Collections.unmodifiableSet(allDecls);
+    @Override public Set.Immutable<O> getAllDecls() {
+        return Set.Immutable.<O>of().__insertAll(allDecls);
     }
 
-    @Override public Set<O> getAllRefs() {
-        return Collections.unmodifiableSet(allRefs);
+    @Override public Set.Immutable<O> getAllRefs() {
+        return Set.Immutable.<O>of().__insertAll(allRefs);
     }
 
 
@@ -83,35 +81,35 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
 
     public void addDecl(S scope, O decl) {
         // FIXME: check scope/D is not closed
-        allScopes.add(scope);
-        allDecls.add(decl);
+        allScopes.__insert(scope);
+        allDecls.__insert(decl);
         decls.put(decl, scope);
     }
 
     public void addRef(O ref, S scope) {
         // FIXME: check scope/R is not closed
-        allScopes.add(scope);
-        allRefs.add(ref);
+        allScopes.__insert(scope);
+        allRefs.__insert(ref);
         refs.put(ref, scope);
     }
 
     public void addDirectEdge(S sourceScope, L label, S targetScope) {
         // FIXME: check scope/l is not closed
-        allScopes.add(sourceScope);
+        allScopes.__insert(sourceScope);
         directEdges.put(sourceScope, label, targetScope);
     }
 
     public void addAssoc(O decl, L label, S scope) {
         // FIXME: check decl/l is not closed
-        allScopes.add(scope);
-        allDecls.add(decl);
+        allScopes.__insert(scope);
+        allDecls.__insert(decl);
         assocEdges.put(decl, label, scope);
     }
 
     public void addImport(S scope, L label, O ref) {
         // FIXME: check scope/l is not closed
-        allScopes.add(scope);
-        allRefs.add(ref);
+        allScopes.__insert(scope);
+        allRefs.__insert(ref);
         importEdges.put(scope, label, ref);
     }
 

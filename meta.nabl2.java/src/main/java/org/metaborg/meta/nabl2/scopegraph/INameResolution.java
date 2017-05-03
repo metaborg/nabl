@@ -1,23 +1,23 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Set;
 
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 
+import io.usethesource.capsule.Set;
+
 public interface INameResolution<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Set<S> getAllScopes();
+    Set.Immutable<S> getAllScopes();
 
-    Set<O> getAllRefs();
+    Set.Immutable<O> getAllRefs();
 
-    Set<IResolutionPath<S, L, O>> resolve(O ref);
+    Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref);
 
-    Set<IDeclPath<S, L, O>> visible(S scope);
+    Set.Immutable<IDeclPath<S, L, O>> visible(S scope);
 
-    Set<IDeclPath<S, L, O>> reachable(S scope);
+    Set.Immutable<IDeclPath<S, L, O>> reachable(S scope);
 
     static <S extends IScope, L extends ILabel, O extends IOccurrence> INameResolution<S, L, O> empty() {
         return new EmptyNameResolution<>();
@@ -28,24 +28,24 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
 
         private static final long serialVersionUID = 42L;
 
-        @Override public Set<S> getAllScopes() {
-            return Collections.emptySet();
+        @Override public Set.Immutable<S> getAllScopes() {
+            return Set.Immutable.of();
         }
 
-        @Override public Set<O> getAllRefs() {
-            return Collections.emptySet();
+        @Override public Set.Immutable<O> getAllRefs() {
+            return Set.Immutable.of();
         }
 
-        @Override public Set<IResolutionPath<S, L, O>> resolve(O ref) {
-            return Collections.emptySet();
+        @Override public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
+            return Set.Immutable.of();
         }
 
-        @Override public Set<IDeclPath<S, L, O>> visible(S scope) {
-            return Collections.emptySet();
+        @Override public Set.Immutable<IDeclPath<S, L, O>> visible(S scope) {
+            return Set.Immutable.of();
         }
 
-        @Override public Set<IDeclPath<S, L, O>> reachable(S scope) {
-            return Collections.emptySet();
+        @Override public Set.Immutable<IDeclPath<S, L, O>> reachable(S scope) {
+            return Set.Immutable.of();
         }
 
     }

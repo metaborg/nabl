@@ -6,8 +6,8 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.HashTreePSet;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm {
 
@@ -27,12 +27,12 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return getArgs().stream().allMatch(ITerm::isGround);
     }
 
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        PSet<ITermVar> vars = HashTreePSet.empty();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    	Set.Transient<ITermVar> vars = Set.Transient.of();
         for(ITerm arg : getArgs()) {
-            vars = vars.plusAll(arg.getVars());
+            vars.__insertAll(arg.getVars());
         }
-        return vars;
+        return vars.freeze();
     }
 
     @Override public <T> T match(Cases<T> cases) {

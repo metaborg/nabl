@@ -6,8 +6,8 @@ import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.INilTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.HashTreePSet;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 42L)
@@ -21,8 +21,8 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
         return false;
     }
     
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        return HashTreePSet.empty();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

@@ -21,7 +21,6 @@
     <module>../meta.nabl2.integration.coq.eclipse</module>
     <module>../meta.nabl2.integration.dynsem</module>
     <module>../meta.nabl2.integration.dynsem.eclipse</module>
-    <module>../meta.nabl2.java</module>
     <module>../meta.nabl2.lang</module>
     <module>../meta.nabl2.lang.eclipse</module>
     <module>../meta.nabl2.runtime</module>

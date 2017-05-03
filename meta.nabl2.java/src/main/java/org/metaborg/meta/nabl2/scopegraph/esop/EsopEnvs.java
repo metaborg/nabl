@@ -1,11 +1,11 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -20,6 +20,8 @@ import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+
+import io.usethesource.capsule.Set;
 
 // TODO: Support garbage collection of sub-envs
 // * lambda's must be separate classes not to capture arguments
@@ -42,7 +44,7 @@ public class EsopEnvs {
                 return Optional.ofNullable(env);
             }
 
-            @Override public Optional<Set<P>> getAll() {
+            @Override public Optional<Set.Immutable<P>> getAll() {
                 return env().flatMap(IEsopEnv::getAll);
             }
 
@@ -71,7 +73,7 @@ public class EsopEnvs {
                 return env;
             }
 
-            @Override public Optional<Set<P>> getAll() {
+            @Override public Optional<Set.Immutable<P>> getAll() {
                 return env().getAll();
             }
 
@@ -91,9 +93,9 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private Set<P> _paths = Sets.newHashSet(paths);
+            private Set.Immutable<P> _paths = Set.Immutable.<P>of().__insertAll(Sets.newHashSet(paths));
 
-            @Override public Optional<Set<P>> getAll() {
+            @Override public Optional<Set.Immutable<P>> getAll() {
                 return Optional.of(_paths);
             }
 
@@ -110,38 +112,47 @@ public class EsopEnvs {
             private static final long serialVersionUID = 42L;
 
             private final Deque<IEsopEnv<S, L, O, P>> _envs = Queues.newArrayDeque(Arrays.asList(envs));
-            private final Set<Object> shadowed = Sets.newHashSet();
-            private final Set<P> paths = Sets.newHashSet();
+            private final Set.Transient<Object> _shadowed = Set.Transient.of();
+            private final Set.Transient<P> _paths = Set.Transient.of();
+            private Set.Immutable<P> paths = null;
 
-            private boolean done() {
-                if(filter.shortCircuit() && !paths.isEmpty()) {
-                    return true;
-                }
+            private @Nullable Set.Immutable<P> paths() {
+            	if(paths != null) {
+            		return paths;
+            	}
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
-                while(it.hasNext()) {
+                while(paths == null && it.hasNext()) {
                     IEsopEnv<S, L, O, P> env = it.next();
                     boolean progress = env.getAll().map(ps -> {
                         // be careful not to self-shadow, therefore first add paths, then add shadow tokens
-                        ps.stream().filter(p -> !shadowed.contains(filter.matchToken(p))).forEach(paths::add);
-                        ps.stream().map(p -> filter.matchToken(p)).forEach(shadowed::add);
+                        ps.stream().filter(p -> !_shadowed.contains(filter.matchToken(p))).forEach(_paths::__insert);
+                        ps.stream().map(p -> filter.matchToken(p)).forEach(_shadowed::__insert);
                         it.remove();
-                        return true;
+                        if(filter.shortCircuit() && !_paths.isEmpty()) {
+                        	paths = _paths.freeze();
+                        	return false;
+                        } else {
+                        	return true;
+                        }
                     }).orElse(false);
                     if(!progress) {
-                        return false;
+                    	break;
                     }
                 }
-                return true;
+                if(paths == null && _envs.isEmpty()) {
+                	paths = _paths.freeze();
+                }
+                return paths;
             }
 
-            @Override public Optional<Set<P>> getAll() {
-                return done() ? Optional.of(paths) : Optional.empty();
+            @Override public Optional<Set.Immutable<P>> getAll() {
+                return Optional.ofNullable(paths());
             }
 
             @Override public String toString() {
                 StringBuilder sb = new StringBuilder();
                 sb.append("(");
-                sb.append(paths);
+                sb.append(paths != null ? paths : _paths);
                 _envs.stream().forEach(e -> {
                     sb.append(" <| ");
                     sb.append(e);
@@ -158,29 +169,36 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private final Set<IEsopEnv<S, L, O, P>> _envs = Sets.newHashSet(envs);
-            private final Set<P> paths = Sets.newHashSet();
+            private final java.util.Set<IEsopEnv<S, L, O, P>> _envs = Sets.newHashSet(envs);
+            private final Set.Transient<P> _paths = Set.Transient.of();
+            private Set.Immutable<P> paths = null;
 
-            private boolean done() {
+            private @Nullable Set.Immutable<P> paths() {
+            	if(paths != null) {
+            		return paths;
+            	}
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
                     final IEsopEnv<S, L, O, P> env = it.next();
                     env.getAll().ifPresent(ps -> {
-                        paths.addAll(ps);
+                        _paths.__insertAll(ps);
                         it.remove();
                     });
                 }
-                return _envs.isEmpty();
+                if(_envs.isEmpty()) {
+                	paths = _paths.freeze();
+                }
+                return paths;
             }
 
-            @Override public Optional<Set<P>> getAll() {
-                return done() ? Optional.of(paths) : Optional.empty();
+            @Override public Optional<Set.Immutable<P>> getAll() {
+                return Optional.ofNullable(paths());
             }
 
             @Override public String toString() {
                 StringBuilder sb = new StringBuilder();
                 sb.append("(");
-                sb.append(paths);
+                sb.append(paths != null ? paths : _paths);
                 _envs.stream().forEach(e -> {
                     sb.append(" U ");
                     sb.append(e);
@@ -198,8 +216,8 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            @Override public Optional<Set<P>> getAll() {
-                return Optional.of(Collections.emptySet());
+            @Override public Optional<Set.Immutable<P>> getAll() {
+                return Optional.of(Set.Immutable.of());
             }
 
             @Override public String toString() {

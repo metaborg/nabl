@@ -12,20 +12,13 @@ dependencies:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
 
 exports:
+
   ## Stratego
 - language: Stratego-Sugar
   directory: trans
   includes:
-  ## NaBL2
   - "nabl2/**/*.str"
-- language: NaBL2Lang
-  directory: trans
-  includes:
-  - "nabl2/**/*.nabl2"
-- language: Stratego-Sugar
-  directory: src-gen/nabl2/collection
-  includes:
-  - "nabl2/**/*.str"
+
   ## SDF3
 - language: TemplateLang
   directory: syntax
@@ -36,6 +29,10 @@ exports:
   includes:
   - "nabl2/**/*.sdf"
   - "completion/nabl2/**/*.sdf"
+- language: ds
+  directory: src-gen
+  includes:
+  - "ds-signatures/nabl2/**/*.ds"
 - language: EditorService
   directory: src-gen
   includes:
@@ -46,10 +43,6 @@ exports:
   - "completion/nabl2/**/*.str"
   - "pp/nabl2/**/*.str"
   - "signatures/nabl2/**/*.str"
-- language: ds
-  directory: src-gen
-  includes:
-  - "ds-signatures/nabl2/**/*.str"
 
 language:
   sdf:

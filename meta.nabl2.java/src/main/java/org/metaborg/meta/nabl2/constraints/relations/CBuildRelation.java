@@ -9,7 +9,8 @@ import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -23,8 +24,8 @@ public abstract class CBuildRelation implements IRelationConstraint {
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
-    @Override public PSet<ITermVar> getVars() {
-        return getLeft().getVars().plusAll(getRelation().getVars());
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return getLeft().getVars().__insertAll(getRelation().getVars());
     }
 
     @Override public <T> T match(Cases<T> cases) {

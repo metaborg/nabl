@@ -9,13 +9,12 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IStep;
+import org.metaborg.meta.nabl2.util.collections.PSequence;
 import org.metaborg.util.iterators.Iterables2;
-import org.pcollections.HashTreePSet;
-import org.pcollections.PSequence;
-import org.pcollections.PSet;
-import org.pcollections.TreePVector;
 
 import com.google.common.collect.Iterators;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -31,20 +30,20 @@ abstract class EStep<S extends IScope, L extends ILabel, O extends IOccurrence> 
         return 1;
     }
 
-    @Value.Lazy @Override public PSet<O> getImports() {
-        return HashTreePSet.empty();
+    @Value.Lazy @Override public Set.Immutable<O> getImports() {
+        return Set.Immutable.of();
     }
 
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
         return Iterables2.empty();
     }
 
-    @Value.Lazy @Override public PSet<S> getScopes() {
-        return HashTreePSet.singleton(getSource()).plus(getTarget());
+    @Value.Lazy @Override public Set.Immutable<S> getScopes() {
+        return Set.Immutable.of(getSource(), getTarget());
     }
 
     @Value.Lazy @Override public PSequence<L> getLabels() {
-        return TreePVector.singleton(getLabel());
+        return PSequence.of(getLabel());
     }
 
     @Override public Iterator<IStep<S, L, O>> iterator() {

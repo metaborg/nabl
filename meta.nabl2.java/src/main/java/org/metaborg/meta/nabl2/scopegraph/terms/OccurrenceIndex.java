@@ -10,9 +10,10 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.pcollections.PSet;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+
+import io.usethesource.capsule.Set;
 
 public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializable {
 
@@ -44,7 +45,7 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return new OccurrenceIndex(resource, term.withLocked(locked));
     }
 
-    public PSet<ITermVar> getVars() {
+    public Set.Immutable<ITermVar> getVars() {
         return term.getVars();
     }
 

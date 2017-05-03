@@ -9,8 +9,9 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
-import org.pcollections.PSequence;
-import org.pcollections.PSet;
+import org.metaborg.meta.nabl2.util.collections.PSequence;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -33,11 +34,11 @@ abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOcc
         return this;
     }
 
-    @Value.Lazy @Override public PSet<O> getImports() {
+    @Value.Lazy @Override public Set.Immutable<O> getImports() {
         return getPath().getImports();
     }
 
-    @Value.Lazy @Override public PSet<S> getScopes() {
+    @Value.Lazy @Override public Set.Immutable<S> getScopes() {
         return getPath().getScopes();
     }
 

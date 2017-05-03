@@ -9,9 +9,10 @@ import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.PSet;
 
 import com.google.common.base.Preconditions;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -25,7 +26,7 @@ public abstract class CAstProperty implements IAstConstraint {
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
-    @Override public PSet<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return getValue().getVars();
     }
     

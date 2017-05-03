@@ -12,13 +12,14 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.path.IStep;
+import org.metaborg.meta.nabl2.util.collections.PSequence;
 import org.metaborg.meta.nabl2.util.collections.PSets;
-import org.pcollections.PSequence;
-import org.pcollections.PSet;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.math.IntMath;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -33,7 +34,7 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;
         }
-        if(!PSets.intersection(getLeft().getScopes(), getRight().getScopes()).minus(getLeft().getTarget()).isEmpty()) {
+        if(!PSets.intersection(getLeft().getScopes(), getRight().getScopes()).__remove(getLeft().getTarget()).isEmpty()) {
             return null;
         }
         return this;
@@ -51,20 +52,20 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         return getLeft().size() + getRight().size();
     }
 
-    @Value.Lazy @Override public PSet<O> getImports() {
-        return getLeft().getImports().plusAll(getRight().getImports());
+    @Value.Lazy @Override public Set.Immutable<O> getImports() {
+        return getLeft().getImports().__insertAll(getRight().getImports());
     }
 
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
         return Iterables.concat(getLeft().getImportPaths(), getRight().getImportPaths());
     }
 
-    @Value.Lazy @Override public PSet<S> getScopes() {
-        return getLeft().getScopes().plusAll(getRight().getScopes());
+    @Value.Lazy @Override public Set.Immutable<S> getScopes() {
+        return getLeft().getScopes().__insertAll(getRight().getScopes());
     }
 
     @Value.Lazy @Override public PSequence<L> getLabels() {
-        return getLeft().getLabels().plusAll(getRight().getLabels());
+        return getLeft().getLabels().appendAll(getRight().getLabels());
     }
 
     @Override public Iterator<IStep<S, L, O>> iterator() {

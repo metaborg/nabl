@@ -294,7 +294,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        Optional<Set<IResolutionPath<Scope, Label, Occurrence>>> paths = nameResolution.tryResolve(ref);
+        Optional<? extends io.usethesource.capsule.Set<IResolutionPath<Scope, Label, Occurrence>>> paths = nameResolution.tryResolve(ref);
         if(paths.isPresent()) {
             List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths.get());
             tracker().removeActive(r.getDeclaration(), r); // before `unify`, so that we don't cause an error chain if
@@ -407,11 +407,11 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
+                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
+                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 })
                 // @formatter:on

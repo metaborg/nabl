@@ -7,8 +7,8 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.pcollections.HashTreePSet;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -26,8 +26,8 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
         return false;
     }
     
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        return HashTreePSet.singleton(this);
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of(this);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

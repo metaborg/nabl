@@ -70,7 +70,7 @@ public class TB {
         LinkedList<ImmutableClassToInstanceMap<Object>> attachmentsQueue =
                 attachments != null ? Lists.newLinkedList(attachments) : null;
         IListTerm list = newNil();
-        if(attachments != null) {
+        if(attachmentsQueue != null) {
             list = list.withAttachments(attachmentsQueue.removeLast());
         }
         return newListTail(elemsQueue, list, attachmentsQueue);

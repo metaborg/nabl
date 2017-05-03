@@ -1,17 +1,18 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
-import java.util.Set;
 
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 
+import io.usethesource.capsule.Set;
+
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Set<S> getAllScopes();
+    Set.Immutable<S> getAllScopes();
 
-    Set<O> getAllDecls();
+    Set.Immutable<O> getAllDecls();
 
-    Set<O> getAllRefs();
+    Set.Immutable<O> getAllRefs();
 
 
     IFunction<O, S> getDecls();

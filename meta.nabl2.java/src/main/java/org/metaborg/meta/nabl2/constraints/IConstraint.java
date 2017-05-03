@@ -14,7 +14,8 @@ import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 public interface IConstraint {
 
@@ -22,7 +23,7 @@ public interface IConstraint {
 
     IMessageContent pp();
 
-    PSet<ITermVar> getVars();
+    Set.Immutable<ITermVar> getVars();
     
     <T> T match(Cases<T> function);
 

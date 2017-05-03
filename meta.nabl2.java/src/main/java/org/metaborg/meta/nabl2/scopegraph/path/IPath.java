@@ -3,14 +3,15 @@ package org.metaborg.meta.nabl2.scopegraph.path;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.pcollections.PSequence;
-import org.pcollections.PSet;
+import org.metaborg.meta.nabl2.util.collections.PSequence;
+
+import io.usethesource.capsule.Set;
 
 public interface IPath<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    PSet<O> getImports();
+    Set.Immutable<O> getImports();
 
-    PSet<S> getScopes();
+    Set.Immutable<S> getScopes();
 
     PSequence<L> getLabels();
 

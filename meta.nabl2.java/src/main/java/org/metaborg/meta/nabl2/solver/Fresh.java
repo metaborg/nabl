@@ -1,18 +1,18 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.io.Serializable;
+import java.util.Map;
 
-import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import com.google.common.collect.Maps;
 
 public class Fresh implements Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final Object2IntMap<String> counters;
+    private final Map<String,Integer> counters;
 
     public Fresh() {
-        counters = new Object2IntLinkedOpenHashMap<>();
+        counters = Maps.newHashMap();
     }
 
     public String fresh(String base) {

@@ -9,7 +9,8 @@ import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -23,8 +24,8 @@ public abstract class CInstantiate implements IPolyConstraint {
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
-    @Override public PSet<ITermVar> getVars() {
-        return getType().getVars().plusAll(getScheme().getVars());
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return getType().getVars().__insertAll(getScheme().getVars());
     }
 
     @Override public <T> T match(Cases<T> cases) {

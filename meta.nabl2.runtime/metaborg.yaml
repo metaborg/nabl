@@ -15,15 +15,14 @@ dependencies:
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
 
 exports:
+
   ## Stratego
 - language: Stratego-Sugar
   directory: trans
   includes:
-  ## ESV
-- language: EditorService
-  directory: editor
-  includes:
-  - "nabl2/**/*.esv"
+  - "nabl2/**/*.str"
+  - "nabl2/**/*.meta"
+
   ## NaBL2
   - "nabl2/**/*.str"
 - language: NaBL2Lang
@@ -34,6 +33,7 @@ exports:
   directory: src-gen/nabl2/collection
   includes:
   - "nabl2/**/*.str"
+
   ## SDF3
 - language: TemplateLang
   directory: syntax
@@ -44,6 +44,10 @@ exports:
   includes:
   - "nabl2/**/*.sdf"
   - "completion/nabl2/**/*.sdf"
+- language: ds
+  directory: src-gen
+  includes:
+  - "ds-signatures/nabl2/**/*.ds"
 - language: EditorService
   directory: src-gen
   includes:
@@ -54,14 +58,17 @@ exports:
   - "completion/nabl2/**/*.str"
   - "pp/nabl2/**/*.str"
   - "signatures/nabl2/**/*.str"
-- language: ds
-  directory: src-gen
+
+  ## ESV
+- language: EditorService
+  directory: editor
   includes:
-  - "ds-signatures/nabl2/**/*.str"
-  # DynSem
+  - "nabl2/**/*.esv"
+
+  ## DynSem
 - language: ds
   directory: trans
-  includes: "**/*.ds"
+  includes: "nabl2/**/*.ds"
 
 language:
   sdf:

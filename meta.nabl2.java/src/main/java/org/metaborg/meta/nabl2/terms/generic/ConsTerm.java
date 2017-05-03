@@ -11,7 +11,8 @@ import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
-import org.pcollections.PSet;
+
+import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -39,8 +40,8 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
         return false;
     }
 
-    @Value.Lazy @Override public PSet<ITermVar> getVars() {
-        return getHead().getVars().plusAll(getTail().getVars());
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return getHead().getVars().__insertAll(getTail().getVars());
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
