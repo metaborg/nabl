@@ -6,11 +6,7 @@ imports
 
   libspoofax/sdf/pp
 
-  pp/-
-  pp/nabl2/shared/common/-
-  pp/nabl2/shared/constraints/-
-
-  completion/nabl2/shared/common/-
+  pp/nabl2/shared/-
 
 rules
 
@@ -18,7 +14,7 @@ rules
     pp-NaBL2(prettyprint|120)
 
   pp-NaBL2(prettyprint|width) =
-    parenthesize-NaBL2;
+    try(parenthesize-NaBL2);
     prettyprint;
     !V([], <id>);
     box2text-string(|width)
@@ -32,4 +28,4 @@ rules
   pp-partial-NaBL2-string(|sort) =
     pp-NaBL2(prettyprint-NaBL2(|sort))
 
-  parenthesize-NaBL2 = parenthesize-NaBL2Shared
+  parenthesize-NaBL2 = fail

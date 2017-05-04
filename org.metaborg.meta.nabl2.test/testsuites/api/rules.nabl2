@@ -1,5 +1,9 @@
 module testsuites/api/rules
 
+imports
+
+  signatures/testsuites/api/-
+
 rules
 
   [[ GetAllDecls(xs) ^ () ]] :=

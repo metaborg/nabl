@@ -2,7 +2,6 @@ module nabl2runtime
 
 imports
 
-  nabl2/runtime/analysis/-
-  nabl2/runtime/editor/-
-  nabl2/runtime/stdlib/-
-  nabl2/runtime/-
+  libstratego-lib
+
+  nabl2/runtime/main

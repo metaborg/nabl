@@ -8,6 +8,7 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.pcollections.PSet;
 
 @Value.Immutable
@@ -15,6 +16,8 @@ import org.pcollections.PSet;
 public abstract class CInstantiate implements IPolyConstraint {
 
     @Value.Parameter public abstract ITerm getType();
+
+    @Value.Parameter public abstract ITermVar getInstVars();
 
     @Value.Parameter public abstract ITerm getScheme();
 
@@ -41,7 +44,8 @@ public abstract class CInstantiate implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getType()).append(" instOf ").append(getScheme()).build();
+        return MessageContent.builder().append(getType()).append(" instOf(").append(TB.newList(getInstVars()))
+                .append(") ").append(getScheme()).build();
     }
 
     @Override public String toString() {

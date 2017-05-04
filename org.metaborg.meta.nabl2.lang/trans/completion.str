@@ -1,0 +1,13 @@
+module completion
+
+imports
+
+  libspoofax/editor/completion/-
+
+  nabl2/shared/completion
+
+  completion/nabl2/lang/-
+  completion/-
+
+  pp
+ 

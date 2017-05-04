@@ -5,16 +5,17 @@ imports
   libstratego-lib
   libstratego-aterm
 
-  nabl2shared
+  nabl2/shared/main
  
   nabl2/lang/analysis/main
-  nabl2/lang/completion
   nabl2/lang/generation/cgen/main
   nabl2/lang/generation/dynsem/main
   nabl2/lang/signature-extraction/main
   nabl2/lang/coq/main
-  nabl2/lang/outline
-  nabl2/lang/pp
+
+  completion
+  outline
+  pp
  
   completion/completion
  

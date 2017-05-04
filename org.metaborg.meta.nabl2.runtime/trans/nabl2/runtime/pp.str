@@ -19,8 +19,6 @@ imports
 
 rules
 
-  parenthesize-NaBL2      = parenthesize-NaBL2Runtime
-
   pp-NaBL2-CTerm          = pp-NaBL2(prettyprint-NaBL2-CTerm)
   pp-NaBL2-Term           = pp-NaBL2(prettyprint-NaBL2-Term)
   pp-NaBL2-CGenArgs       = pp-NaBL2(prettyprint-NaBL2-CGenArgs)

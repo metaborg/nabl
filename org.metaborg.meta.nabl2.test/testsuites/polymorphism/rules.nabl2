@@ -1,0 +1,12 @@
+module testsuites/polymorphism/rules
+
+imports
+
+  signatures/testsuites/polymorphism/-
+
+rules
+
+  [[ GenInst() ^ () ]] :=
+    s genOf(gvs) (ty1,ty2),
+    (ty1_1,ty2_1) instOf(ivs1) s,
+    (ty2_1,ty2_2) instOf(ivs2) s.
