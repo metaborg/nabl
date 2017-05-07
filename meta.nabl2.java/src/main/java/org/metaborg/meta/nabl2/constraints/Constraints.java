@@ -8,9 +8,10 @@ import java.util.stream.Collectors;
 import org.metaborg.meta.nabl2.constraints.ast.AstConstraints;
 import org.metaborg.meta.nabl2.constraints.base.BaseConstraints;
 import org.metaborg.meta.nabl2.constraints.equality.EqualityConstraints;
-import org.metaborg.meta.nabl2.constraints.namebinding.NamebindingConstraints;
+import org.metaborg.meta.nabl2.constraints.nameresolution.NameResolutionConstraints;
 import org.metaborg.meta.nabl2.constraints.poly.PolyConstraints;
 import org.metaborg.meta.nabl2.constraints.relations.RelationConstraints;
+import org.metaborg.meta.nabl2.constraints.scopegraph.ScopeGraphConstraints;
 import org.metaborg.meta.nabl2.constraints.sets.SetConstraints;
 import org.metaborg.meta.nabl2.constraints.sym.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -27,7 +28,8 @@ public class Constraints {
             AstConstraints.matcher(),
             BaseConstraints.matcher(),
             EqualityConstraints.matcher(),
-            NamebindingConstraints.matcher(),
+            ScopeGraphConstraints.matcher(),
+            NameResolutionConstraints.matcher(),
             RelationConstraints.matcher(),
             SetConstraints.matcher(),
             SymbolicConstraints.matcher(),
@@ -46,7 +48,8 @@ public class Constraints {
             AstConstraints::build,
             BaseConstraints::build,
             EqualityConstraints::build,
-            NamebindingConstraints::build,
+            ScopeGraphConstraints::build,
+            NameResolutionConstraints::build,
             RelationConstraints::build,
             SetConstraints::build,
             SymbolicConstraints::build,
@@ -70,7 +73,8 @@ public class Constraints {
             c -> AstConstraints.find(c, unifier),
             c -> BaseConstraints.find(c, unifier),
             c -> EqualityConstraints.find(c, unifier),
-            c -> NamebindingConstraints.find(c, unifier),
+            c -> ScopeGraphConstraints.find(c, unifier),
+            c -> NameResolutionConstraints.find(c, unifier),
             c -> RelationConstraints.find(c, unifier),
             c -> SetConstraints.find(c, unifier),
             c -> SymbolicConstraints.find(c, unifier),

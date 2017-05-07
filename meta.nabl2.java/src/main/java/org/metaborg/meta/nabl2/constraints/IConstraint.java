@@ -7,9 +7,10 @@ import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
-import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
+import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
+import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -24,7 +25,7 @@ public interface IConstraint {
     IMessageContent pp();
 
     Set.Immutable<ITermVar> getVars();
-    
+
     <T> T match(Cases<T> function);
 
     interface Cases<T> {
@@ -35,7 +36,9 @@ public interface IConstraint {
 
         T caseEquality(IEqualityConstraint constraint);
 
-        T caseNamebinding(INamebindingConstraint constraint);
+        T caseScopeGraph(IScopeGraphConstraint constraint);
+
+        T caseNameResolution(INameResolutionConstraint constraint);
 
         T caseRelation(IRelationConstraint constraint);
 
@@ -50,7 +53,8 @@ public interface IConstraint {
             Function<IAstConstraint,T> onAst,
             Function<IBaseConstraint,T> onBase,
             Function<IEqualityConstraint,T> onEquality,
-            Function<INamebindingConstraint,T> onNamebinding,
+            Function<IScopeGraphConstraint,T> onScopeGraph,
+            Function<INameResolutionConstraint,T> onNameResolution,
             Function<IRelationConstraint,T> onRelation,
             Function<ISetConstraint,T> onSet,
             Function<ISymbolicConstraint,T> onSym,
@@ -71,8 +75,12 @@ public interface IConstraint {
                     return onEquality.apply(constraint);
                 }
 
-                @Override public T caseNamebinding(INamebindingConstraint constraint) {
-                    return onNamebinding.apply(constraint);
+                @Override public T caseScopeGraph(IScopeGraphConstraint constraint) {
+                    return onScopeGraph.apply(constraint);
+                }
+
+                public T caseNameResolution(INameResolutionConstraint constraint) {
+                    return onNameResolution.apply(constraint);
                 }
 
                 @Override public T caseRelation(IRelationConstraint constraint) {
@@ -106,7 +114,9 @@ public interface IConstraint {
 
         T caseEquality(IEqualityConstraint constraint) throws E;
 
-        T caseNamebinding(INamebindingConstraint constraint) throws E;
+        T caseScopeGraph(IScopeGraphConstraint constraint) throws E;
+
+        T caseNameResolution(INameResolutionConstraint constraint) throws E;
 
         T caseRelation(IRelationConstraint constraint) throws E;
 
@@ -121,7 +131,8 @@ public interface IConstraint {
             CheckedFunction1<IAstConstraint,T,E> onAst,
             CheckedFunction1<IBaseConstraint,T,E> onBase,
             CheckedFunction1<IEqualityConstraint,T,E> onEquality,
-            CheckedFunction1<INamebindingConstraint,T,E> onNamebinding,
+            CheckedFunction1<IScopeGraphConstraint,T,E> onScopeGraph,
+            CheckedFunction1<INameResolutionConstraint,T,E> onNameResolution,
             CheckedFunction1<IRelationConstraint,T,E> onRelation,
             CheckedFunction1<ISetConstraint,T,E> onSet,
             CheckedFunction1<ISymbolicConstraint,T,E> onSym,
@@ -142,8 +153,12 @@ public interface IConstraint {
                     return onEquality.apply(constraint);
                 }
 
-                @Override public T caseNamebinding(INamebindingConstraint constraint) throws E {
-                    return onNamebinding.apply(constraint);
+                @Override public T caseScopeGraph(IScopeGraphConstraint constraint) throws E {
+                    return onScopeGraph.apply(constraint);
+                }
+
+                public T caseNameResolution(INameResolutionConstraint constraint) throws E {
+                    return onNameResolution.apply(constraint);
                 }
 
                 @Override public T caseRelation(IRelationConstraint constraint) throws E {

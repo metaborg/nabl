@@ -4,4 +4,4 @@ imports
 
   libstratego-lib
 
-  nabl2/runtime/main
+  nabl2/runtime

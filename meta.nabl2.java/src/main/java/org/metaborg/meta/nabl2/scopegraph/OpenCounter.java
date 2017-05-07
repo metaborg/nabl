@@ -37,6 +37,10 @@ public class OpenCounter<S, L> implements Serializable {
         complete = true;
     }
 
+    public boolean isComplete() {
+        return complete;
+    }
+
     public void remove(S scope, L label) {
         if(!open.remove(scope, label)) {
             throw new IllegalStateException();

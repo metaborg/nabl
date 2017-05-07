@@ -3,30 +3,18 @@ package org.metaborg.meta.nabl2.solver.components;
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
-import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGDecl;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGDirectEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGExportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGImportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.CGRef;
-import org.metaborg.meta.nabl2.constraints.namebinding.CResolve;
-import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint;
-import org.metaborg.meta.nabl2.constraints.namebinding.INamebindingConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCDeclProperty;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDecl;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDirectEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGExportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
+import org.metaborg.meta.nabl2.constraints.nameresolution.CAssoc;
+import org.metaborg.meta.nabl2.constraints.nameresolution.CDeclProperty;
+import org.metaborg.meta.nabl2.constraints.nameresolution.CResolve;
+import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
+import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
-import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
@@ -53,37 +41,25 @@ import org.metaborg.meta.nabl2.util.Unit;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
+public class NameResolutionSolver extends SolverComponent<INameResolutionConstraint> {
 
     private final ResolutionParameters params;
     private final EsopScopeGraph<Scope, Label, Occurrence> scopeGraph;
     private final Properties<Occurrence> properties;
-
-    private final Set<INamebindingConstraint> unsolvedBuilds;
-    private final Set<CGDirectEdge<Scope>> incompleteDirectEdges;
-    private final Set<CGImportEdge<Scope>> incompleteImportEdges;
-    private final Set<INamebindingConstraint> unsolvedChecks;
-
     private final OpenCounter<Scope, Label> scopeCounter;
+
+    private final Set<INameResolutionConstraint> unsolved;
 
     private EsopNameResolution<Scope, Label, Occurrence> nameResolution = null;
 
-    public NamebindingSolver(Solver solver, ResolutionParameters params) {
+    public NameResolutionSolver(Solver solver, ResolutionParameters params, EsopScopeGraph<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
         super(solver);
         this.params = params;
-        this.scopeGraph = new EsopScopeGraph<>();
+        this.scopeGraph = scopeGraph;
+        this.scopeCounter = scopeCounter;
         this.properties = new Properties<>();
 
-        this.unsolvedBuilds = Sets.newHashSet();
-        this.incompleteDirectEdges = Sets.newHashSet();
-        this.incompleteImportEdges = Sets.newHashSet();
-        this.unsolvedChecks = Sets.newHashSet();
-
-        this.scopeCounter = new OpenCounter<>();
-    }
-
-    public IScopeGraph<Scope, Label, Occurrence> getScopeGraph() {
-        return scopeGraph;
+        this.unsolved = Sets.newHashSet();
     }
 
     public INameResolution<Scope, Label, Occurrence> getNameResolution() {
@@ -102,55 +78,39 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override protected Unit doAdd(INamebindingConstraint constraint) throws UnsatisfiableException {
+    @Override protected Unit doAdd(INameResolutionConstraint constraint) throws UnsatisfiableException {
         if(isResolutionStarted()) {
             throw new IllegalStateException("Adding constraints after resolution has started.");
         }
-        return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addBuild, this::addBuild, this::addBuild,
-                this::addBuild, this::add, this::add, this::add));
+        return constraint.matchOrThrow(CheckedCases.of(this::add, this::add, this::add));
     }
 
     @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
         boolean progress = false;
-        progress |= doIterate(unsolvedBuilds, this::solve);
-        progress |= doIterate(incompleteDirectEdges, this::solveDirectEdge);
-        progress |= doIterate(incompleteImportEdges, this::solveImportEdge);
-        if(!isResolutionStarted() && unsolvedBuilds.isEmpty()) {
+        if(!isResolutionStarted() && scopeCounter.isComplete()) {
             progress |= true;
             scopeCounter.setComplete();
             nameResolution = new EsopNameResolution<>(scopeGraph, params, scopeCounter);
         }
-        progress |= doIterate(unsolvedChecks, this::solve);
+        progress |= doIterate(unsolved, this::solve);
         return progress;
     }
 
-    @Override protected Set<? extends INamebindingConstraint> doFinish(IMessageInfo messageInfo) {
-        Set<INamebindingConstraint> constraints = Sets.newHashSet();
+    @Override protected Set<? extends INameResolutionConstraint> doFinish(IMessageInfo messageInfo) {
+        Set<INameResolutionConstraint> constraints = Sets.newHashSet();
         if(isPartial()) {
-            addScopeGraphConstraints(constraints, messageInfo);
+            addNameResolutionConstraints(constraints, messageInfo);
         }
-        constraints.addAll(unsolvedBuilds);
-        constraints.addAll(unsolvedChecks);
-        constraints.addAll(incompleteDirectEdges);
-        constraints.addAll(incompleteImportEdges);
+        constraints.addAll(unsolved);
         return constraints;
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
-        if(!solve(constraint)) {
-            unsolvedBuilds.add(constraint);
-        } else {
-            work();
-        }
-        return unit;
-    }
-
     private Unit add(CResolve constraint) throws UnsatisfiableException {
         tracker().addActive(constraint.getDeclaration(), constraint);
         if(!solve(constraint)) {
-            unsolvedChecks.add(constraint);
+            unsolved.add(constraint);
         } else {
             work();
         }
@@ -160,7 +120,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private Unit add(CAssoc constraint) throws UnsatisfiableException {
         tracker().addActive(constraint.getScope(), constraint);
         if(!solve(constraint)) {
-            unsolvedChecks.add(constraint);
+            unsolved.add(constraint);
         } else {
             work();
         }
@@ -170,7 +130,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private Unit add(CDeclProperty constraint) throws UnsatisfiableException {
         tracker().addActive(constraint.getValue(), constraint);
         if(!solve(constraint)) {
-            unsolvedChecks.add(constraint);
+            unsolved.add(constraint);
         } else {
             work();
         }
@@ -179,110 +139,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private boolean solve(INamebindingConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve, this::solve, this::solve, this::solve,
-                this::solve, this::solve, this::solve));
+    private boolean solve(INameResolutionConstraint constraint) throws UnsatisfiableException {
+        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve, this::solve));
     }
-
-    private boolean solve(CGDecl c) {
-        ITerm scopeTerm = find(c.getScope());
-        ITerm declTerm = find(c.getDeclaration());
-        if(!(scopeTerm.isGround() && declTerm.isGround())) {
-            return false;
-        }
-        Scope scope = Scope.matcher().match(scopeTerm)
-                .orElseThrow(() -> new TypeException("Expected a scope as first agument to " + c));
-        Occurrence decl = Occurrence.matcher().match(declTerm)
-                .orElseThrow(() -> new TypeException("Expected an occurrence as second argument to " + c));
-        scopeGraph.addDecl(scope, decl);
-        return true;
-    }
-
-    private boolean solve(CGRef c) {
-        ITerm scopeTerm = find(c.getScope());
-        ITerm refTerm = find(c.getReference());
-        if(!(scopeTerm.isGround() && refTerm.isGround())) {
-            return false;
-        }
-        Occurrence ref = Occurrence.matcher().match(refTerm)
-                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
-        Scope scope = Scope.matcher().match(scopeTerm)
-                .orElseThrow(() -> new TypeException("Expected a scope as second argument to " + c));
-        scopeGraph.addRef(ref, scope);
-        return true;
-    }
-
-    private boolean solve(CGDirectEdge<?> c) {
-        ITerm sourceScopeTerm = find(c.getSourceScope());
-        if(!sourceScopeTerm.isGround()) {
-            return false;
-        }
-        Scope sourceScope = Scope.matcher().match(sourceScopeTerm)
-                .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
-        scopeCounter.add(sourceScope, c.getLabel());
-        CGDirectEdge<Scope> cc =
-                ImmutableCGDirectEdge.of(sourceScope, c.getLabel(), c.getTargetScope(), c.getMessageInfo());
-        if(!solveDirectEdge(cc)) {
-            incompleteDirectEdges.add(cc);
-        }
-        return true;
-    }
-
-    private boolean solve(CGImportEdge<?> c) {
-        ITerm scopeTerm = find(c.getScope());
-        if(!scopeTerm.isGround()) {
-            return false;
-        }
-        Scope scope = Scope.matcher().match(scopeTerm)
-                .orElseThrow(() -> new TypeException("Expected a scope as first argument to " + c));
-        scopeCounter.add(scope, c.getLabel());
-        CGImportEdge<Scope> cc = ImmutableCGImportEdge.of(scope, c.getLabel(), c.getReference(), c.getMessageInfo());
-        if(!solveImportEdge(cc)) {
-            incompleteImportEdges.add(cc);
-
-        }
-        return true;
-    }
-
-    private boolean solve(CGExportEdge c) {
-        ITerm scopeTerm = find(c.getScope());
-        ITerm declTerm = find(c.getDeclaration());
-        if(!(scopeTerm.isGround() && declTerm.isGround())) {
-            return false;
-        }
-        Scope scope = Scope.matcher().match(scopeTerm)
-                .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
-        Occurrence decl = Occurrence.matcher().match(declTerm)
-                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
-        scopeGraph.addAssoc(decl, c.getLabel(), scope);
-        return true;
-    }
-
-
-    private boolean solveDirectEdge(CGDirectEdge<Scope> c) {
-        ITerm targetScopeTerm = find(c.getTargetScope());
-        if(!targetScopeTerm.isGround()) {
-            return false;
-        }
-        Scope targetScope = Scope.matcher().match(targetScopeTerm)
-                .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
-        scopeGraph.addDirectEdge(c.getSourceScope(), c.getLabel(), targetScope);
-        scopeCounter.remove(c.getSourceScope(), c.getLabel());
-        return true;
-    }
-
-    private boolean solveImportEdge(CGImportEdge<Scope> c) {
-        ITerm refTerm = find(c.getReference());
-        if(!refTerm.isGround()) {
-            return false;
-        }
-        Occurrence ref = Occurrence.matcher().match(refTerm)
-                .orElseThrow(() -> new TypeException("Expected an occurrence as third argument to " + c));
-        scopeGraph.addImport(c.getScope(), c.getLabel(), ref);
-        scopeCounter.remove(c.getScope(), c.getLabel());
-        return true;
-    }
-
 
     private boolean solve(CResolve r) throws UnsatisfiableException {
         if(!isResolutionStarted()) {
@@ -362,31 +221,14 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return nameResolution != null;
     }
 
-    private void addScopeGraphConstraints(Set<INamebindingConstraint> constraints, IMessageInfo messageInfo) {
-        for(Scope scope : scopeGraph.getAllScopes()) {
-            for(Occurrence decl : scopeGraph.getDecls().inverse().get(scope)) {
-                constraints.add(ImmutableCGDecl.of(scope, decl, messageInfo));
-            }
-            for(Occurrence ref : scopeGraph.getRefs().inverse().get(scope)) {
-                constraints.add(ImmutableCGRef.of(ref, scope, messageInfo));
-            }
-            for(Map.Entry<Label, Scope> edge : scopeGraph.getDirectEdges().get(scope)) {
-                constraints.add(ImmutableCGDirectEdge.of(scope, edge.getKey(), edge.getValue(), messageInfo));
-            }
-            for(Map.Entry<Label, Occurrence> edge : scopeGraph.getImportEdges().get(scope)) {
-                constraints.add(ImmutableCGImportEdge.of(scope, edge.getKey(), edge.getValue(), messageInfo));
-            }
-            for(Map.Entry<Label, Occurrence> edge : scopeGraph.getExportEdges().inverse().get(scope)) {
-                constraints.add(ImmutableCGExportEdge.of(edge.getValue(), edge.getKey(), scope, messageInfo));
-            }
-            for(Occurrence decl : properties.getIndices()) {
-                for(ITerm key : properties.getDefinedKeys(decl)) {
-                    properties.getValue(decl, key).ifPresent(value -> {
-                        constraints.add(ImmutableCDeclProperty.of(decl, key, value, 0, messageInfo));
-                    });
-                }
-            }
-        }
+    private void addNameResolutionConstraints(Set<INameResolutionConstraint> constraints, IMessageInfo messageInfo) {
+		for(Occurrence decl : properties.getIndices()) {
+			for(ITerm key : properties.getDefinedKeys(decl)) {
+				properties.getValue(decl, key).ifPresent(value -> {
+					constraints.add(ImmutableCDeclProperty.of(decl, key, value, 0, messageInfo));
+				});
+			}
+		}
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -399,19 +241,19 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             return M.<Optional<Set<IElement<ITerm>>>>cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls().inverse().get(scope);
+                    Iterable<Occurrence> decls = NameResolutionSolver.this.scopeGraph.getDecls().inverse().get(scope);
                     return Optional.of(makeSet(decls, ns));
                 }),
                 M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Iterable<Occurrence> refs = NamebindingSolver.this.scopeGraph.getRefs().inverse().get(scope);
+                    Iterable<Occurrence> refs = NameResolutionSolver.this.scopeGraph.getRefs().inverse().get(scope);
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryVisible(scope);
+                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NameResolutionSolver.this.nameResolution.tryVisible(scope);
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NamebindingSolver.this.nameResolution.tryReachable(scope);
+                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NameResolutionSolver.this.nameResolution.tryReachable(scope);
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 })
                 // @formatter:on

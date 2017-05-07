@@ -17,13 +17,18 @@ import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
+import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.components.AstSolver;
 import org.metaborg.meta.nabl2.solver.components.BaseSolver;
 import org.metaborg.meta.nabl2.solver.components.EqualitySolver;
-import org.metaborg.meta.nabl2.solver.components.NamebindingSolver;
+import org.metaborg.meta.nabl2.solver.components.NameResolutionSolver;
 import org.metaborg.meta.nabl2.solver.components.PolymorphismSolver;
 import org.metaborg.meta.nabl2.solver.components.RelationSolver;
+import org.metaborg.meta.nabl2.solver.components.ScopeGraphSolver;
 import org.metaborg.meta.nabl2.solver.components.SetSolver;
 import org.metaborg.meta.nabl2.solver.components.SymbolicSolver;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
@@ -61,7 +66,8 @@ public class Solver {
     private final BaseSolver baseSolver;
     private final EqualitySolver equalitySolver;
     private final AstSolver astSolver;
-    private final NamebindingSolver namebindingSolver;
+    private final ScopeGraphSolver scopeGraphSolver;
+    private final NameResolutionSolver nameResolutionSolver;
     private final RelationSolver relationSolver;
     private final SetSolver setSolver;
     private final SymbolicSolver symbolicSolver;
@@ -84,9 +90,12 @@ public class Solver {
         this.components.add(baseSolver = new BaseSolver(this));
         this.components.add(equalitySolver = new EqualitySolver(this, unifier));
         this.components.add(astSolver = new AstSolver(this));
-        this.components.add(namebindingSolver = new NamebindingSolver(this, config.getResolutionParams()));
+        final EsopScopeGraph<Scope, Label, Occurrence> scopeGraph = new EsopScopeGraph<>();
+        final OpenCounter<Scope, Label> scopeCounter = new OpenCounter<>();
+        this.components.add(scopeGraphSolver = new ScopeGraphSolver(this, config.getResolutionParams(), scopeGraph, scopeCounter));
+        this.components.add(nameResolutionSolver = new NameResolutionSolver(this, config.getResolutionParams(), scopeGraph, scopeCounter));
         this.components.add(relationSolver = new RelationSolver(this, config.getRelations(), config.getFunctions()));
-        this.components.add(setSolver = new SetSolver(this, namebindingSolver.nameSets()));
+        this.components.add(setSolver = new SetSolver(this, nameResolutionSolver.nameSets()));
         this.components.add(symbolicSolver = new SymbolicSolver(this));
         this.components.add(polySolver = new PolymorphismSolver(this));
 
@@ -127,7 +136,8 @@ public class Solver {
                     c -> add(astSolver, c),
                     c -> add(baseSolver, c),
                     c -> add(equalitySolver, c),
-                    c -> add(namebindingSolver, c),
+                    c -> add(scopeGraphSolver, c),
+                    c -> add(nameResolutionSolver, c),
                     c -> add(relationSolver, c),
                     c -> add(setSolver, c),
                     c -> add(symbolicSolver, c),
@@ -192,7 +202,7 @@ public class Solver {
         Solver solver = new Solver(config, fresh, SolverMode.PARTIAL, progress, cancel, debugConfig);
         for(ITerm activeTerm : interfaceTerms) {
             solver.tracker.addActive(activeTerm, ImmutableCTrue.of(messageInfo));
-            solver.namebindingSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
+            solver.scopeGraphSolver.addActive(M.collecttd(Scope.matcher()).apply(activeTerm));
         }
 
         Set<IConstraint> unsolved = Sets.newHashSet();
@@ -247,7 +257,7 @@ public class Solver {
         if(debugConfig.resolution() || debugConfig.timing()) {
             logger.info("Solved {} constraints in {}s.", n, (Duration.ofNanos(dt).toMillis() / 1000.0));
             logger.info(" * namebinding : {}s",
-                    (Duration.ofNanos(solver.namebindingSolver.getTimer().total()).toMillis() / 1000.0));
+                    (Duration.ofNanos(solver.scopeGraphSolver.getTimer().total()).toMillis() / 1000.0));
             logger.info(" * relations   : {}s",
                     (Duration.ofNanos(solver.relationSolver.getTimer().total()).toMillis() / 1000.0));
             logger.info(" * unsolved    : {}", unsolved.size());
@@ -257,9 +267,9 @@ public class Solver {
             // @formatter:off
             config,
             solver.astSolver.getProperties(),
-            solver.namebindingSolver.getScopeGraph(),
-            solver.namebindingSolver.getNameResolution(),
-            solver.namebindingSolver.getProperties(),
+            solver.scopeGraphSolver.getScopeGraph(),
+            solver.nameResolutionSolver.getNameResolution(),
+            solver.nameResolutionSolver.getProperties(),
             solver.relationSolver.getRelations(),
             solver.unifier,
             solver.symbolicSolver.get(),

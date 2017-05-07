@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.constraints.namebinding;
+package org.metaborg.meta.nabl2.constraints.nameresolution;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -15,7 +15,7 @@ import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CDeclProperty implements INamebindingConstraint {
+public abstract class CDeclProperty implements INameResolutionConstraint {
 
     @Value.Parameter public abstract ITerm getDeclaration();
 
@@ -40,7 +40,7 @@ public abstract class CDeclProperty implements INamebindingConstraint {
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
-        return cases.caseNamebinding(this);
+        return cases.caseNameResolution(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
@@ -48,12 +48,12 @@ public abstract class CDeclProperty implements INamebindingConstraint {
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T, E> cases) throws E {
-        return cases.caseNamebinding(this);
+        return cases.caseNameResolution(this);
     }
 
     @Override public IMessageContent pp() {
         return MessageContent.builder().append(getDeclaration()).append(".").append(getKey()).append(" := ")
-            .append(getValue()).build();
+                .append(getValue()).build();
     }
 
     @Override public String toString() {

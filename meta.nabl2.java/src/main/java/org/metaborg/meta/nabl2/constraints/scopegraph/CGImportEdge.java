@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.constraints.namebinding;
+package org.metaborg.meta.nabl2.constraints.scopegraph;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -14,7 +14,7 @@ import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CGImportEdge<S extends ITerm> implements INamebindingConstraint {
+public abstract class CGImportEdge<S extends ITerm> implements IScopeGraphConstraint {
 
     @Value.Parameter public abstract S getScope();
 
@@ -33,7 +33,7 @@ public abstract class CGImportEdge<S extends ITerm> implements INamebindingConst
     }
 
     @Override public <T> T match(IConstraint.Cases<T> cases) {
-        return cases.caseNamebinding(this);
+        return cases.caseScopeGraph(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
@@ -41,12 +41,12 @@ public abstract class CGImportEdge<S extends ITerm> implements INamebindingConst
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(IConstraint.CheckedCases<T, E> cases) throws E {
-        return cases.caseNamebinding(this);
+        return cases.caseScopeGraph(this);
     }
 
     @Override public IMessageContent pp() {
         return MessageContent.builder().append(getScope()).append(" =" + getLabel().getName() + "=> ")
-            .append(getReference()).build();
+                .append(getReference()).build();
     }
 
     @Override public String toString() {

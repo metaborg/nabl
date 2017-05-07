@@ -4,4 +4,4 @@ imports
 
   libstratego-lib
 
-  nabl2/shared/main
+  nabl2/shared

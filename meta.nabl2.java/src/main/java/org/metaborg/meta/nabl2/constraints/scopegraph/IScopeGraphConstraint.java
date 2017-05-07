@@ -1,10 +1,10 @@
-package org.metaborg.meta.nabl2.constraints.namebinding;
+package org.metaborg.meta.nabl2.constraints.scopegraph;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 
-public interface INamebindingConstraint extends IConstraint {
+public interface IScopeGraphConstraint extends IConstraint {
 
     <T> T match(Cases<T> cases);
 
@@ -20,22 +20,13 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseImport(CGImportEdge<?> importEdge);
 
-        T caseResolve(CResolve resolve);
-
-        T caseAssoc(CAssoc assoc);
-
-        T caseProperty(CDeclProperty property);
-
         static <T> Cases<T> of(
             // @formatter:off
             Function1<CGDecl,T> onDecl,
             Function1<CGRef,T> onRef,
             Function1<CGDirectEdge<?>,T> onDirectEdge,
             Function1<CGExportEdge,T> onExportEdge,
-            Function1<CGImportEdge<?>,T> onImportEdge,
-            Function1<CResolve,T> onResolve,
-            Function1<CAssoc,T> onAssoc,
-            Function1<CDeclProperty,T> onProperty
+            Function1<CGImportEdge<?>,T> onImportEdge
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -60,18 +51,6 @@ public interface INamebindingConstraint extends IConstraint {
                     return onImportEdge.apply(importEdge);
                 }
 
-                @Override public T caseResolve(CResolve constraint) {
-                    return onResolve.apply(constraint);
-                }
-
-                @Override public T caseAssoc(CAssoc assoc) {
-                    return onAssoc.apply(assoc);
-                }
-
-                @Override public T caseProperty(CDeclProperty property) {
-                    return onProperty.apply(property);
-                }
-
             };
         }
 
@@ -91,22 +70,13 @@ public interface INamebindingConstraint extends IConstraint {
 
         T caseImport(CGImportEdge<?> importEdge) throws E;
 
-        T caseResolve(CResolve resolve) throws E;
-
-        T caseAssoc(CAssoc assoc) throws E;
-
-        T caseProperty(CDeclProperty property) throws E;
-
         static <T, E extends Throwable> CheckedCases<T, E> of(
             // @formatter:off
             CheckedFunction1<CGDecl,T,E> onDecl,
             CheckedFunction1<CGRef,T,E> onRef,
             CheckedFunction1<CGDirectEdge<?>,T,E> onDirectEdge,
             CheckedFunction1<CGExportEdge,T,E> onExportEdge,
-            CheckedFunction1<CGImportEdge<?>,T,E> onImportEdge,
-            CheckedFunction1<CResolve,T,E> onResolve,
-            CheckedFunction1<CAssoc,T,E> onAssoc,
-            CheckedFunction1<CDeclProperty,T,E> onProperty
+            CheckedFunction1<CGImportEdge<?>,T,E> onImportEdge
             // @formatter:on
         ) {
             return new CheckedCases<T, E>() {
@@ -129,18 +99,6 @@ public interface INamebindingConstraint extends IConstraint {
 
                 @Override public T caseImport(CGImportEdge<?> importEdge) throws E {
                     return onImportEdge.apply(importEdge);
-                }
-
-                @Override public T caseResolve(CResolve constraint) throws E {
-                    return onResolve.apply(constraint);
-                }
-
-                @Override public T caseAssoc(CAssoc assoc) throws E {
-                    return onAssoc.apply(assoc);
-                }
-
-                @Override public T caseProperty(CDeclProperty property) throws E {
-                    return onProperty.apply(property);
                 }
 
             };
