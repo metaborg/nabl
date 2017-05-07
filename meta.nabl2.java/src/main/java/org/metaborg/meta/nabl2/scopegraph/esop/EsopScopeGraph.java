@@ -4,10 +4,8 @@ import java.io.Serializable;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
-import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
-import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
 import org.metaborg.meta.nabl2.util.collections.HashRelation3;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
@@ -111,12 +109,6 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         allScopes.__insert(scope);
         allRefs.__insert(ref);
         importEdges.put(scope, label, ref);
-    }
-
-    // ------------------------------------
-
-    EsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter) {
-        return new EsopNameResolution<>(this, params, scopeCounter);
     }
 
 }

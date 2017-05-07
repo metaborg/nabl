@@ -5,8 +5,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
@@ -17,11 +15,14 @@ import org.metaborg.meta.nabl2.scopegraph.terms.SpacedName;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.util.functions.Function0;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 
 // TODO: Support garbage collection of sub-envs
 // * lambda's must be separate classes not to capture arguments
@@ -44,8 +45,8 @@ public class EsopEnvs {
                 return Optional.ofNullable(env);
             }
 
-            @Override public Optional<Set.Immutable<P>> getAll() {
-                return env().flatMap(IEsopEnv::getAll);
+            @Override public Optional<Tuple2<Set.Immutable<P>, Set.Immutable<String>>> get() {
+                return env().flatMap(IEsopEnv::get);
             }
 
             @Override public String toString() {
@@ -73,8 +74,8 @@ public class EsopEnvs {
                 return env;
             }
 
-            @Override public Optional<Set.Immutable<P>> getAll() {
-                return env().getAll();
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return env().get();
             }
 
             @Override public String toString() {
@@ -95,8 +96,8 @@ public class EsopEnvs {
 
             private Set.Immutable<P> _paths = Set.Immutable.<P>of().__insertAll(Sets.newHashSet(paths));
 
-            @Override public Optional<Set.Immutable<P>> getAll() {
-                return Optional.of(_paths);
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return Optional.of(ImmutableTuple2.of(_paths, Set.Immutable.of()));
             }
 
             @Override public String toString() {
@@ -114,39 +115,44 @@ public class EsopEnvs {
             private final Deque<IEsopEnv<S, L, O, P>> _envs = Queues.newArrayDeque(Arrays.asList(envs));
             private final Set.Transient<Object> _shadowed = Set.Transient.of();
             private final Set.Transient<P> _paths = Set.Transient.of();
+            private final Set.Transient<String> _trace = Set.Transient.of();
             private Set.Immutable<P> paths = null;
+            private Set.Immutable<String> trace = null;
 
-            private @Nullable Set.Immutable<P> paths() {
-            	if(paths != null) {
-            		return paths;
-            	}
+            private boolean done() {
+                if(paths != null) {
+                    return true;
+                }
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(paths == null && it.hasNext()) {
                     IEsopEnv<S, L, O, P> env = it.next();
-                    boolean progress = env.getAll().map(ps -> {
+                    if(env.get().map(pts -> {
                         // be careful not to self-shadow, therefore first add paths, then add shadow tokens
-                        ps.stream().filter(p -> !_shadowed.contains(filter.matchToken(p))).forEach(_paths::__insert);
-                        ps.stream().map(p -> filter.matchToken(p)).forEach(_shadowed::__insert);
+                        pts._1().stream().filter(p -> !_shadowed.contains(filter.matchToken(p)))
+                                .forEach(_paths::__insert);
+                        pts._1().stream().map(p -> filter.matchToken(p)).forEach(_shadowed::__insert);
+                        _trace.__insertAll(pts._2());
                         it.remove();
                         if(filter.shortCircuit() && !_paths.isEmpty()) {
-                        	paths = _paths.freeze();
-                        	return false;
-                        } else {
-                        	return true;
+                            paths = _paths.freeze();
+                            trace = _trace.freeze();
+                            return true;
                         }
-                    }).orElse(false);
-                    if(!progress) {
-                    	break;
+                        return false;
+                    }).orElse(false)) {
+                        break;
                     }
+                    ;
                 }
                 if(paths == null && _envs.isEmpty()) {
-                	paths = _paths.freeze();
+                    paths = _paths.freeze();
+                    trace = _trace.freeze();
                 }
-                return paths;
+                return paths != null;
             }
 
-            @Override public Optional<Set.Immutable<P>> getAll() {
-                return Optional.ofNullable(paths());
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return done() ? Optional.of(ImmutableTuple2.of(paths, trace)) : Optional.empty();
             }
 
             @Override public String toString() {
@@ -171,28 +177,32 @@ public class EsopEnvs {
 
             private final java.util.Set<IEsopEnv<S, L, O, P>> _envs = Sets.newHashSet(envs);
             private final Set.Transient<P> _paths = Set.Transient.of();
+            private final Set.Transient<String> _trace = Set.Transient.of();
             private Set.Immutable<P> paths = null;
+            private Set.Immutable<String> trace = null;
 
-            private @Nullable Set.Immutable<P> paths() {
-            	if(paths != null) {
-            		return paths;
-            	}
+            private boolean done() {
+                if(paths != null) {
+                    return true;
+                }
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
                     final IEsopEnv<S, L, O, P> env = it.next();
-                    env.getAll().ifPresent(ps -> {
-                        _paths.__insertAll(ps);
+                    env.get().ifPresent(pts -> {
+                        _paths.__insertAll(pts._1());
+                        _trace.__insertAll(pts._2());
                         it.remove();
                     });
                 }
                 if(_envs.isEmpty()) {
-                	paths = _paths.freeze();
+                    paths = _paths.freeze();
+                    trace = _trace.freeze();
                 }
-                return paths;
+                return paths != null;
             }
 
-            @Override public Optional<Set.Immutable<P>> getAll() {
-                return Optional.ofNullable(paths());
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return done() ? Optional.of(ImmutableTuple2.of(paths, trace)) : Optional.empty();
             }
 
             @Override public String toString() {
@@ -210,14 +220,47 @@ public class EsopEnvs {
         };
     }
 
+    // trace environment
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
+            IEsopEnv<S, L, O, P> trace(String step, IEsopEnv<S, L, O, P> env) {
+        return new IEsopEnv<S, L, O, P>() {
+            private static final long serialVersionUID = 42L;
+
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return env.get().map(pts -> ImmutableTuple2.of(pts._1(), pts._2().__insert(step)));
+            }
+
+            @Override public String toString() {
+                return step + " @ " + env.toString();
+            }
+
+        };
+    }
+
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
+            IEsopEnv<S, L, O, P> trace(IEsopEnv<S, L, O, P> env, Immutable<String> steps) {
+        return new IEsopEnv<S, L, O, P>() {
+            private static final long serialVersionUID = 42L;
+
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return env.get().map(pts -> ImmutableTuple2.of(pts._1(), pts._2().__insertAll(steps)));
+            }
+
+            @Override public String toString() {
+                return steps + " @ " + env.toString();
+            }
+
+        };
+    }
+
     // empty environment
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
             IEsopEnv<S, L, O, P> empty() {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            @Override public Optional<Set.Immutable<P>> getAll() {
-                return Optional.of(Set.Immutable.of());
+            @Override public Optional<Tuple2<Immutable<P>, Immutable<String>>> get() {
+                return Optional.of(ImmutableTuple2.of(Set.Immutable.of(), Set.Immutable.of()));
             }
 
             @Override public String toString() {

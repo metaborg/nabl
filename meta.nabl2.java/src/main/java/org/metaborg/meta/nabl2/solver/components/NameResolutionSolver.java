@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.solver.components;
 
 import static org.metaborg.meta.nabl2.util.Unit.unit;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,11 +38,17 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.util.Unit;
+import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import io.usethesource.capsule.Set.Immutable;
+
 public class NameResolutionSolver extends SolverComponent<INameResolutionConstraint> {
+    private static final ILogger logger = LoggerUtils.logger(NameResolutionSolver.class);
 
     private final ResolutionParameters params;
     private final EsopScopeGraph<Scope, Label, Occurrence> scopeGraph;
@@ -52,7 +59,8 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
 
     private EsopNameResolution<Scope, Label, Occurrence> nameResolution = null;
 
-    public NameResolutionSolver(Solver solver, ResolutionParameters params, EsopScopeGraph<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
+    public NameResolutionSolver(Solver solver, ResolutionParameters params,
+            EsopScopeGraph<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
         super(solver);
         this.params = params;
         this.scopeGraph = scopeGraph;
@@ -90,7 +98,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         if(!isResolutionStarted() && scopeCounter.isComplete()) {
             progress |= true;
             scopeCounter.setComplete();
-            nameResolution = new EsopNameResolution<>(scopeGraph, params, scopeCounter);
+            nameResolution = new EsopNameResolution<>(scopeGraph, params, scopeCounter, new Tracer());
         }
         progress |= doIterate(unsolved, this::solve);
         return progress;
@@ -153,7 +161,11 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        Optional<? extends io.usethesource.capsule.Set<IResolutionPath<Scope, Label, Occurrence>>> paths = nameResolution.tryResolve(ref);
+        Optional<? extends io.usethesource.capsule.Set<IResolutionPath<Scope, Label, Occurrence>>> paths =
+                nameResolution.tryResolve(ref).map(pts -> {
+                    logDep(ref.getIndex().getResource(), pts._2());
+                    return pts._1();
+                });
         if(paths.isPresent()) {
             List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths.get());
             tracker().removeActive(r.getDeclaration(), r); // before `unify`, so that we don't cause an error chain if
@@ -222,13 +234,13 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
     }
 
     private void addNameResolutionConstraints(Set<INameResolutionConstraint> constraints, IMessageInfo messageInfo) {
-		for(Occurrence decl : properties.getIndices()) {
-			for(ITerm key : properties.getDefinedKeys(decl)) {
-				properties.getValue(decl, key).ifPresent(value -> {
-					constraints.add(ImmutableCDeclProperty.of(decl, key, value, 0, messageInfo));
-				});
-			}
-		}
+        for(Occurrence decl : properties.getIndices()) {
+            for(ITerm key : properties.getDefinedKeys(decl)) {
+                properties.getValue(decl, key).ifPresent(value -> {
+                    constraints.add(ImmutableCDeclProperty.of(decl, key, value, 0, messageInfo));
+                });
+            }
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -249,11 +261,19 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NameResolutionSolver.this.nameResolution.tryVisible(scope);
+                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths =
+                            NameResolutionSolver.this.nameResolution.tryVisible(scope).map(pts -> {
+                                logDep(scope.getResource(), pts._2());
+                                return pts._1();
+                            });
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths = NameResolutionSolver.this.nameResolution.tryReachable(scope);
+                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths =
+                            NameResolutionSolver.this.nameResolution.tryReachable(scope).map(pts -> {
+                                logDep(scope.getResource(), pts._2());
+                                return pts._1();
+                            });
                     return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
                 })
                 // @formatter:on
@@ -300,5 +320,21 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
 
     // ------------------------------------------------------------------------------------------------------//
 
+    private static void logDep(String resource, io.usethesource.capsule.Set.Immutable<String> dependencies) {
+        final Immutable<String> realDeps = dependencies.__remove(resource);
+        if(!realDeps.isEmpty()) {
+            logger.info("DEP: {} -> {}", resource, realDeps);
+        }
+    }
+
+    private static class Tracer implements Function1<Scope, String>, Serializable {
+
+        private static final long serialVersionUID = 42L;
+
+        public String apply(Scope s) {
+            return s.getResource();
+        }
+
+    }
 
 }

@@ -2,8 +2,7 @@ module NaBL2Lang
 
 imports
 
-  nabl2/shared/Main
-  nabl2/lang/Main
+  nabl2/Lang
   nabl2/lang/modules/Module // not transitively visible
 
 context-free start-symbols
@@ -13,4 +12,3 @@ context-free start-symbols
 context-free syntax
 
   Start = Module
-

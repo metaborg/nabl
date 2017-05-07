@@ -8,13 +8,14 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import io.usethesource.capsule.Set;
 
 public interface IEsopEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
         extends Serializable {
 
-    Optional<Set.Immutable<P>> getAll();
+    Optional<Tuple2<Set.Immutable<P>,Set.Immutable<String>>> get();
 
     interface Filter<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
             extends Serializable {

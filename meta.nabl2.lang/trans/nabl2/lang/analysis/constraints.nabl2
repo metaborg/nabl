@@ -111,13 +111,15 @@ rules
  
 rules
 
-  Clause[[ CGen(scheme,term,msg) ^ (s) ]] :=
+  Clause[[ CGen(scheme,vars,term,msg) ^ (s) ]] :=
     CTerm[[ scheme ^ (s) ]],
+    CTerm[[ vars ^ (s) ]],
     CTerm[[ term ^ (s) ]],
     Message[[ msg ^ (s) ]].
 
-  Clause[[ CInst(term,scheme,msg) ^ (s) ]] :=
+  Clause[[ CInst(term,vars,scheme,msg) ^ (s) ]] :=
     CTerm[[ term ^ (s) ]],
+    CTerm[[ vars ^ (s) ]],
     CTerm[[ scheme ^ (s) ]],
     Message[[ msg ^ (s) ]].
  
