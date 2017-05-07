@@ -165,8 +165,13 @@ rules // ###### Analysis results ######
    * @param a : Analysis
    * @type ref:Occurrence -> (decl:Occurrence, Path)
    */
-  nabl2-get-resolved-name(|a) = nabl2--get-ref-resolution
+  nabl2-get-resolved-name(|a) = nabl2-get-resolved-names(|a); ?[<id>]
 
+  /**
+   * @param a : Analysis
+   * @type ref:Occurrence -> List((decl:Occurrence, Path))
+   */
+  nabl2-get-resolved-names(|a) = nabl2--get-ref-resolution
 
 
 rules // ###### Scope graphs ######
