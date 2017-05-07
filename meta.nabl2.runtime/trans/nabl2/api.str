@@ -148,6 +148,11 @@ rules // ###### Analysis results ######
    */
   nabl2-get-resolved-name(|a) = fail
 
+  /**
+   * @param a : Analysis
+   * @type ref:Occurrence -> List((decl:Occurrence, Path))
+   */
+  nabl2-get-resolved-names(|a) = fail
 
 
 rules // ###### Scope graphs ######

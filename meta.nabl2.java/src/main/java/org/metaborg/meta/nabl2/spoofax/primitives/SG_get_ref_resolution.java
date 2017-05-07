@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -25,13 +26,12 @@ public class SG_get_ref_resolution extends ScopeGraphContextPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm>flatMap(ref -> {
             return context.unit(ref.getIndex().getResource()).solution().flatMap(s -> {
-                List<IResolutionPath<Scope, Label, Occurrence>> paths =
-                        Lists.newArrayList(s.getNameResolution().resolve(ref));
-                if(paths.size() != 1) {
-                    return Optional.empty();
+                final Set<IResolutionPath<Scope, Label, Occurrence>> paths = s.getNameResolution().resolve(ref);
+                List<ITerm> pathTerms = Lists.newArrayListWithExpectedSize(paths.size());
+                for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
+                    pathTerms.add(TB.newTuple(path.getDeclaration(), Paths.toTerm(path)));
                 }
-                IResolutionPath<Scope, Label, Occurrence> path = paths.get(0);
-                ITerm result = TB.newTuple(path.getDeclaration(), Paths.toTerm(path));
+                ITerm result = TB.newList(pathTerms);
                 return Optional.of(result);
             });
         });
