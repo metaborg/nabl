@@ -10,6 +10,7 @@ import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 import com.google.common.annotations.Beta;
 
@@ -32,7 +33,7 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
         }
     }
 
-    IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter);
+    IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter, Function1<S, String> tracer);
 
     interface Builder<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
