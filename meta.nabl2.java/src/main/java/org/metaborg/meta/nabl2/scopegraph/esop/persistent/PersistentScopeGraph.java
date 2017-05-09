@@ -91,7 +91,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         return new PersistentNameResolution<>(this, params, scopeCounter);
     }
 
-    public static class ScopeGraphBuilder<S extends IScope, L extends ILabel, O extends IOccurrence>
+    public static class Builder<S extends IScope, L extends ILabel, O extends IOccurrence>
             implements IEsopScopeGraph.Builder<S, L, O> {
 
         private final Set.Transient<S> allScopes;
@@ -104,8 +104,10 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         private final IRelation3.Mutable<S, L, S> directEdges;
         private final IRelation3.Mutable<O, L, S> exportEdges;
         private final IRelation3.Mutable<S, L, O> importEdges;
+       
+        private IEsopScopeGraph<S, L, O> result = null;
 
-        public ScopeGraphBuilder() {
+        public Builder() {
             this.allScopes = Set.Transient.of();
             this.allDeclarations = Set.Transient.of();
             this.allReferences = Set.Transient.of();
@@ -118,30 +120,46 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             this.importEdges = HashRelation3.create();
         }
 
+        void requireNonSealed() {
+            if (result != null) {
+                throw new IllegalStateException("Mutation prohibited, builder is already closed.");
+            }
+        }
+        
         public void addDecl(S scope, O decl) {
+            requireNonSealed();            
+            
             allScopes.__insert(scope);
             allDeclarations.__insert(decl);
             declarations.put(decl, scope);
         }
 
         public void addRef(O ref, S scope) {
+            requireNonSealed();
+            
             allScopes.__insert(scope);
             allReferences.__insert(ref);
             references.put(ref, scope);
         }
 
         public void addDirectEdge(S sourceScope, L label, S targetScope) {
+            requireNonSealed();
+            
             allScopes.__insert(sourceScope);
             directEdges.put(sourceScope, label, targetScope);
         }
 
         public void addAssoc(O decl, L label, S scope) {
+            requireNonSealed();
+            
             allScopes.__insert(scope);
             allDeclarations.__insert(decl);
             exportEdges.put(decl, label, scope);
         }
 
         public void addImport(S scope, L label, O ref) {
+            requireNonSealed();            
+            
             allScopes.__insert(scope);
             allReferences.__insert(ref);
             importEdges.put(scope, label, ref);
@@ -189,8 +207,12 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
 
         @Override
         public IEsopScopeGraph<S, L, O> result() {
-            return new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(), allReferences.freeze(),
-                    declarations, references, directEdges, exportEdges, importEdges);
+            if (result == null) {
+                result = new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(),
+                        allReferences.freeze(), declarations, references, directEdges, exportEdges, importEdges);
+            }
+
+            return result;
         }
     }
 

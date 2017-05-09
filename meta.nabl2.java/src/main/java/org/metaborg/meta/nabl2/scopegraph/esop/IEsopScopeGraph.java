@@ -6,10 +6,10 @@ import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
-import org.metaborg.meta.nabl2.util.functions.Function1;
 
 import com.google.common.annotations.Beta;
 
@@ -19,14 +19,20 @@ import io.usethesource.capsule.Set;
 public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
 		extends IScopeGraph<S, L, O> {
 
-	IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter, Function1<S, String> tracer);
-
+    public static final boolean USE_PERSISTENT_SCOPE_GRAPH = Boolean.getBoolean("usePersistentScopeGraph");
+  
 	/*
 	 * Factory method to switch between different scope graph implementations.
 	 */
-	static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopScopeGraph.Builder<S, L, O> builder() {
-		return new EsopScopeGraph<>();
+	static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopScopeGraph.Builder<S, L, O> builder() {    
+	    if (USE_PERSISTENT_SCOPE_GRAPH) {
+	        return new PersistentScopeGraph.Builder<>();
+	    } else {	    
+	        return new EsopScopeGraph<>();
+	    }
 	}
+
+    IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter);
 
 	interface Builder<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
