@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.scopegraph.esop;
+package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
 import java.io.Serializable;
 import java.util.Optional;
@@ -11,7 +11,7 @@ import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 
 import io.usethesource.capsule.Set;
 
-public interface IEsopEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
+public interface IPersistentEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
         extends Serializable {
 
     Optional<Set.Immutable<P>> getAll();

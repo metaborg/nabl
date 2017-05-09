@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.scopegraph;
 
-
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 
@@ -13,7 +12,6 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
     Set.Immutable<O> getAllDecls();
 
     Set.Immutable<O> getAllRefs();
-
 
     IFunction<O, S> getDecls();
 
