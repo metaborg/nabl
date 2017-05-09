@@ -1,11 +1,6 @@
 package org.metaborg.meta.nabl2.constraints.scopegraph;
 
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDecl;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDirectEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGExportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;

@@ -1,20 +1,23 @@
-package org.metaborg.meta.nabl2.scopegraph.esop;
+package org.metaborg.meta.nabl2.scopegraph.esop.reference;
 
 import java.io.Serializable;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
+import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
 import org.metaborg.meta.nabl2.util.collections.HashRelation3;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 import io.usethesource.capsule.Set;
 
 public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements IScopeGraph<S, L, O>, Serializable {
+        implements IEsopScopeGraph<S, L, O>, IEsopScopeGraph.Builder<S, L, O>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
@@ -109,6 +112,22 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         allScopes.__insert(scope);
         allRefs.__insert(ref);
         importEdges.put(scope, label, ref);
+    }
+
+    // ------------------------------------
+
+    /**
+     * Return identity because this class implements both the mutable builder interface and the and graph interface.
+     */
+    @Override public IEsopScopeGraph<S, L, O> result() {
+        return this;
+    }
+
+    // ------------------------------------
+
+    @Override public EsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params,
+            OpenCounter<S, L> scopeCounter, Function1<S, String> tracer) {
+        return new EsopNameResolution<>(this, params, scopeCounter, tracer);
     }
 
 }

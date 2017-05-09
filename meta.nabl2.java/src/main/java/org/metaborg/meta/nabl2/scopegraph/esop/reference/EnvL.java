@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.scopegraph.esop;
+package org.metaborg.meta.nabl2.scopegraph.esop.reference;
 
 import java.util.Map;
 

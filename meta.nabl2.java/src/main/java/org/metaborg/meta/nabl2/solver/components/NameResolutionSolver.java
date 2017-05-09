@@ -9,16 +9,16 @@ import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCDeclProperty;
 import org.metaborg.meta.nabl2.constraints.nameresolution.CAssoc;
 import org.metaborg.meta.nabl2.constraints.nameresolution.CDeclProperty;
 import org.metaborg.meta.nabl2.constraints.nameresolution.CResolve;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.nameresolution.ImmutableCDeclProperty;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
-import org.metaborg.meta.nabl2.scopegraph.esop.EsopNameResolution;
-import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -51,19 +51,19 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
     private static final ILogger logger = LoggerUtils.logger(NameResolutionSolver.class);
 
     private final ResolutionParameters params;
-    private final EsopScopeGraph<Scope, Label, Occurrence> scopeGraph;
+	private final IEsopScopeGraph.Builder<Scope, Label, Occurrence> scopeGraphBuilder;
     private final Properties<Occurrence> properties;
     private final OpenCounter<Scope, Label> scopeCounter;
 
     private final Set<INameResolutionConstraint> unsolved;
 
-    private EsopNameResolution<Scope, Label, Occurrence> nameResolution = null;
+    private IEsopNameResolution<Scope, Label, Occurrence> nameResolution = null;
 
     public NameResolutionSolver(Solver solver, ResolutionParameters params,
-            EsopScopeGraph<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
+            IEsopScopeGraph.Builder<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
         super(solver);
         this.params = params;
-        this.scopeGraph = scopeGraph;
+        this.scopeGraphBuilder = scopeGraph;
         this.scopeCounter = scopeCounter;
         this.properties = new Properties<>();
 
@@ -98,7 +98,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         if(!isResolutionStarted() && scopeCounter.isComplete()) {
             progress |= true;
             scopeCounter.setComplete();
-            nameResolution = new EsopNameResolution<>(scopeGraph, params, scopeCounter, new Tracer());
+			nameResolution = scopeGraphBuilder.result().resolve(params, scopeCounter, new Tracer());
         }
         progress |= doIterate(unsolved, this::solve);
         return progress;
@@ -161,7 +161,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        Optional<? extends io.usethesource.capsule.Set<IResolutionPath<Scope, Label, Occurrence>>> paths =
+        Optional<? extends io.usethesource.capsule.Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> paths =
                 nameResolution.tryResolve(ref).map(pts -> {
                     logDep(ref.getIndex().getResource(), pts._2());
                     return pts._1();
@@ -197,7 +197,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
         Label label = a.getLabel();
-        List<Scope> scopes = Lists.newArrayList(scopeGraph.getExportEdges().get(decl, label));
+        List<Scope> scopes = Lists.newArrayList(scopeGraphBuilder.getExportEdges().get(decl, label));
         tracker().removeActive(a.getScope(), a); // before `unify`, so that we don't cause an error chain if that fails
         switch(scopes.size()) {
             case 0:
@@ -253,11 +253,11 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
             return M.<Optional<Set<IElement<ITerm>>>>cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Iterable<Occurrence> decls = NameResolutionSolver.this.scopeGraph.getDecls().inverse().get(scope);
+                    Iterable<Occurrence> decls = NameResolutionSolver.this.scopeGraphBuilder.getDecls().inverse().get(scope);
                     return Optional.of(makeSet(decls, ns));
                 }),
                 M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Iterable<Occurrence> refs = NameResolutionSolver.this.scopeGraph.getRefs().inverse().get(scope);
+                    Iterable<Occurrence> refs = NameResolutionSolver.this.scopeGraphBuilder.getRefs().inverse().get(scope);
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {

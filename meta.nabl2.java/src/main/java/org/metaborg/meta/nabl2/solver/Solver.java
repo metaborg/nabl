@@ -18,7 +18,7 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
-import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
@@ -90,7 +90,7 @@ public class Solver {
         this.components.add(baseSolver = new BaseSolver(this));
         this.components.add(equalitySolver = new EqualitySolver(this, unifier));
         this.components.add(astSolver = new AstSolver(this));
-        final EsopScopeGraph<Scope, Label, Occurrence> scopeGraph = new EsopScopeGraph<>();
+		final IEsopScopeGraph.Builder<Scope, Label, Occurrence>  scopeGraph = IEsopScopeGraph.builder();
         final OpenCounter<Scope, Label> scopeCounter = new OpenCounter<>();
         this.components.add(scopeGraphSolver = new ScopeGraphSolver(this, config.getResolutionParams(), scopeGraph, scopeCounter));
         this.components.add(nameResolutionSolver = new NameResolutionSolver(this, config.getResolutionParams(), scopeGraph, scopeCounter));

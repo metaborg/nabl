@@ -6,11 +6,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDecl;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGDirectEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGExportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGImportEdge;
-import org.metaborg.meta.nabl2.constraints.namebinding.ImmutableCGRef;
 import org.metaborg.meta.nabl2.constraints.scopegraph.CGDecl;
 import org.metaborg.meta.nabl2.constraints.scopegraph.CGDirectEdge;
 import org.metaborg.meta.nabl2.constraints.scopegraph.CGExportEdge;
@@ -18,9 +13,14 @@ import org.metaborg.meta.nabl2.constraints.scopegraph.CGImportEdge;
 import org.metaborg.meta.nabl2.constraints.scopegraph.CGRef;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.scopegraph.ImmutableCGDecl;
+import org.metaborg.meta.nabl2.constraints.scopegraph.ImmutableCGDirectEdge;
+import org.metaborg.meta.nabl2.constraints.scopegraph.ImmutableCGExportEdge;
+import org.metaborg.meta.nabl2.constraints.scopegraph.ImmutableCGImportEdge;
+import org.metaborg.meta.nabl2.constraints.scopegraph.ImmutableCGRef;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
-import org.metaborg.meta.nabl2.scopegraph.esop.EsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
@@ -37,17 +37,17 @@ import com.google.common.collect.Sets;
 public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
 
     private final ResolutionParameters params;
-    private final EsopScopeGraph<Scope, Label, Occurrence> scopeGraph;
+    private final IEsopScopeGraph.Builder<Scope, Label, Occurrence> scopeGraphBuilder;
     private final OpenCounter<Scope, Label> scopeCounter;
 
     private final Set<IScopeGraphConstraint> unsolved;
     private final Set<CGDirectEdge<Scope>> incompleteDirectEdges;
     private final Set<CGImportEdge<Scope>> incompleteImportEdges;
 
-    public ScopeGraphSolver(Solver solver, ResolutionParameters params, EsopScopeGraph<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
+    public ScopeGraphSolver(Solver solver, ResolutionParameters params, IEsopScopeGraph.Builder<Scope, Label, Occurrence> scopeGraph, OpenCounter<Scope, Label> scopeCounter) {
         super(solver);
         this.params = params;
-        this.scopeGraph = scopeGraph;
+        this.scopeGraphBuilder = scopeGraph;
         this.scopeCounter = scopeCounter;
 
         this.unsolved = Sets.newHashSet();
@@ -56,7 +56,7 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
     }
 
     public IScopeGraph<Scope, Label, Occurrence> getScopeGraph() {
-        return scopeGraph;
+		return scopeGraphBuilder.result();
     }
 
     public void addActive(Iterable<Scope> scopes) {
@@ -115,7 +115,7 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
                 .orElseThrow(() -> new TypeException("Expected a scope as first agument to " + c));
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as second argument to " + c));
-        scopeGraph.addDecl(scope, decl);
+        scopeGraphBuilder.addDecl(scope, decl);
         return true;
     }
 
@@ -129,7 +129,7 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         Scope scope = Scope.matcher().match(scopeTerm)
                 .orElseThrow(() -> new TypeException("Expected a scope as second argument to " + c));
-        scopeGraph.addRef(ref, scope);
+        scopeGraphBuilder.addRef(ref, scope);
         return true;
     }
 
@@ -175,7 +175,7 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
                 .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
-        scopeGraph.addAssoc(decl, c.getLabel(), scope);
+        scopeGraphBuilder.addAssoc(decl, c.getLabel(), scope);
         return true;
     }
 
@@ -187,7 +187,7 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
         }
         Scope targetScope = Scope.matcher().match(targetScopeTerm)
                 .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
-        scopeGraph.addDirectEdge(c.getSourceScope(), c.getLabel(), targetScope);
+        scopeGraphBuilder.addDirectEdge(c.getSourceScope(), c.getLabel(), targetScope);
         scopeCounter.remove(c.getSourceScope(), c.getLabel());
         return true;
     }
@@ -199,7 +199,7 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
         }
         Occurrence ref = Occurrence.matcher().match(refTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as third argument to " + c));
-        scopeGraph.addImport(c.getScope(), c.getLabel(), ref);
+        scopeGraphBuilder.addImport(c.getScope(), c.getLabel(), ref);
         scopeCounter.remove(c.getScope(), c.getLabel());
         return true;
     }
@@ -207,20 +207,20 @@ public class ScopeGraphSolver extends SolverComponent<IScopeGraphConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     private void addScopeGraphConstraints(Set<IScopeGraphConstraint> constraints, IMessageInfo messageInfo) {
-        for(Scope scope : scopeGraph.getAllScopes()) {
-            for(Occurrence decl : scopeGraph.getDecls().inverse().get(scope)) {
+        for(Scope scope : scopeGraphBuilder.getAllScopes()) {
+            for(Occurrence decl : scopeGraphBuilder.getDecls().inverse().get(scope)) {
                 constraints.add(ImmutableCGDecl.of(scope, decl, messageInfo));
             }
-            for(Occurrence ref : scopeGraph.getRefs().inverse().get(scope)) {
+            for(Occurrence ref : scopeGraphBuilder.getRefs().inverse().get(scope)) {
                 constraints.add(ImmutableCGRef.of(ref, scope, messageInfo));
             }
-            for(Map.Entry<Label, Scope> edge : scopeGraph.getDirectEdges().get(scope)) {
+            for(Map.Entry<Label, Scope> edge : scopeGraphBuilder.getDirectEdges().get(scope)) {
                 constraints.add(ImmutableCGDirectEdge.of(scope, edge.getKey(), edge.getValue(), messageInfo));
             }
-            for(Map.Entry<Label, Occurrence> edge : scopeGraph.getImportEdges().get(scope)) {
+            for(Map.Entry<Label, Occurrence> edge : scopeGraphBuilder.getImportEdges().get(scope)) {
                 constraints.add(ImmutableCGImportEdge.of(scope, edge.getKey(), edge.getValue(), messageInfo));
             }
-            for(Map.Entry<Label, Occurrence> edge : scopeGraph.getExportEdges().inverse().get(scope)) {
+            for(Map.Entry<Label, Occurrence> edge : scopeGraphBuilder.getExportEdges().inverse().get(scope)) {
                 constraints.add(ImmutableCGExportEdge.of(edge.getValue(), edge.getKey(), scope, messageInfo));
             }
         }

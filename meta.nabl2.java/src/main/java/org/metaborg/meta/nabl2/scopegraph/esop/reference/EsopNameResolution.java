@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.scopegraph.esop;
+package org.metaborg.meta.nabl2.scopegraph.esop.reference;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -15,11 +15,12 @@ import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
-import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
@@ -38,11 +39,11 @@ import com.google.common.collect.Sets;
 import io.usethesource.capsule.Set;
 
 public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements INameResolution<S, L, O>, Serializable {
+        implements IEsopNameResolution<S, L, O>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final EsopScopeGraph<S, L, O> scopeGraph;
+    private final IScopeGraph<S, L, O> scopeGraph;
     private final Set<L> labels;
     private final L labelD;
     private final IRegExpMatcher<L> wf;
@@ -57,7 +58,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     transient private Map<S, IEsopEnv<S, L, O, IDeclPath<S, L, O>>> reachableCache;
     transient private Map<IRelation<L>, EnvL<S, L, O>> stagedEnv_L;
 
-    public EsopNameResolution(EsopScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
+    public EsopNameResolution(IScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
             OpenCounter<S, L> scopeCounter, Function1<S, String> tracer) {
         this.scopeGraph = scopeGraph;
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
@@ -99,18 +100,18 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return tryReachable(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
     }
 
-    public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O ref) {
+    @Override public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O ref) {
         final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env =
                 resolveCache.computeIfAbsent(ref, r -> resolveEnv(Set.Immutable.of(), ref));
         return env.get();
     }
 
-    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
+    @Override public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
         final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env = visibleCache.computeIfAbsent(scope, s -> visibleEnv(scope));
         return env.get();
     }
 
-    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
+    @Override public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
         final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                 reachableCache.computeIfAbsent(scope, s -> reachableEnv(scope));
         return env.get();
