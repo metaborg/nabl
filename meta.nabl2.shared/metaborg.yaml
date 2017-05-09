@@ -16,6 +16,7 @@ exports:
 - language: Stratego-Sugar
   directory: trans
   includes:
+  - "nabl2shared.str"
   - "nabl2/**/*.str"
 
   ## SDF3

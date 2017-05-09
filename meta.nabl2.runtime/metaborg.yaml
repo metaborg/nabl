@@ -19,11 +19,11 @@ exports:
 - language: Stratego-Sugar
   directory: trans
   includes:
+  - "nabl2runtime.str"
   - "nabl2/**/*.str"
   - "nabl2/**/*.meta"
 
   ## NaBL2
-  - "nabl2/**/*.str"
 - language: NaBL2Lang
   directory: trans
   includes:
