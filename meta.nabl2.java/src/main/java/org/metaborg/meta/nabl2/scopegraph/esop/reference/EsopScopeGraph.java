@@ -97,6 +97,7 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
     public void addDirectEdge(S sourceScope, L label, S targetScope) {
         // FIXME: check scope/l is not closed
         allScopes.__insert(sourceScope);
+        allScopes.__insert(targetScope);        
         directEdges.put(sourceScope, label, targetScope);
     }
 
