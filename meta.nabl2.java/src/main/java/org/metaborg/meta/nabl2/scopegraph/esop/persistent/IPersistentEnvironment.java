@@ -15,11 +15,9 @@ public interface IPersistentEnvironment<S extends IScope, L extends ILabel, O ex
         extends Serializable {
 
     Optional<Set.Immutable<P>> getAll();
-
+    
     interface Filter<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
-            extends Serializable {
-
-        Optional<P> test(IDeclPath<S, L, O> path);
+            extends FilterPredicate<S, L, O, P>, Serializable {
 
         Object matchToken(P p);
 
@@ -27,4 +25,11 @@ public interface IPersistentEnvironment<S extends IScope, L extends ILabel, O ex
 
     }
 
+    @FunctionalInterface
+    interface FilterPredicate<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> {
+
+        Optional<P> test(IDeclPath<S, L, O> path);
+
+    }
+    
 }

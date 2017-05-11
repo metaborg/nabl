@@ -32,10 +32,10 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
 
     private final Set.Immutable<S> allScopes;
 
-    private final IRelation3<S, L, S> directEdges;
+    protected final IRelation3<S, L, S> directEdges;
 
-    private final IRelation3<S, L, O> declarations;
-    private final IRelation3<S, L, O> references;
+    protected final IRelation3<S, L, O> declarations;
+    protected final IRelation3<S, L, O> references;
 
     // TODO
     // private final TernaryRelation.Immutable<S, L, S> directEdges;

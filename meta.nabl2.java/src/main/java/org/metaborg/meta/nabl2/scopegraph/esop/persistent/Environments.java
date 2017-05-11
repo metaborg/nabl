@@ -91,13 +91,13 @@ public class Environments {
         };
     }
 
-    // initialize with paths
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> init(
-            Iterable<P> paths) {
+    // TODO get rid of lambda; re-think persistent environments
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> of(
+            Set.Immutable<P> paths) {
         return new IPersistentEnvironment<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private Set.Immutable<P> _paths = Set.Immutable.<P>of().__insertAll(Sets.newHashSet(paths));
+            private Set.Immutable<P> _paths = paths;
 
             @Override
             public Optional<Set.Immutable<P>> getAll() {
