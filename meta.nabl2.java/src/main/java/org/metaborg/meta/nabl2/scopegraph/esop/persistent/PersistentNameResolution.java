@@ -18,7 +18,6 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
@@ -45,7 +44,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     private static final long serialVersionUID = 42L;
 
-    private final IScopeGraph<S, L, O> scopeGraph;
+    private final PersistentScopeGraph<S, L, O> scopeGraph;
 
     private final Set<L> labels;
     private final L labelD;
@@ -56,14 +55,16 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     private final OpenCounter<S, L> scopeCounter;
 
     transient private Map<O, IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>>> resolveCache;
+
     transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> visibleCache;
     transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> reachableCache;
+    
     transient private Map<IRelation<L>, EnvironmentL<S, L, O>> stagedEnv_L;
 
-    public PersistentNameResolution(IScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
+    public PersistentNameResolution(PersistentScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
             OpenCounter<S, L> scopeCounter) {
         this.scopeGraph = scopeGraph;
-
+        
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
         this.labelD = params.getLabelD();
         this.wf = RegExpMatcher.create(params.getPathWf());
@@ -83,11 +84,13 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         this.stagedEnv_L = Maps.newHashMap();
     }
 
+    // NOTE: never used in project
     @Override
     public Set.Immutable<S> getAllScopes() {
         return scopeGraph.getAllScopes();
     }
 
+    // NOTE: all references could be duplicated to get rid of scope graph reference
     @Override
     public Set.Immutable<O> getAllRefs() {
         return scopeGraph.getAllRefs();
