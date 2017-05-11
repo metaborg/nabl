@@ -3,6 +3,8 @@ package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.liftHashFunctionToRelation;
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.union;
 
+import java.util.Objects;
+
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
@@ -17,8 +19,6 @@ import org.metaborg.meta.nabl2.util.collections.IInverseFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.tuples.Tuple3;
-
-import com.google.common.base.Objects;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.BinaryRelation.Immutable;
@@ -163,7 +163,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         }
         
         void requireNonEqual(Object one, Object two) {
-            if (Objects.equal(one, two)) {
+            if (Objects.equals(one, two)) {
                 throw new IllegalArgumentException(String.format("Arguments must not equal:\n\t%s\n\t%s", one, two));
             }
         }
