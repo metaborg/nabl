@@ -10,6 +10,8 @@ public interface IRegExpMatcher<S> {
 
     boolean isFinal();
 
-    boolean isEmpty();
+    default boolean isEmpty() {
+        return isFinal() && !isAccepting();
+    }
 
 }

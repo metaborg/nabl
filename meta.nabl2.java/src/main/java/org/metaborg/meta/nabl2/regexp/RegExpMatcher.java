@@ -49,10 +49,6 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         return !nonFinal.contains(state);
     }
 
-    @Override public boolean isEmpty() {
-        return isFinal() && !isAccepting();
-    }
-
     public static <S> IRegExpMatcher<S> create(final IRegExp<S> initial) {
         final List<Deriver<S>> derivers = Lists.newArrayList();
         for (S symbol : initial.getBuilder().getAlphabet()) {
