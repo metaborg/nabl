@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.util.collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.metaborg.meta.nabl2.util.functions.Function3;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple3;
 import org.metaborg.meta.nabl2.util.tuples.Tuple3;
 
@@ -28,8 +29,13 @@ public interface IRelation3<K, L, V> {
 
     @Beta
     default java.util.stream.Stream<Tuple3<K, L, V>> stream() {
+        return this.stream(ImmutableTuple3::of);
+    }
+
+    @Beta
+    default <R> java.util.stream.Stream<R> stream(final Function3<K, L, V, R> converter) {
         return this.keySet().stream().flatMap(
-                key -> this.get(key).stream().map(entry -> ImmutableTuple3.of(key, entry.getKey(), entry.getValue())));
+                key -> this.get(key).stream().map(entry -> converter.apply(key, entry.getKey(), entry.getValue())));
     }
 
     interface Mutable<K, L, V> extends IRelation3<K, L, V> {
