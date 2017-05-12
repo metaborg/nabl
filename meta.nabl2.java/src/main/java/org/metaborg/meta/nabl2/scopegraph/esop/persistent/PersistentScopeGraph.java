@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.liftHashFunctionToRelation;
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.union;
+import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
 
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -46,6 +47,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     // private final TernaryRelation.Immutable<S, L, O> declarations;
     // private final TernaryRelation.Immutable<S, L, O> references;
 
+    @SuppressWarnings("unchecked")
     public PersistentScopeGraph(final Set.Immutable<S> allScopes, final Set.Immutable<O> allDeclarations,
             final Set.Immutable<O> allReferences, final IFunction<O, S> declarations, final IFunction<O, S> references,
             final IRelation3<S, L, S> directEdges, final IRelation3<O, L, S> exportEdges,
@@ -68,12 +70,12 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     
     public Stream<ScopeLabelOccurrence<S, L, O>> localDeclarationsStream() {
         // TODO: use hash lookup on label instead of filter        
-        return declarationsStream().filter(tuple -> tuple.label().equals(Label.D));
+        return declarationsStream().filter(labelEquals(Label.D));
     }    
     
     public Stream<ScopeLabelOccurrence<S, L, O>> exportDeclarationsStream() {
-        // TODO: use hash lookup on label instead of filter
-        return declarationsStream().filter(tuple -> !tuple.label().equals(Label.D));
+        // TODO: use hash lookup on label instead of filter       
+        return declarationsStream().filter(labelEquals(Label.D).negate());
     }
 
     public Stream<ScopeLabelOccurrence<S, L, O>> referencesStream() {
@@ -82,19 +84,21 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     
     public Stream<ScopeLabelOccurrence<S, L, O>> localReferencesStream() {
         // TODO: use hash lookup on label instead of filter
-        return referencesStream().filter(tuple -> tuple.label().equals(Label.R));
+        return referencesStream().filter(labelEquals(Label.R));
     }    
     
     public Stream<ScopeLabelOccurrence<S, L, O>> importReferencesStream() {
         // TODO: use hash lookup on label instead of filter        
-        return referencesStream().filter(tuple -> !tuple.label().equals(Label.R));
+        return referencesStream().filter(labelEquals(Label.R).negate());
     }    
     
+    @Deprecated
     @Override
     public Set.Immutable<S> getAllScopes() {
         return allScopes;
     }
 
+    @Deprecated
     @Override
     public Set.Immutable<O> getAllDecls() {
         // projection of third column
@@ -107,12 +111,13 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IFunction.Mutable<O, S> result = HashFunction.create();
         
         // filter and project
-        declarationsStream().filter(tuple -> tuple.label().equals(Label.D)).iterator()
+        declarationsStream().filter(labelEquals(Label.D)).iterator()
                 .forEachRemaining(tuple -> result.put(tuple.occurrence(), tuple.scope()));
 
         return result;
     }
 
+    @Deprecated
     @Override
     public Set.Immutable<O> getAllRefs() {
         // projection of third column        
@@ -125,34 +130,37 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IFunction.Mutable<O, S> result = HashFunction.create();
                 
         // filter and project        
-        referencesStream().filter(tuple -> tuple.label().equals(Label.R)).iterator()
+        referencesStream().filter(labelEquals(Label.R)).iterator()
                 .forEachRemaining(tuple -> result.put(tuple.occurrence(), tuple.scope()));
         
         return result;
     }
 
+    @Deprecated
     @Override
     public IRelation3<S, L, S> getDirectEdges() {
         return directEdges;
     }
 
+    @Deprecated
     @Override
     public IRelation3<O, L, S> getExportEdges() {
         final IRelation3.Mutable<S, L, O> result = HashRelation3.create();
 
         // filter
-        declarationsStream().filter(tuple -> !tuple.label().equals(Label.D)).iterator()
+        declarationsStream().filter(labelEquals(Label.D).negate()).iterator()
                 .forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result.inverse();
     }
 
+    @Deprecated
     @Override
     public IRelation3<S, L, O> getImportEdges() {
         final IRelation3.Mutable<S, L, O> result = HashRelation3.create();
 
         // filter
-        referencesStream().filter(tuple -> !tuple.label().equals(Label.R)).iterator()
+        referencesStream().filter(labelEquals(Label.R).negate()).iterator()
                 .forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result;

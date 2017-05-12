@@ -1,5 +1,10 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
+import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
+import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.occurrenceEquals;
+import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.scopeEquals;
+import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope.sourceScopeEquals;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -148,7 +153,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         
         // @formatter:off
         IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = scopeGraph.localReferencesStream()
-            .filter(tuple -> tuple.occurrence().equals(reference))
+            .filter(occurrenceEquals(reference))
             .findAny() // must be unique (TODO ensure this)
             .map(ScopeLabelOccurrence::scope)
             .map(scope -> env(seenI.__insert(reference), ordered, wf, Paths.empty(scope), Environments.resolutionFilter(reference)))
@@ -198,7 +203,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                 } else {
                     // @formatter:off
                     final Set.Immutable<P> paths = scopeGraph.localDeclarationsStream()
-                        .filter(tuple -> tuple.scope().equals(path.getTarget()))
+                        .filter(scopeEquals(path.getTarget()))
                         .map(ScopeLabelOccurrence::occurrence)
                         .flatMap(declaration -> OptionalStream.of(filter.test(Paths.decl(path, declaration))))
                         .collect(CapsuleCollectors.toSet());
@@ -232,8 +237,8 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
         // @formatter:off
         final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = scopeGraph.directEdgesStream()
-            .filter(tuple -> tuple.label().equals(l))
-            .filter(tuple -> tuple.sourceScope().equals(path.getTarget()))
+            .filter(labelEquals(l))
+            .filter(sourceScopeEquals(path.getTarget()))
             .map(ScopeLabelScope::targetScope)
             .flatMap(nextScope -> OptionalStream.of(Paths.append(path, Paths.direct(path.getTarget(), l, nextScope)).map(getter::apply)))
             .collect(CapsuleCollectors.toSet());
@@ -250,8 +255,8 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         final Function<IResolutionPath<S, L, O>, IPersistentEnvironment<S, L, O, P>> importPathToUnionEnvironment = importPath -> {   
             // @formatter:off        
             final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importEnvironments = scopeGraph.exportDeclarationsStream()
-                    .filter(tuple -> tuple.label().equals(l))
-                    .filter(tuple -> tuple.occurrence().equals(importPath.getDeclaration()))
+                    .filter(labelEquals(l))
+                    .filter(occurrenceEquals(importPath.getDeclaration()))
                     .map(ScopeLabelOccurrence::scope)
                     .flatMap(nextScope -> OptionalStream.of(Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope)).map(getter::apply)))
                     .collect(CapsuleCollectors.toSet());
@@ -270,7 +275,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         
         // @formatter:off        
         final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = scopeGraph.importReferencesStream()
-            .filter(tuple -> tuple.scope().equals(path.getTarget()))
+            .filter(scopeEquals(path.getTarget()))
             .filter(tuple -> !seenImports.contains(tuple.occurrence()))
             .map(ScopeLabelOccurrence::occurrence)
             .map(reference -> resolveEnv(seenImports, reference))

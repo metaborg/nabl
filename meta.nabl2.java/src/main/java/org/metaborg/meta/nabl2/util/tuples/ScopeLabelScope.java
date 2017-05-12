@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.util.tuples;
 
+import java.util.Objects;
+import java.util.function.Predicate;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
@@ -8,7 +11,8 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class ScopeLabelScope<S extends IScope, L extends ILabel, O extends IOccurrence> {
+public abstract class ScopeLabelScope<S extends IScope, L extends ILabel, O extends IOccurrence>
+        implements HasLabel<L> {
 
     @Value.Parameter public abstract S sourceScope();
 
@@ -16,4 +20,14 @@ public abstract class ScopeLabelScope<S extends IScope, L extends ILabel, O exte
 
     @Value.Parameter public abstract S targetScope();
 
+    public final static <S extends IScope, L extends ILabel, O extends IOccurrence> 
+    Predicate<ScopeLabelScope<S, L, O>> sourceScopeEquals(S scope) {
+        return tuple -> Objects.equals(tuple.sourceScope(), scope);
+    } 
+    
+    public final static <S extends IScope, L extends ILabel, O extends IOccurrence> 
+    Predicate<ScopeLabelScope<S, L, O>> targetScopeEquals(S scope) {
+        return tuple -> Objects.equals(tuple.targetScope(), scope);
+    }    
+    
 }
