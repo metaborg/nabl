@@ -4,6 +4,7 @@ import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConve
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.union;
 
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -18,7 +19,10 @@ import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IInverseFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.meta.nabl2.util.tuples.Tuple3;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelOccurrence;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
+import org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence;
+import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.BinaryRelation.Immutable;
@@ -26,16 +30,16 @@ import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements IEsopScopeGraph<S, L, O>, java.io.Serializable {
-
+        implements IEsopScopeGraph<S, L, O>, java.io.Serializable {    
+    
     private static final long serialVersionUID = 42L;
 
     private final Set.Immutable<S> allScopes;
 
-    protected final IRelation3<S, L, S> directEdges;
+    private final IRelation3<S, L, S> directEdges;
 
-    protected final IRelation3<S, L, O> declarations;
-    protected final IRelation3<S, L, O> references;
+    private final IRelation3<S, L, O> declarations;
+    private final IRelation3<S, L, O> references;
 
     // TODO
     // private final TernaryRelation.Immutable<S, L, S> directEdges;
@@ -54,6 +58,38 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         this.references = union(importEdges, liftHashFunctionToRelation(references, (L) Label.R).inverse());
     }
 
+    public Stream<ScopeLabelScope<S, L, O>> directEdgesStream() {
+        return directEdges.stream(ImmutableScopeLabelScope::of);
+    }
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> declarationsStream() {
+        return declarations.stream(ImmutableScopeLabelOccurrence::of);
+    }    
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> localDeclarationsStream() {
+        // TODO: use hash lookup on label instead of filter        
+        return declarationsStream().filter(tuple -> tuple.label().equals(Label.D));
+    }    
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> exportDeclarationsStream() {
+        // TODO: use hash lookup on label instead of filter
+        return declarationsStream().filter(tuple -> !tuple.label().equals(Label.D));
+    }
+
+    public Stream<ScopeLabelOccurrence<S, L, O>> referencesStream() {
+        return references.stream(ImmutableScopeLabelOccurrence::of);
+    }
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> localReferencesStream() {
+        // TODO: use hash lookup on label instead of filter
+        return referencesStream().filter(tuple -> tuple.label().equals(Label.R));
+    }    
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> importReferencesStream() {
+        // TODO: use hash lookup on label instead of filter        
+        return referencesStream().filter(tuple -> !tuple.label().equals(Label.R));
+    }    
+    
     @Override
     public Set.Immutable<S> getAllScopes() {
         return allScopes;
@@ -62,35 +98,35 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     @Override
     public Set.Immutable<O> getAllDecls() {
         // projection of third column
-        return declarations.stream().map(Tuple3::_3).collect(CapsuleCollectors.toSet());
+        return declarationsStream().map(ScopeLabelOccurrence::occurrence).collect(CapsuleCollectors.toSet());
     }
-
-    @Override
-    public Set.Immutable<O> getAllRefs() {
-        // projection of third column        
-        return references.stream().map(Tuple3::_3).collect(CapsuleCollectors.toSet());
-    }
-
+   
     @Deprecated
     @Override
     public IFunction<O, S> getDecls() {
         final IFunction.Mutable<O, S> result = HashFunction.create();
         
         // filter and project
-        declarations.stream().filter(tuple -> tuple._2().equals(Label.D)).iterator()
-                .forEachRemaining(tuple -> result.put(tuple._3(), tuple._1()));
+        declarationsStream().filter(tuple -> tuple.label().equals(Label.D)).iterator()
+                .forEachRemaining(tuple -> result.put(tuple.occurrence(), tuple.scope()));
 
         return result;
     }
 
+    @Override
+    public Set.Immutable<O> getAllRefs() {
+        // projection of third column        
+        return referencesStream().map(ScopeLabelOccurrence::occurrence).collect(CapsuleCollectors.toSet());
+    }
+    
     @Deprecated
     @Override
     public IFunction<O, S> getRefs() {
         final IFunction.Mutable<O, S> result = HashFunction.create();
                 
         // filter and project        
-        references.stream().filter(tuple -> tuple._2().equals(Label.R)).iterator()
-                .forEachRemaining(tuple -> result.put(tuple._3(), tuple._1()));
+        referencesStream().filter(tuple -> tuple.label().equals(Label.R)).iterator()
+                .forEachRemaining(tuple -> result.put(tuple.occurrence(), tuple.scope()));
         
         return result;
     }
@@ -105,8 +141,8 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IRelation3.Mutable<S, L, O> result = HashRelation3.create();
 
         // filter
-        declarations.stream().filter(tuple -> !tuple._2().equals(Label.D)).iterator()
-                .forEachRemaining(tuple -> result.put(tuple._1(), tuple._2(), tuple._3()));
+        declarationsStream().filter(tuple -> !tuple.label().equals(Label.D)).iterator()
+                .forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result.inverse();
     }
@@ -116,8 +152,8 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IRelation3.Mutable<S, L, O> result = HashRelation3.create();
 
         // filter
-        references.stream().filter(tuple -> !tuple._2().equals(Label.R)).iterator()
-                .forEachRemaining(tuple -> result.put(tuple._1(), tuple._2(), tuple._3()));
+        referencesStream().filter(tuple -> !tuple.label().equals(Label.R)).iterator()
+                .forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result;
     }
@@ -293,11 +329,11 @@ class CollectionConverter {
         return output;
     }
     
-    public static final <T, U, V> IRelation3<T, U, V> union(IRelation3<T, U, V> one, IRelation3<T, U, V> two) {
+    public static final <T extends IScope, U extends ILabel, V extends IOccurrence> IRelation3<T, U, V> union(IRelation3<T, U, V> one, IRelation3<T, U, V> two) {
         final IRelation3.Mutable<T, U, V> result = HashRelation3.create();
 
-        one.stream().iterator().forEachRemaining(tuple -> result.put(tuple._1(), tuple._2(), tuple._3()));
-        two.stream().iterator().forEachRemaining(tuple -> result.put(tuple._1(), tuple._2(), tuple._3()));
+        one.stream(ImmutableScopeLabelOccurrence::of).iterator().forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
+        two.stream(ImmutableScopeLabelOccurrence::of).iterator().forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result;
     }
