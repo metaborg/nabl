@@ -222,23 +222,25 @@ public class Environments {
         };
     }
 
-    // empty environment
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> empty() {
-        return new IPersistentEnvironment<S, L, O, P>() {
-            private static final long serialVersionUID = 42L;
-
-            @Override
-            public Optional<Set.Immutable<P>> getAll() {
-                return Optional.of(Set.Immutable.of());
-            }
-
-            @Override
-            public String toString() {
-                return "{}";
-            }
-
-        };
+    @SuppressWarnings("unchecked")
+    public static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> empty() {
+        return EMPTY_ENVIRONMENT;
     }
+    
+    @SuppressWarnings("rawtypes")
+    private static final IPersistentEnvironment EMPTY_ENVIRONMENT = new IPersistentEnvironment() {
+        private static final long serialVersionUID = 42L;
+
+        @Override
+        public Optional<Set.Immutable> getAll() {
+            return Optional.of(Set.Immutable.of());
+        }
+
+        @Override
+        public String toString() {
+            return Set.Immutable.of().toString();
+        }
+    };
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> IPersistentEnvironment.Filter<S, L, O, IResolutionPath<S, L, O>> resolutionFilter(
             O ref) {
