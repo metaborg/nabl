@@ -45,8 +45,8 @@ public class Environments {
             }
 
             @Override
-            public Optional<Set.Immutable<P>> getAll() {
-                return env().flatMap(IPersistentEnvironment::getAll);
+            public Optional<Set.Immutable<P>> solution() {
+                return env().flatMap(IPersistentEnvironment::solution);
             }
 
             @Override
@@ -76,8 +76,8 @@ public class Environments {
             }
 
             @Override
-            public Optional<Set.Immutable<P>> getAll() {
-                return env().getAll();
+            public Optional<Set.Immutable<P>> solution() {
+                return env().solution();
             }
 
             @Override
@@ -100,7 +100,7 @@ public class Environments {
             private Set.Immutable<P> _paths = paths;
 
             @Override
-            public Optional<Set.Immutable<P>> getAll() {
+            public Optional<Set.Immutable<P>> solution() {
                 return Optional.of(_paths);
             }
 
@@ -130,7 +130,7 @@ public class Environments {
                 Iterator<IPersistentEnvironment<S, L, O, P>> it = _envs.iterator();
                 while (paths == null && it.hasNext()) {
                     IPersistentEnvironment<S, L, O, P> env = it.next();
-                    boolean progress = env.getAll().map(ps -> {
+                    boolean progress = env.solution().map(ps -> {
                         // be careful not to self-shadow, therefore first add
                         // paths, then add shadow tokens
                         ps.stream().filter(p -> !_shadowed.contains(filter.matchToken(p))).forEach(_paths::__insert);
@@ -154,7 +154,7 @@ public class Environments {
             }
 
             @Override
-            public Optional<Set.Immutable<P>> getAll() {
+            public Optional<Set.Immutable<P>> solution() {
                 return Optional.ofNullable(paths());
             }
 
@@ -190,7 +190,7 @@ public class Environments {
                 Iterator<IPersistentEnvironment<S, L, O, P>> it = _envs.iterator();
                 while (it.hasNext()) {
                     final IPersistentEnvironment<S, L, O, P> env = it.next();
-                    env.getAll().ifPresent(ps -> {
+                    env.solution().ifPresent(ps -> {
                         _paths.__insertAll(ps);
                         it.remove();
                     });
@@ -202,7 +202,7 @@ public class Environments {
             }
 
             @Override
-            public Optional<Set.Immutable<P>> getAll() {
+            public Optional<Set.Immutable<P>> solution() {
                 return Optional.ofNullable(paths());
             }
 
@@ -232,7 +232,7 @@ public class Environments {
         private static final long serialVersionUID = 42L;
 
         @Override
-        public Optional<Set.Immutable> getAll() {
+        public Optional<Set.Immutable> solution() {
             return Optional.of(Set.Immutable.of());
         }
 

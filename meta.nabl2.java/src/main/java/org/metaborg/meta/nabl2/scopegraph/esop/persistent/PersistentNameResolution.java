@@ -123,19 +123,19 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     public Optional<Tuple2<Immutable<IResolutionPath<S, L, O>>, Immutable<String>>> tryResolve(O ref) {
         final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> env = resolveCache.computeIfAbsent(ref,
                 r -> resolveEnv(Set.Immutable.of(), ref));
-        return env.getAll().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
+        return env.solution().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
     }
 
     public Optional<Tuple2<Immutable<IDeclPath<S, L, O>>, Immutable<String>>> tryVisible(S scope) {
         final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> env = visibleCache.computeIfAbsent(scope,
                 s -> visibleEnv(scope));
-        return env.getAll().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
+        return env.solution().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
     }
 
     public Optional<Tuple2<Immutable<IDeclPath<S, L, O>>, Immutable<String>>> tryReachable(S scope) {
         final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> env = reachableCache.computeIfAbsent(scope,
                 s -> reachableEnv(scope));
-        return env.getAll().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
+        return env.solution().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
     }
 
     private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
@@ -264,7 +264,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         };
 
         final Function<IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>>, IPersistentEnvironment<S, L, O, P>> intermediateToFinal = environment -> {
-            final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importEnvironments = environment.getAll()
+            final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importEnvironments = environment.solution()
                     .orElse(Set.Immutable.of()).stream().map(importPathToUnionEnvironment)
                     .collect(CapsuleCollectors.toSet());
             

@@ -14,7 +14,16 @@ import io.usethesource.capsule.Set;
 public interface IPersistentEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
         extends Serializable {
 
-    Optional<Set.Immutable<P>> getAll();
+    /**
+     * Return a set of resolved paths if the associated scope graph contains
+     * enough information to perform the resolution. If not resolvable at the
+     * current point in time a call to this method results in
+     * {@link Optional#empty()}.
+     * 
+     * @return a set of resolved paths, or {@link Optional#empty()} if not (yet)
+     *         resolvable.
+     */
+    Optional<Set.Immutable<P>> solution();
 
     interface Filter<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
             extends FilterPredicate<S, L, O, P>, Serializable {
