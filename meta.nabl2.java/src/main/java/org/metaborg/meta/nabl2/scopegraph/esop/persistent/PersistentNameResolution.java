@@ -148,13 +148,16 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     private IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> resolveEnv(Set.Immutable<O> seenI, O reference) {
         // TODO: use hash lookup on occurrence instead of filter
-        
+
+        final Set.Immutable<O> nextSeenI = seenI.__insert(reference);
+        final IPersistentEnvironment.Filter<S, L, O, IResolutionPath<S, L, O>> nextFilter = Environments.resolutionFilter(reference);
+
         // @formatter:off
         IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = scopeGraph.localReferencesStream()
             .filter(occurrenceEquals(reference))
             .findAny() // must be unique (TODO ensure this)
             .map(tuple -> tuple.scope())
-            .map(scope -> env(seenI.__insert(reference), ordered, wf, Paths.empty(scope), Environments.resolutionFilter(reference)))
+            .map(scope -> env(nextSeenI, ordered, wf, Paths.empty(scope), nextFilter))
             .orElse(Environments.empty());
         // @formatter:on
 
@@ -213,15 +216,21 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             } else {
                 // case: env_nonD
 
-                final Function<IScopePath<S, L, O>, IPersistentEnvironment<S, L, O, P>> getter = p -> env(seenImports,
-                        lt, re.match(l), p, filter);
+                final IRegExpMatcher<L> nextRe = re.match(l);
+                               
+                if (nextRe.isEmpty()) {
+                    // TODO check if importScopes calculation can be pruned as well                   
+                    result = Environments.empty();
+                } else {
+                    final Function<IScopePath<S, L, O>, IPersistentEnvironment<S, L, O, P>> getter = p -> env(seenImports, lt, nextRe, p, filter);
+                    
+                    final Set.Immutable<IPersistentEnvironment<S, L, O, P>> directScopes = directScopes(seenImports, l, path, filter, getter);
+                    final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importScopes = importScopes(seenImports, l, path, filter, getter);
 
-                final Set.Immutable<IPersistentEnvironment<S, L, O, P>> directScopes = directScopes(seenImports, l, path, filter, getter);
-                final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importScopes = importScopes(seenImports, l, path, filter, getter);
-
-                // TODO: currently union of two sequences of environments
-                // TODO: goal is to do better
-                result = Environments.union(Iterables.concat(directScopes, importScopes));
+                    // TODO: currently union of two sequences of environments
+                    // TODO: goal is to do better
+                    result = Environments.union(Iterables.concat(directScopes, importScopes));
+                }
             }
 
             return Optional.of(result);
@@ -233,12 +242,18 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             Function<IScopePath<S, L, O>, IPersistentEnvironment<S, L, O, P>> getter) {
 
+        final Function<S, Optional<IScopePath<S, L, O>>> extendPathToNextScopeAndValidate = nextScope -> Paths
+                .append(path, Paths.direct(path.getTarget(), l, nextScope));              
+        
         // @formatter:off
         final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = scopeGraph.directEdgesStream()
             .filter(labelEquals(l))
             .filter(sourceScopeEquals(path.getTarget()))
             .map(tuple -> tuple.targetScope())
-            .flatMap(nextScope -> OptionalStream.of(Paths.append(path, Paths.direct(path.getTarget(), l, nextScope)).map(getter::apply)))
+            .map(extendPathToNextScopeAndValidate)
+            .flatMap(OptionalStream::of)
+            .map(getter::apply)
+            //.flatMap(nextScope -> OptionalStream.of(Paths.append(path, Paths.direct(path.getTarget(), l, nextScope)).map(getter::apply)))
             .collect(CapsuleCollectors.toSet());
         // @formatter:on
 
