@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -139,11 +140,11 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }
 
     private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
-        return env(Set.Immutable.of(), ordered, wf, Paths.empty(scope), Environments.envFilter());
+        return env(Set.Immutable.of(), ordered, wf, Paths.empty(scope), Environments.identityFilter());
     }
 
     private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> reachableEnv(S scope) {
-        return env(Set.Immutable.of(), unordered, wf, Paths.empty(scope), Environments.envFilter());
+        return env(Set.Immutable.of(), unordered, wf, Paths.empty(scope), Environments.identityFilter());
     }
 
     private IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> resolveEnv(Set.Immutable<O> seenI, O reference) {
@@ -210,7 +211,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                         .collect(CapsuleCollectors.toSet());
                     // @formatter:on
 
-                    result = Environments.of(paths);
+                    result = Environments.eager(paths);
                 }
 
             } else {
@@ -227,9 +228,9 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                     final Set.Immutable<IPersistentEnvironment<S, L, O, P>> directScopes = directScopes(seenImports, l, path, filter, getter);
                     final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importScopes = importScopes(seenImports, l, path, filter, getter);
 
-                    // TODO: currently union of two sequences of environments
-                    // TODO: goal is to do better
-                    result = Environments.union(Iterables.concat(directScopes, importScopes));
+                    // TODO: add union to Capsule
+                    final Set.Immutable<IPersistentEnvironment<S, L, O, P>> scopes = directScopes.__insertAll(importScopes); 
+                    result = Environments.union(scopes);
                 }
             }
 
@@ -321,7 +322,8 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                             .lazy((Function0<IPersistentEnvironment<S, L, O, P>> & Serializable) () -> {
                                 return env_lCache.computeIfAbsent(l, ll -> env_l(seenI, lt, re, l, path, filter));
                             });
-                    return Environments.shadow(filter, smallerEnv.apply(seenI, re, path, filter, env_lCache), env_l);
+                    
+                    return Environments.shadow(filter, Arrays.asList(smallerEnv.apply(seenI, re, path, filter, env_lCache), env_l));
                 }
 
             });
@@ -333,7 +335,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                     IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
                     Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache) {
                 return Environments.union(stagedEnvs.stream().map(se -> se.apply(seenI, re, path, filter, env_lCache))
-                        .collect(Collectors.toList()));
+                        .collect(CapsuleCollectors.toSet()));
 
             }
 
