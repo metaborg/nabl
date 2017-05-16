@@ -58,6 +58,18 @@ public class Environments {
             sb.append(env().map(Object::toString).orElse("?"));
             return sb.toString();
         }
+
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }
     };
     
     // guarded delegation
@@ -95,6 +107,18 @@ public class Environments {
             sb.append(env());
             return sb.toString();
         }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
     };    
     
     // lazy delegation
@@ -121,6 +145,18 @@ public class Environments {
         public String toString() {
             return paths.toString();
         }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
     };
     
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> eager(
@@ -216,6 +252,18 @@ public class Environments {
             sb.append(")");
             return sb.toString();
         }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
     };
     
     // NOTE: order of environments is relevant for algorithm to work correctly 
@@ -291,6 +339,18 @@ public class Environments {
             sb.append(")");
             return sb.toString();
         }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
     };
     
     
@@ -328,6 +388,23 @@ public class Environments {
         public String toString() {
             return Set.Immutable.of().toString();
         }
+        
+        @Override
+        public int hashCode() {
+            return -1260680698;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other)
+                return true;
+            if (other == null)
+                return false;
+            if (getClass() != other.getClass())
+                return false;
+
+            return true;
+        }
     };
     
     @SuppressWarnings("rawtypes")
@@ -346,7 +423,7 @@ public class Environments {
         private final O reference;
 
         private ResolutionFilter(O reference) {
-            this.reference = reference;
+            this.reference = Objects.requireNonNull(reference);
         }
 
         @Override
@@ -362,6 +439,26 @@ public class Environments {
         @Override
         public boolean shortCircuit() {
             return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return -1263774330 + reference.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other)
+                return true;
+            if (other == null)
+                return false;
+            if (getClass() != other.getClass())
+                return false;
+            
+            @SuppressWarnings("rawtypes")
+            ResolutionFilter that = (ResolutionFilter) other;
+            
+            return Objects.equals(reference, that.reference);
         }
     };    
     
@@ -392,6 +489,23 @@ public class Environments {
         public boolean shortCircuit() {
             return false;
         }
+        
+        @Override
+        public int hashCode() {
+            return 993372364;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other)
+                return true;
+            if (other == null)
+                return false;
+            if (getClass() != other.getClass())
+                return false;
+            
+            return true;
+        }        
     };
 
     @SuppressWarnings("rawtypes")

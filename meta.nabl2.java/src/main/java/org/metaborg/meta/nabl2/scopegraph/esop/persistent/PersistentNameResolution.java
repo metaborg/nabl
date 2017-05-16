@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
@@ -38,7 +37,6 @@ import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -63,10 +61,10 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     private final OpenCounter<S, L> scopeCounter;
 
-    transient private Map<O, IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>>> resolveCache;
+    transient private Map<O, IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>>> resolutionCache;
 
-    transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> visibleCache;
-    transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> reachableCache;
+    transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> visibilityCache;
+    transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> reachabilityCache;
 
     transient private Map<IRelation<L>, EnvironmentL<S, L, O>> stagedEnv_L;
 
@@ -87,9 +85,9 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }
 
     private void initTransients() {
-        this.resolveCache = Maps.newHashMap();
-        this.visibleCache = Maps.newHashMap();
-        this.reachableCache = Maps.newHashMap();
+        this.resolutionCache = Maps.newHashMap();
+        this.visibilityCache = Maps.newHashMap();
+        this.reachabilityCache = Maps.newHashMap();
         this.stagedEnv_L = Maps.newHashMap();
     }
 
@@ -121,33 +119,36 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         return tryReachable(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
     }
 
-    public Optional<Tuple2<Immutable<IResolutionPath<S, L, O>>, Immutable<String>>> tryResolve(O ref) {
-        final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> env = resolveCache.computeIfAbsent(ref,
-                r -> resolveEnv(Set.Immutable.of(), ref));
-        return env.solution().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
+    public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O reference) {
+        final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = resolutionCache
+                .computeIfAbsent(reference, r -> resolveEnvironment(Set.Immutable.of(), r));
+
+        return environment.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
     }
 
-    public Optional<Tuple2<Immutable<IDeclPath<S, L, O>>, Immutable<String>>> tryVisible(S scope) {
-        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> env = visibleCache.computeIfAbsent(scope,
-                s -> visibleEnv(scope));
-        return env.solution().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
+    public Optional<Tuple2<Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
+        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> environment = visibilityCache.computeIfAbsent(scope,
+                s -> visibleEnvironment(s));
+        
+        return environment.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
     }
 
-    public Optional<Tuple2<Immutable<IDeclPath<S, L, O>>, Immutable<String>>> tryReachable(S scope) {
-        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> env = reachableCache.computeIfAbsent(scope,
-                s -> reachableEnv(scope));
-        return env.solution().map(ps -> ImmutableTuple2.of(ps, Set.Immutable.of()));
+    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
+        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> env = reachabilityCache.computeIfAbsent(scope,
+                s -> reachableEnvironment(s));
+        
+        return env.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
     }
 
-    private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
+    private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> visibleEnvironment(S scope) {
         return env(Set.Immutable.of(), ordered, wf, Paths.empty(scope), Environments.identityFilter());
     }
 
-    private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> reachableEnv(S scope) {
+    private IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> reachableEnvironment(S scope) {
         return env(Set.Immutable.of(), unordered, wf, Paths.empty(scope), Environments.identityFilter());
     }
 
-    private IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> resolveEnv(Set.Immutable<O> seenI, O reference) {
+    private IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> resolveEnvironment(Set.Immutable<O> seenI, O reference) {
         // TODO: use hash lookup on occurrence instead of filter
 
         final Set.Immutable<O> nextSeenI = seenI.__insert(reference);
@@ -292,7 +293,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             .filter(scopeEquals(path.getTarget()))
             .filter(tuple -> !seenImports.contains(tuple.occurrence()))
             .map(tuple -> tuple.occurrence())
-            .map(reference -> resolveEnv(seenImports, reference))
+            .map(reference -> resolveEnvironment(seenImports, reference))
             .map(intermediateToFinal)            
             .collect(CapsuleCollectors.toSet());
         // @formatter:on     
