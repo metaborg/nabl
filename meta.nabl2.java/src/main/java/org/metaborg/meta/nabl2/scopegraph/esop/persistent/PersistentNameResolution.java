@@ -64,7 +64,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> visibilityCache;
     transient private Map<S, IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>>> reachabilityCache;
 
-    transient private Map<IRelation<L>, EnvironmentBuilder<S, L, O>> stagedEnv_L;
+    transient private Map<IRelation<L>, EnvironmentBuilder<S, L, O>> environmentBuilderCache;
 
     public PersistentNameResolution(PersistentScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
             OpenCounter<S, L> scopeCounter) {
@@ -80,13 +80,17 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         this.scopeCounter = scopeCounter;
 
         initTransients();
+        
+        // stage and cache environment builders
+        getEnvironmentBuilder(ordered);
+        getEnvironmentBuilder(unordered);
     }
 
     private void initTransients() {
         this.resolutionCache = Maps.newHashMap();
         this.visibilityCache = Maps.newHashMap();
-        this.reachabilityCache = Maps.newHashMap();
-        this.stagedEnv_L = Maps.newHashMap();
+        this.reachabilityCache = Maps.newHashMap();                
+        this.environmentBuilderCache = Maps.newHashMap();
     }
 
     @Beta
@@ -232,16 +236,12 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         if (re.isEmpty()) {
             return Environments.empty();
         } else {
-            /*
-             * NOTE: this is the only place where staging is invoked with a set
-             * of labels and then later on applied with the nameResolution it
-             * origins from
-             */            
-            final Supplier<EnvironmentBuilder<S, L, O>> lazyEnvironment = () -> EnvironmentBuilders.stageEnvironments(lt, nameResolution.getLabels());
-            
-            final EnvironmentBuilder<S, L, O> stagedEnvironment = nameResolution.getOrCacheStagedEnvironment(lt, lazyEnvironment);
-            
-            return stagedEnvironment.build(seenImports, re, path, filter, Maps.newHashMap(), lt, nameResolution);
+            final EnvironmentBuilder<S, L, O> builder = nameResolution.getEnvironmentBuilder(lt);
+
+            final IPersistentEnvironment<S, L, O, P> environment = builder.build(seenImports, re, path, filter,
+                    Maps.newHashMap(), lt, nameResolution);
+
+            return environment;
         }
     }
 
@@ -386,10 +386,13 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         return environments;           
     }
 
-    private EnvironmentBuilder<S, L, O> getOrCacheStagedEnvironment(final IRelation<L> lt, final Supplier<EnvironmentBuilder<S, L, O>> lazyValue) {
-        return stagedEnv_L.computeIfAbsent(lt, key -> lazyValue.get());
+    /**
+     * Retrieves an environment builder for for a relation of labels. 
+     */
+    private EnvironmentBuilder<S, L, O> getEnvironmentBuilder(final IRelation<L> lt) {
+        return environmentBuilderCache.computeIfAbsent(lt, key -> EnvironmentBuilders.stage(key, labels));
     }
-
+    
     // serialization
 
     private void writeObject(ObjectOutputStream out) throws IOException {

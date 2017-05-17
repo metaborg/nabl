@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
@@ -39,21 +40,24 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
                 Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt,
                 PersistentNameResolution<S, L, O> nameResolution) {
-            final IPersistentEnvironment<S, L, O, P> env_l = Environments
-                    .lazy((Function0<IPersistentEnvironment<S, L, O, P>> & Serializable) () -> {
-                        
-                        // TODO: reconsider static call to evn_l
-                        return env_lCache.computeIfAbsent(label,
-                                ll -> PersistentNameResolution.env_l(seenImports, lt, re, label, path, filter, nameResolution));
-                    });
+            
+            /*
+             * NOTE: caching currently does not work because.
+             */
+            assert !env_lCache.containsKey(label);
+            
+            final IPersistentEnvironment<S, L, O, P> labelEnvironment = Environments.lazy(() -> {
+                return env_lCache.computeIfAbsent(label, label -> PersistentNameResolution.env_l(seenImports, lt, re,
+                        label, path, filter, nameResolution));
+            });
 
             if (shadowingBuilder.isPresent()) {
-                final IPersistentEnvironment<S, L, O, P> shadowing = shadowingBuilder.get().build(seenImports, re, path,
-                        filter, env_lCache, lt, nameResolution);
+                final IPersistentEnvironment<S, L, O, P> shadowEnvironment = shadowingBuilder.get().build(seenImports,
+                        re, path, filter, env_lCache, lt, nameResolution);
 
-                return Environments.shadow(filter, Arrays.asList(shadowing, env_l));
+                return Environments.shadow(filter, Arrays.asList(shadowEnvironment, labelEnvironment));
             } else {
-                return env_l;
+                return labelEnvironment;
             }
         }
 
@@ -101,7 +105,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         }
     }
 
-    static final <S extends IScope, L extends ILabel, O extends IOccurrence> EnvironmentBuilder<S, L, O> stageEnvironments(
+    static final <S extends IScope, L extends ILabel, O extends IOccurrence> EnvironmentBuilder<S, L, O> stage(
             IRelation<L> lt, final Set.Immutable<L> labels) {
         
         // @formatter:off
@@ -116,7 +120,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
                 if (smallerLabels.isEmpty()) {
                     environmentBuilder = Optional.empty();
                 } else {
-                    environmentBuilder = Optional.of(stageEnvironments(lt, smallerLabels));
+                    environmentBuilder = Optional.of(stage(lt, smallerLabels));
                 }
                 
                 return new RefinementBuilder<>(l, environmentBuilder);
