@@ -559,6 +559,45 @@ public class Environments {
         return EMPTY_ENVIRONMENT;
     }
     
+    private static class UnresolvableEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
+        private static final long serialVersionUID = 42L;
+
+        @Override
+        public Optional<Set.Immutable<P>> solution() {
+            return Optional.empty();
+        }
+
+        @Override
+        public String toString() {
+            return "???";
+        }
+        
+        @Override
+        public int hashCode() {
+            return 1012020627;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other)
+                return true;
+            if (other == null)
+                return false;
+            if (getClass() != other.getClass())
+                return false;
+
+            return true;
+        }
+    };
+    
+    @SuppressWarnings("rawtypes")
+    private static final IPersistentEnvironment UNRESOLVABLE_ENVIRONMENT = new UnresolvableEnvironment<>();
+    
+    @SuppressWarnings("unchecked")
+    public static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> unresolvable() {
+        return UNRESOLVABLE_ENVIRONMENT;
+    }    
+    
     // TODO: rename to RedirectFilter?
     private static class ResolutionFilter<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IResolutionPath<S, L, O>>
             implements IPersistentEnvironment.Filter<S, L, O, P> {
