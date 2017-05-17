@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -32,7 +31,6 @@ import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.util.functions.Function0;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
@@ -239,7 +237,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
              * of labels and then later on applied with the nameResolution it
              * origins from
              */            
-            final Supplier<EnvironmentBuilder<S, L, O>> lazyEnvironment = () -> stageEnvironments(lt, nameResolution.getLabels());
+            final Supplier<EnvironmentBuilder<S, L, O>> lazyEnvironment = () -> EnvironmentBuilders.stageEnvironments(lt, nameResolution.getLabels());
             
             final EnvironmentBuilder<S, L, O> stagedEnvironment = nameResolution.getOrCacheStagedEnvironment(lt, lazyEnvironment);
             
@@ -251,7 +249,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
      * Returns the set of declarations that are reachable from S with a
      * l-labeled step.
      */
-    private static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> env_l(
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> env_l(
             Set.Immutable<O> seenImports,
             IRelation<L> lt, IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path,
             IPersistentEnvironment.Filter<S, L, O, P> filter,
@@ -390,136 +388,6 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     private EnvironmentBuilder<S, L, O> getOrCacheStagedEnvironment(final IRelation<L> lt, final Supplier<EnvironmentBuilder<S, L, O>> lazyValue) {
         return stagedEnv_L.computeIfAbsent(lt, key -> lazyValue.get());
-    }   
-    
-    private static final <S extends IScope, L extends ILabel, O extends IOccurrence> EnvironmentBuilder<S, L, O> stageEnvironments(
-            IRelation<L> lt, final Set.Immutable<L> labels) {
-        
-        // @formatter:off
-        final Set.Immutable<L> max = max(lt, labels);
-        
-        final Set.Immutable<EnvironmentBuilder<S, L, O>> builders = max.stream()
-            .map(l -> {
-                final Set.Immutable<L> smallerLabels = smaller(lt, labels, l);
-                
-                final Optional<EnvironmentBuilder<S, L, O>> environmentBuilder;
-                
-                if (smallerLabels.isEmpty()) {
-                    environmentBuilder = Optional.empty();
-                } else {
-                    environmentBuilder = Optional.of(stageEnvironments(lt, smallerLabels));
-                }
-                
-                return new RefinementBuilder<>(l, environmentBuilder);
-            })
-            .collect(CapsuleCollectors.toSet());
-        // @formatter:on
-
-        // if (builders.size() == 0) {
-        // System.out.println("TODO");
-        // }
-        
-        if (builders.size() == 1) {
-            return builders.findFirst().get();
-        }
-        
-        return new AggregationBuilder<>(builders);
-    }
-
-    /**
-     * Staged computation builder for name resolution that optionally allows
-     * refinement by use of shadowing.
-     */
-    private static class RefinementBuilder<S extends IScope, L extends ILabel, O extends IOccurrence>
-    implements EnvironmentBuilder<S, L, O> {
-
-        private final L label;        
-        private final Optional<EnvironmentBuilder<S, L, O>> shadowingBuilder;
-
-        private RefinementBuilder(final L label, final Optional<EnvironmentBuilder<S, L, O>> shadowingBuilder) {
-            this.label = label;
-            this.shadowingBuilder = shadowingBuilder;
-        }
-
-        @Override
-        public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(Set.Immutable<O> seenImports,
-                IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
-                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt,
-                PersistentNameResolution<S, L, O> nameResolution) {
-            final IPersistentEnvironment<S, L, O, P> env_l = Environments
-                    .lazy((Function0<IPersistentEnvironment<S, L, O, P>> & Serializable) () -> {
-                        return env_lCache.computeIfAbsent(label,
-                                ll -> env_l(seenImports, lt, re, label, path, filter, nameResolution));
-                    });
-
-            if (shadowingBuilder.isPresent()) {
-                final IPersistentEnvironment<S, L, O, P> shadowing = shadowingBuilder.get().build(seenImports, re, path,
-                        filter, env_lCache, lt, nameResolution); 
-                
-                return Environments.shadow(filter, Arrays.asList(shadowing, env_l));
-            } else {
-                return env_l;
-            }
-        }
-        
-        @Override
-        public String toString() {
-            if (shadowingBuilder.isPresent()) {
-                return String.format("%s < %s", shadowingBuilder.get(), label);
-            } else {
-                return String.format("~%s", label);
-            }
-        }
-    };    
- 
-    /**
-     * Staged computation builder for name resolution that represents the union
-     * of a set of nested computations.
-     */    
-    private static class AggregationBuilder<S extends IScope, L extends ILabel, O extends IOccurrence>
-            implements EnvironmentBuilder<S, L, O> {
-
-        private final Set.Immutable<EnvironmentBuilder<S, L, O>> builders;
-
-        private AggregationBuilder(final Set.Immutable<EnvironmentBuilder<S, L, O>> builders) {
-            this.builders = builders;
-        }
-
-        @Override
-        public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(Set.Immutable<O> seenImports,
-                IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
-                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt,
-                PersistentNameResolution<S, L, O> nameResolution) {
-
-            return Environments
-                    .union(builders.stream().map(environmentBuilder -> environmentBuilder.build(seenImports, re, path,
-                            filter, env_lCache, lt, nameResolution)).collect(CapsuleCollectors.toSet()));
-        }
-
-        @Override
-        public String toString() {            
-            return builders.toString();
-        }
-    };   
-    
-    private static <L extends ILabel> Set.Immutable<L> max(IRelation<L> lt, Set.Immutable<L> labels) {
-        // @formatter:off
-        final Set.Immutable<L> result = labels.stream()
-            .filter(l -> lt.larger(l).stream().noneMatch(labels::contains))
-            .collect(CapsuleCollectors.toSet());
-        // @formatter:on       
-
-        return result;
-    }
-
-    private static <L extends ILabel> Set.Immutable<L> smaller(IRelation<L> lt, Set.Immutable<L> labels, L l) {
-        // @formatter:off
-        final Set.Immutable<L> result = lt.smaller(l).stream()
-            .filter(labels::contains)
-            .collect(CapsuleCollectors.toSet());
-        // @formatter:on              
-
-        return result;
     }
 
     // serialization
