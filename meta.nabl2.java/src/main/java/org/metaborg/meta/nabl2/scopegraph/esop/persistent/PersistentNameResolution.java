@@ -10,7 +10,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -39,7 +38,6 @@ import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.annotations.Beta;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -235,12 +233,17 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             PersistentNameResolution<S, L, O> nameResolution) {
         if (re.isEmpty()) {
             return Environments.empty();
-        } else {          
-            final Supplier<EnvironmentBuilder<S, L, O>> lazyEnvironment = () -> stageEnvironments(nameResolution, lt);
+        } else {
+            /*
+             * NOTE: this is the only place where staging is invoked with a set
+             * of labels and then later on applied with the nameResolution it
+             * origins from
+             */            
+            final Supplier<EnvironmentBuilder<S, L, O>> lazyEnvironment = () -> stageEnvironments(lt, nameResolution.getLabels());
             
             final EnvironmentBuilder<S, L, O> stagedEnvironment = nameResolution.getOrCacheStagedEnvironment(lt, lazyEnvironment);
             
-            return stagedEnvironment.build(seenImports, re, path, filter, Maps.newHashMap(), nameResolution);
+            return stagedEnvironment.build(seenImports, re, path, filter, Maps.newHashMap(), lt, nameResolution);
         }
     }
 
@@ -387,88 +390,106 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     private EnvironmentBuilder<S, L, O> getOrCacheStagedEnvironment(final IRelation<L> lt, final Supplier<EnvironmentBuilder<S, L, O>> lazyValue) {
         return stagedEnv_L.computeIfAbsent(lt, key -> lazyValue.get());
-    }
+    }   
     
-//    private static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> env_L(Set.Immutable<L> labels,
-//            Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
-//            IPersistentEnvironment.Filter<S, L, O, P> filter) {
-//
-//        return stagedEnv_L.computeIfAbsent(lt, lo -> stageEnv_L(labels, lo, this)).apply(seenImports, re, path, filter,
-//                Maps.newHashMap());
-//    }
-
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> EnvironmentBuilder<S, L, O> stageEnvironments(
-            PersistentNameResolution<S, L, O> nameResolution, IRelation<L> lt) {
-        return stageEnvironments0(nameResolution, lt, nameResolution.getLabels());      
-    }
-    
-    private static final <S extends IScope, L extends ILabel, O extends IOccurrence> EnvironmentBuilder<S, L, O> stageEnvironments0(
-            PersistentNameResolution<S, L, O> nameResolution, IRelation<L> lt, final Set.Immutable<L> labels) {
-        final List<EnvironmentBuilder<S, L, O>> stagedEnvs = Lists.newArrayList();
-
+            IRelation<L> lt, final Set.Immutable<L> labels) {
+        
+        // @formatter:off
         final Set.Immutable<L> max = max(lt, labels);
-        for (L l : max) {
-            final Set.Immutable<L> smaller = smaller(lt, labels, l);
-            EnvironmentBuilder<S, L, O> smallerEnv = stageEnvironments0(nameResolution, lt, smaller);
+        
+        final Set.Immutable<EnvironmentBuilder<S, L, O>> builders = max.stream()
+            .map(l -> {
+                final Set.Immutable<L> smallerLabels = smaller(lt, labels, l);
+                
+                final Optional<EnvironmentBuilder<S, L, O>> environmentBuilder;
+                
+                if (smallerLabels.isEmpty()) {
+                    environmentBuilder = Optional.empty();
+                } else {
+                    environmentBuilder = Optional.of(stageEnvironments(lt, smallerLabels));
+                }
+                
+                return new EnvironmentLShadow<>(l, environmentBuilder);
+            })
+            .collect(CapsuleCollectors.toSet());
+        // @formatter:on
 
-            stagedEnvs.add(new EnvironmentLShadow<>(l, lt, smallerEnv));
+        // if (builders.size() == 0) {
+        // System.out.println("TODO");
+        // }
+        
+        if (builders.size() == 1) {
+            return builders.findFirst().get();
         }
         
-        // TODO: if stagedEnvs -> return emptyEnvironment
-        
-//        Environments.union(stagedEnvs.stream().map(se -> se.apply(seenImports, re, path, filter, env_lCache))
-//                .collect(CapsuleCollectors.toSet()));
-        
-        return new EnvironmentLUnion<>(stagedEnvs);
+        return new EnvironmentLUnion<>(builders);
     }
 
     private static class EnvironmentLShadow<S extends IScope, L extends ILabel, O extends IOccurrence>
     implements EnvironmentBuilder<S, L, O> {
 
-        private final L l;
-        private final IRelation<L> lt;        
-        private final EnvironmentBuilder<S, L, O> smallerEnv;
-        // private final PersistentNameResolution<S, L, O> nameResolution;
+        private final L l;        
+        private final Optional<EnvironmentBuilder<S, L, O>> smallerEnv;
 
-        private EnvironmentLShadow(final L l, final IRelation<L> lt, final EnvironmentBuilder<S, L, O> smallerEnv) {
+        private EnvironmentLShadow(final L l, final Optional<EnvironmentBuilder<S, L, O>> smallerEnv) {
             this.l = l;
-            this.lt = lt;
             this.smallerEnv = smallerEnv;
-            // this.nameResolution = nameResolution;
         }
 
         @Override
         public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(Set.Immutable<O> seenImports,
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
-                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, final PersistentNameResolution<S, L, O> nameResolution) {
+                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt, PersistentNameResolution<S, L, O> nameResolution) {
             final IPersistentEnvironment<S, L, O, P> env_l = Environments
                     .lazy((Function0<IPersistentEnvironment<S, L, O, P>> & Serializable) () -> {
-                        return env_lCache.computeIfAbsent(l, ll -> env_l(seenImports, lt, re, l, path, filter, nameResolution));
+                        return env_lCache.computeIfAbsent(l,
+                                ll -> env_l(seenImports, lt, re, l, path, filter, nameResolution));
                     });
 
-            return Environments.shadow(filter,
-                    Arrays.asList(smallerEnv.build(seenImports, re, path, filter, env_lCache, nameResolution), env_l));
+            if (smallerEnv.isPresent()) {
+                return Environments.shadow(filter, Arrays.asList(
+                        smallerEnv.get().build(seenImports, re, path, filter, env_lCache, lt, nameResolution), env_l));
+            } else {
+                return env_l;
+            }
+        }
+        
+        @Override
+        public String toString() {
+            if (smallerEnv.isPresent()) {
+                return String.format("%s < %s", smallerEnv.get(), l);
+            } else {
+                return String.format("~%s", l);
+            }
         }
     };    
-    
+ 
     private static class EnvironmentLUnion<S extends IScope, L extends ILabel, O extends IOccurrence>
             implements EnvironmentBuilder<S, L, O> {
 
-        private final List<EnvironmentBuilder<S, L, O>> stagedEnvs;
+        private final Set.Immutable<EnvironmentBuilder<S, L, O>> stagedEnvs;
 
-        private EnvironmentLUnion(final List<EnvironmentBuilder<S, L, O>> stagedEnvs) {
+        private EnvironmentLUnion(final Set.Immutable<EnvironmentBuilder<S, L, O>> stagedEnvs) {
             this.stagedEnvs = stagedEnvs;
         }
 
         @Override
         public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(Set.Immutable<O> seenImports,
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
-                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, PersistentNameResolution<S, L, O> nameResolution) {
+                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt,
+                PersistentNameResolution<S, L, O> nameResolution) {
 
-            return Environments.union(stagedEnvs.stream().map(se -> se.build(seenImports, re, path, filter, env_lCache, nameResolution))
-                    .collect(CapsuleCollectors.toSet()));
+            return Environments
+                    .union(stagedEnvs.stream().map(environmentBuilder -> environmentBuilder.build(seenImports, re, path,
+                            filter, env_lCache, lt, nameResolution)).collect(CapsuleCollectors.toSet()));
         }
-    };
+
+        @Override
+        public String toString() {            
+            return stagedEnvs.toString();
+        }
+    };   
     
     private static <L extends ILabel> Set.Immutable<L> max(IRelation<L> lt, Set.Immutable<L> labels) {
         // @formatter:off
