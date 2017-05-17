@@ -360,12 +360,6 @@ public class Environments {
         if (environments.size() == 1) {
             return environments.stream().findFirst().get();
         }
-
-        final IPersistentEnvironment<S, L, O, P> stateless = new LazyShadowEnvironment<>(filter, environments);
-        final IPersistentEnvironment<S, L, O, P> stateful = new StatefulLazyShadowEnvironment<>(filter, environments);
-        
-        boolean solutionsEqual = Objects.equals(stateless.solution(), stateful.solution());
-        assert solutionsEqual;
         
         if (USE_STATELESS_FILTERS) {
             return new LazyShadowEnvironment<>(filter, environments);
@@ -518,12 +512,6 @@ public class Environments {
         if (environments.size() == 1) {
             return environments.findFirst().get();
         }
-        
-        final IPersistentEnvironment<S, L, O, P> stateless = new LazyUnionEnvironment<>(environments);
-        final IPersistentEnvironment<S, L, O, P> stateful = new StatefulLazyUnionEnvironment<>(environments);
-        
-        boolean solutionsEqual = Objects.equals(stateless.solution(), stateful.solution()); 
-        assert solutionsEqual;
         
         if (USE_STATELESS_FILTERS) {
             return new LazyUnionEnvironment<>(environments);
