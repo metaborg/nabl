@@ -29,6 +29,8 @@ import io.usethesource.capsule.Set;
 
 public class Environments {
     
+    private static final boolean USE_STATELESS_FILTERS = true;
+    
     private static class LazyGuardedEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
         private static final long serialVersionUID = 42L;
 
@@ -164,9 +166,87 @@ public class Environments {
         return new EagerEnvironment<>(paths);
     }
 
-    /*
-     * TODO ensure that environment can be used as set and is not required to be a sequence???
-     */
+    private static class LazyShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
+        private static final long serialVersionUID = 42L;
+
+        private final IPersistentEnvironment.Filter<S, L, O, P> filter;
+        private final List<IPersistentEnvironment<S, L, O, P>> environments;
+        
+        transient private Set.Immutable<P> result;
+        
+        private LazyShadowEnvironment(final IPersistentEnvironment.Filter<S, L, O, P> filter,
+                final List<IPersistentEnvironment<S, L, O, P>> environments) {
+            this.filter = filter;
+            this.environments = environments;
+        }
+        
+        private @Nullable Set.Immutable<P> paths() {
+            if (result == null) {
+                boolean aborted = false;
+                boolean solutionFound = false;
+                                
+                final Set.Transient<Object> shadowTokens = Set.Transient.of();                
+                final Set.Transient<P> partialResult = Set.Transient.of();                
+                
+                final Iterator<IPersistentEnvironment<S, L, O, P>> it = environments.iterator();
+                                
+                while (!aborted && !solutionFound && it.hasNext()) {
+                    final IPersistentEnvironment<S, L, O, P> environment = it.next();
+
+                    if (environment.solution().isPresent()) {
+                        final Set.Immutable<P> paths = environment.solution().get();
+
+                        // To avoid self-shadowing, we first add not yet
+                        // shadowed paths.
+                        paths.stream().filter(path -> !shadowTokens.contains(filter.matchToken(path)))
+                                .forEach(partialResult::__insert);
+
+                        // Then we update the shadow list.
+                        paths.stream().map(filter::matchToken).forEach(shadowTokens::__insert);
+
+                        if (filter.shortCircuit() && !partialResult.isEmpty()) {
+                            solutionFound = true;
+                        }
+                    } else {
+                        aborted = true;
+                    }
+                }       
+               
+                if (!aborted) {
+                    result = partialResult.freeze();
+                }
+            }
+            
+            return result;
+        }
+
+        @Override
+        public Optional<Set.Immutable<P>> solution() {
+            return Optional.ofNullable(paths());
+        }
+
+        @Override
+        public String toString() {
+            String body = environments.stream().map(Object::toString).collect(Collectors.joining(" <| "));
+            return String.format("( %s )", body);           
+        }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
+    };
+    
+ 
+    
+    
     private static class StatefulLazyShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
         private static final long serialVersionUID = 42L;
 
@@ -281,9 +361,75 @@ public class Environments {
             return environments.stream().findFirst().get();
         }
 
-        return new StatefulLazyShadowEnvironment<>(filter, environments);
+        final IPersistentEnvironment<S, L, O, P> stateless = new LazyShadowEnvironment<>(filter, environments);
+        final IPersistentEnvironment<S, L, O, P> stateful = new StatefulLazyShadowEnvironment<>(filter, environments);
+        
+        boolean solutionsEqual = Objects.equals(stateless.solution(), stateful.solution());
+        assert solutionsEqual;
+        
+        if (USE_STATELESS_FILTERS) {
+            return new LazyShadowEnvironment<>(filter, environments);
+        } else {
+            return new StatefulLazyShadowEnvironment<>(filter, environments);
+        }
     }   
 
+    private static class LazyUnionEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
+        private static final long serialVersionUID = 42L;
+
+        private final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments;       
+        transient private Set.Immutable<P> result;        
+        
+        private LazyUnionEnvironment(final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments) {
+            this.environments = environments;            
+        }
+
+        private @Nullable Set.Immutable<P> paths() {
+            if (result == null) {             
+                boolean aborted = false;               
+                
+                final Set.Transient<P> partialResult = Set.Transient.of();
+                
+                final Iterator<IPersistentEnvironment<S, L, O, P>> it = environments.iterator();
+                while (!aborted && it.hasNext()) {
+                    final IPersistentEnvironment<S, L, O, P> environment = it.next();
+
+                    environment.solution().ifPresent(paths -> {
+                        partialResult.__insertAll(paths);
+                    });
+                }
+
+                if (!aborted) {
+                    result = partialResult.freeze();
+                }
+            }
+            
+            return result;
+        }
+
+        @Override
+        public Optional<Set.Immutable<P>> solution() {
+            return Optional.ofNullable(paths());
+        }
+
+        @Override
+        public String toString() {
+            return environments.toString();
+        }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
+    };
+    
     private static class StatefulLazyUnionEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
         private static final long serialVersionUID = 42L;
 
@@ -373,7 +519,17 @@ public class Environments {
             return environments.findFirst().get();
         }
         
-        return new StatefulLazyUnionEnvironment<>(environments);
+        final IPersistentEnvironment<S, L, O, P> stateless = new LazyUnionEnvironment<>(environments);
+        final IPersistentEnvironment<S, L, O, P> stateful = new StatefulLazyUnionEnvironment<>(environments);
+        
+        boolean solutionsEqual = Objects.equals(stateless.solution(), stateful.solution()); 
+        assert solutionsEqual;
+        
+        if (USE_STATELESS_FILTERS) {
+            return new LazyUnionEnvironment<>(environments);
+        } else {
+            return new StatefulLazyUnionEnvironment<>(environments);
+        }
     }
 
     private static class EmptyEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
