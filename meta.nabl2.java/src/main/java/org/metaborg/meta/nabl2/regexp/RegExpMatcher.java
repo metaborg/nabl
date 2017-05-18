@@ -98,4 +98,9 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         return new RegExpMatcher<>(initial, stateTransitions, nonFinal);
     }
 
+    @Override
+    public String toString() {
+        return state.toString();
+    }
+    
 }

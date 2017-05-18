@@ -178,7 +178,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }
 
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> visibleEnvironment(final S scope, final PersistentNameResolution<S, L, O> nameResolution) {
-        return env(
+        return buildEnvironment(
                 Set.Immutable.of(), 
                 nameResolution.getOrdered(), 
                 nameResolution.getWf(), 
@@ -188,7 +188,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }
 
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> reachableEnvironment(final S scope, final PersistentNameResolution<S, L, O> nameResolution) {   
-        return env(
+        return buildEnvironment(
                 Set.Immutable.of(), 
                 nameResolution.getUnordered(), 
                 nameResolution.getWf(), 
@@ -215,7 +215,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             .filter(occurrenceEquals(reference))
             .findAny() // must be unique (TODO ensure this)
             .map(tuple -> tuple.scope())
-            .map(scope -> env(nextSeenImports, nameResolution.getOrdered(), nameResolution.getWf(), Paths.empty(scope), nextFilter, nameResolution))
+            .map(scope -> buildEnvironment(nextSeenImports, nameResolution.getOrdered(), nameResolution.getWf(), Paths.empty(scope), nextFilter, nameResolution))
             .orElse(Environments.empty());
         // @formatter:on 
         
@@ -226,7 +226,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
      * Calculate new environment if path is well-formed, otherwise return an
      * empty environment.
      */
-    static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> env(
+    static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> buildEnvironment(
             Set.Immutable<O> seenImports,
             IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
             IPersistentEnvironment.Filter<S, L, O, P> filter,
