@@ -29,31 +29,31 @@ rules
 
   // Operations on heap
   
-  initHeap(_) --> H_({}).
+  initHeap(_) --> H_({})
 
   // Operations on frames
 
   initFrame(s, ks, slots) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
   where
-    F_(fresh) => ff.
+    F_(fresh) => ff
  
   H H_(x) |- scopeOf(f) --> s
   where
-    x[f] => FC_(s, _, _).
+    x[f] => FC_(s, _, _)
   
   // Dynamic address lookup  
-  F f |- lookup([D(_, d)]) --> Addr(f, d).
+  F f |- lookup([D(_, d)]) --> Addr(f, d)
 
   H h, F f1 |- lookup([E(s, l)|p]) --> Addr(f3, d)
   where
     getScopeOfFirstElem(p) --> s';
     H h |- linksOf(f1) --> ks;
     ks[l][s'] => f2;
-    H h, F f2 |- lookup(p) --> Addr(f3, d).
+    H h, F f2 |- lookup(p) --> Addr(f3, d)
  
- getScopeOfFirstElem([D(s, _)|_]) --> s.
- getScopeOfFirstElem([E(s, _)|_]) --> s.
- getScopeOfFirstElem([N(s, _, _, _)|_]) --> s.
+ getScopeOfFirstElem([D(s, _)|_]) --> s
+ getScopeOfFirstElem([E(s, _)|_]) --> s
+ getScopeOfFirstElem([N(s, _, _, _)|_]) --> s
 
  
   // Fetching and mutating slot values
@@ -61,23 +61,23 @@ rules
   H h |- get(Addr(f', d)) --> v
   where
     H h |- slotsOf(f') --> slots;
-    slots[d] => v.
+    slots[d] => v
 
   set(Addr(f, d), v) :: H H_(x) --> v :: H H_({f |--> FC_(s, ks, {d |--> v, slots}), x})
   where
-    x[f] => FC_(s, ks, slots).
+    x[f] => FC_(s, ks, slots)
   
-  mkAddr(f, d) --> Addr(f, d).
+  mkAddr(f, d) --> Addr(f, d)
 
 rules
   
   H H_(x) |- linksOf(f) --> ks
   where
-    x[f] => FC_(_, ks, _).
+    x[f] => FC_(_, ks, _)
     
   H H_(x) |- slotsOf(f) --> slots
   where
-    x[f] => FC_(_, _, slots).
+    x[f] => FC_(_, _, slots)
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
@@ -91,30 +91,30 @@ signature // Utility function
 
 rules // Utility function
 
-  initDefaultSlots(_, []) --> {}.
+  initDefaultSlots(_, []) --> {}
   
   initDefaultSlots(s, [ns|namespaces]) --> slots + tail
   where
     (s, ns) -declsOf-> ds;
     DefaultSlots(ds) --> slots;
-    initDefaultSlots(s, namespaces) --> tail.
+    initDefaultSlots(s, namespaces) --> tail
 
-  DefaultSlots([]) --> {}.
+  DefaultSlots([]) --> {}
 
   DefaultSlots([d|ds]) --> { d |--> v, slots }
   where
     d -typeOf-> t;
     default(t) --> v;
-    DefaultSlots(ds) --> slots.
+    DefaultSlots(ds) --> slots
 
 rules // initDefault
 
-  initDefault(s, ks) --> initDefaultNS(s, ks, [DefaultNamespace()]).
+  initDefault(s, ks) --> initDefaultNS(s, ks, [DefaultNamespace()])
 
   initDefaultNS(s, ks, namespaces) :: H H_(x) -->
     ff :: H H_({ ff |--> FC_(s, ks, initDefaultSlots(s, namespaces)), x })
   where
-    F_(fresh) => ff.
+    F_(fresh) => ff
 
 signature // initEager helpers
   
@@ -129,19 +129,19 @@ rules // initEager takes a scope and recursively traverses its edges to construc
   where
     s -edgesOf-> es;
     allkeys(es) => ls;
-    initEagerEdges(es, ls, namespaces) --> links.
+    initEagerEdges(es, ls, namespaces) --> links
     
-  initEagerEdges(_, [], _) --> {}.
+  initEagerEdges(_, [], _) --> {}
   
   initEagerEdges(m, [l|ls], ns) -->
     { l |--> link, tail }
   where
     initEagerEdge(m[l], ns) --> link;
-    initEagerEdges(m, ls, ns) --> tail.
+    initEagerEdges(m, ls, ns) --> tail
 
-  initEagerEdge([], _) --> {}.
+  initEagerEdge([], _) --> {}
   
   initEagerEdge([s|ss], ns) --> { s |--> F, link }
   where
     initEager(s, ns) --> F;
-    initEagerEdge(ss, ns) --> link.
+    initEagerEdge(ss, ns) --> link
