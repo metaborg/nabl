@@ -24,7 +24,7 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
@@ -57,7 +57,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     private final IRelation<L> ordered;
     private final IRelation<L> unordered;
 
-    private final OpenCounter<S, L> scopeCounter;
+    private final IActiveScopes<S, L> scopeCounter;
 
     transient private Map<O, IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>>> resolutionCache;
 
@@ -67,7 +67,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     transient private Map<IRelation<L>, EnvironmentBuilder<S, L, O>> environmentBuilderCache;
 
     public PersistentNameResolution(PersistentScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
-            OpenCounter<S, L> scopeCounter) {
+            IActiveScopes<S, L> scopeCounter) {
         this.scopeGraph = scopeGraph;
 
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
@@ -109,7 +109,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }
 
     @Beta
-    public final OpenCounter<S, L> getScopeCounter() {
+    public final IActiveScopes<S, L> getScopeCounter() {
         return scopeCounter;
     }
     
@@ -261,7 +261,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             // NOTE: capturing mutable state: scopeCounter
 
             final PersistentScopeGraph<S, L, O> scopeGraph = nameResolution.getScopeGraph();
-            final OpenCounter<S, L> scopeCounter = nameResolution.getScopeCounter();
+            final IActiveScopes<S, L> scopeCounter = nameResolution.getScopeCounter();
             final L labelD = nameResolution.getLabelD();
             
             if (scopeCounter.isOpen(path.getTarget(), l)) {

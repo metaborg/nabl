@@ -7,11 +7,11 @@ import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
@@ -167,7 +167,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     }
 
     @Override
-    public PersistentNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter, Function1<S, String> tracer) {
+    public PersistentNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter, Function1<S, String> tracer) {
         return new PersistentNameResolution<>(this, params, scopeCounter);
     }
 
