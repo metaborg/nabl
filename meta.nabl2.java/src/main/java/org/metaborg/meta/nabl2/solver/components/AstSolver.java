@@ -26,15 +26,15 @@ import com.google.common.collect.Sets;
 
 public class AstSolver extends SolverComponent<IAstConstraint> {
 
-    private final Properties<TermIndex> properties;
+    private final IProperties.Mutable<TermIndex> properties;
 
     public AstSolver(Solver solver) {
         super(solver);
-        this.properties = new Properties<>();
+        this.properties = Properties.Mutable.of();
     }
 
     public IProperties<TermIndex> getProperties() {
-        return properties;
+        return properties.freeze();
     }
 
     @Override protected Unit doAdd(IAstConstraint constraint) throws UnsatisfiableException {

@@ -1,49 +1,46 @@
-package org.metaborg.meta.nabl2.solver.components;
+package org.metaborg.meta.nabl2.solver_new.components;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CEvalFunction;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
-import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms.RelationFunctions;
 import org.metaborg.meta.nabl2.solver.FunctionUndefinedException;
-import org.metaborg.meta.nabl2.solver.Solver;
-import org.metaborg.meta.nabl2.solver.SolverComponent;
-import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
+import org.metaborg.meta.nabl2.solver_new.ASolver;
+import org.metaborg.meta.nabl2.solver_new.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class RelationSolver extends SolverComponent<IRelationConstraint> {
+import io.usethesource.capsule.Map;
+
+public class RelationSolver extends ASolver<IRelationConstraint, RelationSolver.RelationResult> {
 
     private final IRelations.Transient<ITerm> relations;
-    private final Map<String, PartialFunction1<ITerm, ITerm>> functions;
+    private final Map.Transient<String, PartialFunction1<ITerm, ITerm>> functions;
 
-    private final SetMultimap<IRelationName, IRelationConstraint> deferedBuilds = HashMultimap.create();
-    private final Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
+    private final Multimap<IRelationName, IRelationConstraint> deferedBuilds = HashMultimap.create();
+    private final java.util.Set<IRelationConstraint> deferedChecks = Sets.newHashSet();
     private boolean complete = false;
 
-    public RelationSolver(Solver solver, IRelations.Immutable<ITerm> relations,
-            Map<String, PartialFunction1<ITerm, ITerm>> functions) {
-        super(solver);
+    public RelationSolver(SolverCore core, IRelations.Immutable<ITerm> relations,
+            Map.Immutable<String, PartialFunction1<ITerm, ITerm>> functions) {
+        super(core);
         this.relations = relations.melt();
-        this.functions = Maps.newHashMap(functions);
+        this.functions = functions.asTransient();
         addRelationFunctions();
     }
 
@@ -53,63 +50,20 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
             PartialFunction1<ITerm, ITerm> lubFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
                 return lub(relationName, left, right);
             }))::match;
-            functions.put(lubName, lubFun);
+            functions.__put(lubName, lubFun);
             String glbName = RelationTerms.relationFunction(relationName, RelationFunctions.GLB);
             PartialFunction1<ITerm, ITerm> glbFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
                 return glb(relationName, left, right);
             }))::match;
-            functions.put(glbName, glbFun);
+            functions.__put(glbName, glbFun);
         }
     }
 
-    public IRelations<ITerm> getRelations() {
-        return relations;
+    @Override public boolean add(IRelationConstraint constraint) throws InterruptedException {
+        return constraint.match(IRelationConstraint.Cases.of(this::add, this::add, this::add));
     }
 
-    // ------------------------------------------------------------------------------------------------------//
-
-    @Override protected Unit doAdd(IRelationConstraint constraint) throws UnsatisfiableException {
-        if(complete) {
-            throw new IllegalStateException("Cannot add constraints after iteration started.");
-        }
-        return constraint.matchOrThrow(CheckedCases.of(this::add, this::add, this::add));
-    }
-
-    private Unit add(CBuildRelation constraint) throws UnsatisfiableException {
-        if(isPartial() || !solve(constraint)) {
-            deferedBuilds.put(constraint.getRelation(), constraint);
-        } else {
-            work();
-        }
-        return Unit.unit;
-
-    }
-
-    private Unit add(CCheckRelation constraint) throws UnsatisfiableException {
-        if(isPartial() || !solve(constraint)) {
-            deferedChecks.add(constraint);
-        } else {
-            work();
-        }
-        return Unit.unit;
-
-    }
-
-    private Unit add(CEvalFunction constraint) throws UnsatisfiableException {
-        tracker().addActive(constraint.getResult(), constraint);
-        if(isPartial() || !solve(constraint)) {
-            deferedChecks.add(constraint);
-        } else {
-            work();
-        }
-        return Unit.unit;
-
-    }
-
-    @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
-        if(isPartial()) {
-            return false;
-        }
+    @Override public boolean iterate() throws InterruptedException {
         complete = true;
         boolean progress = false;
         progress |= doIterate(deferedBuilds.values(), this::solve);
@@ -117,20 +71,51 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         return progress;
     }
 
-    @Override protected Set<? extends IRelationConstraint> doFinish(IMessageInfo messageInfo) {
-        Set<IRelationConstraint> unsolved = Sets.newHashSet();
-        unsolved.addAll(deferedBuilds.values());
-        unsolved.addAll(deferedChecks);
-        return unsolved;
+    public RelationResult finish() {
+        java.util.Set<IRelationConstraint> constraints = Sets.newHashSet();
+        constraints.addAll(deferedBuilds.values());
+        constraints.addAll(deferedChecks);
+        return ImmutableRelationResult.of(relations.freeze(), constraints);
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private boolean solve(IRelationConstraint constraint) throws UnsatisfiableException {
-        return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve, this::solve));
+    private boolean add(CBuildRelation constraint) {
+        if(!solve(constraint)) {
+            return deferedBuilds.put(constraint.getRelation(), constraint);
+        } else {
+            work();
+            return true;
+        }
     }
 
-    private boolean solve(CBuildRelation c) throws UnsatisfiableException {
+    private boolean add(CCheckRelation constraint) {
+        if(!solve(constraint)) {
+            return deferedChecks.add(constraint);
+        } else {
+            work();
+            return true;
+        }
+
+    }
+
+    private boolean add(CEvalFunction constraint) {
+        tracker().addActive(constraint.getResult(), constraint);
+        if(!solve(constraint)) {
+            return deferedChecks.add(constraint);
+        } else {
+            work();
+            return true;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
+
+    private boolean solve(IRelationConstraint constraint) {
+        return constraint.match(IRelationConstraint.Cases.of(this::solve, this::solve, this::solve));
+    }
+
+    private boolean solve(CBuildRelation c) {
         ITerm left = find(c.getLeft());
         if(!left.isGround()) {
             return false;
@@ -142,12 +127,12 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         try {
             relations.add(c.getRelation(), left, right);
         } catch(RelationException e) {
-            throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(MessageContent.of(e.getMessage())));
+            addMessage(c.getMessageInfo().withDefaultContent(MessageContent.of(e.getMessage())));
         }
         return true;
     }
 
-    private boolean solve(CCheckRelation c) throws UnsatisfiableException {
+    private boolean solve(CCheckRelation c) {
         if(!isComplete(c.getRelation())) {
             return false;
         }
@@ -159,7 +144,7 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         return relations.contains(c.getRelation(), left, right);
     }
 
-    private boolean solve(CEvalFunction c) throws UnsatisfiableException {
+    private boolean solve(CEvalFunction c) {
         ITerm term = find(c.getTerm());
         if(!term.isGround()) {
             return false;
@@ -172,11 +157,11 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
         if(!result.isPresent()) {
             return false;
         }
-        tracker().removeActive(c.getResult(), c); // before `unify`, so that we don't cause an error chain if that
-                                                  // fails
+        tracker().removeActive(c.getResult(), c);
         unify(c.getResult(), result.get(), c.getMessageInfo());
         return true;
     }
+
 
     // ------------------------------------------------------------------------------------------------------//
 
@@ -190,6 +175,18 @@ public class RelationSolver extends SolverComponent<IRelationConstraint> {
 
     private Optional<ITerm> glb(IRelationName name, ITerm left, ITerm right) {
         return isComplete(name) ? relations.greatestLowerBound(name, left, right) : Optional.empty();
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
+
+    @Value.Immutable
+    @Serial.Version(42L)
+    public static abstract class RelationResult {
+
+        @Value.Parameter public abstract IRelations.Immutable<ITerm> relations();
+
+        @Value.Parameter public abstract java.util.Set<IRelationConstraint> residualConstraints();
+
     }
 
 }

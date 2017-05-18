@@ -19,6 +19,8 @@ public interface IFunction<K, V> {
 
     Optional<V> get(K key);
 
+    IFunction.Mutable<K, V> copyOf();
+
     interface Mutable<K, V> extends IFunction<K, V> {
 
         boolean put(K key, V value);

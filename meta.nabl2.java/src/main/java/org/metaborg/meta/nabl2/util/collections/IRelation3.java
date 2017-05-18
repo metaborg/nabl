@@ -23,17 +23,19 @@ public interface IRelation3<K, L, V> {
 
     boolean contains(K key, L label, V value);
 
+    boolean isEmpty();
+
     Set<Map.Entry<L, V>> get(K key);
 
     Set<V> get(K key, L label);
 
-    @Beta
-    default java.util.stream.Stream<Tuple3<K, L, V>> stream() {
+    IRelation3.Mutable<K, L, V> copyOf();
+
+    @Beta default java.util.stream.Stream<Tuple3<K, L, V>> stream() {
         return this.stream(ImmutableTuple3::of);
     }
 
-    @Beta
-    default <R> java.util.stream.Stream<R> stream(final Function3<K, L, V, R> converter) {
+    @Beta default <R> java.util.stream.Stream<R> stream(final Function3<K, L, V, R> converter) {
         return this.keySet().stream().flatMap(
                 key -> this.get(key).stream().map(entry -> converter.apply(key, entry.getKey(), entry.getValue())));
     }

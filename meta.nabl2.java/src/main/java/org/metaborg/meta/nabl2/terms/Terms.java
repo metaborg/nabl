@@ -22,6 +22,7 @@ import org.metaborg.meta.nabl2.util.functions.Function6;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class Terms {
@@ -313,7 +314,7 @@ public class Terms {
             return listElems(M.term());
         }
 
-        public static <T> IMatcher<List<T>> listElems(IMatcher<T> m) {
+        public static <T> IMatcher<ImmutableList<T>> listElems(IMatcher<T> m) {
             return listElems(m, (t, ts) -> ts);
         }
 
@@ -321,14 +322,15 @@ public class Terms {
             return listElems(M.term(), f);
         }
 
-        public static <T, R> IMatcher<R> listElems(IMatcher<T> m, Function2<? super IListTerm, ? super List<T>, R> f) {
+        public static <T, R> IMatcher<R> listElems(IMatcher<T> m,
+                Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
             return term -> {
                 return term.match(Terms.<Optional<R>>cases(Terms::empty, list -> {
                     List<Optional<T>> os = Lists.newArrayList();
                     for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t));
                     }
-                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, Lists.newArrayList(ts)));
+                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
                 }, Terms::empty, Terms::empty, Terms::empty));
             };
         }

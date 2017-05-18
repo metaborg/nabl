@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
@@ -13,5 +14,9 @@ public abstract class SymbolicConstraints implements ISymbolicConstraints {
     @Value.Parameter public abstract Set<ITerm> getFacts();
 
     @Value.Parameter public abstract Set<ITerm> getGoals();
-    
+
+    public static SymbolicConstraints empty() {
+        return ImmutableSymbolicConstraints.of(Collections.emptySet(), Collections.emptySet());
+    }
+
 }

@@ -12,7 +12,6 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
@@ -20,11 +19,11 @@ import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
+import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
@@ -54,8 +53,8 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     private final L labelD;
     private final IRegExpMatcher<L> wf;
 
-    private final IRelation<L> ordered;
-    private final IRelation<L> unordered;
+    private final IRelation.Immutable<L> ordered;
+    private final IRelation.Immutable<L> unordered;
 
     private final IActiveScopes<S, L> scopeCounter;
 
@@ -76,7 +75,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         this.ordered = params.getSpecificityOrder();
         assert ordered.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
-        this.unordered = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
+        this.unordered = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         this.scopeCounter = scopeCounter;
 
         initTransients();

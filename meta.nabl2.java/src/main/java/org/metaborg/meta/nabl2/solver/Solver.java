@@ -14,9 +14,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
-import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -56,7 +54,7 @@ public class Solver {
     private final SolverConfig config;
     final SolverMode mode;
     private final Function1<String, ITermVar> fresh;
-    private final Unifier unifier;
+    private final Unifier.Transient unifier;
     final VarTracker<IConstraint> tracker;
     final ICancel cancel;
     final IProgress progress;
@@ -73,14 +71,14 @@ public class Solver {
     private final SymbolicSolver symbolicSolver;
     private final PolymorphismSolver polySolver;
 
-    private final Messages messages;
+    private final Messages.Builder messages;
 
     private Solver(SolverConfig config, Function1<String, ITermVar> fresh, SolverMode mode, IProgress progress,
             ICancel cancel, NaBL2DebugConfig debugConfig) {
         this.config = config;
         this.mode = mode;
         this.fresh = fresh;
-        this.unifier = new Unifier();
+        this.unifier = new Unifier.Transient();
         this.tracker = new VarTracker<>(unifier);
         this.cancel = cancel;
         this.progress = progress;
@@ -99,7 +97,7 @@ public class Solver {
         this.components.add(symbolicSolver = new SymbolicSolver(this));
         this.components.add(polySolver = new PolymorphismSolver(this));
 
-        this.messages = new Messages();
+        this.messages = new Messages.Builder();
     }
 
     // --- solver life cycle ---
@@ -111,7 +109,7 @@ public class Solver {
                 throw new IllegalArgumentException(
                         "Partial solution was computed with a different solver configuration.");
             }
-            messages.addAll(partialSolution.getMessages());
+            messages.addAll(partialSolution.getMessages().getAll());
             IUnifier otherUnifier = partialSolution.getUnifier();
             for(ITermVar var : otherUnifier.getAllVars()) {
                 try {
@@ -225,8 +223,8 @@ public class Solver {
             config,
             interfaceTerms,
             constraints,
-            solver.unifier,
-            solver.messages
+            solver.unifier.freeze(),
+            solver.messages.build()
             // @formatter:on
         );
     }
@@ -271,19 +269,12 @@ public class Solver {
             solver.nameResolutionSolver.getNameResolution(),
             solver.nameResolutionSolver.getProperties(),
             solver.relationSolver.getRelations(),
-            solver.unifier,
+            solver.unifier.freeze(),
             solver.symbolicSolver.get(),
-            solver.messages,
+            solver.messages.build(),
             unsolved
             // @formatter:on
         );
-    }
-
-    public static Set<IMessageInfo> unsolvedErrors(Collection<IConstraint> constraints) {
-        return constraints.stream().map(c -> {
-            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-            return c.getMessageInfo().withDefaultContent(content);
-        }).collect(Collectors.toSet());
     }
 
     // --- internals for use by solver components ---

@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 
 public class HashFunction<K, V> implements IFunction.Mutable<K, V>, Serializable {
@@ -70,6 +71,10 @@ public class HashFunction<K, V> implements IFunction.Mutable<K, V>, Serializable
 
     @Override public Optional<V> get(K key) {
         return Optional.ofNullable(fwd.get(key));
+    }
+
+    public org.metaborg.meta.nabl2.util.collections.IFunction.Mutable<K, V> copyOf() {
+        return new HashFunction<>(Maps.newHashMap(fwd), HashMultimap.create(bwd));
     }
 
     public static <K, V> HashFunction<K, V> create() {

@@ -1,25 +1,33 @@
 package org.metaborg.meta.nabl2.solver.messages;
 
 import java.io.Serializable;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.constraints.messages.MessageKind;
+import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.Sets;
+import io.usethesource.capsule.Set;
 
 public class Messages implements IMessages, Serializable {
     private static final long serialVersionUID = 42L;
 
-    private final Set<IMessageInfo> all;
-    private final Set<IMessageInfo> errors;
-    private final Set<IMessageInfo> warnings;
-    private final Set<IMessageInfo> notes;
+    private final Set.Immutable<IMessageInfo> all;
+    private final Set.Immutable<IMessageInfo> errors;
+    private final Set.Immutable<IMessageInfo> warnings;
+    private final Set.Immutable<IMessageInfo> notes;
 
-    public Messages() {
-        this.all = Sets.newHashSet();
-        this.errors = Sets.newHashSet();
-        this.warnings = Sets.newHashSet();
-        this.notes = Sets.newHashSet();
+    public Messages(Set.Immutable<IMessageInfo> messages) {
+        this.all = messages;
+        this.errors = Set.Immutable.<IMessageInfo>of().__insertAll(
+                messages.stream().filter(m -> m.getKind().equals(MessageKind.ERROR)).collect(Collectors.toSet()));
+        this.warnings = Set.Immutable.<IMessageInfo>of().__insertAll(
+                messages.stream().filter(m -> m.getKind().equals(MessageKind.WARNING)).collect(Collectors.toSet()));
+        this.notes = Set.Immutable.<IMessageInfo>of().__insertAll(
+                messages.stream().filter(m -> m.getKind().equals(MessageKind.NOTE)).collect(Collectors.toSet()));
     }
 
     public boolean add(IMessageInfo message) {
@@ -54,28 +62,61 @@ public class Messages implements IMessages, Serializable {
         return false;
     }
 
-    @Override public Set<IMessageInfo> getAll() {
+    @Override public Set.Immutable<IMessageInfo> getAll() {
         return all;
     }
 
-    @Override public Set<IMessageInfo> getErrors() {
+    @Override public Set.Immutable<IMessageInfo> getErrors() {
         return errors;
     }
 
-    @Override public Set<IMessageInfo> getWarnings() {
+    @Override public Set.Immutable<IMessageInfo> getWarnings() {
         return warnings;
     }
 
-    @Override public Set<IMessageInfo> getNotes() {
+    @Override public Set.Immutable<IMessageInfo> getNotes() {
         return notes;
     }
 
-    public static Messages merge(IMessages... messages) {
-        Messages result = new Messages();
-        for(IMessages message : messages) {
-            result.addAll(message);
+    public static class Builder implements IMessages.Builder {
+
+        private final Set.Transient<IMessageInfo> messages;
+
+        public Builder() {
+            this.messages = Set.Transient.of();
         }
-        return result;
+
+        public Builder(IMessages messages) {
+            this.messages = messages.getAll().asTransient();
+        }
+
+        public boolean add(IMessageInfo message) {
+            return messages.__insert(message);
+        }
+
+        public boolean addAll(Iterable<? extends IMessageInfo> messages) {
+            boolean change = false;
+            for(IMessageInfo message : messages) {
+                change |= this.messages.__insert(message);
+            }
+            return change;
+        }
+
+        public void merge(IMessages other) {
+            messages.__insertAll(other.getAll());
+        }
+
+        public IMessages build() {
+            return new Messages(messages.freeze());
+        }
+
+    }
+
+    public static java.util.Set<IMessageInfo> unsolvedErrors(Iterable<? extends IConstraint> constraints) {
+        return Iterables2.stream(constraints).map(c -> {
+            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
+            return c.getMessageInfo().withDefaultContent(content);
+        }).collect(Collectors.toSet());
     }
 
 }

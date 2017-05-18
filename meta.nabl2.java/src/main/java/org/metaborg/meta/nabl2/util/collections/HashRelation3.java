@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 
 public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Serializable {
@@ -94,6 +95,18 @@ public class HashRelation3<K, L, V> implements IRelation3.Mutable<K, L, V>, Seri
 
     @Override public Set<Map.Entry<L, V>> get(K key) {
         return fwd.containsKey(key) ? Collections.unmodifiableSet(fwd.get(key).entries()) : Collections.emptySet();
+    }
+
+    public boolean isEmpty() {
+        return fwd.isEmpty();
+    }
+
+    public org.metaborg.meta.nabl2.util.collections.IRelation3.Mutable<K, L, V> copyOf() {
+        final Map<K, SetMultimap<L, V>> fwd = Maps.newHashMap();
+        this.fwd.entrySet().stream().forEach(entry -> fwd.put(entry.getKey(), HashMultimap.create(entry.getValue())));
+        final Map<V, SetMultimap<L, K>> bwd = Maps.newHashMap();
+        this.bwd.entrySet().stream().forEach(entry -> bwd.put(entry.getKey(), HashMultimap.create(entry.getValue())));
+        return new HashRelation3<>(fwd, bwd);
     }
 
     public static <K, L, V> HashRelation3<K, L, V> create() {

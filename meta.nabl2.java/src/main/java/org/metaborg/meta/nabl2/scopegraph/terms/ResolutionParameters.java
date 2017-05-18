@@ -30,7 +30,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
 
     @Value.Parameter @Override public abstract IRegExp<Label> getPathWf();
 
-    @Value.Parameter @Override public abstract IRelation<Label> getSpecificityOrder();
+    @Value.Parameter @Override public abstract IRelation.Immutable<Label> getSpecificityOrder();
 
     @Value.Check protected void check() {
         Preconditions.checkArgument(getLabels().contains(getLabelD()));
@@ -40,7 +40,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         return term -> M.appl3("", matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
             RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
             return matchWf(builder).match(wfTerm)
-                .<ResolutionParameters>map(wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
+                    .<ResolutionParameters>map(wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
         }).match(term).flatMap(o -> o);
     }
 
@@ -50,10 +50,10 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         });
     }
 
-    private static IMatcher<IRelation<Label>> matchOrder() {
+    private static IMatcher<IRelation.Immutable<Label>> matchOrder() {
         IMatcher<Label> m_label = Label.matcher();
         return M.listElems(M.appl2("", m_label, m_label, (t, l1, l2) -> ImmutableTuple2.of(l1, l2)), (t, ps) -> {
-            Relation<Label> order = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
+            Relation.Transient<Label> order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
             for(Tuple2<Label, Label> p : ps) {
                 try {
                     order.add(p._1(), p._2());
@@ -61,7 +61,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
                     throw new IllegalArgumentException(e);
                 }
             }
-            return order;
+            return order.freeze();
         });
     }
 
@@ -81,15 +81,15 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         IAlphabet<Label> labels = new FiniteAlphabet<>(Label.D, Label.P, Label.I);
         RegExpBuilder<Label> R = new RegExpBuilder<>(labels);
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(Label.P)), R.closure(R.symbol(Label.I)));
-        Relation<Label> order;
+        final Relation.Transient<Label> order;
         try {
-            order = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
+            order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
             order.add(Label.D, Label.I);
             order.add(Label.I, Label.P);
         } catch(RelationException e) {
             throw new IllegalStateException(e);
         }
-        return ImmutableResolutionParameters.of(labels, Label.D, wf, order);
+        return ImmutableResolutionParameters.of(labels, Label.D, wf, order.freeze());
     }
 
 }

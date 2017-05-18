@@ -51,8 +51,8 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
     private static final ILogger logger = LoggerUtils.logger(NameResolutionSolver.class);
 
     private final ResolutionParameters params;
-	private final IEsopScopeGraph.Builder<Scope, Label, Occurrence> scopeGraphBuilder;
-    private final Properties<Occurrence> properties;
+    private final IEsopScopeGraph.Builder<Scope, Label, Occurrence> scopeGraphBuilder;
+    private final IProperties.Mutable<Occurrence> properties;
     private final OpenCounter<Scope, Label> scopeCounter;
 
     private final Set<INameResolutionConstraint> unsolved;
@@ -65,7 +65,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         this.params = params;
         this.scopeGraphBuilder = scopeGraph;
         this.scopeCounter = scopeCounter;
-        this.properties = new Properties<>();
+        this.properties = Properties.Mutable.of();
 
         this.unsolved = Sets.newHashSet();
     }
@@ -75,7 +75,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
     }
 
     public IProperties<Occurrence> getProperties() {
-        return properties;
+        return properties.freeze();
     }
 
     public void addActive(Iterable<Scope> scopes) {
@@ -98,7 +98,7 @@ public class NameResolutionSolver extends SolverComponent<INameResolutionConstra
         if(!isResolutionStarted() && scopeCounter.isComplete()) {
             progress |= true;
             scopeCounter.setComplete();
-			nameResolution = scopeGraphBuilder.result().resolve(params, scopeCounter, new Tracer());
+            nameResolution = scopeGraphBuilder.result().resolve(params, scopeCounter, new Tracer());
         }
         progress |= doIterate(unsolved, this::solve);
         return progress;

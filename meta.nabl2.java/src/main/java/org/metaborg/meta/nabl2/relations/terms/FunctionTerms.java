@@ -1,8 +1,6 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -14,17 +12,19 @@ import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableList;
+
+import io.usethesource.capsule.Map;
 
 public class FunctionTerms {
 
-    public static IMatcher<Map<String, Eval>> functions() {
+    public static IMatcher<Map.Immutable<String, PartialFunction1<ITerm, ITerm>>> functions() {
         return M.listElems(function(), (l, funDefs) -> {
-            Map<String, Eval> functions = Maps.newHashMap();
+            Map.Transient<String, PartialFunction1<ITerm, ITerm>> functions = Map.Transient.of();
             for(Tuple2<String, Eval> funDef : funDefs) {
                 functions.put(funDef._1(), funDef._2());
             }
-            return functions;
+            return functions.freeze();
         });
     }
 
@@ -50,9 +50,9 @@ public class FunctionTerms {
     public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final List<Tuple2<ITerm, ITerm>> cases;
+        private final ImmutableList<Tuple2<ITerm, ITerm>> cases;
 
-        private Eval(List<Tuple2<ITerm, ITerm>> cases) {
+        private Eval(ImmutableList<Tuple2<ITerm, ITerm>> cases) {
             this.cases = cases;
         }
 
@@ -61,7 +61,7 @@ public class FunctionTerms {
                 throw new IllegalStateException("Term argument must be ground.");
             }
             for(Tuple2<ITerm, ITerm> c : cases) {
-                Unifier unifier = new Unifier();
+                Unifier.Transient unifier = new Unifier.Transient();
                 try {
                     unifier.unify(c._1(), term);
                     ITerm result = unifier.find(c._2());

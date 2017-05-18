@@ -12,6 +12,6 @@ public interface IResolutionParameters<L extends ILabel> {
 
     IRegExp<L> getPathWf();
 
-    IRelation<L> getSpecificityOrder();
+    IRelation.Immutable<L> getSpecificityOrder();
 
 }

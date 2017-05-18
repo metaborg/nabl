@@ -6,7 +6,7 @@ import java.util.Collection;
 import org.metaborg.meta.nabl2.util.collections.HashMultisetMultimap;
 import org.metaborg.meta.nabl2.util.collections.MultisetMultimap;
 
-public class OpenCounter<S, L> implements Serializable {
+public class OpenCounter<S, L> implements IActiveScopes<S, L>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
@@ -37,7 +37,7 @@ public class OpenCounter<S, L> implements Serializable {
         complete = true;
     }
 
-    public boolean isComplete() {
+    @Override public boolean isComplete() {
         return complete;
     }
 
@@ -53,14 +53,8 @@ public class OpenCounter<S, L> implements Serializable {
         }
     }
 
-    public boolean isOpen(S scope, L label) {
+    @Override public boolean isOpen(S scope, L label) {
         return !complete || open.containsEntry(scope, label);
-    }
-
-    public void throwIfClosed(S scope, L label) throws IllegalArgumentException {
-        if(isOpen(scope, label)) {
-            throw new IllegalArgumentException(scope + "/" + label + " is closed.");
-        }
     }
 
 }

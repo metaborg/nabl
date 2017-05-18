@@ -21,6 +21,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.UnificationResult;
 import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.unification.Unifiers;
 import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.meta.nabl2.util.Unit;
 
@@ -28,10 +29,10 @@ import com.google.common.collect.Sets;
 
 public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
 
-    private final Unifier unifier;
+    private final Unifier.Transient unifier;
     private final Set<IEqualityConstraint> defered;
 
-    public EqualitySolver(Solver solver, Unifier unifier) {
+    public EqualitySolver(Solver solver, Unifier.Transient unifier) {
         super(solver);
         this.unifier = unifier;
         this.defered = Sets.newHashSet();
@@ -103,7 +104,7 @@ public class EqualitySolver extends SolverComponent<IEqualityConstraint> {
                     .append(constraint.getLeft()).build();
             throw new UnsatisfiableException(constraint.getMessageInfo().withDefaultContent(content));
         }
-        return unifier.canUnify(left, right) ? Optional.empty() : Optional.of(Collections.emptySet());
+        return Unifiers.canUnify(left, right) ? Optional.empty() : Optional.of(Collections.emptySet());
     }
 
 }

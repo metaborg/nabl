@@ -1,58 +1,46 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.relations.IVariance;
 import org.metaborg.meta.nabl2.relations.IVariantMatcher;
 import org.metaborg.meta.nabl2.relations.InstantiatedVariantsException;
+import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
-public class Relations<T> implements IRelations<T>, Serializable {
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.SetMultimap;
 
-    private static final long serialVersionUID = 42L;
+public abstract class Relations<T> implements IRelations<T> {
 
-    private final Map<IRelationName, Relation<T>> relations;
-    private final Multimap<IRelationName, IVariantMatcher<T>> variantMatchers;
+    private final Map.Immutable<IRelationName, ? extends IRelation<T>> relations;
+    protected final SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers;
 
-    public Relations(Map<IRelationName, Relation<T>> relations,
-            Multimap<IRelationName, IVariantMatcher<T>> variantMatchers) {
+    private Relations(Map.Immutable<IRelationName, ? extends IRelation<T>> relations,
+            SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
         this.relations = relations;
         this.variantMatchers = variantMatchers;
     }
 
-    @Override public Iterable<IRelationName> getNames() {
+    @Override public java.util.Set<IRelationName> getNames() {
         return relations.keySet();
-    }
-
-    public void add(IRelationName name, T t1, T t2) throws RelationException {
-        if(!relations.containsKey(name)) {
-            throw new NoSuchElementException("Relation " + name + " not defined.");
-        }
-        Relation<T> relation = relations.get(name);
-        for(IVariantMatcher<T> matcher : variantMatchers.get(name)) {
-            if(Optionals.lift(matcher.match(t1), matcher.match(t2), (a1, a2) -> true).isPresent()) {
-                throw new InstantiatedVariantsException(
-                        "Cannot add instantiated pair of variant constructors to the relation: " + t1 + " and " + t2);
-            }
-        }
-        relation.add(t1, t2);
     }
 
     @Override public boolean contains(IRelationName name, T t1, T t2) {
         if(!relations.containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
-        Relation<T> relation = relations.get(name);
+        IRelation<T> relation = relations.get(name);
         for(IVariantMatcher<T> matcher : variantMatchers.get(name)) {
             Optional<Boolean> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
                 return (args1.size() == args2.size())
@@ -133,6 +121,77 @@ public class Relations<T> implements IRelations<T>, Serializable {
 
     private IRelationName nameOrDefault(IRelationName name, IRelationName defaultName) {
         return name.getName().isPresent() ? name : defaultName;
+    }
+
+    public static class Immutable<T> extends Relations<T> implements IRelations.Immutable<T>, Serializable {
+        private static final long serialVersionUID = 42L;
+
+        private final Map.Immutable<IRelationName, IRelation.Immutable<T>> relations;
+
+        public Immutable(Map.Immutable<IRelationName, IRelation.Immutable<T>> relations,
+                SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
+            super(relations, variantMatchers);
+            this.relations = relations;
+        }
+
+        @Override public Relations.Transient<T> melt() {
+            final Map.Transient<IRelationName, IRelation.Transient<T>> relationsBuilder = Map.Transient.of();
+            for(Entry<IRelationName, IRelation.Immutable<T>> entry : relations.entrySet()) {
+                relationsBuilder.__put(entry.getKey(), entry.getValue().melt());
+            }
+            return new Relations.Transient<>(relationsBuilder.freeze(), variantMatchers);
+        }
+
+
+    }
+
+    public static class Transient<T> extends Relations<T> implements IRelations.Transient<T>, Serializable {
+        private static final long serialVersionUID = 42L;
+
+        private final Map.Immutable<IRelationName, IRelation.Transient<T>> relations;
+
+        public Transient(Map.Immutable<IRelationName, IRelation.Transient<T>> relations,
+                SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
+            super(relations, variantMatchers);
+            this.relations = relations;
+        }
+
+        @Override public boolean add(IRelationName name, T t1, T t2) throws RelationException {
+            if(!relations.containsKey(name)) {
+                throw new NoSuchElementException("Relation " + name + " not defined.");
+            }
+            IRelation.Transient<T> relation = relations.get(name);
+            for(IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+                if(Optionals.lift(matcher.match(t1), matcher.match(t2), (a1, a2) -> true).isPresent()) {
+                    throw new InstantiatedVariantsException(
+                            "Cannot add instantiated pair of variant constructors to the relation: " + t1 + " and "
+                                    + t2);
+                }
+            }
+            return relation.add(t1, t2);
+        }
+
+        @Override public IRelations.Immutable<T> freeze() {
+            Map.Transient<IRelationName, IRelation.Immutable<T>> relationsBuilder = Map.Transient.of();
+            for(Entry<IRelationName, IRelation.Transient<T>> entry : relations.entrySet()) {
+                relationsBuilder.__put(entry.getKey(), entry.getValue().freeze());
+            }
+            return new Relations.Immutable<>(relationsBuilder.freeze(), variantMatchers);
+        }
+
+        public static <T> Relations.Transient<T> of(Map<IRelationName, RelationDescription> relations,
+                SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
+            Map.Transient<IRelationName, IRelation.Transient<T>> relationsBuilder = Map.Transient.of();
+            for(Entry<IRelationName, RelationDescription> entry : relations.entrySet()) {
+                relationsBuilder.__put(entry.getKey(), Relation.Transient.of(entry.getValue()));
+            }
+            return new Relations.Transient<>(relationsBuilder.freeze(), variantMatchers);
+        }
+
+    }
+
+    public static <T> Relations.Immutable<T> empty() {
+        return new Relations.Immutable<>(Map.Immutable.of(), SetMultimap.Immutable.of());
     }
 
 }
