@@ -6,7 +6,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -22,6 +25,8 @@ import org.metaborg.meta.nabl2.util.functions.Function0;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 // TODO: Support garbage collection of sub-envs
 // * lambda's must be separate classes not to capture arguments
@@ -244,9 +249,6 @@ public class Environments {
         }        
     };
     
- 
-    
-    
     private static class StatefulLazyShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
         private static final long serialVersionUID = 42L;
 
@@ -346,7 +348,145 @@ public class Environments {
         }        
     };
     
+    private static class LazyReferenceShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>, RP extends IResolutionPath<S, L, O>>
+            implements IPersistentEnvironment<S, L, O, P> {
+        private static final long serialVersionUID = 42L;
+
+        private final boolean shortCircuit;
+        private final List<IPersistentEnvironment<S, L, O, P>> environments;
+        
+        transient private Set.Immutable<P> result;
+        
+        private LazyReferenceShadowEnvironment(final boolean shortCircuit, final List<IPersistentEnvironment<S, L, O, P>> environments) {
+            assert environments.size() > 1;
+            this.shortCircuit = shortCircuit;
+            this.environments = environments;
+        }
+        
+        @SuppressWarnings("unchecked")
+        private @Nullable Set.Immutable<P> paths() {
+            if (result == null) {
+                                               
+                // path.getDeclaration()
+                final Set.Transient<O> shadowTokens = Set.Transient.of();
+
+                final Predicate<RP> statefulFilter = path -> {
+                    if (shadowTokens.contains(path.getDeclaration())) {
+                        return false;
+                    } else {
+                        shadowTokens.__insert(path.getDeclaration());
+                        return true;
+                    }
+                };
+                
+                @SuppressWarnings("unchecked")
+                final Function<P, RP> castPathToResolutionPath = path -> ((RP) IResolutionPath.class.cast(path));
+                
+                // @formatter:off
+                final Stream<Optional<Set.Immutable<RP>>> solutionStream = 
+                        environments.stream()
+                        .map(IPersistentEnvironment::solution)
+                        .map(solution -> {
+                            if (solution.isPresent()) {
+                                final Set.Immutable<RP> partialResult = solution.get().stream()
+                                          .map(castPathToResolutionPath)
+                                          .filter(statefulFilter)
+                                          .collect(CapsuleCollectors.toSet());
+                    
+                                return Optional.of(partialResult);
+                            } else {
+                                return Optional.<Set.Immutable<RP>>empty();
+                            }
+                        })
+                        .filter(solution -> !solution.isPresent() || !solution.get().isEmpty());
+                // @formatter:on
+
+                if (shortCircuit) {
+                    final Optional<Optional<Set.Immutable<RP>>> findFirst = solutionStream.findFirst();
+                    
+                    if (findFirst.isPresent()) {
+                        if (findFirst.get().isPresent()) {
+                            result = (Set.Immutable<P>) findFirst.get().get();
+                        } else {
+                            // not solvable
+                            result = null;
+                        }
+                    } else {
+                        // all evaluated, but empty set 
+                        result = Set.Immutable.of();
+                    }
+                } else {
+                    Set.Immutable<RP> partialResult = Set.Immutable.of(); 
+                    final Iterator<Optional<Immutable<RP>>> iterator = solutionStream.iterator();
+                    
+                    while (iterator.hasNext()) {
+                        final Optional<Immutable<RP>> next = iterator.next();
+                        
+                        if (next.isPresent()) {
+                            partialResult = partialResult.__insertAll(next.get());
+                        } else {
+                            partialResult = Set.Immutable.of();
+                            break;
+                        }
+                    }
+                     
+                    result = (Set.Immutable<P>) partialResult;
+                }                
+            }
+
+            return result;
+        }
+
+        @Override
+        public Optional<Set.Immutable<P>> solution() {
+            return Optional.ofNullable(paths());
+        }
+
+        @Override
+        public String toString() {
+            String body = environments.stream().map(Object::toString).collect(Collectors.joining(" <| "));
+            return String.format("( %s )", body);           
+        }
+        
+        @Override
+        public int hashCode() {
+            // TODO Auto-generated method stub
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // TODO Auto-generated method stub
+            return super.equals(obj);
+        }        
+    };
+    
     // NOTE: order of environments is relevant for algorithm to work correctly 
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> shadow(
+            boolean shortCircuit, List<IPersistentEnvironment<S, L, O, P>> candidates) {
+
+        final List<IPersistentEnvironment<S, L, O, P>> environments = candidates.stream()
+                .filter(environment -> !Objects.equals(environment, empty())).collect(Collectors.toList());
+
+        if (environments.isEmpty()) {
+            return Environments.empty();
+        }
+
+        if (environments.size() == 1) {
+            return environments.stream().findFirst().get();
+        }
+       
+        return new LazyReferenceShadowEnvironment<>(shortCircuit, environments);
+        
+//        if (USE_STATELESS_FILTERS) {
+//            return new LazyShadowEnvironment<>(filter, environments);
+//        } else {
+//            return new StatefulLazyShadowEnvironment<>(filter, environments);
+//        }
+    }   
+      
+    // NOTE: order of environments is relevant for algorithm to work correctly 
+    @Deprecated
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> shadow(
             IPersistentEnvironment.Filter<S, L, O, P> filter, List<IPersistentEnvironment<S, L, O, P>> candidates) {
         

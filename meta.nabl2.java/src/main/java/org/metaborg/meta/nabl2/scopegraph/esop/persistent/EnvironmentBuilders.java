@@ -15,7 +15,6 @@ import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
@@ -47,7 +46,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(Set.Immutable<O> seenImports,
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
                 Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt,
-                PersistentNameResolution<S, L, O> nameResolution) {
+                Optional<O> resolutionReference, PersistentNameResolution<S, L, O> nameResolution) {
             
             /*
              * NOTE: caching currently does not work because.
@@ -86,7 +85,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
                         // NOTE: using nextRe
                         final IPersistentEnvironment<S, L, O, P> result = env_lCache.computeIfAbsent(label,
                                 label -> EnvironmentBuilders.env_l(seenImports, lt, nextRe, label, path, filter, env_lCache,
-                                        nameResolution));
+                                        resolutionReference, nameResolution));
                         return result;
                     });
                 }
@@ -94,9 +93,12 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
 
             if (shadowingBuilder.isPresent()) {
                 final IPersistentEnvironment<S, L, O, P> shadowEnvironment = shadowingBuilder.get().build(seenImports,
-                        re, path, filter, env_lCache, lt, nameResolution);
-
-                return Environments.shadow(filter, Arrays.asList(shadowEnvironment, labelEnvironment));
+                        re, path, filter, env_lCache, lt, resolutionReference, nameResolution);
+             
+                // return Environments.shadow(filter, Arrays.asList(shadowEnvironment, labelEnvironment));
+                
+                return Environments.shadow(resolutionReference.isPresent(),
+                        Arrays.asList(shadowEnvironment, labelEnvironment));
             } else {
                 return labelEnvironment;
             }
@@ -128,12 +130,13 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         @Override
         public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(Set.Immutable<O> seenImports,
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
-                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt,
+                Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, IRelation<L> lt, 
+                Optional<O> resolutionReference,
                 PersistentNameResolution<S, L, O> nameResolution) {
 
             // @formatter:off
             final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = builders.stream()
-                    .map(b -> b.build(seenImports, re, path, filter, env_lCache, lt, nameResolution))
+                    .map(b -> b.build(seenImports, re, path, filter, env_lCache, lt, resolutionReference, nameResolution))
                     .collect(CapsuleCollectors.toSet());
             // @formatter:on
 
@@ -210,6 +213,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             /***/
             Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache,
+            Optional<O> resolutionReference,
             PersistentNameResolution<S, L, O> nameResolution) {
     
         // TODO WIP factoring out facts
@@ -225,7 +229,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             // NOTE uses 'nextRe' and 'p'
             // TODO should I use env_lCache instead of Maps.newHashMap()?
             final IPersistentEnvironment<S, L, O, P> environment = builder.build(seenImports, nextRe, p, filter,
-                    Maps.newHashMap(), lt, nameResolution);
+                    Maps.newHashMap(), lt, resolutionReference, nameResolution);
 
             return environment;
         };

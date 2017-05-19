@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
@@ -22,6 +23,7 @@ interface EnvironmentBuilder<S extends IScope, L extends ILabel, O extends IOccu
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache,
             final IRelation<L> lt,
+            final Optional<O> resolutionReference,            
             final PersistentNameResolution<S, L, O> nameResolution);
     // @formatter:on
 
