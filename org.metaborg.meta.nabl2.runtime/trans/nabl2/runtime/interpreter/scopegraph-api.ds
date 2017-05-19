@@ -46,7 +46,7 @@ signature
 
   arrows // name resolution
     NaBL2 |- pathOf(Occurrence) --> Path
-
+ 
   sorts
     NaBL2
 
