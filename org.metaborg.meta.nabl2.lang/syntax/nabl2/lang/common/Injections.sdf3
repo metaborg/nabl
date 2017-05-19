@@ -26,7 +26,8 @@ context-free syntax
 
   NewScopes.NewScopes = <new <{CVar " "}+>>
 
-  LabelRE.Option = <<LabelRE>?>
+  LabelRE.Option   = <<LabelRE>?>
+  LabelRE.NonEmpty = <<LabelRE>+>
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
@@ -39,7 +40,7 @@ syntax
 
 context-free priorities
 
-    LabelRE.Option // aka, the same as LabelRE.Closure
+    { LabelRE.Option LabelRE.NonEmpty } // aka, the same as LabelRE.Closure
   > LabelRE.Concat
   > LabelRE.And
   > LabelRE.Or
