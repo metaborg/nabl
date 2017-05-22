@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -88,16 +89,16 @@ public class Environments {
     private static class LazyEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
         private static final long serialVersionUID = 42L;
 
-        private final Function0<IPersistentEnvironment<S, L, O, P>> supplier;
+        private final Supplier<IPersistentEnvironment<S, L, O, P>> supplier;
         private IPersistentEnvironment<S, L, O, P> result = null;
         
-        private LazyEnvironment(final Function0<IPersistentEnvironment<S, L, O, P>> supplier) {
+        private LazyEnvironment(final Supplier<IPersistentEnvironment<S, L, O, P>> supplier) {
             this.supplier = supplier;
         }
         
         private IPersistentEnvironment<S, L, O, P> env() {
             if (result == null) {
-                result = supplier.apply();
+                result = supplier.get();
             }
             return result;
         }
@@ -130,7 +131,7 @@ public class Environments {
     
     // lazy delegation
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> lazy(
-            Function0<IPersistentEnvironment<S, L, O, P>> supplier) {
+            Supplier<IPersistentEnvironment<S, L, O, P>> supplier) {
         return new LazyEnvironment<>(supplier);
     }
 
@@ -168,7 +169,11 @@ public class Environments {
     
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> eager(
             Set.Immutable<P> paths) {
-        return new EagerEnvironment<>(paths);
+        if (paths.isEmpty()) {
+            return empty();
+        } else {
+            return new EagerEnvironment<>(paths);
+        }
     }
 
     private static class LazyShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> implements IPersistentEnvironment<S, L, O, P> {
@@ -386,52 +391,46 @@ public class Environments {
                 final Stream<Optional<Set.Immutable<RP>>> solutionStream = 
                         environments.stream()
                         .map(IPersistentEnvironment::solution)
-                        .map(solution -> {
+                        .flatMap(solution -> {
                             if (solution.isPresent()) {
                                 final Set.Immutable<RP> partialResult = solution.get().stream()
                                           .map(castPathToResolutionPath)
                                           .filter(statefulFilter)
                                           .collect(CapsuleCollectors.toSet());
-                    
-                                return Optional.of(partialResult);
+                                
+                                if (partialResult.isEmpty()) {
+                                    return Stream.empty();                                    
+                                } else {
+                                    return Stream.of(Optional.of(partialResult));     
+                                }
+                               
                             } else {
-                                return Optional.<Set.Immutable<RP>>empty();
+                                return Stream.of(Optional.<Set.Immutable<RP>>empty());
                             }
-                        })
-                        .filter(solution -> !solution.isPresent() || !solution.get().isEmpty());
+                        });
                 // @formatter:on
 
+                final Optional<Optional<Set.Immutable<RP>>> shadowedPaths;
+                
                 if (shortCircuit) {
-                    final Optional<Optional<Set.Immutable<RP>>> findFirst = solutionStream.findFirst();
-                    
-                    if (findFirst.isPresent()) {
-                        if (findFirst.get().isPresent()) {
-                            result = (Set.Immutable<P>) findFirst.get().get();
-                        } else {
-                            // not solvable
-                            result = null;
-                        }
-                    } else {
-                        // all evaluated, but empty set 
-                        result = Set.Immutable.of();
-                    }
+                    shadowedPaths = solutionStream.findFirst();
                 } else {
-                    Set.Immutable<RP> partialResult = Set.Immutable.of(); 
-                    final Iterator<Optional<Immutable<RP>>> iterator = solutionStream.iterator();
-                    
-                    while (iterator.hasNext()) {
-                        final Optional<Immutable<RP>> next = iterator.next();
-                        
-                        if (next.isPresent()) {
-                            partialResult = partialResult.__insertAll(next.get());
+                    shadowedPaths = solutionStream.reduce((left, right) -> {
+                        if (left.isPresent() && right.isPresent()) {
+                            return Optional.of(left.get().__insertAll(right.get()));
                         } else {
-                            partialResult = Set.Immutable.of();
-                            break;
+                            return Optional.empty();
                         }
-                    }
-                     
-                    result = (Set.Immutable<P>) partialResult;
-                }                
+                    });
+                }         
+                
+                if (!shadowedPaths.isPresent()) {
+                    // empty set of paths
+                    result = Set.Immutable.of();
+                } else {
+                    // either set of paths or null if not solvable
+                    result = (Set.Immutable<P>) shadowedPaths.get().orElse(null); 
+                }
             }
 
             return result;
@@ -461,32 +460,31 @@ public class Environments {
         }        
     };
     
-    // NOTE: order of environments is relevant for algorithm to work correctly 
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> shadow(
-            boolean shortCircuit, List<IPersistentEnvironment<S, L, O, P>> candidates) {
-
-        final List<IPersistentEnvironment<S, L, O, P>> environments = candidates.stream()
-                .filter(environment -> !Objects.equals(environment, empty())).collect(Collectors.toList());
-
-        if (environments.isEmpty()) {
-            return Environments.empty();
-        }
-
-        if (environments.size() == 1) {
-            return environments.stream().findFirst().get();
-        }
-       
-        return new LazyReferenceShadowEnvironment<>(shortCircuit, environments);
-        
-//        if (USE_STATELESS_FILTERS) {
-//            return new LazyShadowEnvironment<>(filter, environments);
-//        } else {
-//            return new StatefulLazyShadowEnvironment<>(filter, environments);
+//    // NOTE: order of environments is relevant for algorithm to work correctly 
+//    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> shadow(
+//            boolean shortCircuit, List<IPersistentEnvironment<S, L, O, P>> candidates) {
+//
+//        final List<IPersistentEnvironment<S, L, O, P>> environments = candidates.stream()
+//                .filter(environment -> !Objects.equals(environment, empty())).collect(Collectors.toList());
+//
+//        if (environments.isEmpty()) {
+//            return Environments.empty();
 //        }
-    }   
+//
+//        if (environments.size() == 1) {
+//            return environments.stream().findFirst().get();
+//        }
+//       
+//        return new LazyReferenceShadowEnvironment<>(shortCircuit, environments);
+//        
+////        if (USE_STATELESS_FILTERS) {
+////            return new LazyShadowEnvironment<>(filter, environments);
+////        } else {
+////            return new StatefulLazyShadowEnvironment<>(filter, environments);
+////        }
+//    }
       
-    // NOTE: order of environments is relevant for algorithm to work correctly 
-    @Deprecated
+    // NOTE: order of environments is relevant for algorithm to work correctly
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> shadow(
             IPersistentEnvironment.Filter<S, L, O, P> filter, List<IPersistentEnvironment<S, L, O, P>> candidates) {
         
@@ -499,10 +497,16 @@ public class Environments {
         
         if (environments.size() == 1) {
             return environments.stream().findFirst().get();
-        }
+        }       
         
         if (USE_STATELESS_FILTERS) {
-            return new LazyShadowEnvironment<>(filter, environments);
+            // return new LazyShadowEnvironment<>(filter, environments);
+            
+            if (filter == IDENTITY_FILTER) {
+                return new LazyReferenceShadowEnvironment<>(false, environments);
+            } else {
+                return new LazyReferenceShadowEnvironment<>(true, environments);
+            }            
         } else {
             return new StatefulLazyShadowEnvironment<>(filter, environments);
         }
@@ -783,6 +787,11 @@ public class Environments {
             
             return Objects.equals(reference, that.reference);
         }
+        
+        @Override
+        public String toString() {
+            return String.format("ResolutionFilter(%s)", reference);            
+        }
     };    
     
     // TODO: rename to RedirectFilter?
@@ -828,6 +837,11 @@ public class Environments {
                 return false;
             
             return true;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("IdentityFilter()");            
         }        
     };
 

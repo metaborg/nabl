@@ -1,9 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
-import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
 import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.occurrenceEquals;
-import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.scopeEquals;
-import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope.sourceScopeEquals;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,7 +8,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
@@ -30,7 +26,6 @@ import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
@@ -40,7 +35,6 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 public class PersistentNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution<S, L, O>, Serializable {
@@ -155,7 +149,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     public Set.Immutable<IDeclPath<S, L, O>> reachable(S scope) {
         return tryReachable(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
     }
-
+    
     public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O reference) {
         final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = resolutionCache
                 .computeIfAbsent(reference, r -> resolveEnvironment(Set.Immutable.of(), r, this));
@@ -184,7 +178,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                 nameResolution.getWf(), 
                 Paths.empty(scope),
                 Environments.identityFilter(), 
-                Optional.empty(), nameResolution);
+                Optional.empty(), nameResolution, false);
     }
 
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> reachableEnvironment(final S scope, final PersistentNameResolution<S, L, O> nameResolution) {   
@@ -194,14 +188,14 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
                 nameResolution.getWf(), 
                 Paths.empty(scope),
                 Environments.identityFilter(), 
-                Optional.empty(), nameResolution);
+                Optional.empty(), nameResolution, false);
     }
-
+    
     static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> resolveEnvironment(
             final Set.Immutable<O> seenImports, final O reference,
             /***/
             PersistentNameResolution<S, L, O> nameResolution) {
-
+        
         final PersistentScopeGraph<S, L, O> scopeGraph = nameResolution.getScopeGraph();
         
         // TODO: use hash lookup on occurrence instead of filter
@@ -209,13 +203,17 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         final Set.Immutable<O> nextSeenImports = seenImports.__insert(reference);
         final IPersistentEnvironment.Filter<S, L, O, IResolutionPath<S, L, O>> nextFilter = Environments
                 .resolutionFilter(reference);
-
+        final Optional<O> nextReference = Optional.of(reference);
+        
+        // EXPERIMENTAL
+        boolean eagerEvaluation = false;
+        
         // @formatter:off
         IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = scopeGraph.localReferencesStream()
             .filter(occurrenceEquals(reference))
             .findAny() // must be unique (TODO ensure this)
             .map(tuple -> tuple.scope())
-            .map(scope -> buildEnvironment(nextSeenImports, nameResolution.getOrdered(), nameResolution.getWf(), Paths.empty(scope), nextFilter, Optional.of(reference), nameResolution))
+            .map(scope -> buildEnvironment(nextSeenImports, nameResolution.getOrdered(), nameResolution.getWf(), Paths.empty(scope), nextFilter, nextReference, nameResolution, eagerEvaluation))
             .orElse(Environments.empty());
         // @formatter:on 
         
@@ -231,14 +229,15 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             Optional<O> resolutionReference,
-            PersistentNameResolution<S, L, O> nameResolution) {
+            PersistentNameResolution<S, L, O> nameResolution,
+            boolean eagerEvaluation) {
         if (re.isEmpty()) {
             return Environments.empty();
         } else {
             final EnvironmentBuilder<S, L, O> builder = nameResolution.getEnvironmentBuilder(lt);
 
             final IPersistentEnvironment<S, L, O, P> environment = builder.build(seenImports, re, path, filter,
-                    Maps.newHashMap(), lt, resolutionReference, nameResolution);
+                    Maps.newHashMap(), lt, resolutionReference, nameResolution, eagerEvaluation);
 
             return environment;
         }

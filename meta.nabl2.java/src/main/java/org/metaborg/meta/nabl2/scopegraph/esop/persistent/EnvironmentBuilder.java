@@ -24,7 +24,8 @@ interface EnvironmentBuilder<S extends IScope, L extends ILabel, O extends IOccu
             Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache,
             final IRelation<L> lt,
             final Optional<O> resolutionReference,            
-            final PersistentNameResolution<S, L, O> nameResolution);
+            final PersistentNameResolution<S, L, O> nameResolution, 
+            boolean eagerEvaluation);
     // @formatter:on
 
 }
