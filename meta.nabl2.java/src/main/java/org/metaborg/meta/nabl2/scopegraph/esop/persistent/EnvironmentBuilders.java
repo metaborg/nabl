@@ -231,6 +231,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         assert !nextRe.isEmpty();
            
         // case: env_nonD       
+        // walks the graphs with l-labeled step and extends the nested environments
         final Function<IScopePath<S, L, O>, IPersistentEnvironment<S, L, O, P>> nestedPathToEnvironment = 
                 p -> {
                     final EnvironmentBuilder<S, L, O> builder = nameResolution.getEnvironmentBuilder(lt);
