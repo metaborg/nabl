@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
@@ -12,6 +14,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
 public class StrategoTermIndices {
+    private static ILogger logger = LoggerUtils.logger(StrategoTermIndices.class);
 
     private static final String OP = "TermIndex";
     private static final int ARITY = 2;
@@ -38,16 +41,16 @@ public class StrategoTermIndices {
         private IStrategoTerm index(final IStrategoTerm term) {
             IStrategoTerm result = StrategoTerms.match(term,
                     StrategoTerms.<IStrategoTerm>cases(
-                // @formatter:off
-                appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
-                tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
-                list -> index(list),
-                integer -> termFactory.makeInt(integer.intValue()),
-                real -> termFactory.makeReal(real.realValue()),
-                string -> termFactory.makeString(string.stringValue())
-                // @formatter:on
+                        // @formatter:off
+                        appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
+                        tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
+                        list -> index(list),
+                        integer -> termFactory.makeInt(integer.intValue()),
+                        real -> termFactory.makeReal(real.realValue()),
+                        string -> termFactory.makeString(string.stringValue())
+                        // @formatter:on
                     ));
-            assert !get(result).isPresent();
+            get(result).ifPresent(i -> logger.warn("Overwriting pre-existing index {} of term {}.", i, term));
             result = put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
             termFactory.copyAttachments(term, result);
             return result;
@@ -60,7 +63,7 @@ public class StrategoTermIndices {
             } else {
                 result = termFactory.makeListCons(index(list.head()), index(list.tail()), list.getAnnotations());
             }
-            assert !get(result).isPresent();
+            get(result).ifPresent(i -> logger.warn("Overwriting pre-existing index {} of list {}.", i, list));
             result = (IStrategoList) put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
             termFactory.copyAttachments(list, result);
             return result;
