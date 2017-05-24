@@ -5,6 +5,7 @@ imports
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Relations
   nabl2/shared/common/Sorts
+  nabl2/lang/rules/CGen
 
 template options
 
@@ -19,7 +20,7 @@ context-free syntax
 
 context-free syntax
 
-  RelationDef.RelationDef = <<{RelationOption ", "}*> <Relation> <RelationType> <VariancePatterns>>
+  RelationDef.RelationDef = <<{RelationOption ", "}*> <Relation> <RelationType> <Patterns>>
 
   RelationOption = Reflexivity
   RelationOption = Symmetry
@@ -28,8 +29,23 @@ context-free syntax
   RelationType.TypeSort =
   RelationType          = <: <SortRef> * <SortRef>>
 
-  VariancePatterns      = <{ <{VariancePattern ",\n"}*> }>
-  VariancePatterns      = {ast("[]")}
+  Patterns = <{ <{Pattern ",\n"}*> }>
+  Patterns      = {ast("[]")}
+  
+  Pattern = VariancePattern
+  Pattern = RelationPattern
+ 
+  RelationPattern.Relation = <
+  	<RelationDefVariant> <RelationBuildOp> <RelationDefVariant> := {
+   		<{RuleClause ",\n"}+>.
+   	}>
+  
+  VarIds = {VarId ","}*
+  
+  
+ syntax 
+  
+  RelationDefVariant-CF.DefVariant = OpId-LEX "(" LAYOUT?-CF VarIds-CF LAYOUT?-CF ")"
  
  lexical syntax
  
