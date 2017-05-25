@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
-import java.util.function.Supplier;
+import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.IBiSimulation.biSimulate;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -16,7 +16,7 @@ import org.metaborg.meta.nabl2.util.functions.Function1;
 import io.usethesource.capsule.Set;
 
 public class BiSimulationScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements IEsopScopeGraph<S, L, O>, java.io.Serializable {
+        implements IEsopScopeGraph<S, L, O>, IBiSimulation, java.io.Serializable {
     
     private static final long serialVersionUID = 42L;
 
@@ -26,26 +26,7 @@ public class BiSimulationScopeGraph<S extends IScope, L extends ILabel, O extend
     public BiSimulationScopeGraph(final IEsopScopeGraph<S, L, O> one, final IEsopScopeGraph<S, L, O> two) {
         this.one = one;
         this.two = two;
-    }
-    
-    private static void signalError() {
-        // throw new IllegalStateException();        
-    }
-    
-    private static <T> T choose(T one, T two) {
-        return two;
-    }
-    
-    private static <T> T biSimulate(Supplier<T> supplierOne, Supplier<T> supplierTwo) {
-        final T resultOne = supplierOne.get();
-        final T resultTwo = supplierTwo.get();
-        boolean equal = resultOne.equals(resultTwo);
-
-        if (!equal)
-            signalError();
-        
-        return choose(resultOne, resultTwo);        
-    }
+    }   
     
     @Override
     public Set.Immutable<S> getAllScopes() {
