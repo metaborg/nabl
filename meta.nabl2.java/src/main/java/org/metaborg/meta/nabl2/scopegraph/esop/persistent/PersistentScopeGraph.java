@@ -175,7 +175,9 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IEsopNameResolution<S, L, O> one = new PersistentNameResolution<>(this, params, scopeCounter);
         final IEsopNameResolution<S, L, O> two = new AllShortestPathsNameResolution<>(this, params, scopeCounter);
         
-        return new BiSimulationNameResolution<>(one, two);
+        // return new BiSimulationNameResolution<>(one, two);
+        // return one;
+        return two;
     }
 
     public static class Builder<S extends IScope, L extends ILabel, O extends IOccurrence>
@@ -307,7 +309,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
                 final EsopScopeGraph<S, L, O> one = new EsopScopeGraph<>();
                                
                 declarations.keySet().forEach(o -> one.addDecl(declarations.get(o).get(), o));
-                references.keySet().forEach(o -> one.addDecl(references.get(o).get(), o));
+                references.keySet().forEach(o -> one.addRef(o, references.get(o).get()));
 
                 directEdges.stream(ImmutableScopeLabelScope::of)
                         .forEach(sls -> one.addDirectEdge(sls.sourceScope(), sls.label(), sls.targetScope()));

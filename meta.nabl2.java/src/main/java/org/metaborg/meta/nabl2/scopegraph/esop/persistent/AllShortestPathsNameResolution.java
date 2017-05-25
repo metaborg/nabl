@@ -541,7 +541,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     declaration).map(path -> {
                         final Set.Immutable<IResolutionPath<S, L, O>> paths = Set.Immutable.of(path);
 
-                        final Set.Immutable<String> messages = Set.Immutable.of();
+                        final Set.Immutable<String> messages = Set.Immutable.of(path.getDeclaration().getIndex().getResource());
 
                         return ImmutableTuple2.of(paths, messages);
                     });
