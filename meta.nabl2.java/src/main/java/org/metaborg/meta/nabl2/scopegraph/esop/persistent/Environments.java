@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -22,11 +21,9 @@ import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.SpacedName;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.util.functions.Function0;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 // TODO: Support garbage collection of sub-envs
@@ -353,7 +350,7 @@ public class Environments {
         }        
     };
     
-    private static class LazyReferenceShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>, RP extends IResolutionPath<S, L, O>>
+    private static class LazyReferenceShadowEnvironment<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
             implements IPersistentEnvironment<S, L, O, P> {
         private static final long serialVersionUID = 42L;
 
@@ -375,26 +372,33 @@ public class Environments {
                 // path.getDeclaration()
                 final Set.Transient<O> shadowTokens = Set.Transient.of();
 
-                final Predicate<RP> statefulFilter = path -> {
-                    if (shadowTokens.contains(path.getDeclaration())) {
-                        return false;
-                    } else {
-                        shadowTokens.__insert(path.getDeclaration());
-                        return true;
+                final Predicate<P> statefulFilter = path -> {
+                    if (path instanceof IDeclPath) {                    
+                        if (shadowTokens.contains(((IDeclPath<S, L, O>) path).getDeclaration())) {
+                            return false;
+                        } else {
+                            shadowTokens.__insert(((IDeclPath<S, L, O>) path).getDeclaration());
+                            return true;
+                        } 
                     }
+                    if (path instanceof IResolutionPath) {                    
+                        if (shadowTokens.contains(((IResolutionPath<S, L, O>) path).getDeclaration())) {
+                            return false;
+                        } else {
+                            shadowTokens.__insert(((IResolutionPath<S, L, O>) path).getDeclaration());
+                            return true;
+                        } 
+                    }                    
+                    throw new IllegalStateException(path.getClass().toString());
                 };
                 
-                @SuppressWarnings("unchecked")
-                final Function<P, RP> castPathToResolutionPath = path -> ((RP) IResolutionPath.class.cast(path));
-                
                 // @formatter:off
-                final Stream<Optional<Set.Immutable<RP>>> solutionStream = 
+                final Stream<Optional<Set.Immutable<P>>> solutionStream = 
                         environments.stream()
                         .map(IPersistentEnvironment::solution)
                         .flatMap(solution -> {
                             if (solution.isPresent()) {
-                                final Set.Immutable<RP> partialResult = solution.get().stream()
-                                          .map(castPathToResolutionPath)
+                                final Set.Immutable<P> partialResult = solution.get().stream()
                                           .filter(statefulFilter)
                                           .collect(CapsuleCollectors.toSet());
                                 
@@ -405,12 +409,12 @@ public class Environments {
                                 }
                                
                             } else {
-                                return Stream.of(Optional.<Set.Immutable<RP>>empty());
+                                return Stream.of(Optional.<Set.Immutable<P>>empty());
                             }
                         });
                 // @formatter:on
 
-                final Optional<Optional<Set.Immutable<RP>>> shadowedPaths;
+                final Optional<Optional<Set.Immutable<P>>> shadowedPaths;
                 
                 if (shortCircuit) {
                     shadowedPaths = solutionStream.findFirst();

@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
-import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.occurrenceEquals;
+import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -151,24 +151,31 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }
     
     public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O reference) {
-        final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = resolutionCache
-                .computeIfAbsent(reference, r -> resolveEnvironment(Set.Immutable.of(), r, this));
+//        final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = resolutionCache
+//                .computeIfAbsent(reference, r -> resolveEnvironment(Set.Immutable.of(), r, this));
+        
+        // without cache ...
+        final IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = resolveEnvironment(Set.Immutable.of(), reference, this);
 
         return environment.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
     }
 
     public Optional<Tuple2<Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
-        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> environment = visibilityCache.computeIfAbsent(scope,
-                s -> visibleEnvironment(s, this));
+//        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> environment = visibilityCache.computeIfAbsent(scope,
+//                s -> visibleEnvironment(s, this));
+        
+        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> environment = visibleEnvironment(scope, this);        
 
         return environment.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
     }
 
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
-        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> env = reachabilityCache.computeIfAbsent(scope,
-                s -> reachableEnvironment(s, this));
+//        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> environment = reachabilityCache.computeIfAbsent(scope,
+//                s -> reachableEnvironment(s, this));
 
-        return env.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
+        final IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> environment = reachableEnvironment(scope, this);
+        
+        return environment.solution().map(paths -> ImmutableTuple2.of(paths, Set.Immutable.of()));
     }
 
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> IPersistentEnvironment<S, L, O, IDeclPath<S, L, O>> visibleEnvironment(final S scope, final PersistentNameResolution<S, L, O> nameResolution) {
@@ -206,10 +213,10 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         final Optional<O> nextReference = Optional.of(reference);
         
         // EXPERIMENTAL
-        boolean eagerEvaluation = false;
+        boolean eagerEvaluation = true;
         
         // @formatter:off
-        IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = scopeGraph.localReferencesStream()
+        IPersistentEnvironment<S, L, O, IResolutionPath<S, L, O>> environment = scopeGraph.referenceEdgeStream()
             .filter(occurrenceEquals(reference))
             .findAny() // must be unique (TODO ensure this)
             .map(tuple -> tuple.scope())

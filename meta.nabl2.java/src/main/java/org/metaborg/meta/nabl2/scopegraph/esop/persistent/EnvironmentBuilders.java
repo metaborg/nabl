@@ -1,8 +1,8 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
 import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
-import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.occurrenceEquals;
-import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.scopeEquals;
+import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
+import static org.metaborg.meta.nabl2.util.tuples.HasScope.scopeEquals;
 import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope.sourceScopeEquals;
 
 import java.util.Arrays;
@@ -63,7 +63,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
                 labelEnvironment = Environments.empty();
             } else if (label.equals(nameResolution.getLabelD()) && re.isAccepting()) {
                 // @formatter:off
-                final Set.Immutable<P> paths = nameResolution.getScopeGraph().localDeclarationsStream()
+                final Set.Immutable<P> paths = nameResolution.getScopeGraph().declarationEdgeStream()
                     .filter(scopeEquals(path.getTarget()))
                     .map(tuple -> tuple.occurrence())
                     .flatMap(declaration -> OptionalStream.of(filter.test(Paths.decl(path, declaration))))
@@ -267,7 +267,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
                 nextScope -> Paths.append(path, Paths.direct(path.getTarget(), label, nextScope));
 
         // @formatter:off
-        final Set.Immutable<S> targetScopes = scopeGraph.directEdgesStream()
+        final Set.Immutable<S> targetScopes = scopeGraph.middleEdgeStream()
             .filter(labelEquals(label))
             .filter(sourceScopeEquals(path.getTarget()))
             .map(tuple -> tuple.targetScope())
@@ -295,7 +295,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
        
         final Function<IResolutionPath<S, L, O>, IPersistentEnvironment<S, L, O, P>> importPathToUnionEnvironment = importPath -> {
             // @formatter:off        
-            final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importEnvironments = scopeGraph.exportDeclarationsStream()
+            final Set.Immutable<IPersistentEnvironment<S, L, O, P>> importEnvironments = scopeGraph.requireImportEdgeStream()
                     .filter(labelEquals(label))
                     .filter(occurrenceEquals(importPath.getDeclaration()))
                     .map(tuple -> tuple.scope())
@@ -315,7 +315,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         };
 
         // @formatter:off        
-        final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = scopeGraph.importReferencesStream()
+        final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = scopeGraph.associatedScopeEdgeStream()
             .filter(scopeEquals(path.getTarget()))
             .filter(tuple -> !seenImports.contains(tuple.occurrence()))
             .map(tuple -> tuple.occurrence())

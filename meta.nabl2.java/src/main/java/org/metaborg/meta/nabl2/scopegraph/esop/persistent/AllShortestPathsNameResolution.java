@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
-import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence.occurrenceEquals;
+import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -79,8 +79,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         getEnvironmentBuilder(ordered);
         getEnvironmentBuilder(unordered);
 
-        final Set.Immutable<O> importToUnfold = scopeGraph.importReferencesStream().map(tuple -> tuple.occurrence())
+        final Set.Immutable<O> importToUnfold = scopeGraph.requireImportEdgeStream().map(tuple -> tuple.occurrence())
                 .collect(CapsuleCollectors.toSet());
+        
+//        final Set.Immutable<O> importToUnfold = scopeGraph.associatedScopeEdgeStream().map(tuple -> tuple.occurrence())
+//                .collect(CapsuleCollectors.toSet());
         
         // final Set.Immutable<ScopeLabelOccurrence<S, L, O>> importToUnfoldMap
         // = scopeGraph.importReferencesStream()
@@ -94,10 +97,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     }
 
     private void initAllShortestPaths(final Set.Immutable<O> importToUnfold, final Map.Immutable<O, S> importSubstitutionMap) {
-        final List<O> rs = scopeGraph.referencesStream().map(tuple -> tuple.occurrence()).sorted()
+        final List<O> rs = scopeGraph.sourceEdgeStream().map(tuple -> tuple.occurrence()).sorted()
                 .collect(Collectors.toList());
 
-        final List<O> ds = scopeGraph.declarationsStream().map(tuple -> tuple.occurrence()).sorted()
+        final List<O> ds = scopeGraph.targetEdgeStream().map(tuple -> tuple.occurrence()).sorted()
                 .collect(Collectors.toList());
 
         final List<S> scopes = scopeGraph.getAllScopes().stream().sorted().collect(Collectors.toList());
@@ -152,7 +155,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             // TODO: improve labeling !!!
             final Distance<L> distance = new Distance<>(10, (L) Label.Q);
             
-            final S s = scopeGraph.importReferencesStream().filter(occurrenceEquals(o)).map(tuple -> tuple.scope())
+            final S s = scopeGraph.requireImportEdgeStream().filter(occurrenceEquals(o)).map(tuple -> tuple.scope())
                     .findAny().get();            
             
             final int sIndex = reverseIndex.get(s);
@@ -167,30 +170,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * 
          * for each edge (u,v) { dist[u][v] <- w(u,v) }
          */
-        scopeGraph.declarationsStream().forEach(slo -> {
-            final S s = slo.scope();
-            final L l = slo.label();
-            final O o = slo.occurrence();
-
-            final Distance<L> distance;
-            switch (l.toString()) {
-            case "I()":
-                distance = new Distance<>(10, l);
-                break;
-            case "D()":
-                distance = new Distance<>(1, l);
-                break;
-            default:
-                throw new IllegalStateException(l.toString());
-            }
-            
-            final int sIndex = reverseIndex.get(s);
-            final int oIndex = reverseIndex.get(o);
-
-            dist[sIndex][oIndex] = distance;
-            next[sIndex][oIndex] = oIndex;
-        });
-        scopeGraph.referencesStream().forEach(slo -> {
+        scopeGraph.sourceEdgeStream().forEach(slo -> {
             final O o = slo.occurrence();
             final L l = slo.label();
             final S s = slo.scope();
@@ -213,7 +193,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             dist[oIndex][sIndex] = distance;
             next[oIndex][sIndex] = sIndex;
         });
-        scopeGraph.directEdgesStream().forEach(sls -> {
+        scopeGraph.middleEdgeStream().forEach(sls -> {
             final S s = sls.sourceScope();
             final L l = sls.label();
             final S t = sls.targetScope();
@@ -233,6 +213,29 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             dist[sIndex][tIndex] = distance;
             next[sIndex][tIndex] = tIndex;
         });
+        scopeGraph.targetEdgeStream().forEach(slo -> {
+            final S s = slo.scope();
+            final L l = slo.label();
+            final O o = slo.occurrence();
+
+            final Distance<L> distance;
+            switch (l.toString()) {
+            case "I()":
+                distance = new Distance<>(10, l);
+                break;
+            case "D()":
+                distance = new Distance<>(1, l);
+                break;
+            default:
+                throw new IllegalStateException(l.toString());
+            }
+            
+            final int sIndex = reverseIndex.get(s);
+            final int oIndex = reverseIndex.get(o);
+
+            dist[sIndex][oIndex] = distance;
+            next[sIndex][oIndex] = oIndex;
+        });        
 
         for (int k = 0; k < nodes.size(); k++) {
             for (int i = 0; i < nodes.size(); i++) {
@@ -285,7 +288,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 //                        .filter(occurrenceEquals(path.getDeclaration())).collect(CapsuleCollectors.toSet());                
 
                 // @formatter:off
-                final S associatedScope = scopeGraph.exportDeclarationsStream()
+                final S associatedScope = scopeGraph.associatedScopeEdgeStream()
                         .filter(occurrenceEquals(path.getDeclaration()))
                         .map(tuple -> tuple.scope())
                         .findAny().get();
@@ -341,6 +344,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * 
          * Paths.named(path.getTarget(), label, importPath, nextScope);
          */
+        
+        final List<?> __states = trace.stream().skip(1).limit(trace.size() - 2).collect(Collectors.toList());
+        final List<L> __labels = dist[u][k].labels.stream().limit(__states.size()).collect(Collectors.toList());        
+        
         @SuppressWarnings("unchecked")
         final List<S> states = trace.stream().skip(1).limit(trace.size() - 2).map(scope -> (S) scope)
                 .collect(Collectors.toList());
@@ -513,7 +520,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final int u = reverseIndex.get(reference);
         final Distance<L>[] reachableTargets = dist[u];
        
-        final Set.Immutable<Integer> candidates = scopeGraph.declarationsStream()
+        final Set.Immutable<Integer> candidates = scopeGraph.declarationEdgeStream()
                 .filter(slo -> slo.occurrence().getName().equals(reference.getName()))
                 .map(tuple -> tuple.occurrence()).mapToInt(reverseIndex::get).boxed()
                 .collect(CapsuleCollectors.toSet());
