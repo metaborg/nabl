@@ -15,6 +15,7 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
 import org.metaborg.meta.nabl2.util.collections.HashRelation3;
@@ -303,8 +304,24 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         @Override
         public IEsopScopeGraph<S, L, O> result() {
             if (result == null) {
-                result = new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(),
+                final EsopScopeGraph<S, L, O> one = new EsopScopeGraph<>();
+                               
+                declarations.keySet().forEach(o -> one.addDecl(declarations.get(o).get(), o));
+                references.keySet().forEach(o -> one.addDecl(references.get(o).get(), o));
+
+                directEdges.stream(ImmutableScopeLabelScope::of)
+                        .forEach(sls -> one.addDirectEdge(sls.sourceScope(), sls.label(), sls.targetScope()));
+
+                assocEdges.stream(ImmutableOccurrenceLabelScope::of)
+                        .forEach(slo -> one.addAssoc(slo.occurrence(), slo.label(), slo.scope()));
+
+                importEdges.stream(ImmutableScopeLabelOccurrence::of)
+                        .forEach(slo -> one.addImport(slo.scope(), slo.label(), slo.occurrence()));               
+                                                                
+                final IEsopScopeGraph<S, L, O> two = new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(),
                         allReferences.freeze(), declarations, references, directEdges, assocEdges, importEdges);
+                
+                result = new BiSimulationScopeGraph<>(one, two);                
             }
 
             return result;
