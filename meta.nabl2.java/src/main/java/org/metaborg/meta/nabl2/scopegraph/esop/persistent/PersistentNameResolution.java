@@ -236,9 +236,9 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         } else {
             final EnvironmentBuilder<S, L, O> builder = nameResolution.getEnvironmentBuilder(lt);
 
-            final IPersistentEnvironment<S, L, O, P> environment = builder.build(seenImports, re, path, filter,
-                    Maps.newHashMap(), lt, resolutionReference, nameResolution, eagerEvaluation);
-
+            final IPersistentEnvironment<S, L, O, P> environment = builder.build(builder, seenImports, re, path, filter,
+                    Maps.newHashMap(), resolutionReference, nameResolution, eagerEvaluation);
+            
             return environment;
         }
     }

@@ -12,6 +12,8 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
@@ -167,8 +169,12 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     }
 
     @Override
-    public PersistentNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter, Function1<S, String> tracer) {
-        return new PersistentNameResolution<>(this, params, scopeCounter);
+    public IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter,
+            Function1<S, String> tracer) {
+        final IEsopNameResolution<S, L, O> one = new PersistentNameResolution<>(this, params, scopeCounter);
+        final IEsopNameResolution<S, L, O> two = new AllShortestPathsNameResolution<>(this, params, scopeCounter);
+        
+        return new BiSimulationNameResolution<>(one, two);
     }
 
     public static class Builder<S extends IScope, L extends ILabel, O extends IOccurrence>
