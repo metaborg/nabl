@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,7 +32,6 @@ import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.util.tuples.HasLabel;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.OccurrenceLabelScope;
@@ -88,22 +86,19 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         getEnvironmentBuilder(ordered);
         getEnvironmentBuilder(unordered);
         
-        unresolvedImports = scopeGraph.requireImportEdgeStream().collect(CapsuleCollectors.toSet());
-        resolvedImports = Map.Immutable.of();
+        final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports = scopeGraph.requireImportEdgeStream()
+                .collect(CapsuleCollectors.toSet());
         
-        initAllShortestPaths();
+        final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence = Map.Immutable
+                .of();
+        
+        this.resolutionResult = initAllShortestPaths(unresolvedImports, substitutionEvidence);
     }
 
     private void initTransients() {
         this.environmentBuilderCache = Maps.newHashMap();
     }
     
-    private Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports = Set.Immutable.of();
-
-    private Map.Immutable<ScopeLabelOccurrence<S, L, O>, OccurrenceLabelScope<O, L, S>> resolvedImports = Map.Immutable.of();
-    
-    private Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence = Map.Immutable.of();    
-
     private ScopeLabelScope<S, L, O> toDirectEdge(ScopeLabelOccurrence<S, L, O> requireImportEdge,
             OccurrenceLabelScope<O, L, S> associatedScopeEdge) {
         assert Objects.equals(requireImportEdge.label(), associatedScopeEdge.label());
@@ -112,7 +107,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 associatedScopeEdge.scope());
     }
     
-    private void initAllShortestPaths() {
+    private ShortestPathResult<S, L, O> initAllShortestPaths(
+            final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports,
+            final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence) {
+        
         final List<O> rs = scopeGraph.sourceEdgeStream().map(tuple -> tuple.occurrence()).sorted()
                 .collect(Collectors.toList());
 
@@ -239,26 +237,24 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     }
                 }
             }
-        }
-
-        this.dist = dist;
-        this.next = next;
+        }       
         
-        this.forwardIndex = forwardIndex;
-        this.reverseIndex = reverseIndex;       
+        final ShortestPathResult<S, L, O> tmpResolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
+                forwardIndex, unresolvedImports, substitutionEvidence);
         
         final Set.Transient<ScopeLabelOccurrence<S, L, O>> __unresolvedImports = Set.Transient.of();
-        final Map.Transient<ScopeLabelOccurrence<S, L, O>, OccurrenceLabelScope<O, L, S>> __resolvedImports = resolvedImports
-                .asTransient();
         final Map.Transient<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> __substitutionEvidence = substitutionEvidence
-                .asTransient();        
+                .asTransient();
         
         for (ScopeLabelOccurrence<S, L, O> unresolvedImport : unresolvedImports) {
-            if (tryResolve(unresolvedImport.occurrence()).isPresent()) {
+            final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolveResult = tryResolve(
+                    scopeGraph, tmpResolutionResult, comparator, unresolvedImport.occurrence());
+            
+            if (tryResolveResult.isPresent()) {
                 // System.out.println("Import resolved.");
                 
                 // TODO support multiple paths
-                final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = resolve(unresolvedImport.occurrence());
+                final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = tryResolveResult.get()._1();
                 
                 final IResolutionPath<S, L, O> path = declarationPaths.findFirst().get();                               
 
@@ -267,11 +263,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                         .filter(occurrenceEquals(path.getDeclaration()))
                         .findAny().get();
                 // @formatter:on
-                
-                __resolvedImports.__put(unresolvedImport, associatedScopeEdge);
-                
-                //// ************ /////
-                
+                                
                 final ScopeLabelScope<S, L, O> directEdge = toDirectEdge(unresolvedImport, associatedScopeEdge);
                 __substitutionEvidence.put(directEdge, path);                
             } else {
@@ -281,29 +273,26 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }               
         }
         
-        if (resolvedImports.size() == __resolvedImports.size()) {
-            this.resolvedImports = __resolvedImports.freeze();
-            this.unresolvedImports =  __unresolvedImports.freeze();
-            this.substitutionEvidence = __substitutionEvidence.freeze();
-            return;
+        final ShortestPathResult<S, L, O> resolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
+                forwardIndex, __unresolvedImports.freeze(), __substitutionEvidence.freeze());
+        
+        if (substitutionEvidence.size() == __substitutionEvidence.size()) {
+            return resolutionResult;
         } else {
-            this.resolvedImports = __resolvedImports.freeze();
-            this.unresolvedImports =  __unresolvedImports.freeze();
-            this.substitutionEvidence = __substitutionEvidence.freeze();
-            
-            initAllShortestPaths();
+            return initAllShortestPaths(resolutionResult.unresolvedImports, resolutionResult.substitutionEvidence);
         }
     }
 
     /*
      * Reconstruct path from all-shortest-paths matrix.
      */
-    private Optional<IResolutionPath<S, L, O>> path(final O reference, final O declaration) {
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>> path(
+            final ShortestPathResult<S, L, O> resolutionResult, final O reference, final O declaration) {
 
-        final int u = reverseIndex.get(reference);
+        final int u = resolutionResult.reverseIndex.get(reference);
 
         int j = u;
-        final int k = reverseIndex.get(declaration);
+        final int k = resolutionResult.reverseIndex.get(declaration);
 
         /*
          * if next[u][v] = null then return [] path = [u] while u ≠ v u ←
@@ -312,26 +301,26 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
         final List<Object> trace = new ArrayList<>(0);
 
-        if (next[j][k] == -1) {
+        if (resolutionResult.next[j][k] == -1) {
             return Optional.empty();
         } else {
-            trace.add(forwardIndex.get(j));
+            trace.add(resolutionResult.forwardIndex.get(j));
 
             while (j != k) {
-                j = next[j][k];
-                trace.add(forwardIndex.get(j));
+                j = resolutionResult.next[j][k];
+                trace.add(resolutionResult.forwardIndex.get(j));
             }
         }
         
         if (DEBUG) {
             final List<?> __states = trace.stream().collect(Collectors.toList());
-            final List<L> __labels = dist[u][k].labels.stream().collect(Collectors.toList());
+            final List<L> __labels = resolutionResult.dist[u][k].labels.stream().collect(Collectors.toList());
         }
         
         @SuppressWarnings("unchecked")
         final List<S> states = trace.stream().skip(1).limit(trace.size() - 2).map(scope -> (S) scope)
                 .collect(Collectors.toList());
-        final List<L> labels = dist[u][k].labels.stream().limit(states.size()).collect(Collectors.toList());
+        final List<L> labels = resolutionResult.dist[u][k].labels.stream().limit(states.size()).collect(Collectors.toList());
 
         final IScopePath<S, L, O> pathStart = Paths.empty(states.get(0));
         final IScopePath<S, L, O> pathMiddle = IntStream.range(1, states.size())
@@ -340,8 +329,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     final ScopeLabelScope<S, L, O> query = ImmutableScopeLabelScope.of(pathIntermediate.getTarget(),
                             tuple._1(), tuple._2());
                     
-                    if (substitutionEvidence.containsKey(query)) {
-                        final IResolutionPath<S, L, O> importPath = substitutionEvidence.get(query);
+                    if (resolutionResult.substitutionEvidence.containsKey(query)) {
+                        final IResolutionPath<S, L, O> importPath = resolutionResult.substitutionEvidence.get(query);
                         return Paths.append(pathIntermediate,
                                 Paths.named(pathIntermediate.getTarget(), tuple._1(), importPath, tuple._2())).get();
                     } else {
@@ -413,7 +402,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         }
     }
     
-    public static class Distance<L extends ILabel> implements java.io.Serializable { // Comparable<Distance<L>>
+    public static class Distance<L extends ILabel> implements java.io.Serializable {
 
         private static final long serialVersionUID = 42L;
         
@@ -448,9 +437,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             mergedLabels.addAll(one.labels);
             mergedLabels.addAll(two.labels);           
             
-//            java.util.function.Predicate<L> notLabelR = (Predicate<L>) HasLabel.labelEquals((L) Label.R).negate();
-//            java.util.function.Predicate<L> notLabelD = (Predicate<L>) HasLabel.labelEquals((L) Label.D).negate();
-            
             java.util.function.Predicate<L> notLabelR = label -> !label.equals(Label.R);
             java.util.function.Predicate<L> notLabelD = label -> !label.equals(Label.D);
 
@@ -462,16 +448,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             // @formatter:on            
             
             final IRegExpMatcher<L> matcherResult = wellFormednessExpression.match(filteredLabels);
-                        
-//            IRegExpMatcher<L> matcherResult = wellFormednessExpression;
-//            for (L label : mergedLabels) {
-//                if (!matcherResult.isAccepting()) {
-//                    break;
-//                }
-//                matcherResult = matcherResult.match(label);
-//            }
-            
-            if (matcherResult.isEmpty()) { // !matcherResult.isAccepting()
+
+            if (matcherResult.isEmpty()) {
                 return INFINITE;
             } else {
                 return new Distance<>(mergedLabels);
@@ -484,25 +462,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         
         public Distance(List<L> labels) {
             this.labels = labels;
-        }        
-
-//        public Distance<L> concat(Distance<L> that) {
-//
-//            if (longValue > Integer.MAX_VALUE) {
-//                return INFINITE;
-//            } else {
-//                final List<L> mergedLabels = new ArrayList<>(0);
-//                mergedLabels.addAll(this.labels);
-//                mergedLabels.addAll(that.labels);
-//                
-//                return Distance.of(longValue.intValue(), mergedLabels);
-//            }
-//        }
-//
-//        @Override
-//        public int compareTo(Distance<L> that) {
-//            return this.value - that.value;
-//        }
+        }
 
         @Override
         public String toString() {
@@ -515,15 +475,36 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     }
 
+    public static class ShortestPathResult<S extends IScope, L extends ILabel, O extends IOccurrence> {
+        public final Distance<L>[][] dist;
+        public final int[][] next;
+        
+        public final java.util.Map<Object, Integer> reverseIndex;
+        public final java.util.Map<Integer, Object> forwardIndex;
+        
+        public final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports;
+        public final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence;
+        
+        public ShortestPathResult(final Distance<L>[][] dist, final int[][] next,
+                final java.util.Map<Object, Integer> reverseIndex, final java.util.Map<Integer, Object> forwardIndex,
+                final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports,
+                final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence) {
+            this.dist = dist;
+            this.next = next;
+            
+            this.reverseIndex = reverseIndex;
+            this.forwardIndex = forwardIndex;            
+            
+            this.unresolvedImports = unresolvedImports;
+            this.substitutionEvidence = substitutionEvidence;
+        }
+    }
+
     /*
      * TEMPORARY STATEFUL REPRESENTION OF ALL SHORTEST PATHS
      */
-    private /* final */ Distance<L>[][] dist;
-    private /* final */ int[][] next; 
+    private final ShortestPathResult<S, L, O> resolutionResult;
     
-    private /* final */ java.util.Map<Object, Integer> reverseIndex;
-    private /* final */ java.util.Map<Integer, Object> forwardIndex;
-
     @Beta
     public final Set.Immutable<L> getLabels() {
         return labels;
@@ -606,33 +587,31 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         initTransients();
     }
 
-    @Override
-    public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(final O reference) {
-        final int u = reverseIndex.get(reference);
-        final Distance<L>[] reachableTargets = dist[u];
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(
+            final PersistentScopeGraph<S, L, O> scopeGraph, final ShortestPathResult<S, L, O> resolutionResult,
+            final Comparator<Distance<L>> comparator, final O reference) {
+        final int u = resolutionResult.reverseIndex.get(reference);
+        final Distance<L>[] visibleTargets = resolutionResult.dist[u];
        
         final Set.Immutable<Integer> candidates = scopeGraph.declarationEdgeStream()
                 .filter(slo -> slo.occurrence().getName().equals(reference.getName()))
-                .map(tuple -> tuple.occurrence()).mapToInt(reverseIndex::get).boxed()
+                .map(tuple -> tuple.occurrence()).mapToInt(resolutionResult.reverseIndex::get).boxed()
                 .collect(CapsuleCollectors.toSet());
-                
-        // TODO: use configurable comparators based resolution, reachability and ..
-        final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);        
         
         // @formatter:off
         final OptionalInt declarationIndexAtMinimalCost = IntStream
-                .range(0, reachableTargets.length)
+                .range(0, visibleTargets.length)
                 .filter(candidates::contains)
-                .reduce((i, j) -> comparator.compare(reachableTargets[i], reachableTargets[j]) < 0 ? i : j);
+                .reduce((i, j) -> comparator.compare(visibleTargets[i], visibleTargets[j]) < 0 ? i : j);
         // @formatter:on              
             
         // TODO: support multiple paths
         if (declarationIndexAtMinimalCost.isPresent()) {
             @SuppressWarnings("unchecked")
-            final O declaration = (O) forwardIndex.get(declarationIndexAtMinimalCost.getAsInt());
+            final O declaration = (O) resolutionResult.forwardIndex.get(declarationIndexAtMinimalCost.getAsInt());
             
-            final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> result = path(reference,
-                    declaration).map(path -> {
+            final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> result = path(
+                    resolutionResult, reference, declaration).map(path -> {
                         final Set.Immutable<IResolutionPath<S, L, O>> paths = Set.Immutable.of(path);
 
                         final Set.Immutable<String> messages = Set.Immutable.of(path.getDeclaration().getIndex().getResource());
@@ -647,6 +626,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     }
 
     @Override
+    public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(final O reference) {
+        final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);
+        return tryResolve(scopeGraph, resolutionResult, comparator, reference);
+    }
+
+    @Override
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
         // TODO Auto-generated method stub
         return Optional.empty();
@@ -654,6 +639,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     @Override
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
+        final Comparator<Distance<L>> comparator = new PathComparator<>(unordered);        
         // TODO Auto-generated method stub
         return Optional.empty();
     }
