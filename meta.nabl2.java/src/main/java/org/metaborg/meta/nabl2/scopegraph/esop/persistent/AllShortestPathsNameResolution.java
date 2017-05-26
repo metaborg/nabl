@@ -7,11 +7,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -29,7 +31,9 @@ import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
+import org.metaborg.meta.nabl2.util.tuples.HasLabel;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.OccurrenceLabelScope;
@@ -166,13 +170,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * Injecting all direct edges that resulted from resolving import
          * clauses.
          */
-        substitutionEvidence.keySet().forEach(directEdge -> {
-            final Distance<L> distance = new Distance<>(10, directEdge.label());
+        substitutionEvidence.keySet().forEach(sls -> {
+            final int sIndex = reverseIndex.get(sls.sourceScope());
+            final int tIndex = reverseIndex.get(sls.targetScope());
             
-            final int sIndex = reverseIndex.get(directEdge.sourceScope());
-            final int tIndex = reverseIndex.get(directEdge.targetScope());
-            
-            dist[sIndex][tIndex] = distance;
+            dist[sIndex][tIndex] = Distance.of(sls.label());
             next[sIndex][tIndex] = tIndex;        
         });
         
@@ -182,72 +184,30 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * for each edge (u,v) { dist[u][v] <- w(u,v) }
          */
         scopeGraph.sourceEdgeStream().forEach(slo -> {
-            final O o = slo.occurrence();
-            final L l = slo.label();
-            final S s = slo.scope();
+            final int oIndex = reverseIndex.get(slo.occurrence());
+            final int sIndex = reverseIndex.get(slo.scope());
 
-            final Distance<L> distance;
-            switch (l.toString()) {
-            case "I()":
-                distance = new Distance<>(10, l);
-                break;
-            case "R()":
-                distance = new Distance<>(1, l); 
-                break;
-            default:
-                throw new IllegalStateException(l.toString());
-            }
-
-            final int oIndex = reverseIndex.get(o);
-            final int sIndex = reverseIndex.get(s);
-            
-            dist[oIndex][sIndex] = distance;
+            dist[oIndex][sIndex] = Distance.of(slo.label());
             next[oIndex][sIndex] = sIndex;
         });
         scopeGraph.middleEdgeStream().forEach(sls -> {
-            final S s = sls.sourceScope();
-            final L l = sls.label();
-            final S t = sls.targetScope();
-
-            final Distance<L> distance;
-            switch (l.toString()) {
-            case "P()":
-                distance = new Distance<>(100, l);
-                break;
-            default:
-                throw new IllegalStateException(l.toString());
-            }
-
-            final int sIndex = reverseIndex.get(s);
-            final int tIndex = reverseIndex.get(t);
+            final int sIndex = reverseIndex.get(sls.sourceScope());
+            final int tIndex = reverseIndex.get(sls.targetScope());
             
-            dist[sIndex][tIndex] = distance;
+            dist[sIndex][tIndex] = Distance.of(sls.label());
             next[sIndex][tIndex] = tIndex;
         });
         scopeGraph.targetEdgeStream().forEach(slo -> {
-            final S s = slo.scope();
-            final L l = slo.label();
-            final O o = slo.occurrence();
+            final int sIndex = reverseIndex.get(slo.scope());
+            final int oIndex = reverseIndex.get(slo.occurrence());
 
-            final Distance<L> distance;
-            switch (l.toString()) {
-            case "I()":
-                distance = new Distance<>(10, l);
-                break;
-            case "D()":
-                distance = new Distance<>(1, l);
-                break;
-            default:
-                throw new IllegalStateException(l.toString());
-            }
-            
-            final int sIndex = reverseIndex.get(s);
-            final int oIndex = reverseIndex.get(o);
-
-            dist[sIndex][oIndex] = distance;
+            dist[sIndex][oIndex] = Distance.of(slo.label());
             next[sIndex][oIndex] = oIndex;
-        });        
-
+        });
+        
+        // TODO: use configurable comparators based resolution, reachability and ..
+        final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);
+        
         for (int k = 0; k < nodes.size(); k++) {
             for (int i = 0; i < nodes.size(); i++) {
                 for (int j = 0; j < nodes.size(); j++) {
@@ -255,9 +215,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     Distance<L> ik = dist[i][k];
                     Distance<L> kj = dist[k][j];
 
-                    Distance<L> ikj = ik.sum(kj);
+                    // TODO: use configurable BiFunction, curried by 'wf'
+                    Distance<L> ikj = Distance.concat(wf, ik, kj);
 
-                    if (ij.compareTo(ikj) > 0) {
+                    if (comparator.compare(ij, ikj) > 0) {
                         dist[i][j] = ikj;
                         next[i][j] = next[i][k];
                         
@@ -392,55 +353,163 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final Optional<IResolutionPath<S, L, O>> resolutionPath = Paths.resolve(reference, pathMiddle, declaration);
         return resolutionPath;
     }
+    
+    public static class PathComparator<L extends ILabel> implements Comparator<Distance<L>> {
+        
+        private final IRelation<L> labelOrder;
 
-    public static class Distance<L extends ILabel> implements Comparable<Distance<L>>, java.io.Serializable {
+        public PathComparator(IRelation<L> labelOrder) {
+            this.labelOrder = labelOrder;
+        }
+
+        @Override
+        public int compare(Distance<L> o1, Distance<L> o2) {
+            if (o1 == o2) {
+                 return 0;
+            }
+            if (o1 == Distance.ZERO) {
+                return -1;
+            }
+            if (o1 == Distance.INFINITE) {
+                return +1;
+            }            
+            if (o2 == Distance.ZERO) {
+                return +1;
+            }
+            if (o2 == Distance.INFINITE) {
+                return -1;
+            }
+            
+            int commonLength = Math.min(o1.labels.size(), o2.labels.size());
+            
+            final OptionalInt commonComparisonResult = IntStream.range(0, commonLength).map(index -> {
+                L l1 = o1.labels.get(index);
+                L l2 = o2.labels.get(index);
+
+                if (!labelOrder.contains(l1, l2)) {
+                    return 0;
+                } else {
+                    if (labelOrder.smaller(l2).contains(l1)) {
+                        return -1;
+                    } else {
+                        return +1;
+                    }
+                }
+            }).filter(comparisionResult -> comparisionResult != 0).findFirst();
+
+            if (commonComparisonResult.isPresent()) {
+                return commonComparisonResult.getAsInt();
+            }
+            
+            if (o1.labels.size() == o2.labels.size()) {
+                return 0;
+            } else {
+                if (o1.labels.size() < o2.labels.size()) {
+                    return -1;
+                } else {
+                    return +1;
+                }
+            }
+        }
+    }
+    
+    public static class Distance<L extends ILabel> implements java.io.Serializable { // Comparable<Distance<L>>
 
         private static final long serialVersionUID = 42L;
         
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        public static final Distance ZERO = new Distance(0, Collections.EMPTY_LIST);
+        public static final Distance ZERO = new Distance(Collections.EMPTY_LIST);
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        public static final Distance INFINITE = new Distance(Integer.MAX_VALUE, Collections.EMPTY_LIST);
+        public static final Distance INFINITE = new Distance(Collections.EMPTY_LIST);
 
-        private final int value;
         private final List<L> labels;
 
-        public Distance(int value, L label) {
-            this.value = value;
+        public static final <L extends ILabel> Distance<L> of(L label) {
+            return new Distance<L>(label);
+        }
+        
+        public static final <L extends ILabel> Distance<L> concat(final IRegExpMatcher<L> wellFormednessExpression,
+                final Distance<L> one, final Distance<L> two) {
+            if (one == Distance.ZERO) {
+                return two;
+            }
+            if (one == Distance.INFINITE) {
+                return Distance.INFINITE;
+            }            
+            if (two == Distance.ZERO) {
+                return one;
+            }
+            if (two == Distance.INFINITE) {
+                return Distance.INFINITE;
+            }
+            
+            final List<L> mergedLabels = new ArrayList<>(0);
+            mergedLabels.addAll(one.labels);
+            mergedLabels.addAll(two.labels);           
+            
+//            java.util.function.Predicate<L> notLabelR = (Predicate<L>) HasLabel.labelEquals((L) Label.R).negate();
+//            java.util.function.Predicate<L> notLabelD = (Predicate<L>) HasLabel.labelEquals((L) Label.D).negate();
+            
+            java.util.function.Predicate<L> notLabelR = label -> !label.equals(Label.R);
+            java.util.function.Predicate<L> notLabelD = label -> !label.equals(Label.D);
+
+            // @formatter:off
+            final List<L> filteredLabels = mergedLabels.stream()
+                    .filter(notLabelR)
+                    .filter(notLabelD)
+                    .collect(Collectors.toList());
+            // @formatter:on            
+            
+            final IRegExpMatcher<L> matcherResult = wellFormednessExpression.match(filteredLabels);
+                        
+//            IRegExpMatcher<L> matcherResult = wellFormednessExpression;
+//            for (L label : mergedLabels) {
+//                if (!matcherResult.isAccepting()) {
+//                    break;
+//                }
+//                matcherResult = matcherResult.match(label);
+//            }
+            
+            if (matcherResult.isEmpty()) { // !matcherResult.isAccepting()
+                return INFINITE;
+            } else {
+                return new Distance<>(mergedLabels);
+            }
+        }
+        
+        public Distance(L label) {
             this.labels = Collections.singletonList(label);
         }
         
-        public Distance(int value, List<L> labels) {
-            this.value = value;
+        public Distance(List<L> labels) {
             this.labels = labels;
         }        
 
-        public Distance<L> sum(Distance<L> that) {
-            Long longValue = (long) this.value + (long) that.value;
-
-            if (longValue > Integer.MAX_VALUE) {
-                return INFINITE;
-            } else {
-                final List<L> mergedLabels = new ArrayList<>(0);
-                mergedLabels.addAll(this.labels);
-                mergedLabels.addAll(that.labels);
-                
-                return new Distance<>(longValue.intValue(), mergedLabels);
-            }
-        }
-
-        @Override
-        public int compareTo(Distance<L> that) {
-            return this.value - that.value;
-        }
+//        public Distance<L> concat(Distance<L> that) {
+//
+//            if (longValue > Integer.MAX_VALUE) {
+//                return INFINITE;
+//            } else {
+//                final List<L> mergedLabels = new ArrayList<>(0);
+//                mergedLabels.addAll(this.labels);
+//                mergedLabels.addAll(that.labels);
+//                
+//                return Distance.of(longValue.intValue(), mergedLabels);
+//            }
+//        }
+//
+//        @Override
+//        public int compareTo(Distance<L> that) {
+//            return this.value - that.value;
+//        }
 
         @Override
         public String toString() {
-            if (value == Integer.MAX_VALUE) {
-                return "∞" + labels.toString();
+            if (this == INFINITE) {
+                return "∞";
             } else {
-                return Integer.toString(value) + labels.toString();
+                return labels.toString();
             }
         }
 
@@ -547,11 +616,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .map(tuple -> tuple.occurrence()).mapToInt(reverseIndex::get).boxed()
                 .collect(CapsuleCollectors.toSet());
                 
+        // TODO: use configurable comparators based resolution, reachability and ..
+        final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);        
+        
         // @formatter:off
         final OptionalInt declarationIndexAtMinimalCost = IntStream
                 .range(0, reachableTargets.length)
                 .filter(candidates::contains)
-                .reduce((i, j) -> reachableTargets[i].compareTo(reachableTargets[j]) < 0 ? i : j);
+                .reduce((i, j) -> comparator.compare(reachableTargets[i], reachableTargets[j]) < 0 ? i : j);
         // @formatter:on              
             
         // TODO: support multiple paths
