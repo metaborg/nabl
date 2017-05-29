@@ -32,6 +32,7 @@ import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
+import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.OccurrenceLabelScope;
@@ -634,12 +635,37 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     @Override
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
         // TODO Auto-generated method stub
-        return Optional.empty();
+        // return Optional.empty();
+        
+        // TODO: vastly improve performance and general architecture of this method!!!
+         
+        final int u = resolutionResult.reverseIndex.get(scope);
+        final Distance<L>[] visibleTargets = resolutionResult.dist[u];
+       
+        final IFunction<O, S> refs = scopeGraph.getRefs();
+        
+        // @formatter:off
+        final Set.Immutable<IDeclPath<S, L, O>> visibleDeclarations = IntStream
+                .range(0, visibleTargets.length)
+//                .filter(index -> visibleTargets[index] != Distance.ZERO)
+                .filter(index -> visibleTargets[index] != Distance.INFINITE)
+                .mapToObj(index -> resolutionResult.forwardIndex.get(index))
+                .filter(IOccurrence.class::isInstance)
+                .map(IOccurrence.class::cast)
+                .map(o -> (O) o)
+                .filter(refs::containsKey)
+                .map(o -> Paths.<S, L, O>decl(Paths.empty(refs.get(o).get()), o))
+                .collect(CapsuleCollectors.toSet());
+        // @formatter:on           
+
+        final Set.Immutable<String> messages = Set.Immutable.of("::");        
+        
+        return Optional.of(ImmutableTuple2.of(visibleDeclarations, messages));
     }
 
     @Override
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
-        final Comparator<Distance<L>> comparator = new PathComparator<>(unordered);        
+        final Comparator<Distance<L>> comparator = new PathComparator<>(unordered);
         // TODO Auto-generated method stub
         return Optional.empty();
     }
