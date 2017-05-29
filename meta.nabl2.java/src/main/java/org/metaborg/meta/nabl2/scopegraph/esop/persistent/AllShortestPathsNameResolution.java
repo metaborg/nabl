@@ -21,6 +21,7 @@ import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
+import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
@@ -64,12 +65,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private final IRelation<L> ordered;
     private final IRelation<L> unordered;
 
-    private final OpenCounter<S, L> scopeCounter;
+    private final IActiveScopes<S, L> scopeCounter;
 
     transient private java.util.Map<IRelation<L>, EnvironmentBuilder<S, L, O>> environmentBuilderCache;
 
     public AllShortestPathsNameResolution(PersistentScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
-            OpenCounter<S, L> scopeCounter) {
+            IActiveScopes<S, L> scopeCounter) {
         this.scopeGraph = scopeGraph;
 
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
@@ -78,7 +79,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         this.ordered = params.getSpecificityOrder();
         assert ordered.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
-        this.unordered = new Relation<>(RelationDescription.STRICT_PARTIAL_ORDER);
+        this.unordered = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         this.scopeCounter = scopeCounter;
 
         initTransients();
@@ -522,7 +523,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     }
 
     @Beta
-    public final OpenCounter<S, L> getScopeCounter() {
+    public final IActiveScopes<S, L> getScopeCounter() {
         return scopeCounter;
     }
 

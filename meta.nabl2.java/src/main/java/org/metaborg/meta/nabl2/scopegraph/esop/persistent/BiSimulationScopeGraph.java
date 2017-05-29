@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.IBiSimulation.biSimulate;
 
+import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
@@ -72,12 +73,10 @@ public class BiSimulationScopeGraph<S extends IScope, L extends ILabel, O extend
     }
 
     @Override
-    public IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter,
+    public IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter,
             Function1<S, String> tracer) {
         return new BiSimulationNameResolution<>(one.resolve(params, scopeCounter, tracer),
                 two.resolve(params, scopeCounter, tracer));
     }
-
     
-
 }

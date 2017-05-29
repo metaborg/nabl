@@ -170,7 +170,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     }
 
     @Override
-    public IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, OpenCounter<S, L> scopeCounter,
+    public IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter,
             Function1<S, String> tracer) {
         final IEsopNameResolution<S, L, O> one = new PersistentNameResolution<>(this, params, scopeCounter);
         final IEsopNameResolution<S, L, O> two = new AllShortestPathsNameResolution<>(this, params, scopeCounter);
