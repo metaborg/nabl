@@ -4,6 +4,8 @@ imports
 
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
+  nabl2/shared/common/Names
+  nabl2/shared/common/ScopeGraph
 
 template options
 
@@ -13,6 +15,14 @@ context-free syntax
 
   Constraint.CTrue   = <true <MessagePosition>>
   Constraint.CFalse  = <false <Message>>
+  
+  Constraint.Exists  = <
+  	exists <VarId>@<Occurrence> in <Names> =\> <Constraint>>
+  
+  Constraint.ForAll  = <
+  	forall <VarId>@<Occurrence> in <Names> =\> <Constraint>>
+  	
+  Constraint.CList   = <(<{Constraint ",\n"}+>)>
 
 lexical syntax
 

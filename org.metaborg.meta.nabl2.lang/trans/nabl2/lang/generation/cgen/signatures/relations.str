@@ -3,6 +3,7 @@ module nabl2/lang/generation/cgen/signatures/relations
 imports
 
   libstrc
+  libspoofax/stratego/debug
   nabl2/lang/generation/cgen/-
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
@@ -10,7 +11,7 @@ imports
   signatures/nabl2/lang/signatures/-
   nabl2/lang/util/stratego
 
-rules
+rules 
 
   signature-to-str:
     Relations(_) -> []
@@ -19,7 +20,7 @@ rules
     section* -> [Rules(relstr*)]
     with reldef* := <filter(?Signature(<id>));concat;
                      filter(?Relations(<id>));concat;
-                     map(\ RelationDef(opt*,name,sort,var*) -> (name,opt*,var*) \)> section*;
+                     map(\ RelationDef(opt*,name,sort,var*) -> (name,opt*,var*) \); debug0> section*;
          if [_|_] := reldef* then
            relterm* := <map(explode(injection-to-term))> reldef*;
            relstr* := [ |[ nabl2--custom-relations = !~List(relterm*) ]| ]
