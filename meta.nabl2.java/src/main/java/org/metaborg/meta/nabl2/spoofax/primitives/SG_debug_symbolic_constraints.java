@@ -20,7 +20,7 @@ public class SG_debug_symbolic_constraints extends AnalysisNoTermPrimitive {
             throws InterpreterException {
         final IScopeGraphUnit unit = context.unit(index.getResource());
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
-            return TermSimplifier.focus(unit.resource(), SymbolicTerms.build(sol.getSymbolic(), sol.getUnifier()));
+            return TermSimplifier.focus(unit.resource(), SymbolicTerms.build(sol.symbolic(), sol.unifier()));
         });
     }
 

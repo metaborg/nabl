@@ -6,11 +6,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
-import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.util.collections.IProperties;
 
 import com.google.common.collect.Lists;
 
@@ -20,11 +20,11 @@ public final class ScopeGraphTerms {
     private static final String TYPE = "Type";
 
     private final IScopeGraph<Scope, Label, Occurrence> scopeGraph;
-    private final IProperties<Occurrence> properties;
+    private final IProperties<Occurrence, ITerm, ITerm> properties;
     private final IUnifier unifier;
 
-    private ScopeGraphTerms(IScopeGraph<Scope, Label, Occurrence> scopeGraph, IProperties<Occurrence> properties,
-            IUnifier unifier) {
+    private ScopeGraphTerms(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
+            IProperties<Occurrence, ITerm, ITerm> properties, IUnifier unifier) {
         this.scopeGraph = scopeGraph;
         this.properties = properties;
         this.unifier = unifier;
@@ -97,8 +97,8 @@ public final class ScopeGraphTerms {
 
     // static interface
 
-    public static ITerm build(IScopeGraph<Scope, Label, Occurrence> scopeGraph, IProperties<Occurrence> properties,
-            IUnifier unifier) {
+    public static ITerm build(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
+            IProperties<Occurrence, ITerm, ITerm> properties, IUnifier unifier) {
         return new ScopeGraphTerms(scopeGraph, properties, unifier).build();
     }
 

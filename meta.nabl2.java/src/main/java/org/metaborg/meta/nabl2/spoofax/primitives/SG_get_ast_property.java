@@ -21,7 +21,7 @@ public class SG_get_ast_property extends AstPrimitive {
         }
         ITerm key = terms.get(0);
         return context.unit(index.getResource()).solution().<ITerm>flatMap(s -> {
-            return s.getAstProperties().getValue(index, key).map(s.getUnifier()::find);
+            return s.astProperties().getValue(index, key).map(s.unifier()::find);
         });
     }
 

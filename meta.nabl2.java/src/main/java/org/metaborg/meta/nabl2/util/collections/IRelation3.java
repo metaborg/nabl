@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.metaborg.meta.nabl2.util.functions.Function3;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple3;
@@ -13,9 +12,9 @@ public interface IRelation3<K, L, V> {
 
     IRelation3<V, L, K> inverse();
 
-    Set<K> keySet();
+    java.util.Set<K> keySet();
 
-    Set<V> valueSet();
+    java.util.Set<V> valueSet();
 
     boolean contains(K key);
 
@@ -25,11 +24,9 @@ public interface IRelation3<K, L, V> {
 
     boolean isEmpty();
 
-    Set<Map.Entry<L, V>> get(K key);
+    java.util.Set<? extends Map.Entry<L, V>> get(K key);
 
-    Set<V> get(K key, L label);
-
-    IRelation3.Mutable<K, L, V> copyOf();
+    java.util.Set<V> get(K key, L label);
 
     @Beta default java.util.stream.Stream<Tuple3<K, L, V>> stream() {
         return this.stream(ImmutableTuple3::of);
@@ -40,15 +37,25 @@ public interface IRelation3<K, L, V> {
                 key -> this.get(key).stream().map(entry -> converter.apply(key, entry.getKey(), entry.getValue())));
     }
 
-    interface Mutable<K, L, V> extends IRelation3<K, L, V> {
+    interface Immutable<K, L, V> extends IRelation3<K, L, V> {
+
+        IRelation3.Transient<K, L, V> melt();
+
+    }
+
+    interface Transient<K, L, V> extends IRelation3<K, L, V> {
 
         boolean put(K key, L label, V value);
+
+        boolean putAll(IRelation3<K, L, V> other);
 
         boolean remove(K key);
 
         boolean remove(K key, L label);
 
         boolean remove(K key, L label, V value);
+
+        IRelation3.Immutable<K, L, V> freeze();
 
     }
 

@@ -20,7 +20,7 @@ public class SG_debug_unifier extends AnalysisNoTermPrimitive {
             throws InterpreterException {
         final IScopeGraphUnit unit = context.unit(index.getResource());
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
-            return TermSimplifier.focus(unit.resource(), UnifierTerms.build(sol.getUnifier()));
+            return TermSimplifier.focus(unit.resource(), UnifierTerms.build(sol.unifier()));
         });
     }
 

@@ -1,51 +1,46 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.reference;
 
 import java.io.Serializable;
+import java.util.stream.Stream;
 
-import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
-import org.metaborg.meta.nabl2.util.collections.HashFunction;
-import org.metaborg.meta.nabl2.util.collections.HashRelation3;
+import org.metaborg.meta.nabl2.util.collections.HashTrieFunction;
+import org.metaborg.meta.nabl2.util.collections.HashTrieRelation3;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
+import org.metaborg.meta.nabl2.util.functions.Predicate2;
+import org.metaborg.meta.nabl2.util.functions.Predicate3;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 
-public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements IEsopScopeGraph<S, L, O>, IEsopScopeGraph.Builder<S, L, O>, Serializable {
-    private static final long serialVersionUID = 42L;
+public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+        implements IEsopScopeGraph<S, L, O, V> {
 
-    private final Set.Transient<S> allScopes;
-    private final Set.Transient<O> allDecls;
-    private final Set.Transient<O> allRefs;
+    private final Set<S> allScopes;
+    private final Set<O> allDecls;
+    private final Set<O> allRefs;
 
-    private final IFunction.Mutable<O, S> decls;
-    private final IFunction.Mutable<O, S> refs;
-    private final IRelation3.Mutable<S, L, S> directEdges;
-    private final IRelation3.Mutable<O, L, S> assocEdges;
-    private final IRelation3.Mutable<S, L, O> importEdges;
+    private final IFunction<O, S> decls;
+    private final IFunction<O, S> refs;
+    private final IRelation3<S, L, S> directEdges;
+    private final IRelation3<O, L, S> assocEdges;
+    private final IRelation3<S, L, O> importEdges;
 
-    public EsopScopeGraph() {
-        this(Set.Transient.of(), Set.Transient.of(), Set.Transient.of(), HashFunction.create(), HashFunction.create(),
-                HashRelation3.create(), HashRelation3.create(), HashRelation3.create());
-    }
+    private final IRelation3<S, L, V> incompleteDirectEdges;
+    private final IRelation3<S, L, V> incompleteImportEdges;
 
-    public EsopScopeGraph(IEsopScopeGraph<S, L, O> scopeGraph) {
-        this(scopeGraph.getAllScopes().asTransient(), scopeGraph.getAllDecls().asTransient(),
-                scopeGraph.getAllRefs().asTransient(), scopeGraph.getDecls().copyOf(), scopeGraph.getRefs().copyOf(),
-                scopeGraph.getDirectEdges().copyOf(), scopeGraph.getExportEdges().copyOf(),
-                scopeGraph.getImportEdges().copyOf());
-    }
+    private final SetMultimap<S, L> openEdges;
 
-    private EsopScopeGraph(Set.Transient<S> allScopes, Set.Transient<O> allDecls, Set.Transient<O> allRefs,
-            IFunction.Mutable<O, S> decls, IFunction.Mutable<O, S> refs, IRelation3.Mutable<S, L, S> directEdges,
-            IRelation3.Mutable<O, L, S> assocEdges, IRelation3.Mutable<S, L, O> importEdges) {
-        super();
+    private EsopScopeGraph(Set<S> allScopes, Set<O> allDecls, Set<O> allRefs, IFunction<O, S> decls,
+            IFunction<O, S> refs, IRelation3<S, L, S> directEdges, IRelation3<O, L, S> assocEdges,
+            IRelation3<S, L, O> importEdges, IRelation3<S, L, V> incompleteDirectEdges,
+            IRelation3<S, L, V> incompleteImportEdges, SetMultimap<S, L> openEdges) {
         this.allScopes = allScopes;
         this.allDecls = allDecls;
         this.allRefs = allRefs;
@@ -54,9 +49,12 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         this.directEdges = directEdges;
         this.assocEdges = assocEdges;
         this.importEdges = importEdges;
+        this.incompleteDirectEdges = incompleteDirectEdges;
+        this.incompleteImportEdges = incompleteImportEdges;
+        this.openEdges = openEdges;
     }
 
-    // -----------------------
+    // ------------------------------------------------------------
 
     @Override public Set.Immutable<S> getAllScopes() {
         return Set.Immutable.<S>of().__insertAll(allScopes);
@@ -70,7 +68,6 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return Set.Immutable.<O>of().__insertAll(allRefs);
     }
 
-
     @Override public IFunction<O, S> getDecls() {
         return decls;
     }
@@ -83,6 +80,10 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return directEdges;
     }
 
+    @Override public IRelation3<S, L, V> incompleteDirectEdges() {
+        return incompleteDirectEdges;
+    }
+
     @Override public IRelation3<O, L, S> getExportEdges() {
         return assocEdges;
     }
@@ -91,57 +92,288 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return importEdges;
     }
 
-    // -----------------------
-
-    public void addDecl(S scope, O decl) {
-        // FIXME: check scope/D is not closed
-        allScopes.__insert(scope);
-        allDecls.__insert(decl);
-        decls.put(decl, scope);
+    @Override public IRelation3<S, L, V> incompleteImportEdges() {
+        return incompleteImportEdges;
     }
 
-    public void addRef(O ref, S scope) {
-        // FIXME: check scope/R is not closed
-        allScopes.__insert(scope);
-        allRefs.__insert(ref);
-        refs.put(ref, scope);
+    @Override public boolean isComplete() {
+        return openEdges.isEmpty() && incompleteDirectEdges.isEmpty() && incompleteImportEdges.isEmpty();
     }
 
-    public void addDirectEdge(S sourceScope, L label, S targetScope) {
-        // FIXME: check scope/l is not closed
-        allScopes.__insert(sourceScope);
-        allScopes.__insert(targetScope);
-        directEdges.put(sourceScope, label, targetScope);
+    @Override public boolean isOpen(S scope, L label) {
+        return openEdges.containsEntry(scope, label) || incompleteDirectEdges.contains(scope, label)
+                || incompleteImportEdges.contains(scope, label);
     }
-
-    public void addAssoc(O decl, L label, S scope) {
-        // FIXME: check decl/l is not closed
-        allScopes.__insert(scope);
-        allDecls.__insert(decl);
-        assocEdges.put(decl, label, scope);
-    }
-
-    public void addImport(S scope, L label, O ref) {
-        // FIXME: check scope/l is not closed
-        allScopes.__insert(scope);
-        allRefs.__insert(ref);
-        importEdges.put(scope, label, ref);
-    }
-
-    // ------------------------------------
-
-    /**
-     * Return identity because this class implements both the mutable builder interface and the and graph interface.
-     */
-    @Override public IEsopScopeGraph<S, L, O> result() {
-        return this;
-    }
-
-    // ------------------------------------
 
     @Override public EsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params,
-            IActiveScopes<S, L> scopeCounter, Function1<S, String> tracer) {
-        return new EsopNameResolution<>(this, params, scopeCounter, tracer);
+            Predicate2<S, L> isEdgeClosed) {
+        return new EsopNameResolution<>(this, params, isEdgeClosed);
+    }
+
+    // ------------------------------------
+
+    public static class Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+            extends EsopScopeGraph<S, L, O, V> implements IEsopScopeGraph.Immutable<S, L, O, V>, Serializable {
+        private static final long serialVersionUID = 42L;
+
+        private final Set.Immutable<S> allScopes;
+        private final Set.Immutable<O> allDecls;
+        private final Set.Immutable<O> allRefs;
+
+        private final IFunction.Immutable<O, S> decls;
+        private final IFunction.Immutable<O, S> refs;
+        private final IRelation3.Immutable<S, L, S> directEdges;
+        private final IRelation3.Immutable<O, L, S> assocEdges;
+        private final IRelation3.Immutable<S, L, O> importEdges;
+
+        private final IRelation3.Immutable<S, L, V> incompleteDirectEdges;
+        private final IRelation3.Immutable<S, L, V> incompleteImportEdges;
+
+        private final SetMultimap.Immutable<S, L> openEdges;
+
+        Immutable(Set.Immutable<S> allScopes, Set.Immutable<O> allDecls, Set.Immutable<O> allRefs,
+                IFunction.Immutable<O, S> decls, IFunction.Immutable<O, S> refs,
+                IRelation3.Immutable<S, L, S> directEdges, IRelation3.Immutable<O, L, S> assocEdges,
+                IRelation3.Immutable<S, L, O> importEdges, IRelation3.Immutable<S, L, V> incompleteDirectEdges,
+                IRelation3.Immutable<S, L, V> incompleteImportEdges, SetMultimap.Immutable<S, L> openEdges) {
+            super(allScopes, allDecls, allRefs, decls, refs, directEdges, assocEdges, importEdges,
+                    incompleteDirectEdges, incompleteImportEdges, openEdges);
+            this.allScopes = allScopes;
+            this.allDecls = allDecls;
+            this.allRefs = allRefs;
+            this.decls = decls;
+            this.refs = refs;
+            this.directEdges = directEdges;
+            this.assocEdges = assocEdges;
+            this.importEdges = importEdges;
+            this.incompleteDirectEdges = incompleteDirectEdges;
+            this.incompleteImportEdges = incompleteImportEdges;
+            this.openEdges = openEdges;
+        }
+
+        // ------------------------------------------------------------
+
+        @Override public Set.Immutable<S> getAllScopes() {
+            return allScopes;
+        }
+
+        @Override public Set.Immutable<O> getAllDecls() {
+            return allDecls;
+        }
+
+        @Override public Set.Immutable<O> getAllRefs() {
+            return allRefs;
+        }
+
+        @Override public IFunction.Immutable<O, S> getDecls() {
+            return decls;
+        }
+
+        @Override public IFunction.Immutable<O, S> getRefs() {
+            return refs;
+        }
+
+        @Override public IRelation3.Immutable<S, L, S> getDirectEdges() {
+            return directEdges;
+        }
+
+        @Override public IRelation3.Immutable<S, L, V> incompleteDirectEdges() {
+            return incompleteDirectEdges;
+        }
+
+        @Override public IRelation3.Immutable<O, L, S> getExportEdges() {
+            return assocEdges;
+        }
+
+        @Override public IRelation3.Immutable<S, L, O> getImportEdges() {
+            return importEdges;
+        }
+
+        @Override public IRelation3.Immutable<S, L, V> incompleteImportEdges() {
+            return incompleteImportEdges;
+        }
+
+        public SetMultimap.Immutable<S, L> openEdges() {
+            return openEdges;
+        }
+
+        // ------------------------------------------------------------
+
+        public EsopScopeGraph.Transient<S, L, O, V> melt() {
+            return new EsopScopeGraph.Transient<>(allScopes.asTransient(), allDecls.asTransient(),
+                    allRefs.asTransient(), decls.melt(), refs.melt(), directEdges.melt(), assocEdges.melt(),
+                    importEdges.melt(), incompleteDirectEdges.melt(), incompleteImportEdges.melt(),
+                    openEdges.asTransient());
+        }
+
+        public static <S extends IScope, L extends ILabel, O extends IOccurrence, V>
+                EsopScopeGraph.Immutable<S, L, O, V> of() {
+            return new EsopScopeGraph.Immutable<>(Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(),
+                    HashTrieFunction.Immutable.of(), HashTrieFunction.Immutable.of(), HashTrieRelation3.Immutable.of(),
+                    HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(),
+                    HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(), SetMultimap.Immutable.of());
+        }
+
+    }
+
+    public static class Transient<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+            extends EsopScopeGraph<S, L, O, V> implements IEsopScopeGraph.Transient<S, L, O, V> {
+
+        private final Set.Transient<S> allScopes;
+        private final Set.Transient<O> allDecls;
+        private final Set.Transient<O> allRefs;
+
+        private final IFunction.Transient<O, S> decls;
+        private final IFunction.Transient<O, S> refs;
+        private final IRelation3.Transient<S, L, S> directEdges;
+        private final IRelation3.Transient<O, L, S> assocEdges;
+        private final IRelation3.Transient<S, L, O> importEdges;
+
+        private final IRelation3.Transient<S, L, V> incompleteDirectEdges;
+        private final IRelation3.Transient<S, L, V> incompleteImportEdges;
+
+        private final SetMultimap.Transient<S, L> openEdges;
+
+        Transient(Set.Transient<S> allScopes, Set.Transient<O> allDecls, Set.Transient<O> allRefs,
+                IFunction.Transient<O, S> decls, IFunction.Transient<O, S> refs,
+                IRelation3.Transient<S, L, S> directEdges, IRelation3.Transient<O, L, S> assocEdges,
+                IRelation3.Transient<S, L, O> importEdges, IRelation3.Transient<S, L, V> incompleteDirectEdges,
+                IRelation3.Transient<S, L, V> incompleteImportEdges, SetMultimap.Transient<S, L> openEdges) {
+            super(allScopes, allDecls, allRefs, decls, refs, directEdges, assocEdges, importEdges,
+                    incompleteDirectEdges, incompleteImportEdges, openEdges);
+            this.allScopes = allScopes;
+            this.allDecls = allDecls;
+            this.allRefs = allRefs;
+            this.decls = decls;
+            this.refs = refs;
+            this.directEdges = directEdges;
+            this.assocEdges = assocEdges;
+            this.importEdges = importEdges;
+            this.incompleteDirectEdges = incompleteDirectEdges;
+            this.incompleteImportEdges = incompleteImportEdges;
+            this.openEdges = openEdges;
+        }
+
+        // ------------------------------------------------------------
+
+        @Override public boolean addDecl(S scope, O decl) {
+            // FIXME: check scope/D is not closed
+            if(decls.put(decl, scope)) {
+                allScopes.__insert(scope);
+                allDecls.__insert(decl);
+                return true;
+            }
+            return false;
+        }
+
+        @Override public boolean addRef(O ref, S scope) {
+            // FIXME: check scope/R is not closed
+            if(refs.put(ref, scope)) {
+                allScopes.__insert(scope);
+                allRefs.__insert(ref);
+                return true;
+            }
+            return false;
+        }
+
+        @Override public boolean addDirectEdge(S sourceScope, L label, S targetScope) {
+            // FIXME: check scope/l is not closed
+            if(directEdges.put(sourceScope, label, targetScope)) {
+                allScopes.__insert(sourceScope);
+                allScopes.__insert(targetScope);
+                return true;
+            }
+            return false;
+        }
+
+        @Override public boolean addIncompleteDirectEdge(S scope, L label, V var) {
+            return incompleteDirectEdges.put(scope, label, var);
+        }
+
+        @Override public boolean addAssoc(O decl, L label, S scope) {
+            // FIXME: check decl/l is not closed
+            if(assocEdges.put(decl, label, scope)) {
+                allScopes.__insert(scope);
+                allDecls.__insert(decl);
+                return true;
+            }
+            return false;
+        }
+
+        @Override public boolean addIncompleteImportEdge(S scope, L label, V var) {
+            return incompleteImportEdges.put(scope, label, var);
+        }
+
+        @Override public boolean addImport(S scope, L label, O ref) {
+            // FIXME: check scope/l is not closed
+            if(importEdges.put(scope, label, ref)) {
+                allScopes.__insert(scope);
+                allRefs.__insert(ref);
+                return true;
+            }
+            return false;
+        }
+
+        @Override public boolean addOpen(S scope, L label) {
+            return openEdges.__insert(scope, label);
+        }
+
+        @Override public boolean addAll(IEsopScopeGraph<S, L, O, V> other) {
+            boolean change = false;
+            change |= allScopes.__insertAll(other.getAllScopes());
+            change |= allDecls.__insertAll(other.getAllDecls());
+            change |= allRefs.__insertAll(other.getAllRefs());
+            change |= decls.putAll(other.getDecls());
+            change |= refs.putAll(other.getRefs());
+            change |= directEdges.putAll(other.getDirectEdges());
+            change |= assocEdges.putAll(other.getExportEdges());
+            change |= importEdges.putAll(other.getImportEdges());
+            change |= incompleteDirectEdges.putAll(other.incompleteDirectEdges());
+            change |= incompleteImportEdges.putAll(other.incompleteImportEdges());
+            return change;
+        }
+
+        @Override public boolean removeOpen(S scope, L label) {
+            return openEdges.__remove(scope, label);
+        }
+
+        // -------------------------
+
+        public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
+            boolean progress = false;
+            progress |= reduce(incompleteDirectEdges, fs, this::addDirectEdge);
+            progress |= reduce(incompleteImportEdges, fo, this::addImport);
+            return progress;
+        }
+
+        private <X> boolean reduce(IRelation3.Transient<S, L, V> relation, PartialFunction1<V, X> f,
+                Predicate3<S, L, X> add) {
+            return relation.stream().flatMap(slv -> {
+                return f.apply(slv._3()).map(x -> {
+                    add.test(slv._1(), slv._2(), x);
+                    return Stream.of(slv);
+                }).orElse(Stream.empty());
+            }).map(slv -> {
+                return relation.remove(slv._1(), slv._2(), slv._3());
+            }).findAny().isPresent();
+        }
+
+        // ------------------------------------------------------------
+
+        public EsopScopeGraph.Immutable<S, L, O, V> freeze() {
+            return new EsopScopeGraph.Immutable<>(allScopes.freeze(), allDecls.freeze(), allRefs.freeze(),
+                    decls.freeze(), refs.freeze(), directEdges.freeze(), assocEdges.freeze(), importEdges.freeze(),
+                    incompleteDirectEdges.freeze(), incompleteImportEdges.freeze(), openEdges.freeze());
+        }
+
+        public static <S extends IScope, L extends ILabel, O extends IOccurrence, V>
+                EsopScopeGraph.Transient<S, L, O, V> of() {
+            return new EsopScopeGraph.Transient<>(Set.Transient.of(), Set.Transient.of(), Set.Transient.of(),
+                    HashTrieFunction.Transient.of(), HashTrieFunction.Transient.of(), HashTrieRelation3.Transient.of(),
+                    HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                    HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(), SetMultimap.Transient.of());
+        }
+
     }
 
 }

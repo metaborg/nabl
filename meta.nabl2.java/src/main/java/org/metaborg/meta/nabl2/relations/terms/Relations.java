@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.IRelationName;
@@ -14,6 +15,7 @@ import org.metaborg.meta.nabl2.relations.InstantiatedVariantsException;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.util.Optionals;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
@@ -123,6 +125,10 @@ public abstract class Relations<T> implements IRelations<T> {
         return name.getName().isPresent() ? name : defaultName;
     }
 
+    public Stream<Tuple2<T, T>> stream(IRelationName name) {
+        return relations.get(name).stream();
+    }
+
     public static class Immutable<T> extends Relations<T> implements IRelations.Immutable<T>, Serializable {
         private static final long serialVersionUID = 42L;
 
@@ -142,11 +148,13 @@ public abstract class Relations<T> implements IRelations<T> {
             return new Relations.Transient<>(relationsBuilder.freeze(), variantMatchers);
         }
 
+        public static <T> Relations.Immutable<T> of() {
+            return new Relations.Immutable<>(Map.Immutable.of(), SetMultimap.Immutable.of());
+        }
 
     }
 
-    public static class Transient<T> extends Relations<T> implements IRelations.Transient<T>, Serializable {
-        private static final long serialVersionUID = 42L;
+    public static class Transient<T> extends Relations<T> implements IRelations.Transient<T> {
 
         private final Map.Immutable<IRelationName, IRelation.Transient<T>> relations;
 
@@ -188,10 +196,6 @@ public abstract class Relations<T> implements IRelations<T> {
             return new Relations.Transient<>(relationsBuilder.freeze(), variantMatchers);
         }
 
-    }
-
-    public static <T> Relations.Immutable<T> empty() {
-        return new Relations.Immutable<>(Map.Immutable.of(), SetMultimap.Immutable.of());
     }
 
 }

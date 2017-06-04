@@ -20,7 +20,7 @@ public class SG_get_visible_decls extends AnalysisPrimitive {
             throws InterpreterException {
         return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
             return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                return TB.newList(Paths.declPathsToDecls(s.getNameResolution().visible(scope)));
+                return TB.newList(Paths.declPathsToDecls(s.nameResolution().visible(scope)));
             });
         });
     }

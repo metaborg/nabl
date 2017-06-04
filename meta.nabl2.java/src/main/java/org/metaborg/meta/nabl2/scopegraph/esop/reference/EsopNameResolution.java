@@ -14,13 +14,12 @@ import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
-import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
@@ -29,6 +28,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.util.functions.Function0;
 import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction0;
+import org.metaborg.meta.nabl2.util.functions.Predicate2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.collect.Iterables;
@@ -43,23 +43,22 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private static final long serialVersionUID = 42L;
 
-    private final IScopeGraph<S, L, O> scopeGraph;
+
+    private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final Set<L> labels;
     private final L labelD;
     private final IRegExpMatcher<L> wf;
     private final IRelation.Immutable<L> order;
     private final IRelation<L> noOrder;
-    private final Function1<S, String> tracer;
-
-    private final IActiveScopes<S, L> scopeCounter;
+    private final Predicate2<S, L> isEdgeClosed;
 
     transient private Map<O, IEsopEnv<S, L, O, IResolutionPath<S, L, O>>> resolveCache;
     transient private Map<S, IEsopEnv<S, L, O, IDeclPath<S, L, O>>> visibleCache;
     transient private Map<S, IEsopEnv<S, L, O, IDeclPath<S, L, O>>> reachableCache;
     transient private Map<IRelation<L>, EnvL<S, L, O>> stagedEnv_L;
 
-    public EsopNameResolution(IScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
-            IActiveScopes<S, L> scopeCounter, Function1<S, String> tracer) {
+    public EsopNameResolution(IEsopScopeGraph<S, L, O, ?> scopeGraph, IResolutionParameters<L> params,
+            Predicate2<S, L> isEdgeClosed) {
         this.scopeGraph = scopeGraph;
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
         this.labelD = params.getLabelD();
@@ -68,8 +67,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         assert order.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
-        this.scopeCounter = scopeCounter;
-        this.tracer = tracer;
+        this.isEdgeClosed = isEdgeClosed;
         initTransients();
     }
 
@@ -80,11 +78,11 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.stagedEnv_L = Maps.newHashMap();
     }
 
-    @Override public Set.Immutable<S> getAllScopes() {
+    @Override public Set<S> getAllScopes() {
         return scopeGraph.getAllScopes();
     }
 
-    @Override public Set.Immutable<O> getAllRefs() {
+    @Override public Set<O> getAllRefs() {
         return scopeGraph.getAllRefs();
     }
 
@@ -137,14 +135,14 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if(re.isEmpty()) {
             return EsopEnvs.empty();
         } else {
-            return EsopEnvs.trace(tracer.apply(path.getTarget()), env_L(labels, seenImports, lt, re, path, filter));
+            return EsopEnvs.trace(path.getTarget().getResource(), env_L(labels, seenImports, lt, re, path, filter));
         }
     }
 
     private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_l(Set.Immutable<O> seenImports, IRelation<L> lt,
             IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
         return EsopEnvs.guarded((PartialFunction0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
-            if(scopeCounter.isOpen(path.getTarget(), l)) {
+            if(!isEdgeClosed.test(path.getTarget(), l)) {
                 return Optional.empty();
             } else {
                 final IEsopEnv<S, L, O, P> env = l.equals(labelD) ? env_D(seenImports, lt, re, path, filter)

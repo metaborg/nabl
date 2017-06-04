@@ -19,7 +19,7 @@ public class SG_get_scope_decls extends AnalysisPrimitive {
             throws InterpreterException {
         return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
             return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                return TB.newList(s.getScopeGraph().getDecls().inverse().get(scope));
+                return TB.newList(s.scopeGraph().getDecls().inverse().get(scope));
             });
         });
     }

@@ -1,23 +1,21 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
-import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
-import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
-import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
+import org.metaborg.meta.nabl2.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
 
-import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 
 @Beta
-public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence>
+public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
         extends IScopeGraph<S, L, O> {
 
     public static final boolean USE_PERSISTENT_SCOPE_GRAPH = Boolean.getBoolean("usePersistentScopeGraph");
@@ -25,60 +23,66 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     /*
      * Factory method to switch between different scope graph implementations.
      */
-    static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopScopeGraph.Builder<S, L, O> builder() {
+    static <S extends IScope, L extends ILabel, O extends IOccurrence, V> IEsopScopeGraph.Transient<S, L, O, V>
+            builder() {
         if(USE_PERSISTENT_SCOPE_GRAPH) {
-            return new PersistentScopeGraph.Builder<>();
+            throw new IllegalArgumentException("Persisent scope graphs are temporarily removed.");
         } else {
-            return new EsopScopeGraph<>();
+            return EsopScopeGraph.Transient.of();
         }
     }
 
-    static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopScopeGraph.Builder<S, L, O>
-            builder(IEsopScopeGraph<S, L, O> scopeGraph) {
-        if(USE_PERSISTENT_SCOPE_GRAPH) {
-            // TODO: Initialize builder of persistent graphs with an existing graph
-            throw new UnsupportedOperationException();
-        } else {
-            return new EsopScopeGraph<>(scopeGraph);
-        }
+    boolean isOpen(S scope, L label);
+
+    IRelation3<S, L, V> incompleteDirectEdges();
+
+    IRelation3<S, L, V> incompleteImportEdges();
+
+    boolean isComplete();
+
+    IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, Predicate2<S, L> isEdgeClosed);
+
+    interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+            extends IEsopScopeGraph<S, L, O, V>, IScopeGraph.Immutable<S, L, O> {
+
+        IRelation3.Immutable<S, L, V> incompleteDirectEdges();
+
+        IRelation3.Immutable<S, L, V> incompleteImportEdges();
+
+        SetMultimap.Immutable<S, L> openEdges();
+
+        IEsopScopeGraph.Transient<S, L, O, V> melt();
+
     }
 
-    IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter,
-            Function1<S, String> tracer);
+    interface Transient<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+            extends IEsopScopeGraph<S, L, O, V> {
 
-    interface Builder<S extends IScope, L extends ILabel, O extends IOccurrence> {
+        boolean addOpen(S scope, L label);
 
-        Set<S> getAllScopes();
+        boolean removeOpen(S scope, L label);
 
-        Set<O> getAllDecls();
+        boolean addDecl(S scope, O decl);
 
-        Set<O> getAllRefs();
+        boolean addRef(O ref, S scope);
 
-        IFunction<O, S> getDecls();
+        boolean addDirectEdge(S sourceScope, L label, S targetScope);
 
-        IFunction<O, S> getRefs();
+        boolean addIncompleteDirectEdge(S scope, L label, V var);
 
-        IRelation3<S, L, S> getDirectEdges();
+        boolean addAssoc(O decl, L label, S scope);
 
-        IRelation3<O, L, S> getExportEdges();
+        boolean addImport(S scope, L label, O ref);
 
-        IRelation3<S, L, O> getImportEdges();
+        boolean addIncompleteImportEdge(S scope, L label, V var);
 
-        // -----------------------
+        boolean addAll(IEsopScopeGraph<S, L, O, V> other);
 
-        void addDecl(S scope, O decl);
-
-        void addRef(O ref, S scope);
-
-        void addDirectEdge(S sourceScope, L label, S targetScope);
-
-        void addAssoc(O decl, L label, S scope);
-
-        void addImport(S scope, L label, O ref);
+        boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo);
 
         // -----------------------
 
-        IEsopScopeGraph<S, L, O> result();
+        IEsopScopeGraph.Immutable<S, L, O, V> freeze();
 
     }
 

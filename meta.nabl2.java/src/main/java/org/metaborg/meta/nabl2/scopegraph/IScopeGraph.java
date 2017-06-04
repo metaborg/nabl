@@ -7,11 +7,11 @@ import io.usethesource.capsule.Set;
 
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Set.Immutable<S> getAllScopes();
+    Set<S> getAllScopes();
 
-    Set.Immutable<O> getAllDecls();
+    Set<O> getAllDecls();
 
-    Set.Immutable<O> getAllRefs();
+    Set<O> getAllRefs();
 
     IFunction<O, S> getDecls();
 
@@ -22,5 +22,25 @@ public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccu
     IRelation3<O, L, S> getExportEdges();
 
     IRelation3<S, L, O> getImportEdges();
+
+    interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence> extends IScopeGraph<S, L, O> {
+
+        @Override Set.Immutable<S> getAllScopes();
+
+        @Override Set.Immutable<O> getAllDecls();
+
+        @Override Set.Immutable<O> getAllRefs();
+
+        @Override IFunction.Immutable<O, S> getDecls();
+
+        @Override IFunction.Immutable<O, S> getRefs();
+
+        @Override IRelation3.Immutable<S, L, S> getDirectEdges();
+
+        @Override IRelation3.Immutable<O, L, S> getExportEdges();
+
+        @Override IRelation3.Immutable<S, L, O> getImportEdges();
+
+    }
 
 }

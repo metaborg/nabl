@@ -7,87 +7,53 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.constraints.messages.MessageKind;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
 
-public class Messages implements IMessages, Serializable {
-    private static final long serialVersionUID = 42L;
+public abstract class Messages implements IMessages {
 
-    private final Set.Immutable<IMessageInfo> all;
-    private final Set.Immutable<IMessageInfo> errors;
-    private final Set.Immutable<IMessageInfo> warnings;
-    private final Set.Immutable<IMessageInfo> notes;
+    private final Set<IMessageInfo> messages;
 
-    public Messages(Set.Immutable<IMessageInfo> messages) {
-        this.all = messages;
-        this.errors = Set.Immutable.<IMessageInfo>of().__insertAll(
-                messages.stream().filter(m -> m.getKind().equals(MessageKind.ERROR)).collect(Collectors.toSet()));
-        this.warnings = Set.Immutable.<IMessageInfo>of().__insertAll(
-                messages.stream().filter(m -> m.getKind().equals(MessageKind.WARNING)).collect(Collectors.toSet()));
-        this.notes = Set.Immutable.<IMessageInfo>of().__insertAll(
-                messages.stream().filter(m -> m.getKind().equals(MessageKind.NOTE)).collect(Collectors.toSet()));
+    public Messages(Set<IMessageInfo> messages) {
+        this.messages = messages;
     }
 
-    public boolean add(IMessageInfo message) {
-        switch(message.getKind()) {
-            default:
-            case ERROR:
-                return add(message, errors);
-            case WARNING:
-                return add(message, warnings);
-            case NOTE:
-                return add(message, notes);
+    @Override public Set<IMessageInfo> getAll() {
+        return messages;
+    }
+
+    public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
+        private static final long serialVersionUID = 42L;
+
+        private final Set.Immutable<IMessageInfo> messages;
+
+        private Immutable(Set.Immutable<IMessageInfo> messages) {
+            super(messages);
+            this.messages = messages;
         }
-    }
 
-    public boolean addAll(Iterable<? extends IMessageInfo> messages) {
-        boolean changed = false;
-        for(IMessageInfo message : messages) {
-            changed |= add(message);
+        @Override public Set.Immutable<IMessageInfo> getAll() {
+            return messages;
         }
-        return changed;
-    }
 
-    public boolean addAll(IMessages messages) {
-        return addAll(messages.getAll());
-    }
-
-    private boolean add(IMessageInfo message, Set<IMessageInfo> collection) {
-        if(collection.add(message)) {
-            all.add(message);
-            return true;
+        public Messages.Transient melt() {
+            return new Messages.Transient(messages.asTransient());
         }
-        return false;
+
+        public static Messages.Immutable of() {
+            return new Messages.Immutable(Set.Immutable.of());
+        }
+
     }
 
-    @Override public Set.Immutable<IMessageInfo> getAll() {
-        return all;
-    }
-
-    @Override public Set.Immutable<IMessageInfo> getErrors() {
-        return errors;
-    }
-
-    @Override public Set.Immutable<IMessageInfo> getWarnings() {
-        return warnings;
-    }
-
-    @Override public Set.Immutable<IMessageInfo> getNotes() {
-        return notes;
-    }
-
-    public static class Builder implements IMessages.Builder {
+    public static class Transient extends Messages implements IMessages.Transient {
 
         private final Set.Transient<IMessageInfo> messages;
 
-        public Builder() {
-            this.messages = Set.Transient.of();
-        }
-
-        public Builder(IMessages messages) {
-            this.messages = messages.getAll().asTransient();
+        private Transient(Set.Transient<IMessageInfo> messages) {
+            super(messages);
+            this.messages = messages;
         }
 
         public boolean add(IMessageInfo message) {
@@ -102,12 +68,16 @@ public class Messages implements IMessages, Serializable {
             return change;
         }
 
-        public void merge(IMessages other) {
-            messages.__insertAll(other.getAll());
+        public boolean addAll(IMessages other) {
+            return messages.__insertAll(other.getAll());
         }
 
-        public IMessages build() {
-            return new Messages(messages.freeze());
+        public Messages.Immutable freeze() {
+            return new Messages.Immutable(messages.freeze());
+        }
+
+        public static Messages.Transient of() {
+            return new Messages.Transient(Set.Transient.of());
         }
 
     }

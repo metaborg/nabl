@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.symbolic;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.solver.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.IUnifier;

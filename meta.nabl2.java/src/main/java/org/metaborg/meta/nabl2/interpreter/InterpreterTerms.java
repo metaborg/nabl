@@ -15,13 +15,13 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -35,8 +35,8 @@ public class InterpreterTerms {
     private static final ILogger logger = LoggerUtils.logger(InterpreterTerms.class);
 
     public static ITerm context(ISolution solution) {
-        return newAppl("NaBL2", scopegraph(solution.getScopeGraph()), nameresolution(solution.getNameResolution()),
-            declTypes(solution.getDeclProperties(), solution.getUnifier()));
+        return newAppl("NaBL2", scopegraph(solution.scopeGraph()), nameresolution(solution.nameResolution()),
+                declTypes(solution.declProperties(), solution.unifier()));
     }
 
     private static ITerm scopegraph(IScopeGraph<Scope, Label, Occurrence> scopeGraph) {
@@ -92,7 +92,7 @@ public class InterpreterTerms {
         return map(entries.entrySet());
     }
 
-    private static ITerm declTypes(IProperties<Occurrence> declProperties, IUnifier unifier) {
+    private static ITerm declTypes(IProperties<Occurrence, ITerm, ITerm> declProperties, IUnifier unifier) {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence decl : declProperties.getIndices()) {
             declProperties.getValue(decl, AnalysisTerms.TYPE_KEY).map(unifier::find).ifPresent(type -> {

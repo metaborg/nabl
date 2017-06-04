@@ -1,7 +1,12 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.util.Optional;
-import java.util.Set;
+
+import org.metaborg.meta.nabl2.util.functions.Function2;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+
+import com.google.common.annotations.Beta;
 
 public interface IFunction<K, V> {
 
@@ -13,19 +18,39 @@ public interface IFunction<K, V> {
 
     boolean containsValue(V value);
 
-    Set<K> keySet();
+    java.util.Set<K> keySet();
 
-    Set<V> valueSet();
+    java.util.Set<V> valueSet();
 
     Optional<V> get(K key);
 
-    IFunction.Mutable<K, V> copyOf();
+    @Beta default java.util.stream.Stream<Tuple2<K, V>> stream() {
+        return this.stream(ImmutableTuple2::of);
+    }
 
-    interface Mutable<K, V> extends IFunction<K, V> {
+    @Beta default <R> java.util.stream.Stream<R> stream(final Function2<K, V, R> converter) {
+        return this.keySet().stream().map(key -> converter.apply(key, this.get(key).get()));
+    }
+
+    interface Immutable<K, V> extends IFunction<K, V> {
+
+        IInverseFunction.Immutable<V, K> inverse();
+
+        Transient<K, V> melt();
+
+    }
+
+    interface Transient<K, V> extends IFunction<K, V> {
 
         boolean put(K key, V value);
 
+        boolean putAll(IFunction<K, V> other);
+
         boolean remove(K key);
+
+        IInverseFunction.Transient<V, K> inverse();
+
+        Immutable<K, V> freeze();
 
     }
 

@@ -22,7 +22,7 @@ public class SG_get_decl_property extends ScopeGraphContextPrimitive {
         ITerm key = terms.get(0);
         return Occurrence.matcher().match(term).<ITerm>flatMap(decl -> {
             return context.unit(decl.getIndex().getResource()).solution().<ITerm>flatMap(s -> {
-                return s.getDeclProperties().getValue(decl, key).map(s.getUnifier()::find);
+                return s.declProperties().getValue(decl, key).map(s.unifier()::find);
             });
         });
     }

@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.relations.terms;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.ReflexivityException;
@@ -11,6 +12,7 @@ import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.SymmetryException;
 import org.metaborg.meta.nabl2.relations.TransitivityException;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -91,6 +93,10 @@ public abstract class Relation<T> implements IRelation<T> {
         return bounds.stream().filter(g -> bounds.stream().allMatch(l -> contains(l, g))).findFirst();
     }
 
+    @Override public Stream<Tuple2<T, T>> stream() {
+        return smaller.entrySet().stream().map(Tuple2::of);
+    }
+
     public static class Immutable<T> extends Relation<T> implements IRelation.Immutable<T>, Serializable {
         private static final long serialVersionUID = 42L;
 
@@ -114,8 +120,7 @@ public abstract class Relation<T> implements IRelation<T> {
 
     }
 
-    public static class Transient<T> extends Relation<T> implements IRelation.Transient<T>, Serializable {
-        private static final long serialVersionUID = 42L;
+    public static class Transient<T> extends Relation<T> implements IRelation.Transient<T> {
 
         private final SetMultimap.Transient<T, T> smaller;
         private final SetMultimap.Transient<T, T> larger;

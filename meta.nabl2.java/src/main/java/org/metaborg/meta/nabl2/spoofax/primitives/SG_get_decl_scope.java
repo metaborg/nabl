@@ -18,7 +18,7 @@ public class SG_get_decl_scope extends AnalysisPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm>flatMap(decl -> {
             return context.unit(index.getResource()).solution().<ITerm>flatMap(s -> {
-                return s.getScopeGraph().getDecls().get(decl).flatMap(Optional::<ITerm>of);
+                return s.scopeGraph().getDecls().get(decl).flatMap(Optional::<ITerm>of);
             });
         });
     }

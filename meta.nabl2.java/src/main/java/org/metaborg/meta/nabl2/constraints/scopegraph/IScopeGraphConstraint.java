@@ -14,19 +14,19 @@ public interface IScopeGraphConstraint extends IConstraint {
 
         T caseRef(CGRef ref);
 
-        T caseDirectEdge(CGDirectEdge<?> directEdge);
+        T caseDirectEdge(CGDirectEdge directEdge);
 
         T caseAssoc(CGExportEdge assoc);
 
-        T caseImport(CGImportEdge<?> importEdge);
+        T caseImport(CGImportEdge importEdge);
 
         static <T> Cases<T> of(
             // @formatter:off
             Function1<CGDecl,T> onDecl,
             Function1<CGRef,T> onRef,
-            Function1<CGDirectEdge<?>,T> onDirectEdge,
+            Function1<CGDirectEdge,T> onDirectEdge,
             Function1<CGExportEdge,T> onExportEdge,
-            Function1<CGImportEdge<?>,T> onImportEdge
+            Function1<CGImportEdge,T> onImportEdge
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -39,7 +39,7 @@ public interface IScopeGraphConstraint extends IConstraint {
                     return onRef.apply(ref);
                 }
 
-                @Override public T caseDirectEdge(CGDirectEdge<?> directEdge) {
+                @Override public T caseDirectEdge(CGDirectEdge directEdge) {
                     return onDirectEdge.apply(directEdge);
                 }
 
@@ -47,7 +47,7 @@ public interface IScopeGraphConstraint extends IConstraint {
                     return onExportEdge.apply(exportEdge);
                 }
 
-                @Override public T caseImport(CGImportEdge<?> importEdge) {
+                @Override public T caseImport(CGImportEdge importEdge) {
                     return onImportEdge.apply(importEdge);
                 }
 
@@ -64,19 +64,19 @@ public interface IScopeGraphConstraint extends IConstraint {
 
         T caseRef(CGRef ref) throws E;
 
-        T caseDirectEdge(CGDirectEdge<?> directEdge) throws E;
+        T caseDirectEdge(CGDirectEdge directEdge) throws E;
 
         T caseAssoc(CGExportEdge assoc) throws E;
 
-        T caseImport(CGImportEdge<?> importEdge) throws E;
+        T caseImport(CGImportEdge importEdge) throws E;
 
         static <T, E extends Throwable> CheckedCases<T, E> of(
             // @formatter:off
             CheckedFunction1<CGDecl,T,E> onDecl,
             CheckedFunction1<CGRef,T,E> onRef,
-            CheckedFunction1<CGDirectEdge<?>,T,E> onDirectEdge,
+            CheckedFunction1<CGDirectEdge,T,E> onDirectEdge,
             CheckedFunction1<CGExportEdge,T,E> onExportEdge,
-            CheckedFunction1<CGImportEdge<?>,T,E> onImportEdge
+            CheckedFunction1<CGImportEdge,T,E> onImportEdge
             // @formatter:on
         ) {
             return new CheckedCases<T, E>() {
@@ -89,7 +89,7 @@ public interface IScopeGraphConstraint extends IConstraint {
                     return onRef.apply(constraint);
                 }
 
-                @Override public T caseDirectEdge(CGDirectEdge<?> directEdge) throws E {
+                @Override public T caseDirectEdge(CGDirectEdge directEdge) throws E {
                     return onDirectEdge.apply(directEdge);
                 }
 
@@ -97,13 +97,18 @@ public interface IScopeGraphConstraint extends IConstraint {
                     return onExportEdge.apply(exportEdge);
                 }
 
-                @Override public T caseImport(CGImportEdge<?> importEdge) throws E {
+                @Override public T caseImport(CGImportEdge importEdge) throws E {
                     return onImportEdge.apply(importEdge);
                 }
 
             };
         }
 
+    }
+
+    public static boolean is(IConstraint constraint) {
+        return constraint.match(IConstraint.Cases.of(c -> false, c -> false, c -> false, c -> true, c -> false,
+                c -> false, c -> false, c -> false, c -> false));
     }
 
 }

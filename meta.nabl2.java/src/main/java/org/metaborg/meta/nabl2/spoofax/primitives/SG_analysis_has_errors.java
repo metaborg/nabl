@@ -18,7 +18,7 @@ public class SG_analysis_has_errors extends ScopeGraphContextPrimitive {
             throws InterpreterException {
         return TermIndex.get(term).flatMap(index -> {
             return context.unit(index.getResource()).solution().flatMap(s -> {
-                if(s.getMessages().getErrors().isEmpty()) {
+                if(s.messages().getErrors().isEmpty()) {
                     return Optional.empty();
                 } else {
                     return Optional.of(term);

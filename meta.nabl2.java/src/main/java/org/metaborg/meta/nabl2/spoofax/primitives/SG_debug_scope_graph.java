@@ -21,7 +21,7 @@ public class SG_debug_scope_graph extends AnalysisNoTermPrimitive {
         final IScopeGraphUnit unit = context.unit(index.getResource());
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
             return TermSimplifier.focus(unit.resource(),
-                    ScopeGraphTerms.build(sol.getScopeGraph(), sol.getDeclProperties(), sol.getUnifier()));
+                    ScopeGraphTerms.build(sol.scopeGraph(), sol.declProperties(), sol.unifier()));
         });
     }
 

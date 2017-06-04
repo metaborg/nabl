@@ -61,7 +61,7 @@ public class FunctionTerms {
                 throw new IllegalStateException("Term argument must be ground.");
             }
             for(Tuple2<ITerm, ITerm> c : cases) {
-                Unifier.Transient unifier = new Unifier.Transient();
+                Unifier.Transient unifier = Unifier.Transient.of();
                 try {
                     unifier.unify(c._1(), term);
                     ITerm result = unifier.find(c._2());

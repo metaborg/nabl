@@ -1,6 +1,9 @@
 package org.metaborg.meta.nabl2.relations;
 
 import java.util.Optional;
+import java.util.stream.Stream;
+
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import io.usethesource.capsule.Set;
 
@@ -17,6 +20,8 @@ public interface IRelation<T> {
     Optional<T> leastUpperBound(T t1, T t2);
 
     Optional<T> greatestLowerbound(T t1, T t2);
+
+    Stream<Tuple2<T, T>> stream();
 
     interface Immutable<T> extends IRelation<T> {
 

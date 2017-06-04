@@ -28,7 +28,7 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
             throws InterpreterException {
         return context.unit(index.getResource()).solution().flatMap(sol -> {
-            final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.getScopeGraph());
+            final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.scopeGraph());
             final IMatcher<S> sourceMatcher = getSourceMatcher();
             return M.<ITerm>cases(
                     // @formatter:off

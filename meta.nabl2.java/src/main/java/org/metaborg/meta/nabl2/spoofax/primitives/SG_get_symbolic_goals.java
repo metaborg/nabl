@@ -19,7 +19,7 @@ public class SG_get_symbolic_goals extends AnalysisPrimitive {
             throws InterpreterException {
         return context.unit(index.getResource()).solution().<ITerm>map(s -> {
             return TB
-                    .newList(s.getSymbolic().getGoals().stream().map(s.getUnifier()::find).collect(Collectors.toSet()));
+                    .newList(s.symbolic().getGoals().stream().map(s.unifier()::find).collect(Collectors.toSet()));
         });
     }
 

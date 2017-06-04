@@ -25,4 +25,8 @@ public abstract class Tuple2<T1, T2> implements Map.Entry<T1, T2> {
         throw new UnsupportedOperationException("Method Tuple2::setValue not supported.");
     }
 
+    public static <T1, T2> Tuple2<T1, T2> of(Map.Entry<T1, T2> entry) {
+        return ImmutableTuple2.of(entry.getKey(), entry.getValue());
+    }
+
 }

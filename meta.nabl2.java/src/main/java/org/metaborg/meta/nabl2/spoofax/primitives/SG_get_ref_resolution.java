@@ -26,7 +26,7 @@ public class SG_get_ref_resolution extends ScopeGraphContextPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm>flatMap(ref -> {
             return context.unit(ref.getIndex().getResource()).solution().flatMap(s -> {
-                final Set<IResolutionPath<Scope, Label, Occurrence>> paths = s.getNameResolution().resolve(ref);
+                final Set<IResolutionPath<Scope, Label, Occurrence>> paths = s.nameResolution().resolve(ref);
                 List<ITerm> pathTerms = Lists.newArrayListWithExpectedSize(paths.size());
                 for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
                     pathTerms.add(TB.newTuple(path.getDeclaration(), Paths.toTerm(path)));

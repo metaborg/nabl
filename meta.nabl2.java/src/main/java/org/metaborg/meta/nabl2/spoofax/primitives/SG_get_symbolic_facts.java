@@ -19,7 +19,7 @@ public class SG_get_symbolic_facts extends AnalysisPrimitive {
             throws InterpreterException {
         return context.unit(index.getResource()).solution().map(s -> {
             return TB
-                    .newList(s.getSymbolic().getFacts().stream().map(s.getUnifier()::find).collect(Collectors.toSet()));
+                    .newList(s.symbolic().getFacts().stream().map(s.unifier()::find).collect(Collectors.toSet()));
         });
     }
 

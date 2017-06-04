@@ -18,7 +18,7 @@ public class SG_get_ref_scope extends AnalysisPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term).<ITerm>flatMap(ref -> {
             return context.unit(index.getResource()).solution().<ITerm>flatMap(s -> {
-                return s.getScopeGraph().getRefs().get(ref).flatMap(Optional::<ITerm>of);
+                return s.scopeGraph().getRefs().get(ref).flatMap(Optional::<ITerm>of);
             });
         });
     }

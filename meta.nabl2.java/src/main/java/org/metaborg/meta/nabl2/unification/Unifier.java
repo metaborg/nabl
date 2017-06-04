@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -12,10 +13,18 @@ import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import io.usethesource.capsule.Map;
 
 public abstract class Unifier implements IUnifier {
+
+    private final Map<ITermVar, ITerm> reps;
+
+    private Unifier(Map<ITermVar, ITerm> reps) {
+        this.reps = reps;
+    }
 
     /**
      * Find representative term.
@@ -61,13 +70,20 @@ public abstract class Unifier implements IUnifier {
 
     protected abstract ITerm findVarRepShallow(ITermVar var);
 
-    public static class Immutable extends Unifier implements IUnifier, Serializable {
+    public Stream<Tuple2<ITermVar, ITerm>> stream() {
+        return reps.entrySet().stream().map(kv -> ImmutableTuple2.of(kv.getKey(), find(kv.getValue())));
+    }
+
+    public static class Immutable extends Unifier implements IUnifier.Immutable, Serializable {
         private static final long serialVersionUID = 42L;
 
         private final Map.Immutable<ITermVar, ITerm> reps;
+        private final Map.Immutable<ITermVar, Integer> sizes;
 
-        public Immutable(Map.Immutable<ITermVar, ITerm> reps) {
+        private Immutable(Map.Immutable<ITermVar, ITerm> reps, Map.Immutable<ITermVar, Integer> sizes) {
+            super(reps);
             this.reps = reps;
+            this.sizes = sizes;
         }
 
         @Override public Set<ITermVar> getAllVars() {
@@ -92,6 +108,14 @@ public abstract class Unifier implements IUnifier {
             }
         }
 
+        @Override public Unifier.Transient melt() {
+            return new Unifier.Transient(reps.asTransient(), sizes.asTransient());
+        }
+
+        public static Unifier.Immutable of() {
+            return new Unifier.Immutable(Map.Immutable.of(), Map.Immutable.of());
+        }
+
     }
 
     public static class Transient extends Unifier implements IUnifier.Transient {
@@ -99,9 +123,10 @@ public abstract class Unifier implements IUnifier {
         private final Map.Transient<ITermVar, ITerm> reps;
         private final Map.Transient<ITermVar, Integer> sizes;
 
-        public Transient() {
-            this.reps = Map.Transient.of();
-            this.sizes = Map.Transient.of();
+        private Transient(Map.Transient<ITermVar, ITerm> reps, Map.Transient<ITermVar, Integer> sizes) {
+            super(reps);
+            this.reps = reps;
+            this.sizes = sizes;
         }
 
         @Override public Set<ITermVar> getAllVars() {
@@ -251,18 +276,12 @@ public abstract class Unifier implements IUnifier {
             return success;
         }
 
-        public void merge(IUnifier other) {
-            for(ITermVar var : other.getAllVars()) {
-                try {
-                    unify(find(var), other.find(var));
-                } catch(UnificationException ex) {
-                    throw new RuntimeException(ex); // FIXME
-                }
-            }
+        public IUnifier.Immutable freeze() {
+            return new Unifier.Immutable(reps.freeze(), sizes.freeze());
         }
 
-        public IUnifier freeze() {
-            return new Immutable(reps.freeze());
+        public static Unifier.Transient of() {
+            return new Unifier.Transient(Map.Transient.of(), Map.Transient.of());
         }
 
     }

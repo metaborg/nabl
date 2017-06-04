@@ -1,26 +1,45 @@
 package org.metaborg.meta.nabl2.solver.messages;
 
+import java.util.stream.Collectors;
+
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.messages.MessageKind;
 
 import io.usethesource.capsule.Set;
 
 public interface IMessages {
 
-    Set.Immutable<IMessageInfo> getErrors();
+    default java.util.Set<IMessageInfo> getErrors() {
+        return getAll().stream().filter(m -> m.getKind().equals(MessageKind.ERROR)).collect(Collectors.toSet());
+    }
 
-    Set.Immutable<IMessageInfo> getWarnings();
+    default java.util.Set<IMessageInfo> getWarnings() {
+        return getAll().stream().filter(m -> m.getKind().equals(MessageKind.WARNING)).collect(Collectors.toSet());
+    }
 
-    Set.Immutable<IMessageInfo> getNotes();
+    default java.util.Set<IMessageInfo> getNotes() {
+        return getAll().stream().filter(m -> m.getKind().equals(MessageKind.NOTE)).collect(Collectors.toSet());
+    }
 
-    Set.Immutable<IMessageInfo> getAll();
+    Set<IMessageInfo> getAll();
 
-    interface Builder {
+    interface Immutable extends IMessages {
+
+        Set.Immutable<IMessageInfo> getAll();
+
+        IMessages.Transient melt();
+
+    }
+
+    interface Transient extends IMessages {
 
         boolean add(IMessageInfo message);
 
-        void merge(IMessages other);
+        boolean addAll(Iterable<? extends IMessageInfo> messages);
 
-        IMessages build();
+        boolean addAll(IMessages messages);
+
+        IMessages.Immutable freeze();
 
     }
 

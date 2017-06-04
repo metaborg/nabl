@@ -23,9 +23,9 @@ public class SG_get_ast_resolution extends AstPrimitive {
             throws InterpreterException {
         return context.unit(index.getResource()).solution().<ITerm>flatMap(s -> {
             List<ITerm> entries = Lists.newArrayList();
-            for(Occurrence ref : s.getScopeGraph().getAllRefs()) {
+            for(Occurrence ref : s.scopeGraph().getAllRefs()) {
                 if(ref.getIndex().equals(index)) {
-                    for(Occurrence decl : Paths.resolutionPathsToDecls(s.getNameResolution().resolve(ref))) {
+                    for(Occurrence decl : Paths.resolutionPathsToDecls(s.nameResolution().resolve(ref))) {
                         entries.add(TB.newTuple(ref, decl.getName()));
                     }
                 }

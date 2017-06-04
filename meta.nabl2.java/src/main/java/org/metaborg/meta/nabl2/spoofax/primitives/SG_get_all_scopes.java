@@ -17,7 +17,7 @@ public class SG_get_all_scopes extends AnalysisPrimitive {
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
             throws InterpreterException {
         return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-            return TB.newList(s.getScopeGraph().getAllScopes());
+            return TB.newList(s.scopeGraph().getAllScopes());
         });
     }
 

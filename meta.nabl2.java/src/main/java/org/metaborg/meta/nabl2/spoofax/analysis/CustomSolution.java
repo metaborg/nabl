@@ -22,11 +22,11 @@ public abstract class CustomSolution {
         return M.tuple4(M.listElems(MessageInfo.matcherEditorMessage(MessageKind.ERROR)),
                 M.listElems(MessageInfo.matcherEditorMessage(MessageKind.WARNING)),
                 M.listElems(MessageInfo.matcherEditorMessage(MessageKind.NOTE)), M.term(), (t, es, ws, ns, a) -> {
-                    Messages.Builder messages = new Messages.Builder();
+                    Messages.Transient messages = Messages.Transient.of();
                     messages.addAll(es);
                     messages.addAll(ws);
                     messages.addAll(ns);
-                    return ImmutableCustomSolution.of(a, messages.build());
+                    return ImmutableCustomSolution.of(a, messages.freeze());
                 });
     }
 

@@ -14,9 +14,9 @@ import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class CGImportEdge<S extends ITerm> implements IScopeGraphConstraint {
+public abstract class CGImportEdge implements IScopeGraphConstraint {
 
-    @Value.Parameter public abstract S getScope();
+    @Value.Parameter public abstract ITerm getScope();
 
     @Value.Parameter public abstract Label getLabel();
 

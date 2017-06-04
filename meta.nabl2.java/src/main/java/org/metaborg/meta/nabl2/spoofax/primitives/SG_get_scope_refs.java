@@ -19,7 +19,7 @@ public class SG_get_scope_refs extends AnalysisPrimitive {
             throws InterpreterException {
         return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
             return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                return TB.newList(s.getScopeGraph().getRefs().inverse().get(scope));
+                return TB.newList(s.scopeGraph().getRefs().inverse().get(scope));
             });
         });
     }
