@@ -23,12 +23,14 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     private static final String R_OP = "R";
     private static final String I_OP = "I";
     private static final String P_OP = "P";
+    private static final String Q_OP = "?";
     private static final String OP = "Label";
 
     public static final Label D = ImmutableLabel.of(D_OP);
     public static final Label R = ImmutableLabel.of(R_OP);
-    public static final Label P = ImmutableLabel.of(P_OP);
     public static final Label I = ImmutableLabel.of(I_OP);
+    public static final Label P = ImmutableLabel.of(P_OP);
+    public static final Label Q = ImmutableLabel.of(Q_OP);
 
     // ILabel implementation
 
@@ -40,8 +42,9 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
         switch(getName()) {
             case D_OP:
             case R_OP:
-            case P_OP:
             case I_OP:
+            case P_OP:
+            case Q_OP:
                 return getName();
             default:
                 return OP;
@@ -52,8 +55,9 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
         switch(getName()) {
             case D_OP:
             case R_OP:
-            case P_OP:
             case I_OP:
+            case P_OP:
+            case Q_OP:                
                 return ImmutableList.of();
             default:
                 return ImmutableList.of((ITerm) TB.newString(getName()));
@@ -69,8 +73,9 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
             // @formatter:off
             M.appl0(D_OP, (t) -> f.apply(ImmutableLabel.of(D_OP))),
             M.appl0(R_OP, (t) -> f.apply(ImmutableLabel.of(R_OP))),
-            M.appl0(P_OP, (t) -> f.apply(ImmutableLabel.of(P_OP))),
             M.appl0(I_OP, (t) -> f.apply(ImmutableLabel.of(I_OP))),
+            M.appl0(P_OP, (t) -> f.apply(ImmutableLabel.of(P_OP))),
+            M.appl0(Q_OP, (t) -> f.apply(ImmutableLabel.of(Q_OP))),            
             M.appl1(OP, M.stringValue(), (t,l) -> f.apply(ImmutableLabel.of(l)))
             // @formatter:on
         );

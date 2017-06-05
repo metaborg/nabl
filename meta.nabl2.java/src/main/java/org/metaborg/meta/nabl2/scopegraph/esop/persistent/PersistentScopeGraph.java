@@ -12,7 +12,10 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.util.collections.HashFunction;
 import org.metaborg.meta.nabl2.util.collections.HashRelation3;
@@ -20,8 +23,10 @@ import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IInverseFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableOccurrenceLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelOccurrence;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
+import org.metaborg.meta.nabl2.util.tuples.OccurrenceLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 
@@ -37,10 +42,9 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
 
     private final Set.Immutable<S> allScopes;
 
-    private final IRelation3<S, L, S> directEdges;
-
-    private final IRelation3<S, L, O> declarations;
-    private final IRelation3<S, L, O> references;
+    private final IRelation3<O, L, S> sourceEdges;
+    private final IRelation3<S, L, S> middleEdges;
+    private final IRelation3<S, L, O> targetEdges;
 
     // TODO
     // private final TernaryRelation.Immutable<S, L, S> directEdges;
@@ -50,48 +54,47 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     @SuppressWarnings("unchecked")
     public PersistentScopeGraph(final Set.Immutable<S> allScopes, final Set.Immutable<O> allDeclarations,
             final Set.Immutable<O> allReferences, final IFunction<O, S> declarations, final IFunction<O, S> references,
-            final IRelation3<S, L, S> directEdges, final IRelation3<O, L, S> exportEdges,
+            final IRelation3<S, L, S> directEdges, final IRelation3<O, L, S> assocEdges,
             final IRelation3<S, L, O> importEdges) {
         this.allScopes = allScopes;
               
-        this.directEdges = directEdges;
-
-        this.declarations = union(exportEdges.inverse(), liftHashFunctionToRelation(declarations, (L) Label.D).inverse());
-        this.references = union(importEdges, liftHashFunctionToRelation(references, (L) Label.R).inverse());
+        this.sourceEdges = union(assocEdges.inverse(), liftHashFunctionToRelation(references, (L) Label.R).inverse()).inverse();
+        this.middleEdges = directEdges;
+        this.targetEdges = union(importEdges, liftHashFunctionToRelation(declarations, (L) Label.D).inverse());
     }
 
-    public Stream<ScopeLabelScope<S, L, O>> directEdgesStream() {
-        return directEdges.stream(ImmutableScopeLabelScope::of);
+    public Stream<OccurrenceLabelScope<O, L, S>> sourceEdgeStream() {
+        return sourceEdges.stream(ImmutableOccurrenceLabelScope::of);
     }
     
-    public Stream<ScopeLabelOccurrence<S, L, O>> declarationsStream() {
-        return declarations.stream(ImmutableScopeLabelOccurrence::of);
-    }    
-    
-    public Stream<ScopeLabelOccurrence<S, L, O>> localDeclarationsStream() {
-        // TODO: use hash lookup on label instead of filter        
-        return declarationsStream().filter(labelEquals(Label.D));
-    }    
-    
-    public Stream<ScopeLabelOccurrence<S, L, O>> exportDeclarationsStream() {
-        // TODO: use hash lookup on label instead of filter       
-        return declarationsStream().filter(labelEquals(Label.D).negate());
-    }
-
-    public Stream<ScopeLabelOccurrence<S, L, O>> referencesStream() {
-        return references.stream(ImmutableScopeLabelOccurrence::of);
-    }
-    
-    public Stream<ScopeLabelOccurrence<S, L, O>> localReferencesStream() {
+    public Stream<OccurrenceLabelScope<O, L, S>> referenceEdgeStream() {
         // TODO: use hash lookup on label instead of filter
-        return referencesStream().filter(labelEquals(Label.R));
+        return sourceEdgeStream().filter(labelEquals(Label.R));
+    }
+    
+    public Stream<OccurrenceLabelScope<O, L, S>> associatedScopeEdgeStream() {
+        // TODO: use hash lookup on label instead of filter
+        return sourceEdgeStream().filter(labelEquals(Label.R).negate());
     }    
     
-    public Stream<ScopeLabelOccurrence<S, L, O>> importReferencesStream() {
+    public Stream<ScopeLabelScope<S, L, O>> middleEdgeStream() {
+        return middleEdges.stream(ImmutableScopeLabelScope::of);
+    }
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> targetEdgeStream() {
+        return targetEdges.stream(ImmutableScopeLabelOccurrence::of);
+    }    
+    
+    public Stream<ScopeLabelOccurrence<S, L, O>> declarationEdgeStream() {
         // TODO: use hash lookup on label instead of filter        
-        return referencesStream().filter(labelEquals(Label.R).negate());
-    }    
+        return targetEdgeStream().filter(labelEquals(Label.D));
+    }
     
+    public Stream<ScopeLabelOccurrence<S, L, O>> requireImportEdgeStream() {
+        // TODO: use hash lookup on label instead of filter
+        return targetEdgeStream().filter(labelEquals(Label.D).negate());
+    }
+   
     @Deprecated
     @Override
     public Set.Immutable<S> getAllScopes() {
@@ -101,8 +104,8 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     @Deprecated
     @Override
     public Set.Immutable<O> getAllDecls() {
-        // projection of third column
-        return declarationsStream().map(ScopeLabelOccurrence::occurrence).collect(CapsuleCollectors.toSet());
+        return Stream.concat(declarationEdgeStream().map(tuple -> tuple.occurrence()),
+                associatedScopeEdgeStream().map(tuple -> tuple.occurrence())).collect(CapsuleCollectors.toSet());
     }
    
     @Deprecated
@@ -111,7 +114,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IFunction.Mutable<O, S> result = HashFunction.create();
         
         // filter and project
-        declarationsStream().filter(labelEquals(Label.D)).iterator()
+        declarationEdgeStream().iterator()
                 .forEachRemaining(tuple -> result.put(tuple.occurrence(), tuple.scope()));
 
         return result;
@@ -120,8 +123,8 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     @Deprecated
     @Override
     public Set.Immutable<O> getAllRefs() {
-        // projection of third column        
-        return referencesStream().map(ScopeLabelOccurrence::occurrence).collect(CapsuleCollectors.toSet());
+        return Stream.concat(referenceEdgeStream().map(tuple -> tuple.occurrence()),
+                requireImportEdgeStream().map(tuple -> tuple.occurrence())).collect(CapsuleCollectors.toSet());
     }
     
     @Deprecated
@@ -130,7 +133,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IFunction.Mutable<O, S> result = HashFunction.create();
                 
         // filter and project        
-        referencesStream().filter(labelEquals(Label.R)).iterator()
+        referenceEdgeStream().iterator()
                 .forEachRemaining(tuple -> result.put(tuple.occurrence(), tuple.scope()));
         
         return result;
@@ -139,7 +142,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     @Deprecated
     @Override
     public IRelation3<S, L, S> getDirectEdges() {
-        return directEdges;
+        return middleEdges;
     }
 
     @Deprecated
@@ -148,7 +151,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IRelation3.Mutable<S, L, O> result = HashRelation3.create();
 
         // filter
-        declarationsStream().filter(labelEquals(Label.D).negate()).iterator()
+        associatedScopeEdgeStream().iterator()
                 .forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result.inverse();
@@ -160,15 +163,21 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         final IRelation3.Mutable<S, L, O> result = HashRelation3.create();
 
         // filter
-        referencesStream().filter(labelEquals(Label.R).negate()).iterator()
+        requireImportEdgeStream().iterator()
                 .forEachRemaining(tuple -> result.put(tuple.scope(), tuple.label(), tuple.occurrence()));
 
         return result;
     }
 
     @Override
-    public PersistentNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter, Function1<S, String> tracer) {
-        return new PersistentNameResolution<>(this, params, scopeCounter);
+    public IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, IActiveScopes<S, L> scopeCounter,
+            Function1<S, String> tracer) {
+        final IEsopNameResolution<S, L, O> one = new PersistentNameResolution<>(this, params, scopeCounter);
+        final IEsopNameResolution<S, L, O> two = new AllShortestPathsNameResolution<>(this, params, scopeCounter);
+        
+        // return new BiSimulationNameResolution<>(one, two);
+        // return one;
+        return two;
     }
 
     public static class Builder<S extends IScope, L extends ILabel, O extends IOccurrence>
@@ -182,7 +191,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         private final IFunction.Mutable<O, S> references;
 
         private final IRelation3.Mutable<S, L, S> directEdges;
-        private final IRelation3.Mutable<O, L, S> exportEdges;
+        private final IRelation3.Mutable<O, L, S> assocEdges;
         private final IRelation3.Mutable<S, L, O> importEdges;
        
         private IEsopScopeGraph<S, L, O> result = null;
@@ -196,7 +205,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             this.references = HashFunction.create();
 
             this.directEdges = HashRelation3.create();
-            this.exportEdges = HashRelation3.create();
+            this.assocEdges = HashRelation3.create();
             this.importEdges = HashRelation3.create();
         }
 
@@ -234,7 +243,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             
             allScopes.__insert(scope);
             allDeclarations.__insert(decl);
-            exportEdges.put(decl, label, scope);
+            assocEdges.put(decl, label, scope);
         }      
         
         public void addRef(O ref, S scope) {
@@ -286,7 +295,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
 
         @Override
         public IRelation3<O, L, S> getExportEdges() {
-            return exportEdges;
+            return assocEdges;
         }
 
         @Override
@@ -297,8 +306,24 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         @Override
         public IEsopScopeGraph<S, L, O> result() {
             if (result == null) {
-                result = new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(),
-                        allReferences.freeze(), declarations, references, directEdges, exportEdges, importEdges);
+                final EsopScopeGraph<S, L, O> one = new EsopScopeGraph<>();
+                               
+                declarations.keySet().forEach(o -> one.addDecl(declarations.get(o).get(), o));
+                references.keySet().forEach(o -> one.addRef(o, references.get(o).get()));
+
+                directEdges.stream(ImmutableScopeLabelScope::of)
+                        .forEach(sls -> one.addDirectEdge(sls.sourceScope(), sls.label(), sls.targetScope()));
+
+                assocEdges.stream(ImmutableOccurrenceLabelScope::of)
+                        .forEach(slo -> one.addAssoc(slo.occurrence(), slo.label(), slo.scope()));
+
+                importEdges.stream(ImmutableScopeLabelOccurrence::of)
+                        .forEach(slo -> one.addImport(slo.scope(), slo.label(), slo.occurrence()));               
+                                                                
+                final IEsopScopeGraph<S, L, O> two = new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(),
+                        allReferences.freeze(), declarations, references, directEdges, assocEdges, importEdges);
+                
+                result = new BiSimulationScopeGraph<>(one, two);                
             }
 
             return result;

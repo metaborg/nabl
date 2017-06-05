@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableList;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class Occurrence extends AbstractApplTerm implements IOccurrence, IApplTerm {
+public abstract class Occurrence extends AbstractApplTerm implements IOccurrence, IApplTerm, Comparable<IOccurrence> {
 
     private static final String OP = "Occurrence";
 
@@ -67,6 +67,22 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
         sb.append(getIndex());
         sb.append("}");
         return sb.toString();
+    }
+
+    @Override
+    public int compareTo(final IOccurrence other) {
+        int diffNamespace = getNamespace().getName().compareTo(other.getNamespace().getName());
+        if (diffNamespace != 0) {
+            return diffNamespace;
+        }
+
+        int diffName = getName().toString().compareTo(other.getName().toString());
+        if (diffName != 0) {
+            return diffName;
+        }
+
+        int diffIndex = getIndex().toString().compareTo(other.getIndex().toString());
+        return diffIndex;
     }
 
 }
