@@ -66,7 +66,6 @@ rules
   init-to-java(|lang-name,project-name,generated-pkg,term-pkg,nabl2-pkg,project-dir,java-dir):
     CGenInitRule(_, _, _) -> result*
     with result* := <concat> [
-      <runner-files(|lang-name,project-name,generated-pkg,nabl2-pkg,project-dir,java-dir)>,
       <termindex-javas(|term-pkg,nabl2-pkg,java-dir)>,
       <init-javas(|term-pkg,nabl2-pkg,java-dir)>
     ]

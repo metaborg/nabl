@@ -71,6 +71,9 @@ rules
   normalize-regex:
     ConcatDot(re1,re2) -> Concat(re1,re2)
 
+  normalize-regex:
+    NonEmpty(re) -> Concat(re,Closure(re))
+
 rules
 
   normalize-constructors = try(sometd(normalize-opdecl))

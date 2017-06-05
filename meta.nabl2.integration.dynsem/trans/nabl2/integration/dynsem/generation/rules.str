@@ -10,11 +10,11 @@ imports
 rules
 
   cgen-sig-to-params-ds:
-    CGenSig(rdef, sort, param*, _) ->
-      <cgen-op-ds(|rdef)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
+      CGenSig(rdef, sort, param*, _) -> result
+    with result := <cgen-op-ds(|rdef)>  (<sort-to-ds> sort, "paramsOf", <param-sorts-to-ds> param*)
 
   cgen-sig-to-type-ds:
-    CGenSig(rdef, sort, _, Type(type-sort)) -> result
+      CGenSig(rdef, sort, _, Type(type-sort)) -> result
     with result := <cgen-op-ds(|rdef)> (<sort-to-ds> sort, "typeOf", <sort-to-ds> type-sort)
 
   cgen-op-ds(|rdef): (src-sort, base-name, target-sort) -> (op, arrow, rule)

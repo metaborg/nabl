@@ -18,7 +18,8 @@ context-free syntax
 
   >
   
-  CGenSig.CGenSig = <<CGenRuleDef> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
+  CGenSig.CGenInitSig = <init <CGenSigParams> <CGenSigType>>
+  CGenSig.CGenSig     = <<CGenRuleDef> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
  
   CGenSigParams   = <^ (<{SortRef ", "}*>)>
 

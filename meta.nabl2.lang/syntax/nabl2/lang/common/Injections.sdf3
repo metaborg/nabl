@@ -28,6 +28,7 @@ context-free syntax
 
   LabelRE.Option    = <<LabelRE>?>
   LabelRE.ConcatDot = <<LabelRE>.<LabelRE>>     {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
+  LabelRE.NonEmpty = <<LabelRE>+>
 
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
@@ -40,7 +41,7 @@ syntax
 
 context-free priorities
 
-    { LabelRE.Option LabelRE.Closure }
+    { LabelRE.Option LabelRE.NonEmpty } // aka, the same as LabelRE.Closure
   > { LabelRE.Concat LabelRE.ConcatDot }
   > LabelRE.And
   > LabelRE.Or

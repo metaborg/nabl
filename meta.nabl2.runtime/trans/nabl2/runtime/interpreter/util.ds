@@ -9,9 +9,9 @@ signature
   arrows // Auxiliary functions
     filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
     declOfPath(List(Step)) --> Occurrence
-    NaBL2 |- (Scope * Namespace) -declsOf-> List(Occurrence)
-    NaBL2 |- Occurrence -declOfRef-> Occurrence
-    NaBL2 |- (Occurrence * Label) -assocScopeOf-> Scope
+    NaBL2 |- declsOf(Scope, Namespace) --> List(Occurrence)
+    NaBL2 |- declOfRef(Occurrence) --> Occurrence
+    NaBL2 |- assocScopeOf(Occurrence, Label) --> Scope
 
 rules
 
@@ -27,9 +27,9 @@ rules
     
 rules    
  
-  o:Occurrence -declOfRef-> declOfPath(p)
+  declOfRef(o:Occurrence) --> declOfPath(p)
   where
-    o -pathOf-> p
+    pathOf(o) --> p
 
 rules
 
@@ -39,11 +39,11 @@ rules
 
 rules
 
-  (s, ns):(Scope * Namespace) -declsOf-> decls'
-    where s -declsOf-> decls;
+  declsOf(s, ns) /* :(Scope * Namespace) */ --> decls'
+    where declsOf(s) --> decls;
           filterOccsByNamespace(decls, ns) => decls'
 
-  (d, l):(Occurrence * Label) -assocScopeOf-> s
+  assocScopeOf(d, l) /* :(Occurrence * Label) */ --> s
   where
-    d -assocsOf-> assocs;
+    assocsOf(d) --> assocs;
     assocs[l] => [s]

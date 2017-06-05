@@ -9,7 +9,7 @@ signature
     Occurrence
  
   sorts Label constructors
-		P     : Label
+    P     : Label
     I     : Label
     Label : String -> Label
 
@@ -26,27 +26,27 @@ signature
     Namespace        : String -> Namespace
  
   arrows // occurrences
-    Name                  -mkOccurrence-> Occurrence
-    (String * Name)       -mkOccurrence-> Occurrence
-    (Name * AST)          -mkOccurrence-> Occurrence
-    (String * Name * AST) -mkOccurrence-> Occurrence
+    mkOccurrence(Name)               --> Occurrence
+    mkOccurrence(String, Name)       --> Occurrence
+    //mkOccurrence(Name, AST)          --> Occurrence
+    mkOccurrence(String, Name, AST) --> Occurrence
 
     namespaceOf(Occurrence) --> Namespace
     nameOf(Occurrence) --> Name
 
   arrows // scope graph
-    NaBL2 |- Scope -declsOf-> List(Occurrence)
-    NaBL2 |- Scope -edgesOf-> Map(Label, List(Scope))
-    NaBL2 |- Scope -importsOf-> Map(Label, List(Occurrence))
+    NaBL2 |- declsOf(Scope) --> List(Occurrence)
+    NaBL2 |- edgesOf(Scope) --> Map(Label, List(Scope))
+    NaBL2 |- importsOf(Scope) --> Map(Label, List(Occurrence))
 
-    NaBL2 |- Occurrence -scopeOfDecl-> Scope
-    NaBL2 |- Occurrence -scopeOfRef-> Scope
-    NaBL2 |- Occurrence -assocsOf-> Map(Label, List(Scope))
-    NaBL2 |- Occurrence -typeOf-> Type
+    NaBL2 |- scopeOfDecl(Occurrence) --> Scope
+    NaBL2 |- scopeOfRef(Occurrence) --> Scope
+    NaBL2 |- assocsOf(Occurrence) --> Map(Label, List(Scope))
+    NaBL2 |- typeOf(Occurrence) --> Type
 
   arrows // name resolution
-    NaBL2 |- Occurrence -pathOf-> Path
-
+    NaBL2 |- pathOf(Occurrence) --> Path
+ 
   sorts
     NaBL2
 
