@@ -32,11 +32,11 @@ public class ActiveVars implements IConstraintSetProperty {
     // ---------------------------------------------
 
     @Override public boolean add(IConstraint constraint) {
-        boolean change = false;
-        for(ITermVar var : findActiveVars(constraint)) {
-            change |= activeVars.add(var);
-        }
-        return change;
+        return activeVars.addAll(findActiveVars(constraint));
+    }
+
+    public boolean add(ITerm term) {
+        return activeVars.addAll(unifier.find(term).getVars());
     }
 
     @Override public boolean update(final ITermVar var) {
@@ -53,15 +53,11 @@ public class ActiveVars implements IConstraintSetProperty {
     }
 
     @Override public boolean remove(IConstraint constraint) {
-        boolean change = false;
-        for(ITermVar var : findActiveVars(constraint)) {
-            change |= activeVars.remove(var);
-        }
-        return change;
+        return Multisets.removeOccurrences(activeVars, findActiveVars(constraint));
     }
 
-    public boolean contains(ITermVar var) {
-        return activeVars.contains(var);
+    public boolean contains(ITerm term) {
+        return unifier.find(term).getVars().stream().anyMatch(activeVars::contains);
     }
 
     // ---------------------------------------------

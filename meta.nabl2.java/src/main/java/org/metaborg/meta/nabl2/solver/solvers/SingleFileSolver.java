@@ -54,7 +54,7 @@ public class SingleFileSolver extends BaseSolver {
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
         // guards
-        final Predicate1<ITermVar> isVarInactive = v -> !activeVars.contains(v);
+        final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
         final Predicate1<IRelationName> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
         final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> !scopeGraph.isOpen(s, l);
 
@@ -66,7 +66,7 @@ public class SingleFileSolver extends BaseSolver {
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
         final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, () -> true, isEdgeClosed,
                 scopeGraph, initial.declProperties().melt());
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isVarInactive);
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
         final RelationComponent relationSolver =
                 new RelationComponent(core, isRelationComplete, config.getFunctions(), initial.relations().melt());
         final SetComponent setSolver = new SetComponent(core, nameResolutionSolver.nameSets());

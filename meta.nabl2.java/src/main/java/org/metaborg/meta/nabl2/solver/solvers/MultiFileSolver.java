@@ -64,9 +64,10 @@ public class MultiFileSolver extends BaseSolver {
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
+        intfVars.stream().forEach(activeVars::add);
 
         // guards
-        final Predicate1<ITermVar> isVarInactive = v -> !(intfVars.contains(v) || activeVars.contains(v));
+        final Predicate1<ITerm> isTermInactive = v -> !activeVars.contains(v);
         final Predicate1<IRelationName> isRelationComplete = r -> false;
         final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> !(intfScopes.contains(s) || scopeGraph.isOpen(s, l));
 
@@ -78,7 +79,7 @@ public class MultiFileSolver extends BaseSolver {
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
         final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, () -> true, isEdgeClosed,
                 scopeGraph, initial.declProperties().melt());
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isVarInactive);
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
         final RelationComponent relationSolver =
                 new RelationComponent(core, isRelationComplete, config.getFunctions(), initial.relations().melt());
         final SetComponent setSolver = new SetComponent(core, nameResolutionSolver.nameSets());
@@ -131,7 +132,7 @@ public class MultiFileSolver extends BaseSolver {
         final HasScopeGraphConstraints hasScopeGraphConstraints = new HasScopeGraphConstraints();
 
         // guards
-        final Predicate1<ITermVar> isVarInactive = v -> !activeVars.contains(v);
+        final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
         final Predicate1<IRelationName> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
         final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> !scopeGraph.isOpen(s, l);
 
@@ -143,7 +144,7 @@ public class MultiFileSolver extends BaseSolver {
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
         final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, () -> true, isEdgeClosed,
                 scopeGraph, initial.declProperties().melt());
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isVarInactive);
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
         final RelationComponent relationSolver =
                 new RelationComponent(core, isRelationComplete, config.getFunctions(), initial.relations().melt());
         final SetComponent setSolver = new SetComponent(core, nameResolutionSolver.nameSets());

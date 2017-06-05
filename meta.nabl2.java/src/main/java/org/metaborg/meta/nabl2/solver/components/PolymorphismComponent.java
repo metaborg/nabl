@@ -24,11 +24,11 @@ import com.google.common.collect.Maps;
 
 public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
 
-    private final Predicate1<ITermVar> isVarInactive;
+    private final Predicate1<ITerm> isTermInactive;
 
-    public PolymorphismComponent(SolverCore core, Predicate1<ITermVar> isVarInactive) {
+    public PolymorphismComponent(SolverCore core, Predicate1<ITerm> isTermInactive) {
         super(core);
-        this.isVarInactive = isVarInactive;
+        this.isTermInactive = isTermInactive;
     }
 
     @Override public Optional<SolveResult> solve(IPolyConstraint constraint) {
@@ -43,7 +43,7 @@ public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
 
     private Optional<SolveResult> solve(CGeneralize gen) {
         final ITerm type = find(gen.getType());
-        if(!isTermInactive(type)) {
+        if(!isTermInactive.test(type)) {
             return Optional.empty();
         }
         final Map<ITermVar, TypeVar> subst = Maps.newLinkedHashMap(); // linked map to preserve key order
@@ -66,7 +66,7 @@ public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
 
     private Optional<SolveResult> solve(CInstantiate inst) {
         final ITerm schemeTerm = find(inst.getScheme());
-        if(!isTermInactive(schemeTerm)) {
+        if(!isTermInactive.test(schemeTerm)) {
             return Optional.empty();
         }
         final Optional<Forall> forall = Forall.matcher().match(schemeTerm);
@@ -96,10 +96,6 @@ public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
             t -> subst.containsKey(t) ? Optional.of(subst.get(t)) : Optional.empty()
             // @formatter:on
         ).apply(term);
-    }
-
-    private boolean isTermInactive(ITerm term) {
-        return term.getVars().stream().allMatch(isVarInactive::test);
     }
 
 }
