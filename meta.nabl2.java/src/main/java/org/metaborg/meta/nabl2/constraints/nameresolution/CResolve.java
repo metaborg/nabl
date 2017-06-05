@@ -7,9 +7,6 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
-
-import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -20,10 +17,6 @@ public abstract class CResolve implements INameResolutionConstraint {
     @Value.Parameter public abstract ITerm getDeclaration();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return getReference().getVars().__insertAll(getDeclaration().getVars());
-    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseResolve(this);

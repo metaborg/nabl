@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 
 public interface IConstraintSetProperty {
 
@@ -15,5 +16,7 @@ public interface IConstraintSetProperty {
     }
 
     boolean remove(IConstraint constraint);
+
+    boolean update(ITermVar var);
 
 }

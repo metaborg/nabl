@@ -70,7 +70,8 @@ public class EqualityComponent extends ASolver<IEqualityConstraint, IUnifier.Imm
                 final Set<IConstraint> constraints = unifyResult.getResidual().stream()
                         .map(ts -> ImmutableCEqual.of(ts.getKey(), ts.getValue(), constraint.getMessageInfo()))
                         .collect(Collectors.toSet());
-                final SolveResult solveResult = ImmutableSolveResult.builder().constraints(constraints).build();
+                final SolveResult solveResult = ImmutableSolveResult.builder().constraints(constraints)
+                        .unifiedVars(unifyResult.getSubstituted()).build();
                 return Optional.of(solveResult);
             } else {
                 return Optional.empty();

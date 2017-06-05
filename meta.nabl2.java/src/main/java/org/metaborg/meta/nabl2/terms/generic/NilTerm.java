@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.INilTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 42L)
@@ -21,8 +21,8 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
         return false;
     }
     
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of();
+    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
+        return ImmutableMultiset.of();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

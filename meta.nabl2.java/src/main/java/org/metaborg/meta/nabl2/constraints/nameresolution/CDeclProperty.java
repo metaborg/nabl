@@ -7,11 +7,8 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 
 import com.google.common.base.Preconditions;
-
-import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -26,10 +23,6 @@ public abstract class CDeclProperty implements INameResolutionConstraint {
     @Value.Parameter public abstract int getPriority();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return getDeclaration().getVars().__insertAll(getValue().getVars());
-    }
 
     @Value.Check public void check() {
         Preconditions.checkArgument(getKey().isGround());

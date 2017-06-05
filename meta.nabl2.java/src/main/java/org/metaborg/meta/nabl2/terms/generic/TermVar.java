@@ -8,7 +8,7 @@ import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -25,9 +25,9 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
     @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
         return false;
     }
-    
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of(this);
+
+    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
+        return ImmutableMultiset.of(this);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

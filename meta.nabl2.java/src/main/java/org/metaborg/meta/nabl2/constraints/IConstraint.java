@@ -13,18 +13,13 @@ import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
-
-import io.usethesource.capsule.Set;
 
 public interface IConstraint {
 
     IMessageInfo getMessageInfo();
 
     IMessageContent pp();
-
-    Set.Immutable<ITermVar> getVars();
 
     <T> T match(Cases<T> function);
 

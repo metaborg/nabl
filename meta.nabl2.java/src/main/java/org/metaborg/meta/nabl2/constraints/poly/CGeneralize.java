@@ -10,8 +10,6 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 
-import io.usethesource.capsule.Set;
-
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class CGeneralize implements IPolyConstraint {
@@ -23,10 +21,6 @@ public abstract class CGeneralize implements IPolyConstraint {
     @Value.Parameter public abstract ITerm getType();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return getScheme().getVars().__insertAll(getType().getVars());
-    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseGeneralize(this);

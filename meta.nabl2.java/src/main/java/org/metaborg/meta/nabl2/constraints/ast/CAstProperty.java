@@ -8,11 +8,8 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 
 import com.google.common.base.Preconditions;
-
-import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -26,10 +23,6 @@ public abstract class CAstProperty implements IAstConstraint {
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return getValue().getVars();
-    }
-    
     @Value.Check public void check() {
         Preconditions.checkArgument(getKey().isGround());
     }
@@ -52,7 +45,7 @@ public abstract class CAstProperty implements IAstConstraint {
 
     @Override public IMessageContent pp() {
         return MessageContent.builder().append(getIndex()).append(".").append(getKey()).append(" := ")
-            .append(getValue()).build();
+                .append(getValue()).build();
     }
 
     @Override public String toString() {

@@ -8,7 +8,9 @@ import org.metaborg.meta.nabl2.solver.ISolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.ImmutableSolveResult;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
+import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.solver.properties.IConstraintSetProperty;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
@@ -25,7 +27,7 @@ public class FixedPointSolver {
     private final java.util.Set<IConstraintSetProperty> properties;
 
     public FixedPointSolver(ICancel cancel, IProgress progress, ISolver<IConstraint, ?> component,
-            IConstraintSetProperty... properties) {
+            Iterable<? extends IConstraintSetProperty> properties) {
         this(cancel, progress, component, Sets.newHashSet(properties));
     }
 
@@ -37,10 +39,10 @@ public class FixedPointSolver {
         this.properties = properties;
     }
 
-    public SolveResult solve(Iterable<? extends IConstraint> initialConstraints, IMessages.Transient messages)
-            throws InterruptedException {
-        propertiesAdd(initialConstraints);
+    public SolveResult solve(Iterable<? extends IConstraint> initialConstraints) throws InterruptedException {
+        propertiesAddAll(initialConstraints);
 
+        final IMessages.Transient messages = Messages.Transient.of();
         final Multimap<String, String> strongDependencies = HashMultimap.create();
         final Multimap<String, String> weakDependencies = HashMultimap.create();
 
@@ -54,22 +56,26 @@ public class FixedPointSolver {
                 cancel.throwIfCancelled();
                 final IConstraint constraint = it.next();
                 final SolveResult result;
+                propertiesRemove(constraint); // property only on other constraints
                 if((result = component.solve(constraint).orElse(null)) != null) {
                     messages.addAll(result.messages());
 
                     strongDependencies.putAll(result.strongDependencies());
                     weakDependencies.putAll(result.weakDependencies());
 
-                    propertiesAdd(result.constraints());
+                    propertiesAddAll(result.constraints());
                     newConstraints.addAll(result.constraints());
 
-                    propertiesRemove(constraint);
+
+                    propertiesUpdate(result.unifiedVars());
                     it.remove();
 
                     component.update();
 
                     this.progress.work(1);
                     progress |= true;
+                } else {
+                    propertiesAdd(constraint);
                 }
             }
             constraints.addAll(newConstraints);
@@ -85,15 +91,29 @@ public class FixedPointSolver {
                 .build();
     }
 
-    private void propertiesAdd(Iterable<? extends IConstraint> constraints) {
+    private void propertiesAddAll(Iterable<? extends IConstraint> constraints) {
         for(IConstraintSetProperty property : properties) {
             property.addAll(constraints);
+        }
+    }
+
+    private void propertiesAdd(IConstraint constraint) {
+        for(IConstraintSetProperty property : properties) {
+            property.add(constraint);
         }
     }
 
     private void propertiesRemove(IConstraint constraint) {
         for(IConstraintSetProperty property : properties) {
             property.remove(constraint);
+        }
+    }
+
+    private void propertiesUpdate(Set<ITermVar> vars) {
+        for(ITermVar var : vars) {
+            for(IConstraintSetProperty property : properties) {
+                property.update(var);
+            }
         }
     }
 

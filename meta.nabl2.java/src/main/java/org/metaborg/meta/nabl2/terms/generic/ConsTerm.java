@@ -12,7 +12,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -40,8 +40,11 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
         return false;
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
-        return getHead().getVars().__insertAll(getTail().getVars());
+    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+        vars.addAll(getHead().getVars());
+        vars.addAll(getTail().getVars());
+        return vars.build();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

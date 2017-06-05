@@ -11,6 +11,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.util.time.AggregateTimer;
 
 import com.google.common.collect.ImmutableMultimap;
@@ -84,6 +85,10 @@ public interface ISolver<C extends IConstraint, R> {
             return ImmutableMultimap.of();
         }
 
+        @Value.Default public Set<ITermVar> unifiedVars() {
+            return Collections.emptySet();
+        }
+
         public static SolveResult empty() {
             return ImmutableSolveResult.builder().build();
         }
@@ -120,7 +125,7 @@ public interface ISolver<C extends IConstraint, R> {
             }
 
             public boolean update() throws InterruptedException {
-                return false;
+                return component.update();
             }
 
             public R finish() {
@@ -146,7 +151,7 @@ public interface ISolver<C extends IConstraint, R> {
             }
 
             public boolean update() throws InterruptedException {
-                return false;
+                return component.update();
             }
 
             public R finish() {
@@ -172,7 +177,7 @@ public interface ISolver<C extends IConstraint, R> {
             }
 
             public boolean update() throws InterruptedException {
-                return false;
+                return component.update();
             }
 
             public R finish() {

@@ -12,8 +12,7 @@ import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializable {
 
@@ -45,7 +44,7 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return new OccurrenceIndex(resource, term.withLocked(locked));
     }
 
-    public Set.Immutable<ITermVar> getVars() {
+    public ImmutableMultiset<ITermVar> getVars() {
         return term.getVars();
     }
 

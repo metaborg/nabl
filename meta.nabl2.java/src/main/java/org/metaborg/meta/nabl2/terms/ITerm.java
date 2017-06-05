@@ -1,8 +1,7 @@
 package org.metaborg.meta.nabl2.terms;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 public interface ITerm {
 
@@ -12,7 +11,7 @@ public interface ITerm {
 
     ITerm withLocked(boolean locked);
 
-    Set.Immutable<ITermVar> getVars();
+    ImmutableMultiset<ITermVar> getVars();
 
     ImmutableClassToInstanceMap<Object> getAttachments();
 

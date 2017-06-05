@@ -8,9 +8,6 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
-
-import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -23,10 +20,6 @@ public abstract class CGImportEdge implements IScopeGraphConstraint {
     @Value.Parameter public abstract ITerm getReference();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return getScope().getVars().__insertAll(getReference().getVars());
-    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseImport(this);

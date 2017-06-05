@@ -12,8 +12,6 @@ import org.metaborg.meta.nabl2.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
 
-import io.usethesource.capsule.SetMultimap;
-
 @Beta
 public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
         extends IScopeGraph<S, L, O> {
@@ -49,18 +47,12 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
 
         IRelation3.Immutable<S, L, V> incompleteImportEdges();
 
-        SetMultimap.Immutable<S, L> openEdges();
-
         IEsopScopeGraph.Transient<S, L, O, V> melt();
 
     }
 
     interface Transient<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends IEsopScopeGraph<S, L, O, V> {
-
-        boolean addOpen(S scope, L label);
-
-        boolean removeOpen(S scope, L label);
 
         boolean addDecl(S scope, O decl);
 

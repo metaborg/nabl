@@ -5,7 +5,7 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -21,8 +21,8 @@ abstract class StringTerm extends AbstractTerm implements IStringTerm {
         return false;
     }
     
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of();
+    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
+        return ImmutableMultiset.of();
     }
 
     @Override public <T> T match(Cases<T> cases) {

@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.terms.ITermVar;
 
 public class HasScopeGraphConstraints implements IConstraintSetProperty {
 
@@ -43,6 +44,10 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
             c -> false
             // @formatter:on
         ));
+    }
+
+    public boolean update(ITermVar var) {
+        return false;
     }
 
     public boolean isEmpty() {

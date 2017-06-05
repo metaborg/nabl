@@ -66,7 +66,7 @@ public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
 
     private Optional<SolveResult> solve(CInstantiate inst) {
         final ITerm schemeTerm = find(inst.getScheme());
-        if(!schemeTerm.isGround()) {
+        if(!isTermInactive(schemeTerm)) {
             return Optional.empty();
         }
         final Optional<Forall> forall = Forall.matcher().match(schemeTerm);

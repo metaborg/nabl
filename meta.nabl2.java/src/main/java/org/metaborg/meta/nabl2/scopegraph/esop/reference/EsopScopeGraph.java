@@ -17,7 +17,6 @@ import org.metaborg.meta.nabl2.util.functions.Predicate2;
 import org.metaborg.meta.nabl2.util.functions.Predicate3;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 
 public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
         implements IEsopScopeGraph<S, L, O, V> {
@@ -35,12 +34,10 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
     private final IRelation3<S, L, V> incompleteDirectEdges;
     private final IRelation3<S, L, V> incompleteImportEdges;
 
-    private final SetMultimap<S, L> openEdges;
-
     private EsopScopeGraph(Set<S> allScopes, Set<O> allDecls, Set<O> allRefs, IFunction<O, S> decls,
             IFunction<O, S> refs, IRelation3<S, L, S> directEdges, IRelation3<O, L, S> assocEdges,
             IRelation3<S, L, O> importEdges, IRelation3<S, L, V> incompleteDirectEdges,
-            IRelation3<S, L, V> incompleteImportEdges, SetMultimap<S, L> openEdges) {
+            IRelation3<S, L, V> incompleteImportEdges) {
         this.allScopes = allScopes;
         this.allDecls = allDecls;
         this.allRefs = allRefs;
@@ -51,7 +48,6 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         this.importEdges = importEdges;
         this.incompleteDirectEdges = incompleteDirectEdges;
         this.incompleteImportEdges = incompleteImportEdges;
-        this.openEdges = openEdges;
     }
 
     // ------------------------------------------------------------
@@ -97,12 +93,11 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
     }
 
     @Override public boolean isComplete() {
-        return openEdges.isEmpty() && incompleteDirectEdges.isEmpty() && incompleteImportEdges.isEmpty();
+        return incompleteDirectEdges.isEmpty() && incompleteImportEdges.isEmpty();
     }
 
     @Override public boolean isOpen(S scope, L label) {
-        return openEdges.containsEntry(scope, label) || incompleteDirectEdges.contains(scope, label)
-                || incompleteImportEdges.contains(scope, label);
+        return incompleteDirectEdges.contains(scope, label) || incompleteImportEdges.contains(scope, label);
     }
 
     @Override public EsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params,
@@ -129,15 +124,13 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         private final IRelation3.Immutable<S, L, V> incompleteDirectEdges;
         private final IRelation3.Immutable<S, L, V> incompleteImportEdges;
 
-        private final SetMultimap.Immutable<S, L> openEdges;
-
         Immutable(Set.Immutable<S> allScopes, Set.Immutable<O> allDecls, Set.Immutable<O> allRefs,
                 IFunction.Immutable<O, S> decls, IFunction.Immutable<O, S> refs,
                 IRelation3.Immutable<S, L, S> directEdges, IRelation3.Immutable<O, L, S> assocEdges,
                 IRelation3.Immutable<S, L, O> importEdges, IRelation3.Immutable<S, L, V> incompleteDirectEdges,
-                IRelation3.Immutable<S, L, V> incompleteImportEdges, SetMultimap.Immutable<S, L> openEdges) {
+                IRelation3.Immutable<S, L, V> incompleteImportEdges) {
             super(allScopes, allDecls, allRefs, decls, refs, directEdges, assocEdges, importEdges,
-                    incompleteDirectEdges, incompleteImportEdges, openEdges);
+                    incompleteDirectEdges, incompleteImportEdges);
             this.allScopes = allScopes;
             this.allDecls = allDecls;
             this.allRefs = allRefs;
@@ -148,7 +141,6 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             this.importEdges = importEdges;
             this.incompleteDirectEdges = incompleteDirectEdges;
             this.incompleteImportEdges = incompleteImportEdges;
-            this.openEdges = openEdges;
         }
 
         // ------------------------------------------------------------
@@ -193,17 +185,12 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return incompleteImportEdges;
         }
 
-        public SetMultimap.Immutable<S, L> openEdges() {
-            return openEdges;
-        }
-
         // ------------------------------------------------------------
 
         public EsopScopeGraph.Transient<S, L, O, V> melt() {
             return new EsopScopeGraph.Transient<>(allScopes.asTransient(), allDecls.asTransient(),
                     allRefs.asTransient(), decls.melt(), refs.melt(), directEdges.melt(), assocEdges.melt(),
-                    importEdges.melt(), incompleteDirectEdges.melt(), incompleteImportEdges.melt(),
-                    openEdges.asTransient());
+                    importEdges.melt(), incompleteDirectEdges.melt(), incompleteImportEdges.melt());
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence, V>
@@ -211,7 +198,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return new EsopScopeGraph.Immutable<>(Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(),
                     HashTrieFunction.Immutable.of(), HashTrieFunction.Immutable.of(), HashTrieRelation3.Immutable.of(),
                     HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(),
-                    HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(), SetMultimap.Immutable.of());
+                    HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of());
         }
 
     }
@@ -232,15 +219,13 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         private final IRelation3.Transient<S, L, V> incompleteDirectEdges;
         private final IRelation3.Transient<S, L, V> incompleteImportEdges;
 
-        private final SetMultimap.Transient<S, L> openEdges;
-
         Transient(Set.Transient<S> allScopes, Set.Transient<O> allDecls, Set.Transient<O> allRefs,
                 IFunction.Transient<O, S> decls, IFunction.Transient<O, S> refs,
                 IRelation3.Transient<S, L, S> directEdges, IRelation3.Transient<O, L, S> assocEdges,
                 IRelation3.Transient<S, L, O> importEdges, IRelation3.Transient<S, L, V> incompleteDirectEdges,
-                IRelation3.Transient<S, L, V> incompleteImportEdges, SetMultimap.Transient<S, L> openEdges) {
+                IRelation3.Transient<S, L, V> incompleteImportEdges) {
             super(allScopes, allDecls, allRefs, decls, refs, directEdges, assocEdges, importEdges,
-                    incompleteDirectEdges, incompleteImportEdges, openEdges);
+                    incompleteDirectEdges, incompleteImportEdges);
             this.allScopes = allScopes;
             this.allDecls = allDecls;
             this.allRefs = allRefs;
@@ -251,7 +236,6 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             this.importEdges = importEdges;
             this.incompleteDirectEdges = incompleteDirectEdges;
             this.incompleteImportEdges = incompleteImportEdges;
-            this.openEdges = openEdges;
         }
 
         // ------------------------------------------------------------
@@ -314,10 +298,6 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return false;
         }
 
-        @Override public boolean addOpen(S scope, L label) {
-            return openEdges.__insert(scope, label);
-        }
-
         @Override public boolean addAll(IEsopScopeGraph<S, L, O, V> other) {
             boolean change = false;
             change |= allScopes.__insertAll(other.getAllScopes());
@@ -331,10 +311,6 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             change |= incompleteDirectEdges.putAll(other.incompleteDirectEdges());
             change |= incompleteImportEdges.putAll(other.incompleteImportEdges());
             return change;
-        }
-
-        @Override public boolean removeOpen(S scope, L label) {
-            return openEdges.__remove(scope, label);
         }
 
         // -------------------------
@@ -363,7 +339,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         public EsopScopeGraph.Immutable<S, L, O, V> freeze() {
             return new EsopScopeGraph.Immutable<>(allScopes.freeze(), allDecls.freeze(), allRefs.freeze(),
                     decls.freeze(), refs.freeze(), directEdges.freeze(), assocEdges.freeze(), importEdges.freeze(),
-                    incompleteDirectEdges.freeze(), incompleteImportEdges.freeze(), openEdges.freeze());
+                    incompleteDirectEdges.freeze(), incompleteImportEdges.freeze());
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence, V>
@@ -371,7 +347,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return new EsopScopeGraph.Transient<>(Set.Transient.of(), Set.Transient.of(), Set.Transient.of(),
                     HashTrieFunction.Transient.of(), HashTrieFunction.Transient.of(), HashTrieRelation3.Transient.of(),
                     HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
-                    HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(), SetMultimap.Transient.of());
+                    HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of());
         }
 
     }

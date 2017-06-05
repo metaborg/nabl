@@ -13,7 +13,7 @@ public interface IAstConstraint extends IConstraint {
 
         T caseProperty(CAstProperty constraint);
 
-        static <T> Cases<T> of(Function<CAstProperty,T> onProperty) {
+        static <T> Cases<T> of(Function<CAstProperty, T> onProperty) {
             return new Cases<T>() {
 
                 @Override public T caseProperty(CAstProperty constraint) {
@@ -25,14 +25,14 @@ public interface IAstConstraint extends IConstraint {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 
         T caseProperty(CAstProperty constraint) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CAstProperty,T,E> onProperty) {
-            return new CheckedCases<T,E>() {
+        static <T, E extends Throwable> CheckedCases<T, E> of(CheckedFunction1<CAstProperty, T, E> onProperty) {
+            return new CheckedCases<T, E>() {
 
                 @Override public T caseProperty(CAstProperty constraint) throws E {
                     return onProperty.apply(constraint);
@@ -41,6 +41,11 @@ public interface IAstConstraint extends IConstraint {
             };
         }
 
+    }
+
+    public static boolean is(IConstraint constraint) {
+        return constraint.match(IConstraint.Cases.of(c -> true, c -> false, c -> false, c -> false, c -> false,
+                c -> false, c -> false, c -> false, c -> false));
     }
 
 }

@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableMultiset;
 
 public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm {
 
@@ -27,12 +27,12 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return getArgs().stream().allMatch(ITerm::isGround);
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
-    	Set.Transient<ITermVar> vars = Set.Transient.of();
+    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
         for(ITerm arg : getArgs()) {
-            vars.__insertAll(arg.getVars());
+            vars.addAll(arg.getVars());
         }
-        return vars.freeze();
+        return vars.build();
     }
 
     @Override public <T> T match(Cases<T> cases) {

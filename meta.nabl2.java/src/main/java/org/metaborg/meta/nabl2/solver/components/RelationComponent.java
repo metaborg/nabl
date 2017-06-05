@@ -32,10 +32,10 @@ public class RelationComponent extends ASolver<IRelationConstraint, IRelations.I
     private final IRelations.Transient<ITerm> relations;
     private final Map.Transient<String, PartialFunction1<ITerm, ITerm>> functions;
 
-    public RelationComponent(SolverCore core, Predicate1<IRelationName> isIncomplete,
+    public RelationComponent(SolverCore core, Predicate1<IRelationName> isComplete,
             Map.Immutable<String, PartialFunction1<ITerm, ITerm>> functions, IRelations.Transient<ITerm> initial) {
         super(core);
-        this.isComplete = isIncomplete;
+        this.isComplete = isComplete;
         this.relations = initial;
         this.functions = functions.asTransient();
         addRelationFunctions();

@@ -8,9 +8,6 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
-
-import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -23,10 +20,6 @@ public abstract class CCheckRelation implements IRelationConstraint {
     @Value.Parameter public abstract ITerm getRight();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return getLeft().getVars().__insertAll(getRelation().getVars());
-    }
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseCheck(this);
@@ -46,7 +39,7 @@ public abstract class CCheckRelation implements IRelationConstraint {
 
     @Override public IMessageContent pp() {
         return MessageContent.builder().append(getLeft()).append(" <" + getRelation() + "? ").append(getRight())
-            .build();
+                .build();
     }
 
     @Override public String toString() {
