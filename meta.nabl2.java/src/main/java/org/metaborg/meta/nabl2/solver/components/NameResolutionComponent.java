@@ -2,7 +2,10 @@ package org.metaborg.meta.nabl2.solver.components;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
@@ -13,7 +16,6 @@ import org.metaborg.meta.nabl2.constraints.nameresolution.CResolve;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
-import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Namespace;
@@ -22,6 +24,8 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.ImmutableSolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
@@ -29,44 +33,37 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
-import org.metaborg.meta.nabl2.util.functions.Predicate0;
-import org.metaborg.meta.nabl2.util.functions.Predicate2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 
-public class NameResolutionComponent
-        extends ASolver<INameResolutionConstraint, IProperties.Immutable<Occurrence, ITerm, ITerm>> {
-    private static final ILogger logger = LoggerUtils.logger(NameResolutionComponent.class);
+public class NameResolutionComponent extends ASolver {
 
-    private final Predicate0 isGraphComplete;
-    private final IEsopScopeGraph<Scope, Label, Occurrence, ?> scopeGraph;
-    private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
+    private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
+    private final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution;
     private final IProperties.Transient<Occurrence, ITerm, ITerm> properties;
 
-    public NameResolutionComponent(SolverCore core, Predicate0 isGraphComplete, Predicate2<Scope, Label> isEdgeClosed,
-            IEsopScopeGraph<Scope, Label, Occurrence, ?> scopeGraph,
+    public NameResolutionComponent(SolverCore core,
+            IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph,
+            IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution,
             IProperties.Transient<Occurrence, ITerm, ITerm> initial) {
         super(core);
-        this.isGraphComplete = isGraphComplete;
         this.scopeGraph = scopeGraph;
-        this.nameResolution = scopeGraph.resolve(config().getResolutionParams(), isEdgeClosed);
+        this.nameResolution = nameResolution;
         this.properties = initial;
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override public SeedResult seed(IProperties.Immutable<Occurrence, ITerm, ITerm> solution, IMessageInfo message)
-            throws InterruptedException {
+    public SeedResult seed(NameResolutionResult solution, IMessageInfo message) throws InterruptedException {
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
-        solution.stream().forEach(entry -> {
+        scopeGraph.addAll(solution.scopeGraph());
+        nameResolution.addAll(solution.nameResolution());
+        solution.declProperties().stream().forEach(entry -> {
             properties.putValue(entry._1(), entry._2(), entry._3()).ifPresent(prev -> {
                 constraints.add(ImmutableCEqual.of(entry._3(), prev, message));
             });
@@ -74,37 +71,41 @@ public class NameResolutionComponent
         return SeedResult.constraints(constraints);
     }
 
-    @Override public Optional<SolveResult> solve(INameResolutionConstraint constraint) {
+    public Optional<SolveResult> solve(INameResolutionConstraint constraint) {
         return constraint.match(INameResolutionConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 
-    @Override public IProperties.Immutable<Occurrence, ITerm, ITerm> finish() {
-        return properties.freeze();
+    public boolean update() throws InterruptedException {
+        boolean change = false;
+        change |= scopeGraph.reduce(this::findScope, this::findOccurrence);
+        change |= nameResolution.resolve();
+        return change;
+    }
+
+    public NameResolutionResult finish() {
+        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), nameResolution.freeze(), properties.freeze());
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<SolveResult> solve(CResolve r) {
-        if(!isGraphComplete.test()) {
-            return Optional.empty();
-        }
         final ITerm refTerm = find(r.getReference());
         if(!refTerm.isGround()) {
             return Optional.empty();
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        final Optional<Tuple2<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>, Set.Immutable<String>>> maybePathsAndDeps =
+        final Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
                 nameResolution.tryResolve(ref);
         if(!maybePathsAndDeps.isPresent()) {
             return Optional.empty();
         }
-        final Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get()._1();
-        final String refResource = ref.getIndex().getResource();
-        final Multimap<String, String> weakDeps = ImmutableMultimap.<String, String>builder()
-                .putAll(refResource, maybePathsAndDeps.get()._2().__remove(refResource)).build();
+        final Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get();
         final List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths);
-        final SolveResult result;
+        final Multimap<String, String> deps = HashMultimap.create();
+        deps.putAll(ref.getIndex().getResource(),
+                declarations.stream().map(d -> d.getIndex().getResource()).collect(Collectors.toSet()));
+        final ImmutableSolveResult result;
         switch(declarations.size()) {
             case 0: {
                 IMessageInfo message = r.getMessageInfo()
@@ -114,16 +115,7 @@ public class NameResolutionComponent
             }
             case 1: {
                 final Occurrence decl = declarations.get(0);
-                final String declResource = decl.getIndex().getResource();
-                final Multimap<String, String> strongDeps = !declResource.equals(refResource)
-                        ? ImmutableMultimap.of(refResource, declResource) : ImmutableMultimap.of();
-                result = ImmutableSolveResult.builder()
-                        // @formatter:off
-                        .addConstraints(ImmutableCEqual.of(r.getDeclaration(), decl, r.getMessageInfo()))
-                        .strongDependencies(strongDeps)
-                        .weakDependencies(weakDeps)
-                        // @formatter:on
-                        .build();
+                result = SolveResult.constraints(ImmutableCEqual.of(r.getDeclaration(), decl, r.getMessageInfo()));
                 break;
             }
             default: {
@@ -133,13 +125,10 @@ public class NameResolutionComponent
                 break;
             }
         }
-        return Optional.of(result);
+        return Optional.of(result.withDependencies(deps));
     }
 
     private Optional<SolveResult> solve(CAssoc a) {
-        if(!isGraphComplete.test()) {
-            return Optional.empty();
-        }
         final ITerm declTerm = find(a.getDeclaration());
         if(!declTerm.isGround()) {
             return Optional.empty();
@@ -191,9 +180,6 @@ public class NameResolutionComponent
 
     public IMatcher<java.util.Set<IElement<ITerm>>> nameSets() {
         return term -> {
-            if(!isGraphComplete.test()) {
-                return Optional.empty();
-            }
             return M.<Optional<java.util.Set<IElement<ITerm>>>>cases(
                 // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
@@ -205,20 +191,14 @@ public class NameResolutionComponent
                     return Optional.of(makeSet(refs, ns));
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths =
-                            NameResolutionComponent.this.nameResolution.tryVisible(scope).map(pts -> {
-                                logger.warn("Possibly ignoring dependencies.");
-                                return pts._1();
-                            });
-                    return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
+                    Optional<? extends io.usethesource.capsule.Set<Occurrence>> decls =
+                            NameResolutionComponent.this.nameResolution.tryVisible(scope);
+                    return decls.map(ds -> makeSet(ds, ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                    Optional<? extends io.usethesource.capsule.Set<IDeclPath<Scope,Label,Occurrence>>> paths =
-                            NameResolutionComponent.this.nameResolution.tryReachable(scope).map(pts -> {
-                                logger.warn("Possibly ignoring dependencies.");
-                                return pts._1();
-                            });
-                    return paths.map(ps -> makeSet(Paths.declPathsToDecls(ps), ns));
+                    Optional<? extends io.usethesource.capsule.Set<Occurrence>> decls =
+                            NameResolutionComponent.this.nameResolution.tryReachable(scope);
+                    return decls.map(ds -> makeSet(ds, ns));
                 })
                 // @formatter:on
             ).match(term).flatMap(o -> o);
@@ -259,6 +239,30 @@ public class NameResolutionComponent
                     throw new IllegalArgumentException("Projection " + name + " undefined for occurrences.");
             }
         }
+
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
+
+    private Optional<Scope> findScope(ITerm scopeTerm) {
+        return Optional.of(find(scopeTerm)).filter(ITerm::isGround).map(
+                st -> Scope.matcher().match(st).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+    }
+
+    private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
+        return Optional.of(find(occurrenceTerm)).filter(ITerm::isGround).map(ot -> Occurrence.matcher().match(ot)
+                .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+    }
+
+    @Value.Immutable
+    @Serial.Version(42l)
+    public static abstract class NameResolutionResult {
+
+        @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+
+        @Value.Parameter public abstract IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+
+        @Value.Parameter public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
     }
 

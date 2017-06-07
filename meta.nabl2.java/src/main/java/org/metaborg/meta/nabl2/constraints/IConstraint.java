@@ -97,6 +97,112 @@ public interface IConstraint {
             };
         }
 
+        static <T> Builder<T> builder() {
+            return new Builder<>();
+        }
+
+        static class Builder<T> {
+
+            private Function<? super IAstConstraint, T> onAst = null;
+            private Function<? super IBaseConstraint, T> onBase = null;
+            private Function<? super IEqualityConstraint, T> onEquality = null;
+            private Function<? super IScopeGraphConstraint, T> onScopeGraph = null;
+            private Function<? super INameResolutionConstraint, T> onNameResolution = null;
+            private Function<? super IRelationConstraint, T> onRelation = null;
+            private Function<? super ISetConstraint, T> onSet = null;
+            private Function<? super ISymbolicConstraint, T> onSym = null;
+            private Function<? super IPolyConstraint, T> onPoly = null;
+
+            public Builder<T> onAst(Function<? super IAstConstraint, T> onAst) {
+                this.onAst = onAst;
+                return this;
+            }
+
+            public Builder<T> onBase(Function<? super IBaseConstraint, T> onBase) {
+                this.onBase = onBase;
+                return this;
+            }
+
+            public Builder<T> onEquality(Function<? super IEqualityConstraint, T> onEquality) {
+                this.onEquality = onEquality;
+                return this;
+            }
+
+            public Builder<T> onScopeGraph(Function<? super IScopeGraphConstraint, T> onScopeGraph) {
+                this.onScopeGraph = onScopeGraph;
+                return this;
+            }
+
+            public Builder<T> onNameResolution(Function<? super INameResolutionConstraint, T> onNameResolution) {
+                this.onNameResolution = onNameResolution;
+                return this;
+            }
+
+            public Builder<T> onRelation(Function<? super IRelationConstraint, T> onRelation) {
+                this.onRelation = onRelation;
+                return this;
+            }
+
+            public Builder<T> onSet(Function<? super ISetConstraint, T> onSet) {
+                this.onSet = onSet;
+                return this;
+            }
+
+            public Builder<T> onSym(Function<? super ISymbolicConstraint, T> onSym) {
+                this.onSym = onSym;
+                return this;
+            }
+
+            public Builder<T> onPoly(Function<? super IPolyConstraint, T> onPoly) {
+                this.onPoly = onPoly;
+                return this;
+            }
+
+            public Cases<T> otherwise(Function<? super IConstraint, T> otherwise) {
+                return new Cases<T>() {
+
+                    @Override public T caseAst(IAstConstraint constraint) {
+                        return(onAst != null ? onAst.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseBase(IBaseConstraint constraint) {
+                        return(onBase != null ? onBase.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseEquality(IEqualityConstraint constraint) {
+                        return(onEquality != null ? onEquality.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseScopeGraph(IScopeGraphConstraint constraint) {
+                        return(onScopeGraph != null ? onScopeGraph.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    public T caseNameResolution(INameResolutionConstraint constraint) {
+                        return(onNameResolution != null ? onNameResolution.apply(constraint)
+                                : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseRelation(IRelationConstraint constraint) {
+                        return(onRelation != null ? onRelation.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseSet(ISetConstraint constraint) {
+                        return(onSet != null ? onSet.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseSym(ISymbolicConstraint constraint) {
+                        return(onSym != null ? onSym.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T casePoly(IPolyConstraint constraint) {
+                        return(onPoly != null ? onPoly.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                };
+            }
+
+        }
+
     }
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> function) throws E;
@@ -173,6 +279,113 @@ public interface IConstraint {
                 }
 
             };
+        }
+
+        static <T, E extends Throwable> Builder<T, E> builder() {
+            return new Builder<>();
+        }
+
+        static class Builder<T, E extends Throwable> {
+
+            private CheckedFunction1<? super IAstConstraint, T, E> onAst = null;
+            private CheckedFunction1<? super IBaseConstraint, T, E> onBase = null;
+            private CheckedFunction1<? super IEqualityConstraint, T, E> onEquality = null;
+            private CheckedFunction1<? super IScopeGraphConstraint, T, E> onScopeGraph = null;
+            private CheckedFunction1<? super INameResolutionConstraint, T, E> onNameResolution = null;
+            private CheckedFunction1<? super IRelationConstraint, T, E> onRelation = null;
+            private CheckedFunction1<? super ISetConstraint, T, E> onSet = null;
+            private CheckedFunction1<? super ISymbolicConstraint, T, E> onSym = null;
+            private CheckedFunction1<? super IPolyConstraint, T, E> onPoly = null;
+
+            public Builder<T, E> onAst(CheckedFunction1<? super IAstConstraint, T, E> onAst) {
+                this.onAst = onAst;
+                return this;
+            }
+
+            public Builder<T, E> onBase(CheckedFunction1<? super IBaseConstraint, T, E> onBase) {
+                this.onBase = onBase;
+                return this;
+            }
+
+            public Builder<T, E> onEquality(CheckedFunction1<? super IEqualityConstraint, T, E> onEquality) {
+                this.onEquality = onEquality;
+                return this;
+            }
+
+            public Builder<T, E> onScopeGraph(CheckedFunction1<? super IScopeGraphConstraint, T, E> onScopeGraph) {
+                this.onScopeGraph = onScopeGraph;
+                return this;
+            }
+
+            public Builder<T, E>
+                    onNameResolution(CheckedFunction1<? super INameResolutionConstraint, T, E> onNameResolution) {
+                this.onNameResolution = onNameResolution;
+                return this;
+            }
+
+            public Builder<T, E> onRelation(CheckedFunction1<? super IRelationConstraint, T, E> onRelation) {
+                this.onRelation = onRelation;
+                return this;
+            }
+
+            public Builder<T, E> onSet(CheckedFunction1<? super ISetConstraint, T, E> onSet) {
+                this.onSet = onSet;
+                return this;
+            }
+
+            public Builder<T, E> onSym(CheckedFunction1<? super ISymbolicConstraint, T, E> onSym) {
+                this.onSym = onSym;
+                return this;
+            }
+
+            public Builder<T, E> onPoly(CheckedFunction1<? super IPolyConstraint, T, E> onPoly) {
+                this.onPoly = onPoly;
+                return this;
+            }
+
+            public CheckedCases<T, E> otherwise(CheckedFunction1<? super IConstraint, T, E> otherwise) {
+                return new CheckedCases<T, E>() {
+
+                    @Override public T caseAst(IAstConstraint constraint) throws E {
+                        return(onAst != null ? onAst.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseBase(IBaseConstraint constraint) throws E {
+                        return(onBase != null ? onBase.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseEquality(IEqualityConstraint constraint) throws E {
+                        return(onEquality != null ? onEquality.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseScopeGraph(IScopeGraphConstraint constraint) throws E {
+                        return(onScopeGraph != null ? onScopeGraph.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    public T caseNameResolution(INameResolutionConstraint constraint) throws E {
+                        return(onNameResolution != null ? onNameResolution.apply(constraint)
+                                : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseRelation(IRelationConstraint constraint) throws E {
+                        return(onRelation != null ? onRelation.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseSet(ISetConstraint constraint) throws E {
+                        return(onSet != null ? onSet.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseSym(ISymbolicConstraint constraint) throws E {
+                        return(onSym != null ? onSym.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T casePoly(IPolyConstraint constraint) throws E {
+                        return(onPoly != null ? onPoly.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                };
+            }
+
         }
 
     }

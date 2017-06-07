@@ -9,25 +9,17 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.util.time.AggregateTimer;
+import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 
-public interface ISolver<C extends IConstraint, R> {
-
-    SeedResult seed(R solution, IMessageInfo message) throws InterruptedException;
-
-    Optional<SolveResult> solve(C constraint) throws InterruptedException;
-
-    boolean update() throws InterruptedException;
-
-    R finish();
-
-    AggregateTimer getTimer();
+@FunctionalInterface
+public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, InterruptedException> {
 
     @Value.Immutable(builder = true)
     @Serial.Version(42l)
@@ -77,11 +69,7 @@ public interface ISolver<C extends IConstraint, R> {
             return Messages.Immutable.of();
         }
 
-        @Value.Default public Multimap<String, String> strongDependencies() {
-            return ImmutableMultimap.of();
-        }
-
-        @Value.Default public Multimap<String, String> weakDependencies() {
+        @Value.Default public Multimap<String, String> dependencies() {
             return ImmutableMultimap.of();
         }
 
@@ -89,106 +77,42 @@ public interface ISolver<C extends IConstraint, R> {
             return Collections.emptySet();
         }
 
-        public static SolveResult empty() {
+        public static ImmutableSolveResult empty() {
             return ImmutableSolveResult.builder().build();
         }
 
-        public static SolveResult messages(IMessageInfo... messages) {
+        public static ImmutableSolveResult messages(IMessageInfo... messages) {
             return messages(Arrays.asList(messages));
         }
 
-        public static SolveResult messages(Iterable<? extends IMessageInfo> messages) {
+        public static ImmutableSolveResult messages(Iterable<? extends IMessageInfo> messages) {
             Messages.Transient msgs = Messages.Transient.of();
             msgs.addAll(messages);
             return ImmutableSolveResult.builder().messages(msgs.freeze()).build();
         }
 
-        public static SolveResult constraints(IConstraint... constraints) {
+        public static ImmutableSolveResult constraints(IConstraint... constraints) {
             return constraints(Arrays.asList(constraints));
         }
 
-        public static SolveResult constraints(Iterable<? extends IConstraint> constraints) {
+        public static ImmutableSolveResult constraints(Iterable<? extends IConstraint> constraints) {
             return ImmutableSolveResult.builder().constraints(constraints).build();
         }
 
     }
 
-    public static <C extends IConstraint, R> ISolver<C, R> defer(final ISolver<C, R> component) {
-        return new ISolver<C, R>() {
-
-            public SeedResult seed(R solution, IMessageInfo message) throws InterruptedException {
-                return component.seed(solution, message);
-            }
-
-            public Optional<SolveResult> solve(C constraint) throws InterruptedException {
-                return Optional.empty();
-            }
-
-            public boolean update() throws InterruptedException {
-                return component.update();
-            }
-
-            public R finish() {
-                return component.finish();
-            }
-
-            public AggregateTimer getTimer() {
-                return component.getTimer();
-            }
-
+    public static ISolver deny(String error) {
+        return c -> {
+            throw new IllegalArgumentException(error + ": " + c);
         };
     }
 
-    public static <C extends IConstraint, R> ISolver<C, R> deny(final ISolver<C, R> component) {
-        return new ISolver<C, R>() {
-
-            public SeedResult seed(R solution, IMessageInfo message) throws InterruptedException {
-                return component.seed(solution, message);
-            }
-
-            public Optional<SolveResult> solve(C constraint) throws InterruptedException {
-                throw new IllegalStateException("Solving is not allowed for " + constraint);
-            }
-
-            public boolean update() throws InterruptedException {
-                return component.update();
-            }
-
-            public R finish() {
-                return component.finish();
-            }
-
-            public AggregateTimer getTimer() {
-                return component.getTimer();
-            }
-
-        };
+    public static ISolver defer() {
+        return c -> Optional.empty();
     }
 
-    public static <C extends IConstraint, R> ISolver<C, R> ignore(final ISolver<C, R> component) {
-        return new ISolver<C, R>() {
-
-            public SeedResult seed(R solution, IMessageInfo message) throws InterruptedException {
-                return component.seed(solution, message);
-            }
-
-            public Optional<SolveResult> solve(C constraint) throws InterruptedException {
-                return Optional.of(SolveResult.empty());
-            }
-
-            public boolean update() throws InterruptedException {
-                return component.update();
-            }
-
-            public R finish() {
-                return component.finish();
-            }
-
-            public AggregateTimer getTimer() {
-                return component.getTimer();
-            }
-
-        };
+    public static ISolver drop() {
+        return c -> Optional.of(SolveResult.empty());
     }
 
 }

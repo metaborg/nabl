@@ -15,7 +15,7 @@ public interface ISetConstraint extends IConstraint {
 
         T caseDistinct(CDistinct constraint);
 
-        static <T> Cases<T> of(Function<CSubsetEq,T> onSubsetEq, Function<CDistinct,T> onDistinct) {
+        static <T> Cases<T> of(Function<CSubsetEq, T> onSubsetEq, Function<CDistinct, T> onDistinct) {
             return new Cases<T>() {
 
                 @Override public T caseSubsetEq(CSubsetEq constraint) {
@@ -31,7 +31,7 @@ public interface ISetConstraint extends IConstraint {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 
@@ -39,9 +39,9 @@ public interface ISetConstraint extends IConstraint {
 
         T caseDistinct(CDistinct inequal) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CSubsetEq,T,E> onSubsetEq,
-                CheckedFunction1<CDistinct,T,E> onDistinct) {
-            return new CheckedCases<T,E>() {
+        static <T, E extends Throwable> CheckedCases<T, E> of(CheckedFunction1<CSubsetEq, T, E> onSubsetEq,
+                CheckedFunction1<CDistinct, T, E> onDistinct) {
+            return new CheckedCases<T, E>() {
 
                 @Override public T caseSubsetEq(CSubsetEq constraint) throws E {
                     return onSubsetEq.apply(constraint);
@@ -54,6 +54,11 @@ public interface ISetConstraint extends IConstraint {
             };
         }
 
+    }
+
+    public static boolean is(IConstraint constraint) {
+        return constraint.match(IConstraint.Cases.of(c -> false, c -> false, c -> false, c -> false, c -> false,
+                c -> false, c -> true, c -> false, c -> false));
     }
 
 }

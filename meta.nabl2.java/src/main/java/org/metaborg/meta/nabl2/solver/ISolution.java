@@ -22,7 +22,7 @@ public interface ISolution {
 
     IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    IEsopNameResolution<Scope, Label, Occurrence> nameResolution();
+    IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
 
     IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 

@@ -2,13 +2,11 @@ package org.metaborg.meta.nabl2.scopegraph.esop;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
-import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
-import org.metaborg.meta.nabl2.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
 
@@ -37,8 +35,6 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     IRelation3<S, L, V> incompleteImportEdges();
 
     boolean isComplete();
-
-    IEsopNameResolution<S, L, O> resolve(IResolutionParameters<L> params, Predicate2<S, L> isEdgeClosed);
 
     interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends IEsopScopeGraph<S, L, O, V>, IScopeGraph.Immutable<S, L, O> {

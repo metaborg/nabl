@@ -14,12 +14,14 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
-public class ScopeGraphComponent
-        extends ASolver<IScopeGraphConstraint, IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm>> {
+public class ScopeGraphComponent extends ASolver {
 
     private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
 
@@ -30,14 +32,13 @@ public class ScopeGraphComponent
 
     // ------------------------------------------------------------------------------------------------------//
 
-    @Override public org.metaborg.meta.nabl2.solver.ISolver.SeedResult
-            seed(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> solution, IMessageInfo message)
-                    throws InterruptedException {
+    public ISolver.SeedResult seed(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> solution,
+            IMessageInfo message) throws InterruptedException {
         scopeGraph.addAll(solution);
         return SeedResult.empty();
     }
 
-    @Override public Optional<SolveResult> solve(IScopeGraphConstraint constraint) {
+    public Optional<SolveResult> solve(IScopeGraphConstraint constraint) {
         if(constraint.match(
                 IScopeGraphConstraint.Cases.of(this::solve, this::solve, this::solve, this::solve, this::solve))) {
             return Optional.of(SolveResult.empty());
@@ -46,11 +47,7 @@ public class ScopeGraphComponent
         }
     }
 
-    @Override public boolean update() throws InterruptedException {
-        return scopeGraph.reduce(this::findScope, this::findOccurrence);
-    }
-
-    @Override public IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> finish() {
+    public IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> finish() {
         return scopeGraph.freeze();
     }
 

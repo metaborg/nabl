@@ -18,33 +18,38 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import rx.Observable;
+import rx.subjects.PublishSubject;
+
 public class FixedPointSolver {
+
+    private final PublishSubject<SolveResult> stepSubject;
 
     private final ICancel cancel;
     private final IProgress progress;
 
-    private final ISolver<IConstraint, ?> component;
+    private final ISolver component;
     private final java.util.Set<IConstraintSetProperty> properties;
 
-    public FixedPointSolver(ICancel cancel, IProgress progress, ISolver<IConstraint, ?> component,
+    public FixedPointSolver(ICancel cancel, IProgress progress, ISolver component,
             Iterable<? extends IConstraintSetProperty> properties) {
         this(cancel, progress, component, Sets.newHashSet(properties));
     }
 
-    public FixedPointSolver(ICancel cancel, IProgress progress, ISolver<IConstraint, ?> component,
+    public FixedPointSolver(ICancel cancel, IProgress progress, ISolver component,
             Set<IConstraintSetProperty> properties) {
         this.cancel = cancel;
         this.progress = progress;
         this.component = component;
         this.properties = properties;
+        this.stepSubject = PublishSubject.create();
     }
 
     public SolveResult solve(Iterable<? extends IConstraint> initialConstraints) throws InterruptedException {
         propertiesAddAll(initialConstraints);
 
         final IMessages.Transient messages = Messages.Transient.of();
-        final Multimap<String, String> strongDependencies = HashMultimap.create();
-        final Multimap<String, String> weakDependencies = HashMultimap.create();
+        final Multimap<String, String> dependencies = HashMultimap.create();
 
         final Set<IConstraint> constraints = Sets.newHashSet(initialConstraints);
         boolean progress;
@@ -57,20 +62,18 @@ public class FixedPointSolver {
                 final IConstraint constraint = it.next();
                 final SolveResult result;
                 propertiesRemove(constraint); // property only on other constraints
-                if((result = component.solve(constraint).orElse(null)) != null) {
+                if((result = component.apply(constraint).orElse(null)) != null) {
                     messages.addAll(result.messages());
 
-                    strongDependencies.putAll(result.strongDependencies());
-                    weakDependencies.putAll(result.weakDependencies());
+                    dependencies.putAll(result.dependencies());
 
                     propertiesAddAll(result.constraints());
                     newConstraints.addAll(result.constraints());
 
-
                     propertiesUpdate(result.unifiedVars());
                     it.remove();
 
-                    component.update();
+                    stepSubject.onNext(result);
 
                     this.progress.work(1);
                     progress |= true;
@@ -84,8 +87,7 @@ public class FixedPointSolver {
         return ImmutableSolveResult.builder()
                 // @formatter:off
                 .messages(messages.freeze())
-                .strongDependencies(strongDependencies)
-                .weakDependencies(weakDependencies)
+                .dependencies(dependencies)
                 .constraints(constraints)
                 // @formatter:on
                 .build();
@@ -115,6 +117,10 @@ public class FixedPointSolver {
                 property.update(var);
             }
         }
+    }
+
+    public Observable<SolveResult> step() {
+        return stepSubject;
     }
 
 }

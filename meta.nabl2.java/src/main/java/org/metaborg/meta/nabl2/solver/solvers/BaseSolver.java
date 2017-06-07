@@ -1,12 +1,15 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.Optional;
 
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
@@ -18,82 +21,101 @@ import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
-import org.metaborg.meta.nabl2.solver.components.BaseComponent;
-import org.metaborg.meta.nabl2.solver.components.CompositeComponent;
-import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
-import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
-import org.metaborg.meta.nabl2.solver.components.PolymorphismComponent;
-import org.metaborg.meta.nabl2.solver.components.RelationComponent;
 import org.metaborg.meta.nabl2.solver.components.ScopeGraphComponent;
-import org.metaborg.meta.nabl2.solver.components.SetComponent;
-import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.util.collections.IProperties;
+import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
 public class BaseSolver {
 
-    protected final SolverConfig config;
-
-    public BaseSolver(SolverConfig config) {
-        this.config = config;
-    }
-
-    public ISolution solveGraph(ISolution initial, ICancel cancel, IProgress progress)
+    public GraphSolution solveGraph(BaseSolution initial, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
 
         // shared
-        final IUnifier.Transient unifier = initial.unifier().melt();
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier, n -> {
+        final SolverCore core = new SolverCore(initial.config(), t -> t, n -> {
             throw new IllegalStateException("Fresh variables are not available when solving assumptions.");
         });
-        final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
-        final BaseComponent baseSolver = new BaseComponent(core);
-        final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
+        final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
-        final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, () -> false,
-                (s, l) -> false, scopeGraph, initial.declProperties().melt());
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, v -> true);
-        final RelationComponent relationSolver =
-                new RelationComponent(core, r -> false, config.getFunctions(), initial.relations().melt());
-        final SetComponent setSolver = new SetComponent(core, nameResolutionSolver.nameSets());
-        final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
         try {
-            final CompositeComponent compositeSolver = new CompositeComponent(core, astSolver,
-                    ISolver.defer(baseSolver), equalitySolver, ISolver.defer(nameResolutionSolver),
-                    ISolver.defer(polySolver), ISolver.defer(relationSolver), ISolver.defer(setSolver),
-                    scopeGraphSolver, ISolver.defer(symSolver));
+            ISolver component = c -> c.matchOrThrow(IConstraint.CheckedCases
+                    .<Optional<SolveResult>, InterruptedException>builder()
+                    // @formatter:off
+                    .onAst(astSolver::solve)
+                    .onScopeGraph(scopeGraphSolver::solve)
+                    .otherwise(cc -> Optional.empty())
+                    // @formatter:on
+            );
 
-            final FixedPointSolver solver = new FixedPointSolver(cancel, progress, compositeSolver, Iterables2.empty());
+            final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.empty());
             final SolveResult solveResult = solver.solve(initial.constraints());
 
-            final Set<IConstraint> assumptionConstraint = solveResult.constraints().stream()
-                    .filter(c -> IAstConstraint.is(c) || IScopeGraphConstraint.is(c)).collect(Collectors.toSet());
-            final Set<IConstraint> otherConstraints = solveResult.constraints().stream()
-                    .filter(c -> !IScopeGraphConstraint.is(c)).collect(Collectors.toSet());
-
-            final IMessages.Transient messages = initial.messages().melt();
-            messages.addAll(Messages.unsolvedErrors(assumptionConstraint));
-            messages.addAll(solveResult.messages());
-
-            return ImmutableSolution.builder()
-                    // @formatter:off
-                    .from(compositeSolver.finish())
-                    .messages(solveResult.messages())
-                    .constraints(otherConstraints)
-                    // @formatter:on
-                    .build();
+            return ImmutableGraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
+                    solveResult.messages(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
+
+    }
+
+    public GraphSolution reportUnsolvedGraphConstraints(GraphSolution initial) {
+        java.util.Set<IConstraint> graphConstraints = Sets.newHashSet();
+        java.util.Set<IConstraint> otherConstraints = Sets.newHashSet();
+        initial.constraints().stream().forEach(c -> {
+            if(IAstConstraint.is(c) || IScopeGraphConstraint.is(c)) {
+                graphConstraints.add(c);
+            } else {
+                otherConstraints.add(c);
+            }
+        });
+        IMessages.Transient messages = initial.messages().melt();
+        messages.addAll(Messages.unsolvedErrors(graphConstraints));
+        return ImmutableGraphSolution.copyOf(initial).withMessages(messages.freeze()).withConstraints(otherConstraints);
+    }
+
+    public ISolution reportUnsolvedConstraints(ISolution initial) {
+        IMessages.Transient messages = initial.messages().melt();
+        messages.addAll(Messages.unsolvedErrors(initial.constraints()));
+        return ImmutableSolution.builder().from(initial).messages(messages.freeze()).constraints(Collections.emptySet())
+                .build();
+    }
+
+    @Value.Immutable
+    @Serial.Version(42l)
+    public static abstract class BaseSolution {
+
+        @Value.Parameter public abstract SolverConfig config();
+
+        @Value.Parameter public abstract ImmutableSet<IConstraint> constraints();
+
+    }
+
+    @Value.Immutable
+    @Serial.Version(42l)
+    public static abstract class GraphSolution {
+
+        @Value.Parameter public abstract SolverConfig config();
+
+        @Value.Parameter public abstract IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
+
+        @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+
+        @Value.Parameter public abstract IMessages.Immutable messages();
+
+        @Value.Parameter public abstract ImmutableSet<IConstraint> constraints();
 
     }
 

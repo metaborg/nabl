@@ -77,7 +77,7 @@ public class InterpreterTerms {
         return map(entries.entrySet());
     }
 
-    private static ITerm nameresolution(INameResolution<Scope, Label, Occurrence> nameResolution) {
+    private static ITerm nameresolution(INameResolution.Immutable<Scope, Label, Occurrence> nameResolution) {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence ref : nameResolution.getAllRefs()) {
             List<IResolutionPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));

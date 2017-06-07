@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.ImmutableSymbolicConstraints;
@@ -12,7 +14,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 
 import io.usethesource.capsule.Set;
 
-public class SymbolicComponent extends ASolver<ISymbolicConstraint, ISymbolicConstraints> {
+public class SymbolicComponent extends ASolver {
 
     private final Set.Transient<ITerm> facts;
     private final Set.Transient<ITerm> goals;
@@ -23,13 +25,13 @@ public class SymbolicComponent extends ASolver<ISymbolicConstraint, ISymbolicCon
         this.goals = initial.getGoals().asTransient();
     }
 
-    @Override public SeedResult seed(ISymbolicConstraints solution, IMessageInfo message) throws InterruptedException {
+    public SeedResult seed(ISymbolicConstraints solution, IMessageInfo message) throws InterruptedException {
         facts.__insertAll(solution.getFacts());
         goals.__insertAll(solution.getGoals());
         return SeedResult.empty();
     }
 
-    @Override public Optional<SolveResult> solve(ISymbolicConstraint constraint) throws InterruptedException {
+    public Optional<SolveResult> solve(ISymbolicConstraint constraint) throws InterruptedException {
         constraint.match(ISymbolicConstraint.Cases.of(
             // @formatter:off
             fact -> facts.__insert(fact.getFact()),

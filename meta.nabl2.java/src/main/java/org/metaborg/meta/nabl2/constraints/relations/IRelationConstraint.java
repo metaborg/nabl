@@ -42,7 +42,7 @@ public interface IRelationConstraint extends IConstraint {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> cases) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 
@@ -52,14 +52,14 @@ public interface IRelationConstraint extends IConstraint {
 
         T caseEval(CEvalFunction constraint) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(
+        static <T, E extends Throwable> CheckedCases<T, E> of(
             // @formatter:off
             CheckedFunction1<CBuildRelation,T,E> onBuild,
             CheckedFunction1<CCheckRelation,T,E> onCheck,
             CheckedFunction1<CEvalFunction,T,E> onEval
             // @formatter:on
         ) {
-            return new CheckedCases<T,E>() {
+            return new CheckedCases<T, E>() {
 
                 @Override public T caseBuild(CBuildRelation constraint) throws E {
                     return onBuild.apply(constraint);
@@ -76,6 +76,12 @@ public interface IRelationConstraint extends IConstraint {
             };
         }
 
+    }
+
+    public static boolean isCheck(IConstraint constraint) {
+        return constraint.match(IConstraint.Cases.of(c -> false, c -> false, c -> false, c -> false, c -> false,
+                c -> c.match(IRelationConstraint.Cases.of(r -> false, r -> true, r -> false)), c -> false, c -> false,
+                c -> false));
     }
 
 }

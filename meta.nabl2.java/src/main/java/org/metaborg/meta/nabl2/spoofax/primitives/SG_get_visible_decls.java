@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
-import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -20,7 +19,7 @@ public class SG_get_visible_decls extends AnalysisPrimitive {
             throws InterpreterException {
         return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
             return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                return TB.newList(Paths.declPathsToDecls(s.nameResolution().visible(scope)));
+                return TB.newList(s.nameResolution().visible(scope));
             });
         });
     }

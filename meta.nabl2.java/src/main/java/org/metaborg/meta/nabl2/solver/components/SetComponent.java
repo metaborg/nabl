@@ -15,6 +15,7 @@ import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.sets.IElement;
 import org.metaborg.meta.nabl2.sets.SetEvaluator;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
@@ -28,7 +29,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
-public class SetComponent extends ASolver<ISetConstraint, Unit> {
+public class SetComponent extends ASolver {
 
     private static final String NAME_OP = "NAME";
 
@@ -39,7 +40,7 @@ public class SetComponent extends ASolver<ISetConstraint, Unit> {
         this.evaluator = SetEvaluator.matcher(elems);
     }
 
-    @Override public Optional<SolveResult> solve(ISetConstraint constraint) {
+    public Optional<SolveResult> solve(ISetConstraint constraint) {
         return constraint.match(ISetConstraint.Cases.of(this::solve, this::solve));
     }
 

@@ -12,6 +12,7 @@ import org.metaborg.meta.nabl2.poly.ImmutableForall;
 import org.metaborg.meta.nabl2.poly.ImmutableTypeVar;
 import org.metaborg.meta.nabl2.poly.TypeVar;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -22,7 +23,7 @@ import org.metaborg.meta.nabl2.util.functions.Predicate1;
 
 import com.google.common.collect.Maps;
 
-public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
+public class PolymorphismComponent extends ASolver {
 
     private final Predicate1<ITerm> isTermInactive;
 
@@ -31,7 +32,7 @@ public class PolymorphismComponent extends ASolver<IPolyConstraint, Unit> {
         this.isTermInactive = isTermInactive;
     }
 
-    @Override public Optional<SolveResult> solve(IPolyConstraint constraint) {
+    public Optional<SolveResult> solve(IPolyConstraint constraint) {
         return constraint.match(IPolyConstraint.Cases.of(this::solve, this::solve));
     }
 

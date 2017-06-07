@@ -16,6 +16,8 @@ import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms.RelationFunctions;
 import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.FunctionUndefinedException;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -25,7 +27,7 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import io.usethesource.capsule.Map;
 
-public class RelationComponent extends ASolver<IRelationConstraint, IRelations.Immutable<ITerm>> {
+public class RelationComponent extends ASolver {
 
     private final Predicate1<IRelationName> isComplete;
 
@@ -56,8 +58,7 @@ public class RelationComponent extends ASolver<IRelationConstraint, IRelations.I
         }
     }
 
-    @Override public SeedResult seed(IRelations.Immutable<ITerm> solution, IMessageInfo message)
-            throws InterruptedException {
+    public SeedResult seed(IRelations.Immutable<ITerm> solution, IMessageInfo message) throws InterruptedException {
         for(IRelationName name : solution.getNames()) {
             for(Tuple2<ITerm, ITerm> pair : (Iterable<Tuple2<ITerm, ITerm>>) solution.stream(name)::iterator) {
                 try {
@@ -70,7 +71,7 @@ public class RelationComponent extends ASolver<IRelationConstraint, IRelations.I
         return SeedResult.empty();
     }
 
-    @Override public Optional<SolveResult> solve(IRelationConstraint constraint) {
+    public Optional<SolveResult> solve(IRelationConstraint constraint) {
         return constraint.match(IRelationConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 

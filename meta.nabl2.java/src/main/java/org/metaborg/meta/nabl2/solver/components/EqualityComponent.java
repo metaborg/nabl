@@ -12,6 +12,8 @@ import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
+import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.ImmutableSeedResult;
 import org.metaborg.meta.nabl2.solver.ImmutableSolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
@@ -27,7 +29,7 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.collect.Sets;
 
-public class EqualityComponent extends ASolver<IEqualityConstraint, IUnifier.Immutable> {
+public class EqualityComponent extends ASolver {
 
     private final IUnifier.Transient unifier;
 
@@ -36,7 +38,7 @@ public class EqualityComponent extends ASolver<IEqualityConstraint, IUnifier.Imm
         this.unifier = initial;
     }
 
-    @Override public SeedResult seed(IUnifier.Immutable solution, IMessageInfo message) throws InterruptedException {
+    public SeedResult seed(IUnifier.Immutable solution, IMessageInfo message) throws InterruptedException {
         final Set<IConstraint> constraints = Sets.newHashSet();
         final IMessages.Transient messages = Messages.Transient.of();
         for(Tuple2<ITermVar, ITerm> vt : (Iterable<Tuple2<ITermVar, ITerm>>) solution.stream()::iterator) {
@@ -51,7 +53,7 @@ public class EqualityComponent extends ASolver<IEqualityConstraint, IUnifier.Imm
         return ImmutableSeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
     }
 
-    @Override public Optional<SolveResult> solve(IEqualityConstraint constraint) {
+    public Optional<SolveResult> solve(IEqualityConstraint constraint) {
         return constraint.match(IEqualityConstraint.Cases.of(this::solve, this::solve));
     }
 
