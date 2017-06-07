@@ -81,7 +81,7 @@ public class RelationComponent extends ASolver {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private Optional<SolveResult> solve(CBuildRelation c) {
+    public Optional<SolveResult> solve(CBuildRelation c) {
         final ITerm left = find(c.getLeft());
         final ITerm right = find(c.getRight());
         if(!(left.isGround() && right.isGround())) {
@@ -96,7 +96,7 @@ public class RelationComponent extends ASolver {
         return Optional.of(SolveResult.empty());
     }
 
-    private Optional<SolveResult> solve(CCheckRelation c) {
+    public Optional<SolveResult> solve(CCheckRelation c) {
         if(!isComplete.test(c.getRelation())) {
             return Optional.empty();
         }
@@ -112,7 +112,7 @@ public class RelationComponent extends ASolver {
         }
     }
 
-    private Optional<SolveResult> solve(CEvalFunction c) {
+    public Optional<SolveResult> solve(CEvalFunction c) {
         final ITerm term = find(c.getTerm());
         if(!term.isGround()) {
             return Optional.empty();

@@ -36,4 +36,6 @@ public interface ISolution {
 
     java.util.Set<IConstraint> constraints();
 
+    ISolution findAndLock();
+
 }

@@ -2,12 +2,17 @@ package org.metaborg.meta.nabl2.solver.solvers;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
+import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
+import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -15,19 +20,28 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.solver.ISolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.ImmutableSolution;
 import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
+import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
+import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
+import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
+import org.metaborg.meta.nabl2.solver.components.RelationComponent;
 import org.metaborg.meta.nabl2.solver.components.ScopeGraphComponent;
+import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
+import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.meta.nabl2.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -36,6 +50,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 public class BaseSolver {
+
+    protected final NaBL2DebugConfig nabl2Debug;
+
+    public BaseSolver(NaBL2DebugConfig nabl2Debug) {
+        this.nabl2Debug = nabl2Debug;
+    }
 
     public GraphSolution solveGraph(BaseSolution initial, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
@@ -91,6 +111,55 @@ public class BaseSolver {
         messages.addAll(Messages.unsolvedErrors(initial.constraints()));
         return ImmutableSolution.builder().from(initial).messages(messages.freeze()).constraints(Collections.emptySet())
                 .build();
+    }
+
+    public ISolution merge(ISolution initial, Iterable<? extends ISolution> solutions,
+            Predicate2<Scope, Label> isEdgeComplete, IMessageInfo message) throws InterruptedException {
+
+        final IUnifier.Transient unifier = initial.unifier().melt();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
+        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
+                initial.nameResolution().melt(scopeGraph, isEdgeComplete);
+
+        final SolverCore core = new SolverCore(initial.config(), unifier::find, n -> {
+            throw new IllegalStateException("Fresh is not available when merging.");
+        });
+        final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
+        final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
+        final NameResolutionComponent nameResolutionSolver =
+                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
+        final RelationComponent relationSolver =
+                new RelationComponent(core, r -> false, initial.config().getFunctions(), initial.relations().melt());
+        final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
+
+        final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
+        final IMessages.Transient messages = initial.messages().melt();
+        for(ISolution solution : solutions) {
+            seed(astSolver.seed(solution.astProperties(), message), messages, constraints);
+            seed(equalitySolver.seed(solution.unifier(), message), messages, constraints);
+            scopeGraph.addAll(solution.scopeGraph());
+            seed(nameResolutionSolver.seed(solution.declProperties(), message), messages, constraints);
+            seed(relationSolver.seed(solution.relations(), message), messages, constraints);
+            seed(symSolver.seed(solution.symbolic(), message), messages, constraints);
+        }
+        nameResolutionSolver.update();
+
+        IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
+        NameResolutionResult nameResult = nameResolutionSolver.finish();
+        IRelations.Immutable<ITerm> relationResult = relationSolver.finish();
+        IUnifier.Immutable unifyResult = equalitySolver.finish();
+        ISymbolicConstraints symbolicResult = symSolver.finish();
+
+        return ImmutableSolution.of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.nameResolution(),
+                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, messages.freeze(),
+                constraints);
+    }
+
+    protected boolean seed(SeedResult result, IMessages.Transient messages, Set<IConstraint> constraints) {
+        boolean change = false;
+        change |= messages.addAll(result.messages());
+        change |= constraints.addAll(result.constraints());
+        return change;
     }
 
     @Value.Immutable

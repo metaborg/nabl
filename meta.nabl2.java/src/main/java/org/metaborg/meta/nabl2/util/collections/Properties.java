@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple3;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
@@ -95,6 +96,13 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
 
     @Override public String toString() {
         return values.toString();
+    }
+
+    public static <I, K, V> IProperties.Transient<I, K, V> map(IProperties<I, K, V> properties,
+            Function1<V, V> mapper) {
+        IProperties.Transient<I, K, V> mappedProperties = Properties.Transient.of();
+        properties.stream().forEach(ikv -> mappedProperties.putValue(ikv._1(), ikv._2(), mapper.apply(ikv._3())));
+        return mappedProperties;
     }
 
 }

@@ -15,8 +15,8 @@ import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 
 @FunctionalInterface
 public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, InterruptedException> {
@@ -69,8 +69,8 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
             return Messages.Immutable.of();
         }
 
-        @Value.Default public Multimap<String, String> dependencies() {
-            return ImmutableMultimap.of();
+        @Value.Default public SetMultimap<String, String> dependencies() {
+            return ImmutableSetMultimap.of();
         }
 
         @Value.Default public Set<ITermVar> unifiedVars() {

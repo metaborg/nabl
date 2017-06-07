@@ -14,7 +14,10 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
+import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.meta.nabl2.util.functions.Function1;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 1L)
@@ -39,5 +42,17 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract IMessages.Immutable messages();
 
     @Value.Parameter @Override public abstract java.util.Set<IConstraint> constraints();
+
+    @Override public ISolution findAndLock() {
+        final Function1<ITerm, ITerm> findAndLock = t -> unifier().find(t).withLocked(true);
+        final IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties =
+                Properties.map(astProperties(), findAndLock).freeze();
+        final IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties =
+                Properties.map(declProperties(), findAndLock).freeze();
+        final IUnifier.Immutable unifier = Unifier.findAndLock(unifier());
+        final ISymbolicConstraints symbolic = symbolic().map(findAndLock);
+        return ImmutableSolution.builder().from(this).astProperties(astProperties).declProperties(declProperties)
+                .unifier(unifier).symbolic(symbolic).build();
+    }
 
 }

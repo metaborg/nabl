@@ -286,4 +286,10 @@ public abstract class Unifier implements IUnifier {
 
     }
 
+    public static IUnifier.Immutable findAndLock(IUnifier unifier) {
+        final Map.Transient<ITermVar, ITerm> reps = Map.Transient.of();
+        unifier.stream().forEach(vt -> reps.__put(vt._1(), unifier.find(vt._2()).withLocked(true)));
+        return new Unifier.Immutable(reps.freeze(), Map.Immutable.of());
+    }
+
 }
