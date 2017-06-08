@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Update;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
@@ -83,14 +85,17 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.Transient.of(globalIntra.config().getResolutionParams(), scopeGraph, (s, l) -> true);
-        nameResolution.resolve();
+
+        final SetMultimap<String, String> deps = HashMultimap.create();
+        final SetMultimap<String, String> missingDeps = HashMultimap.create();
+        Collection<IResolutionPath<Scope, Label, Occurrence>> initialPaths =
+                nameResolution.resolve().resolved().values();
+        discoverDependencies(initialPaths, deps, missingDeps);
 
         // FIXME do something with previous state
 
         final Map<String, ISolution> pending = Maps.newHashMap(unitIntras);
         final Map<String, ISolution> finished = Maps.newHashMap();
-        final SetMultimap<String, String> deps = HashMultimap.create();
-        final SetMultimap<String, String> missingDeps = HashMultimap.create();
 
         // solve global
         ISolution globalInter = reportUnsolvedNonCheckConstraints(globalIntra);
@@ -105,11 +110,6 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         boolean change = true;
         while(change) {
             change = false;
-
-            final SetMultimap<String, String> newDeps = discoverDependencies(nameResolution, deps);
-            if(!newDeps.isEmpty()) {
-                missingDeps.putAll(newDeps);
-            }
 
             Iterator<Map.Entry<String, ISolution>> it = pending.entrySet().iterator();
             while(it.hasNext()) {
@@ -135,8 +135,10 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                     }
                     if(!depsToMerge.isEmpty()) {
                         ISolution solution = mergeDep(initial, depsToMerge, message);
-                        solution = solveInterInference(solution, scopeGraph, nameResolution, fresh, cancel, progress);
-                        pending.put(resource, solution);
+                        InterInferenceResult result =
+                                solveInterInference(solution, scopeGraph, nameResolution, fresh, cancel, progress);
+                        pending.put(resource, result.solution());
+                        discoverDependencies(result.paths(), deps, missingDeps);
                         change |= true;
                     }
                 }
@@ -179,31 +181,25 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         return ImmutableIncrementalSolution.of(globalInter, finished, deps);
     }
 
-    private SetMultimap<String, String> discoverDependencies(
-            IEsopNameResolution<Scope, Label, Occurrence> nameResolution, SetMultimap<String, String> dependencies) {
-        // FIXME Track newly found paths only, instead of iterating over all
-        SetMultimap<String, String> newDependencies = HashMultimap.create();
-        for(Occurrence ref : nameResolution.getAllRefs()) {
-            for(IResolutionPath<Scope, Label, Occurrence> path : nameResolution.resolve(ref)) {
-                String refResource = path.getReference().getIndex().getResource();
-                for(String depResource : pathResources(path)) {
-                    if(!depResource.equals(refResource) && !depResource.equals(globalSource)
-                            && dependencies.put(refResource, depResource)) {
-                        newDependencies.put(refResource, depResource);
-                    }
+    private boolean discoverDependencies(Iterable<? extends IResolutionPath<Scope, Label, Occurrence>> newPaths,
+            SetMultimap<String, String> dependencies, SetMultimap<String, String> missingDeps) {
+        boolean change = false;
+        for(IResolutionPath<Scope, Label, Occurrence> path : newPaths) {
+            String refResource = path.getReference().getIndex().getResource();
+            for(String depResource : pathResources(path)) {
+                if(!depResource.equals(refResource) && !depResource.equals(globalSource)
+                        && dependencies.put(refResource, depResource)) {
+                    change |= missingDeps.put(refResource, depResource);
                 }
             }
         }
-        return newDependencies;
+        return change;
     }
 
     private Set<String> pathResources(IResolutionPath<Scope, Label, Occurrence> path) {
-        Set<String> res = Sets.newHashSet();
+        final Set<String> res = Sets.newHashSet();
         res.add(path.getDeclaration().getIndex().getResource());
-        for(IResolutionPath<Scope, Label, Occurrence> imp : path.getImportPaths()) {
-            res.add(imp.getReference().getIndex().getResource());
-            res.add(imp.getDeclaration().getIndex().getResource());
-        }
+        // FIXME Do we need to consider the import paths here?
         return res;
     }
 
@@ -237,7 +233,6 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 seed(relationSolver.seed(dependencySolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(dependencySolution.symbolic(), message), messages, constraints);
             }
-            nameResolutionSolver.update();
 
             // build result
             IUnifier.Immutable unifierResult = equalitySolver.finish();
@@ -253,7 +248,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
     }
 
-    private ISolution solveInterInference(ISolution initial,
+    private InterInferenceResult solveInterInference(ISolution initial,
             IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph,
             IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution, Function1<String, ITermVar> fresh,
             ICancel cancel, IProgress progress) throws SolverException, InterruptedException {
@@ -299,19 +294,25 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
                 Iterables2.from(activeVars, hasRelationBuildConstraints));
 
+        final ImmutableInterInferenceResult.Builder result = ImmutableInterInferenceResult.builder();
         solver.step().subscribe(r -> {
             if(!r.unifiedVars().isEmpty()) {
                 try {
-                    nameResolutionSolver.update();
+                    Update<Scope, Label, Occurrence> updateResult = nameResolutionSolver.update();
+                    result.addAllPaths(updateResult.resolved().values());
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
             }
         });
 
+        final ISolution solution;
         try {
+            // initial resolve
+            Update<Scope, Label, Occurrence> updateResult = nameResolutionSolver.update();
+            result.addAllPaths(updateResult.resolved().values());
+
             // solve constraints
-            nameResolutionSolver.update();
             SolveResult solveResult = solver.solve(initial.constraints());
 
             // build result
@@ -320,14 +321,13 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             IRelations.Immutable<ITerm> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            ISolution solution = ImmutableSolution.of(config, astResult, initial.scopeGraph(), initial.nameResolution(),
+            solution = ImmutableSolution.of(config, astResult, initial.scopeGraph(), initial.nameResolution(),
                     declResult, relationResult, unifierResult, symbolicConstraints, solveResult.messages(),
                     solveResult.constraints());
-
-            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
+        return result.solution(solution).build();
     }
 
     public ISolution reportUnsolvedNonCheckConstraints(ISolution initial) {
@@ -388,6 +388,16 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
+
+    }
+
+    @Value.Immutable(builder = true)
+    static abstract class InterInferenceResult {
+
+        @Value.Parameter public abstract ISolution solution();
+
+        @Value.Parameter public abstract Set<IResolutionPath<Scope, Label, Occurrence>> paths();
+
 
     }
 

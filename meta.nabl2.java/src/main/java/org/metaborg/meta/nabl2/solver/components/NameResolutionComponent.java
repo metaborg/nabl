@@ -78,11 +78,9 @@ public class NameResolutionComponent extends ASolver {
         return constraint.match(INameResolutionConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 
-    public boolean update() throws InterruptedException {
-        boolean change = false;
-        change |= scopeGraph.reduce(this::findScope, this::findOccurrence);
-        change |= nameResolution.resolve();
-        return change;
+    public IEsopNameResolution.Update<Scope, Label, Occurrence> update() throws InterruptedException {
+        scopeGraph.reduce(this::findScope, this::findOccurrence);
+        return nameResolution.resolve();
     }
 
     public NameResolutionResult finish() {

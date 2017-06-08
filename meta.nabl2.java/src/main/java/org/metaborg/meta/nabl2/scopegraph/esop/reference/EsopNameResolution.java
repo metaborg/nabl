@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
@@ -29,6 +31,7 @@ import org.metaborg.meta.nabl2.util.functions.Predicate2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
@@ -197,46 +200,46 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             }
         }
 
-        public boolean resolve() {
-            boolean change = false;
+        public EsopNameResolution.Update<S, L, O> resolve() {
+            ImmutableUpdate.Builder<S, L, O> update = ImmutableUpdate.builder();
             for(O ref : scopeGraph.getAllRefs()) {
                 if(!resolution.containsKey(ref)) {
                     final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env =
                             pendingResolution.computeIfAbsent(ref, r -> resolveEnv(Set.Immutable.of(), ref));
-                    change |= env.get().map(result -> {
+                    env.get().ifPresent(result -> {
+                        update.putAllResolved(ref, result._1());
                         resolution.__put(ref, result._1());
                         pendingResolution.remove(ref);
-                        return true;
-                    }).orElse(false);
+                    });
                 }
             }
             for(S scope : scopeGraph.getAllScopes()) {
                 if(!visibility.containsKey(scope)) {
                     final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                             pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
-                    change |= env.get().map(result -> {
+                    env.get().ifPresent(result -> {
                         Set.Transient<O> decls = Set.Transient.of();
                         decls.__insertAll(
                                 result._1().stream().map(IDeclPath::getDeclaration).collect(Collectors.toSet()));
+                        update.putAllVisible(scope, decls);
                         visibility.__put(scope, decls.freeze());
                         pendingVisibility.remove(scope);
-                        return true;
-                    }).orElse(false);
+                    });
                 }
                 if(!reachability.containsKey(scope)) {
                     final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                             pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
-                    change |= env.get().map(result -> {
+                    env.get().ifPresent(result -> {
                         Set.Transient<O> decls = Set.Transient.of();
                         decls.__insertAll(
                                 result._1().stream().map(IDeclPath::getDeclaration).collect(Collectors.toSet()));
+                        update.putAllReachable(scope, decls);
                         reachability.__put(scope, decls.freeze());
                         pendingReachability.remove(scope);
-                        return true;
-                    }).orElse(false);
+                    });
                 }
             }
-            return change;
+            return update.build();
         }
 
         private IEsopEnv<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
@@ -409,5 +412,19 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         }
 
     }
+
+    @Value.Immutable(builder = true)
+    @Serial.Version(42l)
+    static abstract class Update<S extends IScope, L extends ILabel, O extends IOccurrence>
+            implements IEsopNameResolution.Update<S, L, O> {
+
+        @Value.Parameter public abstract SetMultimap<O, IResolutionPath<S, L, O>> resolved();
+
+        @Value.Parameter public abstract SetMultimap<S, O> visible();
+
+        @Value.Parameter public abstract SetMultimap<S, O> reachable();
+
+    }
+
 
 }
