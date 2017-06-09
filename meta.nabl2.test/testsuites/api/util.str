@@ -14,6 +14,20 @@ rules
     nabl2-get-ast-analysis;
     nabl2-analysis-has-errors
 
+rules
+
+  get-ast-type-succeeds =
+    ?AstWithType(x);
+    a := <nabl2-get-ast-analysis>;
+    <nabl2-get-ast-type(|a)> x
+
+  get-ast-type-fails =
+    ?AstWithoutType(x);
+    a := <nabl2-get-ast-analysis>;
+    <not(nabl2-get-ast-type(|a))> x
+
+rules
+
   get-all-decls =
     ?GetAllDecls(xs);
     a := <nabl2-get-ast-analysis>;

@@ -6,6 +6,16 @@ imports
 
 rules
 
+  [[ AstWithType(x) ^ () ]] :=
+    AstWithType[[ x ^ () : ty ]].
+  AstWithType[[ x ^ () : () ]].
+
+  [[ AstWithoutType(x) ^ () ]] :=
+    AstWithoutType[[ x ^ () ]].
+  AstWithoutType[[ x ^ () ]].
+
+rules
+
   [[ GetAllDecls(xs) ^ () ]] :=
     new s,
     Map1(GetAllDecls)[[ xs ^ (s) ]].
