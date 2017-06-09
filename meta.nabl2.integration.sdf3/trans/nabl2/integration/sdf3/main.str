@@ -1,0 +1,6 @@
+module nabl2/integration/sdf3/main
+
+rules
+
+  generate-all-terms:
+    (_, _, ast, path, project-path) -> None()

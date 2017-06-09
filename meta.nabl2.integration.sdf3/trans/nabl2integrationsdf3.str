@@ -1,0 +1,7 @@
+module nabl2integrationsdf3
+
+imports
+
+  libstratego-lib
+  
+  nabl2/integration/sdf3
