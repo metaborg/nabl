@@ -13,4 +13,3 @@ menus
     action: "Generate All DynSem"   = generate-all-dynsem
     action: "Generate DynSem Rules" = generate-dynsem-ds
     action: "Generate DynSem Java"  = generate-dynsem-java
-
