@@ -18,8 +18,8 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.meta.nabl2.util.functions.Predicate1;
+import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.Maps;
 

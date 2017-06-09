@@ -21,9 +21,9 @@ import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
-import org.metaborg.meta.nabl2.util.functions.Predicate1;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.util.functions.PartialFunction1;
+import org.metaborg.util.functions.Predicate1;
 
 import io.usethesource.capsule.Map;
 

@@ -14,9 +14,9 @@ import org.metaborg.meta.nabl2.relations.IVariantMatcher;
 import org.metaborg.meta.nabl2.relations.InstantiatedVariantsException;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationException;
-import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.Lists;
 

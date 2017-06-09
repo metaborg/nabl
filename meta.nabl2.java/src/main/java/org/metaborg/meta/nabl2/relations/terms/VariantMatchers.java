@@ -13,8 +13,8 @@ import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.util.Optionals;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

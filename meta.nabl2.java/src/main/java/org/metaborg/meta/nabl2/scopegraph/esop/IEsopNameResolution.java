@@ -5,7 +5,7 @@ import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
-import org.metaborg.meta.nabl2.util.functions.Predicate2;
+import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
 import com.google.common.collect.SetMultimap;

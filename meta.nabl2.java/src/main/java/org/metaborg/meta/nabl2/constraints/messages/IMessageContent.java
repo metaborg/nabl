@@ -3,7 +3,7 @@ package org.metaborg.meta.nabl2.constraints.messages;
 import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.Function1;
 
 public interface IMessageContent {
 

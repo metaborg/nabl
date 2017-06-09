@@ -13,7 +13,7 @@ import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
-import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
+import org.metaborg.util.functions.CheckedFunction1;
 
 public interface IConstraint {
 

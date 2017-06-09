@@ -1,8 +1,8 @@
 package org.metaborg.meta.nabl2.constraints.scopegraph;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.CheckedFunction1;
+import org.metaborg.util.functions.Function1;
 
 public interface IScopeGraphConstraint extends IConstraint {
 

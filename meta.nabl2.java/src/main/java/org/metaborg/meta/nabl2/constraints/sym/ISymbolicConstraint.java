@@ -3,7 +3,7 @@ package org.metaborg.meta.nabl2.constraints.sym;
 import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
+import org.metaborg.util.functions.CheckedFunction1;
 
 public interface ISymbolicConstraint extends IConstraint {
 

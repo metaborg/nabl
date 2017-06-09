@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.Function1;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

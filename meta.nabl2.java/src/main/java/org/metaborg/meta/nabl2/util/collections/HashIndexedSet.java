@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;

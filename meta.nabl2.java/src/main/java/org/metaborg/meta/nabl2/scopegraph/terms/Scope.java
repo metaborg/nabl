@@ -58,14 +58,13 @@ public abstract class Scope extends AbstractApplTerm implements IScope, IApplTer
     @Override public String toString() {
         return "#" + getResource() + "-" + getName();
     }
-    
-    @Override
-    public int compareTo(final IScope scope) {
+
+    @Override public int compareTo(final IScope scope) {
         int diffResource = getResource().compareTo(scope.getResource());
-        if (diffResource != 0) {
+        if(diffResource != 0) {
             return diffResource;
         }
-        
+
         int diffName = getName().toString().compareTo(scope.getName());
         return diffName;
     }

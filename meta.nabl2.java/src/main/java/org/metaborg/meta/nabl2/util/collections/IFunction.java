@@ -2,7 +2,7 @@ package org.metaborg.meta.nabl2.util.collections;
 
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.util.functions.Function2;
+import org.metaborg.util.functions.Function2;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 

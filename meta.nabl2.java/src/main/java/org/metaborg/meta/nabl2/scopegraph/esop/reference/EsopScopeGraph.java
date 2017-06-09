@@ -11,8 +11,8 @@ import org.metaborg.meta.nabl2.util.collections.HashTrieFunction;
 import org.metaborg.meta.nabl2.util.collections.HashTrieRelation3;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
-import org.metaborg.meta.nabl2.util.functions.Predicate3;
+import org.metaborg.util.functions.PartialFunction1;
+import org.metaborg.util.functions.Predicate3;
 
 import io.usethesource.capsule.Set;
 

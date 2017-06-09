@@ -17,7 +17,7 @@ import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.Function1;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 1L)

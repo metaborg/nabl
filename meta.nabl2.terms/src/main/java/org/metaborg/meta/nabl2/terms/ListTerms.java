@@ -1,10 +1,10 @@
 package org.metaborg.meta.nabl2.terms;
 
 import org.metaborg.meta.nabl2.terms.generic.ListTermIterator;
-import org.metaborg.meta.nabl2.util.Unit;
-import org.metaborg.meta.nabl2.util.functions.CheckedFunction1;
-import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.meta.nabl2.util.functions.Function2;
+import org.metaborg.util.functions.CheckedFunction1;
+import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.Function2;
+import org.metaborg.util.unit.Unit;
 
 public class ListTerms {
 

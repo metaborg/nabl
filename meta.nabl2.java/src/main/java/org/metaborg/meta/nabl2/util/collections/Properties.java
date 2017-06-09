@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple3;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;

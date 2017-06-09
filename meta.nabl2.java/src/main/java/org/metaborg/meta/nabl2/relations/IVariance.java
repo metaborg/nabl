@@ -1,7 +1,7 @@
 package org.metaborg.meta.nabl2.relations;
 
-import org.metaborg.meta.nabl2.util.functions.Function0;
-import org.metaborg.meta.nabl2.util.functions.Function1;
+import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 
 public interface IVariance {
 

@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
-import org.metaborg.meta.nabl2.util.functions.PartialFunction1;
+import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.annotations.Beta;
 

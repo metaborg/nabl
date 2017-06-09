@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.terms.generic;
 
-import static org.metaborg.meta.nabl2.util.Unit.unit;
+import static org.metaborg.util.unit.Unit.unit;
 
 import java.util.Objects;
 

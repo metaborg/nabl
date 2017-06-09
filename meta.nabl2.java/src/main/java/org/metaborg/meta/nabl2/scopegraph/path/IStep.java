@@ -3,8 +3,8 @@ package org.metaborg.meta.nabl2.scopegraph.path;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.util.functions.Function3;
-import org.metaborg.meta.nabl2.util.functions.Function4;
+import org.metaborg.util.functions.Function3;
+import org.metaborg.util.functions.Function4;
 
 public interface IStep<S extends IScope, L extends ILabel, O extends IOccurrence> extends IScopePath<S, L, O> {
 
