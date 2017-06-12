@@ -6,6 +6,8 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.annotations.Beta;
 
+import io.usethesource.capsule.Set;
+
 public interface IRelation2<K, V> {
 
     IRelation2<V, K> inverse();
@@ -18,7 +20,7 @@ public interface IRelation2<K, V> {
 
     boolean isEmpty();
 
-    java.util.Set<V> get(K key);
+    Set.Immutable<V> get(K key);
 
     java.util.Set<K> keySet();
 
@@ -32,19 +34,23 @@ public interface IRelation2<K, V> {
 
     interface Immutable<K, V> extends IRelation2<K, V> {
 
+        IRelation2.Immutable<V, K> inverse();
+
         IRelation2.Transient<K, V> melt();
 
     }
 
     interface Transient<K, V> extends IRelation2<K, V> {
 
+        IRelation2.Transient<V, K> inverse();
+
         boolean put(K key, V value);
 
         boolean putAll(IRelation2<K, V> other);
 
-        boolean removeKey(K key);
+        Set.Immutable<V> removeKey(K key);
 
-        boolean removeValue(V value);
+        Set.Immutable<K> removeValue(V value);
 
         boolean removeEntry(K key, V value);
 

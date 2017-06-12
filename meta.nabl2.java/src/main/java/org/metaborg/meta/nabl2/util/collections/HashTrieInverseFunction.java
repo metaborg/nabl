@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.util.collections;
 import java.io.Serializable;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
 
 public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<K, V> {
@@ -35,7 +36,7 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
         return bwd.keySet();
     }
 
-    @Override public java.util.Set<V> get(K key) {
+    @Override public Set.Immutable<V> get(K key) {
         return fwd.get(key);
     }
 

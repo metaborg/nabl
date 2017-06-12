@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.util.collections;
 import java.io.Serializable;
 import java.util.Map;
 
+import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
 
 public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
@@ -39,7 +40,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
         return fwd.entrySet();
     }
 
-    @Override public java.util.Set<V> get(K key) {
+    @Override public Set.Immutable<V> get(K key) {
         return fwd.get(key);
     }
 
@@ -103,28 +104,22 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
                     Boolean::logicalOr);
         }
 
-        @Override public boolean removeKey(K key) {
-            java.util.Set<V> values;
-            if(!(values = fwd.get(key)).isEmpty()) {
-                fwd.__remove(key);
-                for(V value : values) {
-                    bwd.__remove(value, key);
-                }
-                return true;
+        @Override public Set.Immutable<V> removeKey(K key) {
+            final Set.Immutable<V> values = fwd.get(key);
+            fwd.__remove(key);
+            for(V value : values) {
+                bwd.__remove(value, key);
             }
-            return false;
+            return values;
         }
 
-        @Override public boolean removeValue(V value) {
-            java.util.Set<K> keys;
-            if(!(keys = bwd.get(value)).isEmpty()) {
-                bwd.__remove(value);
-                for(K key : keys) {
-                    fwd.__remove(key, value);
-                }
-                return true;
+        @Override public Set.Immutable<K> removeValue(V value) {
+            final Set.Immutable<K> keys = bwd.get(value);
+            bwd.__remove(value);
+            for(K key : keys) {
+                fwd.__remove(key, value);
             }
-            return false;
+            return keys;
         }
 
         @Override public boolean removeEntry(K key, V value) {

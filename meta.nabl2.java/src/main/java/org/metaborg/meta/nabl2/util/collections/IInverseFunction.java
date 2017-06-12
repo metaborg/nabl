@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.util.collections;
 
+import io.usethesource.capsule.Set;
+
 public interface IInverseFunction<K, V> {
 
     boolean containsKey(K key);
@@ -12,7 +14,7 @@ public interface IInverseFunction<K, V> {
 
     java.util.Set<V> valueSet();
 
-    java.util.Set<V> get(K key);
+    Set.Immutable<V> get(K key);
 
     IFunction<V, K> inverse();
 

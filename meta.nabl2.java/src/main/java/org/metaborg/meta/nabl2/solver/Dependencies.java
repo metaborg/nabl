@@ -25,6 +25,19 @@ public abstract class Dependencies<E> {
     }
 
 
+    public boolean contains(E node) {
+        return dependencies.containsKey(node) || dependencies.containsValue(node);
+    }
+
+    public boolean contains(E from, E to) {
+        return dependencies.containsEntry(from, to);
+    }
+
+    public java.util.Set<E> nodeSet() {
+        return Sets.union(dependencies.keySet(), dependencies.valueSet());
+    }
+
+
     public Set.Immutable<E> getDirectDependencies(E node) {
         return dependencies.get(node);
     }
@@ -32,13 +45,14 @@ public abstract class Dependencies<E> {
     public Set.Immutable<E> getAllDependencies(E node) {
         final Set.Transient<E> deps = Set.Transient.of();
         allDependencies(node, deps);
+        deps.__remove(node);
         return deps.freeze();
     }
 
     private void allDependencies(E current, Set.Transient<E> deps) {
         if(!deps.contains(current)) {
+            deps.__insert(current);
             dependencies.get(current).stream().forEach(next -> {
-                deps.__insert(next);
                 allDependencies(next, deps);
             });
         }
@@ -52,14 +66,15 @@ public abstract class Dependencies<E> {
     public Set.Immutable<E> getAllDependents(E node) {
         final Set.Transient<E> deps = Set.Transient.of();
         allDependents(node, deps);
+        deps.__remove(node);
         return deps.freeze();
     }
 
     private void allDependents(E current, Set.Transient<E> deps) {
         if(!deps.contains(current)) {
+            deps.__insert(current);
             dependencies.inverse().get(current).stream().forEach(next -> {
-                deps.__insert(next);
-                allDependencies(next, deps);
+                allDependents(next, deps);
             });
         }
     }
@@ -70,7 +85,7 @@ public abstract class Dependencies<E> {
         final AtomicInteger index = new AtomicInteger(0);
         final Deque<Node> stack = new IndexedDeque<>();
         final Map<E, Node> visited = Maps.newHashMap();
-        for(E current : Sets.union(dependencies.keySet(), dependencies.valueSet())) {
+        for(E current : nodeSet()) {
             if(!visited.containsKey(current)) {
                 strongconnect(current, index, stack, visited, components);
             }
@@ -185,6 +200,14 @@ public abstract class Dependencies<E> {
             boolean change = false;
             change |= !dependencies.removeKey(node).isEmpty();
             change |= !dependencies.removeValue(node).isEmpty();
+            return change;
+        }
+
+        public boolean removeAll(Iterable<? extends E> nodes) {
+            boolean change = false;
+            for(E node : nodes) {
+                change |= remove(node);
+            }
             return change;
         }
 

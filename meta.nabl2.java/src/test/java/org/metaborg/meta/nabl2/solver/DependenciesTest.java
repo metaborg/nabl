@@ -1,12 +1,14 @@
 package org.metaborg.meta.nabl2.solver;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
 import org.junit.Test;
 
+import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
 
 public class DependenciesTest {
@@ -54,4 +56,29 @@ public class DependenciesTest {
         assertEquals(3, components.get(1).size());
         assertEquals(1, components.get(2).size());
     }
+
+    @Test public void testSCCInDependents() {
+        Dependencies.Transient<Integer> deps = Dependencies.Transient.of();
+        deps.add(1, 2);
+        deps.add(2, 3);
+        deps.add(3, 1);
+        Set.Immutable<Integer> nodes = deps.getAllDependents(1);
+        assertEquals(2, nodes.size());
+        assertFalse(nodes.contains(1));
+        assertTrue(nodes.contains(2));
+        assertTrue(nodes.contains(3));
+    }
+
+    @Test public void testSCCInDependencies() {
+        Dependencies.Transient<Integer> deps = Dependencies.Transient.of();
+        deps.add(1, 2);
+        deps.add(2, 3);
+        deps.add(3, 1);
+        Set.Immutable<Integer> nodes = deps.getAllDependencies(1);
+        assertEquals(2, nodes.size());
+        assertFalse(nodes.contains(1));
+        assertTrue(nodes.contains(2));
+        assertTrue(nodes.contains(3));
+    }
+
 }
