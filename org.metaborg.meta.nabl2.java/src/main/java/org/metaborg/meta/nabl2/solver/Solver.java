@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -110,8 +111,10 @@ public class Solver {
     }
 
     private void addAll(Collection<IConstraint> constraints) throws InterruptedException {
-        progress.setWorkRemaining(constraints.size() + 1);
-        for(IConstraint constraint : constraints) {
+        List<IConstraint> theConstraints = Lists.newArrayList(constraints);
+        Collections.shuffle(theConstraints);
+        progress.setWorkRemaining(theConstraints.size() + 1);
+        for(IConstraint constraint : theConstraints) {
             cancel.throwIfCancelled();
             try {
                 constraint.matchOrThrow(CheckedCases.of(
