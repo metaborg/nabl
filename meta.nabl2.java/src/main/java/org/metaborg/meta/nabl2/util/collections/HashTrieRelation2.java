@@ -8,48 +8,47 @@ import io.usethesource.capsule.SetMultimap;
 
 public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
 
-    private final SetMultimap<K, V> fwd;
-    private final SetMultimap<V, K> bwd;
-
-    protected HashTrieRelation2(SetMultimap<K, V> fwd, SetMultimap<V, K> bwd) {
-        this.fwd = fwd;
-        this.bwd = bwd;
+    protected HashTrieRelation2() {
     }
 
+    protected abstract SetMultimap<K, V> fwd();
+
+    protected abstract SetMultimap<V, K> bwd();
+
     @Override public boolean containsKey(K key) {
-        return fwd.containsKey(key);
+        return fwd().containsKey(key);
     }
 
     @Override public boolean containsEntry(K key, V value) {
-        return fwd.containsEntry(key, value);
+        return fwd().containsEntry(key, value);
     }
 
     @Override public boolean containsValue(V value) {
-        return bwd.containsKey(value);
+        return bwd().containsKey(value);
     }
 
     @Override public java.util.Set<K> keySet() {
-        return fwd.keySet();
+        return fwd().keySet();
     }
 
     @Override public java.util.Set<V> valueSet() {
-        return bwd.keySet();
+        return bwd().keySet();
     }
 
     @Override public java.util.Set<Map.Entry<K, V>> entrySet() {
-        return fwd.entrySet();
+        return fwd().entrySet();
     }
 
     @Override public Set.Immutable<V> get(K key) {
-        return fwd.get(key);
+        return fwd().get(key);
     }
 
-    public boolean isEmpty() {
-        return fwd.isEmpty();
+    @Override public boolean isEmpty() {
+        return fwd().isEmpty();
     }
 
     @Override public String toString() {
-        return fwd.toString();
+        return fwd().toString();
     }
 
     public static class Immutable<K, V> extends HashTrieRelation2<K, V>
@@ -60,16 +59,23 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
         private final SetMultimap.Immutable<V, K> bwd;
 
         Immutable(SetMultimap.Immutable<K, V> fwd, SetMultimap.Immutable<V, K> bwd) {
-            super(fwd, bwd);
             this.fwd = fwd;
             this.bwd = bwd;
+        }
+
+        @Override protected SetMultimap<K, V> fwd() {
+            return fwd;
+        }
+
+        @Override protected SetMultimap<V, K> bwd() {
+            return bwd;
         }
 
         @Override public IRelation2.Immutable<V, K> inverse() {
             return new HashTrieRelation2.Immutable<>(bwd, fwd);
         }
 
-        public HashTrieRelation2.Transient<K, V> melt() {
+        @Override public HashTrieRelation2.Transient<K, V> melt() {
             return new HashTrieRelation2.Transient<>(fwd.asTransient(), bwd.asTransient());
         }
 
@@ -85,9 +91,16 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
         private final SetMultimap.Transient<V, K> bwd;
 
         Transient(SetMultimap.Transient<K, V> fwd, SetMultimap.Transient<V, K> bwd) {
-            super(fwd, bwd);
             this.fwd = fwd;
             this.bwd = bwd;
+        }
+
+        @Override protected SetMultimap<K, V> fwd() {
+            return fwd;
+        }
+
+        @Override protected SetMultimap<V, K> bwd() {
+            return bwd;
         }
 
         @Override public boolean put(K key, V value) {
@@ -99,7 +112,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
             return false;
         }
 
-        public boolean putAll(IRelation2<K, V> other) {
+        @Override public boolean putAll(IRelation2<K, V> other) {
             return other.stream().reduce(false, (change, klv) -> Boolean.logicalOr(change, put(klv._1(), klv._2())),
                     Boolean::logicalOr);
         }
@@ -134,7 +147,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
             return new HashTrieRelation2.Transient<>(bwd, fwd);
         }
 
-        public HashTrieRelation2.Immutable<K, V> freeze() {
+        @Override public HashTrieRelation2.Immutable<K, V> freeze() {
             return new HashTrieRelation2.Immutable<>(fwd.freeze(), bwd.freeze());
         }
 

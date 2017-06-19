@@ -26,26 +26,18 @@ import io.usethesource.capsule.Set;
 public abstract class Relation<T> implements IRelation<T> {
     private static final ILogger logger = LoggerUtils.logger(Relation.class);
 
-    protected final RelationDescription description;
-
-    private final IRelation2<T, T> pairs;
-
-    public Relation(RelationDescription description, IRelation2<T, T> pairs) {
-        this.description = description;
-        this.pairs = pairs;
+    protected Relation() {
     }
 
-    @Override public RelationDescription getDescription() {
-        return description;
-    }
+    protected abstract IRelation2<T, T> pairs();
 
     @Override public Set.Immutable<T> smaller(T t) {
         Set.Transient<T> ts = Set.Transient.of();
         smaller(t, ts, Sets.newHashSet());
-        if(description.getSymmetry().equals(Symmetry.SYMMETRIC)) {
+        if(getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
             larger(t, ts, Sets.newHashSet());
         }
-        if(description.getReflexivity().equals(Reflexivity.REFLEXIVE)) {
+        if(getDescription().getReflexivity().equals(Reflexivity.REFLEXIVE)) {
             ts.__insert(t);
         }
         return ts.freeze();
@@ -54,9 +46,9 @@ public abstract class Relation<T> implements IRelation<T> {
     private void smaller(T current, Set.Transient<T> ts, java.util.Set<T> visited) {
         if(!visited.contains(current)) {
             visited.add(current);
-            for(T next : pairs.inverse().get(current)) {
+            for(T next : pairs().inverse().get(current)) {
                 ts.__insert(next);
-                if(description.getTransitivity().equals(Transitivity.TRANSITIVE)) {
+                if(getDescription().getTransitivity().equals(Transitivity.TRANSITIVE)) {
                     smaller(next, ts, visited);
                 }
             }
@@ -67,10 +59,10 @@ public abstract class Relation<T> implements IRelation<T> {
     @Override public Set.Immutable<T> larger(T t) {
         Set.Transient<T> ts = Set.Transient.of();
         larger(t, ts, Sets.newHashSet());
-        if(description.getSymmetry().equals(Symmetry.SYMMETRIC)) {
+        if(getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
             smaller(t, ts, Sets.newHashSet());
         }
-        if(description.getReflexivity().equals(Reflexivity.REFLEXIVE)) {
+        if(getDescription().getReflexivity().equals(Reflexivity.REFLEXIVE)) {
             ts.__insert(t);
         }
         return ts.freeze();
@@ -79,9 +71,9 @@ public abstract class Relation<T> implements IRelation<T> {
     private void larger(T current, Set.Transient<T> ts, java.util.Set<T> visited) {
         if(!visited.contains(current)) {
             visited.add(current);
-            for(T next : pairs.get(current)) {
+            for(T next : pairs().get(current)) {
                 ts.__insert(next);
-                if(description.getTransitivity().equals(Transitivity.TRANSITIVE)) {
+                if(getDescription().getTransitivity().equals(Transitivity.TRANSITIVE)) {
                     larger(next, ts, visited);
                 }
             }
@@ -91,7 +83,7 @@ public abstract class Relation<T> implements IRelation<T> {
 
     @Override public boolean contains(T t1, T t2) {
         if(t1.equals(t2)) {
-            switch(description.getReflexivity()) {
+            switch(getDescription().getReflexivity()) {
                 case REFLEXIVE:
                     return true;
                 case IRREFLEXIVE:
@@ -101,7 +93,7 @@ public abstract class Relation<T> implements IRelation<T> {
             }
         }
         boolean hit = contains(t1, t2, Sets.newHashSet());
-        if(!hit && description.getSymmetry().equals(Symmetry.SYMMETRIC)) {
+        if(!hit && getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
             hit |= contains(t2, t1, Sets.newHashSet());
         }
         return hit;
@@ -110,10 +102,10 @@ public abstract class Relation<T> implements IRelation<T> {
     private boolean contains(T current, T t, java.util.Set<T> visited) {
         if(!visited.contains(current)) {
             visited.add(current);
-            return pairs.get(current).stream().anyMatch(next -> {
+            return pairs().get(current).stream().anyMatch(next -> {
                 if(next.equals(t)) {
                     return true;
-                } else if(description.getTransitivity().equals(Transitivity.TRANSITIVE)) {
+                } else if(getDescription().getTransitivity().equals(Transitivity.TRANSITIVE)) {
                     return contains(next, t, visited);
                 } else {
                     return false;
@@ -126,7 +118,7 @@ public abstract class Relation<T> implements IRelation<T> {
 
 
     @Override public Optional<T> leastUpperBound(T t1, T t2) {
-        if(!description.equals(RelationDescription.PARTIAL_ORDER)) {
+        if(!getDescription().equals(RelationDescription.PARTIAL_ORDER)) {
             logger.warn("Lub must be called on partial-order, ignored.");
             return Optional.empty();
         }
@@ -137,7 +129,7 @@ public abstract class Relation<T> implements IRelation<T> {
     }
 
     @Override public Optional<T> greatestLowerbound(T t1, T t2) {
-        if(!description.equals(RelationDescription.PARTIAL_ORDER)) {
+        if(!getDescription().equals(RelationDescription.PARTIAL_ORDER)) {
             logger.warn("Glb must be called on partial-order, ignored.");
             return Optional.empty();
         }
@@ -149,21 +141,30 @@ public abstract class Relation<T> implements IRelation<T> {
 
 
     @Override public Stream<Tuple2<T, T>> stream() {
-        return pairs.entrySet().stream().map(Tuple2::of);
+        return pairs().stream();
     }
 
 
     public static class Immutable<T> extends Relation<T> implements IRelation.Immutable<T>, Serializable {
         private static final long serialVersionUID = 42L;
 
+        private final RelationDescription description;
         private final IRelation2.Immutable<T, T> pairs;
 
         public Immutable(RelationDescription description, IRelation2.Immutable<T, T> pairs) {
-            super(description, pairs);
+            this.description = description;
             this.pairs = pairs;
         }
 
-        public Relation.Transient<T> melt() {
+        @Override public RelationDescription getDescription() {
+            return description;
+        }
+
+        @Override protected IRelation2<T, T> pairs() {
+            return pairs;
+        }
+
+        @Override public Relation.Transient<T> melt() {
             return new Relation.Transient<>(description, pairs.melt());
         }
 
@@ -175,11 +176,21 @@ public abstract class Relation<T> implements IRelation<T> {
 
     public static class Transient<T> extends Relation<T> implements IRelation.Transient<T> {
 
+        private final RelationDescription description;
         private final IRelation2.Transient<T, T> pairs;
 
         public Transient(RelationDescription description, IRelation2.Transient<T, T> pairs) {
-            super(description, pairs);
+            this.description = description;
             this.pairs = pairs;
+        }
+
+        @Override public RelationDescription getDescription() {
+            return description;
+        }
+
+
+        @Override protected IRelation2<T, T> pairs() {
+            return pairs;
         }
 
         @Override public boolean add(T t1, T t2) throws RelationException {

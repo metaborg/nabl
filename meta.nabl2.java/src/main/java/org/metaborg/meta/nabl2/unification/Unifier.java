@@ -20,11 +20,10 @@ import io.usethesource.capsule.Map;
 
 public abstract class Unifier implements IUnifier {
 
-    private final Map<ITermVar, ITerm> reps;
-
-    private Unifier(Map<ITermVar, ITerm> reps) {
-        this.reps = reps;
+    protected Unifier() {
     }
+
+    protected abstract Map<ITermVar, ITerm> reps();
 
     /**
      * Find representative term.
@@ -70,8 +69,8 @@ public abstract class Unifier implements IUnifier {
 
     protected abstract ITerm findVarRepShallow(ITermVar var);
 
-    public Stream<Tuple2<ITermVar, ITerm>> stream() {
-        return reps.entrySet().stream().map(kv -> ImmutableTuple2.of(kv.getKey(), find(kv.getValue())));
+    @Override public Stream<Tuple2<ITermVar, ITerm>> stream() {
+        return reps().entrySet().stream().map(kv -> ImmutableTuple2.of(kv.getKey(), find(kv.getValue())));
     }
 
     public static class Immutable extends Unifier implements IUnifier.Immutable, Serializable {
@@ -81,9 +80,12 @@ public abstract class Unifier implements IUnifier {
         private final Map.Immutable<ITermVar, Integer> sizes;
 
         private Immutable(Map.Immutable<ITermVar, ITerm> reps, Map.Immutable<ITermVar, Integer> sizes) {
-            super(reps);
             this.reps = reps;
             this.sizes = sizes;
+        }
+
+        @Override protected Map<ITermVar, ITerm> reps() {
+            return reps;
         }
 
         @Override public Set<ITermVar> getAllVars() {
@@ -124,7 +126,6 @@ public abstract class Unifier implements IUnifier {
         private final Map.Transient<ITermVar, Integer> sizes;
 
         private Transient(Map.Transient<ITermVar, ITerm> reps, Map.Transient<ITermVar, Integer> sizes) {
-            super(reps);
             this.reps = reps;
             this.sizes = sizes;
         }
@@ -158,12 +159,16 @@ public abstract class Unifier implements IUnifier {
          * 
          * @return Unified term
          */
-        public UnificationResult unify(ITerm left, ITerm right) throws UnificationException {
+        @Override public UnificationResult unify(ITerm left, ITerm right) throws UnificationException {
             final UnificationResult result = new UnificationResult();
             if(!unifyTerms(left, right, result)) {
                 throw new UnificationException(find(left), find(right));
             }
             return result;
+        }
+
+        @Override protected Map<ITermVar, ITerm> reps() {
+            return reps;
         }
 
         private boolean unifyTerms(ITerm left, ITerm right, UnificationResult result) {
@@ -276,7 +281,8 @@ public abstract class Unifier implements IUnifier {
             return success;
         }
 
-        public IUnifier.Immutable freeze() {
+        @Override public IUnifier.Immutable freeze() {
+            reps.keySet().stream().forEach(this::find);
             return new Unifier.Immutable(reps.freeze(), sizes.freeze());
         }
 

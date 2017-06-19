@@ -40,40 +40,38 @@ import io.usethesource.capsule.Set;
 public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution<S, L, O> {
 
-    private final Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution;
-    private final Map<S, Set.Immutable<O>> visibility;
-    private final Map<S, Set.Immutable<O>> reachability;
-
-    private EsopNameResolution(Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution,
-            Map<S, Set.Immutable<O>> visibility, Map<S, Set.Immutable<O>> reachability) {
-        this.resolution = resolution;
-        this.visibility = visibility;
-        this.reachability = reachability;
+    protected EsopNameResolution() {
     }
+
+    protected abstract Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution();
+
+    protected abstract Map<S, Set.Immutable<O>> visibility();
+
+    protected abstract Map<S, Set.Immutable<O>> reachability();
 
     @Override public Set.Immutable<O> getAllRefs() {
         Set.Transient<O> allRefs = Set.Transient.of();
-        allRefs.__insertAll(resolution.keySet());
+        allRefs.__insertAll(resolution().keySet());
         return allRefs.freeze();
     }
 
     @Override public Set.Immutable<S> getAllScopes() {
         Set.Transient<S> allScopes = Set.Transient.of();
-        allScopes.__insertAll(visibility.keySet());
-        allScopes.__insertAll(reachability.keySet());
+        allScopes.__insertAll(visibility().keySet());
+        allScopes.__insertAll(reachability().keySet());
         return allScopes.freeze();
     }
 
     @Override public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
-        return Optional.ofNullable(resolution.get(ref)).orElse(Set.Immutable.of());
+        return Optional.ofNullable(resolution().get(ref)).orElse(Set.Immutable.of());
     }
 
     @Override public Set.Immutable<O> visible(S scope) {
-        return Optional.ofNullable(visibility.get(scope)).orElse(Set.Immutable.of());
+        return Optional.ofNullable(visibility().get(scope)).orElse(Set.Immutable.of());
     }
 
     @Override public Set.Immutable<O> reachable(S scope) {
-        return Optional.ofNullable(reachability.get(scope)).orElse(Set.Immutable.of());
+        return Optional.ofNullable(reachability().get(scope)).orElse(Set.Immutable.of());
     }
 
     public static class Immutable<S extends IScope, L extends ILabel, O extends IOccurrence>
@@ -89,14 +87,25 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         private Immutable(IResolutionParameters<L> params,
                 Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution,
                 Map.Immutable<S, Set.Immutable<O>> visibility, Map.Immutable<S, Set.Immutable<O>> reachability) {
-            super(resolution, visibility, reachability);
             this.params = params;
             this.resolution = resolution;
             this.visibility = visibility;
             this.reachability = reachability;
         }
 
-        public org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Transient<S, L, O>
+        @Override protected Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution() {
+            return resolution;
+        }
+
+        @Override protected Map<S, Set.Immutable<O>> visibility() {
+            return visibility;
+        }
+
+        @Override protected Map<S, Set.Immutable<O>> reachability() {
+            return reachability;
+        }
+
+        @Override public org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Transient<S, L, O>
                 melt(IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed) {
             return new EsopNameResolution.Transient<>(params, scopeGraph, isEdgeClosed, resolution.asTransient(),
                     visibility.asTransient(), reachability.asTransient());
@@ -135,7 +144,6 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         public Transient(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
                 Predicate2<S, L> isEdgeClosed, Map.Transient<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution,
                 Map.Transient<S, Set.Immutable<O>> visibility, Map.Transient<S, Set.Immutable<O>> reachability) {
-            super(resolution, visibility, reachability);
             this.params = params;
 
             this.scopeGraph = scopeGraph;
@@ -158,7 +166,19 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             this.stagedEnv_L = Maps.newHashMap();
         }
 
-        public boolean addAll(IEsopNameResolution<S, L, O> other) {
+        @Override protected Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution() {
+            return resolution;
+        }
+
+        @Override protected Map<S, Set.Immutable<O>> visibility() {
+            return visibility;
+        }
+
+        @Override protected Map<S, Set.Immutable<O>> reachability() {
+            return reachability;
+        }
+
+        @Override public boolean addAll(IEsopNameResolution<S, L, O> other) {
             boolean change = false;
             for(O ref : other.getAllRefs()) {
                 Set.Immutable<IResolutionPath<S, L, O>> prev = resolution.__put(ref, other.resolve(ref));
@@ -200,7 +220,7 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             }
         }
 
-        public EsopNameResolution.Update<S, L, O> resolveAll() {
+        @Override public EsopNameResolution.Update<S, L, O> resolveAll() {
             ImmutableUpdate.Builder<S, L, O> update = ImmutableUpdate.builder();
             for(O ref : scopeGraph.getAllRefs()) {
                 if(!resolution.containsKey(ref)) {
@@ -417,11 +437,11 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
     static abstract class Update<S extends IScope, L extends ILabel, O extends IOccurrence>
             implements IEsopNameResolution.Update<S, L, O> {
 
-        @Value.Parameter public abstract SetMultimap<O, IResolutionPath<S, L, O>> resolved();
+        @Override @Value.Parameter public abstract SetMultimap<O, IResolutionPath<S, L, O>> resolved();
 
-        @Value.Parameter public abstract SetMultimap<S, O> visible();
+        @Override @Value.Parameter public abstract SetMultimap<S, O> visible();
 
-        @Value.Parameter public abstract SetMultimap<S, O> reachable();
+        @Override @Value.Parameter public abstract SetMultimap<S, O> reachable();
 
     }
 

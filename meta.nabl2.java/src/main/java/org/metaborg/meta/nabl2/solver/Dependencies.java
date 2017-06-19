@@ -19,30 +19,29 @@ import io.usethesource.capsule.Set;
 
 public abstract class Dependencies<E> {
 
-    private final IRelation2<E, E> dependencies;
-
-    public Dependencies(IRelation2<E, E> dependencies) {
-        this.dependencies = dependencies;
+    protected Dependencies() {
     }
+
+    protected abstract IRelation2<E, E> dependencies();
 
     public abstract Dependencies<E> inverse();
 
 
     public boolean contains(E node) {
-        return dependencies.containsKey(node) || dependencies.containsValue(node);
+        return dependencies().containsKey(node) || dependencies().containsValue(node);
     }
 
     public boolean contains(E from, E to) {
-        return dependencies.containsEntry(from, to);
+        return dependencies().containsEntry(from, to);
     }
 
     public java.util.Set<E> nodeSet() {
-        return Sets.union(dependencies.keySet(), dependencies.valueSet());
+        return Sets.union(dependencies().keySet(), dependencies().valueSet());
     }
 
 
     public Set.Immutable<E> getDirectDependencies(E node) {
-        return dependencies.get(node);
+        return dependencies().get(node);
     }
 
     public Set.Immutable<E> getAllDependencies(@SuppressWarnings("unchecked") E... nodes) {
@@ -63,7 +62,7 @@ public abstract class Dependencies<E> {
     private void allDependencies(E current, Set.Transient<E> deps) {
         if(!deps.contains(current)) {
             deps.__insert(current);
-            dependencies.get(current).stream().forEach(next -> {
+            dependencies().get(current).stream().forEach(next -> {
                 allDependencies(next, deps);
             });
         }
@@ -71,7 +70,7 @@ public abstract class Dependencies<E> {
 
 
     public Set.Immutable<E> getDirectDependents(E node) {
-        return dependencies.inverse().get(node);
+        return dependencies().inverse().get(node);
     }
 
     public Set.Immutable<E> getAllDependents(@SuppressWarnings("unchecked") E... nodes) {
@@ -92,7 +91,7 @@ public abstract class Dependencies<E> {
     private void allDependents(E current, Set.Transient<E> deps) {
         if(!deps.contains(current)) {
             deps.__insert(current);
-            dependencies.inverse().get(current).stream().forEach(next -> {
+            dependencies().inverse().get(current).stream().forEach(next -> {
                 allDependents(next, deps);
             });
         }
@@ -150,7 +149,7 @@ public abstract class Dependencies<E> {
         Node v;
         visited.put(current, v = new Node(current, index.getAndIncrement()));
         stack.push(v);
-        for(E next : dependencies.get(current)) {
+        for(E next : dependencies().get(current)) {
             Node w = visited.get(next);
             if(w == null) {
                 w = strongconnect(next, index, stack, visited, components);
@@ -211,7 +210,7 @@ public abstract class Dependencies<E> {
 
 
     @Override public String toString() {
-        return "Dependencies" + dependencies.toString();
+        return "Dependencies" + dependencies().toString();
     }
 
 
@@ -221,8 +220,11 @@ public abstract class Dependencies<E> {
         private final IRelation2.Immutable<E, E> dependencies;
 
         public Immutable(IRelation2.Immutable<E, E> dependencies) {
-            super(dependencies);
             this.dependencies = dependencies;
+        }
+
+        @Override protected IRelation2<E, E> dependencies() {
+            return dependencies;
         }
 
         @Override public Dependencies.Immutable<E> inverse() {
@@ -244,8 +246,11 @@ public abstract class Dependencies<E> {
         private final IRelation2.Transient<E, E> dependencies;
 
         public Transient(IRelation2.Transient<E, E> dependencies) {
-            super(dependencies);
             this.dependencies = dependencies;
+        }
+
+        @Override protected IRelation2<E, E> dependencies() {
+            return dependencies;
         }
 
         @Override public Dependencies.Transient<E> inverse() {
@@ -257,7 +262,7 @@ public abstract class Dependencies<E> {
         }
 
         public boolean addAll(Dependencies<E> other) {
-            return dependencies.putAll(other.dependencies);
+            return dependencies.putAll(other.dependencies());
         }
 
         public boolean remove(E node) {

@@ -9,51 +9,49 @@ import io.usethesource.capsule.SetMultimap;
 
 public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> {
 
-    private final SetMultimap<K, Tuple2<L, V>> fwdK;
-    private final SetMultimap<Tuple2<K, L>, V> fwdKL;
-    private final SetMultimap<V, Tuple2<L, K>> bwdV;
-
-    protected HashTrieRelation3(SetMultimap<K, Tuple2<L, V>> fwdK, SetMultimap<Tuple2<K, L>, V> fwdKL,
-            SetMultimap<V, Tuple2<L, K>> bwdV) {
-        this.fwdK = fwdK;
-        this.fwdKL = fwdKL;
-        this.bwdV = bwdV;
+    protected HashTrieRelation3() {
     }
 
+    protected abstract SetMultimap<K, Tuple2<L, V>> fwdK();
+
+    protected abstract SetMultimap<Tuple2<K, L>, V> fwdKL();
+
+    protected abstract SetMultimap<V, Tuple2<L, K>> bwdV();
+
     @Override public boolean contains(K key) {
-        return fwdK.containsKey(key);
+        return fwdK().containsKey(key);
     }
 
     @Override public boolean contains(K key, L label) {
-        return fwdKL.containsKey(ImmutableTuple2.of(key, label));
+        return fwdKL().containsKey(ImmutableTuple2.of(key, label));
     }
 
     @Override public boolean contains(K key, L label, V value) {
-        return fwdK.containsEntry(key, ImmutableTuple2.of(label, value));
+        return fwdK().containsEntry(key, ImmutableTuple2.of(label, value));
     }
 
     @Override public java.util.Set<K> keySet() {
-        return fwdK.keySet();
+        return fwdK().keySet();
     }
 
     @Override public java.util.Set<V> valueSet() {
-        return bwdV.keySet();
+        return bwdV().keySet();
     }
 
     @Override public java.util.Set<V> get(K key, L label) {
-        return fwdKL.get(ImmutableTuple2.of(key, label));
+        return fwdKL().get(ImmutableTuple2.of(key, label));
     }
 
     @Override public java.util.Set<Tuple2<L, V>> get(K key) {
-        return fwdK.get(key);
+        return fwdK().get(key);
     }
 
-    public boolean isEmpty() {
-        return fwdK.isEmpty();
+    @Override public boolean isEmpty() {
+        return fwdK().isEmpty();
     }
 
     @Override public String toString() {
-        return fwdK.toString();
+        return fwdK().toString();
     }
 
     public static class Immutable<K, L, V> extends HashTrieRelation3<K, L, V>
@@ -67,18 +65,29 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
 
         Immutable(SetMultimap.Immutable<K, Tuple2<L, V>> fwdK, SetMultimap.Immutable<Tuple2<K, L>, V> fwdKL,
                 SetMultimap.Immutable<V, Tuple2<L, K>> bwdV, SetMultimap.Immutable<Tuple2<V, L>, K> bwdVL) {
-            super(fwdK, fwdKL, bwdV);
             this.fwdK = fwdK;
             this.fwdKL = fwdKL;
             this.bwdV = bwdV;
             this.bwdVL = bwdVL;
         }
 
+        @Override protected SetMultimap<K, Tuple2<L, V>> fwdK() {
+            return fwdK;
+        }
+
+        @Override protected SetMultimap<Tuple2<K, L>, V> fwdKL() {
+            return fwdKL;
+        }
+
+        @Override protected SetMultimap<V, Tuple2<L, K>> bwdV() {
+            return bwdV;
+        }
+
         @Override public IRelation3.Immutable<V, L, K> inverse() {
             return new HashTrieRelation3.Immutable<>(bwdV, bwdVL, fwdK, fwdKL);
         }
 
-        public HashTrieRelation3.Transient<K, L, V> melt() {
+        @Override public HashTrieRelation3.Transient<K, L, V> melt() {
             return new HashTrieRelation3.Transient<>(fwdK.asTransient(), fwdKL.asTransient(), bwdV.asTransient(),
                     bwdVL.asTransient());
         }
@@ -99,11 +108,22 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
 
         Transient(SetMultimap.Transient<K, Tuple2<L, V>> fwdK, SetMultimap.Transient<Tuple2<K, L>, V> fwdKL,
                 SetMultimap.Transient<V, Tuple2<L, K>> bwdV, SetMultimap.Transient<Tuple2<V, L>, K> bwdVL) {
-            super(fwdK, fwdKL, bwdV);
             this.fwdK = fwdK;
             this.fwdKL = fwdKL;
             this.bwdV = bwdV;
             this.bwdVL = bwdVL;
+        }
+
+        @Override protected SetMultimap<K, Tuple2<L, V>> fwdK() {
+            return fwdK;
+        }
+
+        @Override protected SetMultimap<Tuple2<K, L>, V> fwdKL() {
+            return fwdKL;
+        }
+
+        @Override protected SetMultimap<V, Tuple2<L, K>> bwdV() {
+            return bwdV;
         }
 
         @Override public boolean put(K key, L label, V value) {
@@ -117,7 +137,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             return false;
         }
 
-        public boolean putAll(IRelation3<K, L, V> other) {
+        @Override public boolean putAll(IRelation3<K, L, V> other) {
             return other.stream().reduce(false,
                     (change, klv) -> Boolean.logicalOr(change, put(klv._1(), klv._2(), klv._3())), Boolean::logicalOr);
         }
@@ -165,7 +185,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             return new HashTrieRelation3.Transient<>(bwdV, bwdVL, fwdK, fwdKL);
         }
 
-        public HashTrieRelation3.Immutable<K, L, V> freeze() {
+        @Override public HashTrieRelation3.Immutable<K, L, V> freeze() {
             return new HashTrieRelation3.Immutable<>(fwdK.freeze(), fwdKL.freeze(), bwdV.freeze(), bwdVL.freeze());
         }
 

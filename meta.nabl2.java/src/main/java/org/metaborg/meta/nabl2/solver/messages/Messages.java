@@ -13,14 +13,13 @@ import io.usethesource.capsule.Set;
 
 public abstract class Messages implements IMessages {
 
-    private final Set<IMessageInfo> messages;
-
-    public Messages(Set<IMessageInfo> messages) {
-        this.messages = messages;
+    protected Messages() {
     }
 
+    protected abstract Set<IMessageInfo> messages();
+
     @Override public Set<IMessageInfo> getAll() {
-        return messages;
+        return messages();
     }
 
     public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
@@ -29,8 +28,11 @@ public abstract class Messages implements IMessages {
         private final Set.Immutable<IMessageInfo> messages;
 
         private Immutable(Set.Immutable<IMessageInfo> messages) {
-            super(messages);
             this.messages = messages;
+        }
+
+        @Override protected Set<IMessageInfo> messages() {
+            return messages;
         }
 
         @Override public Set.Immutable<IMessageInfo> getAll() {
@@ -52,8 +54,11 @@ public abstract class Messages implements IMessages {
         private final Set.Transient<IMessageInfo> messages;
 
         private Transient(Set.Transient<IMessageInfo> messages) {
-            super(messages);
             this.messages = messages;
+        }
+
+        @Override protected Set<IMessageInfo> messages() {
+            return messages;
         }
 
         public boolean add(IMessageInfo message) {

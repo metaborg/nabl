@@ -25,25 +25,23 @@ import io.usethesource.capsule.SetMultimap;
 
 public abstract class Relations<T> implements IRelations<T> {
 
-    private final Map.Immutable<IRelationName, ? extends IRelation<T>> relations;
-    protected final SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers;
-
-    private Relations(Map.Immutable<IRelationName, ? extends IRelation<T>> relations,
-            SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
-        this.relations = relations;
-        this.variantMatchers = variantMatchers;
+    protected Relations() {
     }
 
+    protected abstract SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers();
+
+    protected abstract Map.Immutable<IRelationName, ? extends IRelation<T>> relations();
+
     @Override public java.util.Set<IRelationName> getNames() {
-        return relations.keySet();
+        return relations().keySet();
     }
 
     @Override public boolean contains(IRelationName name, T t1, T t2) {
-        if(!relations.containsKey(name)) {
+        if(!relations().containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
-        IRelation<T> relation = relations.get(name);
-        for(IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+        IRelation<T> relation = relations().get(name);
+        for(IVariantMatcher<T> matcher : variantMatchers().get(name)) {
             Optional<Boolean> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
                 return (args1.size() == args2.size())
                         && Iterables2.stream(Iterables2.zip(args1, args2, (arg1, arg2) -> {
@@ -66,10 +64,10 @@ public abstract class Relations<T> implements IRelations<T> {
     }
 
     @Override public Optional<T> leastUpperBound(IRelationName name, T t1, T t2) {
-        if(!relations.containsKey(name)) {
+        if(!relations().containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
-        for(IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+        for(IVariantMatcher<T> matcher : variantMatchers().get(name)) {
             Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
                 return Optionals.when(args1.size() == args2.size()).flatMap(eq -> {
                     return Optionals.sequence(Iterables2.zip(args1, args2, (arg1, arg2) -> {
@@ -90,14 +88,14 @@ public abstract class Relations<T> implements IRelations<T> {
                 return contains.get();
             }
         }
-        return relations.get(name).leastUpperBound(t1, t2);
+        return relations().get(name).leastUpperBound(t1, t2);
     }
 
     @Override public Optional<T> greatestLowerBound(IRelationName name, T t1, T t2) {
-        if(!relations.containsKey(name)) {
+        if(!relations().containsKey(name)) {
             throw new NoSuchElementException("Relation " + name + " not defined.");
         }
-        for(IVariantMatcher<T> matcher : variantMatchers.get(name)) {
+        for(IVariantMatcher<T> matcher : variantMatchers().get(name)) {
             Optional<Optional<T>> contains = Optionals.lift(matcher.match(t1), matcher.match(t2), (args1, args2) -> {
                 return Optionals.when(args1.size() == args2.size()).flatMap(eq -> {
                     return Optionals.sequence(Iterables2.zip(args1, args2, (arg1, arg2) -> {
@@ -118,26 +116,35 @@ public abstract class Relations<T> implements IRelations<T> {
                 return contains.get();
             }
         }
-        return relations.get(name).greatestLowerbound(t1, t2);
+        return relations().get(name).greatestLowerbound(t1, t2);
     }
 
     private IRelationName nameOrDefault(IRelationName name, IRelationName defaultName) {
         return name.getName().isPresent() ? name : defaultName;
     }
 
-    public Stream<Tuple2<T, T>> stream(IRelationName name) {
-        return relations.get(name).stream();
+    @Override public Stream<Tuple2<T, T>> stream(IRelationName name) {
+        return relations().get(name).stream();
     }
 
     public static class Immutable<T> extends Relations<T> implements IRelations.Immutable<T>, Serializable {
         private static final long serialVersionUID = 42L;
 
+        private final SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers;
         private final Map.Immutable<IRelationName, IRelation.Immutable<T>> relations;
 
         public Immutable(Map.Immutable<IRelationName, IRelation.Immutable<T>> relations,
                 SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
-            super(relations, variantMatchers);
+            this.variantMatchers = variantMatchers;
             this.relations = relations;
+        }
+
+        @Override protected SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers() {
+            return variantMatchers;
+        }
+
+        @Override protected Map.Immutable<IRelationName, ? extends IRelation<T>> relations() {
+            return relations;
         }
 
         @Override public Relations.Transient<T> melt() {
@@ -156,12 +163,21 @@ public abstract class Relations<T> implements IRelations<T> {
 
     public static class Transient<T> extends Relations<T> implements IRelations.Transient<T> {
 
+        private final SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers;
         private final Map.Immutable<IRelationName, IRelation.Transient<T>> relations;
 
         public Transient(Map.Immutable<IRelationName, IRelation.Transient<T>> relations,
                 SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers) {
-            super(relations, variantMatchers);
+            this.variantMatchers = variantMatchers;
             this.relations = relations;
+        }
+
+        @Override protected SetMultimap.Immutable<IRelationName, IVariantMatcher<T>> variantMatchers() {
+            return variantMatchers;
+        }
+
+        @Override protected Map.Immutable<IRelationName, ? extends IRelation<T>> relations() {
+            return relations;
         }
 
         @Override public boolean add(IRelationName name, T t1, T t2) throws RelationException {

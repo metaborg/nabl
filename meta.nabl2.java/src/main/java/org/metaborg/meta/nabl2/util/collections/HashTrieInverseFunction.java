@@ -8,40 +8,39 @@ import io.usethesource.capsule.SetMultimap;
 
 public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<K, V> {
 
-    private final SetMultimap<K, V> fwd;
-    private final Map<V, K> bwd;
-
-    protected HashTrieInverseFunction(SetMultimap<K, V> fwd, Map<V, K> bwd) {
-        this.fwd = fwd;
-        this.bwd = bwd;
+    protected HashTrieInverseFunction() {
     }
 
+    protected abstract SetMultimap<K, V> fwd();
+
+    protected abstract Map<V, K> bwd();
+
     @Override public boolean containsKey(K key) {
-        return fwd.containsKey(key);
+        return fwd().containsKey(key);
     }
 
     @Override public boolean containsValue(V value) {
-        return bwd.containsKey(value);
+        return bwd().containsKey(value);
     }
 
     @Override public boolean containsEntry(K key, V value) {
-        return fwd.containsEntry(key, value);
+        return fwd().containsEntry(key, value);
     }
 
     @Override public java.util.Set<K> keySet() {
-        return fwd.keySet();
+        return fwd().keySet();
     }
 
     @Override public java.util.Set<V> valueSet() {
-        return bwd.keySet();
+        return bwd().keySet();
     }
 
     @Override public Set.Immutable<V> get(K key) {
-        return fwd.get(key);
+        return fwd().get(key);
     }
 
     @Override public String toString() {
-        return fwd.toString();
+        return fwd().toString();
     }
 
     public static class Immutable<K, V> extends HashTrieInverseFunction<K, V>
@@ -52,16 +51,23 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
         private final Map.Immutable<V, K> bwd;
 
         Immutable(SetMultimap.Immutable<K, V> fwd, Map.Immutable<V, K> bwd) {
-            super(fwd, bwd);
             this.fwd = fwd;
             this.bwd = bwd;
+        }
+
+        @Override protected SetMultimap<K, V> fwd() {
+            return fwd;
+        }
+
+        @Override protected Map<V, K> bwd() {
+            return bwd;
         }
 
         @Override public HashTrieFunction.Immutable<V, K> inverse() {
             return new HashTrieFunction.Immutable<>(bwd, fwd);
         }
 
-        public HashTrieInverseFunction.Transient<K, V> melt() {
+        @Override public HashTrieInverseFunction.Transient<K, V> melt() {
             return new HashTrieInverseFunction.Transient<>(fwd.asTransient(), bwd.asTransient());
         }
 
@@ -74,9 +80,16 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
         private final Map.Transient<V, K> bwd;
 
         Transient(SetMultimap.Transient<K, V> fwd, Map.Transient<V, K> bwd) {
-            super(fwd, bwd);
             this.fwd = fwd;
             this.bwd = bwd;
+        }
+
+        @Override protected SetMultimap<K, V> fwd() {
+            return fwd;
+        }
+
+        @Override protected Map<V, K> bwd() {
+            return bwd;
         }
 
         @Override public boolean put(K key, V value) {
@@ -102,7 +115,7 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
             return new HashTrieFunction.Transient<>(bwd, fwd);
         }
 
-        public HashTrieInverseFunction.Immutable<K, V> freeze() {
+        @Override public HashTrieInverseFunction.Immutable<K, V> freeze() {
             return new HashTrieInverseFunction.Immutable<>(fwd.freeze(), bwd.freeze());
         }
 
