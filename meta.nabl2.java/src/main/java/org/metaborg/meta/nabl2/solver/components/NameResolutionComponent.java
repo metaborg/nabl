@@ -80,7 +80,7 @@ public class NameResolutionComponent extends ASolver {
 
     public IEsopNameResolution.Update<Scope, Label, Occurrence> update() throws InterruptedException {
         scopeGraph.reduce(this::findScope, this::findOccurrence);
-        return nameResolution.resolve();
+        return nameResolution.resolveAll();
     }
 
     public NameResolutionResult finish() {

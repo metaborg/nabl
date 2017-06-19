@@ -8,9 +8,9 @@ import io.usethesource.capsule.Set;
 
 public interface INameResolution<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Set<S> getAllScopes();
+    Set.Immutable<S> getAllScopes();
 
-    Set<O> getAllRefs();
+    Set.Immutable<O> getAllRefs();
 
     Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref);
 

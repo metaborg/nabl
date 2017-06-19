@@ -27,7 +27,7 @@ public interface IEsopNameResolution<S extends IScope, L extends ILabel, O exten
 
         boolean addAll(IEsopNameResolution<S, L, O> other);
 
-        Update<S, L, O> resolve();
+        Update<S, L, O> resolveAll();
 
         IEsopNameResolution.Immutable<S, L, O> freeze();
 

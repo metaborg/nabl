@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,8 @@ public abstract class Dependencies<E> {
         this.dependencies = dependencies;
     }
 
+    public abstract Dependencies<E> inverse();
+
 
     public boolean contains(E node) {
         return dependencies.containsKey(node) || dependencies.containsValue(node);
@@ -42,10 +45,18 @@ public abstract class Dependencies<E> {
         return dependencies.get(node);
     }
 
-    public Set.Immutable<E> getAllDependencies(E node) {
+    public Set.Immutable<E> getAllDependencies(@SuppressWarnings("unchecked") E... nodes) {
+        return getAllDependencies(Arrays.asList(nodes));
+    }
+
+    public Set.Immutable<E> getAllDependencies(Iterable<? extends E> nodes) {
         final Set.Transient<E> deps = Set.Transient.of();
-        allDependencies(node, deps);
-        deps.__remove(node);
+        for(E node : nodes) {
+            allDependencies(node, deps);
+        }
+        for(E node : nodes) {
+            deps.__remove(node);
+        }
         return deps.freeze();
     }
 
@@ -63,10 +74,18 @@ public abstract class Dependencies<E> {
         return dependencies.inverse().get(node);
     }
 
-    public Set.Immutable<E> getAllDependents(E node) {
+    public Set.Immutable<E> getAllDependents(@SuppressWarnings("unchecked") E... nodes) {
+        return getAllDependents(Arrays.asList(nodes));
+    }
+
+    public Set.Immutable<E> getAllDependents(Iterable<? extends E> nodes) {
         final Set.Transient<E> deps = Set.Transient.of();
-        allDependents(node, deps);
-        deps.__remove(node);
+        for(E node : nodes) {
+            allDependents(node, deps);
+        }
+        for(E node : nodes) {
+            deps.__remove(node);
+        }
         return deps.freeze();
     }
 
@@ -80,17 +99,50 @@ public abstract class Dependencies<E> {
     }
 
 
-    public List<Set.Immutable<E>> getTopoSortedComponents() {
+    public TopoSortedComponents<E> getTopoSortedComponents() {
+        return getTopoSortedComponents(nodeSet());
+    }
+
+    public TopoSortedComponents<E> getTopoSortedComponents(Iterable<? extends E> nodes) {
         final ImmutableList.Builder<Set.Immutable<E>> components = ImmutableList.builder();
         final AtomicInteger index = new AtomicInteger(0);
         final Deque<Node> stack = new IndexedDeque<>();
         final Map<E, Node> visited = Maps.newHashMap();
-        for(E current : nodeSet()) {
+        for(E current : nodes) {
             if(!visited.containsKey(current)) {
                 strongconnect(current, index, stack, visited, components);
             }
         }
-        return components.build().reverse();
+        return new TopoSortedComponents<>(components.build());
+    }
+
+    public static class TopoSortedComponents<E> {
+
+        private final List<Set.Immutable<E>> components;
+        private final Map<E, Set.Immutable<E>> index;
+
+        private TopoSortedComponents(List<Set.Immutable<E>> components) {
+            this.components = ImmutableList.copyOf(components);
+            this.index = Maps.newHashMap();
+            for(Set.Immutable<E> component : components) {
+                for(E elem : component) {
+                    index.put(elem, component);
+                }
+            }
+        }
+
+        public java.util.Set<E> nodes() {
+            return index.keySet();
+        }
+
+        public List<Set.Immutable<E>> components() {
+            return components;
+        }
+
+        public Set.Immutable<E> component(E elem) {
+            return index.get(elem);
+        }
+
     }
 
     private Node strongconnect(E current, AtomicInteger index, Deque<Node> stack, Map<E, Node> visited,
@@ -173,6 +225,10 @@ public abstract class Dependencies<E> {
             this.dependencies = dependencies;
         }
 
+        @Override public Dependencies.Immutable<E> inverse() {
+            return new Immutable<>(dependencies.inverse());
+        }
+
         public Dependencies.Transient<E> melt() {
             return new Dependencies.Transient<>(dependencies.melt());
         }
@@ -192,8 +248,16 @@ public abstract class Dependencies<E> {
             this.dependencies = dependencies;
         }
 
+        @Override public Dependencies.Transient<E> inverse() {
+            return new Transient<>(dependencies.inverse());
+        }
+
         public boolean add(E from, E to) {
             return dependencies.put(from, to);
+        }
+
+        public boolean addAll(Dependencies<E> other) {
+            return dependencies.putAll(other.dependencies);
         }
 
         public boolean remove(E node) {

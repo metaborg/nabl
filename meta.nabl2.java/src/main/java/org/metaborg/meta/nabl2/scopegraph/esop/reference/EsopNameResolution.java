@@ -51,13 +51,13 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         this.reachability = reachability;
     }
 
-    @Override public Set<O> getAllRefs() {
+    @Override public Set.Immutable<O> getAllRefs() {
         Set.Transient<O> allRefs = Set.Transient.of();
         allRefs.__insertAll(resolution.keySet());
         return allRefs.freeze();
     }
 
-    @Override public Set<S> getAllScopes() {
+    @Override public Set.Immutable<S> getAllScopes() {
         Set.Transient<S> allScopes = Set.Transient.of();
         allScopes.__insertAll(visibility.keySet());
         allScopes.__insertAll(reachability.keySet());
@@ -200,7 +200,7 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             }
         }
 
-        public EsopNameResolution.Update<S, L, O> resolve() {
+        public EsopNameResolution.Update<S, L, O> resolveAll() {
             ImmutableUpdate.Builder<S, L, O> update = ImmutableUpdate.builder();
             for(O ref : scopeGraph.getAllRefs()) {
                 if(!resolution.containsKey(ref)) {
@@ -272,15 +272,15 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
                 if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
                     return Optional.empty();
                 } else {
-                    final IEsopEnv<S, L, O, P> env = l.equals(labelD) ? env_D(seenImports, lt, re, path, filter)
-                            : env_nonD(seenImports, lt, re, l, path, filter);
+                    final IEsopEnv<S, L, O, P> env =
+                            l.equals(labelD) ? env_D(re, path, filter) : env_nonD(seenImports, lt, re, l, path, filter);
                     return Optional.of(env);
                 }
             });
         }
 
-        private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_D(Set.Immutable<O> seenImports, IRelation<L> lt,
-                IRegExpMatcher<L> re, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
+        private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_D(IRegExpMatcher<L> re, IScopePath<S, L, O> path,
+                IEsopEnv.Filter<S, L, O, P> filter) {
             if(!re.isAccepting()) {
                 return EsopEnvs.empty();
             } else {
@@ -298,12 +298,12 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
                     (Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> & Serializable) p -> {
                         return env(seenImports, lt, re.match(l), p, filter);
                     };
-            return EsopEnvs.union(Iterables.concat(directScopes(l, path, filter, getter),
-                    importScopes(seenImports, l, path, filter, getter)));
+            return EsopEnvs
+                    .union(Iterables.concat(directScopes(l, path, getter), importScopes(seenImports, l, path, getter)));
         }
 
         private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> directScopes(L l, IScopePath<S, L, O> path,
-                IEsopEnv.Filter<S, L, O, P> filter, Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
+                Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
             List<IEsopEnv<S, L, O, P>> envs = Lists.newArrayList();
             for(S nextScope : scopeGraph.getDirectEdges().get(path.getTarget(), l)) {
                 Paths.append(path, Paths.direct(path.getTarget(), l, nextScope)).map(getter::apply)
@@ -313,8 +313,7 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         }
 
         private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> importScopes(Set.Immutable<O> seenImports,
-                L l, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter,
-                Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
+                L l, IScopePath<S, L, O> path, Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
             List<IEsopEnv<S, L, O, P>> envs = Lists.newArrayList();
             for(O ref : scopeGraph.getImportEdges().get(path.getTarget(), l)) {
                 if(seenImports.contains(ref)) {

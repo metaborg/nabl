@@ -15,7 +15,7 @@ public class DependenciesTest {
 
     @Test public void testEmpty() {
         Dependencies.Transient<Integer> deps = Dependencies.Transient.of();
-        assertTrue(deps.getTopoSortedComponents().isEmpty());
+        assertTrue(deps.getTopoSortedComponents().components().isEmpty());
         assertTrue(deps.getDirectDependencies(1).isEmpty());
         assertTrue(deps.getAllDependencies(1).isEmpty());
         assertTrue(deps.getDirectDependents(1).isEmpty());
@@ -27,7 +27,7 @@ public class DependenciesTest {
         deps.add(1, 2);
         deps.add(2, 3);
         deps.add(3, 1);
-        List<Immutable<Integer>> components = deps.getTopoSortedComponents();
+        List<Immutable<Integer>> components = deps.getTopoSortedComponents().components();
         assertEquals(1, components.size());
     }
 
@@ -37,7 +37,7 @@ public class DependenciesTest {
         deps.add(2, 3);
         deps.add(3, 1);
         deps.add(2, 4);
-        List<Immutable<Integer>> components = deps.getTopoSortedComponents();
+        List<Immutable<Integer>> components = deps.getTopoSortedComponents().components();
         assertEquals(2, components.size());
         assertEquals(3, components.get(0).size());
         assertEquals(1, components.get(1).size());
@@ -50,7 +50,7 @@ public class DependenciesTest {
         deps.add(2, 3);
         deps.add(3, 1);
         deps.add(2, 4);
-        List<Immutable<Integer>> components = deps.getTopoSortedComponents();
+        List<Immutable<Integer>> components = deps.getTopoSortedComponents().components();
         assertEquals(3, components.size());
         assertEquals(1, components.get(0).size());
         assertEquals(3, components.get(1).size());

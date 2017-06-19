@@ -1,11 +1,12 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -15,15 +16,16 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.scopegraph.ScopeGraphCommon;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
-import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Update;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
-import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
+import org.metaborg.meta.nabl2.solver.Dependencies;
+import org.metaborg.meta.nabl2.solver.Dependencies.TopoSortedComponents;
 import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.solver.ISolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
@@ -58,11 +60,11 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+
+import io.usethesource.capsule.Set;
 
 public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
     private static final ILogger logger = LoggerUtils.logger(IncrementalMultiFileSolver.class);
@@ -74,133 +76,211 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         this.globalSource = globalSource;
     }
 
-    public IncrementalSolution solveInter(ISolution globalIntra, Map<String, ISolution> unitIntras,
-            IMessageInfo message, Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
+    public IncrementalSolution solveInter(IncrementalSolution initial, Map<String, ISolution> updatedUnits,
+            Collection<String> removedUnits, Collection<Scope> intfScopes, IMessageInfo message,
+            Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
             throws InterruptedException, SolverException {
 
-        // build global scope graph
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final Dependencies.Transient<String> dependencies = initial.dependencies().melt();
+        final ISolution globalIntra = initial.globalIntra();
+        final Map<String, ISolution> unitIntras = Maps.newHashMap(initial.unitIntras());
+        final Map<Set.Immutable<String>, ISolution> unitInters = Maps.newHashMap(initial.unitInters());
+
+        if(nabl2Debug.files()) {
+            logger.info("Updated {}", updatedUnits.keySet());
+        }
+
+        // calculate diff
+        java.util.Set<Occurrence> globalDiff = Sets.newHashSet();
+        {
+            for(String unit : removedUnits) {
+                final ISolution prevIntra = unitIntras.get(unit);
+                final java.util.Set<Occurrence> prevDecls;
+                if(prevIntra != null) {
+                    ScopeGraphCommon<Scope, Label, Occurrence> prevGraph =
+                            new ScopeGraphCommon<>(prevIntra.scopeGraph());
+                    prevDecls = intfScopes.stream().flatMap(s -> prevGraph.reachableDecls(s).stream())
+                            .collect(Collectors.toSet());
+                    globalDiff.addAll(prevDecls);
+                }
+
+            }
+            for(Map.Entry<String, ISolution> entry : updatedUnits.entrySet()) {
+                final ISolution prevIntra = unitIntras.get(entry.getKey());
+                final java.util.Set<Occurrence> prevDecls;
+                if(prevIntra != null) {
+                    ScopeGraphCommon<Scope, Label, Occurrence> prevGraph =
+                            new ScopeGraphCommon<>(prevIntra.scopeGraph());
+                    prevDecls = intfScopes.stream().flatMap(s -> prevGraph.reachableDecls(s).stream())
+                            .collect(Collectors.toSet());
+                } else {
+                    prevDecls = Collections.emptySet();
+                }
+
+                final ISolution intra = entry.getValue();
+                final java.util.Set<Occurrence> currDecls;
+                ScopeGraphCommon<Scope, Label, Occurrence> currGraph = new ScopeGraphCommon<>(intra.scopeGraph());
+                currDecls = intfScopes.stream().flatMap(s -> currGraph.reachableDecls(s).stream())
+                        .collect(Collectors.toSet());
+
+                final java.util.Set<Occurrence> unitDiff = Sets.symmetricDifference(prevDecls, currDecls);
+                globalDiff.addAll(unitDiff);
+            }
+        }
+        if(nabl2Debug.analysis()) {
+            logger.warn("Changed top-level declarations: {}", globalDiff);
+        }
+
+        // update to new intras
+        removedUnits.stream().forEach(unitIntras::remove);
+        unitIntras.putAll(updatedUnits);
+
+        // create global scope graph
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = globalIntra.scopeGraph().melt();
         for(ISolution unitIntra : unitIntras.values()) {
             scopeGraph.addAll(unitIntra.scopeGraph());
         }
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.Transient.of(globalIntra.config().getResolutionParams(), scopeGraph, (s, l) -> true);
+        nameResolution.resolveAll();
 
-        final SetMultimap<String, String> deps = HashMultimap.create();
-        final SetMultimap<String, String> missingDeps = HashMultimap.create();
-        Collection<IResolutionPath<Scope, Label, Occurrence>> initialPaths =
-                nameResolution.resolve().resolved().values();
-        discoverDependencies(initialPaths, deps, missingDeps);
+        // invalidate units and dependents
+        final java.util.Set<String> invalidatedUnits = Sets.newHashSet();
+        {
+            // invalidate removed units
+            {
+                invalidatedUnits.addAll(removedUnits);
+                Set.Immutable<String> removedDependents = dependencies.getAllDependents(removedUnits);
+                invalidatedUnits.addAll(removedDependents);
+                if(nabl2Debug.analysis()) {
+                    logger.info("Invalidated removed {} and dependents {}.", removedUnits, removedDependents);
+                }
+            }
 
-        // FIXME do something with previous state
+            // invalidate updated units
+            {
+                invalidatedUnits.addAll(updatedUnits.keySet());
+                Set.Immutable<String> updatedDependents = dependencies.getAllDependents(updatedUnits.keySet());
+                invalidatedUnits.addAll(updatedDependents);
+                if(nabl2Debug.files()) {
+                    logger.info("Invalidated updated {} and dependents {}.", updatedUnits.keySet(), updatedDependents);
+                }
+            }
 
-        final Map<String, ISolution> pending = Maps.newHashMap(unitIntras);
-        final Map<String, ISolution> finished = Maps.newHashMap();
-
-        // solve global
-        ISolution globalInter = reportUnsolvedNonCheckConstraints(globalIntra);
-        globalInter = solveInterChecks(globalInter, scopeGraph, nameResolution, cancel, progress);
-
-        // seed global
-        for(Map.Entry<String, ISolution> entry : pending.entrySet()) {
-            entry.setValue(mergeDep(entry.getValue(), Iterables2.singleton(globalInter), message));
-        }
-
-        // solve inference
-        boolean change = true;
-        while(change) {
-            change = false;
-
-            Iterator<Map.Entry<String, ISolution>> it = pending.entrySet().iterator();
-            while(it.hasNext()) {
-                final Map.Entry<String, ISolution> entry = it.next();
-                final String resource = entry.getKey();
-                final ISolution initial = entry.getValue();
-                if(missingDeps.get(resource).isEmpty()) {
-                    if(nabl2Debug.files()) {
-                        logger.info("Finished inter analysis of {}.", resource);
+            // invalidate remaining units for which resolution changed
+            {
+                TopoSortedComponents<String> components = dependencies.getTopoSortedComponents();
+                Optional<ISolution> inter = initial.globalInter();
+                Predicate<String> resolutionChanged = unit -> {
+                    if(!inter.isPresent()) {
+                        return true;
                     }
-                    finished.put(resource, initial);
-                    it.remove();
-                    change |= true;
-                } else {
-                    final List<ISolution> depsToMerge = Lists.newArrayList();
-                    final Iterator<String> depIt = missingDeps.get(resource).iterator();
-                    while(depIt.hasNext()) {
-                        final String depResource = depIt.next();
-                        if(finished.containsKey(depResource)) {
-                            depsToMerge.add(finished.get(depResource).findAndLock());
-                            depIt.remove();
+                    ISolution intra = unitIntras.get(unit);
+                    java.util.Set<Occurrence> free =
+                            Sets.difference(intra.scopeGraph().getAllRefs(), intra.nameResolution().getAllRefs());
+                    Set.Immutable<String> component = components.component(unit);
+                    for(Occurrence ref : free) {
+                        Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> currDecls =
+                                nameResolution.tryResolve(ref);
+                        if(currDecls.isPresent()) {
+                            Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> prevDecls =
+                                    inter.get().nameResolution().resolve(ref);
+                            if(!currDecls.get().equals(prevDecls)) {
+                                return true;
+                            }
                         }
                     }
-                    if(!depsToMerge.isEmpty()) {
-                        ISolution solution = mergeDep(initial, depsToMerge, message);
-                        InterInferenceResult result =
-                                solveInterInference(solution, scopeGraph, nameResolution, fresh, cancel, progress);
-                        pending.put(resource, result.solution());
-                        discoverDependencies(result.paths(), deps, missingDeps);
-                        change |= true;
-                    }
+                    return false;
+                };
+                java.util.Set<String> differentlyResolvedUnits = Sets.difference(unitIntras.keySet(), invalidatedUnits)
+                        .stream().filter(resolutionChanged).collect(Collectors.toSet());
+                invalidatedUnits.addAll(differentlyResolvedUnits);
+                Set.Immutable<String> differentlyResolvedDependents =
+                        dependencies.getAllDependents(differentlyResolvedUnits);
+                invalidatedUnits.addAll(differentlyResolvedDependents);
+                if(nabl2Debug.files()) {
+                    logger.info("Invalidated differently resolved {} and dependents {}.", differentlyResolvedUnits,
+                            differentlyResolvedDependents);
+                }
+            }
+
+            // remove solutions and dependencies for invalidated units
+            TopoSortedComponents<String> invalidedComponents =
+                    dependencies.inverse().getTopoSortedComponents(invalidatedUnits);
+            invalidedComponents.components().stream().forEach(c -> {
+                unitInters.remove(c);
+                dependencies.removeAll(c);
+                if(nabl2Debug.files()) {
+                    logger.info("Removed invalidated component {}.", c);
+                }
+            });
+        }
+
+        // remove removed units, and update dependency graph
+        invalidatedUnits.retainAll(unitIntras.keySet());
+        for(String unit : invalidatedUnits) {
+            final List<IResolutionPath<Scope, Label, Occurrence>> paths =
+                    nameResolution.getAllRefs().stream().filter(r -> r.getIndex().getResource().equals(unit))
+                            .flatMap(r -> nameResolution.resolve(r).stream()).collect(Collectors.toList());
+            for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
+                String refResource = path.getReference().getIndex().getResource();
+                String declResource = path.getDeclaration().getIndex().getResource();
+                if(!declResource.equals(refResource) && !declResource.equals(globalSource)) {
+                    dependencies.add(refResource, declResource);
                 }
             }
         }
-
-        // finalize and report errors
-        for(Map.Entry<String, ISolution> entry : pending.entrySet()) {
-            String resource = entry.getKey();
-            logger.info("Could not finish inter analysis of {}, missing dependencies {}", resource,
-                    missingDeps.get(resource));
-        }
-        finished.putAll(pending);
-
-        for(Map.Entry<String, ISolution> entry : finished.entrySet()) {
-            ISolution solution = entry.getValue();
-            solution = reportUnsolvedNonCheckConstraints(solution);
-            solution = solveInterChecks(solution, scopeGraph, nameResolution, cancel, progress);
-            entry.setValue(solution);
-        }
-
-        final IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> finalScopeGraph = scopeGraph.freeze();
-        final IEsopNameResolution.Immutable<Scope, Label, Occurrence> finalNameResolution = nameResolution.freeze();
-        for(Map.Entry<String, ISolution> entry : finished.entrySet()) {
-            ISolution solution = ImmutableSolution.builder()
-                    // @formatter:off
-                    .from(entry.getValue())
-                    .scopeGraph(finalScopeGraph)
-                    .nameResolution(finalNameResolution)
-                    .build();
-                    // @formatter:on
-            solution = reportUnsolvedNonCheckConstraints(solution);
-            entry.setValue(solution);
-        }
-
         if(nabl2Debug.files()) {
-            logger.info("Dependencies: {}", deps);
+            logger.info("Found dependencies: {}", dependencies);
         }
 
-        return ImmutableIncrementalSolution.of(globalInter, finished, deps);
-    }
+        // solve global
+        if(nabl2Debug.files()) {
+            logger.info("Analyzing global");
+        }
+        ISolution globalInter = solveInterInference(globalIntra, scopeGraph, nameResolution, fresh, cancel, progress);
+        globalInter = reportUnsolvedNonCheckConstraints(globalInter);
 
-    private boolean discoverDependencies(Iterable<? extends IResolutionPath<Scope, Label, Occurrence>> newPaths,
-            SetMultimap<String, String> dependencies, SetMultimap<String, String> missingDeps) {
-        boolean change = false;
-        for(IResolutionPath<Scope, Label, Occurrence> path : newPaths) {
-            String refResource = path.getReference().getIndex().getResource();
-            for(String depResource : pathResources(path)) {
-                if(!depResource.equals(refResource) && !depResource.equals(globalSource)
-                        && dependencies.put(refResource, depResource)) {
-                    change |= missingDeps.put(refResource, depResource);
+        // analyze components
+        final TopoSortedComponents<String> components = dependencies.getTopoSortedComponents();
+        for(Set.Immutable<String> component : components.components()) {
+            boolean shouldAnalyze = !Sets.intersection(component, invalidatedUnits).isEmpty();
+            if(shouldAnalyze) {
+                if(nabl2Debug.files()) {
+                    logger.info("Analyzing component {}", component);
                 }
+                java.util.Set<ISolution> componentIntras =
+                        component.stream().map(unitIntras::get).collect(Collectors.toSet());
+                java.util.Set<ISolution> componentDependencies =
+                        dependencies.getAllDependencies(component).stream().map(components::component)
+                                .map(unitInters::get).filter(s -> s != null).collect(Collectors.toSet());
+                ISolution inter = mergeDep(globalInter, Sets.union(componentIntras, componentDependencies), message);
+                inter = solveInterInference(inter, scopeGraph, nameResolution, fresh, cancel, progress);
+                inter = reportUnsolvedNonCheckConstraints(inter);
+                inter = solveInterChecks(inter, scopeGraph, nameResolution, cancel, progress);
+                unitInters.put(component, inter.findAndLock());
             }
         }
-        return change;
-    }
 
-    private Set<String> pathResources(IResolutionPath<Scope, Label, Occurrence> path) {
-        final Set<String> res = Sets.newHashSet();
-        res.add(path.getDeclaration().getIndex().getResource());
-        // FIXME Do we need to consider the import paths here?
-        return res;
+        // check global
+        if(nabl2Debug.files()) {
+            logger.info("Checking global");
+        }
+        IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> finalScopeGraph = scopeGraph.freeze();
+        IEsopNameResolution.Immutable<Scope, Label, Occurrence> finalNameResolution = nameResolution.freeze();
+        IMessages.Transient messages = globalInter.messages().melt();
+
+        unitInters.replaceAll((unit, s) -> ImmutableSolution.builder().from(s).scopeGraph(finalScopeGraph)
+                .nameResolution(finalNameResolution).build());
+        unitInters.values().stream().map(ISolution::messages).forEach(messages::addAll);
+
+        globalInter = mergeDep(globalInter, unitInters.values(), message);
+        globalInter = solveInterChecks(globalInter, scopeGraph, nameResolution, cancel, progress);
+        globalInter = ImmutableSolution.builder().from(globalInter).scopeGraph(finalScopeGraph)
+                .nameResolution(finalNameResolution).messages(messages.freeze()).build();
+
+        return ImmutableIncrementalSolution.of(globalIntra, unitIntras, Optional.of(globalInter), unitInters,
+                dependencies.freeze());
     }
 
     private ISolution mergeDep(ISolution initial, Iterable<? extends ISolution> dependencySolutions,
@@ -248,7 +328,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
     }
 
-    private InterInferenceResult solveInterInference(ISolution initial,
+    private ISolution solveInterInference(ISolution initial,
             IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph,
             IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution, Function1<String, ITermVar> fresh,
             ICancel cancel, IProgress progress) throws SolverException, InterruptedException {
@@ -294,12 +374,10 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
                 Iterables2.from(activeVars, hasRelationBuildConstraints));
 
-        final ImmutableInterInferenceResult.Builder result = ImmutableInterInferenceResult.builder();
         solver.step().subscribe(r -> {
             if(!r.unifiedVars().isEmpty()) {
                 try {
-                    Update<Scope, Label, Occurrence> updateResult = nameResolutionSolver.update();
-                    result.addAllPaths(updateResult.resolved().values());
+                    nameResolutionSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -309,8 +387,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final ISolution solution;
         try {
             // initial resolve
-            Update<Scope, Label, Occurrence> updateResult = nameResolutionSolver.update();
-            result.addAllPaths(updateResult.resolved().values());
+            nameResolutionSolver.update();
 
             // solve constraints
             SolveResult solveResult = solver.solve(initial.constraints());
@@ -327,10 +404,10 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
-        return result.solution(solution).build();
+        return solution;
     }
 
-    public ISolution reportUnsolvedNonCheckConstraints(ISolution initial) {
+    private ISolution reportUnsolvedNonCheckConstraints(ISolution initial) {
         java.util.Set<IConstraint> checkConstraints = Sets.newHashSet();
         java.util.Set<IConstraint> otherConstraints = Sets.newHashSet();
         initial.constraints().stream().forEach(c -> {
@@ -391,25 +468,24 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
     }
 
-    @Value.Immutable(builder = true)
-    static abstract class InterInferenceResult {
-
-        @Value.Parameter public abstract ISolution solution();
-
-        @Value.Parameter public abstract Set<IResolutionPath<Scope, Label, Occurrence>> paths();
-
-
-    }
-
     @Value.Immutable
     @Serial.Version(42l)
     public static abstract class IncrementalSolution {
 
-        @Value.Parameter public abstract ISolution globalInter();
+        @Value.Parameter public abstract ISolution globalIntra();
 
-        @Value.Parameter public abstract Map<String, ISolution> unitInters();
+        @Value.Parameter public abstract Map<String, ISolution> unitIntras();
 
-        @Value.Parameter public abstract SetMultimap<String, String> dependencies();
+        @Value.Parameter public abstract Optional<ISolution> globalInter();
+
+        @Value.Parameter public abstract Map<Set.Immutable<String>, ISolution> unitInters();
+
+        @Value.Parameter public abstract Dependencies.Immutable<String> dependencies();
+
+        public static IncrementalSolution of(ISolution globalIntra) {
+            return ImmutableIncrementalSolution.of(globalIntra, ImmutableMap.of(), Optional.empty(), ImmutableMap.of(),
+                    Dependencies.Immutable.of());
+        }
 
     }
 
