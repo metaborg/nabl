@@ -39,8 +39,8 @@ public class DependenciesTest {
         deps.add(2, 4);
         List<Immutable<Integer>> components = deps.getTopoSortedComponents().components();
         assertEquals(2, components.size());
-        assertEquals(3, components.get(0).size());
-        assertEquals(1, components.get(1).size());
+        assertEquals(1, components.get(0).size());
+        assertEquals(3, components.get(1).size());
     }
 
     @Test public void testThreeSCC() {
