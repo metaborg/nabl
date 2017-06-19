@@ -39,7 +39,7 @@ public abstract class CInstantiate implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getType()).append(" instOf(").append(TB.newList(getInstVars()))
+        return MessageContent.builder().append(getType()).append(" instOf(").append(TB.newList((ITerm) getInstVars()))
                 .append(") ").append(getScheme()).build();
     }
 

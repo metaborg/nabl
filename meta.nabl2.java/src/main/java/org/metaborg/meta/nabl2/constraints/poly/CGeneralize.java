@@ -39,7 +39,7 @@ public abstract class CGeneralize implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getScheme()).append(" genOf(").append(TB.newList(getGenVars()))
+        return MessageContent.builder().append(getScheme()).append(" genOf(").append(TB.newList((ITerm) getGenVars()))
                 .append(") ").append(getType()).build();
     }
 
