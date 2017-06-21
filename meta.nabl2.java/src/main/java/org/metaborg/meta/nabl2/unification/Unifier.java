@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -15,6 +16,7 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.util.functions.Function1;
 
 import io.usethesource.capsule.Map;
 
@@ -32,7 +34,7 @@ public abstract class Unifier implements IUnifier {
         // @formatter:off
         return term.isGround() ? term : term.match(Terms.<ITerm>cases(
             (appl) -> TB.newAppl(appl.getOp(), appl.getArgs().stream().map(this::find).collect(Collectors.toList()), appl.getAttachments()),
-            (list) -> find(list),
+            (list) -> findList(list),
             (string) -> string,
             (integer) -> integer,
             (var) -> findVarRep(var)
@@ -40,12 +42,17 @@ public abstract class Unifier implements IUnifier {
         // @formatter:on
     }
 
-    public IListTerm find(IListTerm list) {
+    public IListTerm findList(IListTerm list) {
         // @formatter:off
         IListTerm rep = list.isGround() ? list : list.match(ListTerms.<IListTerm>cases(
-            (cons) -> TB.newCons(find(cons.getHead()), find(cons.getTail()), cons.getAttachments()),
+            (cons) -> TB.newCons(find(cons.getHead()), findList(cons.getTail()), cons.getAttachments()),
             (nil) -> nil,
-            (var) -> (IListTerm) findVarRep(var)
+            (var) -> {
+                ITerm varRep = findVarRep(var);
+                return IListTerm.matcher().match(varRep).orElseThrow(() -> {
+                    return new TypeException("Expected list term, but got " + varRep);
+                });
+            }
         ));
         // @formatter:on
         if(list.isLocked()) {
@@ -281,6 +288,32 @@ public abstract class Unifier implements IUnifier {
             return success;
         }
 
+        @Override public boolean putAll(IUnifier other) {
+            boolean change = false;
+            for(Tuple2<ITermVar, ITerm> entry : (Iterable<Tuple2<ITermVar, ITerm>>) other.stream()::iterator) {
+                ITerm curr = entry._2();
+                ITerm prev = reps.__put(entry._1(), curr);
+                change |= !curr.equals(prev);
+            }
+            return change;
+        }
+
+        @Override public boolean map(Function1<ITerm, ITerm> mapper) throws UnificationException {
+            boolean change = false;
+            for(ITermVar var : reps.keySet()) {
+                final ITerm curr = find(var);
+                final ITerm next = find(mapper.apply(curr));
+                if(next.getVars().contains(var)) {
+                    throw new UnificationException(var, next);
+                }
+                if(!next.equals(curr)) {
+                    reps.__put(var, next);
+                    change |= true;
+                }
+            }
+            return change;
+        }
+
         @Override public IUnifier.Immutable freeze() {
             reps.keySet().stream().forEach(this::find);
             return new Unifier.Immutable(reps.freeze(), sizes.freeze());
@@ -290,12 +323,6 @@ public abstract class Unifier implements IUnifier {
             return new Unifier.Transient(Map.Transient.of(), Map.Transient.of());
         }
 
-    }
-
-    public static IUnifier.Immutable findAndLock(IUnifier unifier) {
-        final Map.Transient<ITermVar, ITerm> reps = Map.Transient.of();
-        unifier.stream().forEach(vt -> reps.__put(vt._1(), unifier.find(vt._2()).withLocked(true)));
-        return new Unifier.Immutable(reps.freeze(), Map.Immutable.of());
     }
 
 }

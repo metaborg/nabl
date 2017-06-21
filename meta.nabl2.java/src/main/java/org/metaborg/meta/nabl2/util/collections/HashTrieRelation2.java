@@ -2,6 +2,9 @@ package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
@@ -51,6 +54,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
         return fwd().toString();
     }
 
+
     public static class Immutable<K, V> extends HashTrieRelation2<K, V>
             implements IRelation2.Immutable<K, V>, Serializable {
         private static final long serialVersionUID = 42L;
@@ -85,6 +89,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
 
     }
 
+
     public static class Transient<K, V> extends HashTrieRelation2<K, V> implements IRelation2.Transient<K, V> {
 
         private final SetMultimap.Transient<K, V> fwd;
@@ -110,6 +115,14 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
 
             }
             return false;
+        }
+
+        @Override public boolean putAll(K key, Iterable<? extends V> values) {
+            boolean change = false;
+            for(V value : values) {
+                change |= put(key, value);
+            }
+            return change;
         }
 
         @Override public boolean putAll(IRelation2<K, V> other) {
@@ -153,6 +166,59 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
 
         public static <K, V> HashTrieRelation2.Transient<K, V> of() {
             return new HashTrieRelation2.Transient<>(SetMultimap.Transient.of(), SetMultimap.Transient.of());
+        }
+
+    }
+
+
+    public static <K, V> IRelation2<K, V> union(IRelation2<K, V> rel1, IRelation2<K, V> rel2) {
+        return new Union<>(rel1, rel2);
+    }
+
+    private static class Union<K, V> implements IRelation2<K, V> {
+
+        private final IRelation2<K, V> rel1;
+        private final IRelation2<K, V> rel2;
+
+        private Union(IRelation2<K, V> rel1, IRelation2<K, V> rel2) {
+            this.rel1 = rel1;
+            this.rel2 = rel2;
+        }
+
+        @Override public IRelation2<V, K> inverse() {
+            return new Union<>(rel1.inverse(), rel2.inverse());
+        }
+
+        @Override public boolean containsKey(K key) {
+            return rel1.containsKey(key) || rel2.containsKey(key);
+        }
+
+        @Override public boolean containsEntry(K key, V value) {
+            return rel1.containsEntry(key, value) || rel2.containsEntry(key, value);
+        }
+
+        @Override public boolean containsValue(V value) {
+            return rel1.containsValue(value) || rel2.containsValue(value);
+        }
+
+        @Override public boolean isEmpty() {
+            return rel1.isEmpty() && rel2.isEmpty();
+        }
+
+        @Override public java.util.Set<V> get(K key) {
+            return Sets.union(rel1.get(key), rel2.get(key));
+        }
+
+        @Override public java.util.Set<K> keySet() {
+            return Sets.union(rel1.keySet(), rel2.keySet());
+        }
+
+        @Override public java.util.Set<V> valueSet() {
+            return Sets.union(rel1.valueSet(), rel2.valueSet());
+        }
+
+        @Override public java.util.Set<Entry<K, V>> entrySet() {
+            return Sets.union(rel1.entrySet(), rel2.entrySet());
         }
 
     }

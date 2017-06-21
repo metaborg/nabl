@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.relations.IVariance;
-import org.metaborg.meta.nabl2.relations.IVariantMatcher;
+import org.metaborg.meta.nabl2.relations.variants.IVariance;
+import org.metaborg.meta.nabl2.relations.variants.IVariantMatcher;
+import org.metaborg.meta.nabl2.relations.variants.Variances;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;

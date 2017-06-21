@@ -1,4 +1,6 @@
-package org.metaborg.meta.nabl2.relations;
+package org.metaborg.meta.nabl2.relations.variants;
+
+import org.metaborg.meta.nabl2.relations.RelationException;
 
 public class InstantiatedVariantsException extends RelationException {
 

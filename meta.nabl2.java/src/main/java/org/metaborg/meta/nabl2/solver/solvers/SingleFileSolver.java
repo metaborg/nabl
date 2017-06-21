@@ -1,11 +1,13 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.IRelationName;
-import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
+import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
@@ -16,6 +18,7 @@ import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.solver.ISolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.ImmutableSolution;
+import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
@@ -50,6 +53,7 @@ public class SingleFileSolver extends BaseSolver {
 
     public ISolution solve(GraphSolution initial, Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
+        final SolverConfig config = initial.config();
 
         // shared
         final IUnifier.Transient unifier = Unifier.Transient.of();
@@ -65,18 +69,18 @@ public class SingleFileSolver extends BaseSolver {
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.Transient.of(initial.config().getResolutionParams(), scopeGraph, (s, l) -> true);
+                EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // solver components
-        final SolverCore core = new SolverCore(initial.config(), unifier::find, fresh);
+        final SolverCore core = new SolverCore(config, unifier::find, fresh);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
-        final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete,
-                initial.config().getFunctions(), initial.config().getRelations().melt());
+        final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
+                VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
 
@@ -112,9 +116,9 @@ public class SingleFileSolver extends BaseSolver {
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            IRelations.Immutable<ITerm> relationResult = relationSolver.finish();
+            Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            return ImmutableSolution.of(initial.config(), initial.astProperties(), nameResolutionResult.scopeGraph(),
+            return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
                     unifierResult, symbolicConstraints, solveResult.messages(), solveResult.constraints());
         } catch(RuntimeException ex) {

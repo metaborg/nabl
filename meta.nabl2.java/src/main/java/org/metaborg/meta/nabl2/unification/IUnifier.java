@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.util.functions.Function1;
 
 public interface IUnifier {
 
@@ -18,6 +19,10 @@ public interface IUnifier {
     interface Transient extends IUnifier {
 
         UnificationResult unify(ITerm left, ITerm right) throws UnificationException;
+
+        boolean putAll(IUnifier other);
+
+        boolean map(Function1<ITerm, ITerm> mapper) throws UnificationException;
 
         IUnifier.Immutable freeze();
 

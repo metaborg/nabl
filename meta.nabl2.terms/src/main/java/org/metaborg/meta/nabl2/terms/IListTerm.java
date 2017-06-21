@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.terms;
 
+import java.util.Optional;
+
+import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.util.functions.CheckedFunction1;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
@@ -41,5 +44,15 @@ public interface IListTerm extends ITerm {
     IListTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
     @Override IListTerm withLocked(boolean locked);
+
+    public static IMatcher<IListTerm> matcher() {
+        return term -> {
+            if(term instanceof IListTerm) {
+                return Optional.of((IListTerm) term);
+            } else {
+                return Optional.empty();
+            }
+        };
+    }
 
 }

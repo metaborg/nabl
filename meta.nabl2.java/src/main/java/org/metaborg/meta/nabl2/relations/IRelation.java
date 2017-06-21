@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.relations;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.util.collections.IRelation2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import io.usethesource.capsule.Set;
@@ -17,9 +18,11 @@ public interface IRelation<T> {
 
     boolean contains(T t1, T t2);
 
+    IRelation2<T, T> entries();
+
     Optional<T> leastUpperBound(T t1, T t2);
 
-    Optional<T> greatestLowerbound(T t1, T t2);
+    Optional<T> greatestLowerBound(T t1, T t2);
 
     Stream<Tuple2<T, T>> stream();
 
@@ -32,6 +35,14 @@ public interface IRelation<T> {
     interface Transient<T> extends IRelation<T> {
 
         boolean add(T t1, T t2) throws RelationException;
+
+        default boolean addAll(IRelation<T> other) throws RelationException {
+            boolean change = false;
+            for(Tuple2<T, T> pair : (Iterable<Tuple2<T, T>>) other.stream()::iterator) {
+                change |= add(pair._1(), pair._2());
+            }
+            return change;
+        }
 
         Immutable<T> freeze();
 

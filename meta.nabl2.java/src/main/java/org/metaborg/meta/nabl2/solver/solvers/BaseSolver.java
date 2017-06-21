@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -11,7 +12,9 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
-import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.relations.IRelationName;
+import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
+import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
@@ -47,6 +50,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class BaseSolver {
@@ -128,8 +132,8 @@ public class BaseSolver {
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
-        final RelationComponent relationSolver =
-                new RelationComponent(core, r -> false, initial.config().getFunctions(), initial.relations().melt());
+        final RelationComponent relationSolver = new RelationComponent(core, r -> false,
+                initial.config().getFunctions(), VariantRelations.melt(initial.relations()));
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
         final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
@@ -146,7 +150,7 @@ public class BaseSolver {
 
         IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
         NameResolutionResult nameResult = nameResolutionSolver.finish();
-        IRelations.Immutable<ITerm> relationResult = relationSolver.finish();
+        Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
 

@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.util.tuples.Tuple3;
+import org.metaborg.util.functions.Function1;
 
 public interface IProperties<I, K, V> {
 
@@ -13,6 +14,10 @@ public interface IProperties<I, K, V> {
     Set<K> getDefinedKeys(I index);
 
     Optional<V> getValue(I index, K key);
+
+    boolean contains(I index);
+
+    boolean contains(I index, K key);
 
     public Stream<Tuple3<I, K, V>> stream();
 
@@ -25,6 +30,12 @@ public interface IProperties<I, K, V> {
     interface Transient<I, K, V> extends IProperties<I, K, V> {
 
         Optional<V> putValue(I index, K key, V value);
+
+        default boolean putAll(IProperties<I, K, V> other) {
+            return other.stream().map(ikv -> ikv.apply(this::putValue).isPresent()).reduce(false, Boolean::logicalOr);
+        }
+
+        boolean mapValues(Function1<V, V> mapper);
 
         IProperties.Immutable<I, K, V> freeze();
 

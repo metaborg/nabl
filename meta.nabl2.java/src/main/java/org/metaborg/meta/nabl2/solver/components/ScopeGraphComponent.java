@@ -105,7 +105,7 @@ public class ScopeGraphComponent extends ASolver {
         Scope scope = Scope.matcher().match(scopeRep)
                 .orElseThrow(() -> new TypeException("Expected a scope but got " + scopeRep));
         return findOccurrence(c.getReference()).map(ref -> {
-            scopeGraph.addImport(scope, c.getLabel(), ref);
+            scopeGraph.addImportEdge(scope, c.getLabel(), ref);
             return true;
         }).orElseGet(() -> {
             scopeGraph.addIncompleteImportEdge(scope, c.getLabel(), c.getReference());
@@ -123,7 +123,7 @@ public class ScopeGraphComponent extends ASolver {
                 .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
-        scopeGraph.addAssoc(decl, c.getLabel(), scope);
+        scopeGraph.addExportEdge(decl, c.getLabel(), scope);
         return true;
     }
 

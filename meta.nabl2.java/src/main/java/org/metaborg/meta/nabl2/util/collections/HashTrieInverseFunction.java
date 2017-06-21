@@ -1,6 +1,9 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Map.Entry;
+
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -31,6 +34,10 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
         return fwd().keySet();
     }
 
+    @Override public java.util.Set<Entry<K, V>> entrySet() {
+        return fwd().entrySet();
+    }
+
     @Override public java.util.Set<V> valueSet() {
         return bwd().keySet();
     }
@@ -42,6 +49,7 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
     @Override public String toString() {
         return fwd().toString();
     }
+
 
     public static class Immutable<K, V> extends HashTrieInverseFunction<K, V>
             implements IInverseFunction.Immutable<K, V>, Serializable {
@@ -72,6 +80,7 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
         }
 
     }
+
 
     public static class Transient<K, V> extends HashTrieInverseFunction<K, V>
             implements IInverseFunction.Transient<K, V> {
@@ -120,5 +129,55 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
         }
 
     }
+
+
+    public static <K, V> IInverseFunction<K, V> union(IInverseFunction<K, V> fun1, IInverseFunction<K, V> fun2) {
+        return new Union<>(fun1, fun2);
+    }
+
+    private static class Union<K, V> implements IInverseFunction<K, V> {
+
+        private final IInverseFunction<K, V> fun1;
+        private final IInverseFunction<K, V> fun2;
+
+        private Union(IInverseFunction<K, V> fun1, IInverseFunction<K, V> fun2) {
+            this.fun1 = fun1;
+            this.fun2 = fun2;
+        }
+
+        @Override public IFunction<V, K> inverse() {
+            return HashTrieFunction.union(fun1.inverse(), fun2.inverse());
+        }
+
+        @Override public boolean containsKey(K key) {
+            return fun1.containsKey(key) || fun2.containsKey(key);
+        }
+
+        @Override public boolean containsEntry(K key, V value) {
+            return fun1.containsEntry(key, value) || fun2.containsEntry(key, value);
+        }
+
+        @Override public boolean containsValue(V value) {
+            return fun1.containsValue(value) || fun2.containsValue(value);
+        }
+
+        @Override public java.util.Set<K> keySet() {
+            return Sets.union(fun1.keySet(), fun2.keySet());
+        }
+
+        @Override public java.util.Set<Map.Entry<K, V>> entrySet() {
+            return Sets.union(fun1.entrySet(), fun2.entrySet());
+        }
+
+        @Override public java.util.Set<V> valueSet() {
+            return Sets.union(fun1.valueSet(), fun2.valueSet());
+        }
+
+        @Override public java.util.Set<V> get(K key) {
+            return Sets.union(fun1.get(key), fun2.get(key));
+        }
+
+    }
+
 
 }

@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -8,23 +9,22 @@ import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.collect.ImmutableList;
-
-import io.usethesource.capsule.Map;
+import com.google.common.collect.ImmutableMap;
 
 public class FunctionTerms {
 
-    public static IMatcher<Map.Immutable<String, PartialFunction1<ITerm, ITerm>>> functions() {
+    public static IMatcher<Map<String, PartialFunction1<ITerm, ITerm>>> functions() {
         return M.listElems(function(), (l, funDefs) -> {
-            Map.Transient<String, PartialFunction1<ITerm, ITerm>> functions = Map.Transient.of();
+            ImmutableMap.Builder<String, PartialFunction1<ITerm, ITerm>> functions = ImmutableMap.builder();
             for(Tuple2<String, Eval> funDef : funDefs) {
                 functions.put(funDef._1(), funDef._2());
             }
-            return functions.freeze();
+            return functions.build();
         });
     }
 

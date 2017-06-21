@@ -29,6 +29,8 @@ public interface IEsopNameResolution<S extends IScope, L extends ILabel, O exten
 
         Update<S, L, O> resolveAll();
 
+        Update<S, L, O> resolveAll(Iterable<? extends O> refs, Iterable<? extends S> scopes);
+
         IEsopNameResolution.Immutable<S, L, O> freeze();
 
     }

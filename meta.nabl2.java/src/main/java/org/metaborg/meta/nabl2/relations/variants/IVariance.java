@@ -1,5 +1,6 @@
-package org.metaborg.meta.nabl2.relations;
+package org.metaborg.meta.nabl2.relations.variants;
 
+import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 

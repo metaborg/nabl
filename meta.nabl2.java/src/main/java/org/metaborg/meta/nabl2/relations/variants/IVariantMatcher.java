@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.relations;
+package org.metaborg.meta.nabl2.relations.variants;
 
 import java.util.Collection;
 import java.util.List;

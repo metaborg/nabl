@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.util.collections;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
@@ -19,6 +20,8 @@ public interface IFunction<K, V> {
     boolean containsValue(V value);
 
     java.util.Set<K> keySet();
+
+    java.util.Set<Map.Entry<K, V>> entrySet();
 
     java.util.Set<V> valueSet();
 

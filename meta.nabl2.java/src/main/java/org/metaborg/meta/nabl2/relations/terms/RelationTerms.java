@@ -1,14 +1,16 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
-import org.metaborg.meta.nabl2.relations.IRelation;
+import java.util.Map;
+
 import org.metaborg.meta.nabl2.relations.IRelationName;
-import org.metaborg.meta.nabl2.relations.IRelations;
-import org.metaborg.meta.nabl2.relations.IVariantMatcher;
 import org.metaborg.meta.nabl2.relations.ImmutableRelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Symmetry;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
+import org.metaborg.meta.nabl2.relations.variants.IVariantMatcher;
+import org.metaborg.meta.nabl2.relations.variants.ImmutableVariantRelationDescription;
+import org.metaborg.meta.nabl2.relations.variants.VariantRelationDescription;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -16,9 +18,7 @@ import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple3;
 import org.metaborg.meta.nabl2.util.tuples.Tuple3;
 
 import com.google.common.collect.ImmutableList;
-
-import io.usethesource.capsule.Map;
-import io.usethesource.capsule.SetMultimap;
+import com.google.common.collect.ImmutableMap;
 
 public class RelationTerms {
 
@@ -26,15 +26,13 @@ public class RelationTerms {
         LUB, GLB
     }
 
-    public static IMatcher<IRelations.Immutable<ITerm>> relations() {
+    public static IMatcher<Map<IRelationName, VariantRelationDescription<ITerm>>> relations() {
         return M.listElems(relationDef(), (l, defs) -> {
-            Map.Transient<IRelationName, IRelation.Immutable<ITerm>> relations = Map.Transient.of();
-            SetMultimap.Transient<IRelationName, IVariantMatcher<ITerm>> variantMatchers = SetMultimap.Transient.of();
+            ImmutableMap.Builder<IRelationName, VariantRelationDescription<ITerm>> relations = ImmutableMap.builder();
             for(Tuple3<IRelationName, RelationDescription, ImmutableList<IVariantMatcher<ITerm>>> def : defs) {
-                relations.__put(def._1(), Relation.Immutable.of(def._2()));
-                def._3().stream().forEach(vm -> variantMatchers.__insert(def._1(), vm)); // FIXME Should be __insertAll
+                relations.put(def._1(), ImmutableVariantRelationDescription.of(def._2(), def._3()));
             }
-            return new Relations.Immutable<>(relations.freeze(), variantMatchers.freeze());
+            return relations.build();
         });
     }
 

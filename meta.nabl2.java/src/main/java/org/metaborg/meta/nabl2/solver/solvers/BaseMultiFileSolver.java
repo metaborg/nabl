@@ -1,12 +1,15 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.IRelationName;
-import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
+import org.metaborg.meta.nabl2.relations.variants.VariantRelation;
+import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
@@ -43,6 +46,8 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+
+import com.google.common.collect.Maps;
 
 
 public class BaseMultiFileSolver extends BaseSolver {
@@ -81,8 +86,8 @@ public class BaseMultiFileSolver extends BaseSolver {
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
-        final RelationComponent relationSolver =
-                new RelationComponent(core, isRelationComplete, config.getFunctions(), config.getRelations().melt());
+        final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
+                VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
 
@@ -117,7 +122,7 @@ public class BaseMultiFileSolver extends BaseSolver {
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            IRelations.Immutable<ITerm> relationResult = relationSolver.finish();
+            Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
 
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),

@@ -1,8 +1,11 @@
-package org.metaborg.meta.nabl2.relations.terms;
+package org.metaborg.meta.nabl2.relations.variants;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.relations.IVariance;
+import org.metaborg.meta.nabl2.relations.terms.ImmutableContravariant;
+import org.metaborg.meta.nabl2.relations.terms.ImmutableCovariant;
+import org.metaborg.meta.nabl2.relations.terms.ImmutableInvariant;
+import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 

@@ -1,9 +1,13 @@
 package org.metaborg.meta.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.SetMultimap;
 
@@ -54,6 +58,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         return fwdK().toString();
     }
 
+
     public static class Immutable<K, L, V> extends HashTrieRelation3<K, L, V>
             implements IRelation3.Immutable<K, L, V>, Serializable {
         private static final long serialVersionUID = 42L;
@@ -98,6 +103,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         }
 
     }
+
 
     public static class Transient<K, L, V> extends HashTrieRelation3<K, L, V> implements IRelation3.Transient<K, L, V> {
 
@@ -195,5 +201,60 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         }
 
     }
+
+
+    public static <K, L, V> IRelation3<K, L, V> union(IRelation3<K, L, V> rel1, IRelation3<K, L, V> rel2) {
+        return new Union<>(rel1, rel2);
+    }
+
+    private static class Union<K, L, V> implements IRelation3<K, L, V> {
+
+        private final IRelation3<K, L, V> rel1;
+        private final IRelation3<K, L, V> rel2;
+
+        private Union(IRelation3<K, L, V> rel1, IRelation3<K, L, V> rel2) {
+            this.rel1 = rel1;
+            this.rel2 = rel2;
+        }
+
+        public IRelation3<V, L, K> inverse() {
+            return new Union<>(rel1.inverse(), rel2.inverse());
+        }
+
+        @Override public boolean contains(K key) {
+            return rel1.contains(key) || rel2.contains(key);
+        }
+
+        @Override public boolean contains(K key, L label) {
+            return rel1.contains(key, label) || rel2.contains(key, label);
+        }
+
+        @Override public boolean contains(K key, L label, V value) {
+            return rel1.contains(key, label, value) || rel2.contains(key, label, value);
+        }
+
+        @Override public boolean isEmpty() {
+            return rel1.isEmpty() && rel2.isEmpty();
+        }
+
+        @Override public Set<? extends Map.Entry<L, V>> get(K key) {
+            return Sets.union(rel1.get(key), rel2.get(key));
+        }
+
+        public Set<V> get(K key, L label) {
+            return Sets.union(rel1.get(key, label), rel2.get(key, label));
+        }
+
+        @Override public java.util.Set<K> keySet() {
+            return Sets.union(rel1.keySet(), rel2.keySet());
+        }
+
+        @Override public java.util.Set<V> valueSet() {
+            return Sets.union(rel1.valueSet(), rel2.valueSet());
+        }
+
+
+    }
+
 
 }

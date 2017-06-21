@@ -221,8 +221,13 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         }
 
         @Override public EsopNameResolution.Update<S, L, O> resolveAll() {
+            return resolveAll(scopeGraph.getAllRefs(), scopeGraph.getAllScopes());
+        }
+
+        @Override public EsopNameResolution.Update<S, L, O> resolveAll(Iterable<? extends O> refs,
+                Iterable<? extends S> scopes) {
             ImmutableUpdate.Builder<S, L, O> update = ImmutableUpdate.builder();
-            for(O ref : scopeGraph.getAllRefs()) {
+            for(O ref : refs) {
                 if(!resolution.containsKey(ref)) {
                     final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env =
                             pendingResolution.computeIfAbsent(ref, r -> resolveEnv(Set.Immutable.of(), ref));
@@ -233,7 +238,7 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
                     });
                 }
             }
-            for(S scope : scopeGraph.getAllScopes()) {
+            for(S scope : scopes) {
                 if(!visibility.containsKey(scope)) {
                     final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                             pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
@@ -444,6 +449,5 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         @Override @Value.Parameter public abstract SetMultimap<S, O> reachable();
 
     }
-
 
 }

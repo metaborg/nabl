@@ -2,19 +2,22 @@ package org.metaborg.meta.nabl2.scopegraph;
 
 import java.util.Deque;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 
-public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extends IOccurrence> {
+public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extends IOccurrence, V> {
 
-    private final IScopeGraph<S, L, O> scopeGraph;
+    private final IEsopScopeGraph<S, L, O, V> scopeGraph;
 
-    public ScopeGraphCommon(IScopeGraph<S, L, O> scopeGraph) {
+    public ScopeGraphCommon(IEsopScopeGraph<S, L, O, V> scopeGraph) {
         this.scopeGraph = scopeGraph;
     }
 
@@ -66,6 +69,45 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
                     });
         }
         return reachable;
+    }
+
+    /**
+     * Summarize a scope graph to all reachable scopes and edges
+     */
+    public IEsopScopeGraph<S, L, O, V> summarize(final S scope) {
+        final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
+        summarize(scope, summaryGraph, Sets.newHashSet());
+        return summaryGraph.freeze();
+    }
+
+    private void summarize(final S scope, IEsopScopeGraph.Transient<S, L, O, V> summaryGraph, Set<Object> visited) {
+        if(!visited.contains(scope)) {
+            visited.add(scope);
+            for(O decl : scopeGraph.getDecls().inverse().get(scope)) {
+                summaryGraph.addDecl(scope, decl);
+                summarize(decl, summaryGraph, visited);
+            }
+            for(Entry<L, S> next : scopeGraph.getDirectEdges().get(scope)) {
+                summaryGraph.addDirectEdge(scope, next.getKey(), next.getValue());
+                summarize(next.getValue(), summaryGraph, visited);
+            }
+        }
+    }
+
+    public IEsopScopeGraph<S, L, O, V> summarize(final O decl) {
+        final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
+        summarize(decl, summaryGraph, Sets.newHashSet());
+        return summaryGraph.freeze();
+    }
+
+    private void summarize(final O decl, IEsopScopeGraph.Transient<S, L, O, V> summaryGraph, Set<Object> visited) {
+        if(!visited.contains(decl)) {
+            visited.add(decl);
+            for(Entry<L, S> next : scopeGraph.getExportEdges().get(decl)) {
+                summaryGraph.addExportEdge(decl, next.getKey(), next.getValue());
+                summarize(next.getValue(), summaryGraph, visited);
+            }
+        }
     }
 
 }

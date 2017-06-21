@@ -6,8 +6,6 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.annotations.Beta;
 
-import io.usethesource.capsule.Set;
-
 public interface IRelation2<K, V> {
 
     IRelation2<V, K> inverse();
@@ -20,7 +18,7 @@ public interface IRelation2<K, V> {
 
     boolean isEmpty();
 
-    Set.Immutable<V> get(K key);
+    java.util.Set<V> get(K key);
 
     java.util.Set<K> keySet();
 
@@ -46,11 +44,13 @@ public interface IRelation2<K, V> {
 
         boolean put(K key, V value);
 
+        boolean putAll(K key, Iterable<? extends V> values);
+
         boolean putAll(IRelation2<K, V> other);
 
-        Set.Immutable<V> removeKey(K key);
+        java.util.Set<V> removeKey(K key);
 
-        Set.Immutable<K> removeValue(V value);
+        java.util.Set<K> removeValue(V value);
 
         boolean removeEntry(K key, V value);
 

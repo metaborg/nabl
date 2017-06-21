@@ -132,6 +132,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
     }
 
+
     public static class Transient<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends EsopScopeGraph<S, L, O, V> implements IEsopScopeGraph.Transient<S, L, O, V> {
 
@@ -205,7 +206,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return incompleteDirectEdges.put(scope, label, var);
         }
 
-        @Override public boolean addAssoc(O decl, L label, S scope) {
+        @Override public boolean addExportEdge(O decl, L label, S scope) {
             return assocEdges.put(decl, label, scope);
         }
 
@@ -213,7 +214,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return incompleteImportEdges.put(scope, label, var);
         }
 
-        @Override public boolean addImport(S scope, L label, O ref) {
+        @Override public boolean addImportEdge(S scope, L label, O ref) {
             return importEdges.put(scope, label, ref);
         }
 
@@ -234,7 +235,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
             boolean progress = false;
             progress |= reduce(incompleteDirectEdges, fs, this::addDirectEdge);
-            progress |= reduce(incompleteImportEdges, fo, this::addImport);
+            progress |= reduce(incompleteImportEdges, fo, this::addImportEdge);
             return progress;
         }
 
@@ -264,6 +265,93 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                     HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
                     HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
                     HashTrieRelation3.Transient.of());
+        }
+
+    }
+
+
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Extension<S, L, O, V>
+            extend(IEsopScopeGraph.Transient<S, L, O, V> graph1, IEsopScopeGraph<S, L, O, V> graph2) {
+        return new Extension<>(graph1, graph2);
+    }
+
+    public static class Extension<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+            extends EsopScopeGraph<S, L, O, V> implements IEsopScopeGraph.Transient<S, L, O, V> {
+
+        private final IEsopScopeGraph.Transient<S, L, O, V> graph1;
+        private final IEsopScopeGraph<S, L, O, V> graph2;
+
+        private Extension(IEsopScopeGraph.Transient<S, L, O, V> graph1, IEsopScopeGraph<S, L, O, V> graph2) {
+            this.graph1 = graph1;
+            this.graph2 = graph2;
+        }
+
+        public IRelation3<S, L, V> incompleteDirectEdges() {
+            return HashTrieRelation3.union(graph1.incompleteDirectEdges(), graph2.incompleteDirectEdges());
+        }
+
+        public IRelation3<S, L, V> incompleteImportEdges() {
+            return HashTrieRelation3.union(graph1.incompleteImportEdges(), graph2.incompleteImportEdges());
+        }
+
+        public IFunction<O, S> getDecls() {
+            return HashTrieFunction.union(graph1.getDecls(), graph2.getDecls());
+        }
+
+        public IFunction<O, S> getRefs() {
+            return HashTrieFunction.union(graph1.getRefs(), graph2.getRefs());
+        }
+
+        public IRelation3<S, L, S> getDirectEdges() {
+            return HashTrieRelation3.union(graph1.getDirectEdges(), graph2.getDirectEdges());
+        }
+
+        public IRelation3<O, L, S> getExportEdges() {
+            return HashTrieRelation3.union(graph1.getExportEdges(), graph2.getExportEdges());
+        }
+
+        public IRelation3<S, L, O> getImportEdges() {
+            return HashTrieRelation3.union(graph1.getImportEdges(), graph2.getImportEdges());
+        }
+
+        public boolean addDecl(S scope, O decl) {
+            return graph1.addDecl(scope, decl);
+        }
+
+        public boolean addRef(O ref, S scope) {
+            return graph1.addRef(ref, scope);
+        }
+
+        public boolean addDirectEdge(S sourceScope, L label, S targetScope) {
+            return graph1.addDirectEdge(sourceScope, label, targetScope);
+        }
+
+        public boolean addIncompleteDirectEdge(S scope, L label, V var) {
+            return graph1.addIncompleteDirectEdge(scope, label, var);
+        }
+
+        public boolean addExportEdge(O decl, L label, S scope) {
+            return graph1.addExportEdge(decl, label, scope);
+        }
+
+        public boolean addImportEdge(S scope, L label, O ref) {
+            return graph1.addImportEdge(scope, label, ref);
+        }
+
+        public boolean addIncompleteImportEdge(S scope, L label, V var) {
+            return graph1.addIncompleteImportEdge(scope, label, var);
+        }
+
+        public boolean addAll(IEsopScopeGraph<S, L, O, V> other) {
+            return graph1.addAll(other);
+        }
+
+        public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
+            return graph1.reduce(fs, fo);
+        }
+
+        public IEsopScopeGraph.Immutable<S, L, O, V> freeze() {
+            return graph1.freeze();
         }
 
     }

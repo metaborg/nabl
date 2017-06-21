@@ -58,9 +58,9 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
 
         boolean addIncompleteDirectEdge(S scope, L label, V var);
 
-        boolean addAssoc(O decl, L label, S scope);
+        boolean addExportEdge(O decl, L label, S scope);
 
-        boolean addImport(S scope, L label, O ref);
+        boolean addImportEdge(S scope, L label, O ref);
 
         boolean addIncompleteImportEdge(S scope, L label, V var);
 

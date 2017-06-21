@@ -40,7 +40,7 @@ public abstract class Dependencies<E> {
     }
 
 
-    public Set.Immutable<E> getDirectDependencies(E node) {
+    public java.util.Set<E> getDirectDependencies(E node) {
         return dependencies().get(node);
     }
 
@@ -69,7 +69,7 @@ public abstract class Dependencies<E> {
     }
 
 
-    public Set.Immutable<E> getDirectDependents(E node) {
+    public java.util.Set<E> getDirectDependents(E node) {
         return dependencies().inverse().get(node);
     }
 
@@ -259,6 +259,10 @@ public abstract class Dependencies<E> {
 
         public boolean add(E from, E to) {
             return dependencies.put(from, to);
+        }
+
+        public boolean addAll(E from, Iterable<? extends E> to) {
+            return dependencies.putAll(from, to);
         }
 
         public boolean addAll(Dependencies<E> other) {

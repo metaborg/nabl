@@ -1,7 +1,10 @@
 package org.metaborg.meta.nabl2.solver;
 
+import java.util.Map;
+
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.relations.IRelations;
+import org.metaborg.meta.nabl2.relations.IRelationName;
+import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -14,21 +17,21 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 
-public interface ISolution {
+public interface ISolution extends IPublicSolution {
 
-    SolverConfig config();
+    @Override SolverConfig config();
 
     IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
 
-    IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+    @Override IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
     IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
 
-    IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
+    @Override IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
-    IRelations.Immutable<ITerm> relations();
+    @Override Map<IRelationName, IVariantRelation.Immutable<ITerm>> relations();
 
-    ISymbolicConstraints symbolic();
+    @Override ISymbolicConstraints symbolic();
 
     IUnifier.Immutable unifier();
 
@@ -36,6 +39,6 @@ public interface ISolution {
 
     java.util.Set<IConstraint> constraints();
 
-    ISolution findAndLock();
+    ISolution findAndLock() throws SolverException;
 
 }

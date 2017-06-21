@@ -1,6 +1,6 @@
 package org.metaborg.meta.nabl2.util.collections;
 
-import io.usethesource.capsule.Set;
+import java.util.Map;
 
 public interface IInverseFunction<K, V> {
 
@@ -12,9 +12,11 @@ public interface IInverseFunction<K, V> {
 
     java.util.Set<K> keySet();
 
+    java.util.Set<Map.Entry<K, V>> entrySet();
+
     java.util.Set<V> valueSet();
 
-    Set.Immutable<V> get(K key);
+    java.util.Set<V> get(K key);
 
     IFunction<V, K> inverse();
 

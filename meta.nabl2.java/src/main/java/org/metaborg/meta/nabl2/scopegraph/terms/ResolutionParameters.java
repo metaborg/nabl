@@ -53,7 +53,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
     private static IMatcher<IRelation.Immutable<Label>> matchOrder() {
         IMatcher<Label> m_label = Label.matcher();
         return M.listElems(M.appl2("", m_label, m_label, (t, l1, l2) -> ImmutableTuple2.of(l1, l2)), (t, ps) -> {
-            Relation.Transient<Label> order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
+            final IRelation.Transient<Label> order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
             for(Tuple2<Label, Label> p : ps) {
                 try {
                     order.add(p._1(), p._2());
@@ -81,7 +81,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         IAlphabet<Label> labels = new FiniteAlphabet<>(Label.D, Label.P, Label.I);
         RegExpBuilder<Label> R = new RegExpBuilder<>(labels);
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(Label.P)), R.closure(R.symbol(Label.I)));
-        final Relation.Transient<Label> order;
+        final IRelation.Transient<Label> order;
         try {
             order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
             order.add(Label.D, Label.I);
