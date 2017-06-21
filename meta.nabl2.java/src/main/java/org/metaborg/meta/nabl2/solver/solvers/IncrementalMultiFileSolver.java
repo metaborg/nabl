@@ -257,26 +257,24 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             globalInter = reportUnsolvedNonCheckConstraints(globalInter);
 
             // analyze components
-            final TopoSortedComponents<String> components = dependencies.getTopoSortedComponents();
+            final TopoSortedComponents<String> components =
+                    dependencies.inverse().getTopoSortedComponents(invalidatedUnits);
             for(Set.Immutable<String> component : components.components()) {
-                boolean shouldAnalyze = !Sets.intersection(component, invalidatedUnits).isEmpty();
-                if(shouldAnalyze) {
-                    if(nabl2Debug.files()) {
-                        logger.info("Analyzing component {}", component);
-                    }
-                    java.util.Set<ISolution> componentIntras =
-                            component.stream().map(unitIntras::get).collect(Collectors.toSet());
-                    java.util.Set<IPublicSolution> dependencyInters =
-                            dependencies.getAllDependencies(component).stream().map(components::component)
-                                    .map(unitInters::get).filter(s -> s != null).collect(Collectors.toSet());
-                    IPublicSolution context =
-                            combinePublicSolutions(config, Iterables2.cons(globalInter, dependencyInters));
-                    ISolution inter = combineSolutions(config, componentIntras);
-                    inter = solveInterInference(inter, context, scopeGraph, nameResolution, fresh, cancel, progress);
-                    inter = reportUnsolvedNonCheckConstraints(inter);
-                    inter = solveInterChecks(inter, context, scopeGraph, nameResolution, cancel, progress);
-                    unitInters.put(component, inter.findAndLock());
+                if(nabl2Debug.files()) {
+                    logger.info("Analyzing component {}", component);
                 }
+                java.util.Set<ISolution> componentIntras =
+                        component.stream().map(unitIntras::get).collect(Collectors.toSet());
+                java.util.Set<IPublicSolution> dependencyInters =
+                        dependencies.getAllDependencies(component).stream().map(components::component)
+                                .map(unitInters::get).filter(s -> s != null).collect(Collectors.toSet());
+                IPublicSolution context =
+                        combinePublicSolutions(config, Iterables2.cons(globalInter, dependencyInters));
+                ISolution inter = combineSolutions(config, componentIntras);
+                inter = solveInterInference(inter, context, scopeGraph, nameResolution, fresh, cancel, progress);
+                inter = reportUnsolvedNonCheckConstraints(inter);
+                inter = solveInterChecks(inter, context, scopeGraph, nameResolution, cancel, progress);
+                unitInters.put(component, inter.findAndLock());
             }
 
             // check global
