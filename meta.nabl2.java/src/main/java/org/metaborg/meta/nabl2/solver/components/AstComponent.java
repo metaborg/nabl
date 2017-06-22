@@ -26,19 +26,28 @@ public class AstComponent extends ASolver {
     public SeedResult seed(IProperties.Immutable<TermIndex, ITerm, ITerm> solution, IMessageInfo message)
             throws InterruptedException {
         solution.stream().forEach(entry -> {
-            final Optional<ITerm> prev = properties.putValue(entry._1(), entry._2(), entry._3());
-            assert !prev.isPresent() : "Should not set the same AST property multiple times.";
+            putProperty(entry._1(), entry._2(), entry._3());
         });
         return SeedResult.empty();
     }
 
     public Optional<SolveResult> solve(IAstConstraint constraint) throws InterruptedException {
         SolveResult result = constraint.match(IAstConstraint.Cases.of(astp -> {
-            final Optional<ITerm> prev = properties.putValue(astp.getIndex(), astp.getKey(), astp.getValue());
-            assert !prev.isPresent() : "Should not set the same AST property multiple times.";
+            putProperty(astp.getIndex(), astp.getKey(), astp.getValue());
             return SolveResult.empty();
         }));
         return Optional.of(result);
+    }
+
+    private void putProperty(TermIndex index, ITerm key, ITerm value) {
+        Optional<ITerm> prev = properties.getValue(index, key);
+        if(!prev.isPresent()) {
+            properties.putValue(index, key, value);
+        } else {
+            if(!value.equals(prev)) {
+                throw new IllegalStateException("Should not set the same AST property multiple times.");
+            }
+        }
     }
 
     public IProperties.Immutable<TermIndex, ITerm, ITerm> finish() {

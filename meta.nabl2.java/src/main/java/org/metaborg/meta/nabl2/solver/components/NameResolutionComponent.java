@@ -67,9 +67,7 @@ public class NameResolutionComponent extends ASolver {
             throws InterruptedException {
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
         solution.stream().forEach(entry -> {
-            properties.putValue(entry._1(), entry._2(), entry._3()).ifPresent(prev -> {
-                constraints.add(ImmutableCEqual.of(entry._3(), prev, message));
-            });
+            putProperty(entry._1(), entry._2(), entry._3(), message).ifPresent(constraints::add);
         });
         return SeedResult.constraints(constraints);
     }
@@ -171,14 +169,20 @@ public class NameResolutionComponent extends ASolver {
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
-        Optional<ITerm> prev = properties.putValue(decl, c.getKey(), c.getValue());
-        final SolveResult result;
-        if(!prev.isPresent()) {
-            result = SolveResult.empty();
-        } else {
-            result = SolveResult.constraints(ImmutableCEqual.of(c.getValue(), prev.get(), c.getMessageInfo()));
-        }
+        final SolveResult result = putProperty(decl, c.getKey(), c.getValue(), c.getMessageInfo())
+                .map(cc -> SolveResult.constraints(cc)).orElseGet(() -> SolveResult.empty());
         return Optional.of(result);
+    }
+
+    private Optional<IConstraint> putProperty(Occurrence decl, ITerm key, ITerm value, IMessageInfo message) {
+        Optional<ITerm> prev = properties.getValue(decl, key);
+        if(!prev.isPresent()) {
+            properties.putValue(decl, key, value);
+            return Optional.empty();
+        } else {
+            return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
+        }
+
     }
 
     // ------------------------------------------------------------------------------------------------------//
