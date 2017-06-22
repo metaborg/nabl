@@ -33,12 +33,7 @@ public class VariantMatchers {
         );
     }
 
-    public static IVariantMatcher<ITerm> covariantList() {
-        return new ListVariant(ImmutableCovariant.of(ImmutableRelationName.of(Optional.empty())));
-    }
-
     private static class ListVariant implements IVariantMatcher<ITerm>, Serializable {
-
         private static final long serialVersionUID = 42L;
 
         private final IVariance variance;
