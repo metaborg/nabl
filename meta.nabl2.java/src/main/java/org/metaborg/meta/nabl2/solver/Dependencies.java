@@ -117,7 +117,7 @@ public abstract class Dependencies<E> {
 
     public static class TopoSortedComponents<E> {
 
-        private final List<Set.Immutable<E>> components;
+        private final ImmutableList<Set.Immutable<E>> components;
         private final Map<E, Set.Immutable<E>> index;
 
         private TopoSortedComponents(List<Set.Immutable<E>> components) {
@@ -134,7 +134,7 @@ public abstract class Dependencies<E> {
             return index.keySet();
         }
 
-        public List<Set.Immutable<E>> components() {
+        public ImmutableList<Set.Immutable<E>> components() {
             return components;
         }
 

@@ -257,16 +257,18 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             globalInter = reportUnsolvedNonCheckConstraints(globalInter);
 
             // analyze components
-            final TopoSortedComponents<String> components =
+            final TopoSortedComponents<String> allComponents =
+                    dependencies.getTopoSortedComponents(unitIntras.keySet());
+            final TopoSortedComponents<String> invalidatedComponents =
                     dependencies.inverse().getTopoSortedComponents(invalidatedUnits);
-            for(Set.Immutable<String> component : components.components()) {
+            for(Set.Immutable<String> component : invalidatedComponents.components().reverse()) {
                 if(nabl2Debug.files()) {
                     logger.info("Analyzing component {}", component);
                 }
                 java.util.Set<ISolution> componentIntras =
                         component.stream().map(unitIntras::get).collect(Collectors.toSet());
                 java.util.Set<IPublicSolution> dependencyInters =
-                        dependencies.getAllDependencies(component).stream().map(components::component)
+                        dependencies.getAllDependencies(component).stream().map(allComponents::component)
                                 .map(unitInters::get).filter(s -> s != null).collect(Collectors.toSet());
                 IPublicSolution context =
                         combinePublicSolutions(config, Iterables2.cons(globalInter, dependencyInters));
@@ -512,8 +514,13 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             throw new IllegalStateException("Fresh variables cannot be created in this phase.");
         });
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
-        final RelationComponent relationSolver = new RelationComponent(core, r -> true, config.getFunctions(),
-                VariantRelations.melt(initial.relations()));
+        RelationComponent relationSolver;
+        try {
+            relationSolver = new RelationComponent(core, r -> true, config.getFunctions(),
+                    VariantRelations.extend(VariantRelations.melt(initial.relations()), context.relations()));
+        } catch(RelationException e) {
+            throw new SolverException(e);
+        }
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
 
         final ISolver denySolver = ISolver.deny("Not allowed in this phase");
