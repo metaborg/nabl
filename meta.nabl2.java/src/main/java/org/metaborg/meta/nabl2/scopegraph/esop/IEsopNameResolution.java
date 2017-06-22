@@ -25,6 +25,10 @@ public interface IEsopNameResolution<S extends IScope, L extends ILabel, O exten
     interface Transient<S extends IScope, L extends ILabel, O extends IOccurrence>
             extends IEsopNameResolution<S, L, O>, INameResolution.Transient<S, L, O> {
 
+        java.util.Set<S> getAllScopes();
+
+        java.util.Set<O> getAllRefs();
+
         boolean addAll(IEsopNameResolution<S, L, O> other);
 
         Update<S, L, O> resolveAll();

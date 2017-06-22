@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
@@ -17,6 +18,8 @@ public interface IPublicSolution {
     SolverConfig config();
 
     IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+
+    IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
 
     IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 

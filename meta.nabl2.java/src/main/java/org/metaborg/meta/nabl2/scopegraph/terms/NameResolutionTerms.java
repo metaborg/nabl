@@ -19,7 +19,7 @@ public final class NameResolutionTerms {
 
     private ITerm build() {
         final List<ITerm> resolutions =
-                nameResolution.getAllRefs().stream().map(this::buildRef).collect(Collectors.toList());
+                nameResolution.getResolvedRefs().stream().map(this::buildRef).collect(Collectors.toList());
         return TB.newAppl("NameResolution", (ITerm) TB.newList(resolutions));
     }
 

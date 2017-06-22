@@ -7,7 +7,9 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
@@ -25,6 +27,8 @@ public abstract class PublicSolution implements IPublicSolution {
 
     @Value.Parameter @Override public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
+    @Value.Parameter @Override public abstract IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
     @Value.Parameter @Override public abstract Map<IRelationName, IVariantRelation.Immutable<ITerm>> relations();
@@ -32,7 +36,8 @@ public abstract class PublicSolution implements IPublicSolution {
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
 
     public static IPublicSolution of(SolverConfig config) {
-        return ImmutablePublicSolution.of(config, EsopScopeGraph.Immutable.of(), Properties.Immutable.of(),
+        return ImmutablePublicSolution.of(config, EsopScopeGraph.Immutable.of(),
+                EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()),
                 org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of());
     }

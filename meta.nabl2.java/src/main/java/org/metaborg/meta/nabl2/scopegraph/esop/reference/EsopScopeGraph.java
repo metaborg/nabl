@@ -270,7 +270,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
     }
 
 
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Extension<S, L, O, V>
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, V> IEsopScopeGraph.Transient<S, L, O, V>
             extend(IEsopScopeGraph.Transient<S, L, O, V> graph1, IEsopScopeGraph<S, L, O, V> graph2) {
         return new Extension<>(graph1, graph2);
     }

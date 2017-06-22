@@ -79,7 +79,7 @@ public class InterpreterTerms {
 
     private static ITerm nameresolution(INameResolution.Immutable<Scope, Label, Occurrence> nameResolution) {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
-        for(Occurrence ref : nameResolution.getAllRefs()) {
+        for(Occurrence ref : nameResolution.getResolvedRefs()) {
             List<IResolutionPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));
             if(paths.size() == 1) {
                 IResolutionPath<Scope, Label, Occurrence> path = paths.get(0);

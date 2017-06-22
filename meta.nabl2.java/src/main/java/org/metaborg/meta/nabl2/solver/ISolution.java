@@ -25,7 +25,7 @@ public interface ISolution extends IPublicSolution {
 
     @Override IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+    @Override IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
 
     @Override IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 

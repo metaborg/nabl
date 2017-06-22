@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.reference;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,17 +50,12 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
 
     protected abstract Map<S, Set.Immutable<O>> reachability();
 
-    @Override public Set.Immutable<O> getAllRefs() {
-        Set.Transient<O> allRefs = Set.Transient.of();
-        allRefs.__insertAll(resolution().keySet());
-        return allRefs.freeze();
+    @Override public java.util.Set<O> getResolvedRefs() {
+        return Collections.unmodifiableSet(resolution().keySet());
     }
 
-    @Override public Set.Immutable<S> getAllScopes() {
-        Set.Transient<S> allScopes = Set.Transient.of();
-        allScopes.__insertAll(visibility().keySet());
-        allScopes.__insertAll(reachability().keySet());
-        return allScopes.freeze();
+    @Override public java.util.Set<S> getResolvedScopes() {
+        return Sets.union(visibility().keySet(), reachability().keySet());
     }
 
     @Override public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
@@ -178,14 +174,22 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             return reachability;
         }
 
+        @Override public java.util.Set<O> getAllRefs() {
+            return scopeGraph.getAllRefs();
+        }
+
+        @Override public java.util.Set<S> getAllScopes() {
+            return scopeGraph.getAllScopes();
+        }
+
         @Override public boolean addAll(IEsopNameResolution<S, L, O> other) {
             boolean change = false;
-            for(O ref : other.getAllRefs()) {
+            for(O ref : other.getResolvedRefs()) {
                 Set.Immutable<IResolutionPath<S, L, O>> prev = resolution.__put(ref, other.resolve(ref));
                 assert prev != null;
                 change |= true;
             }
-            for(S scope : other.getAllScopes()) {
+            for(S scope : other.getResolvedScopes()) {
                 Set.Immutable<O> prev;
                 prev = visibility.__put(scope, other.visible(scope));
                 assert prev != null;
@@ -447,6 +451,96 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         @Override @Value.Parameter public abstract SetMultimap<S, O> visible();
 
         @Override @Value.Parameter public abstract SetMultimap<S, O> reachable();
+
+    }
+
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopNameResolution.Transient<S, L, O>
+            extend(IEsopNameResolution.Transient<S, L, O> resolution1, IEsopNameResolution<S, L, O> resolution2) {
+        return new Extension<>(resolution1, resolution2);
+    }
+
+    private static class Extension<S extends IScope, L extends ILabel, O extends IOccurrence>
+            implements IEsopNameResolution.Transient<S, L, O> {
+
+        private final IEsopNameResolution.Transient<S, L, O> resolution1;
+        private final IEsopNameResolution<S, L, O> resolution2;
+
+        protected Extension(org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Transient<S, L, O> resolution1,
+                IEsopNameResolution<S, L, O> resolution2) {
+            this.resolution1 = resolution1;
+            this.resolution2 = resolution2;
+        }
+
+        @Override public java.util.Set<S> getResolvedScopes() {
+            return Sets.union(resolution1.getResolvedScopes(), resolution2.getResolvedScopes());
+        }
+
+        @Override public java.util.Set<O> getResolvedRefs() {
+            return Sets.union(resolution1.getResolvedRefs(), resolution2.getResolvedRefs());
+        }
+
+        @Override public java.util.Set<O> getAllRefs() {
+            return resolution1.getAllRefs();
+        }
+
+        @Override public java.util.Set<S> getAllScopes() {
+            return resolution1.getAllScopes();
+        }
+
+        @Override public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
+            return tryResolve(ref).orElse(Set.Immutable.of());
+        }
+
+        @Override public Set.Immutable<O> visible(S scope) {
+            return tryVisible(scope).orElse(Set.Immutable.of());
+        }
+
+        @Override public Set.Immutable<O> reachable(S scope) {
+            return tryReachable(scope).orElse(Set.Immutable.of());
+        }
+
+        @Override public Optional<Set.Immutable<IResolutionPath<S, L, O>>> tryResolve(O ref) {
+            if(resolution2.getResolvedRefs().contains(ref)) {
+                return Optional.of(resolution1.resolve(ref));
+            } else {
+                return resolution1.tryResolve(ref);
+            }
+        }
+
+        @Override public Optional<Set.Immutable<O>> tryVisible(S scope) {
+            if(resolution2.getResolvedScopes().contains(scope)) {
+                return Optional.of(resolution1.visible(scope));
+            } else {
+                return resolution1.tryVisible(scope);
+            }
+        }
+
+        @Override public Optional<Set.Immutable<O>> tryReachable(S scope) {
+            if(resolution2.getResolvedScopes().contains(scope)) {
+                return Optional.of(resolution1.reachable(scope));
+            } else {
+                return resolution1.tryReachable(scope);
+            }
+        }
+
+        @Override public boolean addAll(IEsopNameResolution<S, L, O> other) {
+            return resolution1.addAll(other);
+        }
+
+        @Override public IEsopNameResolution.Update<S, L, O> resolveAll() {
+            return resolution1.resolveAll(Sets.difference(resolution1.getAllRefs(), resolution2.getResolvedRefs()),
+                    Sets.difference(resolution1.getAllScopes(), resolution2.getResolvedScopes()));
+        }
+
+        @Override public IEsopNameResolution.Update<S, L, O> resolveAll(Iterable<? extends O> refs,
+                Iterable<? extends S> scopes) {
+            return resolution1.resolveAll(Sets.difference(Sets.newHashSet(refs), resolution2.getResolvedRefs()),
+                    Sets.difference(Sets.newHashSet(scopes), resolution2.getResolvedScopes()));
+        }
+
+        @Override public IEsopNameResolution.Immutable<S, L, O> freeze() {
+            return resolution1.freeze();
+        }
 
     }
 

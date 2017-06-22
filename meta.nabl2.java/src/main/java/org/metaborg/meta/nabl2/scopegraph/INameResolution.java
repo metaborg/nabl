@@ -8,9 +8,9 @@ import io.usethesource.capsule.Set;
 
 public interface INameResolution<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-    Set.Immutable<S> getAllScopes();
+    java.util.Set<S> getResolvedScopes();
 
-    Set.Immutable<O> getAllRefs();
+    java.util.Set<O> getResolvedRefs();
 
     Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref);
 
