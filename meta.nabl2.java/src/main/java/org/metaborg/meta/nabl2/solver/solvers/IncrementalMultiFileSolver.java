@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -217,14 +218,18 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                         final IEsopNameResolution.Transient<Scope, Label, Occurrence> unitNameResolution =
                                 unitIntra.nameResolution().melt(unitGraph, (s, l) -> true);
                         for(Occurrence ref : free) {
-                            if(globalDiff.stream().noneMatch(decl -> IOccurrence.match(ref, decl))) {
+                            final Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> prevDecls =
+                                    prevInter.nameResolution().resolve(ref).orElse(Set.Immutable.of());
+                            final java.util.Set<Occurrence> refs = Stream
+                                    .concat(Stream.of(ref), prevDecls.stream().flatMap(p -> p.getImports().stream()))
+                                    .collect(Collectors.toSet());
+                            if(refs.stream()
+                                    .noneMatch(d -> globalDiff.stream().anyMatch(r -> IOccurrence.match(r, d)))) {
                                 continue;
                             }
                             Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> currDecls =
                                     unitNameResolution.resolve(ref);
                             if(currDecls.isPresent()) {
-                                Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> prevDecls =
-                                        prevInter.nameResolution().resolve(ref).orElse(Set.Immutable.of());
                                 if(!currDecls.get().equals(prevDecls)) {
                                     ISolution unitInter =
                                             ImmutableSolution.builder().from(unitIntra).scopeGraph(unitGraph.freeze())
