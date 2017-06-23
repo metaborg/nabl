@@ -43,12 +43,12 @@ public class NameSetsComponent extends ASolver {
                 }),
                 M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Optional<? extends io.usethesource.capsule.Set<Occurrence>> decls =
-                            NameSetsComponent.this.nameResolution.tryVisible(scope);
+                            NameSetsComponent.this.nameResolution.visible(scope);
                     return decls.map(ds -> makeSet(ds, ns));
                 }),
                 M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Optional<? extends io.usethesource.capsule.Set<Occurrence>> decls =
-                            NameSetsComponent.this.nameResolution.tryReachable(scope);
+                            NameSetsComponent.this.nameResolution.reachable(scope);
                     return decls.map(ds -> makeSet(ds, ns));
                 })
                 // @formatter:on

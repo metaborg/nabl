@@ -1,6 +1,8 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
@@ -24,8 +26,8 @@ public final class NameResolutionTerms {
     }
 
     private ITerm buildRef(Occurrence ref) {
-        final List<ITerm> paths =
-                nameResolution.resolve(ref).stream().map(this::buildPath).collect(Collectors.toList());
+        final List<ITerm> paths = nameResolution.resolutionEntries().stream().map(Map.Entry::getValue)
+                .flatMap(Collection::stream).map(this::buildPath).collect(Collectors.toList());
         final ITerm result;
         if(paths.isEmpty()) {
             result = TB.newAppl("NoResolution");

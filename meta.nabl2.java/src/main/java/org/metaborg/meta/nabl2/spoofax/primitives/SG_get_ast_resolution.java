@@ -25,9 +25,11 @@ public class SG_get_ast_resolution extends AstPrimitive {
             List<ITerm> entries = Lists.newArrayList();
             for(Occurrence ref : s.scopeGraph().getAllRefs()) {
                 if(ref.getIndex().equals(index)) {
-                    for(Occurrence decl : Paths.resolutionPathsToDecls(s.nameResolution().resolve(ref))) {
-                        entries.add(TB.newTuple(ref, decl.getName()));
-                    }
+                    s.nameResolution().resolve(ref).map(Paths::resolutionPathsToDecls).ifPresent(decls -> {
+                        decls.stream().forEach(decl -> {
+                            entries.add(TB.newTuple(ref, decl.getName()));
+                        });
+                    });
                 }
             }
             if(entries.isEmpty()) {

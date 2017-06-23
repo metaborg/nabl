@@ -18,8 +18,8 @@ public class SG_get_reachable_decls extends AnalysisPrimitive {
     @Override public Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
             throws InterpreterException {
         return Scope.matcher().match(term).<ITerm>flatMap(scope -> {
-            return context.unit(index.getResource()).solution().<ITerm>map(s -> {
-                return TB.newList(s.nameResolution().reachable(scope));
+            return context.unit(index.getResource()).solution().<ITerm>flatMap(s -> {
+                return s.nameResolution().reachable(scope).map(TB::newList);
             });
         });
     }

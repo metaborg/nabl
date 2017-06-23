@@ -6,6 +6,7 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.annotations.Beta;
 import com.google.common.collect.SetMultimap;
@@ -25,15 +26,11 @@ public interface IEsopNameResolution<S extends IScope, L extends ILabel, O exten
     interface Transient<S extends IScope, L extends ILabel, O extends IOccurrence>
             extends IEsopNameResolution<S, L, O>, INameResolution.Transient<S, L, O> {
 
-        java.util.Set<S> getAllScopes();
-
-        java.util.Set<O> getAllRefs();
-
         boolean addAll(IEsopNameResolution<S, L, O> other);
 
-        Update<S, L, O> resolveAll();
-
-        Update<S, L, O> resolveAll(Iterable<? extends O> refs, Iterable<? extends S> scopes);
+        default void resolveAll(Iterable<? extends O> refs) {
+            Iterables2.stream(refs).forEach(this::resolve);
+        }
 
         IEsopNameResolution.Immutable<S, L, O> freeze();
 

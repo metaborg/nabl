@@ -3,11 +3,10 @@ package org.metaborg.meta.nabl2.scopegraph.esop.reference;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.immutables.serial.Serial;
-import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
@@ -24,6 +23,7 @@ import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction0;
@@ -32,7 +32,6 @@ import org.metaborg.util.functions.Predicate2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
@@ -44,32 +43,6 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
     protected EsopNameResolution() {
     }
 
-    protected abstract Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution();
-
-    protected abstract Map<S, Set.Immutable<O>> visibility();
-
-    protected abstract Map<S, Set.Immutable<O>> reachability();
-
-    @Override public java.util.Set<O> getResolvedRefs() {
-        return Collections.unmodifiableSet(resolution().keySet());
-    }
-
-    @Override public java.util.Set<S> getResolvedScopes() {
-        return Sets.union(visibility().keySet(), reachability().keySet());
-    }
-
-    @Override public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
-        return Optional.ofNullable(resolution().get(ref)).orElse(Set.Immutable.of());
-    }
-
-    @Override public Set.Immutable<O> visible(S scope) {
-        return Optional.ofNullable(visibility().get(scope)).orElse(Set.Immutable.of());
-    }
-
-    @Override public Set.Immutable<O> reachable(S scope) {
-        return Optional.ofNullable(reachability().get(scope)).orElse(Set.Immutable.of());
-    }
-
     public static class Immutable<S extends IScope, L extends ILabel, O extends IOccurrence>
             extends EsopNameResolution<S, L, O> implements IEsopNameResolution.Immutable<S, L, O>, Serializable {
         private static final long serialVersionUID = 42L;
@@ -77,40 +50,43 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         private final IResolutionParameters<L> params;
 
         private final Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution;
-        private final Map.Immutable<S, Set.Immutable<O>> visibility;
-        private final Map.Immutable<S, Set.Immutable<O>> reachability;
 
         private Immutable(IResolutionParameters<L> params,
-                Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution,
-                Map.Immutable<S, Set.Immutable<O>> visibility, Map.Immutable<S, Set.Immutable<O>> reachability) {
+                Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution) {
             this.params = params;
             this.resolution = resolution;
-            this.visibility = visibility;
-            this.reachability = reachability;
         }
 
-        @Override protected Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution() {
-            return resolution;
+        @Override public java.util.Set<O> getResolvedRefs() {
+            return resolution.keySet();
         }
 
-        @Override protected Map<S, Set.Immutable<O>> visibility() {
-            return visibility;
+        @Override public Optional<Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
+            return Optional.ofNullable(resolution.get(ref));
         }
 
-        @Override protected Map<S, Set.Immutable<O>> reachability() {
-            return reachability;
+        @Override public java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>>
+                resolutionEntries() {
+            return resolution.entrySet();
         }
 
-        @Override public org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Transient<S, L, O>
-                melt(IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed) {
+        @Override public Optional<Set.Immutable<O>> visible(S scope) {
+            return Optional.empty();
+        }
+
+        @Override public Optional<Set.Immutable<O>> reachable(S scope) {
+            return Optional.empty();
+        }
+
+        @Override public IEsopNameResolution.Transient<S, L, O> melt(IEsopScopeGraph<S, L, O, ?> scopeGraph,
+                Predicate2<S, L> isEdgeClosed) {
             return new EsopNameResolution.Transient<>(params, scopeGraph, isEdgeClosed, resolution.asTransient(),
-                    visibility.asTransient(), reachability.asTransient());
+                    Map.Transient.of(), Map.Transient.of());
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution.Immutable<S, L, O>
                 of(IResolutionParameters<L> params) {
-            return new EsopNameResolution.Immutable<>(params, Map.Immutable.of(), Map.Immutable.of(),
-                    Map.Immutable.of());
+            return new EsopNameResolution.Immutable<>(params, Map.Immutable.of());
         }
 
     }
@@ -162,113 +138,67 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             this.stagedEnv_L = Maps.newHashMap();
         }
 
-        @Override protected Map<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution() {
-            return resolution;
-        }
-
-        @Override protected Map<S, Set.Immutable<O>> visibility() {
-            return visibility;
-        }
-
-        @Override protected Map<S, Set.Immutable<O>> reachability() {
-            return reachability;
-        }
-
-        @Override public java.util.Set<O> getAllRefs() {
-            return scopeGraph.getAllRefs();
-        }
-
-        @Override public java.util.Set<S> getAllScopes() {
-            return scopeGraph.getAllScopes();
+        @Override public java.util.Set<O> getResolvedRefs() {
+            return Collections.unmodifiableSet(resolution.keySet());
         }
 
         @Override public boolean addAll(IEsopNameResolution<S, L, O> other) {
-            boolean change = false;
-            for(O ref : other.getResolvedRefs()) {
-                Set.Immutable<IResolutionPath<S, L, O>> prev = resolution.__put(ref, other.resolve(ref));
-                assert prev != null;
-                change |= true;
+            for(Map.Entry<O, Set.Immutable<IResolutionPath<S, L, O>>> entry : other.resolutionEntries()) {
+                resolution.__put(entry.getKey(), entry.getValue());
             }
-            for(S scope : other.getResolvedScopes()) {
-                Set.Immutable<O> prev;
-                prev = visibility.__put(scope, other.visible(scope));
-                assert prev != null;
-                prev = reachability.__put(scope, other.reachable(scope));
-                assert prev != null;
-                change |= true;
-            }
-            return change;
+            return !other.resolutionEntries().isEmpty();
         }
 
-        @Override public Optional<Set.Immutable<IResolutionPath<S, L, O>>> tryResolve(O ref) {
+        @Override public Optional<Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
             if(resolution.containsKey(ref)) {
                 return Optional.of(resolution.get(ref));
             } else {
-                return Optional.empty();
+                final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env =
+                        pendingResolution.computeIfAbsent(ref, r -> resolveEnv(Set.Immutable.of(), ref));
+                return env.get().map(Tuple2::_1).map(result -> {
+                    resolution.__put(ref, result);
+                    pendingResolution.remove(ref);
+                    return result;
+                });
             }
         }
 
-        @Override public Optional<Set.Immutable<O>> tryVisible(S scope) {
+        @Override public java.util.Set<Map.Entry<O, Set.Immutable<IResolutionPath<S, L, O>>>> resolutionEntries() {
+            return resolution.entrySet();
+        }
+
+        @Override public Optional<Set.Immutable<O>> visible(S scope) {
             if(visibility.containsKey(scope)) {
                 return Optional.of(visibility.get(scope));
             } else {
-                return Optional.empty();
+                final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
+                        pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
+                return env.get().map(Tuple2::_1).map(result -> {
+                    Set.Transient<O> declsBuilder = Set.Transient.of();
+                    result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::__insert);
+                    Set.Immutable<O> decls = declsBuilder.freeze();
+                    visibility.__put(scope, decls);
+                    pendingVisibility.remove(scope);
+                    return decls;
+                });
             }
         }
 
-        @Override public Optional<Set.Immutable<O>> tryReachable(S scope) {
+        @Override public Optional<Set.Immutable<O>> reachable(S scope) {
             if(reachability.containsKey(scope)) {
                 return Optional.of(reachability.get(scope));
             } else {
-                return Optional.empty();
+                final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
+                        pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
+                return env.get().map(Tuple2::_1).map(result -> {
+                    Set.Transient<O> declsBuilder = Set.Transient.of();
+                    result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::__insert);
+                    Set.Immutable<O> decls = declsBuilder.freeze();
+                    reachability.__put(scope, decls);
+                    pendingReachability.remove(scope);
+                    return decls;
+                });
             }
-        }
-
-        @Override public EsopNameResolution.Update<S, L, O> resolveAll() {
-            return resolveAll(scopeGraph.getAllRefs(), scopeGraph.getAllScopes());
-        }
-
-        @Override public EsopNameResolution.Update<S, L, O> resolveAll(Iterable<? extends O> refs,
-                Iterable<? extends S> scopes) {
-            ImmutableUpdate.Builder<S, L, O> update = ImmutableUpdate.builder();
-            for(O ref : refs) {
-                if(!resolution.containsKey(ref)) {
-                    final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env =
-                            pendingResolution.computeIfAbsent(ref, r -> resolveEnv(Set.Immutable.of(), ref));
-                    env.get().ifPresent(result -> {
-                        update.putAllResolved(ref, result._1());
-                        resolution.__put(ref, result._1());
-                        pendingResolution.remove(ref);
-                    });
-                }
-            }
-            for(S scope : scopes) {
-                if(!visibility.containsKey(scope)) {
-                    final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
-                            pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
-                    env.get().ifPresent(result -> {
-                        Set.Transient<O> decls = Set.Transient.of();
-                        decls.__insertAll(
-                                result._1().stream().map(IDeclPath::getDeclaration).collect(Collectors.toSet()));
-                        update.putAllVisible(scope, decls);
-                        visibility.__put(scope, decls.freeze());
-                        pendingVisibility.remove(scope);
-                    });
-                }
-                if(!reachability.containsKey(scope)) {
-                    final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
-                            pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
-                    env.get().ifPresent(result -> {
-                        Set.Transient<O> decls = Set.Transient.of();
-                        decls.__insertAll(
-                                result._1().stream().map(IDeclPath::getDeclaration).collect(Collectors.toSet()));
-                        update.putAllReachable(scope, decls);
-                        reachability.__put(scope, decls.freeze());
-                        pendingReachability.remove(scope);
-                    });
-                }
-            }
-            return update.build();
         }
 
         private IEsopEnv<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
@@ -428,8 +358,7 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         }
 
         @Override public IEsopNameResolution.Immutable<S, L, O> freeze() {
-            return new EsopNameResolution.Immutable<>(params, resolution.freeze(), visibility.freeze(),
-                    reachability.freeze());
+            return new EsopNameResolution.Immutable<>(params, resolution.freeze());
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution.Transient<S, L, O>
@@ -438,19 +367,6 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             return new EsopNameResolution.Transient<>(params, scopeGraph, isEdgeClosed, Map.Transient.of(),
                     Map.Transient.of(), Map.Transient.of());
         }
-
-    }
-
-    @Value.Immutable(builder = true)
-    @Serial.Version(42l)
-    static abstract class Update<S extends IScope, L extends ILabel, O extends IOccurrence>
-            implements IEsopNameResolution.Update<S, L, O> {
-
-        @Override @Value.Parameter public abstract SetMultimap<O, IResolutionPath<S, L, O>> resolved();
-
-        @Override @Value.Parameter public abstract SetMultimap<S, O> visible();
-
-        @Override @Value.Parameter public abstract SetMultimap<S, O> reachable();
 
     }
 
@@ -471,71 +387,29 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             this.resolution2 = resolution2;
         }
 
-        @Override public java.util.Set<S> getResolvedScopes() {
-            return Sets.union(resolution1.getResolvedScopes(), resolution2.getResolvedScopes());
-        }
-
         @Override public java.util.Set<O> getResolvedRefs() {
             return Sets.union(resolution1.getResolvedRefs(), resolution2.getResolvedRefs());
         }
 
-        @Override public java.util.Set<O> getAllRefs() {
-            return resolution1.getAllRefs();
+        @Override public Optional<Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
+            return resolution2.resolve(ref).map(Optional::of).orElseGet(() -> resolution1.resolve(ref));
         }
 
-        @Override public java.util.Set<S> getAllScopes() {
-            return resolution1.getAllScopes();
+        @Override public java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>>
+                resolutionEntries() {
+            return Sets.union(resolution1.resolutionEntries(), resolution2.resolutionEntries());
         }
 
-        @Override public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
-            return tryResolve(ref).orElse(Set.Immutable.of());
+        @Override public Optional<Set.Immutable<O>> visible(S scope) {
+            return resolution2.visible(scope).map(Optional::of).orElseGet(() -> resolution1.visible(scope));
         }
 
-        @Override public Set.Immutable<O> visible(S scope) {
-            return tryVisible(scope).orElse(Set.Immutable.of());
-        }
-
-        @Override public Set.Immutable<O> reachable(S scope) {
-            return tryReachable(scope).orElse(Set.Immutable.of());
-        }
-
-        @Override public Optional<Set.Immutable<IResolutionPath<S, L, O>>> tryResolve(O ref) {
-            if(resolution2.getResolvedRefs().contains(ref)) {
-                return Optional.of(resolution1.resolve(ref));
-            } else {
-                return resolution1.tryResolve(ref);
-            }
-        }
-
-        @Override public Optional<Set.Immutable<O>> tryVisible(S scope) {
-            if(resolution2.getResolvedScopes().contains(scope)) {
-                return Optional.of(resolution1.visible(scope));
-            } else {
-                return resolution1.tryVisible(scope);
-            }
-        }
-
-        @Override public Optional<Set.Immutable<O>> tryReachable(S scope) {
-            if(resolution2.getResolvedScopes().contains(scope)) {
-                return Optional.of(resolution1.reachable(scope));
-            } else {
-                return resolution1.tryReachable(scope);
-            }
+        @Override public Optional<Set.Immutable<O>> reachable(S scope) {
+            return resolution2.reachable(scope).map(Optional::of).orElseGet(() -> resolution1.reachable(scope));
         }
 
         @Override public boolean addAll(IEsopNameResolution<S, L, O> other) {
             return resolution1.addAll(other);
-        }
-
-        @Override public IEsopNameResolution.Update<S, L, O> resolveAll() {
-            return resolution1.resolveAll(Sets.difference(resolution1.getAllRefs(), resolution2.getResolvedRefs()),
-                    Sets.difference(resolution1.getAllScopes(), resolution2.getResolvedScopes()));
-        }
-
-        @Override public IEsopNameResolution.Update<S, L, O> resolveAll(Iterable<? extends O> refs,
-                Iterable<? extends S> scopes) {
-            return resolution1.resolveAll(Sets.difference(Sets.newHashSet(refs), resolution2.getResolvedRefs()),
-                    Sets.difference(Sets.newHashSet(scopes), resolution2.getResolvedScopes()));
         }
 
         @Override public IEsopNameResolution.Immutable<S, L, O> freeze() {

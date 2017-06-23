@@ -8,7 +8,6 @@ import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
-import org.metaborg.meta.nabl2.relations.variants.VariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -46,8 +45,6 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-
-import com.google.common.collect.Maps;
 
 
 public class BaseMultiFileSolver extends BaseSolver {

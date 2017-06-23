@@ -26,9 +26,13 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 
 public class InterpreterTerms {
 
@@ -78,15 +82,17 @@ public class InterpreterTerms {
     }
 
     private static ITerm nameresolution(INameResolution.Immutable<Scope, Label, Occurrence> nameResolution) {
-        Map<ITerm, ITerm> entries = Maps.newHashMap();
-        for(Occurrence ref : nameResolution.getResolvedRefs()) {
-            List<IResolutionPath<Scope, Label, Occurrence>> paths = Lists.newArrayList(nameResolution.resolve(ref));
+        final Map<ITerm, ITerm> entries = Maps.newHashMap();
+        for(Map.Entry<Occurrence, Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> entry : nameResolution
+                .resolutionEntries()) {
+            final Occurrence ref = entry.getKey();
+            final Immutable<IResolutionPath<Scope, Label, Occurrence>> paths = entry.getValue();
             if(paths.size() == 1) {
-                IResolutionPath<Scope, Label, Occurrence> path = paths.get(0);
+                IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
                 ITerm value = TB.newTuple(path.getDeclaration(), Paths.toTerm(path));
                 entries.put(ref, value);
             } else {
-                logger.warn("Can only convert a single path, {} has multipe.", ref);
+                logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
             }
         }
         return map(entries.entrySet());

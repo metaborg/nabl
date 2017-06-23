@@ -76,9 +76,9 @@ public class NameResolutionComponent extends ASolver {
         return constraint.match(INameResolutionConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 
-    public IEsopNameResolution.Update<Scope, Label, Occurrence> update() throws InterruptedException {
+    public void update() throws InterruptedException {
         scopeGraph.reduce(this::findScope, this::findOccurrence);
-        return nameResolution.resolveAll();
+        nameResolution.resolveAll(scopeGraph.getAllRefs());
     }
 
     public NameResolutionResult finish() {
@@ -99,7 +99,7 @@ public class NameResolutionComponent extends ASolver {
         final Occurrence ref = Occurrence.matcher().match(refTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
         final Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
-                nameResolution.tryResolve(ref);
+                nameResolution.resolve(ref);
         if(!maybePathsAndDeps.isPresent()) {
             return Optional.empty();
         }

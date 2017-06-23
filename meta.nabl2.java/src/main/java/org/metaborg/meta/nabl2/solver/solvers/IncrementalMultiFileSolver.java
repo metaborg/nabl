@@ -142,7 +142,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 }
             }
             if(nabl2Debug.analysis()) {
-                logger.warn("Changed top-level declarations: {}", globalDiff);
+                logger.warn("{} top-level declarations changed.", globalDiff.size());
             }
 
             // update to new intras
@@ -207,13 +207,12 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                                 EsopScopeGraph.extend(unitIntra.scopeGraph().melt(), globalGraph);
                         final IEsopNameResolution.Transient<Scope, Label, Occurrence> unitNameResolution =
                                 unitIntra.nameResolution().melt(unitGraph, (s, l) -> true);
-                        unitNameResolution.resolveAll(free, Collections.emptySet());
                         for(Occurrence ref : free) {
                             Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> currDecls =
-                                    unitNameResolution.tryResolve(ref);
+                                    unitNameResolution.resolve(ref);
                             if(currDecls.isPresent()) {
                                 Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> prevDecls =
-                                        prevInter.nameResolution().resolve(ref);
+                                        prevInter.nameResolution().resolve(ref).orElse(Set.Immutable.of());
                                 if(!currDecls.get().equals(prevDecls)) {
                                     ISolution unitInter =
                                             ImmutableSolution.builder().from(unitIntra).scopeGraph(unitGraph.freeze())
@@ -254,6 +253,9 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             }
 
             // remove removed units, and update dependency graph
+            if(nabl2Debug.files()) {
+                logger.info("Determining dependencies.", dependencies);
+            }
             {
                 Iterator<Map.Entry<String, ISolution>> it = invalidatedUnits.entrySet().iterator();
                 while(it.hasNext()) {
@@ -263,24 +265,29 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                     }
                 }
             }
-            for(Map.Entry<String, ISolution> entry : invalidatedUnits.entrySet()) {
-                ISolution unitSolution = entry.getValue();
+            for(Map.Entry<String, ISolution> unitEntry : invalidatedUnits.entrySet()) {
+                final String unitSource = unitEntry.getKey();
+                if(nabl2Debug.files()) {
+                    logger.info("Determining dependencies of {}", unitSource);
+                }
+                ISolution unitSolution = unitEntry.getValue();
                 // resolve everything
                 final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> unitGraph =
-                        EsopScopeGraph.extend(unitSolution.scopeGraph().melt(), globalGraph);
+                        unitSolution.scopeGraph().melt();
+                final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> extendedGraph =
+                        EsopScopeGraph.extend(unitGraph, globalGraph);
                 final IEsopNameResolution.Transient<Scope, Label, Occurrence> unitNameResolution =
-                        unitSolution.nameResolution().melt(unitGraph, (s, l) -> true);
-                unitNameResolution.resolveAll(unitGraph.getAllRefs(),
-                        Sets.difference(unitGraph.getAllScopes(), intfScopes));
+                        unitSolution.nameResolution().melt(extendedGraph, (s, l) -> true);
+                unitNameResolution.resolveAll(unitGraph.getAllRefs());
                 // add new dependencies from resolution paths
-                final List<IResolutionPath<Scope, Label, Occurrence>> paths = unitNameResolution.getResolvedRefs()
-                        .stream().flatMap(r -> unitNameResolution.resolve(r).stream()).collect(Collectors.toList());
+                List<IResolutionPath<Scope, Label, Occurrence>> paths = unitNameResolution.resolutionEntries().stream()
+                        .map(Map.Entry::getValue).flatMap(Set.Immutable::stream).collect(Collectors.toList());
                 for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
                     String refResource = path.getReference().getIndex().getResource();
                     dependencies.addAll(refResource, getPathResources(path));
                 }
                 // update solution with new resolution
-                entry.setValue(ImmutableSolution.builder().from(unitSolution).scopeGraph(unitGraph.freeze())
+                unitEntry.setValue(ImmutableSolution.builder().from(unitSolution).scopeGraph(unitGraph.freeze())
                         .nameResolution(unitNameResolution.freeze()).build());
             }
             if(nabl2Debug.files()) {
@@ -444,10 +451,11 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         // shared
         final IUnifier.Transient unifier = initial.unifier().melt();
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph =
-                EsopScopeGraph.extend(initial.scopeGraph().melt(), context.scopeGraph());
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> unitGraph = initial.scopeGraph().melt();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> extendedGraph =
+                EsopScopeGraph.extend(unitGraph, context.scopeGraph());
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution = EsopNameResolution
-                .extend(initial.nameResolution().melt(scopeGraph, (s, l) -> true), context.nameResolution());
+                .extend(initial.nameResolution().melt(extendedGraph, (s, l) -> true), context.nameResolution());
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
@@ -461,9 +469,9 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
-        final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, scopeGraph,
+        final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, unitGraph,
                 nameResolution, Properties.extend(initial.declProperties().melt(), context.declProperties()));
-        final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
+        final NameSetsComponent nameSetSolver = new NameSetsComponent(core, extendedGraph, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
         RelationComponent relationSolver;
         try {
@@ -515,7 +523,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            solution = ImmutableSolution.of(config, astResult, scopeGraph.freeze(), nameResolution.freeze(), declResult,
+            solution = ImmutableSolution.of(config, astResult, unitGraph.freeze(), nameResolution.freeze(), declResult,
                     relationResult, unifierResult, symbolicConstraints, solveResult.messages(),
                     solveResult.constraints());
         } catch(RuntimeException ex) {

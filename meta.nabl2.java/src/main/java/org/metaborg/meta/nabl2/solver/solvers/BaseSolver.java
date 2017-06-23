@@ -50,7 +50,6 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class BaseSolver {
