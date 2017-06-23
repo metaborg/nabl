@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
@@ -18,6 +19,7 @@ import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
+import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.ScopeGraphCommon;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -69,6 +71,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.time.Timer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -90,6 +93,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             java.util.Set<String> removedUnits, java.util.Set<Scope> intfScopes, IMessageInfo message,
             Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
             throws InterruptedException, SolverException {
+        final Timer timer = new Timer();
 
         try {
             final Dependencies.Transient<String> dependencies = initial.dependencies().melt();
@@ -99,13 +103,15 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
             final SolverConfig config = globalIntra.config();
 
-            if(nabl2Debug.files()) {
-                logger.info("Updated {}", updatedUnits.keySet());
+            if(nabl2Debug.analysis()) {
+                logger.info("Analysis of {} updated, {} removed out of {} units with {} previous solutions.",
+                        updatedUnits.size(), removedUnits.size(), unitIntras.size(), unitInters.size());
             }
 
             // calculate diff
             java.util.Set<Occurrence> globalDiff = Sets.newHashSet();
             {
+                timer.start();
                 for(String unit : removedUnits) {
                     final ISolution prevIntra = unitIntras.get(unit);
                     final java.util.Set<Occurrence> prevDecls;
@@ -140,9 +146,10 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                     final java.util.Set<Occurrence> unitDiff = Sets.symmetricDifference(prevDecls, currDecls);
                     globalDiff.addAll(unitDiff);
                 }
-            }
-            if(nabl2Debug.analysis()) {
-                logger.warn("{} top-level declarations changed.", globalDiff.size());
+                if(nabl2Debug.timing()) {
+                    logger.info("Computed diff of {} top-level declarations in {}s.", globalDiff.size(),
+                            TimeUnit.NANOSECONDS.toSeconds(timer.stop()));
+                }
             }
 
             // update to new intras
@@ -163,6 +170,8 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             // invalidate units and dependents
             final Map<String, ISolution> invalidatedUnits = Maps.newHashMap();
             {
+                timer.start();
+
                 // invalidate removed units
                 {
                     removedUnits.stream().forEach(unit -> {
@@ -173,7 +182,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                     removedDependents.stream().forEach(unit -> {
                         invalidatedUnits.putIfAbsent(unit, unitIntras.get(unit));
                     });
-                    if(nabl2Debug.analysis()) {
+                    if(nabl2Debug.files()) {
                         logger.info("Invalidated removed {} and dependents {}.", removedUnits, removedDependents);
                     }
                 }
@@ -208,6 +217,9 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                         final IEsopNameResolution.Transient<Scope, Label, Occurrence> unitNameResolution =
                                 unitIntra.nameResolution().melt(unitGraph, (s, l) -> true);
                         for(Occurrence ref : free) {
+                            if(globalDiff.stream().noneMatch(decl -> IOccurrence.match(ref, decl))) {
+                                continue;
+                            }
                             Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> currDecls =
                                     unitNameResolution.resolve(ref);
                             if(currDecls.isPresent()) {
@@ -250,49 +262,65 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                         logger.info("Removed invalidated component {}.", c);
                     }
                 });
+
+                if(nabl2Debug.timing()) {
+                    logger.info("Invalidated {} units in {}s.", invalidatedUnits.size(),
+                            TimeUnit.NANOSECONDS.toSeconds(timer.stop()));
+                }
             }
 
             // remove removed units, and update dependency graph
-            if(nabl2Debug.files()) {
-                logger.info("Determining dependencies.", dependencies);
-            }
             {
-                Iterator<Map.Entry<String, ISolution>> it = invalidatedUnits.entrySet().iterator();
-                while(it.hasNext()) {
-                    Map.Entry<String, ISolution> entry = it.next();
-                    if(entry.getValue() == null) {
-                        it.remove();
+                timer.start();
+
+                if(nabl2Debug.files()) {
+                    logger.info("Determining dependencies.", dependencies);
+                }
+                {
+                    Iterator<Map.Entry<String, ISolution>> it = invalidatedUnits.entrySet().iterator();
+                    while(it.hasNext()) {
+                        Map.Entry<String, ISolution> entry = it.next();
+                        if(entry.getValue() == null) {
+                            it.remove();
+                        }
                     }
                 }
-            }
-            for(Map.Entry<String, ISolution> unitEntry : invalidatedUnits.entrySet()) {
-                final String unitSource = unitEntry.getKey();
+                for(Map.Entry<String, ISolution> unitEntry : invalidatedUnits.entrySet()) {
+                    final String unitSource = unitEntry.getKey();
+                    if(nabl2Debug.files()) {
+                        logger.info("Determining dependencies of {}", unitSource);
+                    }
+                    ISolution unitSolution = unitEntry.getValue();
+                    // resolve everything
+                    final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> unitGraph =
+                            unitSolution.scopeGraph().melt();
+                    final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> extendedGraph =
+                            EsopScopeGraph.extend(unitGraph, globalGraph);
+                    final IEsopNameResolution.Transient<Scope, Label, Occurrence> unitNameResolution =
+                            unitSolution.nameResolution().melt(extendedGraph, (s, l) -> true);
+                    unitNameResolution.resolveAll(unitGraph.getAllRefs());
+                    // add new dependencies from resolution paths
+                    List<IResolutionPath<Scope, Label, Occurrence>> paths =
+                            unitNameResolution.resolutionEntries().stream().map(Map.Entry::getValue)
+                                    .flatMap(Set.Immutable::stream).collect(Collectors.toList());
+                    for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
+                        String refResource = path.getReference().getIndex().getResource();
+                        dependencies.addAll(refResource, getPathResources(path));
+                    }
+                    // update solution with new resolution
+                    unitEntry.setValue(ImmutableSolution.builder().from(unitSolution).scopeGraph(unitGraph.freeze())
+                            .nameResolution(unitNameResolution.freeze()).build());
+                }
+                if(nabl2Debug.analysis() || nabl2Debug.timing()) {
+                    logger.info("Computed {} dependencies in {}s.", dependencies.size(),
+                            TimeUnit.NANOSECONDS.toSeconds(timer.stop()));
+                }
                 if(nabl2Debug.files()) {
-                    logger.info("Determining dependencies of {}", unitSource);
+                    logger.info("Found dependencies: {}", dependencies);
                 }
-                ISolution unitSolution = unitEntry.getValue();
-                // resolve everything
-                final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> unitGraph =
-                        unitSolution.scopeGraph().melt();
-                final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> extendedGraph =
-                        EsopScopeGraph.extend(unitGraph, globalGraph);
-                final IEsopNameResolution.Transient<Scope, Label, Occurrence> unitNameResolution =
-                        unitSolution.nameResolution().melt(extendedGraph, (s, l) -> true);
-                unitNameResolution.resolveAll(unitGraph.getAllRefs());
-                // add new dependencies from resolution paths
-                List<IResolutionPath<Scope, Label, Occurrence>> paths = unitNameResolution.resolutionEntries().stream()
-                        .map(Map.Entry::getValue).flatMap(Set.Immutable::stream).collect(Collectors.toList());
-                for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
-                    String refResource = path.getReference().getIndex().getResource();
-                    dependencies.addAll(refResource, getPathResources(path));
-                }
-                // update solution with new resolution
-                unitEntry.setValue(ImmutableSolution.builder().from(unitSolution).scopeGraph(unitGraph.freeze())
-                        .nameResolution(unitNameResolution.freeze()).build());
             }
-            if(nabl2Debug.files()) {
-                logger.info("Found dependencies: {}", dependencies);
-            }
+
+            timer.start();
 
             // solve global
             if(nabl2Debug.files()) {
@@ -303,7 +331,6 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 globalInter = solveInterInference(globalIntra, PublicSolution.of(config), fresh, cancel, progress);
                 globalInter = reportUnsolvedNonCheckConstraints(globalInter);
             }
-
 
             // analyze components
             final TopoSortedComponents<String> allComponents =
@@ -335,6 +362,11 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             globalInter = combineSolutions(config, Iterables2.cons(globalInter, unitInters.values()));
             globalInter = solveInterChecks(globalInter, PublicSolution.of(config), cancel, progress);
 
+            if(nabl2Debug.analysis() || nabl2Debug.timing()) {
+                logger.info("Analyzed {} components of {} units in {}s.", invalidatedComponents.components().size(),
+                        invalidatedComponents.components().stream().map(c -> c.size()).reduce(0, Integer::sum),
+                        TimeUnit.NANOSECONDS.toSeconds(timer.stop()));
+            }
             return ImmutableIncrementalSolution.of(globalIntra, unitIntras, Optional.of(globalInter), unitInters,
                     dependencies.freeze());
         } catch(Exception ex) {

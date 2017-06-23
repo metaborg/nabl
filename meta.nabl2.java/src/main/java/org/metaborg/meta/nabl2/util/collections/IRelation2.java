@@ -16,6 +16,8 @@ public interface IRelation2<K, V> {
 
     boolean containsValue(V value);
 
+    int size();
+
     boolean isEmpty();
 
     java.util.Set<V> get(K key);

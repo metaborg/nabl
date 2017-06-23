@@ -125,6 +125,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                         unitSolution.nameResolution(), unitSolution.declProperties()), message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(unitSolution.symbolic(), message), messages, constraints);
+                messages.addAll(unitSolution.messages());
             }
 
             // solve constraints

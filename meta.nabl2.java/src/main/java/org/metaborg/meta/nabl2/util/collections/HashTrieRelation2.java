@@ -46,6 +46,10 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
         return fwd().get(key);
     }
 
+    @Override public int size() {
+        return fwd().size();
+    }
+
     @Override public boolean isEmpty() {
         return fwd().isEmpty();
     }
@@ -199,6 +203,10 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
 
         @Override public boolean containsValue(V value) {
             return rel1.containsValue(value) || rel2.containsValue(value);
+        }
+
+        @Override public int size() {
+            return rel1.size() + rel2.size();
         }
 
         @Override public boolean isEmpty() {

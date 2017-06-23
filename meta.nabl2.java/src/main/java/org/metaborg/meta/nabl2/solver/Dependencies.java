@@ -257,6 +257,10 @@ public abstract class Dependencies<E> {
             return new Transient<>(dependencies.inverse());
         }
 
+        public int size() {
+            return dependencies.size();
+        }
+
         public boolean add(E from, E to) {
             return dependencies.put(from, to);
         }
