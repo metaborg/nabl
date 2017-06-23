@@ -368,7 +368,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                         TimeUnit.NANOSECONDS.toSeconds(timer.stop()));
             }
             return ImmutableIncrementalSolution.of(globalIntra, unitIntras, Optional.of(globalInter), unitInters,
-                    dependencies.freeze());
+                    dependencies.freeze(), invalidatedComponents.components());
         } catch(Exception ex) {
             throw new SolverException(ex);
         }
@@ -648,9 +648,11 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         @Value.Parameter public abstract Dependencies.Immutable<String> dependencies();
 
+        @Value.Parameter public abstract java.util.Set<Set.Immutable<String>> updates();
+
         public static IncrementalSolution of(ISolution globalIntra) {
             return ImmutableIncrementalSolution.of(globalIntra, ImmutableMap.of(), Optional.empty(), ImmutableMap.of(),
-                    Dependencies.Immutable.of());
+                    Dependencies.Immutable.of(), Collections.emptySet());
         }
 
     }
