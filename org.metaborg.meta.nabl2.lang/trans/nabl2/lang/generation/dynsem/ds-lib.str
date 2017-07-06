@@ -34,7 +34,7 @@ signature
     NamedDynamic      : String -> DSName
     Signatures        : List(DSSignature) -> DSSection
     NativeOperators   : List(DSNativeOpDecl) -> DSSignature
-    ArrowDeclarations : List(DSArrowDecl) -> DSSignature
+    Arrows            : List(DSArrowDecl) -> DSSignature
     Constructors      : List(DSConsDecl) -> DSSignature
     NullaryConsDecl   : String * DSSort * DSAnnos -> DSConsDecl
     ConsDecl          : String * List(DSSort) * DSSort * DSAnnos -> DSConsDecl
