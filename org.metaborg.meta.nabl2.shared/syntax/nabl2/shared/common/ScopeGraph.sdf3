@@ -18,6 +18,7 @@ sorts
 context-free syntax
 
   Scope                          = CVar
+  CFGNode                        = CVar
   CTerm                          = Scope
 
   Occurrence.Occurrence          = <<NamespaceRef>{<CTerm> <OccurrenceIndex>}> // FIXME Use NaBL2_ prefix

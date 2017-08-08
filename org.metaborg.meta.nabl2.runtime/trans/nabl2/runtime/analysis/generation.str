@@ -42,6 +42,9 @@ rules
   nabl2--new-scope(|source): n -> Scope(source,n')
     with n' := <nabl2--fresh> (source, <is-string <+ !"s"> n)
 
+  nabl2--new-cfg-node(|source): n -> CFGNode(source,n')
+    with n' := <nabl2--fresh> (source, <is-string <+ !"c"> n)
+
 rules
 
   // signatures of the generated rules

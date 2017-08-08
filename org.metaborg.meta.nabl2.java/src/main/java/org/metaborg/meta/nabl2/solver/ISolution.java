@@ -3,6 +3,8 @@ package org.metaborg.meta.nabl2.solver;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -32,6 +34,8 @@ public interface ISolution {
     IRelations<ITerm> getRelations();
 
     ISymbolicConstraints getSymbolic();
+
+    IControlFlowGraph<CFGNode, Occurrence> getControlFlowGraph();
 
     IUnifier getUnifier();
 

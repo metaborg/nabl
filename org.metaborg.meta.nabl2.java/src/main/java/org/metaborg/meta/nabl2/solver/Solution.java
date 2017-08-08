@@ -5,6 +5,8 @@ import java.util.Set;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -35,6 +37,8 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract IUnifier getUnifier();
 
     @Value.Parameter @Override public abstract ISymbolicConstraints getSymbolic();
+
+    @Value.Parameter @Override public abstract IControlFlowGraph<CFGNode, Occurrence> getControlFlowGraph();
 
     @Value.Parameter public abstract IMessages getMessages();
 

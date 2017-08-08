@@ -31,7 +31,7 @@ public class SymbolicSolver extends SolverComponent<ISymbolicConstraint> {
     }
 
     @Override protected Unit doAdd(ISymbolicConstraint constraint) throws UnsatisfiableException {
-        constraint.matchOrThrow(CheckedCases.of(fact -> {
+        constraint.<Unit, UnsatisfiableException>matchOrThrow(CheckedCases.of(fact -> {
             facts.add(fact.getFact());
             return unit;
         }, goal -> {

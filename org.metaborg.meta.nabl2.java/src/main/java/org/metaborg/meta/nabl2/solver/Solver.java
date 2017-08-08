@@ -19,6 +19,7 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.components.AstSolver;
 import org.metaborg.meta.nabl2.solver.components.BaseSolver;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowSolver;
 import org.metaborg.meta.nabl2.solver.components.EqualitySolver;
 import org.metaborg.meta.nabl2.solver.components.NamebindingSolver;
 import org.metaborg.meta.nabl2.solver.components.PolymorphismSolver;
@@ -63,6 +64,7 @@ public class Solver {
     private final SetSolver setSolver;
     private final SymbolicSolver symbolicSolver;
     private final PolymorphismSolver polySolver;
+    private final ControlFlowSolver controlFlowSolver;
 
     private final Messages messages;
 
@@ -86,6 +88,7 @@ public class Solver {
         this.components.add(symbolicSolver = new SymbolicSolver(this));
         this.components.add(polySolver = new PolymorphismSolver(this, namebindingSolver::arePropsDone,
                 namebindingSolver::getDeclProperty, namebindingSolver::setDeclProperty));
+        this.components.add(controlFlowSolver = new ControlFlowSolver(this));
 
         this.messages = new Messages();
     }
@@ -128,7 +131,8 @@ public class Solver {
                     c -> add(relationSolver, c),
                     c -> add(setSolver, c),
                     c -> add(symbolicSolver, c),
-                    c -> add(polySolver, c)
+                    c -> add(polySolver, c),
+                    c -> add(controlFlowSolver, c)
                     // @formatter:on
                 ));
             } catch(UnsatisfiableException ex) {
@@ -260,6 +264,7 @@ public class Solver {
             solver.relationSolver.getRelations(),
             solver.unifier,
             solver.symbolicSolver.get(),
+            solver.controlFlowSolver.getControlFlowGraph(),
             solver.messages,
             unsolved
             // @formatter:on
