@@ -28,7 +28,7 @@ rules
         //ns-type-op*,
         //ns-prop-op*
         ]),
-        ArrowDeclarations([
+        Arrows([
           ast-params-arrow*,
           ast-type-arrow*
         //ns-type-arrow*,
