@@ -1,11 +1,11 @@
 package org.metaborg.meta.nabl2.controlflow;
 
-import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.collections.IRelation2;
 import org.metaborg.meta.nabl2.util.collections.ISet;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
-public interface IControlFlowGraph<S extends ICFGNode, O extends IOccurrence> {
+public interface IControlFlowGraph<S extends ICFGNode> {
 
     ISet<S> getAllCFGNodes();
 
@@ -13,10 +13,10 @@ public interface IControlFlowGraph<S extends ICFGNode, O extends IOccurrence> {
 
     ISet<S> getAllEnds();
 
-    ISet<O> getAllDecls();
 
+    IFunction<Tuple2<S, String>, Object> getProperties();
 
-    IFunction<O, S> getDecls();
+    IFunction<Tuple2<S, String>, Integer> getTFNumbers();
 
     IRelation2<S, S> getDirectEdges();
 }

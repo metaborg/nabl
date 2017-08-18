@@ -35,7 +35,7 @@ public interface ISolution {
 
     ISymbolicConstraints getSymbolic();
 
-    IControlFlowGraph<CFGNode, Occurrence> getControlFlowGraph();
+    IControlFlowGraph<CFGNode> getControlFlowGraph();
 
     IUnifier getUnifier();
 

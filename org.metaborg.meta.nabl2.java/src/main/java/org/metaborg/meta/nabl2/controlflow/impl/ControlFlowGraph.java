@@ -1,26 +1,32 @@
 package org.metaborg.meta.nabl2.controlflow.impl;
 
-import org.metaborg.meta.nabl2.controlflow.ICFGNode;
-import org.metaborg.meta.nabl2.controlflow.IControlFlowGraph;
-import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
-import org.metaborg.meta.nabl2.util.collections.*;
-
 import java.io.Serializable;
 
-public class ControlFlowGraph<S extends ICFGNode, O extends IOccurrence>
-    implements IControlFlowGraph<S, O>, Serializable {
+import org.metaborg.meta.nabl2.controlflow.ICFGNode;
+import org.metaborg.meta.nabl2.controlflow.IControlFlowGraph;
+import org.metaborg.meta.nabl2.util.collections.HashFunction;
+import org.metaborg.meta.nabl2.util.collections.HashRelation2;
+import org.metaborg.meta.nabl2.util.collections.HashSet;
+import org.metaborg.meta.nabl2.util.collections.IFunction;
+import org.metaborg.meta.nabl2.util.collections.IRelation2;
+import org.metaborg.meta.nabl2.util.collections.ISet;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+
+public class ControlFlowGraph<S extends ICFGNode>
+    implements IControlFlowGraph<S>, Serializable {
 
     private final ISet.Mutable<S> allCFGNodes;
-    private final ISet.Mutable<O> allDecls;
 
-    private final IFunction.Mutable<O, S> decls;
+    private final IFunction.Mutable<Tuple2<S, String>, Integer> tfNumbers;
+    private final IFunction.Mutable<Tuple2<S, String>, Object> properties;
     private final IRelation2.Mutable<S, S> directEdges;
 
     public ControlFlowGraph() {
         this.allCFGNodes = HashSet.create();
-        this.allDecls = HashSet.create();
 
-        this.decls = HashFunction.create();
+        this.tfNumbers = HashFunction.create();
+        this.properties = HashFunction.create();
         this.directEdges = HashRelation2.create();
     }
 
@@ -40,8 +46,13 @@ public class ControlFlowGraph<S extends ICFGNode, O extends IOccurrence>
     }
 
     @Override
-    public IFunction<O, S> getDecls() {
-        return decls;
+    public IFunction<Tuple2<S, String>, Integer> getTFNumbers() {
+        return tfNumbers;
+    }
+
+    @Override
+    public IFunction<Tuple2<S, String>, Object> getProperties() {
+        return properties;
     }
 
     @Override
@@ -49,15 +60,22 @@ public class ControlFlowGraph<S extends ICFGNode, O extends IOccurrence>
         return directEdges;
     }
 
-    @Override
-    public ISet<O> getAllDecls() {
-        return allDecls;
+    public void addTFNumber(S node, String prop, int number) {
+        allCFGNodes.add(node);
+        tfNumbers.put(ImmutableTuple2.of(node, prop), number);
     }
 
-    public void addDecl(S node, O decl) {
+    public void setProperty(S node, String prop, Object value) {
         allCFGNodes.add(node);
-        allDecls.add(decl);
-        decls.put(decl, node);
+        properties.put(ImmutableTuple2.of(node, prop), value);
+    }
+
+    public int getTFNumber(S node, String prop) {
+        return tfNumbers.get(ImmutableTuple2.of(node, prop)).orElse(null);
+    }
+
+    public Object setProperty(S node, String prop) {
+        return properties.get(ImmutableTuple2.of(node, prop)).orElse(null);
     }
 
     public void addDirectEdge(S sourceNode, S targetNode) {

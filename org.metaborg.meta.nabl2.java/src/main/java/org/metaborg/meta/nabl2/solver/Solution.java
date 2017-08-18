@@ -38,7 +38,7 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract ISymbolicConstraints getSymbolic();
 
-    @Value.Parameter @Override public abstract IControlFlowGraph<CFGNode, Occurrence> getControlFlowGraph();
+    @Value.Parameter @Override public abstract IControlFlowGraph<CFGNode> getControlFlowGraph();
 
     @Value.Parameter public abstract IMessages getMessages();
 

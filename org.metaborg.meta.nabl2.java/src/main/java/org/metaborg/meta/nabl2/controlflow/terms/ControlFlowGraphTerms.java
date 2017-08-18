@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 
 public final class ControlFlowGraphTerms {
 
-    private final IControlFlowGraph<CFGNode, Occurrence> controlFlowGraph;
+    private final IControlFlowGraph<CFGNode> controlFlowGraph;
 
-    private ControlFlowGraphTerms(IControlFlowGraph<CFGNode, Occurrence> controlFlowGraph, IProperties<Occurrence> properties,
+    private ControlFlowGraphTerms(IControlFlowGraph<CFGNode> controlFlowGraph, IProperties<Occurrence> properties,
             IUnifier unifier) {
         this.controlFlowGraph = controlFlowGraph;
     }
@@ -43,7 +43,7 @@ public final class ControlFlowGraphTerms {
 
     // static interface
 
-    public static ITerm build(IControlFlowGraph<CFGNode, Occurrence> controlFlowGraph, IProperties<Occurrence> properties,
+    public static ITerm build(IControlFlowGraph<CFGNode> controlFlowGraph, IProperties<Occurrence> properties,
             IUnifier unifier) {
         return new ControlFlowGraphTerms(controlFlowGraph, properties, unifier).build();
     }
