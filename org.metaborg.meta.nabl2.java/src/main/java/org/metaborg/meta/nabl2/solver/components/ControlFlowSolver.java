@@ -1,15 +1,27 @@
 package org.metaborg.meta.nabl2.solver.components;
 
-import com.google.common.collect.Sets;
-import org.metaborg.meta.nabl2.constraints.controlflow.*;
+import static org.metaborg.meta.nabl2.util.Unit.unit;
+
+import java.util.Optional;
+import java.util.Set;
+
+import org.metaborg.meta.nabl2.constraints.controlflow.CFDecl;
+import org.metaborg.meta.nabl2.constraints.controlflow.CFDeclProperty;
+import org.metaborg.meta.nabl2.constraints.controlflow.CFDirectEdge;
+import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint;
 import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint.CheckedCases;
+import org.metaborg.meta.nabl2.constraints.controlflow.ImmutableCFDirectEdge;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.controlflow.impl.ControlFlowGraph;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
-import org.metaborg.meta.nabl2.solver.*;
+import org.metaborg.meta.nabl2.solver.IProperties;
+import org.metaborg.meta.nabl2.solver.Properties;
+import org.metaborg.meta.nabl2.solver.Solver;
+import org.metaborg.meta.nabl2.solver.SolverComponent;
+import org.metaborg.meta.nabl2.solver.TypeException;
+import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
-import org.metaborg.meta.nabl2.terms.IConsTerm;
 import org.metaborg.meta.nabl2.terms.IIntTerm;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.IStringTerm;
@@ -21,10 +33,10 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import java.util.Optional;
-import java.util.Set;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 
-import static org.metaborg.meta.nabl2.util.Unit.unit;
+import meta.flowspec.java.interpreter.TransferFunctionAppl;
 
 public class ControlFlowSolver extends SolverComponent<IControlFlowConstraint> {
     private static final ILogger logger = LoggerUtils.logger(ControlFlowSolver.class);
@@ -123,9 +135,9 @@ public class ControlFlowSolver extends SolverComponent<IControlFlowConstraint> {
                     throw new TypeException("Expected occurence in CFDecl to have a list as a \"name\"");
                 }
                 for(ITerm pairTerm : (IListTerm) listTerm) {
-                    Tuple2<String, Integer> result = matchStringIntPair(pairTerm);
+                    Tuple2<String, TransferFunctionAppl> result = matchStringTFApplPair(pairTerm);
                     String prop = result._1();
-                    Integer number = result._2();
+                    TransferFunctionAppl number = result._2();
                     controlFlowGraph.addTFNumber(node, prop, number);
                 }
                 break;
@@ -140,24 +152,38 @@ public class ControlFlowSolver extends SolverComponent<IControlFlowConstraint> {
         return true;
     }
 
-    private Tuple2<String, TransferFunctionAppl> matchStringIntPair(ITerm pairTerm) {
+    private Tuple2<String, TransferFunctionAppl> matchStringTFApplPair(ITerm pairTerm) {
         if (!(pairTerm instanceof IApplTerm)) {
             throw new TypeException("Expected occurence in CFDecl to have a list of applications as a \"name\"");
         }
         IApplTerm pair = (IApplTerm) pairTerm;
         if (pair.getOp() != "" || pair.getArity() != 2) {
-            throw new TypeException("Expected occurence in CFDecl to have a list of pairs as a \"name\"");
+            throw new TypeException("Expected occurence in CFDecl to have a list of (_,_) as a \"name\"");
         }
         ITerm propTerm = pair.getArgs().get(0);
-        ITerm numberTerm = pair.getArgs().get(1);
+        ITerm pair2Term = pair.getArgs().get(1);
         if (!(propTerm instanceof IStringTerm)) {
             throw new TypeException("Expected occurence in CFDecl to have a list of (String, _) as a \"name\"");
         }
-        if (!(numberTerm instanceof IStringTerm)) {
-            throw new TypeException("Expected occurence in CFDecl to have a list of (String, int) as a \"name\"");
+        if (!(pair2Term instanceof IApplTerm)) {
+            throw new TypeException("Expected occurence in CFDecl to have a list of (String, appl) as a \"name\"");
         }
-        Tuple2<String, Integer> result = ImmutableTuple2.of(((IStringTerm) propTerm).getValue(), ((IIntTerm) numberTerm).getValue());
-        return result;
+        IApplTerm pair2 = (IApplTerm) pair2Term;
+        if(pair2.getOp() != "" || pair2.getArity() != 2) {
+            throw new TypeException("Expected occurence in CFDecl to have a list of (String, (_,_)) as a \"name\"");
+        }
+        ITerm intTerm = pair2.getArgs().get(0);
+        ITerm argsTerm = pair2.getArgs().get(1);
+        if (!(intTerm instanceof IIntTerm)) {
+            throw new TypeException("Expected occurence in CFDecl to have a list of (String, (int, _)) as a \"name\"");
+        }
+        if (!(argsTerm instanceof IListTerm)) {
+            throw new TypeException("Expected occurence in CFDecl to have a list of (String, (int, [...])) as a \"name\"");
+        }
+        ITerm[] args = Iterators.toArray(((IListTerm) argsTerm).iterator(), ITerm.class);
+        return ImmutableTuple2.of(
+                ((IStringTerm) propTerm).getValue(), 
+                new TransferFunctionAppl(((IIntTerm) intTerm).getValue(), args));
     }
 
     private boolean solve(CFDirectEdge<?> c) {

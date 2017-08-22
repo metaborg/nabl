@@ -5,6 +5,8 @@ import org.metaborg.meta.nabl2.util.collections.IRelation2;
 import org.metaborg.meta.nabl2.util.collections.ISet;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
+import meta.flowspec.java.interpreter.TransferFunctionAppl;
+
 public interface IControlFlowGraph<S extends ICFGNode> {
 
     ISet<S> getAllCFGNodes();
@@ -16,7 +18,7 @@ public interface IControlFlowGraph<S extends ICFGNode> {
 
     IFunction<Tuple2<S, String>, Object> getProperties();
 
-    IFunction<Tuple2<S, String>, Integer> getTFNumbers();
+    IFunction<Tuple2<S, String>, TransferFunctionAppl> getTFAppls();
 
     IRelation2<S, S> getDirectEdges();
 }

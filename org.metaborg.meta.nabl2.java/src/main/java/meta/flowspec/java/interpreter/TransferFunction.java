@@ -2,8 +2,6 @@ package meta.flowspec.java.interpreter;
 
 import java.util.Arrays;
 
-import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
-import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -61,11 +59,5 @@ public class TransferFunction extends RootNode {
             }
             default : throw new IllegalArgumentException("Expected constructor TransferFunction");
         }
-    }
-
-    public Object call(Object arg) {
-        // TODO implement call with one argument, the CFGNode from the direction
-        // This means that TransFunction should already have the arguments for the pattern variables baked in, or this call method should be on a wrapper. 
-        return null;
     }
 }
