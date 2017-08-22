@@ -5,7 +5,6 @@ import java.util.List;
 import org.metaborg.meta.nabl2.controlflow.terms.ImmutableCFGNode;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.controlflow.ICFGNode;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
@@ -14,6 +13,8 @@ import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
+
+import meta.flowspec.nabl2.controlflow.ICFGNode;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

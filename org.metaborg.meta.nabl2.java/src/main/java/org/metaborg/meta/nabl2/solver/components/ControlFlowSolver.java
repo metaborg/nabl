@@ -12,7 +12,9 @@ import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint;
 import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint.CheckedCases;
 import org.metaborg.meta.nabl2.constraints.controlflow.ImmutableCFDirectEdge;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
-import org.metaborg.meta.nabl2.controlflow.impl.ControlFlowGraph;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
+import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.solver.IProperties;
@@ -58,7 +60,7 @@ public class ControlFlowSolver extends SolverComponent<IControlFlowConstraint> {
         this.unsolvedChecks = Sets.newHashSet();
     }
 
-    public ControlFlowGraph<CFGNode> getControlFlowGraph() {
+    public IControlFlowGraph<CFGNode> getControlFlowGraph() {
         return controlFlowGraph;
     }
 
@@ -138,7 +140,7 @@ public class ControlFlowSolver extends SolverComponent<IControlFlowConstraint> {
                     Tuple2<String, TransferFunctionAppl> result = matchStringTFApplPair(pairTerm);
                     String prop = result._1();
                     TransferFunctionAppl number = result._2();
-                    controlFlowGraph.addTFNumber(node, prop, number);
+                    controlFlowGraph.addTFAppl(node, prop, number);
                 }
                 break;
             }

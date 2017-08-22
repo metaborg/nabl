@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.solver;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.controlflow.IControlFlowGraph;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
@@ -15,6 +14,8 @@ import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
 
 public interface ISolution {
 
