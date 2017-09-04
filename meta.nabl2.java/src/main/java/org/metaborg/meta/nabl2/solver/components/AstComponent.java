@@ -2,7 +2,10 @@ package org.metaborg.meta.nabl2.solver.components;
 
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.ast.CAstProperty;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
+import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
@@ -26,27 +29,28 @@ public class AstComponent extends ASolver {
     public SeedResult seed(IProperties.Immutable<TermIndex, ITerm, ITerm> solution, IMessageInfo message)
             throws InterruptedException {
         solution.stream().forEach(entry -> {
-            putProperty(entry._1(), entry._2(), entry._3());
+            putProperty(entry._1(), entry._2(), entry._3(), message);
         });
         return SeedResult.empty();
     }
 
     public Optional<SolveResult> solve(IAstConstraint constraint) throws InterruptedException {
-        SolveResult result = constraint.match(IAstConstraint.Cases.of(astp -> {
-            putProperty(astp.getIndex(), astp.getKey(), astp.getValue());
-            return SolveResult.empty();
-        }));
+        SolveResult result = constraint.match(IAstConstraint.Cases.of(astp -> solve(astp)));
         return Optional.of(result);
     }
 
-    private void putProperty(TermIndex index, ITerm key, ITerm value) {
+    private SolveResult solve(CAstProperty astp) {
+        return putProperty(astp.getIndex(), astp.getKey(), astp.getValue(), astp.getMessageInfo())
+                .map(cc -> SolveResult.constraints(cc)).orElseGet(() -> SolveResult.empty());
+    }
+
+    private Optional<IConstraint> putProperty(TermIndex index, ITerm key, ITerm value, IMessageInfo message) {
         Optional<ITerm> prev = properties.getValue(index, key);
         if(!prev.isPresent()) {
             properties.putValue(index, key, value);
+            return Optional.empty();
         } else {
-            if(!value.equals(prev)) {
-                throw new IllegalStateException("Should not set the same AST property multiple times.");
-            }
+            return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
         }
     }
 
