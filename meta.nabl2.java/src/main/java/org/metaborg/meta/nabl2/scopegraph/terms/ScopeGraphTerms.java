@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
@@ -19,11 +20,11 @@ public final class ScopeGraphTerms {
     private static final String NO_TYPE = "NoType";
     private static final String TYPE = "Type";
 
-    private final IScopeGraph<Scope, Label, Occurrence> scopeGraph;
+    private final IEsopScopeGraph<Scope, Label, Occurrence, ? extends ITerm> scopeGraph;
     private final IProperties<Occurrence, ITerm, ITerm> properties;
     private final IUnifier unifier;
 
-    private ScopeGraphTerms(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
+    private ScopeGraphTerms(IEsopScopeGraph<Scope, Label, Occurrence, ? extends ITerm> scopeGraph,
             IProperties<Occurrence, ITerm, ITerm> properties, IUnifier unifier) {
         this.scopeGraph = scopeGraph;
         this.properties = properties;
@@ -50,14 +51,18 @@ public final class ScopeGraphTerms {
             parts.add(TB.newAppl("Refs", (ITerm) TB.newList(refs)));
         }
 
-        List<ITerm> directEdges =
-                scopeGraph.getDirectEdges().get(scope).stream().map(this::buildDirectEdge).collect(Collectors.toList());
+        List<ITerm> directEdges = Stream
+                .concat(scopeGraph.getDirectEdges().get(scope).stream(),
+                        scopeGraph.incompleteDirectEdges().get(scope).stream())
+                .map(this::buildDirectEdge).collect(Collectors.toList());
         if(!directEdges.isEmpty()) {
             parts.add(TB.newAppl("DirectEdges", (ITerm) TB.newList(directEdges)));
         }
 
-        List<ITerm> importEdges =
-                scopeGraph.getImportEdges().get(scope).stream().map(this::buildImportEdge).collect(Collectors.toList());
+        List<ITerm> importEdges = Stream
+                .concat(scopeGraph.getImportEdges().get(scope).stream(),
+                        scopeGraph.incompleteImportEdges().get(scope).stream())
+                .map(this::buildImportEdge).collect(Collectors.toList());
         if(!importEdges.isEmpty()) {
             parts.add(TB.newAppl("ImportEdges", (ITerm) TB.newList(importEdges)));
         }
@@ -83,11 +88,11 @@ public final class ScopeGraphTerms {
         return TB.newAppl("Ref", ref);
     }
 
-    private ITerm buildDirectEdge(Map.Entry<Label, Scope> edge) {
+    private ITerm buildDirectEdge(Map.Entry<Label, ? extends ITerm> edge) {
         return TB.newAppl("DirectEdge", edge.getKey(), edge.getValue());
     }
 
-    private ITerm buildImportEdge(Map.Entry<Label, Occurrence> edge) {
+    private ITerm buildImportEdge(Map.Entry<Label, ? extends ITerm> edge) {
         return TB.newAppl("ImportEdge", edge.getKey(), edge.getValue());
     }
 
@@ -97,7 +102,7 @@ public final class ScopeGraphTerms {
 
     // static interface
 
-    public static ITerm build(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
+    public static ITerm build(IEsopScopeGraph<Scope, Label, Occurrence, ? extends ITerm> scopeGraph,
             IProperties<Occurrence, ITerm, ITerm> properties, IUnifier unifier) {
         return new ScopeGraphTerms(scopeGraph, properties, unifier).build();
     }

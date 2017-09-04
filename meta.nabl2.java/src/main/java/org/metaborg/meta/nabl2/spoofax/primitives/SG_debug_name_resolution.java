@@ -20,7 +20,7 @@ public class SG_debug_name_resolution extends AnalysisNoTermPrimitive {
             throws InterpreterException {
         final IScopeGraphUnit unit = context.unit(index.getResource());
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
-            return TermSimplifier.focus(unit.resource(), NameResolutionTerms.build(sol.nameResolution()));
+            return TermSimplifier.focus(unit.resource(), NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution()));
         });
     }
 
