@@ -64,4 +64,5 @@ rules
   get-ds-options-if-active: (path, project-path) -> ds-options
     where is-ds-active
        <+ warn-msg(|"Missing dynsem compile dependency required for NaBL2 DynSem integration."); fail
+    where <ds-has-options> project-path
     with ds-options := <ds-get-options> (path, project-path)
