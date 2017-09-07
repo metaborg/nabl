@@ -12,7 +12,6 @@ import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.path.IStep;
-import org.metaborg.meta.nabl2.util.collections.PSets;
 import org.pcollections.PSequence;
 import org.pcollections.PSet;
 
@@ -30,10 +29,12 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
     @Value.Parameter public abstract IScopePath<S, L, O> getRight();
 
     @Value.Check public @Nullable ComposedScopePath<S, L, O> check() {
+        // left and right are not connected
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;
         }
-        if(!PSets.intersection(getLeft().getScopes(), getRight().getScopes()).minus(getLeft().getTarget()).isEmpty()) {
+        // path is cyclic
+        if(getScopes().size() <= size()) {
             return null;
         }
         return this;
