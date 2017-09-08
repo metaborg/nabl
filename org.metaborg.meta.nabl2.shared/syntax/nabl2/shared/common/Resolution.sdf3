@@ -36,7 +36,7 @@ context-free syntax
   LabelRE.Epsilon    = <e>
   LabelRE            = PathLabel
   LabelRE.Closure    = <<LabelRE>*>
-  LabelRE.Concat     = <<LabelRE>.<LabelRE>>     {right}
+  LabelRE.Concat     = <<LabelRE> <LabelRE>>     {right}
   LabelRE.And        = <<LabelRE> & <LabelRE>>   {left}
   LabelRE.Or         = <<LabelRE> | <LabelRE>>   {left}
   LabelRE            = <(<LabelRE>)>             {bracket}
