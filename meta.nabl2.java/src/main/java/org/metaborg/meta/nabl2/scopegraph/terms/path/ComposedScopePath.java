@@ -31,10 +31,12 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
     @Value.Parameter public abstract IScopePath<S, L, O> getRight();
 
     @Value.Check public @Nullable ComposedScopePath<S, L, O> check() {
+        // left and right are not connected
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;
         }
-        if(!PSets.intersection(getLeft().getScopes(), getRight().getScopes()).__remove(getLeft().getTarget()).isEmpty()) {
+        // path is cyclic
+        if(getScopes().size() <= size()) {
             return null;
         }
         return this;
