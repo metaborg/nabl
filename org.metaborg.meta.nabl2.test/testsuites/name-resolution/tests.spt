@@ -74,3 +74,10 @@ test resolve via scope in type [[
   resolve [[y]] via type of x in x { [[y]] } 
 ]] 0 errors
    resolve #1 to #2
+
+//-------------------------------
+
+test resolve with cycle [[
+  resolve [[x]] to [[x]] with a cycle
+]] 0 errors
+   resolve #1 to #2
