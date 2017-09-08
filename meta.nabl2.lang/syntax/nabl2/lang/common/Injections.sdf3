@@ -41,8 +41,8 @@ syntax
 
 context-free priorities
 
-    { LabelRE.Option LabelRE.NonEmpty } // aka, the same as LabelRE.Closure
-  > { LabelRE.Concat LabelRE.ConcatDot }
+    { LabelRE.Closure LabelRE.Option LabelRE.NonEmpty }
+  > { right: LabelRE.Concat LabelRE.ConcatDot }
   > LabelRE.And
   > LabelRE.Or
 
