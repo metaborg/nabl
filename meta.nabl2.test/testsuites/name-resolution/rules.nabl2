@@ -123,7 +123,7 @@ rules
 
 rules
 
-  [[ ResolveWithCycle(xr,xd) ^ () ]] :=
+  [[ ImportCycle(xr,xd) ^ () ]] :=
     new s1 s2,
     s1 ---> s2,
     s2 ---> s1,

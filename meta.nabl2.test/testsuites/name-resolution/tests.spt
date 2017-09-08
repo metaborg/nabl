@@ -78,6 +78,5 @@ test resolve via scope in type [[
 //-------------------------------
 
 test resolve with cycle [[
-  resolve [[x]] to [[x]] with a cycle
+  import cycle x to x
 ]] 0 errors
-   resolve #1 to #2
