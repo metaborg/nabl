@@ -39,3 +39,7 @@ context-free syntax
 context-free syntax
 
   Test.ResolveYViaTypeOfX = <resolve <Y> via type of <X> in <X> { <Y> } >
+
+context-free syntax
+
+  Test.ImportCycle = <import cycle <X> to <X> >

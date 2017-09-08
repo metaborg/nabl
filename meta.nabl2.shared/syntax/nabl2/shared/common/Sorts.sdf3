@@ -26,4 +26,4 @@ lexical syntax
 
   SortVarId = VarId
 
-  SortVarId = "term" | "string" | "scope" | "occurrence" | "type" | "list" | "map" {reject}
+  SortVarId = "term" | "string" | "scope" | "occurrence" | "list" | "map" {reject}
