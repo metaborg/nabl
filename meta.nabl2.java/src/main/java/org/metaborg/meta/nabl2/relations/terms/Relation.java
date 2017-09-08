@@ -30,6 +30,7 @@ public abstract class Relation<T> implements IRelation<T> {
     protected Relation() {
     }
 
+
     @Override public Set.Immutable<T> smaller(T t) {
         Set.Transient<T> ts = Set.Transient.of();
         smaller(t, ts, Sets.newHashSet());
