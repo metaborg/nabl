@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.constraints.namebinding;
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
+import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -15,6 +16,7 @@ public final class NamebindingConstraints {
     private static final String CG_DIRECT_EDGE = "CGDirectEdge";
     private static final String CG_EXPORT_EDGE = "CGAssoc";
     private static final String CG_IMPORT_EDGE = "CGNamedEdge";
+    private static final String CG_DECL_PROPERTY = "CGDeclProperty";
     private static final String CG_REF = "CGRef";
     private static final String C_RESOLVE = "CResolve";
     private static final String C_ASSOC = "CAssoc";
@@ -42,6 +44,10 @@ public final class NamebindingConstraints {
             M.appl4(CG_IMPORT_EDGE, M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, ref, label, scope, origin) -> {
                         return ImmutableCGImportEdge.of(scope, label, ref, origin);
+                    }),
+            M.appl5(C_DECL_PROPERTY, Occurrence.matcher(), M.term(), M.term(), Constraints.priorityMatcher(), MessageInfo.matcher(),
+                    (c, decl, key, value, prio, origin) -> {
+                        return ImmutableCGDeclProperty.of(decl, key, value, prio, origin);
                     }),
             M.appl3(C_RESOLVE, M.term(), M.term(), MessageInfo.matcher(),
                     (c, ref, decl, origin) -> {
@@ -72,6 +78,8 @@ public final class NamebindingConstraints {
                               MessageInfo.buildOnlyOriginTerm(exp.getMessageInfo())),
             imp -> TB.newAppl(CG_IMPORT_EDGE, imp.getReference(), imp.getLabel(), imp.getScope(),
                               MessageInfo.buildOnlyOriginTerm(imp.getMessageInfo())),
+            prop ->TB.newAppl(CG_DECL_PROPERTY, prop.getDeclaration(), prop.getKey(), prop.getValue(),
+                              Constraints.buildPriority(prop.getPriority()), MessageInfo.build(prop.getMessageInfo())),
             res -> TB.newAppl(C_RESOLVE, res.getReference(), res.getDeclaration(),
                               MessageInfo.build(res.getMessageInfo())),
             assoc -> TB.newAppl(C_ASSOC, assoc.getDeclaration(), assoc.getLabel(), assoc.getScope(),
@@ -108,6 +116,12 @@ public final class NamebindingConstraints {
                         imp.getLabel(),
                         unifier.find(imp.getReference()),
                         imp.getMessageInfo().apply(unifier::find)),
+            prop -> ImmutableCGDeclProperty.of(
+                        unifier.find(prop.getDeclaration()),
+                        prop.getKey(),
+                        unifier.find(prop.getValue()),
+                        prop.getPriority(),
+                        prop.getMessageInfo().apply(unifier::find)),
             res -> ImmutableCResolve.of(
                         unifier.find(res.getReference()),
                         unifier.find(res.getDeclaration()),

@@ -12,6 +12,7 @@ import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.namebinding.CAssoc;
 import org.metaborg.meta.nabl2.constraints.namebinding.CDeclProperty;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGDecl;
+import org.metaborg.meta.nabl2.constraints.namebinding.CGDeclProperty;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGDirectEdge;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGExportEdge;
 import org.metaborg.meta.nabl2.constraints.namebinding.CGImportEdge;
@@ -108,7 +109,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             throw new IllegalStateException("Adding constraints after resolution has started.");
         }
         return constraint.matchOrThrow(CheckedCases.of(this::addBuild, this::addBuild, this::addBuild, this::addBuild,
-                this::addBuild, this::add, this::add, this::add));
+                this::addBuild, this::addBuild, this::add, this::add, this::add));
     }
 
     @Override protected boolean doIterate() throws UnsatisfiableException, InterruptedException {
@@ -140,6 +141,16 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     // ------------------------------------------------------------------------------------------------------//
 
     private Unit addBuild(INamebindingConstraint constraint) throws UnsatisfiableException {
+        if(!solve(constraint)) {
+            unsolvedBuilds.add(constraint);
+        } else {
+            work();
+        }
+        return unit;
+    }
+
+    private Unit addBuild(CGDeclProperty constraint) throws UnsatisfiableException {
+        unifier().addActive(constraint.getValue(), constraint);
         if(!solve(constraint)) {
             unsolvedBuilds.add(constraint);
         } else {
@@ -182,7 +193,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     private boolean solve(INamebindingConstraint constraint) throws UnsatisfiableException {
         return constraint.matchOrThrow(CheckedCases.of(this::solve, this::solve, this::solve, this::solve, this::solve,
-                this::solve, this::solve, this::solve));
+                this::solve, this::solve, this::solve, this::solve));
     }
 
     private boolean solve(CGDecl c) {
@@ -256,6 +267,25 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         scopeGraph.addAssoc(decl, c.getLabel(), scope);
+        return true;
+    }
+
+    private boolean solve(CGDeclProperty c) throws UnsatisfiableException {
+        ITerm declTerm = unifier().find(c.getDeclaration());
+        if(!declTerm.isGround()) {
+            return false;
+        }
+        Occurrence decl = Occurrence.matcher().match(declTerm)
+                .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
+        unifier().removeActive(c.getValue(), c); // before `unify`, so that we don't cause an error chain if that fails
+        Optional<ITerm> prev = properties.putValue(decl, c.getKey(), c.getValue());
+        if(prev.isPresent()) {
+            try {
+                unifier().unify(c.getValue(), prev.get());
+            } catch(UnificationException ex) {
+                throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(ex.getMessageContent()));
+            }
+        }
         return true;
     }
 
@@ -351,6 +381,9 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     }
 
     private boolean solve(CDeclProperty c) throws UnsatisfiableException {
+        if(!isResolutionStarted()) {
+            return false;
+        }
         ITerm declTerm = unifier().find(c.getDeclaration());
         if(!declTerm.isGround()) {
             return false;
@@ -358,15 +391,17 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         unifier().removeActive(c.getValue(), c); // before `unify`, so that we don't cause an error chain if that fails
-        Optional<ITerm> prev = properties.putValue(decl, c.getKey(), c.getValue());
+        Optional<ITerm> prev = properties.getValue(decl, c.getKey());
         if(prev.isPresent()) {
             try {
                 unifier().unify(c.getValue(), prev.get());
             } catch(UnificationException ex) {
                 throw new UnsatisfiableException(c.getMessageInfo().withDefaultContent(ex.getMessageContent()));
             }
+            return true;
+        } else {
+            return false;
         }
-        return true;
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -410,7 +445,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 return Optional.empty();
             }
             return M.<Optional<Set<IElement<ITerm>>>>cases(
-                // @formatter:off
+            // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls().inverse().get(scope);
                     return Optional.of(makeSet(decls, ns));
