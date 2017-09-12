@@ -63,7 +63,7 @@ rules
 
 rules
 
-  normalize-regexes = try(sometd(normalize-regex))
+  normalize-regexes = topdown(try(normalize-regex))
 
   normalize-regex:
     Option(re) -> Or(Epsilon(),re)
