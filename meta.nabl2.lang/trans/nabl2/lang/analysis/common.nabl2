@@ -174,6 +174,8 @@ rules // relations
     Rel{name} -> s,
     Rel{name} |-> _ | error $[[name] cannot be resolved to a relation].
 
+  RelationRef[[ ExtRelation(_) ^ (s) ]].
+
   VariancePattern[[ OpVariant(name,variances) ^ (s) ]] :=
     Cons{name} -> s,
     Cons{name} |-> _,
@@ -195,6 +197,8 @@ rules // functions
   FunctionRef[[ Function(name) ^ (s) ]] :=
     Fun{name} -> s,
     Fun{name} |-> _ | error $[[name] does not resolve to a function].
+
+  FunctionRef[[ ExtFunction(_) ^ (s) ]].
 
   FunctionRef[[ Lub(rel) ^ (s) ]] :=
     // TODO: does the relation qualify for lub?

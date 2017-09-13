@@ -2,7 +2,7 @@ package org.metaborg.meta.nabl2.relations;
 
 import org.metaborg.util.functions.Function1;
 
-public interface IRelationName {
+public interface IFunctionName {
 
     <T> T match(Cases<T> cases);
 

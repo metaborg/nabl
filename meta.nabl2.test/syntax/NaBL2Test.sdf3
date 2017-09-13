@@ -7,7 +7,7 @@ imports
   testsuites/api/Syntax
   testsuites/base/Syntax
   testsuites/constraint-generation/Syntax
-  testsuites/functions/Syntax
+  testsuites/relations-functions/Syntax
   testsuites/name-resolution/Syntax
   testsuites/known-problems/Syntax
   testsuites/polymorphism/Syntax

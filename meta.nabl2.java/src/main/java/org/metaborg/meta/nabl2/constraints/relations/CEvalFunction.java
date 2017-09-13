@@ -6,6 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.relations.terms.FunctionName;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -14,7 +15,7 @@ public abstract class CEvalFunction implements IRelationConstraint {
 
     @Value.Parameter public abstract ITerm getResult();
 
-    @Value.Parameter public abstract String getFunction();
+    @Value.Parameter public abstract FunctionName getFunction();
 
     @Value.Parameter public abstract ITerm getTerm();
 

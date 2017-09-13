@@ -12,7 +12,6 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -149,7 +148,7 @@ public class BaseSolver {
 
         IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
         NameResolutionResult nameResult = nameResolutionSolver.finish();
-        Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+        Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
 

@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -67,7 +66,7 @@ public class BaseMultiFileSolver extends BaseSolver {
 
         // guards
         final Predicate1<ITerm> isTermInactive = v -> !activeVars.contains(v);
-        final Predicate1<IRelationName> isRelationComplete = r -> false;
+        final Predicate1<String> isRelationComplete = r -> false;
         final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> !intfScopes.contains(s);
 
         // more shared
@@ -90,7 +89,7 @@ public class BaseMultiFileSolver extends BaseSolver {
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
-                        // @formatter:off
+                // @formatter:off
                                 .onBase(baseSolver::solve)
                                 .onEquality(equalitySolver::solve)
                                 .onNameResolution(nameResolutionSolver::solve)
@@ -119,7 +118,7 @@ public class BaseMultiFileSolver extends BaseSolver {
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
 
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),

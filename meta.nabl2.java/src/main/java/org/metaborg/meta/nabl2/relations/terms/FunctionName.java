@@ -4,7 +4,8 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.relations.IRelationName;
+import org.metaborg.meta.nabl2.relations.IFunctionName;
+import org.metaborg.meta.nabl2.relations.terms.RelationName.NamedRelation;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
@@ -14,20 +15,29 @@ import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
 
-public abstract class RelationName extends AbstractApplTerm implements IRelationName, IApplTerm {
+public abstract class FunctionName extends AbstractApplTerm implements IFunctionName, IApplTerm {
+
+    public enum RelationFunctions {
+        LUB, GLB;
+
+        public String of(String relation) {
+            return relation.isEmpty() ? name() : (relation + "." + name());
+        }
+
+    }
+
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class NamedRelation extends RelationName {
+    static abstract class NamedFunction extends FunctionName {
 
-        private static final String OP0 = "DefaultRelation";
-        private static final String OP1 = "Relation";
+        private static final String OP = "Function";
 
         @Value.Parameter public abstract String getName();
 
-        // IRelationName implementation
+        // IFunctionName implementation
 
-        public <T> T match(IRelationName.Cases<T> cases) {
+        public <T> T match(IFunctionName.Cases<T> cases) {
             return cases.caseNamed(getName());
         }
 
@@ -38,20 +48,15 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         @Value.Lazy @Override public String getOp() {
-            return getName().isEmpty() ? OP0 : OP1;
+            return OP;
         }
 
         @Value.Lazy @Override public List<ITerm> getArgs() {
-            return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) TB.newString(getName()));
+            return ImmutableList.of((ITerm) TB.newString(getName()));
         }
 
-        public static IMatcher<NamedRelation> matcher() {
-            return M.preserveAttachments(M.cases(
-            // @formatter:off
-                M.appl0(OP0, (t) -> ImmutableNamedRelation.of("")),
-                M.appl1(OP1, M.stringValue(), (t, name) -> ImmutableNamedRelation.of(name))
-                // @formatter:on
-            ));
+        public static IMatcher<NamedFunction> matcher() {
+            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ImmutableNamedFunction.of(name)));
         }
 
         // Object implementation
@@ -72,15 +77,15 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class ExtRelation extends RelationName {
+    static abstract class ExtFunction extends FunctionName {
 
-        private static final String OP = "ExtRelation";
+        private static final String OP = "ExtFunction";
 
         @Value.Parameter public abstract String getName();
 
-        // IRelationName implementation
+        // IFunctionName implementation
 
-        public <T> T match(IRelationName.Cases<T> cases) {
+        public <T> T match(IFunctionName.Cases<T> cases) {
             return cases.caseExt(getName());
         }
 
@@ -98,8 +103,8 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
             return ImmutableList.of((ITerm) TB.newString(getName()));
         }
 
-        public static IMatcher<ExtRelation> matcher() {
-            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ImmutableExtRelation.of(name)));
+        public static IMatcher<ExtFunction> matcher() {
+            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ImmutableExtFunction.of(name)));
         }
 
         // Object implementation
@@ -118,11 +123,13 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
     }
 
-    public static IMatcher<? extends RelationName> matcher() {
+    public static IMatcher<? extends FunctionName> matcher() {
         return M.preserveAttachments(M.cases(
             // @formatter:off
-            NamedRelation.matcher(),
-            ExtRelation.matcher()
+            NamedFunction.matcher(),
+            ExtFunction.matcher(),
+            M.appl1("Lub", NamedRelation.matcher(), (t, r) -> ImmutableNamedFunction.of(RelationFunctions.LUB.of(r.getName()))),
+            M.appl1("Glb", NamedRelation.matcher(), (t, r) -> ImmutableNamedFunction.of(RelationFunctions.GLB.of(r.getName())))
             // @formatter:on
         ));
     }

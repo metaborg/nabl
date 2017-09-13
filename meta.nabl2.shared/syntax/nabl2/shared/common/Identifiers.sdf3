@@ -7,6 +7,7 @@ sorts
 lexical syntax
 
   INT            = "-"? [0-9]+
+  ID             = [a-zA-Z] [a-zA-Z0-9\_]*
   LCID           = [a-z] [a-zA-Z0-9\_]*
   UCID           = [A-Z] [a-zA-Z0-9\_]*
 
@@ -39,6 +40,8 @@ lexical syntax
   ProjectionId   = LCID
   ProjectionId   = Keyword {reject}
 
+  StrategyId     = [a-zA-Z] [a-zA-Z0-9\-\_\']*
+
   LabelId        = UCID
   LabelId        = BuiltinLabel {reject}
   LabelId        = Keyword {reject}
@@ -48,7 +51,10 @@ lexical syntax
 lexical restrictions
 
   INT   -/- [0-9]
-  LCID  -/- [a-zA-Z0-9\_\']
-  UCID  -/- [a-zA-Z0-9\_\']
+  ID    -/- [a-zA-Z0-9\-\_\']
+  LCID  -/- [a-zA-Z0-9\-\_\']
+  UCID  -/- [a-zA-Z0-9\-\_\']
 
-  VarId -/- [a-zA-Z0-9\_\']
+  VarId -/- [a-zA-Z0-9\-\_\']
+
+  StrategyId -/- [a-zA-Z0-9\-\_\']

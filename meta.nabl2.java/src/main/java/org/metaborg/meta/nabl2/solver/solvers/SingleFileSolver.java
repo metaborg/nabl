@@ -64,7 +64,7 @@ public class SingleFileSolver extends BaseSolver {
 
         // guards
         final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
-        final Predicate1<IRelationName> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
+        final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
@@ -116,7 +116,7 @@ public class SingleFileSolver extends BaseSolver {
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,

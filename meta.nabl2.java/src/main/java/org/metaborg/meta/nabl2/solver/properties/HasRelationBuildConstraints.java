@@ -10,7 +10,7 @@ import com.google.common.collect.Multiset;
 
 public class HasRelationBuildConstraints implements IConstraintSetProperty {
 
-    private final Multiset<IRelationName> relations;
+    private final Multiset<String> relations;
 
     public HasRelationBuildConstraints() {
         this.relations = HashMultiset.create();
@@ -25,7 +25,7 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
             c -> false,
             c -> false,
             c -> c.match(IRelationConstraint.Cases.of(
-                br -> relations.add(br.getRelation()),
+                br -> br.getRelation().match(IRelationName.Cases.of(name -> relations.add(name), extName -> false)),
                 cr -> false,
                 ev -> false
             )),
@@ -45,7 +45,7 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
             c -> false,
             c -> false,
             c -> c.match(IRelationConstraint.Cases.of(
-                br -> relations.remove(br.getRelation()),
+                br -> br.getRelation().match(IRelationName.Cases.of(name -> relations.remove(name), extName -> false)),
                 cr -> false,
                 ev -> false
             )),
@@ -60,7 +60,7 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
         return false;
     }
 
-    public boolean contains(IRelationName name) {
+    public boolean contains(String name) {
         return relations.contains(name);
     }
 

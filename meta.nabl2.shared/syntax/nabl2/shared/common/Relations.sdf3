@@ -26,6 +26,8 @@ context-free syntax
 
 syntax
 
+  RelationRef-CF.ExtRelation = "`" StrategyId-LEX "`"
+
   RelationBuildOp-CF = "<" RelationRef-CF "!"
   RelationCheckOp-CF = "<" RelationRef-CF "?"
 

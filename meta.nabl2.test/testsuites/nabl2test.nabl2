@@ -5,7 +5,7 @@ imports
   testsuites/api/-
   testsuites/base/-
   testsuites/constraint-generation/-
-  testsuites/functions/-
+  testsuites/relations-functions/-
   testsuites/known-problems/-
   testsuites/name-resolution/-
   testsuites/polymorphism/-
@@ -21,6 +21,11 @@ signature
     labels P I
     order  D < P, D < I, I < P
     well-formedness P* I*
+
+  relations
+    reflexive, transitive, anti-symmetric sub : a * a {
+      [+sub]
+    }
 
   functions
   

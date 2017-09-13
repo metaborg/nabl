@@ -11,11 +11,11 @@ import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CEvalFunction;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
+import org.metaborg.meta.nabl2.relations.IFunctionName;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.RelationException;
-import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
-import org.metaborg.meta.nabl2.relations.terms.RelationTerms.RelationFunctions;
+import org.metaborg.meta.nabl2.relations.terms.FunctionName.RelationFunctions;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.solver.ASolver;
@@ -27,20 +27,21 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
+import org.spoofax.terms.util.NotImplementedException;
 
 import com.google.common.collect.Maps;
 
 
 public class RelationComponent extends ASolver {
 
-    private final Predicate1<IRelationName> isComplete;
+    private final Predicate1<String> isComplete;
 
-    private final Map<IRelationName, IVariantRelation.Transient<ITerm>> relations;
+    private final Map<String, IVariantRelation.Transient<ITerm>> relations;
     private final Map<String, PartialFunction1<ITerm, ITerm>> functions;
 
-    public RelationComponent(SolverCore core, Predicate1<IRelationName> isComplete,
+    public RelationComponent(SolverCore core, Predicate1<String> isComplete,
             Map<String, PartialFunction1<ITerm, ITerm>> functions,
-            Map<IRelationName, IVariantRelation.Transient<ITerm>> initial) {
+            Map<String, IVariantRelation.Transient<ITerm>> initial) {
         super(core);
         this.isComplete = isComplete;
         this.relations = initial;
@@ -49,13 +50,13 @@ public class RelationComponent extends ASolver {
     }
 
     private void addRelationFunctions() {
-        for(IRelationName relationName : relations.keySet()) {
-            String lubName = RelationTerms.relationFunction(relationName, RelationFunctions.LUB);
+        for(String relationName : relations.keySet()) {
+            String lubName = RelationFunctions.LUB.of(relationName);
             PartialFunction1<ITerm, ITerm> lubFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
                 return lub(relationName, left, right);
             }))::match;
             functions.put(lubName, lubFun);
-            String glbName = RelationTerms.relationFunction(relationName, RelationFunctions.GLB);
+            String glbName = RelationFunctions.GLB.of(relationName);
             PartialFunction1<ITerm, ITerm> glbFun = M.flatten(M.tuple2(M.term(), M.term(), (t, left, right) -> {
                 return glb(relationName, left, right);
             }))::match;
@@ -63,9 +64,9 @@ public class RelationComponent extends ASolver {
         }
     }
 
-    public SeedResult seed(Map<IRelationName, IVariantRelation.Immutable<ITerm>> solution, IMessageInfo message)
-            throws InterruptedException {
-        for(Entry<IRelationName, IVariantRelation.Immutable<ITerm>> entry : solution.entrySet()) {
+    public SeedResult seed(Map<String, IVariantRelation.Immutable<ITerm>> solution,
+            @SuppressWarnings("unused") IMessageInfo message) throws InterruptedException {
+        for(Entry<String, IVariantRelation.Immutable<ITerm>> entry : solution.entrySet()) {
             try {
                 relation(entry.getKey()).addAll(entry.getValue());
             } catch(RelationException e) {
@@ -79,7 +80,7 @@ public class RelationComponent extends ASolver {
         return constraint.match(IRelationConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 
-    public Map<IRelationName, IVariantRelation.Immutable<ITerm>> finish() {
+    public Map<String, IVariantRelation.Immutable<ITerm>> finish() {
         return VariantRelations.freeze(relations);
     }
 
@@ -91,29 +92,43 @@ public class RelationComponent extends ASolver {
         if(!(left.isGround() && right.isGround())) {
             return Optional.empty();
         }
-        try {
-            relation(c.getRelation()).add(left, right);
-        } catch(RelationException e) {
-            final IMessageInfo message = c.getMessageInfo().withDefaultContent(MessageContent.of(e.getMessage()));
-            return Optional.of(SolveResult.messages(message));
-        }
-        return Optional.of(SolveResult.empty());
+        return c.getRelation().match(IRelationName.Cases.of(
+            // @formatter:off
+            name -> {
+                try {
+                    relation(name).add(left, right);
+                } catch(RelationException e) {
+                    final IMessageInfo message = c.getMessageInfo().withDefaultContent(MessageContent.of(e.getMessage()));
+                    return Optional.of(SolveResult.messages(message));
+                }
+                return Optional.of(SolveResult.empty());
+            },
+            extName -> { throw new NotImplementedException(); }
+            // @formatter:on
+        ));
     }
 
     public Optional<SolveResult> solve(CCheckRelation c) {
-        if(!isComplete.test(c.getRelation())) {
-            return Optional.empty();
-        }
         final ITerm left = find(c.getLeft());
         final ITerm right = find(c.getRight());
         if(!(left.isGround() && right.isGround())) {
             return Optional.empty();
         }
-        if(relation(c.getRelation()).contains(left, right)) {
-            return Optional.of(SolveResult.empty());
-        } else {
-            return Optional.empty();
-        }
+        return c.getRelation().match(IRelationName.Cases.of(
+            // @formatter:off
+            name -> {
+                if(!isComplete.test(name)) {
+                    return Optional.empty();
+                }
+                if(relation(name).contains(left, right)) {
+                    return Optional.of(SolveResult.empty());
+                } else {
+                    return Optional.empty();
+                }
+            },
+            extName -> { throw new NotImplementedException(); }
+            // @formatter:on
+        ));
     }
 
     public Optional<SolveResult> solve(CEvalFunction c) {
@@ -121,31 +136,38 @@ public class RelationComponent extends ASolver {
         if(!term.isGround()) {
             return Optional.empty();
         }
-        final PartialFunction1<ITerm, ITerm> fun = functions.get(c.getFunction());
-        if(fun == null) {
-            throw new FunctionUndefinedException("Function " + c.getFunction() + " undefined.");
-        }
-        Optional<ITerm> result = fun.apply(term);
-        return result.map(ret -> {
-            return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
-        });
+        return c.getFunction().match(IFunctionName.Cases.of(
+            // @formatter:off
+            name -> {
+                final PartialFunction1<ITerm, ITerm> fun = functions.get(name);
+                if(fun == null) {
+                    throw new FunctionUndefinedException("Function " + name + " undefined.");
+                }
+                Optional<ITerm> result = fun.apply(term);
+                return result.map(ret -> {
+                    return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
+                });
+            },
+            extName -> { throw new NotImplementedException(); }
+            // @formatter:on
+        ));
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private IRelation.Transient<ITerm> relation(IRelationName name) {
+    private IRelation.Transient<ITerm> relation(String name) {
         return Optional.ofNullable(relations.get(name))
                 .orElseThrow(() -> new IllegalStateException("Relation " + name + " not defined."));
     }
 
-    private Optional<ITerm> lub(IRelationName name, ITerm left, ITerm right) {
+    private Optional<ITerm> lub(String name, ITerm left, ITerm right) {
         if(!isComplete.test(name)) {
             return Optional.empty();
         }
         return relation(name).leastUpperBound(left, right);
     }
 
-    private Optional<ITerm> glb(IRelationName name, ITerm left, ITerm right) {
+    private Optional<ITerm> glb(String name, ITerm left, ITerm right) {
         if(!isComplete.test(name)) {
             return Optional.empty();
         }

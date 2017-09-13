@@ -1,0 +1,40 @@
+module testsuites/relations-functions/rules
+
+imports
+
+  signatures/testsuites/relations-functions/-
+
+rules
+
+  [[ PairProjectionFunction() ^ () ]] :=
+    1 is projectFirst of (1,2),
+    2 is projectSecond of (1,2).
+
+rules
+
+  [[ SubRelationIsReflexive() ^ () ]] :=
+    1 <sub? 1.
+
+  [[ SubRelationIsTransitive() ^ () ]] :=
+    1 <sub! 2,
+    2 <sub! 3,
+    1 <sub? 3.
+
+  [[ SubRelationIsAntiSymmetric() ^ () ]] :=
+    1 <sub! 2,
+    2 <sub! 1.
+
+  [[ SubRelationHasCovariantLists() ^ () ]] :=
+    1 <sub! 2,
+    2 <sub! 3,
+    [1,2] <sub? [3,2].
+
+  [[ SubRelationHasLub() ^ () ]] :=
+    1 <sub! 2,
+    2 <sub! 3,
+    2 is sub.lub of (1, 2).
+
+  [[ SubRelationHasGlb() ^ () ]] :=
+    1 <sub! 2,
+    2 <sub! 3,
+    1 is sub.glb of (1, 2).

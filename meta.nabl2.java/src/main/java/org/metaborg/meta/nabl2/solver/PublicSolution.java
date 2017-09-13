@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -31,7 +30,7 @@ public abstract class PublicSolution implements IPublicSolution {
 
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
-    @Value.Parameter @Override public abstract Map<IRelationName, IVariantRelation.Immutable<ITerm>> relations();
+    @Value.Parameter @Override public abstract Map<String, IVariantRelation.Immutable<ITerm>> relations();
 
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
 

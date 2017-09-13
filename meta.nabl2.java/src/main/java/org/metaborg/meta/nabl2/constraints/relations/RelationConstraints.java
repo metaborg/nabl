@@ -1,8 +1,8 @@
 package org.metaborg.meta.nabl2.constraints.relations;
 
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
+import org.metaborg.meta.nabl2.relations.terms.FunctionName;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
-import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -24,7 +24,7 @@ public final class RelationConstraints {
             M.appl4(C_CHECK_REL, M.term(), RelationName.matcher(), M.term(), MessageInfo.matcher(), (c, term1, rel, term2, origin) -> {
                 return ImmutableCCheckRelation.of(term1, rel, term2, origin);
             }),
-            M.appl4(C_EVAL, M.term(), RelationTerms.functionName(), M.term(), MessageInfo.matcher(), (c, result, fun, term, origin) -> {
+            M.appl4(C_EVAL, M.term(), FunctionName.matcher(), M.term(), MessageInfo.matcher(), (c, result, fun, term, origin) -> {
                 return ImmutableCEvalFunction.of(result, fun, term, origin);
             })
             // @formatter:on
@@ -38,7 +38,7 @@ public final class RelationConstraints {
                                 MessageInfo.build(build.getMessageInfo())),
             check -> TB.newAppl(C_CHECK_REL, check.getLeft(), check.getRelation(), check.getRight(),
                                 MessageInfo.build(check.getMessageInfo())),
-            eval -> TB.newAppl(C_EVAL, eval.getResult(), TB.newString(eval.getFunction()), eval.getTerm(),
+            eval -> TB.newAppl(C_EVAL, eval.getResult(), eval.getFunction(), eval.getTerm(),
                                MessageInfo.build(eval.getMessageInfo()))
             // @formatter:on
         ));

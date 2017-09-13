@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -72,7 +71,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         // guards
         final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
-        final Predicate1<IRelationName> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
+        final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier::find, fresh);
@@ -138,7 +137,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,

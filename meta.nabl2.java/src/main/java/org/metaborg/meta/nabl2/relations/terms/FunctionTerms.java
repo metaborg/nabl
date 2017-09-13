@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.relations.terms.FunctionName.NamedFunction;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -29,8 +30,8 @@ public class FunctionTerms {
     }
 
     private static IMatcher<Tuple2<String, Eval>> function() {
-        return M.tuple2(functionName(), M.listElems(functionCase()), (t, name, cases) -> {
-            return ImmutableTuple2.of(name, new Eval(cases));
+        return M.tuple2(NamedFunction.matcher(), M.listElems(functionCase()), (t, name, cases) -> {
+            return ImmutableTuple2.of(name.getName(), new Eval(cases));
         });
     }
 
@@ -41,10 +42,6 @@ public class FunctionTerms {
             }
             return ImmutableTuple2.of(t1, t2);
         });
-    }
-
-    private static IMatcher<String> functionName() {
-        return M.appl1("Function", M.stringValue(), (t, n) -> n);
     }
 
     public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {

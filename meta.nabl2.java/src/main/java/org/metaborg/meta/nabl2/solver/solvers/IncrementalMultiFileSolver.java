@@ -16,7 +16,6 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
@@ -396,7 +395,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> false);
         final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = Properties.Transient.of();
-        final Map<IRelationName, IVariantRelation.Transient<ITerm>> relations =
+        final Map<String, IVariantRelation.Transient<ITerm>> relations =
                 VariantRelations.transientOf(config.getRelations());
         final IUnifier.Transient unifier = Unifier.Transient.of();
         final Set.Transient<ITerm> symbolicFacts = Set.Transient.of();
@@ -410,8 +409,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 scopeGraph.addAll(solution.scopeGraph());
                 nameResolution.addAll(solution.nameResolution());
                 declProperties.putAll(solution.declProperties());
-                for(Map.Entry<IRelationName, IVariantRelation.Immutable<ITerm>> entry : solution.relations()
-                        .entrySet()) {
+                for(Map.Entry<String, IVariantRelation.Immutable<ITerm>> entry : solution.relations().entrySet()) {
                     relations.get(entry.getKey()).addAll(entry.getValue());
                 }
                 unifier.putAll(solution.unifier());
@@ -425,7 +423,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
 
         ISolution solution = ImmutableSolution.builder().config(config)
-                // @formatter:off
+        // @formatter:off
                 .astProperties(astProperties.freeze())
                 .scopeGraph(scopeGraph.freeze())
                 .nameResolution(nameResolution.freeze())
@@ -448,7 +446,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> false);
         final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = Properties.Transient.of();
-        final Map<IRelationName, IVariantRelation.Transient<ITerm>> relations =
+        final Map<String, IVariantRelation.Transient<ITerm>> relations =
                 VariantRelations.transientOf(config.getRelations());
         final Set.Transient<ITerm> symbolicFacts = Set.Transient.of();
         final Set.Transient<ITerm> symbolicGoals = Set.Transient.of();
@@ -458,8 +456,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 scopeGraph.addAll(solution.scopeGraph());
                 nameResolution.addAll(solution.nameResolution());
                 declProperties.putAll(solution.declProperties());
-                for(Map.Entry<IRelationName, IVariantRelation.Immutable<ITerm>> entry : solution.relations()
-                        .entrySet()) {
+                for(Map.Entry<String, IVariantRelation.Immutable<ITerm>> entry : solution.relations().entrySet()) {
                     relations.get(entry.getKey()).addAll(entry.getValue());
                 }
                 symbolicFacts.__insertAll(solution.symbolic().getFacts());
@@ -470,7 +467,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
 
         IPublicSolution solution = ImmutablePublicSolution.builder().config(config)
-                // @formatter:off
+        // @formatter:off
                 .scopeGraph(scopeGraph.freeze())
                 .nameResolution(nameResolution.freeze())
                 .declProperties(declProperties.freeze())
@@ -522,7 +519,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
-                        // @formatter:off
+                // @formatter:off
                         .onBase(baseSolver::solve)
                         .onEquality(equalitySolver::solve)
                         .onNameResolution(nameResolutionSolver::solve)
@@ -558,7 +555,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
             IProperties.Immutable<Occurrence, ITerm, ITerm> declResult = nameResolutionSolver.finishDeclProperties();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<IRelationName, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             solution = ImmutableSolution.of(config, astResult, unitGraph.freeze(), nameResolution.freeze(), declResult,
                     relationResult, unifierResult, symbolicConstraints, solveResult.messages(),
@@ -611,8 +608,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         final ISolver denySolver = ISolver.deny("Not allowed in this phase");
         final ISolver component =
-                c -> c.matchOrThrow(
-                        IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
+                c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
                 // @formatter:off
                 .onRelation(cc -> cc.matchOrThrow(
                         IRelationConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>of(

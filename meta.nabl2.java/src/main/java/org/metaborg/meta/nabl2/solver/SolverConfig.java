@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.terms.FunctionTerms;
 import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelationDescription;
@@ -21,7 +20,7 @@ public abstract class SolverConfig {
 
     @Value.Parameter public abstract ResolutionParameters getResolutionParams();
 
-    @Value.Parameter public abstract Map<IRelationName, VariantRelationDescription<ITerm>> getRelations();
+    @Value.Parameter public abstract Map<String, VariantRelationDescription<ITerm>> getRelations();
 
     @Value.Parameter public abstract Map<String, PartialFunction1<ITerm, ITerm>> getFunctions();
 

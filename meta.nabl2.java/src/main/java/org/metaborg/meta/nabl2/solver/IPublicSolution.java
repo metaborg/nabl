@@ -2,7 +2,6 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.util.Map;
 
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -23,7 +22,7 @@ public interface IPublicSolution {
 
     IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
-    Map<IRelationName, IVariantRelation.Immutable<ITerm>> relations();
+    Map<String, IVariantRelation.Immutable<ITerm>> relations();
 
     ISymbolicConstraints symbolic();
 
