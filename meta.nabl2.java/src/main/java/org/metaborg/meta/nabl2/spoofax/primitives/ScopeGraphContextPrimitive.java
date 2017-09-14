@@ -59,8 +59,8 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }
 
-    public Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
+    @SuppressWarnings("unused") public Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term,
+            List<ITerm> terms) throws InterpreterException {
         throw new UnsupportedOperationException("Subclasses must override ScopeGraphContextPrimitive::call");
     }
 

@@ -8,8 +8,7 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
-import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
-import org.metaborg.meta.nabl2.stratego.TermIndex;
+import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -25,28 +24,27 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
         super(name);
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, TermIndex index, ITerm term)
-            throws InterpreterException {
-        return context.unit(index.getResource()).solution().flatMap(sol -> {
+    @Override public Optional<ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms) throws InterpreterException {
+        return unit.solution().flatMap(sol -> {
             final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.scopeGraph());
             final IMatcher<S> sourceMatcher = getSourceMatcher();
             return M.<ITerm>cases(
-                    // @formatter:off
-                    M.term(sourceMatcher, (t, source) -> {
-                        List<ITerm> edgeTerms = Lists.newArrayList();
-                        for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
-                            edgeTerms.add(TB.newTuple(edge.getKey(), edge.getValue()));
-                        }
-                        return TB.newList(edgeTerms);
-                    }),
-                    M.tuple2(sourceMatcher, Label.matcher(), (t, source, label) -> {
-                        List<ITerm> targetTerms = Lists.newArrayList();
-                        for(ITerm target : edges.get(source, label)) {
-                            targetTerms.add(target);
-                        }
-                        return TB.newList(targetTerms);
-                    })
-                    // @formatter:on
+                // @formatter:off
+                M.term(sourceMatcher, (t, source) -> {
+                    List<ITerm> edgeTerms = Lists.newArrayList();
+                    for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
+                        edgeTerms.add(TB.newTuple(edge.getKey(), edge.getValue()));
+                    }
+                    return TB.newList(edgeTerms);
+                }),
+                M.tuple2(sourceMatcher, Label.matcher(), (t, source, label) -> {
+                    List<ITerm> targetTerms = Lists.newArrayList();
+                    for(ITerm target : edges.get(source, label)) {
+                        targetTerms.add(target);
+                    }
+                    return TB.newList(targetTerms);
+                })
+                // @formatter:on
             ).match(term);
         });
     }

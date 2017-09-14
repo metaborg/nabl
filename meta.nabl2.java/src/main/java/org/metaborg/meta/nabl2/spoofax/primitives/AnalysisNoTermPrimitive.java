@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
+import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
+import org.metaborg.meta.nabl2.spoofax.analysis.StrategoAnalysis;
 import org.metaborg.meta.nabl2.stratego.ConstraintTerms;
-import org.metaborg.meta.nabl2.stratego.StrategoTermIndices;
 import org.metaborg.meta.nabl2.stratego.StrategoTerms;
-import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -24,14 +24,15 @@ public abstract class AnalysisNoTermPrimitive extends ScopeGraphContextPrimitive
         if(sterms.size() != 1) {
             throw new IllegalArgumentException("Expected one term argument: analysis");
         }
-        TermIndex index = StrategoTermIndices.get(sterms.get(0))
-                .orElseThrow(() -> new IllegalArgumentException("Not a valid analysis term."));
+        if(!(sterms.get(0) instanceof StrategoAnalysis)) {
+            throw new IllegalArgumentException("Not a valid analysis term.");
+        }
+        final StrategoAnalysis analysis = (StrategoAnalysis) sterms.get(0);
         StrategoTerms strategoTerms = new StrategoTerms(factory);
-        Optional<? extends ITerm> result = call(context, index);
+        Optional<? extends ITerm> result = call(analysis);
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }
 
-    public abstract Optional<? extends ITerm> call(IScopeGraphContext<?> context, TermIndex index)
-            throws InterpreterException;
+    public abstract Optional<? extends ITerm> call(IScopeGraphUnit unit) throws InterpreterException;
 
 }

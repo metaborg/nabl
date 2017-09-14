@@ -114,20 +114,25 @@ rules // ###### Analysis results ######
    * @param a : Analysis
    * @type node:Term -> Term
    */
-  nabl2-get-ast-params = fail
   nabl2-get-ast-params(|a) = fail
+  nabl2-get-ast-params =
+    where(a := <nabl2-get-ast-analysis>); nabl2-get-ast-params(|a)
 
   /**
    * @param a : Analysis
    * @type node:Term -> Type
    */
-  nabl2-get-ast-type = fail
   nabl2-get-ast-type(|a) = fail
+  nabl2-get-ast-type =
+    where(a := <nabl2-get-ast-analysis>); nabl2-get-ast-type(|a)
 
   /**
+   * @param a : Analysis
    * @type node:Term -> List(Occurrence)
    */
-  nabl2-get-ast-refs = fail
+  nabl2-get-ast-refs(|a) = fail
+  nabl2-get-ast-refs = 
+    where(a := <nabl2-get-ast-analysis>); nabl2-get-ast-refs(|a)
 
   /**
    * @param a : Analysis

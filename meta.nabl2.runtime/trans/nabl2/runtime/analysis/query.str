@@ -21,21 +21,21 @@ rules
   /**
    * @type node:Term -> List((ref:Occurrence,decl:Occurrence))
    */
-  nabl2--get-ast-resolution =
-    prim("SG_get_ast_resolution")
+  nabl2--get-ast-resolution(|a) =
+    prim("SG_get_ast_resolution", a)
 
   /**
    * @param key : Term
    * @type node:Term -> value:Term
    */
-  nabl2--get-ast-property(|key) =
-    prim("SG_get_ast_property",key)
+  nabl2--get-ast-property(|a,key) =
+    prim("SG_get_ast_property",a,key)
 
-  nabl2--get-ast-params =
-    nabl2--get-ast-property(|Params())
+  nabl2--get-ast-params(|a) =
+    nabl2--get-ast-property(|a,Params())
 
-  nabl2--get-ast-type =
-    nabl2--get-ast-property(|Type())
+  nabl2--get-ast-type(|a) =
+    nabl2--get-ast-property(|a,Type())
 
 rules
 
@@ -64,12 +64,11 @@ rules
 
 rules
 
-  nabl2--get-ast-analysis: term -> a
-    with a := <nabl2--copy-ast-index(|term)> AnalysisToken()
+  nabl2--get-ast-analysis =
+    prim("SG_get_ast_analysis")
 
-  nabl2--get-resource-analysis: resource -> a
-    with idx := TermIndex(resource,0);
-         a := <nabl2--set-ast-index(|idx)> AnalysisToken()
+  nabl2--get-resource-analysis =
+    prim("SG_get_resource_analysis")
 
   nabl2--analysis-has-errors =
     prim("SG_analysis_has_errors")
