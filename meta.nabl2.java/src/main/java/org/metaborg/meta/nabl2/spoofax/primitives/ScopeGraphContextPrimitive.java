@@ -61,7 +61,7 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
 
     @SuppressWarnings("unused") public Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term,
             List<ITerm> terms) throws InterpreterException {
-        throw new UnsupportedOperationException("Subclasses must override ScopeGraphContextPrimitive::call");
+        throw new UnsupportedOperationException("Subclasses must override call method.");
     }
 
 }

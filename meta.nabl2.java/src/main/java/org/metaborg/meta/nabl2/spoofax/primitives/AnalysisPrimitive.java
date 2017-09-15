@@ -13,6 +13,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.util.NotImplementedException;
 
 public abstract class AnalysisPrimitive extends ScopeGraphContextPrimitive {
 
@@ -33,15 +34,22 @@ public abstract class AnalysisPrimitive extends ScopeGraphContextPrimitive {
             throw new IllegalArgumentException("Not a valid analysis term.");
         }
         final StrategoAnalysis analysis = (StrategoAnalysis) sterms.get(0);
+        return call(analysis, sterm, sterms, factory);
+    }
+
+    public Optional<? extends IStrategoTerm> call(IScopeGraphUnit unit, IStrategoTerm sterm, List<IStrategoTerm> sterms,
+            ITermFactory factory) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
         final List<ITerm> terms = sterms.stream().skip(1).map(strategoTerms::fromStratego)
                 .map(ConstraintTerms::specialize).collect(Collectors.toList());
         final ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
-        Optional<? extends ITerm> result = call(analysis, term, terms);
+        Optional<? extends ITerm> result = call(unit, term, terms);
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }
 
-    public abstract Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
-            throws InterpreterException;
+    @SuppressWarnings("unused") public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term,
+            List<ITerm> terms) throws InterpreterException {
+        throw new NotImplementedException("Subclasses should override call method.");
+    }
 
 }

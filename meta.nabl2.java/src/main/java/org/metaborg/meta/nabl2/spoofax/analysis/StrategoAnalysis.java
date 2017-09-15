@@ -80,7 +80,7 @@ public class StrategoAnalysis extends AbstractSimpleTerm implements IStrategoTer
         return IStrategoTerm.IMMUTABLE;
     }
 
-    @Override public IStrategoList getAnnotations() {
+    @SuppressWarnings("deprecation") @Override public IStrategoList getAnnotations() {
         return AbstractTermFactory.EMPTY_LIST;
     }
 
@@ -101,7 +101,7 @@ public class StrategoAnalysis extends AbstractSimpleTerm implements IStrategoTer
     }
 
     @Override public String toString() {
-        return "Analysis(" + resource() + ")";
+        return "Analysis(\"" + resource() + "\")";
     }
 
 }

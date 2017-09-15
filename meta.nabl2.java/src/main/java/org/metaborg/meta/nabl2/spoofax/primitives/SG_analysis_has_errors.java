@@ -3,27 +3,25 @@ package org.metaborg.meta.nabl2.spoofax.primitives;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
-import org.metaborg.meta.nabl2.stratego.TermIndex;
-import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.spoofax.interpreter.core.InterpreterException;
+import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.interpreter.terms.ITermFactory;
 
-public class SG_analysis_has_errors extends ScopeGraphContextPrimitive {
+public class SG_analysis_has_errors extends AnalysisPrimitive {
 
     public SG_analysis_has_errors() {
-        super(SG_analysis_has_errors.class.getSimpleName(), 0, 0);
+        super(SG_analysis_has_errors.class.getSimpleName());
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
-        return TermIndex.get(term).flatMap(index -> {
-            return context.unit(index.getResource()).solution().flatMap(s -> {
-                if(s.messages().getErrors().isEmpty()) {
-                    return Optional.empty();
-                } else {
-                    return Optional.of(term);
-                }
-            });
+    @Override public Optional<? extends IStrategoTerm> call(IScopeGraphUnit unit, IStrategoTerm sterm,
+            List<IStrategoTerm> sterms, ITermFactory factory) throws InterpreterException {
+        return unit.solution().flatMap(s -> {
+            if(s.messages().getErrors().isEmpty()) {
+                return Optional.empty();
+            } else {
+                return Optional.of(sterm);
+            }
         });
     }
 

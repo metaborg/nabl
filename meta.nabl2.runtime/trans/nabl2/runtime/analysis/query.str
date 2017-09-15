@@ -42,25 +42,25 @@ rules
   /**
    * @type ref:Occurrence -> (decl:Occurrence,Path))
    */
-  nabl2--get-ref-resolution =
-    prim("SG_get_ref_resolution")
+  nabl2--get-ref-resolution(|a) =
+    prim("SG_get_ref_resolution", a)
 
   /**
    * @param key : Term
    * @type decl:Occurrence -> value:Term
    */
-  nabl2--get-decl-property(|key) =
-    prim("SG_get_decl_property",key)
+  nabl2--get-decl-property(|a,key) =
+    prim("SG_get_decl_property",a,key)
 
-  nabl2--get-decl-property-by-name(|name) =
-    nabl2--get-decl-property(|Property(name))
+  nabl2--get-decl-property-by-name(|a,name) =
+    nabl2--get-decl-property(|a,Property(name))
 
   /**
    * @param key : Term
    * @type decl:Occurrence -> Type
    */
-  nabl2--get-decl-type =
-    nabl2--get-decl-property(|Type())
+  nabl2--get-decl-type(|a) =
+    nabl2--get-decl-property(|a,Type())
 
 rules
 
@@ -71,10 +71,10 @@ rules
     prim("SG_get_resource_analysis")
 
   nabl2--analysis-has-errors =
-    prim("SG_analysis_has_errors")
+    ?a; prim("SG_analysis_has_errors", a)
 
   nabl2--get-custom-analysis =
-    prim("SG_get_custom_analysis")
+    ?a; prim("SG_get_custom_analysis", a)
 
 rules
 
