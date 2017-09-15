@@ -84,15 +84,15 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
     private final String globalSource;
 
-    public IncrementalMultiFileSolver(String globalSource, NaBL2DebugConfig nabl2Debug) {
-        super(nabl2Debug);
+    public IncrementalMultiFileSolver(String globalSource, NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
+        super(nabl2Debug, callExternal);
         this.globalSource = globalSource;
     }
 
     public IncrementalSolution solveInter(IncrementalSolution initial, Map<String, ISolution> updatedUnits,
-            java.util.Set<String> removedUnits, java.util.Set<Scope> intfScopes, IMessageInfo message,
-            Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
-            throws InterruptedException, SolverException {
+            java.util.Set<String> removedUnits, java.util.Set<Scope> intfScopes,
+            @SuppressWarnings("unused") IMessageInfo message, Function1<String, ITermVar> fresh, ICancel cancel,
+            IProgress progress) throws InterruptedException, SolverException {
         final Timer timer = new Timer();
 
         try {
@@ -499,7 +499,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh);
+        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -595,7 +595,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         // solver components
         final SolverCore core = new SolverCore(config, initial.unifier()::find, n -> {
             throw new IllegalStateException("Fresh variables cannot be created in this phase.");
-        });
+        }, callExternal);
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         RelationComponent relationSolver;
         try {

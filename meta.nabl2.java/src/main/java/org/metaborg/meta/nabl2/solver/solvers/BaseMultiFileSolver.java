@@ -48,8 +48,8 @@ import org.metaborg.util.task.IProgress;
 
 public class BaseMultiFileSolver extends BaseSolver {
 
-    public BaseMultiFileSolver(NaBL2DebugConfig nabl2Debug) {
-        super(nabl2Debug);
+    public BaseMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
+        super(nabl2Debug, callExternal);
     }
 
     public ISolution solveIntra(GraphSolution initial, Collection<ITermVar> intfVars, Collection<Scope> intfScopes,
@@ -75,7 +75,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, isEdgeClosed);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh);
+        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =

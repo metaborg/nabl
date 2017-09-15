@@ -50,8 +50,8 @@ import com.google.common.collect.Sets;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
-    public SemiIncrementalMultiFileSolver(NaBL2DebugConfig nabl2Debug) {
-        super(nabl2Debug);
+    public SemiIncrementalMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
+        super(nabl2Debug, callExternal);
     }
 
     public ISolution solveInter(ISolution initial, Iterable<? extends ISolution> unitSolutions, IMessageInfo message,
@@ -74,7 +74,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh);
+        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -89,7 +89,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
-                        // @formatter:off
+                // @formatter:off
                         .onBase(baseSolver::solve)
                         .onEquality(equalitySolver::solve)
                         .onNameResolution(nameResolutionSolver::solve)

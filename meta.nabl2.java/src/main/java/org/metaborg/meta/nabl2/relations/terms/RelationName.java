@@ -65,7 +65,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         @Override public String toString() {
-            return super.toString();
+            return getName();
         }
 
     }
@@ -113,7 +113,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         @Override public String toString() {
-            return super.toString();
+            return "`" + getName() + "`";
         }
 
     }

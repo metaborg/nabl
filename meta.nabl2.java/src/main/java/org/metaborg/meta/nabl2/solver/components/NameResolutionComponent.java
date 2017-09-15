@@ -108,7 +108,7 @@ public class NameResolutionComponent extends ASolver {
         final Multimap<String, String> deps = HashMultimap.create();
         deps.putAll(ref.getIndex().getResource(),
                 declarations.stream().map(d -> d.getIndex().getResource()).collect(Collectors.toSet()));
-        final ImmutableSolveResult result;
+        final SolveResult result;
         switch(declarations.size()) {
             case 0: {
                 IMessageInfo message = r.getMessageInfo()
@@ -128,7 +128,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return Optional.of(result.withDependencies(deps));
+        return Optional.of(ImmutableSolveResult.copyOf(result).withDependencies(deps));
     }
 
     private Optional<SolveResult> solve(CAssoc a) {

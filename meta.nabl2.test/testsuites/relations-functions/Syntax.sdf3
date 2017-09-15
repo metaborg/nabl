@@ -21,3 +21,9 @@ context-free syntax
   Test.SubRelationHasLub = <sub relation has lub>
 
   Test.SubRelationHasGlb = <sub relation has glb>
+
+context-free syntax
+
+  Test.ExternalReflexiveRelation = <<AlNum> and <AlNum> in external reflexive relation>
+
+  Test.ExternalConcatFunction = <external concat function>

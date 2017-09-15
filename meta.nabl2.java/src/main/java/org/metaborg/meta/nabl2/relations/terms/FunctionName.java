@@ -70,7 +70,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         }
 
         @Override public String toString() {
-            return super.toString();
+            return getName();
         }
 
     }
@@ -118,7 +118,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         }
 
         @Override public String toString() {
-            return super.toString();
+            return "`" + getName() + "`";
         }
 
     }

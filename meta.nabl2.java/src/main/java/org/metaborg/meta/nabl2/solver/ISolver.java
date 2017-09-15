@@ -77,25 +77,25 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
             return Collections.emptySet();
         }
 
-        public static ImmutableSolveResult empty() {
+        public static SolveResult empty() {
             return ImmutableSolveResult.builder().build();
         }
 
-        public static ImmutableSolveResult messages(IMessageInfo... messages) {
+        public static SolveResult messages(IMessageInfo... messages) {
             return messages(Arrays.asList(messages));
         }
 
-        public static ImmutableSolveResult messages(Iterable<? extends IMessageInfo> messages) {
+        public static SolveResult messages(Iterable<? extends IMessageInfo> messages) {
             Messages.Transient msgs = Messages.Transient.of();
             msgs.addAll(messages);
             return ImmutableSolveResult.builder().messages(msgs.freeze()).build();
         }
 
-        public static ImmutableSolveResult constraints(IConstraint... constraints) {
+        public static SolveResult constraints(IConstraint... constraints) {
             return constraints(Arrays.asList(constraints));
         }
 
-        public static ImmutableSolveResult constraints(Iterable<? extends IConstraint> constraints) {
+        public static SolveResult constraints(Iterable<? extends IConstraint> constraints) {
             return ImmutableSolveResult.builder().constraints(constraints).build();
         }
 

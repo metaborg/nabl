@@ -4,9 +4,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.constraints.relations.CBuildRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CCheckRelation;
 import org.metaborg.meta.nabl2.constraints.relations.CEvalFunction;
@@ -27,7 +29,6 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
-import org.spoofax.terms.util.NotImplementedException;
 
 import com.google.common.collect.Maps;
 
@@ -41,10 +42,10 @@ public class RelationComponent extends ASolver {
 
     public RelationComponent(SolverCore core, Predicate1<String> isComplete,
             Map<String, PartialFunction1<ITerm, ITerm>> functions,
-            Map<String, IVariantRelation.Transient<ITerm>> initial) {
+            Map<String, IVariantRelation.Transient<ITerm>> relations) {
         super(core);
         this.isComplete = isComplete;
-        this.relations = initial;
+        this.relations = relations;
         this.functions = Maps.newHashMap(functions);
         addRelationFunctions();
     }
@@ -103,7 +104,9 @@ public class RelationComponent extends ASolver {
                 }
                 return Optional.of(SolveResult.empty());
             },
-            extName -> { throw new NotImplementedException(); }
+            extName -> {
+                throw new IllegalArgumentException("Cannot add entries to external relations.");
+            }
             // @formatter:on
         ));
     }
@@ -126,7 +129,13 @@ public class RelationComponent extends ASolver {
                     return Optional.empty();
                 }
             },
-            extName -> { throw new NotImplementedException(); }
+            extName -> {
+                final ITerm msginfo = MessageInfo.build(c.getMessageInfo());
+                return callExternal(extName, left, right, msginfo).map(csTerm -> {
+                    return M.listElems(Constraints.matcher()).match(csTerm)
+                            .map(SolveResult::constraints).orElseThrow(() -> new IllegalArgumentException("Expected list of constraints, got " + csTerm));
+                });
+            }
             // @formatter:on
         ));
     }
@@ -148,7 +157,11 @@ public class RelationComponent extends ASolver {
                     return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 });
             },
-            extName -> { throw new NotImplementedException(); }
+            extName -> {
+                return callExternal(extName, term).map(ret -> {
+                    return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
+                });
+            }
             // @formatter:on
         ));
     }

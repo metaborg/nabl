@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -47,8 +46,8 @@ import org.metaborg.util.task.IProgress;
 
 public class SingleFileSolver extends BaseSolver {
 
-    public SingleFileSolver(NaBL2DebugConfig nabl2Debug) {
-        super(nabl2Debug);
+    public SingleFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
+        super(nabl2Debug, callExternal);
     }
 
     public ISolution solve(GraphSolution initial, Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
@@ -72,7 +71,7 @@ public class SingleFileSolver extends BaseSolver {
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh);
+        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
@@ -86,7 +85,7 @@ public class SingleFileSolver extends BaseSolver {
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
-                        // @formatter:off
+                // @formatter:off
                         .onBase(baseSolver::solve)
                         .onEquality(equalitySolver::solve)
                         .onNameResolution(nameResolutionSolver::solve)

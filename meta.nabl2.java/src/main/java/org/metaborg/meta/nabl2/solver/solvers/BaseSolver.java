@@ -54,9 +54,11 @@ import com.google.common.collect.Sets;
 public class BaseSolver {
 
     protected final NaBL2DebugConfig nabl2Debug;
+    protected final CallExternal callExternal;
 
-    public BaseSolver(NaBL2DebugConfig nabl2Debug) {
+    public BaseSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
         this.nabl2Debug = nabl2Debug;
+        this.callExternal = callExternal;
     }
 
     public GraphSolution solveGraph(BaseSolution initial, ICancel cancel, IProgress progress)
@@ -68,19 +70,19 @@ public class BaseSolver {
         // solver components
         final SolverCore core = new SolverCore(initial.config(), t -> t, n -> {
             throw new IllegalStateException("Fresh variables are not available when solving assumptions.");
-        });
+        }, callExternal);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
 
         try {
-            ISolver component = c -> c.matchOrThrow(IConstraint.CheckedCases
-                    .<Optional<SolveResult>, InterruptedException>builder()
+            ISolver component =
+                    c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
                     // @formatter:off
                     .onAst(astSolver::solve)
                     .onScopeGraph(scopeGraphSolver::solve)
                     .otherwise(cc -> Optional.empty())
                     // @formatter:on
-            );
+                    );
 
             final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.empty());
             final SolveResult solveResult = solver.solve(initial.constraints());
@@ -125,7 +127,7 @@ public class BaseSolver {
 
         final SolverCore core = new SolverCore(initial.config(), unifier::find, n -> {
             throw new IllegalStateException("Fresh is not available when merging.");
-        });
+        }, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =

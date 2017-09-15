@@ -6,7 +6,7 @@ imports
 
 rules
 
-  nabl2--term-eq = (strip-annos,strip-annos) ; eq
+  nabl2--term-eq = strip-annos ; eq
 
 
   nabl2--xmlencode =

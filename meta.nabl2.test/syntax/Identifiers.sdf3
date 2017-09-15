@@ -2,6 +2,8 @@ module Identifiers
 
 lexical syntax
 
+  AlNum = [A-Za-z0-9]+
+
   X = [Xx]
   Y = [Yy]
   Z = [Zz]

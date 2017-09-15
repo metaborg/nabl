@@ -169,6 +169,8 @@ rules
       fatal-err(|"Cannot get an index of non-ground ")
     end
 
+  nabl2--message-pos = ?Message(_,_,pos) < !pos + id
+
 rules
 
   nabl2--fresh =

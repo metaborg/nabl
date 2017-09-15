@@ -1,0 +1,20 @@
+module testsuites/relations-functions/util
+
+imports
+
+  nabl2/api
+  nabl2/runtime/analysis/-
+  nabl2/runtime/prelude/-
+  signatures/nabl2/shared/constraints/-
+  signatures/testsuites/relations-functions/-
+  testsuites/assert
+ 
+rules
+
+  reflexive-relation: (x1,x2,msginfo) -> [CTrue(<nabl2--message-pos> msginfo)]
+    where <nabl2--term-eq> (x1,x2)
+
+  reflexive-relation: (x1,x2,msginfo) -> [CFalse(msginfo)]
+    where <not(nabl2--term-eq)> (x1,x2)
+
+  concat-function = conc
