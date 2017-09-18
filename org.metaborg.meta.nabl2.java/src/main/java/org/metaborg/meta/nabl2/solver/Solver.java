@@ -83,7 +83,7 @@ public class Solver {
         this.components.add(relationSolver = new RelationSolver(this, config.getRelations(), config.getFunctions()));
         this.components.add(setSolver = new SetSolver(this, namebindingSolver.nameSets()));
         this.components.add(symbolicSolver = new SymbolicSolver(this));
-        this.components.add(polySolver = new PolymorphismSolver(this));
+        this.components.add(polySolver = new PolymorphismSolver(this, namebindingSolver::isResolutionDone));
 
         this.messages = new Messages();
     }

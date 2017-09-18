@@ -24,18 +24,21 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.Unit;
+import org.metaborg.meta.nabl2.util.functions.Predicate0;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
 
+    private final Predicate0 isResolutionDone;
     private final Set<IPolyConstraint> defered;
 
     private boolean complete = false;
 
-    public PolymorphismSolver(Solver solver) {
+    public PolymorphismSolver(Solver solver, Predicate0 isResolutionDone) {
         super(solver);
+        this.isResolutionDone = isResolutionDone;
         this.defered = Sets.newHashSet();
     }
 
@@ -76,7 +79,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     }
 
     private boolean solve(CGeneralize gen) throws UnsatisfiableException {
-        if(!complete) {
+        if(!canSolve()) {
             return false;
         }
         ITerm type = unifier().find(gen.getType());
@@ -105,7 +108,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
     }
 
     private boolean solve(CInstantiate inst) throws UnsatisfiableException {
-        if(!complete) {
+        if(!canSolve()) {
             return false;
         }
         ITerm schemeTerm = unifier().find(inst.getScheme());
@@ -138,10 +141,16 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
 
     private ITerm subst(ITerm term, Map<? extends ITerm, ? extends ITerm> subst) {
         return M.sometd(
-            // @formatter:off
+        // @formatter:off
             t -> subst.containsKey(t) ? Optional.of(subst.get(t)) : Optional.empty()
             // @formatter:on
         ).apply(term);
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
+
+    private boolean canSolve() {
+        return complete && isResolutionDone.test();
     }
 
 }

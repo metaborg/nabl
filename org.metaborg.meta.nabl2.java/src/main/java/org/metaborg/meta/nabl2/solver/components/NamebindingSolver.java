@@ -375,6 +375,11 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         return nameResolution != null;
     }
 
+    public boolean isResolutionDone() {
+        return isResolutionStarted() && incompleteDirectEdges.isEmpty() && incompleteImportEdges.isEmpty()
+                && unsolvedChecks.isEmpty();
+    }
+
     private void addScopeGraphConstraints(Set<INamebindingConstraint> constraints, IMessageInfo messageInfo) {
         for(Scope scope : scopeGraph.getAllScopes()) {
             for(Occurrence decl : scopeGraph.getDecls().inverse().get(scope)) {
@@ -410,7 +415,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 return Optional.empty();
             }
             return M.<Optional<Set<IElement<ITerm>>>>cases(
-                // @formatter:off
+            // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls().inverse().get(scope);
                     return Optional.of(makeSet(decls, ns));
