@@ -11,13 +11,13 @@ lexical syntax
   MetaPrefix     = "nabl2" {case-insensitive}
 
   VarId          = [a-z] [a-zA-Z0-9\_]* [\']*
-  VarId          = MetaPrefix [a-zA-Z0-9\_\']* {reject}
+  VarId          = MetaPrefix [a-zA-Z0-9\_\-\']* {reject}
   VarId          = Keyword [\']* {reject}
 
-  OpId           = [A-Z] [a-zA-Z0-9\_]*
+  OpId           = [A-Z] [a-zA-Z0-9\_\-\']*
   OpId           = Keyword {reject}
 
-  SortId         = [A-Z] [a-zA-Z0-9\_]*
+  SortId         = [A-Z] [a-zA-Z0-9\_\-\']*
   SortId         = Keyword {reject}
 
   NamespaceId    = [A-Z] [a-zA-Z0-9]*
@@ -50,14 +50,14 @@ lexical restrictions
   INT          -/- [0-9]
 
   VarId        -/- [a-zA-Z0-9\_\']
-  OpId         -/- [a-zA-Z0-9\_\']
-  SortId       -/- [a-zA-Z0-9\_\']
-  NamespaceId  -/- [a-zA-Z0-9\_\']
-  PropertyId   -/- [a-zA-Z0-9\_\']
-  RelationId   -/- [a-zA-Z0-9\_\']
-  ProjectionId -/- [a-zA-Z0-9\_\']
-  FunctionId   -/- [a-zA-Z0-9\_\']
-  LabelId      -/- [a-zA-Z0-9\_\']
-  BuiltinLabel -/- [a-zA-Z0-9\_\']
-//TVarId       -/- [a-zA-Z0-9\_\']
+  OpId         -/- [a-zA-Z0-9\_\-\']
+  SortId       -/- [a-zA-Z0-9\_\-\']
+  NamespaceId  -/- [a-zA-Z0-9]
+  PropertyId   -/- [a-zA-Z0-9]
+  RelationId   -/- [a-zA-Z0-9]
+  ProjectionId -/- [a-zA-Z0-9]
+  FunctionId   -/- [a-zA-Z0-9]
+  LabelId      -/- [a-zA-Z0-9]
+  BuiltinLabel -/- [a-zA-Z0-9]
+//TVarId       -/- [a-zA-Z0-9\_\-\']
 
