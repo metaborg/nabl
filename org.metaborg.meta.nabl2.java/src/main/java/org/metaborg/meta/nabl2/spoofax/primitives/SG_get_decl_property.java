@@ -13,7 +13,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 public class SG_get_decl_property extends ScopeGraphPrimitive {
 
     public SG_get_decl_property() {
-        super(SG_get_decl_property.class.getSimpleName(), 0, 1);
+        super(SG_get_decl_property.class.getSimpleName(), 0, 2);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
