@@ -130,7 +130,7 @@ public class ConstraintTerms {
         // toStrategoList
         final List<ITerm> terms = Lists.newArrayList();
         final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
-        final Ref<ITermVar> varTail = new Ref<>();
+        final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
                 // @formatter:off
@@ -144,7 +144,8 @@ public class ConstraintTerms {
                     return null;
                 },
                 var -> {
-                    varTail.set(var);
+                    varTail.set(explicate(var));
+                    attachments.add(ImmutableClassToInstanceMap.builder().build());
                     return null;
                 }
                 // @formatter:on
@@ -152,7 +153,7 @@ public class ConstraintTerms {
         }
         list = TB.newList(terms, attachments);
         if(varTail.get() != null) {
-            return TB.newAppl(LISTTAIL_CTOR, Arrays.asList(list, varTail.get()));
+            return TB.newAppl(LISTTAIL_CTOR, list, varTail.get());
         } else {
             return list;
         }
