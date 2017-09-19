@@ -7,22 +7,25 @@ sorts
 lexical syntax
 
   INT            = "-"? [0-9]+
+
   ID             = [a-zA-Z] [a-zA-Z0-9\_]*
-  LCID           = [a-z] [a-zA-Z0-9\_]*
-  UCID           = [A-Z] [a-zA-Z0-9\_]*
+  LCID           = [a-z]    [a-zA-Z0-9\_]*
+  UCID           = [A-Z]    [a-zA-Z0-9\_]*
+
+  STRID          = [a-zA-Z] [a-zA-Z0-9\_\-\']*
+  STRLCID        = [a-z]    [a-zA-Z0-9\_\-\']*
+  STRUCID        = [A-Z]    [a-zA-Z0-9\_\-\']*
 
   MetaPrefix     = "nabl2" {case-insensitive}
 
-                   // inline of LCID, or apostrophes won't work
-                   // because of follow restrictions on LCID
-  VarId          = [a-z] [a-zA-Z0-9\_]* [\']*
+  VarId          = [a-z] [a-zA-Z0-9\_]* "'"*
   VarId          = MetaPrefix ~[]* {reject}
   VarId          = Keyword [\']* {reject}
 
-  OpId           = UCID
+  OpId           = STRUCID
   OpId           = Keyword {reject}
 
-  SortId         = UCID
+  SortId         = STRUCID
   SortId         = Keyword {reject}
 
   NamespaceId    = UCID
@@ -40,7 +43,7 @@ lexical syntax
   ProjectionId   = LCID
   ProjectionId   = Keyword {reject}
 
-  StrategyId     = [a-zA-Z] [a-zA-Z0-9\-\_\']*
+  StrategyId     = STRID
 
   LabelId        = UCID
   LabelId        = BuiltinLabel {reject}
@@ -51,10 +54,13 @@ lexical syntax
 lexical restrictions
 
   INT   -/- [0-9]
-  ID    -/- [a-zA-Z0-9\-\_\']
-  LCID  -/- [a-zA-Z0-9\-\_\']
-  UCID  -/- [a-zA-Z0-9\-\_\']
 
-  VarId -/- [a-zA-Z0-9\-\_\']
+  ID    -/- [a-zA-Z0-9\_]
+  LCID  -/- [a-zA-Z0-9\_]
+  UCID  -/- [a-zA-Z0-9\_]
 
-  StrategyId -/- [a-zA-Z0-9\-\_\']
+  STRID   -/- [a-zA-Z0-9\-\_\']
+  STRLCID -/- [a-zA-Z0-9\-\_\']
+  STRUCID -/- [a-zA-Z0-9\-\_\']
+
+  VarId   -/- [a-zA-Z0-9\-\_\']
