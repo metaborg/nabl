@@ -28,8 +28,8 @@ public final class PolyConstraints {
     public static ITerm build(IPolyConstraint constraint) {
         return constraint.match(IPolyConstraint.Cases.<ITerm>of(
             // @formatter:off
-            gen -> TB.newAppl(C_GEN, gen.getScheme(), gen.getType(), MessageInfo.build(gen.getMessageInfo())),
-            inst -> TB.newAppl(C_INST, inst.getType(), inst.getScheme(), MessageInfo.build(inst.getMessageInfo()))
+            gen -> TB.newAppl(C_GEN, gen.getDeclaration(), gen.getType(), MessageInfo.build(gen.getMessageInfo())),
+            inst -> TB.newAppl(C_INST, inst.getType(), inst.getDeclaration(), MessageInfo.build(inst.getMessageInfo()))
             // @formatter:on
         ));
     }
@@ -38,14 +38,14 @@ public final class PolyConstraints {
         return constraint.match(IPolyConstraint.Cases.of(
             // @formatter:off
             gen -> ImmutableCGeneralize.of(
-                        unifier.find(gen.getScheme()),
+                        unifier.find(gen.getDeclaration()),
                         gen.getGenVars(),
                         unifier.find(gen.getType()),
                         gen.getMessageInfo().apply(unifier::find)),
             inst -> ImmutableCInstantiate.of(
                         unifier.find(inst.getType()),
                         inst.getInstVars(),
-                        unifier.find(inst.getScheme()),
+                        unifier.find(inst.getDeclaration()),
                         inst.getMessageInfo().apply(unifier::find))
             // @formatter:on
         ));

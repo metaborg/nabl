@@ -15,6 +15,7 @@ import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.components.AstSolver;
 import org.metaborg.meta.nabl2.solver.components.BaseSolver;
@@ -48,7 +49,7 @@ public class Solver {
     private final SolverConfig config;
     final SolverMode mode;
     final Function1<String, ITermVar> fresh;
-    final Unifier<IConstraint> unifier;
+    final Unifier<IConstraint, IOccurrence> unifier;
     final ICancel cancel;
     final IProgress progress;
     final NaBL2DebugConfig debugConfig;
@@ -83,7 +84,8 @@ public class Solver {
         this.components.add(relationSolver = new RelationSolver(this, config.getRelations(), config.getFunctions()));
         this.components.add(setSolver = new SetSolver(this, namebindingSolver.nameSets()));
         this.components.add(symbolicSolver = new SymbolicSolver(this));
-        this.components.add(polySolver = new PolymorphismSolver(this, namebindingSolver::isResolutionDone));
+        this.components.add(polySolver = new PolymorphismSolver(this, namebindingSolver::arePropsDone,
+                namebindingSolver::getDeclProperty, namebindingSolver::setDeclProperty));
 
         this.messages = new Messages();
     }

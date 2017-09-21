@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
@@ -23,7 +24,7 @@ public abstract class SolverComponent<C extends IConstraint> {
         this.timer = new AggregateTimer();
     }
 
-    final protected Unifier<IConstraint> unifier() {
+    final protected Unifier<IConstraint, IOccurrence> unifier() {
         return solver.unifier;
     }
 

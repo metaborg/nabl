@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,13 +15,15 @@ import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.util.collections.HashRelation3;
+import org.metaborg.meta.nabl2.util.collections.IRelation3;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-public class Unifier<D> implements IUnifier, Serializable {
+public class Unifier<D, E> implements IUnifier, Serializable {
 
     private static final long serialVersionUID = 42L;
 
@@ -30,11 +33,14 @@ public class Unifier<D> implements IUnifier, Serializable {
     private final SetMultimap<ITermVar, D> activeVars;
     private final Set<ITermVar> frozenVars;
 
+    private final IRelation3.Mutable<ITermVar, ITerm, E> varDetermined;
+
     public Unifier() {
         this.reps = Maps.newHashMap();
         this.sizes = Maps.newHashMap();
         this.activeVars = HashMultimap.create();
         this.frozenVars = Sets.newHashSet();
+        this.varDetermined = HashRelation3.create();
     }
 
     @Override public Set<ITermVar> getAllVars() {
@@ -162,6 +168,7 @@ public class Unifier<D> implements IUnifier, Serializable {
         }
         reps.put(var, term);
         updateActive(var, term);
+        updateDetermination(var, term);
         return true;
     }
 
@@ -172,10 +179,12 @@ public class Unifier<D> implements IUnifier, Serializable {
             reps.put(varRight, varLeft);
             sizes.put(varLeft, sizeLeft + sizeRight);
             updateActive(varRight, varLeft);
+            updateDetermination(varRight, varLeft);
         } else {
             reps.put(varLeft, varRight);
             sizes.put(varRight, sizeLeft + sizeRight);
             updateActive(varLeft, varRight);
+            updateDetermination(varLeft, varRight);
         }
         return true;
     }
@@ -308,6 +317,35 @@ public class Unifier<D> implements IUnifier, Serializable {
                 throw new IllegalArgumentException("Freezing active " + var);
             }
             frozenVars.add(var);
+        }
+    }
+
+    /**
+     * Add determination
+     */
+    public void addDetermination(ITerm term, ITerm key, E by) {
+        for(ITermVar var : find(term).getVars()) {
+            varDetermined.put(var, key, by);
+        }
+    }
+
+    /**
+     * Get objects that determine variables in this term
+     */
+    public Set<E> isDeterminedBy(ITerm term, ITerm key) {
+        final Set<E> bys = Sets.newHashSet();
+        for(ITermVar var : term.getVars()) {
+            bys.addAll(varDetermined.get(var, key).asSet());
+        }
+        return bys;
+    }
+
+    private void updateDetermination(ITermVar var, ITerm term) {
+        for(Entry<ITerm, E> objKey : Sets.newHashSet(varDetermined.get(var))) {
+            for(ITermVar newVar : term.getVars()) {
+                varDetermined.remove(var, objKey.getKey(), objKey.getValue());
+                varDetermined.put(newVar, objKey.getKey(), objKey.getValue());
+            }
         }
     }
 

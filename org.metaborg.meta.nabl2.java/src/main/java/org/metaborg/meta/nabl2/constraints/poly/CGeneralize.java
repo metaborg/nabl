@@ -15,7 +15,7 @@ import org.pcollections.PSet;
 @Serial.Version(value = 42L)
 public abstract class CGeneralize implements IPolyConstraint {
 
-    @Value.Parameter public abstract ITerm getScheme();
+    @Value.Parameter public abstract ITerm getDeclaration();
 
     @Value.Parameter public abstract ITermVar getGenVars();
 
@@ -24,7 +24,7 @@ public abstract class CGeneralize implements IPolyConstraint {
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
     @Override public PSet<ITermVar> getVars() {
-        return getScheme().getVars().plusAll(getType().getVars());
+        return getDeclaration().getVars().plusAll(getType().getVars());
     }
 
     @Override public <T> T match(Cases<T> cases) {
@@ -44,7 +44,7 @@ public abstract class CGeneralize implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getScheme()).append(" genOf(").append(TB.newList((ITerm) getGenVars()))
+        return MessageContent.builder().append(getDeclaration()).append(" genOf(").append(TB.newList((ITerm) getGenVars()))
                 .append(") ").append(getType()).build();
     }
 
