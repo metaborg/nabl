@@ -5,6 +5,7 @@ import java.util.Set;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.IRelations;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
@@ -15,6 +16,8 @@ import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
 
 @Value.Immutable
 @Serial.Version(value = 1L)
@@ -35,6 +38,8 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract IUnifier getUnifier();
 
     @Value.Parameter @Override public abstract ISymbolicConstraints getSymbolic();
+
+    @Value.Parameter @Override public abstract IControlFlowGraph<CFGNode> getControlFlowGraph();
 
     @Value.Parameter public abstract IMessages getMessages();
 

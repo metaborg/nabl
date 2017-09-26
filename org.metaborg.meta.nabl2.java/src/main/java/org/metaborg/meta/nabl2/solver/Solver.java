@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,10 +16,12 @@ import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.components.AstSolver;
 import org.metaborg.meta.nabl2.solver.components.BaseSolver;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowSolver;
 import org.metaborg.meta.nabl2.solver.components.EqualitySolver;
 import org.metaborg.meta.nabl2.solver.components.NamebindingSolver;
 import org.metaborg.meta.nabl2.solver.components.PolymorphismSolver;
@@ -38,10 +41,13 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.spoofax.interpreter.terms.IStrategoTerm;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
 
 public class Solver {
     private static final ILogger logger = LoggerUtils.logger(Solver.class);
@@ -63,6 +69,7 @@ public class Solver {
     private final SetSolver setSolver;
     private final SymbolicSolver symbolicSolver;
     private final PolymorphismSolver polySolver;
+    private final ControlFlowSolver controlFlowSolver;
 
     private final Messages messages;
 
@@ -86,6 +93,7 @@ public class Solver {
         this.components.add(symbolicSolver = new SymbolicSolver(this));
         this.components.add(polySolver = new PolymorphismSolver(this, namebindingSolver::arePropsDone,
                 namebindingSolver::getDeclProperty, namebindingSolver::setDeclProperty));
+        this.components.add(controlFlowSolver = new ControlFlowSolver(this));
 
         this.messages = new Messages();
     }
@@ -128,7 +136,8 @@ public class Solver {
                     c -> add(relationSolver, c),
                     c -> add(setSolver, c),
                     c -> add(symbolicSolver, c),
-                    c -> add(polySolver, c)
+                    c -> add(polySolver, c),
+                    c -> add(controlFlowSolver, c)
                     // @formatter:on
                 ));
             } catch(UnsatisfiableException ex) {
@@ -220,7 +229,7 @@ public class Solver {
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
             Collection<IConstraint> constraints, Collection<PartialSolution> partialSolutions, IMessageInfo messageInfo,
-            IProgress progress, ICancel cancel, NaBL2DebugConfig debugConfig)
+            IProgress progress, ICancel cancel, NaBL2DebugConfig debugConfig, Optional<IStrategoTerm> tfs)
             throws SolverException, InterruptedException {
         final int n = constraints.size() + partialSolutions.stream().map(PartialSolution::getResidualConstraints)
                 .map(Collection::size).reduce(1, (i, j) -> i + j);
@@ -250,6 +259,10 @@ public class Solver {
             logger.info(" * unsolved    : {}", unsolved.size());
         }
 
+        IControlFlowGraph<CFGNode> controlFlowGraph = solver.controlFlowSolver.getControlFlowGraph();
+        
+        // TODO: Add call to {@link MaximalFixedPoint} solver
+        
         return ImmutableSolution.of(
             // @formatter:off
             config,
@@ -260,6 +273,7 @@ public class Solver {
             solver.relationSolver.getRelations(),
             solver.unifier,
             solver.symbolicSolver.get(),
+            controlFlowGraph,
             solver.messages,
             unsolved
             // @formatter:on
