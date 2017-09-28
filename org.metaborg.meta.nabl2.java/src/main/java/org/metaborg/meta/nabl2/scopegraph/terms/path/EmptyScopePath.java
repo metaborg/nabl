@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.terms.path;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.immutables.serial.Serial;
@@ -54,7 +55,7 @@ abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOcc
     }
 
     @Override public Iterator<IStep<S, L, O>> iterator() {
-        return Iterators.emptyIterator();
+        return Collections.emptyIterator();
     }
 
     @Override public int hashCode() {
