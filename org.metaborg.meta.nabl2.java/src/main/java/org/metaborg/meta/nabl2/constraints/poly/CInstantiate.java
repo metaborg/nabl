@@ -19,12 +19,12 @@ public abstract class CInstantiate implements IPolyConstraint {
 
     @Value.Parameter public abstract ITermVar getInstVars();
 
-    @Value.Parameter public abstract ITerm getScheme();
+    @Value.Parameter public abstract ITerm getDeclaration();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
     @Override public PSet<ITermVar> getVars() {
-        return getType().getVars().plusAll(getScheme().getVars());
+        return getType().getVars().plusAll(getDeclaration().getVars());
     }
 
     @Override public <T> T match(Cases<T> cases) {
@@ -44,8 +44,8 @@ public abstract class CInstantiate implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getType()).append(" instOf(").append(TB.newList(getInstVars()))
-                .append(") ").append(getScheme()).build();
+        return MessageContent.builder().append(getType()).append(" instOf(").append(TB.newList((ITerm) getInstVars()))
+                .append(") ").append(getDeclaration()).build();
     }
 
     @Override public String toString() {

@@ -11,6 +11,11 @@ template options
 
 context-free syntax
 
+  Signature.Sorts = <
+    sorts
+      <{Sort "\n"}*>
+  > {longest-match}
+
   Signature.Constructors = <
     constructors
       <{OpDecl "\n"}*>

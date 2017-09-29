@@ -20,7 +20,7 @@ rules
     normalize-rule-names;
     normalize-constraints;
     normalize-wildcards;
-    normalize-regex;
+    normalize-regexes;
     normalize-constructors;
     normalize-arg-matches;
     normalize-rule-vars;
@@ -63,10 +63,16 @@ rules
 
 rules
 
-  normalize-regex = try(sometd(normalize-option))
+  normalize-regexes = topdown(try(normalize-regex))
 
-  normalize-option:
+  normalize-regex:
     Option(re) -> Or(Epsilon(),re)
+
+  normalize-regex:
+    ConcatDot(re1,re2) -> Concat(re1,re2)
+
+  normalize-regex:
+    NonEmpty(re) -> Concat(re,Closure(re))
 
 rules
 

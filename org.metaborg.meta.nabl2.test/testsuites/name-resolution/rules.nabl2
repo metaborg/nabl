@@ -120,3 +120,13 @@ rules
     {yr} -> s',
     s' ---> s'',
     {yr} |-> _.
+
+rules
+
+  [[ ImportCycle(xr,xd) ^ () ]] :=
+    new s1 s2,
+    s1 ---> s2,
+    s2 ---> s1,
+    {xr} -> s1,
+    {xd} <- s2,
+    {xr} |-> _.

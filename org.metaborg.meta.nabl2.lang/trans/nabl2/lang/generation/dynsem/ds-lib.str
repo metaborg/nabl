@@ -34,7 +34,7 @@ signature
     NamedDynamic      : String -> DSName
     Signatures        : List(DSSignature) -> DSSection
     NativeOperators   : List(DSNativeOpDecl) -> DSSignature
-    ArrowDeclarations : List(DSArrowDecl) -> DSSignature
+    Arrows            : List(DSArrowDecl) -> DSSignature
     Constructors      : List(DSConsDecl) -> DSSignature
     NullaryConsDecl   : String * DSSort * DSAnnos -> DSConsDecl
     ConsDecl          : String * List(DSSort) * DSSort * DSAnnos -> DSConsDecl
@@ -48,6 +48,7 @@ rules
 
   is-ds-active        = <is-language-active> "ds"
   call-ds(|s)         = call-in-language(|"ds",s)
+  ds-has-options      = call-ds(|"ds-has-properties")
   ds-get-options      = call-ds(|"ds-to-interp-get-options")
   ds-pp-module        = call-ds(|"pp-dynsem-string")
   ds-sort-to-string   = call-ds(|"ds-to-interp-terms-types-name")
@@ -63,7 +64,6 @@ rules
   sort-to-ds: TermSort() -> SimpleSort("AST")
   sort-to-ds: ScopeSort() -> SimpleSort("Scope")
   sort-to-ds: OccurrenceSort() -> SimpleSort("Occurrence")
-  sort-to-ds: TypeSort() -> SimpleSort("Type")
 
   sort-to-ds: LabelSort() -> SimpleSort("Label")
   sort-to-ds: StepSort() -> SimpleSort("Step")

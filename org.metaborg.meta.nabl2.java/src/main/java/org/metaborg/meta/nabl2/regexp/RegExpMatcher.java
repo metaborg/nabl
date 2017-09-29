@@ -58,7 +58,7 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
     public static <S> IRegExpMatcher<S> create(final IRegExp<S> initial) {
         final List<Deriver<S>> derivers = Lists.newArrayList();
         for (S symbol : initial.getBuilder().getAlphabet()) {
-            derivers.add(new Deriver<S>(symbol, initial.getBuilder()));
+            derivers.add(new Deriver<>(symbol, initial.getBuilder()));
         }
 
         final Object2ObjectMap<IRegExp<S>,Object2ObjectMap<S,IRegExp<S>>> stateTransitions = new Object2ObjectOpenHashMap<>();

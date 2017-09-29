@@ -13,6 +13,11 @@ imports
 
 signature
 
+  name resolution
+    labels P I
+    order  D < P, D < I, I < P
+    well-formedness P* I*
+
   functions
   
     projectFirst: Term -> Term {

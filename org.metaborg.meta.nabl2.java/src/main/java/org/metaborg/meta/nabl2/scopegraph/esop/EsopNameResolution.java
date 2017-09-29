@@ -123,9 +123,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return env(HashTreePSet.empty(), noOrder, wf, Paths.empty(scope), EsopEnvs.envFilter());
     }
 
-    private IEsopEnv<S, L, O, IResolutionPath<S, L, O>> resolveEnv(PSet<O> seenI, O ref) {
+    private IEsopEnv<S, L, O, IResolutionPath<S, L, O>> resolveEnv(PSet<O> seenImports, O ref) {
         return scopeGraph.getRefs().get(ref)
-                .map(scope -> env(seenI.plus(ref), order, wf, Paths.empty(scope), EsopEnvs.resolutionFilter(ref)))
+                .map(scope -> env(seenImports.plus(ref), order, wf, Paths.empty(scope), EsopEnvs.resolutionFilter(ref)))
                 .orElseGet(() -> EsopEnvs.empty());
     }
 

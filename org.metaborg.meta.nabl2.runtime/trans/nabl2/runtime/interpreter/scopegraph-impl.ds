@@ -52,81 +52,81 @@ signature
  
 rules
 
-  initNaBL2(t) --> nabl2_init(t).
+  initNaBL2(t) --> nabl2_init(t)
  
 rules // occurrences
 
-  t:Name -mkOccurrence-> Occurrence(ns,t,idx)
+  mkOccurrence(t:Name) --> Occurrence(ns,t,idx)
     where DefaultNamespace() => ns;
-          nabl2_indexOf(t) => idx.
+          nabl2_indexOf(t) => idx
 
-  (ns, t):(String * Name) -mkOccurrence-> Occurrence(ns',t,idx)
+  mkOccurrence(ns, t) /* :(String * Name) */--> Occurrence(ns',t,idx)
     where Namespace(ns) => ns';
-          nabl2_indexOf(t) => idx.
+          nabl2_indexOf(t) => idx
 
-  (t, o):(Name * AST) -mkOccurrence-> Occurrence(ns,t,idx)
-    where DefaultNamespace() => ns;
-          nabl2_indexOf(o) => idx.
+//  mkOccurrence(t, o):(Name * AST) --> Occurrence(ns,t,idx)
+//    where DefaultNamespace() => ns;
+//          nabl2_indexOf(o) => idx
 
-  (ns, t, o):(String * Name * AST) -mkOccurrence-> Occurrence(ns',t,idx)
+  mkOccurrence(ns, t, o) /* :(String * Name * AST) */ --> Occurrence(ns',t,idx)
     where Namespace(ns) => ns';
-          nabl2_indexOf(o) => idx.
+          nabl2_indexOf(o) => idx
 
-  namespaceOf(Occurrence(ns,_,_)) --> ns.
+  namespaceOf(Occurrence(ns,_,_)) --> ns
 
-  nameOf(Occurrence(_,n,_)) --> n.
+  nameOf(Occurrence(_,n,_)) --> n
 
 rules // scope graph
 
-  NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -declsOf-> ds
+  NaBL2 NaBL2(G(ss,_,_),_,_) |- declsOf(s:Scope) --> ds
     where case ss[s?] of {
       true =>
         ss[s] => SE(ds,_,_,_)
       false =>
         [] => ds
-    }.
+    }
 
-  NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -edgesOf-> es
+  NaBL2 NaBL2(G(ss,_,_),_,_) |- edgesOf(s:Scope) --> es
     where case ss[s?] of {
       true =>
         ss[s] => SE(_,_,es,_)
       false =>
         {} => es
-    }.
+    }
 
-  NaBL2 NaBL2(G(ss,_,_),_,_) |- s:Scope -importsOf-> ir
+  NaBL2 NaBL2(G(ss,_,_),_,_) |- importsOf(s:Scope) --> ir
     where case ss[s?] of {
       true =>
         ss[s] => SE(_,_,_,ir)
       false =>
         {} => ir
-    }.
+    }
 
 
-  NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -scopeOfDecl-> s
+  NaBL2 NaBL2(G(_,ds,_),_,_) |- scopeOfDecl(d:Occurrence) --> s
     where case ds[d?] of {
       true =>
         ds[d] => DE([s],_)
-    }.
+    }
 
-  NaBL2 NaBL2(G(_,ds,_),_,_) |- d:Occurrence -assocsOf-> as
+  NaBL2 NaBL2(G(_,ds,_),_,_) |- assocsOf(d:Occurrence) --> assocs
     where case ds[d?] of {
       true =>
-        ds[d] => DE(_,as)
+        ds[d] => DE(_,assocs)
       false =>
-        {} => as
-    }.
+        {} => assocs
+    }
 
-  NaBL2 NaBL2(G(_,_,rs),_,_) |- r:Occurrence -scopeOfRef-> s
+  NaBL2 NaBL2(G(_,_,rs),_,_) |- scopeOfRef(r:Occurrence) --> s
     where case rs[r?] of {
       true =>
         rs[r] => RE([s])
-    }.
+    }
 
-  NaBL2 NaBL2(_,_,dt) |- o:Occurrence -typeOf-> t
-    where dt[o] => t.
+  NaBL2 NaBL2(_,_,dt) |- typeOf(o:Occurrence) --> t
+    where dt[o] => t
 
 rules // name resolution
 
-  NaBL2 NaBL2(_,nr,_) |- r:Occurrence -pathOf-> p
-    where nr[r] => (_, p).
+  NaBL2 NaBL2(_,nr,_) |- pathOf(r:Occurrence) --> p
+    where nr[r] => (_, p)

@@ -21,46 +21,46 @@ rules
   /**
    * @type node:Term -> List((ref:Occurrence,decl:Occurrence))
    */
-  nabl2--get-ast-resolution =
-    prim("SG_get_ast_resolution")
+  nabl2--get-ast-resolution(|a) =
+    prim("SG_get_ast_resolution",a)
 
   /**
    * @param key : Term
    * @type node:Term -> value:Term
    */
-  nabl2--get-ast-property(|key) =
-    prim("SG_get_ast_property",key)
+  nabl2--get-ast-property(|a,key) =
+    prim("SG_get_ast_property",a,key)
 
-  nabl2--get-ast-params =
-    nabl2--get-ast-property(|Params())
+  nabl2--get-ast-params(|a) =
+    nabl2--get-ast-property(|a,Params())
 
-  nabl2--get-ast-type =
-    nabl2--get-ast-property(|Type())
+  nabl2--get-ast-type(|a) =
+    nabl2--get-ast-property(|a,Type())
 
 rules
 
   /**
    * @type ref:Occurrence -> (decl:Occurrence,Path))
    */
-  nabl2--get-ref-resolution =
-    prim("SG_get_ref_resolution")
+  nabl2--get-ref-resolution(|a) =
+    prim("SG_get_ref_resolution",a)
 
   /**
    * @param key : Term
    * @type decl:Occurrence -> value:Term
    */
-  nabl2--get-decl-property(|key) =
-    prim("SG_get_decl_property",key)
+  nabl2--get-decl-property(|a,key) =
+    prim("SG_get_decl_property",a,key)
 
-  nabl2--get-decl-property-by-name(|name) =
-    nabl2--get-decl-property(|Property(name))
+  nabl2--get-decl-property-by-name(|a,name) =
+    nabl2--get-decl-property(|a,Property(name))
 
   /**
    * @param key : Term
    * @type decl:Occurrence -> Type
    */
-  nabl2--get-decl-type =
-    nabl2--get-decl-property(|Type())
+  nabl2--get-decl-type(|a) =
+    nabl2--get-decl-property(|a,Type())
 
 rules
 
@@ -72,7 +72,7 @@ rules
          a := <nabl2--set-ast-index(|idx)> AnalysisToken()
 
   nabl2--analysis-has-errors =
-    prim("SG_analysis_has_errors")
+    ?a; prim("SG_analysis_has_errors", a)
 
   nabl2--get-custom-analysis =
     prim("SG_get_custom_analysis")

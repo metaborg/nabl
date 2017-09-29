@@ -2,10 +2,12 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.IConstraint.CheckedCases;
@@ -13,6 +15,7 @@ import org.metaborg.meta.nabl2.constraints.base.ImmutableCTrue;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
+import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.solver.components.AstSolver;
 import org.metaborg.meta.nabl2.solver.components.BaseSolver;
@@ -31,7 +34,6 @@ import org.metaborg.meta.nabl2.unification.UnificationException;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.Unit;
 import org.metaborg.meta.nabl2.util.functions.Function1;
-import org.metaborg.util.config.NaBL2DebugConfig;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -47,7 +49,7 @@ public class Solver {
     private final SolverConfig config;
     final SolverMode mode;
     final Function1<String, ITermVar> fresh;
-    final Unifier<IConstraint> unifier;
+    final Unifier<IConstraint, IOccurrence> unifier;
     final ICancel cancel;
     final IProgress progress;
     final NaBL2DebugConfig debugConfig;
@@ -82,7 +84,8 @@ public class Solver {
         this.components.add(relationSolver = new RelationSolver(this, config.getRelations(), config.getFunctions()));
         this.components.add(setSolver = new SetSolver(this, namebindingSolver.nameSets()));
         this.components.add(symbolicSolver = new SymbolicSolver(this));
-        this.components.add(polySolver = new PolymorphismSolver(this));
+        this.components.add(polySolver = new PolymorphismSolver(this, namebindingSolver::arePropsDone,
+                namebindingSolver::getDeclProperty, namebindingSolver::setDeclProperty));
 
         this.messages = new Messages();
     }
@@ -110,8 +113,10 @@ public class Solver {
     }
 
     private void addAll(Collection<IConstraint> constraints) throws InterruptedException {
-        progress.setWorkRemaining(constraints.size() + 1);
-        for(IConstraint constraint : constraints) {
+        List<IConstraint> theConstraints = Lists.newArrayList(constraints);
+        Collections.shuffle(theConstraints);
+        progress.setWorkRemaining(theConstraints.size() + 1);
+        for(IConstraint constraint : theConstraints) {
             cancel.throwIfCancelled();
             try {
                 constraint.matchOrThrow(CheckedCases.of(

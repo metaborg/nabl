@@ -64,6 +64,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private final Set<CGDirectEdge<Scope>> incompleteDirectEdges;
     private final Set<CGImportEdge<Scope>> incompleteImportEdges;
     private final Set<INamebindingConstraint> unsolvedChecks;
+    private final Set<CDeclProperty> unsolvedProps;
 
     private final OpenCounter<Scope, Label> scopeCounter;
 
@@ -79,6 +80,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         this.incompleteDirectEdges = Sets.newHashSet();
         this.incompleteImportEdges = Sets.newHashSet();
         this.unsolvedChecks = Sets.newHashSet();
+        this.unsolvedProps = Sets.newHashSet();
 
         this.scopeCounter = new OpenCounter<>();
     }
@@ -122,6 +124,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             nameResolution = new EsopNameResolution<>(scopeGraph, params, scopeCounter);
         }
         progress |= doIterate(unsolvedChecks, this::solve);
+        progress |= doIterate(unsolvedProps, this::solve);
         return progress;
     }
 
@@ -171,7 +174,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
     private Unit add(CDeclProperty constraint) throws UnsatisfiableException {
         unifier().addActive(constraint.getValue(), constraint);
         if(!solve(constraint)) {
-            unsolvedChecks.add(constraint);
+            unsolvedProps.add(constraint);
         } else {
             work();
         }
@@ -357,6 +360,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
         }
         Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
+        unifier().addDetermination(c.getValue(), c.getKey(), decl);
         unifier().removeActive(c.getValue(), c); // before `unify`, so that we don't cause an error chain if that fails
         Optional<ITerm> prev = properties.putValue(decl, c.getKey(), c.getValue());
         if(prev.isPresent()) {
@@ -373,6 +377,18 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
 
     private boolean isResolutionStarted() {
         return nameResolution != null;
+    }
+
+    public boolean arePropsDone() {
+        return isResolutionStarted() && unsolvedProps.isEmpty();
+    }
+
+    public Optional<ITerm> getDeclProperty(Occurrence decl, ITerm key) {
+        return properties.getValue(decl, key);
+    }
+
+    public Optional<ITerm> setDeclProperty(Occurrence decl, ITerm key, ITerm value) {
+        return properties.putValue(decl, key, value);
     }
 
     private void addScopeGraphConstraints(Set<INamebindingConstraint> constraints, IMessageInfo messageInfo) {
@@ -410,7 +426,7 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
                 return Optional.empty();
             }
             return M.<Optional<Set<IElement<ITerm>>>>cases(
-                // @formatter:off
+            // @formatter:off
                 M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                     Iterable<Occurrence> decls = NamebindingSolver.this.scopeGraph.getDecls().inverse().get(scope);
                     return Optional.of(makeSet(decls, ns));

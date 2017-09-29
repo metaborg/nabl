@@ -12,7 +12,7 @@ rules
 
   generate-all-dynsem:
     (_, _, ast@Module(name,_), path, project-path) -> result
-    with if is-ds-active;
+    with if is-ds-active; <ds-has-options> project-path;
            ds-options := <ds-get-options> (path, project-path);
            lang-name := <lookup> (LangName(), ds-options);
            project-dir := <lookup> (GenProject(), ds-options);
@@ -33,7 +33,7 @@ rules
 
   generate-dynsem-ds:
     (_, _, ast@Module(name,_), path, project-path) -> result
-    with if is-ds-active;
+    with if is-ds-active; <ds-has-options> project-path;
            ds-options := <ds-get-options> (path, project-path);
            langname := <lookup> (LangName(), ds-options);
            src-gen-dir := <src-gen-dir(|project-path, "nabl2")>
@@ -47,7 +47,7 @@ rules
 
   generate-dynsem-java:
     (_, _, ast@Module(name,_), path, project-path) -> result
-    with if is-ds-active;
+    with if is-ds-active; <ds-has-options> project-path;
            ds-options := <ds-get-options> (path, project-path);
            lang-name := <lookup> (LangName(), ds-options);
            project-dir := <lookup> (GenProject(), ds-options);
