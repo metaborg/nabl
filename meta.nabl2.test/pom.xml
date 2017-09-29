@@ -85,6 +85,13 @@
           <languageUnderTest>org.metaborg:org.metaborg.meta.nabl2.test:${metaborg-version}</languageUnderTest>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
