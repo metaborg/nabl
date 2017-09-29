@@ -16,4 +16,5 @@ public interface IMessageInfo {
     IMessageInfo withContent(IMessageContent content);
 
     IMessageInfo apply(Function1<ITerm, ITerm> f);
+
 }

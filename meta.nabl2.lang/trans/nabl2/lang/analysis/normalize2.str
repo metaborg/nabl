@@ -1,0 +1,165 @@
+module nabl2/lang/analysis/normalize2
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/generation/-
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+rules
+
+  editor-normalize:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext            := <get-extension> path;
+      filename       := <guarantee-extension(|$[normalized.[ext]])> path;
+      normalized-ast := <normalize2> Module($[[name].normalized],section*);
+      result         := <pp-NaBL2-string> normalized-ast
+
+  normalize2 =
+    normalize2-axioms;
+    normalize2-rule-names;
+    normalize2-rule-params;
+    normalize2-rule-types;
+    normalize2-rule-clauses;
+    normalize2-regexes;
+    normalize2-constraints
+
+rules
+
+  normalize2-axioms = try(sometd(normalize2-axiom))
+
+  normalize2-axiom:
+    CGenInitRuleNoConstraint(params,type)
+      -> CGenInitRule(params,type,[CTrue(DefaultTermIndex())])
+
+  normalize2-axiom:
+    CGenMatchRuleNoConstraint(rdef,pattern,params,type)
+      -> CGenMatchRule(rdef,pattern,params,type,[CTrue(DefaultTermIndex())])
+
+rules
+
+  normalize2-rule-names = try(sometd(normalize2-rule-name))
+
+  normalize2-rule-name:
+    NameNoArgs(name) -> Name(name,[])
+
+rules
+
+  normalize2-rule-params = try(sometd(normalize2-rule-param))
+
+  normalize2-rule-param:
+    CGenMatchRule(rdef,pattern,param,type,clause*)
+      -> CGenMatchRule(rdef,pattern,param,type,clause'*)
+    with clause'* := [ CAstProperty(TermIndexFrom(<term-var>),Params(),param),
+                       clause*
+                     ]
+
+rules
+
+  normalize2-rule-types = try(sometd(normalize2-rule-type))
+
+  normalize2-rule-type:
+    CGenMatchRule(rdef,pattern,param,Type(type),clause*)
+      -> CGenMatchRule(rdef,pattern,param,Type(<type-var>),clause'*)
+    with clause'* := [ CEqual(<type-var>, type, DefaultMessage()),
+                       CAstProperty(TermIndexFrom(<term-var>),Type(),<type-var>),
+                       clause*
+                     ]
+
+rules
+
+  normalize2-rule-clauses = try(sometd(normalize2-rule-clause))
+  
+  normalize2-rule-clause:
+    CGenInitRule(params,type,clause*)
+      -> CGenInitRule(params,type,[clause])
+    with constraint := <normalize2-new-clauses> clause*;
+         rule-var* := <all-vars> (params,type);
+         used-var* := <nabl2--free-constraint-vars> constraint;
+         free-var* := <conc> (used-var*, rule-var*);
+         if [] := free-var* then
+           clause := constraint
+         else
+           clause := CExists(free-var*, constraint, TermIndexFrom(<term-var>))
+         end
+
+  normalize2-rule-clause:
+    CGenMatchRule(rdef,pattern,params,type,clause*)
+      -> CGenMatchRule(rdef,pattern,params,type,[clause])
+    with constraint := <normalize2-new-clauses> clause*;
+         used-var* := <nabl2--free-constraint-vars> constraint;
+         rule-var* := <all-vars> (pattern,params,type);
+         free-var* := <diff;make-set> (used-var*, [<term-var>,rule-var*]);
+         if [] := free-var* then
+           clause := constraint
+         else
+           clause := CExists(free-var*, constraint, TermIndexFrom(<term-var>))
+         end
+
+  normalize2-rule-clause:
+    FunDef(name,arg*,clause*)
+      -> FunDef(name,arg*,[clause])
+    with constraint := <normalize2-new-clauses> clause*;
+         used-var* := <nabl2--free-constraint-vars> constraint;
+         rule-var* := <all-vars> (arg*);
+         free-var* := <diff;make-set> (used-var*, [<term-var>,rule-var*]);
+         if [] := free-var* then
+           clause := constraint
+         else
+           clause := CExists(free-var*, constraint, TermIndexFrom(<term-var>))
+         end
+
+  normalize2-new-clauses: clauses -> constraint
+    with (nvss, constraints) := <partition(?NewScopes(<id>))> clauses;
+         conj := CConj(constraints, TermIndexFrom(<term-var>));
+         nvs := <concat> nvss;
+         if [] := nvs then
+           constraint := conj
+         else
+           constraint := CNew(nvs,conj,TermIndexFrom(<term-var>))
+         end
+  
+rules
+
+  normalize2-regexes = topdown(try(normalize2-regex))
+
+  normalize2-regex:
+    Option(re) -> Or(Epsilon(),re)
+
+  normalize2-regex:
+    ConcatDot(re1,re2) -> Concat(re1,re2)
+
+  normalize2-regex:
+    NonEmpty(re) -> Concat(re,Closure(re))
+
+rules
+
+  normalize2-constraints = topdown(try(normalize2-constraint))
+  
+  normalize2-constraint:
+    CDeclType(o,ty,prio,msginfo) ->
+      CDeclProperty(o,Type(),ty,prio,msginfo)
+
+  normalize2-constraint:
+    CGen(t1,t2,msginfo) ->
+      CGen(t1,Wld(),t2,msginfo)
+
+  normalize2-constraint:
+    CInst(t1,t2,msginfo) ->
+      CInst(t1,Wld(),t2,msginfo)
+
+  normalize2-constraint:
+    CSetEq(s1,proj,s2,msginfo) ->
+      CConj([ CSubsetEq(s1,proj,s2,msginfo),
+              CSubsetEq(s2,proj,s1,msginfo)
+            ], <nabl2--message-pos> msginfo)

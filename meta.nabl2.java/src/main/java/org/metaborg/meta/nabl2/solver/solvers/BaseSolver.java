@@ -29,6 +29,7 @@ import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
+import org.metaborg.meta.nabl2.solver.components.BaseComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
@@ -72,6 +73,7 @@ public class BaseSolver {
             throw new IllegalStateException("Fresh variables are not available when solving assumptions.");
         }, callExternal);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
+        final BaseComponent baseSolver = new BaseComponent(core);
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
 
         try {
@@ -79,6 +81,7 @@ public class BaseSolver {
                     c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
                     // @formatter:off
                     .onAst(astSolver::solve)
+                    .onBase(baseSolver::solve)
                     .onScopeGraph(scopeGraphSolver::solve)
                     .otherwise(cc -> Optional.empty())
                     // @formatter:on

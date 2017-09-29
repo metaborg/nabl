@@ -1,0 +1,17 @@
+module nabl2/shared/common/constraints
+
+imports
+
+  signatures/nabl2/shared/constraints/-
+
+  nabl2/shared/vars
+
+rules
+
+  nabl2--free-constraint-vars =
+    switch id
+      case ?CConj(cs,_)      : <mapconcat(nabl2--free-constraint-vars);make-set> cs
+      case ?CExists(evs,c,_) : <diff> (<nabl2--free-constraint-vars> c, evs)
+      case ?CNew(nvs,c,_)    : <diff> (<nabl2--free-constraint-vars> c, nvs)
+      otherwise              : nabl2--all-vars
+    end

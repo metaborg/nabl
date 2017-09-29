@@ -9,6 +9,7 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 
+@SuppressWarnings("unused")
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class ScopeLabelScope<S extends IScope, L extends ILabel, O extends IOccurrence>

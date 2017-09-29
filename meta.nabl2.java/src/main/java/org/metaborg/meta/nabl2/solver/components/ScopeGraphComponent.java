@@ -33,7 +33,7 @@ public class ScopeGraphComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     public ISolver.SeedResult seed(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> solution,
-            IMessageInfo message) throws InterruptedException {
+            @SuppressWarnings("unused") IMessageInfo message) throws InterruptedException {
         scopeGraph.addAll(solution);
         return SeedResult.empty();
     }

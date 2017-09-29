@@ -18,12 +18,12 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public class Constraints {
 
     public static IMatcher<IConstraint> matcher() {
-        return M.<IConstraint>cases(
+        return M.req("Not a constraint", M.<IConstraint>cases(
             // @formatter:off
             AstConstraints.matcher(),
             BaseConstraints.matcher(),
@@ -35,7 +35,7 @@ public class Constraints {
             SymbolicConstraints.matcher(),
             PolyConstraints.matcher()
             // @formatter:on
-        );
+        ));
     }
 
     public static IMatcher<Integer> priorityMatcher() {
@@ -44,7 +44,7 @@ public class Constraints {
 
     public static ITerm build(IConstraint constraint) {
         return constraint.match(IConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             AstConstraints::build,
             BaseConstraints::build,
             EqualityConstraints::build,
@@ -67,18 +67,18 @@ public class Constraints {
         return TB.newString(String.join("", Collections.nCopies(prio, "!")));
     }
 
-    public static IConstraint find(IConstraint constraint, IUnifier unifier) {
+    public static IConstraint substitute(IConstraint constraint, ISubstitution.Immutable subst) {
         return constraint.match(IConstraint.Cases.<IConstraint>of(
-            // @formatter:off
-            c -> AstConstraints.find(c, unifier),
-            c -> BaseConstraints.find(c, unifier),
-            c -> EqualityConstraints.find(c, unifier),
-            c -> ScopeGraphConstraints.find(c, unifier),
-            c -> NameResolutionConstraints.find(c, unifier),
-            c -> RelationConstraints.find(c, unifier),
-            c -> SetConstraints.find(c, unifier),
-            c -> SymbolicConstraints.find(c, unifier),
-            c -> PolyConstraints.find(c, unifier)
+        // @formatter:off
+            c -> AstConstraints.substitute(c, subst),
+            c -> BaseConstraints.substitute(c, subst),
+            c -> EqualityConstraints.substitute(c, subst),
+            c -> ScopeGraphConstraints.substitute(c, subst),
+            c -> NameResolutionConstraints.substitute(c, subst),
+            c -> RelationConstraints.substitute(c, subst),
+            c -> SetConstraints.substitute(c, subst),
+            c -> SymbolicConstraints.substitute(c, subst),
+            c -> PolyConstraints.substitute(c, subst)
             // @formatter:on
         ));
     }

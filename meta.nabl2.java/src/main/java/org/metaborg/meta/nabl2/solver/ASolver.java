@@ -3,7 +3,6 @@ package org.metaborg.meta.nabl2.solver;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.time.AggregateTimer;
 
@@ -31,7 +30,7 @@ public abstract class ASolver {
         return core.find.apply(term);
     }
 
-    protected ITermVar fresh(String base) {
+    protected String fresh(String base) {
         return core.fresh.apply(base);
     }
 

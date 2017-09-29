@@ -3,17 +3,13 @@ package org.metaborg.meta.nabl2.unification;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.metaborg.meta.nabl2.solver.TypeException;
-import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.functions.Function1;
@@ -27,38 +23,15 @@ public abstract class Unifier implements IUnifier {
 
     protected abstract Map<ITermVar, ITerm> reps();
 
+    @Override public Set<ITermVar> getAllVars() {
+        return reps().keySet();
+    }
+
     /**
      * Find representative term.
      */
     @Override public ITerm find(ITerm term) {
-        // @formatter:off
-        return term.isGround() ? term : term.match(Terms.<ITerm>cases(
-            (appl) -> TB.newAppl(appl.getOp(), appl.getArgs().stream().map(this::find).collect(Collectors.toList()), appl.getAttachments()),
-            (list) -> findList(list),
-            (string) -> string,
-            (integer) -> integer,
-            (var) -> findVarRep(var)
-        ));
-        // @formatter:on
-    }
-
-    public IListTerm findList(IListTerm list) {
-        // @formatter:off
-        IListTerm rep = list.isGround() ? list : list.match(ListTerms.<IListTerm>cases(
-            (cons) -> TB.newCons(find(cons.getHead()), findList(cons.getTail()), cons.getAttachments()),
-            (nil) -> nil,
-            (var) -> {
-                ITerm varRep = findVarRep(var);
-                return IListTerm.matcher().match(varRep).orElseThrow(() -> {
-                    return new TypeException("Expected list term, but got " + varRep);
-                });
-            }
-        ));
-        // @formatter:on
-        if(list.isLocked()) {
-            rep = rep.withLocked(true);
-        }
-        return rep;
+        return term.isGround() ? term : M.somebu(M.preserveLocking(M.var(this::findVarRep))).apply(term);
     }
 
     protected abstract ITerm findVarRep(ITermVar var);
@@ -83,7 +56,7 @@ public abstract class Unifier implements IUnifier {
     public static class Immutable extends Unifier implements IUnifier.Immutable, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final Map.Immutable<ITermVar, ITerm> reps;
+        private Map.Immutable<ITermVar, ITerm> reps;
         private final Map.Immutable<ITermVar, Integer> sizes;
 
         private Immutable(Map.Immutable<ITermVar, ITerm> reps, Map.Immutable<ITermVar, Integer> sizes) {
@@ -95,15 +68,14 @@ public abstract class Unifier implements IUnifier {
             return reps;
         }
 
-        @Override public Set<ITermVar> getAllVars() {
-            return reps.keySet();
-        }
-
         @Override protected ITerm findVarRep(ITermVar var) {
             if(!reps.containsKey(var)) {
                 return var;
             } else {
-                ITerm rep = find(reps.get(var));
+                final Map.Transient<ITermVar, ITerm> reps = this.reps.asTransient();
+                final ITerm rep = find(reps.get(var));
+                reps.__put(var, rep);
+                this.reps = reps.freeze();
                 return rep;
             }
         }
@@ -112,7 +84,10 @@ public abstract class Unifier implements IUnifier {
             if(!reps.containsKey(var)) {
                 return var;
             } else {
-                ITerm rep = findShallow(reps.get(var));
+                final Map.Transient<ITermVar, ITerm> reps = this.reps.asTransient();
+                final ITerm rep = findShallow(reps.get(var));
+                reps.__put(var, rep);
+                this.reps = reps.freeze();
                 return rep;
             }
         }
@@ -135,10 +110,6 @@ public abstract class Unifier implements IUnifier {
         private Transient(Map.Transient<ITermVar, ITerm> reps, Map.Transient<ITermVar, Integer> sizes) {
             this.reps = reps;
             this.sizes = sizes;
-        }
-
-        @Override public Set<ITermVar> getAllVars() {
-            return reps.keySet();
         }
 
         @Override protected ITerm findVarRep(ITermVar var) {

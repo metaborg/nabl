@@ -138,7 +138,7 @@ public class Terms {
             return appl0(op, (appl) -> appl);
         }
 
-        public static <T, R> IMatcher<R> appl0(String op, Function1<? super IApplTerm, R> f) {
+        public static <R> IMatcher<R> appl0(String op, Function1<? super IApplTerm, R> f) {
             return term -> {
                 return term.match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
@@ -310,7 +310,7 @@ public class Terms {
                     Terms::empty, Terms::empty, Terms::empty));
         }
 
-        public static <T> IMatcher<? extends List<? extends ITerm>> listElems() {
+        public static IMatcher<? extends List<? extends ITerm>> listElems() {
             return listElems(M.term());
         }
 
@@ -514,6 +514,16 @@ public class Terms {
 
         // metadata
 
+        public static <R> IMatcher<R> req(IMatcher<R> matcher) {
+            return req("Cannot match", matcher);
+        }
+
+        public static <R> IMatcher<R> req(String msg, IMatcher<R> matcher) {
+            return t -> {
+                return matcher.match(t).map(Optional::of).orElseThrow(() -> new IllegalArgumentException(msg + ": " + t));
+            };
+        }
+
         @SuppressWarnings("unchecked") public static <R extends ITerm> IMatcher<R>
                 preserveAttachments(IMatcher<R> matcher) {
             return t -> matcher.match(t).map(r -> (R) r.withAttachments(t.getAttachments()));
@@ -588,7 +598,7 @@ public class Terms {
                     Terms::empty, Terms::empty, Terms::empty, Terms::empty));
         }
 
-        public static <T, R, E extends Throwable> ICheckedMatcher<R, E> appl0(String op,
+        public static <R, E extends Throwable> ICheckedMatcher<R, E> appl0(String op,
                 CheckedFunction1<? super IApplTerm, R, ? extends E> f) {
             return term -> {
                 return term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> {
@@ -766,7 +776,7 @@ public class Terms {
 
     // util
 
-    private static <T> Optional<T> empty(ITerm term) {
+    private static <T> Optional<T> empty(@SuppressWarnings("unused") ITerm term) {
         return Optional.empty();
     }
 

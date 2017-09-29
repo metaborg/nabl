@@ -3,6 +3,9 @@ package org.metaborg.meta.nabl2.solver.components;
 import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.base.ImmutableCConj;
+import org.metaborg.meta.nabl2.constraints.base.ImmutableCExists;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
@@ -19,6 +22,7 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.Maps;
@@ -58,7 +62,7 @@ public class PolymorphismComponent extends ASolver {
         }
         SolveResult result = SolveResult.constraints(
                 // @formatter:off
-                ImmutableCEqual.of(gen.getScheme(), scheme, gen.getMessageInfo()),
+                ImmutableCEqual.of(gen.getDeclaration(), scheme, gen.getMessageInfo()),
                 ImmutableCEqual.of(gen.getGenVars(), TB.newList(subst.keySet()), gen.getMessageInfo())
                 // @formatter:on
         );
@@ -66,7 +70,7 @@ public class PolymorphismComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CInstantiate inst) {
-        final ITerm schemeTerm = find(inst.getScheme());
+        final ITerm schemeTerm = find(inst.getDeclaration());
         if(!isTermInactive.test(schemeTerm)) {
             return Optional.empty();
         }
@@ -76,18 +80,22 @@ public class PolymorphismComponent extends ASolver {
         if(forall.isPresent()) {
             final Forall scheme = forall.get();
             scheme.getTypeVars().stream().forEach(v -> {
-                subst.put(v, fresh(v.getName()));
+                subst.put(v, TB.newVar("", v.getName()));
             });
             type = subst(scheme.getType(), subst);
         } else {
             type = schemeTerm;
         }
-        SolveResult result = SolveResult.constraints(
+        final IConstraint constraint =
                 // @formatter:off
-                ImmutableCEqual.of(inst.getType(), type, inst.getMessageInfo()),
-                ImmutableCEqual.of(inst.getInstVars(), TB.newList(subst.keySet()), inst.getMessageInfo())
+                ImmutableCExists.of(subst.values(),
+                        ImmutableCConj.of(Iterables2.<IConstraint>from(
+                                ImmutableCEqual.of(inst.getType(), type, inst.getMessageInfo()),
+                                ImmutableCEqual.of(inst.getInstVars(), TB.newList(subst.keySet()), inst.getMessageInfo())
+                        ), inst.getMessageInfo()),
+                        inst.getMessageInfo());
                 // @formatter:on
-        );
+        SolveResult result = SolveResult.constraints(constraint);
         return Optional.of(result);
     }
 

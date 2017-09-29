@@ -16,6 +16,8 @@ template options
 
 context-free syntax
 
+  Var.This = "this"
+
   Message.DefaultMessage =
 
   TermIndex.DefaultTermIndex =
@@ -48,4 +50,4 @@ context-free priorities
 
 lexical syntax
 
-  Keyword = "seteq" | "new"
+  Keyword = "seteq" | "new" | "this"

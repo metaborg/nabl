@@ -53,7 +53,7 @@ public class BaseMultiFileSolver extends BaseSolver {
     }
 
     public ISolution solveIntra(GraphSolution initial, Collection<ITermVar> intfVars, Collection<Scope> intfScopes,
-            Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
+            Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
         final SolverConfig config = initial.config();
 

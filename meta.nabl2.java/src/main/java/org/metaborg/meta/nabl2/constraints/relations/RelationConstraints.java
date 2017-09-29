@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public final class RelationConstraints {
 
@@ -44,7 +44,7 @@ public final class RelationConstraints {
         ));
     }
 
-    public static IRelationConstraint find(IRelationConstraint constraint, IUnifier unifier) {
+    public static IRelationConstraint substitute(IRelationConstraint constraint, ISubstitution.Immutable unifier) {
         return constraint.match(IRelationConstraint.Cases.<IRelationConstraint>of(
             // @formatter:off
             build -> ImmutableCBuildRelation.of(

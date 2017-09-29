@@ -9,6 +9,9 @@ import org.metaborg.meta.nabl2.terms.Terms.M;
 
 public class Unifiers {
 
+    /**
+     * Returns a boolean indicating whether the two terms can be unified.
+     */
     public static boolean canUnify(ITerm left, ITerm right) {
         // @formatter:off
         return left.match(Terms.cases(

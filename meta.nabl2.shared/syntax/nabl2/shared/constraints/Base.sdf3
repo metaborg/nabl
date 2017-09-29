@@ -4,6 +4,7 @@ imports
 
   nabl2/shared/common/Identifiers
   nabl2/shared/common/Messages
+  nabl2/shared/common/CTerms
 
 template options
 
@@ -14,10 +15,15 @@ context-free syntax
   Constraint.CTrue   = <true <MessagePosition>>
   Constraint.CFalse  = <false <Message>>
 
+  Constraint.CConj   = <(<{Constraint ","}+>) <MessagePosition>>
+
+  Constraint.CExists = <exists <{CVar " "}+>. <Constraint> <MessagePosition>>
+  Constraint.CNew    = <new <{CVar " "}+>. <Constraint> <MessagePosition>>
+
 lexical syntax
 
   ConstraintPriority = "!"*
 
 lexical syntax
 
-  Keyword = "true" | "false"
+  Keyword = "true" | "false" | "exists"

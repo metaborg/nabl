@@ -170,9 +170,3 @@ rules
     end
 
   nabl2--message-pos = ?Message(_,_,pos) < !pos + id
-
-rules
-
-  nabl2--fresh =
-    prim("SG_fresh")
-

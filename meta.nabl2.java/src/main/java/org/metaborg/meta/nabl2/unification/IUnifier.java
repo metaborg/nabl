@@ -12,9 +12,18 @@ public interface IUnifier {
 
     Set<ITermVar> getAllVars();
 
+    /**
+     * Find representative term.
+     */
     ITerm find(ITerm t);
 
     Stream<Tuple2<ITermVar, ITerm>> stream();
+
+    default ISubstitution asSubstitution() {
+        final ISubstitution.Transient subst = Substitution.Transient.of();
+        stream().forEach(vt -> subst.put(vt._1(), vt._2()));
+        return subst.freeze();
+    }
 
     interface Transient extends IUnifier {
 

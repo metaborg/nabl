@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public final class AstConstraints {
 
@@ -31,7 +31,7 @@ public final class AstConstraints {
 
     }
 
-    public static IAstConstraint find(IAstConstraint constraint, IUnifier unifier) {
+    public static IAstConstraint substitute(IAstConstraint constraint, ISubstitution.Immutable unifier) {
         return constraint.match(IAstConstraint.Cases.<IAstConstraint>of(
             // @formatter:off
             prop -> ImmutableCAstProperty.of(

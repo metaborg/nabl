@@ -34,7 +34,6 @@ import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.collections.Properties;
@@ -50,7 +49,7 @@ public class SingleFileSolver extends BaseSolver {
         super(nabl2Debug, callExternal);
     }
 
-    public ISolution solve(GraphSolution initial, Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
+    public ISolution solve(GraphSolution initial, Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
         final SolverConfig config = initial.config();
 

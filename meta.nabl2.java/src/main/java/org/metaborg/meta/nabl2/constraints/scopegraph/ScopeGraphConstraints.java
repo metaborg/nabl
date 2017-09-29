@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public final class ScopeGraphConstraints {
 
@@ -60,7 +60,7 @@ public final class ScopeGraphConstraints {
         ));
     }
 
-    public static IScopeGraphConstraint find(IScopeGraphConstraint constraint, IUnifier unifier) {
+    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, ISubstitution.Immutable unifier) {
         return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
             // @formatter:off
             decl -> ImmutableCGDecl.of(

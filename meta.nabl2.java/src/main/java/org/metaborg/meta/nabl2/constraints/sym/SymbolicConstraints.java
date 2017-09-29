@@ -5,7 +5,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public final class SymbolicConstraints {
 
@@ -34,7 +34,7 @@ public final class SymbolicConstraints {
         ));
     }
 
-    public static ISymbolicConstraint find(ISymbolicConstraint constraint, IUnifier unifier) {
+    public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, ISubstitution.Immutable unifier) {
         return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
             // @formatter:off
             fact -> ImmutableCFact.of(

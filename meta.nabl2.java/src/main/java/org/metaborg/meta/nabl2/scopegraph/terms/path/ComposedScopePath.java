@@ -13,7 +13,6 @@ import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.path.IStep;
 import org.metaborg.meta.nabl2.util.collections.PSequence;
-import org.metaborg.meta.nabl2.util.collections.PSets;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;

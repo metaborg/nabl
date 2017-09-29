@@ -15,14 +15,14 @@ public final class UnificationResult implements Serializable {
     private static final long serialVersionUID = 42L;
 
     private final Set<ITermVar> substituted;
-    private final SetMultimap<ITerm, ITerm> residual;
+    private final SetMultimap<ITermVar, ITerm> residual;
 
     UnificationResult() {
         this.substituted = Sets.newHashSet();
         this.residual = HashMultimap.create();
     }
 
-    boolean addResidual(ITerm left, ITerm right) {
+    boolean addResidual(ITermVar left, ITerm right) {
         return residual.put(left, right);
     }
 
@@ -34,7 +34,7 @@ public final class UnificationResult implements Serializable {
         return substituted;
     }
 
-    public Set<Map.Entry<ITerm, ITerm>> getResidual() {
+    public Set<Map.Entry<ITermVar, ITerm>> getResidual() {
         return residual.entries();
     }
 

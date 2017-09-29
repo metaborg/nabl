@@ -126,7 +126,7 @@ public class ConstraintTerms {
         return term;
     }
 
-    private static ITerm explicateList(IListTerm list, final boolean wasLocked) {
+    private static ITerm explicateList(IListTerm list, @SuppressWarnings("unused") final boolean wasLocked) {
         // toStrategoList
         final List<ITerm> terms = Lists.newArrayList();
         final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();

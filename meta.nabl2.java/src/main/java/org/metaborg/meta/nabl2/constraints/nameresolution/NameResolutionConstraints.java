@@ -7,7 +7,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public final class NameResolutionConstraints {
 
@@ -47,7 +47,7 @@ public final class NameResolutionConstraints {
         ));
     }
 
-    public static INameResolutionConstraint find(INameResolutionConstraint constraint, IUnifier unifier) {
+    public static INameResolutionConstraint substitute(INameResolutionConstraint constraint, ISubstitution.Immutable unifier) {
         return constraint.match(INameResolutionConstraint.Cases.<INameResolutionConstraint>of(
             // @formatter:off
             res -> ImmutableCResolve.of(

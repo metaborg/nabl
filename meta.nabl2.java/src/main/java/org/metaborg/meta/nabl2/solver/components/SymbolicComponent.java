@@ -25,7 +25,8 @@ public class SymbolicComponent extends ASolver {
         this.goals = initial.getGoals().asTransient();
     }
 
-    public SeedResult seed(ISymbolicConstraints solution, IMessageInfo message) throws InterruptedException {
+    public SeedResult seed(ISymbolicConstraints solution, @SuppressWarnings("unused") IMessageInfo message)
+            throws InterruptedException {
         facts.__insertAll(solution.getFacts());
         goals.__insertAll(solution.getGoals());
         return SeedResult.empty();
@@ -33,7 +34,7 @@ public class SymbolicComponent extends ASolver {
 
     public Optional<SolveResult> solve(ISymbolicConstraint constraint) throws InterruptedException {
         constraint.match(ISymbolicConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             fact -> facts.__insert(fact.getFact()),
             goal -> goals.__insert(goal.getGoal())
             // @formatter:on

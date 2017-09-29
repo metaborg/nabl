@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public final class SetConstraints {
 
@@ -37,7 +37,7 @@ public final class SetConstraints {
         ));
     }
 
-    public static ISetConstraint find(ISetConstraint constraint, IUnifier unifier) {
+    public static ISetConstraint substitute(ISetConstraint constraint, ISubstitution.Immutable unifier) {
         return constraint.match(ISetConstraint.Cases.of(
             // @formatter:off
             subseteq -> ImmutableCSubsetEq.of(

@@ -14,7 +14,7 @@ import org.metaborg.meta.nabl2.terms.generic.TB;
 @Serial.Version(value = 42L)
 public abstract class CGeneralize implements IPolyConstraint {
 
-    @Value.Parameter public abstract ITerm getScheme();
+    @Value.Parameter public abstract ITerm getDeclaration();
 
     @Value.Parameter public abstract ITermVar getGenVars();
 
@@ -39,7 +39,7 @@ public abstract class CGeneralize implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getScheme()).append(" genOf(").append(TB.newList((ITerm) getGenVars()))
+        return MessageContent.builder().append(getDeclaration()).append(" genOf(").append(TB.newList((ITerm) getGenVars()))
                 .append(") ").append(getType()).build();
     }
 

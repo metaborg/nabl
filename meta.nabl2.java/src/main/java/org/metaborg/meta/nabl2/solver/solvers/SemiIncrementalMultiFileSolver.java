@@ -37,7 +37,6 @@ import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.util.functions.Function1;
@@ -55,7 +54,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
     }
 
     public ISolution solveInter(ISolution initial, Iterable<? extends ISolution> unitSolutions, IMessageInfo message,
-            Function1<String, ITermVar> fresh, ICancel cancel, IProgress progress)
+            Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
         final SolverConfig config = initial.config();
 

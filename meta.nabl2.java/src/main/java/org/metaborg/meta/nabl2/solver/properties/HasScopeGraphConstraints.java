@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
 public class HasScopeGraphConstraints implements IConstraintSetProperty {
@@ -11,7 +12,19 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
         return constraint.match(IConstraint.Cases.of(
             // @formatter:off
             c -> false,
-            c -> false,
+            c -> c.match(IBaseConstraint.Cases.of(
+                t -> false,
+                f -> false,
+                cc -> {
+                    boolean change = false;
+                    for(IConstraint ccc : cc.getConstraints()) {
+                        change |= add(ccc);
+                    }
+                    return change;
+                },
+                e -> add(e.getConstraint()),
+                n -> add(n.getConstraint())
+            )),
             c -> false,
             c -> {
                 i++;
@@ -30,7 +43,19 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
         return constraint.match(IConstraint.Cases.of(
             // @formatter:off
             c -> false,
-            c -> false,
+            c -> c.match(IBaseConstraint.Cases.of(
+                t -> false,
+                f -> false,
+                cc -> {
+                    boolean change = false;
+                    for(IConstraint ccc : cc.getConstraints()) {
+                        change |= remove(ccc);
+                    }
+                    return change;
+                },
+                e -> remove(e.getConstraint()),
+                n -> remove(n.getConstraint())
+            )),
             c -> false,
             c -> {
                 i--;

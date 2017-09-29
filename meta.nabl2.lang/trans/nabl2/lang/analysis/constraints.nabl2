@@ -15,6 +15,9 @@ rules
   Clause[[ CFalse(msg) ^ (s) ]] :=
     Message[[ msg ^ (s) ]].
 
+  Clause[[ CExists(_,constraints,_) ^ (s) ]] :=
+    Map1(Clause)[[ constraints ^ (s) ]].
+
 rules
 
   Clause[[ CEqual(term1, term2, msg) ^ (s) ]] :=

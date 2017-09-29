@@ -37,10 +37,10 @@ rules // top-level functions that are called during analysis
 rules
 
   nabl2--new-var(|source): n -> CVar(source,n')
-    with n' := <nabl2--fresh> (source, <is-string <+ !"v"> n)
+    with n' := <is-string <+ !"v"> n
 
   nabl2--new-scope(|source): n -> Scope(source,n')
-    with n' := <nabl2--fresh> (source, <is-string <+ !"s"> n)
+    with n' := <is-string <+ !"s"> n
 
 rules
 
