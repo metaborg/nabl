@@ -15,10 +15,6 @@
     <relativePath>../releng/parent/language</relativePath>
   </parent>
   
-  <properties>
-    <maven.test.skip>true</maven.test.skip>
-  </properties>
-
   <dependencies>
     <!-- compile -->
     <dependency>
@@ -86,6 +82,7 @@
           </execution>
         </executions>
         <configuration>
+          <skip>true</skip>
           <languageUnderTest>org.metaborg:org.metaborg.meta.nabl2.test:${metaborg-version}</languageUnderTest>
         </configuration>
       </plugin>
