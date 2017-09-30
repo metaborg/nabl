@@ -35,13 +35,13 @@
       <version>${metaborg-version}</version>
       <type>spoofax-language</type>
     </dependency>
-    <!--dependency>
+    <dependency>
       <groupId>org.metaborg</groupId>
       <artifactId>org.metaborg.meta.lang.spt</artifactId>
       <version>${metaborg-version}</version>
       <type>spoofax-language</type>
       <scope>test</scope>
-    </dependency-->
+    </dependency>
 
     <!-- source -->
     <dependency>
@@ -73,14 +73,14 @@
         <groupId>org.metaborg</groupId>
         <artifactId>spoofax-maven-plugin</artifactId>
         <version>${metaborg-version}</version>
-        <!--executions>
+        <executions>
           <execution>
             <phase>test</phase>
             <goals>
               <goal>test</goal>
             </goals>
           </execution>
-        </executions-->
+        </executions>
         <configuration>
           <languageUnderTest>org.metaborg:org.metaborg.meta.nabl2.test:${metaborg-version}</languageUnderTest>
         </configuration>
