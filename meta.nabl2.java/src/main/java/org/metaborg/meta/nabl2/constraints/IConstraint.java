@@ -4,6 +4,7 @@ import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
+import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
@@ -43,6 +44,8 @@ public interface IConstraint {
 
         T casePoly(IPolyConstraint constraint);
 
+        T caseControlflow(IControlFlowConstraint constraint);
+
         static <T> Cases<T> of(
             // @formatter:off
             Function<IAstConstraint,T> onAst,
@@ -53,7 +56,8 @@ public interface IConstraint {
             Function<IRelationConstraint,T> onRelation,
             Function<ISetConstraint,T> onSet,
             Function<ISymbolicConstraint,T> onSym,
-            Function<IPolyConstraint,T> onPoly
+            Function<IPolyConstraint,T> onPoly,
+            Function<IControlFlowConstraint,T> onControlflow
             // @formatter:on
         ) {
             return new Cases<T>() {
@@ -94,6 +98,10 @@ public interface IConstraint {
                     return onPoly.apply(constraint);
                 }
 
+                @Override public T caseControlflow(IControlFlowConstraint constraint) {
+                    return onControlflow.apply(constraint);
+                }
+
             };
         }
 
@@ -112,6 +120,7 @@ public interface IConstraint {
             private Function<? super ISetConstraint, T> onSet = null;
             private Function<? super ISymbolicConstraint, T> onSym = null;
             private Function<? super IPolyConstraint, T> onPoly = null;
+            private Function<? super IControlFlowConstraint, T> onControlflow = null;
 
             public Builder<T> onAst(Function<? super IAstConstraint, T> onAst) {
                 this.onAst = onAst;
@@ -158,6 +167,11 @@ public interface IConstraint {
                 return this;
             }
 
+            public Builder<T> onControlflow(Function<? super IControlFlowConstraint, T> onControlflow) {
+                this.onControlflow = onControlflow;
+                return this;
+            }
+
             public Cases<T> otherwise(Function<? super IConstraint, T> otherwise) {
                 return new Cases<T>() {
 
@@ -198,6 +212,10 @@ public interface IConstraint {
                         return(onPoly != null ? onPoly.apply(constraint) : otherwise.apply(constraint));
                     }
 
+                    @Override public T caseControlflow(IControlFlowConstraint constraint) {
+                        return(onControlflow != null ? onControlflow.apply(constraint) : otherwise.apply(constraint));
+                    }
+
                 };
             }
 
@@ -227,6 +245,8 @@ public interface IConstraint {
 
         T casePoly(IPolyConstraint constraint) throws E;
 
+        T caseControlflow(IControlFlowConstraint constraint) throws E;
+
         static <T, E extends Throwable> CheckedCases<T, E> of(
             // @formatter:off
             CheckedFunction1<IAstConstraint,T,E> onAst,
@@ -237,7 +257,8 @@ public interface IConstraint {
             CheckedFunction1<IRelationConstraint,T,E> onRelation,
             CheckedFunction1<ISetConstraint,T,E> onSet,
             CheckedFunction1<ISymbolicConstraint,T,E> onSym,
-            CheckedFunction1<IPolyConstraint,T,E> onPoly
+            CheckedFunction1<IPolyConstraint,T,E> onPoly,
+            CheckedFunction1<IControlFlowConstraint,T,E> onControlflow
             // @formatter:on
         ) {
             return new CheckedCases<T, E>() {
@@ -278,6 +299,10 @@ public interface IConstraint {
                     return onPoly.apply(constraint);
                 }
 
+                @Override public T caseControlflow(IControlFlowConstraint constraint) throws E {
+                    return onControlflow.apply(constraint);
+                }
+
             };
         }
 
@@ -296,6 +321,7 @@ public interface IConstraint {
             private CheckedFunction1<? super ISetConstraint, T, E> onSet = null;
             private CheckedFunction1<? super ISymbolicConstraint, T, E> onSym = null;
             private CheckedFunction1<? super IPolyConstraint, T, E> onPoly = null;
+            private CheckedFunction1<? super IControlFlowConstraint, T, E> onControlflow = null;
 
             public Builder<T, E> onAst(CheckedFunction1<? super IAstConstraint, T, E> onAst) {
                 this.onAst = onAst;
@@ -343,6 +369,11 @@ public interface IConstraint {
                 return this;
             }
 
+            public Builder<T, E> onControlflow(CheckedFunction1<? super IControlFlowConstraint, T, E> onControlflow) {
+                this.onControlflow = onControlflow;
+                return this;
+            }
+
             public CheckedCases<T, E> otherwise(CheckedFunction1<? super IConstraint, T, E> otherwise) {
                 return new CheckedCases<T, E>() {
 
@@ -381,6 +412,10 @@ public interface IConstraint {
 
                     @Override public T casePoly(IPolyConstraint constraint) throws E {
                         return(onPoly != null ? onPoly.apply(constraint) : otherwise.apply(constraint));
+                    }
+
+                    @Override public T caseControlflow(IControlFlowConstraint constraint) throws E {
+                        return(onControlflow != null ? onControlflow.apply(constraint) : otherwise.apply(constraint));
                     }
 
                 };

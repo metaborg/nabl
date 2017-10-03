@@ -58,7 +58,7 @@ public interface ISetConstraint extends IConstraint {
 
     public static boolean is(IConstraint constraint) {
         return constraint.match(IConstraint.Cases.of(c -> false, c -> false, c -> false, c -> false, c -> false,
-                c -> false, c -> true, c -> false, c -> false));
+                c -> false, c -> true, c -> false, c -> false, c -> false));
     }
 
 }
