@@ -46,7 +46,7 @@ rules
     with n' := <is-string <+ !"s"> n
 
   nabl2--new-cfg-scope(|source): n -> CFGNode(source,n')
-    with n' := <nabl2--fresh> (source, <is-string <+ !"c"> n)
+    with n' := <is-string <+ !"c"> n
 
 rules
 
