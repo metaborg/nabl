@@ -18,41 +18,36 @@ import io.usethesource.capsule.SetMultimap;
 
 public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
 
-    private final SetMultimap<I, K> keys;
-    private final Map<Tuple2<I, K>, V> values;
-
-    protected Properties(SetMultimap<I, K> keys, Map<Tuple2<I, K>, V> values) {
-        this.keys = keys;
-        this.values = values;
-    }
+    protected abstract SetMultimap<I, K> keys();
+    protected abstract Map<Tuple2<I, K>, V> values();
 
     @Override public java.util.Set<I> getIndices() {
-        return keys.keySet();
+        return keys().keySet();
     }
 
     @Override public Set<K> getDefinedKeys(I index) {
-        return keys.get(index);
+        return keys().get(index);
     }
 
     @Override public Optional<V> getValue(I index, K key) {
-        return Optional.ofNullable(values.get(ImmutableTuple2.of(index, key)));
+        return Optional.ofNullable(values().get(ImmutableTuple2.of(index, key)));
     }
 
     @Override public boolean contains(I index) {
-        return keys.containsKey(index);
+        return keys().containsKey(index);
     }
 
     @Override public boolean contains(I index, K key) {
-        return values.containsKey(ImmutableTuple2.of(index, key));
+        return values().containsKey(ImmutableTuple2.of(index, key));
     }
 
     @Override public Stream<Tuple3<I, K, V>> stream() {
-        return values.entrySet().stream()
+        return values().entrySet().stream()
                 .map(entry -> ImmutableTuple3.of(entry.getKey()._1(), entry.getKey()._2(), entry.getValue()));
     }
 
     @Override public String toString() {
-        return values.toString();
+        return values().toString();
     }
 
 
@@ -64,9 +59,16 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
         private final Map.Immutable<Tuple2<I, K>, V> values;
 
         private Immutable(SetMultimap.Immutable<I, K> keys, Map.Immutable<Tuple2<I, K>, V> values) {
-            super(keys, values);
             this.keys = keys;
             this.values = values;
+        }
+
+        @Override protected SetMultimap<I, K> keys() {
+            return keys;
+        }
+
+        @Override protected Map<Tuple2<I, K>, V> values() {
+            return values;
         }
 
         public static <I, K, V> Properties.Immutable<I, K, V> of() {
@@ -86,9 +88,16 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
         private final Map.Transient<Tuple2<I, K>, V> values;
 
         private Transient(SetMultimap.Transient<I, K> keys, Map.Transient<Tuple2<I, K>, V> values) {
-            super(keys, values);
             this.keys = keys;
             this.values = values;
+        }
+
+        @Override protected SetMultimap<I, K> keys() {
+            return keys;
+        }
+
+        @Override protected Map<Tuple2<I, K>, V> values() {
+            return values;
         }
 
         @Override public Optional<V> putValue(I index, K key, V value) {
