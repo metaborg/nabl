@@ -8,9 +8,12 @@ import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.spoofax.analysis.StrategoAnalysis;
 import org.metaborg.meta.nabl2.stratego.ConstraintTerms;
+import org.metaborg.meta.nabl2.stratego.StrategoTermIndices;
 import org.metaborg.meta.nabl2.stratego.StrategoTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.spoofax.interpreter.core.InterpreterException;
+import org.spoofax.interpreter.core.Tools;
+import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.util.NotImplementedException;
@@ -30,10 +33,19 @@ public abstract class AnalysisPrimitive extends ScopeGraphContextPrimitive {
         if(sterms.size() < 1) {
             throw new IllegalArgumentException("Expected as first term argument: analysis");
         }
-        if(!(sterms.get(0) instanceof StrategoAnalysis)) {
+        final IStrategoTerm analysisTerm = sterms.get(0);
+        final StrategoAnalysis analysis;
+        if((analysisTerm instanceof StrategoAnalysis)) {
+            analysis = (StrategoAnalysis) analysisTerm;
+        } else if(Tools.isTermAppl(analysisTerm)
+                && Tools.hasConstructor((IStrategoAppl) analysisTerm, "AnalysisToken", 0)) {
+            // TODO Remove legacy case after bootstrapping
+            analysis = StrategoTermIndices.get(analysisTerm)
+                    .map(idx -> new StrategoAnalysis(context.unit(idx.getResource())))
+                    .orElseThrow(() -> new IllegalArgumentException("Not a valid analysis term."));
+        } else {
             throw new IllegalArgumentException("Not a valid analysis term.");
         }
-        final StrategoAnalysis analysis = (StrategoAnalysis) sterms.get(0);
         return call(analysis, sterm, sterms, factory);
     }
 
