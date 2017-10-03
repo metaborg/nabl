@@ -56,7 +56,7 @@ rules
  <+ fatal-err(|"Occurrence position must be a term or a scope variable")
 
   nabl2--new-cfg-scope(|source): n -> CFGNode(source,n')
-    with n' := <nabl2--fresh> (source, <is-string <+ !"c"> n)
+    with n' := <is-string <+ !"c"> n
 
 rules
 

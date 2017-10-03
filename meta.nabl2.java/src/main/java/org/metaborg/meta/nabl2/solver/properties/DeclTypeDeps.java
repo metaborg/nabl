@@ -74,7 +74,8 @@ public class DeclTypeDeps implements IConstraintSetProperty {
         return constraint.match(
                 IConstraint.Cases.of(DeclTypeDeps::emptyVarDeps, DeclTypeDeps::getVarDeps, DeclTypeDeps::emptyVarDeps,
                         DeclTypeDeps::emptyVarDeps, DeclTypeDeps::getVarDeps, DeclTypeDeps::emptyVarDeps,
-                        DeclTypeDeps::emptyVarDeps, DeclTypeDeps::emptyVarDeps, DeclTypeDeps::getVarDeps));
+                        DeclTypeDeps::emptyVarDeps, DeclTypeDeps::emptyVarDeps, DeclTypeDeps::getVarDeps,
+                        DeclTypeDeps::emptyVarDeps));
     }
 
     private static Multimap<ITermVar, ITerm> emptyVarDeps(@SuppressWarnings("unused") IConstraint constraint) {
