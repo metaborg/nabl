@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -22,6 +23,7 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.ImmutableNameResolutionResult;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
@@ -48,6 +50,9 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.Sets;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
+import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
@@ -82,14 +87,16 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
+        final IProperties.Transient<Occurrence, ITerm, ITerm> properties = initial.declProperties().melt();
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
+                new NameResolutionComponent(core, scopeGraph, nameResolution, properties);
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.melt(initial.relations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -101,6 +108,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                     .onRelation(relationSolver::solve)
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
+                    .onControlflow(cfgSolver::solve)
                     .otherwise(ISolver.deny("Not allowed in this phase"))
                     // @formatter:on
                 );
@@ -111,6 +119,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
+                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -134,6 +143,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
             // solve constraints
             nameResolutionSolver.update();
+            cfgSolver.update();
             SolveResult solveResult = solver.solve(constraints);
             messages.addAll(solveResult.messages());
 
@@ -143,9 +153,13 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
+            
+            // TODO: add dataflow solver call here
+            
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, messages.freeze(), solveResult.constraints());
+                    unifierResult, symbolicConstraints, cfg, messages.freeze(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

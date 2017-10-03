@@ -12,6 +12,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -30,6 +31,7 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
@@ -53,6 +55,9 @@ import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
+import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
 
 public class BaseSolver {
 
@@ -136,11 +141,13 @@ public class BaseSolver {
         }, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
+        final IProperties.Transient<Occurrence, ITerm, ITerm> properties = initial.declProperties().melt();
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
+                new NameResolutionComponent(core, scopeGraph, nameResolution, properties);
         final RelationComponent relationSolver = new RelationComponent(core, r -> false,
                 initial.config().getFunctions(), VariantRelations.melt(initial.relations()));
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
 
         final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
         final IMessages.Transient messages = initial.messages().melt();
@@ -153,15 +160,19 @@ public class BaseSolver {
             seed(symSolver.seed(solution.symbolic(), message), messages, constraints);
         }
         nameResolutionSolver.update();
+        cfgSolver.update();
 
         IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
         NameResolutionResult nameResult = nameResolutionSolver.finish();
         Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
+        IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
+        
+        // TODO: add dataflow solver call here
 
         return ImmutableSolution.of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.nameResolution(),
-                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, messages.freeze(),
+                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, cfg, messages.freeze(),
                 constraints);
     }
 

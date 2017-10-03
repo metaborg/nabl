@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.metaborg.meta.nabl2.constraints.ast.AstConstraints;
 import org.metaborg.meta.nabl2.constraints.base.BaseConstraints;
 import org.metaborg.meta.nabl2.constraints.base.CConj;
+import org.metaborg.meta.nabl2.constraints.controlflow.ControlFlowConstraints;
 import org.metaborg.meta.nabl2.constraints.equality.EqualityConstraints;
 import org.metaborg.meta.nabl2.constraints.nameresolution.NameResolutionConstraints;
 import org.metaborg.meta.nabl2.constraints.poly.PolyConstraints;
@@ -42,7 +43,8 @@ public class Constraints {
             RelationConstraints.matcher(),
             SetConstraints.matcher(),
             SymbolicConstraints.matcher(),
-            PolyConstraints.matcher()
+            PolyConstraints.matcher(),
+            ControlFlowConstraints.matcher()
             // @formatter:on
         ));
     }
@@ -62,7 +64,8 @@ public class Constraints {
             RelationConstraints::build,
             SetConstraints::build,
             SymbolicConstraints::build,
-            PolyConstraints::build
+            PolyConstraints::build,
+            ControlFlowConstraints::build
             // @formatter:on
         ));
     }
@@ -87,7 +90,8 @@ public class Constraints {
             c -> RelationConstraints.substitute(c, subst),
             c -> SetConstraints.substitute(c, subst),
             c -> SymbolicConstraints.substitute(c, subst),
-            c -> PolyConstraints.substitute(c, subst)
+            c -> PolyConstraints.substitute(c, subst),
+            c -> ControlFlowConstraints.substitute(c, subst)
             // @formatter:on
         ));
     }

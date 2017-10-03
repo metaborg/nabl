@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.solver.properties;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
+import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint;
 import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
@@ -73,7 +74,8 @@ public class ActiveVars implements IConstraintSetProperty {
         constraint.match(
                 IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
                         ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars))
+                        ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
+                        ActiveVars::getActiveVars))
                 .stream().map(ITerm::getVars).forEach(vars::addAll);
         return vars;
     }
@@ -161,6 +163,10 @@ public class ActiveVars implements IConstraintSetProperty {
             }
             // @formatter:on
         ));
+    }
+
+    private static Multiset<ITermVar> getActiveVars(@SuppressWarnings("unused") IControlFlowConstraint constraint) {
+        return ImmutableMultiset.of();
     }
 
     private static Multiset<ITermVar> getActiveVars(@SuppressWarnings("unused") ISymbolicConstraint constraint) {

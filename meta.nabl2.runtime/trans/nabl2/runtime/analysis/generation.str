@@ -31,7 +31,10 @@ rules // top-level functions that are called during analysis
   )
 
   nabl2--generate-constraint-file(|source,args) = ?term; nabl2--strict(
-    <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
+    <conc>
+      ( <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
+      , <nabl2--generate-constraint(nabl2--generate-constraint-default-cfg-rule <+ ![]|"default-cfg")> (source,term,args)
+      )
   )
 
 rules
@@ -52,11 +55,16 @@ rules
  <+ nabl2--get-ast-index
  <+ fatal-err(|"Occurrence position must be a term or a scope variable")
 
+  nabl2--new-cfg-scope(|source): n -> CFGNode(source,n')
+    with n' := <nabl2--fresh> (source, <is-string <+ !"c"> n)
+
 rules
 
   // signatures of the generated rules
   nabl2--generate-constraint-init-rule = fail
   nabl2--generate-constraint-default-rule(|) = fail
+  
+  nabl2--generate-constraint-default-cfg-rule(|) = fail
 
   // error throwing wrappers for recursive invocations
   nabl2--generate-constraint(s|name) =

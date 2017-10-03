@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.solver;
 import java.util.Map;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -15,6 +16,8 @@ import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
 
 public interface ISolution extends IPublicSolution {
 
@@ -31,6 +34,8 @@ public interface ISolution extends IPublicSolution {
     @Override Map<String, IVariantRelation.Immutable<ITerm>> relations();
 
     @Override ISymbolicConstraints symbolic();
+    
+    @Override IControlFlowGraph<CFGNode> controlFlowGraph();
 
     IUnifier.Immutable unifier();
 
