@@ -45,7 +45,7 @@ public interface IAstConstraint extends IConstraint {
 
     public static boolean is(IConstraint constraint) {
         return constraint.match(IConstraint.Cases.of(c -> true, c -> false, c -> false, c -> false, c -> false,
-                c -> false, c -> false, c -> false, c -> false));
+                c -> false, c -> false, c -> false, c -> false, c -> false));
     }
 
 }

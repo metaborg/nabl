@@ -10,6 +10,7 @@ imports
 context-free syntax
 
   Scope.Scope = <#<String>-<String>>
+  CFGNode.CFGNode = <##<String>-<String>>
 
   OccurrenceIndex = TermIndex
   OccurrenceIndex = <@<Scope>>

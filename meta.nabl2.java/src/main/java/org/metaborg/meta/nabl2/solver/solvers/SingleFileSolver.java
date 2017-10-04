@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -21,6 +22,7 @@ import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
@@ -42,6 +44,9 @@ import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+
+import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
+import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
 
 public class SingleFileSolver extends BaseSolver {
 
@@ -73,14 +78,16 @@ public class SingleFileSolver extends BaseSolver {
         final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
+        final Properties.Transient<Occurrence, ITerm, ITerm> properties = Properties.Transient.of();
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
+                new NameResolutionComponent(core, scopeGraph, nameResolution, properties);
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -92,6 +99,7 @@ public class SingleFileSolver extends BaseSolver {
                         .onRelation(relationSolver::solve)
                         .onSet(setSolver::solve)
                         .onSym(symSolver::solve)
+                        .onControlflow(cfgSolver::solve)
                         .otherwise(ISolver.deny("Not allowed in this phase"))
                         // @formatter:on
                 );
@@ -102,6 +110,7 @@ public class SingleFileSolver extends BaseSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
+                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -110,15 +119,20 @@ public class SingleFileSolver extends BaseSolver {
 
         try {
             nameResolutionSolver.update();
+            cfgSolver.update();
             SolveResult solveResult = solver.solve(initial.constraints());
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
+            
+            // TODO: add dataflow solver call here
+            
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, solveResult.messages(), solveResult.constraints());
+                    unifierResult, symbolicConstraints, cfg, solveResult.messages(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

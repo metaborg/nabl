@@ -16,6 +16,9 @@ context-free syntax
   Constraint.CGDecl       = [[Occurrence] <- [Scope] [MessagePosition]]
   Constraint.CGRef        = [[Occurrence] -> [Scope] [MessagePosition]]
 
+  Constraint.CFDecl       = [[Occurrence] <~- [Scope] [MessagePosition]]
+  Constraint.CFDirectEdge = [[Occurrence] -~-> [Scope] [MessagePosition]]
+
   Constraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
 
 syntax
