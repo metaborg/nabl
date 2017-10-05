@@ -48,6 +48,19 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
             return Collections.emptySet();
         }
 
+        @Override public int hashCode() {
+            return 0;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            return true;
+        }
     }
 
 }

@@ -55,4 +55,25 @@ public class HashSet<E> implements ISet.Mutable<E>, Serializable {
     @Override public String toString() {
         return elems.toString();
     }
+
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + elems.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final HashSet<E> other = (HashSet<E>) obj;
+        if(!elems.equals(other.elems))
+            return false;
+        return true;
+    }
+    
 }

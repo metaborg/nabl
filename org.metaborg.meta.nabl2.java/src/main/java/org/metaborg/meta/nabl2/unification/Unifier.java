@@ -349,4 +349,36 @@ public class Unifier<D, E> implements IUnifier, Serializable {
         }
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + activeVars.hashCode();
+        result = prime * result + frozenVars.hashCode();
+        result = prime * result + reps.hashCode();
+        result = prime * result + sizes.hashCode();
+        result = prime * result + varDetermined.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final Unifier<D, E> other = (Unifier<D, E>) obj;
+        if(!activeVars.equals(other.activeVars))
+            return false;
+        if(!frozenVars.equals(other.frozenVars))
+            return false;
+        if(!reps.equals(other.reps))
+            return false;
+        if(!sizes.equals(other.sizes))
+            return false;
+        if(!varDetermined.equals(other.varDetermined))
+            return false;
+        return true;
+    }
+    
 }

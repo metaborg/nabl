@@ -78,4 +78,27 @@ public class HashFunction<K, V> implements IFunction.Mutable<K, V>, Serializable
         return fwd.toString();
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + bwd.hashCode();
+        result = prime * result + fwd.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final HashFunction<K, V> other = (HashFunction<K, V>) obj;
+        if(!bwd.equals(other.bwd))
+            return false;
+        if(!fwd.equals(other.fwd))
+            return false;
+        return true;
+    }
+    
 }

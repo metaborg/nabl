@@ -269,8 +269,46 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return smallerL;
     }
 
-    // serialization
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + labelD.hashCode();
+        result = prime * result + labels.hashCode();
+        result = prime * result + noOrder.hashCode();
+        result = prime * result + order.hashCode();
+        result = prime * result + scopeCounter.hashCode();
+        result = prime * result + scopeGraph.hashCode();
+        result = prime * result + wf.hashCode();
+        return result;
+    }
 
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final EsopNameResolution<S, L, O> other = (EsopNameResolution<S, L, O>) obj;
+        if(!labelD.equals(other.labelD))
+            return false;
+        if(!labels.equals(other.labels))
+            return false;
+        if(!noOrder.equals(other.noOrder))
+            return false;
+        if(!order.equals(other.order))
+            return false;
+        if(!scopeCounter.equals(other.scopeCounter))
+            return false;
+        if(!scopeGraph.equals(other.scopeGraph))
+            return false;
+        if(!wf.equals(other.wf))
+            return false;
+        return true;
+    }
+
+    // serialization
+    
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
     }

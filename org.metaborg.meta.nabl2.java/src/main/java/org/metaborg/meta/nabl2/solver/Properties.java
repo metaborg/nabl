@@ -39,4 +39,24 @@ public class Properties<T> implements IProperties<T>, Serializable {
         return data.computeIfAbsent(index, o -> Maps.newHashMap());
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + data.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final Properties<T> other = (Properties<T>) obj;
+        if(!data.equals(other.data))
+            return false;
+        return true;
+    }
+
 }
