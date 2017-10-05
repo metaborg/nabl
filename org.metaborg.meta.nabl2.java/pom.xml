@@ -10,10 +10,6 @@
   <artifactId>org.metaborg.meta.nabl2.java</artifactId>
   <packaging>jar</packaging>
 
-  <properties>
-    <immutables-version>2.4.4</immutables-version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.metaborg</groupId>
@@ -45,13 +41,11 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <version>${immutables-version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>serial</artifactId>
-      <version>${immutables-version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
