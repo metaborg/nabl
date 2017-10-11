@@ -4,10 +4,37 @@ language NaBL2Test
 
 //-------------------------------
 
+test true succeeds [[
+  true
+]] 0 errors
+
 test false fails [[
   false
 ]] 1 error
 
-test true succeeds [[
-  true
-]] 0 errors
+test default error [[
+  default error
+]] 1 error
+
+test default warning [[
+  default warning on [[X]]
+]] 1 warning at #1
+
+test default note [[
+  default note
+]] 1 note
+
+test string error [[
+  string error on [[X]]
+]] 1 error at #1
+   error like "Error"
+
+test formatted warning [[
+  formatted warning on [[X]]
+]] 1 warning at #1
+   warning like "Warning on "
+
+test formatted note [[
+  formatted note about X
+]] 1 note
+   note like "Note about "
