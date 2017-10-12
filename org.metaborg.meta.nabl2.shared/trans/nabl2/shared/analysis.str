@@ -10,12 +10,12 @@ signature
     File    : String * Term -> Marker
  
   constructors
-    AnalyzeInitial : String/* source */ -> AnalysisAction
+    AnalyzeInitial : String/* source */ * Term/* ast */ -> AnalysisAction
     AnalyzeUnit    : String/* source */ * Term/* ast */ * Term/* parameters */ -> AnalysisAction
     AnalyzeFinal   : String/* source */ -> AnalysisAction
 
   constructors
-    CustomInitial : String/* source */ -> AnalysisAction
+    CustomInitial : String/* source */ * Term/* ast */ -> AnalysisAction
     CustomUnit    : String/* source */ * Term/* ast */ * Term/* initial */ -> AnalysisAction
     CustomFinal   : String/* source */ * Term/* custom initial */ * Term/* custom final */  -> AnalysisAction
 
