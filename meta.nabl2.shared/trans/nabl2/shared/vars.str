@@ -9,8 +9,9 @@ imports
 
 rules
 
-  nabl2--is-var     = is-NaBL2-CVar
-  nabl2--all-vars   = collect-all(nabl2--is-var) ; make-set
+  nabl2--is-wld     = fail
+  nabl2--is-var     = is-NaBL2-CVar; not(nabl2--is-wld)
+  nabl2--all-vars   = collect-all(nabl2--is-var); strip-annos; make-set
   nabl2--var-occurs = (id,nabl2--all-vars) ; elem
 
   nabl2--is-ground  = not(collect-one(nabl2--is-var + is-SDF-placeholder))

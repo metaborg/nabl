@@ -15,10 +15,28 @@ context-free syntax
   Constraint.CTrue   = <true <MessagePosition>>
   Constraint.CFalse  = <false <Message>>
 
-  Constraint.CConj   = <(<{Constraint ","}+>) <MessagePosition>>
+  Constraint         = <( <Constraint> )> {bracket}
 
-  Constraint.CExists = <exists <{CVar " "}+>. <Constraint> <MessagePosition>>
-  Constraint.CNew    = <new <{CVar " "}+>. <Constraint> <MessagePosition>>
+  Constraint.CConj   = <
+    <Constraint>,
+    <Constraint>
+  > {right}
+
+  Constraint.CExists = <
+    exists {<{CVar " "}+>}
+      <Constraint>
+  >
+
+  Constraint.CNew = <new <{CVar " "}+> <MessagePosition>>
+
+context-free priorities
+
+  { 
+    Constraint.CNew
+    Constraint.CExists
+  } > { right:
+    Constraint.CConj
+  }
 
 lexical syntax
 
@@ -26,4 +44,4 @@ lexical syntax
 
 lexical syntax
 
-  Keyword = "true" | "false" | "exists"
+  Keyword = "true" | "false" | "exists" | "new"

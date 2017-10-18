@@ -50,8 +50,9 @@ public abstract class CExists implements IBaseConstraint {
             }
             builder.append(var);
         }
-        builder.append("}. ");
+        builder.append("}. (");
         builder.append(getConstraint().pp());
+        builder.append(")");
         return builder.build();
     }
 

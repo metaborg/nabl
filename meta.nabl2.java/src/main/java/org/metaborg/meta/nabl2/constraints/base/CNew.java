@@ -9,15 +9,13 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent.Builder;
-import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class CNew implements IBaseConstraint {
 
-    @Value.Parameter public abstract Set<ITermVar> getNVars();
-
-    @Value.Parameter public abstract IConstraint getConstraint();
+    @Value.Parameter public abstract Set<ITerm> getNVars();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
@@ -40,9 +38,9 @@ public abstract class CNew implements IBaseConstraint {
     @Override public IMessageContent pp() {
         // new {a b c}. c
         final Builder builder = MessageContent.builder();
-        builder.append("new {");
+        builder.append("new ");
         boolean first = true;
-        for(ITermVar var : getNVars()) {
+        for(ITerm var : getNVars()) {
             if(first) {
                 first = false;
             } else {
@@ -50,8 +48,6 @@ public abstract class CNew implements IBaseConstraint {
             }
             builder.append(var);
         }
-        builder.append("}. ");
-        builder.append(getConstraint().pp());
         return builder.build();
     }
 

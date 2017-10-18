@@ -11,18 +11,19 @@ template options
 
 syntax
 
-  CGenRuleDef-CF.NoName     =
-  CGenRuleDef-CF.NameNoArgs = RuleId-LEX
-  CGenRuleDef-CF.Name       = RuleId-LEX "(" LAYOUT?-CF RuleIds-CF LAYOUT?-CF ")"
+  CGenRuleDef-CF.DefaultRule     =
+  CGenRuleDef-CF.InitRule   = "init"
+  CGenRuleDef-CF.RuleNoArgs = RuleId-LEX
+  CGenRuleDef-CF.Rule       = RuleId-LEX "(" LAYOUT?-CF RuleIds-CF LAYOUT?-CF ")"
 
 
-  CGenRuleRefTop-CF.NoName     =
-  CGenRuleRefTop-CF.NameNoArgs = RuleId-LEX
-  CGenRuleRefTop-CF.Name       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+  CGenRuleRefTop-CF.DefaultRule     =
+  CGenRuleRefTop-CF.RuleNoArgs = RuleId-LEX
+  CGenRuleRefTop-CF.Rule       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
 
-  CGenRuleRef-CF.NoName     = "default"
-  CGenRuleRef-CF.NameNoArgs = RuleId-LEX
-  CGenRuleRef-CF.Name       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+  CGenRuleRef-CF.DefaultRule     = "default"
+  CGenRuleRef-CF.RuleNoArgs = RuleId-LEX
+  CGenRuleRef-CF.Rule       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
 
 context-free syntax
 

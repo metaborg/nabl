@@ -17,13 +17,12 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
                 f -> false,
                 cc -> {
                     boolean change = false;
-                    for(IConstraint ccc : cc.getConstraints()) {
-                        change |= add(ccc);
-                    }
+                    change |= add(cc.getLeft());
+                    change |= add(cc.getRight());
                     return change;
                 },
                 e -> add(e.getConstraint()),
-                n -> add(n.getConstraint())
+                n -> false
             )),
             c -> false,
             c -> {
@@ -48,13 +47,12 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
                 f -> false,
                 cc -> {
                     boolean change = false;
-                    for(IConstraint ccc : cc.getConstraints()) {
-                        change |= remove(ccc);
-                    }
+                    change |= remove(cc.getLeft());
+                    change |= remove(cc.getRight());
                     return change;
                 },
                 e -> remove(e.getConstraint()),
-                n -> remove(n.getConstraint())
+                n -> false
             )),
             c -> false,
             c -> {

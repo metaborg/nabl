@@ -36,7 +36,6 @@ import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
@@ -58,7 +57,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         final SolverConfig config = initial.config();
 
         // shared
-        final IUnifier.Transient unifier = Unifier.Transient.of();
+        final IUnifier.Transient unifier = initial.unifier().melt();
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);

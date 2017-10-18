@@ -19,15 +19,9 @@ context-free syntax
 
   Rule.FunDef = [
     [RuleId] << [{CVar ", "}*] >> :=
-        [{FunClause ",\n"}+].
+        [FunBody].
   ]
 
-  FunClause  = Constraint
-  FunClause  = FunCall
-  FunClause  = NewScopes
+  FunBody = Constraint
 
-  RuleClause = FunCall
-
-context-free syntax
-
-  FunCall.FunCall = [[RuleId] << [{CTerm ", "}*] >>]
+  Constraint.FunCall = [[RuleId] << [{CTerm ", "}*] >>]

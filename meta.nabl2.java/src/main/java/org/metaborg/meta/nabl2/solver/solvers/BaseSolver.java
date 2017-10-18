@@ -42,8 +42,10 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
@@ -62,18 +64,18 @@ public class BaseSolver {
         this.callExternal = callExternal;
     }
 
-    public GraphSolution solveGraph(BaseSolution initial, ICancel cancel, IProgress progress)
-            throws SolverException, InterruptedException {
+    public GraphSolution solveGraph(BaseSolution initial, Function1<String, String> fresh, ICancel cancel,
+            IProgress progress) throws SolverException, InterruptedException {
 
         // shared
+        final IUnifier.Transient unifier = Unifier.Transient.of();
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
 
         // solver components
-        final SolverCore core = new SolverCore(initial.config(), t -> t, n -> {
-            throw new IllegalStateException("Fresh variables are not available when solving assumptions.");
-        }, callExternal);
+        final SolverCore core = new SolverCore(initial.config(), unifier::find, fresh, callExternal);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final BaseComponent baseSolver = new BaseComponent(core);
+        final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
 
         try {
@@ -82,6 +84,7 @@ public class BaseSolver {
                     // @formatter:off
                     .onAst(astSolver::solve)
                     .onBase(baseSolver::solve)
+                    .onEquality(equalitySolver::solve)
                     .onScopeGraph(scopeGraphSolver::solve)
                     .otherwise(cc -> Optional.empty())
                     // @formatter:on
@@ -91,7 +94,7 @@ public class BaseSolver {
             final SolveResult solveResult = solver.solve(initial.constraints());
 
             return ImmutableGraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
-                    solveResult.messages(), solveResult.constraints());
+                    equalitySolver.finish(), solveResult.messages(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
@@ -188,6 +191,8 @@ public class BaseSolver {
         @Value.Parameter public abstract IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+
+        @Value.Parameter public abstract IUnifier.Immutable unifier();
 
         @Value.Parameter public abstract IMessages.Immutable messages();
 

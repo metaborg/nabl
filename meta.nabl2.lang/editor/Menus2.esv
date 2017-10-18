@@ -4,4 +4,5 @@ menus
 
   menu: "Generation" (openeditor) (meta) (realtime)
 
+    action: "Explicate"                    = editor-explicate
     action: "Generate Collection Stratego" = generate-str

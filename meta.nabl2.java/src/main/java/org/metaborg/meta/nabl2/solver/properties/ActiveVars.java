@@ -93,9 +93,8 @@ public class ActiveVars implements IConstraintSetProperty {
             f -> ImmutableMultiset.of(),
             c -> {
                 Multiset<ITermVar> activeVars = HashMultiset.create();
-                for(IConstraint cc : c.getConstraints()) {
-                    activeVars.addAll(getActiveVars(cc));
-                }
+                activeVars.addAll(getActiveVars(c.getLeft()));
+                activeVars.addAll(getActiveVars(c.getRight()));
                 return ImmutableMultiset.copyOf(activeVars);
             },
             e -> {
@@ -104,8 +103,8 @@ public class ActiveVars implements IConstraintSetProperty {
                 return ImmutableMultiset.copyOf(activeVars);
             },
             n -> {
-                Multiset<ITermVar> activeVars = HashMultiset.create(getActiveVars(n.getConstraint()));
-                activeVars.removeAll(n.getNVars());
+                Multiset<ITermVar> activeVars = HashMultiset.create();
+                n.getNVars().forEach(v -> activeVars.addAll(v.getVars()));
                 return ImmutableMultiset.copyOf(activeVars);
             }
             // @formatter:on

@@ -16,13 +16,7 @@ lexical syntax
   STRLCID        = [a-z]    [a-zA-Z0-9\_\-\']*
   STRUCID        = [A-Z]    [a-zA-Z0-9\_\-\']*
 
-  MetaPrefix     = "nabl2" {case-insensitive}
-
-  VarId          = VarId-Public
-  VarId          = VarId-Private
-  VarId-Public   = [a-z] [a-zA-Z0-9\_]* "'"*
-  VarId-Public   = MetaPrefix ~[]* {reject}
-  VarId-Private  = MetaPrefix [a-zA-Z0-9\_]* "'"* {deprecated("Names starting with 'nabl2_' are internal, and should not be used.")}
+  VarId          = [a-z] [a-zA-Z0-9\_]* "'"*
   VarId          = Keyword [\']* {reject}
 
   OpId           = STRUCID

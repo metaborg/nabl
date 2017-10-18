@@ -13,6 +13,8 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 
+import com.google.common.collect.ImmutableSet;
+
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class InitialResult {
@@ -28,10 +30,10 @@ public abstract class InitialResult {
     public abstract InitialResult withCustomResult(Optional<? extends ITerm> customResult);
 
     public static IMatcher<InitialResult> matcher() {
-        return M.appl3("InitialResult", ConstraintTerms.specialize(M.listElems(Constraints.matcher())),
+        return M.appl3("InitialResult", ConstraintTerms.specialize(Constraints.matchConstraintOrList()),
                 ConstraintTerms.specialize(Args.matcher()), ConstraintTerms.specialize(SolverConfig.matcher()),
-                (t, constraints, args, config) -> {
-                    return ImmutableInitialResult.of(constraints, args, config);
+                (t, constraint, args, config) -> {
+                    return ImmutableInitialResult.of(ImmutableSet.of(constraint), args, config);
                 });
     }
 

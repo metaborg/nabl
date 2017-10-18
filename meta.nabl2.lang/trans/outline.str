@@ -39,7 +39,7 @@ rules
 
   prettyprint-rule-label:
       _ -> [ H([SOpt(HS(), "0")], [rdef', S(" [[ "), pattern', S(" "), params', S(" "), type', S(" ]]")]) ]
-    where ?CGenMatchRuleNoConstraint(rdef, pattern, params, type) + ?CGenMatchRule(rdef, pattern, params, type, _)
+    where ?CGenRuleNoConstraint(rdef, pattern, params, type) + ?CGenRule(rdef, pattern, params, type, _)
     with rdef' := <pp-one-Z(prettyprint-NaBL2-CGenRuleDef) <+ pp-one-Z(prettyprint-completion-aux)> rdef
     with pattern' := <pp-one-Z(prettyprint-NaBL2-Pattern) <+ pp-one-Z(prettyprint-completion-aux)> pattern
     with params' := <pp-one-Z(prettyprint-NaBL2-CGenParamsPattern) <+ pp-one-Z(prettyprint-completion-aux)> params

@@ -12,14 +12,14 @@ rules
     ScopeOccurrencesAreEqual[[ x2 ^ (s) : x2' ]],
     x1' == x2'.
 
-  ScopeOccurrencesAreEqual[[ x ^ (s) : {x @ s} ]].
+  ScopeOccurrencesAreEqual[[ x ^ (s) : {x @s} ]].
 
 
   [[ OccurrenceOfXInVarScope(x) ^ () ]] :=
-    {x @ s} == _.
+    {x @s} == _.
 
   [[ ResolveXToScopeOccurrenceX(xr,xd) ^ () ]] :=
-    {xd @ s1} <- s1,
+    {xd @s1} <- s1,
     s2 -P-> s1,
     {xr} -> s2,
     {xr} |-> _,

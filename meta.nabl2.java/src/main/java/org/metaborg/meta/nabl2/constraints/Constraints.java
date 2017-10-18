@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.ast.AstConstraints;
 import org.metaborg.meta.nabl2.constraints.base.BaseConstraints;
+import org.metaborg.meta.nabl2.constraints.base.CConj;
 import org.metaborg.meta.nabl2.constraints.equality.EqualityConstraints;
 import org.metaborg.meta.nabl2.constraints.nameresolution.NameResolutionConstraints;
 import org.metaborg.meta.nabl2.constraints.poly.PolyConstraints;
@@ -21,6 +22,14 @@ import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.ISubstitution;
 
 public class Constraints {
+
+    // TODO Remove after bootstrapping
+    public static IMatcher<IConstraint> matchConstraintOrList() {
+        return M.cases(
+            M.listElems(Constraints.matcher(), (l, cs) -> CConj.of(cs)),
+            Constraints.matcher()
+        );
+    }
 
     public static IMatcher<IConstraint> matcher() {
         return M.req("Not a constraint", M.<IConstraint>cases(
@@ -68,7 +77,7 @@ public class Constraints {
     }
 
     public static IConstraint substitute(IConstraint constraint, ISubstitution.Immutable subst) {
-        return constraint.match(IConstraint.Cases.<IConstraint>of(
+        return subst.isEmpty() ? constraint : constraint.match(IConstraint.Cases.<IConstraint>of(
         // @formatter:off
             c -> AstConstraints.substitute(c, subst),
             c -> BaseConstraints.substitute(c, subst),

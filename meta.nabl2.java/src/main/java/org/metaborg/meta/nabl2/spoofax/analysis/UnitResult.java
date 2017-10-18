@@ -12,6 +12,8 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 
+import com.google.common.collect.ImmutableSet;
+
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class UnitResult {
@@ -25,9 +27,9 @@ public abstract class UnitResult {
     public abstract UnitResult withCustomResult(Optional<? extends ITerm> customResult);
 
     public static IMatcher<UnitResult> matcher() {
-        return M.appl2("UnitResult", M.term(), ConstraintTerms.specialize(M.listElems(Constraints.matcher())),
-                (t, ast, constraints) -> {
-                    return ImmutableUnitResult.of(ast, constraints);
+        return M.appl2("UnitResult", M.term(), ConstraintTerms.specialize(Constraints.matchConstraintOrList()),
+                (t, ast, constraint) -> {
+                    return ImmutableUnitResult.of(ast, ImmutableSet.of(constraint));
                 });
     }
 

@@ -29,13 +29,13 @@ import org.metaborg.meta.nabl2.solver.components.PolymorphismComponent;
 import org.metaborg.meta.nabl2.solver.components.RelationComponent;
 import org.metaborg.meta.nabl2.solver.components.SetComponent;
 import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
+import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.meta.nabl2.unification.Unifier;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
@@ -54,7 +54,7 @@ public class SingleFileSolver extends BaseSolver {
         final SolverConfig config = initial.config();
 
         // shared
-        final IUnifier.Transient unifier = Unifier.Transient.of();
+        final IUnifier.Transient unifier = initial.unifier().melt();
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
@@ -112,13 +112,16 @@ public class SingleFileSolver extends BaseSolver {
             nameResolutionSolver.update();
             SolveResult solveResult = solver.solve(initial.constraints());
 
+            final IMessages.Transient messages = initial.messages().melt();
+            messages.addAll(solveResult.messages());
+
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, solveResult.messages(), solveResult.constraints());
+                    unifierResult, symbolicConstraints, messages.freeze(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

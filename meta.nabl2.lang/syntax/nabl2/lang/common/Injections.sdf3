@@ -16,17 +16,9 @@ template options
 
 context-free syntax
 
-  Var.This = "this"
-
   Message.DefaultMessage =
 
-  TermIndex.DefaultTermIndex =
-  TermIndex.TermIndexFrom    = <@<Var>>
-
-  OccurrenceIndex.DefaultOccurrenceIndex =
-  OccurrenceIndex.OccurrenceIndexFrom    = <@<Var>>
-
-  NewScopes.NewScopes = <new <{CVar " "}+>>
+  MessagePosition.DefaultMessagePosition =
 
   LabelRE.Option    = <<LabelRE>?>
   LabelRE.ConcatDot = <<LabelRE>.<LabelRE>>     {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
@@ -39,6 +31,11 @@ context-free syntax
 
 syntax
 
+  TermIndex-CF.TermIndexFrom    = "@" Var-CF
+
+  OccurrenceIndex-CF.DefaultOccurrenceIndex =
+  OccurrenceIndex-CF.OccurrenceIndexFrom    = "@" Var-CF
+
   Constraint-CF.CSetEq = CSet-CF LAYOUT?-CF "seteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
 
 context-free priorities
@@ -50,4 +47,4 @@ context-free priorities
 
 lexical syntax
 
-  Keyword = "seteq" | "new" | "this"
+  Keyword = "seteq" | "genOf" | "instOf" | "new" | "this"

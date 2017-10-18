@@ -3,6 +3,7 @@ module nabl2/lang/generation/main
 imports
 
   libstrc
+  nabl2/lang/analysis/explicate
   nabl2/lang/generation/-
   nabl2/lang/generation/modules/-
   nabl2/lang/generation/rules/-
@@ -15,6 +16,6 @@ rules
     (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
     with
       filename   := <src-gen-file(|"nabl2/collection", ".str")> name;
-      module-str := <module-to-str> ast;
+      module-str := <explicate;module-to-str> ast;
       result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
  

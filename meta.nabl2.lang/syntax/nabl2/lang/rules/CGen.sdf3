@@ -21,21 +21,21 @@ context-free syntax
 
   Rule.CGenInitRule = <
     init <CGenParamsTerm> <CGenTypeTerm> :=
-        <{RuleClause ",\n"}+>.
+        <RuleBody>.
   >
 
-  Rule.CGenMatchRuleNoConstraint = <
+  Rule.CGenRuleNoConstraint = <
     <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
   >
 
-  Rule.CGenMatchRule = <
+  Rule.CGenRule = <
     <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
-        <{RuleClause ",\n"}+>.
+        <RuleBody>.
   >
 
-  RuleClause             = Constraint
-  RuleClause             = NewScopes
-  RuleClause.CGenRecurse = <<CGenRuleRefTop> [[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  RuleBody       = Constraint
+
+  Constraint.CGenRecurse = <<CGenRuleRefTop>[[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
 
 
 context-free syntax

@@ -132,7 +132,7 @@ public class RelationComponent extends ASolver {
             extName -> {
                 final ITerm msginfo = MessageInfo.build(c.getMessageInfo());
                 return callExternal(extName, left, right, msginfo).map(csTerm -> {
-                    return M.listElems(Constraints.matcher()).match(csTerm)
+                    return Constraints.matchConstraintOrList().match(csTerm)
                             .map(SolveResult::constraints).orElseThrow(() -> new IllegalArgumentException("Expected list of constraints, got " + csTerm));
                 });
             }

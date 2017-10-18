@@ -14,3 +14,8 @@ context-free syntax
   AstProperty.Property = PropertyId
   AstProperty.Type     = "type"
   AstProperty.Params   = "params"
+
+lexical syntax
+
+  PropertyId = "type" {reject}
+  PropertyId = "params" {reject}

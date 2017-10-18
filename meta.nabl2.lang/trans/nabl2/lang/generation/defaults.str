@@ -13,16 +13,15 @@ signature
 
 rules
 
-  index-var      = !Var("nabl2_index")
+  index-var      = !Var("'index")
+  match-var      = !Var("'match")
   source-var     = !Var("nabl2_source")
   term-var       = !Var("nabl2_term")
   type-var       = !Var("nabl2_type")
-  params-var     = !Var("nabl2_params")
-  args-var       = !Var("nabl2_args")
-  constraint-var = !Var("nabl2_constraint")
-  metadata-var   = !Var("nabl2_metadata")
+  params-var     = !Var("'params")
+  args-var       = !Var("'args")
+  constraint-var = !Var("'constraint")
 
-  default-rule-name = !"default"
- 
-  rdef-name: NoName()     -> <default-rule-name>
-  rdef-name: Name(name,_) -> name
+  rdef-name: InitRule()    -> "init"
+  rdef-name: DefaultRule() -> "default"
+  rdef-name: Rule(name,_)  -> name

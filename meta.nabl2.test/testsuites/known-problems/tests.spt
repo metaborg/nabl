@@ -6,6 +6,6 @@ test generalize list tail [[
   generalize list tail
 ]] analysis fails
 
-test cannot use new on parameter [[
+test can use new on parameter [[
   use new on parameter
-]] analysis fails
+]] analysis succeeds

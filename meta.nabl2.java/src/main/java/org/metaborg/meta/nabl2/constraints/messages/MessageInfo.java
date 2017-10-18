@@ -58,6 +58,10 @@ public abstract class MessageInfo implements IMessageInfo {
         return ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), originTerm);
     }
 
+    public static MessageInfo empty() {
+        return ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), TB.EMPTY_TUPLE);
+    }
+
     @Override public String toString() {
         return getKind().name().toLowerCase() + " " + getContent().toString() + " " + TermIndex.get(getOriginTerm());
     }

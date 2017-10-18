@@ -1,0 +1,28 @@
+module nabl2/lang/analysis/util
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  pp/nabl2/lang/common/-
+
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+rules
+
+  nabl2--is-wld = is-wld
+
+  make-cconj: []     -> CTrue(DefaultMessagePosition())
+  make-cconj: [c]    -> c
+  make-cconj: [c|cs] -> CConj(c, <make-cconj> cs)
+
+  make-cexists: ([], c)   -> c
+  make-cexists: (vars, c) -> CExists(vars,c)

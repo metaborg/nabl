@@ -1,0 +1,149 @@
+module nabl2/lang/analysis/explicate
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/-
+  nabl2/lang/generation/-
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+rules
+
+  editor-explicate:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext            := <get-extension> path;
+      filename       := <guarantee-extension(|$[explicated.[ext]])> path;
+      explicated-ast := <explicate> Module($[[name].explicated],section*);
+      result         := <pp-NaBL2-string> explicated-ast
+
+  explicate =
+    explicate-rule-params;
+    explicate-rule-types;
+    explicate-rule-wildcards;
+    explicate-rule-matches;
+  //explicate-rule-free-vars;
+    explicate-messages;
+    explicate-indices;
+    normalize-rule-clauses
+
+rules
+
+  explicate-rule-free-vars = try(sometd(explicate-rule-free-var))
+
+  explicate-rule-free-var:
+    CGenRule(rdef,pattern,params,type,clause)
+      -> CGenRule(rdef,pattern,params,type,clause')
+    with used-var* := <nabl2--free-constraint-vars> clause;
+         rule-var* := <all-vars> (pattern,params,type);
+         free-var* := <diff(strip-annos;eq);make-set> (used-var*, [<term-var>,rule-var*]);
+         clause' := <make-cexists> (free-var*, clause)
+
+  explicate-rule-free-var:
+    FunDef(name,arg*,clause)
+      -> FunDef(name,arg*,clause')
+    with used-var* := <nabl2--free-constraint-vars> clause;
+         rule-var* := <all-vars> (arg*);
+         free-var* := <diff(strip-annos;eq);make-set> (used-var*, [<term-var>,rule-var*]);
+         clause' := <make-cexists> (free-var*, clause)
+
+rules
+
+  explicate-rule-params = try(sometd(explicate-rule-param))
+
+  explicate-rule-param:
+    CGenRule(rdef,pattern,param,type,clause)
+      -> CGenRule(rdef,pattern,param,type,<make-cconj> [clause'*,clause])
+    with if InitRule() := rdef then
+           clause'* := []
+         else
+           clause'* := [ CAstProperty(TermIndexFrom(<term-var>),Params(),param)
+                       ]
+         end
+
+rules
+
+  explicate-rule-types = try(sometd(explicate-rule-type))
+
+  explicate-rule-type:
+    CGenRule(rdef,pattern,param,Type(type),clause)
+      -> CGenRule(rdef,pattern,param,Type(<type-var>),<make-cconj> [clause'*,clause])
+    with if InitRule() := rdef then
+           clause'* := []
+         else
+           clause'* := [ CEqual(<type-var>, type, DefaultMessage())
+                       , CAstProperty(TermIndexFrom(<term-var>),Type(),<type-var>)
+                       ]
+         end
+
+rules
+
+  explicate-rule-matches = try(sometd(explicate-rule-match))
+
+  explicate-rule-match:
+    CGenRule(rdef,pattern,param,type,clause)
+      -> CGenRule(rdef,As(<term-var>,pattern),param,type,clause)
+
+rules
+
+  explicate-rule-wildcards = try(sometd(explicate-rule-wildcard))
+
+  explicate-rule-wildcard:
+    rule@CGenRule(_,_,_,_,_) -> rule'
+    with rule' := <wlds-to-vars> rule
+
+  explicate-rule-wildcard:
+    fun@FunctionDef(_,_,_) -> fun'
+    with fun' := <wlds-to-vars> fun
+
+  explicate-rule-wildcard:
+    fun@FunDef(_,_,_) -> fun'
+    with fun' := <wlds-to-vars> fun
+
+  wlds-to-vars: clause -> clause'
+    with var-set := <new-iset>;
+         {| NextVar:
+           with(var-counter := <new-counter>);
+           rules(
+             NextVar: _ -> var
+               with var := Var($[nabl2_wld[<next-counter;int-to-string> var-counter]]);
+                    <iset-add(|var)> var-set
+           );
+           clause' := <topdown(try(\ Wld() -> <NextVar> \))> clause
+         |};
+         var* := <iset-elements> var-set
+
+rules
+
+  explicate-messages = topdown(try(explicate-message))
+
+  // create default error message
+  explicate-message:
+    DefaultMessage() ->
+      Message(Error(),Default(),DefaultMessagePosition())
+
+  explicate-message:
+    Message(kind,msg,NAME()) ->
+      Message(kind,msg,NAMEWithOrigin())
+
+rules
+
+  explicate-indices = topdown(try(explicate-occurrence-index <+ explicate-default-index))
+
+  // get index from occurrence, if name is from AST
+  explicate-occurrence-index:
+    Occurrence(ns,name,DefaultOccurrenceIndex()) ->
+      Occurrence(ns,name,OccurrenceIndexFrom(name))
+
+  // get index from matched term
+  explicate-default-index:
+    DefaultMessagePosition() -> TermIndexFrom(<term-var>)

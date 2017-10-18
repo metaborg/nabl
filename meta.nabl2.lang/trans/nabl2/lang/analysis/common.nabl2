@@ -6,9 +6,13 @@ imports
 
 rules // Message
 
-  Message[[ Message(_,_,_) ^ (_) ]]. // TODO
+  Message[[ Message(_,_,pos) ^ (s) ]] :=
+    MessagePosition[[ pos ^ (s) ]].
 
-  MessagePosition[[ _ ^ (_) ]]. // TODO
+  MessagePosition[[ DefaultMessagePosition() ^ (_) ]].
+
+  MessagePosition[[ TermIndexFrom(var) ^ (s) ]] :=
+    VarRef[[ var ^ (s) ]].
 
 rules // sorts
 
