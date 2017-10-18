@@ -122,6 +122,45 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                     importEdges.melt(), incompleteDirectEdges.melt(), incompleteImportEdges.melt());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + decls.hashCode();
+            result = prime * result + refs.hashCode();
+            result = prime * result + directEdges.hashCode();
+            result = prime * result + assocEdges.hashCode();
+            result = prime * result + importEdges.hashCode();
+            result = prime * result + incompleteDirectEdges.hashCode();
+            result = prime * result + incompleteImportEdges.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") EsopScopeGraph.Immutable<S, L, O, V> other =
+                    (EsopScopeGraph.Immutable<S, L, O, V>) obj;
+            if(!decls.equals(other.decls))
+                return false;
+            if(!refs.equals(other.refs))
+                return false;
+            if(!directEdges.equals(other.directEdges))
+                return false;
+            if(!assocEdges.equals(other.assocEdges))
+                return false;
+            if(!importEdges.equals(other.importEdges))
+                return false;
+            if(!incompleteDirectEdges.equals(other.incompleteDirectEdges))
+                return false;
+            if(!incompleteImportEdges.equals(other.incompleteImportEdges))
+                return false;
+            return true;
+        }
+
         public static <S extends IScope, L extends ILabel, O extends IOccurrence, V>
                 EsopScopeGraph.Immutable<S, L, O, V> of() {
             return new EsopScopeGraph.Immutable<>(HashTrieFunction.Immutable.of(), HashTrieFunction.Immutable.of(),

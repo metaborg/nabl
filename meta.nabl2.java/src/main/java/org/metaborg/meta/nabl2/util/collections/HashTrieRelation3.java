@@ -97,6 +97,36 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                     bwdVL.asTransient());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + fwdK.hashCode();
+            result = prime * result + fwdKL.hashCode();
+            result = prime * result + bwdV.hashCode();
+            result = prime * result + bwdVL.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final HashTrieRelation3.Immutable<K, L, V> other =
+                    (HashTrieRelation3.Immutable<K, L, V>) obj;
+            if(!fwdK.equals(other.fwdK))
+                return false;
+            if(!fwdKL.equals(other.fwdKL))
+                return false;
+            if(!bwdV.equals(other.bwdV))
+                return false;
+            if(!bwdVL.equals(other.bwdVL))
+                return false;
+            return true;
+        }
+    
         public static <K, L, V> HashTrieRelation3.Immutable<K, L, V> of() {
             return new HashTrieRelation3.Immutable<>(SetMultimap.Immutable.of(), SetMultimap.Immutable.of(),
                     SetMultimap.Immutable.of(), SetMultimap.Immutable.of());

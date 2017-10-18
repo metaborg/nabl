@@ -6,7 +6,13 @@ imports
 
 context-free syntax
 
+  Test.True  = <true>
   Test.False = <false>
 
-  Test.True = <true>
-  
+  Test.DefaultError   = <default error>
+  Test.DefaultWarning = <default warning on <X>>
+  Test.DefaultNote    = <default note>
+
+  Test.StringError      = <string error on <X>>
+  Test.FormattedWarning = <formatted warning on <X>>
+  Test.FormattedNote    = <formatted note about <X>>

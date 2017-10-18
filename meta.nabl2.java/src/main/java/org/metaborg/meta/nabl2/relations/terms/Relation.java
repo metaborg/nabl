@@ -195,6 +195,29 @@ public abstract class Relation<T> implements IRelation<T> {
             return new Relation.Immutable<>(description, HashTrieRelation2.Immutable.of());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + description.hashCode();
+            result = prime * result + entries.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final Relation.Immutable<T> other = (Relation.Immutable<T>) obj;
+            if(!description.equals(other.description))
+                return false;
+            if(!entries.equals(other.entries))
+                return false;
+            return true;
+        }
+    
     }
 
 

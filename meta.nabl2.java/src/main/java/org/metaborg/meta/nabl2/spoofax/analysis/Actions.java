@@ -14,8 +14,8 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class Actions {
 
-    public static ITerm analyzeInitial(String resource) {
-        return TB.newAppl("AnalyzeInitial", sourceTerm(resource));
+    public static ITerm analyzeInitial(String resource, ITerm ast) {
+        return TB.newAppl("AnalyzeInitial", sourceTerm(resource), ast);
     }
 
     public static ITerm analyzeUnit(String resource, ITerm ast, Args args) {
@@ -26,8 +26,8 @@ public class Actions {
         return TB.newAppl("AnalyzeFinal", sourceTerm(resource));
     }
 
-    public static ITerm customInitial(String resource) {
-        return TB.newAppl("CustomInitial", sourceTerm(resource));
+    public static ITerm customInitial(String resource, ITerm ast) {
+        return TB.newAppl("CustomInitial", sourceTerm(resource), ast);
     }
 
     public static ITerm customUnit(String resource, ITerm ast, ITerm initial) {
@@ -39,10 +39,15 @@ public class Actions {
     }
 
     public static ITerm sourceTerm(String resource) {
+        return sourceTerm(resource, TB.newString(resource));
+    }
+
+    public static ITerm sourceTerm(String resource, ITerm term) {
         TermIndex index = ImmutableTermIndex.of(resource, 0);
         TermOrigin origin = ImmutableTermOrigin.of(resource, 0, 0, 0, 0, 0, 0);
-        return TB.newString(resource, ImmutableClassToInstanceMap.builder().put(TermIndex.class, index)
-                .put(TermOrigin.class, origin).build());
+        ImmutableClassToInstanceMap<Object> attachments = ImmutableClassToInstanceMap.builder()
+                .put(TermIndex.class, index).put(TermOrigin.class, origin).build();
+        return term.withAttachments(attachments);
     }
 
 }

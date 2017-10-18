@@ -79,6 +79,30 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
             return new Properties.Transient<>(keys.asTransient(), values.asTransient());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + keys.hashCode();
+            result = prime * result + values.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final Properties.Immutable<I, K, V> other =
+                    (Properties.Immutable<I, K, V>) obj;
+            if(!keys.equals(other.keys))
+                return false;
+            if(!values.equals(other.values))
+                return false;
+            return true;
+        }
+
     }
 
 

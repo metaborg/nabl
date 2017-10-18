@@ -6,8 +6,26 @@ imports
 
 rules
 
+  [[ True() ^ () ]] :=
+    true.
+
   [[ False() ^ () ]] :=
     false.
 
-  [[ True() ^ () ]] :=
-    true.
+  [[ DefaultError() ^ () ]] :=
+    false | error.
+
+  [[ DefaultWarning(x) ^ () ]] :=
+    false | warning @x.
+
+  [[ DefaultNote() ^ () ]] :=
+    false | note.
+
+  [[ StringError(x) ^ () ]] :=
+    false | error "Error" @x.
+
+  [[ FormattedWarning(x) ^ () ]] :=
+    false | warning $[Warning on [x]] @x.
+
+  [[ FormattedNote(x) ^ () ]] :=
+    false | note $[Note about [x]].

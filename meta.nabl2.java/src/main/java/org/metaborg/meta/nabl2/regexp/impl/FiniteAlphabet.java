@@ -44,4 +44,24 @@ public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
         return symbols;
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + symbols.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final FiniteAlphabet<S> other = (FiniteAlphabet<S>) obj;
+        if(!symbols.equals(other.symbols))
+            return false;
+        return true;
+    }
+    
 }

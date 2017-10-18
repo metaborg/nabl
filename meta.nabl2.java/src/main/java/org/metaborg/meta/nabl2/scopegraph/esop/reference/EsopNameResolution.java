@@ -84,6 +84,30 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
                     Map.Transient.of(), Map.Transient.of());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + params.hashCode();
+            result = prime * result + resolution.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final EsopNameResolution.Immutable<S, L, O> other =
+                    (EsopNameResolution.Immutable<S, L, O>) obj;
+            if(!params.equals(other.params))
+                return false;
+            if(!resolution.equals(other.resolution))
+                return false;
+            return true;
+        }
+
         public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution.Immutable<S, L, O>
                 of(IResolutionParameters<L> params) {
             return new EsopNameResolution.Immutable<>(params, Map.Immutable.of());

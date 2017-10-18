@@ -79,6 +79,30 @@ public abstract class HashTrieInverseFunction<K, V> implements IInverseFunction<
             return new HashTrieInverseFunction.Transient<>(fwd.asTransient(), bwd.asTransient());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + fwd.hashCode();
+            result = prime * result + bwd.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final HashTrieInverseFunction.Immutable<K, V> other =
+                    (HashTrieInverseFunction.Immutable<K, V>) obj;
+            if(!fwd.equals(other.fwd))
+                return false;
+            if(!bwd.equals(other.bwd))
+                return false;
+            return true;
+        }
+
     }
 
 

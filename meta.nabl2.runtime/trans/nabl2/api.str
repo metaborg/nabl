@@ -303,12 +303,16 @@ rules // ###### Scope graphs ######
   /**
    * Make an occurrence in the default namespace
    *
+   * NaBL2 equivalent: {node}
+   *
    * @type node:Term -> Occurrence
    */
   nabl2-mk-occurrence = nabl2--mk-occurrence
 
   /**
    * Make an occurrence in the specified namespace
+   *
+   * NaBL2 equivalent: namespace{node}
    *
    * @param ns : String
    * @type node:Term -> Occurrence
@@ -317,6 +321,8 @@ rules // ###### Scope graphs ######
 
   /**
    * Make an occurrence in the specified namespace, using an origin term
+   *
+   * NaBL2 equivalent: namespace{node @t}
    *
    * @param ns : String
    * @param t : Term

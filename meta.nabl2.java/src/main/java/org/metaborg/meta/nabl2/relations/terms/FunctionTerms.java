@@ -67,7 +67,26 @@ public class FunctionTerms {
                 }
             }
             return Optional.empty();
+        }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + cases.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            final Eval other = (Eval) obj;
+            if(!cases.equals(other.cases))
+                return false;
+            return true;
         }
 
     }

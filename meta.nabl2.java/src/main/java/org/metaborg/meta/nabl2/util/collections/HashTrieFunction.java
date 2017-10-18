@@ -83,6 +83,30 @@ public abstract class HashTrieFunction<K, V> implements IFunction<K, V> {
             return new HashTrieFunction.Immutable<>(Map.Immutable.of(), SetMultimap.Immutable.of());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + bwd.hashCode();
+            result = prime * result + fwd.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final HashTrieFunction.Immutable<K, V> other =
+                    (HashTrieFunction.Immutable<K, V>) obj;
+            if(!bwd.equals(other.bwd))
+                return false;
+            if(!fwd.equals(other.fwd))
+                return false;
+            return true;
+        }
+
     }
 
 

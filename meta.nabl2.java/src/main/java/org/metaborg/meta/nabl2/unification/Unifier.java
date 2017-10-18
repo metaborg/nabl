@@ -96,6 +96,29 @@ public abstract class Unifier implements IUnifier {
             return new Unifier.Transient(reps.asTransient(), sizes.asTransient());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + reps.hashCode();
+            result = prime * result + sizes.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            final Unifier.Immutable other = (Unifier.Immutable) obj;
+            if(!reps.equals(other.reps))
+                return false;
+            if(!sizes.equals(other.sizes))
+                return false;
+            return true;
+        }
+    
         public static Unifier.Immutable of() {
             return new Unifier.Immutable(Map.Immutable.of(), Map.Immutable.of());
         }

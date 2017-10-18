@@ -87,6 +87,30 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
             return new HashTrieRelation2.Transient<>(fwd.asTransient(), bwd.asTransient());
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + fwd.hashCode();
+            result = prime * result + bwd.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            @SuppressWarnings("unchecked") final HashTrieRelation2.Immutable<K, V> other =
+                    (HashTrieRelation2.Immutable<K, V>) obj;
+            if(!fwd.equals(other.fwd))
+                return false;
+            if(!bwd.equals(other.bwd))
+                return false;
+            return true;
+        }
+    
         public static <K, V> HashTrieRelation2.Immutable<K, V> of() {
             return new HashTrieRelation2.Immutable<>(SetMultimap.Immutable.of(), SetMultimap.Immutable.of());
         }

@@ -16,7 +16,7 @@ imports
 rules
 
   nabl2--analyze(pre):
-      AnalyzeInitial(resource) -> InitialResult(C, params, config)
+      AnalyzeInitial(resource, ast) -> InitialResult(C, params, config)
     with nabl2--collection-info-msg(|$[Initializing [resource]]);
          labels := <nabl2--labels>;
          wf := <nabl2--labels-wf>;
@@ -39,8 +39,8 @@ rules
 
 
   nabl2--analyze(pre):
-      CustomInitial(resource) -> result
-    where result := <nabl2-custom-analysis-init-hook> resource
+      CustomInitial(resource, ast) -> result
+    where result := <nabl2-custom-analysis-init-hook> (resource, ast)
 
   nabl2--analyze(pre):
       CustomUnit(resource,ast,initial) -> result
