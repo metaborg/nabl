@@ -65,3 +65,18 @@ rules
   unescape-string =
     string-replace(|"\\\"","\"");
     string-replace(|"\\\\","\\")
+
+  sanitize-vars = topdown(try(Var(
+    \ "id"        -> "'id"        \
+  + \ "no-attrs"  -> "'no-attrs"  \
+  + \ "avoid"     -> "'avoid"     \
+  + \ "prefer"    -> "'prefer"    \
+  + \ "reject"    -> "'reject"    \
+  + \ "bracket"   -> "'bracket"   \
+  + \ "non-assoc" -> "'non-assoc" \
+  + \ "assoc"     -> "'assoc"     \
+  + \ "right"     -> "'right"     \
+  + \ "left"      -> "'left"      \
+  + \ "layout"    -> "'layout"    \
+  + \ "empty"     -> "'empty"     \
+  )))
