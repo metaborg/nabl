@@ -23,8 +23,9 @@ context-free syntax
   > {right}
 
   Constraint.CExists = <
-    exists {<{CVar " "}+>}
+    { <{CVar " "}+>:
       <Constraint>
+    }
   >
 
   Constraint.CNew = <new <{CVar " "}+> <MessagePosition>>
@@ -33,7 +34,6 @@ context-free priorities
 
   { 
     Constraint.CNew
-    Constraint.CExists
   } > { right:
     Constraint.CConj
   }

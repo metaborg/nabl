@@ -1,4 +1,5 @@
 module nabl2/lang/analysis/constraints
+/*
 
 imports
 
@@ -152,3 +153,5 @@ rules
   Clause[[ CGoal(term,pos) ^ (s) ]] :=
     CTerm(VarRef)[[ term ^ (s) ]],
     MessagePosition[[ pos ^ (s) ]].
+
+*/

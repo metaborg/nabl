@@ -1,4 +1,5 @@
 module nabl2/lang/analysis/common
+/*
 
 imports
 
@@ -285,3 +286,5 @@ rules
   VarRef[[ Var(name) ^ (s) ]] :=
     Var{name} -> s,
     Var{name} |-> _ | error $[[name] does not resolve to a variable].
+
+*/

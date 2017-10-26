@@ -31,7 +31,7 @@ rules
     explicate-rule-types;
     explicate-rule-wildcards;
     explicate-rule-matches;
-  //explicate-rule-free-vars;
+    explicate-rule-free-vars;
     explicate-messages;
     explicate-indices;
     normalize-rule-clauses

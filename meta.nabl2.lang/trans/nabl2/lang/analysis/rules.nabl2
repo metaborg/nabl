@@ -1,4 +1,5 @@
 module nabl2/lang/analysis/rules
+/*
 
 imports
 
@@ -69,3 +70,5 @@ rules // constraint generation functions
   Rule[[ FunDef(_,_,_) ^ (_,_) ]]. // TODO
 
   Clause[[ FunCall(_,_) ^ (_) ]]. // TODO
+
+*/

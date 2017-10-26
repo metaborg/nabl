@@ -24,7 +24,6 @@ rules
   injection-to-term(e):
     Text(str) -> Term |[ Text(~(<unescape-message;e> str)) ]|
 
-
   injection-to-pattern(e) = pattern-to-pattern(e)
 
   unescape-message =

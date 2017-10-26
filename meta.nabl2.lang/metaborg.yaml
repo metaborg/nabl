@@ -8,11 +8,11 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgBaselineVersion}
   # org.metaborg:org.metaborg.meta.lang.stratego:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
-  - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgBaselineVersion}
+  # org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgBaselineVersion}
   source:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
-  - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgBaselineVersion}
+  # org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgBaselineVersion}
 
 contributions:
 - name: NaBL2Lang

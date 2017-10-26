@@ -3,7 +3,7 @@ module nabl2/lang/generation/main
 imports
 
   libstrc
-  nabl2/lang/analysis/explicate
+  nabl2/lang/analysis/-
   nabl2/lang/generation/-
   nabl2/lang/generation/modules/-
   nabl2/lang/generation/rules/-

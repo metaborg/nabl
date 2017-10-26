@@ -1,4 +1,5 @@
 module nabl2/lang/analysis/static-semantics
+/*
 
 imports
 
@@ -53,3 +54,5 @@ rules
 
   [[ Import(name) ^ (s_mod, s_root) ]] :=
     Mod{name} -> s_root.
+
+*/

@@ -2,26 +2,33 @@ module nabl2/lang/analysis/main
 
 imports
 
-  nabl2/api
+//nabl2/api
   nabl2/shared/main
-  nabl2runtime
+//nabl2runtime
 
   signatures/nabl2/lang/modules/-
   nabl2/lang/analysis/-
 
 rules
 
-  editor-analyze = nabl2-analyze(normalize)
+//editor-analyze = nabl2-analyze(normalize)
 
-  nabl2-custom-analysis-unit-hook:
-      (resource, ast, _) -> [module-name-error*]
-    with module-name-error* := <check-module-name> (ast, resource)
-  
-  nabl2-custom-analysis-final-hook(|a):
-      (resource, _, module-errors*) -> (error*, [], [], ())
-    with error* := <flatten-list> module-errors*
+//nabl2-custom-analysis-unit-hook:
+//    (resource, ast, _) -> [module-name-error*]
+//  with module-name-error* := <check-module-name> (ast, resource)
+//
+//nabl2-custom-analysis-final-hook(|a):
+//    (resource, _, module-errors*) -> (error*, [], [], ())
+//  with error* := <flatten-list> module-errors*
 
 rules
+
+  editor-analyze:
+      (ast, path, project-path) -> (analyzed-ast, error*, warning*, note*)
+    with analyzed-ast := <normalize> ast;
+         error*       := <check-module-name> (analyzed-ast, path);
+         warning*     := [];
+         note*        := []
 
   check-module-name:
       (Module(name,_), path) -> error*
@@ -29,6 +36,6 @@ rules
          if <string-ends-with(|$[/[name]])> $[/[filename]] then
            error* := []
          else
-           error* := [(name,$[module nabl2/lang/name [name] does not agree with filename [filename]])]
+           error* := [(name,$[module [name] does not agree with filename [filename]])]
          end
  

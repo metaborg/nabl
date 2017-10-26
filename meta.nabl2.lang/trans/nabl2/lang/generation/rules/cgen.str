@@ -164,17 +164,26 @@ rules
 
 rules
 
-  vars-to-str:
-    v* -> str
-    with str := <mapseq({\
-                   v -> |[ ~v := <nabl2--new-var(|~<source-var>);try(nabl2--copy-origin(|~<term-var>))> ~n ]|
-                   with n := Str(<var-name> v)
-                 \})> v*
+  vars-to-str: v* -> str
+    with str := <mapseq({\ v -> |[ ~v := <nabl2--new-var(|~<source-var>)> ~n ]|
+                             with n := Str(<var-name> v)
+                        \})> v*
 
 rules
  
-  constraint-to-term =
-    explode(explode-guard)
+  constraint-to-term:
+      CConj(c1, c2) -> Term |[ CConj(~sc1, ~sc2) ]|
+    with sc1 := <constraint-to-term> c1;
+         sc2 := <constraint-to-term> c2
+  constraint-to-term:
+      CExists(evar*, c) -> RootApp(Scope(varname*, Seq(varstr,Build(se))))
+    with varname* := <map(\ Var(n) -> n \)> evar*;
+         svars    := <explode(explode-guard)> evar*;
+         varstr   := <vars-to-str> evar*;
+         sc       := <constraint-to-term> c;
+         se       := Term|[ CExists(~svars,~sc) ]|
+  constraint-to-term:
+      c -> <explode(explode-guard)> c
  
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)

@@ -27,20 +27,29 @@ rules // top-level functions that are called during analysis
   nabl2-debug-constraint-generation-hook = fail
 
   nabl2--generate-constraint-init(|source) = ?term; nabl2--strict(
-    <nabl2--generate-constraint-init-rule(|)> (source, term)
+    {| NextVar:
+      with(var-counter := <new-counter>);
+      rules(
+        NextVar: _ -> <next-counter;int-to-string>
+      );
+      <nabl2--generate-constraint-init-rule(|)> (source, term)
+    |}
   )
 
   nabl2--generate-constraint-file(|source,args) = ?term; nabl2--strict(
-    <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
+    {| NextVar:
+      with(var-counter := <new-counter>);
+      rules(
+        NextVar: _ -> <next-counter;int-to-string>
+      );
+      <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
+    |}
   )
 
 rules
 
   nabl2--new-var(|source): n -> CVar(source,n')
-    with n' := <is-string <+ !"v"> n
-
-  nabl2--new-scope(|source): n -> Scope(source,n')
-    with n' := <is-string <+ !"s"> n
+    with n' := $[[n]-[<NextVar>]]
 
 rules
 

@@ -5,4 +5,3 @@ language
   extensions : nabl2
   provider   : target/metaborg/stratego.ctree
   on save    : generate-str
-

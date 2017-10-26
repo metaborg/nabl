@@ -1,4 +1,5 @@
 module nabl2/lang/analysis/signatures
+/*
 
 imports
 
@@ -114,3 +115,4 @@ rules
     SortRef[[ param_sort ^ (s) ]],
     SortRef[[ result_sort ^ (s) ]].
  
+*/
