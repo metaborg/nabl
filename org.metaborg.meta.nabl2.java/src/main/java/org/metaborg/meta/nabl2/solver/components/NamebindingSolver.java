@@ -483,6 +483,29 @@ public class NamebindingSolver extends SolverComponent<INamebindingConstraint> {
             }
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + occurrence.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            OccurrenceElement other = (OccurrenceElement) obj;
+            if(occurrence == null) {
+                if(other.occurrence != null)
+                    return false;
+            } else if(!occurrence.equals(other.occurrence))
+                return false;
+            return true;
+        }
+
     }
 
     // ------------------------------------------------------------------------------------------------------//
