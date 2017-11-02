@@ -38,9 +38,9 @@ context-free syntax
 
 context-free syntax
 
-  CTerm.NAME           = "NAME"
+  CTerm.NAMETerm = "NAME"
 
-  MessagePosition.NAME = <@ NAMES>
+  MessagePosition.NAMEPosition = <@ NAMES>
 
 lexical syntax
 

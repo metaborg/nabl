@@ -12,7 +12,7 @@ public class Fresh implements Serializable {
     private final Map<String,Integer> counters;
 
     public Fresh() {
-        counters = Maps.newHashMap();
+        counters = Maps.newConcurrentMap();
     }
 
     public String fresh(String base) {

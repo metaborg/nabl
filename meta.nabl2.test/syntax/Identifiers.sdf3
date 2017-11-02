@@ -4,6 +4,9 @@ lexical syntax
 
   AlNum = [A-Za-z0-9]+
 
+  A = [Aa]
+  B = [Bb]
+  C = [Cc]
   X = [Xx]
   Y = [Yy]
   Z = [Zz]

@@ -6,18 +6,6 @@ imports
 
 rules
 
-  [[ CallFunctionNoArgs() ^ () ]] :=
-    NoArgsFunction<< >>.
-
-  NoArgsFunction<< >> := false | note.
-
-  [[ CallFunctionOneArgs() ^ () ]] :=
-    OneArgFunction<< 42 >>.
-
-  OneArgFunction<< _ >> := false | note.
-
-rules
-
   [[ WildcardParam(t) ^ () ]] :=
     WildcardParam[[ t ^ (42) ]].
 

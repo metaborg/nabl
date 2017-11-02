@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
-import org.metaborg.meta.nabl2.spoofax.analysis.StrategoAnalysis;
+import org.metaborg.meta.nabl2.stratego.StrategoBlob;
 import org.metaborg.meta.nabl2.stratego.StrategoTermIndices;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -21,7 +21,7 @@ public class SG_get_ast_analysis extends ScopeGraphContextPrimitive {
             List<IStrategoTerm> sterms, ITermFactory factory) throws InterpreterException {
         return StrategoTermIndices.get(sterm).map(index -> {
             final IScopeGraphUnit unit = context.unit(index.getResource());
-            return new StrategoAnalysis(unit);
+            return new StrategoBlob(unit);
         });
     }
 

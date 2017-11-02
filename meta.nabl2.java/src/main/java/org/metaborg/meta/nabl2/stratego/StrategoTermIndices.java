@@ -45,7 +45,8 @@ public class StrategoTermIndices {
                             list -> index(list),
                             integer -> termFactory.makeInt(integer.intValue()),
                             real -> termFactory.makeReal(real.realValue()),
-                            string -> termFactory.makeString(string.stringValue())
+                            string -> termFactory.makeString(string.stringValue()),
+                            blob -> new StrategoBlob(blob.value())
                     // @formatter:on
                     ));
             result = put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
@@ -95,7 +96,8 @@ public class StrategoTermIndices {
                             tuple -> termFactory.makeTuple(erase(tuple.getAllSubterms()), tuple.getAnnotations()),
                             list -> erase(list), integer -> termFactory.makeInt(integer.intValue()),
                             real -> termFactory.makeReal(real.realValue()),
-                            string -> termFactory.makeString(string.stringValue())
+                            string -> termFactory.makeString(string.stringValue()),
+                            blob -> new StrategoBlob(blob.value())
                     // @formatter:on
                     ));
             result = remove(result, termFactory);

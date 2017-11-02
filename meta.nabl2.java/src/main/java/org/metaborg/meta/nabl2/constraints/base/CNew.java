@@ -36,7 +36,6 @@ public abstract class CNew implements IBaseConstraint {
     }
 
     @Override public IMessageContent pp() {
-        // new {a b c}. c
         final Builder builder = MessageContent.builder();
         builder.append("new ");
         boolean first = true;

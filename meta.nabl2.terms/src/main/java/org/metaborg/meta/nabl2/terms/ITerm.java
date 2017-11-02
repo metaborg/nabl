@@ -30,6 +30,8 @@ public interface ITerm {
 
         T caseInt(IIntTerm integer);
 
+        T caseBlob(IBlobTerm integer);
+
         T caseVar(ITermVar var);
 
         default T caseLock(ITerm term) {
@@ -49,6 +51,8 @@ public interface ITerm {
         T caseString(IStringTerm string) throws E;
 
         T caseInt(IIntTerm integer) throws E;
+
+        T caseBlob(IBlobTerm integer) throws E;
 
         T caseVar(ITermVar var) throws E;
 

@@ -32,15 +32,13 @@ rules
       spattern := Term |[ (~<source-var>, ~pattern) ]|;
       sresult  := Term |[ (~<args-var>, ~<constraint-var>) ]|;
  
-      index-str := |[ ~<index-var> := <nabl2--get-ast-index> ~<term-var> ]|;
-
       bound-var* := <all-vars> pattern;
       used-var*  := <concat;make-set> [ <all-vars> params
                                       , <all-vars> type
                                       , <nabl2--free-constraint-vars> clause
                                       ];
       free-var*  := <diff> (used-var*, bound-var*);
-      var-str    := <vars-to-str> free-var*;
+      var-str    := <toplevel-vars-to-str> free-var*;
 
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
@@ -56,7 +54,6 @@ rules
 
       strclause* := [
         With(var-str),
-        With(index-str),
         With(args-str),
         With(constraint-str),
         With(debug-str)
@@ -72,15 +69,13 @@ rules
       spattern := Term |[ (~<source-var>, ~pattern, ~<args-var>) ]|;
       sresult  := <constraint-var>;
 
-      index-str := |[ ~<index-var> := <nabl2--get-ast-index> ~<term-var> ]|;
-
       bound-var* := <concat;make-set> [ <all-vars> pattern
                                       , <all-vars> params
                                       , <all-vars> type
                                       ];
       used-var*  := <nabl2--free-constraint-vars> clause;
       free-var*  := <diff> (used-var*, bound-var*);
-      var-str    := <vars-to-str> free-var*;
+      var-str    := <toplevel-vars-to-str> free-var*;
 
       pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
       params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
@@ -111,7 +106,6 @@ rules
 
       strclause* := [
         With(var-str),
-        With(index-str),
         With(guarded-args-str),
         With(debug-str),
         With(constraint-str)
@@ -123,49 +117,19 @@ rules
   rdef-strategy-params: DefaultRule() -> []
   rdef-strategy-params: Rule(_,rs)    -> <map(\ r -> SVar(<rdef-strategy-name> Rule(r,[])) \)> rs
  
-rules
-
-  rule-to-str:
-    FunDef(fdef,arg*,clause)
-      -> RDefT(fname, [], [],
-           Rule(fpattern, fresult, strclause*))
-    with
-      fname := <fun-name> fdef;
-      fpattern := Term|[ (~<source-var>, ~<term-var>, ~<args-var>) ]|; 
-      fresult  := <constraint-var>;
-
-      index-str := |[ ~<index-var> := <nabl2--get-ast-index> ~<term-var> ]|;
-
-      bound-var* := arg*;
-      used-var*  := <nabl2--free-constraint-vars> clause;
-      free-var*  := <diff> (used-var*, bound-var*);
-      var-str    := <vars-to-str> free-var*;
-
-      args-pattern := <explode(injection-to-pattern)> Tuple([arg*]);
-      args-string := Str(<pp-stratego-string> args-pattern);
-      args-str := |[ ~args-pattern := ~<args-var> ]|;
-      guarded-args-str := |[
-        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-term> ~<args-var>," in call to ",~Str(fdef)])
-      ]|;
-      debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [" << ",~Str(fdef),"(",<nabl2--pp-flat-term> ~<args-var>,") >>"]) end ]|;
-
-      constraint-str  := |[ ~<constraint-var> := ~(<constraint-to-term> clause) ]|;
-
-      strclause* := [
-        With(index-str),
-        With(guarded-args-str),
-        With(debug-str),
-        With(constraint-str)
-      ]
- 
-  fun-name =
-    !$[nabl2--constraint-function-[<id>]]
- 
 
 rules
 
-  vars-to-str: v* -> str
-    with str := <mapseq({\ v -> |[ ~v := <nabl2--new-var(|~<source-var>)> ~n ]|
+  // generates fresh variable names, used for top-level bound variables in rules
+  toplevel-vars-to-str: v* -> str
+    with str := <mapseq({\ v -> |[ ~v := <nabl2--fresh-var(|~<source-var>)> ~n ]|
+                             with n := Str(<var-name> v)
+                        \})> v*
+
+  // keeps the variable names unchanged, used for locally bound variables in rules
+  // this works because the domain of fresh names is distinct from user variables names
+  local-vars-to-str: v* -> str
+    with str := <mapseq({\ v -> |[ ~v := <nabl2--local-var(|~<source-var>)> ~n ]|
                              with n := Str(<var-name> v)
                         \})> v*
 
@@ -179,7 +143,7 @@ rules
       CExists(evar*, c) -> RootApp(Scope(varname*, Seq(varstr,Build(se))))
     with varname* := <map(\ Var(n) -> n \)> evar*;
          svars    := <explode(explode-guard)> evar*;
-         varstr   := <vars-to-str> evar*;
+         varstr   := <local-vars-to-str> evar*;
          sc       := <constraint-to-term> c;
          se       := Term|[ CExists(~svars,~sc) ]|
   constraint-to-term:
@@ -187,7 +151,6 @@ rules
  
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)
-  explode-guard(e) = funcall-to-term(e)
 
   cgenrecurse-to-term(e):
     CGenRecurse(rref,v,params,type) -> App(recurse-str,Tuple([<source-var>,v,recurse-arg]))
@@ -204,11 +167,6 @@ rules
   rdef-strategy-call: DefaultRule()      -> CallNoArgs(SVar(<rdef-strategy-name> DefaultRule()))
   rdef-strategy-call: rdef@Rule(name,rs) -> Call(SVar(<rdef-strategy-name> rdef), <map(rdef-strategy-call)> rs)
 
-  funcall-to-term(e):
-    FunCall(name,arg*) -> App(fun-str,Tuple([<source-var>,<term-var>,args-term]))
-    with
-      args-term := Tuple(<map(e)> arg*);
-      fun-str := Call(SVar(<fun-name> name),[])
 
 rules
 

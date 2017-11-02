@@ -65,10 +65,5 @@ rules
   RecurseType[[ Type(type) ^ (s) ]] :=
     CTerm(VarRef)[[ type ^ (s) ]].
  
-rules // constraint generation functions
-
-  Rule[[ FunDef(_,_,_) ^ (_,_) ]]. // TODO
-
-  Clause[[ FunCall(_,_) ^ (_) ]]. // TODO
 
 */

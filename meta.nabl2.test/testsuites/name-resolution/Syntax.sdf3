@@ -30,11 +30,25 @@ context-free syntax
 
   Test.ResolveXToXInImportScopeNotInParentScope = <resolve <X> to <X> in import scope over <X> parent scope>
 
+  Test.ResolveXViaIOrJParent = <resolve <X> to <X> in I parent or <X> in J parent>
+
+  Test.ResolveXViaLongerMoreSpecificPath = <resolve <X> to <X> via longer more specific path over <X> via less specific path>
+
+  Test.ResolveXViaParentAfterImport = <resolve <X> to <X> via import after parent>
+
+  Test.ResolveXViaNonTransitiveImport = <resolve <X> to <X> via non-transitive import>
+
 context-free syntax
 
   Test.ResolveXViaY = <resolve <X> via <Y> in <Y> { <X> }>
 
   Test.ResolveXViaYAndZ = <resolve <X> via <Y> where <Y> imports <Z> in <Z> { <X> }>
+
+  Test.ResolveXViaAmbiguousImport = <resolve <X> via <Y> in <Y> { <X> } or <Y> { <X> }>
+
+  Test.ResolveXViaUnorderedImports = <resolve <X> via <Y> in <Y> { <X> } or via <Y> in <Y> { <X> }>
+
+  Test.ResolveInParentWithNonResolvingImport = <resolve <X> to <X> in parent with non-resolving import <Y>>
 
 context-free syntax
 
@@ -42,4 +56,28 @@ context-free syntax
 
 context-free syntax
 
-  Test.ImportCycle = <import cycle <X> to <X> >
+  Test.DirectCycle = <direct cycle <X> to <X>>
+
+  Test.ImportCycle = <resolve <X> via <Y> in <Y> imports <Z> { } and <Z> imports <Y> { <X> }>
+
+context-free syntax
+
+  Test.ImportAnomaly = <
+    anomaly {
+      mod <A> {
+        mod <B> {
+          def <X> = 1
+        }
+      }
+      mod <B> {
+        mod <A> {
+          def <Y> = 2
+        }
+      }
+      mod <C> {
+        import <A>
+        import <B>
+        def <Z> = <X> + <Y>
+      }
+    }
+  >

@@ -32,7 +32,8 @@ context-free syntax
 
 context-free priorities
 
-  { 
+  {
+    Constraint.CExists
     Constraint.CNew
   } > { right:
     Constraint.CConj

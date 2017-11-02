@@ -8,6 +8,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.metaborg.meta.nabl2.terms.IApplTerm;
+import org.metaborg.meta.nabl2.terms.IBlobTerm;
 import org.metaborg.meta.nabl2.terms.IConsTerm;
 import org.metaborg.meta.nabl2.terms.IIntTerm;
 import org.metaborg.meta.nabl2.terms.IListTerm;
@@ -136,6 +137,11 @@ public class TB {
 
     public static IIntTerm newInt(int value, ImmutableClassToInstanceMap<Object> attachments) {
         return ImmutableIntTerm.of(value).withAttachments(attachments);
+    }
+
+
+    public static IBlobTerm newBlob(Object value) {
+        return ImmutableBlobTerm.of(value);
     }
 
 

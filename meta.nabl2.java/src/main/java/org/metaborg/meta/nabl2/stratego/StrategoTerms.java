@@ -48,6 +48,7 @@ public class StrategoTerms {
             list ->  toStrategoList(list),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
+            blob -> new StrategoBlob(blob.getValue()),
             var -> {
                 throw new IllegalArgumentException("Cannot convert specialized terms to Stratego.");
             }
@@ -119,7 +120,8 @@ public class StrategoTerms {
             this::fromStrategoList,
             integer -> TB.newInt(integer.intValue()),
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
-            string -> TB.newString(string.stringValue())
+            string -> TB.newString(string.stringValue()),
+            blob -> TB.newBlob(blob.value())
         )).withAttachments(attachments);
         // @formatter:on
         return term;
@@ -169,6 +171,13 @@ public class StrategoTerms {
                 return cases.caseReal((IStrategoReal) term);
             case IStrategoTerm.STRING:
                 return cases.caseString((IStrategoString) term);
+            case IStrategoTerm.BLOB:
+                if(term instanceof StrategoBlob) {
+                    StrategoBlob blob = (StrategoBlob) term;
+                    return cases.caseBlob(blob);
+                } else {
+                    throw new IllegalArgumentException("Unsupported Stratego blob type " + term.getClass());
+                }
             default:
                 throw new IllegalArgumentException("Unsupported Stratego term type " + term.getTermType());
         }
@@ -181,7 +190,8 @@ public class StrategoTerms {
         Function1<IStrategoList, T> onList,
         Function1<IStrategoInt, T> onInt,
         Function1<IStrategoReal, T> onReal,
-        Function1<IStrategoString, T> onString
+        Function1<IStrategoString, T> onString,
+        Function1<StrategoBlob, T> onBlob
         // @formatter:on
     ) {
         return new ICases<T>() {
@@ -210,6 +220,10 @@ public class StrategoTerms {
                 return onString.apply(term);
             }
 
+            @Override public T caseBlob(StrategoBlob term) {
+                return onBlob.apply(term);
+            }
+
         };
     }
 
@@ -226,6 +240,8 @@ public class StrategoTerms {
         public T caseReal(IStrategoReal term);
 
         public T caseString(IStrategoString term);
+
+        public T caseBlob(StrategoBlob term);
 
     }
 

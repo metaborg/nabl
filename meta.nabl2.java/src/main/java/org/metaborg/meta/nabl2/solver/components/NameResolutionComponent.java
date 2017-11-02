@@ -185,6 +185,10 @@ public class NameResolutionComponent extends ASolver {
 
     }
 
+    public Optional<ITerm> getProperty(Occurrence decl, ITerm key) {
+        return properties.getValue(decl, key);
+    }
+    
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<Scope> findScope(ITerm scopeTerm) {

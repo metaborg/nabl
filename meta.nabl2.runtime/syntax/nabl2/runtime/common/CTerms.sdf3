@@ -7,3 +7,5 @@ imports
 context-free syntax
 
   CVar.CVar = <?<String>-<String>>
+
+  CTerm.NAME = "NAME"

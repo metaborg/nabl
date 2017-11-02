@@ -31,7 +31,7 @@ rules
     explicate-rule-types;
     explicate-rule-wildcards;
     explicate-rule-matches;
-    explicate-rule-free-vars;
+  //explicate-rule-free-vars;
     explicate-messages;
     explicate-indices;
     normalize-rule-clauses
@@ -45,14 +45,6 @@ rules
       -> CGenRule(rdef,pattern,params,type,clause')
     with used-var* := <nabl2--free-constraint-vars> clause;
          rule-var* := <all-vars> (pattern,params,type);
-         free-var* := <diff(strip-annos;eq);make-set> (used-var*, [<term-var>,rule-var*]);
-         clause' := <make-cexists> (free-var*, clause)
-
-  explicate-rule-free-var:
-    FunDef(name,arg*,clause)
-      -> FunDef(name,arg*,clause')
-    with used-var* := <nabl2--free-constraint-vars> clause;
-         rule-var* := <all-vars> (arg*);
          free-var* := <diff(strip-annos;eq);make-set> (used-var*, [<term-var>,rule-var*]);
          clause' := <make-cexists> (free-var*, clause)
 
@@ -105,10 +97,6 @@ rules
     fun@FunctionDef(_,_,_) -> fun'
     with fun' := <wlds-to-vars> fun
 
-  explicate-rule-wildcard:
-    fun@FunDef(_,_,_) -> fun'
-    with fun' := <wlds-to-vars> fun
-
   wlds-to-vars: clause -> clause'
     with var-set := <new-iset>;
          {| NextVar:
@@ -131,18 +119,27 @@ rules
     DefaultMessage() ->
       Message(Error(),Default(),DefaultMessagePosition())
 
-  explicate-message:
-    Message(kind,msg,NAME()) ->
-      Message(kind,msg,NAMEWithOrigin())
-
 rules
 
-  explicate-indices = topdown(try(explicate-occurrence-index <+ explicate-default-index))
+  explicate-indices =
+    topdown(try(explicate-occurrence-indices));
+    topdown(try(explicate-default-index))
 
-  // get index from occurrence, if name is from AST
+  // record pattern vars to see if we can get index from name itself
+  // otherwise, use matched term
+  explicate-occurrence-indices:
+    CGenRule(rdef,pattern,params,type,clause)
+      -> CGenRule(rdef,pattern,params,type,clause')
+    with pattern-var* := <all-vars> pattern;
+         {| PatternVar:
+           <map({v: ?v; rules(PatternVar: v -> v) })> pattern-var*;
+           clause' := <topdown(try(explicate-occurrence-index))> clause
+         |}
+
   explicate-occurrence-index:
     Occurrence(ns,name,DefaultOccurrenceIndex()) ->
-      Occurrence(ns,name,OccurrenceIndexFrom(name))
+      Occurrence(ns,name,OccurrenceIndexFrom(index))
+    with index := <(is-var;PatternVar) <+ term-var> name
 
   // get index from matched term
   explicate-default-index:

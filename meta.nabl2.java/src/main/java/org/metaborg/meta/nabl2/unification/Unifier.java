@@ -216,6 +216,10 @@ public abstract class Unifier implements IUnifier {
                     M.integer(integerRight -> integerLeft.getValue() != integerRight.getValue()),
                     M.var(varRight -> unifyVarTerm(varRight, integerLeft, result))
                 ).match(rightRep).orElse(false),
+                blobLeft -> M.cases(
+                    M.blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue())),
+                    M.var(varRight -> unifyVarTerm(varRight, blobLeft, result))
+                ).match(rightRep).orElse(false),
                 varLeft -> M.cases(
                     // match var before term, or term will always match
                     M.var(varRight -> unifyVars(varLeft, varRight, result)),

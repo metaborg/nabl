@@ -13,7 +13,6 @@ signature
 
 rules
 
-  index-var      = !Var("'index")
   match-var      = !Var("'match")
   source-var     = !Var("nabl2_source")
   term-var       = !Var("nabl2_term")

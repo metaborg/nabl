@@ -35,11 +35,12 @@ public class Terms {
     // SAFE
 
     public static <T> ITerm.Cases<T> cases(
-        // @formatter:off
+    // @formatter:off
         Function1<? super IApplTerm, ? extends T> onAppl,
         Function1<? super IListTerm, ? extends T> onList,
         Function1<? super IStringTerm, ? extends T> onString,
         Function1<? super IIntTerm, ? extends T> onInt,
+        Function1<? super IBlobTerm, ? extends T> onBlob,
         Function1<? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
@@ -61,6 +62,10 @@ public class Terms {
                 return onInt.apply(integer);
             }
 
+            @Override public T caseBlob(IBlobTerm blob) {
+                return onBlob.apply(blob);
+            }
+
             @Override public T caseVar(ITermVar var) {
                 return onVar.apply(var);
             }
@@ -69,11 +74,12 @@ public class Terms {
     }
 
     public static <T> ITerm.Cases<T> casesFix(
-        // @formatter:off
+    // @formatter:off
         Function2<ITerm.Cases<T>, ? super IApplTerm, ? extends T> onAppl,
         Function2<ITerm.Cases<T>, ? super IListTerm, ? extends T> onList,
         Function2<ITerm.Cases<T>, ? super IStringTerm, ? extends T> onString,
         Function2<ITerm.Cases<T>, ? super IIntTerm, ? extends T> onInt,
+        Function2<ITerm.Cases<T>, ? super IBlobTerm, ? extends T> onBlob,
         Function2<ITerm.Cases<T>, ? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
@@ -93,6 +99,10 @@ public class Terms {
 
             @Override public T caseInt(IIntTerm integer) {
                 return onInt.apply(this, integer);
+            }
+
+            @Override public T caseBlob(IBlobTerm blob) {
+                return onBlob.apply(this, blob);
             }
 
             @Override public T caseVar(ITermVar var) {
@@ -122,7 +132,7 @@ public class Terms {
 
         public static IMatcher<IApplTerm> appl() {
             return term -> term.match(Terms.<Optional<IApplTerm>>cases(Optional::of, Terms::empty, Terms::empty,
-                    Terms::empty, Terms::empty));
+                    Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static <R> IMatcher<R> appl(String op, Function1<? super IApplTerm, R> f) {
@@ -131,7 +141,7 @@ public class Terms {
 
         public static <R> IMatcher<R> appl(Function1<? super IApplTerm, R> f) {
             return term -> term.match(Terms.<Optional<R>>cases(appl -> Optional.of(f.apply(appl)), Terms::empty,
-                    Terms::empty, Terms::empty, Terms::empty));
+                    Terms::empty, Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static IMatcher<IApplTerm> appl0(String op) {
@@ -145,7 +155,7 @@ public class Terms {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -161,7 +171,7 @@ public class Terms {
                         return Optional.empty();
                     }
                     return m.match(appl.getArgs().get(0)).map(t -> f.apply(appl, t));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -180,7 +190,7 @@ public class Terms {
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0));
                     Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1));
                     return Optionals.lift(o1, o2, (t1, t2) -> f.apply(appl, t1, t2));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -200,7 +210,7 @@ public class Terms {
                     Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1));
                     Optional<? extends T3> o3 = m3.match(appl.getArgs().get(2));
                     return Optionals.lift(o1, o2, o3, (t1, t2, t3) -> f.apply(appl, t1, t2, t3));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -222,7 +232,7 @@ public class Terms {
                     Optional<? extends T3> o3 = m3.match(appl.getArgs().get(2));
                     Optional<? extends T4> o4 = m4.match(appl.getArgs().get(3));
                     return Optionals.lift(o1, o2, o3, o4, (t1, t2, t3, t4) -> f.apply(appl, t1, t2, t3, t4));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -247,7 +257,7 @@ public class Terms {
                     Optional<? extends T5> o5 = m5.match(appl.getArgs().get(4));
                     return Optionals.lift(o1, o2, o3, o4, o5,
                             (t1, t2, t3, t4, t5) -> f.apply(appl, t1, t2, t3, t4, t5));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -307,7 +317,7 @@ public class Terms {
 
         public static <R> IMatcher<R> list(Function1<? super IListTerm, R> f) {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, list -> Optional.of(f.apply(list)),
-                    Terms::empty, Terms::empty, Terms::empty));
+                    Terms::empty, Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static IMatcher<? extends List<? extends ITerm>> listElems() {
@@ -331,7 +341,7 @@ public class Terms {
                         os.add(m.match(t));
                     }
                     return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
-                }, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -339,7 +349,7 @@ public class Terms {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.of(f.apply(cons)),
                         nil -> Optional.empty(), var -> Optional.empty()));
-            }, Terms::empty, Terms::empty, Terms::empty));
+            }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
 
         }
 
@@ -351,7 +361,7 @@ public class Terms {
                     Optional<? extends TTl> otl = mtl.match(cons.getTail());
                     return Optionals.lift(ohd, otl, (thd, ttl) -> f.apply(cons, thd, ttl));
                 }, Terms::empty, Terms::empty));
-            }, Terms::empty, Terms::empty, Terms::empty));
+            }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
 
         }
 
@@ -359,7 +369,7 @@ public class Terms {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.empty(),
                         nil -> Optional.of(f.apply(nil)), var -> Optional.empty()));
-            }, Terms::empty, Terms::empty, Terms::empty));
+            }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
 
         }
 
@@ -371,7 +381,7 @@ public class Terms {
 
         public static <R> IMatcher<R> string(Function1<? super IStringTerm, R> f) {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, Terms::empty,
-                    string -> Optional.of(f.apply(string)), Terms::empty, Terms::empty));
+                    string -> Optional.of(f.apply(string)), Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static IMatcher<String> stringValue() {
@@ -386,11 +396,32 @@ public class Terms {
 
         public static <R> IMatcher<R> integer(Function1<? super IIntTerm, R> f) {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, Terms::empty, Terms::empty,
-                    integer -> Optional.of(f.apply(integer)), Terms::empty));
+                    integer -> Optional.of(f.apply(integer)), Terms::empty, Terms::empty));
         }
 
         public static IMatcher<Integer> integerValue() {
             return integer(i -> i.getValue());
+        }
+
+        // blob
+
+        public static IMatcher<IBlobTerm> blob() {
+            return blob(i -> i);
+        }
+
+        public static <R> IMatcher<R> blob(Function1<? super IBlobTerm, R> f) {
+            return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
+                    blob -> Optional.of(f.apply(blob)), Terms::empty));
+        }
+
+        @SuppressWarnings("unchecked") public static <T> IMatcher<T> blobValue(Class<T> blobClass) {
+            return t -> blob().match(t).flatMap(b -> {
+                if(blobClass.isInstance(b.getValue())) {
+                    return Optional.of((T) b.getValue());
+                } else {
+                    return Optional.empty();
+                }
+            });
         }
 
         // var
@@ -401,7 +432,7 @@ public class Terms {
 
         public static <R> IMatcher<R> var(Function1<? super ITermVar, R> f) {
             return term -> term.match(Terms.<Optional<R>>cases(Terms::empty, Terms::empty, Terms::empty, Terms::empty,
-                    var -> Optional.of(f.apply(var))));
+                    Terms::empty, var -> Optional.of(f.apply(var))));
         }
 
         // optionals
@@ -450,6 +481,7 @@ public class Terms {
                 )),
                 (string) -> string,
                 (integer) -> integer,
+                (blob) -> blob,
                 (var) -> var
             )));
             // @formatter:on
@@ -458,7 +490,7 @@ public class Terms {
         public static Function1<ITerm, ITerm> somebu(IMatcher<ITerm> m) {
             return term -> {
                 ITerm next = term.match(Terms.<ITerm>cases(
-                    // @formatter:off
+                // @formatter:off
                     (appl) -> {
                         List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(Collectors.toList());
                         return TB.newAppl(appl.getOp(), args, appl.getAttachments());
@@ -470,6 +502,7 @@ public class Terms {
                     )),
                     (string) -> string,
                     (integer) -> integer,
+                    (blob) -> blob,
                     (var) -> var
                     // @formatter:on
                 ));
@@ -481,7 +514,7 @@ public class Terms {
             return term -> {
                 List<R> results = Lists.newArrayList();
                 M.<Unit>casesFix(f -> Iterables2.<IMatcher<? extends Unit>>from(
-                    // @formatter:off
+                // @formatter:off
                     t -> m.match(t).map(r -> {
                         results.add(r);
                         return Unit.unit;
@@ -504,6 +537,7 @@ public class Terms {
                         )),
                         (string) -> Unit.unit,
                         (integer) -> Unit.unit,
+                        (blob) -> Unit.unit,
                         (var) -> Unit.unit
                     )))
                     // @formatter:on
@@ -520,7 +554,8 @@ public class Terms {
 
         public static <R> IMatcher<R> req(String msg, IMatcher<R> matcher) {
             return t -> {
-                return matcher.match(t).map(Optional::of).orElseThrow(() -> new IllegalArgumentException(msg + ": " + t));
+                return matcher.match(t).map(Optional::of)
+                        .orElseThrow(() -> new IllegalArgumentException(msg + ": " + t));
             };
         }
 
@@ -546,10 +581,10 @@ public class Terms {
     // CHECKED
 
     public static <T, E extends Throwable> ITerm.CheckedCases<T, E> checkedCases(
-            // @formatter:off
+    // @formatter:off
             CheckedFunction1<? super IApplTerm, T, E> onAppl, CheckedFunction1<? super IListTerm, T, E> onList,
             CheckedFunction1<? super IStringTerm, T, E> onString, CheckedFunction1<? super IIntTerm, T, E> onInt,
-            CheckedFunction1<? super ITermVar, T, E> onVar
+            CheckedFunction1<? super IBlobTerm, T, E> onBlob, CheckedFunction1<? super ITermVar, T, E> onVar
     // @formatter:on
     ) {
         return new ITerm.CheckedCases<T, E>() {
@@ -568,6 +603,10 @@ public class Terms {
 
             @Override public T caseInt(IIntTerm integer) throws E {
                 return onInt.apply(integer);
+            }
+
+            @Override public T caseBlob(IBlobTerm blob) throws E {
+                return onBlob.apply(blob);
             }
 
             @Override public T caseVar(ITermVar var) throws E {
@@ -595,7 +634,7 @@ public class Terms {
         public static <R, E extends Throwable> ICheckedMatcher<R, E>
                 appl(CheckedFunction1<? super IApplTerm, R, ? extends E> f) {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> Optional.of(f.apply(appl)),
-                    Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                    Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static <R, E extends Throwable> ICheckedMatcher<R, E> appl0(String op,
@@ -606,7 +645,7 @@ public class Terms {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -624,7 +663,7 @@ public class Terms {
                     }
                     T t = o1.get();
                     return Optional.of(f.apply(appl, t));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -647,7 +686,7 @@ public class Terms {
                     }
                     T2 t2 = o2.get();
                     return Optional.of(f.apply(appl, t1, t2));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -676,7 +715,7 @@ public class Terms {
                     }
                     T3 t3 = o3.get();
                     return Optional.of(f.apply(appl, t1, t2, t3));
-                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -685,7 +724,7 @@ public class Terms {
         public static <R, E extends Throwable> ICheckedMatcher<R, E>
                 list(CheckedFunction1<? super IListTerm, R, ? extends E> f) {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty,
-                    list -> Optional.of(f.apply(list)), Terms::empty, Terms::empty, Terms::empty));
+                    list -> Optional.of(f.apply(list)), Terms::empty, Terms::empty, Terms::empty, Terms::empty));
         }
 
         public static <T, R, E extends Throwable> ICheckedMatcher<R, E> listElems(
@@ -702,7 +741,7 @@ public class Terms {
                         ts.add(o.get());
                     }
                     return Optional.of(f.apply(list, ts));
-                }, Terms::empty, Terms::empty, Terms::empty));
+                }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
             };
         }
 
@@ -711,7 +750,7 @@ public class Terms {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty, list -> {
                 return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(cons -> Optional.of(f.apply(cons)),
                         nil -> Optional.empty(), var -> Optional.empty()));
-            }, Terms::empty, Terms::empty, Terms::empty));
+            }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
 
         }
 
@@ -720,7 +759,7 @@ public class Terms {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty, list -> {
                 return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(cons -> Optional.empty(),
                         nil -> Optional.of(f.apply(nil)), var -> Optional.empty()));
-            }, Terms::empty, Terms::empty, Terms::empty));
+            }, Terms::empty, Terms::empty, Terms::empty, Terms::empty));
 
         }
 
@@ -729,7 +768,7 @@ public class Terms {
         public static <R, E extends Throwable> ICheckedMatcher<R, E>
                 integer(CheckedFunction1<IIntTerm, R, ? extends E> f) {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty, Terms::empty,
-                    Terms::empty, string -> Optional.of(f.apply(string)), Terms::empty));
+                    Terms::empty, string -> Optional.of(f.apply(string)), Terms::empty, Terms::empty));
         }
 
         // string
@@ -737,7 +776,7 @@ public class Terms {
         public static <R, E extends Throwable> ICheckedMatcher<R, E>
                 string(CheckedFunction1<IStringTerm, R, ? extends E> f) {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty, Terms::empty,
-                    string -> Optional.of(f.apply(string)), Terms::empty, Terms::empty));
+                    string -> Optional.of(f.apply(string)), Terms::empty, Terms::empty, Terms::empty));
         }
 
         // var
@@ -747,7 +786,7 @@ public class Terms {
             return term -> term.matchOrThrow(Terms.<Optional<R>, E>checkedCases(Terms::empty, list -> {
                 return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(cons -> Optional.empty(),
                         nil -> Optional.empty(), var -> Optional.of(f.apply(var))));
-            }, Terms::empty, Terms::empty, var -> Optional.of(f.apply(var))));
+            }, Terms::empty, Terms::empty, Terms::empty, var -> Optional.of(f.apply(var))));
         }
 
         // cases

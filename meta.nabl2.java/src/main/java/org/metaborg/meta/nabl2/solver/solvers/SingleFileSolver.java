@@ -30,7 +30,9 @@ import org.metaborg.meta.nabl2.solver.components.RelationComponent;
 import org.metaborg.meta.nabl2.solver.components.SetComponent;
 import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
+import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
+import org.metaborg.meta.nabl2.solver.properties.DeclTypeDeps;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
@@ -58,10 +60,13 @@ public class SingleFileSolver extends BaseSolver {
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
+        final ActiveDeclTypes activeDeclTypes = new ActiveDeclTypes(unifier);
+        final DeclTypeDeps declTypeDeps = new DeclTypeDeps(unifier, activeDeclTypes::contains);
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
         // guards
-        final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
+        final Predicate1<ITerm> isGenSafe = t -> !activeVars.contains(t) && !declTypeDeps.contains(t);
+        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.contains(d);
         final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // more shared
@@ -76,7 +81,8 @@ public class SingleFileSolver extends BaseSolver {
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
+        final PolymorphismComponent polySolver =
+                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
@@ -85,15 +91,15 @@ public class SingleFileSolver extends BaseSolver {
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
                 // @formatter:off
-                        .onBase(baseSolver::solve)
-                        .onEquality(equalitySolver::solve)
-                        .onNameResolution(nameResolutionSolver::solve)
-                        .onPoly(polySolver::solve)
-                        .onRelation(relationSolver::solve)
-                        .onSet(setSolver::solve)
-                        .onSym(symSolver::solve)
-                        .otherwise(ISolver.deny("Not allowed in this phase"))
-                        // @formatter:on
+                    .onBase(baseSolver::solve)
+                    .onEquality(equalitySolver::solve)
+                    .onNameResolution(nameResolutionSolver::solve)
+                    .onPoly(polySolver::solve)
+                    .onRelation(relationSolver::solve)
+                    .onSet(setSolver::solve)
+                    .onSym(symSolver::solve)
+                    .otherwise(ISolver.deny("Not allowed in this phase"))
+                    // @formatter:on
                 );
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
                 Iterables2.from(activeVars, hasRelationBuildConstraints));

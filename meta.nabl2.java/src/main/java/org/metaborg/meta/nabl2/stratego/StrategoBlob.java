@@ -1,13 +1,9 @@
-package org.metaborg.meta.nabl2.spoofax.analysis;
+package org.metaborg.meta.nabl2.stratego;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Set;
 
-import org.metaborg.meta.nabl2.constraints.IConstraint;
-import org.metaborg.meta.nabl2.solver.Fresh;
-import org.metaborg.meta.nabl2.solver.ISolution;
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermPrinter;
@@ -15,41 +11,19 @@ import org.spoofax.terms.AbstractSimpleTerm;
 import org.spoofax.terms.AbstractTermFactory;
 import org.spoofax.terms.util.EmptyIterator;
 
-public class StrategoAnalysis extends AbstractSimpleTerm implements IStrategoTerm, IScopeGraphUnit {
+public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
     private static final long serialVersionUID = 1L;
 
-    private final IScopeGraphUnit unit;
+    private final Object value;
 
-    public StrategoAnalysis(IScopeGraphUnit unit) {
-        this.unit = unit;
+    public StrategoBlob(Object obj) {
+        this.value = obj;
     }
 
-    // IScopeGraphUnit delegation
-
-    public String resource() {
-        return unit.resource();
+    public Object value() {
+        return value;
     }
-
-    public Set<IConstraint> constraints() {
-        return unit.constraints();
-    }
-
-    public Optional<ISolution> solution() {
-        return unit.solution();
-    }
-
-    public Optional<CustomSolution> customSolution() {
-        return unit.customSolution();
-    }
-
-    public Fresh fresh() {
-        return unit.fresh();
-    }
-
-    public boolean isPrimary() {
-        return unit.isPrimary();
-    }
-
+    
     // IStrategoTerm implementation
 
     @Override public boolean isList() {
@@ -101,7 +75,20 @@ public class StrategoAnalysis extends AbstractSimpleTerm implements IStrategoTer
     }
 
     @Override public String toString() {
-        return "Analysis(\"" + resource() + "\")";
+        return "BLOB(\"" + value.getClass() + "\")";
     }
 
+    @SuppressWarnings("unchecked") public static <T> Optional<T> match(IStrategoTerm term, Class<T> blobClass) {
+        if(term instanceof StrategoBlob) {
+            StrategoBlob blob = (StrategoBlob) term;
+            if(blobClass.isInstance(blob.value)) {
+                return Optional.of((T) blob.value);
+            } else {
+                return Optional.empty();
+            }
+        } else {
+            return Optional.empty();
+        }
+    }
+    
 }

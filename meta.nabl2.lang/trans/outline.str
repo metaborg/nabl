@@ -33,11 +33,6 @@ rules
   pp-rule-label = pp-NaBL2(prettyprint-rule-label)
 
   prettyprint-rule-label:
-     FunDef(name, params, _) -> [ H([SOpt(HS(), "0")], [name', S(" << "), params', S(" >>")]) ]
-    with name' := <pp-one-Z(prettyprint-NaBL2-RuleId) <+ pp-one-Z(prettyprint-completion-aux)> name
-    with params' := <pp-H-list(prettyprint-NaBL2-CVar|",") <+ pp-one-Z(prettyprint-completion-aux)> params
-
-  prettyprint-rule-label:
       _ -> [ H([SOpt(HS(), "0")], [rdef', S(" [[ "), pattern', S(" "), params', S(" "), type', S(" ]]")]) ]
     where ?CGenRuleNoConstraint(rdef, pattern, params, type) + ?CGenRule(rdef, pattern, params, type, _)
     with rdef' := <pp-one-Z(prettyprint-NaBL2-CGenRuleDef) <+ pp-one-Z(prettyprint-completion-aux)> rdef

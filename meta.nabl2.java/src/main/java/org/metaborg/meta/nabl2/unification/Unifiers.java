@@ -44,6 +44,10 @@ public class Unifiers {
                 M.integer(integerRight -> (integerLeft.getValue() == integerRight.getValue())),
                 M.var(varRight -> true)
             ).match(right).orElse(false),
+            blobLeft -> M.cases(
+                M.blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue())),
+                M.var(varRight -> true)
+            ).match(right).orElse(false),
             varLeft -> true
         ));
         // @formatter:on

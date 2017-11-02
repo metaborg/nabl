@@ -52,7 +52,9 @@ import org.metaborg.meta.nabl2.solver.components.SetComponent;
 import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
+import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
+import org.metaborg.meta.nabl2.solver.properties.DeclTypeDeps;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
@@ -492,10 +494,13 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
+        final ActiveDeclTypes activeDeclTypes = new ActiveDeclTypes(unifier);
+        final DeclTypeDeps declTypeDeps = new DeclTypeDeps(unifier, activeDeclTypes::contains);
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
         // guards
-        final Predicate1<ITerm> isTermInactive = t -> !activeVars.contains(t);
+        final Predicate1<ITerm> isGenSafe = t -> !activeVars.contains(t) && !declTypeDeps.contains(t);
+        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.contains(d);
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
@@ -505,7 +510,8 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, unitGraph,
                 nameResolution, Properties.extend(initial.declProperties().melt(), context.declProperties()));
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, extendedGraph, nameResolution);
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, isTermInactive);
+        final PolymorphismComponent polySolver =
+                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         RelationComponent relationSolver;
         try {
             relationSolver = new RelationComponent(core, r -> false, config.getFunctions(),
@@ -519,15 +525,15 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
                 // @formatter:off
-                        .onBase(baseSolver::solve)
-                        .onEquality(equalitySolver::solve)
-                        .onNameResolution(nameResolutionSolver::solve)
-                        .onPoly(polySolver::solve)
-                        .onRelation(relationSolver::solve)
-                        .onSet(setSolver::solve)
-                        .onSym(symSolver::solve)
-                        .otherwise(ISolver.deny("Not allowed in this phase"))
-                        // @formatter:on
+                    .onBase(baseSolver::solve)
+                    .onEquality(equalitySolver::solve)
+                    .onNameResolution(nameResolutionSolver::solve)
+                    .onPoly(polySolver::solve)
+                    .onRelation(relationSolver::solve)
+                    .onSet(setSolver::solve)
+                    .onSym(symSolver::solve)
+                    .otherwise(ISolver.deny("Not allowed in this phase"))
+                    // @formatter:on
                 );
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
                 Iterables2.from(activeVars, hasRelationBuildConstraints));

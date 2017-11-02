@@ -39,6 +39,7 @@ public class ConstraintTerms {
             list -> specializeList(list),
             string -> string,
             integer -> integer,
+            blob -> blob,
             var -> { throw new IllegalArgumentException("Term is already specialized."); }
             // @formatter:on
         )).withAttachments(term.getAttachments());
@@ -112,6 +113,7 @@ public class ConstraintTerms {
             list -> explicateList(list, isLocked),
             string -> string,
             integer -> integer,
+            blob -> blob,
             var -> {
                 List<ITerm> args = Arrays.asList(TB.newString(var.getResource()), TB.newString(var.getName()));
                 return TB.newAppl(VAR_CTOR, args);

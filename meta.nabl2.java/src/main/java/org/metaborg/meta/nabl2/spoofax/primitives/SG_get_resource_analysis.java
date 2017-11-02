@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
-import org.metaborg.meta.nabl2.spoofax.analysis.StrategoAnalysis;
+import org.metaborg.meta.nabl2.stratego.StrategoBlob;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -24,7 +24,7 @@ public class SG_get_resource_analysis extends ScopeGraphContextPrimitive {
         }
         String resource = Tools.asJavaString(sterm);
         final IScopeGraphUnit unit = context.unit(resource);
-        return Optional.of(new StrategoAnalysis(unit));
+        return Optional.of(new StrategoBlob(unit));
     }
 
 }

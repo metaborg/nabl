@@ -56,6 +56,24 @@ test resolve import over parent [[
 ]] 0 errors
    resolve #1 to #2
 
+test resolve ambiguous with unordered labels [[
+  resolve x to x in I parent or x in J parent
+]] 1 error
+   error like "ambiguous"
+
+test resolve via longer more specific path [[
+  resolve [[x]] to [[x]] via longer more specific path over x via less specific path
+]] 0 errors
+   resolve #1 to #2
+
+test resolve via parent after import fails [[
+  resolve x to x via import after parent
+]] 1 error
+
+test resolve via non-transitive import fails [[
+  resolve x to x via non-transitive import
+]] 1 error
+
 //-------------------------------
 
 test resolve in imported scope  [[
@@ -68,6 +86,21 @@ test resolve in transitively imported scope  [[
 ]] 0 errors
    resolve #1 to #2
 
+test resolve via ambiguous import [[
+  resolve x via y in y { x } or y { x }
+]] 1 error
+   error like "ambiguous"
+
+test resolve via unordered imports [[
+  resolve x via y in y { x } or via y in y { x }
+]] 1 error
+   error like "ambiguous"
+
+test resolve in parent with non-resolving import [[
+  resolve [[x]] to [[x]] in parent with non-resolving import y
+]] 0 errors
+   resolve #1 to #2
+
 //-------------------------------
 
 test resolve via scope in type [[
@@ -77,6 +110,38 @@ test resolve via scope in type [[
 
 //-------------------------------
 
-test resolve with cycle [[
-  import cycle x to x
+test resolve with direct cycle [[
+  direct cycle [[x]] to [[x]]
 ]] 0 errors
+   resolve #1 to #2
+
+test resolve with import cycle [[
+  resolve [[x]] via y in y imports z { } and z imports y { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+test import anomaly [[
+  anomaly {
+    mod A {
+      mod [[B]] {
+        def [[x]] = 1
+      }
+    }
+    mod B {
+      mod [[A]] {
+        def [[y]] = 2
+      }
+    }
+    mod C {
+      import [[A]]
+      import [[B]]
+      def z = [[x]] + [[y]]
+    }
+  }
+]] 0 errors
+   resolve #5 to #3
+   resolve #6 to #1
+   resolve #7 to #2
+   resolve #8 to #4

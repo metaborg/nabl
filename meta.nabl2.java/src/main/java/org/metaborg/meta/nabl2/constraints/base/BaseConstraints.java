@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.constraints.base;
 
+import java.util.stream.Collectors;
+
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -30,12 +32,12 @@ public final class BaseConstraints {
                         return ImmutableCConj.of(c1, c2, MessageInfo.empty());
                     }),
             M.appl2(C_EXISTS, M.listElems(M.var()), (t -> Constraints.matcher().match(t)),
-                    (c, vars, constraints) -> {
-                        return ImmutableCExists.of(vars, constraints, MessageInfo.empty());
+                    (c, vars, constraint) -> {
+                        return ImmutableCExists.of(vars, constraint, MessageInfo.empty());
                     }),
             M.appl2(C_NEW, M.listElems(M.var()), MessageInfo.matcherOnlyOriginTerm(),
-                    (c, vars, msginfo) -> {
-                        return ImmutableCNew.of(vars, msginfo);
+                    (c, vars, origin) -> {
+                        return ImmutableCNew.of(vars, origin);
                     })
             // @formatter:on
         );
@@ -57,7 +59,7 @@ public final class BaseConstraints {
         return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
             // @formatter:off
             t -> ImmutableCTrue.of(t.getMessageInfo().apply(subst::find)),
-            f -> ImmutableCTrue.of(f.getMessageInfo().apply(subst::find)),
+            f -> ImmutableCFalse.of(f.getMessageInfo().apply(subst::find)),
             c -> {
                 return ImmutableCConj.of(
                         Constraints.substitute(c.getLeft(), subst),
@@ -70,7 +72,10 @@ public final class BaseConstraints {
                         Constraints.substitute(e.getConstraint(), restrictedSubst),
                         e.getMessageInfo().apply(restrictedSubst::find));
             },
-            n -> ImmutableCNew.of(n.getNVars(), n.getMessageInfo().apply(subst::find))
+            n -> {
+                return ImmutableCNew.of(n.getNVars().stream().map(subst::find).collect(Collectors.toSet()),
+                        n.getMessageInfo().apply(subst::find));
+            }
             // @formatter:on
         ));
     }

@@ -9,3 +9,9 @@ test generalize list tail [[
 test can use new on parameter [[
   use new on parameter
 ]] analysis succeeds
+
+//------------------------------- polymorphism
+
+test generalize and instantiate [[
+  generalize and instantiate
+]] analysis fails // 0 errors
