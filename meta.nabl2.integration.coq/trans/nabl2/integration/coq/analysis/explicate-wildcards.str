@@ -35,8 +35,8 @@ rules // Wildcard explication
 			rules(wld-trname: _ -> 0)
 
 	explicate-rule-wildcards:
-		CGenMatchRule(name, trpattern, spatterns, typattern, body) ->
-			CGenMatchRule(name,
+		CGenRule(name, trpattern, spatterns, typattern, body) ->
+			CGenRule(name,
 				<alltd(explicate-term-pattern-wildcards)> trpattern,
 				<alltd(explicate-scope-pattern-wildcards)> spatterns,
 				<alltd(explicate-type-pattern-wildcards)> typattern,

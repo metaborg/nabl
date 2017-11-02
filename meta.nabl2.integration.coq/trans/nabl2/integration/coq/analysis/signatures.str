@@ -24,10 +24,10 @@ rules
 				<map(extract-rule-sigs); concat; nub> rs
 
 	extract-rule-sigs:
-		CGenInitRule(_, _, _) -> []
+		CGenRule(InitRule(), _, _, _, _) -> []
 		
 	extract-rule-sigs:
-		CGenMatchRule(Name(_,[]), match, scopes, types, body) ->
+		CGenRule(Rule(_,[]), match, scopes, types, body) ->
 			term_sigs
 		with
 			term_sigs := <extract-term-sigs(|body)> match
@@ -36,7 +36,7 @@ rules
 		x ->
 			[]
 		where
-			not(!x; ?CGenMatchRule(Name(_,[]), As(_, Op(_, _)), _, _, _))
+			not(!x; ?CGenRule(Rule(_,[]), As(_, Op(_, _)), _, _, _))
 	
 	// Term signature extraction
 	
@@ -94,7 +94,7 @@ rules
 	// Body signature extraction
 		
 	extract-body-sigs(|args):
-		CGenRecurse(Name(name,[]), x, _, _) -> r
+		CGenRecurse(Rule(name,[]), x, _, _) -> r
 		with
 			(i := <get-index0(my-match(|x))> args; r := [(name, i)]) <+
 				(r := [])
@@ -102,7 +102,7 @@ rules
 	extract-body-sigs(|args):
 		x -> []
 		with
-			not(!x; ?CGenRecurse(Name(_,[]), Var(_), _, _))
+			not(!x; ?CGenRecurse(Rule(_,[]), Var(_), _, _))
 
 	// If the term is syntactically equal
 	my-match(|x):

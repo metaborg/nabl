@@ -22,10 +22,10 @@ rules // Dependency analysis
 		[] -> []
 
 	mdep:
-		CGenInitRule(_, _, body) -> None()
+		CGenRule(InitRule(), _, _, _, body) -> None()
 	
 	mdep:
-		CGenMatchRule(name, _, _, _, body) ->
+		CGenRule(name, _, _, _, body) ->
 			x'
 			with
 			x':=
@@ -39,7 +39,7 @@ rules // Dependency analysis
 				["Mutual dependency analysis encountered an unexpected rule kind:",
 					<write-to-string> x, ". Please report."]
 		where
-			not(?CGenInitRule(_, _, _) <+ ?CGenMatchRule(_, _, _, _, _))
+			not(?CGenRule(_, _, _, _, _))
 	
 	mdeps-body(|name):
 		[b|bs] ->

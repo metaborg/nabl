@@ -26,14 +26,14 @@ rules
 
   cgen-op-name(|rdef,sort): base-name -> op-name
     with sort-name := <ds-sort-to-string> sort;
-         if Name(name,args) := rdef then
+         if Rule(name,args) := rdef then
            op-name := $[nabl2_[<rdef-name> rdef]_[<length;int-to-string> args]_[base-name][sort-name]]
          else
            op-name := $[nabl2_[base-name][sort-name]]
          end
 
   cgen-arrow-name(|rdef): base-name -> arrow-name
-    with if Name(name,args) := rdef then
+    with if Rule(name,args) := rdef then
            arrow-name := $[[<rdef-name> rdef]_[<length;int-to-string> args]_[base-name]]
          else
            arrow-name := $[[base-name]]

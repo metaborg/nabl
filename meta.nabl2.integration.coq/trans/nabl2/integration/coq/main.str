@@ -287,7 +287,7 @@ rules // Rule normalization
   			\)> (spattern, body)
   
   normalize-rule:
-  	CGenMatchRule(name, term_pattern, spattern, tpattern, body) ->
+  	CGenRule(name, term_pattern, spattern, tpattern, body) ->
   		<extract-term-pattern;
   			mbind(\ (term_pattern', body0) ->
   			<extract-scope-patterns;
@@ -296,7 +296,7 @@ rules // Rule normalization
   			mbind(\ (tpattern', body2) ->
   			<normalize-body;
   			mbind(\ body' ->
-  			CGenMatchRule(name, term_pattern', spattern', tpattern', body')
+  			CGenRule(name, term_pattern', spattern', tpattern', body')
   			\)> body2
   			\)> (tpattern, body1)
   			\)> (spattern, body0)
@@ -308,8 +308,7 @@ rules // Rule normalization
   			["Rule normalization encountered an unexpected rule kind: ",
   				<write-to-string> x, ". Please report."]
   	where
-  		not(?CGenInitRule(_, _, _) <+
-  			?CGenMatchRule(_, _, _, _, _))
+  		not(?CGenRule(_, _, _, _, _))
 
 	// Iterate through clauses of body to look for normalization opportunities
 	normalize-body:
@@ -555,7 +554,7 @@ rules // Rules
 			coq
 	
 	rule-to-coq:
-		(r@CGenMatchRule(name, trpattern, spattern, typattern, body), coq) ->
+		(r@CGenRule(name, trpattern, spattern, typattern, body), coq) ->
 			<collect-all(\ Var(x) -> Bind(x) \);
 			mbind(\ var_names ->
 			<rule-name-from-term-pattern;
@@ -604,8 +603,7 @@ rules // Rules
 					<write-to-string> r, ". Please report."]
 		where
 			not(!r;
-				?CGenInitRule(_, _, _) <+
-				?CGenMatchRule(_, _, _, _, _))
+				?CGenRule(_, _, _, _, _))
 
 	// Converts a None() to a ListDeclBar if necessary,
 	// and appends the constructor
@@ -895,10 +893,6 @@ rules // CGen body
 		
 	// FIXME: do we need this information in Coq?
 	cgen-clause-to-coq:
-		NewScopes(_) -> None()
-	
-	// FIXME: do we need this information in Coq?
-	cgen-clause-to-coq:
 		CDistinct(_, _, _) -> None()
 	
 	cgen-clause-to-coq:
@@ -992,7 +986,6 @@ rules // CGen body
 				?CDeclType(_, _, _, _) <+
 				?CGenRecurse(_, _, _, _) <+
 				?CGDirectEdge(_, _, _, _) <+
-				?NewScopes(_) <+
 				?CDistinct(_, _, _) <+
 				?CGAssoc(_, _, _, _) <+
 				?CAssoc(_, _, _, _) <+

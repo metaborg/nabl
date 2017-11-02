@@ -1,5 +1,0 @@
-module nabl2/integration/sdf3
-
-imports
-
-  nabl2/integration/sdf3/main
