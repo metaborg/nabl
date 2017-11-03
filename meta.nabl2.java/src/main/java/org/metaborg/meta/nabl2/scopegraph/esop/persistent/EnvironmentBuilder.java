@@ -17,7 +17,7 @@ interface EnvironmentBuilder<S extends IScope, L extends ILabel, O extends IOccu
     // TODO: capture `IRelation<L> lt` in classes? 
     
     // @formatter:off
-    <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(
+    <P extends IPath<S, L, O>, V> IPersistentEnvironment<S, L, O, P> build(
             final EnvironmentBuilder<S, L, O> builder,
             Set.Immutable<O> seenI, 
             IRegExpMatcher<L> re,
@@ -25,7 +25,7 @@ interface EnvironmentBuilder<S extends IScope, L extends ILabel, O extends IOccu
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache,
             final Optional<O> resolutionReference,            
-            final PersistentNameResolution<S, L, O> nameResolution, 
+            final PersistentNameResolution<S, L, O, V> nameResolution, 
             boolean eagerEvaluation);
     // @formatter:on
 

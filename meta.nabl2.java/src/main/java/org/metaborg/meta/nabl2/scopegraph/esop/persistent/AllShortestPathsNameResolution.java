@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -21,12 +22,10 @@ import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
-import org.metaborg.meta.nabl2.scopegraph.IActiveScopes;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.OpenCounter;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
@@ -49,14 +48,14 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
-public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
+public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence, V>
         implements IEsopNameResolution<S, L, O>, java.io.Serializable {
 
     private static final long serialVersionUID = 42L;
 
     private static final boolean DEBUG = false;
 
-    private final PersistentScopeGraph<S, L, O> scopeGraph;
+    private final PersistentScopeGraph<S, L, O, V> scopeGraph;
 
     private final Set.Immutable<L> labels;
     private final L labelD;
@@ -65,12 +64,9 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private final IRelation<L> ordered;
     private final IRelation<L> unordered;
 
-    private final IActiveScopes<S, L> scopeCounter;
-
     transient private java.util.Map<IRelation<L>, EnvironmentBuilder<S, L, O>> environmentBuilderCache;
 
-    public AllShortestPathsNameResolution(PersistentScopeGraph<S, L, O> scopeGraph, IResolutionParameters<L> params,
-            IActiveScopes<S, L> scopeCounter) {
+    public AllShortestPathsNameResolution(PersistentScopeGraph<S, L, O, V> scopeGraph, IResolutionParameters<L> params) {
         this.scopeGraph = scopeGraph;
 
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
@@ -80,7 +76,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         assert ordered.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.unordered = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
-        this.scopeCounter = scopeCounter;
 
         initTransients();
 
@@ -513,18 +508,13 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     }
 
     @Beta
-    public final PersistentScopeGraph<S, L, O> getScopeGraph() {
+    public final PersistentScopeGraph<S, L, O, V> getScopeGraph() {
         return scopeGraph;
     }
 
     @Beta
     public final L getLabelD() {
         return labelD;
-    }
-
-    @Beta
-    public final IActiveScopes<S, L> getScopeCounter() {
-        return scopeCounter;
     }
 
     @Beta
@@ -544,33 +534,46 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     // NOTE: never used in project
     @Deprecated
-    @Override
     public Set.Immutable<S> getAllScopes() {
         return scopeGraph.getAllScopes();
     }
 
     // NOTE: all references could be duplicated to get rid of scope graph
     // reference
-    @Override
     public Set.Immutable<O> getAllRefs() {
         return scopeGraph.getAllRefs();
     }
 
+//    public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
+//        return tryResolve(ref).map(Tuple2::_1).orElse(Set.Immutable.of());
+//    }
+//
+//    public Set.Immutable<IDeclPath<S, L, O>> visible(S scope) {
+//        return tryVisible(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
+//    }
+//
+//    public Set.Immutable<IDeclPath<S, L, O>> reachable(S scope) {
+//        return tryReachable(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
+//    }
+
     @Override
-    public Set.Immutable<IResolutionPath<S, L, O>> resolve(O ref) {
-        return tryResolve(ref).map(Tuple2::_1).orElse(Set.Immutable.of());
+    public Optional<Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Set.Immutable<IDeclPath<S, L, O>> visible(S scope) {
-        return tryVisible(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
+    public Optional<Set.Immutable<O>> visible(S scope) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Set.Immutable<IDeclPath<S, L, O>> reachable(S scope) {
-        return tryReachable(scope).map(Tuple2::_1).orElse(Set.Immutable.of());
-    }
-
+    public Optional<Set.Immutable<O>> reachable(S scope) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
+    }    
+    
     /**
      * Retrieves an environment builder for for a relation of labels.
      */
@@ -589,8 +592,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         initTransients();
     }
 
-    private static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(
-            final PersistentScopeGraph<S, L, O> scopeGraph, final ShortestPathResult<S, L, O> resolutionResult,
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(
+            final PersistentScopeGraph<S, L, O, V> scopeGraph, final ShortestPathResult<S, L, O> resolutionResult,
             final Comparator<Distance<L>> comparator, final O reference) {
         final int u = resolutionResult.reverseIndex.get(reference);
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
@@ -627,13 +630,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         return Optional.empty();
     }
 
-    @Override
     public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(final O reference) {
         final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);
         return tryResolve(scopeGraph, resolutionResult, comparator, reference);
     }
 
-    @Override
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
         // TODO Auto-generated method stub
         // return Optional.empty();
@@ -664,11 +665,22 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         return Optional.of(ImmutableTuple2.of(visibleDeclarations, messages));
     }
 
-    @Override
     public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
         final Comparator<Distance<L>> comparator = new PathComparator<>(unordered);
         // TODO Auto-generated method stub
         return Optional.empty();
+    }
+
+    @Override
+    public java.util.Set<O> getResolvedRefs() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
+    }
+
+    @Override
+    public java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>> resolutionEntries() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
 }

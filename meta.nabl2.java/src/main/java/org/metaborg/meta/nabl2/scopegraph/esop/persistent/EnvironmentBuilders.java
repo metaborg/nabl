@@ -44,10 +44,10 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         }
 
         @Override
-        public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(final EnvironmentBuilder<S, L, O> builder, Set.Immutable<O> seenImports,
+        public <P extends IPath<S, L, O>, V> IPersistentEnvironment<S, L, O, P> build(final EnvironmentBuilder<S, L, O> builder, Set.Immutable<O> seenImports,
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
                 Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache,
-                Optional<O> resolutionReference, PersistentNameResolution<S, L, O> nameResolution, boolean eagerEvaluation) {
+                Optional<O> resolutionReference, PersistentNameResolution<S, L, O, V> nameResolution, boolean eagerEvaluation) {
             
             /*
              * NOTE: caching currently does not work because.
@@ -57,7 +57,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             final IPersistentEnvironment<S, L, O, P> labelEnvironment;
                         
             // NOTE: using nameResolution.{scopeGraph, labelD}
-            if (nameResolution.getScopeCounter().isOpen(path.getTarget(), label)) {
+            if (nameResolution.getScopeGraph().isOpen(path.getTarget(), label)) {
                 labelEnvironment = Environments.unresolvable();
             } else if (label.equals(nameResolution.getLabelD()) && !re.isAccepting()) {
                 labelEnvironment = Environments.empty();
@@ -137,11 +137,11 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         }      
         
         @Override
-        public <P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> build(final EnvironmentBuilder<S, L, O> builder, Set.Immutable<O> seenImports,
+        public <P extends IPath<S, L, O>, V> IPersistentEnvironment<S, L, O, P> build(final EnvironmentBuilder<S, L, O> builder, Set.Immutable<O> seenImports,
                 IRegExpMatcher<L> re, IScopePath<S, L, O> path, IPersistentEnvironment.Filter<S, L, O, P> filter,
                 Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache, 
                 Optional<O> resolutionReference,
-                PersistentNameResolution<S, L, O> nameResolution, boolean eagerEvaluation) {
+                PersistentNameResolution<S, L, O, V> nameResolution, boolean eagerEvaluation) {
 
             // @formatter:off
             final Set.Immutable<IPersistentEnvironment<S, L, O, P>> environments = builders.stream()
@@ -216,7 +216,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
      * Returns the set of declarations that are reachable from S with a
      * l-labeled step.
      */
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> IPersistentEnvironment<S, L, O, P> env_l(
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>, V> IPersistentEnvironment<S, L, O, P> env_l(
             final EnvironmentBuilder<S, L, O> builder,
             Set.Immutable<O> seenImports,
             IRegExpMatcher<L> nextRe, L label, IScopePath<S, L, O> path,
@@ -224,10 +224,10 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             /***/
             Map<L, IPersistentEnvironment<S, L, O, P>> env_lCache,
             Optional<O> resolutionReference,
-            PersistentNameResolution<S, L, O> nameResolution, boolean eagerEvaluation) {
+            PersistentNameResolution<S, L, O, V> nameResolution, boolean eagerEvaluation) {
     
         // TODO WIP factoring out facts
-        assert !nameResolution.getScopeCounter().isOpen(path.getTarget(), label);
+        assert !nameResolution.getScopeGraph().isOpen(path.getTarget(), label);
         assert !label.equals(nameResolution.getLabelD());
         assert !nextRe.isEmpty();
            
@@ -254,14 +254,14 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         return Environments.union(scopes);
     }    
     
-    static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> Set.Immutable<IPersistentEnvironment<S, L, O, P>> directScopes(
+    static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>, V> Set.Immutable<IPersistentEnvironment<S, L, O, P>> directScopes(
             Set.Immutable<O> seenImports, L label, IScopePath<S, L, O> path,
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             Function<IScopePath<S, L, O>, IPersistentEnvironment<S, L, O, P>> nestedPathToEnvironment,
             /***/
-            PersistentNameResolution<S, L, O> nameResolution) {
+            PersistentNameResolution<S, L, O, V> nameResolution) {
 
-        final PersistentScopeGraph<S, L, O> scopeGraph = nameResolution.getScopeGraph();
+        final PersistentScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
        
         final Function<S, Optional<IScopePath<S, L, O>>> extendPathToNextScopeAndValidate = 
                 nextScope -> Paths.append(path, Paths.direct(path.getTarget(), label, nextScope));
@@ -284,14 +284,14 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         return environments;
     }
 
-    static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> Set.Immutable<IPersistentEnvironment<S, L, O, P>> importScopes(
+    static final <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>, V> Set.Immutable<IPersistentEnvironment<S, L, O, P>> importScopes(
             Set.Immutable<O> seenImports, L label, IScopePath<S, L, O> path,
             IPersistentEnvironment.Filter<S, L, O, P> filter,
             Function<IScopePath<S, L, O>, IPersistentEnvironment<S, L, O, P>> nestedPathToEnvironment,
             /***/
-            PersistentNameResolution<S, L, O> nameResolution) {
+            PersistentNameResolution<S, L, O, V> nameResolution) {
 
-        final PersistentScopeGraph<S, L, O> scopeGraph = nameResolution.getScopeGraph();
+        final PersistentScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
        
         final Function<IResolutionPath<S, L, O>, IPersistentEnvironment<S, L, O, P>> importPathToUnionEnvironment = importPath -> {
             // @formatter:off        

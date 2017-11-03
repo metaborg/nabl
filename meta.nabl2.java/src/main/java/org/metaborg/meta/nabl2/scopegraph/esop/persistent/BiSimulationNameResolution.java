@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.IBiSimulation.biSimulate;
 
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
@@ -27,44 +28,74 @@ public class BiSimulationNameResolution<S extends IScope, L extends ILabel, O ex
         this.two = two;
     }
     
+//    @Override
+//    public Set.Immutable<S> getAllScopes() {
+//        return biSimulate(one::getAllScopes, two::getAllScopes);
+//    }
+//
+//    @Override
+//    public Set.Immutable<O> getAllRefs() {
+//        return biSimulate(one::getAllRefs, two::getAllRefs);
+//    }
+//
+//    @Override
+//    public Set.Immutable<IResolutionPath<S, L, O>> resolve(O reference) {
+//        return biSimulate(() -> one.resolve(reference), () -> two.resolve(reference));
+//    }
+//
+//    @Override
+//    public Set.Immutable<IDeclPath<S, L, O>> visible(S scope) {
+//        return biSimulate(() -> one.visible(scope), () -> two.visible(scope));
+//    }
+//
+//    @Override
+//    public Set.Immutable<IDeclPath<S, L, O>> reachable(S scope) {
+//        return biSimulate(() -> one.reachable(scope), () -> two.reachable(scope));
+//    }
+
     @Override
-    public Set.Immutable<S> getAllScopes() {
-        return biSimulate(one::getAllScopes, two::getAllScopes);
+    public Optional<io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Set.Immutable<O> getAllRefs() {
-        return biSimulate(one::getAllRefs, two::getAllRefs);
+    public Optional<io.usethesource.capsule.Set.Immutable<O>> visible(S scope) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Set.Immutable<IResolutionPath<S, L, O>> resolve(O reference) {
-        return biSimulate(() -> one.resolve(reference), () -> two.resolve(reference));
+    public Optional<io.usethesource.capsule.Set.Immutable<O>> reachable(S scope) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
+    }
+        
+//    @Override
+//    public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O reference) {
+//        return biSimulate(() -> one.tryResolve(reference), () -> two.tryResolve(reference));
+//    }
+//
+//    @Override
+//    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
+//        return biSimulate(() -> one.tryVisible(scope), () -> two.tryVisible(scope));
+//    }
+//
+//    @Override
+//    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
+//        return biSimulate(() -> one.tryReachable(scope), () -> two.tryReachable(scope));
+//    }
+
+    @Override
+    public java.util.Set<O> getResolvedRefs() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Set.Immutable<IDeclPath<S, L, O>> visible(S scope) {
-        return biSimulate(() -> one.visible(scope), () -> two.visible(scope));
-    }
-
-    @Override
-    public Set.Immutable<IDeclPath<S, L, O>> reachable(S scope) {
-        return biSimulate(() -> one.reachable(scope), () -> two.reachable(scope));
-    }
-
-    @Override
-    public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(O reference) {
-        return biSimulate(() -> one.tryResolve(reference), () -> two.tryResolve(reference));
-    }
-
-    @Override
-    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryVisible(S scope) {
-        return biSimulate(() -> one.tryVisible(scope), () -> two.tryVisible(scope));
-    }
-
-    @Override
-    public Optional<Tuple2<Set.Immutable<IDeclPath<S, L, O>>, Set.Immutable<String>>> tryReachable(S scope) {
-        return biSimulate(() -> one.tryReachable(scope), () -> two.tryReachable(scope));
+    public java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>> resolutionEntries() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not yet implemented.");
     }
 
 }
