@@ -13,3 +13,5 @@
 *.name-resolution
 *.unifier
 *.symbolic
+
+*.nabl2test

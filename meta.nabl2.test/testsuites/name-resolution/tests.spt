@@ -101,6 +101,11 @@ test resolve in parent with non-resolving import [[
 ]] 0 errors
    resolve #1 to #2
 
+test importing scope and reference scope are different [[
+  resolve [[x]] via y in different scope in y { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
 //-------------------------------
 
 test resolve via scope in type [[
@@ -117,6 +122,17 @@ test resolve with direct cycle [[
 
 test resolve with import cycle [[
   resolve [[x]] via y in y imports z { } and z imports y { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+test import into nested module with same name [[
+  resolve [[x]] via y and y in y { y { [[x]] } }
+]] 1 errors
+   error like "ambiguous"
+   resolve #1 to #2
+
+test do not resolve with self as import [[
+  resolve [[x]] via itself to [[x]] { x }
 ]] 0 errors
    resolve #1 to #2
 

@@ -217,6 +217,16 @@ rules
     {yr} <=I= s,
     {xr} |-> _.
 
+  [[ ResolveViaImportNotInSameScope(xr,yr,yd,xd) ^ () ]] :=
+    new s1 s2 sy,
+    {xr} -> s1,
+    {yr} <=I= s1,
+    {yr} -> s2,
+    {yd} <- s2,
+    {yd} =I=> sy,
+    {xd} <- sy,
+    {xr} |-> _.
+
 rules
 
   [[ ResolveYViaTypeOfX(yr,xr,xd,yd) ^ () ]] :=
@@ -260,6 +270,33 @@ rules
     {yr2} <=I= sz,
     {xd} <- sz,
 
+    {xr} |-> _.
+
+  [[ ImportNested(xr,yr1,yr2,yd1,yd2,xd) ^ () ]] :=
+    new s1 s2 sy1 sy2,
+    {xr} -> s1,
+    {yr1} -> s1,
+    {yr2} -> s1,
+    {yr1} <=I= s1,
+    {yr2} <=I= s1,
+
+    s1 -P-> s2,
+    {yd1} <- s2,
+
+    {yd1} =I=> sy1,
+    {yd2} <- sy1,
+    {yd2} =I=> sy2,
+    {xd} <- sy2,
+
+    {xr} |-> _.
+
+  [[ SelfImport(xr,xd1,xd2) ^ () ]] :=
+    new s sx,
+    {xr} -> s,
+    {xr} <=I= s,
+    {xd1} <- s,
+    {xd1} =I=> sx,
+    {xd2} <- sx,
     {xr} |-> _.
 
 rules
