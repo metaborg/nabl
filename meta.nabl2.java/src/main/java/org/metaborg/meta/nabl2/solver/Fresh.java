@@ -16,6 +16,8 @@ public class Fresh implements Serializable {
     }
 
     public String fresh(String base) {
+        // remove any number suffix from the base
+        base = base.replaceFirst("-[0-9]+$", "");
         // to prevent accidental name clashes, ensure the base contains no dashes,
         // and then use dashes as our connecting character.
         base = base.replaceAll("-", "_");
