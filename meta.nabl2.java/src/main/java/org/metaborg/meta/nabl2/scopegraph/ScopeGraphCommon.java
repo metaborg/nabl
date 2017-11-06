@@ -75,7 +75,7 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
      * Summarize a scope graph to all reachable scopes and edges
      */
     public IEsopScopeGraph<S, L, O, V> summarize(final S scope) {
-        final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = IEsopScopeGraph.builder();
         summarize(scope, summaryGraph, Sets.newHashSet());
         return summaryGraph.freeze();
     }
@@ -95,7 +95,7 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
     }
 
     public IEsopScopeGraph<S, L, O, V> summarize(final O decl) {
-        final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = IEsopScopeGraph.builder();
         summarize(decl, summaryGraph, Sets.newHashSet());
         return summaryGraph.freeze();
     }

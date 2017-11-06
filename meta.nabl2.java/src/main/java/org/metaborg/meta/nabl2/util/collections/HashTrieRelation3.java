@@ -230,6 +230,49 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                     SetMultimap.Transient.of(), SetMultimap.Transient.of());
         }
 
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((bwdV == null) ? 0 : bwdV.hashCode());
+            result = prime * result + ((bwdVL == null) ? 0 : bwdVL.hashCode());
+            result = prime * result + ((fwdK == null) ? 0 : fwdK.hashCode());
+            result = prime * result + ((fwdKL == null) ? 0 : fwdKL.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            HashTrieRelation3.Transient other = (HashTrieRelation3.Transient) obj;
+            if (bwdV == null) {
+                if (other.bwdV != null)
+                    return false;
+            } else if (!bwdV.equals(other.bwdV))
+                return false;
+            if (bwdVL == null) {
+                if (other.bwdVL != null)
+                    return false;
+            } else if (!bwdVL.equals(other.bwdVL))
+                return false;
+            if (fwdK == null) {
+                if (other.fwdK != null)
+                    return false;
+            } else if (!fwdK.equals(other.fwdK))
+                return false;
+            if (fwdKL == null) {
+                if (other.fwdKL != null)
+                    return false;
+            } else if (!fwdKL.equals(other.fwdKL))
+                return false;
+            return true;
+        }
+
     }
 
 

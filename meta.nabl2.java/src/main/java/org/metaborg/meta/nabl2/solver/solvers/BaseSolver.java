@@ -69,7 +69,7 @@ public class BaseSolver {
 
         // shared
         final IUnifier.Transient unifier = Unifier.Transient.of();
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = IEsopScopeGraph.builder();
 
         // solver components
         final SolverCore core = new SolverCore(initial.config(), unifier::find, fresh, callExternal);

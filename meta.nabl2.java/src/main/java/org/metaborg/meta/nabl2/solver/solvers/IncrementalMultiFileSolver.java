@@ -392,7 +392,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             throws InterruptedException, SolverException {
 
         final IProperties.Transient<TermIndex, ITerm, ITerm> astProperties = Properties.Transient.of();
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = IEsopScopeGraph.builder();
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> false);
         final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = Properties.Transient.of();
@@ -443,7 +443,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
     private IPublicSolution combinePublicSolutions(SolverConfig config, Iterable<? extends IPublicSolution> solutions)
             throws InterruptedException, SolverException {
 
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = IEsopScopeGraph.builder();
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> false);
         final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = Properties.Transient.of();

@@ -52,7 +52,7 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract java.util.Set<IConstraint> constraints();
 
     public static ISolution of(SolverConfig config) {
-        return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
+        return ImmutableSolution.of(config, Properties.Immutable.of(), (IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm>) (IEsopScopeGraph.Immutable) IEsopScopeGraph.builder().freeze(),
                 EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()), Unifier.Immutable.of(),
                 org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),

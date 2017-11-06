@@ -4,6 +4,7 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.metaborg.util.functions.PartialFunction1;
@@ -22,7 +23,7 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     static <S extends IScope, L extends ILabel, O extends IOccurrence, V> IEsopScopeGraph.Transient<S, L, O, V>
             builder() {
         if(USE_PERSISTENT_SCOPE_GRAPH) {
-            throw new IllegalArgumentException("Persisent scope graphs are temporarily removed.");
+            return new PersistentScopeGraph.Builder<>();
         } else {
             return EsopScopeGraph.Transient.of();
         }

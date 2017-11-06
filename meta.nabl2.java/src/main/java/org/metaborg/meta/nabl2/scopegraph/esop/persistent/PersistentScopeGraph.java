@@ -28,6 +28,7 @@ import org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
+import org.metaborg.util.functions.Predicate3;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.BinaryRelation.Immutable;
@@ -44,6 +45,9 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     private final IRelation3.Immutable<O, L, S> sourceEdges;
     private final IRelation3.Immutable<S, L, S> middleEdges;
     private final IRelation3.Immutable<S, L, O> targetEdges;
+    
+    private final IRelation3.Immutable<S, L, V> incompleteDirectEdges;
+    private final IRelation3.Immutable<S, L, V> incompleteImportEdges;    
 
     // TODO
     // private final TernaryRelation.Immutable<S, L, S> directEdges;
@@ -54,12 +58,17 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
     public PersistentScopeGraph(final Set.Immutable<S> allScopes, final Set.Immutable<O> allDeclarations,
             final Set.Immutable<O> allReferences, final IFunction<O, S> declarations, final IFunction<O, S> references,
             final IRelation3.Immutable<S, L, S> directEdges, final IRelation3<O, L, S> assocEdges,
-            final IRelation3.Immutable<S, L, O> importEdges) {
+            final IRelation3.Immutable<S, L, O> importEdges,
+            final IRelation3.Immutable<S, L, V> incompleteDirectEdges,
+            final IRelation3.Immutable<S, L, V> incompleteImportEdges) {
         this.allScopes = allScopes;
               
         this.sourceEdges = (IRelation3.Immutable<O, L, S>) union(assocEdges.inverse(), liftHashFunctionToRelation(references, (L) Label.R).inverse()).inverse();
         this.middleEdges = directEdges;
         this.targetEdges = union(importEdges, liftHashFunctionToRelation(declarations, (L) Label.D).inverse());
+        
+        this.incompleteDirectEdges = incompleteDirectEdges;
+        this.incompleteImportEdges = incompleteImportEdges;
     }
 
     public Stream<OccurrenceLabelScope<O, L, S>> sourceEdgeStream() {
@@ -192,6 +201,9 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
         private final IRelation3.Transient<S, L, S> directEdges;
         private final IRelation3.Transient<O, L, S> assocEdges;
         private final IRelation3.Transient<S, L, O> importEdges;
+        
+        private final IRelation3.Transient<S, L, V> incompleteDirectEdges;
+        private final IRelation3.Transient<S, L, V> incompleteImportEdges;
        
         private IEsopScopeGraph.Immutable<S, L, O, V> result = null;
 
@@ -206,6 +218,35 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             this.directEdges = HashTrieRelation3.Transient.of();
             this.assocEdges = HashTrieRelation3.Transient.of();
             this.importEdges = HashTrieRelation3.Transient.of();
+            
+            this.incompleteDirectEdges = HashTrieRelation3.Transient.of();
+            this.incompleteImportEdges = HashTrieRelation3.Transient.of();
+        }
+        
+        private Builder(
+                Set.Transient<S> allScopes, 
+                Set.Transient<O> allDeclarations, 
+                Set.Transient<O> allReferences,
+                IFunction.Transient<O, S> declarations, 
+                IFunction.Transient<O, S> references,
+                IRelation3.Transient<S, L, S> directEdges,
+                IRelation3.Transient<O, L, S> assocEdges,
+                IRelation3.Transient<S, L, O> importEdges,
+                IRelation3.Transient<S, L, V> incompleteDirectEdges,
+                IRelation3.Transient<S, L, V> incompleteImportEdges) {
+            this.allScopes = allScopes;
+            this.allDeclarations = allDeclarations;
+            this.allReferences = allReferences;
+
+            this.declarations = declarations;
+            this.references = references;
+
+            this.directEdges = directEdges;
+            this.assocEdges = assocEdges;
+            this.importEdges = importEdges;        
+            
+            this.incompleteDirectEdges = incompleteDirectEdges;
+            this.incompleteImportEdges = incompleteImportEdges;
         }
 
         void requireNonSealed() {
@@ -225,9 +266,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
 
             allScopes.__insert(sourceScope);
             allScopes.__insert(targetScope);
-            directEdges.put(sourceScope, label, targetScope);
-            
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return directEdges.put(sourceScope, label, targetScope);
         }
         
         public boolean addDecl(S scope, O decl) {
@@ -235,9 +274,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             
             allScopes.__insert(scope);
             allDeclarations.__insert(decl);
-            declarations.put(decl, scope);
-            
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return declarations.put(decl, scope);
         }
         
         public boolean addAssoc(O decl, L label, S scope) {
@@ -246,9 +283,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             
             allScopes.__insert(scope);
             allDeclarations.__insert(decl);
-            assocEdges.put(decl, label, scope);
-            
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return assocEdges.put(decl, label, scope);
         }      
         
         public boolean addRef(O ref, S scope) {
@@ -256,9 +291,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             
             allScopes.__insert(scope);
             allReferences.__insert(ref);
-            references.put(ref, scope);
-            
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return references.put(ref, scope);
         }
 
         public boolean addImportEdge(S scope, L label, O ref) {
@@ -267,9 +300,7 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
             
             allScopes.__insert(scope);
             allReferences.__insert(ref);
-            importEdges.put(scope, label, ref);
-            
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return importEdges.put(scope, label, ref);
         }
 
         @Override
@@ -327,10 +358,16 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
                         .forEach(slo -> one.addExportEdge(slo.occurrence(), slo.label(), slo.scope()));
 
                 importEdges.stream(ImmutableScopeLabelOccurrence::of)
-                        .forEach(slo -> one.addImportEdge(slo.scope(), slo.label(), slo.occurrence()));               
+                        .forEach(slo -> one.addImportEdge(slo.scope(), slo.label(), slo.occurrence()));
+                
+                incompleteDirectEdges.stream()
+                        .forEach(slo -> one.addIncompleteDirectEdge(slo._1(), slo._2(), slo._3()));
+                
+                incompleteImportEdges.stream()
+                        .forEach(slo -> one.addIncompleteImportEdge(slo._1(), slo._2(), slo._3()));                
                                                                 
                 final IEsopScopeGraph.Immutable<S, L, O, V> two = new PersistentScopeGraph<>(allScopes.freeze(), allDeclarations.freeze(),
-                        allReferences.freeze(), declarations.freeze(), references.freeze(), directEdges.freeze(), assocEdges.freeze(), importEdges.freeze());
+                        allReferences.freeze(), declarations.freeze(), references.freeze(), directEdges.freeze(), assocEdges.freeze(), importEdges.freeze(), incompleteDirectEdges.freeze(), incompleteImportEdges.freeze());
                 
                 result = new BiSimulationScopeGraph<>(one.freeze(), two);                
             }
@@ -340,87 +377,136 @@ public class PersistentScopeGraph<S extends IScope, L extends ILabel, O extends 
 
         @Override
         public boolean isOpen(S scope, L label) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return incompleteDirectEdges().contains(scope, label) || incompleteImportEdges().contains(scope, label);
         }
 
         @Override
         public IRelation3<S, L, V> incompleteDirectEdges() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return incompleteDirectEdges;
         }
 
         @Override
         public IRelation3<S, L, V> incompleteImportEdges() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return incompleteImportEdges;
         }
 
         @Override
         public boolean isComplete() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return incompleteDirectEdges().isEmpty() && incompleteImportEdges().isEmpty();
         }
 
         @Override
         public boolean addIncompleteDirectEdge(S scope, L label, V var) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return incompleteDirectEdges.put(scope, label, var);
         }
 
         @Override
         public boolean addExportEdge(O decl, L label, S scope) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return addAssoc(decl, label, scope);
         }
 
         @Override
         public boolean addIncompleteImportEdge(S scope, L label, V var) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            return incompleteImportEdges.put(scope, label, var);
         }
 
         @Override
         public boolean addAll(IEsopScopeGraph<S, L, O, V> other) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            boolean change = false;
+            
+            change |= other.getDecls().stream()
+                    .map(tuple -> this.addDecl(tuple._2(), tuple._1()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+            
+            change |= other.getRefs().stream()
+                    .map(tuple -> this.addRef(tuple._1(), tuple._2()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+
+            change |= other.getDirectEdges().stream()
+                    .map(tuple -> this.addDirectEdge(tuple._1(), tuple._2(), tuple._3()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+
+            change |= other.getExportEdges().stream()
+                    .map(tuple -> this.addExportEdge(tuple._1(), tuple._2(), tuple._3()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+
+            change |= other.getImportEdges().stream()
+                    .map(tuple -> this.addImportEdge(tuple._1(), tuple._2(), tuple._3()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+
+            change |= other.incompleteDirectEdges().stream()
+                    .map(tuple -> this.addIncompleteDirectEdge(tuple._1(), tuple._2(), tuple._3()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+            
+            change |= other.incompleteImportEdges().stream()
+                    .map(tuple -> this.addIncompleteImportEdge(tuple._1(), tuple._2(), tuple._3()))
+                    .reduce(Boolean::logicalOr)
+                    .orElse(false);
+           
+            return change;            
         }
 
         @Override
         public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not yet implemented.");
+            boolean progress = false;
+            progress |= reduce(incompleteDirectEdges, fs, this::addDirectEdge);
+            progress |= reduce(incompleteImportEdges, fo, this::addImportEdge);
+            return progress;
+        }
+
+        private <X> boolean reduce(IRelation3.Transient<S, L, V> relation, PartialFunction1<V, X> f,
+                Predicate3<S, L, X> add) {
+            return relation.stream().flatMap(slv -> {
+                return f.apply(slv._3()).map(x -> {
+                    add.test(slv._1(), slv._2(), x);
+                    return Stream.of(slv);
+                }).orElse(Stream.empty());
+            }).map(slv -> {
+                return relation.remove(slv._1(), slv._2(), slv._3());
+            }).findAny().isPresent();
         }
     }
 
     @Override
     public boolean isOpen(S scope, L label) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return incompleteDirectEdges().contains(scope, label) || incompleteImportEdges().contains(scope, label);
     }
 
     @Override
     public IRelation3.Immutable<S, L, V> incompleteDirectEdges() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return incompleteDirectEdges;
     }
 
     @Override
     public IRelation3.Immutable<S, L, V> incompleteImportEdges() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return incompleteImportEdges;
     }
 
     @Override
     public boolean isComplete() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return incompleteDirectEdges().isEmpty() && incompleteImportEdges().isEmpty();
     }
-
+    
     @Override
-    public org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph.Transient<S, L, O, V> melt() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+    public org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph.Transient<S, L, O, V> melt() {       
+        return new PersistentScopeGraph.Builder<>(
+                this.getAllScopes().asTransient(),
+                this.getAllDecls().asTransient(),
+                this.getAllRefs().asTransient(),
+                this.getDecls().melt(),
+                this.getRefs().melt(),
+                this.getDirectEdges().melt(),
+                this.getExportEdges().melt(),
+                this.getImportEdges().melt(),
+                this.incompleteDirectEdges.melt(), 
+                this.incompleteImportEdges.melt()                
+        );
     }
 }
 

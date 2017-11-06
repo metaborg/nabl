@@ -9,7 +9,6 @@ import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
-import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
@@ -35,7 +34,7 @@ public abstract class PublicSolution implements IPublicSolution {
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
 
     public static IPublicSolution of(SolverConfig config) {
-        return ImmutablePublicSolution.of(config, EsopScopeGraph.Immutable.of(),
+        return ImmutablePublicSolution.of(config, (IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm>) (IEsopScopeGraph.Immutable) IEsopScopeGraph.builder().freeze(),
                 EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()),
                 org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of());

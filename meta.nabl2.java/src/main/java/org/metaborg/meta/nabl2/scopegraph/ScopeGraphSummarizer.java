@@ -21,7 +21,7 @@ public final class ScopeGraphSummarizer<S extends IScope, L extends ILabel, O ex
 
     public IEsopScopeGraph.Immutable<S, L, O, V> summarize(final Iterable<? extends S> scopes,
             final Iterable<? extends O> decls) {
-        IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
+        IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = IEsopScopeGraph.builder();
         for(S scope : scopes) {
             summarizeScope(scope, summaryGraph);
         }
