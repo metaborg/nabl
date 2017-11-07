@@ -3,7 +3,7 @@ module nabl2/lang/analysis/main
 imports
 
 //nabl2/api
-  nabl2/shared/main
+  nabl2/shared/-
 //nabl2runtime
 
   signatures/nabl2/lang/modules/-
@@ -25,7 +25,7 @@ rules
 
   editor-analyze:
       (ast, path, project-path) -> (analyzed-ast, error*, warning*, note*)
-    with analyzed-ast := <normalize> ast;
+    with analyzed-ast := <normalize-all;desugar-all> ast;
          error*       := <check-module-name> (analyzed-ast, path);
          warning*     := [];
          note*        := []
@@ -38,4 +38,19 @@ rules
          else
            error* := [(name,$[module [name] does not agree with filename [filename]])]
          end
- 
+
+  editor-normalize:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext            := <get-extension> path;
+      filename       := <guarantee-extension(|$[normalized.[ext]])> path;
+      normalized-ast := <normalize-all> Module($[[name].normalized],section*);
+      result         := <resugar-all;pp-NaBL2-string> normalized-ast
+
+  editor-explicate:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext            := <get-extension> path;
+      filename       := <guarantee-extension(|$[explicated.[ext]])> path;
+      explicated-ast := <explicate-all> Module($[[name].explicated],section*);
+      result         := <resugar-all;pp-NaBL2-string> explicated-ast

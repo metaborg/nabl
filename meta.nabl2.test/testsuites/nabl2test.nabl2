@@ -13,6 +13,14 @@ imports
 
 signature
 
+  sorts
+    Test
+
+  constructors
+    Test0 : Test
+    Test1 : Test -> Test
+    Test3 : Test * Test * Test -> Test
+
   namespaces
     Ns1
     Ns2

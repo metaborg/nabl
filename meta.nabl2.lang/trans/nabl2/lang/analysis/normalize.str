@@ -15,24 +15,21 @@ imports
 
   nabl2/shared/-
 
+/**************************************
+ * Normalization rules
+ * - stay close to user-written spec
+ * - preserve pretty-printability
+ **************************************/
+
 rules
 
-  editor-normalize:
-    (node, position, Module(name,section*), path, project-path) -> (filename, result)
-    with
-      ext            := <get-extension> path;
-      filename       := <guarantee-extension(|$[normalized.[ext]])> path;
-      normalized-ast := <normalize> Module($[[name].normalized],section*);
-      result         := <pp-NaBL2-string> normalized-ast
-
-  normalize =
+  normalize-all =
     normalize-axioms;
     normalize-rule-names;
     normalize-regexes;
     normalize-constraints;
     normalize-init-rules;
     normalize-rule-clauses
-  //explicate-rule-free-vars
 
 rules
 
