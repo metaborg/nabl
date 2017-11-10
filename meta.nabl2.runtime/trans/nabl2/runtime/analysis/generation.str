@@ -31,10 +31,8 @@ rules // top-level functions that are called during analysis
   )
 
   nabl2--generate-constraint-file(|source,args) = ?term; nabl2--strict(
-    <conc>
-      ( <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
-      , <nabl2--generate-constraint(nabl2--generate-constraint-default-cfg-rule <+ ![]|"default-cfg")> (source,term,args)
-      )
+    <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
+    ; try(!CConj(<id>, <nabl2--generate-constraint(nabl2--generate-constraint-default-cfg-rule <+ ![]|"default-cfg")> (source,term,args)))
   )
 
 rules
