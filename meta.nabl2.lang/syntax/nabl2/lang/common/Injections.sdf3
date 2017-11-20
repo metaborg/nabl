@@ -24,6 +24,9 @@ context-free syntax
   LabelRE.ConcatDot = <<LabelRE>.<LabelRE>>     {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
   LabelRE.NonEmpty = <<LabelRE>+>
 
+  ELabel.DefaultELabel = "-"
+  NLabel.DefaultNLabel = "="
+
   Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
 
   Constraint.CGen  = [[CTerm] genOf [CTerm] [Message]]

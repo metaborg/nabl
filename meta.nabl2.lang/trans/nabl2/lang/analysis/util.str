@@ -19,10 +19,3 @@ imports
 rules
 
   nabl2--is-wld = is-wld
-
-  make-cconj: []     -> CTrue(DefaultMessagePosition())
-  make-cconj: [c]    -> c
-  make-cconj: [c|cs] -> CConj(c, <make-cconj> cs)
-
-  make-cexists: ([], c)   -> c
-  make-cexists: (vars, c) -> CExists(vars,c)

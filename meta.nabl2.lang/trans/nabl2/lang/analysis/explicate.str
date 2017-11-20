@@ -43,7 +43,7 @@ rules
     with used-var* := <nabl2--free-constraint-vars> clause;
          rule-var* := <all-vars> (pattern,params,type);
          free-var* := <diff(strip-annos;eq);make-set> (used-var*, [<term-var>,rule-var*]);
-         clause' := <make-cexists> (free-var*, clause)
+         clause' := <nabl2--make-cexists> (free-var*, clause)
 
 rules
 
@@ -51,7 +51,7 @@ rules
 
   explicate-rule-param:
     CGenRule(rdef,pattern,param,type,clause)
-      -> CGenRule(rdef,pattern,param,type,<make-cconj> [clause'*,clause])
+      -> CGenRule(rdef,pattern,param,type,<nabl2--make-cconj> [clause'*,clause])
     with if InitRule() := rdef then
            clause'* := []
          else
@@ -65,7 +65,7 @@ rules
 
   explicate-rule-type:
     CGenRule(rdef,pattern,param,Type(type),clause)
-      -> CGenRule(rdef,pattern,param,Type(<type-var>),<make-cconj> [clause'*,clause])
+      -> CGenRule(rdef,pattern,param,Type(<type-var>),<nabl2--make-cconj> [clause'*,clause])
     with if InitRule() := rdef then
            clause'* := []
          else

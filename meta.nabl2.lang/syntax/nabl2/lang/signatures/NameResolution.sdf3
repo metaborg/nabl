@@ -18,9 +18,11 @@ context-free syntax
       <{NameResolutionParam "\n\n"}*>
   > {longest-match}
 
-  NameResolutionParam.Labels     = <labels <{PathLabel " "}*>>
-  NameResolutionParam.Order      = <order <{LabelOrder ",\n"}*>>
-  NameResolutionParam.WF         = <well-formedness <LabelRE>>
+  NameResolutionParam.Labels        = <labels <{PathLabel " "}*>>
+  NameResolutionParam.Order         = <order <{LabelOrder ",\n"}*>>
+  NameResolutionParam.WF            = <well-formedness <LabelRE>>
+  NameResolutionParam.DefaultELabel = <default edge label <PathLabel>>
+  NameResolutionParam.DefaultNLabel = <default named label <PathLabel>>
 
 context-free syntax
 

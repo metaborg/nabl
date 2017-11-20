@@ -81,7 +81,7 @@ rules
 
   normalize-constraint:
     CSetEq(s1,proj,s2,msginfo) ->
-      <make-cconj> [CSubsetEq(s1,proj,s2,msginfo) ,CSubsetEq(s2,proj,s1,msginfo)]
+      <nabl2--make-cconj> [CSubsetEq(s1,proj,s2,msginfo) ,CSubsetEq(s2,proj,s1,msginfo)]
 
 rules
 

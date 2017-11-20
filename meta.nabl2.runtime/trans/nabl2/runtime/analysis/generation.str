@@ -36,6 +36,12 @@ rules // top-level functions that are called during analysis
 
 rules
 
+  nabl2--custom-default-e-label = fail
+  nabl2--custom-default-n-label = fail
+
+  nabl2--default-e-label = nabl2--custom-default-e-label <+ !P()
+  nabl2--default-n-label = nabl2--custom-default-n-label <+ !I()
+
   nabl2--fresh-var(|source): n -> CVar(source, n')
     with n' := <nabl2--fresh> (source, n)
 
@@ -60,16 +66,16 @@ rules
  <+ nabl2--generate-constraint-missing(|name)
 
   nabl2--error-no-index:
-      (source,term,args) -> constraint*
+      (source,term,args) -> constraint
     where <not(nabl2--get-ast-index)> term
     with msg := $[Constraint generator traverses over non-AST node [<pp-NaBL2-Term> term]];
          if nabl2-debug-constraint-generation-hook then
            warn(|msg)
          end;
-         constraint* := [CFalse(Message(Error(),msg,NoIndex()))]
+         constraint := CFalse(Message(Error(),msg,NoIndex()))
 
   nabl2--generate-constraint-placeholder:
-      (source,term,args) -> constraint*
+      (source,term,args) -> <nabl2--make-cconj> constraint*
     where <is-SDF-placeholder> term
     with index := <nabl2--get-ast-index> term;
          if ParamsAndType(params,type) := args then
@@ -80,24 +86,24 @@ rules
          end end
 
   nabl2--generate-constraint-missing(|name):
-      (source,term,args) -> <conc> (ast-constraint*, constraint*)
+      (source,term,args) -> <nabl2--make-cconj> [ast-constraint*, constraint]
     with index := <nabl2--get-ast-index> term;
-    if ParamsAndType(params,type) := args then
-      ast-constraint* := [CAstProperty(index, Params(), params),
-                          CAstProperty(index, Type(), type)];
-      msg := ${Missing constraint generation rule: {name} [[ {<nabl2--pp-flat-term> term} {<nabl2--pp-flat-args> args} ]]};
-      if nabl2-debug-constraint-generation-hook then
-        warn(|msg)
-      end;
-      constraint* := [CFalse(Message(Warning(),msg,index))]
-    else if Params(params) := args then
-      ast-constraint* := [CAstProperty(index, Params(), params)];
-      msg := ${Missing constraint generation rule: {name} [[ {<nabl2--pp-flat-term> term} {<nabl2--pp-flat-args> args} ]]};
-      if nabl2-debug-constraint-generation-hook then
-        warn(|msg)
-      end;
-      constraint* := [CFalse(Message(Warning(),msg,index))]
-    end end
+         if ParamsAndType(params,type) := args then
+           ast-constraint* := [CAstProperty(index, Params(), params),
+                               CAstProperty(index, Type(), type)];
+           msg := ${Missing constraint generation rule: {name} [[ {<nabl2--pp-flat-term> term} {<nabl2--pp-flat-args> args} ]]};
+           if nabl2-debug-constraint-generation-hook then
+             warn(|msg)
+           end;
+           constraint := CFalse(Message(Warning(),msg,index))
+         else if Params(params) := args then
+           ast-constraint* := [CAstProperty(index, Params(), params)];
+           msg := ${Missing constraint generation rule: {name} [[ {<nabl2--pp-flat-term> term} {<nabl2--pp-flat-args> args} ]]};
+           if nabl2-debug-constraint-generation-hook then
+             warn(|msg)
+           end;
+           constraint := CFalse(Message(Warning(),msg,index))
+         end end
 
 rules
 

@@ -25,6 +25,10 @@ rules
     OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of> ~t ]|
   injection-to-term(e):
     Text(str) -> Term |[ Text(~(<unescape-message;e> str)) ]|
+  injection-to-term(e):
+    DefaultELabel() -> Term |[ <nabl2--default-e-label> ]|
+  injection-to-term(e):
+    DefaultNLabel() -> Term |[ <nabl2--default-n-label> ]|
 
   injection-to-pattern(e) = pattern-to-pattern(e)
 

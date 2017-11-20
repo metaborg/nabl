@@ -29,12 +29,8 @@ syntax
 
 context-free syntax
 
-  ELabel.P = "-"
-  ELabel   = PathLabel
-
-  NLabel.I = "="
-  NLabel   = PathLabel
-
+  ELabel = PathLabel
+  NLabel = PathLabel
 
 context-free syntax
 
