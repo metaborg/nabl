@@ -53,8 +53,8 @@ rules
  <+ nabl2--get-ast-index
  <+ fatal-err(|"Occurrence position must be a term or a scope variable")
 
-  nabl2--new-cfg-scope(|source): n -> CFGNode(source,n')
-    with n' := <is-string <+ !"c"> n
+  nabl2--new-cfg-node(|source): n -> CFGNode(source,n')
+    with n' := <nabl2--fresh> (source, n)
 
 rules
 

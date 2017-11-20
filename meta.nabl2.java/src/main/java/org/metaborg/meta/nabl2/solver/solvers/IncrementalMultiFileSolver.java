@@ -407,6 +407,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Set.Transient<ITerm> symbolicGoals = Set.Transient.of();
         final IMessages.Transient messages = Messages.Transient.of();
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
+        // TODO [jeff] preserve control flow graph here too! And check for more ISolution stuff
 
         try {
             for(ISolution solution : solutions) {
@@ -572,9 +573,6 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
-            
-            // TODO: add dataflow solver call here
-            
             solution = ImmutableSolution.of(config, astResult, unitGraph.freeze(), nameResolution.freeze(), declResult,
                     relationResult, unifierResult, symbolicConstraints, cfg, solveResult.messages(),
                     solveResult.constraints());
