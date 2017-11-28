@@ -16,41 +16,34 @@ import com.google.common.collect.ClassToInstanceMap;
 @Serial.Version(value = 42L)
 public abstract class TermOrigin {
 
-    @Value.Parameter public abstract String getResource();
+    @Value.Parameter public abstract ImploderAttachment getImploderAttachment();
 
-
-    @Value.Parameter public abstract int getStartOffset();
-
-    @Value.Parameter public abstract int getStartLine();
-
-    @Value.Parameter public abstract int getStartColumn();
-
-
-    @Value.Parameter public abstract int getEndOffset();
-
-    @Value.Parameter public abstract int getEndLine();
-
-    @Value.Parameter public abstract int getEndColumn();
-
-
-    public int getLine() {
-        return getStartLine();
+    public String getResource() {
+        return getImploderAttachment().getLeftToken().getFilename();
     }
 
-    public int getColumn() {
-        return getStartColumn();
+    public IToken getLeftToken() {
+        return getImploderAttachment().getLeftToken();
     }
 
+    public IToken getRightToken() {
+        return getImploderAttachment().getRightToken();
+    }
 
     @Override public String toString() {
+        IToken token = getImploderAttachment().getLeftToken();
         StringBuilder sb = new StringBuilder();
         sb.append("@");
-        sb.append(getResource());
+        sb.append(token.getFilename());
         sb.append(":");
-        sb.append(getLine());
+        sb.append(token.getLine());
         sb.append(",");
-        sb.append(getColumn());
+        sb.append(token.getColumn());
         return sb.toString();
+    }
+
+    public static TermOrigin of(String resource) {
+        return ImmutableTermOrigin.of(ImploderAttachment.createCompactPositionAttachment(resource, 0, 0, 0, 0));
     }
 
     public static Optional<TermOrigin> get(ITerm term) {
@@ -61,24 +54,15 @@ public abstract class TermOrigin {
         return Optional.ofNullable(attachments.getInstance(TermOrigin.class));
     }
 
-    // ImploderAttachment interaction
+    // Stratego term interaction
 
-    public static TermOrigin fromImploderAttachment(ImploderAttachment attachment) {
-        final IToken left = attachment.getLeftToken();
-        final IToken right = attachment.getRightToken();
-        final String resource = left.getFilename();
-        return ImmutableTermOrigin.of(resource,
-            left.getStartOffset(), left.getLine(), left.getColumn(),
-            right.getEndOffset(), right.getEndLine(), right.getEndColumn());
+    public static Optional<TermOrigin> get(IStrategoTerm term) {
+        return Optional.ofNullable(ImploderAttachment.get(OriginAttachment.tryGetOrigin(term)))
+                .map(ia -> ImmutableTermOrigin.of(ia));
     }
 
-    public ImploderAttachment toImploderAttachment() {
-        return ImploderAttachment.createCompactPositionAttachment(getResource(), getLine(), getColumn(),
-            getStartOffset(), getEndOffset());
-    }
-
-    public static Optional<ImploderAttachment> getImploderAttachment(IStrategoTerm term) {
-        return Optional.ofNullable(ImploderAttachment.get(OriginAttachment.tryGetOrigin(term)));
+    public void put(IStrategoTerm term) {
+        term.putAttachment(getImploderAttachment());
     }
 
 }
