@@ -17,6 +17,9 @@ rules
                              map(Fst;nabl2-get-occurrence-index))> refs
 
   nabl2--editor-hover: (node, _, _, _, _) -> label
+    where <nabl2-get-ast-index> node // HACK: necessary to prevent errors
+                                     //       as we sometimes get nodes
+                                     //       without the AST index here
     with a := <nabl2-get-ast-analysis> node
     where type := <nabl2-get-ast-type(|a)> node
     with typetext := <nabl2--focus-term(|a);
