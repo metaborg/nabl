@@ -119,7 +119,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
-                    cfgSolver.update();
+//                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -137,13 +137,14 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                         unitSolution.nameResolution(), unitSolution.declProperties()), message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(unitSolution.symbolic(), message), messages, constraints);
+                seed(cfgSolver.seed(unitSolution.controlFlowGraph(), message), messages, constraints);
                 constraints.addAll(unitSolution.constraints());
                 messages.addAll(unitSolution.messages());
             }
 
             // solve constraints
             nameResolutionSolver.update();
-            cfgSolver.update();
+//            cfgSolver.update();
             SolveResult solveResult = solver.solve(constraints);
             messages.addAll(solveResult.messages());
 
@@ -154,8 +155,6 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
-            
-            // TODO: add dataflow solver call here
             
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,

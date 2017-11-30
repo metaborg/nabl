@@ -12,6 +12,7 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.solver.ASolver;
+import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
@@ -29,7 +30,9 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 
+import io.usethesource.capsule.Map;
 import meta.flowspec.java.interpreter.TransferFunctionAppl;
 import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
 import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
@@ -53,16 +56,13 @@ public class ControlFlowComponent extends ASolver {
     }
 
     public void update() throws InterruptedException {
-        controlFlowGraph.reduce(this::findCFGNode);
     }
 
     public Optional<SolveResult> solve(IControlFlowConstraint constraint) {
-        logger.debug("ControlFlowSolver::solve");
         return constraint.match(IControlFlowConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 
     private Optional<SolveResult> solve(CFDecl c) {
-        logger.debug("Solve Declaration");
         ITerm nodeTerm = find(c.getNode());
         ITerm declTerm = find(c.getDeclaration());
         if (!(nodeTerm.isGround() && declTerm.isGround())) {
@@ -135,7 +135,6 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CFDirectEdge<?> c) {
-        logger.debug("Solve Directed Edge");
         Optional<CFGNode> sourceNode = findCFGNode(c.getSourceNode());
         Optional<CFGNode> targetNode = findCFGNode(c.getTargetNode());
 
@@ -146,7 +145,6 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CFDeclProperty c) {
-        logger.debug("Solve Declaration Property");
         Optional<Occurrence> declTerm = findOccurrence(c.getDeclaration());
 
         return declTerm.map(decl -> 
@@ -173,5 +171,10 @@ public class ControlFlowComponent extends ASolver {
     private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
         return Optional.of(find(occurrenceTerm)).filter(ITerm::isGround).map(ot -> Occurrence.matcher().match(ot)
                 .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+    }
+
+    public SeedResult seed(IControlFlowGraph<CFGNode> solution, IMessageInfo message) {
+        controlFlowGraph.addAll(solution);
+        return SeedResult.empty();
     }
 }

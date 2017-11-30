@@ -81,6 +81,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
+import meta.flowspec.nabl2.controlflow.ICFGNode;
 import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
 import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
 
@@ -407,7 +408,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Set.Transient<ITerm> symbolicGoals = Set.Transient.of();
         final IMessages.Transient messages = Messages.Transient.of();
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
-        // TODO [jeff] preserve control flow graph here too! And check for more ISolution stuff
+        final ControlFlowGraph<CFGNode> controlFlowGraph = ControlFlowGraph.of();
 
         try {
             for(ISolution solution : solutions) {
@@ -423,6 +424,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 symbolicGoals.__insertAll(solution.symbolic().getGoals());
                 messages.addAll(solution.messages());
                 constraints.addAll(solution.constraints());
+                controlFlowGraph.addAll(solution.controlFlowGraph());
             }
         } catch(RelationException ex) {
             throw new SolverException(ex);
@@ -439,6 +441,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 .symbolic(ImmutableSymbolicConstraints.of(symbolicFacts.freeze(), symbolicGoals.freeze()))
                 .messages(messages.freeze())
                 .constraints(constraints)
+                .controlFlowGraph(controlFlowGraph)
                 .build();
                 // @formatter:on
 
