@@ -19,10 +19,16 @@ signature
 rules
 
   /**
-   * @type node:Term -> List((ref:Occurrence,decl:Occurrence))
+   * @type node:Term -> List(Occurrence)
    */
-  nabl2--get-ast-resolution(|a) =
-    prim("SG_get_ast_resolution", a)
+  nabl2--get-ast-decls(|a) =
+    prim("SG_get_ast_decls",a)
+
+  /**
+   * @type node:Term -> List(Occurrence)
+   */
+  nabl2--get-ast-refs(|a) =
+    prim("SG_get_ast_refs",a)
 
   /**
    * @param key : Term
@@ -157,6 +163,8 @@ rules
 
   nabl2--occurrence-ns: Occurrence(ns,_,index) -> ns'
     with ns' := <try(nabl2--copy-origin(|index))> ns
+
+  nabl2--occurrence-index: Occurrence(_,_,index) -> index
 
 rules
 

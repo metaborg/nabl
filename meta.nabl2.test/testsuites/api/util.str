@@ -26,6 +26,18 @@ rules
     a := <nabl2-get-ast-analysis>;
     <not(nabl2-get-ast-type(|a))> x
 
+  get-ast-decls =
+    (?AstWithNoDecls(x) + ?AstWithOneDecl(x) + ?AstWithTwoDecls(x));
+    a := <nabl2-get-ast-analysis>;
+    <nabl2-get-ast-decls(|a)> x;
+    length
+
+  get-ast-refs =
+    (?AstWithNoRefs(x) + ?AstWithOneRef(x) + ?AstWithTwoRefs(x));
+    a := <nabl2-get-ast-analysis>;
+    <nabl2-get-ast-refs(|a)> x;
+    length
+
 rules
 
   get-all-decls =

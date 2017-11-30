@@ -14,6 +14,37 @@ rules
     AstWithoutType[[ x ^ () ]].
   AstWithoutType[[ x ^ () ]].
 
+
+  [[ AstWithNoDecls(x) ^ () ]] :=
+    AstWithNoDecls[[ x ^ () ]].
+  AstWithNoDecls[[ x ^ () ]].
+
+  [[ AstWithOneDecl(x) ^ () ]] :=
+    AstWithOneDecl[[ x ^ () ]].
+  AstWithOneDecl[[ x ^ () ]] :=
+    new s, Ns1{x} <- s.
+
+  [[ AstWithTwoDecls(x) ^ () ]] :=
+    AstWithTwoDecls[[ x ^ () ]].
+  AstWithTwoDecls[[ x ^ () ]] :=
+    new s, Ns1{x} <- s, Ns2{x} <- s.
+
+
+  [[ AstWithNoRefs(x) ^ () ]] :=
+    AstWithNoRefs[[ x ^ () ]].
+  AstWithNoRefs[[ x ^ () ]].
+
+  [[ AstWithOneRef(x) ^ () ]] :=
+    AstWithOneRef[[ x ^ () ]].
+  AstWithOneRef[[ x ^ () ]] :=
+    new s, Ns1{x} -> s.
+
+  [[ AstWithTwoRefs(x) ^ () ]] :=
+    AstWithTwoRefs[[ x ^ () ]].
+  AstWithTwoRefs[[ x ^ () ]] :=
+    new s, Ns1{x} -> s, Ns2{x} -> s.
+
+
 rules
 
   [[ GetAllDecls(xs) ^ () ]] :=

@@ -91,7 +91,7 @@ public class StrategoTerms {
     private <T extends IStrategoTerm> T putAttachments(T term, ImmutableClassToInstanceMap<Object> attachments) {
         Optional<TermOrigin> origin = TermOrigin.get(attachments);
         if(origin.isPresent()) {
-            term.putAttachment(origin.get().toImploderAttachment());
+            origin.get().put(term);
         }
 
         Optional<TermIndex> index = TermIndex.get(attachments);
@@ -142,8 +142,8 @@ public class StrategoTerms {
     private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
         Builder<Object> b = ImmutableClassToInstanceMap.builder();
 
-        TermOrigin.getImploderAttachment(term).ifPresent(imploderAttachment -> {
-            b.put(TermOrigin.class, TermOrigin.fromImploderAttachment(imploderAttachment));
+        TermOrigin.get(term).ifPresent(origin -> {
+            b.put(TermOrigin.class, origin);
         });
 
         StrategoTermIndices.get(term).ifPresent(termIndex -> {

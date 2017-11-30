@@ -141,9 +141,17 @@ rules // ###### Analysis results ######
    * @param a : Analysis
    * @type node:Term -> List(Occurrence)
    */
-  nabl2-get-ast-refs(|a) = nabl2--get-ast-resolution(|a); map(Snd)
-  nabl2-get-ast-refs = 
+  nabl2-get-ast-decls =
+    where(a := <nabl2-get-ast-analysis>); nabl2-get-ast-decls(|a)
+  nabl2-get-ast-decls(|a) = nabl2--get-ast-decls(|a)
+
+  /**
+   * @param a : Analysis
+   * @type node:Term -> List(Occurrence)
+   */
+  nabl2-get-ast-refs =
     where(a := <nabl2-get-ast-analysis>); nabl2-get-ast-refs(|a)
+  nabl2-get-ast-refs(|a) = nabl2--get-ast-refs(|a)
 
   /**
    * @param a : Analysis
@@ -344,6 +352,12 @@ rules // ###### Scope graphs ######
    */
   nabl2-get-occurrence-name = nabl2--occurrence-name
 
+  /**
+   * Get index of an occurrence
+   *
+   * @type Occurrence -> TermIndex
+   */
+  nabl2-get-occurrence-index = nabl2--occurrence-index
 
 rules // ###### Symbolic Constraints ######
   
