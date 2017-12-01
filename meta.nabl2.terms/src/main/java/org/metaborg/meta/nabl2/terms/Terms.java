@@ -546,6 +546,10 @@ public class Terms {
             };
         }
 
+        public static Function1<ITerm, ITerm> maybe(IMatcher<ITerm> m) {
+            return term -> m.match(term).orElse(term);
+        }
+
         // metadata
 
         public static <R> IMatcher<R> req(IMatcher<R> matcher) {
