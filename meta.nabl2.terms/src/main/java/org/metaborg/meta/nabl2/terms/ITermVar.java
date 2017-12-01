@@ -10,4 +10,6 @@ public interface ITermVar extends ITerm, IListTerm {
 
     ITermVar withAttachments(ImmutableClassToInstanceMap<Object> value);
 
+    @Override ITermVar withLocked(boolean locked);
+
 }
