@@ -7,3 +7,5 @@ imports
 context-free syntax
 
   Test.GenInst = <generalize and instantiate>
+
+  Test.GeneralizeListTail = <generalize list tail>

@@ -4,16 +4,6 @@ language NaBL2Test
 
 //-------------------------------
 
-test call function with no args succeeds [[
-  call function with no args
-]] 1 note
-
-test call function with one arg succeeds [[
-  call function with one arg
-]] 1 note
-
-//-------------------------------
-
 test wildcard param succeeds [[
   wildcard parameter on X
 ]] 1 note
@@ -41,3 +31,7 @@ test higher-order call on non-empty list [[
 test new scope as type [[
   new scope as type on x
 ]] analysis succeeds
+
+test cannot use new on parameter [[
+  use new on parameter
+]] analysis fails // FIXME: analysis succeeds

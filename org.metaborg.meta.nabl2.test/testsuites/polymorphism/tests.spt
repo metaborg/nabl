@@ -7,3 +7,7 @@ language NaBL2Test
 test generalize and instantiate [[
   generalize and instantiate
 ]] 0 errors
+
+test generalize list tail [[
+  generalize list tail
+]] analysis fails // FIXME: 0 errors
