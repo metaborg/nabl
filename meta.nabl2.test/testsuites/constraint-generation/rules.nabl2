@@ -8,13 +8,11 @@ rules
 
   [[ WildcardParam(t) ^ () ]] :=
     WildcardParam[[ t ^ (42) ]].
-
   WildcardParam[[ t ^ (_) ]] := false | note.
 
 
   [[ WildcardType(t) ^ () ]] :=
     WildcardType[[ t ^ () : 42 ]].
-
   WildcardType[[ t ^ () : _ ]] := false | note.
 
 
@@ -25,13 +23,16 @@ rules
 
   [[ CallRuleHOOnList(ts) ^ () ]] :=
     Map0(CallRuleHOOnList)[[ ts ^ () ]].
-
   CallRuleHOOnList[[ t ^ () ]] := false | note.
 
 rules
 
   [[ NewScopeAsType(x) ^ () ]] :=
     NewScopeAsType[[ x ^ () : _ ]].
-    
   NewScopeAsType[[ x ^ () : s ]] :=
+    new s.
+
+  [[ NewOnParameter(t) ^ () ]] :=
+    NewOnParameter[[ t ^ (s) ]].
+  NewOnParameter[[ t ^ (s) ]] :=
     new s.

@@ -16,13 +16,13 @@ rules
 
   injection-to-term(e) = term-to-term(e)
   injection-to-term(e):
-    TermIndexFrom(t) -> Term |[ <nabl2--get-ast-index> ~t ]|
+    TermIndexFrom(t) -> Term |[ <nabl2--get-ast-index> ~(<e> t) ]|
   injection-to-term(e):
     NAMEPosition() -> Term |[ <try(nabl2--copy-origin(|~<term-var>))> NAME() ]|
   injection-to-term(e):
     NAMETerm() -> Term |[ NAME() ]|
   injection-to-term(e):
-    OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of> ~t ]|
+    OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of> ~(<e> t) ]|
   injection-to-term(e):
     Text(str) -> Term |[ Text(~(<unescape-message;e> str)) ]|
   injection-to-term(e):
