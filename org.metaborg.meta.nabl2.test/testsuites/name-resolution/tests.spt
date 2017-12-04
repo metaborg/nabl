@@ -88,7 +88,12 @@ test resolve compound name with implicit position [[
 ]] 0 errors
    resolve #1 to #2
 
-test resolve compund name with explicit position [[
+test resolve compound name with explicit position [[
   resolve compound [[x]] to [[x]] with explicit position
+]] 0 errors
+   resolve #1 to #2
+
+test resolve compound names from ast [[
+   resolve ast compound [[wrapped x]] to [[wrapped x]]
 ]] 0 errors
    resolve #1 to #2

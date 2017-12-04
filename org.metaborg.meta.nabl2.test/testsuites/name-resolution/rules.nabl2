@@ -148,3 +148,9 @@ rules
     {[xd] @xd} <- s,
     {[xr] @xr} -> s,
     {[xr] @xr} |-> _.
+
+  [[ ResolveAstCompoundName(cr,cd) ^ () ]] :=
+    new s,
+    {cd} <- s,
+    {cr} -> s,
+    {cr} |-> _.
