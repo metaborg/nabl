@@ -20,6 +20,7 @@ context-free syntax
   Scope                          = CVar
   CFGNode                        = CVar
   CTerm                          = Scope
+  CTerm                          = CFGNode
 
   Occurrence.Occurrence          = <<NamespaceRef>{<CTerm> <OccurrenceIndex>}> // FIXME Use NaBL2_ prefix
   Occurrence                     = CVar
