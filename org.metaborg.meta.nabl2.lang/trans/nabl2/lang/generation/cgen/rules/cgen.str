@@ -209,16 +209,17 @@ rules
   roccs-strategy-name = !$[nabl2--transform-occurrences]
   
   rule-to-occurrences-str:
-    CGenMatchRule(_, pattern, _, _, clause*) ->
+    CGenMatchRule(_, pattern-match, _, _, clause*) ->
       RDefT(<roccs-strategy-name>, [], [],
-           Rule(pattern, pattern', []))
+           Rule(pattern-match, pattern-build, []))
     where
+      pattern-match' := <try(?As(_, <id>))> pattern-match;
       occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
       <not(?[])> occ*;
-      pattern' := <alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern
+      pattern-build := <alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match'
 
   occ-to-occ-build:
     Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
-      Term |[ Occurrence(Namespace(~nspace), ~v, <nabl2--occurrence-index-of(|<nabl2--get-ast-index> ~t)> ~t) ]|
+      Term |[ Occurrence(Namespace(~nspace), <debug(!"XXX ")> ~v, <nabl2--occurrence-index-of(|<nabl2--get-ast-index> ~t)> ~t) ]|
     where
       nspace := Str(nspace-str)
