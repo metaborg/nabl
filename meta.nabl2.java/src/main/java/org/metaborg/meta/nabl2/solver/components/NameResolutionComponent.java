@@ -77,6 +77,15 @@ public class NameResolutionComponent extends ASolver {
     }
 
     public void update() throws InterruptedException {
+        /*
+         * The next two lines assume assume an interdependency between the scope
+         * graph and the name resolution. I.e., whenever the scope graph is
+         * updated, it is assumed that the name resolution updates itself
+         * automatically as well.
+         * 
+         * This does not hold for all implementations.
+         * TODO: rework implementation to not rely on the assumption.
+         */
         scopeGraph.reduce(this::findScope, this::findOccurrence);
         nameResolution.resolveAll(scopeGraph.getAllRefs());
     }
