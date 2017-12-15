@@ -1,12 +1,31 @@
 package org.metaborg.meta.nabl2.scopegraph.esop;
 
+import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.liftHashFunctionToRelation;
+import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.union;
+import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
+
+import java.util.stream.Stream;
+
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.persistent.AllShortestPathsNameResolution;
+import org.metaborg.meta.nabl2.scopegraph.esop.persistent.BiSimulationNameResolution;
+import org.metaborg.meta.nabl2.scopegraph.esop.persistent.BiSimulationScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
+import org.metaborg.meta.nabl2.util.collections.HashTrieRelation3;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableOccurrenceLabelScope;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelOccurrence;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
+import org.metaborg.meta.nabl2.util.tuples.OccurrenceLabelScope;
+import org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence;
+import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.annotations.Beta;
@@ -20,10 +39,16 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     /*
      * Factory method to switch between different scope graph implementations.
      */
-    static <S extends IScope, L extends ILabel, O extends IOccurrence, V> IEsopScopeGraph.Transient<S, L, O, V>
-            builder() {
-        if(USE_PERSISTENT_SCOPE_GRAPH) {
-            return new PersistentScopeGraph.Builder<>();
+    static <S extends IScope, L extends ILabel, O extends IOccurrence, V> IEsopScopeGraph.Transient<S, L, O, V> builder() {
+        if (USE_PERSISTENT_SCOPE_GRAPH) {
+            // return new PersistentScopeGraph.Builder<>();
+            
+            IEsopScopeGraph.Immutable<S, L, O, V> one = EsopScopeGraph.Immutable.of();
+            IEsopScopeGraph.Immutable<S, L, O, V> two = new PersistentScopeGraph<>();
+            
+            // return new BiSimulationScopeGraph<>(one, two).melt();
+            
+            return two.melt();
         } else {
             return EsopScopeGraph.Transient.of();
         }
@@ -36,6 +61,58 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     IRelation3<S, L, V> incompleteImportEdges();
 
     boolean isComplete();
+
+    // default Stream<OccurrenceLabelScope<O, L, S>> referenceEdgeStream() {
+    // return liftHashFunctionToRelation(this.getRefs(), (L)
+    // Label.R).stream(ImmutableOccurrenceLabelScope::of);
+    // }
+
+    default IRelation3.Immutable<O, L, S> sourceEdges() {
+        return (IRelation3.Immutable<O, L, S>) union(this.getExportEdges().inverse(),
+                liftHashFunctionToRelation(this.getRefs(), (L) Label.R).inverse()).inverse();
+    }
+
+    default IRelation3.Immutable<S, L, S> middleEdges() {
+        final IRelation3.Transient<S, L, S> result = HashTrieRelation3.Transient.of();    
+        this.getDirectEdges().stream().iterator().forEachRemaining(tuple -> result.put(tuple._1(), tuple._2(), tuple._3()));
+        return result.freeze();
+    }
+
+    default IRelation3.Immutable<S, L, O> targetEdges() {
+        return union(this.getImportEdges(), liftHashFunctionToRelation(this.getDecls(), (L) Label.D).inverse());
+    }
+
+    default Stream<OccurrenceLabelScope<O, L, S>> sourceEdgeStream() {
+        return sourceEdges().stream(ImmutableOccurrenceLabelScope::of);
+    }
+
+    default Stream<OccurrenceLabelScope<O, L, S>> referenceEdgeStream() {
+        // TODO: use hash lookup on label instead of filter
+        return sourceEdgeStream().filter(labelEquals(Label.R));
+    }
+
+    default Stream<OccurrenceLabelScope<O, L, S>> associatedScopeEdgeStream() {
+        // TODO: use hash lookup on label instead of filter
+        return sourceEdgeStream().filter(labelEquals(Label.R).negate());
+    }
+
+    default Stream<ScopeLabelScope<S, L, O>> middleEdgeStream() {
+        return middleEdges().stream(ImmutableScopeLabelScope::of);
+    }
+
+    default Stream<ScopeLabelOccurrence<S, L, O>> targetEdgeStream() {
+        return targetEdges().stream(ImmutableScopeLabelOccurrence::of);
+    }
+
+    default Stream<ScopeLabelOccurrence<S, L, O>> declarationEdgeStream() {
+        // TODO: use hash lookup on label instead of filter
+        return targetEdgeStream().filter(labelEquals(Label.D));
+    }
+
+    default Stream<ScopeLabelOccurrence<S, L, O>> requireImportEdgeStream() {
+        // TODO: use hash lookup on label instead of filter
+        return targetEdgeStream().filter(labelEquals(Label.D).negate());
+    }
 
     interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends IEsopScopeGraph<S, L, O, V>, IScopeGraph.Immutable<S, L, O> {

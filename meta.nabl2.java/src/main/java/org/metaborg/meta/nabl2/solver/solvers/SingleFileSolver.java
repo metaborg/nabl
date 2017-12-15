@@ -72,7 +72,7 @@ public class SingleFileSolver extends BaseSolver {
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
+                IEsopNameResolution.builder(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);

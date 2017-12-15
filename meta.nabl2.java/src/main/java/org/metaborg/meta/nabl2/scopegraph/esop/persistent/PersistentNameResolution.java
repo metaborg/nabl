@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
+import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.liftHashFunctionToRelation;
+import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.union;
 import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
 
 import java.io.IOException;
@@ -9,6 +11,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
@@ -21,28 +24,36 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
+import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableResolutionParameters;
+import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
+import org.metaborg.meta.nabl2.util.collections.IRelation3;
+import org.metaborg.meta.nabl2.util.tuples.ImmutableOccurrenceLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
+import io.usethesource.capsule.util.collection.AbstractSpecialisedImmutableMap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 public class PersistentNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence, V>
-        implements IEsopNameResolution<S, L, O>, Serializable {
+        implements IEsopNameResolution.Immutable<S, L, O>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final PersistentScopeGraph<S, L, O, V> scopeGraph;
+    private final IEsopScopeGraph<S, L, O, V> scopeGraph;
 
     private final Set.Immutable<L> labels;
     private final L labelD;
@@ -58,13 +69,31 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     transient private Map<IRelation<L>, EnvironmentBuilder<S, L, O>> environmentBuilderCache;
 
-    public PersistentNameResolution(PersistentScopeGraph<S, L, O, V> scopeGraph, IResolutionParameters<L> params) {
+    @Deprecated
+    private final IResolutionParameters<L> resolutionParameters;
+    
+    @Deprecated
+    private final Predicate2<S, L> isEdgeClosed;
+    
+    /*
+     * TODO: decide on type: IEsopScopeGraph is either persistent or transient
+     * TODO: fix; currently ignores {@param isEdgeClose}
+     */
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopNameResolution.Transient<S, L, O> builder(
+            IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed) { 
+        return new PersistentNameResolution(scopeGraph, params, isEdgeClosed)
+                .melt(scopeGraph, isEdgeClosed);
+    }    
+    
+    public PersistentNameResolution(IEsopScopeGraph<S, L, O, V> scopeGraph, IResolutionParameters<L> resolutionParameters, Predicate2<S, L> isEdgeClosed) {
         this.scopeGraph = scopeGraph;
+        this.resolutionParameters = resolutionParameters;
+        this.isEdgeClosed = isEdgeClosed;
 
-        this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(params.getLabels()));
-        this.labelD = params.getLabelD();
-        this.wf = RegExpMatcher.create(params.getPathWf());
-        this.ordered = params.getSpecificityOrder();
+        this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(resolutionParameters.getLabels()));
+        this.labelD = resolutionParameters.getLabelD();
+        this.wf = RegExpMatcher.create(resolutionParameters.getPathWf());
+        this.ordered = resolutionParameters.getSpecificityOrder();
         assert ordered.getDescription().equals(
                 RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.unordered = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
@@ -82,6 +111,11 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
         this.reachabilityCache = Maps.newHashMap();                
         this.environmentBuilderCache = Maps.newHashMap();
     }
+    
+    @Beta
+    public IEsopScopeGraph<S, L, O, V> scopeGraph() {
+        return scopeGraph;
+    }
 
     @Beta
     public final Set.Immutable<L> getLabels() {
@@ -89,9 +123,21 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     }    
     
     @Beta
-    public final PersistentScopeGraph<S, L, O, V> getScopeGraph() {
+    @Override
+    public IResolutionParameters<L> getResolutionParameters() {
+        return resolutionParameters;
+    }
+    
+    @Beta
+    @Override
+    public final IEsopScopeGraph<S, L, O, V> getScopeGraph() {
         return scopeGraph;
     }
+    
+    @Override
+    public boolean isEdgeClosed(S scope, L label) {
+        return isEdgeClosed.test(scope, label); 
+    }    
 
     @Beta
     public final L getLabelD() {
@@ -116,13 +162,15 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
     // NOTE: never used in project
     @Deprecated
     public Set.Immutable<S> getAllScopes() {
-        return scopeGraph.getAllScopes();
+        return scopeGraph.getAllScopes()
+                .stream().collect(CapsuleCollectors.toSet());
     }
 
     // NOTE: all references could be duplicated to get rid of scope graph
     // reference
     public Set.Immutable<O> getAllRefs() {
-        return scopeGraph.getAllRefs();
+        return scopeGraph.getAllRefs()
+                .stream().collect(CapsuleCollectors.toSet());
     }
 
     @Override
@@ -206,7 +254,7 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
             /***/
             PersistentNameResolution<S, L, O, V> nameResolution) {
         
-        final PersistentScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
+        final IEsopScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
         
         // TODO: use hash lookup on occurrence instead of filter
 
@@ -273,17 +321,117 @@ public class PersistentNameResolution<S extends IScope, L extends ILabel, O exte
 
     @Override
     public java.util.Set<O> getResolvedRefs() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return getAllRefs().stream()
+            .filter(reference -> this.resolve(reference).isPresent())
+            .collect(CapsuleCollectors.toSet());
     }
 
     @Override
     public java.util.Set<Map.Entry<O, Set.Immutable<IResolutionPath<S, L, O>>>> resolutionEntries() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return getAllRefs().stream()
+                .filter(reference -> this.resolve(reference).isPresent())
+                .map(reference -> AbstractSpecialisedImmutableMap.entryOf(reference, this.resolve(reference).get()))
+                .collect(CapsuleCollectors.toSet());
     }
 
+    @Override
+    public org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Transient<S, L, O> melt(
+            IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed) {
+        return new TransientNameResolution<>(this, isEdgeClosed);
+    }
+    
 }
+
+class TransientNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence, V>
+        implements IEsopNameResolution.Transient<S, L, O> {
+
+    private IEsopNameResolution.Immutable<S, L, O> solution;
+    
+    @Deprecated
+    private final Predicate2<S, L> isEdgeClosed;
+    
+    TransientNameResolution(final IEsopNameResolution.Immutable<S, L, O> solution, final Predicate2<S, L> isEdgeClosed) {
+        this.solution = solution;
+        this.isEdgeClosed = isEdgeClosed;
+    }
+    
+    @Beta
+    @Override
+    public IResolutionParameters<L> getResolutionParameters() {
+        return solution.getResolutionParameters();
+    }
+
+    @Beta
+    @Override
+    public IEsopScopeGraph<S, L, O, ?> getScopeGraph() {
+        return solution.getScopeGraph();
+    }
+    
+    @Override
+    public boolean isEdgeClosed(S scope, L label) {
+        return isEdgeClosed.test(scope, label); 
+    }    
+    
+    @Override
+    public java.util.Set<O> getResolvedRefs() {
+        return solution.getResolvedRefs();
+    }
+
+    @Override
+    public Optional<io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
+        return solution.resolve(ref);
+    }
+
+    @Override
+    public Optional<io.usethesource.capsule.Set.Immutable<O>> visible(S scope) {
+        return solution.visible(scope);
+    }
+
+    @Override
+    public Optional<io.usethesource.capsule.Set.Immutable<O>> reachable(S scope) {
+        return solution.reachable(scope);
+    }
+
+    @Override
+    public java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>> resolutionEntries() {
+        return solution.resolutionEntries();
+    }
+
+    @Override
+    public boolean addAll(IEsopNameResolution<S, L, O> that) {
+        IEsopScopeGraph<S, L, O, V> graph1 = (IEsopScopeGraph<S, L, O, V>) this.getScopeGraph();
+        IEsopScopeGraph<S, L, O, V> graph2 = (IEsopScopeGraph<S, L, O, V>) that.getScopeGraph();
+        
+        java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>> res1 = this.resolutionEntries();
+        java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>> res2 = that.resolutionEntries();
+        boolean isModified = !res1.equals(res2); 
+        
+        IEsopScopeGraph.Transient<S, L, O, V> builder = IEsopScopeGraph.builder();
+        builder.addAll(graph1);
+        builder.addAll(graph2);
+        IEsopScopeGraph.Immutable<S, L, O, ?> mergedGraphs = builder.freeze();
+        
+        assert Objects.equal(
+                this.getResolutionParameters(), 
+                that.getResolutionParameters());
+        
+        IResolutionParameters<L> mergedResolutionParameters = this.getResolutionParameters();
+        // Predicate2<S, L> mergedEdgeClosedPredicate = (s, l) -> true;
+        
+        IEsopNameResolution.Immutable<S, L, O> mergedNameResolution = 
+                IEsopNameResolution.builder(mergedResolutionParameters, mergedGraphs, isEdgeClosed).freeze();
+        
+        this.solution = mergedNameResolution;
+        
+        return isModified;
+    }
+
+    @Override
+    public org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Immutable<S, L, O> freeze() {
+        return solution;
+    }
+}
+
 
 class OptionalStream {
 

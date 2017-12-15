@@ -90,6 +90,11 @@ public class BiSimulationScopeGraph<S extends IScope, L extends ILabel, O extend
         return new TransientBiSimulationScopeGraph<>(one.melt(), two.melt());
     }
     
+    @Override
+    public String toString() {
+        return two.toString();
+    }
+    
 }
 
 class TransientBiSimulationScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
@@ -232,4 +237,9 @@ class TransientBiSimulationScopeGraph<S extends IScope, L extends ILabel, O exte
     public org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph.Immutable<S, L, O, V> freeze() {
         return new BiSimulationScopeGraph<>(one.freeze(), two.freeze());
     }
+    
+    @Override
+    public String toString() {
+        return two.toString();
+    }    
 }

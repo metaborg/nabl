@@ -5,6 +5,7 @@ import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals
 import static org.metaborg.meta.nabl2.util.tuples.HasScope.scopeEquals;
 import static org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope.sourceScopeEquals;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -16,10 +17,14 @@ import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopEnvs;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.IEsopEnv;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
+import org.metaborg.util.functions.PartialFunction0;
 
 import com.google.common.collect.Maps;
 
@@ -55,9 +60,11 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             assert !env_lCache.containsKey(label);
                        
             final IPersistentEnvironment<S, L, O, P> labelEnvironment;
-                        
-            // NOTE: using nameResolution.{scopeGraph, labelD}
-            if (nameResolution.getScopeGraph().isOpen(path.getTarget(), label)) {
+                    
+            boolean isOpen = nameResolution.getScopeGraph().isOpen(path.getTarget(), label);
+            boolean isClosed = nameResolution.isEdgeClosed(path.getTarget(), label);
+            
+            if (isOpen || !isClosed) {
                 labelEnvironment = Environments.unresolvable();
             } else if (label.equals(nameResolution.getLabelD()) && !re.isAccepting()) {
                 labelEnvironment = Environments.empty();
@@ -212,6 +219,23 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
         return result;
     }
 
+    /*
+        private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_l(Set.Immutable<O> seenImports, IRelation<L> lt,
+                IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
+            return EsopEnvs.guarded((PartialFunction0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
+                final S s = path.getTarget();
+                if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
+                    return Optional.empty();
+                } else {
+                    final IEsopEnv<S, L, O, P> env =
+                            l.equals(labelD) ? env_D(re, path, filter) : env_nonD(seenImports, lt, re, l, path, filter);
+                    return Optional.of(env);
+                }
+            });
+        }
+     */
+   
+    
     /**
      * Returns the set of declarations that are reachable from S with a
      * l-labeled step.
@@ -228,6 +252,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
     
         // TODO WIP factoring out facts
         assert !nameResolution.getScopeGraph().isOpen(path.getTarget(), label);
+        assert nameResolution.isEdgeClosed(path.getTarget(), label);
         assert !label.equals(nameResolution.getLabelD());
         assert !nextRe.isEmpty();
            
@@ -261,7 +286,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             /***/
             PersistentNameResolution<S, L, O, V> nameResolution) {
 
-        final PersistentScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
+        final IEsopScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
        
         final Function<S, Optional<IScopePath<S, L, O>>> extendPathToNextScopeAndValidate = 
                 nextScope -> Paths.append(path, Paths.direct(path.getTarget(), label, nextScope));
@@ -291,7 +316,7 @@ public class EnvironmentBuilders<S extends IScope, L extends ILabel, O extends I
             /***/
             PersistentNameResolution<S, L, O, V> nameResolution) {
 
-        final PersistentScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
+        final IEsopScopeGraph<S, L, O, V> scopeGraph = nameResolution.getScopeGraph();
        
         final Function<IResolutionPath<S, L, O>, IPersistentEnvironment<S, L, O, P>> importPathToUnionEnvironment = importPath -> {
             // @formatter:off        

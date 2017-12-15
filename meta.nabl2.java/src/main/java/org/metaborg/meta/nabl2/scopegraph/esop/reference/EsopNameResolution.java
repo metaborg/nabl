@@ -29,6 +29,7 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction0;
 import org.metaborg.util.functions.Predicate2;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -36,6 +37,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution<S, L, O> {
@@ -51,12 +53,31 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
 
         private final Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution;
 
+        /*
+         * NOTE: do not use; temporarily used for debugging
+         */
+        @Beta
+        @Deprecated
+        private final IEsopScopeGraph<S, L, O, ?> scopeGraph;        
+        
         private Immutable(IResolutionParameters<L> params,
-                Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution) {
+                Map.Immutable<O, Set.Immutable<IResolutionPath<S, L, O>>> resolution,
+                IEsopScopeGraph<S, L, O, ?> scopeGraph) {
             this.params = params;
             this.resolution = resolution;
+            this.scopeGraph = scopeGraph;
         }
 
+        @Beta
+        public IEsopScopeGraph<S, L, O, ?> getScopeGraph() {
+            return scopeGraph;
+        }        
+        
+        @Override
+        public boolean isEdgeClosed(S scope, L label) {
+            throw new UnsupportedOperationException("Not yet implemented."); 
+        }
+        
         @Override public java.util.Set<O> getResolvedRefs() {
             return resolution.keySet();
         }
@@ -67,7 +88,12 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
 
         @Override public java.util.Set<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>>
                 resolutionEntries() {
-            return resolution.entrySet();
+            final Set.Immutable<Entry<O, io.usethesource.capsule.Set.Immutable<IResolutionPath<S, L, O>>>> entrySet = resolution
+                    .entrySet().stream().collect(CapsuleCollectors.toSet());
+            
+            assert resolution.entrySet().equals(entrySet);
+            
+            return entrySet;
         }
 
         @Override public Optional<Set.Immutable<O>> visible(S scope) {
@@ -109,8 +135,13 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution.Immutable<S, L, O>
-                of(IResolutionParameters<L> params) {
-            return new EsopNameResolution.Immutable<>(params, Map.Immutable.of());
+                of(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph) {
+            return new EsopNameResolution.Immutable<>(params, Map.Immutable.of(), scopeGraph);
+        }
+
+        @Override
+        public IResolutionParameters<L> getResolutionParameters() {
+            return params;
         }
 
     }
@@ -162,8 +193,18 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             this.stagedEnv_L = Maps.newHashMap();
         }
 
+        @Beta
+        public IEsopScopeGraph<S, L, O, ?> getScopeGraph() {
+            return scopeGraph;
+        }        
+        
         @Override public java.util.Set<O> getResolvedRefs() {
             return Collections.unmodifiableSet(resolution.keySet());
+        }         
+        
+        @Override
+        public boolean isEdgeClosed(S scope, L label) {
+            return isEdgeClosed.test(scope, label);
         }
 
         @Override public boolean addAll(IEsopNameResolution<S, L, O> other) {
@@ -255,6 +296,9 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
                 if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
                     return Optional.empty();
                 } else {
+                    // !scopeGraph.isOpen(s, l)
+                    //  isEdgeClosed.test(s, l)
+                    
                     final IEsopEnv<S, L, O, P> env =
                             l.equals(labelD) ? env_D(re, path, filter) : env_nonD(seenImports, lt, re, l, path, filter);
                     return Optional.of(env);
@@ -382,7 +426,7 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
         }
 
         @Override public IEsopNameResolution.Immutable<S, L, O> freeze() {
-            return new EsopNameResolution.Immutable<>(params, resolution.freeze());
+            return new EsopNameResolution.Immutable<>(params, resolution.freeze(), scopeGraph);
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution.Transient<S, L, O>
@@ -392,6 +436,10 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
                     Map.Transient.of(), Map.Transient.of());
         }
 
+        @Override
+        public IResolutionParameters<L> getResolutionParameters() {
+            return params;
+        }
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopNameResolution.Transient<S, L, O>
@@ -411,6 +459,20 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
             this.resolution2 = resolution2;
         }
 
+        @Beta
+        public IEsopScopeGraph<S, L, O, ?> getScopeGraph() {
+            org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph.Transient builder = IEsopScopeGraph.builder();
+            builder.addAll(resolution1.getScopeGraph());
+            builder.addAll(resolution2.getScopeGraph());
+            return builder.freeze();
+        }
+        
+        @Override
+        public boolean isEdgeClosed(S scope, L label) {
+            // TODO: what is the aggreation semantic? (|| or &&)
+            return resolution1.isEdgeClosed(scope, label) || resolution2.isEdgeClosed(scope, label);
+        }     
+        
         @Override public java.util.Set<O> getResolvedRefs() {
             return Sets.union(resolution1.getResolvedRefs(), resolution2.getResolvedRefs());
         }
@@ -438,6 +500,18 @@ public abstract class EsopNameResolution<S extends IScope, L extends ILabel, O e
 
         @Override public IEsopNameResolution.Immutable<S, L, O> freeze() {
             return resolution1.freeze();
+        }
+
+        @Override
+        public IResolutionParameters<L> getResolutionParameters() {
+            IResolutionParameters<L> params1 = resolution1.getResolutionParameters();
+            IResolutionParameters<L> params2 = resolution2.getResolutionParameters();
+            
+            if (!params1.equals(params2)) {
+                throw new IllegalStateException();
+            }
+            
+            return params1;
         }
 
     }

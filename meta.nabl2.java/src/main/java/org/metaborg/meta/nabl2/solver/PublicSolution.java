@@ -34,8 +34,10 @@ public abstract class PublicSolution implements IPublicSolution {
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
 
     public static IPublicSolution of(SolverConfig config) {
-        return ImmutablePublicSolution.of(config, (IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm>) (IEsopScopeGraph.Immutable) IEsopScopeGraph.builder().freeze(),
-                EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
+        final IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph = (IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm>) (IEsopScopeGraph.Immutable) IEsopScopeGraph.builder().freeze(); 
+                
+        return ImmutablePublicSolution.of(config, scopeGraph,
+                EsopNameResolution.Immutable.of(config.getResolutionParams(), scopeGraph), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()),
                 org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of());
     }
