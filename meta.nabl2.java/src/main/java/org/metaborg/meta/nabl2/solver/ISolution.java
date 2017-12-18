@@ -17,7 +17,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
 
 public interface ISolution extends IPublicSolution {
 

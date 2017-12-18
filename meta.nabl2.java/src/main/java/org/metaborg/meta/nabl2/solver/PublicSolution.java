@@ -20,8 +20,8 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
-import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 1L)

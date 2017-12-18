@@ -56,8 +56,8 @@ import org.metaborg.util.task.IProgress;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
-import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 public class BaseSolver {
 
@@ -147,7 +147,7 @@ public class BaseSolver {
         final RelationComponent relationSolver = new RelationComponent(core, r -> false,
                 initial.config().getFunctions(), VariantRelations.melt(initial.relations()));
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
 
         final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
         final IMessages.Transient messages = initial.messages().melt();

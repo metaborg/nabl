@@ -51,8 +51,8 @@ import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.Sets;
 
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
-import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
@@ -96,7 +96,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 VariantRelations.melt(initial.relations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()

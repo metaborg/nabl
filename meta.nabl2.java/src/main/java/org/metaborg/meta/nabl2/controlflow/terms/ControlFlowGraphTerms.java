@@ -2,8 +2,6 @@ package org.metaborg.meta.nabl2.controlflow.terms;
 
 import com.google.common.collect.Lists;
 
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
-
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.terms.ITerm;

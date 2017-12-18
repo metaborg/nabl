@@ -13,8 +13,6 @@ import org.metaborg.meta.nabl2.terms.generic.TB;
 
 import com.google.common.collect.ImmutableList;
 
-import meta.flowspec.nabl2.controlflow.ICFGNode;
-
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApplTerm {
@@ -57,7 +55,7 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
     }
 
     @Override public String toString() {
-        return "#" + getResource() + "-" + getName();
+        return "##" + getResource() + "-" + getName();
     }
 
 }

@@ -10,31 +10,17 @@ public interface IControlFlowConstraint extends IConstraint {
 
     interface Cases<T> {
 
-        T caseDecl(CFDecl decl);
-
         T caseDirectEdge(CFDirectEdge<?> directEdge);
-
-        T caseProperty(CFDeclProperty property);
 
         static <T> Cases<T> of(
             // @formatter:off
-            Function1<CFDecl,T> onDecl,
-            Function1<CFDirectEdge<?>,T> onDirectEdge,
-            Function1<CFDeclProperty, T> onProperty
+            Function1<CFDirectEdge<?>,T> onDirectEdge
             // @formatter:on
         ) {
             return new Cases<T>() {
 
-                @Override public T caseDecl(CFDecl constraint) {
-                    return onDecl.apply(constraint);
-                }
-
                 @Override public T caseDirectEdge(CFDirectEdge<?> directEdge) {
                     return onDirectEdge.apply(directEdge);
-                }
-
-                @Override public T caseProperty(CFDeclProperty property) {
-                    return onProperty.apply(property);
                 }
 
             };
@@ -46,31 +32,17 @@ public interface IControlFlowConstraint extends IConstraint {
 
     interface CheckedCases<T, E extends Throwable> {
 
-        T caseDecl(CFDecl decl) throws E;
-
         T caseDirectEdge(CFDirectEdge<?> directEdge) throws E;
-
-        T caseProperty(CFDeclProperty property) throws E;
 
         static <T, E extends Throwable> CheckedCases<T, E> of(
             // @formatter:off
-            CheckedFunction1<CFDecl,T,E> onDecl,
-            CheckedFunction1<CFDirectEdge<?>,T,E> onDirectEdge,
-            CheckedFunction1<CFDeclProperty,T,E> onProperty
+            CheckedFunction1<CFDirectEdge<?>,T,E> onDirectEdge
             // @formatter:on
         ) {
             return new CheckedCases<T, E>() {
 
-                @Override public T caseDecl(CFDecl constraint) throws E {
-                    return onDecl.apply(constraint);
-                }
-
                 @Override public T caseDirectEdge(CFDirectEdge<?> directEdge) throws E {
                     return onDirectEdge.apply(directEdge);
-                }
-
-                @Override public T caseProperty(CFDeclProperty property) throws E {
-                    return onProperty.apply(property);
                 }
 
             };

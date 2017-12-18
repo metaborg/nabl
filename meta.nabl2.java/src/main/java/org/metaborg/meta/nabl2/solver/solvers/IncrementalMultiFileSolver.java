@@ -81,9 +81,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
-import meta.flowspec.nabl2.controlflow.ICFGNode;
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
-import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.*;
 
 public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
     private static final ILogger logger = LoggerUtils.logger(IncrementalMultiFileSolver.class);
@@ -530,7 +528,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()

@@ -47,8 +47,8 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import meta.flowspec.nabl2.controlflow.IControlFlowGraph;
-import meta.flowspec.nabl2.controlflow.impl.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 public class SingleFileSolver extends BaseSolver {
 
@@ -93,7 +93,7 @@ public class SingleFileSolver extends BaseSolver {
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of(), properties);
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
