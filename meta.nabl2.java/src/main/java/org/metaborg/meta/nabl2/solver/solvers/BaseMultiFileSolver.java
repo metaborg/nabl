@@ -83,9 +83,8 @@ public class BaseMultiFileSolver extends BaseSolver {
         final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
-        final Properties.Transient<Occurrence, ITerm, ITerm> properties = Properties.Transient.of();
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, properties);
+                new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final PolymorphismComponent polySolver =
                 new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
@@ -132,8 +131,6 @@ public class BaseMultiFileSolver extends BaseSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
-            
-            // TODO: add dataflow solver call here
             
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,

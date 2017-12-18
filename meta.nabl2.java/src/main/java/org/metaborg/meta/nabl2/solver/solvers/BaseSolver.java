@@ -141,9 +141,8 @@ public class BaseSolver {
         }, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
-        final IProperties.Transient<Occurrence, ITerm, ITerm> properties = initial.declProperties().melt();
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, properties);
+                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
         final RelationComponent relationSolver = new RelationComponent(core, r -> false,
                 initial.config().getFunctions(), VariantRelations.melt(initial.relations()));
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
@@ -168,8 +167,6 @@ public class BaseSolver {
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
         IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
-        
-        // TODO: add dataflow solver call here
 
         return ImmutableSolution.of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.nameResolution(),
                 nameResult.declProperties(), relationResult, unifyResult, symbolicResult, cfg, messages.freeze(),
