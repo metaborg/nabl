@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -68,12 +69,12 @@ public class ControlFlowGraph<N extends ICFGNode>
     }
 
     public TransferFunctionAppl getTFAppl(N node, String prop) {
-        TransferFunctionAppl transferFunctionAppl = tfAppls.get(ImmutableTuple2.of(TermIndex.get(node), prop));
-        if (transferFunctionAppl == null) {
-            return new IdentityTFAppl<>(this, prop);
-        } else {
-            return transferFunctionAppl;
+        Optional<TransferFunctionAppl> tfApplOption = TermIndex.get(node).flatMap(index -> 
+            Optional.ofNullable(tfAppls.get(ImmutableTuple2.of(index, prop))));
+        if(tfApplOption.isPresent()) {
+            return tfApplOption.get();
         }
+        return new IdentityTFAppl<>(this, prop);
     }
 
     @Override
