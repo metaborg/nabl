@@ -281,15 +281,15 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                             }
                         }
                     } else {
-                        if (DEBUG) {
-                            // final String lessString = String.format("moreThan: %s < %s", ij, ikj);
-                            final String lessString = String.format("%s < \n%s", ij, ikj);
-                            
-                            if (!(ij == Distance.INFINITE || ikj == Distance.INFINITE) && !(ij == Distance.ZERO || ikj == Distance.ZERO) && !ij.equals(ikj)) {
-                                System.out.println(lessString);
-                                System.out.println();
-                            }
-                        }
+//                        if (DEBUG) {
+//                            // final String lessString = String.format("moreThan: %s < %s", ij, ikj);
+//                            final String lessString = String.format("%s <= \n%s", ij, ikj);
+//                            
+//                            if (!(ij == Distance.INFINITE || ikj == Distance.INFINITE) && !(ij == Distance.ZERO || ikj == Distance.ZERO) && !ij.equals(ikj)) {
+//                                System.out.println(lessString);
+//                                System.out.println();
+//                            }
+//                        }
                     }
                 }
             }
@@ -518,18 +518,31 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
             int commonLength = Math.min(o1.labels.size(), o2.labels.size());
 
+            final boolean isAmbiguous = IntStream.range(0, commonLength).map(index -> {
+                final L l1 = o1.labels.get(index);
+                final L l2 = o2.labels.get(index);
+                return !Objects.equals(l1, l2) && !labelOrder.smaller(l2).contains(l1) && !labelOrder.larger(l2).contains(l1) ? 1 : 0;
+            }).sum() == 0 ? false : true;
+            
+            if (isAmbiguous) {
+                // incomparable or ambiguity respectively
+                return 0;
+            }
+            
             final OptionalInt commonComparisonResult = IntStream.range(0, commonLength).map(index -> {
                 L l1 = o1.labels.get(index);
                 L l2 = o2.labels.get(index);
 
-                if (!labelOrder.contains(l1, l2)) {
+                if (Objects.equals(l1, l2)) {
                     return 0;
+                }
+                
+                if (labelOrder.smaller(l2).contains(l1)) {
+                    return -1;
+                } else if (labelOrder.larger(l2).contains(l1)) {
+                    return +1;
                 } else {
-                    if (labelOrder.smaller(l2).contains(l1)) {
-                        return -1;
-                    } else {
-                        return +1;
-                    }
+                    throw new IllegalStateException("Incomparable or ambiguous labels must be handled beforehand.");
                 }
             }).filter(comparisionResult -> comparisionResult != 0).findFirst();
 
@@ -862,6 +875,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .filter(slo -> slo.occurrence().getName().equals(reference.getName())).map(tuple -> tuple.occurrence())
                 .mapToInt(resolutionResult.reverseIndex::get).boxed().collect(CapsuleCollectors.toSet());
 
+        /*
+         * TODO: represent minimal cost as absolute number (instead of a concrete list of labels) 
+         * to accommodate for ambiguities.
+         */
         // @formatter:off
         final OptionalInt declarationIndexAtMinimalCost = IntStream
                 .range(0, visibleTargets.length)
@@ -869,22 +886,35 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .reduce((i, j) -> comparator.compare(visibleTargets[i], visibleTargets[j]) < 0 ? i : j);
         // @formatter:on
 
-        final Distance<L> minimalDistance;
+        /*
+         * NOTE: minimalDistance is an example instance of at minimal cost.
+         * However, there could be ambiguous instance with the same cost.
+         */ 
+        final Distance<L> minimalDistanceExample;
 
         if (declarationIndexAtMinimalCost.isPresent()) {
-            minimalDistance = visibleTargets[declarationIndexAtMinimalCost.getAsInt()];
+            minimalDistanceExample = visibleTargets[declarationIndexAtMinimalCost.getAsInt()];
         } else {
-            minimalDistance = Distance.INFINITE;
+            minimalDistanceExample = Distance.INFINITE;
         }
-
+        
         // check if ambiguous
-        if (declarationIndexAtMinimalCost.isPresent() && !minimalDistance.equals(Distance.INFINITE)) {
+        if (declarationIndexAtMinimalCost.isPresent() && !minimalDistanceExample.equals(Distance.INFINITE)) {
             long uniqueSolutionCount = IntStream.range(0, visibleTargets.length).filter(candidates::contains)
                     .mapToObj(index -> visibleTargets[index]).distinct().count();
 
-            long minimalCostSolutionCount = IntStream.range(0, visibleTargets.length).filter(candidates::contains)
-                    .mapToObj(index -> visibleTargets[index]).filter(distance -> distance.equals(minimalDistance))
-                    .count();
+            final Set.Immutable<Integer> indices = IntStream.range(0, visibleTargets.length)
+                    .filter(candidates::contains)
+                    .filter(index -> comparator.compare(visibleTargets[index], minimalDistanceExample) == 0)
+                    .mapToObj(Integer::valueOf)
+                    .collect(CapsuleCollectors.toSet());
+            
+            long minimalCostSolutionCount = indices.size();
+            
+            final Set.Immutable<O> declarations = indices.stream()
+                    .map(index -> (O) resolutionResult.forwardIndex.get(index)).collect(CapsuleCollectors.toSet());
+            
+            long declarationsCount = declarations.size();
 
             if (minimalCostSolutionCount > 1) {
                 // ambiguity detected
@@ -893,7 +923,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         }
 
         // TODO: support multiple paths
-        if (declarationIndexAtMinimalCost.isPresent() && !minimalDistance.equals(Distance.INFINITE)) {
+        if (declarationIndexAtMinimalCost.isPresent() && !minimalDistanceExample.equals(Distance.INFINITE)) {
             @SuppressWarnings("unchecked")
             final O declaration = (O) resolutionResult.forwardIndex.get(declarationIndexAtMinimalCost.getAsInt());
 
