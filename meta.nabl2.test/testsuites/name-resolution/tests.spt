@@ -2,12 +2,6 @@ module name-resolution
 
 language NaBL2Test
 
-//test resolve ambiguous with unordered labels [[
-//  resolve x to x in I parent or x in J parent
-//]] 1 error
-////   error like "ambiguous"
-////   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match 
-
 //-------------------------------
 
 test scope occurrences are equal [[
@@ -48,7 +42,7 @@ test resolve ambiguous in same scope [[
 //   error like "ambiguous"
 //   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
 
-////-------------------------------
+//-------------------------------
 
 test resolve in parent scope [[
   resolve [[x]] to [[x]] in parent scope
@@ -69,7 +63,8 @@ test resolve import over parent [[
 test resolve ambiguous with unordered labels [[
   resolve x to x in I parent or x in J parent
 ]] 1 error
-   error like "ambiguous"
+//   error like "ambiguous"
+//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
 
 test resolve via longer more specific path [[
   resolve [[x]] to [[x]] via longer more specific path over x via less specific path
@@ -84,7 +79,7 @@ test resolve via non-transitive import fails [[
   resolve x to x via non-transitive import
 ]] 1 error
 
-////-------------------------------
+//-------------------------------
 
 test resolve in imported scope  [[
   resolve [[x]] via y in y { [[x]] }
