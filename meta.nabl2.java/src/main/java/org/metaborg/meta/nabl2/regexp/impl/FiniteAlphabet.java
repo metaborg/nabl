@@ -63,5 +63,9 @@ public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
             return false;
         return true;
     }
+
+    @Override public String toString() {
+        return symbols.toString();
+    }
     
 }

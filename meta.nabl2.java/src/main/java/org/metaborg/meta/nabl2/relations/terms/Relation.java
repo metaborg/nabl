@@ -167,6 +167,20 @@ public abstract class Relation<T> implements IRelation<T> {
         return entries().stream();
     }
 
+    @Override public String toString() {
+        final IRelation2<T, T> entries;
+        
+        if (this instanceof Relation.Transient) {
+            entries = ((Relation.Transient) this).entries();
+        } else if (this instanceof Relation.Immutable) {
+            entries = ((Relation.Immutable) this).entries();
+        } else {
+            assert (this instanceof Relation.Extension);
+            entries = ((Relation.Extension) this).entries();
+        }
+        
+        return entries.toString();
+    }
 
     public static class Immutable<T> extends Relation<T> implements IRelation.Immutable<T>, Serializable {
         private static final long serialVersionUID = 42L;
