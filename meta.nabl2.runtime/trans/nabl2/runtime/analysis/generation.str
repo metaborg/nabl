@@ -31,13 +31,15 @@ rules // top-level functions that are called during analysis
   )
 
   nabl2--generate-constraint-file(|source,args) = ?term; nabl2--strict(
-    nabl2_constraints := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
-  ; flowspec_constraints :=
-      <nabl2--generate-constraint-placeholder
-       <+ nabl2--generate-constraint-default-cfg-rule
-       <+ !CTrue(<nabl2--get-ast-index> term)> (source,term,args)
-  ; !CConj(nabl2_constraints, flowspec_constraints)
+    nabl2_constraint := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
+  ; flowspec_constraint := <nabl2-generate-flowspec-constraint(|term)> (source,term,args)
+  ; !CConj(nabl2_constraint, flowspec_constraint)
   )
+
+  nabl2-generate-flowspec-constraint(|term) =
+    nabl2--generate-constraint-placeholder
+    <+ nabl2--generate-constraint-default-cfg-rule
+    <+ !CTrue(<nabl2--get-ast-index> term)
 
 rules
 
