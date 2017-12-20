@@ -87,9 +87,8 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
-        final IProperties.Transient<Occurrence, ITerm, ITerm> properties = initial.declProperties().melt();
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, properties);
+                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
@@ -119,7 +118,6 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
-//                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -144,7 +142,6 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
             // solve constraints
             nameResolutionSolver.update();
-//            cfgSolver.update();
             SolveResult solveResult = solver.solve(constraints);
             messages.addAll(solveResult.messages());
 

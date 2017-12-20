@@ -159,7 +159,6 @@ public class BaseSolver {
             seed(symSolver.seed(solution.symbolic(), message), messages, constraints);
         }
         nameResolutionSolver.update();
-        cfgSolver.update();
 
         IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
         NameResolutionResult nameResult = nameResolutionSolver.finish();

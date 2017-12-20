@@ -115,7 +115,6 @@ public class SingleFileSolver extends BaseSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
-                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -124,7 +123,6 @@ public class SingleFileSolver extends BaseSolver {
 
         try {
             nameResolutionSolver.update();
-            cfgSolver.update();
             SolveResult solveResult = solver.solve(initial.constraints());
 
             final IMessages.Transient messages = initial.messages().melt();
@@ -138,7 +136,7 @@ public class SingleFileSolver extends BaseSolver {
             
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, cfg, solveResult.messages(), solveResult.constraints());
+                    unifierResult, symbolicConstraints, cfg, messages.freeze(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

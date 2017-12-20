@@ -513,9 +513,8 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
-        final Properties.Extension<Occurrence, ITerm, ITerm> properties = Properties.extend(initial.declProperties().melt(), context.declProperties());
         final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, unitGraph,
-                nameResolution, properties);
+                nameResolution, Properties.extend(initial.declProperties().melt(), context.declProperties()));
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, extendedGraph, nameResolution);
         final PolymorphismComponent polySolver =
                 new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
@@ -551,7 +550,6 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
-                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -562,7 +560,6 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         try {
             // initial resolve
             nameResolutionSolver.update();
-            cfgSolver.update();
 
             // solve constraints
             SolveResult solveResult = solver.solve(initial.constraints());

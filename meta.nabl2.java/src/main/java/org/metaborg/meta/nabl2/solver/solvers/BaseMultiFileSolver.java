@@ -114,7 +114,6 @@ public class BaseMultiFileSolver extends BaseSolver {
             if(!r.unifiedVars().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
-                    cfgSolver.update();
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -123,7 +122,6 @@ public class BaseMultiFileSolver extends BaseSolver {
 
         try {
             nameResolutionSolver.update();
-            cfgSolver.update();
             final SolveResult solveResult = solver.solve(initial.constraints());
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
