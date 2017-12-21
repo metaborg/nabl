@@ -36,12 +36,14 @@ public class ControlFlowGraph<N extends ICFGNode>
 
     @Override
     public Set<N> getAllStarts() {
-        throw new RuntimeException("unimplemented");
+        // TODO: implement
+        return Set.Immutable.of();
     }
 
     @Override
     public Set<N> getAllEnds() {
-        throw new RuntimeException("unimplemented");
+        // TODO: implement
+        return Set.Immutable.of();
     }
 
     @Override
@@ -57,6 +59,10 @@ public class ControlFlowGraph<N extends ICFGNode>
     @Override
     public BinaryRelation<N, N> getDirectEdges() {
         return directEdges;
+    }
+
+    public void addTFAppl(N node, String prop, TransferFunctionAppl tfAppl) {
+        tfAppls.__put(ImmutableTuple2.of(TermIndex.get(node).get(), prop), tfAppl);
     }
 
     public void addTFAppl(TermIndex index, String prop, TransferFunctionAppl tfAppl) {

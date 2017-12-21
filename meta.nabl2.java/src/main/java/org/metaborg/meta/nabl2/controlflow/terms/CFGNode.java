@@ -19,7 +19,7 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
 
     private static final String OP = "CFGNode";
 
-    // IScope implementation
+    // ICFGNode implementation
 
     @Value.Parameter @Override public abstract String getResource();
 

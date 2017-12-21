@@ -1,5 +1,9 @@
 module nabl2/runtime/analysis/debug
 
+imports
+
+  libstratego-aterm
+
 rules
 
   nabl2--debug-constraints(|a) =
@@ -7,6 +11,9 @@ rules
 
   nabl2--debug-scope-graph(|a) =
     prim("SG_debug_scope_graph", a)
+
+  nabl2--debug-control-flow-graph(|a) =
+    prim("SG_debug_control_flow_graph", a)
 
   nabl2--debug-name-resolution(|a) =
     prim("SG_debug_name_resolution", a)
@@ -19,3 +26,5 @@ rules
 
   nabl2--focus-term(|a) =
     prim("SG_focus_term", a)
+
+  prettyprint-NaBL2-Term = pp-aterm-box

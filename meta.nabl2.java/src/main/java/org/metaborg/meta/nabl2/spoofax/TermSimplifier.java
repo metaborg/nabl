@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.spoofax;
 
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableCFGNode;
 import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableScope;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
@@ -25,7 +26,7 @@ public class TermSimplifier {
             }),
             t -> CFGNode.matcher().match(t).map(n -> {
                 String r = (resource == null || n.getResource().equals(resource)) ? "" : n.getResource();
-                return ImmutableScope.of(r, n.getName());
+                return ImmutableCFGNode.of(r, n.getName());
             }),
             t -> TermIndex.matcher().match(t).map(i -> {
                 String r = (resource == null || i.getResource().equals(resource)) ? "" : i.getResource();

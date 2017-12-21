@@ -37,6 +37,9 @@ rules
   nabl2--get-ast-type(|a) =
     nabl2--get-ast-property(|a,Type())
 
+  nabl2--get-ast-property-by-name(|a,name) =
+    nabl2--get-ast-property(|a,Property(name))
+
 rules
 
   /**

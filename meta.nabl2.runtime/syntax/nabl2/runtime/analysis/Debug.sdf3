@@ -6,6 +6,8 @@ imports
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Resolution
   nabl2/shared/constraints/Base
+  nabl2/shared/constraints/AST
+  nabl2/runtime/common/Native
 
 context-free syntax
 
@@ -103,3 +105,25 @@ context-free syntax
       <{CTerm "\n"}*>
     }
   >
+
+context-free syntax
+
+  AnalysisResult.ControlFlowGraph = [
+    control-flow graph {
+      direct edges {
+        [{CFGDirectEdge "\n"}*]
+      }
+      start nodes {
+        [{CFGNode "\n"}*]
+      }
+      end nodes {
+        [{CFGNode "\n"}*]
+      }
+      properties {
+        [{CFGProperty "\n"}*]
+      }
+    }
+  ]
+
+  CFGDirectEdge.DirectEdge = [[CFGNode] -> [CFGNode]]
+  CFGProperty.DFProperty = [[CFGNode].[PropertyId] := [Term]]

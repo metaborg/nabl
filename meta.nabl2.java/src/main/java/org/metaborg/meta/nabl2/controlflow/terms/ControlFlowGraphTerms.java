@@ -1,51 +1,44 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
-import com.google.common.collect.Lists;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
-import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 public final class ControlFlowGraphTerms {
 
     private final IControlFlowGraph<CFGNode> controlFlowGraph;
 
-    private ControlFlowGraphTerms(IControlFlowGraph<CFGNode> controlFlowGraph, IProperties<Occurrence, ITerm, ITerm> properties,
-            IUnifier unifier) {
+    private ControlFlowGraphTerms(IControlFlowGraph<CFGNode> controlFlowGraph) {
         this.controlFlowGraph = controlFlowGraph;
     }
 
     private ITerm build() {
-        List<ITerm> CFGNodes = controlFlowGraph.getAllCFGNodes().stream().map(this::buildCFGNode).collect(Collectors.toList());
-        return TB.newAppl("controlFlowGraph", (ITerm) TB.newList(CFGNodes));
+        List<ITerm> directEdges = controlFlowGraph.getDirectEdges().entrySet().stream().map(this::buildDirectEdge)
+                .collect(Collectors.toList());
+        List<ITerm> starts = controlFlowGraph.getAllStarts().stream().collect(Collectors.toList());
+        List<ITerm> ends = controlFlowGraph.getAllEnds().stream().collect(Collectors.toList());
+        List<ITerm> properties = controlFlowGraph.getProperties().entrySet().stream().map(this::buildProperty)
+                .collect(Collectors.toList());
+        return TB.newAppl("ControlFlowGraph", (ITerm) TB.newList(directEdges), (ITerm) TB.newList(starts),
+                (ITerm) TB.newList(ends), (ITerm) TB.newList(properties));
     }
 
-    private ITerm buildCFGNode(CFGNode cfgNode) {
-        List<ITerm> parts = Lists.newArrayList();
-
-        List<ITerm> directEdges =
-                controlFlowGraph.getDirectEdges().get(cfgNode).stream().map(this::buildDirectEdge).collect(Collectors.toList());
-        if(!directEdges.isEmpty()) {
-            parts.add(TB.newAppl("DirectEdges", (ITerm) TB.newList(directEdges)));
-        }
-
-        return TB.newAppl("CFGNode", cfgNode, TB.newList(parts));
+    private ITerm buildDirectEdge(Map.Entry<CFGNode, CFGNode> directEdge) {
+        return TB.newAppl("DirectEdge", directEdge.getKey(), directEdge.getValue());
     }
 
-    private ITerm buildDirectEdge(CFGNode target) {
-        return TB.newAppl("DirectEdge", target);
+    private ITerm buildProperty(Map.Entry<Tuple2<CFGNode, String>, ITerm> directEdge) {
+        return TB.newAppl("DFProperty", directEdge.getKey()._1(), TB.newString(directEdge.getKey()._2()), directEdge.getValue());
     }
 
     // static interface
 
-    public static ITerm build(IControlFlowGraph<CFGNode> controlFlowGraph, IProperties<Occurrence, ITerm, ITerm> properties,
-            IUnifier unifier) {
-        return new ControlFlowGraphTerms(controlFlowGraph, properties, unifier).build();
+    public static ITerm build(IControlFlowGraph<CFGNode> controlFlowGraph) {
+        return new ControlFlowGraphTerms(controlFlowGraph).build();
     }
 
 }
