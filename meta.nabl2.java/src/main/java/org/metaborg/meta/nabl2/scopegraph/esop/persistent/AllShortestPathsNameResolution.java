@@ -17,6 +17,7 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
@@ -59,7 +60,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     private static final long serialVersionUID = 42L;
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private final IEsopScopeGraph<S, L, O, V> scopeGraph;
 
@@ -254,13 +255,24 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     Distance<L> kj = dist[k][j];
 
                     // TODO: use configurable BiFunction, curried by 'wf'
-                    Distance<L> ikj = Distance.concat(wf, ik, kj);
+                    final Distance<L> ikj;
+                    if (ik == Distance.INFINITE || kj == Distance.INFINITE) {
+                        ikj = Distance.INFINITE;
+                    } else if (ik == Distance.ZERO && kj == Distance.ZERO) {
+                        ikj = Distance.ZERO;
+                    } else if (ik == Distance.ZERO) {
+                        ikj = kj;
+                    } else if (kj == Distance.ZERO) {
+                        ikj = ik;
+                    } else {
+                        ikj = Distance.concat(wf, ik, kj);
+                    }
 
                     if (comparator.compare(ij, ikj) == 0 && !ij.equals(ikj)) {
                         System.out.println("breakpoint");
                     }
 
-                    if (comparator.compare(ij, ikj) > 0) {
+                    if (ikj != Distance.INFINITE && (ij == Distance.INFINITE || comparator.compare(ij, ikj) > 0)) {
                         dist[i][j] = ikj;
                         next[i][j] = next[i][k];
 
@@ -295,6 +307,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
 
+//        if (dist.length > 0) {
+//            printMatrix(dist);
+//            System.out.println();
+//        }
+        
         final ShortestPathResult<S, L, O> tmpResolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
                 forwardIndex, unresolvedImports, resolvedImports, substitutionEvidence);
 
@@ -369,6 +386,56 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         }
     }
 
+    private static final <L extends ILabel> void printMatrix(final Distance<L>[][] dist) {
+        final int dimension = dist.length; // assume x and y dimensions are equal      
+        
+        if (dimension == 0) return;
+        
+        final int maxLength = Stream.of(dist)
+                .flatMap(row -> Stream.of(row))
+                .map(Object::toString)
+                .mapToInt(String::length)
+                .max()
+                .getAsInt();
+        
+        Function<Object, String> formatter = distance -> String.format("%" + maxLength + "s", distance);
+        
+        final String rowHead = "|  ";
+        final String rowTail = "  |";
+        
+        final String sepHead = "---";
+        final String sepTail = "---";
+        
+        final String columnFill = 
+                IntStream.range(0, maxLength)
+                    .mapToObj(position -> "-")
+                    .reduce(String::concat).get();
+        
+        final String rowSeparator = 
+                IntStream.range(0, dimension + 1)
+                    .mapToObj(position -> columnFill)
+                    .collect(Collectors.joining("---"));
+        
+        final String columnHeader = 
+                Stream.concat(Stream.of(""), IntStream.range(0, dimension).mapToObj(Integer::valueOf))
+                    .map(formatter)
+                    .collect(Collectors.joining(" | "));
+
+        System.out.println(sepHead + rowSeparator + sepTail);
+        System.out.println(rowHead + columnHeader + rowTail);
+        System.out.println(sepHead + rowSeparator + sepTail);
+        
+        IntStream.range(0, dimension)
+            .mapToObj(rowId -> Stream.concat(Stream.of(rowId), Stream.of(dist[rowId])).map(formatter).collect(Collectors.joining(" | ")))
+            .map(rowString -> rowHead + rowString + rowTail)
+            .forEach(System.out::println);
+        
+        System.out.println(sepHead + rowSeparator + sepTail);
+        
+        System.out.println();
+        System.out.println();        
+    }
+    
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> ScopeLabelScope<S, L, O> resolvedImportPathToDirectEdge(
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final ScopeLabelOccurrence<S, L, O> resolvedImport,
             final IResolutionPath<S, L, O> resolvedImportPath) {
@@ -485,9 +552,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
         @Override
         public int compare(Distance<L> o1, Distance<L> o2) {
-            final boolean isValidOne = isValid(o1);
-            final boolean isValidTwo = isValid(o2);
-
             if (o1 == o2) {
                 return 0;
             }
@@ -503,6 +567,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             if (o2 == Distance.INFINITE) {
                 return -1;
             }
+
+            final boolean isValidOne = isValid(o1);
+            final boolean isValidTwo = isValid(o2);
+
             if (!isValidOne && !isValidTwo) {
                 // System.out.println("breakpoint");
                 return 0;
@@ -521,14 +589,15 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final boolean isAmbiguous = IntStream.range(0, commonLength).map(index -> {
                 final L l1 = o1.labels.get(index);
                 final L l2 = o2.labels.get(index);
-                return !Objects.equals(l1, l2) && !labelOrder.smaller(l2).contains(l1) && !labelOrder.larger(l2).contains(l1) ? 1 : 0;
+                return !Objects.equals(l1, l2) && !labelOrder.smaller(l2).contains(l1)
+                        && !labelOrder.larger(l2).contains(l1) ? 1 : 0;
             }).sum() == 0 ? false : true;
-            
+
             if (isAmbiguous) {
                 // incomparable or ambiguity respectively
                 return 0;
             }
-            
+
             final OptionalInt commonComparisonResult = IntStream.range(0, commonLength).map(index -> {
                 L l1 = o1.labels.get(index);
                 L l2 = o2.labels.get(index);
@@ -536,7 +605,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 if (Objects.equals(l1, l2)) {
                     return 0;
                 }
-                
+
                 if (labelOrder.smaller(l2).contains(l1)) {
                     return -1;
                 } else if (labelOrder.larger(l2).contains(l1)) {
@@ -640,13 +709,27 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
             assert mergedLabels.size() >= 2;
 
+            // require maximum one R at the beginning
             if (countOfLabelR == 1 && !mergedLabels.get(0).equals(Label.R)) {
                 return INFINITE;
             }
 
+            // require maximum one D at the end
             if (countOfLabelD == 1 && !mergedLabels.get(mergedLabels.size() - 1).equals(Label.D)) {
                 return INFINITE;
             }
+
+            // if (!((countOfLabelR == 1 && mergedLabels.get(0).equals(Label.R))
+            // && (countOfLabelD == 1 && mergedLabels.get(mergedLabels.size() -
+            // 1).equals(Label.D)))) {
+            // // don't match if not full prefix, just concat
+            // return new Distance<>(mergedLabels);
+            // }
+            //
+            //// if (!mergedLabels.get(0).equals(Label.R)) {
+            //// // don't match if not full prefix, just concat
+            //// return new Distance<>(mergedLabels);
+            //// }
 
             // @formatter:off
             final List<L> filteredLabels = mergedLabels.stream()
@@ -657,7 +740,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
             final IRegExpMatcher<L> matcherResult = wellFormednessExpression.match(filteredLabels);
 
+            // boolean isAccepting = matcherResult.isAccepting();
+            // boolean isFinal = matcherResult.isFinal();
+            // boolean isEmpty = matcherResult.isEmpty();
+
             if (matcherResult.isEmpty()) {
+                assert matcherResult.isAccepting() == false;
+                assert matcherResult.isFinal();
+                assert matcherResult.isEmpty();
                 return INFINITE;
             } else {
                 return new Distance<>(mergedLabels);
@@ -701,6 +791,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         public String toString() {
             if (this == INFINITE) {
                 return "∞";
+            } else if (this == ZERO) {
+                return "∅";
             } else {
                 return labels.toString();
             }
@@ -876,8 +968,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .mapToInt(resolutionResult.reverseIndex::get).boxed().collect(CapsuleCollectors.toSet());
 
         /*
-         * TODO: represent minimal cost as absolute number (instead of a concrete list of labels) 
-         * to accommodate for ambiguities.
+         * TODO: represent minimal cost as absolute number (instead of a
+         * concrete list of labels) to accommodate for ambiguities.
          */
         // @formatter:off
         final OptionalInt declarationIndexAtMinimalCost = IntStream
@@ -889,7 +981,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         /*
          * NOTE: minimalDistance is an example instance of at minimal cost.
          * However, there could be ambiguous instance with the same cost.
-         */ 
+         */
         final Distance<L> minimalDistanceExample;
 
         if (declarationIndexAtMinimalCost.isPresent()) {
@@ -897,7 +989,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         } else {
             minimalDistanceExample = Distance.INFINITE;
         }
-        
+
         // check if ambiguous
         if (declarationIndexAtMinimalCost.isPresent() && !minimalDistanceExample.equals(Distance.INFINITE)) {
             long uniqueSolutionCount = IntStream.range(0, visibleTargets.length).filter(candidates::contains)
@@ -906,14 +998,13 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final Set.Immutable<Integer> indices = IntStream.range(0, visibleTargets.length)
                     .filter(candidates::contains)
                     .filter(index -> comparator.compare(visibleTargets[index], minimalDistanceExample) == 0)
-                    .mapToObj(Integer::valueOf)
-                    .collect(CapsuleCollectors.toSet());
-            
+                    .mapToObj(Integer::valueOf).collect(CapsuleCollectors.toSet());
+
             long minimalCostSolutionCount = indices.size();
-            
+
             final Set.Immutable<O> declarations = indices.stream()
                     .map(index -> (O) resolutionResult.forwardIndex.get(index)).collect(CapsuleCollectors.toSet());
-            
+
             long declarationsCount = declarations.size();
 
             if (minimalCostSolutionCount > 1) {
