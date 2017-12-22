@@ -2,6 +2,10 @@ module name-resolution
 
 language NaBL2Test
 
+// TODO: add tests that exercise transitive costs / shadowing
+// TODO: test more complex well-formedness expressions that have non-optional middle parts
+// TODO: add tests that exercise more complex ambiguous paths
+
 //-------------------------------
 
 test scope occurrences are equal [[
