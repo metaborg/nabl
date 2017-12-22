@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -337,12 +338,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final Map.Transient<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> __substitutionEvidence = substitutionEvidence
                 .asTransient();
 
+        boolean importRevised = false;        
         for (ScopeLabelOccurrence<S, L, O> oldResolvedImport : resolvedImports.keySet()) {
             final IResolutionPath<S, L, O> oldResolutionPath = resolvedImports.get(oldResolvedImport);
             final IResolutionPath<S, L, O> newResolutionPath = tryResolve(scopeGraph, tmpResolutionResult, comparator,
                     oldResolvedImport.occurrence()).get()._1().findFirst().get();
 
             if (!oldResolutionPath.equals(newResolutionPath)) {
+                importRevised = true;
                 System.out.println("breakpoint");
 
                 __resolvedImports.put(oldResolvedImport, newResolutionPath);
@@ -350,11 +353,31 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph,
                         oldResolvedImport, newResolutionPath);
                 __substitutionEvidence.put(directEdge, newResolutionPath);
+                
+                /*  
+                 * NOTE: we don't remove old direct edges.
+                 * New shortest path will change path solutions based on cost the next iteration.
+                 */
+                
+//                Iterator<Entry<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>>> entryIterator = __substitutionEvidence.entryIterator();
+//                while (entryIterator.hasNext()) {
+//                    Entry<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> entry = entryIterator.next();
+//                    if (entry.getValue().equals(oldResolutionPath)) {
+//                        __substitutionEvidence.__remove(entry.getKey());
+//                    }
+//                }
+                
+//                entryIterator.forEachRemaining(entry -> {
+//                    if (entry.getValue().equals(oldResolutionPath)) {
+//                        entryIterator.remove();
+//                    }
+//                });
             }
         }
         // TODO: do I have to abort early after substitution or can go on?
         // TODO: i assume terminate early
-
+        
+        if (true || !importRevised) {        
         for (ScopeLabelOccurrence<S, L, O> unresolvedImport : unresolvedImports) {
             final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolveResult = tryResolve(
                     scopeGraph, tmpResolutionResult, comparator, unresolvedImport.occurrence());
@@ -389,12 +412,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 __unresolvedImports.__insert(unresolvedImport);
             }
         }
+        }
 
         final ShortestPathResult<S, L, O> resolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
                 forwardIndex, __unresolvedImports.freeze(), __resolvedImports.freeze(),
                 __substitutionEvidence.freeze());
 
         if (substitutionEvidence.size() == __substitutionEvidence.size()) {
+            System.out.println("final");
             return resolutionResult;
         } else {
             return initAllShortestPaths(resolutionResult.unresolvedImports, resolutionResult.resolvedImports,
