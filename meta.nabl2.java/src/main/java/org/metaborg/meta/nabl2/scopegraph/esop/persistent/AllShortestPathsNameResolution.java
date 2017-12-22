@@ -15,6 +15,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -150,7 +152,20 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         nodes.addAll(rs);
         nodes.addAll(ds);
         nodes.addAll(scopes);
-
+        
+        int rsOffset = 0;
+        int rsLength = rs.size();
+        
+        int dsOffset = rsOffset + rsLength;
+        int dsLength = ds.size();
+        
+        int scopesOffset = dsOffset + dsLength;
+        int scopesLength = scopes.size();
+        
+        IntPredicate isReference = i -> rsOffset <= i && i < rsOffset + rsLength;
+        IntPredicate isDeclaration = i -> dsOffset <= i && i < dsOffset + dsLength;
+        IntPredicate isScope = i -> scopesOffset <= i && i < scopesOffset + scopesLength;
+       
         final java.util.Map<Integer, Object> forwardIndex = new HashMap<>();
         for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
             forwardIndex.put(nodeIndex, nodes.get(nodeIndex));
@@ -307,10 +322,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
 
-//        if (dist.length > 0) {
-//            printMatrix(dist);
-//            System.out.println();
-//        }
+        if (dist.length > 0) {
+//            printMatrix(dist, isReference, isDeclaration);
+            printMatrix(dist, isScope, isScope);
+            System.out.println();
+        }
         
         final ShortestPathResult<S, L, O> tmpResolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
                 forwardIndex, unresolvedImports, resolvedImports, substitutionEvidence);
@@ -385,14 +401,25 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     resolutionResult.substitutionEvidence);
         }
     }
-
+    
     private static final <L extends ILabel> void printMatrix(final Distance<L>[][] dist) {
-        final int dimension = dist.length; // assume x and y dimensions are equal      
+        printMatrix(dist, i -> true, i -> true);
+    }
+
+    private static final <L extends ILabel> void printMatrix(final Distance<L>[][] dist, IntPredicate rowFilter, IntPredicate colFilter) {
+        final int dimensionX = (int) IntStream.range(0, dist.length).filter(rowFilter).count();
+        final int dimensionY = (int) IntStream.range(0, dist.length).filter(colFilter).count();
         
-        if (dimension == 0) return;
+//        final int dimension = dist.length; // assume x and y dimensions are equal      
         
-        final int maxLength = Stream.of(dist)
-                .flatMap(row -> Stream.of(row))
+        if (dimensionX == 0 || dimensionY == 0) return;
+        
+        final int[] rowIDs = IntStream.range(0, dist.length).filter(rowFilter).toArray();
+        final int[] colIDs = IntStream.range(0, dist.length).filter(colFilter).toArray();
+        
+        final int maxLength = IntStream.of(rowIDs)
+                .mapToObj(rowId -> IntStream.of(colIDs).mapToObj(colId -> dist[rowId][colId]))
+                .flatMap(stream -> stream)
                 .map(Object::toString)
                 .mapToInt(String::length)
                 .max()
@@ -412,12 +439,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     .reduce(String::concat).get();
         
         final String rowSeparator = 
-                IntStream.range(0, dimension + 1)
+                IntStream.range(0, dimensionY + 1)
                     .mapToObj(position -> columnFill)
                     .collect(Collectors.joining("---"));
         
         final String columnHeader = 
-                Stream.concat(Stream.of(""), IntStream.range(0, dimension).mapToObj(Integer::valueOf))
+                Stream.concat(Stream.of(""), IntStream.of(colIDs).mapToObj(Integer::valueOf))
                     .map(formatter)
                     .collect(Collectors.joining(" | "));
 
@@ -425,8 +452,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         System.out.println(rowHead + columnHeader + rowTail);
         System.out.println(sepHead + rowSeparator + sepTail);
         
-        IntStream.range(0, dimension)
-            .mapToObj(rowId -> Stream.concat(Stream.of(rowId), Stream.of(dist[rowId])).map(formatter).collect(Collectors.joining(" | ")))
+        IntStream.of(rowIDs)
+            .mapToObj(rowId -> Stream.concat(Stream.of(rowId), IntStream.of(colIDs).mapToObj(colId -> dist[rowId][colId])).map(formatter).collect(Collectors.joining(" | ")))
             .map(rowString -> rowHead + rowString + rowTail)
             .forEach(System.out::println);
         
