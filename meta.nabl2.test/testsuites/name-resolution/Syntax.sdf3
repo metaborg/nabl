@@ -62,8 +62,8 @@ context-free syntax
 
 context-free syntax
 
-  Test.ImportAnomaly = <
-    anomaly {
+  Test.ImportAnomaly1 = <
+    anomaly1 {
       mod <A> {
         mod <B> {
           def <X> = 1
@@ -73,6 +73,28 @@ context-free syntax
         mod <A> {
           def <Y> = 2
         }
+      }
+      mod <C> {
+        import <A>
+        import <B>
+        def <Z> = <X> + <Y>
+      }
+    }
+  >
+
+  Test.ImportAnomaly2 = <
+    anomaly2 {
+      mod <A> {
+        mod <B> {
+          def <X> = 1
+        }
+        	def <Y> = 2
+      }
+      mod <B> {
+        mod <A> {
+          def <Y> = 2
+        }
+        	def <X> = 1      
       }
       mod <C> {
         import <A>

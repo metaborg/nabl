@@ -264,7 +264,7 @@ rules
 
 rules
 
-  [[ ImportAnomaly(ad,abd,xd,bd,bad,yd,cd,ar,br,zd,xr,yr) ^ () ]] :=
+  [[ ImportAnomaly1(ad,abd,xd,bd,bad,yd,cd,ar,br,zd,xr,yr) ^ () ]] :=
     new s sa sab sb sba sc, 
   
     sa -P-> s, 
@@ -296,3 +296,41 @@ rules
     {yr} -> sc,
     {xr} |-> _,
     {yr} |-> _. 
+
+rules
+
+  [[ ImportAnomaly2(ad,abd,xd,y2d,bd,bad,yd,x2d,cd,ar,br,zd,xr,yr) ^ () ]] :=
+    new s sa sab sb sba sc, 
+  
+    sa -P-> s, 
+    sab -P-> sa,
+    sb -P-> s,
+    sba -P-> sb,
+    sc -P-> s,
+  
+    {ad} <- s,
+    {ad} =I=> sa,
+    {abd} <- sa,
+    {abd} =I=> sab,
+    {xd} <- sab,
+    {y2d} <- sa,
+    
+    {bd} <- s,
+    {bd} =I=> sb,
+    {bad} <- sb,
+    {bad} =I=> sba,
+    {yd} <- sba,
+    {x2d} <- sb,
+ 
+    {cd} <- s,
+    {cd} =I=> sc,
+    {ar} -> sc,
+    {ar} <=I= sc,
+    {br} -> sc,
+    {br} <=I= sc,
+    {zd} <- sc,
+    {xr} -> sc,
+    {yr} -> sc,
+    {xr} |-> _,
+    {yr} |-> _. 
+        
