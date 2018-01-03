@@ -111,13 +111,13 @@ public class StrategoTerms {
 
     // from
 
-    public ITerm fromStratego(IStrategoTerm sterm) {
+    public static ITerm fromStratego(IStrategoTerm sterm) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
         // @formatter:off
         ITerm term = match(sterm, StrategoTerms.cases(
-            appl -> TB.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
-            tuple -> TB.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
-            this::fromStrategoList,
+            appl -> TB.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(StrategoTerms::fromStratego).collect(Collectors.toList())),
+            tuple -> TB.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(StrategoTerms::fromStratego).collect(Collectors.toList())),
+            StrategoTerms::fromStrategoList,
             integer -> TB.newInt(integer.intValue()),
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
             string -> TB.newString(string.stringValue()),
@@ -127,7 +127,7 @@ public class StrategoTerms {
         return term;
     }
 
-    private IListTerm fromStrategoList(IStrategoList list) {
+    private static IListTerm fromStrategoList(IStrategoList list) {
         final LinkedList<ITerm> terms = Lists.newLinkedList();
         final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
         while(!list.isEmpty()) {
@@ -139,7 +139,7 @@ public class StrategoTerms {
         return TB.newList(terms, attachments);
     }
 
-    private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
+    private static ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
         Builder<Object> b = ImmutableClassToInstanceMap.builder();
 
         TermOrigin.getImploderAttachment(term).ifPresent(imploderAttachment -> {
