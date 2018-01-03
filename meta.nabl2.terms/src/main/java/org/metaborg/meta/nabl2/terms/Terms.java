@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.generic.TB;
@@ -575,6 +576,14 @@ public class Terms {
     public interface IMatcher<T> {
 
         Optional<T> match(ITerm term);
+        
+        default <R> IMatcher<R> map(Function<T, R> fun) {
+            return term -> this.match(term).<R>map(fun);
+        }
+        
+        default <R> IMatcher<R> flatMap(Function<T, Optional<R>> fun) {
+            return term -> this.match(term).<R>flatMap(fun);
+        }
 
     }
 
