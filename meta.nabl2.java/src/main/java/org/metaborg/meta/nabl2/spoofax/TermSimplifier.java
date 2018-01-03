@@ -26,7 +26,7 @@ public class TermSimplifier {
             }),
             t -> CFGNode.matcher().match(t).map(n -> {
                 String r = (resource == null || n.getResource().equals(resource)) ? "" : n.getResource();
-                return ImmutableCFGNode.of(r, n.getName());
+                return ImmutableCFGNode.of(r, n.getName(), n.getKind());
             }),
             t -> TermIndex.matcher().match(t).map(i -> {
                 String r = (resource == null || i.getResource().equals(resource)) ? "" : i.getResource();

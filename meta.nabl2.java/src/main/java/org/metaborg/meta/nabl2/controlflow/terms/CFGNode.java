@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -25,6 +26,8 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
 
     @Value.Parameter @Override public abstract String getName();
 
+    @Value.Parameter @Override public abstract ICFGNode.Kind getKind();
+
     // IApplTerm implementation
 
     @Override protected CFGNode check() {
@@ -40,8 +43,10 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
     }
 
     public static IMatcher<CFGNode> matcher() {
-        return M.appl2("CFGNode", M.stringValue(), M.stringValue(),
-                (t, resource, name) -> ImmutableCFGNode.of(resource, name).withAttachments(t.getAttachments()));
+        return M.appl3("CFGNode", M.stringValue(), M.stringValue(), 
+                    M.appl().flatMap(appl -> Optional.ofNullable(ICFGNode.Kind.valueOf(appl.getOp()))),
+                    (t, resource, name, kind) -> 
+                        ImmutableCFGNode.of(resource, name, kind).withAttachments(t.getAttachments()));
     }
 
     // Object implementation

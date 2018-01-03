@@ -8,4 +8,12 @@ public interface ICFGNode extends ITerm {
 
     String getName();
 
+    Kind getKind();
+
+    enum Kind {
+        Normal,
+        Start,
+        End,
+        Artificial;
+    }
 }

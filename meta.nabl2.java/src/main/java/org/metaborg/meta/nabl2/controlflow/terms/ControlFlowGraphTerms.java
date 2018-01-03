@@ -19,8 +19,8 @@ public final class ControlFlowGraphTerms {
     private ITerm build() {
         List<ITerm> directEdges = controlFlowGraph.getDirectEdges().entrySet().stream().map(this::buildDirectEdge)
                 .collect(Collectors.toList());
-        List<ITerm> starts = controlFlowGraph.getAllStarts().stream().collect(Collectors.toList());
-        List<ITerm> ends = controlFlowGraph.getAllEnds().stream().collect(Collectors.toList());
+        List<ITerm> starts = controlFlowGraph.getStartNodes().stream().collect(Collectors.toList());
+        List<ITerm> ends = controlFlowGraph.getEndNodes().stream().collect(Collectors.toList());
         List<ITerm> properties = controlFlowGraph.getProperties().entrySet().stream().map(this::buildProperty)
                 .collect(Collectors.toList());
         return TB.newAppl("ControlFlowGraph", (ITerm) TB.newList(directEdges), (ITerm) TB.newList(starts),

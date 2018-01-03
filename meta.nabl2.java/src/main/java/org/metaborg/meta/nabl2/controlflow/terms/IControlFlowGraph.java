@@ -10,11 +10,15 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 public interface IControlFlowGraph<N extends ICFGNode> {
 
-    Set<N> getAllCFGNodes();
+    Set<N> getAllNodes();
 
-    Set<N> getAllStarts();
+    Set<N> getStartNodes();
 
-    Set<N> getAllEnds();
+    Set<N> getEndNodes();
+
+    Set<N> getNormalNodes();
+
+    Set<N> getArtificialNodes();
 
 
     Map<Tuple2<N, String>, ITerm> getProperties();
@@ -26,4 +30,6 @@ public interface IControlFlowGraph<N extends ICFGNode> {
     Object getProperty(N node, String prop);
 
     boolean isEmpty();
+
+    void complete();
 }

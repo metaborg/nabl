@@ -57,7 +57,7 @@ public class ControlFlowComponent extends ASolver {
 
     private Optional<CFGNode> findCFGNode(ITerm cfgNodeTerm) {
         return Optional.of(find(cfgNodeTerm)).filter(ITerm::isGround).map(
-                st -> CFGNode.matcher().match(st).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+                st -> CFGNode.matcher().match(st).orElseThrow(() -> new TypeException("Expected a cfg node, got " + st)));
     }
 
     public SeedResult seed(IControlFlowGraph<CFGNode> solution, IMessageInfo message) {
