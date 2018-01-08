@@ -20,7 +20,8 @@ rules
   injection-to-term(e):
     NAMEWithOrigin() -> Term |[ <try(nabl2--copy-origin(|~<term-var>))> NAME() ]|
   injection-to-term(e):
-    OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of(|~<index-var>)> ~t ]|
+    OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of(|~<index-var>)> ~t' ]|
+    with t' := <e> t
   injection-to-term(e):
     Text(str) -> Term |[ Text(~(<unescape-message;e> str)) ]|
 

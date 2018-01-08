@@ -157,4 +157,30 @@ public class Relation<T> implements IRelation<T>, Serializable {
         return bounds.stream().filter(g -> bounds.stream().allMatch(l -> contains(l, g))).findFirst();
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + description.hashCode();
+        result = prime * result + larger.hashCode();
+        result = prime * result + smaller.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final Relation<T> other = (Relation<T>) obj;
+        if(!description.equals(other.description))
+            return false;
+        if(!larger.equals(other.larger))
+            return false;
+        if(!smaller.equals(other.smaller))
+            return false;
+        return true;
+    }
+    
 }

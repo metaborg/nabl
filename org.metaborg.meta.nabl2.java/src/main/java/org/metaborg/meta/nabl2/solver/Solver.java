@@ -92,7 +92,7 @@ public class Solver {
 
     // --- solver life cycle ---
 
-    private void addAll(Collection<PartialSolution> partialSolutions, IMessageInfo protoMessage)
+    private void addAll(Collection<? extends PartialSolution> partialSolutions, IMessageInfo protoMessage)
             throws InterruptedException {
         for(PartialSolution partialSolution : partialSolutions) {
             if(!partialSolution.getConfig().equals(config)) {
@@ -219,7 +219,7 @@ public class Solver {
     }
 
     public static Solution solveFinal(SolverConfig config, Function1<String, ITermVar> fresh,
-            Collection<IConstraint> constraints, Collection<PartialSolution> partialSolutions, IMessageInfo messageInfo,
+            Collection<IConstraint> constraints, Collection<? extends PartialSolution> partialSolutions, IMessageInfo messageInfo,
             IProgress progress, ICancel cancel, NaBL2DebugConfig debugConfig)
             throws SolverException, InterruptedException {
         final int n = constraints.size() + partialSolutions.stream().map(PartialSolution::getResidualConstraints)

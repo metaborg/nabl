@@ -43,3 +43,13 @@ context-free syntax
 context-free syntax
 
   Test.ImportCycle = <import cycle <X> to <X> >
+
+context-free syntax
+
+  Test.ResolveImplicitCompoundName = <resolve compound <X> to <X> with implicit position>
+
+  Test.ResolveExplicitCompoundName = <resolve compound <X> to <X> with explicit position>
+
+  Test.ResolveAstCompoundName = <resolve ast compound <AstCompoundName> to <AstCompoundName>>
+
+  AstCompoundName.Wrapped = <wrapped <X>>

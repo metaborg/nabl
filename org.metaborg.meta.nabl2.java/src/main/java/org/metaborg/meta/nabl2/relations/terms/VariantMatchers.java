@@ -59,6 +59,26 @@ public class VariantMatchers {
             return TB.newList(ts);
         }
 
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + variance.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            final ListVariant other = (ListVariant) obj;
+            if(!variance.equals(other.variance))
+                return false;
+            return true;
+        }
+
     }
 
     private static class OpVariant implements IVariantMatcher<ITerm>, Serializable {
@@ -85,6 +105,29 @@ public class VariantMatchers {
 
         @Override public ITerm build(Iterable<? extends ITerm> ts) {
             return TB.newAppl(op, ts);
+        }
+
+        @Override public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + op.hashCode();
+            result = prime * result + variances.hashCode();
+            return result;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            final OpVariant other = (OpVariant) obj;
+            if(!op.equals(other.op))
+                return false;
+            if(!variances.equals(other.variances))
+                return false;
+            return true;
         }
 
     }

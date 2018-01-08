@@ -166,4 +166,23 @@ public final class RegExpBuilder<S> implements IRegExpBuilder<S>, Serializable {
         // @formatter:on
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + alphabet.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final RegExpBuilder<S> other = (RegExpBuilder<S>) obj;
+        if(!alphabet.equals(other.alphabet))
+            return false;
+        return true;
+    }
 }

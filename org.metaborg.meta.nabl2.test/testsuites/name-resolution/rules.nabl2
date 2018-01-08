@@ -130,3 +130,27 @@ rules
     {xr} -> s1,
     {xd} <- s2,
     {xr} |-> _.
+
+rules
+
+  [[ ResolveImplicitCompoundName(xr,xd) ^ () ]] :=
+    new s,
+    ResolveImplicitCompoundNameDecl[[ xd ^ (s) ]],
+    ResolveImplicitCompoundNameRef[[ xr ^ (s) ]].
+  ResolveImplicitCompoundNameDecl[[ xd ^ (s) ]] :=
+    {[xd]} <- s.
+  ResolveImplicitCompoundNameRef[[ xr ^ (s) ]] :=
+    {[xr]} -> s,
+    {[xr]} |-> _.
+
+  [[ ResolveExplicitCompoundName(xr,xd) ^ () ]] :=
+    new s,
+    {[xd] @xd} <- s,
+    {[xr] @xr} -> s,
+    {[xr] @xr} |-> _.
+
+  [[ ResolveAstCompoundName(cr,cd) ^ () ]] :=
+    new s,
+    {cd} <- s,
+    {cr} -> s,
+    {cr} |-> _.

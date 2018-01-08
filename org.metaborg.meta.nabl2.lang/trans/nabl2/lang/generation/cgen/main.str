@@ -15,6 +15,6 @@ rules
     (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
     with
       filename   := <src-gen-file(|project-path, "nabl2", ".str")> name;
-      module-str := <module-to-str> ast;
+      module-str := <module-to-str;sanitize-vars> ast;
       result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
  

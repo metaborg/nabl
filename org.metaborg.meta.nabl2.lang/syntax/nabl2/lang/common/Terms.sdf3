@@ -41,7 +41,7 @@ lexical syntax
 
   StringChars   = StringChar*
   StringChar    = ~[\"\\\t\r\n]
-  StringChar    =  "\\\"" | "\\\\"
+  StringChar    =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
 
 lexical restrictions
 

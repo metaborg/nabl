@@ -59,4 +59,29 @@ public class OpenCounter<S, L> implements Serializable {
         }
     }
 
+
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (complete ? 1231 : 1237);
+        result = prime * result + open.hashCode();
+        return result;
+    }
+
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final OpenCounter<S, L> other = (OpenCounter<S, L>) obj;
+        if(complete != other.complete)
+            return false;
+        if(!open.equals(other.open))
+            return false;
+        return true;
+    }
+
 }

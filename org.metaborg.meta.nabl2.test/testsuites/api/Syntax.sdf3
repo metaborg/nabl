@@ -10,6 +10,18 @@ context-free syntax
 
   Test.AstWithoutType = <<X> has no type>
 
+  Test.AstWithNoDecls = <<X> has no declarations>
+
+  Test.AstWithOneDecl = <<X> has one declaration>
+
+  Test.AstWithTwoDecls = <<X> has two declarations>
+
+  Test.AstWithNoRefs = <<X> has no references>
+
+  Test.AstWithOneRef = <<X> has one reference>
+
+  Test.AstWithTwoRefs = <<X> has two references>
+
 context-free syntax
 
   Test.GetAllDecls = <get all <{X " "}*> decls>

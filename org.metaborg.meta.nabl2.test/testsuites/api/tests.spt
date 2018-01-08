@@ -16,6 +16,32 @@ test get ast type fails [[
   x has no type
 ]] run get-ast-type-fails
 
+
+test get no ast decls [[
+  x has no declarations
+]] run get-ast-decls to 0
+
+test get one ast decls [[
+  x has one declaration
+]] run get-ast-decls to 1
+
+test get two ast decls [[
+  x has two declarations
+]] run get-ast-decls to 2
+
+
+test get no ast refs [[
+  x has no references
+]] run get-ast-refs to 0
+
+test get one ast refs [[
+  x has one reference
+]] run get-ast-refs to 1
+
+test get two ast refs [[
+  x has two references
+]] run get-ast-refs to 2
+
 // ------------------------
 
 test get all decls (0) [[

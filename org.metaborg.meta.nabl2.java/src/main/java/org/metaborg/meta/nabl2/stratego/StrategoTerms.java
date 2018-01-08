@@ -116,7 +116,7 @@ public class StrategoTerms {
     private <T extends IStrategoTerm> T putAttachments(T term, ImmutableClassToInstanceMap<Object> attachments) {
         Optional<TermOrigin> origin = TermOrigin.get(attachments);
         if(origin.isPresent()) {
-            term.putAttachment(origin.get().toImploderAttachment());
+            origin.get().put(term);
         }
 
         Optional<TermIndex> index = TermIndex.get(attachments);
@@ -136,8 +136,7 @@ public class StrategoTerms {
 
     public ITerm fromStratego(IStrategoTerm term) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(term);
-        ITerm rawTerm = match(term,
-                StrategoTerms.<ITerm>cases(
+        ITerm rawTerm = match(term, StrategoTerms.<ITerm>cases(
             // @formatter:off
             appl -> TB.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
             tuple -> TB.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
@@ -146,7 +145,7 @@ public class StrategoTerms {
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
             string -> TB.newString(string.stringValue())
             // @formatter:on
-                )).withAttachments(attachments);
+        )).withAttachments(attachments);
         return M.<ITerm>cases(
             // @formatter:off
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
@@ -176,8 +175,8 @@ public class StrategoTerms {
     private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
         Builder<Object> b = ImmutableClassToInstanceMap.builder();
 
-        TermOrigin.getImploderAttachment(term).ifPresent(imploderAttachment -> {
-            b.put(TermOrigin.class, TermOrigin.fromImploderAttachment(imploderAttachment));
+        TermOrigin.get(term).ifPresent(origin -> {
+            b.put(TermOrigin.class, origin);
         });
 
         StrategoTermIndices.get(term).ifPresent(termIndex -> {

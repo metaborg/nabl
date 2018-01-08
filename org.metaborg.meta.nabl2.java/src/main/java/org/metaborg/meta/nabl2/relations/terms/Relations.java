@@ -134,4 +134,27 @@ public class Relations<T> implements IRelations<T>, Serializable {
         return name.getName().isPresent() ? name : defaultName;
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + relations.hashCode();
+        result = prime * result + variantMatchers.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") final Relations<T> other = (Relations<T>) obj;
+        if(!relations.equals(other.relations))
+            return false;
+        if(!variantMatchers.equals(other.variantMatchers))
+            return false;
+        return true;
+    }
+    
 }

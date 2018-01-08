@@ -119,4 +119,45 @@ public class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccur
         return new EsopNameResolution<>(this, params, scopeCounter);
     }
 
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + allDecls.hashCode();
+        result = prime * result + allRefs.hashCode();
+        result = prime * result + allScopes.hashCode();
+        result = prime * result + assocEdges.hashCode();
+        result = prime * result + decls.hashCode();
+        result = prime * result + directEdges.hashCode();
+        result = prime * result + importEdges.hashCode();
+        result = prime * result + refs.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        @SuppressWarnings("unchecked") EsopScopeGraph<S, L, O> other = (EsopScopeGraph<S, L, O>) obj;
+        if(!allDecls.equals(other.allDecls))
+            return false;
+        if(!allRefs.equals(other.allRefs))
+            return false;
+        if(!allScopes.equals(other.allScopes))
+            return false;
+        if(!assocEdges.equals(other.assocEdges))
+            return false;
+        if(!decls.equals(other.decls))
+            return false;
+        if(!directEdges.equals(other.directEdges))
+            return false;
+        if(!importEdges.equals(other.importEdges))
+            return false;
+        if(!refs.equals(other.refs))
+            return false;
+        return true;
+    }
+    
 }

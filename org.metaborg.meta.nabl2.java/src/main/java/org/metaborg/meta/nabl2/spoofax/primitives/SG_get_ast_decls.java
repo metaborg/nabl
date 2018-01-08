@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
-import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphContext;
 import org.metaborg.meta.nabl2.stratego.ITermIndex;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
@@ -14,11 +13,10 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-@Deprecated
-public class SG_get_ast_resolution extends ScopeGraphPrimitive {
+public class SG_get_ast_decls extends ScopeGraphPrimitive {
 
-    public SG_get_ast_resolution() {
-        super(SG_get_ast_resolution.class.getSimpleName(), 0, 1);
+    public SG_get_ast_decls() {
+        super(SG_get_ast_decls.class.getSimpleName(), 0, 1);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
@@ -31,15 +29,10 @@ public class SG_get_ast_resolution extends ScopeGraphPrimitive {
         return TermIndex.get(term).flatMap(index -> {
             return context.unit(analysis.getResource()).solution().<ITerm> flatMap(s -> {
                 List<ITerm> entries = Lists.newArrayList();
-                for (Occurrence ref : s.getScopeGraph().getAllRefs()) {
-                    if (ref.getIndex().equals(index)) {
-                        for (Occurrence decl : Paths.resolutionPathsToDecls(s.getNameResolution().resolve(ref))) {
-                            entries.add(TB.newTuple(ref, decl.getName()));
-                        }
+                for (Occurrence decl : s.getScopeGraph().getAllDecls()) {
+                    if (decl.getIndex().equals(index)) {
+                        entries.add(decl);
                     }
-                }
-                if (entries.isEmpty()) {
-                    return Optional.empty();
                 }
                 return Optional.of(TB.newList(entries));
             });

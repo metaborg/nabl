@@ -78,4 +78,34 @@ public class Messages implements IMessages, Serializable {
         return result;
     }
 
+    
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + all.hashCode();
+        result = prime * result + errors.hashCode();
+        result = prime * result + notes.hashCode();
+        result = prime * result + warnings.hashCode();
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        final Messages other = (Messages) obj;
+        if(!all.equals(other.all))
+            return false;
+        if(!errors.equals(other.errors))
+            return false;
+        if(!notes.equals(other.notes))
+            return false;
+        if(!warnings.equals(other.warnings))
+            return false;
+        return true;
+    }
+    
 }

@@ -19,11 +19,9 @@ signature
     well-formedness P* I*
 
   functions
-  
     projectFirst: Term -> Term {
       (fst, _) -> fst
     }
-
     projectSecond: Term -> Term {
       (_, snd) -> snd
     }
