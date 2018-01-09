@@ -371,7 +371,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 }
                 
                 importRevised = true;
-                System.out.println(String.format("invalided [ %s ]", oldResolvedImport));
+                System.out.println(String.format("invalided [ %s ]\n   old path: %s\n   new path: %s", oldResolvedImport, oldResolutionPath, newResolutionPath));
 
                 __resolvedImports.put(oldResolvedImport, newResolutionPath);
                 __substitutionEvidence.put(directEdge, newResolutionPath);                
