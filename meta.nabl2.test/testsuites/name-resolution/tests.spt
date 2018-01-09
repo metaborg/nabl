@@ -188,7 +188,7 @@ test resolve with import cycle [[
 //-------------------------------
 
 test import anomaly [[
-  anomaly {
+  anomaly1 {
     mod A {
       mod [[B]] {
         def [[x]] = 1
