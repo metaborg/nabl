@@ -8,6 +8,7 @@ imports
   nabl2/shared/constraints/Base
   nabl2/shared/constraints/AST
   nabl2/runtime/common/Native
+  nabl2/runtime/common/AST
 
 context-free syntax
 
@@ -126,4 +127,13 @@ context-free syntax
   ]
 
   CFGDirectEdge.DirectEdge = [[CFGNode] -> [CFGNode]]
-  CFGProperty.DFProperty = [[CFGNode].[PropertyId] := [Term]]
+  CFGProperty.DFProperty = [[CFGNode].[PropertyId] := [FSData]]
+  
+  FSData.List = <[<{FSData ", "}+>]>
+  FSData.Set = [{[{FSData ", "}+]}]
+  FSData.Map = [{[{FSDataPair ", "}+]}]
+  FSData = CFGNode
+  FSData = TermIndex
+  FSData = String
+  FSData = Int
+  FSDataPair = [[FSData] => [FSData]]

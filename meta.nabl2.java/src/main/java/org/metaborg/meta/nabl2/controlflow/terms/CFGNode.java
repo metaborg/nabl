@@ -39,7 +39,7 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(TB.newString(getResource()), TB.newString(getName()));
+        return ImmutableList.of(TB.newString(getResource()), TB.newString(getName()), getKind());
     }
 
     public static IMatcher<CFGNode> matcher() {
