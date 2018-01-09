@@ -37,7 +37,11 @@ public class ControlFlowGraph<N extends ICFGNode>
 
     @Override
     public Set<N> getAllNodes() {
-        return normalNodes.freeze().__insertAll(startNodes).__insertAll(endNodes);
+        Set.Transient<N> allNodes = Set.Transient.of();
+        allNodes.__insertAll(normalNodes);
+        allNodes.__insertAll(startNodes);
+        allNodes.__insertAll(endNodes);
+        return allNodes;
     }
 
     @Override
