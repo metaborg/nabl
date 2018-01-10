@@ -118,6 +118,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 associatedScopeEdge.scope());
     }
 
+    private ShortestPathResult<S, L, O> initAllShortestPaths(final ShortestPathResult<S, L, O> resolutionResult) {
+        return initAllShortestPaths(resolutionResult.unresolvedImports, resolutionResult.resolvedImports,
+                resolutionResult.substitutionEvidence, resolutionResult.invalidSubstitutionEvidence);
+    }
+    
     private ShortestPathResult<S, L, O> initAllShortestPaths(
             final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports,
             final Map.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports,
@@ -401,8 +406,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             resolutionResult.isFinal = true;
             return resolutionResult;
         } else {
-            return initAllShortestPaths(resolutionResult.unresolvedImports, resolutionResult.resolvedImports,
-                    resolutionResult.substitutionEvidence, resolutionResult.invalidSubstitutionEvidence);
+            return initAllShortestPaths(resolutionResult);
         }
     }
     
