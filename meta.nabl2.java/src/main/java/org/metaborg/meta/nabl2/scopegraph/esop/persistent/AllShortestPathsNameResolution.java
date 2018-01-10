@@ -17,17 +17,14 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.metaborg.meta.nabl2.regexp.IRegExp;
 import org.metaborg.meta.nabl2.regexp.IRegExpMatcher;
 import org.metaborg.meta.nabl2.regexp.RegExpMatcher;
 import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
-import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
@@ -38,7 +35,6 @@ import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
-import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableLabel;
 import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableScope;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
@@ -53,7 +49,6 @@ import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
@@ -71,13 +66,13 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private final IEsopScopeGraph<S, L, O, V> scopeGraph;
 
     private final Set.Immutable<L> labels;
-    private final L labelD;
     private final IRegExpMatcher<L> wf;
 
+    @Deprecated
+    private final L labelD;
+    
     private final IRelation<L> ordered;
     private final IRelation<L> unordered;
-
-    transient private java.util.Map<IRelation<L>, EnvironmentBuilder<S, L, O>> environmentBuilderCache;
 
     @Deprecated
     private final IResolutionParameters<L> resolutionParameters;
@@ -87,13 +82,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     public AllShortestPathsNameResolution(IEsopScopeGraph<S, L, O, V> scopeGraph,
             IResolutionParameters<L> resolutionParameters, Predicate2<S, L> isEdgeClosed) {
-        // // Helps to detect errors depending on mutability of the scope
-        // graphs.
-        // if (scopeGraph instanceof IEsopScopeGraph.Transient) {
-        // this.scopeGraph = ((IEsopScopeGraph.Transient) scopeGraph).freeze();
-        // } else {
-        // this.scopeGraph = scopeGraph;
-        // }
+//        // Helps to detect errors depending on mutability of the scope graphs.
+//        if (scopeGraph instanceof IEsopScopeGraph.Transient) {
+//            this.scopeGraph = ((IEsopScopeGraph.Transient) scopeGraph).freeze();
+//        } else {
+//            this.scopeGraph = scopeGraph;
+//        }
 
         this.scopeGraph = scopeGraph;
         this.resolutionParameters = resolutionParameters;
@@ -102,34 +96,15 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         this.labels = Set.Immutable.<L>of().__insertAll(Sets.newHashSet(resolutionParameters.getLabels()));
         this.labelD = resolutionParameters.getLabelD();
         this.wf = RegExpMatcher.create(resolutionParameters.getPathWf());
+        
         this.ordered = resolutionParameters.getSpecificityOrder();
-        assert ordered.getDescription().equals(
-                RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
         this.unordered = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
-
-        initTransients();
-
-        // stage and cache environment builders
-        getEnvironmentBuilder(ordered);
-        getEnvironmentBuilder(unordered);
+        assert ordered.getDescription().equals(RelationDescription.STRICT_PARTIAL_ORDER) : "Label specificity order must be a strict partial order";
 
         final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports = scopeGraph.requireImportEdgeStream()
                 .collect(CapsuleCollectors.toSet());
 
-        final Map.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports = Map.Immutable
-                .of();
-
-        final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence = Map.Immutable
-                .of();
-        
-        final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> invalidSubstitutionEvidence = Map.Immutable
-                .of();        
-
-        this.resolutionResult = initAllShortestPaths(unresolvedImports, resolvedImports, substitutionEvidence, invalidSubstitutionEvidence);
-    }
-
-    private void initTransients() {
-        this.environmentBuilderCache = Maps.newHashMap();
+        this.resolutionResult = initAllShortestPaths(unresolvedImports, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
     }
 
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> ScopeLabelScope<S, L, O> toDirectEdge(
@@ -215,28 +190,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         }
 
         /*
-         * Injecting all direct edges that resulted from resolving import
-         * clauses.
-         */
-        substitutionEvidence.keySet().forEach(sls -> {
-            final int sIndex = reverseIndex.get(sls.sourceScope());
-            final int tIndex = reverseIndex.get(sls.targetScope());
-
-            dist[sIndex][tIndex] = Distance.of(sls.label());
-            next[sIndex][tIndex] = tIndex;
-        });
-
-//        invalidSubstitutionEvidence.keySet().forEach(sls -> {
-//            final int sIndex = reverseIndex.get(sls.sourceScope());
-//            final int tIndex = reverseIndex.get(sls.targetScope());
-//
-//            dist[sIndex][tIndex] = Distance.of(sls.label());
-//            next[sIndex][tIndex] = tIndex;
-//        });
-                
-        final Function<ITermVar, IScope> termToScope = term -> ImmutableScope.of(term.getResource(), term.getName());
-
-        /*
          * Assigning the weight of the edge (u,v).
          * 
          * for each edge (u,v) { dist[u][v] <- w(u,v) }
@@ -255,17 +208,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             dist[sIndex][tIndex] = Distance.of(sls.label());
             next[sIndex][tIndex] = tIndex;
         });
-        // scopeGraph.incompleteDirectEdges().stream().forEach(slv -> {
-        // final S sourceScope = slv._1();
-        // final L label = slv._2();
-        // final S targetScope = (S) termToScope.apply((ITermVar) slv._3());
-        //
-        // final int sIndex = reverseIndex.get(sourceScope);
-        // final int tIndex = reverseIndex.get(targetScope);
-        //
-        // dist[sIndex][tIndex] = Distance.of(label);
-        // next[sIndex][tIndex] = tIndex;
-        // });
         scopeGraph.targetEdgeStream().forEach(slo -> {
             final int sIndex = reverseIndex.get(slo.scope());
             final int oIndex = reverseIndex.get(slo.occurrence());
@@ -273,6 +215,18 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             dist[sIndex][oIndex] = Distance.of(slo.label());
             next[sIndex][oIndex] = oIndex;
         });
+        
+        /*
+         * Adding direct edges that resulted from previously resolved imports.
+         */
+        substitutionEvidence.keySet().forEach(sls -> {
+            final int sIndex = reverseIndex.get(sls.sourceScope());
+            final int tIndex = reverseIndex.get(sls.targetScope());
+
+            dist[sIndex][tIndex] = Distance.of(sls.label());
+            next[sIndex][tIndex] = tIndex;
+        });
+        
 
         // TODO: use configurable comparators based resolution, reachability and
         // ..
@@ -281,12 +235,19 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         for (int k = 0; k < nodes.size(); k++) {
             for (int i = 0; i < nodes.size(); i++) {
                 for (int j = 0; j < nodes.size(); j++) {
-                    Distance<L> ij = dist[i][j];
-                    Distance<L> ik = dist[i][k];
-                    Distance<L> kj = dist[k][j];
+                    // if (i == j) break;                    
+                    
+                    final Distance<L> ij = dist[i][j];
+                    final Distance<L> ik = dist[i][k];
+                    final Distance<L> kj = dist[k][j];
 
-                    // TODO: use configurable BiFunction, curried by 'wf'
+                    /*
+                     * Calculating the cost of the transitive edge `ikj`.
+                     * Optimizing for cases that do not require default path
+                     * concatenation (i.e., if costs are ZERO or INFINITE).
+                     */
                     final Distance<L> ikj;
+                    
                     if (ik == Distance.INFINITE || kj == Distance.INFINITE) {
                         ikj = Distance.INFINITE;
                     } else if (ik == Distance.ZERO && kj == Distance.ZERO) {
@@ -307,29 +268,24 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                         dist[i][j] = ikj;
                         next[i][j] = next[i][k];
 
-                        if (DEBUG) {
-                            if (forwardIndex.get(i) instanceof IOccurrence
-                                    && forwardIndex.get(j) instanceof IOccurrence) {
-
-                                final String lessString = String.format("%s < %s", ikj, ij);
-                                final String distString = String.format("dist: %s -> %s = %s", nodes.get(i),
-                                        nodes.get(j), ikj);
-                                final String nextString = String.format("next: %s -> %s = %s", nodes.get(i),
-                                        nodes.get(j), nodes.get(next[i][k]));
-
-                                System.out.println(lessString);
-                                System.out.println(distString);
-                                System.out.println(nextString);
-                                System.out.println();
-                            }
-                        }
-                    } else {
 //                        if (DEBUG) {
-//                            // final String lessString = String.format("moreThan: %s < %s", ij, ikj);
-//                            final String lessString = String.format("%s <= \n%s", ij, ikj);
-//                            
-//                            if (!(ij == Distance.INFINITE || ikj == Distance.INFINITE) && !(ij == Distance.ZERO || ikj == Distance.ZERO) && !ij.equals(ikj)) {
-//                                System.out.println(lessString);
+//                            final String lessString = String.format("%s < %s", ikj, ij);
+//                            final String distString = String.format("dist: %s -> %s = %s", nodes.get(i),
+//                                    nodes.get(j), ikj);
+//                            final String nextString = String.format("next: %s -> %s = %s", nodes.get(i),
+//                                    nodes.get(j), nodes.get(next[i][k]));
+//
+//                            System.out.println(lessString);
+//                            System.out.println(distString);
+//                            System.out.println(nextString);
+//                            System.out.println();
+//                        }
+//                    } else {
+//                        if (DEBUG) {
+//                            if (!(ij == Distance.INFINITE || ikj == Distance.INFINITE)  && !(ij == Distance.ZERO || ikj == Distance.ZERO) && !Objects.equals(ij, ikj)) {
+//                                final String moreThanString = String.format("%s >= \n%s", ikj, ij);
+//
+//                                System.out.println(moreThanString);
 //                                System.out.println();
 //                            }
 //                        }
@@ -711,6 +667,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
 
+        /*
+         * Checks that paths contain at most one reference label and at most one
+         * declaration label. If present, a declaration occur at the first
+         * position, and a declaration at the last position.
+         */
         private static final <L extends ILabel> boolean isValid(Distance<L> distance) {
             List<L> mergedLabels = distance.labels;
 
@@ -720,13 +681,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
             long countOfLabelR = mergedLabels.stream().filter(label -> label.equals(Label.R)).count();
             long countOfLabelD = mergedLabels.stream().filter(label -> label.equals(Label.D)).count();
-
-            // assert countOfLabelR <= 1;
-            // assert countOfLabelD <= 1;
-            //
-            // assert countOfLabelR != 1 || mergedLabels.get(0).equals(Label.R);
-            // assert countOfLabelD != 1 || mergedLabels.get(mergedLabels.size()
-            // - 1).equals(Label.D);
 
             if (countOfLabelR == 1 && !mergedLabels.get(0).equals(Label.R)) {
                 return false;
@@ -775,10 +729,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             mergedLabels.addAll(one.labels);
             mergedLabels.addAll(two.labels);
 
-//            if (mergedLabels.contains(Label.X)) {
-//                System.out.println();
-//            }
-            
             java.util.function.Predicate<L> notLabelR = label -> !label.equals(Label.R);
             java.util.function.Predicate<L> notLabelD = label -> !label.equals(Label.D);
 
@@ -929,6 +879,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     }
 
     @Beta
+    @Deprecated
     @Override
     public IResolutionParameters<L> getResolutionParameters() {
         return resolutionParameters;
@@ -947,12 +898,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .collect(CapsuleCollectors.toSet());
     }
 
+    @Deprecated
     @Override
     public boolean isEdgeClosed(S scope, L label) {
         return isEdgeClosed.test(scope, label);
     }
 
     @Beta
+    @Deprecated
     public final L getLabelD() {
         return labelD;
     }
@@ -1029,13 +982,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         }
     }
 
-    /**
-     * Retrieves an environment builder for for a relation of labels.
-     */
-    public EnvironmentBuilder<S, L, O> getEnvironmentBuilder(final IRelation<L> lt) {
-        return environmentBuilderCache.computeIfAbsent(lt, key -> EnvironmentBuilders.stage(key, labels));
-    }
-
     // serialization
 
     private void writeObject(ObjectOutputStream out) throws IOException {
@@ -1044,7 +990,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        initTransients();
+        // initTransients();
     }
 
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(

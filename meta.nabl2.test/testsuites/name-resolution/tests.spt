@@ -51,8 +51,8 @@ test import anomaly [[
 ]] 0 errors
    resolve  #7 to #4
    resolve  #8 to #1
-   resolve  #9 to #2 // 2 vs 6
-   resolve #10 to #5 // 5 vs 3
+   resolve  #9 to #2
+   resolve #10 to #5
 
 //-------------------------------
 
