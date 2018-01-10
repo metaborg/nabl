@@ -35,10 +35,8 @@ import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
-import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableScope;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
@@ -136,6 +134,16 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         nodes.addAll(ds);
         nodes.addAll(scopes);
         
+        final java.util.Map<Integer, Object> forwardIndex = new HashMap<>();
+        for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+            forwardIndex.put(nodeIndex, nodes.get(nodeIndex));
+        }
+
+        final java.util.Map<Object, Integer> reverseIndex = new HashMap<>();
+        for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+            reverseIndex.put(nodes.get(nodeIndex), nodeIndex);
+        }        
+        
         int rsOffset = 0;
         int rsLength = rs.size();
         
@@ -148,16 +156,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         IntPredicate isReference = i -> rsOffset <= i && i < rsOffset + rsLength;
         IntPredicate isDeclaration = i -> dsOffset <= i && i < dsOffset + dsLength;
         IntPredicate isScope = i -> scopesOffset <= i && i < scopesOffset + scopesLength;
-       
-        final java.util.Map<Integer, Object> forwardIndex = new HashMap<>();
-        for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-            forwardIndex.put(nodeIndex, nodes.get(nodeIndex));
-        }
-
-        final java.util.Map<Object, Integer> reverseIndex = new HashMap<>();
-        for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-            reverseIndex.put(nodes.get(nodeIndex), nodeIndex);
-        }
 
         @SuppressWarnings("unchecked")
         final Distance<L>[][] dist = new Distance[nodes.size()][nodes.size()];
@@ -293,11 +291,17 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 }
             }
         }
+        
+        if (DEBUG) {
+            if (dist.length > 0) {
+                // print sub-matrix showing distances from references to declarations  
+                printMatrix(dist, isReference, isDeclaration);
 
-        if (dist.length > 0) {
-//            printMatrix(dist, isReference, isDeclaration);
-            printMatrix(dist, isScope, isScope);
-            System.out.println();
+                // print sub-matrix showing distances between inner scopes
+                printMatrix(dist, isScope, isScope);
+
+                System.out.println();
+            }
         }
         
         final ShortestPathResult<S, L, O> tmpResolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
@@ -318,16 +322,19 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     oldResolvedImport.occurrence()).get()._1().findFirst().get();
             
             if (!oldResolutionPath.equals(newResolutionPath)) {              
-                final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph,
-                        oldResolvedImport, newResolutionPath);
+                final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath);
 
                 if (invalidSubstitutionEvidence.containsKey(directEdge) && invalidSubstitutionEvidence.get(directEdge).equals(newResolutionPath)) {
-                    // no update necessary / previously seen, but less precise
+                    // no update necessary: this path was previously seen, but is less precise than the other paths 
                     break;
                 }
                 
                 importRevised = true;
-                System.out.println(String.format("invalided [ %s ]\n   old path: %s\n   new path: %s", oldResolvedImport, oldResolutionPath, newResolutionPath));
+                
+                if (DEBUG) {
+                    System.out.println(String.format("invalided [ %s ]\n   old path: %s\n   new path: %s",
+                            oldResolvedImport, oldResolutionPath, newResolutionPath));
+                }
 
                 __resolvedImports.put(oldResolvedImport, newResolutionPath);
                 __substitutionEvidence.put(directEdge, newResolutionPath);                
@@ -343,56 +350,38 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                         __invalidSubstitutionEvidence.__put(entry.getKey(), entry.getValue());
                     }
                 }
-                
-//                entryIterator.forEachRemaining(entry -> {
-//                    if (entry.getValue().equals(oldResolutionPath)) {
-//                        entryIterator.remove();
-//                    }
-//                });
             }
         }
-        // TODO: do I have to abort early after substitution or can go on?
-        // TODO: i assume terminate early
         
-        if (importRevised) {
-            System.out.println();
+        if (DEBUG) {
+            if (importRevised) {
+                System.out.println();
+            }
         }
-        
+
+        /*
+         * TODO: do we have to abort early after revised imports or can we
+         * continue resolving other imports?
+         */       
         if (!importRevised) {
-        for (ScopeLabelOccurrence<S, L, O> unresolvedImport : unresolvedImports) {
-            final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolveResult = tryResolve(
-                    scopeGraph, tmpResolutionResult, comparator, unresolvedImport.occurrence());
+            for (ScopeLabelOccurrence<S, L, O> unresolvedImport : unresolvedImports) {
+                final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> resolution = tryResolve(
+                        scopeGraph, tmpResolutionResult, comparator, unresolvedImport.occurrence());
 
-            if (tryResolveResult.isPresent()) {
-                // System.out.println("Import resolved.");
+                if (resolution.isPresent()) {
+                    // TODO support multiple paths
+                    final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = resolution.get()._1();
+                    assert declarationPaths.size() == 1;
 
-                // TODO support multiple paths
-                final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = tryResolveResult.get()._1();
-                assert declarationPaths.size() == 1;
+                    final IResolutionPath<S, L, O> path = declarationPaths.findFirst().get();
+                    __resolvedImports.put(unresolvedImport, path);
 
-                final IResolutionPath<S, L, O> path = declarationPaths.findFirst().get();
-                __resolvedImports.put(unresolvedImport, path);
-
-                final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport,
-                        path);
-                __substitutionEvidence.put(directEdge, path);
-
-//                // @formatter:off
-//                final Set.Immutable<OccurrenceLabelScope<O, L, S>> associatedScopeEdges = scopeGraph.associatedScopeEdgeStream()
-//                        .filter(occurrenceEquals(path.getDeclaration())).collect(CapsuleCollectors.toSet());
-//                                        
-//                final OccurrenceLabelScope<O, L, S> associatedScopeEdge = associatedScopeEdges.findFirst().get();
-//                // @formatter:on
-                //
-                // final ScopeLabelScope<S, L, O> directEdge =
-                // toDirectEdge(unresolvedImport, associatedScopeEdge);
-                // __substitutionEvidence.put(directEdge, path);
-            } else {
-                // System.out.println("Import not resolvable.");
-
-                __unresolvedImports.__insert(unresolvedImport);
+                    final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path);
+                    __substitutionEvidence.put(directEdge, path);
+                } else {
+                    __unresolvedImports.__insert(unresolvedImport);
+                }
             }
-        }
         }
 
         final ShortestPathResult<S, L, O> resolutionResult = new ShortestPathResult<>(dist, next, reverseIndex,
@@ -400,10 +389,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 __substitutionEvidence.freeze(), __invalidSubstitutionEvidence.freeze());
 
         if (substitutionEvidence.equals(__substitutionEvidence) && invalidSubstitutionEvidence.equals(__invalidSubstitutionEvidence)) { // substitutionEvidence.size() == __substitutionEvidence.size()
-            System.out.println("final");
-            System.out.println();
-            System.out.println();
-            System.out.println();            
+            if (DEBUG) {            
+                System.out.println("final");
+                System.out.println();
+                System.out.println();
+                System.out.println();
+            }
             resolutionResult.isFinal = true;
             return resolutionResult;
         } else {
@@ -419,9 +410,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private static final <L extends ILabel> void printMatrix(final Distance<L>[][] dist, IntPredicate rowFilter, IntPredicate colFilter) {
         final int dimensionX = (int) IntStream.range(0, dist.length).filter(rowFilter).count();
         final int dimensionY = (int) IntStream.range(0, dist.length).filter(colFilter).count();
-        
-//        final int dimension = dist.length; // assume x and y dimensions are equal      
-        
+
         if (dimensionX == 0 || dimensionY == 0) return;
         
         final int[] rowIDs = IntStream.range(0, dist.length).filter(rowFilter).toArray();
@@ -467,10 +456,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             .map(rowString -> rowHead + rowString + rowTail)
             .forEach(System.out::println);
         
-        System.out.println(sepHead + rowSeparator + sepTail);
-        
-//        System.out.println();
-//        System.out.println();        
+        System.out.println(sepHead + rowSeparator + sepTail);        
     }
     
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> ScopeLabelScope<S, L, O> resolvedImportPathToDirectEdge(
@@ -609,15 +595,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final boolean isValidTwo = isValid(o2);
 
             if (!isValidOne && !isValidTwo) {
-                // System.out.println("breakpoint");
                 return 0;
             }
             if (!isValidOne) {
-                // System.out.println("breakpoint");
                 return +1;
             }
             if (!isValidTwo) {
-                // System.out.println("breakpoint");
                 return +1;
             }
 
@@ -710,6 +693,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             return new Distance<L>(label);
         }
 
+        @SuppressWarnings("unchecked")
         public static final <L extends ILabel> Distance<L> concat(final IRegExpMatcher<L> wellFormednessExpression,
                 final Distance<L> one, final Distance<L> two) {
             if (one == Distance.ZERO) {
@@ -725,7 +709,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 return Distance.INFINITE;
             }
 
-            final List<L> mergedLabels = new ArrayList<>(0);
+            final List<L> mergedLabels = new ArrayList<>(one.labels.size() + two.labels.size());
             mergedLabels.addAll(one.labels);
             mergedLabels.addAll(two.labels);
 
@@ -734,13 +718,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
             long countOfLabelR = mergedLabels.stream().filter(label -> label.equals(Label.R)).count();
             long countOfLabelD = mergedLabels.stream().filter(label -> label.equals(Label.D)).count();
-
-            // assert countOfLabelR <= 1;
-            // assert countOfLabelD <= 1;
-            //
-            // assert countOfLabelR != 1 || mergedLabels.get(0).equals(Label.R);
-            // assert countOfLabelD != 1 || mergedLabels.get(mergedLabels.size()
-            // - 1).equals(Label.D);
 
             assert mergedLabels.size() >= 2;
 
@@ -754,18 +731,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 return INFINITE;
             }
 
-            // if (!((countOfLabelR == 1 && mergedLabels.get(0).equals(Label.R))
-            // && (countOfLabelD == 1 && mergedLabels.get(mergedLabels.size() -
-            // 1).equals(Label.D)))) {
-            // // don't match if not full prefix, just concat
-            // return new Distance<>(mergedLabels);
-            // }
-            //
-            //// if (!mergedLabels.get(0).equals(Label.R)) {
-            //// // don't match if not full prefix, just concat
-            //// return new Distance<>(mergedLabels);
-            //// }
-
             // @formatter:off
             final List<L> filteredLabels = mergedLabels.stream()
                     .filter(notLabelR)
@@ -775,14 +740,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
             final IRegExpMatcher<L> matcherResult = wellFormednessExpression.match(filteredLabels);
 
-            // boolean isAccepting = matcherResult.isAccepting();
-            // boolean isFinal = matcherResult.isFinal();
-            // boolean isEmpty = matcherResult.isEmpty();
-
             if (matcherResult.isEmpty()) {
-                assert matcherResult.isAccepting() == false;
-                assert matcherResult.isFinal();
-                assert matcherResult.isEmpty();
                 return INFINITE;
             } else {
                 return new Distance<>(mergedLabels);
