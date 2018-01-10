@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -591,8 +592,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 return -1;
             }
 
-            final boolean isValidOne = isValid(o1);
-            final boolean isValidTwo = isValid(o2);
+            final boolean isValidOne = Distance.isValid(o1);
+            final boolean isValidTwo = Distance.isValid(o2);
 
             if (!isValidOne && !isValidTwo) {
                 return 0;
@@ -649,32 +650,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 }
             }
         }
-
-        /*
-         * Checks that paths contain at most one reference label and at most one
-         * declaration label. If present, a declaration occur at the first
-         * position, and a declaration at the last position.
-         */
-        private static final <L extends ILabel> boolean isValid(Distance<L> distance) {
-            List<L> mergedLabels = distance.labels;
-
-            if (mergedLabels.size() == 1) {
-                return true;
-            }
-
-            long countOfLabelR = mergedLabels.stream().filter(label -> label.equals(Label.R)).count();
-            long countOfLabelD = mergedLabels.stream().filter(label -> label.equals(Label.D)).count();
-
-            if (countOfLabelR == 1 && !mergedLabels.get(0).equals(Label.R)) {
-                return false;
-            }
-
-            if (countOfLabelD == 1 && !mergedLabels.get(mergedLabels.size() - 1).equals(Label.D)) {
-                return false;
-            }
-
-            return true;
-        }
     }
 
     public static class Distance<L extends ILabel> implements java.io.Serializable {
@@ -692,6 +667,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         public static final <L extends ILabel> Distance<L> of(L label) {
             return new Distance<L>(label);
         }
+        
+        public Distance(L label) {
+            this.labels = Collections.singletonList(label);
+        }
+
+        public Distance(List<L> labels) {
+            this.labels = labels;
+        }        
 
         @SuppressWarnings("unchecked")
         public static final <L extends ILabel> Distance<L> concat(final IRegExpMatcher<L> wellFormednessExpression,
@@ -712,29 +695,18 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final List<L> mergedLabels = new ArrayList<>(one.labels.size() + two.labels.size());
             mergedLabels.addAll(one.labels);
             mergedLabels.addAll(two.labels);
-
-            java.util.function.Predicate<L> notLabelR = label -> !label.equals(Label.R);
-            java.util.function.Predicate<L> notLabelD = label -> !label.equals(Label.D);
-
-            long countOfLabelR = mergedLabels.stream().filter(label -> label.equals(Label.R)).count();
-            long countOfLabelD = mergedLabels.stream().filter(label -> label.equals(Label.D)).count();
-
             assert mergedLabels.size() >= 2;
+            
+            final Distance<L> concatenation = new Distance<>(mergedLabels);
 
-            // require maximum one R at the beginning
-            if (countOfLabelR == 1 && !mergedLabels.get(0).equals(Label.R)) {
+            if (!Distance.isValid(concatenation)) {
                 return INFINITE;
             }
-
-            // require maximum one D at the end
-            if (countOfLabelD == 1 && !mergedLabels.get(mergedLabels.size() - 1).equals(Label.D)) {
-                return INFINITE;
-            }
-
+            
             // @formatter:off
             final List<L> filteredLabels = mergedLabels.stream()
-                    .filter(notLabelR)
-                    .filter(notLabelD)
+                    .filter(label -> !label.equals(Label.R))
+                    .filter(label -> !label.equals(Label.D))
                     .collect(Collectors.toList());
             // @formatter:on            
 
@@ -743,18 +715,36 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             if (matcherResult.isEmpty()) {
                 return INFINITE;
             } else {
-                return new Distance<>(mergedLabels);
+                return concatenation;
             }
         }
 
-        public Distance(L label) {
-            this.labels = Collections.singletonList(label);
-        }
+        /*
+         * Checks that paths contain at most one reference label and at most one
+         * declaration label. If present, a declaration occur at the first
+         * position, and a declaration at the last position.
+         */
+        public static final <L extends ILabel> boolean isValid(Distance<L> distance) {
+            List<L> mergedLabels = distance.labels;
 
-        public Distance(List<L> labels) {
-            this.labels = labels;
-        }
+            if (mergedLabels.size() == 1) {
+                return true;
+            }
 
+            long countOfLabelR = mergedLabels.stream().filter(label -> label.equals(Label.R)).count();
+            long countOfLabelD = mergedLabels.stream().filter(label -> label.equals(Label.D)).count();
+
+            if (countOfLabelR == 1 && !mergedLabels.get(0).equals(Label.R)) {
+                return false;
+            }
+
+            if (countOfLabelD == 1 && !mergedLabels.get(mergedLabels.size() - 1).equals(Label.D)) {
+                return false;
+            }
+
+            return true;
+        }        
+        
         @Override
         public int hashCode() {
             final int prime = 31;
