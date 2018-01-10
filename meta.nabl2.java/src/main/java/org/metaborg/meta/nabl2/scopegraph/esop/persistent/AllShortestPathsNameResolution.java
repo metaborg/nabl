@@ -503,55 +503,30 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         } else {
             trace.add(resolutionResult.forwardIndex.get(j));
 
-            // TODO: check second clause
-            while (j != k && resolutionResult.next[j][k] != -1) {
-                j = resolutionResult.next[j][k];
+            while (j != k) {                
+                j = resolutionResult.next[j][k];                
                 trace.add(resolutionResult.forwardIndex.get(j));
             }
         }
 
-        // if (DEBUG) {
-        // final List<?> __states = trace.stream().collect(Collectors.toList());
-        // final List<L> __labels =
-        // resolutionResult.dist[u][k].labels.stream().collect(Collectors.toList());
-        // System.out.println("breakpoint");
-        // }
-
-        // final List<S> states = trace.stream().skip(1).limit(trace.size() -
-        // 2).map(scope -> (S) scope)
-        // .collect(Collectors.toList());
-
-        final List<?> candidateStates = trace.stream().skip(1).limit(trace.size() - 2).collect(Collectors.toList());
-
-        // java.util.function.Predicate<L> notLabelR = label ->
-        // !label.equals(Label.R);
-        // java.util.function.Predicate<L> notLabelD = label ->
-        // !label.equals(Label.D);
-        //
-        // final List<?> candidateStates = trace.stream()
-        // .filter(node -> IScope.class.isInstance(node))
-        // .collect(Collectors.toList());
-
-        if (DEBUG) {
-            if (!candidateStates.stream().allMatch(IScope.class::isInstance)) {
-                final List<?> __states = trace.stream().collect(Collectors.toList());
-                final List<L> __labels = resolutionResult.dist[u][k].labels.stream().collect(Collectors.toList());
-                System.out.println("breakpoint");
-            }
-        }
-
-        if (!candidateStates.stream().allMatch(IScope.class::isInstance)) {
-            // path is invalid because it violates Scope -> Scope constraints
-            return Optional.empty();
-        }
-
-        final List<S> states = candidateStates.stream().map(scope -> (S) scope).collect(Collectors.toList());
-        final List<L> labels = resolutionResult.dist[u][k].labels.stream().limit(states.size())
+        assert Distance.isValid(resolutionResult.dist[u][k]);
+        assert Objects.equals(trace.get(0), reference);
+        assert Objects.equals(trace.get(trace.size() - 1), declaration);
+                
+        final List<S> scopes = trace.stream()
+                .skip(1)
+                .limit(trace.size() - 2)
+                .map(occurrence -> (S) occurrence)
                 .collect(Collectors.toList());
+        
+        final List<L> labels = resolutionResult.dist[u][k].labels.stream().limit(scopes.size())
+                .collect(Collectors.toList());
+        
+        assert scopes.size() + 1 == resolutionResult.dist[u][k].labels.size();
 
-        final IScopePath<S, L, O> pathStart = Paths.empty(states.get(0));
-        final IScopePath<S, L, O> pathMiddle = IntStream.range(1, states.size())
-                .mapToObj(i -> ImmutableTuple2.of(labels.get(i), states.get(i)))
+        final IScopePath<S, L, O> pathStart = Paths.empty(scopes.get(0));
+        final IScopePath<S, L, O> pathMiddle = IntStream.range(1, scopes.size())
+                .mapToObj(i -> ImmutableTuple2.of(labels.get(i), scopes.get(i)))
                 .reduce(pathStart, (pathIntermediate, tuple) -> {
                     final ScopeLabelScope<S, L, O> query = ImmutableScopeLabelScope.of(pathIntermediate.getTarget(),
                             tuple._1(), tuple._2());
