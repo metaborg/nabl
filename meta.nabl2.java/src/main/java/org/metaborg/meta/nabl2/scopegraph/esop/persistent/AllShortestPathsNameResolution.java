@@ -5,6 +5,7 @@ import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -783,7 +784,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     }
 
-    public static class ShortestPathResult<S extends IScope, L extends ILabel, O extends IOccurrence> {
+    public static class ShortestPathResult<S extends IScope, L extends ILabel, O extends IOccurrence>
+            implements Serializable {
+        
+        private static final long serialVersionUID = 42L;
+        
         public final Distance<L>[][] dist;
         public final int[][] next;
 
@@ -938,7 +943,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        // initTransients();
     }
 
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(
