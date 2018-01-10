@@ -64,6 +64,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private static final boolean DEBUG = false;
 
     private final IEsopScopeGraph<S, L, O, V> scopeGraph;
+    private final ShortestPathResult<S, L, O> resolutionResult;
 
     private final Set.Immutable<L> labels;
     private final IRegExpMatcher<L> wf;
@@ -820,11 +821,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             this.invalidSubstitutionEvidence = invalidSubstitutionEvidence;
         }
     }
-
-    /*
-     * TEMPORARY STATEFUL REPRESENTION OF ALL SHORTEST PATHS
-     */
-    private final ShortestPathResult<S, L, O> resolutionResult;
 
     @Beta
     public final Set.Immutable<L> getLabels() {
