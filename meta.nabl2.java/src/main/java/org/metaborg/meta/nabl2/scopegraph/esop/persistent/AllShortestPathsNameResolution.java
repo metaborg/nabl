@@ -1001,8 +1001,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
                 
         final Set.Immutable<Integer> candidateIndices = scopeGraph.declarationEdgeStream()
-                .filter(slo -> slo.occurrence().getName().equals(reference.getName())).map(tuple -> tuple.occurrence())
-                .mapToInt(resolutionResult.reverseIndex::get).boxed().collect(CapsuleCollectors.toSet());
+                .filter(slo -> IOccurrence.match(reference, slo.occurrence()))
+                .map(tuple -> tuple.occurrence())
+                .mapToInt(resolutionResult.reverseIndex::get)
+                .boxed()
+                .collect(CapsuleCollectors.toSet());
 
         if (candidateIndices.isEmpty()) {
             return Optional.of(ImmutableTuple2.of(Set.Immutable.of(),
