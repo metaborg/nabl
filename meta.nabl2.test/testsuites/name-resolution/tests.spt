@@ -85,20 +85,17 @@ test resolve same name in same scope [[
 test resolve different names in same scope [[
   resolve x to y in same scope
 ]] 1 error
-//   error like "does not resolve"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match 
+   error like "does not resolve" 
 
 test resolve same name different namespace in same scope [[
   resolve ns1 x to ns2 x in same scope
 ]] 1 error
-//   error like "does not resolve"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
+   error like "does not resolve"
 
 test resolve ambiguous in same scope [[
   resolve x to x or x in same scope
 ]] 1 error
-//   error like "ambiguous"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
+   error like "ambiguous"
 
 //-------------------------------
 
@@ -110,8 +107,7 @@ test resolve in parent scope [[
 test resolve ambiguous in parent scopes [[
   resolve x to x and x in parent scopes
 ]] 1 error
-//   error like "ambiguous"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
+   error like "ambiguous"
 
 test resolve import over parent [[
   resolve [[x]] to [[x]] in import scope over x parent scope
@@ -121,8 +117,7 @@ test resolve import over parent [[
 test resolve ambiguous with unordered labels [[
   resolve x to x in I parent or x in J parent
 ]] 1 error
-//   error like "ambiguous"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
+   error like "ambiguous"
 
 test resolve via longer more specific path [[
   resolve [[x]] to [[x]] via longer more specific path over x via less specific path
@@ -152,14 +147,12 @@ test resolve in transitively imported scope  [[
 test resolve via ambiguous import [[
   resolve x via y in y { x } or y { x }
 ]] 1 error
-//   error like "ambiguous"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
+   error like "ambiguous"
 
 test resolve via unordered imports [[
   resolve x via y in y { x } or via y in y { x }
 ]] 1 error
-//   error like "ambiguous"
-//   NOTE: new algorithm does not trigger NameResolutionComponent.java, therefore error messages do not match
+   error like "ambiguous"
 
 test resolve in parent with non-resolving import [[
   resolve [[x]] to [[x]] in parent with non-resolving import y
