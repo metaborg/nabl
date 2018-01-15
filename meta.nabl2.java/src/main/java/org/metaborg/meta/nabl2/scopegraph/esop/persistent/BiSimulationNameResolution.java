@@ -101,7 +101,7 @@ public class BiSimulationNameResolution<S extends IScope, L extends ILabel, O ex
     @Override
     public org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution.Transient<S, L, O> melt(
             IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed) {
-        return new TransientBiSimulationNameResolution(
+        return new TransientBiSimulationNameResolution<>(
                 one.melt(scopeGraph, isEdgeClosed), 
                 two.melt(scopeGraph, isEdgeClosed)); 
     }
