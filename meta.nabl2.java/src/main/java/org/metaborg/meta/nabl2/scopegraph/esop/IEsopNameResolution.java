@@ -37,8 +37,8 @@ public interface IEsopNameResolution<S extends IScope, L extends ILabel, O exten
             // IEsopNameResolution.Immutable<S, L, O> two = new PersistentNameResolution<>(scopeGraph, params, isEdgeClosed);
             IEsopNameResolution.Immutable<S, L, O> two = new AllShortestPathsNameResolution<>(scopeGraph, params, isEdgeClosed);           
             
-            // return new BiSimulationNameResolution<>(one, two).melt(scopeGraph, isEdgeClosed);
-            
+            // return new BiSimulationNameResolution<>(one, two).melt(scopeGraph, isEdgeClosed);            
+            // return one.melt(scopeGraph, isEdgeClosed);
             return two.melt(scopeGraph, isEdgeClosed);
         } else {
             return EsopNameResolution.Transient.of(params, scopeGraph, isEdgeClosed);
