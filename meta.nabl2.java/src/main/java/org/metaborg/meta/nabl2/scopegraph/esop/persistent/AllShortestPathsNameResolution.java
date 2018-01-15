@@ -1,5 +1,6 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
+import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
 import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
 
 import java.io.IOException;
@@ -53,6 +54,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.collection.AbstractSpecialisedImmutableMap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
@@ -105,7 +107,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports = scopeGraph.requireImportEdgeStream()
                 .collect(CapsuleCollectors.toSet());
 
-        this.resolutionResult = initAllShortestPaths(unresolvedImports, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+        this.resolutionResult = initAllShortestPaths(unresolvedImports, SetMultimap.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
     }
 
     private static final <S extends IScope, L extends ILabel, O extends IOccurrence> ScopeLabelScope<S, L, O> toDirectEdge(
@@ -125,7 +127,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     
     private ShortestPathResult<S, L, O> initAllShortestPaths(
             final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports,
-            final Map.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports,
+            final SetMultimap.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports,
             final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence,
             final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> invalidSubstitutionEvidence) {
 
@@ -316,7 +318,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 forwardIndex, unresolvedImports, resolvedImports, substitutionEvidence, invalidSubstitutionEvidence);
 
         final Set.Transient<ScopeLabelOccurrence<S, L, O>> __unresolvedImports = Set.Transient.of();
-        final Map.Transient<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> __resolvedImports = resolvedImports
+        final SetMultimap.Transient<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> __resolvedImports = resolvedImports
                 .asTransient();
         final Map.Transient<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> __substitutionEvidence = substitutionEvidence
                 .asTransient();
@@ -325,27 +327,56 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
         boolean importRevised = false;        
         for (ScopeLabelOccurrence<S, L, O> oldResolvedImport : resolvedImports.keySet()) {
-            final IResolutionPath<S, L, O> oldResolutionPath = resolvedImports.get(oldResolvedImport);
-            final IResolutionPath<S, L, O> newResolutionPath = tryResolve(scopeGraph, tmpResolutionResult, comparator,
-                    oldResolvedImport.occurrence()).get()._1().findFirst().get();
-            
-            if (!oldResolutionPath.equals(newResolutionPath)) {              
-                final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath);
+            final Set.Immutable<IResolutionPath<S, L, O>> oldResolutionPaths = resolvedImports.get(oldResolvedImport);
+            final Set.Immutable<IResolutionPath<S, L, O>> newResolutionPaths = tryResolve(scopeGraph, tmpResolutionResult, comparator, oldResolvedImport.occurrence()).get()._1();
 
-                if (invalidSubstitutionEvidence.containsKey(directEdge) && invalidSubstitutionEvidence.get(directEdge).equals(newResolutionPath)) {
-                    // no update necessary: this path was previously seen, but is less precise than the other paths 
+            final Set.Immutable<IResolutionPath<S, L, O>> newResolutionPathsFiltered = newResolutionPaths.stream()
+                    .filter(newResolutionPath -> resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath).isPresent())
+                    .collect(CapsuleCollectors.toSet());
+                       
+            // TODO compare substitution substitutionEdges instead resolutionPaths (because some paths don't have an edge)
+            if (!oldResolutionPaths.equals(newResolutionPathsFiltered)) {
+                final Map.Transient<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> tmpSubsitutionEdges = Map.Transient.of();                
+                
+//                final Set<ScopeLabelScope<S, L, O>> directEdges = newResolutionPaths.stream()
+//                        .map(newResolutionPath -> resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath))
+//                        .collect(CapsuleCollectors.toSet());
+//                
+//                directEdges.forEach(directEdge -> { /* TODO */ });
+                
+                newResolutionPathsFiltered.forEach(newResolutionPath -> {
+                    resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath).ifPresent(directEdge -> {
+                        tmpSubsitutionEdges.__put(directEdge, newResolutionPath); 
+                    });
+                });                        
+                
+                // directEdge -> newResolutionPath
+                final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> subsitutionEdges = tmpSubsitutionEdges.freeze();               
+                
+                boolean previouslySeen = subsitutionEdges.keySet().stream().anyMatch(directEdge -> {
+                    return (invalidSubstitutionEvidence.containsKey(directEdge) && newResolutionPathsFiltered.contains(invalidSubstitutionEvidence.get(directEdge)));
+                });
+                
+                if (previouslySeen) {
                     break;
                 }
+                                                    
+//                final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPaths);
+//
+//                if (invalidSubstitutionEvidence.containsKey(directEdge) && invalidSubstitutionEvidence.get(directEdge).equals(newResolutionPaths)) {
+//                    // no update necessary: this path was previously seen, but is less precise than the other paths 
+//                    break;
+//                }
                 
                 importRevised = true;
                 
                 if (DEBUG) {
                     System.out.println(String.format("invalided [ %s ]\n   old path: %s\n   new path: %s",
-                            oldResolvedImport, oldResolutionPath, newResolutionPath));
+                            oldResolvedImport, oldResolutionPaths, newResolutionPaths));
                 }
 
-                __resolvedImports.put(oldResolvedImport, newResolutionPath);
-                __substitutionEvidence.put(directEdge, newResolutionPath);                
+                __resolvedImports.__put(oldResolvedImport, newResolutionPaths);
+                __substitutionEvidence.__putAll(subsitutionEdges);                
                 
                 /*  
                  * Removing invalidated edges form solution and adding it to log. 
@@ -353,7 +384,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 Iterator<Entry<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>>> entryIterator = __substitutionEvidence.entryIterator();
                 while (entryIterator.hasNext()) {
                     Entry<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> entry = entryIterator.next();
-                    if (entry.getValue().equals(oldResolutionPath)) {
+                    if (oldResolutionPaths.contains(entry.getValue())) {
                         __substitutionEvidence.__remove(entry.getKey());
                         __invalidSubstitutionEvidence.__put(entry.getKey(), entry.getValue());
                     }
@@ -377,15 +408,40 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                         scopeGraph, tmpResolutionResult, comparator, unresolvedImport.occurrence());
 
                 if (resolution.isPresent()) {
-                    // TODO support multiple paths
-                    final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = resolution.get()._1();
-                    assert declarationPaths.size() == 1;
+                    final Set.Immutable<IResolutionPath<S, L, O>> paths = resolution.get()._1();
+                    final Set.Immutable<String> messages = resolution.get()._2();
+                    // assert declarationPaths.size() == 1;
 
-                    final IResolutionPath<S, L, O> path = declarationPaths.findFirst().get();
-                    __resolvedImports.put(unresolvedImport, path);
+                    // TODO: how to behave when ambiguous (i.e., `paths.size() > 1`)?
+                    
+                    paths.forEach(path -> {
+                        
+                        resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path).ifPresent(directEdge -> {
+                            // TODO: use set instead of map? Do we need
+                            // the path? If yes, change to paths /
+                            // multi-map.
+                            
+                            __resolvedImports.__insert(unresolvedImport, path);
+                            __substitutionEvidence.put(directEdge, path);
+                        });
+                        
+//                        // TODO: use set instead of map? Do we need the path? If yes, change to paths / multi-map.
+//                        
+//                        final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path);
+//                        
+//                        __resolvedImports.__insert(unresolvedImport, path);
+//                        __substitutionEvidence.put(directEdge, path);
+                    });
 
-                    final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path);
-                    __substitutionEvidence.put(directEdge, path);
+//                    // TODO CURSOR support multiple paths
+//                    final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = resolution.get()._1();
+//                    // assert declarationPaths.size() == 1;
+//
+//                    final IResolutionPath<S, L, O> path = declarationPaths.findFirst().get();
+//                    __resolvedImports.put(unresolvedImport, path);
+//
+//                    final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path);
+//                    __substitutionEvidence.put(directEdge, path);
                 } else {
                     __unresolvedImports.__insert(unresolvedImport);
                 }
@@ -466,18 +522,19 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         System.out.println(sepHead + rowSeparator + sepTail);        
     }
     
-    private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> ScopeLabelScope<S, L, O> resolvedImportPathToDirectEdge(
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<ScopeLabelScope<S, L, O>> resolvedImportPathToDirectEdge(
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final ScopeLabelOccurrence<S, L, O> resolvedImport,
             final IResolutionPath<S, L, O> resolvedImportPath) {
         // @formatter:off
         final Set.Immutable<OccurrenceLabelScope<O, L, S>> associatedScopeEdges = scopeGraph.associatedScopeEdgeStream()
-                .filter(occurrenceEquals(resolvedImportPath.getDeclaration())).collect(CapsuleCollectors.toSet());
+                .filter(labelEquals(resolvedImport.label()))
+                .filter(occurrenceEquals(resolvedImportPath.getDeclaration()))
+                .collect(CapsuleCollectors.toSet());
                                 
-        final OccurrenceLabelScope<O, L, S> associatedScopeEdge = associatedScopeEdges.findFirst().get();
-        // @formatter:on
+        assert 0 <= associatedScopeEdges.size() && associatedScopeEdges.size() <= 1;
 
-        final ScopeLabelScope<S, L, O> directEdge = toDirectEdge(resolvedImport, associatedScopeEdge);
-        return directEdge;
+        return associatedScopeEdges.findFirst().map(associatedScopeEdge -> toDirectEdge(resolvedImport, associatedScopeEdge));
+        // @formatter:on
     }
 
     /*
@@ -776,7 +833,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         public final java.util.Map<Integer, Object> forwardIndex;
 
         public final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports;
-        public final Map.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports;
+        public final SetMultimap.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports;
         public final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence;
         public final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> invalidSubstitutionEvidence;
 
@@ -785,7 +842,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         public ShortestPathResult(final Distance<L>[][] dist, final int[][] next,
                 final java.util.Map<Object, Integer> reverseIndex, final java.util.Map<Integer, Object> forwardIndex,
                 final Set.Immutable<ScopeLabelOccurrence<S, L, O>> unresolvedImports,
-                final Map.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports,
+                final SetMultimap.Immutable<ScopeLabelOccurrence<S, L, O>, IResolutionPath<S, L, O>> resolvedImports,
                 final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence,
                 final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> invalidSubstitutionEvidence) {
             this.dist = dist;
@@ -879,7 +936,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     @Override
     public Optional<Set.Immutable<IResolutionPath<S, L, O>>> resolve(O ref) {
-        return tryResolve(ref).map(Tuple2::_1);
+        final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> resolution = tryResolve(ref);
+        return resolution.map(Tuple2::_1);
     }
 
     @Override
@@ -923,113 +981,96 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final ShortestPathResult<S, L, O> resolutionResult,
             final Comparator<Distance<L>> comparator, final O reference) {
+
+        if (resolutionResult.isFinal) {
+            final Set.Immutable<ScopeLabelOccurrence<S, L, O>> sloReferences = resolutionResult.resolvedImports.keySet().stream()
+                    .filter(slo -> slo.occurrence().equals(reference))
+                    .collect(CapsuleCollectors.toSet()); 
+           
+            if (!sloReferences.isEmpty()) {            
+                // final Set.Immutable<IResolutionPath<S, L, O>> paths = resolutionResult.resolvedImports.get(sloReferences.get());
+    
+                // TOOD: check resolutionResult.resolvedImports need to be a multi-map?!
+                final Set.Immutable<IResolutionPath<S, L, O>> paths = sloReferences.stream().flatMap(sloReference -> resolutionResult.resolvedImports.get(sloReference).stream()).collect(CapsuleCollectors.toSet());            
+                final Set.Immutable<String> messages = Set.Immutable.of(); // TODO save and cache messages while calculating shortest paths  
+                return Optional.of(ImmutableTuple2.of(paths, messages));
+            }
+        }        
+        
         final int u = resolutionResult.reverseIndex.get(reference);
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
-
-        final Optional<ScopeLabelOccurrence<S, L, O>> sloReference = resolutionResult.resolvedImports.keySet().stream().filter(slo -> slo.occurrence().equals(reference)).findFirst(); 
-        
-        if (resolutionResult.isFinal && sloReference.isPresent()) {
-            final IResolutionPath<S, L, O> path = resolutionResult.resolvedImports.get(sloReference.get());            
-            return Optional.of(ImmutableTuple2.of(Set.Immutable.of(path), Set.Immutable.of()));
-        }
-        
-//        final Set.Immutable<IResolutionPath<S, L, O>> invalidImportResolutionPaths = resolutionResult.invalidSubstitutionEvidence.values().stream()
-//            .filter(path -> path.getReference().equals(reference))
-//            .collect(CapsuleCollectors.toSet());
-//        
-//        if (!invalidImportResolutionPaths.isEmpty()) {
-//            return Optional.of(ImmutableTuple2.of(invalidImportResolutionPaths, Set.Immutable.of()));
-//        }
-        
-        final Set.Immutable<O> invalidImportResolutionDeclarations = resolutionResult.invalidSubstitutionEvidence.values().stream()
-                .filter(path -> path.getReference().equals(reference))
-                .map(path -> path.getDeclaration())
-                .collect(CapsuleCollectors.toSet());          
-        
-//        final Set.Immutable<IResolutionPath<S, L, O>> importResolutionPaths = resolutionResult.substitutionEvidence.values().stream()
-//                .filter(path -> path.getReference().equals(reference))
-//                .collect(CapsuleCollectors.toSet());      
-//        
-//        if (!importResolutionPaths.isEmpty()) {
-//            return Optional.of(ImmutableTuple2.of(importResolutionPaths, Set.Immutable.of()));
-//        }
                 
-        final Set.Immutable<O> importResolutionDeclarations = resolutionResult.substitutionEvidence.values().stream()
-                .filter(path -> path.getReference().equals(reference))
-                .map(path -> path.getDeclaration())
-                .collect(CapsuleCollectors.toSet());  
-        
-        final Set.Immutable<Integer> candidates = scopeGraph.declarationEdgeStream()
+        final Set.Immutable<Integer> candidateIndices = scopeGraph.declarationEdgeStream()
                 .filter(slo -> slo.occurrence().getName().equals(reference.getName())).map(tuple -> tuple.occurrence())
                 .mapToInt(resolutionResult.reverseIndex::get).boxed().collect(CapsuleCollectors.toSet());
 
+        if (candidateIndices.isEmpty()) {
+            return Optional.of(ImmutableTuple2.of(Set.Immutable.of(),
+                    Set.Immutable.of("Does not resolve.", "No reachable declarations with matching identifier name.")));
+        }
+        
+        final Set.Immutable<Integer> declarationIndices = cheapest(visibleTargets, candidateIndices, comparator);
+        
+        final Set.Immutable<Distance<L>> declarationsCosts = declarationIndices.stream()
+                .map(index -> visibleTargets[index])
+                .collect(CapsuleCollectors.toSet());
+        
+        final Set.Immutable<O> declarations = declarationIndices.stream()
+                .map(index -> (O) resolutionResult.forwardIndex.get(index))
+                .collect(CapsuleCollectors.toSet());
+
+        if (declarationsCosts.contains(Distance.INFINITE)) {            
+            /*
+             * NOTE: type-based name resolution depends on the fact that do-not-know (i.e., Optional.empty()) is returned here, 
+             * instead of signaling that no resolution was found (i.e., Set.Immutable.of()).
+             */            
+            // TODO: maybe check if edge is closed. If yes, then return empty Set.Immutable.of(), other Optional.empty()?
+            return Optional.empty();
+        }
+        
         /*
-         * TODO: represent minimal cost as absolute number (instead of a
-         * concrete list of labels) to accommodate for ambiguities.
+         * NOTE: not every check declaration might result in a path. E.g., if
+         * namespaces between reference and declaration don't match, a path is
+         * voided. Consider comparing namespaces earlier at candidate level?
          */
-        // @formatter:off
-        final OptionalInt declarationIndexAtMinimalCost = IntStream
-                .range(0, visibleTargets.length)
+        final Set.Immutable<IResolutionPath<S, L, O>> resolutionPaths = 
+                declarations.stream()
+                    .flatMap(declaration -> {
+                        Optional<IResolutionPath<S, L, O>> path = path(resolutionResult, reference, declaration);
+
+                        if (path.isPresent()) {
+                            return Stream.of(path.get());
+                        } else {
+                            return Stream.empty();
+                        }
+                    })
+                    .collect(CapsuleCollectors.toSet());
+        
+        final Set.Immutable<String> messages = Set.Immutable.of();
+                // .of(path.getDeclaration().getIndex().getResource());
+        
+        return Optional.of(ImmutableTuple2.of(resolutionPaths, messages));
+    }   
+
+    private final static <L extends ILabel> Set.Immutable<Integer> cheapest(final Distance<L>[] distances, final Set.Immutable<Integer> candidates, final Comparator<Distance<L>> comparator) {
+        final OptionalInt declarationIndexAtMinimalCost = IntStream.range(0, distances.length)
                 .filter(candidates::contains)
-                .reduce((i, j) -> comparator.compare(visibleTargets[i], visibleTargets[j]) < 0 ? i : j);
-        // @formatter:on
+                .reduce((i, j) -> comparator.compare(distances[i], distances[j]) < 0 ? i : j);
 
         /*
          * NOTE: minimalDistance is an example instance of at minimal cost.
          * However, there could be ambiguous instance with the same cost.
          */
-        final Distance<L> minimalDistanceExample;
-
-        if (declarationIndexAtMinimalCost.isPresent()) {
-            minimalDistanceExample = visibleTargets[declarationIndexAtMinimalCost.getAsInt()];
-        } else {
-            minimalDistanceExample = Distance.INFINITE;
-        }
-
-        // check if ambiguous
-        if (declarationIndexAtMinimalCost.isPresent() && !minimalDistanceExample.equals(Distance.INFINITE)) {
-            long uniqueSolutionCount = IntStream.range(0, visibleTargets.length).filter(candidates::contains)
-                    .mapToObj(index -> visibleTargets[index]).distinct().count();
-
-            final Set.Immutable<Integer> indices = IntStream.range(0, visibleTargets.length)
-                    .filter(candidates::contains)
-                    .filter(index -> comparator.compare(visibleTargets[index], minimalDistanceExample) == 0)
-                    .mapToObj(Integer::valueOf).collect(CapsuleCollectors.toSet());
-
-            long minimalCostSolutionCount = indices.size();
-
-            final Set.Immutable<O> declarations = indices.stream()
-                    .map(index -> (O) resolutionResult.forwardIndex.get(index)).collect(CapsuleCollectors.toSet());
-
-            long declarationsCount = declarations.size();
-
-            if (minimalCostSolutionCount > 1) {
-                // ambiguity detected
-                return Optional.empty();
-            }
-        }
-
-        // TODO: support multiple paths
-        if (declarationIndexAtMinimalCost.isPresent() && !minimalDistanceExample.equals(Distance.INFINITE)) {
-            @SuppressWarnings("unchecked")
-            final O declaration = (O) resolutionResult.forwardIndex.get(declarationIndexAtMinimalCost.getAsInt());
-
-            final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> result = path(
-                    resolutionResult, reference, declaration).map(path -> {
-                        final Set.Immutable<IResolutionPath<S, L, O>> paths = Set.Immutable.of(path);
-
-                        final Set.Immutable<String> messages = Set.Immutable
-                                .of(path.getDeclaration().getIndex().getResource());
-
-                        return ImmutableTuple2.of(paths, messages);
-                    });
-
-            return result;
-        }
-
-        return Optional.empty();
+        final Distance<L> minimalDistanceExample = distances[declarationIndexAtMinimalCost.getAsInt()];
+        
+        final Set.Immutable<Integer> indices = IntStream.range(0, distances.length)
+                .filter(candidates::contains)
+                .filter(index -> comparator.compare(distances[index], minimalDistanceExample) == 0)
+                .mapToObj(Integer::valueOf).collect(CapsuleCollectors.toSet());
+        
+        return indices;
     }
-
+    
     public Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> tryResolve(
             final O reference) {
         final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);
