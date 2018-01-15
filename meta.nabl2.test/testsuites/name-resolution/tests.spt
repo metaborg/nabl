@@ -2,58 +2,6 @@ module name-resolution
 
 language NaBL2Test
 
-test import anomaly [[
-  anomaly1 {
-    mod A {
-      mod [[B]] {
-        def [[x]] = 1
-      }
-    }
-    mod B {
-      mod [[A]] {
-        def [[y]] = 2
-      }
-    }
-    mod C {
-      import [[A]]
-      import [[B]]
-      def z = [[x]] + [[y]]
-    }
-  }
-]] 0 errors
-   resolve #5 to #3
-   resolve #6 to #1
-   resolve #7 to #2
-   resolve #8 to #4
-
-//-------------------------------
-
-test import anomaly [[
-  anomaly2 {
-    mod A {
-      mod [[B]] {
-        def [[x]] = 1
-      }
-      def [[y]] = 2
-    }
-    mod B {
-      mod [[A]] {
-        def [[y]] = 2
-      }
-      def [[x]] = 1
-    }
-    mod C {
-      import [[A]]
-      import [[B]]
-      def z = [[x]] + [[y]]
-    }
-  }
-]] 0 errors
-   resolve  #7 to #4
-   resolve  #8 to #1
-   resolve  #9 to #2
-   resolve #10 to #5
-
 //-------------------------------
 
 // TODO: add tests that exercise transitive costs / shadowing
@@ -203,3 +151,31 @@ test import anomaly [[
    resolve #6 to #1
    resolve #7 to #2
    resolve #8 to #4
+
+//-------------------------------
+
+test import anomaly [[
+  anomaly2 {
+    mod A {
+      mod [[B]] {
+        def [[x]] = 1
+      }
+      def [[y]] = 2
+    }
+    mod B {
+      mod [[A]] {
+        def [[y]] = 2
+      }
+      def [[x]] = 1
+    }
+    mod C {
+      import [[A]]
+      import [[B]]
+      def z = [[x]] + [[y]]
+    }
+  }
+]] 0 errors
+   resolve  #7 to #4
+   resolve  #8 to #1
+   resolve  #9 to #2
+   resolve #10 to #5
