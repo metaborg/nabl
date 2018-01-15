@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -268,10 +267,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                         ikj = Distance.concat(wf, ik, kj);
                     }
 
-                    if (comparator.compare(ij, ikj) == 0 && !ij.equals(ikj)) {
-                        System.out.println("breakpoint");
-                    }
-
                     if (ikj != Distance.INFINITE && (ij == Distance.INFINITE || comparator.compare(ij, ikj) > 0)) {
                         dist[i][j] = ikj;
                         next[i][j] = next[i][k];
@@ -337,18 +332,12 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             // TODO compare substitution substitutionEdges instead resolutionPaths (because some paths don't have an edge)
             if (!oldResolutionPaths.equals(newResolutionPathsFiltered)) {
                 final Map.Transient<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> tmpSubsitutionEdges = Map.Transient.of();                
-                
-//                final Set<ScopeLabelScope<S, L, O>> directEdges = newResolutionPaths.stream()
-//                        .map(newResolutionPath -> resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath))
-//                        .collect(CapsuleCollectors.toSet());
-//                
-//                directEdges.forEach(directEdge -> { /* TODO */ });
-                
+
                 newResolutionPathsFiltered.forEach(newResolutionPath -> {
                     resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPath).ifPresent(directEdge -> {
                         tmpSubsitutionEdges.__put(directEdge, newResolutionPath); 
                     });
-                });                        
+                });
                 
                 // directEdge -> newResolutionPath
                 final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> subsitutionEdges = tmpSubsitutionEdges.freeze();               
@@ -360,14 +349,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 if (previouslySeen) {
                     break;
                 }
-                                                    
-//                final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, oldResolvedImport, newResolutionPaths);
-//
-//                if (invalidSubstitutionEvidence.containsKey(directEdge) && invalidSubstitutionEvidence.get(directEdge).equals(newResolutionPaths)) {
-//                    // no update necessary: this path was previously seen, but is less precise than the other paths 
-//                    break;
-//                }
-                
+
                 importRevised = true;
                 
                 if (DEBUG) {
@@ -424,24 +406,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                             __resolvedImports.__insert(unresolvedImport, path);
                             __substitutionEvidence.put(directEdge, path);
                         });
-                        
-//                        // TODO: use set instead of map? Do we need the path? If yes, change to paths / multi-map.
-//                        
-//                        final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path);
-//                        
-//                        __resolvedImports.__insert(unresolvedImport, path);
-//                        __substitutionEvidence.put(directEdge, path);
                     });
-
-//                    // TODO CURSOR support multiple paths
-//                    final Set.Immutable<IResolutionPath<S, L, O>> declarationPaths = resolution.get()._1();
-//                    // assert declarationPaths.size() == 1;
-//
-//                    final IResolutionPath<S, L, O> path = declarationPaths.findFirst().get();
-//                    __resolvedImports.put(unresolvedImport, path);
-//
-//                    final ScopeLabelScope<S, L, O> directEdge = resolvedImportPathToDirectEdge(scopeGraph, unresolvedImport, path);
-//                    __substitutionEvidence.put(directEdge, path);
                 } else {
                     __unresolvedImports.__insert(unresolvedImport);
                 }
@@ -713,6 +678,16 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         @SuppressWarnings({ "rawtypes", "unchecked" })
         public static final Distance INFINITE = new Distance(Collections.EMPTY_LIST);
 
+        @SuppressWarnings("unchecked")
+        public static final <L extends ILabel> Distance<L> zero() {
+            return ZERO;
+        }
+        
+        @SuppressWarnings("unchecked")
+        public static final <L extends ILabel> Distance<L> infinite() {
+            return INFINITE;
+        }
+        
         private final List<L> labels;
 
         public static final <L extends ILabel> Distance<L> of(L label) {
