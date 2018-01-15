@@ -542,17 +542,27 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
      */
     private static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>> path(
             final ShortestPathResult<S, L, O> resolutionResult, final O reference, final O declaration) {
-
+        
+        if (!IOccurrence.match(reference, declaration)) {
+            throw new IllegalArgumentException(String.format("Reference and declaration must match.\n   ref: %s\n   dec: %s", reference, declaration));
+        }
+        
         final int u = resolutionResult.reverseIndex.get(reference);
 
         int j = u;
         final int k = resolutionResult.reverseIndex.get(declaration);
 
         /*
-         * if next[u][v] = null then return [] path = [u] while u ≠ v u ←
-         * next[u][v] path.append(u) return path
+         * if next[u][v] = null then 
+         *   return [] 
+         *   
+         * path = [u] 
+         * while u ≠ v 
+         *   u ← next[u][v] 
+         *   path.append(u) 
+         *   
+         * return path
          */
-
         final List<Object> trace = new ArrayList<>(0);
 
         if (resolutionResult.next[j][k] == -1) {
@@ -566,43 +576,46 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
 
-        assert Distance.isValid(resolutionResult.dist[u][k]);
-        assert Objects.equals(trace.get(0), reference);
-        assert Objects.equals(trace.get(trace.size() - 1), declaration);
-                
-        final List<S> scopes = trace.stream()
-                .skip(1)
-                .limit(trace.size() - 2)
-                .map(occurrence -> (S) occurrence)
-                .collect(Collectors.toList());
-        
-        final List<L> labels = resolutionResult.dist[u][k].labels.stream().limit(scopes.size())
-                .collect(Collectors.toList());
-        
-        assert scopes.size() + 1 == resolutionResult.dist[u][k].labels.size();
-
-        final IScopePath<S, L, O> pathStart = Paths.empty(scopes.get(0));
-        final IScopePath<S, L, O> pathMiddle = IntStream.range(1, scopes.size())
-                .mapToObj(i -> ImmutableTuple2.of(labels.get(i), scopes.get(i)))
-                .reduce(pathStart, (pathIntermediate, tuple) -> {
-                    final ScopeLabelScope<S, L, O> query = ImmutableScopeLabelScope.of(pathIntermediate.getTarget(),
-                            tuple._1(), tuple._2());
-
-                    if (resolutionResult.substitutionEvidence.containsKey(query)) {
-                        final IResolutionPath<S, L, O> importPath = resolutionResult.substitutionEvidence.get(query);
-                        return Paths
-                                .append(pathIntermediate,
-                                        Paths.named(pathIntermediate.getTarget(), tuple._1(), importPath, tuple._2()))
-                                .get();
-                    } else {
-                        return Paths.append(pathIntermediate,
-                                Paths.direct(pathIntermediate.getTarget(), tuple._1(), tuple._2())).get();
-                    }
-                }, (p1, p2) -> Paths.append(p1, p2).get());
-
-        final Optional<IResolutionPath<S, L, O>> resolutionPath = Paths.resolve(reference, pathMiddle, declaration);
-        return resolutionPath;
+        return traceToPath(trace, resolutionResult.dist[u][k].labels, resolutionResult.substitutionEvidence);
     }
+    
+    /**
+     * Converts the a trace of occurrences/scopes (that are separated by labeled steps) into a resolution path.
+     * 
+     * @param trace the sequence of occurrences and scopes that form a path
+     * @param labels the sequence of labeled steps separating the trace
+     * @param substitutionEvidence lookup table for named import edges
+     * @return a resolution path from a reference to its declaration 
+     */
+    @SuppressWarnings("unchecked")
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>> traceToPath(final List<?> trace, final List<L> labels, final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence) {
+        assert labels.size() == trace.size() - 1;
+        
+        final O reference = (O) trace.get(0);        
+        final List<S> scopes = trace.stream().skip(1).limit(trace.size() - 2).map(occurrence -> (S) occurrence).collect(Collectors.toList());      
+        final O declaration = (O) trace.get(trace.size() - 1);
+
+        IScopePath<S, L, O> pathSegment = Paths.empty(scopes.get(0));        
+        S pathTarget = scopes.get(0);
+        
+        for (int i = 1; i < scopes.size(); i++) {
+            final L nextLabel = labels.get(i);
+            final S nextScope = scopes.get(i);
+            
+            final ScopeLabelScope<S, L, O> directEdge = ImmutableScopeLabelScope.of(pathTarget, nextLabel, nextScope);
+
+            if (substitutionEvidence.containsKey(directEdge)) {
+                pathSegment = Paths.append(pathSegment, Paths.named(pathTarget, nextLabel, substitutionEvidence.get(directEdge), nextScope)).get();
+                pathTarget  = nextScope;
+            } else {
+                pathSegment = Paths.append(pathSegment, Paths.direct(pathTarget, nextLabel, nextScope)).get();
+                pathTarget  = nextScope;
+            }
+        }
+        
+        return Paths.resolve(reference, pathSegment, declaration);
+    }
+    
 
     public static class PathComparator<L extends ILabel> implements Comparator<Distance<L>> {
 
@@ -1031,22 +1044,9 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             return Optional.empty();
         }
         
-        /*
-         * NOTE: not every check declaration might result in a path. E.g., if
-         * namespaces between reference and declaration don't match, a path is
-         * voided. Consider comparing namespaces earlier at candidate level?
-         */
         final Set.Immutable<IResolutionPath<S, L, O>> resolutionPaths = 
                 declarations.stream()
-                    .flatMap(declaration -> {
-                        Optional<IResolutionPath<S, L, O>> path = path(resolutionResult, reference, declaration);
-
-                        if (path.isPresent()) {
-                            return Stream.of(path.get());
-                        } else {
-                            return Stream.empty();
-                        }
-                    })
+                    .map(declaration -> path(resolutionResult, reference, declaration).get())
                     .collect(CapsuleCollectors.toSet());
         
         final Set.Immutable<String> messages = Set.Immutable.of();
@@ -1059,7 +1059,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final OptionalInt declarationIndexAtMinimalCost = IntStream.range(0, distances.length)
                 .filter(candidates::contains)
                 .reduce((i, j) -> comparator.compare(distances[i], distances[j]) < 0 ? i : j);
-
+        
         /*
          * NOTE: minimalDistance is an example instance of at minimal cost.
          * However, there could be ambiguous instance with the same cost.
