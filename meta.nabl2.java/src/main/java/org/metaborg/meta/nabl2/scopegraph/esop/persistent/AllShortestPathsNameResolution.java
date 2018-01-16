@@ -109,16 +109,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         this.resolutionResult = initAllShortestPaths(new ShortestPathParameters<>(unresolvedImports), new ShortestPathResult<>());
     }
 
-    private static final <S extends IScope, L extends ILabel, O extends IOccurrence> ScopeLabelScope<S, L, O> toDirectEdge(
-            ScopeLabelOccurrence<S, L, O> requireImportEdge, OccurrenceLabelScope<O, L, S> associatedScopeEdge) {
-        // TODO: look at this constraint; fails currently
-        // assert Objects.equals(requireImportEdge.label(),
-        // associatedScopeEdge.label());
-
-        return ImmutableScopeLabelScope.of(requireImportEdge.scope(), requireImportEdge.label(),
-                associatedScopeEdge.scope());
-    }
-
     private ShortestPathResult<S, L, O> initAllShortestPaths(final ShortestPathParameters<S, L, O> resolutionParameters, final ShortestPathResult<S, L, O> previousSolution) {
         
         final List<O> rs = scopeGraph.sourceEdgeStream().map(tuple -> tuple.occurrence()).sorted()
@@ -484,7 +474,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<ScopeLabelScope<S, L, O>> resolvedImportPathToDirectEdge(
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final ScopeLabelOccurrence<S, L, O> resolvedImport,
             final IResolutionPath<S, L, O> resolvedImportPath) {
-        // @formatter:off
+
         final Set.Immutable<OccurrenceLabelScope<O, L, S>> associatedScopeEdges = scopeGraph.associatedScopeEdgeStream()
                 .filter(labelEquals(resolvedImport.label()))
                 .filter(occurrenceEquals(resolvedImportPath.getDeclaration()))
@@ -492,8 +482,17 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                                 
         assert 0 <= associatedScopeEdges.size() && associatedScopeEdges.size() <= 1;
 
-        return associatedScopeEdges.findFirst().map(associatedScopeEdge -> toDirectEdge(resolvedImport, associatedScopeEdge));
-        // @formatter:on
+        if (associatedScopeEdges.isEmpty()) {
+            return Optional.empty();
+        } else {            
+            final OccurrenceLabelScope<O, L, S> associatedScopeEdge = associatedScopeEdges.findFirst().get();
+            
+            final ScopeLabelScope<S, L, O> directEdge = ImmutableScopeLabelScope.of(resolvedImport.scope(), resolvedImport.label(), associatedScopeEdge.scope());
+            
+            assert Objects.equals(resolvedImport.label(), associatedScopeEdge.label());
+            
+            return Optional.of(directEdge);
+        }
     }
 
     /*
