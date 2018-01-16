@@ -19,7 +19,7 @@ rules
   get-ast-type-succeeds =
     ?AstWithType(x);
     a := <nabl2-get-ast-analysis>;
-    <nabl2-get-ast-type(|a)> x
+    <nabl2-get-ast-type(|a)> x => ()
 
   get-ast-type-fails =
     ?AstWithoutType(x);
@@ -37,6 +37,16 @@ rules
     a := <nabl2-get-ast-analysis>;
     <nabl2-get-ast-refs(|a)> x;
     length
+
+  get-ast-custom-prop-succeeds =
+    ?AstWithCustomProp(x);
+    a := <nabl2-get-ast-analysis>;
+    <nabl2-get-ast-property(|a,"customProp")> x => ()
+
+  get-ast-custom-prop-fails =
+    ?AstWithoutCustomProp(x);
+    a := <nabl2-get-ast-analysis>;
+    <not(nabl2-get-ast-property(|a,"customProp"))> x
 
 rules
 
