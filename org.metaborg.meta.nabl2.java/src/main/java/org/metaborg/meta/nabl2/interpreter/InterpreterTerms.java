@@ -8,6 +8,7 @@ import static org.metaborg.meta.nabl2.terms.generic.TB.newTuple;
 import java.util.List;
 import java.util.Map;
 
+import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
@@ -17,7 +18,6 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.solver.IProperties;
 import org.metaborg.meta.nabl2.solver.ISolution;
-import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
@@ -95,7 +95,7 @@ public class InterpreterTerms {
     private static ITerm declTypes(IProperties<Occurrence> declProperties, IUnifier unifier) {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence decl : declProperties.getIndices()) {
-            declProperties.getValue(decl, AnalysisTerms.TYPE_KEY).map(unifier::find).ifPresent(type -> {
+            declProperties.getValue(decl, DeclProperties.TYPE_KEY).map(unifier::find).ifPresent(type -> {
                 entries.put(decl, unifier.find(type));
             });
         }
