@@ -220,6 +220,6 @@ rules
 
   occ-to-occ-build:
     Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
-      Term |[ Occurrence(Namespace(~nspace), <debug(!"XXX ")> ~v, <nabl2--occurrence-index-of(|<nabl2--get-ast-index> ~t)> ~t) ]|
+      Term |[ Occurrence(Namespace(~nspace), ~v, <nabl2--occurrence-index-of(|<nabl2--get-ast-index> ~t)> ~t) ]|
     where
       nspace := Str(nspace-str)
