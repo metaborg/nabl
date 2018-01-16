@@ -417,7 +417,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 forwardIndex, __unresolvedImports.freeze(), __resolvedImports.freeze(),
                 __substitutionEvidence.freeze(), __invalidSubstitutionEvidence.freeze());
 
-        if (substitutionEvidence.equals(__substitutionEvidence) && invalidSubstitutionEvidence.equals(__invalidSubstitutionEvidence)) { // substitutionEvidence.size() == __substitutionEvidence.size()
+        boolean isFixpointReached = substitutionEvidence.size() == __substitutionEvidence.size()
+                && invalidSubstitutionEvidence.size() == __invalidSubstitutionEvidence.size();
+        
+        if (isFixpointReached) {
             if (DEBUG) {            
                 System.out.println("final");
                 System.out.println();
