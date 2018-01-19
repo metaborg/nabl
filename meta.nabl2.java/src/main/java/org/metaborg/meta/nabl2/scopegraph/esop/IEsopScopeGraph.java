@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.scopegraph.esop;
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.liftHashFunctionToRelation;
 import static org.metaborg.meta.nabl2.scopegraph.esop.persistent.CollectionConverter.union;
 import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
+import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
 
 import java.util.stream.Stream;
 
@@ -29,6 +30,11 @@ import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.annotations.Beta;
+
+import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 @Beta
 public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
@@ -112,6 +118,42 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     default Stream<ScopeLabelOccurrence<S, L, O>> requireImportEdgeStream() {
         // TODO: use hash lookup on label instead of filter
         return targetEdgeStream().filter(labelEquals(Label.D).negate());
+    }
+    
+    default SetMultimap.Immutable<S, L> importSourceScopes(O importReference) {
+        final SetMultimap.Transient<S, L> builder = SetMultimap.Transient.of(); 
+        
+        requireImportEdgeStream()
+                .filter(occurrenceEquals(importReference))
+                .forEach(importEdge -> builder.__insert(importEdge.scope(), importEdge.label()));
+                
+        return builder.freeze();
+    }
+    
+    default Set.Immutable<S> importSourceScopes(O importReference, L importLabel) {
+        return requireImportEdgeStream()
+                .filter(occurrenceEquals(importReference))
+                .filter(labelEquals(importLabel))
+                .map(ScopeLabelOccurrence::scope)
+                .collect(CapsuleCollectors.toSet());
+    }
+
+    default SetMultimap.Immutable<L, S> importTargetScopes(O importDeclaration) {
+        final SetMultimap.Transient<L, S> builder = SetMultimap.Transient.of(); 
+        
+        associatedScopeEdgeStream()
+                .filter(occurrenceEquals(importDeclaration))
+                .forEach(importEdge -> builder.__insert(importEdge.label(), importEdge.scope()));
+                
+        return builder.freeze();
+    }
+    
+    default Set.Immutable<S> importTargetScopes(O importDeclaration, L importLabel) {
+        return associatedScopeEdgeStream()
+                .filter(occurrenceEquals(importDeclaration))
+                .filter(labelEquals(importLabel))
+                .map(OccurrenceLabelScope::scope)
+                .collect(CapsuleCollectors.toSet());
     }
 
     interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>

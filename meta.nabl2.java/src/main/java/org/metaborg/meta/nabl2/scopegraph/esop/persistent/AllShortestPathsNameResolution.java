@@ -373,6 +373,24 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 final Optional<Tuple2<Set.Immutable<IResolutionPath<S, L, O>>, Set.Immutable<String>>> resolution = tryResolve(
                         scopeGraph, resolutionResult, comparator, unresolvedImport.occurrence());
 
+//                if (resolution.isPresent()) {
+//                    final Set.Immutable<IResolutionPath<S, L, O>> paths = resolution.get()._1();
+//                    final Set.Immutable<String> messages = resolution.get()._2();
+//
+//                    paths.forEach(path -> {
+//                        
+//                        final O importReference = path.getReference();
+//                        final O importDeclaration = path.getDeclaration();
+//                        
+//                        Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = joinImports(scopeGraph, importReference, importDeclaration);
+//                        
+//                        // TODO: rework resolution parameters
+//                        // TODO: support multiple direct edges
+//                        nextResolutionParametersBuilder.resolveImport(unresolvedImport, path);
+//                        nextResolutionParametersBuilder.updateSubstitutionEvidence(unresolvedImport, path, directEdges;                        
+//                    });
+//                }
+                
                 if (resolution.isPresent()) {
                     final Set.Immutable<IResolutionPath<S, L, O>> paths = resolution.get()._1();
                     final Set.Immutable<String> messages = resolution.get()._2();
@@ -471,6 +489,42 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         System.out.println(sepHead + rowSeparator + sepTail);        
     }
     
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Set.Immutable<ScopeLabelScope<S, L, O>> joinImports(
+            final IEsopScopeGraph<S, L, O, V> scopeGraph, O importReference, O importDeclaration) {
+        
+        final SetMultimap.Immutable<S, L> importSourceScopes = scopeGraph.importSourceScopes(importReference);
+        final SetMultimap.Immutable<L, S> importTargetScopes = scopeGraph.importTargetScopes(importDeclaration);
+        
+        // calculate cross-product: importSourceScopes x importLabel x importTargetScopes
+        final Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = 
+                importSourceScopes.entrySet().stream()
+                        .flatMap(sourceTuple -> importTargetScopes.get(sourceTuple.getValue()).stream()
+                                .map(targetScope -> ImmutableScopeLabelScope.of(sourceTuple.getKey(), sourceTuple.getValue(), targetScope))
+                                .map(ScopeLabelScope.class::cast))
+                        .collect(CapsuleCollectors.toSet());
+        
+        return directEdges;
+    }
+    
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Set.Immutable<ScopeLabelScope<S, L, O>> joinImports(
+            final IEsopScopeGraph<S, L, O, V> scopeGraph, O importReference, L importLabel, O importDeclaration) {
+        
+        final Set.Immutable<S> importSourceScopes = scopeGraph.importSourceScopes(importReference,   importLabel);
+        final Set.Immutable<S> importTargetScopes = scopeGraph.importTargetScopes(importDeclaration, importLabel);
+        
+        // calculate cross-product: importSourceScopes x importLabel x importTargetScopes
+        final Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = 
+                importSourceScopes.stream()
+                        .flatMap(sourceScope -> importTargetScopes.stream()
+                                .map(targetScope -> ImmutableScopeLabelScope.of(sourceScope, importLabel, targetScope))
+                                .map(ScopeLabelScope.class::cast))
+                        .collect(CapsuleCollectors.toSet());
+        
+        return directEdges;
+    }
+
+    
+    @Deprecated
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Optional<ScopeLabelScope<S, L, O>> resolvedImportPathToDirectEdge(
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final ScopeLabelOccurrence<S, L, O> resolvedImport,
             final IResolutionPath<S, L, O> resolvedImportPath) {
@@ -479,7 +533,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .filter(labelEquals(resolvedImport.label()))
                 .filter(occurrenceEquals(resolvedImportPath.getDeclaration()))
                 .collect(CapsuleCollectors.toSet());
-                                
+        
         assert 0 <= associatedScopeEdges.size() && associatedScopeEdges.size() <= 1;
 
         if (associatedScopeEdges.isEmpty()) {
