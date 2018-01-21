@@ -22,6 +22,10 @@ context-free syntax
 
   Test.AstWithTwoRefs = <<X> has two references>
 
+  Test.AstWithCustomProp = <<X> has a custom prop>
+
+  Test.AstWithoutCustomProp = <<X> has no custom prop>
+
 context-free syntax
 
   Test.GetAllDecls = <get all <{X " "}*> decls>
