@@ -287,26 +287,26 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 }
             }
         }
-        
-        if (DEBUG) {
-            if (dist.length > 0) {
-                // print sub-matrix showing distances from references to declarations  
-                printMatrix(dist, isReference, isDeclaration);
 
-                // print sub-matrix showing distances between inner scopes
-                printMatrix(dist, isScope, isScope);
 
-                System.out.println();
-            }
-        }
-
-        
         /**********************************************************************
          * Result from running shortest path algorithm.
          **********************************************************************/        
         
         final AllShortestPathsResult<S, L, O> resolutionResult = new AllShortestPathsResult<>(dist, next, reverseIndex, forwardIndex, resolutionParameters);
-       
+
+        if (DEBUG) {
+            if (dist.length > 0) {
+                // print sub-matrix showing distances from references to declarations  
+                resolutionResult.printMatrix(isReference, isDeclaration);
+
+                // print sub-matrix showing distances between inner scopes
+                resolutionResult.printMatrix(isScope, isScope);
+
+                System.out.println();
+            }
+        }
+        
                 
         /**********************************************************************
          * Checking if imports were invalidated (e.g., do deal with import anomaly).
@@ -400,63 +400,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             return initAllShortestPaths(nextResolutionParameters, resolutionResult);
         }
     }
-    
-    private static final <L extends ILabel> void printMatrix(final Distance<L>[][] dist) {
-        printMatrix(dist, i -> true, i -> true);
-    }
 
-    private static final <L extends ILabel> void printMatrix(final Distance<L>[][] dist, IntPredicate rowFilter, IntPredicate colFilter) {
-        final int dimensionX = (int) IntStream.range(0, dist.length).filter(rowFilter).count();
-        final int dimensionY = (int) IntStream.range(0, dist.length).filter(colFilter).count();
-
-        if (dimensionX == 0 || dimensionY == 0) return;
-        
-        final int[] rowIDs = IntStream.range(0, dist.length).filter(rowFilter).toArray();
-        final int[] colIDs = IntStream.range(0, dist.length).filter(colFilter).toArray();
-        
-        final int maxLength = IntStream.of(rowIDs)
-                .mapToObj(rowId -> IntStream.of(colIDs).mapToObj(colId -> dist[rowId][colId]))
-                .flatMap(stream -> stream)
-                .map(Object::toString)
-                .mapToInt(String::length)
-                .max()
-                .getAsInt();
-        
-        Function<Object, String> formatter = distance -> String.format("%" + maxLength + "s", distance);
-        
-        final String rowHead = "|  ";
-        final String rowTail = "  |";
-        
-        final String sepHead = "---";
-        final String sepTail = "---";
-        
-        final String columnFill = 
-                IntStream.range(0, maxLength)
-                    .mapToObj(position -> "-")
-                    .reduce(String::concat).get();
-        
-        final String rowSeparator = 
-                IntStream.range(0, dimensionY + 1)
-                    .mapToObj(position -> columnFill)
-                    .collect(Collectors.joining("---"));
-        
-        final String columnHeader = 
-                Stream.concat(Stream.of(""), IntStream.of(colIDs).mapToObj(Integer::valueOf))
-                    .map(formatter)
-                    .collect(Collectors.joining(" | "));
-
-        System.out.println(sepHead + rowSeparator + sepTail);
-        System.out.println(rowHead + columnHeader + rowTail);
-        System.out.println(sepHead + rowSeparator + sepTail);
-        
-        IntStream.of(rowIDs)
-            .mapToObj(rowId -> Stream.concat(Stream.of(rowId), IntStream.of(colIDs).mapToObj(colId -> dist[rowId][colId])).map(formatter).collect(Collectors.joining(" | ")))
-            .map(rowString -> rowHead + rowString + rowTail)
-            .forEach(System.out::println);
-        
-        System.out.println(sepHead + rowSeparator + sepTail);        
-    }
-    
     private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> joinImports(
             final IEsopScopeGraph<S, L, O, V> scopeGraph, Set.Immutable<IResolutionPath<S, L, O>> newImportPaths) {
         

@@ -5,11 +5,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.persistent.all_shortest_paths.AllShortestPathsNameResolution.ShortestPathParameters;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
@@ -139,5 +144,61 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
         
         return Paths.resolve(reference, pathSegment, declaration);
     }    
+    
+    final void printMatrix() {
+        printMatrix(i -> true, i -> true);
+    }
+
+    final void printMatrix(IntPredicate rowFilter, IntPredicate colFilter) {
+        final int dimensionX = (int) IntStream.range(0, dist.length).filter(rowFilter).count();
+        final int dimensionY = (int) IntStream.range(0, dist.length).filter(colFilter).count();
+
+        if (dimensionX == 0 || dimensionY == 0) return;
+        
+        final int[] rowIDs = IntStream.range(0, dist.length).filter(rowFilter).toArray();
+        final int[] colIDs = IntStream.range(0, dist.length).filter(colFilter).toArray();
+        
+        final int maxLength = IntStream.of(rowIDs)
+                .mapToObj(rowId -> IntStream.of(colIDs).mapToObj(colId -> dist[rowId][colId]))
+                .flatMap(stream -> stream)
+                .map(Object::toString)
+                .mapToInt(String::length)
+                .max()
+                .getAsInt();
+        
+        Function<Object, String> formatter = distance -> String.format("%" + maxLength + "s", distance);
+        
+        final String rowHead = "|  ";
+        final String rowTail = "  |";
+        
+        final String sepHead = "---";
+        final String sepTail = "---";
+        
+        final String columnFill = 
+                IntStream.range(0, maxLength)
+                    .mapToObj(position -> "-")
+                    .reduce(String::concat).get();
+        
+        final String rowSeparator = 
+                IntStream.range(0, dimensionY + 1)
+                    .mapToObj(position -> columnFill)
+                    .collect(Collectors.joining("---"));
+        
+        final String columnHeader = 
+                Stream.concat(Stream.of(""), IntStream.of(colIDs).mapToObj(Integer::valueOf))
+                    .map(formatter)
+                    .collect(Collectors.joining(" | "));
+
+        System.out.println(sepHead + rowSeparator + sepTail);
+        System.out.println(rowHead + columnHeader + rowTail);
+        System.out.println(sepHead + rowSeparator + sepTail);
+        
+        IntStream.of(rowIDs)
+            .mapToObj(rowId -> Stream.concat(Stream.of(rowId), IntStream.of(colIDs).mapToObj(colId -> dist[rowId][colId])).map(formatter).collect(Collectors.joining(" | ")))
+            .map(rowString -> rowHead + rowString + rowTail)
+            .forEach(System.out::println);
+        
+        System.out.println(sepHead + rowSeparator + sepTail);        
+    }
     
 }
