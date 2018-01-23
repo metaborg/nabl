@@ -208,7 +208,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         /*
          * Adding direct edges that resulted from previously resolved imports.
          */
-        resolutionParameters.resolvedImports.values().stream().forEach(sls -> {
+        resolutionParameters.resolvedImportEdges().forEach(sls -> {
             final int sIndex = reverseIndex.get(sls.sourceScope());
             final int tIndex = reverseIndex.get(sls.targetScope());
 
@@ -308,7 +308,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final AllShortestPathsParametersBuilder<S, L, O> nextResolutionParametersBuilder = resolutionParameters.asTransient();
         
         boolean importRevised = false;        
-        for (O importReference : resolutionParameters.resolvedImports.keySet()) {
+        for (O importReference : resolutionParameters.resolvedImportReferences()) {
                         
             final Set.Immutable<IResolutionPath<S, L, O>> newImportPaths = 
                     resolveToPaths(scopeGraph, resolutionResult, comparator, importReference).get();
@@ -317,7 +317,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                     scopeGraph.joinImports(newImportPaths);
             
             final java.util.Set<ScopeLabelScope<S, L, O>> newDirectEdges = directEdgeToResolutionPath.keySet();
-            final java.util.Set<ScopeLabelScope<S, L, O>> oldDirectEdges = resolutionParameters.resolvedImports.get(importReference);
+            final java.util.Set<ScopeLabelScope<S, L, O>> oldDirectEdges = resolutionParameters.resolvedImportEdges(importReference);
                         
             if (!oldDirectEdges.equals(newDirectEdges)) {
 
@@ -376,11 +376,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         
         final AllShortestPathsParameters<S, L, O> nextResolutionParameters = nextResolutionParametersBuilder.freeze();
         
-        boolean isFixpointReached = 
-                resolutionParameters.resolvedImports.size() == nextResolutionParameters.resolvedImports.size()
-                        && resolutionParameters.invalidImports.size() == nextResolutionParameters.invalidImports.size();
-
-        if (isFixpointReached) {
+        if (AllShortestPathsParameters.isFixpointReached(resolutionParameters, nextResolutionParameters)) {
             if (DEBUG) {            
                 System.out.println("final");
                 System.out.println();
@@ -530,7 +526,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         if (resolutionResult.isFinal) {
 //            throw new UnsupportedOperationException("Not yet implemented.");
            
-            final Set.Immutable<IResolutionPath<S, L, O>> paths = resolutionResult.parameters.resolvedImportPaths().get(reference);
+            final Set.Immutable<IResolutionPath<S, L, O>> paths = resolutionResult.parameters.resolvedImportPaths(reference);
             
             if (!paths.isEmpty()) {
                 final Set.Immutable<String> messages = Set.Immutable.of();  

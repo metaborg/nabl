@@ -21,7 +21,7 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
     private static final long serialVersionUID = 42L;
            
     private final Set.Immutable<O> unresolvedImports;
-    public SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> resolvedImports;
+    private final SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> resolvedImports;
     public SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> invalidImports;
     
     // TODO: join to product public SetMultimap.Immutable<O, IResolutionPath<S, L, O>> resolvedImportPaths;
@@ -51,23 +51,58 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
         this.directEdgeToResolutionPath = directEdgeToResolutionPath;
         this.invalidDirectEdgeToResolutionPath = invalidDirectEdgeToResolutionPath;            
     }
+
+    /**********************************************************************
+     * REFERENCES
+     **********************************************************************/      
+    
+    public Set.Immutable<O> resolvedImportReferences() {
+        return resolvedImports.keySet().stream().collect(CapsuleCollectors.toSet());
+    }
     
     public Set.Immutable<O> unresolvedImportReferences() {
         return unresolvedImports;
     }
     
+    /**********************************************************************
+     * EDGES
+     **********************************************************************/
+
+    public Set.Immutable<ScopeLabelScope<S, L, O>> resolvedImportEdges() {
+        return directEdgeToResolutionPath.keySet().stream().collect(CapsuleCollectors.toSet());
+    }
+    
+    public Set.Immutable<ScopeLabelScope<S, L, O>> resolvedImportEdges(final O importReference) {
+        return resolvedImports.get(importReference);
+    }    
+    
+    /**********************************************************************
+     * PATHS
+     **********************************************************************/
+    
+    // TODO remove duplicate (persistent / transient)
+    public Set.Immutable<IResolutionPath<S, L, O>> resolvedImportPaths() {
+        return directEdgeToResolutionPath.values().stream().collect(CapsuleCollectors.toSet());
+    }
+
+    // TODO remove duplicate (persistent / transient)
+    public Set.Immutable<IResolutionPath<S, L, O>> resolvedImportPaths(final O importReference) {        
+        // joins resolvedImports with directEdgeToResolutionPath
+        final Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = resolvedImports.get(importReference);
+        return directEdges.stream().map(directEdgeToResolutionPath::get).collect(CapsuleCollectors.toSet());
+    }
+    
+    /**********************************************************************
+     * ...
+     **********************************************************************/        
+    
+    public static final boolean isFixpointReached(AllShortestPathsParameters one, AllShortestPathsParameters two) {
+        return one.resolvedImports.size() == two.resolvedImports.size() && one.invalidImports.size() == two.invalidImports.size();
+    }
+    
     public boolean isImportEdgeInvalidated(O importReference, ScopeLabelScope<S, L, O> directEdge) {
         return this.invalidImports.containsEntry(importReference, directEdge);
     }
-    
-    // TODO make public API
-    // TODO remove duplicate (persistent / transient)
-    public SetMultimap.Immutable<O, IResolutionPath<S, L, O>> resolvedImportPaths() {
-        // joins resolvedImports with directEdgeToResolutionPath            
-        return resolvedImports.entrySet().stream()
-                .map(tuple -> ImmutableTuple2.of(tuple.getKey(), directEdgeToResolutionPath.get(tuple.getValue())))
-                .collect(CapsuleCollectors.toSetMultimap(tuple -> tuple._1(), tuple -> tuple._2()));
-    }        
             
     public AllShortestPathsParametersBuilder<S, L, O> asTransient() {
         return new AllShortestPathsParametersBuilder<>(unresolvedImports.asTransient(), resolvedImports.asTransient(), invalidImports.asTransient(), directEdgeToResolutionPath.asTransient(), invalidDirectEdgeToResolutionPath.asTransient());
