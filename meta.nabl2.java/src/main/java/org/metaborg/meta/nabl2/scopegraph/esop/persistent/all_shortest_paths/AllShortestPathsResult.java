@@ -35,7 +35,15 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
 
     public final AllShortestPathsParameters<S, L, O> parameters;
     
-    public boolean isFinal = false;
+    private boolean isFinal = false;
+    
+    public boolean isFinal() {
+        return isFinal;
+    }
+    
+    public void setFinal() {
+        isFinal = true;
+    }
     
     @SuppressWarnings("unchecked")
     private AllShortestPathsResult() {

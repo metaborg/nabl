@@ -103,7 +103,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         this.resolutionResult = initAllShortestPaths(new AllShortestPathsParameters<>(unresolvedImports), AllShortestPathsResult.empty());
     }
 
-    private AllShortestPathsResult<S, L, O> initAllShortestPaths(final AllShortestPathsParameters<S, L, O> resolutionParameters, final AllShortestPathsResult<S, L, O> previousSolution) {    
+    @SuppressWarnings("unchecked")
+    private AllShortestPathsResult<S, L, O> initAllShortestPaths(
+            final AllShortestPathsParameters<S, L, O> resolutionParameters, 
+            final AllShortestPathsResult<S, L, O> previousSolution) {    
 
         /**********************************************************************
          * Mapping graph vertices (references, declaration, and scopes) to integer numbers.
@@ -304,8 +307,6 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
                 // print sub-matrix showing distances between inner scopes
                 resolutionResult.printMatrix(isScope, isScope);
-
-                System.out.println();
             }
         }
         
@@ -348,14 +349,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 }
             }
         }
-        
-        if (DEBUG) {
-            if (importRevised) {
-                System.out.println();
-            }
-        }
 
-        
+
         /**********************************************************************
          * Try to resolve imports that were reachable in this round.
          **********************************************************************/
@@ -387,12 +382,9 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         
         if (AllShortestPathsParameters.isFixpointReached(resolutionParameters, nextResolutionParameters)) {
             if (DEBUG) {            
-                System.out.println("final");
-                System.out.println();
-                System.out.println();
-                System.out.println();
+                System.out.println("finalized shortest-path resolution parameters");
             }
-            resolutionResult.isFinal = true;
+            resolutionResult.setFinal();
             return resolutionResult;
         } else {
             return initAllShortestPaths(nextResolutionParameters, resolutionResult);
@@ -532,30 +524,15 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final AllShortestPathsResult<S, L, O> resolutionResult,
             final Comparator<Distance<L>> comparator, final O reference) {
 
-        if (resolutionResult.isFinal) {
-//            throw new UnsupportedOperationException("Not yet implemented.");
-           
+        if (resolutionResult.isFinal() 
+                && resolutionResult.parameters.resolvedImportReferences().contains(reference)) {
+            
             final Set.Immutable<IResolutionPath<S, L, O>> paths = resolutionResult.parameters.resolvedImportPaths(reference);
+            final Set.Immutable<String> messages = Set.Immutable.of();  
             
-            if (!paths.isEmpty()) {
-                final Set.Immutable<String> messages = Set.Immutable.of();  
-                return Optional.of(ImmutableTuple2.of(paths, messages));
-            }
-            
-//            final Set.Immutable<ScopeLabelOccurrence<S, L, O>> sloReferences = resolutionResult.parameters.resolvedImports.keySet().stream()
-//                    .filter(slo -> slo.occurrence().equals(reference))
-//                    .collect(CapsuleCollectors.toSet()); 
-//                       
-//            if (!sloReferences.isEmpty()) {            
-//                // final Set.Immutable<IResolutionPath<S, L, O>> paths = resolutionResult.resolvedImports.get(sloReferences.get());
-//    
-//                // TOOD: check resolutionResult.resolvedImports need to be a multi-map?!
-//                final Set.Immutable<IResolutionPath<S, L, O>> paths = sloReferences.stream().flatMap(sloReference -> resolutionResult.parameters.resolvedImports.get(sloReference).stream()).collect(CapsuleCollectors.toSet());       
-//                final Set.Immutable<String> messages = Set.Immutable.of(); // TODO save and cache messages while calculating shortest paths  
-//                return Optional.of(ImmutableTuple2.of(paths, messages));
-//            }
-        }        
-        
+            return Optional.of(ImmutableTuple2.of(paths, messages));
+        }  
+
         final int u = resolutionResult.reverseIndex.get(reference);
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
                 
