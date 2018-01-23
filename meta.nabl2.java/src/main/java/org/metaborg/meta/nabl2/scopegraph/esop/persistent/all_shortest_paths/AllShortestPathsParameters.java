@@ -6,7 +6,6 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 
@@ -22,12 +21,10 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
            
     private final Set.Immutable<O> unresolvedImports;
     private final SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> resolvedImports;
-    public SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> invalidImports;
-    
-    // TODO: join to product public SetMultimap.Immutable<O, IResolutionPath<S, L, O>> resolvedImportPaths;
-            
-    public Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> directEdgeToResolutionPath;
-    public Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> invalidDirectEdgeToResolutionPath;
+    private final SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> invalidImports;
+                
+    private final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> directEdgeToResolutionPath;
+    private final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> invalidDirectEdgeToResolutionPath;
     
     public boolean isFinal = false;
     
@@ -92,11 +89,15 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
         return directEdges.stream().map(directEdgeToResolutionPath::get).collect(CapsuleCollectors.toSet());
     }
     
+    public IResolutionPath<S, L, O> resolvedImportPath(ScopeLabelScope<S, L, O> directEdge) {
+        return directEdgeToResolutionPath.get(directEdge);
+    }    
+    
     /**********************************************************************
      * ...
      **********************************************************************/        
     
-    public static final boolean isFixpointReached(AllShortestPathsParameters one, AllShortestPathsParameters two) {
+    public static final boolean isFixpointReached(AllShortestPathsParameters<?, ?, ?> one, AllShortestPathsParameters<?, ?, ?> two) {
         return one.resolvedImports.size() == two.resolvedImports.size() && one.invalidImports.size() == two.invalidImports.size();
     }
     
@@ -114,4 +115,5 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
                 "ShortestPathParameters [\nisFinal=%s, \nunresolvedImports=%s, \nresolvedImports=%s, \ndirectEdgeToResolutionPath=%s, \ninvalidDirectEdgeToResolutionPath=%s]",
                 isFinal, unresolvedImports, resolvedImports, directEdgeToResolutionPath, invalidDirectEdgeToResolutionPath);
     }
+
 }

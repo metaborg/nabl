@@ -14,14 +14,12 @@ import java.util.stream.Stream;
 import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
-import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 
-import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 
 public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extends IOccurrence>
@@ -104,7 +102,7 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
             }
         }
 
-        return traceToPath(trace, dist[u][k].getLabels(), parameters.directEdgeToResolutionPath);
+        return traceToPath(trace, dist[u][k].getLabels());
     }
     
     /**
@@ -116,7 +114,7 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
      * @return a resolution path from a reference to its declaration 
      */
     @SuppressWarnings("unchecked")
-    private static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>> traceToPath(final List<?> trace, final List<L> labels, final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> substitutionEvidence) {
+    private Optional<IResolutionPath<S, L, O>> traceToPath(final List<?> trace, final List<L> labels) {
         assert labels.size() == trace.size() - 1;
         
         final O reference = (O) trace.get(0);        
@@ -132,8 +130,8 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
             
             final ScopeLabelScope<S, L, O> directEdge = ImmutableScopeLabelScope.of(pathTarget, nextLabel, nextScope);
 
-            if (substitutionEvidence.containsKey(directEdge)) {
-                pathSegment = Paths.append(pathSegment, Paths.named(pathTarget, nextLabel, substitutionEvidence.get(directEdge), nextScope)).get();
+            if (parameters.resolvedImportEdges().contains(directEdge)) {
+                pathSegment = Paths.append(pathSegment, Paths.named(pathTarget, nextLabel, parameters.resolvedImportPath(directEdge), nextScope)).get();
                 pathTarget  = nextScope;
             } else {
                 pathSegment = Paths.append(pathSegment, Paths.direct(pathTarget, nextLabel, nextScope)).get();
