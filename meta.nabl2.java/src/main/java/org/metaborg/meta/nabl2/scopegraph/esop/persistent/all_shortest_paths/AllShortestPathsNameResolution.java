@@ -524,6 +524,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final IEsopScopeGraph<S, L, O, V> scopeGraph, final AllShortestPathsResult<S, L, O> resolutionResult,
             final Comparator<Distance<L>> comparator, final O reference) {
 
+        /*
+         * Important: only when resolution result is final, return cached answers for resolved imports, 
+         * otherwise try to resolve analogous to regular variable references. This distinction in behaviour 
+         * is necessary to detect invalidated imports (e.g., due to import anomaly). 
+         */
         if (resolutionResult.isFinal() 
                 && resolutionResult.parameters.resolvedImportReferences().contains(reference)) {
             
@@ -531,7 +536,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             final Set.Immutable<String> messages = Set.Immutable.of();  
             
             return Optional.of(ImmutableTuple2.of(paths, messages));
-        }  
+        }
 
         final int u = resolutionResult.reverseIndex.get(reference);
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
