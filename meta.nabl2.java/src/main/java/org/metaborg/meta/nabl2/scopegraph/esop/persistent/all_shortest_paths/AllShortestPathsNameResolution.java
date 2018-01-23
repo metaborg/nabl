@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
+package org.metaborg.meta.nabl2.scopegraph.esop.persistent.all_shortest_paths;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
