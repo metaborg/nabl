@@ -15,7 +15,6 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
-import org.metaborg.meta.nabl2.scopegraph.esop.persistent.all_shortest_paths.AllShortestPathsNameResolution.ShortestPathParameters;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
@@ -36,7 +35,7 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
     public final java.util.Map<Object, Integer> reverseIndex;
     public final java.util.Map<Integer, Object> forwardIndex;
 
-    public final ShortestPathParameters<S, L, O> parameters;
+    public final AllShortestPathsParameters<S, L, O> parameters;
     
     public boolean isFinal = false;
     
@@ -48,7 +47,7 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
         this.reverseIndex = Collections.EMPTY_MAP;
         this.forwardIndex = Collections.EMPTY_MAP;
 
-        this.parameters = new ShortestPathParameters<>(Set.Immutable.of());
+        this.parameters = new AllShortestPathsParameters<>(Set.Immutable.of());
     }
     
     public static final <S extends IScope, L extends ILabel, O extends IOccurrence> AllShortestPathsResult<S, L, O> empty() {
@@ -57,7 +56,7 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
     
     public AllShortestPathsResult(final Distance<L>[][] dist, final int[][] next,
             final java.util.Map<Object, Integer> reverseIndex, final java.util.Map<Integer, Object> forwardIndex,
-            final ShortestPathParameters<S, L, O> parameters) {
+            final AllShortestPathsParameters<S, L, O> parameters) {
         this.dist = dist;
         this.next = next;
 
