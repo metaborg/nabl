@@ -18,6 +18,7 @@ import org.metaborg.meta.nabl2.scopegraph.esop.persistent.PersistentScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.persistent.all_shortest_paths.AllShortestPathsNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.util.collections.HashTrieRelation3;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
@@ -32,6 +33,7 @@ import org.metaborg.util.functions.PartialFunction1;
 import com.google.common.annotations.Beta;
 
 import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -156,6 +158,44 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
                 .collect(CapsuleCollectors.toSet());
     }
 
+    /*
+     * NOTE: depends on default methods import(Source|Target)Scopes of IEsopScopeGraph.
+     */
+    default Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> joinImports(Set.Immutable<IResolutionPath<S, L, O>> newImportPaths) {
+        
+        final Map.Transient<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> directEdgeToResolutionPath = Map.Transient.of();
+
+        newImportPaths.stream().forEach(importPath -> {
+            final Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = 
+                    joinImports(importPath.getReference(), importPath.getDeclaration());
+
+            for (ScopeLabelScope<S, L, O> directEdge : directEdges) {
+                directEdgeToResolutionPath.__put(directEdge, importPath);
+            }
+        });
+
+        return directEdgeToResolutionPath.freeze();
+    }
+
+    /*
+     * NOTE: depends on default methods import(Source|Target)Scopes of IEsopScopeGraph.
+     */
+    default Set.Immutable<ScopeLabelScope<S, L, O>> joinImports(O importReference, O importDeclaration) {
+        
+        final SetMultimap.Immutable<S, L> importSourceScopes = this.importSourceScopes(importReference);
+        final SetMultimap.Immutable<L, S> importTargetScopes = this.importTargetScopes(importDeclaration);
+        
+        // calculate cross-product: importSourceScopes x importLabel x importTargetScopes
+        final Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = 
+                importSourceScopes.entrySet().stream()
+                        .flatMap(sourceTuple -> importTargetScopes.get(sourceTuple.getValue()).stream()
+                                .map(targetScope -> ImmutableScopeLabelScope.of(sourceTuple.getKey(), sourceTuple.getValue(), targetScope))
+                                .map(ScopeLabelScope.class::cast))
+                        .collect(CapsuleCollectors.toSet());
+        
+        return directEdges;
+    }    
+    
     interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends IEsopScopeGraph<S, L, O, V>, IScopeGraph.Immutable<S, L, O> {
 
