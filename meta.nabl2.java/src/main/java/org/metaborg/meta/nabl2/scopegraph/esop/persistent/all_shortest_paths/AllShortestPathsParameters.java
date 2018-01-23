@@ -48,6 +48,10 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
         this.directEdgeToResolutionPath = directEdgeToResolutionPath;
         this.invalidDirectEdgeToResolutionPath = invalidDirectEdgeToResolutionPath;            
     }
+    
+    public static final boolean isFixpointReached(AllShortestPathsParameters<?, ?, ?> one, AllShortestPathsParameters<?, ?, ?> two) {
+        return one.resolvedImports.size() == two.resolvedImports.size() && one.invalidImports.size() == two.invalidImports.size();
+    }    
 
     /**********************************************************************
      * REFERENCES
@@ -77,16 +81,14 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
      * PATHS
      **********************************************************************/
     
-    // TODO remove duplicate (persistent / transient)
     public Set.Immutable<IResolutionPath<S, L, O>> resolvedImportPaths() {
         return directEdgeToResolutionPath.values().stream().collect(CapsuleCollectors.toSet());
     }
 
-    // TODO remove duplicate (persistent / transient)
     public Set.Immutable<IResolutionPath<S, L, O>> resolvedImportPaths(final O importReference) {        
-        // joins resolvedImports with directEdgeToResolutionPath
-        final Set.Immutable<ScopeLabelScope<S, L, O>> directEdges = resolvedImports.get(importReference);
-        return directEdges.stream().map(directEdgeToResolutionPath::get).collect(CapsuleCollectors.toSet());
+        return resolvedImports.get(importReference).stream()
+                .map(directEdgeToResolutionPath::get)
+                .collect(CapsuleCollectors.toSet());
     }
     
     public IResolutionPath<S, L, O> resolvedImportPath(ScopeLabelScope<S, L, O> directEdge) {
@@ -95,18 +97,19 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
     
     /**********************************************************************
      * ...
-     **********************************************************************/        
-    
-    public static final boolean isFixpointReached(AllShortestPathsParameters<?, ?, ?> one, AllShortestPathsParameters<?, ?, ?> two) {
-        return one.resolvedImports.size() == two.resolvedImports.size() && one.invalidImports.size() == two.invalidImports.size();
-    }
+     **********************************************************************/
     
     public boolean isImportEdgeInvalidated(O importReference, ScopeLabelScope<S, L, O> directEdge) {
         return this.invalidImports.containsEntry(importReference, directEdge);
     }
             
     public AllShortestPathsParametersBuilder<S, L, O> asTransient() {
-        return new AllShortestPathsParametersBuilder<>(unresolvedImports.asTransient(), resolvedImports.asTransient(), invalidImports.asTransient(), directEdgeToResolutionPath.asTransient(), invalidDirectEdgeToResolutionPath.asTransient());
+        return new AllShortestPathsParametersBuilder<>(
+                unresolvedImports.asTransient(), 
+                resolvedImports.asTransient(), 
+                invalidImports.asTransient(), 
+                directEdgeToResolutionPath.asTransient(), 
+                invalidDirectEdgeToResolutionPath.asTransient());
     }
 
     @Override

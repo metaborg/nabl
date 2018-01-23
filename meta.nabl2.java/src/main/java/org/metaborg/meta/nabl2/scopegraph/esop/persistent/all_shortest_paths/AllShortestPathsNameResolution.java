@@ -49,6 +49,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     private static final long serialVersionUID = 42L;
 
     private static final boolean DEBUG = false;
+    private static final boolean SANITIZE_SCOPE_GRAPHS = false;
 
     private final IEsopScopeGraph<S, L, O, V> scopeGraph;
     private final AllShortestPathsResult<S, L, O> resolutionResult;
@@ -68,16 +69,23 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
     @Deprecated
     private final Predicate2<S, L> isEdgeClosed;
 
+    /*
+     * Helps to detect errors depending on mutability of the scope graphs.
+     */
+    @SuppressWarnings("unused")
+    private static <S extends IScope, L extends ILabel, O extends IOccurrence, V> 
+    IEsopScopeGraph<S, L, O, V> sanatizeScopeGraph(IEsopScopeGraph<S, L, O, V> scopeGraph) {
+        if (SANITIZE_SCOPE_GRAPHS && (scopeGraph instanceof IEsopScopeGraph.Transient)) {
+            return ((IEsopScopeGraph.Transient<S, L, O, V>) scopeGraph).freeze();
+        } else {
+            return scopeGraph;
+        }
+    }
+    
     public AllShortestPathsNameResolution(IEsopScopeGraph<S, L, O, V> scopeGraph,
             IResolutionParameters<L> resolutionParameters, Predicate2<S, L> isEdgeClosed) {
-//        // Helps to detect errors depending on mutability of the scope graphs.
-//        if (scopeGraph instanceof IEsopScopeGraph.Transient) {
-//            this.scopeGraph = ((IEsopScopeGraph.Transient) scopeGraph).freeze();
-//        } else {
-//            this.scopeGraph = scopeGraph;
-//        }
 
-        this.scopeGraph = scopeGraph;
+        this.scopeGraph = sanatizeScopeGraph(scopeGraph);
         this.resolutionParameters = resolutionParameters;
         this.isEdgeClosed = isEdgeClosed;
 
@@ -95,9 +103,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         this.resolutionResult = initAllShortestPaths(new AllShortestPathsParameters<>(unresolvedImports), AllShortestPathsResult.empty());
     }
 
-    private AllShortestPathsResult<S, L, O> initAllShortestPaths(final AllShortestPathsParameters<S, L, O> resolutionParameters, final AllShortestPathsResult<S, L, O> previousSolution) {
-        
-                
+    private AllShortestPathsResult<S, L, O> initAllShortestPaths(final AllShortestPathsParameters<S, L, O> resolutionParameters, final AllShortestPathsResult<S, L, O> previousSolution) {    
+
         /**********************************************************************
          * Mapping graph vertices (references, declaration, and scopes) to integer numbers.
          **********************************************************************/

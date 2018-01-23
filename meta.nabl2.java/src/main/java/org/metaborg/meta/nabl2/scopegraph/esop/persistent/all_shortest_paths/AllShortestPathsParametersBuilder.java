@@ -4,13 +4,11 @@ import org.metaborg.meta.nabl2.scopegraph.ILabel;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 
 public class AllShortestPathsParametersBuilder<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
@@ -35,15 +33,6 @@ public class AllShortestPathsParametersBuilder<S extends IScope, L extends ILabe
         this.invalidDirectEdgeToResolutionPath = invalidDirectEdgeToResolutionPath;
     }
 
-    // TODO make public API
-    // TODO remove duplicate (persistent / transient)
-    public SetMultimap.Immutable<O, IResolutionPath<S, L, O>> resolvedImportPaths() {
-        // joins resolvedImports with directEdgeToResolutionPath            
-        return resolvedImports.entrySet().stream()
-                .map(tuple -> ImmutableTuple2.of(tuple.getKey(), directEdgeToResolutionPath.get(tuple.getValue())))
-                .collect(CapsuleCollectors.toSetMultimap(tuple -> tuple._1(), tuple -> tuple._2()));
-    }        
-    
     public void resolveImport(O importReference, final Map.Immutable<ScopeLabelScope<S, L, O>, IResolutionPath<S, L, O>> directEdgeToResolutionPath) {              
          assert this.unresolvedImports.contains(importReference);
          assert !this.resolvedImports.containsKey(importReference);
