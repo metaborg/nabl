@@ -1,8 +1,5 @@
 package org.metaborg.meta.nabl2.scopegraph.esop.persistent;
 
-import static org.metaborg.meta.nabl2.util.tuples.HasLabel.labelEquals;
-import static org.metaborg.meta.nabl2.util.tuples.HasOccurrence.occurrenceEquals;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -11,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -42,7 +38,6 @@ import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.OccurrenceLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelOccurrence;
 import org.metaborg.meta.nabl2.util.tuples.ScopeLabelScope;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
@@ -51,7 +46,6 @@ import org.metaborg.util.functions.Predicate2;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.Sets;
 
-import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
@@ -308,29 +302,22 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                         
             if (!oldDirectEdges.equals(newDirectEdges)) {
 
-                // assert oldDirectEdges.intersect(newDirectEdges).isEmpty();
+                final Set.Immutable<ScopeLabelScope<S, L, O>> invalidatedDirectEdges = 
+                        newDirectEdges.stream()
+                            .filter(directEdge -> resolutionParameters.isImportEdgeInvalidated(importReference, directEdge))
+                            .collect(CapsuleCollectors.toSet());
                 
-                // TODO: maybe I have to filter out all invalid edges???
-                // TODO: investigate proper condition.
-                boolean previouslySeen = newDirectEdges.stream().anyMatch(directEdge -> {
-                    boolean directEdgeSeen = resolutionParameters.invalidDirectEdgeToResolutionPath.containsKey(directEdge);
-                    // boolean pathSeen = directEdgeToResolutionPath.get(directEdge).intersect(resolutionParameters.invalidDirectEdgeToResolutionPath.get(directEdge)).size() > 0;
-                    
-                    return directEdgeSeen; // && pathSeen;
-                });
-                
-                if (previouslySeen) {
-                    break;
+                if (invalidatedDirectEdges.isEmpty()) {
+                    nextResolutionParametersBuilder.updateImport(importReference, directEdgeToResolutionPath);
+                    importRevised = true;
+            
+                    if (DEBUG) {
+                        System.out.println(String.format("invalided [ %s ]\n   old path: %s\n   new path: %s",
+                                importReference, oldDirectEdges, newDirectEdges));
+                    }                
+                } else if (invalidatedDirectEdges.size() != newDirectEdges.size()) {
+                    throw new IllegalStateException("Assumed that either all edges or none become invalidated.");
                 }
-
-                importRevised = true;
-                
-                if (DEBUG) {
-                    System.out.println(String.format("invalided [ %s ]\n   old path: %s\n   new path: %s",
-                            importReference, oldDirectEdges, newDirectEdges));
-                }
-
-                nextResolutionParametersBuilder.updateImport(importReference, directEdgeToResolutionPath);
             }
         }
         
@@ -814,6 +801,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             this.invalidImports = invalidImports;
             this.directEdgeToResolutionPath = directEdgeToResolutionPath;
             this.invalidDirectEdgeToResolutionPath = invalidDirectEdgeToResolutionPath;            
+        }
+        
+        
+        public boolean isImportEdgeInvalidated(O importReference, ScopeLabelScope<S, L, O> directEdge) {
+            return this.invalidImports.containsEntry(importReference, directEdge);
         }
         
         // TODO make public API
