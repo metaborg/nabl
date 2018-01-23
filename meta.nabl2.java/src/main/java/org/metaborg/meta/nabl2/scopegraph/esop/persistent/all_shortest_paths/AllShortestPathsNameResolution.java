@@ -33,7 +33,6 @@ import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
-import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.util.collections.IFunction;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableScopeLabelScope;
@@ -532,7 +531,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
 
-        return traceToPath(trace, resolutionResult.dist[u][k].labels, resolutionResult.parameters.directEdgeToResolutionPath);
+        return traceToPath(trace, resolutionResult.dist[u][k].getLabels(), resolutionResult.parameters.directEdgeToResolutionPath);
     }
     
     /**
@@ -612,11 +611,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 return +1;
             }
 
-            int commonLength = Math.min(o1.labels.size(), o2.labels.size());
+            int commonLength = Math.min(o1.getLabels().size(), o2.getLabels().size());
 
             final boolean isAmbiguous = IntStream.range(0, commonLength).map(index -> {
-                final L l1 = o1.labels.get(index);
-                final L l2 = o2.labels.get(index);
+                final L l1 = o1.getLabels().get(index);
+                final L l2 = o2.getLabels().get(index);
                 return !Objects.equals(l1, l2) && !labelOrder.smaller(l2).contains(l1)
                         && !labelOrder.larger(l2).contains(l1) ? 1 : 0;
             }).sum() == 0 ? false : true;
@@ -627,8 +626,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
 
             final OptionalInt commonComparisonResult = IntStream.range(0, commonLength).map(index -> {
-                L l1 = o1.labels.get(index);
-                L l2 = o2.labels.get(index);
+                L l1 = o1.getLabels().get(index);
+                L l2 = o2.getLabels().get(index);
 
                 if (Objects.equals(l1, l2)) {
                     return 0;
@@ -647,158 +646,16 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 return commonComparisonResult.getAsInt();
             }
 
-            if (o1.labels.size() == o2.labels.size()) {
+            if (o1.getLabels().size() == o2.getLabels().size()) {
                 return 0;
             } else {
-                if (o1.labels.size() < o2.labels.size()) {
+                if (o1.getLabels().size() < o2.getLabels().size()) {
                     return -1;
                 } else {
                     return +1;
                 }
             }
         }
-    }
-
-    public static class Distance<L extends ILabel> implements java.io.Serializable {
-
-        private static final long serialVersionUID = 42L;
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        public static final Distance ZERO = new Distance(Collections.EMPTY_LIST);
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        
-        public static final Distance INFINITE = new Distance((List) null);
-
-        @SuppressWarnings("unchecked")
-        public static final <L extends ILabel> Distance<L> zero() {
-            return ZERO;
-        }
-        
-        @SuppressWarnings("unchecked")
-        public static final <L extends ILabel> Distance<L> infinite() {
-            return INFINITE;
-        }
-        
-        private final List<L> labels;
-
-        public static final <L extends ILabel> Distance<L> of(L label) {
-            return new Distance<L>(label);
-        }
-        
-        public Distance(L label) {
-            this.labels = Collections.singletonList(label);
-        }
-
-        public Distance(List<L> labels) {
-            this.labels = labels;
-        }        
-
-        @SuppressWarnings("unchecked")
-        public static final <L extends ILabel> Distance<L> concat(final IRegExpMatcher<L> wellFormednessExpression,
-                final Distance<L> one, final Distance<L> two) {
-            if (one == Distance.ZERO) {
-                return two;
-            }
-            if (one == Distance.INFINITE) {
-                return Distance.INFINITE;
-            }
-            if (two == Distance.ZERO) {
-                return one;
-            }
-            if (two == Distance.INFINITE) {
-                return Distance.INFINITE;
-            }
-
-            final List<L> mergedLabels = new ArrayList<>(one.labels.size() + two.labels.size());
-            mergedLabels.addAll(one.labels);
-            mergedLabels.addAll(two.labels);
-            assert mergedLabels.size() >= 2;
-            
-            final Distance<L> concatenation = new Distance<>(mergedLabels);
-
-            if (!Distance.isValid(concatenation)) {
-                return INFINITE;
-            }
-            
-            // @formatter:off
-            final List<L> filteredLabels = mergedLabels.stream()
-                    .filter(label -> !label.equals(Label.R))
-                    .filter(label -> !label.equals(Label.D))
-                    .collect(Collectors.toList());
-            // @formatter:on            
-
-            final IRegExpMatcher<L> matcherResult = wellFormednessExpression.match(filteredLabels);
-
-            if (matcherResult.isEmpty()) {
-                return INFINITE;
-            } else {
-                return concatenation;
-            }
-        }
-
-        /*
-         * Checks that paths contain at most one reference label and at most one
-         * declaration label. If present, a declaration occur at the first
-         * position, and a declaration at the last position.
-         */
-        public static final <L extends ILabel> boolean isValid(Distance<L> distance) {
-            List<L> mergedLabels = distance.labels;
-
-            if (mergedLabels.size() == 1) {
-                return true;
-            }
-
-            long countOfLabelR = mergedLabels.stream().filter(label -> label.equals(Label.R)).count();
-            long countOfLabelD = mergedLabels.stream().filter(label -> label.equals(Label.D)).count();
-
-            if (countOfLabelR == 1 && !mergedLabels.get(0).equals(Label.R)) {
-                return false;
-            }
-
-            if (countOfLabelD == 1 && !mergedLabels.get(mergedLabels.size() - 1).equals(Label.D)) {
-                return false;
-            }
-
-            return true;
-        }        
-        
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((labels == null) ? 0 : labels.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Distance other = (Distance) obj;
-            if (labels == null) {
-                if (other.labels != null)
-                    return false;
-            } else if (!labels.equals(other.labels))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            if (this == INFINITE) {
-                return "∞";
-            } else if (this == ZERO) {
-                return "∅";
-            } else {
-                return labels.toString();
-            }
-        }
-
     }
 
     public static class ShortestPathParameters<S extends IScope, L extends ILabel, O extends IOccurrence>
