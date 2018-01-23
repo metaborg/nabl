@@ -20,7 +20,7 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
 
     private static final long serialVersionUID = 42L;
            
-    public Set.Immutable<O> unresolvedImports;
+    private final Set.Immutable<O> unresolvedImports;
     public SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> resolvedImports;
     public SetMultimap.Immutable<O, ScopeLabelScope<S, L, O>> invalidImports;
     
@@ -52,6 +52,9 @@ public class AllShortestPathsParameters<S extends IScope, L extends ILabel, O ex
         this.invalidDirectEdgeToResolutionPath = invalidDirectEdgeToResolutionPath;            
     }
     
+    public Set.Immutable<O> unresolvedImportReferences() {
+        return unresolvedImports;
+    }
     
     public boolean isImportEdgeInvalidated(O importReference, ScopeLabelScope<S, L, O> directEdge) {
         return this.invalidImports.containsEntry(importReference, directEdge);

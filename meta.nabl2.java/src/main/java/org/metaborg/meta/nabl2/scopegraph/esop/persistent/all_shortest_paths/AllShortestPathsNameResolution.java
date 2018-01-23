@@ -355,7 +355,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * TODO: do we have to abort early after revised imports or can we continue resolving other imports?
          */
         if (!importRevised) {
-            for (O importReference : resolutionParameters.unresolvedImports) {                
+            for (O importReference : resolutionParameters.unresolvedImportReferences()) {                
 
                 final Optional<Set.Immutable<IResolutionPath<S, L, O>>> optionalImportPaths = 
                         resolveToPaths(scopeGraph, resolutionResult, comparator, importReference);
