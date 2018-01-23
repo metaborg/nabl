@@ -160,16 +160,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         final int[][] next = new int[nodes.size()][nodes.size()];
 
         /*
-         * 1 let dist be a |V| × |V| array of minimum distances initialized to ∞
-         * (infinity) 2 for each vertex v 3 dist[v][v] ← 0 4 for each edge (u,v)
-         * 5 dist[u][v] ← w(u,v) // the weight of the edge (u,v) 6 for k from 1
-         * to |V| 7 for i from 1 to |V| 8 for j from 1 to |V| 9 if dist[i][j] >
-         * dist[i][k] + dist[k][j] 10 dist[i][j] ← dist[i][k] + dist[k][j] 11
-         * end if
-         */
-
-        /*
          * let dist be a |V| × |V| array of minimum distances initialized to ∞
+         * let next be a |V| × |V| array positive path successor IDs initialized to -1
          */
         for (int n = 0; n < nodes.size(); n++) {
             for (int m = 0; m < nodes.size(); m++) {
@@ -227,6 +219,16 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         /**********************************************************************
          * Calculating shortest paths.
          **********************************************************************/
+
+       /*
+        * for k from 0 until |V| 
+        *   for i from 0 until |V|
+        *     for j from 0 until |V|
+        *       if dist[i][j] > dist[i][k] + dist[k][j]
+        *          dist[i][j] = dist[i][k] + dist[k][j]
+        *          next[i][j] = next[i][k];
+        *       end if
+        */
         
         final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);
 
