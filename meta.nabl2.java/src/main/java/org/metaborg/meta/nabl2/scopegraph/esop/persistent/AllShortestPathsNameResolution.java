@@ -106,6 +106,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
 
     private ShortestPathResult<S, L, O> initAllShortestPaths(final ShortestPathParameters<S, L, O> resolutionParameters, final ShortestPathResult<S, L, O> previousSolution) {
         
+                
+        /**********************************************************************
+         * Mapping graph vertices (references, declaration, and scopes) to integer numbers.
+         **********************************************************************/
+        
         final List<O> rs = scopeGraph.sourceEdgeStream().map(tuple -> tuple.occurrence()).sorted()
                 .collect(Collectors.toList());
 
@@ -128,6 +133,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
             reverseIndex.put(nodes.get(nodeIndex), nodeIndex);
         }        
+
+        
+        /**********************************************************************
+         * Predicates for pretty-printing matrices. 
+         **********************************************************************/        
         
         int rsOffset = 0;
         int rsLength = rs.size();
@@ -142,6 +152,11 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         IntPredicate isDeclaration = i -> dsOffset <= i && i < dsOffset + dsLength;
         IntPredicate isScope = i -> scopesOffset <= i && i < scopesOffset + scopesLength;
 
+        
+        /**********************************************************************
+         * Initalizing distance matrix and next matrix (for recovering paths). 
+         **********************************************************************/        
+        
         @SuppressWarnings("unchecked")
         final Distance<L>[][] dist = new Distance[nodes.size()][nodes.size()];
         final int[][] next = new int[nodes.size()][nodes.size()];
@@ -211,8 +226,10 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         });
         
 
-        // TODO: use configurable comparators based resolution, reachability and
-        // ..
+        /**********************************************************************
+         * Calculating shortest paths.
+         **********************************************************************/
+        
         final Comparator<Distance<L>> comparator = new PathComparator<>(ordered);
 
         for (int k = 0; k < nodes.size(); k++) {
@@ -284,8 +301,19 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 System.out.println();
             }
         }
+
+        
+        /**********************************************************************
+         * Result from running shortest path algorithm.
+         **********************************************************************/        
         
         final ShortestPathResult<S, L, O> resolutionResult = new ShortestPathResult<>(dist, next, reverseIndex, forwardIndex, resolutionParameters);
+       
+                
+        /**********************************************************************
+         * Checking if imports were invalidated (e.g., do deal with import anomaly).
+         **********************************************************************/
+        
         final TransientShortestPathParameters<S, L, O> nextResolutionParametersBuilder = resolutionParameters.asTransient();
         
         boolean importRevised = false;        
@@ -327,10 +355,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
 
+        
+        /**********************************************************************
+         * Try to resolve imports that were reachable in this round.
+         **********************************************************************/
+        
         /*
-         * TODO: do we have to abort early after revised imports or can we
-         * continue resolving other imports?
-         */       
+         * TODO: do we have to abort early after revised imports or can we continue resolving other imports?
+         */
         if (!importRevised) {
             for (O importReference : resolutionParameters.unresolvedImports) {                
 
@@ -346,10 +378,13 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             }
         }
         
+        
+        /**********************************************************************
+         * Determining if all resolvable references and imports were resolved.
+         **********************************************************************/        
+        
         final ShortestPathParameters<S, L, O> nextResolutionParameters = nextResolutionParametersBuilder.freeze();
         
-        // TODO: use multi-map or binary relatin in order to keep on using size
-        // boolean isFixpointReached = true;
         boolean isFixpointReached = 
                 resolutionParameters.resolvedImports.size() == nextResolutionParameters.resolvedImports.size()
                         && resolutionParameters.invalidImports.size() == nextResolutionParameters.invalidImports.size();
