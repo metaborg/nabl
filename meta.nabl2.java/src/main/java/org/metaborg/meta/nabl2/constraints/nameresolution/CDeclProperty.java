@@ -6,7 +6,7 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
+import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.base.Preconditions;
@@ -46,7 +46,7 @@ public abstract class CDeclProperty implements INameResolutionConstraint {
     }
 
     @Override public IMessageContent pp() {
-        if(getKey().equals(AnalysisTerms.TYPE_KEY)) {
+        if(getKey().equals(DeclProperties.TYPE_KEY)) {
             return MessageContent.builder().append(getDeclaration()).append(" : ").append(getValue()).build();
         } else {
             return MessageContent.builder().append(getDeclaration()).append(".").append(getKey()).append(" := ")

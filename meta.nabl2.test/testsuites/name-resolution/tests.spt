@@ -170,7 +170,7 @@ test resolve compound name with explicit position [[
    resolve #1 to #2
 
 test resolve compound names from ast [[
-   resolve ast compound [[wrapped x]] to [[wrapped x]]
+   resolve ast compound wrapped [[x]] to [[wrapped x]]
 ]] 0 errors
    resolve #1 to #2
 

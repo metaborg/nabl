@@ -42,6 +42,15 @@ test get two ast refs [[
   x has two references
 ]] run get-ast-refs to 2
 
+
+test get ast custom prop succeeds [[
+  x has a custom prop
+]] run get-ast-custom-prop-succeeds
+
+test get ast custom prop fails [[
+  x has no custom prop
+]] run get-ast-custom-prop-fails
+
 // ------------------------
 
 test get all decls (0) [[

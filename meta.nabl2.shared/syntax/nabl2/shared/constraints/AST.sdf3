@@ -3,8 +3,8 @@ module nabl2/shared/constraints/AST
 imports
 
   nabl2/shared/common/AST
-  nabl2/shared/common/CTerms
   nabl2/shared/common/Identifiers
+  nabl2/shared/common/CTerms
   nabl2/shared/common/Messages
 
 context-free syntax
@@ -17,5 +17,4 @@ context-free syntax
 
 lexical syntax
 
-  PropertyId = "type" {reject}
-  PropertyId = "params" {reject}
+  PropertyId = "type" | "params" {reject}

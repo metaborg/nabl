@@ -8,6 +8,7 @@ import org.metaborg.meta.nabl2.constraints.base.ImmutableCConj;
 import org.metaborg.meta.nabl2.constraints.base.ImmutableCExists;
 import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
+import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.constraints.nameresolution.ImmutableCDeclProperty;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
@@ -21,7 +22,6 @@ import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
-import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -81,7 +81,7 @@ public class PolymorphismComponent extends ASolver {
 
         SolveResult result = SolveResult.constraints(
                 // @formatter:off
-                ImmutableCDeclProperty.of(decl, AnalysisTerms.TYPE_KEY, scheme, 0, gen.getMessageInfo()),
+                ImmutableCDeclProperty.of(decl, DeclProperties.TYPE_KEY, scheme, 0, gen.getMessageInfo()),
                 ImmutableCEqual.of(gen.getGenVars(), TB.newList(subst.keySet()), gen.getMessageInfo())
                 // @formatter:on
         );
@@ -100,7 +100,7 @@ public class PolymorphismComponent extends ASolver {
             return Optional.empty();
         }
 
-        final Optional<ITerm> schemeTerm = getDeclProp.apply(decl, AnalysisTerms.TYPE_KEY);
+        final Optional<ITerm> schemeTerm = getDeclProp.apply(decl, DeclProperties.TYPE_KEY);
         if(!schemeTerm.isPresent()) {
             return Optional.empty();
         }

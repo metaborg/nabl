@@ -4,12 +4,12 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
+import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.solver.TypeException;
-import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.IUnifier;
@@ -109,7 +109,7 @@ public class DeclTypeDeps implements IConstraintSetProperty {
             r -> ImmutableMultimap.of(),
             a -> ImmutableMultimap.of(),
             dp -> {
-                if(dp.getKey().equals(AnalysisTerms.TYPE_KEY)) {
+                if(dp.getKey().equals(DeclProperties.TYPE_KEY)) {
                     final Multimap<ITermVar, ITerm> determinedVars = HashMultimap.create();
                     for(ITermVar v : dp.getValue().getVars()) {
                         determinedVars.put(v, dp.getDeclaration());
