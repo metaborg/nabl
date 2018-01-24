@@ -125,14 +125,14 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         nodes.addAll(ds);
         nodes.addAll(scopes);
         
-        final java.util.Map<Integer, Object> forwardIndex = new HashMap<>();
+        final java.util.Map<Integer, Object> identifierToGraphNode = new HashMap<>();
         for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-            forwardIndex.put(nodeIndex, nodes.get(nodeIndex));
+            identifierToGraphNode.put(nodeIndex, nodes.get(nodeIndex));
         }
 
-        final java.util.Map<Object, Integer> reverseIndex = new HashMap<>();
+        final java.util.Map<Object, Integer> graphNodeToIdentifier = new HashMap<>();
         for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-            reverseIndex.put(nodes.get(nodeIndex), nodeIndex);
+            graphNodeToIdentifier.put(nodes.get(nodeIndex), nodeIndex);
         }        
 
         
@@ -186,22 +186,22 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * for each edge (u,v) { dist[u][v] <- w(u,v) }
          */
         scopeGraph.sourceEdgeStream().forEach(slo -> {
-            final int oIndex = reverseIndex.get(slo.occurrence());
-            final int sIndex = reverseIndex.get(slo.scope());
+            final int oIndex = graphNodeToIdentifier.get(slo.occurrence());
+            final int sIndex = graphNodeToIdentifier.get(slo.scope());
 
             dist[oIndex][sIndex] = Distance.of(slo.label());
             next[oIndex][sIndex] = sIndex;
         });
         scopeGraph.middleEdgeStream().forEach(sls -> {
-            final int sIndex = reverseIndex.get(sls.sourceScope());
-            final int tIndex = reverseIndex.get(sls.targetScope());
+            final int sIndex = graphNodeToIdentifier.get(sls.sourceScope());
+            final int tIndex = graphNodeToIdentifier.get(sls.targetScope());
 
             dist[sIndex][tIndex] = Distance.of(sls.label());
             next[sIndex][tIndex] = tIndex;
         });
         scopeGraph.targetEdgeStream().forEach(slo -> {
-            final int sIndex = reverseIndex.get(slo.scope());
-            final int oIndex = reverseIndex.get(slo.occurrence());
+            final int sIndex = graphNodeToIdentifier.get(slo.scope());
+            final int oIndex = graphNodeToIdentifier.get(slo.occurrence());
 
             dist[sIndex][oIndex] = Distance.of(slo.label());
             next[sIndex][oIndex] = oIndex;
@@ -211,8 +211,8 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * Adding direct edges that resulted from previously resolved imports.
          */
         resolutionParameters.resolvedImportEdges().forEach(sls -> {
-            final int sIndex = reverseIndex.get(sls.sourceScope());
-            final int tIndex = reverseIndex.get(sls.targetScope());
+            final int sIndex = graphNodeToIdentifier.get(sls.sourceScope());
+            final int tIndex = graphNodeToIdentifier.get(sls.targetScope());
 
             dist[sIndex][tIndex] = Distance.of(sls.label());
             next[sIndex][tIndex] = tIndex;
@@ -298,7 +298,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
          * Result from running shortest path algorithm.
          **********************************************************************/        
         
-        final AllShortestPathsResult<S, L, O> resolutionResult = new AllShortestPathsResult<>(dist, next, reverseIndex, forwardIndex, resolutionParameters);
+        final AllShortestPathsResult<S, L, O> resolutionResult = new AllShortestPathsResult<>(dist, next, graphNodeToIdentifier, identifierToGraphNode, resolutionParameters);
 
         if (DEBUG) {
             if (dist.length > 0) {
@@ -538,13 +538,13 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
             return Optional.of(ImmutableTuple2.of(paths, messages));
         }
 
-        final int u = resolutionResult.reverseIndex.get(reference);
+        final int u = resolutionResult.occurrenceToIdentifier(reference);
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
                 
         final Set.Immutable<Integer> candidateIndices = scopeGraph.declarationEdgeStream()
                 .filter(slo -> IOccurrence.match(reference, slo.occurrence()))
                 .map(tuple -> tuple.occurrence())
-                .mapToInt(resolutionResult.reverseIndex::get)
+                .mapToInt(resolutionResult::occurrenceToIdentifier)
                 .boxed()
                 .collect(CapsuleCollectors.toSet());
 
@@ -560,7 +560,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .collect(CapsuleCollectors.toSet());
         
         final Set.Immutable<O> declarations = declarationIndices.stream()
-                .map(index -> (O) resolutionResult.forwardIndex.get(index))
+                .map(resolutionResult::identifierToOccurrence)
                 .collect(CapsuleCollectors.toSet());
 
         if (declarationsCosts.contains(Distance.INFINITE)) {            
@@ -612,7 +612,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
         // TODO: vastly improve performance and general architecture of this
         // method!!!
 
-        final int u = resolutionResult.reverseIndex.get(scope);
+        final int u = resolutionResult.scopeToIdentifier(scope);
         final Distance<L>[] visibleTargets = resolutionResult.dist[u];
 
         final IFunction<O, S> refs = scopeGraph.getRefs();
@@ -622,7 +622,7 @@ public class AllShortestPathsNameResolution<S extends IScope, L extends ILabel, 
                 .range(0, visibleTargets.length)
 //                .filter(index -> visibleTargets[index] != Distance.ZERO)
                 .filter(index -> visibleTargets[index] != Distance.INFINITE)
-                .mapToObj(index -> resolutionResult.forwardIndex.get(index))
+                .mapToObj(index -> (Object) resolutionResult.identifierToGraphNode(index))
                 .filter(IOccurrence.class::isInstance)
                 .map(IOccurrence.class::cast)
                 .map(o -> (O) o)

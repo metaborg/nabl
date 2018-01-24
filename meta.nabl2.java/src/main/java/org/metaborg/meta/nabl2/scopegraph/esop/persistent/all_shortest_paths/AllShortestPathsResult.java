@@ -30,13 +30,49 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
     public final Distance<L>[][] dist;
     public final int[][] next;
 
-    public final java.util.Map<Object, Integer> reverseIndex;
-    public final java.util.Map<Integer, Object> forwardIndex;
+    private final java.util.Map<Object, Integer> graphNodeToIdentifier; // reverse index
+    private final java.util.Map<Integer, Object> identifierToGraphNode; // forward index
 
     public final AllShortestPathsParameters<S, L, O> parameters;
     
     private boolean isFinal = false;
+
+    public final int graphNodeToIdentifier(final Object graphNode) {
+        final Integer identifier = graphNodeToIdentifier.get(graphNode);
+        
+        if (identifier == null) {
+            throw new IllegalArgumentException(String.format("No index found for graph node %s.", graphNode));
+        } else {
+            return identifier.intValue();
+        }
+    }
     
+    public final <T> T identifierToGraphNode(final int identifier) {
+        final Object graphNode = identifierToGraphNode.get(identifier);
+        
+        if (graphNode == null) {
+            throw new IllegalArgumentException(String.format("No graph node found for identifier %s.", identifier));
+        } else {
+            return (T) graphNode;
+        }
+    }    
+    
+    public final int occurrenceToIdentifier(final O occurrence) {
+        return graphNodeToIdentifier(occurrence);
+    }
+    
+    public final O identifierToOccurrence(final int identifier) {
+        return identifierToGraphNode(identifier);
+    }    
+
+    public final int scopeToIdentifier(final S scope) {
+        return graphNodeToIdentifier(scope);
+    }
+    
+    public final S identifierToScope(final int identifier) {
+        return identifierToGraphNode(identifier);
+    }    
+        
     public boolean isFinal() {
         return isFinal;
     }
@@ -50,8 +86,8 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
         this.dist = new Distance[0][0];
         this.next = new int[0][0];
 
-        this.reverseIndex = Collections.EMPTY_MAP;
-        this.forwardIndex = Collections.EMPTY_MAP;
+        this.graphNodeToIdentifier = Collections.EMPTY_MAP;
+        this.identifierToGraphNode = Collections.EMPTY_MAP;
 
         this.parameters = new AllShortestPathsParameters<>(Set.Immutable.of());
     }
@@ -61,13 +97,13 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
     }
     
     public AllShortestPathsResult(final Distance<L>[][] dist, final int[][] next,
-            final java.util.Map<Object, Integer> reverseIndex, final java.util.Map<Integer, Object> forwardIndex,
+            final java.util.Map<Object, Integer> graphNodeToIdentifier, final java.util.Map<Integer, Object> identifierToGraphNode,
             final AllShortestPathsParameters<S, L, O> parameters) {
         this.dist = dist;
         this.next = next;
 
-        this.reverseIndex = reverseIndex;
-        this.forwardIndex = forwardIndex;
+        this.graphNodeToIdentifier = graphNodeToIdentifier;
+        this.identifierToGraphNode = identifierToGraphNode;
 
         this.parameters = parameters;
     }
@@ -81,10 +117,10 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
             throw new IllegalArgumentException(String.format("Reference and declaration must match.\n   ref: %s\n   dec: %s", reference, declaration));
         }
         
-        final int u = reverseIndex.get(reference);
+        final int u = graphNodeToIdentifier.get(reference);
 
         int j = u;
-        final int k = reverseIndex.get(declaration);
+        final int k = graphNodeToIdentifier.get(declaration);
 
         /*
          * if next[u][v] = null then 
@@ -102,11 +138,11 @@ public class AllShortestPathsResult<S extends IScope, L extends ILabel, O extend
         if (next[j][k] == -1) {
             return Optional.empty();
         } else {
-            trace.add(forwardIndex.get(j));
+            trace.add(identifierToGraphNode.get(j));
 
             while (j != k) {
                 j = next[j][k];                
-                trace.add(forwardIndex.get(j));
+                trace.add(identifierToGraphNode.get(j));
             }
         }
 
