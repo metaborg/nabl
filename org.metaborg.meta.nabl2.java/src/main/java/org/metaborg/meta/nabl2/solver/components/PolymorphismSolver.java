@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.constraints.poly.CGeneralize;
 import org.metaborg.meta.nabl2.constraints.poly.CInstantiate;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
@@ -21,7 +22,6 @@ import org.metaborg.meta.nabl2.solver.Solver;
 import org.metaborg.meta.nabl2.solver.SolverComponent;
 import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.solver.UnsatisfiableException;
-import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.Terms.M;
@@ -104,7 +104,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         final Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + inst));
         activeDecls.add(decl);
-        unifier().addDetermination(inst.getType(), AnalysisTerms.TYPE_KEY, decl);
+        unifier().addDetermination(inst.getType(), DeclProperties.TYPE_KEY, decl);
         determined.add(inst);
         return true;
     }
@@ -149,7 +149,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
             throw new UnsatisfiableException(gen.getMessageInfo().withDefaultContent(ex.getMessageContent()));
         }
 
-        final Optional<ITerm> prev = setDeclProp.apply(decl, AnalysisTerms.TYPE_KEY, scheme);
+        final Optional<ITerm> prev = setDeclProp.apply(decl, DeclProperties.TYPE_KEY, scheme);
         if(prev.isPresent()) {
             throw new UnsatisfiableException();
         }
@@ -169,7 +169,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         final Occurrence decl = Occurrence.matcher().match(declTerm)
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + inst));
 
-        final Optional<ITerm> schemeTerm = getDeclProp.apply(decl, AnalysisTerms.TYPE_KEY).map(unifier()::find);
+        final Optional<ITerm> schemeTerm = getDeclProp.apply(decl, DeclProperties.TYPE_KEY).map(unifier()::find);
         if(!schemeTerm.isPresent()) {
             return false;
         }
@@ -219,7 +219,7 @@ public class PolymorphismSolver extends SolverComponent<IPolyConstraint> {
         if(unifier().isActive(type)) {
             return false;
         }
-        for(IOccurrence decl : unifier().isDeterminedBy(type, AnalysisTerms.TYPE_KEY)) {
+        for(IOccurrence decl : unifier().isDeterminedBy(type, DeclProperties.TYPE_KEY)) {
             if(activeDecls.contains(decl)) {
                 return false;
             }

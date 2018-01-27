@@ -45,6 +45,11 @@ rules
     new s, Ns1{x} -> s, Ns2{x} -> s.
 
 
+  [[ AstWithCustomProp(x) ^ () ]] :=
+    @x.customProp := ().
+
+  [[ AstWithoutCustomProp(x) ^ () ]].
+
 rules
 
   [[ GetAllDecls(xs) ^ () ]] :=
