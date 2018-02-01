@@ -1,0 +1,42 @@
+module pp
+
+imports
+
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/editor/refactoring/-
+  pp/StatixLang-parenthesize
+  pp/StatixLang-pp
+
+rules
+
+  editor-format:
+    (_, _, ast, path, project-path) -> (filename, result)
+    with
+      ext      := <get-extension> path;
+      filename := <guarantee-extension(|$[pp.[ext]])> path;
+      result   := <pp-StatixLang-string> ast
+
+rules
+  
+  pp-StatixLang-string =
+    parenthesize-StatixLang
+    ; prettyprint-StatixLang-start-symbols
+    ; !V([], <id>)
+    ; box2text-string(|120)
+      
+  pp-partial-StatixLang-string =
+    parenthesize-StatixLang
+    ; prettyprint-StatixLang
+    ; !V([], <id>)
+    ; box2text-string(|120)
+    
+  pp-partial-StatixLang-string(|sort) =
+    parenthesize-StatixLang
+    ; prettyprint-StatixLang(|sort)
+    ; !V([], <id>)
+    ; box2text-string(|120)  
+      
+rules
+  
+  construct-textual-change = construct-textual-change(pp-partial-StatixLang-string, parenthesize, override-reconstruction, resugar)
