@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: StatixLang language Eclipse plugin
-Bundle-SymbolicName: meta.statix.lang.eclipse;singleton:=true
+Bundle-SymbolicName: org.metaborg.meta.statix.lang.eclipse;singleton:=true
 Bundle-Version: 2.5.0.qualifier
 Bundle-Vendor: org.metaborg
 Bundle-ActivationPolicy: lazy

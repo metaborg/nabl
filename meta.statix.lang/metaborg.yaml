@@ -1,5 +1,5 @@
 ---
-id: org.metaborg:meta.statix.lang:2.5.0-SNAPSHOT
+id: org.metaborg:org.metaborg.meta.statix.lang:2.5.0-SNAPSHOT
 name: StatixLang
 dependencies:
   compile:
@@ -12,7 +12,6 @@ dependencies:
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
 language:
   sdf:
-   #pretty-print: Statix
     sdf2table: java
     placeholder:
       prefix: "$"
