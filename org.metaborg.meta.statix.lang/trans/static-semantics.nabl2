@@ -21,6 +21,7 @@ signature
     RType
     TType
     TClass
+    SKind
 
   constructors
     AST        : occurrence -> TType
@@ -38,6 +39,9 @@ signature
     REL        : list(TType) -> RType
     NS         : list(TType) -> RType
 
+    SimpleSort : SKind
+    SortAlias  : SKind
+
     OccurrenceEdge : TClass
     DirectEdge     : TClass
     NamedEdge      : TClass
@@ -53,7 +57,10 @@ signature
     Sort
 
   relations
-    in : Type * TClass
+//  reflexive, transitive, anti-symmetric sub : Type * Type {
+//    [+sub]
+//  }
+    in  : Type * TClass
 
   name resolution
     labels P I
@@ -90,30 +97,41 @@ rules
   [[ Sorts(sorts) ^ (s) ]] :=
     Map1(SortDecl)[[ sorts ^ (s) ]].
 
-  SortDecl[[ AstSort(x) ^ (s) ]] :=
+  SortDecl[[ SortDecl(SimpleSort(x)) ^ (s) ]] :=
     Sort{x} <- s,
-    Sort{x} : AST(Sort{x}) !.
+    Sort{x} : SORT(Sort{x}) !!,
+    Sort{x}.kind := SimpleSort().
 
-  SortDecl[[ SimpleSort(x) ^ (s) ]] :=
+  SortDecl[[ SortAlias(SimpleSort(x), sort) ^ (s) ]] :=
     Sort{x} <- s,
-    Sort{x} : SORT(Sort{x}) !.
+    Sort{x} : ty !!,
+    Sort{x}.kind := SortAlias(),
+    SortRef[[ sort ^ (s) : ty ]].
 
   [[ Constructors(ctors) ^ (s) ]] :=
     Map1[[ ctors ^ (s) ]].
 
   [[ OpDecl(x, sort) ^ (s) ]] :=
     Op{x} <- s,
-    Op{x} : ty !,
+    Op{x} : ty !!,
     OpSort[[ sort ^ (s) : ty ]].
 
-  OpSort[[ SimpleSort(x) ^ (s) : OP([], ty) ]] :=
-    Sort{x} -> s,
-    Sort{x} |-> d,
-    d : ty !.
+  OpSort[[ SimpleSort(sort) ^ (s) : OP([], ty) ]] :=
+    RealSortRef[[ sort ^ (s) : ty ]].
 
-  OpSort[[ ArrowSort(args, ret) ^ (s) : OP(tys, ty) ]] :=
+  OpSort[[ ArrowSort(args, sort) ^ (s) : OP(tys, ty) ]] :=
     Map1T(SortRef)[[ args ^ (s) : tys ]],
-    SortRef[[ ret ^ (s) : ty ]].
+    RealSortRef[[ sort ^ (s) : ty ]].
+
+//[[ InjDecl(sort1, sort2) ^ (s) ]] :=
+//  SortRef[[ sort1 ^ (s) : ty1 ]],
+//  RealSortRef[[ sort2 ^ (s) : ty2 ]],
+//  ty1 <sub! ty2.
+
+  RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
+    Sort{x} -> s, Sort{x} |-> d,
+    d : ty !,
+    d.kind := k, k != SortAlias() | error $[Cannot refer to alias [d]].
 
   SortRef[[ IntSort() ^ (_) : INT() ]].
   SortRef[[ StringSort() ^ (_) : STRING() ]].
@@ -251,6 +269,7 @@ rules
     C{x} |-> d,
     d : CON(tys),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
+//  atys <sub? tys.
 
   [[ c@C(_, _) ^ (s) ]] :=
     UserConstraint(VarRef)[[ c ^ (s) ]].
@@ -393,6 +412,7 @@ rules
     Op{x} |-> d,
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
+//  atys <sub? tys.
   Term(V)[[ Str(_) ^ (_) : STRING() ]].
   Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
     Map1T(Term(V))[[ ts ^ (s) : _ ]].

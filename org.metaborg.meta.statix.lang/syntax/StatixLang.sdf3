@@ -243,8 +243,8 @@ lexical syntax
 
 context-free syntax
 
-  SortDecl.AstSort      = <<SortId> ( ast )>
-  SortDecl              = Sort
+  SortDecl.SortDecl  = Sort
+  SortDecl.SortAlias = <<Sort> = <SortRef>>
 
   Sort.SimpleSort = SortId
 
@@ -258,10 +258,11 @@ context-free syntax
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
 
-  OpDecl.OpDecl = <<SID> : <OpSort>>
+  OpDecl.OpDecl  = <<SID> : <OpSort>>
+//OpDecl.InjDecl = [[SortRef] => [Sort]]
 
-  OpSort           = Sort
-  OpSort.ArrowSort = [[{SortRef " * "}+] -> [Sort]]
+  OpSort.SimpleSort = Sort
+  OpSort.ArrowSort  = [[{SortRef " * "}+] -> [Sort]]
 
 lexical syntax
 
