@@ -1,0 +1,20 @@
+module Sugar
+
+imports
+
+  StatixLang
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free syntax
+
+  Rule.Rule = <
+    <{RuleProp " "}*> <UserConstraint>.
+  >
+  Rule.Rule = <
+    <{RuleProp " "}*> <UserConstraint> :- <LocalVars> <Constraint>.
+  >
+
+  CParam.Param = <<SortRef>>
