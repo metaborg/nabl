@@ -12,6 +12,7 @@ public final class SetConstraints {
 
     private static final String C_SUBSET_EQ = "CSubsetEq";
     private static final String C_DISTINCT = "CDistinct";
+    private static final String C_EVAL_SET = "CEvalSet";
 
     public static IMatcher<ISetConstraint> matcher() {
         return M.<ISetConstraint>cases(
@@ -21,6 +22,9 @@ public final class SetConstraints {
             }),
             M.appl3(C_DISTINCT, SetTerms.projectionMatcher(), M.term(), MessageInfo.matcher(), (c, proj, set, origin) -> {
                 return ImmutableCDistinct.of(set, proj, origin);
+            }),
+            M.appl3(C_EVAL_SET, M.term(), M.term(), MessageInfo.matcher(), (c, result, set, origin) -> {
+                return ImmutableCEvalSet.of(result, set, origin);
             })
             // @formatter:on
         );
@@ -32,7 +36,8 @@ public final class SetConstraints {
             subseteq -> TB.newAppl(C_SUBSET_EQ, subseteq.getLeft(), SetTerms.buildProjection(subseteq.getProjection()),
                                    subseteq.getRight(), MessageInfo.build(subseteq.getMessageInfo())),
             distinct -> TB.newAppl(C_DISTINCT, SetTerms.buildProjection(distinct.getProjection()), distinct.getSet(),
-                                   MessageInfo.build(distinct.getMessageInfo()))
+                                   MessageInfo.build(distinct.getMessageInfo())),
+            eval -> TB.newAppl(C_EVAL_SET, eval.getResult(), eval.getSet(), MessageInfo.build(eval.getMessageInfo()))
             // @formatter:on
         ));
     }
@@ -48,7 +53,11 @@ public final class SetConstraints {
             distinct -> ImmutableCDistinct.of(
                             unifier.find(distinct.getSet()),
                             distinct.getProjection(),
-                            distinct.getMessageInfo().apply(unifier::find))
+                            distinct.getMessageInfo().apply(unifier::find)),
+            eval -> ImmutableCEvalSet.of(
+                            unifier.find(eval.getResult()),
+                            unifier.find(eval.getSet()),
+                            eval.getMessageInfo().apply(unifier::find))
             // @formatter:on
         ));
     }
