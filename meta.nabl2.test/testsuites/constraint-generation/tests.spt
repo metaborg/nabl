@@ -34,4 +34,4 @@ test new scope as type [[
 
 test cannot use new on parameter [[
   use new on parameter
-]] analysis fails // FIXME: analysis succeeds
+]] analysis succeeds
