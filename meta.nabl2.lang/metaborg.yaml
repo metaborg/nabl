@@ -58,7 +58,7 @@ exports:
 
 language:
   sdf:
-    sdf2table: c
+    sdf2table: java
     pretty-print: NaBL2
     placeholder:
       prefix: "$"
