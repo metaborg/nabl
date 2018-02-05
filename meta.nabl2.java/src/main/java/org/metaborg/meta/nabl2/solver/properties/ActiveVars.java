@@ -144,8 +144,14 @@ public class ActiveVars implements IConstraintSetProperty {
         ));
     }
 
-    private static Multiset<ITermVar> getActiveVars(@SuppressWarnings("unused") ISetConstraint constraint) {
-        return ImmutableMultiset.of();
+    private static Multiset<ITermVar> getActiveVars(ISetConstraint constraint) {
+        return constraint.match(ISetConstraint.Cases.of(
+            // @formatter:off
+            subseteq -> ImmutableMultiset.of(),
+            distinct -> ImmutableMultiset.of(),
+            eval -> eval.getResult().getVars()
+            // @formatter:on
+        ));
     }
 
     private static Multiset<ITermVar> getActiveVars(IPolyConstraint constraint) {
