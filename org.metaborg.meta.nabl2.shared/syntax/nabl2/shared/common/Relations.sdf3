@@ -2,6 +2,7 @@ module nabl2/shared/common/Relations
 
 imports
 
+  nabl2/shared/constraints/Base
   nabl2/shared/common/Identifiers
 
 template options
@@ -24,6 +25,11 @@ context-free syntax
   RelationRef.DefaultRelation =
   RelationRef                 = Relation
 
+  RelationPattern.RelationPattern = <
+  	(<RelationDefVariant>, <RelationDefVariant>) := <Constraint>.>
+  	
+  VarIds = {VarId ","}*
+
 syntax
 
   RelationBuildOp-CF = "<" RelationRef-CF "!"
@@ -34,6 +40,8 @@ syntax
 
   OpRelation-CF.DefaultRelation =
   OpRelation-CF.Relation        = RelationId-LEX "."
+  
+  RelationDefVariant-CF.DefVariant = OpId-LEX "(" LAYOUT?-CF VarIds-CF LAYOUT?-CF ")"
 
 context-free syntax
 

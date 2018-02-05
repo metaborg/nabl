@@ -6,6 +6,7 @@ imports
   
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
   signatures/nabl2/shared/constraints/-
   generation/nabl2/lang/cgen/-
   generation/nabl2/lang/-
