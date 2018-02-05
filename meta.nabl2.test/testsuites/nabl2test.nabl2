@@ -8,6 +8,7 @@ imports
   testsuites/relations-functions/-
   testsuites/known-problems/-
   testsuites/name-resolution/-
+  testsuites/name-sets/-
   testsuites/polymorphism/-
   testsuites/unification/-
 

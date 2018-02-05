@@ -2,8 +2,8 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: NaBL2Runtime language Eclipse plugin
 Bundle-SymbolicName: org.metaborg.meta.nabl2.runtime.eclipse;singleton:=true
-Bundle-Version: 2.4.0.qualifier
-Bundle-Vendor: metaborg.org
+Bundle-Version: 2.5.0.qualifier
+Bundle-Vendor: org.metaborg
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.metaborg.spoofax.eclipse
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

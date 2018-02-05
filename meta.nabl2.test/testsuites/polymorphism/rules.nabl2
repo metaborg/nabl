@@ -10,3 +10,7 @@ rules
     {"x"} genOf(gvs) (ty1,ty2),
     (ty1_1,ty2_1) instOf(ivs1) {"x"},
     (ty2_1,ty2_2) instOf(ivs2) {"x"}.
+
+  [[ GeneralizeListTail() ^ () ]] :=
+    s genOf ["x"|tl],
+    ["x"|["y"]] instOf s.

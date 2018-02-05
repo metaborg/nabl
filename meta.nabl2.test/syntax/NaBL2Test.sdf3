@@ -9,7 +9,7 @@ imports
   testsuites/constraint-generation/Syntax
   testsuites/relations-functions/Syntax
   testsuites/name-resolution/Syntax
-  testsuites/known-problems/Syntax
+  testsuites/name-sets/Syntax
   testsuites/polymorphism/Syntax
   testsuites/unification/Syntax
 

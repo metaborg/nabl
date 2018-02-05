@@ -6,10 +6,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.meta.nabl2.constraints.equality.ImmutableCEqual;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.ImmutableMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.constraints.sets.CDistinct;
+import org.metaborg.meta.nabl2.constraints.sets.CEvalSet;
 import org.metaborg.meta.nabl2.constraints.sets.CSubsetEq;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
 import org.metaborg.meta.nabl2.sets.IElement;
@@ -41,7 +43,7 @@ public class SetComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(ISetConstraint constraint) {
-        return constraint.match(ISetConstraint.Cases.of(this::solve, this::solve));
+        return constraint.match(ISetConstraint.Cases.of(this::solve, this::solve, this::solve));
     }
 
     public Unit finish() {
@@ -105,6 +107,21 @@ public class SetComponent extends ASolver {
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates);
             return Optional.of(SolveResult.messages(messages));
         }
+    }
+
+    private Optional<SolveResult> solve(CEvalSet constraint) {
+        ITerm setTerm = find(constraint.getSet());
+        if(!setTerm.isGround()) {
+            return Optional.empty();
+        }
+        Optional<Set<IElement<ITerm>>> maybeSet = evaluator.match(setTerm);
+        if(!(maybeSet.isPresent())) {
+            return Optional.empty();
+        }
+        List<ITerm> set = maybeSet.get().stream().map(i -> find(i.getValue())).collect(Collectors.toList());
+        return Optional.of(SolveResult
+                .constraints(ImmutableCEqual.of(constraint.getResult(), TB.newList(set), constraint.getMessageInfo())));
+
     }
 
     private Iterable<IMessageInfo> makeMessages(IMessageInfo template, Collection<IElement<ITerm>> elements) {

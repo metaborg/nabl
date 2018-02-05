@@ -10,11 +10,24 @@ imports
 
 rules
 
-  nabl2--editor-resolve: (node, _, _, _, _) -> decl
-    where decl := <nabl2-get-ast-refs> node
+  nabl2--editor-resolve: (node, _, _, _, _) -> decls
+    where <nabl2-get-ast-index> node // HACK: necessary to prevent errors
+                                     //       as we sometimes get nodes
+                                     //       without the AST index here
+    with a := <nabl2-get-ast-analysis> node
+    where refs@[_|_] := <nabl2-get-ast-refs(|a)> node // fail if this node has no refs,
+                                                      // so the resolver can try other
+                                                      // nodes under the current point
+    with decls := <mapconcat(nabl2-get-resolved-names(|a);
+                             map(Fst;nabl2-get-occurrence-index))> refs
 
-  nabl2--editor-hover: (node, _, _, path, project-path) -> label
-    with analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-    where type := <nabl2-get-ast-type(|analysis)> node
-    with typetext := <nabl2--focus-term(|analysis);pp-NaBL2-objlangterm;nabl2--xmlencode> type;
+  nabl2--editor-hover: (node, _, _, _, _) -> label
+    where <nabl2-get-ast-index> node // HACK: necessary to prevent errors
+                                     //       as we sometimes get nodes
+                                     //       without the AST index here
+    with a := <nabl2-get-ast-analysis> node
+    where type := <nabl2-get-ast-type(|a)> node
+    with typetext := <nabl2--focus-term(|a);
+                      pp-NaBL2-objlangterm;
+                      nabl2--xmlencode> type;
          label := $[Type: [typetext]]

@@ -1,0 +1,24 @@
+module desugar
+
+imports
+
+  signatures/-
+
+rules
+
+  desugar-all =
+    desugar-params;
+    desugar-funrels;
+    desugar-rules
+
+  desugar-params = try(sometd(desugar-param))
+  desugar-param: Param(sort) -> Param(In(), sort)
+
+  // HACK: we cannot type check this uniformly, so for now concat here
+  desugar-funrels = try(sometd(desugar-funrel))
+  desugar-funrel: FunctionalRelation(ins,out) -> SimpleRelation(types)
+    with types := <conc> (ins, [out])
+
+  desugar-rules = try(sometd(desugar-rule))
+  desugar-rule: Rule(props, h) -> Rule(props, h, NoLocalVars(), CTrue(), CTrue())
+  desugar-rule: Rule(props, h, vs, b) -> Rule(props, h, vs, CTrue(), b)

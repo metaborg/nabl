@@ -6,8 +6,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
+import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
-import org.metaborg.meta.nabl2.spoofax.analysis.AnalysisTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;
 import org.metaborg.meta.nabl2.unification.IUnifier;
@@ -77,7 +78,7 @@ public final class ScopeGraphTerms {
     }
 
     private ITerm buildDecl(Occurrence decl) {
-        return TB.newAppl("Decl", decl, buildType(properties.getValue(decl, AnalysisTerms.TYPE_KEY)));
+        return TB.newAppl("Decl", decl, buildType(properties.getValue(decl, DeclProperties.TYPE_KEY)));
     }
 
     private ITerm buildType(Optional<ITerm> type) {
