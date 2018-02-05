@@ -15,6 +15,9 @@ rules
   nabl2--debug-control-flow-graph(|a) =
     prim("SG_debug_control_flow_graph", a)
 
+  nabl2--show-control-flow-graph(|a) =
+    prim("SG_show_control_flow_graph", a)
+
   nabl2--debug-name-resolution(|a) =
     prim("SG_debug_name_resolution", a)
 

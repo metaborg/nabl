@@ -136,4 +136,5 @@ context-free syntax
   FSData = TermIndex
   FSData = String
   FSData = Int
+  FSData = Term
   FSDataPair = [[FSData] => [FSData]]

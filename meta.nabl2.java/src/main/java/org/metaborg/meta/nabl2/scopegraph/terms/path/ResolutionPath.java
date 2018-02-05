@@ -15,7 +15,7 @@ import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOccurrence>
+public abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IResolutionPath<S, L, O> {
 
     @Value.Parameter @Override public abstract O getReference();

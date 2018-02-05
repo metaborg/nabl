@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
@@ -60,7 +61,7 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
     }
 
     @Override public String toString() {
-        return "##" + getResource() + "-" + getName();
+        return "##" + getName() + TermIndex.get(this).map(TermIndex::toString).orElse("");
     }
 
 }

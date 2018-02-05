@@ -20,7 +20,7 @@ import io.usethesource.capsule.Set;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOccurrence>
+public abstract class EmptyScopePath<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IScopePath<S, L, O> {
 
     @Value.Parameter public abstract S getScope();

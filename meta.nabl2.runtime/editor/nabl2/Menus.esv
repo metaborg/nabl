@@ -19,3 +19,8 @@ menus
     action: "Debug project name resolution"      = nabl2--debug-project-name-resolution (meta) (realtime) (openeditor)
     action: "Debug project unifier"              = nabl2--debug-project-unifier (meta) (realtime) (openeditor)
     action: "Debug project symbolic constraints" = nabl2--debug-project-symbolic-constraints (meta) (openeditor)
+
+    separator
+
+    action: "Show file control-flow graph"    = nabl2--show-file-control-flow-graph (meta) (realtime) (openeditor)
+    action: "Show project control-flow graph" = nabl2--show-project-control-flow-graph (meta) (realtime) (openeditor)
