@@ -13,9 +13,9 @@ dependencies:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
 exports:
-- language: SDF
+- language: ATerm
   directory: src-gen/syntax
-  includes: "**/*.sdf"
+  includes: "**/*.aterm"
 - language: TemplateLang
   directory: syntax
   includes: "**/*.sdf3"

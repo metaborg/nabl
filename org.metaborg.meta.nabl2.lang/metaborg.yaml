@@ -20,9 +20,7 @@ generates:
 exports:
 - language: ATerm
   directory: src-gen/syntax
-- language: SDF
-  directory: src-gen/syntax
-  includes: "**/*.sdf"
+  includes: "**/*.aterm"
 - language: TemplateLang
   directory: syntax
   includes: "**/*.sdf3"
