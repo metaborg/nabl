@@ -102,15 +102,10 @@ public class ControlFlowGraph<N extends ICFGNode>
     }
 
     @Override
-    public Object getProperty(N node, String prop) {
-        Object transferFunctionAppl = properties.get(ImmutableTuple2.of(node, prop));
-        if (transferFunctionAppl == null) {
-            return new IdentityTFAppl<>(this, prop);
-        } else {
-            return transferFunctionAppl;
-        }
+    public ITerm getProperty(N node, String prop) {
+        return properties.get(ImmutableTuple2.of(node, prop));
     }
-    
+
     protected void addNode(N node) {
         switch(node.getKind()) {
         case Artificial:
