@@ -15,12 +15,12 @@ template options
 
 context-free syntax
 
-  Constraint.CDeclProperty = [[Occurrence].[Property] := [CTerm] [ConstraintPriority] [Message]]
+  Constraint.CDeclProperty = [[Occurrence].[DeclProperty] := [CTerm] [ConstraintPriority] [Message]]
  
-  Property.Property = PropertyId
-  Property.Type     = "type"
-  Property.Params   = "params"
+  DeclProperty.Property = DeclPropertyId
+  DeclProperty.Type     = "type"
 
 lexical syntax
 
-  PropertyId = "type" {reject}
+  DeclPropertyId = PropertyId
+  DeclPropertyId = "type" {reject}

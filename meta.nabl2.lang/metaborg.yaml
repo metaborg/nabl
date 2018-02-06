@@ -36,11 +36,10 @@ exports:
   directory: syntax
   includes:
   - "nabl2/**/*.sdf3"
-- language: SDF
+- language: ATerm
   directory: src-gen/syntax
   includes:
-  - "nabl2/**/*.sdf"
-  - "completion/nabl2/**/*.sdf"
+  - "**/*.aterm"
 - language: ds
   directory: src-gen
   includes:

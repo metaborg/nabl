@@ -11,10 +11,11 @@ context-free syntax
 
   Constraint.CAstProperty =  [[TermIndex].[AstProperty] := [CTerm]]
 
-  AstProperty.Property = PropertyId
+  AstProperty.Property = AstPropertyId
   AstProperty.Type     = "type"
   AstProperty.Params   = "params"
 
 lexical syntax
 
-  PropertyId = "type" | "params" {reject}
+  AstPropertyId = PropertyId
+  AstPropertyId = "type" | "params" {reject}
