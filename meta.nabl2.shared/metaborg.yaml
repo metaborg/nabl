@@ -45,8 +45,10 @@ exports:
 
 language:
   sdf:
-    enabled: false
+    sdf2table: java
     pretty-print: NaBL2
+    placeholder:
+      prefix: "$"
   stratego:
     format: ctree
     args:
