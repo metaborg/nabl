@@ -211,7 +211,7 @@ rules
   rule-to-occurrences-str:
     CGenMatchRule(_, pattern-match, _, _, clause*) ->
       RDefT(<roccs-strategy-name>, [], [],
-           Rule(AnnoList(pattern-match, [Var(ListVar("anno*"))]), AnnoList(pattern-build, [Var(ListVar("anno*"))]), []))
+           Rule(AnnoList(pattern-match', [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
     where
       pattern-match' := <try(?As(_, <id>))> pattern-match;
       occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
