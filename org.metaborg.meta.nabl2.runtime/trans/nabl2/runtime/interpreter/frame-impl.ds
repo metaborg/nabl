@@ -78,6 +78,10 @@ rules
   H H_(x) |- slotsOf(f) --> slots
   where
     x[f] => FC_(_, _, slots)
+  
+  addLink(f1, l, s2, f2) :: H H_(x) --> f1 :: H H_({x, f1 |--> FC_(s, {ks, {l |--> {s2 |--> f2}}}, slots)})
+  where
+    x[f1] => FC_(s, ks, slots)
 
 //////////////////////////////
 // DEFAULT FRAMES AND HEAPS //
