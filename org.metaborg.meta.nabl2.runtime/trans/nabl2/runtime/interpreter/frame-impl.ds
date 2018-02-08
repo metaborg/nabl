@@ -79,6 +79,11 @@ rules
   where
     x[f] => FC_(_, _, slots)
   
+  
+  copyOf(f1) :: H H_(x) --> initFrame(s, ks, slots)
+  where
+    x[f1] => FC_(s, ks, slots)
+  
   addLink(f1, l, s2, f2) :: H H_(x) --> f1 :: H H_({ f1 |--> FC_(s, {ks, {l |--> {s2 |--> f2}}}, slots), x})
   where
     x[f1] => FC_(s, ks, slots)
