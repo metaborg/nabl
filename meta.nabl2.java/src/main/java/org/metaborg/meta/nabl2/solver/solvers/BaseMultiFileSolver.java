@@ -75,7 +75,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, isEdgeClosed);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
+        final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
@@ -90,7 +90,7 @@ public class BaseMultiFileSolver extends BaseSolver {
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
-                    // @formatter:off
+                // @formatter:off
                     .onBase(baseSolver::solve)
                     .onEquality(equalitySolver::solve)
                     .onNameResolution(nameResolutionSolver::solve)

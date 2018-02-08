@@ -6,7 +6,6 @@ imports
   testsuites/base/-
   testsuites/constraint-generation/-
   testsuites/relations-functions/-
-  testsuites/known-problems/-
   testsuites/name-resolution/-
   testsuites/name-sets/-
   testsuites/polymorphism/-

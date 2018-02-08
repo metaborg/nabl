@@ -54,7 +54,6 @@ import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
-import org.metaborg.meta.nabl2.solver.properties.DeclTypeDeps;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
@@ -495,23 +494,16 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
         final ActiveDeclTypes activeDeclTypes = new ActiveDeclTypes(unifier);
-        final DeclTypeDeps declTypeDeps = new DeclTypeDeps(unifier, activeDeclTypes::contains);
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
-        // guards
-        final Predicate1<ITerm> isGenSafe = t -> !activeVars.contains(t) && !declTypeDeps.contains(t);
-        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.contains(d);
-
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
+        final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver = new NameResolutionComponent(core, unitGraph,
                 nameResolution, Properties.extend(initial.declProperties().melt(), context.declProperties()));
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, extendedGraph, nameResolution);
-        final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         RelationComponent relationSolver;
         try {
             relationSolver = new RelationComponent(core, r -> false, config.getFunctions(),
@@ -521,6 +513,12 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
+
+        final Predicate1<ITerm> isGenSafe = t -> activeVars.isNotActive(t)
+                && nameResolutionSolver.getDeps(t).stream().allMatch(decl -> activeDeclTypes.isNotActive(decl));
+        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.isNotActive(d);
+        final PolymorphismComponent polySolver =
+                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -598,7 +596,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 initial.nameResolution().melt(scopeGraph, (s, l) -> true);
 
         // solver components
-        final SolverCore core = new SolverCore(config, initial.unifier()::find, n -> {
+        final SolverCore core = new SolverCore(config, initial.unifier(), n -> {
             throw new IllegalStateException("Fresh variables cannot be created in this phase.");
         }, callExternal);
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);

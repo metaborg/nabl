@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +21,10 @@ import com.google.common.collect.SetMultimap;
 
 @FunctionalInterface
 public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, InterruptedException> {
+
+    default void update(@SuppressWarnings("unused") Collection<ITermVar> vars) {
+        // ignore by default
+    };
 
     @Value.Immutable(builder = true)
     @Serial.Version(42l)

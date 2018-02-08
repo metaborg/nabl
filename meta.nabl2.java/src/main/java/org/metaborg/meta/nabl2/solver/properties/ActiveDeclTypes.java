@@ -1,67 +1,62 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
-import java.util.Optional;
+import java.util.Collection;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
-import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
-import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.TermMultiset;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+import com.google.common.collect.Multiset.Entry;
 
 /**
  * Track active declaration types.
  */
 public class ActiveDeclTypes implements IConstraintSetProperty {
 
-    private final IUnifier unifier;
+    private final TermMultiset activeDecls;
 
     public ActiveDeclTypes(IUnifier unifier) {
-        this.unifier = unifier;
+        this.activeDecls = new TermMultiset(unifier);
     }
 
     // ---------------------------------------------
 
     @Override public boolean add(IConstraint constraint) {
-        return false;
+        final Multiset<ITerm> addedDecls = getActiveDecls(constraint);
+        for(Entry<ITerm> e : addedDecls.entrySet()) {
+            activeDecls.add(e.getElement(), e.getCount());
+        }
+        return !addedDecls.isEmpty();
     }
 
     // ---------------------------------------------
 
-    @Override public boolean update(final ITermVar var) {
-        return false;
+    @Override public boolean update(final Collection<ITermVar> vars) {
+        return activeDecls.update(vars);
     }
 
     // ---------------------------------------------
 
     @Override public boolean remove(IConstraint constraint) {
-        return false;
-    }
-
-    public boolean contains(IOccurrence decl) {
-        // TODO decl.type is active
-        return true;
-    }
-
-    // ---------------------------------------------
-
-    private Optional<IOccurrence> findDeclaration(ITerm term) {
-        final ITerm declTerm = unifier.find(term);
-        if(!declTerm.isGround()) {
-            return Optional.empty();
+        boolean change = false;
+        for(Entry<ITerm> e : getActiveDecls(constraint).entrySet()) {
+            change |= activeDecls.remove(e.getElement(), e.getCount()) > 0;
         }
-        IOccurrence decl = Occurrence.matcher().match(declTerm)
-                .orElseThrow(() -> new TypeException("Exepected occurrence, got " + declTerm));
-        return Optional.of(decl);
+        return change;
+    }
+
+    public boolean isNotActive(Occurrence decl) {
+        return activeDecls.varSet().isEmpty() && !activeDecls.contains(decl);
     }
 
     // ---------------------------------------------

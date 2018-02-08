@@ -32,7 +32,6 @@ import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
-import org.metaborg.meta.nabl2.solver.properties.DeclTypeDeps;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
@@ -61,12 +60,9 @@ public class SingleFileSolver extends BaseSolver {
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
         final ActiveDeclTypes activeDeclTypes = new ActiveDeclTypes(unifier);
-        final DeclTypeDeps declTypeDeps = new DeclTypeDeps(unifier, activeDeclTypes::contains);
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
         // guards
-        final Predicate1<ITerm> isGenSafe = t -> !activeVars.contains(t) && !declTypeDeps.contains(t);
-        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.contains(d);
         final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // more shared
@@ -75,18 +71,23 @@ public class SingleFileSolver extends BaseSolver {
                 EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
+        final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
-        final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
+
+        // polymorphism solver
+        final Predicate1<ITerm> isGenSafe = t -> activeVars.isNotActive(t)
+                && nameResolutionSolver.getDeps(t).stream().allMatch(decl -> activeDeclTypes.isNotActive(decl));
+        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.isNotActive(d);
+        final PolymorphismComponent polySolver =
+                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()

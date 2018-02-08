@@ -32,6 +32,6 @@ test new scope as type [[
   new scope as type on x
 ]] analysis succeeds
 
-test cannot use new on parameter [[
+test can use new on parameter [[
   use new on parameter
 ]] analysis succeeds

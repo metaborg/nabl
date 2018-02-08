@@ -15,7 +15,9 @@ test occurrence indexed in var scope fails [[
 test resolve to scope occurrence succeeds [[
   resolve [[x]] to scope occurrence [[x]]
 ]] 0 errors
-   resolve #1 to #2
+   //resolve #1 to #2 // editor resolution does not work because
+                      // references are indexed on the term index, but
+                      // here we only have a scope index
 
 //-------------------------------
 

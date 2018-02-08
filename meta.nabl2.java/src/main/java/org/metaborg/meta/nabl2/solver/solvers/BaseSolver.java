@@ -72,7 +72,7 @@ public class BaseSolver {
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
 
         // solver components
-        final SolverCore core = new SolverCore(initial.config(), unifier::find, fresh, callExternal);
+        final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -131,7 +131,7 @@ public class BaseSolver {
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 initial.nameResolution().melt(scopeGraph, isEdgeComplete);
 
-        final SolverCore core = new SolverCore(initial.config(), unifier::find, n -> {
+        final SolverCore core = new SolverCore(initial.config(), unifier, n -> {
             throw new IllegalStateException("Fresh is not available when merging.");
         }, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());

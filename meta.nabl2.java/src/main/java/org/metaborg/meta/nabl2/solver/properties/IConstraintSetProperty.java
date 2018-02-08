@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
+import java.util.Collection;
+
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
@@ -17,6 +19,6 @@ public interface IConstraintSetProperty {
 
     boolean remove(IConstraint constraint);
 
-    boolean update(ITermVar var);
+    boolean update(Collection<ITermVar> vars);
 
 }

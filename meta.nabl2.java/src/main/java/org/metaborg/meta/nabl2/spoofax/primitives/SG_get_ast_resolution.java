@@ -19,8 +19,8 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
         super(SG_get_ast_resolution.class.getSimpleName(), 0);
     }
 
-    @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
+    @SuppressWarnings("unlikely-arg-type") @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit,
+            ITerm term, List<ITerm> terms) throws InterpreterException {
         return TermIndex.get(term).flatMap(index -> {
             return unit.solution().<ITerm>flatMap(s -> {
                 List<ITerm> entries = Lists.newArrayList();

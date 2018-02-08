@@ -2,4 +2,10 @@ module polymorphism
 
 language NaBL2Test
 
-// FIXME One test moved to known problems
+test generalize and instantiate [[
+  generalize and instantiate
+]] 0 errors
+
+test generalize list tail [[
+  generalize list tail
+]] analysis fails // KNOWN PROBLEM

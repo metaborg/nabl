@@ -28,6 +28,7 @@ import org.metaborg.meta.nabl2.solver.ImmutableSolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.unification.VarMultimap;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 
 import com.google.common.collect.HashMultimap;
@@ -42,6 +43,7 @@ public class NameResolutionComponent extends ASolver {
     private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
     private final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution;
     private final IProperties.Transient<Occurrence, ITerm, ITerm> properties;
+    private final VarMultimap<Occurrence> varDeps;
 
     public NameResolutionComponent(SolverCore core,
             IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph,
@@ -51,6 +53,7 @@ public class NameResolutionComponent extends ASolver {
         this.scopeGraph = scopeGraph;
         this.nameResolution = nameResolution;
         this.properties = initial;
+        this.varDeps = new VarMultimap<>(unifier());
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -178,6 +181,7 @@ public class NameResolutionComponent extends ASolver {
         Optional<ITerm> prev = properties.getValue(decl, key);
         if(!prev.isPresent()) {
             properties.putValue(decl, key, value);
+            value.getVars().elementSet().stream().forEach(var -> varDeps.put(var, decl));
             return Optional.empty();
         } else {
             return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
@@ -188,7 +192,11 @@ public class NameResolutionComponent extends ASolver {
     public Optional<ITerm> getProperty(Occurrence decl, ITerm key) {
         return properties.getValue(decl, key);
     }
-    
+
+    public java.util.Set<Occurrence> getDeps(ITerm term) {
+        return term.getVars().stream().flatMap(var -> varDeps.get(var).stream()).collect(Collectors.toSet());
+    }
+
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<Scope> findScope(ITerm scopeTerm) {

@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
+import java.util.Collection;
+
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -10,7 +12,7 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
 
     @Override public boolean add(IConstraint constraint) {
         return constraint.match(IConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             c -> false,
             c -> c.match(IBaseConstraint.Cases.of(
                 t -> false,
@@ -40,7 +42,7 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
 
     @Override public boolean remove(IConstraint constraint) {
         return constraint.match(IConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             c -> false,
             c -> c.match(IBaseConstraint.Cases.of(
                 t -> false,
@@ -69,7 +71,7 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
         ));
     }
 
-    public boolean update(ITermVar var) {
+    public boolean update(Collection<ITermVar> vars) {
         return false;
     }
 

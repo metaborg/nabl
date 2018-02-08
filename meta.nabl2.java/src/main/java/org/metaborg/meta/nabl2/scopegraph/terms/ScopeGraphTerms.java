@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
-import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.generic.TB;

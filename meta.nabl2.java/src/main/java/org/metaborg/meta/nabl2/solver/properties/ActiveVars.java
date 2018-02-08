@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver.properties;
 
+import java.util.Collection;
+
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.base.IBaseConstraint;
@@ -7,12 +9,11 @@ import org.metaborg.meta.nabl2.constraints.equality.IEqualityConstraint;
 import org.metaborg.meta.nabl2.constraints.nameresolution.INameResolutionConstraint;
 import org.metaborg.meta.nabl2.constraints.poly.IPolyConstraint;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
-import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
-import org.metaborg.meta.nabl2.constraints.sym.ISymbolicConstraint;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.unification.VarMultiset;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultiset;
@@ -22,42 +23,39 @@ import com.google.common.collect.Multisets;
 public class ActiveVars implements IConstraintSetProperty {
 
     private final IUnifier unifier;
-    private final Multiset<ITermVar> activeVars;
+    private final VarMultiset activeVars;
 
     public ActiveVars(IUnifier unifier) {
         this.unifier = unifier;
-        this.activeVars = HashMultiset.create();
+        this.activeVars = new VarMultiset(unifier);
     }
 
     // ---------------------------------------------
 
     @Override public boolean add(IConstraint constraint) {
-        return activeVars.addAll(findActiveVars(constraint));
+        final Multiset<ITermVar> vars = findActiveVars(constraint);
+        boolean change = false;
+        for(ITermVar var : vars) {
+            change |= add(var);
+        }
+        return change;
     }
 
     public boolean add(ITerm term) {
-        return activeVars.addAll(unifier.find(term).getVars());
+        return activeVars.addAll(term.getVars());
     }
 
-    @Override public boolean update(final ITermVar var) {
-        final int n = activeVars.count(var);
-        if(n > 0) {
-            activeVars.remove(var);
-            final Multiset<ITermVar> newVars = unifier.find(var).getVars();
-            for(ITermVar newVar : newVars) {
-                activeVars.add(newVar, n);
-            }
-            return true;
-        }
-        return false;
+    @Override public boolean update(final Collection<ITermVar> vars) {
+        return activeVars.update(vars);
     }
 
     @Override public boolean remove(IConstraint constraint) {
-        return Multisets.removeOccurrences(activeVars, findActiveVars(constraint));
+        final Multiset<ITermVar> vars = findActiveVars(constraint);
+        return activeVars.removeAll(vars);
     }
 
-    public boolean contains(ITerm term) {
-        return unifier.find(term).getVars().stream().anyMatch(activeVars::contains);
+    public boolean isNotActive(ITerm term) {
+        return term.getVars().elementSet().stream().noneMatch(var -> activeVars.contains(var));
     }
 
     // ---------------------------------------------
@@ -72,15 +70,15 @@ public class ActiveVars implements IConstraintSetProperty {
         final Multiset<ITermVar> vars = HashMultiset.create();
         constraint.match(
                 IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars))
+                        ActiveVars::emptyActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
+                        ActiveVars::getActiveVars, ActiveVars::emptyActiveVars, ActiveVars::getActiveVars))
                 .stream().map(ITerm::getVars).forEach(vars::addAll);
         return vars;
     }
 
     private static Multiset<ITermVar> getActiveVars(IAstConstraint constraint) {
         return constraint.match(IAstConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             p -> p.getValue().getVars()
             // @formatter:on
         ));
@@ -88,7 +86,7 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private static Multiset<ITermVar> getActiveVars(IBaseConstraint constraint) {
         return constraint.match(IBaseConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             t -> ImmutableMultiset.of(),
             f -> ImmutableMultiset.of(),
             c -> {
@@ -113,7 +111,7 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private static Multiset<ITermVar> getActiveVars(IEqualityConstraint constraint) {
         return constraint.match(IEqualityConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             eq -> Multisets.sum(eq.getLeft().getVars(),eq.getRight().getVars()),
             neq -> ImmutableMultiset.of()
             // @formatter:on
@@ -122,7 +120,7 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private static Multiset<ITermVar> getActiveVars(INameResolutionConstraint constraint) {
         return constraint.match(INameResolutionConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             r -> r.getDeclaration().getVars(),
             a -> a.getScope().getVars(),
             dp -> dp.getValue().getVars()
@@ -130,13 +128,9 @@ public class ActiveVars implements IConstraintSetProperty {
         ));
     }
 
-    private static Multiset<ITermVar> getActiveVars(@SuppressWarnings("unused") IScopeGraphConstraint constraint) {
-        return ImmutableMultiset.of();
-    }
-
     private static Multiset<ITermVar> getActiveVars(IRelationConstraint constraint) {
         return constraint.match(IRelationConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             br -> ImmutableMultiset.of(),
             cr -> ImmutableMultiset.of(),
             ev -> ev.getResult().getVars()
@@ -146,7 +140,7 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private static Multiset<ITermVar> getActiveVars(ISetConstraint constraint) {
         return constraint.match(ISetConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             subseteq -> ImmutableMultiset.of(),
             distinct -> ImmutableMultiset.of(),
             eval -> eval.getResult().getVars()
@@ -156,7 +150,7 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private static Multiset<ITermVar> getActiveVars(IPolyConstraint constraint) {
         return constraint.match(IPolyConstraint.Cases.of(
-            // @formatter:off
+        // @formatter:off
             gen -> Multisets.sum(gen.getDeclaration().getVars(), ImmutableMultiset.of(gen.getGenVars())),
             inst -> {
                 Multiset<ITermVar> vars = HashMultiset.create();
@@ -169,7 +163,7 @@ public class ActiveVars implements IConstraintSetProperty {
         ));
     }
 
-    private static Multiset<ITermVar> getActiveVars(@SuppressWarnings("unused") ISymbolicConstraint constraint) {
+    private static Multiset<ITermVar> emptyActiveVars(@SuppressWarnings("unused") IConstraint constraint) {
         return ImmutableMultiset.of();
     }
 
