@@ -33,6 +33,7 @@ import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
+import org.metaborg.meta.nabl2.solver.properties.PolySafe;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -83,11 +84,9 @@ public class SingleFileSolver extends BaseSolver {
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
 
         // polymorphism solver
-        final Predicate1<ITerm> isGenSafe = t -> activeVars.isNotActive(t)
-                && nameResolutionSolver.getDeps(t).stream().allMatch(decl -> activeDeclTypes.isNotActive(decl));
-        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.isNotActive(d);
-        final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
+        final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
+                polySafe::isInstSafe, nameResolutionSolver::getProperty);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()

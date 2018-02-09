@@ -55,6 +55,7 @@ import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
+import org.metaborg.meta.nabl2.solver.properties.PolySafe;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.ImmutableSymbolicConstraints;
@@ -65,7 +66,6 @@ import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
-import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -514,11 +514,9 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
-        final Predicate1<ITerm> isGenSafe = t -> activeVars.isNotActive(t)
-                && nameResolutionSolver.getDeps(t).stream().allMatch(decl -> activeDeclTypes.isNotActive(decl));
-        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.isNotActive(d);
+        final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
         final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
+                new PolymorphismComponent(core, polySafe::isGenSafe, polySafe::isInstSafe, nameResolutionSolver::getProperty);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()

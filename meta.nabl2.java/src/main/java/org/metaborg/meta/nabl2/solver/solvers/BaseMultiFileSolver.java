@@ -64,9 +64,6 @@ public class BaseMultiFileSolver extends BaseSolver {
         intfVars.stream().forEach(activeVars::add);
 
         // guards
-        final Predicate1<ITerm> isGenSafe = t -> false;
-        final Predicate1<Occurrence> isInstSafe = d -> false;
-        final Predicate1<String> isRelationComplete = r -> false;
         final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> !intfScopes.contains(s);
 
         // more shared
@@ -81,9 +78,9 @@ public class BaseMultiFileSolver extends BaseSolver {
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
-        final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
-        final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, Predicate1.never(), Predicate1.never(),
+                nameResolutionSolver::getProperty);
+        final RelationComponent relationSolver = new RelationComponent(core, Predicate1.never(), config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
