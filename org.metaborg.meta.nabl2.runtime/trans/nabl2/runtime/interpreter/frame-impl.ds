@@ -84,7 +84,7 @@ rules
   where
     x[f1] => FC_(s, ks, slots)
   
-  addLink(f1, l, s2, f2) :: H H_(x) --> f1 :: H H_({ f1 |--> FC_(s, {ks, {l |--> {s2 |--> f2}}}, slots), x})
+  addLink(f1, l, s2, f2) :: H H_(x) --> f1 :: H H_({ f1 |--> FC_(s, {l |--> {s2 |--> f2}, ks}, slots), x})
   where
     x[f1] => FC_(s, ks, slots)
 
