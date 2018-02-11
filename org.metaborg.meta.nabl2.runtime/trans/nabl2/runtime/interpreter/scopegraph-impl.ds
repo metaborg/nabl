@@ -50,6 +50,9 @@ signature
   constructors
     NaBL2 : ScopeGraph * NameResolution * DeclTypes -> NaBL2
  
+  arrows
+    initScope(Scope, ScopeEntry) :: NaBL2 --> Scope :: NaBL2
+ 
 rules
 
   initNaBL2(t) --> nabl2_init(t)
@@ -77,6 +80,8 @@ rules // occurrences
   nameOf(Occurrence(_,n,_)) --> n
 
 rules // scope graph
+
+  initScope(s, se) :: NaBL2 NaBL2(G(ss, ds, rs), nr, dt) --> s :: NaBL2 NaBL2(G({s |--> se, ss}, ds, rs), nr, dt)
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- declsOf(s:Scope) --> ds
     where case ss[s?] of {
