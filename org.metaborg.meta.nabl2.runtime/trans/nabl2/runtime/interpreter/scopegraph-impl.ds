@@ -52,7 +52,8 @@ signature
  
   arrows
     initScope(Scope, ScopeEntry) :: NaBL2 --> Scope :: NaBL2
- 
+    mkOccurrenceHavingIndex(String, Name, TermIndex) --> Occurrence
+    
 rules
 
   initNaBL2(t) --> nabl2_init(t)
@@ -67,13 +68,12 @@ rules // occurrences
     where Namespace(ns) => ns';
           nabl2_indexOf(t) => idx
 
-//  mkOccurrence(t, o):(Name * AST) --> Occurrence(ns,t,idx)
-//    where DefaultNamespace() => ns;
-//          nabl2_indexOf(o) => idx
-
   mkOccurrence(ns, t, o) /* :(String * Name * AST) */ --> Occurrence(ns',t,idx)
     where Namespace(ns) => ns';
           nabl2_indexOf(o) => idx
+
+  mkOccurrenceHavingIndex(ns, t, idx) --> Occurrence(ns', t, idx)
+    where Namespace(ns) => ns'
 
   namespaceOf(Occurrence(ns,_,_)) --> ns
 

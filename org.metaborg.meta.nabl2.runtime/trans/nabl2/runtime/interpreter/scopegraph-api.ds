@@ -28,9 +28,7 @@ signature
   arrows // occurrences
     mkOccurrence(Name)               --> Occurrence
     mkOccurrence(String, Name)       --> Occurrence
-    //mkOccurrence(Name, AST)          --> Occurrence
     mkOccurrence(String, Name, AST) --> Occurrence
-//    mkOccurrencePhantom(String, Name) --> Occurrence
 
     namespaceOf(Occurrence) --> Namespace
     nameOf(Occurrence) --> Name
