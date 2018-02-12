@@ -1,0 +1,13 @@
+module Main
+
+imports
+
+  Syntax
+  Colorer
+  Analysis
+
+language
+
+  extensions : statix, stx
+
+  provider : target/metaborg/stratego.ctree

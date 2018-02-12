@@ -20,9 +20,7 @@ generates:
 exports:
 - language: ATerm
   directory: src-gen/syntax
-- language: SDF
-  directory: src-gen/syntax
-  includes: "**/*.sdf"
+  includes: "**/*.aterm"
 - language: TemplateLang
   directory: syntax
   includes: "**/*.sdf3"
@@ -37,7 +35,7 @@ exports:
   includes: "**/*.esv"
 language:
   sdf:
-    sdf2table: c
+    sdf2table: java
     pretty-print: NaBL2
     placeholder:
       prefix: "$"
