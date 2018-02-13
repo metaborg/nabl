@@ -12,7 +12,7 @@ signature
     Addr : Frame * Occurrence -> Addr
 
   sorts FrameContainer constructors
-    FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame 
+    FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame
     
   constructors
     F_ : Int -> Frame // {implicit}
@@ -117,14 +117,12 @@ rules // Utility function
     DefaultSlots(ds) --> slots
 
 rules // initDefault
-
-  initDefault(s, ks) --> initDefaultNS(s, ks, [DefaultNamespace()])
-
-  initDefaultNS(s, ks, namespaces) :: H H_(x) -->
-    ff :: H H_({ ff |--> FC_(s, ks, initDefaultSlots(s, namespaces)), x })
+  
+  initDefault(s, ks) --> initFrame(s, ks, slots)
   where
-    F_(fresh) => ff
-
+    DefaultSlots(declsOf(s)) --> slots
+    
+//    
 signature // initEager helpers
   
   arrows
