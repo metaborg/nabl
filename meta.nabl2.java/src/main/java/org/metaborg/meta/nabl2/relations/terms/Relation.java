@@ -14,9 +14,9 @@ import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.SymmetryException;
 import org.metaborg.meta.nabl2.relations.TransitivityException;
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.meta.nabl2.util.collections.HashTrieRelation2;
 import org.metaborg.meta.nabl2.util.collections.IRelation2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 

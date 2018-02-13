@@ -8,7 +8,7 @@ import org.metaborg.meta.nabl2.stratego.ImmutableTermOrigin;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.stratego.TermOrigin;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 

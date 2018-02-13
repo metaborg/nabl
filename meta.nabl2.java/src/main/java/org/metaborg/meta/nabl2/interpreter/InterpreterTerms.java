@@ -1,9 +1,9 @@
 package org.metaborg.meta.nabl2.interpreter;
 
-import static org.metaborg.meta.nabl2.terms.generic.TB.newAppl;
-import static org.metaborg.meta.nabl2.terms.generic.TB.newList;
-import static org.metaborg.meta.nabl2.terms.generic.TB.newNil;
-import static org.metaborg.meta.nabl2.terms.generic.TB.newTuple;
+import static org.metaborg.meta.nabl2.terms.build.TB.newAppl;
+import static org.metaborg.meta.nabl2.terms.build.TB.newList;
+import static org.metaborg.meta.nabl2.terms.build.TB.newNil;
+import static org.metaborg.meta.nabl2.terms.build.TB.newTuple;
 
 import java.util.List;
 import java.util.Map;
@@ -19,8 +19,8 @@ import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.solver.ISolution;
 import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -101,8 +101,8 @@ public class InterpreterTerms {
     private static ITerm declTypes(IProperties<Occurrence, ITerm, ITerm> declProperties, IUnifier unifier) {
         Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence decl : declProperties.getIndices()) {
-            declProperties.getValue(decl, DeclProperties.TYPE_KEY).map(unifier::find).ifPresent(type -> {
-                entries.put(decl, unifier.find(type));
+            declProperties.getValue(decl, DeclProperties.TYPE_KEY).map(unifier::findRecursive).ifPresent(type -> {
+                entries.put(decl, unifier.findRecursive(type));
             });
         }
         return map(entries.entrySet());

@@ -82,14 +82,12 @@ public abstract class PersistentUnifier implements IUnifier {
     // find(ITerm)
     ///////////////////////////////////////////
 
-    @Override public ITerm findShallow(ITerm term) {
+    @Override public ITerm findTerm(ITerm term) {
         return term.match(Terms.<ITerm>cases().var(var -> {
             final ITermVar rep = findRep(var);
             return terms().getOrDefault(rep, rep);
         }).otherwise(t -> t));
     }
-
-    protected abstract ITermVar findRep(ITermVar var);
 
     protected static ITermVar findRep(ITermVar var, Map.Transient<ITermVar, ITermVar> reps) {
         ITermVar rep = reps.get(var);
@@ -641,13 +639,19 @@ public abstract class PersistentUnifier implements IUnifier {
             return new PersistentUnifier.Result<>(diff, unifier.freeze());
         }
 
+        public IUnifier.Immutable.Result<IUnifier.Immutable> unify(IUnifier other) throws UnificationException {
+            final IUnifier.Transient unifier = melt();
+            final IUnifier.Immutable diff = unifier.unify(other);
+            return new PersistentUnifier.Result<>(diff, unifier.freeze());
+        }
+
         public IUnifier.Immutable.Result<IUnifier.Immutable> match(ITerm pattern, ITerm term) throws MatchException {
             final IUnifier.Transient unifier = melt();
             final IUnifier.Immutable diff = unifier.match(pattern, term);
             return new PersistentUnifier.Result<>(diff, unifier.freeze());
         }
 
-        @Override protected ITermVar findRep(ITermVar var) {
+        @Override public ITermVar findRep(ITermVar var) {
             final Map.Transient<ITermVar, ITermVar> reps = this.reps.get().asTransient();
             final ITermVar rep = findRep(var, reps);
             this.reps.set(reps.freeze());
@@ -714,7 +718,7 @@ public abstract class PersistentUnifier implements IUnifier {
             return terms;
         }
 
-        @Override protected ITermVar findRep(ITermVar var) {
+        @Override public ITermVar findRep(ITermVar var) {
             return findRep(var, reps);
         }
 
@@ -747,6 +751,32 @@ public abstract class PersistentUnifier implements IUnifier {
             }
             if(!allowRecursive && isCyclic(result)) {
                 throw new UnificationException(left, right);
+            }
+            return tinyUnifier(result);
+        }
+
+        @Override public IUnifier.Immutable unify(IUnifier other) throws UnificationException {
+            final Set<ITermVar> result = Sets.newHashSet();
+            final Deque<Tuple2<ITerm, ITerm>> worklist = Lists.newLinkedList();
+            for(ITermVar var : other.varSet()) {
+                final ITermVar rep = other.findRep(var);
+                if(!var.equals(rep)) {
+                    worklist.push(ImmutableTuple2.of(var, rep));
+                } else {
+                    final ITerm term = other.findTerm(var);
+                    if(!var.equals(term)) {
+                        worklist.push(ImmutableTuple2.of(var, term));
+                    }
+                }
+            }
+            while(!worklist.isEmpty()) {
+                final Tuple2<ITerm, ITerm> work = worklist.pop();
+                if(!unifyTerms(work._1(), work._2(), worklist, result)) {
+                    throw new UnificationException(work._1(), work._2());
+                }
+            }
+            if(!allowRecursive && isCyclic(result)) {
+                throw new UnificationException(TB.newTuple(), TB.newTuple()); // FIXME
             }
             return tinyUnifier(result);
         }

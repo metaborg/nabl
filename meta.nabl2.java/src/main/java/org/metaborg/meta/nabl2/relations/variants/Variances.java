@@ -3,8 +3,8 @@ package org.metaborg.meta.nabl2.relations.variants;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 
 public class Variances {
 

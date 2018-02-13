@@ -60,7 +60,7 @@ public class Match {
         // appl
 
         public static IMatcher<IApplTerm> appl() {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<IApplTerm>>cases(Optional::of,
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<IApplTerm>>cases(Optional::of,
                     Match::empty, Match::empty, Match::empty, Match::empty, Match::empty));
         }
 
@@ -69,7 +69,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> appl(Function1<? super IApplTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term)
+            return (term, unifier) -> unifier.findTerm(term)
                     .match(Terms.<Optional<R>>cases(appl -> Optional.of(f.apply(appl)), Match::empty, Match::empty,
                             Match::empty, Match::empty, Match::empty));
         }
@@ -80,7 +80,7 @@ public class Match {
 
         public static <R> IMatcher<R> appl0(String op, Function1<? super IApplTerm, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(appl -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
                         return Optional.empty();
                     }
@@ -96,7 +96,7 @@ public class Match {
         public static <T, R> IMatcher<R> appl1(String op, IMatcher<? extends T> m,
                 Function2<? super IApplTerm, ? super T, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(appl -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 1)) {
                         return Optional.empty();
                     }
@@ -113,7 +113,7 @@ public class Match {
         public static <T1, T2, R> IMatcher<R> appl2(String op, IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
                 Function3<? super IApplTerm, ? super T1, ? super T2, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(appl -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 2)) {
                         return Optional.empty();
                     }
@@ -132,7 +132,7 @@ public class Match {
         public static <T1, T2, T3, R> IMatcher<R> appl3(String op, IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
                 IMatcher<? extends T3> m3, Function4<? super IApplTerm, ? super T1, ? super T2, ? super T3, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(appl -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 3)) {
                         return Optional.empty();
                     }
@@ -153,7 +153,7 @@ public class Match {
                 IMatcher<? extends T2> m2, IMatcher<? extends T3> m3, IMatcher<? extends T4> m4,
                 Function5<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(appl -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 4)) {
                         return Optional.empty();
                     }
@@ -176,7 +176,7 @@ public class Match {
                 IMatcher<? extends T5> m5,
                 Function6<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, ? super T5, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(appl -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
                     if(!(op.equals(appl.getOp()) && appl.getArity() == 5)) {
                         return Optional.empty();
                     }
@@ -246,7 +246,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> list(Function1<? super IListTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty,
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty,
                     list -> Optional.of(f.apply(list)), Match::empty, Match::empty, Match::empty, Match::empty));
         }
 
@@ -261,7 +261,7 @@ public class Match {
         public static <T, R> IMatcher<R> listElems(IMatcher<T> m,
                 Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
             return (term, unifier) -> {
-                return unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
                     List<Optional<T>> os = Lists.newArrayList();
                     for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t, unifier));
@@ -272,7 +272,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> cons(Function1<? super IConsTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.of(f.apply(cons)),
                         nil -> Optional.empty(), var -> Optional.empty()));
             }, Match::empty, Match::empty, Match::empty, Match::empty));
@@ -281,7 +281,7 @@ public class Match {
 
         public static <THd, TTl, R> IMatcher<R> cons(IMatcher<? extends THd> mhd, IMatcher<? extends TTl> mtl,
                 Function3<? super IConsTerm, ? super THd, ? super TTl, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> {
                     Optional<? extends THd> ohd = mhd.match(cons.getHead(), unifier);
                     Optional<? extends TTl> otl = mtl.match(cons.getTail(), unifier);
@@ -292,7 +292,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> nil(Function1<? super INilTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.empty(),
                         nil -> Optional.of(f.apply(nil)), var -> Optional.empty()));
             }, Match::empty, Match::empty, Match::empty, Match::empty));
@@ -306,7 +306,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> string(Function1<? super IStringTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
                     string -> Optional.of(f.apply(string)), Match::empty, Match::empty, Match::empty));
         }
 
@@ -321,7 +321,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> integer(Function1<? super IIntTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
                     Match::empty, integer -> Optional.of(f.apply(integer)), Match::empty, Match::empty));
         }
 
@@ -336,7 +336,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> blob(Function1<? super IBlobTerm, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
                     Match::empty, Match::empty, blob -> Optional.of(f.apply(blob)), Match::empty));
         }
 
@@ -357,7 +357,7 @@ public class Match {
         }
 
         public static <R> IMatcher<R> var(Function1<? super ITermVar, R> f) {
-            return (term, unifier) -> unifier.findShallow(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
+            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(Match::empty, Match::empty,
                     Match::empty, Match::empty, Match::empty, var -> Optional.of(f.apply(var))));
         }
 

@@ -70,7 +70,7 @@ public class FixedPointSolver {
                     propertiesAddAll(result.constraints());
                     newConstraints.addAll(result.constraints());
 
-                    updateVars(result.unifiedVars());
+                    updateVars(result.unifierDiff().varSet());
                     it.remove();
 
                     stepSubject.onNext(result);

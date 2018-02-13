@@ -3,10 +3,10 @@ package org.metaborg.meta.nabl2.constraints.scopegraph;
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class ScopeGraphConstraints {
 
@@ -60,32 +60,32 @@ public final class ScopeGraphConstraints {
         ));
     }
 
-    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, ISubstitution.Immutable unifier) {
+    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, IUnifier unifier) {
         return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
             // @formatter:off
             decl -> ImmutableCGDecl.of(
-                        unifier.find(decl.getScope()),
-                        unifier.find(decl.getDeclaration()),
-                        decl.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(decl.getScope()),
+                        unifier.findRecursive(decl.getDeclaration()),
+                        decl.getMessageInfo().apply(unifier::findRecursive)),
             ref -> ImmutableCGRef.of(
-                        unifier.find(ref.getReference()),
-                        unifier.find(ref.getScope()),
-                        ref.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(ref.getReference()),
+                        unifier.findRecursive(ref.getScope()),
+                        ref.getMessageInfo().apply(unifier::findRecursive)),
             edge -> ImmutableCGDirectEdge.of(
-                        unifier.find(edge.getSourceScope()),
+                        unifier.findRecursive(edge.getSourceScope()),
                         edge.getLabel(),
-                        unifier.find(edge.getTargetScope()),
-                        edge.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(edge.getTargetScope()),
+                        edge.getMessageInfo().apply(unifier::findRecursive)),
             exp -> ImmutableCGExportEdge.of(
-                        unifier.find(exp.getDeclaration()),
+                        unifier.findRecursive(exp.getDeclaration()),
                         exp.getLabel(),
-                        unifier.find(exp.getScope()),
-                        exp.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(exp.getScope()),
+                        exp.getMessageInfo().apply(unifier::findRecursive)),
             imp -> ImmutableCGImportEdge.of(
-                        unifier.find(imp.getScope()),
+                        unifier.findRecursive(imp.getScope()),
                         imp.getLabel(),
-                        unifier.find(imp.getReference()),
-                        imp.getMessageInfo().apply(unifier::find))
+                        unifier.findRecursive(imp.getReference()),
+                        imp.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

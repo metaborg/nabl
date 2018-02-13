@@ -20,9 +20,9 @@ public class SG_get_decl_property extends AnalysisPrimitive {
             throw new InterpreterException("Need one term argument: key");
         }
         ITerm key = terms.get(0);
-        return Occurrence.matcher().match(term).<ITerm>flatMap(decl -> {
-            return unit.solution().<ITerm>flatMap(s -> {
-                return s.declProperties().getValue(decl, key).map(s.unifier()::find);
+        return unit.solution().<ITerm>flatMap(s -> {
+            return Occurrence.matcher().match(term, s.unifier()).<ITerm>flatMap(decl -> {
+                return s.declProperties().getValue(decl, key).map(s.unifier()::findRecursive);
             });
         });
     }

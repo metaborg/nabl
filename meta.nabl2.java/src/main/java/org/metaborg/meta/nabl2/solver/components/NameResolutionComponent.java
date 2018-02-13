@@ -28,7 +28,7 @@ import org.metaborg.meta.nabl2.solver.ImmutableSolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.VarMultimap;
+import org.metaborg.meta.nabl2.terms.collection.VarMultimap;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 
 import com.google.common.collect.HashMultimap;
@@ -53,7 +53,7 @@ public class NameResolutionComponent extends ASolver {
         this.scopeGraph = scopeGraph;
         this.nameResolution = nameResolution;
         this.properties = initial;
-        this.varDeps = new VarMultimap<>(unifier());
+        this.varDeps = new VarMultimap<>();
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -95,11 +95,11 @@ public class NameResolutionComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<SolveResult> solve(CResolve r) {
-        final ITerm refTerm = find(r.getReference());
+        final ITerm refTerm = unifier().findRecursive(r.getReference());
         if(!refTerm.isGround()) {
             return Optional.empty();
         }
-        final Occurrence ref = Occurrence.matcher().match(refTerm)
+        final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
         final Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
                 nameResolution.resolve(ref);
@@ -135,11 +135,11 @@ public class NameResolutionComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CAssoc a) {
-        final ITerm declTerm = find(a.getDeclaration());
+        final ITerm declTerm = unifier().findRecursive(a.getDeclaration());
         if(!declTerm.isGround()) {
             return Optional.empty();
         }
-        final Occurrence decl = Occurrence.matcher().match(declTerm)
+        final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
         final Label label = a.getLabel();
         final List<Scope> scopes = Lists.newArrayList(scopeGraph.getExportEdges().get(decl, label));
@@ -166,11 +166,11 @@ public class NameResolutionComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CDeclProperty c) {
-        final ITerm declTerm = find(c.getDeclaration());
+        final ITerm declTerm = unifier().findRecursive(c.getDeclaration());
         if(!declTerm.isGround()) {
             return Optional.empty();
         }
-        final Occurrence decl = Occurrence.matcher().match(declTerm)
+        final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         final SolveResult result = putProperty(decl, c.getKey(), c.getValue(), c.getMessageInfo())
                 .map(cc -> SolveResult.constraints(cc)).orElseGet(() -> SolveResult.empty());
@@ -181,7 +181,7 @@ public class NameResolutionComponent extends ASolver {
         Optional<ITerm> prev = properties.getValue(decl, key);
         if(!prev.isPresent()) {
             properties.putValue(decl, key, value);
-            value.getVars().elementSet().stream().forEach(var -> varDeps.put(var, decl));
+            value.getVars().elementSet().stream().forEach(var -> varDeps.put(var, decl, unifier()));
             return Optional.empty();
         } else {
             return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
@@ -194,19 +194,20 @@ public class NameResolutionComponent extends ASolver {
     }
 
     public java.util.Set<Occurrence> getDeps(ITerm term) {
-        return term.getVars().stream().flatMap(var -> varDeps.get(var).stream()).collect(Collectors.toSet());
+        return term.getVars().stream().flatMap(var -> varDeps.get(var, unifier()).stream()).collect(Collectors.toSet());
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<Scope> findScope(ITerm scopeTerm) {
-        return Optional.of(find(scopeTerm)).filter(ITerm::isGround).map(
-                st -> Scope.matcher().match(st).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+        return Optional.of(unifier().findRecursive(scopeTerm)).filter(ITerm::isGround).map(st -> Scope.matcher()
+                .match(st, unifier()).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
     }
 
     private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
-        return Optional.of(find(occurrenceTerm)).filter(ITerm::isGround).map(ot -> Occurrence.matcher().match(ot)
-                .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+        return Optional.of(unifier().findRecursive(occurrenceTerm)).filter(ITerm::isGround)
+                .map(ot -> Occurrence.matcher().match(ot, unifier())
+                        .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
     }
 
     @Value.Immutable

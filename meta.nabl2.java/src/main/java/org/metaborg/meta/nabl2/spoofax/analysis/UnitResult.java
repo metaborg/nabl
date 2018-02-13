@@ -9,8 +9,8 @@ import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.stratego.ConstraintTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 
 import com.google.common.collect.ImmutableSet;
 

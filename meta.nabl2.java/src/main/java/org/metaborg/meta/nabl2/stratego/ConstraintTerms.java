@@ -9,9 +9,9 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 import org.metaborg.util.Ref;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
@@ -31,7 +31,7 @@ public class ConstraintTerms {
     public static ITerm specialize(ITerm term) {
         // fromStratego
         term = term.match(Terms.cases(
-            // @formatter:off
+        // @formatter:off
             appl -> {
                 List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(Collectors.toList());
                 return TB.newAppl(appl.getOp(), args);
@@ -44,7 +44,7 @@ public class ConstraintTerms {
             // @formatter:on
         )).withAttachments(term.getAttachments());
         term = M.<ITerm>cases(
-            // @formatter:off
+        // @formatter:off
             M.appl1(LOCK_CTOR, M.term(), (l, t) ->
                     t.withLocked(true)),
             M.appl1(QUOTE_CTOR, M.term(), (q, t) ->
@@ -67,7 +67,7 @@ public class ConstraintTerms {
         final Ref<ITermVar> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
-                // @formatter:off
+            // @formatter:off
                 cons -> {
                     terms.add(specialize(cons.getHead()));
                     attachments.add(cons.getAttachments());
@@ -92,7 +92,7 @@ public class ConstraintTerms {
     }
 
     public static <R> IMatcher<R> specialize(IMatcher<R> m) {
-        return t -> m.match(specialize(t));
+        return (term, unifier) -> m.match(specialize(term), unifier);
     }
 
     /**
@@ -105,7 +105,7 @@ public class ConstraintTerms {
     private static ITerm explicate(ITerm term, final boolean wasLocked) {
         final boolean isLocked = wasLocked || term.isLocked();
         term = term.match(Terms.cases(
-            // @formatter:off
+        // @formatter:off
             appl -> {
                 List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg, isLocked)).collect(Collectors.toList());
                 return TB.newAppl(appl.getOp(), args);
@@ -135,7 +135,7 @@ public class ConstraintTerms {
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
-                // @formatter:off
+            // @formatter:off
                 cons -> {
                     terms.add(explicate(cons.getHead()));
                     attachments.add(cons.getAttachments());
@@ -162,7 +162,7 @@ public class ConstraintTerms {
     }
 
     public static <R> IMatcher<R> explicate(IMatcher<R> m) {
-        return t -> m.match(explicate(t));
+        return (t, u) -> m.match(explicate(t), u);
     }
 
 }

@@ -35,7 +35,7 @@ import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
@@ -43,7 +43,6 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-
 
 public class BaseMultiFileSolver extends BaseSolver {
 
@@ -101,7 +100,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.from(activeVars));
 
         solver.step().subscribe(r -> {
-            if(!r.unifiedVars().isEmpty()) {
+            if(!r.unifierDiff().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
                 } catch(InterruptedException ex) {

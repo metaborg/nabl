@@ -3,8 +3,8 @@ package org.metaborg.meta.nabl2.relations.terms;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Symmetry;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 
 public class RelationOptions {
 

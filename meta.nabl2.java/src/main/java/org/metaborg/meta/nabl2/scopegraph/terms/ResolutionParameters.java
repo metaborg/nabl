@@ -12,10 +12,10 @@ import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
 import org.metaborg.meta.nabl2.scopegraph.IResolutionParameters;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.util.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.base.Preconditions;
@@ -37,11 +37,11 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
     }
 
     public static IMatcher<ResolutionParameters> matcher() {
-        return term -> M.appl3("", matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
+        return (term, unifier) -> IMatcher.flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
             RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
-            return matchWf(builder).match(wfTerm)
+            return matchWf(builder).match(wfTerm, unifier)
                     .<ResolutionParameters>map(wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
-        }).match(term).flatMap(o -> o);
+        })).match(term, unifier);
     }
 
     private static IMatcher<IAlphabet<Label>> matchLabels() {
@@ -67,7 +67,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
 
     private static IMatcher<IRegExp<Label>> matchWf(IRegExpBuilder<Label> builder) {
         return M.casesFix(m -> Iterables2.from(
-            // @formatter:off
+        // @formatter:off
                 M.appl0("Empty", (t) -> builder.emptySet()), M.appl0("Epsilon", (t) -> builder.emptyString()),
                 M.appl1("Closure", m, (t, re) -> builder.closure(re)),
                 M.appl2("Concat", m, m, (t, re1, re2) -> builder.concat(re1, re2)),

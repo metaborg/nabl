@@ -39,7 +39,7 @@ import org.metaborg.meta.nabl2.solver.properties.PolySafe;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
@@ -108,7 +108,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 Iterables2.from(activeVars, hasRelationBuildConstraints));
 
         solver.step().subscribe(r -> {
-            if(!r.unifiedVars().isEmpty()) {
+            if(!r.unifierDiff().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
                 } catch(InterruptedException ex) {

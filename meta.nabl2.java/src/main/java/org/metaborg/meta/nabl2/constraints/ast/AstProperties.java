@@ -1,7 +1,7 @@
 package org.metaborg.meta.nabl2.constraints.ast;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
 
 public final class AstProperties {
 

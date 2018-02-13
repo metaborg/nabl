@@ -2,10 +2,10 @@ package org.metaborg.meta.nabl2.constraints.equality;
 
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class EqualityConstraints {
 
@@ -34,17 +34,17 @@ public final class EqualityConstraints {
         ));
     }
 
-    public static IEqualityConstraint substitute(IEqualityConstraint constraint, ISubstitution.Immutable unifier) {
+    public static IEqualityConstraint substitute(IEqualityConstraint constraint, IUnifier unifier) {
         return constraint.match(IEqualityConstraint.Cases.<IEqualityConstraint>of(
             // @formatter:off
             eq -> ImmutableCEqual.of(
-                    unifier.find(eq.getLeft()),
-                    unifier.find(eq.getRight()),
-                    eq.getMessageInfo().apply(unifier::find)),
+                    unifier.findRecursive(eq.getLeft()),
+                    unifier.findRecursive(eq.getRight()),
+                    eq.getMessageInfo().apply(unifier::findRecursive)),
             ineq -> ImmutableCInequal.of(
-                    unifier.find(ineq.getLeft()),
-                    unifier.find(ineq.getRight()),
-                    ineq.getMessageInfo().apply(unifier::find))
+                    unifier.findRecursive(ineq.getLeft()),
+                    unifier.findRecursive(ineq.getRight()),
+                    ineq.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

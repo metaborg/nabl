@@ -6,29 +6,30 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.stratego.ImmutableTermIndex;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.Transform.T;
 
 public class TermSimplifier {
 
     public static ITerm focus(String resource, ITerm term) {
-        return M.somebu(M.preserveAttachments(M.cases(
+        return T.somebu(M.preserveAttachments(M.cases(
             // @formatter:off
             M.var(var -> {
                 String r = (resource ==  null || var.getResource().equals(resource)) ? "" : var.getResource();
                 return TB.newVar(r, var.getName());
             }),
-            t -> Scope.matcher().match(t).map(s -> {
+            (t, u) -> Scope.matcher().match(t, u).map(s -> {
                 String r = (resource == null || s.getResource().equals(resource)) ? "" : s.getResource();
                 return ImmutableScope.of(r, s.getName());
             }),
-            t -> TermIndex.matcher().match(t).map(i -> {
+            (t, u) -> TermIndex.matcher().match(t, u).map(i -> {
                 String r = (resource == null || i.getResource().equals(resource)) ? "" : i.getResource();
                 return ImmutableTermIndex.of(r, i.getId());
             }),
             Occurrence.matcher()
             // @formatter:on
-        ))).apply(term);
+        ))::match).apply(term);
     }
 
 }

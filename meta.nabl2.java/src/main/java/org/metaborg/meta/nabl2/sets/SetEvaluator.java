@@ -3,8 +3,8 @@ package org.metaborg.meta.nabl2.sets;
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;

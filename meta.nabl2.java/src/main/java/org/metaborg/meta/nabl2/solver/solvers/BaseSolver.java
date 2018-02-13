@@ -41,8 +41,8 @@ import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
@@ -68,7 +68,7 @@ public class BaseSolver {
             IProgress progress) throws SolverException, InterruptedException {
 
         // shared
-        final IUnifier.Transient unifier = Unifier.Transient.of();
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
 
         // solver components

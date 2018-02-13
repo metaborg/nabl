@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 public class SG_get_all_refs extends AnalysisPrimitive {

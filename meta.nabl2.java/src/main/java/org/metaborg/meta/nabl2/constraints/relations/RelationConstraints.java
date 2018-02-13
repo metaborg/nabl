@@ -4,10 +4,10 @@ import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.relations.terms.FunctionName;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class RelationConstraints {
 
@@ -44,24 +44,24 @@ public final class RelationConstraints {
         ));
     }
 
-    public static IRelationConstraint substitute(IRelationConstraint constraint, ISubstitution.Immutable unifier) {
+    public static IRelationConstraint substitute(IRelationConstraint constraint, IUnifier unifier) {
         return constraint.match(IRelationConstraint.Cases.<IRelationConstraint>of(
             // @formatter:off
             build -> ImmutableCBuildRelation.of(
-                        unifier.find(build.getLeft()),
+                        unifier.findRecursive(build.getLeft()),
                         build.getRelation(),
-                        unifier.find(build.getRight()),
-                        build.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(build.getRight()),
+                        build.getMessageInfo().apply(unifier::findRecursive)),
             check -> ImmutableCCheckRelation.of(
-                        unifier.find(check.getLeft()),
+                        unifier.findRecursive(check.getLeft()),
                         check.getRelation(),
-                        unifier.find(check.getRight()),
-                        check.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(check.getRight()),
+                        check.getMessageInfo().apply(unifier::findRecursive)),
             eval -> ImmutableCEvalFunction.of(
-                        unifier.find(eval.getResult()),
+                        unifier.findRecursive(eval.getResult()),
                         eval.getFunction(),
-                        unifier.find(eval.getTerm()),
-                        eval.getMessageInfo().apply(unifier::find))
+                        unifier.findRecursive(eval.getTerm()),
+                        eval.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

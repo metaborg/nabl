@@ -20,9 +20,8 @@ import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.meta.nabl2.unification.UnificationException;
-import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
@@ -54,31 +53,27 @@ public abstract class Solution implements ISolution {
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
-                VariantRelations.immutableOf(config.getRelations()), Unifier.Immutable.of(),
+                VariantRelations.immutableOf(config.getRelations()), PersistentUnifier.Immutable.of(),
                 org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
                 Collections.emptySet());
     }
 
     @Override public ISolution findAndLock() throws SolverException {
-        try {
-            final IUnifier.Transient unifier = unifier().melt();
-            unifier.map(t -> t.withLocked(true));
+        final IUnifier.Transient unifier = unifier().melt();
+        // unifier.map(t -> t.withLocked(true)); // FIXME
 
-            final Function1<ITerm, ITerm> findAndLock = t -> unifier.find(t).withLocked(true);
+        final Function1<ITerm, ITerm> findAndLock = t -> unifier.findRecursive(t).withLocked(true); // FIXME
 
-            final IProperties.Transient<TermIndex, ITerm, ITerm> astProperties = astProperties().melt();
-            astProperties.mapValues(findAndLock);
+        final IProperties.Transient<TermIndex, ITerm, ITerm> astProperties = astProperties().melt();
+        astProperties.mapValues(findAndLock);
 
-            final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = declProperties().melt();
-            declProperties.mapValues(findAndLock);
+        final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = declProperties().melt();
+        declProperties.mapValues(findAndLock);
 
-            final ISymbolicConstraints symbolic = symbolic().map(findAndLock);
+        final ISymbolicConstraints symbolic = symbolic().map(findAndLock);
 
-            return ImmutableSolution.builder().from(this).astProperties(astProperties.freeze())
-                    .declProperties(declProperties.freeze()).unifier(unifier.freeze()).symbolic(symbolic).build();
-        } catch(UnificationException ex) {
-            throw new SolverException(ex);
-        }
+        return ImmutableSolution.builder().from(this).astProperties(astProperties.freeze())
+                .declProperties(declProperties.freeze()).unifier(unifier.freeze()).symbolic(symbolic).build();
     }
 
 }

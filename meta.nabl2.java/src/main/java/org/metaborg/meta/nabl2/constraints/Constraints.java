@@ -16,10 +16,10 @@ import org.metaborg.meta.nabl2.constraints.scopegraph.ScopeGraphConstraints;
 import org.metaborg.meta.nabl2.constraints.sets.SetConstraints;
 import org.metaborg.meta.nabl2.constraints.sym.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public class Constraints {
 
@@ -76,7 +76,7 @@ public class Constraints {
         return TB.newString(String.join("", Collections.nCopies(prio, "!")));
     }
 
-    public static IConstraint substitute(IConstraint constraint, ISubstitution.Immutable subst) {
+    public static IConstraint substitute(IConstraint constraint, IUnifier.Immutable subst) {
         return subst.isEmpty() ? constraint : constraint.match(IConstraint.Cases.<IConstraint>of(
         // @formatter:off
             c -> AstConstraints.substitute(c, subst),

@@ -3,10 +3,10 @@ package org.metaborg.meta.nabl2.constraints.ast;
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class AstConstraints {
 
@@ -31,14 +31,14 @@ public final class AstConstraints {
 
     }
 
-    public static IAstConstraint substitute(IAstConstraint constraint, ISubstitution.Immutable unifier) {
+    public static IAstConstraint substitute(IAstConstraint constraint, IUnifier unifier) {
         return constraint.match(IAstConstraint.Cases.<IAstConstraint>of(
             // @formatter:off
             prop -> ImmutableCAstProperty.of(
                         prop.getIndex(),
                         prop.getKey(),
-                        unifier.find(prop.getValue()),
-                        prop.getMessageInfo().apply(unifier::find))
+                        unifier.findRecursive(prop.getValue()),
+                        prop.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

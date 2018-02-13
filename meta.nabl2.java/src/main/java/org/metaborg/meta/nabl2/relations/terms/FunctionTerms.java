@@ -6,12 +6,13 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.relations.terms.FunctionName.NamedFunction;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.unification.UnificationException;
-import org.metaborg.meta.nabl2.unification.Unifier;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.MatchException;
+import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
+import org.metaborg.meta.nabl2.util.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.collect.ImmutableList;
@@ -58,12 +59,12 @@ public class FunctionTerms {
                 throw new IllegalStateException("Term argument must be ground.");
             }
             for(Tuple2<ITerm, ITerm> c : cases) {
-                Unifier.Transient unifier = Unifier.Transient.of();
+                IUnifier.Transient unifier = PersistentUnifier.Transient.of();
                 try {
-                    unifier.unify(c._1(), term);
-                    ITerm result = unifier.find(c._2());
+                    unifier.match(c._1(), term);
+                    ITerm result = unifier.findRecursive(c._2());
                     return Optional.of(result);
-                } catch(UnificationException e) {
+                } catch(MatchException e) {
                 }
             }
             return Optional.empty();

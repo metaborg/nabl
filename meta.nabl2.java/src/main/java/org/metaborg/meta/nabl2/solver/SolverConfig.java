@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.solver;
 
-
 import java.util.Map;
 
 import org.immutables.serial.Serial;
@@ -10,8 +9,8 @@ import org.metaborg.meta.nabl2.relations.terms.RelationTerms;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelationDescription;
 import org.metaborg.meta.nabl2.scopegraph.terms.ResolutionParameters;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 import org.metaborg.util.functions.PartialFunction1;
 
 @Value.Immutable

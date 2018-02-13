@@ -10,7 +10,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -23,8 +23,8 @@ public class SG_get_ref_resolution extends AnalysisPrimitive {
 
     @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return Occurrence.matcher().match(term).<ITerm>flatMap(ref -> {
-            return unit.solution().flatMap(s -> {
+        return unit.solution().flatMap(s -> {
+            return Occurrence.matcher().match(term, s.unifier()).<ITerm>flatMap(ref -> {
                 return s.nameResolution().resolve(ref).map(paths -> {
                     List<ITerm> pathTerms = Lists.newArrayListWithExpectedSize(paths.size());
                     for(IResolutionPath<Scope, Label, Occurrence> path : paths) {

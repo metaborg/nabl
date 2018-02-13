@@ -22,7 +22,7 @@ public class SG_get_ast_property extends AnalysisPrimitive {
         final ITerm key = terms.get(0);
         return TermIndex.get(term).<ITerm>flatMap(index -> {
             return unit.solution().<ITerm>flatMap(s -> {
-                return s.astProperties().getValue(index, key).map(s.unifier()::find);
+                return s.astProperties().getValue(index, key).map(s.unifier()::findRecursive);
             });
         });
     }

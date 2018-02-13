@@ -5,7 +5,8 @@ import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class UnifierTerms {
 
@@ -16,12 +17,12 @@ public final class UnifierTerms {
     }
 
     private ITerm build() {
-        List<ITerm> entries = unifier.getAllVars().stream().map(this::buildVar).collect(Collectors.toList());
+        List<ITerm> entries = unifier.varSet().stream().map(this::buildVar).collect(Collectors.toList());
         return TB.newAppl("Unifier", (ITerm) TB.newList(entries));
     }
 
     private ITerm buildVar(ITermVar var) {
-        return TB.newTuple(var, unifier.find(var));
+        return TB.newTuple(var, unifier.findRecursive(var));
     }
 
     public static ITerm build(IUnifier unifier) {

@@ -3,8 +3,6 @@ package org.metaborg.meta.nabl2.terms.collection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -64,11 +62,11 @@ public class TermMultisetTest {
         terms.add(t2, unifier);
         assertEquals(1, terms.varSet().size());
 
-        Set<ITermVar> result = unifier.unify(v1, t1);
-        terms.update(result, unifier);
+        IUnifier.Immutable result = unifier.unify(v1, t1);
+        terms.update(result.varSet(), unifier);
 
         assertTrue(terms.contains(t2, unifier));
-        assertTrue(terms.contains(unifier.findShallow(t2), unifier));
+        assertTrue(terms.contains(unifier.findTerm(t2), unifier));
         assertEquals(0, terms.varSet().size());
     }
 

@@ -13,10 +13,10 @@ import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.SpacedName;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
+import org.metaborg.meta.nabl2.util.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.PartialFunction0;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;

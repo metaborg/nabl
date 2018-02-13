@@ -14,6 +14,8 @@ import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.terms.ITermVar;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.util.functions.CheckedFunction1;
 
 import com.google.common.collect.ImmutableSetMultimap;
@@ -78,8 +80,8 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
             return ImmutableSetMultimap.of();
         }
 
-        @Value.Default public Set<ITermVar> unifiedVars() {
-            return Collections.emptySet();
+        @Value.Default public IUnifier.Immutable unifierDiff() {
+            return PersistentUnifier.Immutable.of();
         }
 
         public static SolveResult empty() {

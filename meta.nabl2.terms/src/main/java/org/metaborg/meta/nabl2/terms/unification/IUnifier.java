@@ -48,11 +48,17 @@ public interface IUnifier {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Find the representative for the given term. The representative itself is not instantiated, to prevent exponential
-     * blowup in time or space. If the given term is a variable, the representative term is returned, or the class
-     * variable if the variable is free in the unifier. If the given term is not a variable, it is returned unchanged.
+     * Find the representative variable for the given variable.
      */
-    ITerm findShallow(ITerm term);
+    ITermVar findRep(ITermVar var);
+
+    /**
+     * Find the representative term for the given term. The representative itself is not instantiated, to prevent
+     * exponential blowup in time or space. If the given term is a variable, the representative term is returned, or the
+     * class variable if the variable is free in the unifier. If the given term is not a variable, it is returned
+     * unchanged.
+     */
+    ITerm findTerm(ITerm term);
 
     /**
      * Fully instantiate the given term according to this substitution. Instantiation may result in exponential blowup
@@ -106,6 +112,11 @@ public interface IUnifier {
         Result<Immutable> unify(ITerm term1, ITerm term2) throws UnificationException;
 
         /**
+         * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
+         */
+        Result<Immutable> unify(IUnifier other) throws UnificationException;
+
+        /**
          * Remove the given variable from the unifier.
          */
         Immutable remove(ITermVar var);
@@ -146,9 +157,14 @@ public interface IUnifier {
         ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
         /**
-         * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified. *
+         * Unify the two input terms. Return a diff unifier, or throw if the terms cannot be unified.
          */
         Immutable unify(ITerm term1, ITerm term2) throws UnificationException;
+
+        /**
+         * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
+         */
+        Immutable unify(IUnifier other) throws UnificationException;
 
         /**
          * Remove the given variable from the unifier. Returns a substitution that eliminates the given variable keeping

@@ -14,9 +14,10 @@ public class SG_get_ref_scope extends AnalysisPrimitive {
         super(SG_get_ref_scope.class.getSimpleName());
     }
 
-    @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms) throws InterpreterException {
-        return Occurrence.matcher().match(term).<ITerm>flatMap(ref -> {
-            return unit.solution().<ITerm>flatMap(s -> {
+    @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
+        return unit.solution().<ITerm>flatMap(s -> {
+            return Occurrence.matcher().match(term, s.unifier()).<ITerm>flatMap(ref -> {
                 return s.scopeGraph().getRefs().get(ref).flatMap(Optional::<ITerm>of);
             });
         });

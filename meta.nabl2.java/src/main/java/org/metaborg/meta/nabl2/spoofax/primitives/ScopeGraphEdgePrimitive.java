@@ -10,9 +10,9 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
+import org.metaborg.meta.nabl2.terms.matching.Match.M;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -24,12 +24,13 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
         super(name);
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms) throws InterpreterException {
+    @Override public Optional<ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
         return unit.solution().flatMap(sol -> {
             final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.scopeGraph());
             final IMatcher<S> sourceMatcher = getSourceMatcher();
             return M.<ITerm>cases(
-                // @formatter:off
+            // @formatter:off
                 M.term(sourceMatcher, (t, source) -> {
                     List<ITerm> edgeTerms = Lists.newArrayList();
                     for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
@@ -45,7 +46,7 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
                     return TB.newList(targetTerms);
                 })
                 // @formatter:on
-            ).match(term);
+            ).match(term, sol.unifier());
         });
     }
 

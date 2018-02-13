@@ -9,8 +9,8 @@ import java.util.stream.Stream;
 import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 
 import com.google.common.collect.Lists;
@@ -81,7 +81,7 @@ public final class ScopeGraphTerms {
     }
 
     private ITerm buildType(Optional<ITerm> type) {
-        return type.map(unifier::find).map(t -> TB.newAppl(TYPE, t)).orElseGet(() -> TB.newAppl(NO_TYPE));
+        return type.map(unifier::findRecursive).map(t -> TB.newAppl(TYPE, t)).orElseGet(() -> TB.newAppl(NO_TYPE));
     }
 
     private ITerm buildRef(Occurrence ref) {

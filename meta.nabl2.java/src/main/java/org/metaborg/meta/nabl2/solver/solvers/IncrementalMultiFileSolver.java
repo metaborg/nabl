@@ -60,8 +60,9 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.ImmutableSymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
+import org.metaborg.meta.nabl2.terms.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
@@ -397,7 +398,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = Properties.Transient.of();
         final Map<String, IVariantRelation.Transient<ITerm>> relations =
                 VariantRelations.transientOf(config.getRelations());
-        final IUnifier.Transient unifier = Unifier.Transient.of();
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         final Set.Transient<ITerm> symbolicFacts = Set.Transient.of();
         final Set.Transient<ITerm> symbolicGoals = Set.Transient.of();
         final IMessages.Transient messages = Messages.Transient.of();
@@ -412,13 +413,15 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 for(Map.Entry<String, IVariantRelation.Immutable<ITerm>> entry : solution.relations().entrySet()) {
                     relations.get(entry.getKey()).addAll(entry.getValue());
                 }
-                unifier.putAll(solution.unifier());
+                unifier.unify(solution.unifier());
                 symbolicFacts.__insertAll(solution.symbolic().getFacts());
                 symbolicGoals.__insertAll(solution.symbolic().getGoals());
                 messages.addAll(solution.messages());
                 constraints.addAll(solution.constraints());
             }
         } catch(RelationException ex) {
+            throw new SolverException(ex);
+        } catch(UnificationException ex) {
             throw new SolverException(ex);
         }
 
@@ -515,8 +518,8 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
         final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
-        final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, polySafe::isGenSafe, polySafe::isInstSafe, nameResolutionSolver::getProperty);
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
+                polySafe::isInstSafe, nameResolutionSolver::getProperty);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -535,7 +538,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 Iterables2.from(activeVars, hasRelationBuildConstraints));
 
         solver.step().subscribe(r -> {
-            if(!r.unifiedVars().isEmpty()) {
+            if(!r.unifierDiff().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
                 } catch(InterruptedException ex) {
