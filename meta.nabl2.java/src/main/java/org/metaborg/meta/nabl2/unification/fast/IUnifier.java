@@ -76,12 +76,12 @@ public interface IUnifier {
     /**
      * Test if the two terms are equal relative to this unifier. Further unification preserves equality.
      */
-//    boolean areEqual(ITerm term1, ITerm term2) throws UnificationException;
+    boolean areEqual(ITerm term1, ITerm term2);
 
     /**
      * Test if the two terms are unequal relative to this unifier. Further unification preserves inequality.
      */
-//    boolean areUnequal(ITerm term1, ITerm term2) throws UnificationException;
+    boolean areUnequal(ITerm term1, ITerm term2);
 
     public interface Immutable extends IUnifier {
 

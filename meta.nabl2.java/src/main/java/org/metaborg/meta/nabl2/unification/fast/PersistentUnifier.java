@@ -40,11 +40,11 @@ public abstract class PersistentUnifier {
             this.terms = terms;
         }
 
-        public int size() {
+        @Override public int size() {
             return reps.size();
         }
 
-        public Set<ITermVar> varSet() {
+        @Override public Set<ITermVar> varSet() {
             return reps.keySet();
         }
 
@@ -79,7 +79,7 @@ public abstract class PersistentUnifier {
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        public Set<ITermVar> unify(final ITerm left, final ITerm right) throws UnificationException {
+        @Override public Set<ITermVar> unify(final ITerm left, final ITerm right) throws UnificationException {
             final Set<ITermVar> result = Sets.newHashSet();
             final Deque<Tuple2<ITerm, ITerm>> worklist = Lists.newLinkedList();
             worklist.push(ImmutableTuple2.of(left, right));
@@ -131,7 +131,7 @@ public abstract class PersistentUnifier {
                     M.var(varRight -> unifyVarTerm(varRight, stringLeft, worklist, result))
                 ).match(right).orElse(false),
                 integerLeft -> M.cases(
-                    M.integer(integerRight -> integerLeft.getValue() != integerRight.getValue()),
+                    M.integer(integerRight -> integerLeft.getValue() == integerRight.getValue()),
                     M.var(varRight -> unifyVarTerm(varRight, integerLeft, worklist, result))
                 ).match(right).orElse(false),
                 blobLeft -> M.cases(
@@ -198,6 +198,182 @@ public abstract class PersistentUnifier {
         }
 
         ///////////////////////////////////////////
+        // areEqual(ITerm, ITerm)
+        ///////////////////////////////////////////
+
+        @Override public boolean areEqual(final ITerm left, final ITerm right) {
+            return equalTerms(left, right);
+        }
+
+        private boolean equalTerms(final ITerm left, final ITerm right) {
+            // @formatter:off
+            return left.match(Terms.<Boolean>cases(
+                applLeft -> M.cases(
+                    M.appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
+                                        applLeft.getArity() == applRight.getArity() &&
+                                        equals(applLeft.getArgs(), applRight.getArgs())),
+                    M.var(varRight -> equalVarTerm(varRight, applLeft))
+                ).match(right).orElse(false),
+                listLeft -> M.cases(
+                    M.list(listRight -> listLeft.match(ListTerms.cases(
+                        consLeft -> M.cases(
+                            M.cons(consRight -> {
+                                return equalTerms(consLeft.getHead(), consRight.getHead()) && 
+                                equalTerms(consLeft.getTail(), consRight.getTail());
+                            }),
+                            M.var(varRight -> equalVarTerm(varRight, consLeft))
+                        ).match(listRight).orElse(false),
+                        nilLeft -> M.cases(
+                            M.nil(nilRight -> true),
+                            M.var(varRight -> equalVarTerm(varRight, nilLeft))
+                        ).match(listRight).orElse(false),
+                        varLeft -> M.cases(
+                            M.var(varRight -> equalVars(varLeft, varRight)),
+                            M.term(termRight -> equalVarTerm(varLeft, termRight))
+                        ).match(listRight).orElse(false)
+                    ))),
+                    M.var(varRight -> equalVarTerm(varRight, listLeft))
+                ).match(right).orElse(false),
+                stringLeft -> M.cases(
+                    M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
+                    M.var(varRight -> equalVarTerm(varRight, stringLeft))
+                ).match(right).orElse(false),
+                integerLeft -> M.cases(
+                    M.integer(integerRight -> integerLeft.getValue() == integerRight.getValue()),
+                    M.var(varRight -> equalVarTerm(varRight, integerLeft))
+                ).match(right).orElse(false),
+                blobLeft -> M.cases(
+                    M.blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue())),
+                    M.var(varRight -> equalVarTerm(varRight, blobLeft))
+                ).match(right).orElse(false),
+                varLeft -> M.cases(
+                    // match var before term, or term will always match
+                    M.var(varRight -> equalVars(varLeft, varRight)),
+                    M.term(termRight -> equalVarTerm(varLeft, termRight))
+                ).match(right).orElse(false)
+            ));
+            // @formatter:on
+        }
+
+        private boolean equalVarTerm(final ITermVar var, final ITerm term) {
+            final ITermVar rep = findRep(var);
+            if(terms.containsKey(rep)) {
+                return equalTerms(terms.get(rep), term);
+            }
+            return false;
+        }
+
+        private boolean equalVars(final ITermVar left, final ITermVar right) {
+            final ITermVar leftRep = findRep(left);
+            final ITermVar rightRep = findRep(right);
+            return leftRep.equals(rightRep);
+        }
+
+        private boolean equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
+            Iterator<ITerm> itLeft = lefts.iterator();
+            Iterator<ITerm> itRight = rights.iterator();
+            while(itLeft.hasNext()) {
+                if(!itRight.hasNext()) {
+                    return false;
+                }
+                if(!equalTerms(itLeft.next(), itRight.next())) {
+                    return false;
+                }
+            }
+            if(itRight.hasNext()) {
+                return false;
+            }
+            return true;
+        }
+
+        ///////////////////////////////////////////
+        // areUnequal(ITerm, ITerm)
+        ///////////////////////////////////////////
+
+        @Override public boolean areUnequal(final ITerm left, final ITerm right) {
+            return unequalTerms(left, right);
+        }
+
+        private boolean unequalTerms(final ITerm left, final ITerm right) {
+            // @formatter:off
+            return left.match(Terms.<Boolean>cases(
+                applLeft -> M.cases(
+                    M.appl(applRight -> !applLeft.getOp().equals(applRight.getOp()) ||
+                                        applLeft.getArity() != applRight.getArity() ||
+                                        unequals(applLeft.getArgs(), applRight.getArgs())),
+                    M.var(varRight -> unequalVarTerm(varRight, applLeft))
+                ).match(right).orElse(true),
+                listLeft -> M.cases(
+                    M.list(listRight -> listLeft.match(ListTerms.cases(
+                        consLeft -> M.cases(
+                            M.cons(consRight -> {
+                                return unequalTerms(consLeft.getHead(), consRight.getHead()) || 
+                                       unequalTerms(consLeft.getTail(), consRight.getTail());
+                            }),
+                            M.var(varRight -> unequalVarTerm(varRight, consLeft))
+                        ).match(listRight).orElse(true),
+                        nilLeft -> M.cases(
+                            M.nil(nilRight -> false),
+                            M.var(varRight -> unequalVarTerm(varRight, nilLeft))
+                        ).match(listRight).orElse(true),
+                        varLeft -> M.cases(
+                            M.var(varRight -> unequalVars(varLeft, varRight)),
+                            M.term(termRight -> unequalVarTerm(varLeft, termRight))
+                        ).match(listRight).orElse(true)
+                    ))),
+                    M.var(varRight -> unequalVarTerm(varRight, listLeft))
+                ).match(right).orElse(true),
+                stringLeft -> M.cases(
+                    M.string(stringRight -> !stringLeft.getValue().equals(stringRight.getValue())),
+                    M.var(varRight -> unequalVarTerm(varRight, stringLeft))
+                ).match(right).orElse(true),
+                integerLeft -> M.cases(
+                    M.integer(integerRight -> integerLeft.getValue() != integerRight.getValue()),
+                    M.var(varRight -> unequalVarTerm(varRight, integerLeft))
+                ).match(right).orElse(true),
+                blobLeft -> M.cases(
+                    M.blob(blobRight -> !blobLeft.getValue().equals(blobRight.getValue())),
+                    M.var(varRight -> unequalVarTerm(varRight, blobLeft))
+                ).match(right).orElse(true),
+                varLeft -> M.cases(
+                    // match var before term, or term will always match
+                    M.var(varRight -> unequalVars(varLeft, varRight)),
+                    M.term(termRight -> unequalVarTerm(varLeft, termRight))
+                ).match(right).orElse(true)
+            ));
+            // @formatter:on
+        }
+
+        private boolean unequalVarTerm(final ITermVar var, final ITerm term) {
+            final ITermVar rep = findRep(var);
+            if(terms.containsKey(rep)) {
+                return unequalTerms(terms.get(rep), term);
+            }
+            return false;
+        }
+
+        @SuppressWarnings("unused") private boolean unequalVars(final ITermVar left, final ITermVar right) {
+            return false;
+        }
+
+        private boolean unequals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
+            Iterator<ITerm> itLeft = lefts.iterator();
+            Iterator<ITerm> itRight = rights.iterator();
+            while(itLeft.hasNext()) {
+                if(!itRight.hasNext()) {
+                    return true;
+                }
+                if(unequalTerms(itLeft.next(), itRight.next())) {
+                    return true;
+                }
+            }
+            if(itRight.hasNext()) {
+                return true;
+            }
+            return false;
+        }
+
+        ///////////////////////////////////////////
         // find(ITerm)
         ///////////////////////////////////////////
 
@@ -222,7 +398,7 @@ public abstract class PersistentUnifier {
         // isCyclic(ITerm)
         ///////////////////////////////////////////
 
-        public boolean isCyclic(final ITerm term) {
+        @Override public boolean isCyclic(final ITerm term) {
             return isCyclic(term.getVars().elementSet(), Sets.newHashSet(), Sets.newHashSet());
         }
 
@@ -255,7 +431,7 @@ public abstract class PersistentUnifier {
         // isGround(ITerm)
         ///////////////////////////////////////////
 
-        public boolean isGround(final ITerm term) {
+        @Override public boolean isGround(final ITerm term) {
             return isGround(term.getVars().elementSet(), Sets.newHashSet(), Sets.newHashSet());
         }
 
@@ -284,7 +460,7 @@ public abstract class PersistentUnifier {
         // getVars(ITerm)
         ///////////////////////////////////////////
 
-        public Set<ITermVar> getVars(final ITerm term) {
+        @Override public Set<ITermVar> getVars(final ITerm term) {
             final Set<ITermVar> vars = Sets.newHashSet();
             getVars(term.getVars().elementSet(), Lists.newLinkedList(), Sets.newHashSet(), vars);
             return vars;
@@ -321,7 +497,7 @@ public abstract class PersistentUnifier {
         // size(ITerm)
         ///////////////////////////////////////////
 
-        public TermSize size(final ITerm term) {
+        @Override public TermSize size(final ITerm term) {
             return size(term, Sets.newHashSet(), Maps.newHashMap());
         }
 
