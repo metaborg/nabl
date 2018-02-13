@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.terms.generic;
+package org.metaborg.meta.nabl2.terms.build;
 
 import static org.metaborg.util.unit.Unit.unit;
 

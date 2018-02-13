@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.terms;
+package org.metaborg.meta.nabl2.terms.build;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -15,8 +15,8 @@ import java.util.List;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.junit.Test;
-import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.IApplTerm;
+import org.metaborg.meta.nabl2.terms.ITerm;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;

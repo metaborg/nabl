@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.terms.generic;
+package org.metaborg.meta.nabl2.terms.build;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;

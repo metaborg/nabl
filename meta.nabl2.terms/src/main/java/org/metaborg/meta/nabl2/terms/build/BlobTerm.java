@@ -1,17 +1,18 @@
-package org.metaborg.meta.nabl2.terms.generic;
+package org.metaborg.meta.nabl2.terms.build;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.meta.nabl2.terms.IIntTerm;
+import org.metaborg.meta.nabl2.terms.IBlobTerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMultiset;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class IntTerm extends AbstractTerm implements IIntTerm {
+abstract class BlobTerm extends AbstractTerm implements IBlobTerm {
 
-    @Value.Parameter @Override public abstract int getValue();
+    @Value.Parameter @Override public abstract Object getValue();
 
     @Override public boolean isGround() {
         return true;
@@ -26,33 +27,33 @@ abstract class IntTerm extends AbstractTerm implements IIntTerm {
     }
 
     @Override public <T> T match(Cases<T> cases) {
-        return cases.caseInt(this);
+        return cases.caseBlob(this);
     }
 
     @Override public <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E {
-        return cases.caseInt(this);
+        return cases.caseBlob(this);
     }
 
     @Override public int hashCode() {
-        return Integer.hashCode(getValue());
+        return Objects.hashCode(getValue());
     }
 
     @Override public boolean equals(Object other) {
         if(other == null) {
             return false;
         }
-        if(!(other instanceof IIntTerm)) {
+        if(!(other instanceof IBlobTerm)) {
             return false;
         }
-        IIntTerm that = (IIntTerm) other;
-        if(getValue() != that.getValue()) {
+        IBlobTerm that = (IBlobTerm) other;
+        if(getValue().equals(that.getValue())) {
             return false;
         }
         return true;
     }
 
     @Override public String toString() {
-        return Integer.toString(getValue());
+        return getValue().toString();
     }
 
 }
