@@ -13,6 +13,7 @@ import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
 import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.tuples.Set2;
 import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.Ref;
 
@@ -202,81 +203,104 @@ public abstract class PersistentUnifier {
         ///////////////////////////////////////////
 
         @Override public boolean areEqual(final ITerm left, final ITerm right) {
-            return equalTerms(left, right);
+            return equalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
         }
 
-        private boolean equalTerms(final ITerm left, final ITerm right) {
+        private boolean equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             // @formatter:off
             return left.match(Terms.<Boolean>cases(
                 applLeft -> M.cases(
                     M.appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
                                         applLeft.getArity() == applRight.getArity() &&
-                                        equals(applLeft.getArgs(), applRight.getArgs())),
-                    M.var(varRight -> equalVarTerm(varRight, applLeft))
+                                        equals(applLeft.getArgs(), applRight.getArgs(), stack, visited)),
+                    M.var(varRight -> equalVarTerm(varRight, applLeft, stack, visited))
                 ).match(right).orElse(false),
                 listLeft -> M.cases(
                     M.list(listRight -> listLeft.match(ListTerms.cases(
                         consLeft -> M.cases(
                             M.cons(consRight -> {
-                                return equalTerms(consLeft.getHead(), consRight.getHead()) && 
-                                equalTerms(consLeft.getTail(), consRight.getTail());
+                                return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited) && 
+                                equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
                             }),
-                            M.var(varRight -> equalVarTerm(varRight, consLeft))
+                            M.var(varRight -> equalVarTerm(varRight, consLeft, stack, visited))
                         ).match(listRight).orElse(false),
                         nilLeft -> M.cases(
                             M.nil(nilRight -> true),
-                            M.var(varRight -> equalVarTerm(varRight, nilLeft))
+                            M.var(varRight -> equalVarTerm(varRight, nilLeft, stack, visited))
                         ).match(listRight).orElse(false),
                         varLeft -> M.cases(
-                            M.var(varRight -> equalVars(varLeft, varRight)),
-                            M.term(termRight -> equalVarTerm(varLeft, termRight))
+                            M.var(varRight -> equalVars(varLeft, varRight, stack, visited)),
+                            M.term(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
                         ).match(listRight).orElse(false)
                     ))),
-                    M.var(varRight -> equalVarTerm(varRight, listLeft))
+                    M.var(varRight -> equalVarTerm(varRight, listLeft, stack, visited))
                 ).match(right).orElse(false),
                 stringLeft -> M.cases(
                     M.string(stringRight -> stringLeft.getValue().equals(stringRight.getValue())),
-                    M.var(varRight -> equalVarTerm(varRight, stringLeft))
+                    M.var(varRight -> equalVarTerm(varRight, stringLeft, stack, visited))
                 ).match(right).orElse(false),
                 integerLeft -> M.cases(
                     M.integer(integerRight -> integerLeft.getValue() == integerRight.getValue()),
-                    M.var(varRight -> equalVarTerm(varRight, integerLeft))
+                    M.var(varRight -> equalVarTerm(varRight, integerLeft, stack, visited))
                 ).match(right).orElse(false),
                 blobLeft -> M.cases(
                     M.blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue())),
-                    M.var(varRight -> equalVarTerm(varRight, blobLeft))
+                    M.var(varRight -> equalVarTerm(varRight, blobLeft, stack, visited))
                 ).match(right).orElse(false),
                 varLeft -> M.cases(
                     // match var before term, or term will always match
-                    M.var(varRight -> equalVars(varLeft, varRight)),
-                    M.term(termRight -> equalVarTerm(varLeft, termRight))
+                    M.var(varRight -> equalVars(varLeft, varRight, stack, visited)),
+                    M.term(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
                 ).match(right).orElse(false)
             ));
             // @formatter:on
         }
 
-        private boolean equalVarTerm(final ITermVar var, final ITerm term) {
+        private boolean equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             final ITermVar rep = findRep(var);
             if(terms.containsKey(rep)) {
-                return equalTerms(terms.get(rep), term);
+                return equalTerms(terms.get(rep), term, stack, visited);
             }
             return false;
         }
 
-        private boolean equalVars(final ITermVar left, final ITermVar right) {
+        private boolean equalVars(final ITermVar left, final ITermVar right, final Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             final ITermVar leftRep = findRep(left);
             final ITermVar rightRep = findRep(right);
-            return leftRep.equals(rightRep);
+            if(leftRep.equals(rightRep)) {
+                return true;
+            }
+            final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
+            final boolean equal;
+            if(!visited.containsKey(pair)) {
+                stack.add(pair);
+                visited.put(pair, false);
+                final ITerm leftTerm = terms.get(leftRep);
+                final ITerm rightTerm = terms.get(rightRep);
+                equal = (leftTerm != null && rightTerm != null) ? equalTerms(leftTerm, rightTerm, stack, visited)
+                        : false;
+                visited.put(pair, equal);
+                stack.remove(pair);
+            } else if(stack.contains(pair)) {
+                equal = allowRecursive;
+            } else {
+                equal = visited.get(pair);
+            }
+            return equal;
         }
 
-        private boolean equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
+        private boolean equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights,
+                final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             Iterator<ITerm> itLeft = lefts.iterator();
             Iterator<ITerm> itRight = rights.iterator();
             while(itLeft.hasNext()) {
                 if(!itRight.hasNext()) {
                     return false;
                 }
-                if(!equalTerms(itLeft.next(), itRight.next())) {
+                if(!equalTerms(itLeft.next(), itRight.next(), stack, visited)) {
                     return false;
                 }
             }
@@ -291,79 +315,104 @@ public abstract class PersistentUnifier {
         ///////////////////////////////////////////
 
         @Override public boolean areUnequal(final ITerm left, final ITerm right) {
-            return unequalTerms(left, right);
+            return unequalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
         }
 
-        private boolean unequalTerms(final ITerm left, final ITerm right) {
+        private boolean unequalTerms(final ITerm left, final ITerm right, Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             // @formatter:off
             return left.match(Terms.<Boolean>cases(
                 applLeft -> M.cases(
                     M.appl(applRight -> !applLeft.getOp().equals(applRight.getOp()) ||
                                         applLeft.getArity() != applRight.getArity() ||
-                                        unequals(applLeft.getArgs(), applRight.getArgs())),
-                    M.var(varRight -> unequalVarTerm(varRight, applLeft))
+                                        unequals(applLeft.getArgs(), applRight.getArgs(), stack, visited)),
+                    M.var(varRight -> unequalVarTerm(varRight, applLeft, stack, visited))
                 ).match(right).orElse(true),
                 listLeft -> M.cases(
                     M.list(listRight -> listLeft.match(ListTerms.cases(
                         consLeft -> M.cases(
                             M.cons(consRight -> {
-                                return unequalTerms(consLeft.getHead(), consRight.getHead()) || 
-                                       unequalTerms(consLeft.getTail(), consRight.getTail());
+                                return unequalTerms(consLeft.getHead(), consRight.getHead(), stack, visited) || 
+                                       unequalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
                             }),
-                            M.var(varRight -> unequalVarTerm(varRight, consLeft))
+                            M.var(varRight -> unequalVarTerm(varRight, consLeft, stack, visited))
                         ).match(listRight).orElse(true),
                         nilLeft -> M.cases(
                             M.nil(nilRight -> false),
-                            M.var(varRight -> unequalVarTerm(varRight, nilLeft))
+                            M.var(varRight -> unequalVarTerm(varRight, nilLeft, stack, visited))
                         ).match(listRight).orElse(true),
                         varLeft -> M.cases(
-                            M.var(varRight -> unequalVars(varLeft, varRight)),
-                            M.term(termRight -> unequalVarTerm(varLeft, termRight))
+                            M.var(varRight -> unequalVars(varLeft, varRight, stack, visited)),
+                            M.term(termRight -> unequalVarTerm(varLeft, termRight, stack, visited))
                         ).match(listRight).orElse(true)
                     ))),
-                    M.var(varRight -> unequalVarTerm(varRight, listLeft))
+                    M.var(varRight -> unequalVarTerm(varRight, listLeft, stack, visited))
                 ).match(right).orElse(true),
                 stringLeft -> M.cases(
                     M.string(stringRight -> !stringLeft.getValue().equals(stringRight.getValue())),
-                    M.var(varRight -> unequalVarTerm(varRight, stringLeft))
+                    M.var(varRight -> unequalVarTerm(varRight, stringLeft, stack, visited))
                 ).match(right).orElse(true),
                 integerLeft -> M.cases(
                     M.integer(integerRight -> integerLeft.getValue() != integerRight.getValue()),
-                    M.var(varRight -> unequalVarTerm(varRight, integerLeft))
+                    M.var(varRight -> unequalVarTerm(varRight, integerLeft, stack, visited))
                 ).match(right).orElse(true),
                 blobLeft -> M.cases(
                     M.blob(blobRight -> !blobLeft.getValue().equals(blobRight.getValue())),
-                    M.var(varRight -> unequalVarTerm(varRight, blobLeft))
+                    M.var(varRight -> unequalVarTerm(varRight, blobLeft, stack, visited))
                 ).match(right).orElse(true),
                 varLeft -> M.cases(
                     // match var before term, or term will always match
-                    M.var(varRight -> unequalVars(varLeft, varRight)),
-                    M.term(termRight -> unequalVarTerm(varLeft, termRight))
+                    M.var(varRight -> unequalVars(varLeft, varRight, stack, visited)),
+                    M.term(termRight -> unequalVarTerm(varLeft, termRight, stack, visited))
                 ).match(right).orElse(true)
             ));
             // @formatter:on
         }
 
-        private boolean unequalVarTerm(final ITermVar var, final ITerm term) {
+        private boolean unequalVarTerm(final ITermVar var, final ITerm term, Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             final ITermVar rep = findRep(var);
             if(terms.containsKey(rep)) {
-                return unequalTerms(terms.get(rep), term);
+                return unequalTerms(terms.get(rep), term, stack, visited);
             }
             return false;
         }
 
-        @SuppressWarnings("unused") private boolean unequalVars(final ITermVar left, final ITermVar right) {
-            return false;
+        private boolean unequalVars(final ITermVar left, final ITermVar right, Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
+            final ITermVar leftRep = findRep(left);
+            final ITermVar rightRep = findRep(right);
+            if(leftRep.equals(rightRep)) {
+                return false;
+            }
+            final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
+            final boolean unequal;
+            if(!visited.containsKey(pair)) {
+                stack.add(pair);
+                visited.put(pair, false);
+                final ITerm leftTerm = terms.get(leftRep);
+                final ITerm rightTerm = terms.get(rightRep);
+                unequal = (leftTerm != null && rightTerm != null) ? unequalTerms(leftTerm, rightTerm, stack, visited)
+                        : false;
+                visited.put(pair, unequal);
+                stack.remove(pair);
+            } else if(stack.contains(pair)) {
+                unequal = false;
+            } else {
+                unequal = visited.get(pair);
+            }
+            return unequal;
         }
 
-        private boolean unequals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
+        private boolean unequals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights, Set<Set2<ITermVar>> stack,
+                final java.util.Map<Set2<ITermVar>, Boolean> visited) {
             Iterator<ITerm> itLeft = lefts.iterator();
             Iterator<ITerm> itRight = rights.iterator();
             while(itLeft.hasNext()) {
                 if(!itRight.hasNext()) {
                     return true;
                 }
-                if(unequalTerms(itLeft.next(), itRight.next())) {
+                if(unequalTerms(itLeft.next(), itRight.next(), stack, visited)) {
                     return true;
                 }
             }
