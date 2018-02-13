@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.unification.fast;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
@@ -67,7 +66,7 @@ public interface IUnifier {
     /**
      * Return the size of the given term relative to this unifier.
      */
-     TermSize size(ITerm term);
+    TermSize size(ITerm term);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on two terms
@@ -92,15 +91,18 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified.
          */
-//        Tuple2<Set<ITermVar>, IUnifier> unify(ITerm term1, ITerm term2) throws UnificationException;
+        Tuple2<Set<ITermVar>, IUnifier> unify(ITerm term1, ITerm term2) throws UnificationException;
 
         /**
          * Match the term against the given pattern. Return assignments for the variables in the pattern, or throw if
          * the match fails.
          */
-//        Tuple2<Map<ITermVar, ITerm>, IUnifier> match(ITerm pattern, ITerm term) throws UnificationException;
+        // Tuple2<Map<ITermVar, ITerm>, IUnifier> match(ITerm pattern, ITerm term) throws UnificationException;
 
-//        Transient melt();
+        /**
+         * Return transient version of this unifier.
+         */
+        Transient melt();
 
     }
 
@@ -119,9 +121,12 @@ public interface IUnifier {
          * Match the term against the given pattern. Return assignments for the variables in the pattern, or throw if
          * the match fails.
          */
-//        Map<ITermVar, ITerm> match(ITerm pattern, ITerm term) throws UnificationException;
+        // Map<ITermVar, ITerm> match(ITerm pattern, ITerm term) throws UnificationException;
 
-//        Immutable freeze();
+        /**
+         * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.
+         */
+        Immutable freeze();
 
     }
 

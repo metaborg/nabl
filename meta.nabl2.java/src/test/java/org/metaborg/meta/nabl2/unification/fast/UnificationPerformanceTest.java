@@ -34,7 +34,6 @@ public class UnificationPerformanceTest {
         ITermVar varA = TB.newVar("", A);
         ITermVar varB = TB.newVar("", B);
         ITermVar varC = TB.newVar("", C);
-        ITerm termA = TB.newTuple(varA, varA);
         ITerm termB = TB.newTuple(varB, varB);
         ITerm termC = TB.newTuple(varC, varC);
         try {
@@ -45,10 +44,12 @@ public class UnificationPerformanceTest {
         } catch(UnificationException e) {
             System.out.println("Could not unify");
         }
-        System.out.println("ground = " + unifier.isGround(termA));
-        System.out.println("cyclic = " + unifier.isCyclic(termA));
-        System.out.println("size = " + unifier.size(termA));
-        System.out.println("vars = " + unifier.getVars(termA));
+        System.out.println("ground = " + unifier.isGround(termB));
+        System.out.println("cyclic = " + unifier.isCyclic(termB));
+        System.out.println("size = " + unifier.size(termB));
+        System.out.println("vars = " + unifier.getVars(termB));
+        System.out.println("equal = " + unifier.areEqual(termB, termC));
+        System.out.println("unequal = " + unifier.areUnequal(termB, termC));
     }
 
     private static IUnifier testUnify(int n) {
@@ -67,6 +68,8 @@ public class UnificationPerformanceTest {
         System.out.println("cyclic = " + unifier.isCyclic(left));
         System.out.println("size = " + unifier.size(left));
         System.out.println("vars = " + unifier.getVars(left));
+        System.out.println("equal = " + unifier.areEqual(left, right));
+        System.out.println("unequal = " + unifier.areUnequal(left, right));
         return unifier;
     }
 
@@ -93,6 +96,5 @@ public class UnificationPerformanceTest {
     private static ITerm createTuple(String name, int i) {
         return TB.newTuple(createVar(name, i - 1), createVar(name, i - 1));
     }
-
 
 }
