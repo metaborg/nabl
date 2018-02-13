@@ -1,4 +1,4 @@
-package org.metaborg.meta.nabl2.unification;
+package org.metaborg.meta.nabl2.unification.fast;
 
 import java.util.List;
 
@@ -10,42 +10,49 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import io.usethesource.capsule.Map;
-
 public class UnificationPerformanceTest {
 
     private static final String A = "a";
     private static final String B = "b";
+    private static final String C = "c";
 
     public static void main(String[] args) {
-        for(int n = 0; n < 1000; n += 100) {
+        testCycle(true);
+        testCycle(false);
+        for(int n = 0; n <= 1000; n += 100) {
             System.out.println("Testing n = " + n);
             final long t0 = System.currentTimeMillis();
             System.out.println(testUnify(n));
             final long dt = System.currentTimeMillis() - t0;
             System.out.println("Finished in " + (dt / 1000.0) + "s");
         }
-        testCycle();
     }
 
-    private static void testCycle() {
+    private static void testCycle(boolean allowRecursive) {
         System.out.println("Testing cycle");
-        final FastUnifier unifier = new FastUnifier();
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of(allowRecursive);
         ITermVar varA = TB.newVar("", A);
         ITermVar varB = TB.newVar("", B);
-        ITerm termA = TB.newAppl(A, varA);
-        ITerm termB = TB.newAppl(B, varB);
+        ITermVar varC = TB.newVar("", C);
+        ITerm termA = TB.newTuple(varA, varA);
+        ITerm termB = TB.newTuple(varB, varB);
+        ITerm termC = TB.newTuple(varC, varC);
         try {
             unifier.unify(varA, termB);
-            unifier.unify(varB, termA);
-            System.out.println(unifier.sub());
+            unifier.unify(varB, termC);
+            unifier.unify(varC, termB);
+            System.out.println(unifier);
         } catch(UnificationException e) {
             System.out.println("Could not unify");
         }
+        System.out.println("ground = " + unifier.isGround(termA));
+        System.out.println("cyclic = " + unifier.isCyclic(termA));
+        System.out.println("size = " + unifier.size(termA));
+        System.out.println("vars = " + unifier.getVars(termA));
     }
-    
-    private static Map.Immutable<ITermVar, ITerm> testUnify(int n) {
-        final FastUnifier unifier = new FastUnifier();
+
+    private static IUnifier testUnify(int n) {
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of(true);
         final ITerm left = TB.newTuple(
                 Iterables.concat(createVars(A, n), createTuples(B, n), Iterables2.singleton(createVar(A, n))));
         final ITerm right = TB.newTuple(
@@ -56,7 +63,11 @@ public class UnificationPerformanceTest {
             System.err.println("Unification failed");
             e.printStackTrace(System.err);
         }
-        return unifier.sub();
+        System.out.println("ground = " + unifier.isGround(left));
+        System.out.println("cyclic = " + unifier.isCyclic(left));
+        System.out.println("size = " + unifier.size(left));
+        System.out.println("vars = " + unifier.getVars(left));
+        return unifier;
     }
 
     private static List<ITerm> createVars(String name, int n) {
