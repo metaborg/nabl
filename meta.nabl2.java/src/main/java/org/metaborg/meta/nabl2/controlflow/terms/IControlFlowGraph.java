@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
+import java.util.Collection;
+import java.util.List;
+
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
@@ -32,4 +35,8 @@ public interface IControlFlowGraph<N extends ICFGNode> {
     boolean isEmpty();
 
     void complete();
+
+    List<N> getUnreachableNodes();
+
+    Collection<java.util.Set<N>> getTopoSCCs();
 }
