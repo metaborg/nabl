@@ -112,7 +112,7 @@ public abstract class PersistentUnifier implements IUnifier {
             final java.util.Map<ITermVar, ITerm> visited) {
         return term.match(Terms.cases(
         // @formatter:off
-            appl -> TB.newAppl(appl.getOp(), instantiates(appl.getArgs(), stack, visited)),
+            appl -> TB.newAppl(appl.getOp(), instantiates(appl.getArgs(), stack, visited), appl.getAttachments()),
             list -> instantiate(list, stack, visited),
             string -> string,
             integer -> integer,
@@ -147,13 +147,13 @@ public abstract class PersistentUnifier implements IUnifier {
         while(!elements.isEmpty()) {
             instance.set(elements.pop().match(ListTerms.<IListTerm>cases(
             // @formatter:off
-                cons -> TB.newCons(instantiate(cons.getHead(), stack, visited), instance.get()),
+                cons -> TB.newCons(instantiate(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
                 nil -> nil,
                 var -> (IListTerm) instantiate(var, stack, visited)
                 // @formatter:on
             )));
         }
-        return list;
+        return instance.get();
     }
 
     private ITerm instantiate(final ITermVar var, final Set<ITermVar> stack,
@@ -789,46 +789,27 @@ public abstract class PersistentUnifier implements IUnifier {
                     .appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
                                         applLeft.getArity() == applRight.getArity() &&
                                         unifys(applLeft.getArgs(), applRight.getArgs(), worklist))
-                    .var(varRight -> unifyVarTerm(varRight, applLeft, worklist, result))
+                    .var(varRight -> unifyTerms(varRight, applLeft, worklist, result))
                     .otherwise(t -> false)
                 ),
                 listLeft -> right.match(Terms.<Boolean>cases()
-                    .list(listRight -> listLeft.match(ListTerms.cases(
-                        consLeft -> listRight.match(ListTerms.<Boolean>cases()
-                            .cons(consRight -> {
-                                worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
-                                worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
-                                return true;
-                            })
-                            .var(varRight -> unifyVarTerm(varRight, consLeft, worklist, result))
-                            .otherwise(l -> false)
-                        ),
-                        nilLeft -> listRight.match(ListTerms.<Boolean>cases()
-                            .nil(nilRight -> true)
-                            .var(varRight -> unifyVarTerm(varRight, nilLeft, worklist, result))
-                            .otherwise(l -> false)
-                        ),
-                        varLeft -> listRight.match(ListTerms.<Boolean>cases()
-                            .var(varRight -> unifyVars(varLeft, varRight, worklist, result))
-                            .otherwise(termRight -> unifyVarTerm(varLeft, termRight, worklist, result))
-                        )
-                    )))
-                    .var(varRight -> unifyVarTerm(varRight, listLeft, worklist, result))
+                    .list(listRight -> unifyLists(listLeft, listRight, worklist, result))
+                    .var(varRight -> unifyTerms(varRight, listLeft, worklist, result))
                     .otherwise(t -> false)
                 ),
                 stringLeft -> right.match(Terms.<Boolean>cases()
                     .string(stringRight -> stringLeft.getValue().equals(stringRight.getValue()))
-                    .var(varRight -> unifyVarTerm(varRight, stringLeft, worklist, result))
+                    .var(varRight -> unifyTerms(varRight, stringLeft, worklist, result))
                     .otherwise(t -> false)
                 ),
                 integerLeft -> right.match(Terms.<Boolean>cases()
                     .integer(integerRight -> integerLeft.getValue() == integerRight.getValue())
-                    .var(varRight -> unifyVarTerm(varRight, integerLeft, worklist, result))
+                    .var(varRight -> unifyTerms(varRight, integerLeft, worklist, result))
                     .otherwise(t -> false)
                 ),
                 blobLeft -> right.match(Terms.<Boolean>cases()
                     .blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue()))
-                    .var(varRight -> unifyVarTerm(varRight, blobLeft, worklist, result))
+                    .var(varRight -> unifyTerms(varRight, blobLeft, worklist, result))
                     .otherwise(t -> false)
                 ),
                 varLeft -> right.match(Terms.<Boolean>cases()
@@ -838,6 +819,32 @@ public abstract class PersistentUnifier implements IUnifier {
                 )
             ));
             // @formatter:on
+        }
+
+        private boolean unifyLists(final IListTerm left, final IListTerm right,
+                final Deque<Tuple2<ITerm, ITerm>> worklist, Set<ITermVar> result) {
+            return left.match(ListTerms.cases(
+            // @formatter:off
+                consLeft -> right.match(ListTerms.<Boolean>cases()
+                    .cons(consRight -> {
+                        worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
+                        worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
+                        return true;
+                    })
+                    .var(varRight -> unifyLists(varRight, consLeft, worklist, result))
+                    .otherwise(l -> false)
+                ),
+                nilLeft -> right.match(ListTerms.<Boolean>cases()
+                    .nil(nilRight -> true)
+                    .var(varRight -> unifyVarTerm(varRight, nilLeft, worklist, result))
+                    .otherwise(l -> false)
+                ),
+                varLeft -> right.match(ListTerms.<Boolean>cases()
+                    .var(varRight -> unifyVars(varLeft, varRight, worklist, result))
+                    .otherwise(termRight -> unifyVarTerm(varLeft, termRight, worklist, result))
+                )
+                // @formatter:on
+            ));
         }
 
         private boolean unifyVarTerm(final ITermVar var, final ITerm term, final Deque<Tuple2<ITerm, ITerm>> worklist,
@@ -921,21 +928,7 @@ public abstract class PersistentUnifier implements IUnifier {
                     .otherwise(t -> false)
                 ),
                 listPattern -> term.match(Terms.<Boolean>cases()
-                    .list(listTerm -> listPattern.match(ListTerms.cases(
-                        consPattern -> listTerm.match(ListTerms.<Boolean>cases()
-                            .cons(consTerm -> {
-                                worklist.push(ImmutableTuple2.of(consPattern.getHead(), consTerm.getHead()));
-                                worklist.push(ImmutableTuple2.of(consPattern.getTail(), consTerm.getTail()));
-                                return true;
-                            })
-                            .otherwise(l -> false)
-                        ),
-                        nilPattern -> listTerm.match(ListTerms.<Boolean>cases()
-                            .nil(nilTerm -> true)
-                            .otherwise(l -> false)
-                        ),
-                        varPattern -> matchVar(varPattern, listTerm, worklist, result)
-                    )))
+                    .list(listTerm -> matchLists(listPattern, listTerm, worklist, result))
                     .otherwise(t -> false)
                 ),
                 stringPattern -> term.match(Terms.<Boolean>cases()
@@ -953,6 +946,27 @@ public abstract class PersistentUnifier implements IUnifier {
                 varPattern -> matchVar(varPattern, term, worklist, result)
             ));
             // @formatter:on
+        }
+
+        private boolean matchLists(final IListTerm pattern, final IListTerm term,
+                final Deque<Tuple2<ITerm, ITerm>> worklist, Set<ITermVar> result) {
+            return pattern.match(ListTerms.cases(
+            // @formatter:off
+                consPattern -> term.match(ListTerms.<Boolean>cases()
+                    .cons(consTerm -> {
+                        worklist.push(ImmutableTuple2.of(consPattern.getHead(), consTerm.getHead()));
+                        worklist.push(ImmutableTuple2.of(consPattern.getTail(), consTerm.getTail()));
+                        return true;
+                    })
+                    .otherwise(l -> false)
+                ),
+                nilPattern -> term.match(ListTerms.<Boolean>cases()
+                    .nil(nilTerm -> true)
+                    .otherwise(l -> false)
+                ),
+                varPattern -> matchVar(varPattern, term, worklist, result)
+                // @formatter:on
+            ));
         }
 
         private boolean matchVar(final ITermVar var, final ITerm term, final Deque<Tuple2<ITerm, ITerm>> worklist,
