@@ -123,32 +123,33 @@ rules // initDefault
     DefaultSlots(declsOf(s)) --> slots
     
 //    
-signature // initEager helpers
-  
-  arrows
-    initEagerEdges(Map(Label, List(Scope)), List(Label), List(Namespace)) :: H -->
-      Map(Label, Map(Scope, Frame)) :: H
-    initEagerEdge(List(Scope), List(Namespace)) :: H --> Map(Scope, Frame) :: H
+//signature // initEager helpers
+//  
+//  arrows
+//    initEagerEdges(Map(Label, List(Scope)), List(Label), List(Namespace)) :: H -->
+//      Map(Label, Map(Scope, Frame)) :: H
+//    initEagerEdge(List(Scope), List(Namespace)) :: H --> Map(Scope, Frame) :: H
+//
+//rules // initEager takes a scope and recursively traverses its edges to construct frame links
+//
+//  initEager(s, namespaces) --> initDefaultNS(s, links, namespaces)
+//  where
+//    edgesOf(s) --> es;
+//    allkeys(es) => ls;
+//    initEagerEdges(es, ls, namespaces) --> links
+//    
+//  initEagerEdges(_, [], _) --> {}
+//  
+//  initEagerEdges(m, [l|ls], ns) -->
+//    { l |--> link, tail }
+//  where
+//    initEagerEdge(m[l], ns) --> link;
+//    initEagerEdges(m, ls, ns) --> tail
+//
+//  initEagerEdge([], _) --> {}
+//  
+//  initEagerEdge([s|ss], ns) --> { s |--> F, link }
+//  where
+//    initEager(s, ns) --> F;
+//    initEagerEdge(ss, ns) --> link
 
-rules // initEager takes a scope and recursively traverses its edges to construct frame links
-
-  initEager(s, namespaces) --> initDefaultNS(s, links, namespaces)
-  where
-    edgesOf(s) --> es;
-    allkeys(es) => ls;
-    initEagerEdges(es, ls, namespaces) --> links
-    
-  initEagerEdges(_, [], _) --> {}
-  
-  initEagerEdges(m, [l|ls], ns) -->
-    { l |--> link, tail }
-  where
-    initEagerEdge(m[l], ns) --> link;
-    initEagerEdges(m, ls, ns) --> tail
-
-  initEagerEdge([], _) --> {}
-  
-  initEagerEdge([s|ss], ns) --> { s |--> F, link }
-  where
-    initEager(s, ns) --> F;
-    initEagerEdge(ss, ns) --> link
