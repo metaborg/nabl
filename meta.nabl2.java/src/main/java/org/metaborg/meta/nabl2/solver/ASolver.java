@@ -28,7 +28,7 @@ public abstract class ASolver {
     }
 
     protected IUnifier unifier() {
-        return core.unifier;
+        return core.unifier.get();
     }
 
     protected String fresh(String base) {

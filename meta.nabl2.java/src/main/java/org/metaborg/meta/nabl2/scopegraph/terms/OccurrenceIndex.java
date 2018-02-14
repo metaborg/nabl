@@ -93,12 +93,12 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
     // static
 
     public static IMatcher<OccurrenceIndex> matcher() {
-        return M.cases(
-            // @formatter:off
+        return M.preserveAttachments(M.cases(
+        // @formatter:off
             M.term(TermIndex.matcher(), (t, i) -> new OccurrenceIndex(i.getResource(), i)),
             M.term(Scope.matcher(), (t, s) -> new OccurrenceIndex(s.getResource(), s))
             // @formatter:on
-        );
+        ));
 
     }
 

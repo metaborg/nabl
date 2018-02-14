@@ -45,6 +45,7 @@ import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
@@ -68,7 +69,7 @@ public class BaseSolver {
             IProgress progress) throws SolverException, InterruptedException {
 
         // shared
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(PersistentUnifier.Immutable.of());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
 
         // solver components
@@ -126,7 +127,7 @@ public class BaseSolver {
     public ISolution merge(ISolution initial, Iterable<? extends ISolution> solutions,
             Predicate2<Scope, Label> isEdgeComplete, IMessageInfo message) throws InterruptedException {
 
-        final IUnifier.Transient unifier = initial.unifier().melt();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 initial.nameResolution().melt(scopeGraph, isEdgeComplete);

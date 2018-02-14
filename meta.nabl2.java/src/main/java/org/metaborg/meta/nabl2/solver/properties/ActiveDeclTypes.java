@@ -12,6 +12,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.collection.TermMultiset;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.util.Ref;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultiset;
@@ -23,10 +24,10 @@ import com.google.common.collect.Multiset.Entry;
  */
 public class ActiveDeclTypes implements IConstraintSetProperty {
 
-    private final IUnifier unifier;
+    private final Ref<? extends IUnifier> unifier;
     private final TermMultiset activeDecls;
 
-    public ActiveDeclTypes(IUnifier unifier) {
+    public ActiveDeclTypes(Ref<? extends IUnifier> unifier) {
         this.unifier = unifier;
         this.activeDecls = new TermMultiset();
     }
@@ -36,7 +37,7 @@ public class ActiveDeclTypes implements IConstraintSetProperty {
     @Override public boolean add(IConstraint constraint) {
         final Multiset<ITerm> addedDecls = getActiveDecls(constraint);
         for(Entry<ITerm> e : addedDecls.entrySet()) {
-            activeDecls.add(e.getElement(), e.getCount(), unifier);
+            activeDecls.add(e.getElement(), e.getCount(), unifier.get());
         }
         return !addedDecls.isEmpty();
     }
@@ -44,7 +45,7 @@ public class ActiveDeclTypes implements IConstraintSetProperty {
     // ---------------------------------------------
 
     @Override public boolean update(final Collection<ITermVar> vars) {
-        return activeDecls.update(vars, unifier);
+        return activeDecls.update(vars, unifier.get());
     }
 
     // ---------------------------------------------
@@ -52,13 +53,13 @@ public class ActiveDeclTypes implements IConstraintSetProperty {
     @Override public boolean remove(IConstraint constraint) {
         boolean change = false;
         for(Entry<ITerm> e : getActiveDecls(constraint).entrySet()) {
-            change |= activeDecls.remove(e.getElement(), e.getCount(), unifier) > 0;
+            change |= activeDecls.remove(e.getElement(), e.getCount(), unifier.get()) > 0;
         }
         return change;
     }
 
     public boolean isNotActive(Occurrence decl) {
-        return activeDecls.varSet().isEmpty() && !activeDecls.contains(decl, unifier);
+        return activeDecls.varSet().isEmpty() && !activeDecls.contains(decl, unifier.get());
     }
 
     // ---------------------------------------------

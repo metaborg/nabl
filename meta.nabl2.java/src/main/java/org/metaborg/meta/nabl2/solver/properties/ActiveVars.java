@@ -14,6 +14,7 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.collection.VarMultiset;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.util.Ref;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultiset;
@@ -22,10 +23,10 @@ import com.google.common.collect.Multisets;
 
 public class ActiveVars implements IConstraintSetProperty {
 
-    private final IUnifier unifier;
+    private final Ref<? extends IUnifier> unifier;
     private final VarMultiset activeVars;
 
-    public ActiveVars(IUnifier unifier) {
+    public ActiveVars(Ref<? extends IUnifier> unifier) {
         this.unifier = unifier;
         this.activeVars = new VarMultiset();
     }
@@ -42,27 +43,27 @@ public class ActiveVars implements IConstraintSetProperty {
     }
 
     public boolean add(ITerm term) {
-        return activeVars.addAll(term.getVars(), unifier);
+        return activeVars.addAll(term.getVars(), unifier.get());
     }
 
     @Override public boolean update(final Collection<ITermVar> vars) {
-        return activeVars.update(vars, unifier);
+        return activeVars.update(vars, unifier.get());
     }
 
     @Override public boolean remove(IConstraint constraint) {
         final Multiset<ITermVar> vars = findActiveVars(constraint);
-        return activeVars.removeAll(vars, unifier);
+        return activeVars.removeAll(vars, unifier.get());
     }
 
     public boolean isNotActive(ITerm term) {
-        return term.getVars().elementSet().stream().noneMatch(var -> activeVars.contains(var, unifier));
+        return term.getVars().elementSet().stream().noneMatch(var -> activeVars.contains(var, unifier.get()));
     }
 
     // ---------------------------------------------
 
     private Multiset<ITermVar> findActiveVars(IConstraint constraint) {
         final Multiset<ITermVar> vars = HashMultiset.create();
-        getActiveVars(constraint).stream().map(unifier::findRecursive).map(ITerm::getVars).forEach(vars::addAll);
+        getActiveVars(constraint).stream().map(unifier.get()::findRecursive).map(ITerm::getVars).forEach(vars::addAll);
         return vars;
     }
 

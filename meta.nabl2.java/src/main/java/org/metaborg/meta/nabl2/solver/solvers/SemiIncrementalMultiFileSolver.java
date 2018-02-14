@@ -41,6 +41,7 @@ import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.iterators.Iterables2;
@@ -61,7 +62,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final SolverConfig config = initial.config();
 
         // shared
-        final IUnifier.Transient unifier = initial.unifier().melt();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 initial.nameResolution().melt(scopeGraph, (s, l) -> true);

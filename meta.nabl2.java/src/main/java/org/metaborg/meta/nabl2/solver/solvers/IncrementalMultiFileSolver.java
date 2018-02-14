@@ -65,6 +65,7 @@ import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.meta.nabl2.terms.unification.UnificationException;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.iterators.Iterables2;
@@ -487,7 +488,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final SolverConfig config = initial.config();
 
         // shared
-        final IUnifier.Transient unifier = initial.unifier().melt();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> unitGraph = initial.scopeGraph().melt();
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> extendedGraph =
                 EsopScopeGraph.extend(unitGraph, context.scopeGraph());
@@ -591,13 +592,14 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final SolverConfig config = initial.config();
 
         // shared
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph =
                 EsopScopeGraph.extend(initial.scopeGraph().melt(), context.scopeGraph());
         final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
                 initial.nameResolution().melt(scopeGraph, (s, l) -> true);
 
         // solver components
-        final SolverCore core = new SolverCore(config, initial.unifier(), n -> {
+        final SolverCore core = new SolverCore(config, unifier, n -> {
             throw new IllegalStateException("Fresh variables cannot be created in this phase.");
         }, callExternal);
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
