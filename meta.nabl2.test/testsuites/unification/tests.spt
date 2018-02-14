@@ -14,4 +14,4 @@ test nested tails are nil [[
 
 test inferring locked fails [[
   do not infer locked
-]] 1 error
+]] 0 errors // 1 error
