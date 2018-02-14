@@ -43,7 +43,7 @@ rules
     import org.metaborg.meta.nabl2.interpreter.*;
     import org.metaborg.meta.nabl2.stratego.*;
     import org.metaborg.meta.nabl2.terms.*;
-    import org.metaborg.meta.nabl2.terms.generic.*;
+    import org.metaborg.meta.nabl2.terms.build.*;
     import org.spoofax.interpreter.terms.IStrategoTerm;
 
     import com.oracle.truffle.api.dsl.NodeChild;
