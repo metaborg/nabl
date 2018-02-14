@@ -27,11 +27,11 @@ public final class BaseConstraints {
             M.appl1(C_FALSE, MessageInfo.matcher(), (c, msginfo) -> {
                 return ImmutableCFalse.of(msginfo);
             }),
-            M.appl2(C_CONJ, Constraints.matcher().lazy(), Constraints.matcher().lazy(),
+            M.appl2(C_CONJ, (t, u) -> Constraints.matcher().match(t, u), (t, u) -> Constraints.matcher().match(t, u),
                     (c, c1, c2) -> {
                         return ImmutableCConj.of(c1, c2, MessageInfo.empty());
                     }),
-            M.appl2(C_EXISTS, M.listElems(M.var()), Constraints.matcher().lazy(),
+            M.appl2(C_EXISTS, M.listElems(M.var()), (t, u) -> Constraints.matcher().match(t, u),
                     (c, vars, constraint) -> {
                         return ImmutableCExists.of(vars, constraint, MessageInfo.empty());
                     }),

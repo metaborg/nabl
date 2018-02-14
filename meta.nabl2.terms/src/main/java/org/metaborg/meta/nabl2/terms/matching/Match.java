@@ -429,10 +429,6 @@ public class Match {
             return match(term, PersistentUnifier.Immutable.of(false));
         }
 
-        default IMatcher<T> lazy() {
-            return (term, unifier) -> match(term, unifier);
-        }
-
         static <T> IMatcher<T> flatten(IMatcher<Optional<T>> m) {
             return (term, unifier) -> m.match(term, unifier).flatMap(o -> o);
         }
