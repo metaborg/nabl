@@ -39,4 +39,6 @@ public interface IControlFlowGraph<N extends ICFGNode> {
     List<N> getUnreachableNodes();
 
     Collection<java.util.Set<N>> getTopoSCCs();
+
+    Collection<java.util.Set<N>> getRevTopoSCCs();
 }

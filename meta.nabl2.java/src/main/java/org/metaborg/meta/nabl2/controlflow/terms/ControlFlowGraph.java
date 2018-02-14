@@ -34,6 +34,7 @@ public class ControlFlowGraph<N extends ICFGNode>
     private final BinaryRelation.Transient<N, N> directEdges;
 
     private Collection<java.util.Set<N>> topoSCCs;
+    private Collection<java.util.Set<N>> revTopoSCCs;
 
     private List<N> unreachableNodes;
 
@@ -95,6 +96,11 @@ public class ControlFlowGraph<N extends ICFGNode>
     @Override
     public Collection<java.util.Set<N>> getTopoSCCs() {
         return topoSCCs;
+    }
+
+    @Override
+    public Collection<java.util.Set<N>> getRevTopoSCCs() {
+        return revTopoSCCs;
     }
 
     @Override
@@ -260,6 +266,7 @@ public class ControlFlowGraph<N extends ICFGNode>
             }
         }
         computeTopoSCCs();
+        computeRevTopoSCCs();
     }
     
     /**
@@ -292,7 +299,7 @@ public class ControlFlowGraph<N extends ICFGNode>
             // For each start node that hasn't been visited already,
             if (nodeIndex.get(node) == Integer.MAX_VALUE) {
                 // do the recursive strong-connect
-                index = sccStrongConnect(node, index, nodeIndex, nodeLowlink, sccStack, stackSet, sccs);
+                index = sccStrongConnect(node, index, nodeIndex, nodeLowlink, sccStack, stackSet, sccs, this.getDirectEdges());
             }
         }
 
@@ -306,6 +313,32 @@ public class ControlFlowGraph<N extends ICFGNode>
         }
 
         this.unreachableNodes = Collections.unmodifiableList(unreachable);
+    }
+    private void computeRevTopoSCCs() {
+        Set<N> allNodes = this.getAllNodes();
+        int index = 0;
+        HashMap<N, Integer> nodeIndex = new HashMap<>(allNodes.size());
+        for(N node : allNodes) {
+            nodeIndex.put(node, Integer.MAX_VALUE);
+        }
+        HashMap<N, Integer> nodeLowlink = new HashMap<>(nodeIndex);
+        Deque<N> sccStack = new ArrayDeque<>();
+        java.util.Set<N> stackSet = new HashSet<>();
+        Deque<java.util.Set<N>> sccs = new ArrayDeque<>();
+
+        /* Note these deviations: 
+         * (1) We seed the traversal with the start nodes.
+         * (2) We use a deque of SCCs, so be can push to the front of it. 
+         */
+        for (N node : this.endNodes) {
+            // For each start node that hasn't been visited already,
+            if (nodeIndex.get(node) == Integer.MAX_VALUE) {
+                // do the recursive strong-connect
+                index = sccStrongConnect(node, index, nodeIndex, nodeLowlink, sccStack, stackSet, sccs, this.getDirectEdges().inverse());
+            }
+        }
+
+        this.revTopoSCCs = Collections.unmodifiableCollection(sccs);
     }
 
     /**
@@ -330,7 +363,7 @@ public class ControlFlowGraph<N extends ICFGNode>
      * @return The new index value
      */
     private int sccStrongConnect(N from, int index, HashMap<N, Integer> nodeIndex, HashMap<N, Integer> nodeLowlink, 
-            Deque<N> sccStack, java.util.Set<N> stackSet, Deque<java.util.Set<N>> sccs) {
+            Deque<N> sccStack, java.util.Set<N> stackSet, Deque<java.util.Set<N>> sccs, BinaryRelation<N, N> edges) {
         nodeIndex.put(from, index);
         nodeLowlink.put(from, index);
         index++;
@@ -338,10 +371,10 @@ public class ControlFlowGraph<N extends ICFGNode>
         sccStack.add(from);
         stackSet.add(from);
 
-        for (N to : this.directEdges.get(from)) {
+        for (N to : edges.get(from)) {
             if (nodeIndex.get(to) == Integer.MAX_VALUE) {
                 // Visit neighbours without an index. Propagate lowlink values backward. 
-                index = this.sccStrongConnect(to, index, nodeIndex, nodeLowlink, sccStack, stackSet, sccs);
+                index = this.sccStrongConnect(to, index, nodeIndex, nodeLowlink, sccStack, stackSet, sccs, edges);
                 nodeLowlink.put(from, Integer.min(nodeLowlink.get(from), nodeLowlink.get(to)));
             } else if (stackSet.contains(to)) {
                 /* Neighbours already in the stack are higher in the DFS spanning tree, so we use their
@@ -371,7 +404,7 @@ public class ControlFlowGraph<N extends ICFGNode>
             while (!bfsQueue.isEmpty()) {
                 N node = bfsQueue.pollFirst();
                 orderedSCC.add(node);
-                for (N to : this.directEdges.get(node)) {
+                for (N to : edges.get(node)) {
                     if (scc.contains(to) && !orderedSCC.contains(to)) {
                         bfsQueue.addLast(to);
                     }
