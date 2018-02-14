@@ -88,8 +88,8 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         sb.append(getHead());
-        match(ListTerms.casesFix(
-            // @formatter:off
+        getTail().match(ListTerms.casesFix(
+        // @formatter:off
             (f,cons) -> {
                 sb.append(",");
                 sb.append(cons.getHead());
