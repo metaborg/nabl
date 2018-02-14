@@ -17,12 +17,14 @@ signature
 
     Module            : String * List(DSSection) -> DSModule
     Imports           : List(DSImport) -> DSSection
+    Sorts             : List(DSSortDecl)
+    SortDecl          : String -> DSSortDecl
     Import            : String -> DSImport
     ArrowDecl         : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
     NoArrowROs        : DSArrowROs
     NoArrowRWs        : DSArrowRWs
     SimpleSort        : String -> DSSort
-    TupleSort         : List(Sort) -> DSSort
+    TupleSort         : List(DSSort) -> DSSort
     ListSort          : Sort -> DSSort
     NativeOpDecl      : String * List(DSSort) * DSSort -> DSNativeOpDecl
     Axiom             : DSRelation -> DSRule
