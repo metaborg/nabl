@@ -1,4 +1,4 @@
-module static-semantics
+module statics/statix
 
 imports
 
@@ -97,12 +97,12 @@ rules
   [[ Sorts(sorts) ^ (s) ]] :=
     Map1(SortDecl)[[ sorts ^ (s) ]].
 
-  SortDecl[[ SortDecl(SimpleSort(x)) ^ (s) ]] :=
+  SortDecl[[ SortDecl(x) ^ (s) ]] :=
     Sort{x} <- s,
     Sort{x} : SORT(Sort{x}) !!,
     Sort{x}.kind := SimpleSort().
 
-  SortDecl[[ SortAlias(SimpleSort(x), sort) ^ (s) ]] :=
+  SortDecl[[ SortAlias(x, sort) ^ (s) ]] :=
     Sort{x} <- s,
     Sort{x} : ty !!,
     Sort{x}.kind := SortAlias(),
@@ -116,10 +116,10 @@ rules
     Op{x} : ty !!,
     OpSort[[ sort ^ (s) : ty ]].
 
-  OpSort[[ SimpleSort(sort) ^ (s) : OP([], ty) ]] :=
+  OpSort[[ ConstOp(sort) ^ (s) : OP([], ty) ]] :=
     RealSortRef[[ sort ^ (s) : ty ]].
 
-  OpSort[[ ArrowSort(args, sort) ^ (s) : OP(tys, ty) ]] :=
+  OpSort[[ ArrowOp(args, sort) ^ (s) : OP(tys, ty) ]] :=
     Map1T(SortRef)[[ args ^ (s) : tys ]],
     RealSortRef[[ sort ^ (s) : ty ]].
 
@@ -142,7 +142,7 @@ rules
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
-  SortRef[[ Var(x) ^ (s) : ty ]] :=
+  SortRef[[ SortVar(x) ^ (s) : ty ]] :=
     false | note $[Free sort variable [x]].
   SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
     Sort{x} -> s,

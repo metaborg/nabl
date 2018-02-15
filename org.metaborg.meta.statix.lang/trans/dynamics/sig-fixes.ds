@@ -1,0 +1,9 @@
+module dynamics/sig-fixes
+
+imports
+  ds-signatures/StatixLang-sig
+
+signature
+  sort aliases
+    CommaTerms = List(Term)
+    SpaceTerms = List(Term)

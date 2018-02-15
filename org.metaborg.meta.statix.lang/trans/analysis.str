@@ -9,7 +9,7 @@ imports
   signatures/-
   
   desugar
-  static-semantics
+  statics/-
 
   pp
 
