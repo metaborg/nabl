@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.terms.unification;
 
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -16,17 +18,17 @@ import org.metaborg.meta.nabl2.util.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.Set2;
 import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.util.Ref;
-import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 
-public abstract class PersistentUnifier implements IUnifier {
+public abstract class PersistentUnifier implements IUnifier, Serializable {
 
-    protected abstract boolean allowRecursive();
+    private static final long serialVersionUID = 42L;
 
     protected abstract Map<ITermVar, ITermVar> reps();
 
@@ -50,6 +52,14 @@ public abstract class PersistentUnifier implements IUnifier {
 
     @Override public Set<ITermVar> varSet() {
         return Sets.union(reps().keySet(), terms().keySet());
+    }
+
+    @Override public Set<ITermVar> freeVarSet() {
+        final Set<ITermVar> freeVars = Sets.newHashSet();
+        reps().values().stream().filter(var -> !contains(var)).forEach(freeVars::add);
+        terms().values().stream().flatMap(term -> term.getVars().elementSet().stream()).filter(var -> !contains(var))
+                .forEach(freeVars::add);
+        return freeVars;
     }
 
     @Override public boolean isCyclic() {
@@ -79,7 +89,7 @@ public abstract class PersistentUnifier implements IUnifier {
     }
 
     ///////////////////////////////////////////
-    // find(ITerm)
+    // findTerm(ITerm) / findRep(ITerm)
     ///////////////////////////////////////////
 
     @Override public ITerm findTerm(ITerm term) {
@@ -101,28 +111,28 @@ public abstract class PersistentUnifier implements IUnifier {
     }
 
     ///////////////////////////////////////////
-    // instantiate(ITerm)
+    // findRecursive(ITerm)
     ///////////////////////////////////////////
 
     @Override public ITerm findRecursive(final ITerm term) {
-        return instantiate(term, Sets.newHashSet(), Maps.newHashMap());
+        return findTermRecursive(term, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private ITerm instantiate(final ITerm term, final Set<ITermVar> stack,
+    private ITerm findTermRecursive(final ITerm term, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         return term.match(Terms.cases(
         // @formatter:off
-            appl -> TB.newAppl(appl.getOp(), instantiates(appl.getArgs(), stack, visited), appl.getAttachments()),
-            list -> instantiate(list, stack, visited),
+            appl -> TB.newAppl(appl.getOp(), findRecursiveTerms(appl.getArgs(), stack, visited), appl.getAttachments()),
+            list -> findListTermRecursive(list, stack, visited),
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> instantiate(var, stack, visited)
+            var -> findVarRecursive(var, stack, visited)
             // @formatter:on
         ));
     }
 
-    private IListTerm instantiate(IListTerm list, final Set<ITermVar> stack,
+    private IListTerm findListTermRecursive(IListTerm list, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         Deque<IListTerm> elements = Lists.newLinkedList();
         while(list != null) {
@@ -147,16 +157,16 @@ public abstract class PersistentUnifier implements IUnifier {
         while(!elements.isEmpty()) {
             instance.set(elements.pop().match(ListTerms.<IListTerm>cases(
             // @formatter:off
-                cons -> TB.newCons(instantiate(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
+                cons -> TB.newCons(findTermRecursive(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
                 nil -> nil,
-                var -> (IListTerm) instantiate(var, stack, visited)
+                var -> (IListTerm) findVarRecursive(var, stack, visited)
                 // @formatter:on
             )));
         }
         return instance.get();
     }
 
-    private ITerm instantiate(final ITermVar var, final Set<ITermVar> stack,
+    private ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         final ITermVar rep = findRep(var);
         final ITerm instance;
@@ -164,7 +174,7 @@ public abstract class PersistentUnifier implements IUnifier {
             stack.add(rep);
             visited.put(rep, rep);
             final ITerm term = terms().get(rep);
-            instance = term != null ? instantiate(term, stack, visited) : rep;
+            instance = term != null ? findTermRecursive(term, stack, visited) : rep;
             visited.put(rep, instance);
             stack.remove(rep);
             return instance;
@@ -176,11 +186,11 @@ public abstract class PersistentUnifier implements IUnifier {
         return instance;
     }
 
-    private Iterable<ITerm> instantiates(final Iterable<ITerm> terms, final Set<ITermVar> stack,
+    private Iterable<ITerm> findRecursiveTerms(final Iterable<ITerm> terms, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         List<ITerm> instances = Lists.newArrayList();
         for(ITerm term : terms) {
-            instances.add(instantiate(term, stack, visited));
+            instances.add(findTermRecursive(term, stack, visited));
         }
         return instances;
     }
@@ -278,7 +288,7 @@ public abstract class PersistentUnifier implements IUnifier {
             visited.put(pair, equal);
             stack.remove(pair);
         } else if(stack.contains(pair)) {
-            equal = allowRecursive();
+            equal = false;
         } else {
             equal = visited.get(pair);
         }
@@ -604,24 +614,19 @@ public abstract class PersistentUnifier implements IUnifier {
     // class Immutable
     ///////////////////////////////////////////
 
-    public static class Immutable extends PersistentUnifier implements IUnifier.Immutable {
+    public static class Immutable extends PersistentUnifier implements IUnifier.Immutable, Serializable {
 
-        private final boolean allowRecursive;
+        private static final long serialVersionUID = 42L;
 
         private final Ref<Map.Immutable<ITermVar, ITermVar>> reps;
         private final Map.Immutable<ITermVar, Integer> ranks;
         private final Map.Immutable<ITermVar, ITerm> terms;
 
-        private Immutable(boolean allowRecursive, final Map.Immutable<ITermVar, ITermVar> reps,
-                final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
-            this.allowRecursive = allowRecursive;
+        private Immutable(final Map.Immutable<ITermVar, ITermVar> reps, final Map.Immutable<ITermVar, Integer> ranks,
+                final Map.Immutable<ITermVar, ITerm> terms) {
             this.reps = new Ref<>(reps);
             this.ranks = ranks;
             this.terms = terms;
-        }
-
-        @Override protected boolean allowRecursive() {
-            return allowRecursive;
         }
 
         @Override protected Map<ITermVar, ITermVar> reps() {
@@ -632,20 +637,28 @@ public abstract class PersistentUnifier implements IUnifier {
             return terms;
         }
 
-        public IUnifier.Immutable.Result<IUnifier.Immutable> unify(ITerm left, ITerm right)
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> unify(ITerm left, ITerm right)
                 throws UnificationException {
             final IUnifier.Transient unifier = melt();
             final IUnifier.Immutable diff = unifier.unify(left, right);
             return new PersistentUnifier.Result<>(diff, unifier.freeze());
         }
 
-        public IUnifier.Immutable.Result<IUnifier.Immutable> unify(IUnifier other) throws UnificationException {
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> unify(IUnifier other)
+                throws UnificationException {
             final IUnifier.Transient unifier = melt();
             final IUnifier.Immutable diff = unifier.unify(other);
             return new PersistentUnifier.Result<>(diff, unifier.freeze());
         }
 
-        public IUnifier.Immutable.Result<IUnifier.Immutable> match(ITerm pattern, ITerm term) throws MatchException {
+        @Override public IUnifier.Immutable compose(IUnifier other) {
+            final IUnifier.Transient unifier = melt();
+            unifier.compose(other);
+            return unifier.freeze();
+        }
+
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> match(ITerm pattern, ITerm term)
+                throws MatchException {
             final IUnifier.Transient unifier = melt();
             final IUnifier.Immutable diff = unifier.match(pattern, term);
             return new PersistentUnifier.Result<>(diff, unifier.freeze());
@@ -658,30 +671,36 @@ public abstract class PersistentUnifier implements IUnifier {
             return rep;
         }
 
-        @Override public IUnifier.Immutable remove(ITermVar var) {
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> retain(ITermVar var) {
             final IUnifier.Transient unifier = melt();
-            unifier.remove(var);
-            return unifier.freeze();
+            IUnifier.Immutable result = unifier.retain(var);
+            return new PersistentUnifier.Result<>(result, unifier.freeze());
         }
 
-        @Override public IUnifier.Immutable removeAll(Iterable<ITermVar> vars) {
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> retainAll(Iterable<ITermVar> vars) {
             final IUnifier.Transient unifier = melt();
-            unifier.removeAll(vars);
-            return unifier.freeze();
+            IUnifier.Immutable result = unifier.retainAll(vars);
+            return new PersistentUnifier.Result<>(result, unifier.freeze());
+        }
+
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> remove(ITermVar var) {
+            final IUnifier.Transient unifier = melt();
+            IUnifier.Immutable result = unifier.remove(var);
+            return new PersistentUnifier.Result<>(result, unifier.freeze());
+        }
+
+        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> removeAll(Iterable<ITermVar> vars) {
+            final IUnifier.Transient unifier = melt();
+            IUnifier.Immutable result = unifier.removeAll(vars);
+            return new PersistentUnifier.Result<>(result, unifier.freeze());
         }
 
         @Override public IUnifier.Transient melt() {
-            return new PersistentUnifier.Transient(allowRecursive, reps.get().asTransient(), ranks.asTransient(),
-                    terms.asTransient());
+            return new PersistentUnifier.Transient(reps.get().asTransient(), ranks.asTransient(), terms.asTransient());
         }
 
         public static IUnifier.Immutable of() {
-            return of(false);
-        }
-
-        public static IUnifier.Immutable of(boolean allowRecursive) {
-            return new PersistentUnifier.Immutable(allowRecursive, Map.Immutable.of(), Map.Immutable.of(),
-                    Map.Immutable.of());
+            return new PersistentUnifier.Immutable(Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
         }
 
     }
@@ -690,24 +709,19 @@ public abstract class PersistentUnifier implements IUnifier {
     // class Transient
     ///////////////////////////////////////////
 
-    public static class Transient extends PersistentUnifier implements IUnifier.Transient {
+    public static class Transient extends PersistentUnifier implements IUnifier.Transient, Serializable {
 
-        private final boolean allowRecursive;
+        private static final long serialVersionUID = 42L;
 
         private final Map.Transient<ITermVar, ITermVar> reps;
         private final Map.Transient<ITermVar, Integer> ranks;
         private final Map.Transient<ITermVar, ITerm> terms;
 
-        private Transient(boolean allowRecursive, final Map.Transient<ITermVar, ITermVar> reps,
-                final Map.Transient<ITermVar, Integer> ranks, final Map.Transient<ITermVar, ITerm> terms) {
-            this.allowRecursive = allowRecursive;
+        private Transient(final Map.Transient<ITermVar, ITermVar> reps, final Map.Transient<ITermVar, Integer> ranks,
+                final Map.Transient<ITermVar, ITerm> terms) {
             this.reps = reps;
             this.ranks = ranks;
             this.terms = terms;
-        }
-
-        @Override protected boolean allowRecursive() {
-            return allowRecursive;
         }
 
         @Override protected Map<ITermVar, ITermVar> reps() {
@@ -723,16 +737,11 @@ public abstract class PersistentUnifier implements IUnifier {
         }
 
         @Override public PersistentUnifier.Immutable freeze() {
-            return new PersistentUnifier.Immutable(allowRecursive, reps.freeze(), ranks.freeze(), terms.freeze());
+            return new PersistentUnifier.Immutable(reps.freeze(), ranks.freeze(), terms.freeze());
         }
 
         public static IUnifier.Transient of() {
-            return of(false);
-        }
-
-        public static IUnifier.Transient of(boolean allowRecursive) {
-            return new PersistentUnifier.Transient(allowRecursive, Map.Transient.of(), Map.Transient.of(),
-                    Map.Transient.of());
+            return new PersistentUnifier.Transient(Map.Transient.of(), Map.Transient.of(), Map.Transient.of());
         }
 
         ///////////////////////////////////////////
@@ -749,10 +758,10 @@ public abstract class PersistentUnifier implements IUnifier {
                     throw new UnificationException(left, right);
                 }
             }
-            if(!allowRecursive && isCyclic(result)) {
+            if(isCyclic(result)) {
                 throw new UnificationException(left, right);
             }
-            return tinyUnifier(result);
+            return diffUnifier(result);
         }
 
         @Override public IUnifier.Immutable unify(IUnifier other) throws UnificationException {
@@ -775,10 +784,10 @@ public abstract class PersistentUnifier implements IUnifier {
                     throw new UnificationException(work._1(), work._2());
                 }
             }
-            if(!allowRecursive && isCyclic(result)) {
+            if(isCyclic(result)) {
                 throw new UnificationException(TB.newTuple(), TB.newTuple()); // FIXME
             }
-            return tinyUnifier(result);
+            return diffUnifier(result);
         }
 
         private boolean unifyTerms(final ITerm left, final ITerm right, final Deque<Tuple2<ITerm, ITerm>> worklist,
@@ -911,10 +920,10 @@ public abstract class PersistentUnifier implements IUnifier {
                     throw new MatchException(pattern, term);
                 }
             }
-            if(!allowRecursive && isCyclic(result)) {
+            if(isCyclic(result)) {
                 throw new MatchException(pattern, term);
             }
-            return tinyUnifier(result);
+            return diffUnifier(result);
         }
 
         private boolean matchTerms(final ITerm pattern, final ITerm term, final Deque<Tuple2<ITerm, ITerm>> worklist,
@@ -999,57 +1008,85 @@ public abstract class PersistentUnifier implements IUnifier {
         }
 
         ///////////////////////////////////////////
+        // compose(IUnifier)
+        ///////////////////////////////////////////
+
+        @Override public void compose(IUnifier other) {
+            for(ITermVar var : other.varSet()) {
+                remove(var);
+                final ITermVar rep = other.findRep(var);
+                if(!rep.equals(var)) {
+                    reps.put(var, rep);
+                }
+                final ITerm term = other.findTerm(var);
+                if(!(term.equals(var) || term.equals(rep))) {
+                    terms.put(var, term);
+                }
+            }
+        }
+
+        ///////////////////////////////////////////
+        // retain(ITermVar)
+        ///////////////////////////////////////////
+
+        public IUnifier.Immutable retain(ITermVar var) {
+            return retainAll(Collections.singleton(var));
+        }
+
+        @Override public IUnifier.Immutable retainAll(Iterable<ITermVar> vars) {
+            return removeAll(Sets.difference(varSet(), ImmutableSet.copyOf(vars)));
+        }
+
+        ///////////////////////////////////////////
         // remove(ITermVar)
         ///////////////////////////////////////////
 
-        @Override public IUnifier.Immutable remove(ITermVar var) {
-            return removeAll(Iterables2.singleton(var));
-        }
-
         @Override public IUnifier.Immutable removeAll(Iterable<ITermVar> vars) {
-            final IUnifier.Transient tsubst = PersistentUnifier.Transient.of();
+            final IUnifier.Transient diff = PersistentUnifier.Transient.of();
             for(ITermVar var : vars) {
-                final ITermVar ghost = GhostVar.of();
-                try {
-                    tsubst.match(var, ghost);
-                } catch(MatchException e) {
-                    throw new IllegalStateException("Failed to match ghost variable. This should not occur.");
-                }
-
-                final ITermVar rep = reps.remove(var);
-                if(rep != null) {
-                    reps.put(ghost, rep);
-                }
-
-                final ITerm term = terms.remove(var);
-                if(term != null) {
-                    terms.put(ghost, term);
-                }
+                diff.compose(remove(var));
             }
+            return diff.freeze();
+        }
 
-            final IUnifier.Immutable subst = tsubst.freeze();
-            reps.replaceAll((v, r) -> (ITermVar) subst.findRecursive(r)); // FIXME
-            terms.replaceAll((v, t) -> subst.findRecursive(t));
-
-            return subst;
+        @Override public IUnifier.Immutable remove(ITermVar var) {
+            final IUnifier.Immutable diff;
+            if(reps.containsKey(var)) {
+                final ITermVar rep = reps.remove(var);
+                diff = new PersistentUnifier.Immutable(Map.Immutable.of(var, rep), Map.Immutable.of(),
+                        Map.Immutable.of());
+                reps.replaceAll((v, r) -> v.equals(var) ? rep : r);
+                terms.replaceAll((v, t) -> diff.findRecursive(t));
+            } else if(terms.containsKey(var)) {
+                final ITerm term = terms.remove(var);
+                diff = new PersistentUnifier.Immutable(Map.Immutable.of(), Map.Immutable.of(),
+                        Map.Immutable.of(var, term));
+                diff.varSet().forEach(v -> {
+                    reps.remove(v);
+                    terms.put(v, term);
+                });
+                terms.replaceAll((v, t) -> diff.findRecursive(t));
+            } else {
+                diff = PersistentUnifier.Immutable.of();
+            }
+            return diff;
         }
 
         ///////////////////////////////////////////
-        // tinyUnifier(Set<ITermVar>)
+        // diffUnifier(Set<ITermVar>)
         ///////////////////////////////////////////
 
-        private IUnifier.Immutable tinyUnifier(Set<ITermVar> vars) {
-            final Map.Transient<ITermVar, ITermVar> tinyReps = Map.Transient.of();
-            final Map.Transient<ITermVar, ITerm> tinyTerms = Map.Transient.of();
+        private IUnifier.Immutable diffUnifier(Set<ITermVar> vars) {
+            final Map.Transient<ITermVar, ITermVar> diffReps = Map.Transient.of();
+            final Map.Transient<ITermVar, ITerm> diffTerms = Map.Transient.of();
             for(ITermVar var : vars) {
                 if(reps.containsKey(var)) {
-                    tinyReps.put(var, reps.get(var));
+                    diffReps.put(var, reps.get(var));
                 } else if(terms.containsKey(var)) {
-                    tinyTerms.put(var, terms.get(var));
+                    diffTerms.put(var, terms.get(var));
                 }
             }
-            return new PersistentUnifier.Immutable(allowRecursive, tinyReps.freeze(), Map.Immutable.of(),
-                    tinyTerms.freeze());
+            return new PersistentUnifier.Immutable(diffReps.freeze(), Map.Immutable.of(), diffTerms.freeze());
         }
 
     }

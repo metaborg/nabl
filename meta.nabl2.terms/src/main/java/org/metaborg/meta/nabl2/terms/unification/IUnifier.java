@@ -5,6 +5,31 @@ import java.util.Set;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 
+/**
+ * Unification
+ * 
+ * The following should hold:
+ * 
+ * <code>
+ *   if (d', U') = U.unify(_, _) then U.compose(d') == U'
+ *   !U.remove(v).varSet().contains(v)
+ *   if U.varSet().contains(v) then !U.remove(v).freeVarSet().contains(v)
+ *   Sets.intersection(U.varSet(), U.freeVarSet()).isEmpty()
+ *   if (d', U') = U.remove(v), and t' = d'.findRecursive(t) then U.findRecursive(t) == U'.findRecursive(t')
+ *   if (d', U') = U.remove(v) then U'.compose(d') == U
+ * </code>
+ * 
+ * Internal invariants:
+ * 
+ * <code>
+ *   terms.values().noneMatch(t -> t instanceOf ITermVar)
+ *   Sets.intersection(reps.keySet(), terms.keySet()).isEmpty()
+ * </code>
+ * 
+ * Support for recursive terms is easy to add, but makes many operations exceptional. For example: remove(ITermVar),
+ * findRecursive(ITerm).
+ */
+
 public interface IUnifier {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +55,11 @@ public interface IUnifier {
      * Return the domain of this unifier.
      */
     Set<ITermVar> varSet();
+
+    /**
+     * Return the set of free variables appearing in this unifier.
+     */
+    Set<ITermVar> freeVarSet();
 
     /**
      * Test if the unifier contains any cycles.
@@ -117,20 +147,39 @@ public interface IUnifier {
         Result<Immutable> unify(IUnifier other) throws UnificationException;
 
         /**
-         * Remove the given variable from the unifier.
+         * Return the composition of this unifier with another unifier.
          */
-        Immutable remove(ITermVar var);
-
-        /**
-         * Remove the given variables from the unifier.
-         */
-        Immutable removeAll(Iterable<ITermVar> vars);
+        Immutable compose(IUnifier other);
 
         /**
          * Match the term against the given pattern. Return assignments for the variables in the pattern, or throw if
          * the match fails.
          */
         Result<Immutable> match(ITerm pattern, ITerm term) throws MatchException;
+
+        /**
+         * Return a substituion that only retains the given variable in the domain. Also returns a substitution to
+         * eliminate the removed variables from terms.
+         */
+        Result<Immutable> retain(ITermVar var);
+
+        /**
+         * Return a substituion that only retains the given variables in the domain. Also returns a substitution to
+         * eliminate the removed variables from terms.
+         */
+        Result<Immutable> retainAll(Iterable<ITermVar> vars);
+
+        /**
+         * Return a unifier with the given variable removed from the domain. Returns a substitution to eliminate the
+         * variable from terms.
+         */
+        Result<Immutable> remove(ITermVar var);
+
+        /**
+         * Return a unifier with the given variables removed from the domain. Returns a substitution to eliminate the
+         * variable from terms.
+         */
+        Result<Immutable> removeAll(Iterable<ITermVar> vars);
 
         /**
          * Return transient version of this unifier.
@@ -167,23 +216,39 @@ public interface IUnifier {
         Immutable unify(IUnifier other) throws UnificationException;
 
         /**
-         * Remove the given variable from the unifier. Returns a substitution that eliminates the given variable keeping
-         * in sync with this unifier.
+         * Compose this unifier with another unifier.
          */
-        Immutable remove(ITermVar var);
-
-        /**
-         * Remove the given variables from the unifier. Returns a substitution that eliminates the given variables
-         * keeping in sync with this unifier.
-         * 
-         */
-        Immutable removeAll(Iterable<ITermVar> vars);
+        void compose(IUnifier other);
 
         /**
          * Match the term against the given pattern. Return assignments for the variables in the pattern, or throw if
          * the match fails.
          */
         Immutable match(ITerm pattern, ITerm term) throws MatchException;
+
+        /**
+         * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed
+         * variables from terms.
+         */
+        Immutable retain(ITermVar var);
+
+        /**
+         * Retain only the given variables in the domain of this unifier. Returns a substitution to eliminate the
+         * removed variables from terms.
+         */
+        Immutable retainAll(Iterable<ITermVar> vars);
+
+        /**
+         * Remove the given variable from the domain of this unifier. Returns a substitution to eliminate the variable
+         * from terms.
+         */
+        Immutable remove(ITermVar var);
+
+        /**
+         * Remove the given variables from the domain of this unifier. Returns a substitution to eliminate the variable
+         * from terms.
+         */
+        Immutable removeAll(Iterable<ITermVar> vars);
 
         /**
          * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.

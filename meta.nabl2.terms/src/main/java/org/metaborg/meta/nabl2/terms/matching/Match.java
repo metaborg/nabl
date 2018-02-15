@@ -426,7 +426,7 @@ public class Match {
         Optional<T> match(ITerm term, IUnifier unifier);
 
         @Deprecated default Optional<T> match(ITerm term) {
-            return match(term, PersistentUnifier.Immutable.of(false));
+            return match(term, PersistentUnifier.Immutable.of());
         }
 
         static <T> IMatcher<T> flatten(IMatcher<Optional<T>> m) {
@@ -634,7 +634,7 @@ public class Match {
         Optional<T> matchOrThrow(ITerm term, IUnifier unifier) throws E;
 
         default Optional<T> matchOrThrow(ITerm term) throws E {
-            return matchOrThrow(term, PersistentUnifier.Immutable.of(false));
+            return matchOrThrow(term, PersistentUnifier.Immutable.of());
         }
 
     }

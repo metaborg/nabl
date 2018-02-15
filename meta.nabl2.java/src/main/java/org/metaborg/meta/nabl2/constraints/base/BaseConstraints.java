@@ -67,7 +67,7 @@ public final class BaseConstraints {
                         c.getMessageInfo().apply(subst::findRecursive));
             },
             e -> {
-                final IUnifier.Immutable restrictedSubst = subst.removeAll(e.getEVars());
+                final IUnifier.Immutable restrictedSubst = subst.removeAll(e.getEVars()).unifier();
                 return ImmutableCExists.of(e.getEVars(),
                         Constraints.substitute(e.getConstraint(), restrictedSubst),
                         e.getMessageInfo().apply(restrictedSubst::findRecursive));

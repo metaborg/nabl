@@ -5,9 +5,6 @@ import java.util.List;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.unification.IUnifier;
-import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
-import org.metaborg.meta.nabl2.terms.unification.UnificationException;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Iterables;
@@ -20,8 +17,7 @@ public class UnificationPerformanceTest {
     private static final String C = "c";
 
     public static void main(String[] args) {
-        testCycle(true);
-        testCycle(false);
+        testCycle();
         for(int n = 0; n <= 1000; n += 100) {
             System.out.println("Testing n = " + n);
             final long t0 = System.currentTimeMillis();
@@ -31,9 +27,9 @@ public class UnificationPerformanceTest {
         }
     }
 
-    private static void testCycle(boolean allowRecursive) {
+    private static void testCycle() {
         System.out.println("Testing cycle");
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of(allowRecursive);
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         ITermVar varA = TB.newVar("", A);
         ITermVar varB = TB.newVar("", B);
         ITermVar varC = TB.newVar("", C);
@@ -56,7 +52,7 @@ public class UnificationPerformanceTest {
     }
 
     private static IUnifier testUnify(int n) {
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of(true);
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         final ITerm left = TB.newTuple(
                 Iterables.concat(createVars(A, n), createTuples(B, n), Iterables2.singleton(createVar(A, n))));
         final ITerm right = TB.newTuple(

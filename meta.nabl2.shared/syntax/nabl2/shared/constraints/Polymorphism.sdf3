@@ -13,7 +13,7 @@ syntax
 
   Constraint-CF.CGen  = CTerm-CF LAYOUT?-CF "genOf" "(" LAYOUT?-CF CVar-CF LAYOUT?-CF ")" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
   Constraint-CF.CInst = CTerm-CF LAYOUT?-CF "instOf" "(" LAYOUT?-CF CVar-CF LAYOUT?-CF ")" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
-
+  
 lexical syntax
 
   Keyword = "genOf" | "instOf"
