@@ -128,13 +128,14 @@ public class ScopeGraphComponent extends ASolver {
     }
 
     private Optional<Scope> findScope(ITerm scopeTerm) {
-        return Optional.of(unifier().findRecursive(scopeTerm)).filter(ITerm::isGround).map(st -> Scope.matcher().match(st, unifier())
-                .orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+        return Optional.of(unifier().findRecursive(scopeTerm)).filter(ITerm::isGround).map(st -> Scope.matcher()
+                .match(st, unifier()).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
     }
 
     private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
-        return Optional.of(unifier().findRecursive(occurrenceTerm)).filter(ITerm::isGround).map(ot -> Occurrence.matcher()
-                .match(ot, unifier()).orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+        return Optional.of(unifier().findRecursive(occurrenceTerm)).filter(ITerm::isGround)
+                .map(ot -> Occurrence.matcher().match(ot, unifier())
+                        .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
     }
 
 }
