@@ -265,6 +265,9 @@ public class ControlFlowGraph<N extends ICFGNode>
                 directEdges.__insert(f, to);
             }
         }
+        /* TODO: can we do better? SCCs are the same, topo order can be reversed, just the order within the
+         * SCCs needs to be different. Perhaps faster to do ordering within SCCs as post processing?
+         */
         computeTopoSCCs();
         computeRevTopoSCCs();
     }
@@ -349,10 +352,9 @@ public class ControlFlowGraph<N extends ICFGNode>
      * considered the root of an SCC, and all the nodes above it on the stack are also in that SCC. So you
      * can simply pop nodes of the stack that was kept while doing the DFS (without inspecting them), until
      * you find this node with the same values.
-     * As an extension we also order the nodes in the SCC. The node with the equal index/lowlink is also the
-     * node through which we reach it from a previous SCC (if we haven't started at this node). Therefore we
-     * do a breadth-first search from this node through the SCC. (This is slightly easier than a reverse
-     * postorder and probably good enough for our purposes)
+     * As an adaption we also order the nodes in the SCC. We add visited nodes to the stack in post-order
+     * even though the set of things on the stack is kept in pre-order. This allows us to very easily give
+     * the nodes within an SCC in reverse-postorder
      * @param from The node to start from
      * @param index The index to start from
      * @param nodeIndex The mapping from node to index
@@ -368,7 +370,8 @@ public class ControlFlowGraph<N extends ICFGNode>
         nodeLowlink.put(from, index);
         index++;
 
-        sccStack.add(from);
+        // Note that we don't actually add the node to the stack, we just say it's on there with this set
+        int stackSetSizeBefore = stackSet.size();
         stackSet.add(from);
 
         for (N to : edges.get(from)) {
@@ -386,33 +389,19 @@ public class ControlFlowGraph<N extends ICFGNode>
             }
         }
 
+        // Here we actually add the node to the stack, in _postorder_
+        sccStack.add(from);
+
         if (nodeLowlink.get(from) == nodeIndex.get(from)) {
-            // Pop the SCC of the stack
-            java.util.Set<N> scc = new HashSet<>();
-            while (!sccStack.isEmpty()) {
+            // Pop the SCC of the stack; since it's a stack, we get a reverse postorder
+            java.util.LinkedHashSet<N> scc = new LinkedHashSet<>();
+            for(int i = stackSet.size(); i > stackSetSizeBefore; i--) {
                 N node = sccStack.pop();
                 stackSet.remove(node);
                 scc.add(node);
-                if (node.equals(from)) {
-                    break;
-                }
             }
-            // Now order the SCC by breadth-first search from the root (`from`)
-            java.util.LinkedHashSet<N> orderedSCC = new LinkedHashSet<>(scc.size());
-            Deque<N> bfsQueue = new ArrayDeque<>();
-            bfsQueue.addLast(from);
-            while (!bfsQueue.isEmpty()) {
-                N node = bfsQueue.pollFirst();
-                orderedSCC.add(node);
-                for (N to : edges.get(node)) {
-                    if (scc.contains(to) && !orderedSCC.contains(to)) {
-                        bfsQueue.addLast(to);
-                    }
-                }
-            }
-            assert orderedSCC.size() == scc.size();
-            // Record the SCC
-            sccs.addFirst(Collections.unmodifiableSet(orderedSCC));
+            // AddFirst so we get a topological ordering, not a reverse topological ordering
+            sccs.addFirst(Collections.unmodifiableSet(scc));
         }
 
         return index;
