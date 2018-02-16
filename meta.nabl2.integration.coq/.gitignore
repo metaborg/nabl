@@ -7,7 +7,7 @@
 /.project
 /.settings
 
-.polyglot.metaborg.yaml
+/.polyglot.metaborg.yaml
 
 *.constraints
 *.scope-graph
