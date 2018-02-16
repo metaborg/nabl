@@ -30,7 +30,7 @@ signature
     H |- linksOf(Frame) --> Map(Label, Map(Scope, Frame))
     H |- slotsOf(Frame) --> Map(Occurrence, Val)
     copyOf(Frame) :: H --> Frame :: H
-    addLink(Frame, Label, Scope, Frame) :: H --> Frame :: H
+    addLink(Frame, Label, Frame) :: H --> Frame :: H
 
 signature // The API is parameterized by a `default` operation that returns a default value for each type (where `Type` is a parameter of the scope graph API)
 
