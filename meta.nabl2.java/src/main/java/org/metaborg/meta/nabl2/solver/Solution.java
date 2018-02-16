@@ -7,6 +7,8 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.FlowSpecSolution;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -28,9 +30,6 @@ import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
 
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
-import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
-
 @Value.Immutable(builder = true)
 @Serial.Version(value = 1L)
 public abstract class Solution implements ISolution {
@@ -51,7 +50,7 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
     
-    @Value.Parameter @Override public abstract IControlFlowGraph<CFGNode> controlFlowGraph();
+    @Value.Parameter @Override public abstract IFlowSpecSolution<CFGNode> flowSpecSolution();
 
     @Value.Parameter @Override public abstract IMessages.Immutable messages();
 
@@ -61,7 +60,7 @@ public abstract class Solution implements ISolution {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()), Unifier.Immutable.of(),
-                org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(), ControlFlowGraph.of(), Messages.Immutable.of(),
+                org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(), FlowSpecSolution.of(), Messages.Immutable.of(),
                 Collections.emptySet());
     }
 

@@ -6,36 +6,31 @@ import org.metaborg.meta.nabl2.constraints.controlflow.CFDirectEdge;
 import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.ICompleteControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.TransientControlFlowGraph;
 import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
-import org.metaborg.meta.nabl2.terms.IApplTerm;
-import org.metaborg.meta.nabl2.terms.IIntTerm;
-import org.metaborg.meta.nabl2.terms.IListTerm;
-import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.ListTermIterator;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
-
-import com.google.common.collect.Iterators;
-
-import org.metaborg.meta.nabl2.controlflow.terms.TransferFunctionAppl;
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
-import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 public class ControlFlowComponent extends ASolver {
-    private final ControlFlowGraph<CFGNode> controlFlowGraph;
+    private final IControlFlowGraph.Transient<CFGNode> cfg;
 
-    public ControlFlowComponent(SolverCore core, ControlFlowGraph<CFGNode> cfg) {
+    public ControlFlowComponent(SolverCore core, IControlFlowGraph.Immutable<CFGNode> cfg) {
         super(core);
-        this.controlFlowGraph = cfg;
+        this.cfg = cfg.asTransient();
     }
 
-    public IControlFlowGraph<CFGNode> getControlFlowGraph() {
-        return controlFlowGraph;
+    public ControlFlowComponent(SolverCore core, ICompleteControlFlowGraph.Immutable<CFGNode> cfg) {
+        super(core);
+        this.cfg = TransientControlFlowGraph.from(cfg);
+    }
+
+    public ICompleteControlFlowGraph.Immutable<CFGNode> finish() {
+        return this.cfg.freeze().asCompleteControlFlowGraph();
     }
 
     public void update() throws InterruptedException {
@@ -50,7 +45,7 @@ public class ControlFlowComponent extends ASolver {
         Optional<CFGNode> targetNode = findCFGNode(c.getTargetNode());
 
         return sourceNode.flatMap(sn -> targetNode.map(tn -> {
-            controlFlowGraph.addDirectEdge(sn, tn);
+            this.cfg.edges().__insert(sn, tn);
             return SolveResult.empty();
         }));
     }
@@ -60,8 +55,8 @@ public class ControlFlowComponent extends ASolver {
                 st -> CFGNode.matcher().match(st).orElseThrow(() -> new TypeException("Expected a cfg node, got " + st)));
     }
 
-    public SeedResult seed(IControlFlowGraph<CFGNode> solution, IMessageInfo message) {
-        controlFlowGraph.addAll(solution);
+    public SeedResult seed(ICompleteControlFlowGraph<CFGNode> cfg, IMessageInfo message) {
+        this.cfg.addAll(cfg);
         return SeedResult.empty();
     }
 }

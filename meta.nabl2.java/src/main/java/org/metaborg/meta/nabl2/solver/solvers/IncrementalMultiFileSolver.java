@@ -16,7 +16,6 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.relations.IRelationConstraint;
 import org.metaborg.meta.nabl2.constraints.sets.ISetConstraint;
-import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
@@ -406,7 +405,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Set.Transient<ITerm> symbolicGoals = Set.Transient.of();
         final IMessages.Transient messages = Messages.Transient.of();
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
-        final ControlFlowGraph<CFGNode> controlFlowGraph = ControlFlowGraph.of();
+        final IControlFlowGraph.Transient<CFGNode> controlFlowGraph = ImmutableTransientControlFlowGraph.of();
 
         try {
             for(ISolution solution : solutions) {
@@ -422,7 +421,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 symbolicGoals.__insertAll(solution.symbolic().getGoals());
                 messages.addAll(solution.messages());
                 constraints.addAll(solution.constraints());
-                controlFlowGraph.addAll(solution.controlFlowGraph());
+                controlFlowGraph.addAll(solution.flowSpecSolution().controlFlowGraph());
             }
         } catch(RelationException ex) {
             throw new SolverException(ex);
@@ -439,7 +438,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
                 .symbolic(ImmutableSymbolicConstraints.of(symbolicFacts.freeze(), symbolicGoals.freeze()))
                 .messages(messages.freeze())
                 .constraints(constraints)
-                .controlFlowGraph(controlFlowGraph)
+                .flowSpecSolution(ImmutableFlowSpecSolution.of(controlFlowGraph.freeze().asCompleteControlFlowGraph()))
                 .build();
                 // @formatter:on
 
@@ -527,7 +526,7 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
         }
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, initial.flowSpecSolution().controlFlowGraph());
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -570,9 +569,9 @@ public class IncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
+            ICompleteControlFlowGraph.Immutable<CFGNode> cfg = cfgSolver.finish();
             solution = ImmutableSolution.of(config, astResult, unitGraph.freeze(), nameResolution.freeze(), declResult,
-                    relationResult, unifierResult, symbolicConstraints, cfg, solveResult.messages(),
+                    relationResult, unifierResult, symbolicConstraints, ImmutableFlowSpecSolution.of(cfg), solveResult.messages(),
                     solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);

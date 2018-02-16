@@ -13,6 +13,10 @@ import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ICompleteControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -55,9 +59,6 @@ import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
-import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 public class BaseSolver {
 
@@ -165,10 +166,10 @@ public class BaseSolver {
         Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
-        IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
+        ICompleteControlFlowGraph.Immutable<CFGNode> cfg = cfgSolver.finish();
 
         return ImmutableSolution.of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.nameResolution(),
-                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, cfg, messages.freeze(),
+                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, ImmutableFlowSpecSolution.of(cfg), messages.freeze(),
                 constraints);
     }
 

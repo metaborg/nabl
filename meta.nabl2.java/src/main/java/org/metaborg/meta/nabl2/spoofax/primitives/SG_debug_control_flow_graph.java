@@ -17,7 +17,7 @@ public class SG_debug_control_flow_graph extends AnalysisNoTermPrimitive {
     @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit) throws InterpreterException {
         return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
             return TermSimplifier.focus(unit.resource(),
-                    ControlFlowGraphTerms.build(sol.controlFlowGraph()));
+                    ControlFlowGraphTerms.build(sol.flowSpecSolution()));
         });
     }
 

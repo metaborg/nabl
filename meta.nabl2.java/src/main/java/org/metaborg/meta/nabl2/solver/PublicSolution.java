@@ -5,6 +5,8 @@ import java.util.Map;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.FlowSpecSolution;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -19,9 +21,6 @@ import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
-
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
-import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 1L)
@@ -39,14 +38,14 @@ public abstract class PublicSolution implements IPublicSolution {
 
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
     
-    @Value.Parameter @Override public abstract IControlFlowGraph<CFGNode> controlFlowGraph();
+    @Value.Parameter @Override public abstract IFlowSpecSolution<CFGNode> flowSpecSolution();
 
     public static IPublicSolution of(SolverConfig config) {
         return ImmutablePublicSolution.of(config, EsopScopeGraph.Immutable.of(),
                 EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()),
                 SymbolicConstraints.of(),
-                ControlFlowGraph.of());
+                FlowSpecSolution.of());
     }
 
 }

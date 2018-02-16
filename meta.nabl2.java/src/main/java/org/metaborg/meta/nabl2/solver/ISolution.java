@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -16,8 +17,6 @@ import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
-
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
 
 public interface ISolution extends IPublicSolution {
 
@@ -35,7 +34,7 @@ public interface ISolution extends IPublicSolution {
 
     @Override ISymbolicConstraints symbolic();
     
-    @Override IControlFlowGraph<CFGNode> controlFlowGraph();
+    @Override IFlowSpecSolution<CFGNode> flowSpecSolution();
 
     IUnifier.Immutable unifier();
 
@@ -45,4 +44,5 @@ public interface ISolution extends IPublicSolution {
 
     ISolution findAndLock() throws SolverException;
 
+    ISolution withFlowSpecSolution(IFlowSpecSolution<CFGNode> value);
 }

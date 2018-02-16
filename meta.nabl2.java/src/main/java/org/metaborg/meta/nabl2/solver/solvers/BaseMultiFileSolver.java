@@ -7,6 +7,9 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.ICompleteControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -45,9 +48,6 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
-import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 
 public class BaseMultiFileSolver extends BaseSolver {
@@ -92,7 +92,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableControlFlowGraph.of());
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -128,11 +128,11 @@ public class BaseMultiFileSolver extends BaseSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
+            ICompleteControlFlowGraph.Immutable<CFGNode> cfg = cfgSolver.finish();
             
             return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                     nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, cfg, solveResult.messages(), solveResult.constraints());
+                    unifierResult, symbolicConstraints, ImmutableFlowSpecSolution.of(cfg), solveResult.messages(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
