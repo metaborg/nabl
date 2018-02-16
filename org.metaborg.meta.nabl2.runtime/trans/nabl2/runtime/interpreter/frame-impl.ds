@@ -44,13 +44,20 @@ rules
   // Dynamic address lookup  
   F f |- lookup([D(_, d)]) --> Addr(f, d)
 
-  H h, F f1 |- lookup([E(s, l)|p]) --> Addr(f3, d)
+  H h, F f1 |- lookup([E(s, l)|p]) --> addr
   where
     getScopeOfFirstElem(p) --> s';
     H h |- linksOf(f1) --> ks;
     ks[l][s'] => f2;
-    H h, F f2 |- lookup(p) --> Addr(f3, d)
- 
+    H h, F f2 |- lookup(p) --> addr
+  
+  H h, F f1 |- lookup([N(s, l, _, _) | p]) --> addr
+  where
+    getScopeOfFirstElem(p) --> s';
+    H h |- linksOf(f1) --> ks;
+    ks[l][s'] => f2;
+    H h, F f2 |- lookup(p) --> addr
+    
  getScopeOfFirstElem([D(s, _)|_]) --> s
  getScopeOfFirstElem([E(s, _)|_]) --> s
  getScopeOfFirstElem([N(s, _, _, _)|_]) --> s
