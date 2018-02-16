@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -8,8 +10,7 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Multiset;

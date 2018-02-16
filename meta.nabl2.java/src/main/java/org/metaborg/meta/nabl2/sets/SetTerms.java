@@ -1,11 +1,12 @@
 package org.metaborg.meta.nabl2.sets;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class SetTerms {
 
@@ -22,7 +23,7 @@ public class SetTerms {
     }
 
     public static ITerm buildProjection(Optional<String> projection) {
-        return projection.map(p -> TB.newAppl(PROJECTION, TB.newString(p))).orElseGet(() -> TB.newAppl(NO_PROJECTION));
+        return projection.map(p -> B.newAppl(PROJECTION, B.newString(p))).orElseGet(() -> B.newAppl(NO_PROJECTION));
     }
 
 }

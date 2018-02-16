@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.constraints;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -16,9 +19,7 @@ import org.metaborg.meta.nabl2.constraints.scopegraph.ScopeGraphConstraints;
 import org.metaborg.meta.nabl2.constraints.sets.SetConstraints;
 import org.metaborg.meta.nabl2.constraints.sym.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public class Constraints {
@@ -69,11 +70,11 @@ public class Constraints {
 
     public static ITerm build(Collection<IConstraint> constraints) {
         List<ITerm> constraintTerms = constraints.stream().map(Constraints::build).collect(Collectors.toList());
-        return TB.newAppl("Constraints", (ITerm) TB.newList(constraintTerms));
+        return B.newAppl("Constraints", (ITerm) B.newList(constraintTerms));
     }
 
     public static ITerm buildPriority(int prio) {
-        return TB.newString(String.join("", Collections.nCopies(prio, "!")));
+        return B.newString(String.join("", Collections.nCopies(prio, "!")));
     }
 
     public static IConstraint substitute(IConstraint constraint, IUnifier.Immutable subst) {

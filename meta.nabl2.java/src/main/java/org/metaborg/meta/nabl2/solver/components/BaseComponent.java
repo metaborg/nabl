@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -17,8 +20,6 @@ import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.meta.nabl2.terms.unification.UnificationException;
@@ -53,7 +54,7 @@ public class BaseComponent extends ASolver {
         final IUnifier.Transient tsubst = PersistentUnifier.Transient.of();
         constraint.getEVars().forEach(var -> {
             try {
-                tsubst.unify(var, TB.newVar(var.getResource(), fresh(var.getName())));
+                tsubst.unify(var, B.newVar(var.getResource(), fresh(var.getName())));
             } catch(UnificationException e) {
                 throw new IllegalArgumentException("Evars should be distinct.");
             }

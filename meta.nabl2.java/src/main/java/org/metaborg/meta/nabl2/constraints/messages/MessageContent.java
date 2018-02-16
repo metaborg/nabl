@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.constraints.messages;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -7,9 +10,7 @@ import java.util.stream.Collectors;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -39,7 +40,7 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         @Override public ITerm build() {
-            return TB.newAppl(TERM, getTerm());
+            return B.newAppl(TERM, getTerm());
         }
 
         @Override public String toString(Function<ITerm, String> pp) {
@@ -63,7 +64,7 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         @Override public ITerm build() {
-            return TB.newAppl(TEXT, TB.newString(getText()));
+            return B.newAppl(TEXT, B.newString(getText()));
         }
 
         @Override public String toString(Function<ITerm, String> pp) {
@@ -93,7 +94,7 @@ public abstract class MessageContent implements IMessageContent {
 
         @Override public ITerm build() {
             List<ITerm> parts = getParts().stream().map(IMessageContent::build).collect(Collectors.toList());
-            return TB.newAppl(FORMATTED, (ITerm) TB.newList(parts));
+            return B.newAppl(FORMATTED, (ITerm) B.newList(parts));
         }
 
         @Override public String toString(Function<ITerm, String> pp) {
@@ -123,7 +124,7 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         @Override public ITerm build() {
-            return TB.newAppl(DEFAULT);
+            return B.newAppl(DEFAULT);
         }
 
         @Override public String toString(Function<ITerm, String> pp) {

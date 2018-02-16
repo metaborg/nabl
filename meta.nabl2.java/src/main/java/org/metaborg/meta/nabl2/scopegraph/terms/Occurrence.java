@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 
 import org.immutables.serial.Serial;
@@ -8,8 +10,7 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.build.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableList;
 

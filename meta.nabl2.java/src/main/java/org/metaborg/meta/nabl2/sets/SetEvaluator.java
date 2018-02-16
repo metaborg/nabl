@@ -1,10 +1,11 @@
 package org.metaborg.meta.nabl2.sets;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.HashMultimap;

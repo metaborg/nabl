@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Map;
 
 import org.metaborg.meta.nabl2.relations.ImmutableRelationDescription;
@@ -12,8 +14,7 @@ import org.metaborg.meta.nabl2.relations.variants.IVariantMatcher;
 import org.metaborg.meta.nabl2.relations.variants.ImmutableVariantRelationDescription;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelationDescription;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.util.ImmutableTuple3;
 import org.metaborg.meta.nabl2.util.Tuple3;
 

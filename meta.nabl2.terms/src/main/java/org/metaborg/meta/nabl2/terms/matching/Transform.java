@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.terms.matching;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -9,9 +12,7 @@ import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.iterators.Iterables2;
@@ -28,10 +29,10 @@ public class Transform {
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
                     List<ITerm> args = appl.getArgs().stream().map(arg -> sometd(m).apply(arg)).collect(Collectors.toList());
-                    return TB.newAppl(appl.getOp(), args, appl.getAttachments());
+                    return B.newAppl(appl.getOp(), args, appl.getAttachments());
                 },
                 (list) -> list.match(ListTerms.<IListTerm> cases(
-                    (cons) -> TB.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
+                    (cons) -> B.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
                     (nil) -> nil,
                     (var) -> var
                 )),
@@ -49,10 +50,10 @@ public class Transform {
                 // @formatter:off
                     (appl) -> {
                         List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(Collectors.toList());
-                        return TB.newAppl(appl.getOp(), args, appl.getAttachments());
+                        return B.newAppl(appl.getOp(), args, appl.getAttachments());
                     },
                     (list) -> list.match(ListTerms.<IListTerm> cases(
-                        (cons) -> TB.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
+                        (cons) -> B.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
                         (nil) -> nil,
                         (var) -> var
                     )),

@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.terms.build;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -24,54 +25,54 @@ import com.google.common.collect.ImmutableList;
 public class HashcodeAndEqualsTest {
 
     @Test public void testSameInts() {
-        ITerm t1 = TB.newInt(1);
-        ITerm t2 = TB.newInt(1);
+        ITerm t1 = B.newInt(1);
+        ITerm t2 = B.newInt(1);
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testDifferentInts() {
-        ITerm t1 = TB.newInt(1);
-        ITerm t2 = TB.newInt(2);
+        ITerm t1 = B.newInt(1);
+        ITerm t2 = B.newInt(2);
         assertFalse(t1.equals(t2));
     }
 
     @Test public void testSameStrings() {
-        ITerm t1 = TB.newString("Hello!");
-        ITerm t2 = TB.newString("Hello!");
+        ITerm t1 = B.newString("Hello!");
+        ITerm t2 = B.newString("Hello!");
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testDifferentStrings() {
-        ITerm t1 = TB.newString("Hello!");
-        ITerm t2 = TB.newString("World!");
+        ITerm t1 = B.newString("Hello!");
+        ITerm t2 = B.newString("World!");
         assertFalse(t1.equals(t2));
     }
 
     @Test public void testSameApplNullaryCtors() {
-        ITerm t1 = TB.newAppl("Ctor");
-        ITerm t2 = TB.newAppl("Ctor");
+        ITerm t1 = B.newAppl("Ctor");
+        ITerm t2 = B.newAppl("Ctor");
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSameApplUnaryCtors() {
-        ITerm t1 = TB.newAppl("Ctor", TB.newInt(1));
-        ITerm t2 = TB.newAppl("Ctor", TB.newInt(1));
+        ITerm t1 = B.newAppl("Ctor", B.newInt(1));
+        ITerm t2 = B.newAppl("Ctor", B.newInt(1));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testDifferentApplNullaryCtors() {
-        ITerm t1 = TB.newAppl("Ctor1");
-        ITerm t2 = TB.newAppl("Ctor2");
+        ITerm t1 = B.newAppl("Ctor1");
+        ITerm t2 = B.newAppl("Ctor2");
         assertFalse(t1.equals(t2));
     }
 
     @Test public void testDifferentApplArity() {
-        ITerm t1 = TB.newAppl("Ctor1", TB.newInt(1));
-        ITerm t2 = TB.newAppl("Ctor2", TB.newInt(1), TB.newString("Hello, world!"));
+        ITerm t1 = B.newAppl("Ctor1", B.newInt(1));
+        ITerm t2 = B.newAppl("Ctor2", B.newInt(1), B.newString("Hello, world!"));
         assertFalse(t1.equals(t2));
     }
 
@@ -84,20 +85,20 @@ public class HashcodeAndEqualsTest {
 
     @Test public void testSpecializedAndGenericEqual() {
         ITerm t1 = ImmutableSpecializedAppl.of("Hello, world!", 42);
-        ITerm t2 = TB.newAppl(SpecializedAppl.OP, TB.newString("Hello, world!"), TB.newInt(42));
+        ITerm t2 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testGenericAndSpecializedEqual() {
-        ITerm t1 = TB.newAppl(SpecializedAppl.OP, TB.newString("Hello, world!"), TB.newInt(42));
+        ITerm t1 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         ITerm t2 = ImmutableSpecializedAppl.of("Hello, world!", 42);
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testGenericApplEqualAfterSerialization() throws Exception {
-        ITerm t1 = TB.newAppl(SpecializedAppl.OP, TB.newString("Hello, world!"), TB.newInt(42));
+        ITerm t1 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         ITerm t2 = deserialize(serialize(t1));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
@@ -112,20 +113,20 @@ public class HashcodeAndEqualsTest {
 
     @Test public void testSpecializedApplEqualsGenericAfterSerialization() throws Exception {
         ITerm t1 = deserialize(serialize(ImmutableSpecializedAppl.of("Hello, world!", 42)));
-        ITerm t2 = TB.newAppl(SpecializedAppl.OP, TB.newString("Hello, world!"), TB.newInt(42));
+        ITerm t2 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testGenericApplEqualsSepcializedAfterSerialization() throws Exception {
-        ITerm t1 = deserialize(serialize(TB.newAppl(SpecializedAppl.OP, TB.newString("Hello, world!"), TB.newInt(42))));
+        ITerm t1 = deserialize(serialize(B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42))));
         ITerm t2 = ImmutableSpecializedAppl.of("Hello, world!", 42);
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSerializeGeneric() throws Exception {
-        ITerm t = TB.newAppl(SpecializedAppl.OP, TB.newString("Hello, world!"), TB.newInt(42));
+        ITerm t = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         byte[] b1 = serialize(t);
         byte[] b2 = serialize(deserialize(b1));
         assertTrue(Arrays.equals(b1, b2));
@@ -158,7 +159,7 @@ public class HashcodeAndEqualsTest {
         }
 
         public List<ITerm> getArgs() {
-            return ImmutableList.of(TB.newString(getFirstArg()), TB.newInt(getSecondArg()));
+            return ImmutableList.of(B.newString(getFirstArg()), B.newInt(getSecondArg()));
         }
 
         public IApplTerm withAttachments(ImmutableClassToInstanceMap<Object> value) {

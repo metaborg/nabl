@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.poly;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Set;
 
@@ -8,9 +11,7 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.build.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableList;
 
@@ -33,7 +34,7 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        ITerm vars = TB.newList(getTypeVars());
+        ITerm vars = B.newList(getTypeVars());
         return ImmutableList.of(vars, getType());
     }
 

@@ -1,10 +1,11 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.relations.RelationDescription.Reflexivity;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Symmetry;
 import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class RelationOptions {
 

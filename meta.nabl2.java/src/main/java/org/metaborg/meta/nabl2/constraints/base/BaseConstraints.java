@@ -1,13 +1,14 @@
 package org.metaborg.meta.nabl2.constraints.base;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class BaseConstraints {
@@ -46,11 +47,11 @@ public final class BaseConstraints {
     public static ITerm build(IBaseConstraint constraint) {
         return constraint.match(IBaseConstraint.Cases.<ITerm>of(
         // @formatter:off
-            t -> TB.newAppl(C_TRUE, MessageInfo.buildOnlyOriginTerm(t.getMessageInfo())),
-            f -> TB.newAppl(C_FALSE, MessageInfo.build(f.getMessageInfo())),
-            c -> TB.newAppl(C_CONJ, Constraints.build(c.getLeft()), Constraints.build(c.getRight())),
-            e -> TB.newAppl(C_EXISTS, TB.newList(e.getEVars()), Constraints.build(e.getConstraint())),
-            n -> TB.newAppl(C_NEW, TB.newList(n.getNVars()), MessageInfo.buildOnlyOriginTerm(n.getMessageInfo()))
+            t -> B.newAppl(C_TRUE, MessageInfo.buildOnlyOriginTerm(t.getMessageInfo())),
+            f -> B.newAppl(C_FALSE, MessageInfo.build(f.getMessageInfo())),
+            c -> B.newAppl(C_CONJ, Constraints.build(c.getLeft()), Constraints.build(c.getRight())),
+            e -> B.newAppl(C_EXISTS, B.newList(e.getEVars()), Constraints.build(e.getConstraint())),
+            n -> B.newAppl(C_NEW, B.newList(n.getNVars()), MessageInfo.buildOnlyOriginTerm(n.getMessageInfo()))
             // @formatter:on
         ));
     }

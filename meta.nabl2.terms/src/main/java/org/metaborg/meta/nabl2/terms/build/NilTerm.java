@@ -9,7 +9,7 @@ import org.metaborg.meta.nabl2.terms.ITermVar;
 
 import com.google.common.collect.ImmutableMultiset;
 
-@Value.Immutable(builder = true)
+@Value.Immutable
 @Serial.Version(value = 42L)
 abstract class NilTerm extends AbstractTerm implements INilTerm {
 
@@ -20,7 +20,7 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
     @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
         return false;
     }
-    
+
     @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
         return ImmutableMultiset.of();
     }

@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -11,9 +14,7 @@ import org.metaborg.meta.nabl2.relations.variants.IVariantMatcher;
 import org.metaborg.meta.nabl2.relations.variants.Variances;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
@@ -53,7 +54,7 @@ public class VariantMatchers {
         }
 
         @Override public ITerm build(Collection<? extends ITerm> ts) {
-            return TB.newList(ts);
+            return B.newList(ts);
         }
 
         @Override public int hashCode() {
@@ -101,7 +102,7 @@ public class VariantMatchers {
         }
 
         @Override public ITerm build(Collection<? extends ITerm> ts) {
-            return TB.newAppl(op, ts);
+            return B.newAppl(op, ts);
         }
 
         @Override public int hashCode() {

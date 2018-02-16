@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.build.TB;
+import org.metaborg.meta.nabl2.terms.build.TermBuild;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Iterables;
@@ -30,11 +30,11 @@ public class UnificationPerformanceTest {
     private static void testCycle() {
         System.out.println("Testing cycle");
         final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
-        ITermVar varA = TB.newVar("", A);
-        ITermVar varB = TB.newVar("", B);
-        ITermVar varC = TB.newVar("", C);
-        ITerm termB = TB.newTuple(varB, varB);
-        ITerm termC = TB.newTuple(varC, varC);
+        ITermVar varA = TermBuild.B.newVar("", A);
+        ITermVar varB = TermBuild.B.newVar("", B);
+        ITermVar varC = TermBuild.B.newVar("", C);
+        ITerm termB = TermBuild.B.newTuple(varB, varB);
+        ITerm termC = TermBuild.B.newTuple(varC, varC);
         try {
             unifier.unify(varA, termB);
             unifier.unify(varB, termC);
@@ -53,9 +53,9 @@ public class UnificationPerformanceTest {
 
     private static IUnifier testUnify(int n) {
         final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
-        final ITerm left = TB.newTuple(
+        final ITerm left = TermBuild.B.newTuple(
                 Iterables.concat(createVars(A, n), createTuples(B, n), Iterables2.singleton(createVar(A, n))));
-        final ITerm right = TB.newTuple(
+        final ITerm right = TermBuild.B.newTuple(
                 Iterables.concat(createTuples(A, n), createVars(B, n), Iterables2.singleton(createVar(B, n))));
         try {
             unifier.unify(left, right);
@@ -89,11 +89,11 @@ public class UnificationPerformanceTest {
     }
 
     private static ITerm createVar(String name, int i) {
-        return TB.newVar("", name + "-" + i);
+        return TermBuild.B.newVar("", name + "-" + i);
     }
 
     private static ITerm createTuple(String name, int i) {
-        return TB.newTuple(createVar(name, i - 1), createVar(name, i - 1));
+        return TermBuild.B.newTuple(createVar(name, i - 1), createVar(name, i - 1));
     }
 
 }

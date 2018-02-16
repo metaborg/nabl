@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.terms.unification;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Deque;
@@ -13,7 +15,6 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.build.TB;
 import org.metaborg.meta.nabl2.util.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.Set2;
 import org.metaborg.meta.nabl2.util.Tuple2;
@@ -122,7 +123,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             final java.util.Map<ITermVar, ITerm> visited) {
         return term.match(Terms.cases(
         // @formatter:off
-            appl -> TB.newAppl(appl.getOp(), findRecursiveTerms(appl.getArgs(), stack, visited), appl.getAttachments()),
+            appl -> B.newAppl(appl.getOp(), findRecursiveTerms(appl.getArgs(), stack, visited), appl.getAttachments()),
             list -> findListTermRecursive(list, stack, visited),
             string -> string,
             integer -> integer,
@@ -157,7 +158,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         while(!elements.isEmpty()) {
             instance.set(elements.pop().match(ListTerms.<IListTerm>cases(
             // @formatter:off
-                cons -> TB.newCons(findTermRecursive(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
+                cons -> B.newCons(findTermRecursive(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
                 nil -> nil,
                 var -> (IListTerm) findVarRecursive(var, stack, visited)
                 // @formatter:on
@@ -785,7 +786,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 }
             }
             if(isCyclic(result)) {
-                throw new UnificationException(TB.newTuple(), TB.newTuple()); // FIXME
+                throw new UnificationException(B.newTuple(), B.newTuple()); // FIXME
             }
             return diffUnifier(result);
         }

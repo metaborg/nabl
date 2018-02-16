@@ -1,13 +1,14 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.relations.terms.FunctionName.NamedFunction;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.terms.unification.MatchException;
 import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;

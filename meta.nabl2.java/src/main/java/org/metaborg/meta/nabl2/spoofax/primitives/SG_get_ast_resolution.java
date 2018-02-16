@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.spoofax.primitives;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -8,7 +10,6 @@ import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -28,7 +29,7 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
                     if(ref.getIndex().equals(index)) {
                         s.nameResolution().resolve(ref).map(Paths::resolutionPathsToDecls).ifPresent(decls -> {
                             decls.stream().forEach(decl -> {
-                                entries.add(TB.newTuple(ref, decl.getName()));
+                                entries.add(B.newTuple(ref, decl.getName()));
                             });
                         });
                     }
@@ -36,7 +37,7 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
                 if(entries.isEmpty()) {
                     return Optional.empty();
                 }
-                return Optional.of(TB.newList(entries));
+                return Optional.of(B.newList(entries));
             });
         });
     }

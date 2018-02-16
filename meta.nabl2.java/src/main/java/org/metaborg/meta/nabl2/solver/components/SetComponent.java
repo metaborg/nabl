@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -20,9 +23,7 @@ import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.matching.Transform.T;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
@@ -75,7 +76,7 @@ public class SetComponent extends ASolver {
             return Optional.of(SolveResult.empty());
         } else {
             MessageContent content =
-                    MessageContent.builder().append(TB.newAppl(NAME_OP)).append(" not in ").append(right).build();
+                    MessageContent.builder().append(B.newAppl(NAME_OP)).append(" not in ").append(right).build();
             Iterable<IMessageInfo> messages =
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values());
             return Optional.of(SolveResult.messages(messages));
@@ -102,7 +103,7 @@ public class SetComponent extends ASolver {
         if(duplicates.isEmpty()) {
             return Optional.of(SolveResult.empty());
         } else {
-            MessageContent content = MessageContent.builder().append(TB.newAppl(NAME_OP)).append(" has duplicates in ")
+            MessageContent content = MessageContent.builder().append(B.newAppl(NAME_OP)).append(" has duplicates in ")
                     .append(setTerm).build();
             Iterable<IMessageInfo> messages =
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates);
@@ -122,7 +123,7 @@ public class SetComponent extends ASolver {
         List<ITerm> set =
                 maybeSet.get().stream().map(i -> unifier().findRecursive(i.getValue())).collect(Collectors.toList());
         return Optional.of(SolveResult
-                .constraints(ImmutableCEqual.of(constraint.getResult(), TB.newList(set), constraint.getMessageInfo())));
+                .constraints(ImmutableCEqual.of(constraint.getResult(), B.newList(set), constraint.getMessageInfo())));
 
     }
 
@@ -134,7 +135,7 @@ public class SetComponent extends ASolver {
                 return ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f), e.getPosition());
             }).collect(Collectors.toList());
         } else {
-            ITerm es = TB.newList(elements.stream().map(e -> e.getValue()).collect(Collectors.toList()));
+            ITerm es = B.newList(elements.stream().map(e -> e.getValue()).collect(Collectors.toList()));
             Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> es).match(t, unifier()));
             return Iterables2.singleton(ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f),
                     template.getOriginTerm()));

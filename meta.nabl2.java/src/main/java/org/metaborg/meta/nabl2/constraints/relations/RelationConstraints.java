@@ -1,12 +1,13 @@
 package org.metaborg.meta.nabl2.constraints.relations;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.relations.terms.FunctionName;
 import org.metaborg.meta.nabl2.relations.terms.RelationName;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class RelationConstraints {
@@ -34,11 +35,11 @@ public final class RelationConstraints {
     public static ITerm build(IRelationConstraint constraint) {
         return constraint.match(IRelationConstraint.Cases.<ITerm>of(
             // @formatter:off
-            build -> TB.newAppl(C_BUILD_REL, build.getLeft(), build.getRelation(), build.getRight(),
+            build -> B.newAppl(C_BUILD_REL, build.getLeft(), build.getRelation(), build.getRight(),
                                 MessageInfo.build(build.getMessageInfo())),
-            check -> TB.newAppl(C_CHECK_REL, check.getLeft(), check.getRelation(), check.getRight(),
+            check -> B.newAppl(C_CHECK_REL, check.getLeft(), check.getRelation(), check.getRight(),
                                 MessageInfo.build(check.getMessageInfo())),
-            eval -> TB.newAppl(C_EVAL, eval.getResult(), eval.getFunction(), eval.getTerm(),
+            eval -> B.newAppl(C_EVAL, eval.getResult(), eval.getFunction(), eval.getTerm(),
                                MessageInfo.build(eval.getMessageInfo()))
             // @formatter:on
         ));

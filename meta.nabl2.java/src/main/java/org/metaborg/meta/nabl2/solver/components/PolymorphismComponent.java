@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,7 +26,6 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.build.TB;
 import org.metaborg.meta.nabl2.terms.matching.Transform.T;
 import org.metaborg.util.functions.PartialFunction2;
 import org.metaborg.util.functions.Predicate1;
@@ -82,7 +83,7 @@ public class PolymorphismComponent extends ASolver {
         SolveResult result = SolveResult.constraints(
         // @formatter:off
             ImmutableCDeclProperty.of(decl, DeclProperties.TYPE_KEY, scheme, 0, gen.getMessageInfo()),
-            ImmutableCEqual.of(gen.getGenVars(), TB.newList(subst.keySet()), gen.getMessageInfo())
+            ImmutableCEqual.of(gen.getGenVars(), B.newList(subst.keySet()), gen.getMessageInfo())
             // @formatter:on
         );
         return Optional.of(result);
@@ -111,7 +112,7 @@ public class PolymorphismComponent extends ASolver {
         if(forall.isPresent()) {
             final Forall scheme = forall.get();
             scheme.getTypeVars().stream().forEach(v -> {
-                subst.put(v, TB.newVar("", fresh(v.getName())));
+                subst.put(v, B.newVar("", fresh(v.getName())));
             });
             type = subst(scheme.getType(), subst);
         } else {
@@ -123,7 +124,7 @@ public class PolymorphismComponent extends ASolver {
                 ImmutableCExists.of(subst.values(),
                         ImmutableCConj.of(
                                 ImmutableCEqual.of(inst.getType(), type, inst.getMessageInfo()),
-                                ImmutableCEqual.of(inst.getInstVars(), TB.newList(subst.keySet()), inst.getMessageInfo()),
+                                ImmutableCEqual.of(inst.getInstVars(), B.newList(subst.keySet()), inst.getMessageInfo()),
                                 MessageInfo.empty()
                         ),
                         inst.getMessageInfo());

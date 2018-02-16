@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 
 import org.immutables.serial.Serial;
@@ -8,9 +11,7 @@ import org.metaborg.meta.nabl2.relations.IRelationName;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.build.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableList;
 
@@ -42,7 +43,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         @Value.Lazy @Override public List<ITerm> getArgs() {
-            return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) TB.newString(getName()));
+            return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) B.newString(getName()));
         }
 
         public static IMatcher<NamedRelation> matcher() {
@@ -95,7 +96,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         @Value.Lazy @Override public List<ITerm> getArgs() {
-            return ImmutableList.of((ITerm) TB.newString(getName()));
+            return ImmutableList.of((ITerm) B.newString(getName()));
         }
 
         public static IMatcher<ExtRelation> matcher() {

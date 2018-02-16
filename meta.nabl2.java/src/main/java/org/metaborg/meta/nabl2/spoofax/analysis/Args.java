@@ -1,14 +1,15 @@
 package org.metaborg.meta.nabl2.spoofax.analysis;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableList;
 
@@ -38,12 +39,12 @@ public abstract class Args {
         if(paramTerms.size() == 1) {
             paramsTerm = paramTerms.get(0);
         } else {
-            paramsTerm = TB.newTuple(paramTerms);
+            paramsTerm = B.newTuple(paramTerms);
         }
         return args.getType()
                 // @formatter:off
-                .map(typeTerm -> TB.newAppl(PARAMS_AND_TYPE, paramsTerm, typeTerm))
-                .orElseGet(() -> TB.newAppl(PARAMS, paramsTerm));
+                .map(typeTerm -> B.newAppl(PARAMS_AND_TYPE, paramsTerm, typeTerm))
+                .orElseGet(() -> B.newAppl(PARAMS, paramsTerm));
                 // @formatter:on
 
     }

@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.stratego;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,7 +12,6 @@ import org.metaborg.meta.nabl2.terms.IListTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ListTerms;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.build.TB;
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -115,13 +116,13 @@ public class StrategoTerms {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
         // @formatter:off
         ITerm term = match(sterm, StrategoTerms.cases(
-            appl -> TB.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
-            tuple -> TB.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            appl -> B.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            tuple -> B.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
             this::fromStrategoList,
-            integer -> TB.newInt(integer.intValue()),
+            integer -> B.newInt(integer.intValue()),
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
-            string -> TB.newString(string.stringValue()),
-            blob -> TB.newBlob(blob.value())
+            string -> B.newString(string.stringValue()),
+            blob -> B.newBlob(blob.value())
         )).withAttachments(attachments);
         // @formatter:on
         return term;
@@ -136,7 +137,7 @@ public class StrategoTerms {
             list = list.tail();
         }
         attachments.add(getAttachments(list));
-        return TB.newList(terms, attachments);
+        return B.newList(terms, attachments);
     }
 
     private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {

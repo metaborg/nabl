@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,7 +11,6 @@ import java.util.stream.Stream;
 import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 
@@ -33,7 +34,7 @@ public final class ScopeGraphTerms {
 
     private ITerm build() {
         List<ITerm> scopes = scopeGraph.getAllScopes().stream().map(this::buildScope).collect(Collectors.toList());
-        return TB.newAppl("ScopeGraph", (ITerm) TB.newList(scopes));
+        return B.newAppl("ScopeGraph", (ITerm) B.newList(scopes));
     }
 
     private ITerm buildScope(Scope scope) {
@@ -42,13 +43,13 @@ public final class ScopeGraphTerms {
         List<ITerm> decls =
                 scopeGraph.getDecls().inverse().get(scope).stream().map(this::buildDecl).collect(Collectors.toList());
         if(!decls.isEmpty()) {
-            parts.add(TB.newAppl("Decls", (ITerm) TB.newList(decls)));
+            parts.add(B.newAppl("Decls", (ITerm) B.newList(decls)));
         }
 
         List<ITerm> refs =
                 scopeGraph.getRefs().inverse().get(scope).stream().map(this::buildRef).collect(Collectors.toList());
         if(!refs.isEmpty()) {
-            parts.add(TB.newAppl("Refs", (ITerm) TB.newList(refs)));
+            parts.add(B.newAppl("Refs", (ITerm) B.newList(refs)));
         }
 
         List<ITerm> directEdges = Stream
@@ -56,7 +57,7 @@ public final class ScopeGraphTerms {
                         scopeGraph.incompleteDirectEdges().get(scope).stream())
                 .map(this::buildDirectEdge).collect(Collectors.toList());
         if(!directEdges.isEmpty()) {
-            parts.add(TB.newAppl("DirectEdges", (ITerm) TB.newList(directEdges)));
+            parts.add(B.newAppl("DirectEdges", (ITerm) B.newList(directEdges)));
         }
 
         List<ITerm> importEdges = Stream
@@ -64,40 +65,40 @@ public final class ScopeGraphTerms {
                         scopeGraph.incompleteImportEdges().get(scope).stream())
                 .map(this::buildImportEdge).collect(Collectors.toList());
         if(!importEdges.isEmpty()) {
-            parts.add(TB.newAppl("ImportEdges", (ITerm) TB.newList(importEdges)));
+            parts.add(B.newAppl("ImportEdges", (ITerm) B.newList(importEdges)));
         }
 
         List<ITerm> exportEdges = scopeGraph.getExportEdges().inverse().get(scope).stream().map(this::buildExportEdge)
                 .collect(Collectors.toList());
         if(!exportEdges.isEmpty()) {
-            parts.add(TB.newAppl("AssocEdges", (ITerm) TB.newList(exportEdges)));
+            parts.add(B.newAppl("AssocEdges", (ITerm) B.newList(exportEdges)));
         }
 
-        return TB.newAppl("Scope", scope, (ITerm) TB.newList(parts));
+        return B.newAppl("Scope", scope, (ITerm) B.newList(parts));
     }
 
     private ITerm buildDecl(Occurrence decl) {
-        return TB.newAppl("Decl", decl, buildType(properties.getValue(decl, DeclProperties.TYPE_KEY)));
+        return B.newAppl("Decl", decl, buildType(properties.getValue(decl, DeclProperties.TYPE_KEY)));
     }
 
     private ITerm buildType(Optional<ITerm> type) {
-        return type.map(unifier::findRecursive).map(t -> TB.newAppl(TYPE, t)).orElseGet(() -> TB.newAppl(NO_TYPE));
+        return type.map(unifier::findRecursive).map(t -> B.newAppl(TYPE, t)).orElseGet(() -> B.newAppl(NO_TYPE));
     }
 
     private ITerm buildRef(Occurrence ref) {
-        return TB.newAppl("Ref", ref);
+        return B.newAppl("Ref", ref);
     }
 
     private ITerm buildDirectEdge(Map.Entry<Label, ? extends ITerm> edge) {
-        return TB.newAppl("DirectEdge", edge.getKey(), edge.getValue());
+        return B.newAppl("DirectEdge", edge.getKey(), edge.getValue());
     }
 
     private ITerm buildImportEdge(Map.Entry<Label, ? extends ITerm> edge) {
-        return TB.newAppl("ImportEdge", edge.getKey(), edge.getValue());
+        return B.newAppl("ImportEdge", edge.getKey(), edge.getValue());
     }
 
     private ITerm buildExportEdge(Map.Entry<Label, Occurrence> edge) {
-        return TB.newAppl("AssocEdge", edge.getKey(), edge.getValue());
+        return B.newAppl("AssocEdge", edge.getKey(), edge.getValue());
     }
 
     // static interface

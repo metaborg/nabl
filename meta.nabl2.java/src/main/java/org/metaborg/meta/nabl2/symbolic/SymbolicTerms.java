@@ -1,10 +1,11 @@
 package org.metaborg.meta.nabl2.symbolic;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public class SymbolicTerms {
@@ -14,7 +15,7 @@ public class SymbolicTerms {
                 symbolicConstraints.getFacts().stream().map(unifier::findRecursive).collect(Collectors.toList());
         final List<ITerm> goals =
                 symbolicConstraints.getGoals().stream().map(unifier::findRecursive).collect(Collectors.toList());
-        return TB.newAppl("SymbolicConstraints", TB.newList(facts), TB.newList(goals));
+        return B.newAppl("SymbolicConstraints", B.newList(facts), B.newList(goals));
     }
 
 }

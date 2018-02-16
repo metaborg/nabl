@@ -1,12 +1,13 @@
 package org.metaborg.meta.nabl2.constraints.messages;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.util.functions.Function1;
 
 @Value.Immutable
@@ -40,7 +41,7 @@ public abstract class MessageInfo implements IMessageInfo {
     }
 
     public static ITerm build(IMessageInfo messageInfo) {
-        return TB.newAppl(OP, MessageKind.build(messageInfo.getKind()), messageInfo.getContent().build(),
+        return B.newAppl(OP, MessageKind.build(messageInfo.getKind()), messageInfo.getContent().build(),
                 messageInfo.getOriginTerm());
     }
 
@@ -59,7 +60,7 @@ public abstract class MessageInfo implements IMessageInfo {
     }
 
     public static MessageInfo empty() {
-        return ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), TB.EMPTY_TUPLE);
+        return ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), B.EMPTY_TUPLE);
     }
 
     @Override public String toString() {

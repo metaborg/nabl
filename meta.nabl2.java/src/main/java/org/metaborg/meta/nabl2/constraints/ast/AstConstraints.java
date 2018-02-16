@@ -1,11 +1,12 @@
 package org.metaborg.meta.nabl2.constraints.ast;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.IMatcher;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class AstConstraints {
@@ -25,7 +26,7 @@ public final class AstConstraints {
     public static ITerm build(IAstConstraint constraint) {
         return constraint.match(IAstConstraint.Cases.<ITerm>of(
             // @formatter:off
-            prop -> TB.newAppl(C_AST_PROPERTY, prop.getIndex(), prop.getKey(), prop.getValue())
+            prop -> B.newAppl(C_AST_PROPERTY, prop.getIndex(), prop.getKey(), prop.getValue())
             // @formatter:on
         ));
 

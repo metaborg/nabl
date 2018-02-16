@@ -1,13 +1,14 @@
 package org.metaborg.meta.nabl2.spoofax;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.scopegraph.terms.ImmutableScope;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.stratego.ImmutableTermIndex;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
-import org.metaborg.meta.nabl2.terms.matching.Match.M;
 import org.metaborg.meta.nabl2.terms.matching.Transform.T;
 
 public class TermSimplifier {
@@ -17,7 +18,7 @@ public class TermSimplifier {
             // @formatter:off
             M.var(var -> {
                 String r = (resource ==  null || var.getResource().equals(resource)) ? "" : var.getResource();
-                return TB.newVar(r, var.getName());
+                return B.newVar(r, var.getName());
             }),
             (t, u) -> Scope.matcher().match(t, u).map(s -> {
                 String r = (resource == null || s.getResource().equals(resource)) ? "" : s.getResource();

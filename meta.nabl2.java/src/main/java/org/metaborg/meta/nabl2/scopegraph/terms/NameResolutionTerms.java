@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,7 +10,6 @@ import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.build.TB;
 
 import io.usethesource.capsule.Set;
 
@@ -26,7 +27,7 @@ public final class NameResolutionTerms {
     private ITerm build() {
         final List<ITerm> resolutions =
                 scopeGraph.getAllRefs().stream().map(this::buildRef).collect(Collectors.toList());
-        return TB.newAppl("NameResolution", (ITerm) TB.newList(resolutions));
+        return B.newAppl("NameResolution", (ITerm) B.newList(resolutions));
     }
 
     private ITerm buildRef(Occurrence ref) {
@@ -34,15 +35,15 @@ public final class NameResolutionTerms {
                 .map(this::buildPath).collect(Collectors.toList());
         final ITerm result;
         if(paths.isEmpty()) {
-            result = TB.newAppl("NoResolution");
+            result = B.newAppl("NoResolution");
         } else {
-            result = TB.newAppl("Resolution", (ITerm) TB.newList(paths));
+            result = B.newAppl("Resolution", (ITerm) B.newList(paths));
         }
-        return TB.newTuple(ref, result);
+        return B.newTuple(ref, result);
     }
 
     private ITerm buildPath(IResolutionPath<Scope, Label, Occurrence> path) {
-        return TB.newTuple(path.getDeclaration(), Paths.toTerm(path));
+        return B.newTuple(path.getDeclaration(), Paths.toTerm(path));
     }
 
     public static ITerm build(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
