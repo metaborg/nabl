@@ -4,10 +4,11 @@ import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.metaborg.meta.nabl2.constraints.namebinding.DeclProperties;
-import org.metaborg.meta.nabl2.scopegraph.INameResolution;
 import org.metaborg.meta.nabl2.scopegraph.IScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
@@ -26,9 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-
-import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 
 public class InterpreterTerms {
 
@@ -77,12 +75,13 @@ public class InterpreterTerms {
         return map(entries.entrySet());
     }
 
-    private static ITerm nameresolution(INameResolution.Immutable<Scope, Label, Occurrence> nameResolution) {
+    private static ITerm nameresolution(IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
+        nameResolution.resolveAll();
         final Map<ITerm, ITerm> entries = Maps.newHashMap();
-        for(Map.Entry<Occurrence, Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> entry : nameResolution
+        for(Map.Entry<Occurrence, Set<IResolutionPath<Scope, Label, Occurrence>>> entry : nameResolution
                 .resolutionEntries()) {
             final Occurrence ref = entry.getKey();
-            final Immutable<IResolutionPath<Scope, Label, Occurrence>> paths = entry.getValue();
+            final Set<IResolutionPath<Scope, Label, Occurrence>> paths = entry.getValue();
             if(paths.size() == 1) {
                 IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
                 ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));

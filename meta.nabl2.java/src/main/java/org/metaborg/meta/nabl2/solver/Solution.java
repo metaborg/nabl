@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.solver;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -25,6 +26,7 @@ import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.Predicate2;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 1L)
@@ -36,7 +38,20 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    @Value.Parameter @Override public abstract IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+    @Override public IEsopNameResolution<Scope, Label, Occurrence> nameResolution() {
+        return nameResolution((s, l) -> true);
+    }
+
+    @Override public IEsopNameResolution<Scope, Label, Occurrence>
+            nameResolution(Predicate2<Scope, Label> isEdgeComplete) {
+        final EsopNameResolution<Scope, Label, Occurrence> nr =
+                EsopNameResolution.of(config().getResolutionParams(), scopeGraph(), isEdgeComplete);
+        nameResolutionCache().ifPresent(nr::addAll);
+        return nr;
+    }
+
+    @Value.Auxiliary @Override public abstract Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>>
+            nameResolutionCache();
 
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
@@ -52,10 +67,9 @@ public abstract class Solution implements ISolution {
 
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
-                EsopNameResolution.Immutable.of(config.getResolutionParams()), Properties.Immutable.of(),
-                VariantRelations.immutableOf(config.getRelations()), PersistentUnifier.Immutable.of(),
-                org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
-                Collections.emptySet());
+                Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
+                PersistentUnifier.Immutable.of(), org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(),
+                Messages.Immutable.of(), Collections.emptySet());
     }
 
     @Override public ISolution findAndLock() throws SolverException {

@@ -64,8 +64,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         // shared
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                initial.nameResolution().melt(scopeGraph, (s, l) -> true);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution = initial.nameResolution((s, l) -> true);
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
@@ -125,8 +124,10 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             for(ISolution unitSolution : unitSolutions) {
                 seed(astSolver.seed(unitSolution.astProperties(), message), messages, constraints);
                 seed(equalitySolver.seed(unitSolution.unifier(), message), messages, constraints);
-                seed(nameResolutionSolver.seed(ImmutableNameResolutionResult.of(unitSolution.scopeGraph(),
-                        unitSolution.nameResolution(), unitSolution.declProperties()), message), messages, constraints);
+                final NameResolutionResult nameResult =
+                        ImmutableNameResolutionResult.of(unitSolution.scopeGraph(), unitSolution.declProperties())
+                                .withResolutionCache(unitSolution.nameResolutionCache());
+                seed(nameResolutionSolver.seed(nameResult, message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(unitSolution.symbolic(), message), messages, constraints);
                 constraints.addAll(unitSolution.constraints());
@@ -145,8 +146,9 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
-                    nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, messages.freeze(), solveResult.constraints());
+                    nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
+                    messages.freeze(), solveResult.constraints())
+                    .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

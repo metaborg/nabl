@@ -36,18 +36,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import io.usethesource.capsule.Set;
-
 public class NameResolutionComponent extends ASolver {
 
     private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
-    private final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution;
+    private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
     private final IProperties.Transient<Occurrence, ITerm, ITerm> properties;
     private final VarMultimap<Occurrence> varDeps;
 
     public NameResolutionComponent(SolverCore core,
             IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph,
-            IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution,
+            IEsopNameResolution<Scope, Label, Occurrence> nameResolution,
             IProperties.Transient<Occurrence, ITerm, ITerm> initial) {
         super(core);
         this.scopeGraph = scopeGraph;
@@ -61,7 +59,7 @@ public class NameResolutionComponent extends ASolver {
     public SeedResult seed(NameResolutionResult solution, IMessageInfo message) throws InterruptedException {
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
         scopeGraph.addAll(solution.scopeGraph());
-        nameResolution.addAll(solution.nameResolution());
+        solution.resolutionCache().ifPresent(nameResolution::addAll);
         constraints.addAll(seed(solution.declProperties(), message).constraints());
         return SeedResult.constraints(constraints);
     }
@@ -85,7 +83,8 @@ public class NameResolutionComponent extends ASolver {
     }
 
     public NameResolutionResult finish() {
-        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), nameResolution.freeze(), properties.freeze());
+        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), properties.freeze())
+                .withResolutionCache(nameResolution.toCache());
     }
 
     public IProperties.Immutable<Occurrence, ITerm, ITerm> finishDeclProperties() {
@@ -101,12 +100,12 @@ public class NameResolutionComponent extends ASolver {
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        final Optional<Set.Immutable<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
+        final Optional<java.util.Set<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
                 nameResolution.resolve(ref);
         if(!maybePathsAndDeps.isPresent()) {
             return Optional.empty();
         }
-        final Set.Immutable<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get();
+        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get();
         final List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths);
         final Multimap<String, String> deps = HashMultimap.create();
         deps.putAll(ref.getIndex().getResource(),
@@ -216,7 +215,8 @@ public class NameResolutionComponent extends ASolver {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-        @Value.Parameter public abstract IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+        @Value.Auxiliary public abstract Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>>
+                resolutionCache();
 
         @Value.Parameter public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 

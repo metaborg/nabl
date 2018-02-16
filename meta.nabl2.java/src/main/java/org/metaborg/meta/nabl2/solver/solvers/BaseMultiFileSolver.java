@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
@@ -51,8 +53,8 @@ public class BaseMultiFileSolver extends BaseSolver {
         super(nabl2Debug, callExternal);
     }
 
-    public ISolution solveIntra(GraphSolution initial, Collection<ITermVar> intfVars, Collection<Scope> intfScopes,
-            Function1<String, String> fresh, ICancel cancel, IProgress progress)
+    public ISolution solveIntra(GraphSolution initial, Collection<ITermVar> intfVars,
+            @Nullable Collection<Scope> intfScopes, Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
         final SolverConfig config = initial.config();
 
@@ -63,13 +65,13 @@ public class BaseMultiFileSolver extends BaseSolver {
         final ActiveVars activeVars = new ActiveVars(unifier);
         intfVars.stream().forEach(activeVars::add);
 
-        // guards
-        final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> !intfScopes.contains(s);
+        // guards -- intfScopes == null indicates we do not know the interface scopes, and resolution should be delayed.
+        final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> intfScopes != null && !intfScopes.contains(s);
 
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, isEdgeClosed);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
+                EsopNameResolution.of(config.getResolutionParams(), scopeGraph, isEdgeClosed);
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
@@ -119,9 +121,11 @@ public class BaseMultiFileSolver extends BaseSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
 
-            return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
-                    nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, solveResult.messages(), solveResult.constraints());
+            return ImmutableSolution
+                    .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
+                            nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
+                            solveResult.messages(), solveResult.constraints())
+                    .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

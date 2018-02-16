@@ -128,8 +128,7 @@ public class BaseSolver {
 
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                initial.nameResolution().melt(scopeGraph, isEdgeComplete);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution = initial.nameResolution(isEdgeComplete);
 
         final SolverCore core = new SolverCore(initial.config(), unifier, n -> {
             throw new IllegalStateException("Fresh is not available when merging.");
@@ -160,9 +159,10 @@ public class BaseSolver {
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
 
-        return ImmutableSolution.of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.nameResolution(),
-                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, messages.freeze(),
-                constraints);
+        return ImmutableSolution
+                .of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.declProperties(), relationResult,
+                        unifyResult, symbolicResult, messages.freeze(), constraints)
+                .withNameResolutionCache(nameResult.resolutionCache());
     }
 
     protected boolean seed(SeedResult result, IMessages.Transient messages, Set<IConstraint> constraints) {

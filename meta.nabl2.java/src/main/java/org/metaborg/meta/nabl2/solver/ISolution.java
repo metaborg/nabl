@@ -1,6 +1,7 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
@@ -15,22 +16,27 @@ import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
+import org.metaborg.util.functions.Predicate2;
 
-public interface ISolution extends IPublicSolution {
+public interface ISolution {
 
-    @Override SolverConfig config();
+    SolverConfig config();
 
     IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
 
-    @Override IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+    IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    @Override IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+    IEsopNameResolution<Scope, Label, Occurrence> nameResolution();
 
-    @Override IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
+    IEsopNameResolution<Scope, Label, Occurrence> nameResolution(Predicate2<Scope, Label> isEdgeComplete);
 
-    @Override Map<String, IVariantRelation.Immutable<ITerm>> relations();
+    Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>> nameResolutionCache();
 
-    @Override ISymbolicConstraints symbolic();
+    IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
+
+    Map<String, IVariantRelation.Immutable<ITerm>> relations();
+
+    ISymbolicConstraints symbolic();
 
     IUnifier.Immutable unifier();
 

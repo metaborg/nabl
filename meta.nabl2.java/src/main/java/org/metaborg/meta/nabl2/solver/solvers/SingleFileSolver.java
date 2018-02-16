@@ -69,8 +69,8 @@ public class SingleFileSolver extends BaseSolver {
 
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
+                EsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
@@ -126,9 +126,11 @@ public class SingleFileSolver extends BaseSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
-                    nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, messages.freeze(), solveResult.constraints());
+            return ImmutableSolution
+                    .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
+                            nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
+                            messages.freeze(), solveResult.constraints())
+                    .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
