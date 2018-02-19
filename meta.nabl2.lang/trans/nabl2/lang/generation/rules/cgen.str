@@ -77,6 +77,7 @@ rules
     r@CGenRule(rdef, pattern, params, type, clause)
       -> RDefT(sname, sparams, [], 
            Rule(spattern, sresult, strclause*))
+    where not(InitRule() := rdef)
     with
       args-var       := Var(<newname> "args");
       constraint-var := Var(<newname> "constraint");
@@ -203,9 +204,10 @@ rules
   roccs-strategy-name = !$[nabl2--transform-occurrences]
 
   rule-to-occurrences-str:
-    CGenMatchRule(_, pattern-match, _, _, clause*) ->
+    CGenRule(rdef, pattern-match, _, _, clause*) ->
       RDefT(<roccs-strategy-name>, [], [],
            Rule(AnnoList(pattern-match', [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
+    where not(InitRule() := rdef)
     where
       pattern-match' := <try(?As(_, <id>))> pattern-match;
       occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
