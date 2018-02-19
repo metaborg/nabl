@@ -1,12 +1,13 @@
 package org.metaborg.meta.nabl2.constraints.scopegraph;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class ScopeGraphConstraints {
 
@@ -46,46 +47,46 @@ public final class ScopeGraphConstraints {
     public static ITerm build(IScopeGraphConstraint constraint) {
         return constraint.match(IScopeGraphConstraint.Cases.<ITerm>of(
             // @formatter:off
-            decl -> TB.newAppl(CG_DECL, decl.getDeclaration(), decl.getScope(),
+            decl -> B.newAppl(CG_DECL, decl.getDeclaration(), decl.getScope(),
                                MessageInfo.buildOnlyOriginTerm(decl.getMessageInfo())),
-            ref -> TB.newAppl(CG_REF, ref.getReference(), ref.getScope(),
+            ref -> B.newAppl(CG_REF, ref.getReference(), ref.getScope(),
                               MessageInfo.buildOnlyOriginTerm(ref.getMessageInfo())),
-            edge -> TB.newAppl(CG_DIRECT_EDGE, edge.getSourceScope(), edge.getLabel(), edge.getTargetScope(),
+            edge -> B.newAppl(CG_DIRECT_EDGE, edge.getSourceScope(), edge.getLabel(), edge.getTargetScope(),
                                MessageInfo.buildOnlyOriginTerm(edge.getMessageInfo())),
-            exp -> TB.newAppl(CG_EXPORT_EDGE, exp.getDeclaration(), exp.getLabel(), exp.getScope(),
+            exp -> B.newAppl(CG_EXPORT_EDGE, exp.getDeclaration(), exp.getLabel(), exp.getScope(),
                               MessageInfo.buildOnlyOriginTerm(exp.getMessageInfo())),
-            imp -> TB.newAppl(CG_IMPORT_EDGE, imp.getReference(), imp.getLabel(), imp.getScope(),
+            imp -> B.newAppl(CG_IMPORT_EDGE, imp.getReference(), imp.getLabel(), imp.getScope(),
                               MessageInfo.buildOnlyOriginTerm(imp.getMessageInfo()))
             // @formatter:on
         ));
     }
 
-    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, ISubstitution.Immutable unifier) {
+    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, IUnifier unifier) {
         return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
             // @formatter:off
             decl -> ImmutableCGDecl.of(
-                        unifier.find(decl.getScope()),
-                        unifier.find(decl.getDeclaration()),
-                        decl.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(decl.getScope()),
+                        unifier.findRecursive(decl.getDeclaration()),
+                        decl.getMessageInfo().apply(unifier::findRecursive)),
             ref -> ImmutableCGRef.of(
-                        unifier.find(ref.getReference()),
-                        unifier.find(ref.getScope()),
-                        ref.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(ref.getReference()),
+                        unifier.findRecursive(ref.getScope()),
+                        ref.getMessageInfo().apply(unifier::findRecursive)),
             edge -> ImmutableCGDirectEdge.of(
-                        unifier.find(edge.getSourceScope()),
+                        unifier.findRecursive(edge.getSourceScope()),
                         edge.getLabel(),
-                        unifier.find(edge.getTargetScope()),
-                        edge.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(edge.getTargetScope()),
+                        edge.getMessageInfo().apply(unifier::findRecursive)),
             exp -> ImmutableCGExportEdge.of(
-                        unifier.find(exp.getDeclaration()),
+                        unifier.findRecursive(exp.getDeclaration()),
                         exp.getLabel(),
-                        unifier.find(exp.getScope()),
-                        exp.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(exp.getScope()),
+                        exp.getMessageInfo().apply(unifier::findRecursive)),
             imp -> ImmutableCGImportEdge.of(
-                        unifier.find(imp.getScope()),
+                        unifier.findRecursive(imp.getScope()),
                         imp.getLabel(),
-                        unifier.find(imp.getReference()),
-                        imp.getMessageInfo().apply(unifier::find))
+                        unifier.findRecursive(imp.getReference()),
+                        imp.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

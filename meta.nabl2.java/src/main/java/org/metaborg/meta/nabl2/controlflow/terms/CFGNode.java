@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -8,10 +11,8 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.AbstractApplTerm;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableList;
 
@@ -40,7 +41,7 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(TB.newString(getResource()), TB.newString(getName()), getKind());
+        return ImmutableList.of(B.newString(getResource()), B.newString(getName()), getKind());
     }
 
     public static IMatcher<CFGNode> matcher() {

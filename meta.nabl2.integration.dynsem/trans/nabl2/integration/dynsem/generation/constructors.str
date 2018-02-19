@@ -7,6 +7,12 @@ imports
 
 rules
 
+  sortdecls-to-ds:
+    Sorts(sort*) -> <filter(sortdecl-to-ds)> sort*
+
+  sortdecl-to-ds:
+    SortNoArgs(name) -> SortDecl(name)
+
   opdecl-to-ds:
     OpDecl(name, [], s) -> result
     with result := NullaryConsDecl(name, <sort-to-ds> s, NoAnnos())

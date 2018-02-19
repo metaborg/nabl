@@ -1,11 +1,12 @@
 package org.metaborg.meta.nabl2.constraints.controlflow;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class ControlFlowConstraints {
 
@@ -23,19 +24,19 @@ public final class ControlFlowConstraints {
     public static ITerm build(IControlFlowConstraint constraint) {
         return constraint.match(IControlFlowConstraint.Cases.<ITerm>of(
             // @formatter:off
-            edge -> TB.newAppl(CF_DIRECT_EDGE, edge.getSourceNode(), edge.getTargetNode(),
+            edge -> B.newAppl(CF_DIRECT_EDGE, edge.getSourceNode(), edge.getTargetNode(),
                                MessageInfo.buildOnlyOriginTerm(edge.getMessageInfo()))
             // @formatter:on
         ));
     }
 
-    public static IControlFlowConstraint substitute(IControlFlowConstraint constraint, ISubstitution.Immutable unifier) {
+    public static IControlFlowConstraint substitute(IControlFlowConstraint constraint, IUnifier unifier) {
         return constraint.match(IControlFlowConstraint.Cases.<IControlFlowConstraint>of(
             // @formatter:off
             edge -> ImmutableCFDirectEdge.of(
-                        unifier.find(edge.getSourceNode()),
-                        unifier.find(edge.getTargetNode()),
-                        edge.getMessageInfo().apply(unifier::find))
+                        unifier.findRecursive(edge.getSourceNode()),
+                        unifier.findRecursive(edge.getTargetNode()),
+                        edge.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

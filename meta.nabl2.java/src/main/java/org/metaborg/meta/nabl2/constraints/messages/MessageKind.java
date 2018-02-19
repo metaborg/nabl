@@ -1,9 +1,10 @@
 package org.metaborg.meta.nabl2.constraints.messages;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 public enum MessageKind {
 
@@ -26,11 +27,11 @@ public enum MessageKind {
     public static ITerm build(MessageKind kind) {
         switch(kind) {
             case ERROR:
-                return TB.newAppl(ERROR_OP);
+                return B.newAppl(ERROR_OP);
             case WARNING:
-                return TB.newAppl(WARNING_OP);
+                return B.newAppl(WARNING_OP);
             case NOTE:
-                return TB.newAppl(NOTE_OP);
+                return B.newAppl(NOTE_OP);
             default:
                 throw new IllegalArgumentException();
         }

@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.spoofax.primitives;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,9 +13,7 @@ import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.spoofax.analysis.IScopeGraphUnit;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.util.collections.IRelation3;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -24,28 +25,29 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
         super(name);
     }
 
-    @Override public Optional<ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms) throws InterpreterException {
+    @Override public Optional<ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
         return unit.solution().flatMap(sol -> {
             final IRelation3<S, Label, ? extends ITerm> edges = getEdges(sol.scopeGraph());
             final IMatcher<S> sourceMatcher = getSourceMatcher();
             return M.<ITerm>cases(
-                // @formatter:off
+            // @formatter:off
                 M.term(sourceMatcher, (t, source) -> {
                     List<ITerm> edgeTerms = Lists.newArrayList();
                     for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
-                        edgeTerms.add(TB.newTuple(edge.getKey(), edge.getValue()));
+                        edgeTerms.add(B.newTuple(edge.getKey(), edge.getValue()));
                     }
-                    return TB.newList(edgeTerms);
+                    return B.newList(edgeTerms);
                 }),
                 M.tuple2(sourceMatcher, Label.matcher(), (t, source, label) -> {
                     List<ITerm> targetTerms = Lists.newArrayList();
                     for(ITerm target : edges.get(source, label)) {
                         targetTerms.add(target);
                     }
-                    return TB.newList(targetTerms);
+                    return B.newList(targetTerms);
                 })
                 // @formatter:on
-            ).match(term);
+            ).match(term, sol.unifier());
         });
     }
 

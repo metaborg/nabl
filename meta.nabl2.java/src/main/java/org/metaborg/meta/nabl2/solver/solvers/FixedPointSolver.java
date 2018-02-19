@@ -70,7 +70,7 @@ public class FixedPointSolver {
                     propertiesAddAll(result.constraints());
                     newConstraints.addAll(result.constraints());
 
-                    propertiesUpdate(result.unifiedVars());
+                    updateVars(result.unifierDiff().varSet());
                     it.remove();
 
                     stepSubject.onNext(result);
@@ -85,7 +85,7 @@ public class FixedPointSolver {
         } while(progress);
 
         return ImmutableSolveResult.builder()
-                // @formatter:off
+        // @formatter:off
                 .messages(messages.freeze())
                 .dependencies(dependencies)
                 .constraints(constraints)
@@ -111,11 +111,10 @@ public class FixedPointSolver {
         }
     }
 
-    private void propertiesUpdate(Set<ITermVar> vars) {
-        for(ITermVar var : vars) {
-            for(IConstraintSetProperty property : properties) {
-                property.update(var);
-            }
+    private void updateVars(Set<ITermVar> vars) {
+        for(IConstraintSetProperty property : properties) {
+            component.update(vars);
+            property.update(vars);
         }
     }
 

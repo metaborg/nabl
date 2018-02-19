@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -11,9 +14,7 @@ import org.metaborg.meta.nabl2.relations.variants.IVariantMatcher;
 import org.metaborg.meta.nabl2.relations.variants.Variances;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.Terms;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
@@ -24,7 +25,7 @@ public class VariantMatchers {
 
     public static IMatcher<IVariantMatcher<ITerm>> matcher() {
         return M.cases(
-                // @formatter:off
+        // @formatter:off
                 M.appl1("ListVariant", Variances.matcher(), (t, v) -> new ListVariant(v)),
                 M.appl2("OpVariant", M.stringValue(), M.listElems(Variances.matcher()),
                         (t, op, vs) -> new OpVariant(op, vs)),
@@ -43,7 +44,7 @@ public class VariantMatchers {
         }
 
         @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
-            return M.listElems((l, list) -> {
+            return M.listElems(M.term(), (l, list) -> {
                 List<IVariantMatcher.Arg<ITerm>> args = Lists.newArrayList();
                 for(ITerm arg : list) {
                     args.add(ImmutableArg.of(variance, arg));
@@ -53,7 +54,7 @@ public class VariantMatchers {
         }
 
         @Override public ITerm build(Collection<? extends ITerm> ts) {
-            return TB.newList(ts);
+            return B.newList(ts);
         }
 
         @Override public int hashCode() {
@@ -91,17 +92,17 @@ public class VariantMatchers {
         }
 
         @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
-            return M.appl(op, appl -> {
+            return IMatcher.flatten(M.appl(op, appl -> {
                 return Optionals.when(variances.size() == appl.getArity()).map(eq -> {
                     return (List<Arg<ITerm>>) Lists.newArrayList(Iterables2.zip(variances, appl.getArgs(), (v, a) -> {
                         return (IVariantMatcher.Arg<ITerm>) ImmutableArg.of(v, a);
                     }));
                 });
-            }).match(t).flatMap(o -> o);
+            })).match(t);
         }
 
         @Override public ITerm build(Collection<? extends ITerm> ts) {
-            return TB.newAppl(op, ts);
+            return B.newAppl(op, ts);
         }
 
         @Override public int hashCode() {

@@ -74,10 +74,10 @@ context-free syntax
   > {longest-match}
 
   Rule.Rule = <
-    <{RuleProp " "}*> <UserConstraint> :- <LocalVars> <Constraint> | <Constraint>.
+    <Memo?> <UserConstraint> :- <LocalVars> <Constraint> | <Constraint>.
   >
 
-  RuleProp.Memo = <memo>
+  Memo.Memo = <memo>
 
   LocalVars.NoLocalVars = <>
   LocalVars.LocalVars   = <{<{Var " "}+>}>
@@ -117,7 +117,6 @@ context-free syntax
 
   Constraint         = <(<Constraint>)> {bracket}
   Constraint.CConj   = <<Constraint>, <Constraint>> {left}
-  Constraint.CScope  = <{ <{Var " "}+>: <Constraint> }>
   Constraint.CNew    = <new <{Var " "}+>>
   Constraint.CDisamb = <<Term> disamb <Term>, <Term> : <Term> <WrappedClause>>
 
@@ -134,9 +133,7 @@ context-free syntax
   Constraint.CResolve         = [[Term] |-> [Term]]
   Constraint.CQuery           = [[Term] in [Term] |-> [Term]]
 
-  CDecl.CDecl = [[{CProp " "}*] [LCID] : [{CParam " * "}+]]
-
-  CProp.Memo = "memo"
+  CDecl.CDecl = [[Memo?] [ConstraintId] : [{CParam " * "}+]]
 
   CParam.Param = <<InOut> <SortRef>>
 
@@ -243,13 +240,13 @@ lexical syntax
 
 context-free syntax
 
-  SortDecl.SortDecl  = Sort
-  SortDecl.SortAlias = <<Sort> = <SortRef>>
+  SortDecl.SortDecl  = SortId
+  SortDecl.SortAlias = <<SortId> = <SortRef>>
 
   Sort.SimpleSort = SortId
 
   SortRef                = Sort
-  SortRef.Var            = SortVarId
+  SortRef.SortVar        = SortVarId
   SortRef.ListSort       = <list(<SortRef>)>
   SortRef.TupleSort      = <(<{SortRef " * "}*>)>
   SortRef.IntSort        = "int"
@@ -261,8 +258,8 @@ context-free syntax
   OpDecl.OpDecl  = <<SID> : <OpSort>>
 //OpDecl.InjDecl = [[SortRef] => [Sort]]
 
-  OpSort.SimpleSort = Sort
-  OpSort.ArrowSort  = [[{SortRef " * "}+] -> [Sort]]
+  OpSort.ConstOp = Sort
+  OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]
 
 lexical syntax
 
@@ -300,8 +297,8 @@ syntax
   Term-CF.Str        = "\"" StrChars-LEX "\""
   Term-CF.StrBuild   = "$" "[" StrBuild-CF* "]"
 
-  StrBuild-CF.Str = StrBuildChars-LEX
-  StrBuild-CF     = "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
+  StrBuild-CF.Str2 = StrBuildChars-LEX
+  StrBuild-CF      = "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
 
   Occurrence-CF.Occurrence = UCID-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
 

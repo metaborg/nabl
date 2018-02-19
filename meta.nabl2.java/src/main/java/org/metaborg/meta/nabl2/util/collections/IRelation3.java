@@ -2,8 +2,8 @@ package org.metaborg.meta.nabl2.util.collections;
 
 import java.util.Map;
 
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple3;
-import org.metaborg.meta.nabl2.util.tuples.Tuple3;
+import org.metaborg.meta.nabl2.util.ImmutableTuple3;
+import org.metaborg.meta.nabl2.util.Tuple3;
 import org.metaborg.util.functions.Function3;
 
 import com.google.common.annotations.Beta;

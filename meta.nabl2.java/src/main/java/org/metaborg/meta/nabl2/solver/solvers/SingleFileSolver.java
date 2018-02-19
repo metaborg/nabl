@@ -34,13 +34,14 @@ import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.properties.ActiveDeclTypes;
 import org.metaborg.meta.nabl2.solver.properties.ActiveVars;
-import org.metaborg.meta.nabl2.solver.properties.DeclTypeDeps;
 import org.metaborg.meta.nabl2.solver.properties.HasRelationBuildConstraints;
+import org.metaborg.meta.nabl2.solver.properties.PolySafe;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.symbolic.SymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.iterators.Iterables2;
@@ -61,38 +62,38 @@ public class SingleFileSolver extends BaseSolver {
         final SolverConfig config = initial.config();
 
         // shared
-        final IUnifier.Transient unifier = initial.unifier().melt();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);
         final ActiveDeclTypes activeDeclTypes = new ActiveDeclTypes(unifier);
-        final DeclTypeDeps declTypeDeps = new DeclTypeDeps(unifier, activeDeclTypes::contains);
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
         // guards
-        final Predicate1<ITerm> isGenSafe = t -> !activeVars.contains(t) && !declTypeDeps.contains(t);
-        final Predicate1<Occurrence> isInstSafe = d -> activeDeclTypes.contains(d);
         final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.Transient.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
+                EsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier::find, fresh, callExternal);
+        final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
-        final PolymorphismComponent polySolver =
-                new PolymorphismComponent(core, isGenSafe, isInstSafe, nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
         final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ControlFlowGraph.of());
+
+        // polymorphism solver
+        final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
+        final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
+                polySafe::isInstSafe, nameResolutionSolver::getProperty);
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -112,7 +113,7 @@ public class SingleFileSolver extends BaseSolver {
                 Iterables2.from(activeVars, hasRelationBuildConstraints));
 
         solver.step().subscribe(r -> {
-            if(!r.unifiedVars().isEmpty()) {
+            if(!r.unifierDiff().isEmpty()) {
                 try {
                     nameResolutionSolver.update();
                 } catch(InterruptedException ex) {
@@ -133,10 +134,12 @@ public class SingleFileSolver extends BaseSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
-            
-            return ImmutableSolution.of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
-                    nameResolutionResult.nameResolution(), nameResolutionResult.declProperties(), relationResult,
-                    unifierResult, symbolicConstraints, cfg, messages.freeze(), solveResult.constraints());
+
+            return ImmutableSolution
+                    .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
+                            nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
+                            cfg, messages.freeze(), solveResult.constraints())
+                    .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

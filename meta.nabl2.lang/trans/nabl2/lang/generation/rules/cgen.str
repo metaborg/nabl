@@ -5,32 +5,46 @@ imports
   libstrc
 
   nabl2/shared/-
+  signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
  
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
 
-  nabl2/lang/generation/-
+  nabl2/lang/analysis/-
   nabl2/lang/generation/-
   nabl2/lang/util/stratego
 
 rules
 
+  source-var     = !Var("nabl2_source")
+
+  rdef-name: InitRule()    -> "init"
+  rdef-name: DefaultRule() -> "default"
+  rdef-name: Rule(name, _) -> name
+
+rules
+
   section-to-str:
-    Rules(rule*) -> Rules([pp-str*, rule-str*])
+    Rules(rule*) -> Rules([pp-str*, rule-str*, occurrences-str*])
     with
       rule-str* := <map(rule-to-str)> rule*;
-      pp-str*   := <getfirst(?CGenInitRule(_,_,_));pp-rules <+ ![]> rule*
+      pp-str*   := <getfirst(?CGenInitRule(_, _, _));pp-rules <+ ![]> rule*;
+      occurrences-str* := <filter(rule-to-occurrences-str)> rule*
 
   rule-to-str:
-    CGenRule(rdef@InitRule(),pattern,params,type,clause)
-      -> RDefT(sname, sparams, [],
+    CGenRule(rdef@InitRule(), pattern, params, type, clause)
+      -> RDefT(sname, sparams, [], 
            Rule(spattern, sresult, strclause*))
     with
+      args-var       := Var(<newname> "args");
+      constraint-var := Var(<newname> "constraint");
+
       sname    := <rdef-strategy-name> rdef;
       sparams  := <rdef-strategy-params> rdef;
       spattern := Term |[ (~<source-var>, ~pattern) ]|;
-      sresult  := Term |[ (~<args-var>, ~<constraint-var>) ]|;
+      sresult  := Term |[ (~args-var, ~constraint-var) ]|;
  
       bound-var* := <all-vars> pattern;
       used-var*  := <concat;make-set> [ <all-vars> params
@@ -43,32 +57,36 @@ rules
       params-term := <explode(injection-to-term)> params;
       if Type(type') := type then
         type-term := <explode(injection-to-term)> type';
-        args-str := |[ ~<args-var> := ParamsAndType(~params-term,~type-term) ]|;
-        debug-str := Strat |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term," : ",<pp-NaBL2-objlangterm> ~type-term]) end ]|
+        args-str := |[ ~args-var := ParamsAndType(~params-term, ~type-term) ]|;
+        debug-str := Strat |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> ["init ^ ", <pp-NaBL2-CTerm> ~params-term, " : ", <pp-NaBL2-objlangterm> ~type-term]) end ]|
       else
-        args-str := |[ ~<args-var> := Params(~params-term) ]|;
-        debug-str := Strat |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> ["init ^ ",<pp-NaBL2-CTerm> ~params-term]) end ]|
+        args-str := |[ ~args-var := Params(~params-term) ]|;
+        debug-str := Strat |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> ["init ^ ", <pp-NaBL2-CTerm> ~params-term]) end ]|
       end;
 
-      constraint-str  := |[ ~<constraint-var> := ~(<constraint-to-term> clause) ]|;
+      constraint-str  := |[ ~constraint-var := ~(<constraint-to-term> clause) ]|;
 
       strclause* := [
-        With(var-str),
-        With(args-str),
-        With(constraint-str),
+        With(var-str), 
+        With(args-str), 
+        With(constraint-str), 
         With(debug-str)
       ]
  
   rule-to-str:
-    CGenRule(rdef,pattern,params,type,clause)
-      -> RDefT(sname, sparams, [],
+    r@CGenRule(rdef, pattern, params, type, clause)
+      -> RDefT(sname, sparams, [], 
            Rule(spattern, sresult, strclause*))
     with
+      args-var       := Var(<newname> "args");
+      constraint-var := Var(<newname> "constraint");
+
       sname    := <rdef-strategy-name> rdef;
       sparams  := <rdef-strategy-params> rdef;
-      spattern := Term |[ (~<source-var>, ~pattern, ~<args-var>) ]|;
-      sresult  := <constraint-var>;
+      spattern := Term |[ (~<source-var>, ~pattern, ~args-var) ]|;
+      sresult  := constraint-var;
 
+      term-var   := <get-rule-match-var> r;
       bound-var* := <concat;make-set> [ <all-vars> pattern
                                       , <all-vars> params
                                       , <all-vars> type
@@ -77,37 +95,38 @@ rules
       free-var*  := <diff> (used-var*, bound-var*);
       var-str    := <toplevel-vars-to-str> free-var*;
 
+      params-var := Var(<newname> "params");
       pattern-string := Str(<strip-as-pattern;pp-stratego-string> pattern);
-      params-pattern := As(<params-var>,<explode(injection-to-pattern)> params);
+      params-pattern := As(params-var, <explode(injection-to-pattern)> params);
       params-string := <strip-as-pattern;pp-stratego-string> params-pattern;
-      if Type(type') := type then
-        type-pattern := As(<type-var>,<explode(injection-to-pattern)> type');
+      if type-var := <get-rule-type-var> r then
+        type-pattern := type-var;
         type-string :=  <strip-as-pattern;pp-stratego-string> type-pattern;
-        args-pattern := Term |[ ParamsAndType(~params-pattern,~type-pattern) ]|;
+        args-pattern := Term |[ ParamsAndType(~params-pattern, ~type-pattern) ]|;
         args-string := Str($[^ [params-string] : [type-string]]);
         args-str := |[
-          ~args-pattern := ~<args-var>
+          ~args-pattern := ~args-var
         ]|;
-        debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," : ",<pp-NaBL2-objlangterm> ~<type-var>," ]]"]) end ]|
+        debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef), " [[ ", <pp-NaBL2-Term> ~term-var, " ^ ", <pp-NaBL2-CTerm> ~params-var, " : ", <pp-NaBL2-objlangterm> ~type-var, " ]]"]) end ]|
       else
         args-pattern := Term |[ Params(~params-pattern) ]|;
         args-string := Str($[^ [params-string]]);
         args-str := |[
-          ~args-pattern := ~<args-var>
+          ~args-pattern := ~args-var
         ]|;
-        debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef)," [[ ",<pp-NaBL2-Term> ~<term-var>," ^ ",<pp-NaBL2-CTerm> ~<params-var>," ]]"]) end ]|
+        debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef), " [[ ", <pp-NaBL2-Term> ~term-var, " ^ ", <pp-NaBL2-CTerm> ~params-var, " ]]"]) end ]|
       end;
       guarded-args-str := |[
-        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ",~args-string," with actual ",<nabl2--pp-flat-args> ~<args-var>,
-                                                  " when matching ",~pattern-string, " with ",<pp-NaBL2-Term> ~<term-var>,"."])
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ", ~args-string, " with actual ", <nabl2--pp-flat-args> ~args-var, 
+                                                  " when matching ", ~pattern-string, " with ", <pp-NaBL2-Term> ~term-var, "."])
       ]|;
 
-      constraint-str  := |[ ~<constraint-var> := ~(<constraint-to-term> clause) ]|;
+      constraint-str  := |[ ~constraint-var := ~(<constraint-to-term> clause) ]|;
 
       strclause* := [
-        With(var-str),
-        With(guarded-args-str),
-        With(debug-str),
+        With(var-str), 
+        With(guarded-args-str), 
+        With(debug-str), 
         With(constraint-str)
       ]
  
@@ -115,7 +134,7 @@ rules
 
   rdef-strategy-params: InitRule()    -> []
   rdef-strategy-params: DefaultRule() -> []
-  rdef-strategy-params: Rule(_,rs)    -> <map(\ r -> SVar(<rdef-strategy-name> Rule(r,[])) \)> rs
+  rdef-strategy-params: Rule(_, rs)    -> <map(\ r -> SVar(<rdef-strategy-name> Rule(r, [])) \)> rs
  
 
 rules
@@ -140,12 +159,12 @@ rules
     with sc1 := <constraint-to-term> c1;
          sc2 := <constraint-to-term> c2
   constraint-to-term:
-      CExists(evar*, c) -> RootApp(Scope(varname*, Seq(varstr,Build(se))))
+      CExists(evar*, c) -> RootApp(Scope(varname*, Seq(varstr, Build(se))))
     with varname* := <map(\ Var(n) -> n \)> evar*;
          svars    := <explode(explode-guard)> evar*;
          varstr   := <local-vars-to-str> evar*;
          sc       := <constraint-to-term> c;
-         se       := Term|[ CExists(~svars,~sc) ]|
+         se       := Term|[ CExists(~svars, ~sc) ]|
   constraint-to-term:
       c -> <explode(explode-guard)> c
  
@@ -153,19 +172,19 @@ rules
   explode-guard(e) = cgenrecurse-to-term(e)
 
   cgenrecurse-to-term(e):
-    CGenRecurse(rref,v,params,type) -> App(recurse-str,Tuple([<source-var>,v,recurse-arg]))
+    CGenRecurse(rref, v, params, type) -> App(recurse-str, Tuple([<source-var>, v, recurse-arg]))
     with
       params-term := <e> params;
       if Type(type') := type then
         type-term := <e> type';
-        recurse-arg := Term |[ ParamsAndType(~params-term,~type-term) ]|
+        recurse-arg := Term |[ ParamsAndType(~params-term, ~type-term) ]|
       else
         recurse-arg := Term |[ Params(~params-term) ]|
       end;
-      recurse-str := CallT(SVar("nabl2--generate-constraint"),[<rdef-strategy-call> rref],[Str(<rdef-name> rref)])
+      recurse-str := CallT(SVar("nabl2--generate-constraint"), [<rdef-strategy-call> rref], [Str(<rdef-name> rref)])
 
   rdef-strategy-call: DefaultRule()      -> CallNoArgs(SVar(<rdef-strategy-name> DefaultRule()))
-  rdef-strategy-call: rdef@Rule(name,rs) -> Call(SVar(<rdef-strategy-name> rdef), <map(rdef-strategy-call)> rs)
+  rdef-strategy-call: rdef@Rule(name, rs) -> Call(SVar(<rdef-strategy-name> rdef), <map(rdef-strategy-call)> rs)
 
 
 rules
@@ -174,7 +193,27 @@ rules
 
   pp-rules =
     pp-name := <pp-language-spec-name>;
-    ![ SDefT($[prettyprint-[pp-name]],[],[DefaultVarDec("sort")],CallT(SVar("prettyprint-NaBL2-api-term"),[],[Var("sort")]))
-     , SDefT($[prettyprint-[pp-name]-NaBL2Scope],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
-     , SDefT($[prettyprint-[pp-name]-NaBL2Occurrence],[],[],CallT(SVar("prettyprint-NaBL2-api-term"),[],[]))
+    ![ SDefT($[prettyprint-[pp-name]], [], [DefaultVarDec("sort")], CallT(SVar("prettyprint-NaBL2-api-term"), [], [Var("sort")]))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Scope], [], [], CallT(SVar("prettyprint-NaBL2-api-term"), [], []))
+     , SDefT($[prettyprint-[pp-name]-NaBL2Occurrence], [], [], CallT(SVar("prettyprint-NaBL2-api-term"), [], []))
      ]
+
+rules
+
+  roccs-strategy-name = !$[nabl2--transform-occurrences]
+
+  rule-to-occurrences-str:
+    CGenMatchRule(_, pattern-match, _, _, clause*) ->
+      RDefT(<roccs-strategy-name>, [], [],
+           Rule(AnnoList(pattern-match', [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
+    where
+      pattern-match' := <try(?As(_, <id>))> pattern-match;
+      occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
+      <not(?[])> occ*;
+      pattern-build := <alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match'
+
+  occ-to-occ-build:
+    Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
+      Term |[ Occurrence(Namespace(~nspace), ~v, <nabl2--occurrence-index-of(|<nabl2--get-ast-index> ~t)> ~t) ]|
+    where
+      nspace := Str(nspace-str)

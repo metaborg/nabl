@@ -8,8 +8,8 @@ import org.metaborg.meta.nabl2.relations.IRelation;
 import org.metaborg.meta.nabl2.relations.RelationDescription;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.terms.Relation;
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.meta.nabl2.util.collections.IRelation2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
@@ -194,49 +194,6 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
         public static <T> IVariantRelation.Transient<T> of(VariantRelationDescription<T> description) {
             return new VariantRelation.Transient<>(description,
                     Relation.Transient.of(description.relationDescription()));
-        }
-
-    }
-
-
-    public static <T> IVariantRelation.Transient<T> extend(IVariantRelation.Transient<T> rel1, IVariantRelation<T> rel2)
-            throws RelationException {
-        return new Extension<>(rel1, rel2);
-    }
-
-    private static class Extension<T> extends VariantRelation<T> implements IVariantRelation.Transient<T> {
-
-        private final IVariantRelation.Transient<T> rel1;
-        private final IRelation.Transient<T> baseRelation;
-
-        protected Extension(IVariantRelation.Transient<T> rel1, IVariantRelation<T> rel2) throws RelationException {
-            this.rel1 = rel1;
-            this.baseRelation = Relation.extend(rel1, rel2);
-        }
-
-        @Override protected IRelation<T> baseRelation() {
-            return baseRelation;
-        }
-
-        public RelationDescription getDescription() {
-            return rel1.getDescription();
-        }
-
-        @Override public Iterable<IVariantMatcher<T>> getVariantMatchers() {
-            return rel1.getVariantMatchers();
-        }
-
-        @Override public IRelation2<T, T> entries() {
-            return baseRelation.entries();
-        }
-
-        @Override public boolean add(T t1, T t2) throws RelationException {
-            canAddOrThrow(t1, t2);
-            return baseRelation.add(t1, t2);
-        }
-
-        @Override public IVariantRelation.Immutable<T> freeze() {
-            return rel1.freeze();
         }
 
     }

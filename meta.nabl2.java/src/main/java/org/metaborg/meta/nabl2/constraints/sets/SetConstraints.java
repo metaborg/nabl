@@ -1,12 +1,13 @@
 package org.metaborg.meta.nabl2.constraints.sets;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.sets.SetTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class SetConstraints {
 
@@ -33,31 +34,31 @@ public final class SetConstraints {
     public static ITerm build(ISetConstraint constraint) {
         return constraint.match(ISetConstraint.Cases.<ITerm>of(
             // @formatter:off
-            subseteq -> TB.newAppl(C_SUBSET_EQ, subseteq.getLeft(), SetTerms.buildProjection(subseteq.getProjection()),
+            subseteq -> B.newAppl(C_SUBSET_EQ, subseteq.getLeft(), SetTerms.buildProjection(subseteq.getProjection()),
                                    subseteq.getRight(), MessageInfo.build(subseteq.getMessageInfo())),
-            distinct -> TB.newAppl(C_DISTINCT, SetTerms.buildProjection(distinct.getProjection()), distinct.getSet(),
+            distinct -> B.newAppl(C_DISTINCT, SetTerms.buildProjection(distinct.getProjection()), distinct.getSet(),
                                    MessageInfo.build(distinct.getMessageInfo())),
-            eval -> TB.newAppl(C_EVAL_SET, eval.getResult(), eval.getSet(), MessageInfo.build(eval.getMessageInfo()))
+            eval -> B.newAppl(C_EVAL_SET, eval.getResult(), eval.getSet(), MessageInfo.build(eval.getMessageInfo()))
             // @formatter:on
         ));
     }
 
-    public static ISetConstraint substitute(ISetConstraint constraint, ISubstitution.Immutable unifier) {
+    public static ISetConstraint substitute(ISetConstraint constraint, IUnifier unifier) {
         return constraint.match(ISetConstraint.Cases.of(
             // @formatter:off
             subseteq -> ImmutableCSubsetEq.of(
-                            unifier.find(subseteq.getLeft()),
-                            unifier.find(subseteq.getRight()),
+                            unifier.findRecursive(subseteq.getLeft()),
+                            unifier.findRecursive(subseteq.getRight()),
                             subseteq.getProjection(),
-                            subseteq.getMessageInfo().apply(unifier::find)),
+                            subseteq.getMessageInfo().apply(unifier::findRecursive)),
             distinct -> ImmutableCDistinct.of(
-                            unifier.find(distinct.getSet()),
+                            unifier.findRecursive(distinct.getSet()),
                             distinct.getProjection(),
-                            distinct.getMessageInfo().apply(unifier::find)),
+                            distinct.getMessageInfo().apply(unifier::findRecursive)),
             eval -> ImmutableCEvalSet.of(
-                            unifier.find(eval.getResult()),
-                            unifier.find(eval.getSet()),
-                            eval.getMessageInfo().apply(unifier::find))
+                            unifier.findRecursive(eval.getResult()),
+                            unifier.findRecursive(eval.getSet()),
+                            eval.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

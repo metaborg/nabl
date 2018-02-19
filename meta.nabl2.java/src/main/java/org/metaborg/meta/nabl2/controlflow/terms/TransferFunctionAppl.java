@@ -1,11 +1,12 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Arrays;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.ListTermIterator;
+import org.metaborg.meta.nabl2.terms.build.ListTermIterator;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.Iterators;
 

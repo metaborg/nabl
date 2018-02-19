@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -17,10 +20,9 @@ import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
-import org.metaborg.meta.nabl2.unification.Substitution;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.PersistentUnifier;
+import org.metaborg.meta.nabl2.terms.unification.UnificationException;
 
 import com.google.common.collect.Lists;
 
@@ -49,9 +51,15 @@ public class BaseComponent extends ASolver {
     }
 
     private SolveResult solve(CExists constraint) {
-        ISubstitution.Transient tsubst = Substitution.Transient.of();
-        constraint.getEVars().forEach(var -> tsubst.put(var, TB.newVar(var.getResource(), fresh(var.getName()))));
-        ISubstitution.Immutable subst = tsubst.freeze();
+        final IUnifier.Transient tsubst = PersistentUnifier.Transient.of();
+        constraint.getEVars().forEach(var -> {
+            try {
+                tsubst.unify(var, B.newVar(var.getResource(), fresh(var.getName())));
+            } catch(UnificationException e) {
+                throw new IllegalArgumentException("Evars should be distinct.");
+            }
+        });
+        final IUnifier.Immutable subst = tsubst.freeze();
         return SolveResult.constraints(Constraints.substitute(constraint.getConstraint(), subst));
     }
 
@@ -64,7 +72,7 @@ public class BaseComponent extends ASolver {
     }
 
     private Scope newScope(ITerm term) {
-        return M.var(v -> ImmutableScope.of(v.getResource(), fresh(v.getName()))).match(term)
+        return M.var(v -> ImmutableScope.of(v.getResource(), fresh(v.getName()))).match(term, unifier())
                 .orElseGet(() -> ImmutableScope.of("", fresh("s")));
     }
 

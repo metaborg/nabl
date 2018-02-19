@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -8,8 +10,7 @@ import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Multiset;
@@ -93,12 +94,12 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
     // static
 
     public static IMatcher<OccurrenceIndex> matcher() {
-        return M.cases(
-            // @formatter:off
+        return M.preserveAttachments(M.cases(
+        // @formatter:off
             M.term(TermIndex.matcher(), (t, i) -> new OccurrenceIndex(i.getResource(), i)),
             M.term(Scope.matcher(), (t, s) -> new OccurrenceIndex(s.getResource(), s))
             // @formatter:on
-        );
+        ));
 
     }
 

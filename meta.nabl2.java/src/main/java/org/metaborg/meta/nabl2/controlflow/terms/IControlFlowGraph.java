@@ -5,11 +5,11 @@ import java.util.List;
 
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.util.Tuple2;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 public interface IControlFlowGraph<N extends ICFGNode> {
 

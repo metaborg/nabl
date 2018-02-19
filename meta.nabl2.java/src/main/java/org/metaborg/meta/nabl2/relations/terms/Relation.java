@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.relations.terms;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -14,9 +13,9 @@ import org.metaborg.meta.nabl2.relations.RelationDescription.Transitivity;
 import org.metaborg.meta.nabl2.relations.RelationException;
 import org.metaborg.meta.nabl2.relations.SymmetryException;
 import org.metaborg.meta.nabl2.relations.TransitivityException;
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.meta.nabl2.util.collections.HashTrieRelation2;
 import org.metaborg.meta.nabl2.util.collections.IRelation2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -118,24 +117,26 @@ public abstract class Relation<T> implements IRelation<T> {
 
 
     protected void canAddOrThrow(T t1, T t2) throws RelationException {
-        if(getDescription().getReflexivity().equals(Reflexivity.IRREFLEXIVE) && t1.equals(t2)) {
-            throw new ReflexivityException("Adding <" + t1 + "," + t2 + "> violates irreflexivity");
-        }
-        if(getDescription().getSymmetry().equals(Symmetry.ANTI_SYMMETRIC) && contains(t2, t1)) {
-            throw new SymmetryException("Adding <" + t1 + "," + t2 + "> violates anti-symmetry");
-        }
-        if(getDescription().getTransitivity().equals(Transitivity.ANTI_TRANSITIVE)) {
-            for(T t : smaller(t2)) {
-                if(contains(t1, t)) {
-                    throw new TransitivityException("Adding <" + t1 + "," + t2 + "> violates anti-transitivity");
+        if(t1.equals(t2)) {
+            if(getDescription().getReflexivity().equals(Reflexivity.IRREFLEXIVE)) {
+                throw new ReflexivityException("Adding <" + t1 + "," + t2 + "> violates irreflexivity");
+            }
+        } else {
+            if(getDescription().getSymmetry().equals(Symmetry.ANTI_SYMMETRIC) && contains(t2, t1)) {
+                throw new SymmetryException("Adding <" + t1 + "," + t2 + "> violates anti-symmetry");
+            }
+            if(getDescription().getTransitivity().equals(Transitivity.ANTI_TRANSITIVE)) {
+                for(T t : smaller(t2)) {
+                    if(contains(t1, t)) {
+                        throw new TransitivityException("Adding <" + t1 + "," + t2 + "> violates anti-transitivity");
+                    }
+                }
+                for(T t : larger(t1)) {
+                    if(contains(t, t2)) {
+                        throw new TransitivityException("Adding <" + t1 + "," + t2 + "> violates anti-transitivity");
+                    }
                 }
             }
-            for(T t : larger(t1)) {
-                if(contains(t, t2)) {
-                    throw new TransitivityException("Adding <" + t1 + "," + t2 + "> violates anti-transitivity");
-                }
-            }
-
         }
     }
 
@@ -217,7 +218,7 @@ public abstract class Relation<T> implements IRelation<T> {
                 return false;
             return true;
         }
-    
+
     }
 
 
@@ -251,73 +252,6 @@ public abstract class Relation<T> implements IRelation<T> {
 
         public static <T> IRelation.Transient<T> of(RelationDescription description) {
             return new Relation.Transient<>(description, HashTrieRelation2.Transient.of());
-        }
-
-    }
-
-
-    public static <T> IRelation.Transient<T> extend(IRelation.Transient<T> rel1, IRelation<T> rel2)
-            throws RelationException {
-        return new Extension<>(rel1, rel2);
-    }
-
-    public static class Extension<T> extends Relation<T> implements IRelation.Transient<T> {
-
-        private final IRelation.Transient<T> rel1;
-        private final IRelation<T> rel2;
-
-        protected Extension(IRelation.Transient<T> rel1, IRelation<T> rel2) throws RelationException {
-            this.rel1 = rel1;
-            this.rel2 = rel2;
-            check();
-        }
-
-        private void check() throws RelationException {
-            if(!rel1.getDescription().equals(rel2.getDescription())) {
-                throw new IllegalArgumentException("Relation descriptors must be equal.");
-            }
-            if(getDescription().getSymmetry().equals(Symmetry.ANTI_SYMMETRIC)) {
-                for(Map.Entry<T, T> entry : rel1.entries().entrySet()) {
-                    final T t1 = entry.getKey();
-                    final T t2 = entry.getValue();
-                    if(rel2.contains(t2, t1)) {
-                        throw new SymmetryException("<" + t1 + "," + t2 + "> violates anti-symmetry");
-                    }
-                }
-            }
-            if(getDescription().getTransitivity().equals(Transitivity.ANTI_TRANSITIVE)) {
-                for(Map.Entry<T, T> entry : rel1.entries().entrySet()) {
-                    final T t1 = entry.getKey();
-                    final T t2 = entry.getValue();
-                    for(T t : rel1.smaller(t2)) {
-                        if(rel2.contains(t1, t)) {
-                            throw new TransitivityException("<" + t1 + "," + t2 + "> violates anti-transitivity");
-                        }
-                    }
-                    for(T t : rel1.larger(t1)) {
-                        if(rel2.contains(t, t2)) {
-                            throw new TransitivityException("<" + t1 + "," + t2 + "> violates anti-transitivity");
-                        }
-                    }
-                }
-            }
-        }
-
-        public RelationDescription getDescription() {
-            return rel1.getDescription();
-        }
-
-        @Override public IRelation2<T, T> entries() {
-            return HashTrieRelation2.union(rel1.entries(), rel2.entries());
-        }
-
-        public boolean add(T t1, T t2) throws RelationException {
-            canAddOrThrow(t1, t2);
-            return rel1.add(t1, t2);
-        }
-
-        public IRelation.Immutable<T> freeze() {
-            return rel1.freeze();
         }
 
     }

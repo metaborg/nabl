@@ -2,7 +2,7 @@ package org.metaborg.meta.nabl2.util.collections;
 
 import java.util.Map;
 
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 
 import com.google.common.annotations.Beta;
 

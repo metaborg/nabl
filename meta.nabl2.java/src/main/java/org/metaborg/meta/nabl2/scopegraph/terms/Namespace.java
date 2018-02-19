@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.scopegraph.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 
 import org.immutables.serial.Serial;
@@ -7,10 +10,8 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.scopegraph.INamespace;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.AbstractApplTerm;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableList;
 
@@ -32,7 +33,7 @@ public abstract class Namespace extends AbstractApplTerm implements INamespace, 
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) TB.newString(getName()));
+        return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) B.newString(getName()));
     }
 
     public static IMatcher<Namespace> matcher() {

@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -26,7 +28,6 @@ import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.M;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
 
@@ -88,13 +89,13 @@ public class RelationComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     public Optional<SolveResult> solve(CBuildRelation c) {
-        final ITerm left = find(c.getLeft());
-        final ITerm right = find(c.getRight());
+        final ITerm left = unifier().findRecursive(c.getLeft());
+        final ITerm right = unifier().findRecursive(c.getRight());
         if(!(left.isGround() && right.isGround())) {
             return Optional.empty();
         }
         return c.getRelation().match(IRelationName.Cases.of(
-            // @formatter:off
+        // @formatter:off
             name -> {
                 try {
                     relation(name).add(left, right);
@@ -112,13 +113,13 @@ public class RelationComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(CCheckRelation c) {
-        final ITerm left = find(c.getLeft());
-        final ITerm right = find(c.getRight());
+        final ITerm left = unifier().findRecursive(c.getLeft());
+        final ITerm right = unifier().findRecursive(c.getRight());
         if(!(left.isGround() && right.isGround())) {
             return Optional.empty();
         }
         return c.getRelation().match(IRelationName.Cases.of(
-            // @formatter:off
+        // @formatter:off
             name -> {
                 if(!isComplete.test(name)) {
                     return Optional.empty();
@@ -132,7 +133,7 @@ public class RelationComponent extends ASolver {
             extName -> {
                 final ITerm msginfo = MessageInfo.build(c.getMessageInfo());
                 return callExternal(extName, left, right, msginfo).map(csTerm -> {
-                    return Constraints.matchConstraintOrList().match(csTerm)
+                    return Constraints.matchConstraintOrList().match(csTerm, unifier())
                             .map(SolveResult::constraints).orElseThrow(() -> new IllegalArgumentException("Expected list of constraints, got " + csTerm));
                 });
             }
@@ -141,12 +142,12 @@ public class RelationComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(CEvalFunction c) {
-        final ITerm term = find(c.getTerm());
+        final ITerm term = unifier().findRecursive(c.getTerm());
         if(!term.isGround()) {
             return Optional.empty();
         }
         return c.getFunction().match(IFunctionName.Cases.of(
-            // @formatter:off
+        // @formatter:off
             name -> {
                 final PartialFunction1<ITerm, ITerm> fun = functions.get(name);
                 if(fun == null) {
@@ -174,6 +175,9 @@ public class RelationComponent extends ASolver {
     }
 
     private Optional<ITerm> lub(String name, ITerm left, ITerm right) {
+        if(!(left.isGround() && right.isGround())) {
+            throw new IllegalArgumentException("lub arguments need to be ground.");
+        }
         if(!isComplete.test(name)) {
             return Optional.empty();
         }
@@ -183,6 +187,9 @@ public class RelationComponent extends ASolver {
     private Optional<ITerm> glb(String name, ITerm left, ITerm right) {
         if(!isComplete.test(name)) {
             return Optional.empty();
+        }
+        if(!(left.isGround() && right.isGround())) {
+            throw new IllegalArgumentException("lub arguments need to be ground.");
         }
         return relation(name).greatestLowerBound(left, right);
     }

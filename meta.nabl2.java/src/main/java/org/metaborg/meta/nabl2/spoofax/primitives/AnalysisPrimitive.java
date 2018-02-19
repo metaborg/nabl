@@ -53,9 +53,9 @@ public abstract class AnalysisPrimitive extends ScopeGraphContextPrimitive {
     public Optional<? extends IStrategoTerm> call(IScopeGraphUnit unit, IStrategoTerm sterm, List<IStrategoTerm> sterms,
             ITermFactory factory) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
-        final List<ITerm> terms = sterms.stream().skip(1).map(StrategoTerms::fromStratego)
+        final List<ITerm> terms = sterms.stream().skip(1).map(strategoTerms::fromStratego)
                 .map(ConstraintTerms::specialize).collect(Collectors.toList());
-        final ITerm term = ConstraintTerms.specialize(StrategoTerms.fromStratego(sterm));
+        final ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
         Optional<? extends ITerm> result = call(unit, term, terms);
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }

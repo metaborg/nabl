@@ -8,7 +8,7 @@ import org.metaborg.meta.nabl2.scopegraph.IOccurrence;
 import org.metaborg.meta.nabl2.scopegraph.IScope;
 import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 
 import io.usethesource.capsule.Set;
 

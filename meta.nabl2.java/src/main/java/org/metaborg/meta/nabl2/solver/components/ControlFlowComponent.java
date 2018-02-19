@@ -6,25 +6,14 @@ import org.metaborg.meta.nabl2.constraints.controlflow.CFDirectEdge;
 import org.metaborg.meta.nabl2.constraints.controlflow.IControlFlowConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
 import org.metaborg.meta.nabl2.solver.ASolver;
 import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
-import org.metaborg.meta.nabl2.terms.IApplTerm;
-import org.metaborg.meta.nabl2.terms.IIntTerm;
-import org.metaborg.meta.nabl2.terms.IListTerm;
-import org.metaborg.meta.nabl2.terms.IStringTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.ListTermIterator;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
-
-import com.google.common.collect.Iterators;
-
-import org.metaborg.meta.nabl2.controlflow.terms.TransferFunctionAppl;
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
-import org.metaborg.meta.nabl2.controlflow.terms.ControlFlowGraph;
 
 public class ControlFlowComponent extends ASolver {
     private final ControlFlowGraph<CFGNode> controlFlowGraph;
@@ -56,8 +45,8 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<CFGNode> findCFGNode(ITerm cfgNodeTerm) {
-        return Optional.of(find(cfgNodeTerm)).filter(ITerm::isGround).map(
-                st -> CFGNode.matcher().match(st).orElseThrow(() -> new TypeException("Expected a cfg node, got " + st)));
+        return Optional.of(unifier().findRecursive(cfgNodeTerm)).filter(ITerm::isGround).map(
+                st -> CFGNode.matcher().match(st, unifier()).orElseThrow(() -> new TypeException("Expected a cfg node, got " + st)));
     }
 
     public SeedResult seed(IControlFlowGraph<CFGNode> solution, IMessageInfo message) {

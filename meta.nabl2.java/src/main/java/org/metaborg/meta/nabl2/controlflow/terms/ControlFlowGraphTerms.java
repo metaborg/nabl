@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -7,8 +9,7 @@ import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 
 public final class ControlFlowGraphTerms {
 
@@ -27,16 +28,16 @@ public final class ControlFlowGraphTerms {
         List<ITerm> ends = controlFlowGraph.getEndNodes().stream().collect(Collectors.toList());
         List<ITerm> properties = controlFlowGraph.getProperties().entrySet().stream().map(this::buildProperty)
                 .collect(Collectors.toList());
-        return TB.newAppl("ControlFlowGraph", (ITerm) TB.newList(directEdges), (ITerm) TB.newList(starts),
-                (ITerm) TB.newList(ends), (ITerm) TB.newList(properties));
+        return B.newAppl("ControlFlowGraph", (ITerm) B.newList(directEdges), (ITerm) B.newList(starts),
+                (ITerm) B.newList(ends), (ITerm) B.newList(properties));
     }
 
     private ITerm buildDirectEdge(Map.Entry<CFGNode, CFGNode> directEdge) {
-        return TB.newAppl("DirectEdge", directEdge.getKey(), directEdge.getValue());
+        return B.newAppl("DirectEdge", directEdge.getKey(), directEdge.getValue());
     }
 
     private ITerm buildProperty(Map.Entry<Tuple2<CFGNode, String>, ITerm> directEdge) {
-        return TB.newAppl("DFProperty", directEdge.getKey()._1(), TB.newString(directEdge.getKey()._2()), directEdge.getValue());
+        return B.newAppl("DFProperty", directEdge.getKey()._1(), B.newString(directEdge.getKey()._2()), directEdge.getValue());
     }
 
 

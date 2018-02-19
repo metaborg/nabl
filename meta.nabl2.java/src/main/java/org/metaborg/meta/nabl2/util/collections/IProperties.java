@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.metaborg.meta.nabl2.util.tuples.Tuple3;
+import org.metaborg.meta.nabl2.util.Tuple3;
 import org.metaborg.util.functions.Function1;
 
 public interface IProperties<I, K, V> {

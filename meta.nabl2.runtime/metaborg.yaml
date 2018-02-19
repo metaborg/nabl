@@ -38,11 +38,10 @@ exports:
   directory: syntax
   includes:
   - "nabl2/**/*.sdf3"
-- language: SDF
+- language: ATerm
   directory: src-gen/syntax
   includes:
-  - "nabl2/**/*.sdf"
-  - "completion/nabl2/**/*.sdf"
+  - "**/*.aterm"
 - language: ds
   directory: src-gen
   includes:
@@ -67,12 +66,15 @@ exports:
   ## DynSem
 - language: ds
   directory: trans
-  includes: "nabl2/**/*.ds"
+  includes:
+  - "nabl2/**/*.ds"
 
 language:
   sdf:
-    enabled: false
+    sdf2table: java
     pretty-print: NaBL2
+    placeholder:
+      prefix: "$"
   stratego:
     format: ctree
     args:

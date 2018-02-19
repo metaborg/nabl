@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.solver.components;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,8 +26,7 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.matching.Transform.T;
 import org.metaborg.util.functions.PartialFunction2;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.unit.Unit;
@@ -57,14 +58,14 @@ public class PolymorphismComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<SolveResult> solve(CGeneralize gen) {
-        final ITerm declTerm = find(gen.getDeclaration());
+        final ITerm declTerm = unifier().findRecursive(gen.getDeclaration());
         if(!declTerm.isGround()) {
             return Optional.empty();
         }
-        final Occurrence decl = Occurrence.matcher().match(declTerm)
+        final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + gen));
 
-        final ITerm type = find(gen.getType());
+        final ITerm type = gen.getType();
         if(!isGenSafe.test(type)) {
             return Optional.empty();
         }
@@ -80,20 +81,20 @@ public class PolymorphismComponent extends ASolver {
         }
 
         SolveResult result = SolveResult.constraints(
-                // @formatter:off
-                ImmutableCDeclProperty.of(decl, DeclProperties.TYPE_KEY, scheme, 0, gen.getMessageInfo()),
-                ImmutableCEqual.of(gen.getGenVars(), TB.newList(subst.keySet()), gen.getMessageInfo())
-                // @formatter:on
+        // @formatter:off
+            ImmutableCDeclProperty.of(decl, DeclProperties.TYPE_KEY, scheme, 0, gen.getMessageInfo()),
+            ImmutableCEqual.of(gen.getGenVars(), B.newList(subst.keySet()), gen.getMessageInfo())
+            // @formatter:on
         );
         return Optional.of(result);
     }
 
     private Optional<SolveResult> solve(CInstantiate inst) {
-        final ITerm declTerm = find(inst.getDeclaration());
+        final ITerm declTerm = unifier().findRecursive(inst.getDeclaration());
         if(!declTerm.isGround()) {
             return Optional.empty();
         }
-        final Occurrence decl = Occurrence.matcher().match(declTerm)
+        final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + inst));
 
         if(!isInstSafe.test(decl)) {
@@ -105,13 +106,13 @@ public class PolymorphismComponent extends ASolver {
             return Optional.empty();
         }
 
-        final Optional<Forall> forall = Forall.matcher().match(schemeTerm.get());
+        final Optional<Forall> forall = Forall.matcher().match(schemeTerm.get(), unifier());
         final ITerm type;
         final Map<TypeVar, ITermVar> subst = Maps.newLinkedHashMap(); // linked map to preserve key order
         if(forall.isPresent()) {
             final Forall scheme = forall.get();
             scheme.getTypeVars().stream().forEach(v -> {
-                subst.put(v, TB.newVar("", fresh(v.getName())));
+                subst.put(v, B.newVar("", fresh(v.getName())));
             });
             type = subst(scheme.getType(), subst);
         } else {
@@ -119,11 +120,11 @@ public class PolymorphismComponent extends ASolver {
         }
 
         final IConstraint constraint =
-                // @formatter:off
+        // @formatter:off
                 ImmutableCExists.of(subst.values(),
                         ImmutableCConj.of(
                                 ImmutableCEqual.of(inst.getType(), type, inst.getMessageInfo()),
-                                ImmutableCEqual.of(inst.getInstVars(), TB.newList(subst.keySet()), inst.getMessageInfo()),
+                                ImmutableCEqual.of(inst.getInstVars(), B.newList(subst.keySet()), inst.getMessageInfo()),
                                 MessageInfo.empty()
                         ),
                         inst.getMessageInfo());
@@ -133,7 +134,7 @@ public class PolymorphismComponent extends ASolver {
     }
 
     private ITerm subst(ITerm term, Map<? extends ITerm, ? extends ITerm> subst) {
-        return M.sometd(
+        return T.sometd(
         // @formatter:off
             t -> subst.containsKey(t) ? Optional.of(subst.get(t)) : Optional.empty()
             // @formatter:on

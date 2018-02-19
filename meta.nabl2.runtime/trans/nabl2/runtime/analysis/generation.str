@@ -67,8 +67,8 @@ rules
   // signatures of the generated rules
   nabl2--generate-constraint-init-rule = fail
   nabl2--generate-constraint-default-rule(|) = fail
-  
   nabl2--generate-constraint-default-cfg-rule(|) = fail
+  nabl2--transform-occurrences = fail
 
   // error throwing wrappers for recursive invocations
   nabl2--generate-constraint(s|name) =

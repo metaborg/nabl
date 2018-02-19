@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.constraints.poly;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
@@ -8,7 +10,6 @@ import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
-import org.metaborg.meta.nabl2.terms.generic.TB;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -39,7 +40,7 @@ public abstract class CGeneralize implements IPolyConstraint {
     }
 
     @Override public IMessageContent pp() {
-        return MessageContent.builder().append(getDeclaration()).append(" genOf(").append(TB.newList((ITerm) getGenVars()))
+        return MessageContent.builder().append(getDeclaration()).append(" genOf(").append(B.newList((ITerm) getGenVars()))
                 .append(") ").append(getType()).build();
     }
 

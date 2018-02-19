@@ -43,10 +43,10 @@ import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
-import org.metaborg.meta.nabl2.unification.Unifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
@@ -73,11 +73,11 @@ public class BaseSolver {
             IProgress progress) throws SolverException, InterruptedException {
 
         // shared
-        final IUnifier.Transient unifier = Unifier.Transient.of();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
 
         // solver components
-        final SolverCore core = new SolverCore(initial.config(), unifier::find, fresh, callExternal);
+        final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -131,12 +131,11 @@ public class BaseSolver {
     public ISolution merge(ISolution initial, Iterable<? extends ISolution> solutions,
             Predicate2<Scope, Label> isEdgeComplete, IMessageInfo message) throws InterruptedException {
 
-        final IUnifier.Transient unifier = initial.unifier().melt();
+        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution.Transient<Scope, Label, Occurrence> nameResolution =
-                initial.nameResolution().melt(scopeGraph, isEdgeComplete);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution = initial.nameResolution(isEdgeComplete);
 
-        final SolverCore core = new SolverCore(initial.config(), unifier::find, n -> {
+        final SolverCore core = new SolverCore(initial.config(), unifier, n -> {
             throw new IllegalStateException("Fresh is not available when merging.");
         }, callExternal);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
@@ -167,9 +166,10 @@ public class BaseSolver {
         ISymbolicConstraints symbolicResult = symSolver.finish();
         IControlFlowGraph<CFGNode> cfg = cfgSolver.getControlFlowGraph();
 
-        return ImmutableSolution.of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.nameResolution(),
-                nameResult.declProperties(), relationResult, unifyResult, symbolicResult, cfg, messages.freeze(),
-                constraints);
+        return ImmutableSolution
+                .of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.declProperties(), relationResult,
+                    unifyResult, symbolicResult, cfg, messages.freeze(), constraints)
+                .withNameResolutionCache(nameResult.resolutionCache());
     }
 
     protected boolean seed(SeedResult result, IMessages.Transient messages, Set<IConstraint> constraints) {
@@ -186,6 +186,8 @@ public class BaseSolver {
         @Value.Parameter public abstract SolverConfig config();
 
         @Value.Parameter public abstract ImmutableSet<IConstraint> constraints();
+
+        @Value.Parameter public abstract IUnifier.Immutable unifier();
 
     }
 

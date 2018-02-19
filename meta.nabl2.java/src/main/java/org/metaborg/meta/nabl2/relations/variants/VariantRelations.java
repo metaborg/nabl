@@ -2,8 +2,6 @@ package org.metaborg.meta.nabl2.relations.variants;
 
 import java.util.Map;
 
-import org.metaborg.meta.nabl2.relations.RelationException;
-
 import com.google.common.collect.ImmutableMap;
 
 public class VariantRelations {
@@ -24,16 +22,6 @@ public class VariantRelations {
             transformed.put(entry.getKey(), entry.getValue().freeze());
         }
         return transformed.build();
-    }
-
-    public static <T> Map<String, IVariantRelation.Transient<T>> extend(
-            Map<String, IVariantRelation.Transient<T>> relations1,
-            Map<String, ? extends IVariantRelation<T>> relations2) throws RelationException {
-        ImmutableMap.Builder<String, IVariantRelation.Transient<T>> relations = ImmutableMap.builder();
-        for(Map.Entry<String, IVariantRelation.Transient<T>> entry : relations1.entrySet()) {
-            relations.put(entry.getKey(), VariantRelation.extend(entry.getValue(), relations2.get(entry.getKey())));
-        }
-        return relations.build();
     }
 
     public static <T> Map<String, IVariantRelation.Immutable<T>>

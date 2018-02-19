@@ -1,5 +1,8 @@
 package org.metaborg.meta.nabl2.stratego;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -7,10 +10,8 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.AbstractApplTerm;
-import org.metaborg.meta.nabl2.terms.generic.TB;
+import org.metaborg.meta.nabl2.terms.build.AbstractApplTerm;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -34,7 +35,7 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(TB.newString(getResource()), TB.newInt(getId()));
+        return ImmutableList.of(B.newString(getResource()), B.newInt(getId()));
     }
 
     public static IMatcher<TermIndex> matcher() {

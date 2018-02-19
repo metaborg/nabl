@@ -1,5 +1,7 @@
 package org.metaborg.meta.nabl2.spoofax.analysis;
 
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -9,8 +11,7 @@ import org.metaborg.meta.nabl2.constraints.Constraints;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.stratego.ConstraintTerms;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 
 import com.google.common.collect.ImmutableSet;
 

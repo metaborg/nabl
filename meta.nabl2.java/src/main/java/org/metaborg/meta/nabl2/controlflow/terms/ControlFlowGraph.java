@@ -14,8 +14,8 @@ import java.util.Optional;
 
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.util.tuples.ImmutableTuple2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
+import org.metaborg.meta.nabl2.util.ImmutableTuple2;
+import org.metaborg.meta.nabl2.util.Tuple2;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.Map;

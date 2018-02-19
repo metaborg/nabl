@@ -1,11 +1,12 @@
 package org.metaborg.meta.nabl2.constraints.sym;
 
+import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
+import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
+
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.terms.Terms.IMatcher;
-import org.metaborg.meta.nabl2.terms.Terms.M;
-import org.metaborg.meta.nabl2.terms.generic.TB;
-import org.metaborg.meta.nabl2.unification.ISubstitution;
+import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 
 public final class SymbolicConstraints {
 
@@ -28,21 +29,21 @@ public final class SymbolicConstraints {
     public static ITerm build(ISymbolicConstraint constraint) {
         return constraint.match(ISymbolicConstraint.Cases.<ITerm>of(
             // @formatter:off
-            fact -> TB.newAppl(C_FACT, fact.getFact(), MessageInfo.buildOnlyOriginTerm(fact.getMessageInfo())),
-            goal ->  TB.newAppl(C_GOAL, goal.getGoal(), MessageInfo.buildOnlyOriginTerm(goal.getMessageInfo()))
+            fact -> B.newAppl(C_FACT, fact.getFact(), MessageInfo.buildOnlyOriginTerm(fact.getMessageInfo())),
+            goal ->  B.newAppl(C_GOAL, goal.getGoal(), MessageInfo.buildOnlyOriginTerm(goal.getMessageInfo()))
             // @formatter:on
         ));
     }
 
-    public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, ISubstitution.Immutable unifier) {
+    public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, IUnifier unifier) {
         return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
             // @formatter:off
             fact -> ImmutableCFact.of(
-                        unifier.find(fact.getFact()),
-                        fact.getMessageInfo().apply(unifier::find)),
+                        unifier.findRecursive(fact.getFact()),
+                        fact.getMessageInfo().apply(unifier::findRecursive)),
             goal ->  ImmutableCGoal.of(
-                        unifier.find(goal.getGoal()),
-                        goal.getMessageInfo().apply(unifier::find))
+                        unifier.findRecursive(goal.getGoal()),
+                        goal.getMessageInfo().apply(unifier::findRecursive))
             // @formatter:on
         ));
     }

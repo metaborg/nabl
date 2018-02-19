@@ -3,8 +3,8 @@ package org.metaborg.meta.nabl2.relations;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.meta.nabl2.util.Tuple2;
 import org.metaborg.meta.nabl2.util.collections.IRelation2;
-import org.metaborg.meta.nabl2.util.tuples.Tuple2;
 
 import io.usethesource.capsule.Set;
 

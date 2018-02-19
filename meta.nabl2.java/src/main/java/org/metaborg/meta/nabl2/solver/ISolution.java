@@ -1,9 +1,11 @@
 package org.metaborg.meta.nabl2.solver;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -14,28 +16,31 @@ import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
-import org.metaborg.meta.nabl2.unification.IUnifier;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
+import org.metaborg.util.functions.Predicate2;
 
-import org.metaborg.meta.nabl2.controlflow.terms.IControlFlowGraph;
+public interface ISolution {
 
-public interface ISolution extends IPublicSolution {
-
-    @Override SolverConfig config();
+    SolverConfig config();
 
     IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
 
-    @Override IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+    IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    @Override IEsopNameResolution.Immutable<Scope, Label, Occurrence> nameResolution();
+    IEsopNameResolution<Scope, Label, Occurrence> nameResolution();
 
-    @Override IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
+    IEsopNameResolution<Scope, Label, Occurrence> nameResolution(Predicate2<Scope, Label> isEdgeComplete);
 
-    @Override Map<String, IVariantRelation.Immutable<ITerm>> relations();
+    Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>> nameResolutionCache();
 
-    @Override ISymbolicConstraints symbolic();
+    IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
+
+    Map<String, IVariantRelation.Immutable<ITerm>> relations();
+
+    ISymbolicConstraints symbolic();
     
-    @Override IControlFlowGraph<CFGNode> controlFlowGraph();
+    IControlFlowGraph<CFGNode> controlFlowGraph();
 
     IUnifier.Immutable unifier();
 

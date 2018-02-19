@@ -3,6 +3,7 @@ package org.metaborg.meta.nabl2.solver;
 import java.util.Optional;
 
 import org.metaborg.meta.nabl2.terms.ITerm;
+import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.time.AggregateTimer;
 
@@ -26,8 +27,8 @@ public abstract class ASolver {
         return core.config;
     }
 
-    protected ITerm find(ITerm term) {
-        return core.find.apply(term);
+    protected IUnifier unifier() {
+        return core.unifier.get();
     }
 
     protected String fresh(String base) {

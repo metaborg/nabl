@@ -50,6 +50,10 @@ signature
   constructors
     NaBL2 : ScopeGraph * NameResolution * DeclTypes -> NaBL2
  
+  arrows
+    initScope(Scope, ScopeEntry) :: NaBL2 --> Scope :: NaBL2
+    mkOccurrenceHavingIndex(String, Name, TermIndex) --> Occurrence
+    
 rules
 
   initNaBL2(t) --> nabl2_init(t)
@@ -64,19 +68,20 @@ rules // occurrences
     where Namespace(ns) => ns';
           nabl2_indexOf(t) => idx
 
-//  mkOccurrence(t, o):(Name * AST) --> Occurrence(ns,t,idx)
-//    where DefaultNamespace() => ns;
-//          nabl2_indexOf(o) => idx
-
   mkOccurrence(ns, t, o) /* :(String * Name * AST) */ --> Occurrence(ns',t,idx)
     where Namespace(ns) => ns';
           nabl2_indexOf(o) => idx
+
+  mkOccurrenceHavingIndex(ns, t, idx) --> Occurrence(ns', t, idx)
+    where Namespace(ns) => ns'
 
   namespaceOf(Occurrence(ns,_,_)) --> ns
 
   nameOf(Occurrence(_,n,_)) --> n
 
 rules // scope graph
+
+  initScope(s, se) :: NaBL2 NaBL2(G(ss, ds, rs), nr, dt) --> s :: NaBL2 NaBL2(G({s |--> se, ss}, ds, rs), nr, dt)
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- declsOf(s:Scope) --> ds
     where case ss[s?] of {
