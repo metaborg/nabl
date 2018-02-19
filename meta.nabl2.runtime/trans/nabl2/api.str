@@ -96,6 +96,8 @@ rules // ###### Custom analysis hooks ######
   nabl2-is-custom-analysis-info-enabled =
     nabl2--is-debug-custom-enabled
 
+  nabl2--transform-all-occurrences = bottomup(try(nabl2--transform-occurrences))
+
 rules // ###### Analysis results ######
 
   /**
