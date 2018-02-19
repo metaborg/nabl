@@ -127,7 +127,7 @@ context-free syntax
   ]
 
   CFGDirectEdge.DirectEdge = [[CFGNode] -> [CFGNode]]
-  CFGProperty.DFProperty = [[CFGNode].[PropertyId] := [FSData]]
+  CFGProperty.DFProperty = [[CFGNode].[AstPropertyId] := [FSData]]
   
   FSData.List = <[<{FSData ", "}+>]>
   FSData.Set = [{[{FSData ", "}+]}]
