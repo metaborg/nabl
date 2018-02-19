@@ -22,7 +22,8 @@ rules
     with
       rule-str* := <map(rule-to-str)> rule*;
       pp-str*   := <getfirst(?CGenInitRule(_,_,_));pp-rules <+ ![]> rule*;
-      occurrences-str* := <filter(rule-to-occurrences-str)> rule*
+      occurrences-str* := <rules-to-occurrences-str> rule*
+      
 
   rule-to-str:
     CGenInitRule(params,type,clause*)
@@ -208,6 +209,16 @@ rules
 rules
 
   roccs-strategy-name = !$[nabl2--transform-occurrences]
+  
+  roccs-strategy-all-name = !$[nabl2--transform-all-occurrences]
+  
+  rules-to-occurrences-str:
+    rule* -> [all-rule-str, occurrences-str*]
+    where
+      <is-list> rule*
+    with
+      all-rule-str := |[ ~id:<roccs-strategy-all-name> = bottomup(try(preserve-annos(~id:<roccs-strategy-name>))) ]|;
+      occurrences-str* := <filter(rule-to-occurrences-str)> rule*
   
   rule-to-occurrences-str:
     CGenMatchRule(_, pattern-match, _, _, clause*) ->
