@@ -5,6 +5,7 @@ imports
   libstrc
 
   signatures/nabl2/shared/constraints/-
+  signatures/nabl2/shared/common/-
  
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
