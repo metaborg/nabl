@@ -12,15 +12,22 @@ public interface IControlFlowConstraint extends IConstraint {
 
         T caseDirectEdge(CFDirectEdge<?> directEdge);
 
+        T caseTFAppl(CTFAppl tfAppl);
+
         static <T> Cases<T> of(
             // @formatter:off
-            Function1<CFDirectEdge<?>,T> onDirectEdge
+            Function1<CFDirectEdge<?>,T> onDirectEdge,
+            Function1<CTFAppl,T> onTFAppl
             // @formatter:on
         ) {
             return new Cases<T>() {
 
                 @Override public T caseDirectEdge(CFDirectEdge<?> directEdge) {
                     return onDirectEdge.apply(directEdge);
+                }
+
+                @Override public T caseTFAppl(CTFAppl tfAppl) {
+                    return onTFAppl.apply(tfAppl);
                 }
 
             };
@@ -34,15 +41,22 @@ public interface IControlFlowConstraint extends IConstraint {
 
         T caseDirectEdge(CFDirectEdge<?> directEdge) throws E;
 
+        T caseTFAppl(CTFAppl tfAppl) throws E;
+
         static <T, E extends Throwable> CheckedCases<T, E> of(
             // @formatter:off
-            CheckedFunction1<CFDirectEdge<?>,T,E> onDirectEdge
+            CheckedFunction1<CFDirectEdge<?>,T,E> onDirectEdge,
+            CheckedFunction1<CTFAppl,T,E> onTFAppl
             // @formatter:on
         ) {
             return new CheckedCases<T, E>() {
 
                 @Override public T caseDirectEdge(CFDirectEdge<?> directEdge) throws E {
                     return onDirectEdge.apply(directEdge);
+                }
+
+                @Override public T caseTFAppl(CTFAppl tfAppl) throws E {
+                    return onTFAppl.apply(tfAppl);
                 }
 
             };

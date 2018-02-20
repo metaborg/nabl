@@ -18,17 +18,21 @@ public abstract class FlowSpecSolution<N extends ICFGNode> implements IFlowSpecS
 
     @Override
     @Parameter
+    public abstract Map.Immutable<Tuple2<TermIndex, String>, TransferFunctionAppl> tfAppls();
+
+    @Override
+    @Parameter
     public abstract Map.Immutable<Tuple2<TermIndex, String>, ITerm> preProperties();
 
     @Override
     @Parameter
     public abstract Map.Immutable<Tuple2<TermIndex, String>, ITerm> postProperties();
 
-    public static <N extends ICFGNode> IFlowSpecSolution<N> of(ICompleteControlFlowGraph.Immutable<N> controlFlowGraph) {
-        return ImmutableFlowSpecSolution.of(controlFlowGraph, Map.Immutable.of(), Map.Immutable.of());
+    public static <N extends ICFGNode> IFlowSpecSolution<N> of(ICompleteControlFlowGraph.Immutable<N> controlFlowGraph, Map.Immutable<Tuple2<TermIndex, String>, TransferFunctionAppl> tfAppls) {
+        return ImmutableFlowSpecSolution.of(controlFlowGraph, tfAppls, Map.Immutable.of(), Map.Immutable.of());
     }
 
     public static <N extends ICFGNode> IFlowSpecSolution<N> of() {
-        return ImmutableFlowSpecSolution.of(ControlFlowGraph.<N>of().asCompleteControlFlowGraph(), Map.Immutable.of(), Map.Immutable.of());
+        return ImmutableFlowSpecSolution.of(ControlFlowGraph.<N>of().asCompleteControlFlowGraph(), Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
     }
 }

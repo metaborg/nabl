@@ -12,13 +12,13 @@ context-free syntax
   Constraint.CAstProperty =  [[TermIndex].[AstProperty] := [CTerm]]
 
   AstProperty.Property   = AstPropertyId
-  AstProperty.DFProperty = AstPropertyId {avoid}
   AstProperty.Type       = "type"
   AstProperty.Params     = "params"
-  AstProperty.CFGParams  = "cfgparams"
-  AstProperty.TF         = AstPropertyId
+
+  FSAstProperty.CFGParams  = "cfgparams"
+  FSConstraint.CTFAppl =  <<TermIndex>.<AstPropertyId>:<INT> := [<{CTerm ", "}*>]>
 
 lexical syntax
 
   AstPropertyId = PropertyId
-  AstPropertyId = "type" | "params" | "cfgparams" {reject}
+  AstPropertyId = "type" | "params" {reject}
