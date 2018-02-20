@@ -52,9 +52,28 @@ public class ControlFlowComponent extends ASolver {
         Optional<CFGNode> targetNode = findCFGNode(c.getTargetNode());
 
         return sourceNode.flatMap(sn -> targetNode.map(tn -> {
+            this.addCFGNode(sn);
+            this.addCFGNode(tn);
             this.cfg.edges().__insert(sn, tn);
             return SolveResult.empty();
         }));
+    }
+
+    private void addCFGNode(CFGNode node) {
+        switch (node.getKind()) {
+        case Artificial:
+            cfg.artificialNodes().__insert(node);
+            break;
+        case End:
+            cfg.endNodes().__insert(node);
+            break;
+        case Normal:
+            cfg.normalNodes().__insert(node);
+            break;
+        case Start:
+            cfg.startNodes().__insert(node);
+            break;
+        }
     }
 
     private Optional<SolveResult> solve(CTFAppl c) {
