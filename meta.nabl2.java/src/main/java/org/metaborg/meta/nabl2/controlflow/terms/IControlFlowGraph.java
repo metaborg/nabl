@@ -23,13 +23,13 @@ public interface IControlFlowGraph<N extends ICFGNode> extends IBasicControlFlow
             BinaryRelation.Transient<N, N> edges = edges().asTransient();
 
             for (N n : artificialNodes()) {
-                Set.Immutable<N> to = edges().get(n);
-                Set.Immutable<N> from = edges().inverse().get(n);
+                Set.Immutable<N> to = edges.get(n);
+                Set.Immutable<N> from = edges.inverse().get(n);
 
-                edges().__remove(n);
+                edges.__remove(n);
                 for (N f : from) {
-                    edges().__remove(f, n);
-                    edges().__insert(f, to);
+                    edges.__remove(f, n);
+                    edges.__insert(f, to);
                 }
             }
 

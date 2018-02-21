@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.Tuple2;
@@ -19,8 +18,8 @@ public final class ControlFlowGraphTerms {
     private static final String ESCAPE_MATCH = "\\\\$0";
     private static final String RECORD_RESERVED = "[\"{}|]";
     private final ICompleteControlFlowGraph<CFGNode> controlFlowGraph;
-    private final Immutable<Tuple2<TermIndex, String>, ITerm> preProperties;
-    private final Immutable<Tuple2<TermIndex, String>, ITerm> postProperties;
+    private final Immutable<Tuple2<CFGNode, String>, ITerm> preProperties;
+    private final Immutable<Tuple2<CFGNode, String>, ITerm> postProperties;
 
     private ControlFlowGraphTerms(IFlowSpecSolution<CFGNode> solution) {
         this.controlFlowGraph = solution.controlFlowGraph();
@@ -46,11 +45,11 @@ public final class ControlFlowGraphTerms {
         return B.newAppl("DirectEdge", directEdge.getKey(), directEdge.getValue());
     }
 
-    private ITerm buildPreProperty(Map.Entry<Tuple2<TermIndex, String>, ITerm> directEdge) {
+    private ITerm buildPreProperty(Map.Entry<Tuple2<CFGNode, String>, ITerm> directEdge) {
         return B.newAppl("DFProperty", B.newAppl("Pre", directEdge.getKey()._1()), B.newString(directEdge.getKey()._2()), directEdge.getValue());
     }
 
-    private ITerm buildPostProperty(Map.Entry<Tuple2<TermIndex, String>, ITerm> directEdge) {
+    private ITerm buildPostProperty(Map.Entry<Tuple2<CFGNode, String>, ITerm> directEdge) {
         return B.newAppl("DFProperty", B.newAppl("Post", directEdge.getKey()._1()), B.newString(directEdge.getKey()._2()), directEdge.getValue());
     }
 
@@ -77,14 +76,14 @@ public final class ControlFlowGraphTerms {
 
     private String nodeToDot(CFGNode node, Set<String> properties) {
         String props = properties.stream().map(prop -> propertyToDot(node, prop)).collect(Collectors.joining("|"));
-        return "\"" + node.toString() + "\" [ label = \"{" + (node.getName() + TermIndex.get(node).map(TermIndex::toString).orElse("")).replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "|" + props + "}\" ];\n";
+        return "\"" + node.toString() + "\" [ label = \"{" + (node.getName() + node.getIndex().toString()).replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "|" + props + "}\" ];\n";
     }
 
     // static interface
 
     private String propertyToDot(CFGNode node, String prop) {
-        ITerm prePropVal = preProperties.get(ImmutableTuple2.of(TermIndex.get(node).get(), prop));
-        ITerm postPropVal = postProperties.get(ImmutableTuple2.of(TermIndex.get(node).get(), prop));
+        ITerm prePropVal = preProperties.get(ImmutableTuple2.of(node.getIndex(), prop));
+        ITerm postPropVal = postProperties.get(ImmutableTuple2.of(node.getIndex(), prop));
         return "{" + prop.replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "|" + prePropVal.toString().replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + " -> " + postPropVal.toString().replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "}";
     }
 
