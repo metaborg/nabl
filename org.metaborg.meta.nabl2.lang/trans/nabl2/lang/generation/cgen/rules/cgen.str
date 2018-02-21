@@ -6,11 +6,11 @@ imports
 
   signatures/nabl2/shared/constraints/-
   signatures/nabl2/shared/common/-
- 
+
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
   signatures/nabl2/lang/signatures/-
-  
+
   nabl2/lang/generation/cgen/-
   nabl2/lang/generation/-
   nabl2/lang/util/stratego
@@ -51,7 +51,7 @@ rules
         With(constraint-str),
         With(debug-str)
       ]
- 
+
   rule-to-str:
     CGenMatchRule(rdef,pattern,params,type,clause*)
       -> RDefT(<rdef-strategy-name> rdef,<rdef-strategy-params> rdef,[],
@@ -115,7 +115,7 @@ rules
 
   rdef-strategy-params: NoName() -> []
   rdef-strategy-params: Name(_,rs) -> <map(\ r -> SVar(<rdef-strategy-name> Name(r,[])) \)> rs
- 
+
 rules
 
   rule-to-str:
@@ -139,10 +139,10 @@ rules
         str*,
         With(constraint-str)
       ]
- 
+
   fun-name =
     !$[nabl2--constraint-function-[<id>]]
- 
+
 
 rules
 
@@ -165,10 +165,10 @@ rules
                  \})> s*
 
 rules
- 
+
   constraints-to-terms =
     map(explode(explode-guard))
- 
+
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)
   explode-guard(e) = funcall-to-term(e)
@@ -208,16 +208,15 @@ rules
 rules
 
   roccs-strategy-name = !$[nabl2--transform-occurrences]
-  
+
   rule-to-occurrences-str:
     CGenMatchRule(_, pattern-match, _, _, clause*) ->
       RDefT(<roccs-strategy-name>, [], [],
-           Rule(AnnoList(pattern-match', [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
+           Rule(AnnoList(pattern-match, [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
     where
-      pattern-match' := <try(?As(_, <id>))> pattern-match;
       occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
       <not(?[])> occ*;
-      pattern-build := <alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match'
+      pattern-build := <strip-as-pattern;alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match
 
   occ-to-occ-build:
     Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
