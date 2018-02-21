@@ -257,9 +257,9 @@ rules
   [[ SimpleRelation(sorts) ^ (s) : REL(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
 
-  [[ FunctionalRelation(insorts, outsort) ^ (s) : REL(_) ]] :=
+  [[ FunctionalRelation(insorts, outsorts) ^ (s) : REL(_) ]] :=
     Map1T(SortRef)[[ insorts ^ (s) : intys ]],
-    SortRef[[ outsort ^ (s) : outty ]],
+    SortRef[[ outsorts ^ (s) : outtys ]],
     false | error "Cannot type check functional relations correctly yet".
 
 rules
@@ -361,7 +361,7 @@ rules
     d : REL(tys),
     Map1T(Build)[[ ts ^ (s): tys ]].
 
-  [[ CPathDisamb(prs, p1, p2) ^ (s) ]] :=
+  [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
     Build[[ p1 ^ (s) : PATH() ]],
     Build[[ p2 ^ (s) : PATH() ]],
     Map1[[ prs ^ (s) ]].
