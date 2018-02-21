@@ -2,21 +2,23 @@ module nabl2/lang/analysis/main
 
 imports
 
+  libspoofax/resource/path
+
   signatures/nabl2/lang/-
   nabl2/lang/analysis/-
   pp
 
 rules
 
-  analyze: (ast,path,project-path) -> (ast',[name-error*],[],[])
-    with name-error* := <check-module-name> (ast, path);
+  analyze: (ast, path, project-path) -> (ast', [name-error*], [], [])
+    with name-error* := <check-module-name> (ast, path, project-path);
          ast'   := <normalize> ast
   
-  check-module-name: (Module(name,_), path) -> error*
-    with filename := <remove-extension> path;
-         if <string-ends-with(|$[/[name]])> $[/[filename]] then
+  check-module-name: (Module(name, _), path, project-path) -> error*
+    with rel-path := <current-language-relative-source-or-include-path> path;
+         rel-name := <remove-extension> rel-path;
+         if <eq> (rel-name, name) then
            error* := []
          else
-           error* := [(name,$[module nabl2/lang/name [name] does not agree with filename [filename]])]
+           error* := [(name, $[module [name] does not agree with relative filename [rel-name]])]
          end
- 
