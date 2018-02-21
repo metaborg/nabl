@@ -20,7 +20,7 @@ public final class ControlFlowConstraints {
         return M.cases(
             // @formatter:off
             M.appl3(CF_DIRECT_EDGE, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
-                    (c, scope1, scope2, origin) -> ImmutableCFDirectEdge.of(scope1, scope2, origin)),
+                    (c, node1, node2, origin) -> ImmutableCFDirectEdge.of(node1, node2, origin)),
             M.appl4(C_TF_APPL, TermIndex.matcher(), M.stringValue(), M.integerValue(), M.listElems(), 
                     (c, index, propname, offset, args) -> ImmutableCTFAppl.of(index, propname, offset, args, MessageInfo.of(index)))
             // @formatter:on
