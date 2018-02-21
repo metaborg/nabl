@@ -9,6 +9,7 @@ rules
   desugar-all =
     desugar-params;
     desugar-funrels;
+    desugar-constraints;
     desugar-rules
 
   desugar-params = try(sometd(desugar-param))
@@ -22,3 +23,6 @@ rules
   desugar-rules = try(sometd(desugar-rule))
   desugar-rule: Rule(props, h) -> Rule(props, h, NoLocalVars(), CTrue(), CTrue())
   desugar-rule: Rule(props, h, vs, b) -> Rule(props, h, vs, CTrue(), b)
+
+  desugar-constraints = try(sometd(desugar-constraint))
+  desugar-constraint: CPathDisamb(ord, p1, p2) -> CPathLt(ord, p1, p2)
