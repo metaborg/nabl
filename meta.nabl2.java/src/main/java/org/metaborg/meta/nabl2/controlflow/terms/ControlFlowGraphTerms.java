@@ -75,17 +75,24 @@ public final class ControlFlowGraphTerms {
     }
 
     private String nodeToDot(CFGNode node, Set<String> properties) {
-        String props = properties.stream().map(prop -> propertyToDot(node, prop)).collect(Collectors.joining("|"));
+        String propNames = "{" + properties.stream().map(n -> n.replaceAll(RECORD_RESERVED, ESCAPE_MATCH)).collect(Collectors.joining("|")) + "}";
+        String prePropVals = "{" + properties.stream().map(n -> prePropValToDot(node, n)).collect(Collectors.joining("|")) + "}";
+        String postPropVals = "{" + properties.stream().map(n -> postPropValToDot(node, n)).collect(Collectors.joining("|")) + "}";
+        final String props = "{" + propNames + "|" + prePropVals + "|" + postPropVals + "}";
         return "\"" + node.toString() + "\" [ label = \"{" + (node.getName() + node.getIndex().toString()).replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "|" + props + "}\" ];\n";
     }
 
-    // static interface
-
-    private String propertyToDot(CFGNode node, String prop) {
-        ITerm prePropVal = preProperties.get(ImmutableTuple2.of(node.getIndex(), prop));
-        ITerm postPropVal = postProperties.get(ImmutableTuple2.of(node.getIndex(), prop));
-        return "{" + prop.replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "|" + prePropVal.toString().replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + " -> " + postPropVal.toString().replaceAll(RECORD_RESERVED, ESCAPE_MATCH) + "}";
+    private String prePropValToDot(CFGNode node, String prop) {
+        ITerm prePropVal = preProperties.get(ImmutableTuple2.of(node, prop));
+        return prePropVal.toString().replaceAll(RECORD_RESERVED, ESCAPE_MATCH);
     }
+
+    private String postPropValToDot(CFGNode node, String prop) {
+        ITerm postPropVal = postProperties.get(ImmutableTuple2.of(node, prop));
+        return postPropVal.toString().replaceAll(RECORD_RESERVED, ESCAPE_MATCH);
+    }
+
+    // static interface
 
     public static ITerm build(IFlowSpecSolution<CFGNode> solution) {
         return new ControlFlowGraphTerms(solution).build();
