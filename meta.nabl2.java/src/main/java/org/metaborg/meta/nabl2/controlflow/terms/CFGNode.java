@@ -39,9 +39,15 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
 
     // IApplTerm implementation
 
-    @Override protected CFGNode check() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Value.Check @Override protected CFGNode check() {
+        if (TermIndex.get(this).map(ti -> ti.equals(getIndex())).orElse(false)) {
+            return this;
+        }
         Builder<Object> newAttachments = ImmutableClassToInstanceMap.builder();
-        newAttachments.putAll(this.getAttachments());
+        this.getAttachments().entrySet().stream().filter(e -> e.getKey() != TermIndex.class).forEach(e -> {
+            newAttachments.put((Class) e.getKey(), e.getValue());
+        });
         newAttachments.put(TermIndex.class, getIndex());
         return this.withAttachments(newAttachments.build());
     }
