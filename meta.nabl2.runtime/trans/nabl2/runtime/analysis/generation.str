@@ -26,15 +26,15 @@ rules // top-level functions that are called during analysis
 
   nabl2-debug-constraint-generation-hook = fail
 
-  nabl2--generate-constraint-init(|source) = ?term; nabl2--strict(
-    <nabl2--generate-constraint-init-rule(|)> (source, term)
-  )
+  nabl2--generate-constraint-init(|source) =
+       <nabl2--generate-constraint-init-rule(|)> (source, term)
+    <+ fatal-err(|"Cannot find init rule")
 
-  nabl2--generate-constraint-file(|source,args) = ?term; nabl2--strict(
-    nabl2_constraint := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args)
-  ; flowspec_constraint := <nabl2-generate-flowspec-constraint(|term)> (source,term,args)
-  ; !CConj(nabl2_constraint, flowspec_constraint)
-  )
+  nabl2--generate-constraint-file(|source,args) = ?term;
+       nabl2_constraint := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args);
+       flowspec_constraint := <nabl2-generate-flowspec-constraint(|term)> (source,term,args);
+       !CConj(nabl2_constraint, flowspec_constraint)
+    <+ fatal-err(|"Cannot find constraint rule")
 
   nabl2-generate-flowspec-constraint(|term) =
     nabl2--generate-constraint-placeholder

@@ -18,3 +18,8 @@ context-free syntax
   >
 
   CParam.Param = <<SortRef>>
+
+syntax
+
+  Constraint-CF.CPathDisamb =
+    "pathDisamb" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")" {deprecated("Use 'pathLt' instead.")}
