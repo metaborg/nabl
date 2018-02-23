@@ -4,6 +4,7 @@ import static org.metaborg.meta.nabl2.terms.Terms.TUPLE_OP;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.IBlobTerm;
@@ -427,11 +428,18 @@ public class TermMatch {
             return match(term, PersistentUnifier.Immutable.of());
         }
 
+        default <R> IMatcher<R> map(Function<T, R> fun) {
+            return (term, unifier) -> this.match(term, unifier).<R>map(fun);
+        }
+
+        default <R> IMatcher<R> flatMap(Function<T, Optional<R>> fun) {
+            return (term, unifier) -> this.match(term, unifier).<R>flatMap(fun);
+        }
+
         static <T> IMatcher<T> flatten(IMatcher<Optional<T>> m) {
             return (term, unifier) -> m.match(term, unifier).flatMap(o -> o);
         }
 
     }
-
 
 }

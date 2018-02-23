@@ -3,7 +3,7 @@ module nabl2/lang/generation/signatures/functions
 imports
 
   libstrc
-  generation/-
+  nabl2/lang/generation/-
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   signatures/nabl2/lang/common/-

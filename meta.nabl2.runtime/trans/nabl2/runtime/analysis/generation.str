@@ -31,8 +31,15 @@ rules // top-level functions that are called during analysis
     <+ fatal-err(|"Cannot find init rule")
 
   nabl2--generate-constraint-file(|source,args) = ?term;
-       <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source, term, args)
+       nabl2_constraint := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args);
+       flowspec_constraint := <nabl2-generate-flowspec-constraint(|term)> (source,term,args);
+       !CConj(nabl2_constraint, flowspec_constraint)
     <+ fatal-err(|"Cannot find constraint rule")
+
+  nabl2-generate-flowspec-constraint(|term) =
+    nabl2--generate-constraint-placeholder
+    <+ nabl2--generate-constraint-default-cfg-rule
+    <+ !CTrue(<nabl2--get-ast-index> term)
 
 rules
 
@@ -57,6 +64,7 @@ rules
   // signatures of the generated rules
   nabl2--generate-constraint-init-rule = fail
   nabl2--generate-constraint-default-rule(|) = fail
+  nabl2--generate-constraint-default-cfg-rule(|) = fail
   nabl2--transform-occurrences = fail
 
   // error throwing wrappers for recursive invocations

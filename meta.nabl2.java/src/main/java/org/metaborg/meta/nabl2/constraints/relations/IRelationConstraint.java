@@ -81,7 +81,7 @@ public interface IRelationConstraint extends IConstraint {
     public static boolean isCheck(IConstraint constraint) {
         return constraint.match(IConstraint.Cases.of(c -> false, c -> false, c -> false, c -> false, c -> false,
                 c -> c.match(IRelationConstraint.Cases.of(r -> false, r -> true, r -> false)), c -> false, c -> false,
-                c -> false));
+                c -> false, c -> false));
     }
 
 }

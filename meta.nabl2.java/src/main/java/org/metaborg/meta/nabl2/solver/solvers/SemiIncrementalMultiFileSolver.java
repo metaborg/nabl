@@ -6,6 +6,9 @@ import java.util.Optional;
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -22,6 +25,7 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.ImmutableNameResolutionResult;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
@@ -86,6 +90,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 VariantRelations.melt(initial.relations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableFlowSpecSolution.of());
 
         final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
@@ -101,6 +106,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                     .onRelation(relationSolver::solve)
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
+                    .onControlflow(cfgSolver::solve)
                     .otherwise(ISolver.deny("Not allowed in this phase"))
                     // @formatter:on
                 );
@@ -130,6 +136,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 seed(nameResolutionSolver.seed(nameResult, message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(unitSolution.symbolic(), message), messages, constraints);
+                seed(cfgSolver.seed(unitSolution.flowSpecSolution(), message), messages, constraints);
                 constraints.addAll(unitSolution.constraints());
                 messages.addAll(unitSolution.messages());
             }
@@ -145,9 +152,11 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
+            
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
-                    messages.freeze(), solveResult.constraints())
+                    fsSolution, messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);

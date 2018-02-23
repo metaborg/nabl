@@ -72,7 +72,8 @@ public class ActiveVars implements IConstraintSetProperty {
         constraint.match(
                 IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
                         ActiveVars::emptyActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::getActiveVars, ActiveVars::emptyActiveVars, ActiveVars::getActiveVars))
+                        ActiveVars::getActiveVars, ActiveVars::emptyActiveVars, ActiveVars::getActiveVars,
+                        ActiveVars::emptyActiveVars))
                 .stream().map(ITerm::getVars).forEach(vars::addAll);
         return vars;
     }

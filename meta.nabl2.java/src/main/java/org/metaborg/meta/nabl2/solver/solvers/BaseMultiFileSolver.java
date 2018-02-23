@@ -8,6 +8,9 @@ import javax.annotation.Nullable;
 
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -24,6 +27,7 @@ import org.metaborg.meta.nabl2.solver.SolverConfig;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
@@ -86,6 +90,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableFlowSpecSolution.of());
 
         final ISolver component =
                 c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
@@ -97,6 +102,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                     .onRelation(relationSolver::solve)
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
+                    .onControlflow(cfgSolver::solve)
                     .otherwise(ISolver.deny("Not allowed in this phase"))
                     // @formatter:on
                 );
@@ -120,11 +126,12 @@ public class BaseMultiFileSolver extends BaseSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
 
             return ImmutableSolution
                     .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                             nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
-                            solveResult.messages(), solveResult.constraints())
+                            fsSolution, solveResult.messages(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);

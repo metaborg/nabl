@@ -7,6 +7,9 @@ import java.util.Optional;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.FlowSpecSolution;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -60,6 +63,8 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract IUnifier.Immutable unifier();
 
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
+    
+    @Value.Parameter @Override public abstract IFlowSpecSolution<CFGNode> flowSpecSolution();
 
     @Value.Parameter @Override public abstract IMessages.Immutable messages();
 
@@ -69,7 +74,7 @@ public abstract class Solution implements ISolution {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
                 PersistentUnifier.Immutable.of(), org.metaborg.meta.nabl2.symbolic.SymbolicConstraints.of(),
-                Messages.Immutable.of(), Collections.emptySet());
+                FlowSpecSolution.of(), Messages.Immutable.of(), Collections.emptySet());
     }
 
     @Override public ISolution findAndLock() throws SolverException {

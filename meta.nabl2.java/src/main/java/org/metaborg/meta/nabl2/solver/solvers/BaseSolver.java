@@ -12,6 +12,9 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
+import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
+import org.metaborg.meta.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -30,6 +33,7 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
+import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
 import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
@@ -140,6 +144,7 @@ public class BaseSolver {
         final RelationComponent relationSolver = new RelationComponent(core, r -> false,
                 initial.config().getFunctions(), VariantRelations.melt(initial.relations()));
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
+        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableFlowSpecSolution.of());
 
         final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
         final IMessages.Transient messages = initial.messages().melt();
@@ -158,10 +163,11 @@ public class BaseSolver {
         Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
         IUnifier.Immutable unifyResult = equalitySolver.finish();
         ISymbolicConstraints symbolicResult = symSolver.finish();
+        IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
 
         return ImmutableSolution
                 .of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.declProperties(), relationResult,
-                        unifyResult, symbolicResult, messages.freeze(), constraints)
+                    unifyResult, symbolicResult, fsSolution, messages.freeze(), constraints)
                 .withNameResolutionCache(nameResult.resolutionCache());
     }
 
