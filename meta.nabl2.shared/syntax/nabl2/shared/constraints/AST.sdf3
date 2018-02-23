@@ -15,9 +15,6 @@ context-free syntax
   AstProperty.Type       = "type"
   AstProperty.Params     = "params"
 
-  FSAstProperty.CFGParams  = "cfgparams"
-  FSConstraint.CTFAppl =  <<TermIndex>.<AstPropertyId>:<INT> := [<{CTerm ", "}*>]>
-
 lexical syntax
 
   AstPropertyId = PropertyId
