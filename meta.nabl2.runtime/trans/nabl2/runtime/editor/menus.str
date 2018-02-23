@@ -17,12 +17,6 @@ rules
   nabl2--debug-file-scope-graph =
     nabl2--debug-file-result(nabl2--debug-scope-graph|"scope-graph")
 
-  nabl2--debug-file-control-flow-graph =
-    nabl2--debug-file-result(nabl2--debug-control-flow-graph|"control-flow-graph")
-
-  nabl2--show-file-control-flow-graph =
-    nabl2--show-file-result(nabl2--show-control-flow-graph|"control-flow-graph.gv")
-
   nabl2--debug-file-name-resolution =
     nabl2--debug-file-result(nabl2--debug-name-resolution|"name-resolution")
 
@@ -56,12 +50,6 @@ rules
 
   nabl2--debug-project-scope-graph =
     nabl2--debug-project-result(nabl2--debug-scope-graph|"scope-graph")
-
-  nabl2--debug-project-control-flow-graph =
-    nabl2--debug-project-result(nabl2--debug-control-flow-graph|"control-flow-graph")
-
-  nabl2--show-project-control-flow-graph =
-    nabl2--show-project-result(nabl2--show-control-flow-graph|"control-flow-graph.gv")
 
   nabl2--debug-project-name-resolution =
     nabl2--debug-project-result(nabl2--debug-name-resolution|"name-resolution")
