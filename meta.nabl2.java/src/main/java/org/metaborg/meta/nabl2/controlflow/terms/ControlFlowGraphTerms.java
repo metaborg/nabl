@@ -1,8 +1,5 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
-import static org.metaborg.meta.nabl2.terms.build.TermBuild.B;
-
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,7 +7,6 @@ import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.Tuple2;
 
-import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Map.Immutable;
 
 public final class ControlFlowGraphTerms {
@@ -25,32 +21,6 @@ public final class ControlFlowGraphTerms {
         this.controlFlowGraph = solution.controlFlowGraph();
         this.preProperties = solution.preProperties();
         this.postProperties = solution.postProperties();
-    }
-
-    private ITerm build() {
-        List<ITerm> edges = controlFlowGraph.edges().entrySet().stream().map(this::buildEdge)
-                .collect(Collectors.toList());
-        List<ITerm> starts = controlFlowGraph.startNodes().stream().collect(Collectors.toList());
-        List<ITerm> ends = controlFlowGraph.endNodes().stream().collect(Collectors.toList());
-        List<ITerm> properties = this.preProperties.entrySet().stream().map(this::buildPreProperty)
-                .collect(Collectors.toList());
-        List<ITerm> postProperties = this.postProperties.entrySet().stream().map(this::buildPostProperty)
-                .collect(Collectors.toList());
-        properties.addAll(postProperties);
-        return B.newAppl("ControlFlowGraph", (ITerm) B.newList(edges), (ITerm) B.newList(starts),
-                (ITerm) B.newList(ends), (ITerm) B.newList(properties));
-    }
-
-    private ITerm buildEdge(Map.Entry<CFGNode, CFGNode> directEdge) {
-        return B.newAppl("DirectEdge", directEdge.getKey(), directEdge.getValue());
-    }
-
-    private ITerm buildPreProperty(Map.Entry<Tuple2<CFGNode, String>, ITerm> directEdge) {
-        return B.newAppl("DFProperty", B.newAppl("Pre", directEdge.getKey()._1()), B.newString(directEdge.getKey()._2()), directEdge.getValue());
-    }
-
-    private ITerm buildPostProperty(Map.Entry<Tuple2<CFGNode, String>, ITerm> directEdge) {
-        return B.newAppl("DFProperty", B.newAppl("Post", directEdge.getKey()._1()), B.newString(directEdge.getKey()._2()), directEdge.getValue());
     }
 
 
@@ -93,10 +63,6 @@ public final class ControlFlowGraphTerms {
     }
 
     // static interface
-
-    public static ITerm build(IFlowSpecSolution<CFGNode> solution) {
-        return new ControlFlowGraphTerms(solution).build();
-    }
 
     public static String toDot(IFlowSpecSolution<CFGNode> solution) {
         return new ControlFlowGraphTerms(solution).toDot();
