@@ -26,7 +26,7 @@ rules // top-level functions that are called during analysis
 
   nabl2-debug-constraint-generation-hook = fail
 
-  nabl2--generate-constraint-init(|source) =
+  nabl2--generate-constraint-init(|source) = ?term;
        <nabl2--generate-constraint-init-rule(|)> (source, term)
     <+ fatal-err(|"Cannot find init rule")
 
