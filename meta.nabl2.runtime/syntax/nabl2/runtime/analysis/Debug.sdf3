@@ -106,35 +106,3 @@ context-free syntax
       <{CTerm "\n"}*>
     }
   >
-
-context-free syntax
-
-  AnalysisResult.ControlFlowGraph = [
-    control-flow graph {
-      direct edges {
-        [{CFGDirectEdge "\n"}*]
-      }
-      start nodes {
-        [{CFGNode "\n"}*]
-      }
-      end nodes {
-        [{CFGNode "\n"}*]
-      }
-      properties {
-        [{CFGProperty "\n"}*]
-      }
-    }
-  ]
-
-  CFGDirectEdge.DirectEdge = [[CFGNode] -> [CFGNode]]
-  CFGProperty.DFProperty = [[CFGNode].[AstPropertyId] := [FSData]]
-  
-  FSData.List = <[<{FSData ", "}+>]>
-  FSData.Set = [{[{FSData ", "}+]}]
-  FSData.Map = [{[{FSDataPair ", "}+]}]
-  FSData = CFGNode
-  FSData = TermIndex
-  FSData = String
-  FSData = Int
-  FSData = Term
-  FSDataPair = [[FSData] => [FSData]]

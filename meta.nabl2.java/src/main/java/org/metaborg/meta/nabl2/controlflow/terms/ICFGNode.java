@@ -2,6 +2,7 @@ package org.metaborg.meta.nabl2.controlflow.terms;
 
 import java.util.List;
 
+import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.IApplTerm;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.ITermVar;
@@ -14,7 +15,7 @@ import com.google.common.collect.Multiset;
 
 public interface ICFGNode extends ITerm {
 
-    String getResource();
+    TermIndex getIndex();
 
     String getName();
 

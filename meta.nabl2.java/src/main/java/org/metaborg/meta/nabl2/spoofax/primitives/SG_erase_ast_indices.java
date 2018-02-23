@@ -10,7 +10,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 public class SG_erase_ast_indices extends AbstractPrimitive {
 
     public SG_erase_ast_indices() {
-        super(SG_erase_ast_indices.class.getSimpleName(), 0, 1);
+        super(SG_erase_ast_indices.class.getSimpleName(), 0, 0);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {

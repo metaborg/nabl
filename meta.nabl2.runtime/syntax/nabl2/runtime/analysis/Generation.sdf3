@@ -9,7 +9,6 @@ context-free syntax
   AnalysisResult.Params = <params <CGenArgs>>
 
   CGenArgs.Params        = <<CGenParams>>
-  CGenArgs.CFGParams     = <<CGenParams>> {avoid}
   CGenArgs.ParamsAndType = <<CGenParams> : <CTerm>>
 
   CGenParams = <^ (<{CTerm ","}*>)>
