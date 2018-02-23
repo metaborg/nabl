@@ -7,7 +7,7 @@ imports
   nabl2/shared/-
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
- 
+
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
   signatures/nabl2/lang/signatures/-
@@ -35,7 +35,7 @@ rules
 
   rule-to-str:
     CGenRule(rdef@InitRule(), pattern, params, type, clause)
-      -> RDefT(sname, sparams, [], 
+      -> RDefT(sname, sparams, [],
            Rule(spattern, sresult, strclause*))
     with
       args-var       := Var(<newname> "args");
@@ -45,7 +45,7 @@ rules
       sparams  := <rdef-strategy-params> rdef;
       spattern := Term |[ (~<source-var>, ~pattern) ]|;
       sresult  := Term |[ (~args-var, ~constraint-var) ]|;
- 
+
       bound-var* := <all-vars> pattern;
       used-var*  := <concat;make-set> [ <all-vars> params
                                       , <all-vars> type
@@ -67,15 +67,15 @@ rules
       constraint-str  := |[ ~constraint-var := ~(<constraint-to-term> clause) ]|;
 
       strclause* := [
-        With(var-str), 
-        With(args-str), 
-        With(constraint-str), 
+        With(var-str),
+        With(args-str),
+        With(constraint-str),
         With(debug-str)
       ]
- 
+
   rule-to-str:
     r@CGenRule(rdef, pattern, params, type, clause)
-      -> RDefT(sname, sparams, [], 
+      -> RDefT(sname, sparams, [],
            Rule(spattern, sresult, strclause*))
     where not(InitRule() := rdef)
     with
@@ -118,25 +118,25 @@ rules
         debug-str := |[ if nabl2--is-debug-collection-enabled then nabl2--collection-info-msg(|<concat-strings> [~Str(<rdef-name> rdef), " [[ ", <pp-NaBL2-Term> ~term-var, " ^ ", <pp-NaBL2-CTerm> ~params-var, " ]]"]) end ]|
       end;
       guarded-args-str := |[
-        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ", ~args-string, " with actual ", <nabl2--pp-flat-args> ~args-var, 
+        ~args-str <+ fatal-err(|<concat-strings> ["Cannot match expected ", ~args-string, " with actual ", <nabl2--pp-flat-args> ~args-var,
                                                   " when matching ", ~pattern-string, " with ", <pp-NaBL2-Term> ~term-var, "."])
       ]|;
 
       constraint-str  := |[ ~constraint-var := ~(<constraint-to-term> clause) ]|;
 
       strclause* := [
-        With(var-str), 
-        With(guarded-args-str), 
-        With(debug-str), 
+        With(var-str),
+        With(guarded-args-str),
+        With(debug-str),
         With(constraint-str)
       ]
- 
+
   rdef-strategy-name = !$[nabl2--generate-constraint-[<rdef-name>]-rule]
 
   rdef-strategy-params: InitRule()    -> []
   rdef-strategy-params: DefaultRule() -> []
   rdef-strategy-params: Rule(_, rs)    -> <map(\ r -> SVar(<rdef-strategy-name> Rule(r, [])) \)> rs
- 
+
 
 rules
 
@@ -154,7 +154,7 @@ rules
                         \})> v*
 
 rules
- 
+
   constraint-to-term:
       CConj(c1, c2) -> Term |[ CConj(~sc1, ~sc2) ]|
     with sc1 := <constraint-to-term> c1;
@@ -168,7 +168,7 @@ rules
          se       := Term|[ CExists(~svars, ~sc) ]|
   constraint-to-term:
       c -> <explode(explode-guard)> c
- 
+
   explode-guard(e) = injection-to-term(e)
   explode-guard(e) = cgenrecurse-to-term(e)
 
@@ -209,10 +209,9 @@ rules
            Rule(AnnoList(pattern-match', [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
     where not(InitRule() := rdef)
     where
-      pattern-match' := <try(?As(_, <id>))> pattern-match;
       occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
       <not(?[])> occ*;
-      pattern-build := <alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match'
+      pattern-build := <strip-as-pattern;alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match
 
   occ-to-occ-build:
     Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->

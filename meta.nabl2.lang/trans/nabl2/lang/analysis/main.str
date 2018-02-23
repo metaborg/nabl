@@ -26,17 +26,17 @@ rules
   editor-analyze:
       (ast, path, project-path) -> (analyzed-ast, error*, warning*, note*)
     with analyzed-ast := <normalize-all;desugar-all> ast;
-         error*       := <check-module-name> (analyzed-ast, path);
+         error*       := <check-module-name> (analyzed-ast, path, project-path);
          warning*     := [];
          note*        := []
 
-  check-module-name:
-      (Module(name,_), path) -> error*
-    with filename := <remove-extension> path;
-         if <string-ends-with(|$[/[name]])> $[/[filename]] then
+  check-module-name: (Module(name, _), path, project-path) -> error*
+    with rel-path := <current-language-relative-source-or-include-path> path;
+         rel-name := <remove-extension> rel-path;
+         if <eq> (rel-name, name) then
            error* := []
          else
-           error* := [(name,$[module [name] does not agree with filename [filename]])]
+           error* := [(name, $[module [name] does not agree with relative filename [rel-name]])]
          end
 
   editor-normalize:
