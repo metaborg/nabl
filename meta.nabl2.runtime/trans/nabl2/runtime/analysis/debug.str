@@ -1,9 +1,5 @@
 module nabl2/runtime/analysis/debug
 
-imports
-
-  libstratego-aterm
-
 rules
 
   nabl2--debug-constraints(|a) =
@@ -23,5 +19,3 @@ rules
 
   nabl2--focus-term(|a) =
     prim("SG_focus_term", a)
-
-  prettyprint-NaBL2-Term = pp-aterm-box

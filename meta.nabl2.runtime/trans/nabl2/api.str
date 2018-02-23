@@ -141,18 +141,7 @@ rules // ###### Analysis results ######
 
   /**
    * @param a : Analysis
-   * @type node:Term -> Type
-   */
-  nabl2-get-ast-type(|a) = nabl2--get-ast-type(|a)
-
-  /**
-   * @type node:Term -> Term
-   */
-  nabl2-get-ast-property =
-    where(a := <nabl2-get-ast-analysis>); nabl2-get-ast-type(|a)
-
-  /**
-   * @param a : Analysis
+   * @param prop : String
    * @type node:Term -> Term
    */
   nabl2-get-ast-property(|a,prop) =
@@ -184,14 +173,13 @@ rules // ###### Analysis results ######
    * @param prop : String
    * @type decl:Occurrence -> Term
    */
-  nabl2-get-property(|a,prop) = fail
   nabl2-get-property(|a,prop) = nabl2--get-decl-property-by-name(|a,prop)
 
   /**
    * @param a : Analysis
    * @type ref:Occurrence -> (decl:Occurrence, Path)
    */
-  nabl2-get-resolved-name(|a)  = nabl2-get-resolved-names(|a); ?[<id>]
+  nabl2-get-resolved-name(|a) = nabl2-get-resolved-names(|a); ?[<id>]
 
   /**
    * @param a : Analysis

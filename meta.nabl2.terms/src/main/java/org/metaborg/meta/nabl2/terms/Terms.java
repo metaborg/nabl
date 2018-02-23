@@ -168,7 +168,7 @@ public class Terms {
                 return onVar.apply(this, var);
             }
 
-       };
+        };
     }
 
     // CHECKED

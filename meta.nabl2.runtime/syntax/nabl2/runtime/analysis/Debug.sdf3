@@ -6,9 +6,6 @@ imports
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Resolution
   nabl2/shared/constraints/Base
-  nabl2/shared/constraints/AST
-  nabl2/runtime/common/Native
-  nabl2/runtime/common/AST
 
 context-free syntax
 
