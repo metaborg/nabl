@@ -437,7 +437,7 @@ public class TermMatch {
         }
 
         static <T> IMatcher<T> flatten(IMatcher<Optional<T>> m) {
-            return (term, unifier) -> m.match(term, unifier).flatMap(o -> o);
+            return m.flatMap(o -> o)::match;
         }
 
     }
