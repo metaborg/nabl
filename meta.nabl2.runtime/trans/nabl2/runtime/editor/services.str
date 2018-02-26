@@ -25,9 +25,33 @@ rules
     where <nabl2-get-ast-index> node // HACK: necessary to prevent errors
                                      //       as we sometimes get nodes
                                      //       without the AST index here
-    with a := <nabl2-get-ast-analysis> node
-    where type := <nabl2-get-ast-type(|a)> node
-    with typetext := <nabl2--focus-term(|a);
-                      pp-NaBL2-objlangterm;
-                      nabl2--xmlencode> type;
-         label := $[Type: [typetext]]
+    with a := <nabl2-get-ast-analysis> node;
+         ast-labels  := <nabl2--ast-hover(|a)> node;
+         decl-labels := <nabl2--decl-hover(|a)> node;
+         labels := <conc> (ast-labels, decl-labels)
+    where not([] := labels)
+    with label := <lines> labels
+
+  nabl2--ast-hover(|a): node -> labels
+    where if type := <nabl2-get-ast-type(|a)> node then
+            labels := [$[Type: [<nabl2--hover-type-string(|a)> type]]]
+          else
+            labels := []
+          end
+
+  nabl2--decl-hover(|a): node -> labels
+    with decls := <nabl2-get-ast-decls(|a)> node;
+         declTypes := <filter(!(<id>, <nabl2-get-type(|a)>))> decls
+    with labels := <map(\ (decl, type) -> $[[<nabl2--hover-decl-string(|a)> decl] : [<nabl2--hover-type-string(|a)> type]] \)> declTypes
+
+  nabl2--hover-decl-string(|a) =
+    topdown(try(nabl2--strip-occurrence-index));
+    nabl2--focus-term(|a);
+    pp-NaBL2-CTerm;
+    nabl2--xmlencode
+
+  nabl2--hover-type-string(|a) =
+    topdown(try(nabl2--strip-occurrence-index));
+    nabl2--focus-term(|a);
+    pp-NaBL2-objlangterm;
+    nabl2--xmlencode

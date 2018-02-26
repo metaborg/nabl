@@ -180,6 +180,8 @@ rules
 
   nabl2--namespace-name: Namespace(ns) -> ns
 
+  nabl2--strip-occurrence-index = Occurrence(id, id, !NoIndex())
+
 rules
 
   nabl2--message-pos = ?Message(_,_,pos) < !pos + id

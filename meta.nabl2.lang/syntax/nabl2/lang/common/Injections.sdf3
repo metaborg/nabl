@@ -37,7 +37,7 @@ syntax
   TermIndex-CF.TermIndexFrom    = "@" Var-CF
 
   OccurrenceIndex-CF.DefaultOccurrenceIndex =
-  OccurrenceIndex-CF.OccurrenceIndexFrom    = "@" Var-CF
+  OccurrenceIndex-CF.OccurrenceIndexFrom    = LAYOUT?-CF "@" Var-CF
 
   Constraint-CF.CSetEq = CSet-CF LAYOUT?-CF "seteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
 

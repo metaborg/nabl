@@ -11,5 +11,6 @@ context-free syntax
 
   Scope.Scope = <#<String>-<String>>
 
-  OccurrenceIndex = TermIndex
-  OccurrenceIndex = <@<Scope>>
+  OccurrenceIndex         = < <TermIndex>>
+  OccurrenceIndex         = < @<Scope>>
+  OccurrenceIndex.NoIndex =

@@ -15,10 +15,10 @@ sorts
 
 context-free syntax
 
-  Message.Message        = <| <MessageKind> <MessageContent> <MessagePosition>>
+  Message.Message        = <| <MessageKind> <MessageContent><MessagePosition>>
 
   MessageKind.Error      = <error>
   MessageKind.Warning    = <warning>
   MessageKind.Note       = <note>
 
-  MessagePosition        = TermIndex
+  MessagePosition        = < <TermIndex>>

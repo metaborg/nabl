@@ -17,28 +17,10 @@ imports
 signature
 
   sorts
-    CType
-    RType
-    TType
     TClass
     SKind
 
   constructors
-    AST        : occurrence -> TType
-    SORT       : occurrence -> TType
-    INT        : TType
-    STRING     : TType
-    PATH       : TType
-    OCCURRENCE : TType
-    SCOPE      : TType
-    LIST       : TType -> TType
-    TUPLE      : list(TType) -> TType
-    OP         : list(TType) * TType -> TType
-
-    CON        : list(TType) -> CType
-    REL        : list(TType) -> RType
-    NS         : list(TType) -> RType
-
     SimpleSort : SKind
     SortAlias  : SKind
 
