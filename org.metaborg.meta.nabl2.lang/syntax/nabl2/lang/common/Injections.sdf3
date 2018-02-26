@@ -22,7 +22,7 @@ context-free syntax
   TermIndex.TermIndexFrom    = <@<Var>>
 
   OccurrenceIndex.DefaultOccurrenceIndex =
-  OccurrenceIndex.OccurrenceIndexFrom    = <@<Var>>
+  OccurrenceIndex.OccurrenceIndexFrom    = < @<Var>>
 
   NewScopes.NewScopes = <new <{CVar " "}+>>
 
