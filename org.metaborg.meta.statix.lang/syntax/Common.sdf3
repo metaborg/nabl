@@ -7,7 +7,7 @@ lexical syntax
   ID    = [a-zA-Z] [a-zA-Z0-9\_]*
   UCID  = [A-Z] [a-zA-Z0-9\_]*
   LCID  = [a-z] [a-zA-Z0-9\_]*
-  VARID = [a-z] [a-zA-Z0-9\_]* [\']*
+  VARID = [a-zA-Z] [a-zA-Z0-9\_]* [\']*
 
   SID = [A-Z] [a-zA-Z0-9\_\-\']*
   SID = [a-z] [a-zA-Z0-9\_\-\']* {deprecated("Lowercase sort and constructor names are strongly discouraged")}
