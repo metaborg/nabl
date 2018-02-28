@@ -1,5 +1,9 @@
 module nabl2/runtime/analysis/debug
 
+imports
+
+  nabl2/runtime/analysis/dot
+
 rules
 
   nabl2--debug-constraints(|a) =
@@ -7,6 +11,10 @@ rules
 
   nabl2--debug-scope-graph(|a) =
     prim("SG_debug_scope_graph", a)
+
+  nabl2--debug-scope-graph-dot(|a) =
+    prim("SG_debug_scope_graph", a);
+    scope-graph-to-dot
 
   nabl2--debug-name-resolution(|a) =
     prim("SG_debug_name_resolution", a)
