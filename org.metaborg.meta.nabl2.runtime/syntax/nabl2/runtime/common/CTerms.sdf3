@@ -6,4 +6,4 @@ imports
 
 context-free syntax
 
-  CVar.CVar = <?<String>-<String>>
+  NaBL2-CVar.CVar = <?<NaBL2-String>-<NaBL2-String>>

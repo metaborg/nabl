@@ -15,16 +15,16 @@ template options
 
 context-free syntax
 
-  CVar.Var = VarId
-  CVar.Wld = <_>
+  NaBL2-CVar.Var = NaBL2-VarId
+  NaBL2-CVar.Wld = <_>
 
 syntax
 
-  CTerm-CF.Op    = OpId-LEX "(" LAYOUT?-CF CTerms-CF LAYOUT?-CF ")"
+  NaBL2-CTerm-CF.Op    = NaBL2-OpId-LEX "(" LAYOUT?-CF NaBL2-CTerms-CF LAYOUT?-CF ")"
 
 context-free syntax
 
-  CTerm.Tuple = <(<{CTerm ", "}*>)>
+  NaBL2-CTerm.Tuple = <(<{NaBL2-CTerm ", "}*>)>
 
-  CTerm       = IntTerm
-  CTerm       = StringTerm
+  NaBL2-CTerm       = NaBL2-IntTerm
+  NaBL2-CTerm       = NaBL2-StringTerm

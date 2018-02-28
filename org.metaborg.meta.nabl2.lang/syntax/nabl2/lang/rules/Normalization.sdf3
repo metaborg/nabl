@@ -7,7 +7,7 @@ imports
 
 context-free syntax
 
-  RuleClause.NewVars      = <new vars <{CVar " "}+>>
+  NaBL2-RuleClause.NewVars      = <new vars <{NaBL2-CVar " "}+>>
 
   // not for parsing, just used in normalization and term explosion
-  InjectionPlaceholder.NAMEWithOrigin = "NAME"
+  NaBL2-InjectionPlaceholder.NAMEWithOrigin = "NAME"

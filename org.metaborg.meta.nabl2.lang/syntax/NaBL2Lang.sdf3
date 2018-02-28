@@ -9,9 +9,4 @@ imports
 
 context-free start-symbols
 
-  Start
-
-context-free syntax
-
-  Start = Module
-
+  NaBL2-Module

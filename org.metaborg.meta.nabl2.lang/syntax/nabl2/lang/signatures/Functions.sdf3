@@ -13,25 +13,25 @@ template options
 
 context-free syntax
 
-  Signature.Functions = <
+  NaBL2-Signature.Functions = <
     functions
-      <{FunctionDef "\n\n"}*>
+      <{NaBL2-FunctionDef "\n\n"}*>
   > {longest-match}
 
 context-free syntax
 
-  FunctionDef.FunctionDef = <<Function> <FunctionType> <FunctionCases>>
+  NaBL2-FunctionDef.FunctionDef = <<NaBL2-Function> <NaBL2-FunctionType> <NaBL2-FunctionCases>>
 
-  FunctionType  = [: [SortRef] -> [SortRef]]
+  NaBL2-FunctionType  = [: [NaBL2-SortRef] -> [NaBL2-SortRef]]
 
-  FunctionCases = <
-    { <{FunctionCase ",\n"}*>
+  NaBL2-FunctionCases = <
+    { <{NaBL2-FunctionCase ",\n"}*>
     }
   >
-  FunctionCases = {ast("[]")}
+  NaBL2-FunctionCases = {ast("[]")}
  
-  FunctionCase  = [[CTerm] -> [CTerm]]
+  NaBL2-FunctionCase  = [[NaBL2-CTerm] -> [NaBL2-CTerm]]
 
 lexical syntax
 
-  SectionKeyword = "functions"
+  NaBL2-SectionKeyword = "functions"

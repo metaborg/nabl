@@ -187,7 +187,7 @@ rules
 
   nabl2--occurrence-index-of(|default-index) =
     if nabl2--is-ground then
-      is-NaBL2-Scope
+      is-NaBL2-NaBL2-Scope
    <+ nabl2--get-ast-index
    <+ !default-index
     else

@@ -17,17 +17,17 @@ template options
 
 context-free syntax
 
-  Rule.FunDef = [
-    [RuleId] << [{CVar ", "}*] >> :=
-        [{FunClause ",\n"}+].
+  NaBL2-Rule.FunDef = [
+    [NaBL2-RuleId] << [{NaBL2-CVar ", "}*] >> :=
+        [{NaBL2-FunClause ",\n"}+].
   ]
 
-  FunClause  = Constraint
-  FunClause  = FunCall
-  FunClause  = NewScopes
+  NaBL2-FunClause  = NaBL2-Constraint
+  NaBL2-FunClause  = NaBL2-FunCall
+  NaBL2-FunClause  = NaBL2-NewScopes
 
-  RuleClause = FunCall
+  NaBL2-RuleClause = NaBL2-FunCall
 
 context-free syntax
 
-  FunCall.FunCall = [[RuleId] << [{CTerm ", "}*] >>]
+  NaBL2-FunCall.FunCall = [[NaBL2-RuleId] << [{NaBL2-CTerm ", "}*] >>]

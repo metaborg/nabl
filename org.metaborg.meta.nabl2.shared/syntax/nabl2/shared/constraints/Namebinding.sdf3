@@ -13,35 +13,35 @@ template options
 
 context-free syntax
 
-  Constraint.CGDecl       = [[Occurrence] <- [Scope] [MessagePosition]]
-  Constraint.CGRef        = [[Occurrence] -> [Scope] [MessagePosition]]
+  NaBL2-Constraint.CGDecl       = [[NaBL2-Occurrence] <- [NaBL2-Scope] [NaBL2-MessagePosition]]
+  NaBL2-Constraint.CGRef        = [[NaBL2-Occurrence] -> [NaBL2-Scope] [NaBL2-MessagePosition]]
 
-  Constraint.CResolve     = [[CTerm] |-> [CTerm] [Message]]
+  NaBL2-Constraint.CResolve     = [[NaBL2-CTerm] |-> [NaBL2-CTerm] [NaBL2-Message]]
 
 syntax
 
-  Constraint-CF.CGDirectEdge = Scope-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Scope-CF LAYOUT?-CF MessagePosition-CF
-  Constraint-CF.CGAssoc      = Occurrence-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Scope-CF LAYOUT?-CF MessagePosition-CF
-  Constraint-CF.CGNamedEdge  = Occurrence-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Scope-CF LAYOUT?-CF MessagePosition-CF
+  NaBL2-Constraint-CF.CGDirectEdge = NaBL2-Scope-CF LAYOUT?-CF "-" NaBL2-ELabel-CF "->" LAYOUT?-CF NaBL2-Scope-CF LAYOUT?-CF NaBL2-MessagePosition-CF
+  NaBL2-Constraint-CF.CGAssoc      = NaBL2-Occurrence-CF LAYOUT?-CF "=" NaBL2-NLabel-CF "=>" LAYOUT?-CF NaBL2-Scope-CF LAYOUT?-CF NaBL2-MessagePosition-CF
+  NaBL2-Constraint-CF.CGNamedEdge  = NaBL2-Occurrence-CF LAYOUT?-CF "<=" NaBL2-NLabel-CF "=" LAYOUT?-CF NaBL2-Scope-CF LAYOUT?-CF NaBL2-MessagePosition-CF
 
-  Constraint-CF.CAssoc       = CTerm-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
-
-
-context-free syntax
-
-  ELabel.P = "-"
-  ELabel   = PathLabel
-
-  NLabel.I = "="
-  NLabel   = PathLabel
+  NaBL2-Constraint-CF.CAssoc       = NaBL2-CTerm-CF LAYOUT?-CF "?=" NaBL2-NLabel-CF "=>" LAYOUT?-CF NaBL2-CTerm-CF LAYOUT?-CF NaBL2-Message-CF
 
 
 context-free syntax
 
-  CTerm.NAME           = "NAME"
+  NaBL2-ELabel.P = "-"
+  NaBL2-ELabel   = NaBL2-PathLabel
 
-  MessagePosition.NAME = <@ NAMES>
+  NaBL2-NLabel.I = "="
+  NaBL2-NLabel   = NaBL2-PathLabel
+
+
+context-free syntax
+
+  NaBL2-CTerm.NAME           = "NAME"
+
+  NaBL2-MessagePosition.NAME = <@ NAMES>
 
 lexical syntax
 
-  Keyword = "NAME"
+  NaBL2-Keyword = "NAME"

@@ -8,4 +8,4 @@ imports
 
 context-free syntax
 
-  TermIndex.TermIndex = <@<String>:<Int>>
+  NaBL2-TermIndex.TermIndex = <@<NaBL2-String>:<NaBL2-Int>>

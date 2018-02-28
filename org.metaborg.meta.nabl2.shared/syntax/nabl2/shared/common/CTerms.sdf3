@@ -2,7 +2,7 @@ module nabl2/shared/common/CTerms
 
 sorts
 
-  CVar
+  NaBL2-CVar
 
 template options
 
@@ -10,11 +10,11 @@ template options
 
 context-free syntax
 
-  CTerm           = CVar {prefer}
-  CTerm           = CList
+  NaBL2-CTerm           = NaBL2-CVar {prefer}
+  NaBL2-CTerm           = NaBL2-CList
 
-  CTerms          = <<{CTerm ", "}*>>
+  NaBL2-CTerms          = <<{NaBL2-CTerm ", "}*>>
 
-  CList           = CVar
-  CList.CList     = <[<{CTerm ", "}*>]>
-  CList.CListTail = <[<{CTerm ", "}*>|<CList>]>
+  NaBL2-CList           = NaBL2-CVar
+  NaBL2-CList.CList     = <[<{NaBL2-CTerm ", "}*>]>
+  NaBL2-CList.CListTail = <[<{NaBL2-CTerm ", "}*>|<NaBL2-CList>]>

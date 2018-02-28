@@ -11,13 +11,13 @@ template options
 
 context-free syntax
 
-  Constraint.CTrue   = <true <MessagePosition>>
-  Constraint.CFalse  = <false <Message>>
+  NaBL2-Constraint.CTrue   = <true <NaBL2-MessagePosition>>
+  NaBL2-Constraint.CFalse  = <false <NaBL2-Message>>
 
 lexical syntax
 
-  ConstraintPriority = "!"*
+  NaBL2-ConstraintPriority = "!"*
 
 lexical syntax
 
-  Keyword = "true" | "false"
+  NaBL2-Keyword = "true" | "false"

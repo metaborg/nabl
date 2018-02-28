@@ -8,9 +8,9 @@ imports
 
 context-free syntax
 
-  MessageContent.Formatted = {MessageContent ""}*
-  MessageContent.Text      = String
-  MessageContent.Term      = CTerm
-  MessageContent.Default   = "(default)"
+  NaBL2-MessageContent.Formatted = {NaBL2-MessageContent ""}*
+  NaBL2-MessageContent.Text      = NaBL2-String
+  NaBL2-MessageContent.Term      = NaBL2-CTerm
+  NaBL2-MessageContent.Default   = "(default)"
 
-  MessagePosition.NoIndex  = <@->
+  NaBL2-MessagePosition.NoIndex  = <@->

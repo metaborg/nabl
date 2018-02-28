@@ -12,16 +12,16 @@ template options
 
 context-free syntax
 
-  Signature.CGen = <
+  NaBL2-Signature.CGen = <
     constraint generator
-      <{CGenSig "\n"}*>
+      <{NaBL2-CGenSig "\n"}*>
 
   >
   
-  CGenSig.CGenInitSig = <init <CGenSigParams> <CGenSigType>>
-  CGenSig.CGenSig     = <<CGenRuleDef> [[ <SortRef> <CGenSigParams> <CGenSigType> ]]>
+  NaBL2-CGenSig.CGenInitSig = <init <NaBL2-CGenSigParams> <NaBL2-CGenSigType>>
+  NaBL2-CGenSig.CGenSig     = <<NaBL2-CGenRuleDef> [[ <NaBL2-SortRef> <NaBL2-CGenSigParams> <NaBL2-CGenSigType> ]]>
  
-  CGenSigParams   = <^ (<{SortRef ", "}*>)>
+  NaBL2-CGenSigParams   = <^ (<{NaBL2-SortRef ", "}*>)>
 
-  CGenSigType.NoType = <>
-  CGenSigType.Type   = <: <SortRef>>
+  NaBL2-CGenSigType.NoType = <>
+  NaBL2-CGenSigType.Type   = <: <NaBL2-SortRef>>

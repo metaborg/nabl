@@ -9,8 +9,8 @@ imports
 
 context-free syntax
 
-  Scope.Scope = <#<String>-<String>>
+  NaBL2-Scope.Scope = <#<NaBL2-String>-<NaBL2-String>>
 
-  OccurrenceIndex         = < <TermIndex>>
-  OccurrenceIndex         = < @<Scope>>
-  OccurrenceIndex.NoIndex =
+  NaBL2-OccurrenceIndex         = < <NaBL2-TermIndex>>
+  NaBL2-OccurrenceIndex         = < @<NaBL2-Scope>>
+  NaBL2-OccurrenceIndex.NoIndex =

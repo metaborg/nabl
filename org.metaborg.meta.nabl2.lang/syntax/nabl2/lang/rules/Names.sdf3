@@ -11,21 +11,21 @@ template options
 
 syntax
 
-  CGenRuleDef-CF.NoName     =
-  CGenRuleDef-CF.NameNoArgs = RuleId-LEX
-  CGenRuleDef-CF.Name       = RuleId-LEX "(" LAYOUT?-CF RuleIds-CF LAYOUT?-CF ")"
+  NaBL2-CGenRuleDef-CF.NoName     =
+  NaBL2-CGenRuleDef-CF.NameNoArgs = NaBL2-RuleId-LEX
+  NaBL2-CGenRuleDef-CF.Name       = NaBL2-RuleId-LEX "(" LAYOUT?-CF NaBL2-RuleIds-CF LAYOUT?-CF ")"
 
 
-  CGenRuleRefTop-CF.NoName     =
-  CGenRuleRefTop-CF.NameNoArgs = RuleId-LEX
-  CGenRuleRefTop-CF.Name       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+  NaBL2-CGenRuleRefTop-CF.NoName     =
+  NaBL2-CGenRuleRefTop-CF.NameNoArgs = NaBL2-RuleId-LEX
+  NaBL2-CGenRuleRefTop-CF.Name       = NaBL2-RuleId-LEX "(" LAYOUT?-CF NaBL2-CGenRuleRefs-CF LAYOUT?-CF ")"
 
-  CGenRuleRef-CF.NoName     = "default"
-  CGenRuleRef-CF.NameNoArgs = RuleId-LEX
-  CGenRuleRef-CF.Name       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+  NaBL2-CGenRuleRef-CF.NoName     = "default"
+  NaBL2-CGenRuleRef-CF.NameNoArgs = NaBL2-RuleId-LEX
+  NaBL2-CGenRuleRef-CF.Name       = NaBL2-RuleId-LEX "(" LAYOUT?-CF NaBL2-CGenRuleRefs-CF LAYOUT?-CF ")"
 
 context-free syntax
 
-  RuleIds = <<{RuleId ", "}*>>
+  NaBL2-RuleIds = <<{NaBL2-RuleId ", "}*>>
   
-  CGenRuleRefs = <<{CGenRuleRef ", "}*>>
+  NaBL2-CGenRuleRefs = <<{NaBL2-CGenRuleRef ", "}*>>

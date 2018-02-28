@@ -12,9 +12,9 @@ template options
 
 syntax
 
-  Constraint-CF.CSubsetEq = CSet-CF LAYOUT?-CF "subseteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
-  Constraint-CF.CDistinct = "distinct" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
+  NaBL2-Constraint-CF.CSubsetEq = NaBL2-CSet-CF LAYOUT?-CF "subseteq" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF NaBL2-Message-CF
+  NaBL2-Constraint-CF.CDistinct = "distinct" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF NaBL2-Message-CF
 
 lexical syntax
 
-  Keyword = "subseteq" | "distinct"
+  NaBL2-Keyword = "subseteq" | "distinct"

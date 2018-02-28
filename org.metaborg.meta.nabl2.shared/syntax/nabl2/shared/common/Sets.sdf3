@@ -11,19 +11,19 @@ template options
 
 syntax
 
-  SetExpr-CF.EmptySet = "0"                               // FIXME Use NaBL2_ prefix
-  SetExpr-CF.Union    = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "union" LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
-  SetExpr-CF.Isect    = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "isect" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
-  SetExpr-CF.Diff     = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "minus" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
-  SetExpr-CF.Lsect    = "(" LAYOUT?-CF CSet-CF LAYOUT?-CF "lsect" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF ")"   // FIXME Use NaBL2_ prefix
+  NaBL2-SetExpr-CF.EmptySet = "0"
+  NaBL2-SetExpr-CF.Union    = "(" LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF "union" LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF ")"
+  NaBL2-SetExpr-CF.Isect    = "(" LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF "isect" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF ")"
+  NaBL2-SetExpr-CF.Diff     = "(" LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF "minus" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF ")"
+  NaBL2-SetExpr-CF.Lsect    = "(" LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF "lsect" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF ")"
 
-  SetProj-CF.NoProjection =
-  SetProj-CF.Projection   = "/" ProjectionId-LEX
+  NaBL2-SetProj-CF.NoProjection =
+  NaBL2-SetProj-CF.Projection   = "/" NaBL2-ProjectionId-LEX
 
 context-free syntax
 
-  CSet = SetExpr
+  NaBL2-CSet = NaBL2-SetExpr
 
 lexical syntax
 
-  Keyword = "isect" | "union" | "minus" | "lsect"
+  NaBL2-Keyword = "isect" | "union" | "minus" | "lsect"

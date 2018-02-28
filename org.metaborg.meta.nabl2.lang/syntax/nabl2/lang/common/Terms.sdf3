@@ -10,40 +10,40 @@ template options
 
 context-free syntax
 
-  Var.Var   = VarId
-  Wld.Wld   = "_"
+  NaBL2-Var.Var   = NaBL2-VarId
+  NaBL2-Wld.Wld   = "_"
 
-  VarOrWld  = Var
-  VarOrWld  = Wld
+  NaBL2-VarOrWld  = NaBL2-Var
+  NaBL2-VarOrWld  = NaBL2-Wld
 
-  Pattern          = VarOrWld
-  Pattern.List     = <[<{Pattern ", "}*>]>
-  Pattern.ListTail = <[<{Pattern ", "}*>|<Pattern>]>
-  Pattern.Tuple    = <(<{Pattern ", "}*>)>
-  Pattern.As       = <<Var>@<Pattern>>
-  Pattern          = OpTerm
-  Pattern          = IntTerm
-  Pattern          = StringTerm
+  NaBL2-Pattern          = NaBL2-VarOrWld
+  NaBL2-Pattern.List     = <[<{NaBL2-Pattern ", "}*>]>
+  NaBL2-Pattern.ListTail = <[<{NaBL2-Pattern ", "}*>|<NaBL2-Pattern>]>
+  NaBL2-Pattern.Tuple    = <(<{NaBL2-Pattern ", "}*>)>
+  NaBL2-Pattern.As       = <<NaBL2-Var>@<NaBL2-Pattern>>
+  NaBL2-Pattern          = NaBL2-OpTerm
+  NaBL2-Pattern          = NaBL2-IntTerm
+  NaBL2-Pattern          = NaBL2-StringTerm
 
-  Patterns         = <<{Pattern ", "}*>>
+  NaBL2-Patterns         = <<{NaBL2-Pattern ", "}*>>
 
 context-free syntax
 
-  IntTerm.Int = INT
+  NaBL2-IntTerm.Int = NaBL2-INT
 
 syntax
  
-  OpTerm-CF.Op      = OpId-LEX "(" LAYOUT?-CF Patterns-CF LAYOUT?-CF  ")"
+  NaBL2-OpTerm-CF.Op      = NaBL2-OpId-LEX "(" LAYOUT?-CF NaBL2-Patterns-CF LAYOUT?-CF  ")"
 
-  StringTerm-CF.Str = "\"" StringChars-LEX "\""
+  NaBL2-StringTerm-CF.Str = "\"" NaBL2-StringChars-LEX "\""
  
 lexical syntax
 
-  StringChars   = StringChar*
-  StringChar    = ~[\"\\\t\r\n]
-  StringChar    =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
+  NaBL2-StringChars   = NaBL2-StringChar*
+  NaBL2-StringChar    = ~[\"\\\t\r\n]
+  NaBL2-StringChar    =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
 
 lexical restrictions
 
-  StringChars -/- ~[\"]
+  NaBL2-StringChars -/- ~[\"]
 

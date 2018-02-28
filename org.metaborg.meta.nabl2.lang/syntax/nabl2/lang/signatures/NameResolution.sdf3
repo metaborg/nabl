@@ -13,28 +13,28 @@ template options
 
 context-free syntax
 
-  Signature.NameResolution = <
+  NaBL2-Signature.NameResolution = <
     name resolution
-      <{NameResolutionParam "\n\n"}*>
+      <{NaBL2-NameResolutionParam "\n\n"}*>
   > {longest-match}
 
-  NameResolutionParam.Labels     = <labels <{PathLabel " "}*>>
-  NameResolutionParam.Order      = <order <{LabelOrder ",\n"}*>>
-  NameResolutionParam.WF         = <well-formedness <LabelRE>>
+  NaBL2-NameResolutionParam.Labels     = <labels <{NaBL2-PathLabel " "}*>>
+  NaBL2-NameResolutionParam.Order      = <order <{NaBL2-LabelOrder ",\n"}*>>
+  NaBL2-NameResolutionParam.WF         = <well-formedness <NaBL2-LabelRE>>
 
 context-free syntax
 
-  Signature.Namespaces = <
+  NaBL2-Signature.Namespaces = <
     namespaces
-      <{NamespaceDef "\n\n"}*>
+      <{NaBL2-NamespaceDef "\n\n"}*>
   > {longest-match}
 
-  NamespaceDef.NamespaceDef = <<Namespace> <NamespaceType> <NamespaceProperties>>
+  NaBL2-NamespaceDef.NamespaceDef = <<NaBL2-Namespace> <NaBL2-NamespaceType> <NaBL2-NamespaceProperties>>
 
-  NamespaceType.NoType  =
-  NamespaceType.Type    = <: <SortRef>>
+  NaBL2-NamespaceType.NoType  =
+  NaBL2-NamespaceType.Type    = <: <NaBL2-SortRef>>
 
-  NamespaceProperties = <{ <{NamespaceProperty ",\n"}*> }>
-  NamespaceProperties = {ast("[]")}
+  NaBL2-NamespaceProperties = <{ <{NaBL2-NamespaceProperty ",\n"}*> }>
+  NaBL2-NamespaceProperties = {ast("[]")}
   
-  NamespaceProperty.PropertyDef = <<PropertyId> : <SortRef>>
+  NaBL2-NamespaceProperty.PropertyDef = <<NaBL2-PropertyId> : <NaBL2-SortRef>>

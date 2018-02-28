@@ -6,33 +6,33 @@ template options
 
 context-free syntax
 
-  Module.Module = <
-    module <ModuleId>
+  NaBL2-Module.Module = <
+    module <NaBL2-ModuleId>
 
-    <{ModuleSection "\n"}*>
+    <{NaBL2-ModuleSection "\n"}*>
   >
  
-  ModuleSection.Imports = <
-    imports <ImportModule*>
+  NaBL2-ModuleSection.Imports = <
+    imports <NaBL2-ImportModule*>
   >
  
-  ImportModule.Import = <<ModuleId>> 
+  NaBL2-ImportModule.Import = <<NaBL2-ModuleId>> 
 
 syntax
 
-  ImportModule-CF.ImportWildcard = ModuleId-CF "/-"
+  NaBL2-ImportModule-CF.ImportWildcard = NaBL2-ModuleId-CF "/-"
 
 lexical syntax
 
-  ModuleId = {ModuleIdPart "/"}+
-  ModuleIdPart = [a-zA-Z\_] [a-zA-Z0-9\.\-\_]*
-  ModuleId = SectionKeyword {reject}
+  NaBL2-ModuleId = {NaBL2-ModuleIdPart "/"}+
+  NaBL2-ModuleIdPart = [a-zA-Z\_] [a-zA-Z0-9\.\-\_]*
+  NaBL2-ModuleId = NaBL2-SectionKeyword {reject}
   
-  RuleId = SectionKeyword {reject}
+  NaBL2-RuleId = NaBL2-SectionKeyword {reject}
   
-  SectionKeyword = "imports"
+  NaBL2-SectionKeyword = "imports"
 
 lexical restrictions
 
-  ModuleId -/- [a-zA-Z0-9\.\-\_]
+  NaBL2-ModuleId -/- [a-zA-Z0-9\.\-\_]
 

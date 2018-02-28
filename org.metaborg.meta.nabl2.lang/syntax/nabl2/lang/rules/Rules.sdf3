@@ -12,13 +12,13 @@ template options
 
 context-free syntax
 
-  ModuleSection.Rules = <
+  NaBL2-ModuleSection.Rules = <
     rules
  
-      <{Rule "\n\n"}*>
+      <{NaBL2-Rule "\n\n"}*>
 
   > {longest-match}
 
 lexical syntax
 
-  SectionKeyword = "rules"
+  NaBL2-SectionKeyword = "rules"
