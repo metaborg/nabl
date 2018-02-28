@@ -88,7 +88,7 @@ context-free syntax
 
 context-free syntax
 
-  RelDecl.RelDecl = <<{RelProp " "}*> <LCID> : <RelType>>
+  RelDecl.RelDecl = <<{RelProp " "}*> <LCID> : <RelType> <RelKind>>
 
   RelType.SimpleRelation     = [[{SortRef " * "}+]]
   RelType.FunctionalRelation = [[{SortRef " * "}+] -> [SortRef]] // FIXME Turning SortRef into a list breaks parsing
@@ -100,10 +100,17 @@ context-free syntax
   RelProp.Symmetric     = <symmetric>
   RelProp.AntiSymmetric = <anti-symmetric>
 
+  RelKind.GlobalRel       = <{global}>
+  RelKind.ScopedRel       = <{scoped}>
+  RelKind.DefaultRelScope =
+
 syntax
 
-  Constraint-CF.CAskRel  = "?" LCID-LEX "(" CommaTerms-CF ")"
-  Constraint-CF.CTellRel = "!" LCID-LEX "(" CommaTerms-CF ")"
+  Constraint-CF.CAskGlobalRel  = "?" LCID-LEX "(" CommaTerms-CF ")"
+  Constraint-CF.CTellGlobalRel = "!" LCID-LEX "(" CommaTerms-CF ")"
+
+  Constraint-CF.CAskScopedRel  = "?" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
+  Constraint-CF.CTellScopedRel = "!" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
 
 
 /******************************************************************
