@@ -5,6 +5,7 @@ imports
   nabl2/shared/Main
   nabl2/lang/Main
   nabl2/lang/modules/Module // not transitively visible
+  Layout
 
 context-free start-symbols
 
