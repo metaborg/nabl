@@ -16,38 +16,38 @@ template options
 
 context-free syntax
 
-  Message.DefaultMessage =
+  NaBL2-Message.DefaultMessage =
 
-  MessagePosition.DefaultMessagePosition =
+  NaBL2-MessagePosition.DefaultMessagePosition =
 
-  LabelRE.Option    = <<LabelRE>?>
-  LabelRE.ConcatDot = <<LabelRE>.<LabelRE>>     {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
-  LabelRE.NonEmpty = <<LabelRE>+>
+  NaBL2-LabelRE.Option    = <<NaBL2-LabelRE>?>
+  NaBL2-LabelRE.ConcatDot = <<NaBL2-LabelRE>.<NaBL2-LabelRE>>  {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
+  NaBL2-LabelRE.NonEmpty = <<NaBL2-LabelRE>+>
 
-  ELabel.DefaultELabel = "-"
-  NLabel.DefaultNLabel = "="
+  NaBL2-ELabel.DefaultELabel = "-"
+  NaBL2-NLabel.DefaultNLabel = "="
 
-  Constraint.CDeclType = [[Occurrence] : [CTerm] [ConstraintPriority] [Message]]
+  NaBL2-Constraint.CDeclType = [[NaBL2-Occurrence] : [NaBL2-CTerm] [NaBL2-ConstraintPriority] [NaBL2-Message]]
 
-  Constraint.CGen  = [[CTerm] genOf [CTerm] [Message]]
-  Constraint.CInst = [[CTerm] instOf [CTerm] [Message]]
+  NaBL2-Constraint.CGen  = [[NaBL2-CTerm] genOf [NaBL2-CTerm] [NaBL2-Message]]
+  NaBL2-Constraint.CInst = [[NaBL2-CTerm] instOf [NaBL2-CTerm] [NaBL2-Message]]
 
 syntax
 
-  TermIndex-CF.TermIndexFrom    = "@" Var-CF
+  NaBL2-TermIndex-CF.TermIndexFrom = "@" NaBL2-Var-CF
 
-  OccurrenceIndex-CF.DefaultOccurrenceIndex =
-  OccurrenceIndex-CF.OccurrenceIndexFrom    = LAYOUT?-CF "@" Var-CF
+  NaBL2-OccurrenceIndex-CF.DefaultOccurrenceIndex =
+  NaBL2-OccurrenceIndex-CF.OccurrenceIndexFrom    = LAYOUT?-CF "@" NaBL2-Var-CF
 
-  Constraint-CF.CSetEq = CSet-CF LAYOUT?-CF "seteq" SetProj-CF LAYOUT?-CF CSet-CF LAYOUT?-CF Message-CF
+  NaBL2-Constraint-CF.CSetEq = NaBL2-CSet-CF LAYOUT?-CF "seteq" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF NaBL2-Message-CF
 
 context-free priorities
 
-    { LabelRE.Closure LabelRE.Option LabelRE.NonEmpty }
-  > { right: LabelRE.Concat LabelRE.ConcatDot }
-  > LabelRE.And
-  > LabelRE.Or
+    { NaBL2-LabelRE.Closure NaBL2-LabelRE.Option NaBL2-LabelRE.NonEmpty }
+  > { right: NaBL2-LabelRE.Concat NaBL2-LabelRE.ConcatDot }
+  > NaBL2-LabelRE.And
+  > NaBL2-LabelRE.Or
 
 lexical syntax
 
-  Keyword = "seteq" | "genOf" | "instOf" | "new" | "this"
+  NaBL2-Keyword = "seteq" | "genOf" | "instOf" | "new" | "this"

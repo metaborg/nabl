@@ -11,6 +11,6 @@ template options
 
 context-free syntax
 
-  Constraint.CGoal = [?- [CTerm] [MessagePosition]]
-  Constraint.CFact = [!- [CTerm] [MessagePosition]]
+  NaBL2-Constraint.CGoal = [?- [NaBL2-CTerm] [NaBL2-MessagePosition]]
+  NaBL2-Constraint.CFact = [!- [NaBL2-CTerm] [NaBL2-MessagePosition]]
 

@@ -1,4 +1,4 @@
-module nabl2/lang/common/Layout
+module Layout
 
 lexical syntax
 

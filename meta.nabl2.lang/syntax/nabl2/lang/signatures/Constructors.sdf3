@@ -11,15 +11,15 @@ template options
 
 context-free syntax
 
-  Signature.Sorts = <
+  NaBL2-Signature.Sorts = <
     sorts
-      <{Sort "\n"}*>
+      <{NaBL2-Sort "\n"}*>
   > {longest-match}
 
-  Signature.Constructors = <
+  NaBL2-Signature.Constructors = <
     constructors
-      <{OpDecl "\n"}*>
+      <{NaBL2-OpDecl "\n"}*>
   > {longest-match}
 
-  OpDecl.OpDecl        = [[OpId] : [{SortRef " * "}*] -> [Sort]]
-  OpDecl.NullaryOpDecl = [[OpId] : [Sort]]
+  NaBL2-OpDecl.OpDecl        = [[NaBL2-OpId] : [{NaBL2-SortRef " * "}*] -> [NaBL2-Sort]]
+  NaBL2-OpDecl.NullaryOpDecl = [[NaBL2-OpId] : [NaBL2-Sort]]

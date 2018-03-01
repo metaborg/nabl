@@ -11,6 +11,6 @@ template options
 
 context-free syntax
 
-  Constraint.CEqual   = [[CTerm] == [CTerm] [Message]]
-  Constraint.CInequal = [[CTerm] != [CTerm] [Message]]
+  NaBL2-Constraint.CEqual   = [[NaBL2-CTerm] == [NaBL2-CTerm] [NaBL2-Message]]
+  NaBL2-Constraint.CInequal = [[NaBL2-CTerm] != [NaBL2-CTerm] [NaBL2-Message]]
 

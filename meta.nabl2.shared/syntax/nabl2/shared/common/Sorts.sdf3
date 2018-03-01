@@ -10,20 +10,20 @@ template options
 
 context-free syntax
 
-  Sort.SortNoArgs     = SortId
+  NaBL2-Sort.SortNoArgs     = NaBL2-SortId
 
-  SortRef                = Sort
-  SortRef.TermSort       = "term"
-  SortRef.OccurrenceSort = "occurrence"
-  SortRef.ScopeSort      = "scope"
-  SortRef.StringSort     = "string"
-  SortRef.Var            = SortVarId
-  SortRef.TupleSort      = <(<{SortRef " * "}*>)>
-  SortRef.ListSort       = <list(<SortRef>)>
-  SortRef.MapSort        = <map(<SortRef>, <SortRef>)>
+  NaBL2-SortRef                = NaBL2-Sort
+  NaBL2-SortRef.TermSort       = "term"
+  NaBL2-SortRef.OccurrenceSort = "occurrence"
+  NaBL2-SortRef.ScopeSort      = "scope"
+  NaBL2-SortRef.StringSort     = "string"
+  NaBL2-SortRef.Var            = NaBL2-SortVarId
+  NaBL2-SortRef.TupleSort      = <(<{NaBL2-SortRef " * "}*>)>
+  NaBL2-SortRef.ListSort       = <list(<NaBL2-SortRef>)>
+  NaBL2-SortRef.MapSort        = <map(<NaBL2-SortRef>, <NaBL2-SortRef>)>
  
 lexical syntax
 
-  SortVarId = VarId
+  NaBL2-SortVarId = NaBL2-VarId
 
-  SortVarId = "term" | "string" | "scope" | "occurrence" | "list" | "map" {reject}
+  NaBL2-SortVarId = "term" | "string" | "scope" | "occurrence" | "list" | "map" {reject}

@@ -2,4 +2,4 @@ module nabl2/shared/common/AST
 
 sorts
 
-  TermIndex
+  NaBL2-TermIndex

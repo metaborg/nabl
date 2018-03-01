@@ -11,9 +11,9 @@ template options
 
 syntax
 
-  Constraint-CF.CGen  = CTerm-CF LAYOUT?-CF "genOf" "(" LAYOUT?-CF CVar-CF LAYOUT?-CF ")" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
-  Constraint-CF.CInst = CTerm-CF LAYOUT?-CF "instOf" "(" LAYOUT?-CF CVar-CF LAYOUT?-CF ")" LAYOUT?-CF CTerm-CF LAYOUT?-CF Message-CF
+  NaBL2-Constraint-CF.CGen  = NaBL2-CTerm-CF LAYOUT?-CF "genOf" "(" LAYOUT?-CF NaBL2-CVar-CF LAYOUT?-CF ")" LAYOUT?-CF NaBL2-CTerm-CF LAYOUT?-CF NaBL2-Message-CF
+  NaBL2-Constraint-CF.CInst = NaBL2-CTerm-CF LAYOUT?-CF "instOf" "(" LAYOUT?-CF NaBL2-CVar-CF LAYOUT?-CF ")" LAYOUT?-CF NaBL2-CTerm-CF LAYOUT?-CF NaBL2-Message-CF
   
 lexical syntax
 
-  Keyword = "genOf" | "instOf"
+  NaBL2-Keyword = "genOf" | "instOf"
