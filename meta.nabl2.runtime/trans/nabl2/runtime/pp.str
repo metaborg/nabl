@@ -24,6 +24,7 @@ rules
   pp-NaBL2-CGenArgs       = pp-NaBL2(prettyprint-NaBL2-CGenArgs)
   pp-NaBL2-Constraint     = pp-NaBL2(prettyprint-NaBL2-Constraint)
   pp-NaBL2-CVar           = pp-NaBL2(prettyprint-NaBL2-CVar)
+  pp-NaBL2-PathLabel      = pp-NaBL2(prettyprint-NaBL2-PathLabel)
 
   pp-NaBL2-AnalysisResult = pp-NaBL2(prettyprint-NaBL2-AnalysisResult)
 

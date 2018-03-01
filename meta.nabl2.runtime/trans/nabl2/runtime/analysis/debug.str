@@ -1,5 +1,9 @@
 module nabl2/runtime/analysis/debug
 
+imports
+
+  nabl2/runtime/analysis/dot
+
 rules
 
   nabl2--debug-constraints(|a) =

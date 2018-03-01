@@ -6,6 +6,7 @@ menus
 
     action: "Debug file constraints"          = nabl2--debug-file-constraints (realtime)
     action: "Debug file scope graph"          = nabl2--debug-file-scope-graph (realtime)
+    action: "Debug file scope graph (DOT)"    = nabl2--debug-file-scope-graph-dot (realtime)
     action: "Debug file name resolution"      = nabl2--debug-file-name-resolution (realtime)
     action: "Debug file unifier"              = nabl2--debug-file-unifier (realtime)
     action: "Debug file symbolic constraints" = nabl2--debug-file-symbolic-constraints
@@ -14,6 +15,7 @@ menus
 
     action: "Debug project constraints"          = nabl2--debug-project-constraints (realtime)
     action: "Debug project scope graph"          = nabl2--debug-project-scope-graph (realtime)
+    action: "Debug project scope graph (DOT)"    = nabl2--debug-project-scope-graph-dot (realtime)
     action: "Debug project name resolution"      = nabl2--debug-project-name-resolution (realtime)
     action: "Debug project unifier"              = nabl2--debug-project-unifier (realtime)
     action: "Debug project symbolic constraints" = nabl2--debug-project-symbolic-constraints
