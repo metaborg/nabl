@@ -48,6 +48,18 @@ rules
 
 rules // Special rules
 
+  pp-H-list(pp) = prettyprint-NaBL2-NaBL2-CVar
+  pp-H-list(pp|sep) = prettyprint-NaBL2-NaBL2-CVar
+
+  pp-V-list(pp) = prettyprint-NaBL2-NaBL2-CVar
+  pp-V-list(pp|sep) = prettyprint-NaBL2-NaBL2-CVar
+
+  pp-HV-list(pp) = prettyprint-NaBL2-NaBL2-CVar
+  pp-HV-list(pp|sep) = prettyprint-NaBL2-NaBL2-CVar
+
+  pp-HZ-list(pp) = prettyprint-NaBL2-NaBL2-CVar
+  pp-HZ-list(pp|sep) = prettyprint-NaBL2-NaBL2-CVar
+
   prettyprint-NaBL2-NaBL2-Name:
     _ -> [S("?")]
     where is-SDF-placeholder
