@@ -40,4 +40,4 @@ context-free syntax
 
 lexical syntax
 
-  NaBL2-Keyword = "NAME"
+  NaBL2-Keyword = "NAME" | "NAMES"
