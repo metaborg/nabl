@@ -163,7 +163,7 @@ public class Unifier<D, E> implements IUnifier, Serializable {
     }
 
     private boolean unifyVarTerm(ITermVar var, ITerm term) {
-        if(term.getVars().contains(var)) {
+        if(find(term).getVars().contains(var)) {
             return false;
         }
         reps.put(var, term);
