@@ -6,6 +6,5 @@ imports
 
 sorts
 
-  NaBL2-NaBL2Scope
-  NaBL2-NaBL2Occurrence
-
+  NaBL2Scope
+  NaBL2Occurrence

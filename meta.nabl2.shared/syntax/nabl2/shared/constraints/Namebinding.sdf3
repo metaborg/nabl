@@ -34,10 +34,10 @@ context-free syntax
 
 context-free syntax
 
-  NaBL2-CTerm.NAMETerm = "NaBL2-NAME"
+  NaBL2-CTerm.NAMETerm = "NAME"
 
-  NaBL2-MessagePosition.NAMEPosition = <@ NaBL2-NAMES>
+  NaBL2-MessagePosition.NAMEPosition = <@ NAMES>
 
 lexical syntax
 
-  NaBL2-Keyword = "NaBL2-NAME"
+  NaBL2-Keyword = "NAME"
