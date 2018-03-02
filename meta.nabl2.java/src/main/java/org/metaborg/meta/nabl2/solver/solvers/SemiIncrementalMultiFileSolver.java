@@ -13,6 +13,7 @@ import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
 import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
+import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
 import org.metaborg.meta.nabl2.scopegraph.terms.Occurrence;
 import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
@@ -68,7 +69,8 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         // shared
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution = initial.nameResolution((s, l) -> true);
+        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
+                EsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
 
         // constraint set properties
         final ActiveVars activeVars = new ActiveVars(unifier);

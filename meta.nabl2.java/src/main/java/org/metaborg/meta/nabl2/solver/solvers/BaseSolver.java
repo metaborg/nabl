@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.solver.solvers;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -10,14 +9,7 @@ import org.immutables.value.Value;
 import org.metaborg.meta.nabl2.config.NaBL2DebugConfig;
 import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.ast.IAstConstraint;
-import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.scopegraph.IScopeGraphConstraint;
-import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
-import org.metaborg.meta.nabl2.controlflow.terms.IFlowSpecSolution;
-import org.metaborg.meta.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
-import org.metaborg.meta.nabl2.relations.variants.IVariantRelation;
-import org.metaborg.meta.nabl2.relations.variants.VariantRelations;
-import org.metaborg.meta.nabl2.scopegraph.esop.IEsopNameResolution;
 import org.metaborg.meta.nabl2.scopegraph.esop.IEsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import org.metaborg.meta.nabl2.scopegraph.terms.Label;
@@ -33,24 +25,17 @@ import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.SolverException;
 import org.metaborg.meta.nabl2.solver.components.AstComponent;
 import org.metaborg.meta.nabl2.solver.components.BaseComponent;
-import org.metaborg.meta.nabl2.solver.components.ControlFlowComponent;
 import org.metaborg.meta.nabl2.solver.components.EqualityComponent;
-import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent;
-import org.metaborg.meta.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
-import org.metaborg.meta.nabl2.solver.components.RelationComponent;
 import org.metaborg.meta.nabl2.solver.components.ScopeGraphComponent;
-import org.metaborg.meta.nabl2.solver.components.SymbolicComponent;
 import org.metaborg.meta.nabl2.solver.messages.IMessages;
 import org.metaborg.meta.nabl2.solver.messages.Messages;
 import org.metaborg.meta.nabl2.stratego.TermIndex;
-import org.metaborg.meta.nabl2.symbolic.ISymbolicConstraints;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
 import org.metaborg.meta.nabl2.util.collections.IProperties;
 import org.metaborg.meta.nabl2.util.collections.Properties;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -125,50 +110,6 @@ public class BaseSolver {
         messages.addAll(Messages.unsolvedErrors(initial.constraints()));
         return ImmutableSolution.builder().from(initial).messages(messages.freeze()).constraints(Collections.emptySet())
                 .build();
-    }
-
-    public ISolution merge(ISolution initial, Iterable<? extends ISolution> solutions,
-            Predicate2<Scope, Label> isEdgeComplete, IMessageInfo message) throws InterruptedException {
-
-        final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
-        final IEsopNameResolution<Scope, Label, Occurrence> nameResolution = initial.nameResolution(isEdgeComplete);
-
-        final SolverCore core = new SolverCore(initial.config(), unifier, n -> {
-            throw new IllegalStateException("Fresh is not available when merging.");
-        }, callExternal);
-        final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
-        final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
-        final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
-        final RelationComponent relationSolver = new RelationComponent(core, r -> false,
-                initial.config().getFunctions(), VariantRelations.melt(initial.relations()));
-        final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableFlowSpecSolution.of());
-
-        final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
-        final IMessages.Transient messages = initial.messages().melt();
-        for(ISolution solution : solutions) {
-            seed(astSolver.seed(solution.astProperties(), message), messages, constraints);
-            seed(equalitySolver.seed(solution.unifier(), message), messages, constraints);
-            scopeGraph.addAll(solution.scopeGraph());
-            seed(nameResolutionSolver.seed(solution.declProperties(), message), messages, constraints);
-            seed(relationSolver.seed(solution.relations(), message), messages, constraints);
-            seed(symSolver.seed(solution.symbolic(), message), messages, constraints);
-        }
-        nameResolutionSolver.update();
-
-        IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
-        NameResolutionResult nameResult = nameResolutionSolver.finish();
-        Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
-        IUnifier.Immutable unifyResult = equalitySolver.finish();
-        ISymbolicConstraints symbolicResult = symSolver.finish();
-        IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
-
-        return ImmutableSolution
-                .of(initial.config(), astResult, nameResult.scopeGraph(), nameResult.declProperties(), relationResult,
-                    unifyResult, symbolicResult, fsSolution, messages.freeze(), constraints)
-                .withNameResolutionCache(nameResult.resolutionCache());
     }
 
     protected boolean seed(SeedResult result, IMessages.Transient messages, Set<IConstraint> constraints) {

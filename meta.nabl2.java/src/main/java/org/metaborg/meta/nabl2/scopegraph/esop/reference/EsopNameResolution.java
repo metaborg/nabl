@@ -22,17 +22,14 @@ import org.metaborg.meta.nabl2.scopegraph.path.IDeclPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IResolutionPath;
 import org.metaborg.meta.nabl2.scopegraph.path.IScopePath;
+import org.metaborg.meta.nabl2.scopegraph.terms.Scope;
 import org.metaborg.meta.nabl2.scopegraph.terms.path.Paths;
-import org.metaborg.meta.nabl2.util.Tuple2;
-import org.metaborg.util.functions.Function0;
-import org.metaborg.util.functions.Function1;
-import org.metaborg.util.functions.PartialFunction0;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Map;
 
@@ -51,11 +48,6 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final Map.Transient<S, Set<O>> visibility;
     private final Map.Transient<S, Set<O>> reachability;
 
-    private final java.util.Map<O, IEsopEnv<S, L, O, IResolutionPath<S, L, O>>> pendingResolution;
-    private final java.util.Map<S, IEsopEnv<S, L, O, IDeclPath<S, L, O>>> pendingVisibility;
-    private final java.util.Map<S, IEsopEnv<S, L, O, IDeclPath<S, L, O>>> pendingReachability;
-    private final java.util.Map<IRelation<L>, EnvL<S, L, O>> stagedEnv_L;
-
     public EsopNameResolution(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
             Predicate2<S, L> isEdgeClosed, Map.Transient<O, Set<IResolutionPath<S, L, O>>> resolution,
             Map.Transient<S, Set<O>> visibility, Map.Transient<S, Set<O>> reachability) {
@@ -73,11 +65,6 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.resolution = resolution;
         this.visibility = visibility;
         this.reachability = reachability;
-
-        this.pendingResolution = Maps.newHashMap();
-        this.pendingVisibility = Maps.newHashMap();
-        this.pendingReachability = Maps.newHashMap();
-        this.stagedEnv_L = Maps.newHashMap();
     }
 
     @Override public boolean addAll(IEsopNameResolution.ResolutionCache<S, L, O> cache) {
@@ -104,11 +91,10 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if(resolution.containsKey(ref)) {
             return Optional.of(resolution.get(ref));
         } else {
-            final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = pendingResolution.computeIfAbsent(ref,
-                    r -> resolveEnv(io.usethesource.capsule.Set.Immutable.of(), ref));
-            return env.get().map(Tuple2::_1).map(result -> {
+            final Optional<Set<IResolutionPath<S, L, O>>> env =
+                    resolveEnv(io.usethesource.capsule.Set.Immutable.of(), ref);
+            return env.map(result -> {
                 resolution.put(ref, result);
-                pendingResolution.remove(ref);
                 return result;
             });
         }
@@ -122,14 +108,12 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if(visibility.containsKey(scope)) {
             return Optional.of(visibility.get(scope));
         } else {
-            final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
-                    pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
-            return env.get().map(Tuple2::_1).map(result -> {
+            final Optional<Set<IDeclPath<S, L, O>>> env = visibleEnv(scope);
+            return env.map(result -> {
                 ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
                 result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
                 final Set<O> decls = declsBuilder.build();
                 visibility.put(scope, decls);
-                pendingVisibility.remove(scope);
                 return decls;
             });
         }
@@ -139,176 +123,169 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if(reachability.containsKey(scope)) {
             return Optional.of(reachability.get(scope));
         } else {
-            final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
-                    pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
-            return env.get().map(Tuple2::_1).map(result -> {
+            final Optional<Set<IDeclPath<S, L, O>>> env = reachableEnv(scope);
+            return env.map(result -> {
                 ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
                 result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
                 final Set<O> decls = declsBuilder.build();
                 reachability.put(scope, decls);
-                pendingReachability.remove(scope);
                 return decls;
             });
         }
     }
 
-    private IEsopEnv<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
-        return env(io.usethesource.capsule.Set.Immutable.of(), order, wf, Paths.empty(scope), EsopEnvs.envFilter());
+    private Optional<Set<IDeclPath<S, L, O>>> visibleEnv(S scope) {
+        return env(io.usethesource.capsule.Set.Immutable.of(), order, wf, Paths.empty(scope), EsopFilters.envFilter());
     }
 
-    private IEsopEnv<S, L, O, IDeclPath<S, L, O>> reachableEnv(S scope) {
-        return env(io.usethesource.capsule.Set.Immutable.of(), noOrder, wf, Paths.empty(scope), EsopEnvs.envFilter());
+    private Optional<Set<IDeclPath<S, L, O>>> reachableEnv(S scope) {
+        return env(io.usethesource.capsule.Set.Immutable.of(), noOrder, wf, Paths.empty(scope),
+                EsopFilters.envFilter());
     }
 
-    private IEsopEnv<S, L, O, IResolutionPath<S, L, O>> resolveEnv(io.usethesource.capsule.Set.Immutable<O> seenI,
-            O ref) {
-        return scopeGraph.getRefs().get(ref)
-                .map(scope -> env(seenI.__insert(ref), order, wf, Paths.empty(scope), EsopEnvs.resolutionFilter(ref)))
-                .orElseGet(() -> EsopEnvs.empty());
+    private Optional<Set<IResolutionPath<S, L, O>>> resolveEnv(io.usethesource.capsule.Set.Immutable<O> seenI, O ref) {
+        final Optional<S> scope = scopeGraph.getRefs().get(ref);
+        if(scope.isPresent()) {
+            return env(seenI.__insert(ref), order, wf, Paths.empty(scope.get()), EsopFilters.resolutionFilter(ref));
+        } else {
+            return Optional.of(ImmutableSet.of());
+        }
     }
 
-    private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env(io.usethesource.capsule.Set.Immutable<O> seenImports,
-            IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
+    private <P extends IPath<S, L, O>> Optional<Set<P>> env(io.usethesource.capsule.Set.Immutable<O> seenImports,
+            IRelation<L> lt, IRegExpMatcher<L> re, IScopePath<S, L, O> path, EsopFilters.Filter<S, L, O, P> filter) {
         if(re.isEmpty()) {
-            return EsopEnvs.empty();
+            return Optional.of(ImmutableSet.of());
         } else {
-            return EsopEnvs.trace(path.getTarget().getResource(), env_L(labels, seenImports, lt, re, path, filter));
+            return env_L(labels, seenImports, lt, re, path, filter);
         }
     }
 
-    private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_l(io.usethesource.capsule.Set.Immutable<O> seenImports,
-            IRelation<L> lt, IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
-        return EsopEnvs.guarded((PartialFunction0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
-            final S s = path.getTarget();
-            if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
-                return Optional.empty();
-            } else {
-                final IEsopEnv<S, L, O, P> env =
-                        l.equals(labelD) ? env_D(re, path, filter) : env_nonD(seenImports, lt, re, l, path, filter);
-                return Optional.of(env);
-            }
-        });
+    private <P extends IPath<S, L, O>> Optional<Set<P>> env_l(io.usethesource.capsule.Set.Immutable<O> seenImports,
+            IRelation<L> lt, IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path,
+            EsopFilters.Filter<S, L, O, P> filter) {
+        final S s = path.getTarget();
+        if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
+            return Optional.empty();
+        } else {
+            final Optional<Set<P>> env =
+                    l.equals(labelD) ? env_D(re, path, filter) : env_nonD(seenImports, lt, re, l, path, filter);
+            return env;
+        }
     }
 
-    private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_D(IRegExpMatcher<L> re, IScopePath<S, L, O> path,
-            IEsopEnv.Filter<S, L, O, P> filter) {
-        if(!re.isAccepting()) {
-            return EsopEnvs.empty();
-        } else {
-            List<P> paths = Lists.newArrayList();
+    private <P extends IPath<S, L, O>> Optional<Set<P>> env_D(IRegExpMatcher<L> re, IScopePath<S, L, O> path,
+            EsopFilters.Filter<S, L, O, P> filter) {
+        ImmutableSet.Builder<P> env = ImmutableSet.builder();
+        if(re.isAccepting()) {
             for(O decl : scopeGraph.getDecls().inverse().get(path.getTarget())) {
-                filter.test(Paths.decl(path, decl)).ifPresent(paths::add);
+                filter.test(Paths.decl(path, decl)).ifPresent(env::add);
             }
-            return EsopEnvs.init(paths);
         }
+        return Optional.of(env.build());
     }
 
-    private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_nonD(
-            io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
-            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
-        Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter =
-                (Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> & Serializable) p -> {
-                    return env(seenImports, lt, re.match(l), p, filter);
-                };
-        return EsopEnvs
-                .union(Iterables.concat(directScopes(l, path, getter), importScopes(seenImports, l, path, getter)));
+    private <P extends IPath<S, L, O>> Optional<Set<P>> env_nonD(io.usethesource.capsule.Set.Immutable<O> seenImports,
+            IRelation<L> lt, IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path,
+            EsopFilters.Filter<S, L, O, P> filter) {
+        return Optionals.lift(directScopes(l, path), importScopes(seenImports, l, path), (ps1, ps2) -> {
+            final ImmutableSet.Builder<P> unionEnv = ImmutableSet.builder();
+            for(IScopePath<S, L, O> p : Iterables.concat(ps1, ps2)) {
+                Optional<Set<P>> env = env(seenImports, lt, re.match(l), p, filter);
+                if(env.isPresent()) {
+                    unionEnv.addAll(env.get());
+                } else {
+                    return Optional.<Set<P>>empty();
+                }
+            }
+            return Optional.<Set<P>>of(unionEnv.build());
+        }).flatMap(o -> o);
     }
 
-    private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> directScopes(L l, IScopePath<S, L, O> path,
-            Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
-        List<IEsopEnv<S, L, O, P>> envs = Lists.newArrayList();
+    private Optional<List<IScopePath<S, L, O>>> directScopes(L l, IScopePath<S, L, O> path) {
+        final List<IScopePath<S, L, O>> paths = Lists.newArrayList();
         for(S nextScope : scopeGraph.getDirectEdges().get(path.getTarget(), l)) {
-            Paths.append(path, Paths.direct(path.getTarget(), l, nextScope)).map(getter::apply).ifPresent(envs::add);
+            Paths.append(path, Paths.direct(path.getTarget(), l, nextScope)).ifPresent(paths::add);
         }
-        return envs;
+        return Optional.of(paths);
     }
 
-    private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> importScopes(
-            io.usethesource.capsule.Set.Immutable<O> seenImports, L l, IScopePath<S, L, O> path,
-            Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
-        List<IEsopEnv<S, L, O, P>> envs = Lists.newArrayList();
+    private Optional<List<IScopePath<S, L, O>>> importScopes(io.usethesource.capsule.Set.Immutable<O> seenImports, L l,
+            IScopePath<S, L, O> path) {
+        final List<IScopePath<S, L, O>> paths = Lists.newArrayList();
         for(O ref : scopeGraph.getImportEdges().get(path.getTarget(), l)) {
             if(seenImports.contains(ref)) {
                 continue;
             }
-            final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = resolveEnv(seenImports, ref);
-            envs.add(EsopEnvs.guarded((PartialFunction0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
-                return env.get().map(paths -> {
-                    List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
-                    for(IResolutionPath<S, L, O> importPath : paths._1()) {
-                        for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
-                            Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
-                                    .map(getter::apply).ifPresent(importEnvs::add);
-                        }
+            final Optional<Set<IResolutionPath<S, L, O>>> env = resolveEnv(seenImports, ref);
+            if(env.isPresent()) {
+                for(IResolutionPath<S, L, O> importPath : env.get()) {
+                    for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
+                        Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
+                                .ifPresent(paths::add);
                     }
-                    return EsopEnvs.trace(EsopEnvs.union(importEnvs), paths._2());
-                });
-            }));
-
-        }
-        return envs;
-    }
-
-    private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_L(Set<L> L,
-            io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re,
-            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
-        return stagedEnv_L.computeIfAbsent(lt, lo -> stageEnv_L(L, lt)).apply(seenImports, re, path, filter,
-                Maps.newHashMap());
-    }
-
-    private EnvL<S, L, O> stageEnv_L(Set<L> L, IRelation<L> lt) {
-        List<EnvL<S, L, O>> stagedEnvs = Lists.newArrayList();
-        for(L l : max(lt, L)) {
-            EnvL<S, L, O> smallerEnv = stageEnv_L(smaller(lt, L, l), lt);
-            stagedEnvs.add(new EnvL<S, L, O>() {
-
-                @Override public <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> apply(
-                        io.usethesource.capsule.Set.Immutable<O> seenI, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
-                        IEsopEnv.Filter<S, L, O, P> filter, java.util.Map<L, IEsopEnv<S, L, O, P>> env_lCache) {
-                    final IEsopEnv<S, L, O, P> env_l =
-                            EsopEnvs.lazy((Function0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
-                                return env_lCache.computeIfAbsent(l, ll -> env_l(seenI, lt, re, l, path, filter));
-                            });
-                    return EsopEnvs.shadow(filter, smallerEnv.apply(seenI, re, path, filter, env_lCache), env_l);
                 }
-
-            });
-        }
-        return new EnvL<S, L, O>() {
-
-            @Override public <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> apply(
-                    io.usethesource.capsule.Set.Immutable<O> seenI, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
-                    IEsopEnv.Filter<S, L, O, P> filter, java.util.Map<L, IEsopEnv<S, L, O, P>> env_lCache) {
-                return EsopEnvs.union(stagedEnvs.stream().map(se -> se.apply(seenI, re, path, filter, env_lCache))
-                        .collect(Collectors.toList()));
-
+            } else {
+                return Optional.empty();
             }
-
-        };
-
+        }
+        return Optional.of(paths);
     }
 
-    private Set<L> max(IRelation<L> lt, Set<L> L) {
-        ImmutableSet.Builder<L> maxL = ImmutableSet.builder();
-        tryNext: for(L l : L) {
-            for(L larger : lt.larger(l)) {
-                if(L.contains(larger)) {
+    private <P extends IPath<S, L, O>> Optional<Set<P>> env_L(Set<L> L,
+            io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re,
+            IScopePath<S, L, O> path, EsopFilters.Filter<S, L, O, P> filter) {
+        final Set<L> min_L = min(lt, L);
+        final ImmutableSet.Builder<P> envBuilder = ImmutableSet.builder();
+        for(L l : min_L) {
+            final Optional<Set<P>> env_l = env_l(seenImports, lt, re, l, path, filter);
+            if(env_l.isPresent()) {
+                envBuilder.addAll(env_l.get());
+            } else {
+                return Optional.empty();
+            }
+        }
+        final Set<P> env = envBuilder.build();
+        if(filter.shortCircuit() && !env.isEmpty()) {
+            return Optional.of(env);
+        } else {
+            final Set<Object> shadowTokens = env.stream().map(p -> filter.matchToken(p)).collect(Collectors.toSet());
+            final ImmutableSet.Builder<P> deepEnvBuilder = ImmutableSet.builder();
+            deepEnvBuilder.addAll(env);
+            for(L l : min_L) {
+                final Optional<Set<P>> env_L = env_L(larger(lt, L, l), seenImports, lt, re, path, filter);
+                if(env_L.isPresent()) {
+                    env_L.get().stream().filter(p -> !shadowTokens.contains(filter.matchToken(p)))
+                            .forEach(deepEnvBuilder::add);
+                } else {
+                    return Optional.empty();
+                }
+            }
+            return Optional.of(deepEnvBuilder.build());
+        }
+    }
+
+    private Set<L> min(IRelation<L> lt, Set<L> L) {
+        ImmutableSet.Builder<L> minL = ImmutableSet.builder();
+        tryNext: for(L l1 : L) {
+            for(L l2 : L) {
+                if(lt.contains(l2, l1)) {
                     continue tryNext;
                 }
             }
-            maxL.add(l);
+            minL.add(l1);
         }
-        return maxL.build();
+        return minL.build();
     }
 
-    private Set<L> smaller(IRelation<L> lt, Set<L> L, L l) {
-        ImmutableSet.Builder<L> smallerL = ImmutableSet.builder();
-        for(L smaller : lt.smaller(l)) {
-            if(L.contains(smaller)) {
-                smallerL.add(smaller);
+    private Set<L> larger(IRelation<L> lt, Set<L> L, L l1) {
+        ImmutableSet.Builder<L> largerL = ImmutableSet.builder();
+        for(L l2 : L) {
+            if(lt.contains(l1, l2)) {
+                largerL.add(l2);
             }
         }
-        return smallerL.build();
+        return largerL.build();
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution<S, L, O>

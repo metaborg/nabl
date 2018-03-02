@@ -39,9 +39,6 @@ signature
     Sort
 
   relations
-//  reflexive, transitive, anti-symmetric sub : Type * Type {
-//    [+sub]
-//  }
     in  : Type * TClass
 
   name resolution
@@ -53,11 +50,13 @@ rules
 
   init ^ (s) :=
     new s,
+
     (SCOPE(),      SCOPE()     ) <in! DirectEdge(),
     (OCCURRENCE(), SCOPE()     ) <in! OccurrenceEdge(),
     (SCOPE(),      OCCURRENCE()) <in! OccurrenceEdge(),
     (OCCURRENCE(), SCOPE()     ) <in! NamedEdge(),
     (SCOPE(),      OCCURRENCE()) <in! NamedEdge(),
+
     OCCURRENCE() <in! CanQuery(),
     PATH()       <in! CanQuery().
 
@@ -104,11 +103,6 @@ rules
   OpSort[[ ArrowOp(args, sort) ^ (s) : OP(tys, ty) ]] :=
     Map1T(SortRef)[[ args ^ (s) : tys ]],
     RealSortRef[[ sort ^ (s) : ty ]].
-
-//[[ InjDecl(sort1, sort2) ^ (s) ]] :=
-//  SortRef[[ sort1 ^ (s) : ty1 ]],
-//  RealSortRef[[ sort2 ^ (s) : ty2 ]],
-//  ty1 <sub! ty2.
 
   RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
     Sort{x} -> s, Sort{x} |-> d,
@@ -258,7 +252,6 @@ rules
     C{x} |-> d,
     d : CON(tys),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
-//  atys <sub? tys.
 
   [[ c@C(_, _) ^ (s) ]] :=
     UserConstraint(VarRef)[[ c ^ (s) ]].
@@ -419,7 +412,6 @@ rules
     Op{x} |-> d,
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
-//  atys <sub? tys.
   Term(V)[[ Str(_) ^ (_) : STRING() ]].
   Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
     Map1T(Term(V))[[ ts ^ (s) : _ ]].
