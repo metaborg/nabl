@@ -6,7 +6,7 @@ import static org.metaborg.meta.nabl2.terms.matching.TermMatch.M;
 import java.util.stream.Collectors;
 
 import org.metaborg.meta.nabl2.constraints.messages.MessageInfo;
-import org.metaborg.meta.nabl2.stratego.TermIndex;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.terms.matching.TermMatch.IMatcher;
 import org.metaborg.meta.nabl2.terms.unification.IUnifier;
@@ -21,7 +21,7 @@ public final class ControlFlowConstraints {
             // @formatter:off
             M.appl3(CF_DIRECT_EDGE, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, node1, node2, origin) -> ImmutableCFDirectEdge.of(node1, node2, origin)),
-            M.appl4(C_TF_APPL, TermIndex.matcher(), M.stringValue(), M.integerValue(), M.listElems(), 
+            M.appl4(C_TF_APPL, CFGNode.matcher(), M.stringValue(), M.integerValue(), M.listElems(), 
                     (c, index, propname, offset, args) -> ImmutableCTFAppl.of(index, propname, offset, args, MessageInfo.of(index)))
             // @formatter:on
         );
@@ -32,7 +32,7 @@ public final class ControlFlowConstraints {
             // @formatter:off
             edge -> B.newAppl(CF_DIRECT_EDGE, edge.getSourceNode(), edge.getTargetNode(),
                                MessageInfo.buildOnlyOriginTerm(edge.getMessageInfo())),
-            tfAppl -> B.newAppl(C_TF_APPL, tfAppl.getIndex(), B.newString(tfAppl.getPropertyName()), B.newInt(tfAppl.getOffset()), B.newList(tfAppl.getArguments()))
+            tfAppl -> B.newAppl(C_TF_APPL, tfAppl.getCFGNode(), B.newString(tfAppl.getPropertyName()), B.newInt(tfAppl.getOffset()), B.newList(tfAppl.getArguments()))
             // @formatter:on
         ));
     }
@@ -45,7 +45,7 @@ public final class ControlFlowConstraints {
                         unifier.findRecursive(edge.getTargetNode()),
                         edge.getMessageInfo().apply(unifier::findRecursive)),
             tfAppl -> ImmutableCTFAppl.of(
-                    tfAppl.getIndex(),
+                    tfAppl.getCFGNode(),
                     tfAppl.getPropertyName(),
                     tfAppl.getOffset(),
                     tfAppl.getArguments().stream().map(unifier::findRecursive).collect(Collectors.toList()),

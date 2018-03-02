@@ -1,10 +1,16 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
+import io.usethesource.capsule.Set;
+
 public interface ICompleteControlFlowGraph<N extends ICFGNode> extends IBasicControlFlowGraph<N> {
     /**
-     * @return An *unmodifiable* iterable of unreachable nodes in the control flow graph(s)
+     * @return A set of unreachable nodes in the control flow graph(s)
      */
-    Iterable<N> unreachableNodes();
+    Set.Immutable<N> unreachableNodes();
+    /**
+     * @return A set of nodes that reach a dead end (not ending in an end node) in the control flow graph(s)
+     */
+    Set.Immutable<N> deadEndNodes();
 
     /**
      * @return An *unmodifiable* iterable of *unmodifiable* sets. The iterable is topologically ordered.

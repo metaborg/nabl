@@ -18,7 +18,6 @@ import org.metaborg.meta.nabl2.solver.ISolver.SeedResult;
 import org.metaborg.meta.nabl2.solver.ISolver.SolveResult;
 import org.metaborg.meta.nabl2.solver.SolverCore;
 import org.metaborg.meta.nabl2.solver.TypeException;
-import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.Tuple2;
@@ -27,7 +26,7 @@ import io.usethesource.capsule.Map;
 
 public class ControlFlowComponent extends ASolver {
     private final IControlFlowGraph.Transient<CFGNode> cfg;
-    private final Map.Transient<Tuple2<TermIndex, String>, TransferFunctionAppl> tfAppls;
+    private final Map.Transient<Tuple2<CFGNode, String>, TransferFunctionAppl> tfAppls;
 
     public ControlFlowComponent(SolverCore core, IFlowSpecSolution<CFGNode> solution) {
         super(core);
@@ -77,7 +76,7 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CTFAppl c) {
-        tfAppls.__put(ImmutableTuple2.of(c.getIndex(), c.getPropertyName()), ImmutableTransferFunctionAppl.of(c.getOffset(), c.getArguments()));
+        tfAppls.__put(ImmutableTuple2.of(c.getCFGNode(), c.getPropertyName()), ImmutableTransferFunctionAppl.of(c.getOffset(), c.getArguments()));
         return Optional.ofNullable(SolveResult.empty());
     }
 

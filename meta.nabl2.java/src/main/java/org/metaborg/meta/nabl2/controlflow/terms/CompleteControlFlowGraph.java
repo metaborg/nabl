@@ -42,7 +42,12 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
     @Override
     @Auxiliary
     @Parameter
-    public abstract Iterable<N> unreachableNodes();
+    public abstract Set.Immutable<N> unreachableNodes();
+
+    @Override
+    @Auxiliary
+    @Parameter
+    public abstract Set.Immutable<N> deadEndNodes();
 
     @Override
     @Auxiliary
@@ -66,6 +71,6 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
         TopoSCCResult<N> result = Algorithms.topoSCCs(allNodes, startNodes, endNodes, edges);
 
         return ImmutableCompleteControlFlowGraph.of(edges, startNodes, normalNodes, endNodes,
-                result.unreachables(), result.topoSCCs(), result.revTopoSCCs());
+                result.unreachables(), result.deadEnds(), result.topoSCCs(), result.revTopoSCCs());
     }
 }

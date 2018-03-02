@@ -1,7 +1,6 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -13,6 +12,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Set;
 
 public class Algorithms {
     /**
@@ -31,7 +31,8 @@ public class Algorithms {
         Deque<N> sccStack = new ArrayDeque<>();
         java.util.Set<N> stackSet = new HashSet<>();
         Deque<java.util.Set<N>> sccs = new ArrayDeque<>();
-        ArrayList<N> unreachable = new ArrayList<>();
+        Set.Immutable<N> unreachable = Set.Immutable.of();
+        Set.Immutable<N> deadEnds = Set.Immutable.of();
 
         /* Note these deviations: 
          * (1) We seed the traversal with the start nodes.
@@ -69,10 +70,18 @@ public class Algorithms {
             }
         }
 
+        for (N node : nodes) {
+            // Every node not yet visited from the end nodes is going nowhere
+            if (nodeIndex.get(node) == null) {
+                deadEnds.add(node);
+            }
+        }
+
         return ImmutableTopoSCCResult.of(
                 Collections.unmodifiableCollection(sccs),
                 Collections.unmodifiableCollection(revSCCs),
-                Collections.unmodifiableList(unreachable));
+                unreachable,
+                deadEnds);
     }
 
     /**
@@ -145,6 +154,8 @@ public class Algorithms {
         @Parameter
         Iterable<java.util.Set<N>> revTopoSCCs();
         @Parameter
-        Iterable<N> unreachables();
+        Set.Immutable<N> unreachables();
+        @Parameter
+        Set.Immutable<N> deadEnds();
     }
 }

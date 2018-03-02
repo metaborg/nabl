@@ -1,6 +1,5 @@
 package org.metaborg.meta.nabl2.controlflow.terms;
 
-import org.metaborg.meta.nabl2.stratego.TermIndex;
 import org.metaborg.meta.nabl2.terms.ITerm;
 import org.metaborg.meta.nabl2.util.ImmutableTuple2;
 import org.metaborg.meta.nabl2.util.Tuple2;
@@ -15,10 +14,10 @@ public interface IFlowSpecSolution<N extends ICFGNode> {
     /**
      * @return The transfer functions associated with each node in the control flow graph(s) by property. 
      */
-    Map.Immutable<Tuple2<TermIndex, String>, TransferFunctionAppl> tfAppls();
+    Map.Immutable<Tuple2<CFGNode, String>, TransferFunctionAppl> tfAppls();
 
-    default TransferFunctionAppl getTFAppl(N node, String prop) {
-        return tfAppls().get(ImmutableTuple2.of(node.getIndex(), prop));
+    default TransferFunctionAppl getTFAppl(CFGNode node, String prop) {
+        return tfAppls().get(ImmutableTuple2.of(node, prop));
     }
 
     IFlowSpecSolution<N> withPreProperties(Map.Immutable<Tuple2<CFGNode, String>, ITerm> value);

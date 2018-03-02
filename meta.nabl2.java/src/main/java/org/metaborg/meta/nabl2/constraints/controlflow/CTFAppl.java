@@ -8,14 +8,14 @@ import org.metaborg.meta.nabl2.constraints.IConstraint;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageContent;
 import org.metaborg.meta.nabl2.constraints.messages.IMessageInfo;
 import org.metaborg.meta.nabl2.constraints.messages.MessageContent;
-import org.metaborg.meta.nabl2.stratego.TermIndex;
+import org.metaborg.meta.nabl2.controlflow.terms.CFGNode;
 import org.metaborg.meta.nabl2.terms.ITerm;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class CTFAppl implements IControlFlowConstraint {
 
-    @Value.Parameter public abstract TermIndex getIndex();
+    @Value.Parameter public abstract CFGNode getCFGNode();
 
     @Value.Parameter public abstract String getPropertyName();
     
@@ -43,7 +43,7 @@ public abstract class CTFAppl implements IControlFlowConstraint {
 
     @Override public IMessageContent pp() {
         MessageContent.Builder b = MessageContent.builder()
-                .append(getIndex())
+                .append(getCFGNode())
                 .append(".")
                 .append(getPropertyName())
                 .append(":")
