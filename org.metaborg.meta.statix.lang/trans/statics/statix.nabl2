@@ -211,7 +211,7 @@ rules
 
   [[ Rule(props, h, vs, g, c) ^ (s) ]] :=
     new s', s' ---> s,
-    distinct/name D(s')/Var,
+    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
     UserConstraint(VarDecl)[[ h ^ (s') ]],
     [[ vs ^ (s') ]],
     [[ g ^ (s') ]],
