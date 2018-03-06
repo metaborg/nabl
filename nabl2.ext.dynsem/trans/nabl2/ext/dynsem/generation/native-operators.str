@@ -1,9 +1,9 @@
-module nabl2/integration/dynsem/generation/native-operators
+module nabl2/ext/dynsem/generation/native-operators
 
 imports
 
   libjava-front
-  nabl2/integration/dynsem/generation/-
+  nabl2/ext/dynsem/generation/-
   signatures/nabl2/shared/common/-
 
 rules

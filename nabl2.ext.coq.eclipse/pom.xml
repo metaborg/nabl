@@ -4,7 +4,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>org.metaborg.meta.nabl2.integration.coq.eclipse</artifactId>
+  <artifactId>org.metaborg.meta.nabl2.ext.coq.eclipse</artifactId>
   <packaging>eclipse-plugin</packaging>
 
   <parent>
@@ -15,7 +15,7 @@
   </parent>
 
   <properties>
-    <lang.unpack.artifactId>org.metaborg.meta.nabl2.integration.coq</lang.unpack.artifactId>
+    <lang.unpack.artifactId>org.metaborg.meta.nabl2.ext.coq</lang.unpack.artifactId>
   </properties>
 
   <dependencies>

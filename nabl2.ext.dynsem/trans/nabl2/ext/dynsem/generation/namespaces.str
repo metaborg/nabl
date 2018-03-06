@@ -1,10 +1,10 @@
-module nabl2/integration/dynsem/generation/namespaces
+module nabl2/ext/dynsem/generation/namespaces
 
 imports
 
   signatures/nabl2/lang/signatures/-
   signatures/nabl2/shared/common/-
-  nabl2/integration/dynsem/generation/-
+  nabl2/ext/dynsem/generation/-
 
 rules
 

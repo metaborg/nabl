@@ -1,10 +1,10 @@
-module nabl2/integration/coq/query
+module nabl2/ext/coq/query
 
 imports
   signatures/nabl2/shared/common/-
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
-  nabl2/integration/coq/util/mbind-err
+  nabl2/ext/coq/util/mbind-err
   
 
 // Various operations for querying NaBL2 definitions

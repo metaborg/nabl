@@ -1,5 +1,0 @@
-module nabl2/integration/coq
-
-imports
-
-  nabl2/integration/coq/main

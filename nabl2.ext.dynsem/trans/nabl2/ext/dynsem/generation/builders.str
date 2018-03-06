@@ -1,11 +1,11 @@
-module nabl2/integration/dynsem/generation/builders
+module nabl2/ext/dynsem/generation/builders
 
 imports
 
   libjava-front
   libspoofax/core/language
   nabl2/lang/util/-
-  nabl2/integration/dynsem/generation/-
+  nabl2/ext/dynsem/generation/-
   signatures/nabl2/lang/-
  
 rules

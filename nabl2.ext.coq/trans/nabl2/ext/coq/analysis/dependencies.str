@@ -1,9 +1,9 @@
-module nabl2/integration/coq/analysis/dependencies
+module nabl2/ext/coq/analysis/dependencies
 
 imports
-	nabl2/integration/coq/util/maybe-list
-	nabl2/integration/coq/util/mbind-err
-	nabl2/integration/coq/query
+	nabl2/ext/coq/util/maybe-list
+	nabl2/ext/coq/util/mbind-err
+	nabl2/ext/coq/query
 	
 	signatures/nabl2/lang/rules/CGen-sig
   signatures/nabl2/shared/common/-

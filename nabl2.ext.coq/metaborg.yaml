@@ -1,6 +1,6 @@
 ---
-id: org.metaborg:org.metaborg.meta.nabl2.integration.coq:${metaborgVersion}
-name: NaBL2IntegrationCoq
+id: org.metaborg:org.metaborg.meta.nabl2.ext.coq:${metaborgVersion}
+name: NaBL2ExtCoq
 metaborgVersion: 2.5.0-SNAPSHOT
 
 dependencies:

@@ -1,7 +1,0 @@
-module nabl2integrationdynsem
-
-imports
-
-  libstratego-lib
-
-  nabl2/integration/dynsem/generation/-

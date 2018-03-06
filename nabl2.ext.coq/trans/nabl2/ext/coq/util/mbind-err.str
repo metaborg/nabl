@@ -1,4 +1,4 @@
-module nabl2/integration/coq/util/mbind-err
+module nabl2/ext/coq/util/mbind-err
 
 signature
 	

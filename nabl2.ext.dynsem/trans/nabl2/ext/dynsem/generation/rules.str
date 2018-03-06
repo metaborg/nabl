@@ -1,11 +1,11 @@
-module nabl2/integration/dynsem/generation/rules
+module nabl2/ext/dynsem/generation/rules
 
 imports
 
   signatures/nabl2/lang/rules/-
   signatures/nabl2/lang/signatures/-
   nabl2/lang/generation/rules/-
-  nabl2/integration/dynsem/generation/-
+  nabl2/ext/dynsem/generation/-
 
 rules
 

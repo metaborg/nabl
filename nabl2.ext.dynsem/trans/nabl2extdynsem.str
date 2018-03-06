@@ -1,0 +1,7 @@
+module nabl2extdynsem
+
+imports
+
+  libstratego-lib
+
+  nabl2/ext/dynsem/generation/-
