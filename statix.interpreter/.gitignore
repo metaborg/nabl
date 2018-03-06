@@ -5,15 +5,15 @@
 /.classpath
 /.settings
 /.factorypath
-file:///Users/hendrik/slde/develop-nabl2/spoofax-releng.git/nabl/org.metaborg.meta.statix.interpreter/src/main/resources/signatures-digest.cache
-src/main/resources/specification.aterm
-src/main/resources/parsetable.tbl
-src/main/resources/logback.xml
-src/main/java/org/metaborg/meta/statix/interpreter/generated
-src/main/java/org/metaborg/meta/statix/interpreter/generated/terms
-src/main/java/org/metaborg/meta/statix/interpreter/generated/terms/build
-src/main/java/org/metaborg/meta/statix/interpreter/generated/terms/match
-src/test/java/org/metaborg/meta/statix/interpreter/generated/test
+/src/main/resources/signatures-digest.cache
+/src/main/resources/specification.aterm
+/src/main/resources/parsetable.tbl
+/src/main/resources/logback.xml
+/src/main/java/mb/statix/interpreter/generated
+/src/main/java/mb/statix/interpreter/generated/terms
+/src/main/java/mb/statix/interpreter/generated/terms/build
+/src/main/java/mb/statix/interpreter/generated/terms/match
+/src/test/java/mb/statix/interpreter/generated/test
 /StatixLang.launch
 /TestStatixLang.launch
 /StatixLang (Core).launch

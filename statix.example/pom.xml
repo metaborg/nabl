@@ -5,7 +5,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 >
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>org.metaborg.meta.statix.example</artifactId>
+  <artifactId>statix.example</artifactId>
   <packaging>spoofax-project</packaging>
 
   <parent>
@@ -18,7 +18,7 @@
   <dependencies>
     <dependency>
       <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.statix.lang</artifactId>
+      <artifactId>statix.lang</artifactId>
       <type>spoofax-language</type>
       <version>${metaborg-version}</version>
     </dependency>
