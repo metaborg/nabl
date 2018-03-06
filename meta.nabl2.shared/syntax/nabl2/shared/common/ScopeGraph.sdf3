@@ -12,20 +12,20 @@ template options
 
 sorts
 
-  Scope
-  OccurrenceIndex
+  NaBL2-Scope
+  NaBL2-OccurrenceIndex
 
 context-free syntax
 
-  Scope                          = CVar
-  CTerm                          = Scope
+  NaBL2-Scope                          = NaBL2-CVar
+  NaBL2-CTerm                          = NaBL2-Scope
 
-  Occurrence.Occurrence          = <<NamespaceRef>{<CTerm><OccurrenceIndex>}> // FIXME Use NaBL2_ prefix
-  Occurrence                     = CVar
-  CTerm                          = Occurrence
+  NaBL2-Occurrence.Occurrence          = <<NaBL2-NamespaceRef>{<NaBL2-CTerm><NaBL2-OccurrenceIndex>}>
+  NaBL2-Occurrence                     = NaBL2-CVar
+  NaBL2-CTerm                          = NaBL2-Occurrence
 
-  Namespace.Namespace            = NamespaceId
+  NaBL2-Namespace.Namespace            = NaBL2-NamespaceId
 
-  NamespaceRef                   = Namespace
-  NamespaceRef.DefaultNamespace  =
+  NaBL2-NamespaceRef                   = NaBL2-Namespace
+  NaBL2-NamespaceRef.DefaultNamespace  =
 

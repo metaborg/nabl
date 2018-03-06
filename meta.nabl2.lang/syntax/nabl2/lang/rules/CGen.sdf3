@@ -15,38 +15,38 @@ imports
 
 context-free syntax
 
-  Rule.CGenInitRuleNoConstraint = <
-    init <CGenParamsTerm> <CGenTypeTerm>.
+  NaBL2-Rule.CGenInitRuleNoConstraint = <
+    init <NaBL2-CGenParamsTerm> <NaBL2-CGenTypeTerm>.
   >
 
-  Rule.CGenInitRule = <
-    init <CGenParamsTerm> <CGenTypeTerm> :=
-        <RuleBody>.
+  NaBL2-Rule.CGenInitRule = <
+    init <NaBL2-CGenParamsTerm> <NaBL2-CGenTypeTerm> :=
+        <NaBL2-RuleBody>.
   >
 
-  Rule.CGenRuleNoConstraint = <
-    <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] .
+  NaBL2-Rule.CGenRuleNoConstraint = <
+    <NaBL2-CGenRuleDef> [[ <NaBL2-Pattern> <NaBL2-CGenParamsPattern> <NaBL2-CGenTypePattern> ]] .
   >
 
-  Rule.CGenRule = <
-    <CGenRuleDef> [[ <Pattern> <CGenParamsPattern> <CGenTypePattern> ]] :=
-        <RuleBody>.
+  NaBL2-Rule.CGenRule = <
+    <NaBL2-CGenRuleDef> [[ <NaBL2-Pattern> <NaBL2-CGenParamsPattern> <NaBL2-CGenTypePattern> ]] :=
+        <NaBL2-RuleBody>.
   >
 
-  RuleBody       = Constraint
+  NaBL2-RuleBody       = NaBL2-Constraint
 
-  Constraint.CGenRecurse = <<CGenRuleRefTop>[[ <Var> <CGenParamsTerm> <CGenTypeTerm> ]]>
+  NaBL2-Constraint.CGenRecurse = <<NaBL2-CGenRuleRefTop>[[ <NaBL2-Var> <NaBL2-CGenParamsTerm> <NaBL2-CGenTypeTerm> ]]>
 
 
 context-free syntax
 
-  CGenParamsTerm.Tuple    = <^ (<{CTerm ", "}*>)>
+  NaBL2-CGenParamsTerm.Tuple    = <^ (<{NaBL2-CTerm ", "}*>)>
 
-  CGenParamsPattern.Tuple = <^ (<{VarOrWld ", "}*>)>
+  NaBL2-CGenParamsPattern.Tuple = <^ (<{NaBL2-VarOrWld ", "}*>)>
 
-  CGenTypeTerm.NoType     =
-  CGenTypeTerm.Type       = <: <CTerm>>
+  NaBL2-CGenTypeTerm.NoType     =
+  NaBL2-CGenTypeTerm.Type       = <: <NaBL2-CTerm>>
 
-  CGenTypePattern.NoType  =
-  CGenTypePattern.Type    = <: <CTerm>>
+  NaBL2-CGenTypePattern.NoType  =
+  NaBL2-CGenTypePattern.Type    = <: <NaBL2-CTerm>>
 

@@ -9,13 +9,13 @@ imports
 
 context-free syntax
 
-  Constraint.CAstProperty =  [[TermIndex].[AstProperty] := [CTerm]]
+  NaBL2-Constraint.CAstProperty =  [[NaBL2-TermIndex].[NaBL2-AstProperty] := [NaBL2-CTerm]]
 
-  AstProperty.Property = AstPropertyId
-  AstProperty.Type     = "type"
-  AstProperty.Params   = "params"
+  NaBL2-AstProperty.Property = NaBL2-AstPropertyId
+  NaBL2-AstProperty.Type     = "type"
+  NaBL2-AstProperty.Params   = "params"
 
 lexical syntax
 
-  AstPropertyId = PropertyId
-  AstPropertyId = "type" | "params" {reject}
+  NaBL2-AstPropertyId = NaBL2-PropertyId
+  NaBL2-AstPropertyId = "type" | "params" {reject}

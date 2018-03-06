@@ -6,10 +6,10 @@ imports
 
 context-free syntax
 
-  AnalysisResult.Params = <params <CGenArgs>>
+  NaBL2-AnalysisResult.Params = <params <NaBL2-CGenArgs>>
 
-  CGenArgs.Params        = <<CGenParams>>
-  CGenArgs.ParamsAndType = <<CGenParams> : <CTerm>>
+  NaBL2-CGenArgs.Params        = <<NaBL2-CGenParams>>
+  NaBL2-CGenArgs.ParamsAndType = <<NaBL2-CGenParams> : <NaBL2-CTerm>>
 
-  CGenParams = <^ (<{CTerm ","}*>)>
-  CGenParams = <^ (<CTerm>)>
+  NaBL2-CGenParams = <^ (<{NaBL2-CTerm ","}*>)>
+  NaBL2-CGenParams = <^ (<NaBL2-CTerm>)>

@@ -171,7 +171,7 @@ public class RelationComponent extends ASolver {
 
     private IRelation.Transient<ITerm> relation(String name) {
         return Optional.ofNullable(relations.get(name))
-                .orElseThrow(() -> new IllegalStateException("Relation " + name + " not defined."));
+                .orElseThrow(() -> new IllegalStateException("Relation <" + name + ": not defined."));
     }
 
     private Optional<ITerm> lub(String name, ITerm left, ITerm right) {

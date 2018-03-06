@@ -6,4 +6,4 @@ imports
 
 context-free syntax
 
-  Function.Function           = FunctionId
+  NaBL2-Function.Function           = NaBL2-FunctionId

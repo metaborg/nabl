@@ -13,11 +13,8 @@ template options
 
 context-free syntax
 
-//TypeVar.TVar = <'<TVarId>> // FIXME Use NaBL2_ prefix
-//CTerm        = TypeVar
+  NaBL2-Constraint.CBuildRel = <<NaBL2-CTerm> <NaBL2-RelationBuildOp> <NaBL2-CTerm> <NaBL2-Message>>
 
-  Constraint.CBuildRel = <<CTerm> <RelationBuildOp> <CTerm> <Message>>
+  NaBL2-Constraint.CCheckRel = <<NaBL2-CTerm> <NaBL2-RelationCheckOp> <NaBL2-CTerm> <NaBL2-Message>>
 
-  Constraint.CCheckRel = <<CTerm> <RelationCheckOp> <CTerm> <Message>>
-
-  FunctionRef = RelationFunction
+  NaBL2-FunctionRef = NaBL2-RelationFunction

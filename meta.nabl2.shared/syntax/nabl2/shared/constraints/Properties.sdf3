@@ -15,12 +15,12 @@ template options
 
 context-free syntax
 
-  Constraint.CDeclProperty = [[Occurrence].[DeclProperty] := [CTerm] [ConstraintPriority] [Message]]
+  NaBL2-Constraint.CDeclProperty = [[NaBL2-Occurrence].[NaBL2-DeclProperty] := [NaBL2-CTerm] [NaBL2-ConstraintPriority] [NaBL2-Message]]
  
-  DeclProperty.Property = DeclPropertyId
-  DeclProperty.Type     = "type"
+  NaBL2-DeclProperty.Property = NaBL2-DeclPropertyId
+  NaBL2-DeclProperty.Type     = "type"
 
 lexical syntax
 
-  DeclPropertyId = PropertyId
-  DeclPropertyId = "type" {reject}
+  NaBL2-DeclPropertyId = NaBL2-PropertyId
+  NaBL2-DeclPropertyId = "type" {reject}

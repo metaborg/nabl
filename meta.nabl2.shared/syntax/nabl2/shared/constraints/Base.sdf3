@@ -12,37 +12,37 @@ template options
 
 context-free syntax
 
-  Constraint.CTrue   = <true <MessagePosition>>
-  Constraint.CFalse  = <false <Message>>
+  NaBL2-Constraint.CTrue   = <true <NaBL2-MessagePosition>>
+  NaBL2-Constraint.CFalse  = <false <NaBL2-Message>>
 
-  Constraint         = <( <Constraint> )> {bracket}
+  NaBL2-Constraint         = <( <NaBL2-Constraint> )> {bracket}
 
-  Constraint.CConj   = <
-    <Constraint>,
-    <Constraint>
+  NaBL2-Constraint.CConj   = <
+    <NaBL2-Constraint>,
+    <NaBL2-Constraint>
   > {right}
 
-  Constraint.CExists = <
-    { <{CVar " "}+>:
-      <Constraint>
+  NaBL2-Constraint.CExists = <
+    { <{NaBL2-CVar " "}+>:
+      <NaBL2-Constraint>
     }
   >
 
-  Constraint.CNew = <new <{CVar " "}+> <MessagePosition>>
+  NaBL2-Constraint.CNew = <new <{NaBL2-CVar " "}+> <NaBL2-MessagePosition>>
 
 context-free priorities
 
   {
-    Constraint.CExists
-    Constraint.CNew
+    NaBL2-Constraint.CExists
+    NaBL2-Constraint.CNew
   } > { right:
-    Constraint.CConj
+    NaBL2-Constraint.CConj
   }
 
 lexical syntax
 
-  ConstraintPriority = "!"*
+  NaBL2-ConstraintPriority = "!"*
 
 lexical syntax
 
-  Keyword = "true" | "false" | "exists" | "new"
+  NaBL2-Keyword = "true" | "false" | "exists" | "new"

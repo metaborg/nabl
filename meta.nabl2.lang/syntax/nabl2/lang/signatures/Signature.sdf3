@@ -14,12 +14,12 @@ template options
 
 context-free syntax
 
-  ModuleSection.Signature = <
+  NaBL2-ModuleSection.Signature = <
     signature
-      <{Signature "\n\n"}*>
+      <{NaBL2-Signature "\n\n"}*>
   >
 
 lexical syntax
 
-  SectionKeyword = "signature"
+  NaBL2-SectionKeyword = "signature"
 

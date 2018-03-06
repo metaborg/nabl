@@ -9,97 +9,97 @@ imports
 
 context-free syntax
 
-  AnalysisResult.Constraints = <
+  NaBL2-AnalysisResult.Constraints = <
     constraints {
-      <{Constraint "\n"}*>
+      <{NaBL2-Constraint "\n"}*>
     }
   >
 
 context-free syntax
 
-  AnalysisResult.ScopeGraph = <
+  NaBL2-AnalysisResult.ScopeGraph = <
     scope graph {
-      <{ScopeEntry "\n"}*>
+      <{NaBL2-ScopeEntry "\n"}*>
     }
   >
 
-  ScopeEntry.Scope = <
-    scope <Scope> {
-      <{ScopePartEntry "\n"}*>
+  NaBL2-ScopeEntry.Scope = <
+    scope <NaBL2-Scope> {
+      <{NaBL2-ScopePartEntry "\n"}*>
     }
   >
 
-  ScopePartEntry.Decls = <
+  NaBL2-ScopePartEntry.Decls = <
     declarations {
-      <{DeclEntry "\n"}*>
+      <{NaBL2-DeclEntry "\n"}*>
     }
   >
-  ScopePartEntry.Refs = <
+  NaBL2-ScopePartEntry.Refs = <
     references {
-      <{RefEntry "\n"}*>
+      <{NaBL2-RefEntry "\n"}*>
     }
   >
-  ScopePartEntry.DirectEdges = <
+  NaBL2-ScopePartEntry.DirectEdges = <
     direct edges {
-      <{DirectEntry "\n"}*>
+      <{NaBL2-DirectEntry "\n"}*>
     }
   >
-  ScopePartEntry.ImportEdges = <
+  NaBL2-ScopePartEntry.ImportEdges = <
     import edges {
-      <{ImportEntry "\n"}*>
+      <{NaBL2-ImportEntry "\n"}*>
     }
   >
-  ScopePartEntry.AssocEdges = <
+  NaBL2-ScopePartEntry.AssocEdges = <
     associated declarations {
-      <{AssocEntry "\n"}*>
+      <{NaBL2-AssocEntry "\n"}*>
     }
   >
 
-  DeclEntry.Decl         = <<Occurrence><DeclType>>
-  RefEntry.Ref           = <<Occurrence>>
-  DirectEntry.DirectEdge = [[PathLabel] ~ [Scope]]
-  ImportEntry.ImportEdge = [[PathLabel] ~ [Occurrence]]
-  AssocEntry.AssocEdge   = [[PathLabel] ~ [Occurrence]]
+  NaBL2-DeclEntry.Decl         = <<NaBL2-Occurrence><NaBL2-DeclType>>
+  NaBL2-RefEntry.Ref           = <<NaBL2-Occurrence>>
+  NaBL2-DirectEntry.DirectEdge = [[NaBL2-PathLabel] ~ [NaBL2-Scope]]
+  NaBL2-ImportEntry.ImportEdge = [[NaBL2-PathLabel] ~ [NaBL2-Occurrence]]
+  NaBL2-AssocEntry.AssocEdge   = [[NaBL2-PathLabel] ~ [NaBL2-Occurrence]]
 
-  DeclType.Type   = < : <CTerm>>
-  DeclType.NoType = <>
+  NaBL2-DeclType.Type   = < : <NaBL2-CTerm>>
+  NaBL2-DeclType.NoType = <>
 
 context-free syntax
 
-  AnalysisResult.Unifier = <
+  NaBL2-AnalysisResult.Unifier = <
     unifier {
-      <{UnifierEntry "\n"}*>
+      <{NaBL2-UnifierEntry "\n"}*>
     }
   >
 
-  UnifierEntry = <<CVar> := <CTerm>>
+  NaBL2-UnifierEntry = <<NaBL2-CVar> := <NaBL2-CTerm>>
 
 context-free syntax
 
-  AnalysisResult.NameResolution = <
+  NaBL2-AnalysisResult.NameResolution = <
     name resolution {
-      <{ResolutionEntry "\n"}*>
+      <{NaBL2-ResolutionEntry "\n"}*>
     }
   >
 
-  ResolutionEntry = <<Occurrence> <ResolutionResult>>
+  NaBL2-ResolutionEntry = <<NaBL2-Occurrence> <NaBL2-ResolutionResult>>
 
-  ResolutionResult.NoResolution = <(does not resolve)>
-  ResolutionResult.Resolution = [
-    |-> [{ResolutionPath "\n"}*]
+  NaBL2-ResolutionResult.NoResolution = <(does not resolve)>
+  NaBL2-ResolutionResult.Resolution = [
+    |-> [{NaBL2-ResolutionPath "\n"}*]
   ]
 
-  ResolutionPath = <
-    <Occurrence> via <Path>
+  NaBL2-ResolutionPath = <
+    <NaBL2-Occurrence> via <NaBL2-Path>
   >
 
 context-free syntax
 
-  AnalysisResult.SymbolicConstraints = <
+  NaBL2-AnalysisResult.SymbolicConstraints = <
     facts {
-      <{CTerm "\n"}*>
+      <{NaBL2-CTerm "\n"}*>
     }
     goals {
-      <{CTerm "\n"}*>
+      <{NaBL2-CTerm "\n"}*>
     }
   >

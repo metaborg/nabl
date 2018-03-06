@@ -13,11 +13,6 @@ sorts
 
 context-free syntax
 
-  Type = CType
-  Type = RType
-  Type = NType
-  Type = TType
-
   CType.CON = <<{TType " * "}*>>
   RType.REL = <<{TType " * "}*>>
   NType.NS  = <<{TType " * "}*>>

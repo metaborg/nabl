@@ -30,7 +30,7 @@ rules
     Rules(rule*) -> Rules([pp-str*, rule-str*, occurrences-str*])
     with
       rule-str* := <map(rule-to-str)> rule*;
-      pp-str*   := <getfirst(?CGenInitRule(_, _, _));pp-rules <+ ![]> rule*;
+      pp-str*   := <getfirst(?CGenRule(InitRule(), _, _, _, _));pp-rules <+ ![]> rule*;
       occurrences-str* := <filter(rule-to-occurrences-str)> rule*
 
   rule-to-str:

@@ -12,12 +12,12 @@ template options
 
 context-free syntax
 
-  Constraint.CEval = <<CTerm> is <FunctionRef> of <CTerm> <Message>>
+  NaBL2-Constraint.CEval = <<NaBL2-CTerm> is <NaBL2-FunctionRef> of <NaBL2-CTerm> <NaBL2-Message>>
 
-  Function.Function = FunctionId
+  NaBL2-Function.Function = NaBL2-FunctionId
   
-  FunctionRef = Function
+  NaBL2-FunctionRef = NaBL2-Function
 
 syntax
 
-  FunctionRef-CF.ExtFunction = "`" StrategyId-LEX "`"
+  NaBL2-FunctionRef-CF.ExtFunction = "`" NaBL2-StrategyId-LEX "`"

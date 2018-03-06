@@ -48,5 +48,5 @@ rules
 
   nabl2--analyze(pre):
       CustomFinal(resource,initial,unit*) -> result
-    where result := <nabl2-custom-analysis-final-hook(|resource)> (resource, initial, unit*)
-
+    where a := <nabl2-get-resource-analysis> resource;
+          result := <nabl2-custom-analysis-final-hook(|a)> (resource, initial, unit*)

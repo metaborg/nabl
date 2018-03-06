@@ -11,22 +11,22 @@ template options
 
 syntax
 
-  CGenRuleDef-CF.DefaultRule     =
-  CGenRuleDef-CF.InitRule   = "init"
-  CGenRuleDef-CF.RuleNoArgs = RuleId-LEX
-  CGenRuleDef-CF.Rule       = RuleId-LEX "(" LAYOUT?-CF RuleIds-CF LAYOUT?-CF ")"
+  NaBL2-CGenRuleDef-CF.DefaultRule     =
+  NaBL2-CGenRuleDef-CF.InitRule   = "init"
+  NaBL2-CGenRuleDef-CF.RuleNoArgs = NaBL2-RuleId-LEX
+  NaBL2-CGenRuleDef-CF.Rule       = NaBL2-RuleId-LEX "(" LAYOUT?-CF NaBL2-RuleIds-CF LAYOUT?-CF ")"
 
 
-  CGenRuleRefTop-CF.DefaultRule     =
-  CGenRuleRefTop-CF.RuleNoArgs = RuleId-LEX
-  CGenRuleRefTop-CF.Rule       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+  NaBL2-CGenRuleRefTop-CF.DefaultRule     =
+  NaBL2-CGenRuleRefTop-CF.RuleNoArgs = NaBL2-RuleId-LEX
+  NaBL2-CGenRuleRefTop-CF.Rule       = NaBL2-RuleId-LEX "(" LAYOUT?-CF NaBL2-CGenRuleRefs-CF LAYOUT?-CF ")"
 
-  CGenRuleRef-CF.DefaultRule     = "default"
-  CGenRuleRef-CF.RuleNoArgs = RuleId-LEX
-  CGenRuleRef-CF.Rule       = RuleId-LEX "(" LAYOUT?-CF CGenRuleRefs-CF LAYOUT?-CF ")"
+  NaBL2-CGenRuleRef-CF.DefaultRule     = "default"
+  NaBL2-CGenRuleRef-CF.RuleNoArgs = NaBL2-RuleId-LEX
+  NaBL2-CGenRuleRef-CF.Rule       = NaBL2-RuleId-LEX "(" LAYOUT?-CF NaBL2-CGenRuleRefs-CF LAYOUT?-CF ")"
 
 context-free syntax
 
-  RuleIds = <<{RuleId ", "}*>>
+  NaBL2-RuleIds = <<{NaBL2-RuleId ", "}*>>
   
-  CGenRuleRefs = <<{CGenRuleRef ", "}*>>
+  NaBL2-CGenRuleRefs = <<{NaBL2-CGenRuleRef ", "}*>>

@@ -10,52 +10,52 @@ template options
 
 context-free syntax
 
-  Reflexivity.Reflexive       = "reflexive"
-  Reflexivity.Irreflexive     = "irreflexive"
+  NaBL2-Reflexivity.Reflexive       = "reflexive"
+  NaBL2-Reflexivity.Irreflexive     = "irreflexive"
   
-  Symmetry.Symmetric          = "symmetric" 
-  Symmetry.AntiSymmetric      = "anti-symmetric" 
+  NaBL2-Symmetry.Symmetric          = "symmetric" 
+  NaBL2-Symmetry.AntiSymmetric      = "anti-symmetric" 
   
-  Transitivity.Transitive     = "transitive"
-  Transitivity.AntiTransitive = "anti-transitive"
+  NaBL2-Transitivity.Transitive     = "transitive"
+  NaBL2-Transitivity.AntiTransitive = "anti-transitive"
 
-  Relation.Relation           = RelationId
+  NaBL2-Relation.Relation           = NaBL2-RelationId
 
-  RelationRef.DefaultRelation =
-  RelationRef                 = Relation
+  NaBL2-RelationRef.DefaultRelation =
+  NaBL2-RelationRef                 = NaBL2-Relation
 
 syntax
 
-  RelationRef-CF.ExtRelation = "`" StrategyId-LEX "`"
+  NaBL2-RelationRef-CF.ExtRelation = "`" NaBL2-StrategyId-LEX "`"
 
-  RelationBuildOp-CF = "<" RelationRef-CF "!"
-  RelationCheckOp-CF = "<" RelationRef-CF "?"
+  NaBL2-RelationBuildOp-CF = "<" NaBL2-RelationRef-CF "!"
+  NaBL2-RelationCheckOp-CF = "<" NaBL2-RelationRef-CF "?"
 
-  RelationFunction-CF.Lub = OpRelation-CF "lub"
-  RelationFunction-CF.Glb = OpRelation-CF "glb"
+  NaBL2-RelationFunction-CF.Lub = NaBL2-OpRelation-CF "lub"
+  NaBL2-RelationFunction-CF.Glb = NaBL2-OpRelation-CF "glb"
 
-  OpRelation-CF.DefaultRelation =
-  OpRelation-CF.Relation        = RelationId-LEX "."
+  NaBL2-OpRelation-CF.DefaultRelation =
+  NaBL2-OpRelation-CF.Relation        = NaBL2-RelationId-LEX "."
 
 context-free syntax
 
-  VariancePattern.ListVariant  = <[<Variance>]>
-  VariancePattern.TupleVariant = <(<{Variance ","}*>)>
+  NaBL2-VariancePattern.ListVariant  = <[<NaBL2-Variance>]>
+  NaBL2-VariancePattern.TupleVariant = <(<{NaBL2-Variance ","}*>)>
  
-  Variances = {Variance ","}*
+  NaBL2-Variances = {NaBL2-Variance ","}*
 
 syntax
 
-  VariancePattern-CF.OpVariant = OpId-LEX "(" LAYOUT?-CF Variances-CF LAYOUT?-CF ")"
+  NaBL2-VariancePattern-CF.OpVariant = NaBL2-OpId-LEX "(" LAYOUT?-CF NaBL2-Variances-CF LAYOUT?-CF ")"
 
-  Variance-CF.Invar     = "="
-  Variance-CF.Covar     = "+" RelationRef-CF
-  Variance-CF.Contravar = "-" RelationRef-CF
+  NaBL2-Variance-CF.Invar     = "="
+  NaBL2-Variance-CF.Covar     = "+" NaBL2-RelationRef-CF
+  NaBL2-Variance-CF.Contravar = "-" NaBL2-RelationRef-CF
   
 lexical syntax
 
-  Keyword = "reflexive" | "irreflexive"
+  NaBL2-Keyword = "reflexive" | "irreflexive"
           | "symmetric" | "anti-symmetric"
           | "transitive" | "anti-transitive"
 
-  FunctionId = "lub" | "glb" {reject}
+  NaBL2-FunctionId = "lub" | "glb" {reject}

@@ -12,24 +12,24 @@ template options
 
 context-free syntax
 
-  Signature.Relations = <
+  NaBL2-Signature.Relations = <
     relations
-      <{RelationDef "\n\n"}*>
+      <{NaBL2-RelationDef "\n\n"}*>
   > {longest-match}
 
 context-free syntax
 
-  RelationDef.RelationDef = <<{RelationOption ", "}*> <Relation> <RelationType> <VariancePatterns>>
+  NaBL2-RelationDef.RelationDef = <<{NaBL2-RelationOption ", "}*> <NaBL2-Relation> <NaBL2-RelationType> <NaBL2-VariancePatterns>>
 
-  RelationOption = Reflexivity
-  RelationOption = Symmetry
-  RelationOption = Transitivity
+  NaBL2-RelationOption = NaBL2-Reflexivity
+  NaBL2-RelationOption = NaBL2-Symmetry
+  NaBL2-RelationOption = NaBL2-Transitivity
 
-  RelationType = <: <SortRef> * <SortRef>>
+  NaBL2-RelationType = <: <NaBL2-SortRef> * <NaBL2-SortRef>>
 
-  VariancePatterns      = <{ <{VariancePattern ",\n"}*> }>
-  VariancePatterns      = {ast("[]")}
+  NaBL2-VariancePatterns      = <{ <{NaBL2-VariancePattern ",\n"}*> }>
+  NaBL2-VariancePatterns      = {ast("[]")}
  
  lexical syntax
  
-  Keyword = "relations"
+  NaBL2-Keyword = "relations"

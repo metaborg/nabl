@@ -39,9 +39,6 @@ signature
     Sort
 
   relations
-//  reflexive, transitive, anti-symmetric sub : Type * Type {
-//    [+sub]
-//  }
     in  : Type * TClass
 
   name resolution
@@ -53,11 +50,13 @@ rules
 
   init ^ (s) :=
     new s,
+
     (SCOPE(),      SCOPE()     ) <in! DirectEdge(),
     (OCCURRENCE(), SCOPE()     ) <in! OccurrenceEdge(),
     (SCOPE(),      OCCURRENCE()) <in! OccurrenceEdge(),
     (OCCURRENCE(), SCOPE()     ) <in! NamedEdge(),
     (SCOPE(),      OCCURRENCE()) <in! NamedEdge(),
+
     OCCURRENCE() <in! CanQuery(),
     PATH()       <in! CanQuery().
 
@@ -104,11 +103,6 @@ rules
   OpSort[[ ArrowOp(args, sort) ^ (s) : OP(tys, ty) ]] :=
     Map1T(SortRef)[[ args ^ (s) : tys ]],
     RealSortRef[[ sort ^ (s) : ty ]].
-
-//[[ InjDecl(sort1, sort2) ^ (s) ]] :=
-//  SortRef[[ sort1 ^ (s) : ty1 ]],
-//  RealSortRef[[ sort2 ^ (s) : ty2 ]],
-//  ty1 <sub! ty2.
 
   RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
     Sort{x} -> s, Sort{x} |-> d,
@@ -217,7 +211,7 @@ rules
 
   [[ Rule(props, h, vs, g, c) ^ (s) ]] :=
     new s', s' ---> s,
-    distinct/name D(s')/Var,
+    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
     UserConstraint(VarDecl)[[ h ^ (s') ]],
     [[ vs ^ (s') ]],
     [[ g ^ (s') ]],
@@ -231,10 +225,11 @@ rules
   [[ Relations(rdecls) ^ (s) ]] :=
     Map1[[ rdecls ^ (s) ]].
 
-  [[ RelDecl(props, x, reltype) ^ (s) ]] :=
+  [[ RelDecl(props, x, reltype, kind) ^ (s) ]] :=
     Rel{x} <- s,
     Rel{x} : ty !,
-    [[ reltype ^ (s) : ty ]].
+    [[ reltype ^ (s) : ty ]],
+    [[ kind ^ (Rel{x}) ]].
 
   [[ SimpleRelation(sorts) ^ (s) : REL(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
@@ -244,6 +239,12 @@ rules
     SortRef[[ outsorts ^ (s) : outtys ]],
     false | error "Cannot type check functional relations correctly yet".
 
+  [[ GlobalRel() ^ (d) ]] :=
+    d.kind := GlobalRel() !.
+
+  [[ ScopedRel() ^ (d) ]] :=
+    d.kind := ScopedRel() !.
+
 rules
 
   UserConstraint(V)[[ C(x, args) ^ (s) ]] :=
@@ -251,7 +252,6 @@ rules
     C{x} |-> d,
     d : CON(tys),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
-//  atys <sub? tys.
 
   [[ c@C(_, _) ^ (s) ]] :=
     UserConstraint(VarRef)[[ c ^ (s) ]].
@@ -331,17 +331,35 @@ rules
     Build[[ t2 ^ (s) : SCOPE() ]],
     Build[[ t3 ^ (s) : LIST(PATH()) ]].
 
-  [[ CAskRel(x, ts) ^ (s) ]] :=
+  [[ CAskGlobalRel(x, ts) ^ (s) ]] :=
     Rel{x} -> s,
     Rel{x} |-> d,
     d : REL(tys),
+    d.kind := GlobalRel() | error $[Relation [x] is scoped, use `?r(...) in s` instead.],
     Map1T(Build)[[ ts ^ (s) : tys ]].
 
-  [[ CTellRel(x, ts) ^ (s) ]] :=
+  [[ CTellGlobalRel(x, ts) ^ (s) ]] :=
     Rel{x} -> s,
     Rel{x} |-> d,
     d : REL(tys),
+    d.kind := GlobalRel() | error $[Relation [x] is scoped, use `!r(...) in s` instead.],
     Map1T(Build)[[ ts ^ (s): tys ]].
+
+  [[ CAskScopedRel(x, ts, st) ^ (s) ]] :=
+    Rel{x} -> s,
+    Rel{x} |-> d,
+    d : REL(tys),
+    d.kind := ScopedRel() | warning $[Relation [x] is global, use `?r(...)` instead.],
+    Map1T(Build)[[ ts ^ (s) : tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
+  [[ CTellScopedRel(x, ts, st) ^ (s) ]] :=
+    Rel{x} -> s,
+    Rel{x} |-> d,
+    d : REL(tys),
+    d.kind := ScopedRel() | warning $[Relation [x] is global, use `!r(...)` instead.],
+    Map1T(Build)[[ ts ^ (s): tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
 
   [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
     Build[[ p1 ^ (s) : PATH() ]],
@@ -394,7 +412,6 @@ rules
     Op{x} |-> d,
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
-//  atys <sub? tys.
   Term(V)[[ Str(_) ^ (_) : STRING() ]].
   Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
     Map1T(Term(V))[[ ts ^ (s) : _ ]].

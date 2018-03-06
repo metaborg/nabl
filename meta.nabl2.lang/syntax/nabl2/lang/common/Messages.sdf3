@@ -11,22 +11,22 @@ template options
 
 syntax
 
-  MessageContent-CF.Formatted = "$[" MessageContentPart-CF* "]"
+  NaBL2-MessageContent-CF.Formatted = "$[" NaBL2-MessageContentPart-CF* "]"
 
 context-free syntax
 
-  MessageContent.Default  =
-  MessageContent          = StringTerm
+  NaBL2-MessageContent.Default  =
+  NaBL2-MessageContent          = NaBL2-StringTerm
 
-  MessageContentPart.Term = <[<CTerm>]>
-  MessageContentPart.Text = MessageChars
+  NaBL2-MessageContentPart.Term = <[<NaBL2-CTerm>]>
+  NaBL2-MessageContentPart.Text = NaBL2-MessageChars
 
 lexical syntax
 
-  MessageChars = MessageChar+
-  MessageChar  = ~[\[\]\\\t\r\n]
-  MessageChar  = "\\[" | "\\]" | "\\\\"
+  NaBL2-MessageChars = NaBL2-MessageChar+
+  NaBL2-MessageChar  = ~[\[\]\\\t\r\n]
+  NaBL2-MessageChar  = "\\[" | "\\]" | "\\\\"
 
 lexical restrictions
 
-  MessageChars -/- ~[\[\]]
+  NaBL2-MessageChars -/- ~[\[\]]

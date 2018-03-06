@@ -4,11 +4,8 @@ imports
 
   nabl2/Lang
   nabl2/lang/modules/Module // not transitively visible
+  Layout
 
 context-free start-symbols
 
-  Start
-
-context-free syntax
-
-  Start = Module
+  NaBL2-Module

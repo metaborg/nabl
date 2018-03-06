@@ -2,62 +2,62 @@ module nabl2/shared/common/Identifiers
 
 sorts
 
-  Keyword
+  NaBL2-Keyword
 
 lexical syntax
 
-  INT            = "-"? [0-9]+
+  NaBL2-INT            = "-"? [0-9]+
 
-  ID             = [a-zA-Z] [a-zA-Z0-9\_]*
-  LCID           = [a-z]    [a-zA-Z0-9\_]*
-  UCID           = [A-Z]    [a-zA-Z0-9\_]*
+  NaBL2-ID             = [a-zA-Z] [a-zA-Z0-9\_]*
+  NaBL2-LCID           = [a-z]    [a-zA-Z0-9\_]*
+  NaBL2-UCID           = [A-Z]    [a-zA-Z0-9\_]*
 
-  STRID          = [a-zA-Z] [a-zA-Z0-9\_\-\']*
-  STRLCID        = [a-z]    [a-zA-Z0-9\_\-\']*
-  STRUCID        = [A-Z]    [a-zA-Z0-9\_\-\']*
+  NaBL2-STRID          = [a-zA-Z] [a-zA-Z0-9\_\-\']*
+  NaBL2-STRLCID        = [a-z]    [a-zA-Z0-9\_\-\']*
+  NaBL2-STRUCID        = [A-Z]    [a-zA-Z0-9\_\-\']*
 
-  VarId          = [a-z] [a-zA-Z0-9\_]* "'"*
-  VarId          = Keyword [\']* {reject}
+  NaBL2-VarId          = [a-z] [a-zA-Z0-9\_]* "'"*
+  NaBL2-VarId          = NaBL2-Keyword [\']* {reject}
 
-  OpId           = STRUCID
-  OpId           = Keyword {reject}
+  NaBL2-OpId           = NaBL2-STRUCID
+  NaBL2-OpId           = NaBL2-Keyword {reject}
 
-  SortId         = STRUCID
-  SortId         = Keyword {reject}
+  NaBL2-SortId         = NaBL2-STRUCID
+  NaBL2-SortId         = NaBL2-Keyword {reject}
 
-  NamespaceId    = UCID
-  NamespaceId    = Keyword {reject}
+  NaBL2-NamespaceId    = NaBL2-UCID
+  NaBL2-NamespaceId    = NaBL2-Keyword {reject}
 
-  PropertyId     = LCID
-  PropertyId     = Keyword {reject}
+  NaBL2-PropertyId     = NaBL2-LCID
+  NaBL2-PropertyId     = NaBL2-Keyword {reject}
 
-  RelationId     = LCID
-  RelationId     = Keyword {reject}
+  NaBL2-RelationId     = NaBL2-LCID
+  NaBL2-RelationId     = NaBL2-Keyword {reject}
 
-  FunctionId     = LCID
-  FunctionId     = Keyword {reject}
+  NaBL2-FunctionId     = NaBL2-LCID
+  NaBL2-FunctionId     = NaBL2-Keyword {reject}
 
-  ProjectionId   = LCID
-  ProjectionId   = Keyword {reject}
+  NaBL2-ProjectionId   = NaBL2-LCID
+  NaBL2-ProjectionId   = NaBL2-Keyword {reject}
 
-  StrategyId     = STRID
+  NaBL2-StrategyId     = NaBL2-STRID
 
-  LabelId        = UCID
-  LabelId        = BuiltinLabel {reject}
-  LabelId        = Keyword {reject}
+  NaBL2-LabelId        = NaBL2-UCID
+  NaBL2-LabelId        = NaBL2-BuiltinLabel {reject}
+  NaBL2-LabelId        = NaBL2-Keyword {reject}
 
-  BuiltinLabel   = "D" | "I" | "P"
+  NaBL2-BuiltinLabel   = "D" | "I" | "P"
 
 lexical restrictions
 
-  INT   -/- [0-9]
+  NaBL2-INT   -/- [0-9]
 
-  ID    -/- [a-zA-Z0-9\_]
-  LCID  -/- [a-zA-Z0-9\_]
-  UCID  -/- [a-zA-Z0-9\_]
+  NaBL2-ID    -/- [a-zA-Z0-9\_]
+  NaBL2-LCID  -/- [a-zA-Z0-9\_]
+  NaBL2-UCID  -/- [a-zA-Z0-9\_]
 
-  STRID   -/- [a-zA-Z0-9\-\_\']
-  STRLCID -/- [a-zA-Z0-9\-\_\']
-  STRUCID -/- [a-zA-Z0-9\-\_\']
+  NaBL2-STRID   -/- [a-zA-Z0-9\-\_\']
+  NaBL2-STRLCID -/- [a-zA-Z0-9\-\_\']
+  NaBL2-STRUCID -/- [a-zA-Z0-9\-\_\']
 
-  VarId   -/- [a-zA-Z0-9\-\_\']
+  NaBL2-VarId   -/- [a-zA-Z0-9\-\_\']
