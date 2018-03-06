@@ -1,6 +1,6 @@
 ---
-id: org.metaborg:org.metaborg.meta.nabl2.examples:${metaborgVersion}
-name: NaBL2Examples
+id: org.metaborg:org.metaborg.meta.nabl2.example:${metaborgVersion}
+name: NaBL2Example
 metaborgVersion: 2.5.0-SNAPSHOT
 dependencies:
   compile:

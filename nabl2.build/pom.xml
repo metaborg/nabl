@@ -16,18 +16,18 @@
   </parent>
 
   <modules>
-    <module>../meta.nabl2.examples</module>
-    <module>../meta.nabl2.integration.coq</module>
-    <module>../meta.nabl2.integration.coq.eclipse</module>
-    <module>../meta.nabl2.integration.dynsem</module>
-    <module>../meta.nabl2.integration.dynsem.eclipse</module>
-    <module>../meta.nabl2.lang</module>
-    <module>../meta.nabl2.lang.eclipse</module>
-    <module>../meta.nabl2.runtime</module>
-    <module>../meta.nabl2.runtime.eclipse</module>
-    <module>../meta.nabl2.shared</module>
-    <module>../meta.nabl2.shared.eclipse</module>
-    <module>../meta.nabl2.test</module>
+    <module>../nabl2.examples</module>
+    <module>../nabl2.ext.coq</module>
+    <module>../nabl2.ext.coq.eclipse</module>
+    <module>../nabl2.ext.dynsem</module>
+    <module>../nabl2.ext.dynsem.eclipse</module>
+    <module>../nabl2.lang</module>
+    <module>../nabl2.lang.eclipse</module>
+    <module>../nabl2.runtime</module>
+    <module>../nabl2.runtime.eclipse</module>
+    <module>../nabl2.shared</module>
+    <module>../nabl2.shared.eclipse</module>
+    <module>../nabl2.test</module>
   </modules>
 
   <repositories>
