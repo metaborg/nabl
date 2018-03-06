@@ -40,10 +40,10 @@ rules
     import ~x:term-pkg.*;
     import org.metaborg.meta.lang.dynsem.interpreter.nabl2.NaBL2TermBuild;
     import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
-    import org.metaborg.meta.nabl2.interpreter.*;
-    import org.metaborg.meta.nabl2.stratego.*;
-    import org.metaborg.meta.nabl2.terms.*;
-    import org.metaborg.meta.nabl2.terms.build.*;
+    import mb.nabl2.interpreter.*;
+    import mb.nabl2.stratego.*;
+    import mb.nabl2.terms.*;
+    import mb.nabl2.terms.build.*;
     import org.spoofax.interpreter.terms.IStrategoTerm;
 
     import com.oracle.truffle.api.dsl.NodeChild;

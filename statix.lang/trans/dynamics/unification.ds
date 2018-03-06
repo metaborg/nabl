@@ -3,7 +3,7 @@ module dynamics/unification
 signature
 
   native datatypes
-    "org.metaborg.nabl2.terms.ITerm" as ITerm {}
+    "mb.nabl2.terms.ITerm" as ITerm {}
 
   native operators
     buildVar    : String               -> ITerm
@@ -34,7 +34,7 @@ signature
     UnifyOkay : UnifyResult
 
   native datatypes
-    "org.metaborg.nabl2.terms.unification.IUnifier" as IUnifier {}
+    "mb.nabl2.terms.unification.IUnifier" as IUnifier {}
 
   native operators
     newUnifier : IUnifier
