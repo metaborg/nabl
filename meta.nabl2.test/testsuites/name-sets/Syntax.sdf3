@@ -8,3 +8,4 @@ context-free syntax
 
   Test.EvalEmptySet = <eval empty set>
   Test.EvalSingletonSet = <eval singleton set>
+  Test.ErrorsOnNames = <errors on names <{X ","}+>>

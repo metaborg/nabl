@@ -9,3 +9,7 @@ test eval empty set [[
 test eval singleton set [[
   eval singleton set
 ]] 0 errors
+
+test errors on names [[
+  errors on names [[x]], [[x]], [[x]]
+]] 3 error at #1, #2, #3
