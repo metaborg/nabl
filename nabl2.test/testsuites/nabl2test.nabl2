@@ -51,4 +51,4 @@ signature
 
 rules
 
-  init ^ ().
+  init.

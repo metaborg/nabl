@@ -17,10 +17,11 @@ context-free syntax
       <{NaBL2-CGenSig "\n"}*>
 
   >
-  
+
   NaBL2-CGenSig.CGenInitSig = <init <NaBL2-CGenSigParams> <NaBL2-CGenSigType>>
   NaBL2-CGenSig.CGenSig     = <<NaBL2-CGenRuleDef> [[ <NaBL2-SortRef> <NaBL2-CGenSigParams> <NaBL2-CGenSigType> ]]>
  
+  NaBL2-CGenSigParams   =                               {ast("[]")}
   NaBL2-CGenSigParams   = <^ (<{NaBL2-SortRef ", "}*>)>
 
   NaBL2-CGenSigType.NoType = <>

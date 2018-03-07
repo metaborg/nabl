@@ -16,7 +16,7 @@ rules
   WildcardType[[ t ^ () : _ ]] := false | note.
 
 
-  [[ WildcardConstraint() ^ () ]] :=
+  [[ WildcardConstraint() ]] :=
     _ == 42, false | note.
 
 rules

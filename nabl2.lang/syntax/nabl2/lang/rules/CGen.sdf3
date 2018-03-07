@@ -40,8 +40,10 @@ context-free syntax
 
 context-free syntax
 
+  NaBL2-CGenParamsTerm          =                             {ast("Tuple([])")}
   NaBL2-CGenParamsTerm.Tuple    = <^ (<{NaBL2-CTerm ", "}*>)>
 
+  NaBL2-CGenParamsPattern       =                                {ast("Tuple([])")}
   NaBL2-CGenParamsPattern.Tuple = <^ (<{NaBL2-VarOrWld ", "}*>)>
 
   NaBL2-CGenTypeTerm.NoType     =
