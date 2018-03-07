@@ -5,6 +5,7 @@
 >
   <modelVersion>4.0.0</modelVersion>
   <artifactId>org.metaborg.meta.nabl2.ext.dynsem.eclipse</artifactId>
+  <name>nabl2.ext.dynsem.eclipse</name>
   <packaging>eclipse-plugin</packaging>
 
   <parent>

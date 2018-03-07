@@ -5,7 +5,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>org.metaborg.meta.nabl2.build</artifactId>
-  <version>2.5.0-SNAPSHOT</version>
+  <name>nabl2.build</name>
   <packaging>pom</packaging>
 
   <parent>
@@ -16,7 +16,7 @@
   </parent>
 
   <modules>
-    <module>../nabl2.examples</module>
+    <module>../nabl2.example</module>
     <module>../nabl2.ext.coq</module>
     <module>../nabl2.ext.coq.eclipse</module>
     <module>../nabl2.ext.dynsem</module>

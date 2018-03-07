@@ -6,6 +6,7 @@
 >
   <modelVersion>4.0.0</modelVersion>
   <artifactId>org.metaborg.meta.nabl2.shared</artifactId>
+  <name>nabl2.shared</name>
   <packaging>spoofax-language</packaging>
 
   <parent>
