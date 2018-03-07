@@ -28,11 +28,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <configuration>
               <filesets>
                 <fileset>
-                  <directory>src/main/java/org/metaborg/meta/statix/interpreter/generated</directory>
+                  <directory>src/main/java/mb/statix/interpreter/generated</directory>
                   <includes>**/**</includes>
                 </fileset>
                 <fileset>
-                  <directory>src/test/java/org/metaborg/meta/statix/interpreter/generated/test</directory>
+                  <directory>src/test/java/mb/statix/interpreter/generated/test</directory>
                   <includes>**/**</includes>
                 </fileset>
                 <fileset>
