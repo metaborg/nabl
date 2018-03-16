@@ -8,11 +8,11 @@ imports
 rules // Message
 
   Message[[ Message(_,_,pos) ^ (s) ]] :=
-    MessagePosition[[ pos ^ (s) ]].
+    [[ pos ^ (s) ]].
 
-  MessagePosition[[ DefaultMessagePosition() ^ (_) ]].
+  [[ DefaultMessagePosition() ^ (_) ]].
 
-  MessagePosition[[ TermIndexFrom(var) ^ (s) ]] :=
+  [[ MessagePositionFrom(var) ^ (s) ]] :=
     VarRef[[ var ^ (s) ]].
 
 rules // sorts

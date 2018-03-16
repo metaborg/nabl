@@ -135,4 +135,4 @@ rules
 
   // get index from matched term
   explicate-default-index(|match-var):
-    DefaultMessagePosition() -> TermIndexFrom(match-var)
+    DefaultMessagePosition() -> MessagePositionFrom(match-var)
