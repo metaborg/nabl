@@ -32,7 +32,7 @@ import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
 
 public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
-
+    private static final FakeScopeGraphContext FAKE_SCOPE_GRAPH_CONTEXT = new FakeScopeGraphContext();
     private static ILogger logger = LoggerUtils.logger(ScopeGraphContextPrimitive.class);
 
     public ScopeGraphContextPrimitive(String name, int svars, int tvars) {
@@ -48,7 +48,7 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
         }
         final IScopeGraphContext<?> context;
         if(!(contextObj instanceof IScopeGraphContext)) {
-            context = new FakeScopeGraphContext();
+            context = FAKE_SCOPE_GRAPH_CONTEXT;
         } else {
             context = (IScopeGraphContext<?>) env.contextObject();
         }
