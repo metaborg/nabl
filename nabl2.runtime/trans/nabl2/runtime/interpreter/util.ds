@@ -19,11 +19,13 @@ rules
   
   filterOccsByNamespace([o|os], ns) --> [o|filterOccsByNamespace(os, ns)]
   where
-    ns == namespaceOf(o)
+    namespaceOf(o) --> ns';
+    ns == ns'
     
   filterOccsByNamespace([o|os], ns) --> filterOccsByNamespace(os, ns)
   where
-    ns != namespaceOf(o)
+    namespaceOf(o) --> ns';
+    ns != ns'
     
 rules    
  
@@ -39,9 +41,7 @@ rules
 
 rules
 
-  declsOf(s, ns) /* :(Scope * Namespace) */ --> decls'
-    where declsOf(s) --> decls;
-          filterOccsByNamespace(decls, ns) => decls'
+  declsOf(s, ns) /* :(Scope * Namespace) */ --> filterOccsByNamespace(declsOf(s), ns)
 
   assocScopeOf(d, l) /* :(Occurrence * Label) */ --> s
   where
