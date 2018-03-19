@@ -40,10 +40,10 @@ exports:
   directory: src-gen/syntax
   includes:
   - "**/*.aterm"
-- language: ds
-  directory: src-gen
-  includes:
-  - "ds-signatures/nabl2/**/*.ds"
+# language: ds
+ #directory: src-gen
+ #includes:
+ #- "ds-signatures/nabl2/**/*.ds"
 - language: EditorService
   directory: src-gen
   includes:
