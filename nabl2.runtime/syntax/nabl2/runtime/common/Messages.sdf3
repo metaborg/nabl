@@ -1,0 +1,19 @@
+module nabl2/runtime/common/Messages
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+  nabl2/runtime/common/Native
+
+context-free syntax
+
+  NaBL2-MessageContent.Formatted = {NaBL2-MessageContent ""}*
+  NaBL2-MessageContent.Text      = NaBL2-String
+  NaBL2-MessageContent.Term      = NaBL2-CTerm
+  NaBL2-MessageContent.Default   = "(default)"
+
+  NaBL2-MessagePosition.NoIndex  = < @ ->
+  NaBL2-MessagePosition.NAME     = < @ NAMES>
+  NaBL2-MessagePosition          = < <NaBL2-TermIndex>>

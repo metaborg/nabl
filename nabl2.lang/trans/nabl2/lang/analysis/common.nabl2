@@ -1,0 +1,290 @@
+module nabl2/lang/analysis/common
+/*
+
+imports
+
+  signatures/nabl2/lang/common/-
+
+rules // Message
+
+  Message[[ Message(_,_,pos) ^ (s) ]] :=
+    [[ pos ^ (s) ]].
+
+  [[ DefaultMessagePosition() ^ (_) ]].
+
+  [[ MessagePositionFrom(var) ^ (s) ]] :=
+    VarRef[[ var ^ (s) ]].
+
+rules // sorts
+
+  SortDef[[ SortNoArgs(name) ^ (s) ]] :=
+    Sort{name @s} <- s.
+
+  SortRef[[ SortNoArgs(name) ^ (s) ]] :=
+    Sort{name} -> s,
+    Sort{name} |-> _.
+ 
+  SortRef[[ TermSort() ^ (s) ]].
+
+  SortRef[[ StringSort() ^ (s) ]].
+
+  SortRef[[ OccurrenceSort() ^ (s) ]].
+
+  SortRef[[ ScopeSort() ^ (s) ]].
+
+  SortRef[[ StringSort() ^ (s) ]].
+
+  SortRef[[ Var(name) ^ (s) ]].
+ 
+  SortRef[[ TupleSort(sorts) ^ (s) ]] :=
+    Map1(SortRef)[[ sorts ^ (s) ]].
+
+  SortRef[[ ListSort(sort) ^ (s) ]] :=
+    SortRef[[ sort ^ (s) ]].
+
+  SortRef[[ MapSort(key_sort,value_sort) ^ (s) ]] :=
+    SortRef[[ key_sort ^ (s) ]],
+    SortRef[[ value_sort ^ (s) ]].
+
+rules // properties
+
+  Property[[ Property(name) ^ (s) ]]. // TODO
+
+  Property[[ Type() ^ (s) ]].
+
+rules // name resolution
+
+  NamespaceDef[[ Namespace(name) ^ (s) ]] :=
+    Ns{name} <- s.
+
+  NamespaceRef[[ DefaultNamespace() ^ (s) ]].
+
+  NamespaceRef[[ Namespace(name) ^ (s) ]] :=
+    Ns{name} -> s,
+    Ns{name} |-> _ | error $[Namespace [name] not defined].
+
+  CTerm(Var)[[ Occurrence(ns,name,pos) ^ (s) ]] :=
+    NamespaceRef[[ ns ^ (s) ]],
+    CTerm(Var)[[ name ^ (s) ]]
+    // TODO: pos
+    .
+
+  CSet[[ Declarations(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+  CSet[[ References(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+  CSet[[ Visibles(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+  CSet[[ Reachables(scope,ns) ^ (s) ]] :=
+    CTerm[[ scope ^ (s) ]],
+    NamespaceRef[[ ns ^ (s) ]].
+
+rules //labels
+
+  LabelDef[[ l@P() ^ (s) ]] :=
+    Label{l} <- s.
+
+  LabelDef[[ l@I() ^ (s) ]] :=
+    Label{l} <- s.
+
+  LabelDef[[ Label(name) ^ (s) ]] :=
+    Label{name} <- s.
+
+  LabelRef[[ D() ^ (s) ]].
+
+  LabelRef[[ l@P() ^ (s) ]] :=
+    Label{l} -> s,
+    Label{l} |-> _ | error $[P cannot be resolved to a label].
+
+  LabelRef[[ l@I() ^ (s) ]] :=
+    Label{l} -> s,
+    Label{l} |-> _ | error $[I cannot be resolved to a label].
+
+  LabelRef[[ Label(name) ^ (s) ]] :=
+    Label{name} -> s,
+    Label{name} |-> _ | error $[[name] cannot be resolved to a label].
+
+  LabelOrder[[ Lt(label1,label2) ^ (s) ]] :=
+    LabelRef[[ label1 ^ (s) ]],
+    LabelRef[[ label2 ^ (s) ]].
+
+rules // label regexp
+
+  LabelRE[[ Empty() ^ (s) ]].
+
+  LabelRE[[ Epsilon() ^ (s) ]].
+
+  LabelRE[[ l@D() ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+  LabelRE[[ l@P() ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+  LabelRE[[ l@I() ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+  LabelRE[[ l@Label(_) ^ (s) ]] := LabelRef[[ l ^ (s) ]].
+
+  LabelRE[[ Closure(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
+
+  LabelRE[[ Concat(re1,re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelRE[[ And(re1,re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelRE[[ Or(re1,re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+rules // CSet
+
+  CSet[[ EmptySet() ^ (s) ]].
+
+  CSet[[ Union(set1,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    CSet[[ set2 ^ (s) ]].
+
+  CSet[[ Isect(set1,proj,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]].
+
+  CSet[[ Diff(set1,proj,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]].
+
+  CSet[[ Lsect(set1,proj,set2) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]].
+
+  Projection[[ NoProjection() ^ () ]].
+
+  Projection[[ Projection(name) ^ () ]] :=
+    name == "name" | error $[[name] is not a valid projection].
+
+rules // relations
+
+  RelationDef[[ Relation(name) ^ (s) ]] :=
+    Rel{name} <- s.
+
+  RelationRef[[ DefaultRelation() ^ (s) ]].
+
+  RelationRef[[ Relation(name) ^ (s) ]] :=
+    Rel{name} -> s,
+    Rel{name} |-> _ | error $[[name] cannot be resolved to a relation].
+
+  RelationRef[[ ExtRelation(_) ^ (s) ]].
+
+  VariancePattern[[ OpVariant(name,variances) ^ (s) ]] :=
+    Cons{name} -> s,
+    Cons{name} |-> _,
+    Map1(Variance)[[ variances ^ (s) ]].
+
+  Variance[[ Invar() ^ (s) ]].
+
+  Variance[[ Covar(rel) ^ (s) ]] :=
+    RelationRef[[ rel ^ (s) ]].
+
+  Variance[[ Contravar(rel) ^ (s) ]] :=
+    RelationRef[[ rel ^ (s) ]].
+
+rules // functions
+
+  FunctionDef[[ Function(name) ^ (s) ]] :=
+    Fun{name} <- s.
+
+  FunctionRef[[ Function(name) ^ (s) ]] :=
+    Fun{name} -> s,
+    Fun{name} |-> _ | error $[[name] does not resolve to a function].
+
+  FunctionRef[[ ExtFunction(_) ^ (s) ]].
+
+  FunctionRef[[ Lub(rel) ^ (s) ]] :=
+    // TODO: does the relation qualify for lub?
+    RelationRef[[ rel ^ (s) ]].
+
+  FunctionRef[[ Glb(rel) ^ (s) ]] :=
+    // TODO: does the relation qualify for glb?
+    RelationRef[[ rel ^ (s) ]].
+
+rules // CTerm
+
+  CTerm[[ t ^ (s) ]] :=
+    CTerm(VarRef)[[ t ^ (s) ]].
+
+  CTerm(Var)[[ CList(terms) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]].
+
+  CTerm(Var)[[ CListTail(terms, tail) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]],
+    CTerm(Var)[[ tail ^ (s) ]].
+
+  CTerm(Var)[[ Tuple(terms) ^ (s) ]] :=
+    Map1(CTerm(Var))[[ terms ^ (s) ]].
+
+  CTerm(Var)[[ Op(name, terms) ^ (s) ]] :=
+    Cons{name} -> s,
+    Cons{name} |-> _,
+    Map1(CTerm(Var))[[ terms ^ (s) ]].
+
+  CTerm(Var)[[ Str(_) ^ (s) ]].
+
+  CTerm(Var)[[ Int(_) ^ (s) ]].
+
+  CTerm(Var)[[ v@Var(_) ^ (s) ]] :=
+    Var[[ v ^ (s) ]].
+
+  CTerm(Var)[[ Wld() ^ (s) ]].
+
+  CTerm(Var)[[ CLock(term) ^ (s) ]] :=
+    CTerm(Var)[[ term ^ (s) ]].
+
+  CTerm(Var)[[ CQuote(_) ^ (s) ]].
+
+rules // Term & Pattern
+
+  Term(Var)[[ List(terms) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]].
+
+  Term(Var)[[ ListTail(terms, tail) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]],
+    Term(Var)[[ tail ^ (s) ]].
+
+  Term(Var)[[ Tuple(terms) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]].
+
+  Term(Var)[[ Op(name, terms) ^ (s) ]] :=
+    Map1(Term(Var))[[ terms ^ (s) ]].
+
+  Term(Var)[[ Str(_) ^ (s) ]].
+
+  Term(Var)[[ Int(_) ^ (s) ]].
+
+  Term(Var)[[ As(v, term) ^ (s) ]] :=
+    Var[[ v ^ (s) ]],
+    Term(Var)[[ term ^ (s) ]].
+
+  Term(Var)[[ v@Var(_) ^ (s) ]] :=
+    Var[[ v ^ (s) ]].
+
+  Term(Var)[[ Wld() ^ (s) ]].
+
+rules
+  
+  ScopeVarDecl[[ Var(name) ^ (s) ]] :=
+    Var{name @s} <- s.
+
+  VarDecl[[ Var(name) ^ (s) ]] :=
+    Var{name} <- s.
+  
+  VarRef[[ Var(name) ^ (s) ]] :=
+    Var{name} -> s,
+    Var{name} |-> _ | error $[[name] does not resolve to a variable].
+
+*/

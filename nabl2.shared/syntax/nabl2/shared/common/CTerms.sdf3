@@ -1,0 +1,27 @@
+module nabl2/shared/common/CTerms
+
+sorts
+
+  NaBL2-CVar
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-CTerm           = NaBL2-CVar {prefer}
+  NaBL2-CTerm           = NaBL2-CList
+
+  NaBL2-CTerms          = <<{NaBL2-CTerm ", "}*>>
+
+  NaBL2-CList           = NaBL2-CVar
+  NaBL2-CList.CList     = <[<{NaBL2-CTerm ", "}*>]>
+  NaBL2-CList.CListTail = <[<{NaBL2-CTerm ", "}*>|<NaBL2-CList>]>
+
+syntax
+
+  NaBL2-CTerm-CF.CLock  = "." NaBL2-CTerm-CF {prefer}
+  NaBL2-CList-CF.CLock  = "." NaBL2-CList-CF
+
+  NaBL2-CTerm-CF.CQuote = "`" NaBL2-CTerm-CF

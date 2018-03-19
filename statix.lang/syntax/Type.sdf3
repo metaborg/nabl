@@ -1,0 +1,28 @@
+module Type
+
+imports
+
+  nabl2/API
+
+sorts
+
+  CType // constraint type
+  RType // relation type
+  NType // namespace type
+  TType // term type
+
+context-free syntax
+
+  CType.CON = <<{TType " * "}*>>
+  RType.REL = <<{TType " * "}*>>
+  NType.NS  = <<{TType " * "}*>>
+
+  TType.SORT       = <<NaBL2Occurrence>>
+  TType.INT        = <int>
+  TType.STRING     = <string>
+  TType.PATH       = <path>
+  TType.OCCURRENCE = <occurrence>
+  TType.SCOPE      = <scope>
+  TType.LIST       = <list(<TType>)>
+  TType.TUPLE      = <(<{TType " * "}*>)>
+  TType.OP         = [[{TType " * "}*] -> [TType]]

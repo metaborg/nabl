@@ -1,0 +1,10 @@
+---
+id: org.metaborg:statix.example:${metaborgVersion}
+name: StatixExample
+metaborgVersion: 2.5.0-SNAPSHOT
+dependencies:
+  compile:
+  - org.metaborg:statix.lang:${metaborgVersion}
+runtime:
+  nabl2:
+    debug: analysis files collection

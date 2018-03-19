@@ -1,0 +1,17 @@
+module nabl2/lang/util/misc
+
+imports
+
+  libspoofax/core/language
+
+rules
+
+  unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
+
+  path-prepend(|dir): file -> $[[dir]/[file]]
+
+  src-gen-file(|sub-dir, ext): name -> file-name
+  with file-name := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
+
+  src-gen-dir(|sub-dir): _ -> dir-name
+    with dir-name := <language-srcgen-dir> sub-dir

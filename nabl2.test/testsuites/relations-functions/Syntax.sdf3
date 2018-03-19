@@ -1,0 +1,29 @@
+module testsuites/relations-functions/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.PairProjectionFunction = <pair projection function>
+
+context-free syntax
+
+  Test.SubRelationIsReflexive = <sub relation is reflexive>
+
+  Test.SubRelationIsTransitive = <sub relation is transitive>
+
+  Test.SubRelationIsAntiSymmetric = <sub relation is anti-symmetric>
+
+  Test.SubRelationHasCovariantLists = <sub relation has covariant lists>
+
+  Test.SubRelationHasLub = <sub relation has lub>
+
+  Test.SubRelationHasGlb = <sub relation has glb>
+
+context-free syntax
+
+  Test.ExternalReflexiveRelation = <<AlNum> and <AlNum> in external reflexive relation>
+
+  Test.ExternalConcatFunction = <external concat function>

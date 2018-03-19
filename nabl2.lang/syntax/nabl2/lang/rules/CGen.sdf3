@@ -1,0 +1,54 @@
+module nabl2/lang/rules/CGen
+
+imports
+ 
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/constraints/Base
+
+  nabl2/lang/common/Identifiers
+  nabl2/lang/common/Injections
+  nabl2/lang/common/Terms
+  nabl2/lang/rules/Rules
+  nabl2/lang/rules/Names
+
+
+context-free syntax
+
+  NaBL2-Rule.CGenInitRuleNoConstraint = <
+    init <NaBL2-CGenParamsTerm> <NaBL2-CGenTypeTerm>.
+  >
+
+  NaBL2-Rule.CGenInitRule = <
+    init <NaBL2-CGenParamsTerm> <NaBL2-CGenTypeTerm> :=
+        <NaBL2-RuleBody>.
+  >
+
+  NaBL2-Rule.CGenRuleNoConstraint = <
+    <NaBL2-CGenRuleDef> [[ <NaBL2-Pattern> <NaBL2-CGenParamsPattern> <NaBL2-CGenTypePattern> ]] .
+  >
+
+  NaBL2-Rule.CGenRule = <
+    <NaBL2-CGenRuleDef> [[ <NaBL2-Pattern> <NaBL2-CGenParamsPattern> <NaBL2-CGenTypePattern> ]] :=
+        <NaBL2-RuleBody>.
+  >
+
+  NaBL2-RuleBody       = NaBL2-Constraint
+
+  NaBL2-Constraint.CGenRecurse = <<NaBL2-CGenRuleRefTop>[[ <NaBL2-Var> <NaBL2-CGenParamsTerm> <NaBL2-CGenTypeTerm> ]]>
+
+
+context-free syntax
+
+  NaBL2-CGenParamsTerm          =                             {ast("Tuple([])")}
+  NaBL2-CGenParamsTerm.Tuple    = <^ (<{NaBL2-CTerm ", "}*>)>
+
+  NaBL2-CGenParamsPattern       =                                {ast("Tuple([])")}
+  NaBL2-CGenParamsPattern.Tuple = <^ (<{NaBL2-VarOrWld ", "}*>)>
+
+  NaBL2-CGenTypeTerm.NoType     =
+  NaBL2-CGenTypeTerm.Type       = <: <NaBL2-CTerm>>
+
+  NaBL2-CGenTypePattern.NoType  =
+  NaBL2-CGenTypePattern.Type    = <: <NaBL2-CTerm>>
+

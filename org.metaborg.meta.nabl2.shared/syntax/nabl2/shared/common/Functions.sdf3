@@ -1,9 +1,0 @@
-module nabl2/shared/common/Functions
-
-imports
-
-  nabl2/shared/common/Identifiers
-
-context-free syntax
-
-  NaBL2-Function.Function = NaBL2-FunctionId

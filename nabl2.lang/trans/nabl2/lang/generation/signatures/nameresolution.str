@@ -1,0 +1,54 @@
+module nabl2/lang/generation/signatures/nameresolution
+
+imports
+
+  libstrc
+  nabl2/shared/main
+  nabl2/lang/generation/-
+  signatures/nabl2/lang/signatures/-
+  nabl2/lang/util/stratego
+
+rules
+
+  signature-to-str:
+    NameResolution(_) -> []
+
+  sections-to-nameresolution-str:
+    section* -> [Rules([labelstr*, orderstr*, wfstr*,e-labelstr*,n-labelstr*])]
+    with param* := <filter(?Signature(<id>));concat;
+                    filter(?NameResolution(<id>));concat> section*
+    with if label*@[_|_] := <filter(?Labels(<id>));concat> param* then
+           labelterm* := <map(explode(injection-to-term))> label*;
+           labelstr* := [ |[ nabl2--custom-labels = !~List(labelterm*) ]| ]
+         else
+           labelstr* := []
+         end
+    with if order*@[_|_] := <filter(?Order(<id>));concat;
+                                    map(\ Lt(l1,l2) -> (l1,l2) \)> param* then
+           orderterm* := <map(explode(injection-to-term))> order*;
+           orderstr* := [ |[ nabl2--custom-label-order = !~List(orderterm*) ]| ]
+         else
+           orderstr* := []
+         end
+    with if wf := <getfirst(?WF(<id>))> param* then
+           wfterm := <explode(injection-to-term)> wf;
+           wfstr* := [ |[ nabl2--custom-labels-wf = !~wfterm  ]| ]
+         else
+           wfstr* := []
+         end
+    with if e-label := <getfirst(?DefaultELabel(<id>))> param* then
+           e-labelterm := <explode(injection-to-term)> e-label;
+           e-labelstr* := [ |[ nabl2--custom-default-edge-label = ~e-labelterm ]| ]
+         else
+           e-labelstr* := []
+         end
+    with if n-label := <getfirst(?DefaultNLabel(<id>))> param* then
+           n-labelterm := <explode(injection-to-term)> n-label;
+           n-labelstr* := [ |[ nabl2--custom-default-named-label = ~n-labelterm ]| ]
+         else
+           n-labelstr* := []
+         end
+
+ 
+  signature-to-str:
+    Namespaces(_) -> []

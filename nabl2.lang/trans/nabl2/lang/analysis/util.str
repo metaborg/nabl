@@ -1,0 +1,21 @@
+module nabl2/lang/analysis/util
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  pp/nabl2/lang/common/-
+
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+rules
+
+  nabl2--is-wld = is-wld

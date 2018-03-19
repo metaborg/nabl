@@ -1,0 +1,43 @@
+---
+id: org.metaborg:org.metaborg.meta.nabl2.ext.coq:${metaborgVersion}
+name: NaBL2ExtCoq
+metaborgVersion: 2.5.0-SNAPSHOT
+
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
+  - org.metaborg:org.metaborg.lang.coq:${metaborgVersion}
+
+contributions:
+- name: NaBL2Lang
+  id: org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
+
+generates:
+- language: Coq
+  directory: src-gen/nabl2/coq
+
+language:
+  sdf:
+    enabled: false
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc

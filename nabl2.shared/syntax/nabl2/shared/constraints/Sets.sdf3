@@ -1,0 +1,24 @@
+module nabl2/shared/constraints/Sets
+
+imports
+
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Sets
+  nabl2/shared/common/CTerms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-Constraint.CEvalSet = <<NaBL2-CTerm> is set <NaBL2-CSet> <NaBL2-Message>>
+
+syntax
+
+  NaBL2-Constraint-CF.CSubsetEq = NaBL2-CSet-CF LAYOUT?-CF "subseteq" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF NaBL2-Message-CF
+  NaBL2-Constraint-CF.CDistinct = "distinct" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF NaBL2-Message-CF
+
+lexical syntax
+
+  NaBL2-Keyword = "subseteq" | "distinct"

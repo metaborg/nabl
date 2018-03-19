@@ -1,0 +1,48 @@
+module nabl2/shared/constraints/Base
+
+imports
+
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/CTerms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-Constraint.CTrue   = <true <NaBL2-MessagePosition>>
+  NaBL2-Constraint.CFalse  = <false <NaBL2-Message>>
+
+  NaBL2-Constraint         = <( <NaBL2-Constraint> )> {bracket}
+
+  NaBL2-Constraint.CConj   = <
+    <NaBL2-Constraint>,
+    <NaBL2-Constraint>
+  > {right}
+
+  NaBL2-Constraint.CExists = <
+    { <{NaBL2-CVar " "}+>:
+      <NaBL2-Constraint>
+    }
+  >
+
+  NaBL2-Constraint.CNew = <new <{NaBL2-CVar " "}+> <NaBL2-MessagePosition>>
+
+context-free priorities
+
+  {
+    NaBL2-Constraint.CExists
+    NaBL2-Constraint.CNew
+  } > { right:
+    NaBL2-Constraint.CConj
+  }
+
+lexical syntax
+
+  NaBL2-ConstraintPriority = "!"*
+
+lexical syntax
+
+  NaBL2-Keyword = "true" | "false" | "exists" | "new"

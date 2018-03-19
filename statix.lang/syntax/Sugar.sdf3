@@ -1,0 +1,25 @@
+module Sugar
+
+imports
+
+  StatixLang
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free syntax
+
+  Rule.Rule = <
+    <Memo?> <UserConstraint>.
+  >
+  Rule.Rule = <
+    <Memo?> <UserConstraint> :- <LocalVars> <Constraint>.
+  >
+
+  CParam.Param = <<SortRef>>
+
+syntax
+
+  Constraint-CF.CPathDisamb =
+    "pathDisamb" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")" {deprecated("Use 'pathLt' instead.")}

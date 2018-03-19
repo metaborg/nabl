@@ -1,0 +1,360 @@
+module testsuites/name-resolution/rules
+
+imports
+
+  signatures/testsuites/name-resolution/-
+
+rules
+
+  [[ ScopeOccurrencesAreEqual(x1,x2) ^ () ]] :=
+    new s,
+    ScopeOccurrencesAreEqual[[ x1 ^ (s) : x1' ]],
+    ScopeOccurrencesAreEqual[[ x2 ^ (s) : x2' ]],
+    x1' == x2'.
+
+  ScopeOccurrencesAreEqual[[ x ^ (s) : {x @s} ]].
+
+
+  [[ OccurrenceOfXInVarScope(x) ^ () ]] :=
+    new s',
+    {x @s} -> s'.
+
+  [[ ResolveXToScopeOccurrenceX(xr,xd) ^ () ]] :=
+    {xd @s1} <- s1,
+    s2 -P-> s1,
+    {xr} -> s2,
+    {xr} |-> _,
+    new s1 s2.
+
+rules
+
+  // [x] -> (s) -> [x]
+  // expect: resolve x
+  [[ ResolveXToXInSameScope(xr,xd) ^ () ]] :=
+    new s,
+    {xr} -> s,
+    {xd} <- s,
+    {xr} |-> _.
+
+  // [x] -> (s) -> [y]
+  // expect: do not resolve x
+  [[ ResolveXToYInSameScope(xr,yd) ^ () ]] :=
+    new s,
+    {xr} -> s,
+    {yd} <- s,
+    {xr} |-> _.
+
+  // [Ns1 x] -> (s) -> [Ns2 x]
+  // expect: do not resolve Ns1{x}
+  [[ ResolveNs1XToNs2XInSameScope(xr,xd) ^ () ]] :=
+    new s,
+    Ns1{xr} -> s,
+    Ns2{xd} <- s,
+    Ns1{xr} |-> _.
+
+  // [x] -> (s) -> [x]
+  //           \-> [x] 
+  // expect: ambiguous resolution for x
+  [[ ResolveXToXOrXInSameScope(xr,xd1,xd2) ^ () ]] :=
+    new s,
+    {xr} -> s,
+    {xd1} <- s,
+    {xd2} <- s,
+    {xr} |-> _.
+
+rules
+
+  // [x] -> (s) -P-> (ps) -> [x]
+  // expect: resolve x
+  [[ ResolveXToXInParentScope(xr,xd) ^ () ]] :=
+    new s ps,
+    {xd} <- ps,
+    s -P-> ps,
+    {xr} -> s,
+    {xr} |-> _.
+
+  // [x] -> (s) -P-> (ps1) -> [x]
+  //           \-P-> (ps2) -> [x]
+  // expect: ambiguous resolution for x
+  [[ ResolveXToXOrXInParentScopes(xr,xd1,xd2) ^ () ]] :=
+    new s ps1 ps2,
+    {xd1} <- ps1,
+    {xd2} <- ps2,
+    s -P-> ps1,
+    s -P-> ps2,
+    {xr} -> s,
+    {xr} |-> _.
+
+  // [x] -> (s) -P-> (ps) -> [x]
+  //           \-I-> (is) -> [x]
+  // expect: resolve x via I
+  [[ ResolveXToXInImportScopeNotInParentScope(xr,xd1,xd2) ^ () ]] :=
+    new s is ps,
+    {xd1} <- is,
+    {xd2} <- ps,
+    s -I-> is,
+    s -P-> ps,
+    {xr} -> s,
+    {xr} |-> _.
+
+  // [x] -> (s) -I-> (ps) -> [x]
+  //           \-J-> (is) -> [x]
+  // expect: ambiguous resolution for x
+  [[ ResolveXViaIOrJParent(xr,xd1,xd2) ^ () ]] :=
+    new s si sj,
+    {xr} -> s,
+    s -I-> si,
+    s -J-> sj,
+    {xd1} <- si,
+    {xd2} <- sj,
+    {xr} |-> _.
+
+  // [x] -> (s) -P-> (ps) -> [x]
+  //           \-I-> (is1) -I-> (is2) -> [x]
+  // expect: resolve x via longer I I
+  [[ ResolveXViaLongerMoreSpecificPath(xr,xd1,xd2) ^ () ]] :=
+    new s ps is1 is2,
+    {xr} -> s,
+    s -P-> ps,
+    s -I-> is1,
+    is1 -I-> is2,
+    {xd1} <- is2,
+    {xd2} <- ps,
+    {xr} |-> _.
+
+  // [x] -> (s) -I-> (is) -P-> (ps) -> [x]
+  // expect: cannot resolve x
+  [[ ResolveXViaParentAfterImport(xd,xr) ^ () ]] :=
+    new s is ps,
+    {xr} -> s,
+    s -J-> is,
+    is -P-> ps,
+    {xd} <- ps,
+    {xr} |-> _.
+
+  // [x] -> (s) -J-> (is1) -J-> (is2) -> [x]
+  // expect: cannot resolve x
+  [[ ResolveXViaNonTransitiveImport(xr,xd) ^ () ]] :=
+    new s is1 is2,
+    {xr} -> s,
+    s -J-> is1,
+    is1 -J-> is2,
+    {xd} <- is2,
+    {xr} |-> _.
+
+rules
+
+  //                   /-> [y] =I=> (sy) -> [x]
+  // [x] -> (sx) -P-> (s) =I=> [y]    
+  //                   ^-------/
+  // expect: resolve x via y
+  [[ ResolveXViaY(xr,yr,yd,xd) ^ () ]] :=
+    new s sx sy,
+    {yd} <- s,
+    {yd} =I=> sy,
+    {xd} <- sy,
+    {yr} -> s,
+    {yr} <=I= s,
+    sx -P-> s,
+    {xr} -> sx,
+    {xr} |-> _.
+
+  [[ ResolveXViaYAndZ(xr,yr,yd,zr,zd,xd) ^ () ]] :=
+    new s sx sy sz,
+    {yd} <- s,
+    {yd} =I=> sy,
+    {zr} -> s,
+    {zr} <=I= sy,
+    {zd} <- s,
+    {zd} =I=> sz,
+    {xd} <- sz,
+    {yr} <=I= s,
+    {yr} -> s,
+    sx -P-> s,
+    {xr} -> sx,
+    {xr} |-> _.
+
+  [[ ResolveXViaAmbiguousImport(xr,yr,yd1,xd1,yd2,xd2) ^ () ]] :=
+    new s sy1 sy2,
+    {xr} -> s,
+    {yr} -> s,
+    {yr} <=I= s,
+
+    {yd1} <- s,
+    {yd1} =I=> sy1,
+    {xd1} <- sy1,
+
+    {yd2} <- s,
+    {yd2} =I=> sy2,
+    {xd2} <- sy2,
+ 
+    {xr} |-> _.
+
+  [[ ResolveXViaUnorderedImports(xr,yr1,yd1,xd1,yr2,yd2,xd2) ^ () ]] :=
+    new s sy1 sy2,
+    {xr} -> s,
+
+    {yr1} -> s,
+    {yr1} <=I= s,
+    {yd1} <- s,
+    {yd1} =I=> sy1,
+    {xd1} <- sy1,
+
+    {yr2} -> s,
+    {yr2} <=J= s,
+    {yd2} <- s,
+    {yd2} =J=> sy2,
+    {xd2} <- sy2,
+ 
+    {xr} |-> _.
+
+  [[ ResolveInParentWithNonResolvingImport(xr,xd,yr) ^ () ]] :=
+    new s ps,
+    {xr} -> s,
+    s -P-> ps,
+    {xd} <- ps,
+    {yr} -> s,
+    {yr} <=I= s,
+    {xr} |-> _.
+
+  [[ ResolveViaImportNotInSameScope(xr,yr,yd,xd) ^ () ]] :=
+    new s1 s2 sy,
+    {xr} -> s1,
+    {yr} <=I= s1,
+    {yr} -> s2,
+    {yd} <- s2,
+    {yd} =I=> sy,
+    {xd} <- sy,
+    {xr} |-> _.
+
+rules
+
+  [[ ResolveYViaTypeOfX(yr,xr,xd,yd) ^ () ]] :=
+    new s s' sx,
+    {xd} <- s,
+    {xd} : sx,
+    {yd} <- sx,
+    {xr} -> s,
+    {xr} |-> d,
+    d : s'',
+    {yr} -> s',
+    s' -P-> s'',
+    {yr} |-> _.
+
+rules
+
+  // [x] -> (s1) -P-> (s2) -> [x]
+  //           ^--P--/
+  [[ DirectCycle(xr,xd) ^ () ]] :=
+    new s1 s2,
+    s1 -P-> s2,
+    s2 -P-> s1,
+    {xr} -> s1,
+    {xd} <- s2,
+    {xr} |-> _.
+
+  [[ ImportCycle(xr,yr1,yd,zr,zd,yr2,xd) ^ () ]] :=
+    new s sy sz,
+    {xr} -> s,
+    {yr1} -> s,
+    {yr1} <=I= s,
+    {zr} -> s,
+    {yr2} -> s,
+
+    {yd} <- s,
+    {yd} =I=> sy,
+    {zr} <=I= sy,
+    
+    {zd} <- s,
+    {zd} =I=> sz,
+    {yr2} <=I= sz,
+    {xd} <- sz,
+
+    {xr} |-> _.
+
+  [[ ImportNested(xr,yr1,yr2,yd1,yd2,xd) ^ () ]] :=
+    new s1 s2 sy1 sy2,
+    {xr} -> s1,
+    {yr1} -> s1,
+    {yr2} -> s1,
+    {yr1} <=I= s1,
+    {yr2} <=I= s1,
+
+    s1 -P-> s2,
+    {yd1} <- s2,
+
+    {yd1} =I=> sy1,
+    {yd2} <- sy1,
+    {yd2} =I=> sy2,
+    {xd} <- sy2,
+
+    {xr} |-> _.
+
+  [[ SelfImport(xr,xd1,xd2) ^ () ]] :=
+    new s sx,
+    {xr} -> s,
+    {xr} <=I= s,
+    {xd1} <- s,
+    {xd1} =I=> sx,
+    {xd2} <- sx,
+    {xr} |-> _.
+
+rules
+
+  [[ ImportAnomaly(ad,abd,xd,bd,bad,yd,cd,ar,br,zd,xr,yr) ^ () ]] :=
+    new s sa sab sb sba sc, 
+  
+    sa -P-> s, 
+    sab -P-> sa,
+    sb -P-> s,
+    sba -P-> sb,
+    sc -P-> s,
+  
+    {ad} <- s,
+    {ad} =I=> sa,
+    {abd} <- sa,
+    {abd} =I=> sab,
+    {xd} <- sab,
+    
+    {bd} <- s,
+    {bd} =I=> sb,
+    {bad} <- sb,
+    {bad} =I=> sba,
+    {yd} <- sba,
+ 
+    {cd} <- s,
+    {cd} =I=> sc,
+    {ar} -> sc,
+    {ar} <=I= sc,
+    {br} -> sc,
+    {br} <=I= sc,
+    {zd} <- sc,
+    {xr} -> sc,
+    {yr} -> sc,
+    {xr} |-> _,
+    {yr} |-> _. 
+
+rules
+
+  [[ ResolveImplicitCompoundName(xr,xd) ^ () ]] :=
+    new s,
+    ResolveImplicitCompoundNameDecl[[ xd ^ (s) ]],
+    ResolveImplicitCompoundNameRef[[ xr ^ (s) ]].
+  ResolveImplicitCompoundNameDecl[[ xd ^ (s) ]] :=
+    {[xd]} <- s.
+  ResolveImplicitCompoundNameRef[[ xr ^ (s) ]] :=
+    {[xr]} -> s,
+    {[xr]} |-> _.
+
+  [[ ResolveExplicitCompoundName(xr,xd) ^ () ]] :=
+    new s,
+    {[xd] @xd} <- s,
+    {[xr] @xr} -> s,
+    {[xr] @xr} |-> _.
+
+  [[ ResolveAstCompoundName(cr,cd) ^ () ]] :=
+    new s,
+    {cd} <- s,
+    {cr} -> s,
+    {cr} |-> _.
+

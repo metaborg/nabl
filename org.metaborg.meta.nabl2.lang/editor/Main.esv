@@ -1,7 +1,0 @@
-module Main
-
-imports
-
-  Menus
-  Lang
-  Syntax

@@ -1,0 +1,23 @@
+module nabl2/shared/constraints/Functions
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-Constraint.CEval = <<NaBL2-CTerm> is <NaBL2-FunctionRef> of <NaBL2-CTerm> <NaBL2-Message>>
+
+  NaBL2-Function.Function = NaBL2-FunctionId
+  
+  NaBL2-FunctionRef = NaBL2-Function
+
+syntax
+
+  NaBL2-FunctionRef-CF.ExtFunction = "`" NaBL2-StrategyId-LEX "`"
