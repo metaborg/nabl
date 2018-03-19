@@ -42,7 +42,10 @@ signature
     NaBL2 |- scopeOfRef(Occurrence) --> Scope
     NaBL2 |- assocsOf(Occurrence) --> Map(Label, List(Scope))
     NaBL2 |- typeOf(Occurrence) --> Type
-
+    
+    newScope(Scope, List(Occurrence), List(Occurrence), Map(Label, List(Scope)), Map(Label, List(Occurrence))) :: NaBL2 --> Scope :: NaBL2
+    setType(Occurrence, Type) :: NaBL2 --> Occurrence :: NaBL2
+    
   arrows // name resolution
     NaBL2 |- pathOf(Occurrence) --> Path
  

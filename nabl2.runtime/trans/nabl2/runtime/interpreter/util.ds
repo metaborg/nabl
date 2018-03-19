@@ -8,6 +8,7 @@ signature
 
   arrows // Auxiliary functions
     filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
+    filterOccsByName(List(Occurrence), Name) --> List(Occurrence)
     declOfPath(List(Step)) --> Occurrence
     NaBL2 |- declsOf(Scope, Namespace) --> List(Occurrence)
     NaBL2 |- declOfRef(Occurrence) --> Occurrence
@@ -17,15 +18,29 @@ rules
 
   filterOccsByNamespace([], _) --> []
   
-  filterOccsByNamespace([o|os], ns) --> [o|filterOccsByNamespace(os, ns)]
+  filterOccsByNamespace([o|os], ns) --> [o|os']
   where
     namespaceOf(o) --> ns';
-    ns == ns'
+    ns == ns';
+    filterOccsByNamespace(os, ns) --> os'
     
   filterOccsByNamespace([o|os], ns) --> filterOccsByNamespace(os, ns)
   where
     namespaceOf(o) --> ns';
     ns != ns'
+  
+  filterOccsByName([], _) --> []
+  
+  filterOccsByName([o|os], n) --> [o|os']
+  where
+    nameOf(o) --> n';
+    n' == n;
+    filterOccsByName(os, n) --> os'
+  
+  filterOccsByName([o|os], n) --> filterOccsByName(os, n)
+  where
+    nameOf(o) --> n';
+    n' != n
     
 rules    
  

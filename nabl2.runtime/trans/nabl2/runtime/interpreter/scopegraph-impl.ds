@@ -51,7 +51,6 @@ signature
     NaBL2 : ScopeGraph * NameResolution * DeclTypes -> NaBL2
  
   arrows
-    initScope(Scope, ScopeEntry) :: NaBL2 --> Scope :: NaBL2
     mkOccurrenceHavingIndex(String, Name, TermIndex) --> Occurrence
     
 rules
@@ -81,7 +80,11 @@ rules // occurrences
 
 rules // scope graph
 
-  initScope(s, se) :: NaBL2 NaBL2(G(ss, ds, rs), nr, dt) --> s :: NaBL2 NaBL2(G({s |--> se, ss}, ds, rs), nr, dt)
+  newScope(s, decls, refs, edges, importz) :: NaBL2 NaBL2(G(ss, ds, rs), nr, dt)
+    --> s :: NaBL2 NaBL2(G({s |--> SE(decls, refs, edges, importz), ss}, ds, rs), nr, dt)
+
+  setType(o, ty) :: NaBL2 NaBL2(G(ss, ds, rs), nr, dt)
+    --> o :: NaBL2 NaBL2(G(ss, ds, rs), nr, {o |--> ty, dt})
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- declsOf(s:Scope) --> ds
     where case ss[s?] of {
