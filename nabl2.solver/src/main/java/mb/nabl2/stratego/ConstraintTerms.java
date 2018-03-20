@@ -27,6 +27,9 @@ public class ConstraintTerms {
     private final static String QUOTE_CTOR = "CQuote";
     private final static String VAR_CTOR = "CVar";
 
+    private ConstraintTerms() {
+    }
+
     /**
      * Specialize appl's of NaBL2 constructors for variables and lists to actual variables and lists.
      */
