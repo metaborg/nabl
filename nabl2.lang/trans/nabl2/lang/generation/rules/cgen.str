@@ -204,17 +204,23 @@ rules
   roccs-strategy-name = !$[nabl2--transform-occurrences]
 
   rule-to-occurrences-str:
-    CGenRule(rdef, pattern-match, _, _, clause*) ->
+    CGenRule(rdef, pattern-match, _, _, clause) ->
       RDefT(<roccs-strategy-name>, [], [],
            Rule(AnnoList(pattern-match, [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
-    where not(InitRule() := rdef)
     where
-      occ* := <filter(\ CGRef(o@Occurrence(_, Var(_), _), _, _) -> o \ <+ \ CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o \)> clause*;
-      <not(?[])> occ*;
-      pattern-build := <strip-as-pattern;alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occ* \)> pattern-match
+      not(InitRule() := rdef);
+      occurrence* := <collect-all(cg-decl-or-ref)> clause;
+      <not(?[])> occurrence*;
+      pattern-build := <strip-as-pattern; alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occurrence* \)> pattern-match
 
   occ-to-occ-build:
     Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
-      Term |[ Occurrence(Namespace(~nspace), ~v, <nabl2--occurrence-index-of(|<nabl2--get-ast-index> ~t)> ~t) ]|
+      Term |[ Occurrence(Namespace(~nspace), ~v, <nabl2--occurrence-index-of> ~t) ]|
     where
       nspace := Str(nspace-str)
+  
+  cg-decl-or-ref:
+    CGRef(o@Occurrence(_, Var(_), _), _, _) -> o
+  
+  cg-decl-or-ref:
+    CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o
