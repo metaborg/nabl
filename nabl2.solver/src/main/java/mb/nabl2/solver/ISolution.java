@@ -49,7 +49,7 @@ public interface ISolution {
 
     java.util.Set<IConstraint> constraints();
 
-    ISolution findAndLock() throws SolverException;
+    ISolution findAndLock();
 
     ISolution withFlowSpecSolution(IFlowSpecSolution<CFGNode> value);
 }

@@ -78,7 +78,7 @@ public abstract class Solution implements ISolution {
                 FlowSpecSolution.of(), Messages.Immutable.of(), Collections.emptySet());
     }
 
-    @Override public ISolution findAndLock() throws SolverException {
+    @Override public ISolution findAndLock() {
         final IUnifier.Transient unifier = unifier().melt();
         // unifier.map(t -> t.withLocked(true)); // FIXME
 
