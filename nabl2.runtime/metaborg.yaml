@@ -9,6 +9,7 @@ dependencies:
   # org.metaborg:org.metaborg.meta.lang.stratego:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
+  # org.metaborg:dynsem:${metaborgVersion}
   source:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
@@ -42,10 +43,10 @@ exports:
   directory: src-gen/syntax
   includes:
   - "**/*.aterm"
-- language: ds
-  directory: src-gen
-  includes:
-  - "ds-signatures/nabl2/**/*.ds"
+# language: ds
+ #directory: src-gen
+ #includes:
+ #- "ds-signatures/nabl2/**/*.ds"
 - language: EditorService
   directory: src-gen
   includes:

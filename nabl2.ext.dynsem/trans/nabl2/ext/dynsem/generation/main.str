@@ -16,7 +16,7 @@ rules
          source := <ds-pp-module> ds-ast
 
   module-to-ds(|langname):
-    ast@Module(name,_) -> Module(name,[
+    ast@Module(name,_) -> Module($[nabl2/dynsem/[name]],[
       Imports([
         Import("nabl2/runtime/interpreter/scopegraph-api"),
         Import($[ds-signatures/[langname]-sig])

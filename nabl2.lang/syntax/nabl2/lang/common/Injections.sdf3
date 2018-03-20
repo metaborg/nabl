@@ -19,6 +19,10 @@ context-free syntax
   NaBL2-Message.DefaultMessage =
 
   NaBL2-MessagePosition.DefaultMessagePosition =
+  NaBL2-MessagePosition.MessagePositionFrom    = < @ <NaBL2-Var>>
+
+  NaBL2-OccurrenceIndex.DefaultOccurrenceIndex =
+  NaBL2-OccurrenceIndex.OccurrenceIndexFrom    = < @ <NaBL2-Var>>
 
   NaBL2-LabelRE.Option    = <<NaBL2-LabelRE>?>
   NaBL2-LabelRE.ConcatDot = <<NaBL2-LabelRE>.<NaBL2-LabelRE>>  {right,deprecated("The dot for concatenation is unnecessary, and can be omitted.")}
@@ -35,9 +39,6 @@ context-free syntax
 syntax
 
   NaBL2-TermIndex-CF.TermIndexFrom = "@" NaBL2-Var-CF
-
-  NaBL2-OccurrenceIndex-CF.DefaultOccurrenceIndex =
-  NaBL2-OccurrenceIndex-CF.OccurrenceIndexFrom    = LAYOUT?-CF "@" NaBL2-Var-CF
 
   NaBL2-Constraint-CF.CSetEq = NaBL2-CSet-CF LAYOUT?-CF "seteq" NaBL2-SetProj-CF LAYOUT?-CF NaBL2-CSet-CF LAYOUT?-CF NaBL2-Message-CF
 
