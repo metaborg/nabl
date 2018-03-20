@@ -1,8 +1,5 @@
 package mb.nabl2.terms;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
@@ -207,12 +204,6 @@ public class Terms {
             }
 
         };
-    }
-
-    // vars
-
-    public static Set<ITermVar> unlockedVars(ITerm term) {
-        return term.getVars().stream().filter(v -> !v.isLocked()).collect(Collectors.toSet());
     }
 
 }

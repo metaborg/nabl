@@ -408,11 +408,6 @@ public class TermMatch {
                     .map(r -> (R) r.withAttachments(term.getAttachments()));
         }
 
-        @SuppressWarnings("unchecked") public <R extends ITerm> IMatcher<R> preserveLocking(IMatcher<R> matcher) {
-            return (term, unifier) -> matcher.match(term, unifier)
-                    .map(r -> term.isLocked() ? (R) r.withLocked(true) : r);
-        }
-
         // util
 
         private <T> Optional<T> empty(@SuppressWarnings("unused") ITerm term) {

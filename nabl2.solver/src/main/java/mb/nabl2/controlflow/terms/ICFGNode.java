@@ -35,11 +35,6 @@ public interface ICFGNode extends ITerm {
         }
 
         @Override
-        public boolean isLocked() {
-            return false;
-        }
-
-        @Override
         public Multiset<ITermVar> getVars() {
             return NO_VARS;
         }
@@ -79,9 +74,5 @@ public interface ICFGNode extends ITerm {
             return this;
         }
 
-        @Override
-        public IApplTerm withLocked(boolean locked) {
-            return this;
-        }
     }
 }

@@ -14,6 +14,4 @@ public interface IApplTerm extends ITerm {
 
     @Override IApplTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
-    @Override IApplTerm withLocked(boolean locked);
-
 }

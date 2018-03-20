@@ -7,10 +7,6 @@ public interface ITerm {
 
     boolean isGround();
 
-    boolean isLocked();
-
-    ITerm withLocked(boolean locked);
-
     Multiset<ITermVar> getVars();
 
     ImmutableClassToInstanceMap<Object> getAttachments();

@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.constraints.IConstraint;
@@ -79,21 +78,16 @@ public abstract class Solution implements ISolution {
     }
 
     @Override public ISolution findAndLock() {
-        final IUnifier.Transient unifier = unifier().melt();
-        // unifier.map(t -> t.withLocked(true)); // FIXME
-
-        final Function1<ITerm, ITerm> findAndLock = t -> unifier.findRecursive(t).withLocked(true); // FIXME
-
         final IProperties.Transient<TermIndex, ITerm, ITerm> astProperties = astProperties().melt();
-        astProperties.mapValues(findAndLock);
+        astProperties.mapValues(unifier()::findRecursive);
 
         final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = declProperties().melt();
-        declProperties.mapValues(findAndLock);
+        declProperties.mapValues(unifier()::findRecursive);
 
-        final ISymbolicConstraints symbolic = symbolic().map(findAndLock);
+        final ISymbolicConstraints symbolic = symbolic().map(unifier()::findRecursive);
 
         return ImmutableSolution.builder().from(this).astProperties(astProperties.freeze())
-                .declProperties(declProperties.freeze()).unifier(unifier.freeze()).symbolic(symbolic).build();
+                .declProperties(declProperties.freeze()).symbolic(symbolic).build();
     }
 
 }

@@ -18,10 +18,6 @@ abstract class StringTerm extends AbstractTerm implements IStringTerm {
         return true;
     }
 
-    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
-        return false;
-    }
-    
     @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
         return ImmutableMultiset.of();
     }
