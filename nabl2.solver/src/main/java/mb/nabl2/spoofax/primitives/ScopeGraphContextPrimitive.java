@@ -21,6 +21,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
 import mb.nabl2.config.NaBL2Config;
+import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
@@ -39,22 +40,22 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
         super(name, svars, tvars);
     }
 
-    @Override public final boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars)
-            throws InterpreterException {
+    @Override
+    public final boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
         final Object contextObj = env.contextObject();
-        if(contextObj == null) {
+        if (contextObj == null) {
             logger.warn("Context is null.");
             return false;
         }
         final IScopeGraphContext<?> context;
-        if(!(contextObj instanceof IScopeGraphContext)) {
+        if (!(contextObj instanceof IScopeGraphContext)) {
             context = FAKE_SCOPE_GRAPH_CONTEXT;
         } else {
             context = (IScopeGraphContext<?>) env.contextObject();
         }
         List<IStrategoTerm> termArgs = Arrays.asList(tvars);
         Optional<? extends IStrategoTerm> result;
-        try(IClosableLock lock = context.guard()) {
+        try (IClosableLock lock = context.guard()) {
             result = call(context, env.current(), termArgs, env.getFactory());
         }
         return result.map(t -> {
@@ -73,12 +74,16 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }
 
-    @SuppressWarnings("unused") public Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term,
-            List<ITerm> terms) throws InterpreterException {
+    @SuppressWarnings("unused")
+    public Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
         throw new UnsupportedOperationException("Subclasses must override call method.");
     }
 
     private static final class FakeScopeGraphContext implements IScopeGraphContext<IScopeGraphUnit> {
+        private static final NaBL2Config CONFIG = new NaBL2Config(false,
+                new NaBL2DebugConfig(NaBL2DebugConfig.Flag.ALL));
+
         IScopeGraphUnit fakeUnit = new IScopeGraphUnit() {
             private static final long serialVersionUID = 1L;
             private Fresh fresh = new Fresh();
@@ -133,7 +138,7 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
 
         @Override
         public NaBL2Config config() {
-            return NaBL2Config.DEFAULT;
+            return CONFIG;
         }
     }
 
