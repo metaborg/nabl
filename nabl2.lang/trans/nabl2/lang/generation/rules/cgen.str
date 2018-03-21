@@ -206,16 +206,22 @@ rules
   rule-to-occurrences-str:
     CGenRule(rdef, pattern-match, _, _, clause) ->
       RDefT(<roccs-strategy-name>, [], [],
-           Rule(AnnoList(pattern-match, [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
+           Rule(AnnoList(pattern, [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
     where
       not(InitRule() := rdef);
       occurrence* := <collect-all(cg-decl-or-ref)> clause;
       <not(?[])> occurrence*;
-      pattern-build := <strip-as-pattern; alltd(\ v@Var(_) -> <fetch-elem(?Occurrence(_, v, _)); occ-to-occ-build> occurrence* \)> pattern-match
+      pattern := <strip-as-pattern> pattern-match;
+      pattern-build := <alltd(pattern-to-occurrence-str(|occurrence*))> pattern
 
+  pattern-to-occurrence-str(|occurrence*):
+    v@Var(_) -> <occ-to-occ-build> matching-occ
+    where
+      matching-occ := <fetch-elem(?Occurrence(_, v, _))> occurrence*
+    
   occ-to-occ-build:
     Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
-      Term |[ Occurrence(Namespace(~nspace), ~v, <nabl2--occurrence-index-of> ~t) ]|
+      Term |[ Occurrence(Namespace(~nspace), ~v, <is-string; has-annos; nabl2--occurrence-index-of> ~t) ]|
     where
       nspace := Str(nspace-str)
   
