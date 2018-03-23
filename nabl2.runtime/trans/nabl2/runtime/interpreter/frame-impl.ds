@@ -11,7 +11,7 @@ signature
   constructors
     Addr : Frame * Occurrence -> Addr
 
-  sorts FrameContainer constructors
+  constructors
     FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame
     
   constructors

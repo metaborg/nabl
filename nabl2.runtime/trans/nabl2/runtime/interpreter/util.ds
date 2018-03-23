@@ -10,6 +10,7 @@ signature
     filterOccsByNamespace(List(Occurrence), Namespace) --> List(Occurrence)
     filterOccsByName(List(Occurrence), Name) --> List(Occurrence)
     declOfPath(List(Step)) --> Occurrence
+    importedOf(Scope, Label) --> List(Occurrence)
     NaBL2 |- declsOf(Scope, Namespace) --> List(Occurrence)
     NaBL2 |- declOfRef(Occurrence) --> Occurrence
     NaBL2 |- assocScopeOf(Occurrence, Label) --> Scope
@@ -62,3 +63,14 @@ rules
   where
     assocsOf(d) --> assocs;
     assocs[l] => [s]
+  
+  importedOf(s, l) --> os
+  where
+    importsOf(s) --> import-edges;
+    case import-edges[l?] of {
+      false =>
+        [] : List(Occurrence) => os
+      true =>
+        import-edges[l] => os
+    }
+  
