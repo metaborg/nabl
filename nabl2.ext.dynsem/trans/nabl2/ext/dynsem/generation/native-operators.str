@@ -39,7 +39,7 @@ rules
 
     import ~x:term-pkg.*;
     import org.metaborg.meta.lang.dynsem.interpreter.nabl2.NaBL2TermBuild;
-    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.NativeOpBuild;
     import mb.nabl2.interpreter.*;
     import mb.nabl2.stratego.*;
     import mb.nabl2.terms.*;
@@ -62,7 +62,7 @@ rules
         ~bstm*:stmts
       }
 
-      public static TermBuild create(SourceSection source, TermBuild term) {
+      public static NativeOpBuild create(SourceSection source, TermBuild term) {
         return ~x:nodegen-name.create(source, term);
       }
 
