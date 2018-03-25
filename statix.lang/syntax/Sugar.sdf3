@@ -11,10 +11,10 @@ template options
 context-free syntax
 
   Rule.Rule = <
-    <Memo?> <UserConstraint>.
+    <UserConstraint>.
   >
   Rule.Rule = <
-    <Memo?> <UserConstraint> :- <LocalVars> <Constraint>.
+    <UserConstraint> :- <LocalVars> <Constraint>.
   >
 
   CParam.Param = <<SortRef>>

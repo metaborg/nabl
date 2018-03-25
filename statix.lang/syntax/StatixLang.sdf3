@@ -73,11 +73,11 @@ context-free syntax
     <{Rule "\n\n"}*>
   > {longest-match}
 
+  Rule = <constraint <CDecl>>
+  Rule = <relation <RelDecl>>
   Rule.Rule = <
-    <Memo?> <UserConstraint> :- <LocalVars> <Constraint> | <Constraint>.
+    <UserConstraint> :- <LocalVars> <Constraint> | <Constraint>.
   >
-
-  Memo.Memo = <memo>
 
   LocalVars.NoLocalVars = <>
   LocalVars.LocalVars   = <{<{Var " "}+>}>
@@ -140,7 +140,11 @@ context-free syntax
   Constraint.CResolve         = [[Term] |-> [Term]]
   Constraint.CQuery           = [[Term] in [Term] |-> [Term]]
 
-  CDecl.CDecl = [[Memo?] [ConstraintId] : [{CParam " * "}+]]
+  CDecl.CDecl = [[ConstraintId] : [{CParam " * "}+] [CKind]]
+
+  CKind.InductiveC   = <{inductive}>
+  CKind.CoinductiveC = <{coinductive}>
+  CKind.DefaultC     =
 
   CParam.Param = <<InOut> <SortRef>>
 
@@ -162,7 +166,9 @@ syntax
 lexical syntax
 
   ConstraintId = LCID
-  ConstraintId = "true" | "false" | "new" | "disamb" | "memo" {reject}
+  ConstraintId = "true" | "false"
+               | "new" | "disamb"
+               | "inductive" |"coinductive" {reject}
 
 
 /******************************************************************
@@ -253,7 +259,6 @@ context-free syntax
   Sort.SimpleSort = SortId
 
   SortRef                = Sort
-  SortRef.SortVar        = SortVarId
   SortRef.ListSort       = <list(<SortRef>)>
   SortRef.TupleSort      = <(<{SortRef " * "}*>)>
   SortRef.IntSort        = "int"
@@ -263,7 +268,6 @@ context-free syntax
   SortRef.ScopeSort      = "scope"
 
   OpDecl.OpDecl  = <<SID> : <OpSort>>
-//OpDecl.InjDecl = [[SortRef] => [Sort]]
 
   OpSort.ConstOp = Sort
   OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]

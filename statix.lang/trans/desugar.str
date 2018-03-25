@@ -25,8 +25,8 @@ rules
   desugar-reldecl: DefaultRelScope() -> GlobalRel()
 
   desugar-rules = try(sometd(desugar-rule))
-  desugar-rule: Rule(props, h) -> Rule(props, h, NoLocalVars(), CTrue(), CTrue())
-  desugar-rule: Rule(props, h, vs, b) -> Rule(props, h, vs, CTrue(), b)
+  desugar-rule: Rule(h) -> Rule(h, NoLocalVars(), CTrue(), CTrue())
+  desugar-rule: Rule(h, vs, b) -> Rule(h, vs, CTrue(), b)
 
   desugar-constraints = try(sometd(desugar-constraint))
   desugar-constraint: CPathDisamb(ord, p1, p2) -> CPathLt(ord, p1, p2)

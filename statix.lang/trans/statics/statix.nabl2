@@ -118,8 +118,6 @@ rules
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
-  SortRef[[ SortVar(x) ^ (s) : ty ]] :=
-    false | note $[Free sort variable [x]].
   SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
     Sort{x} -> s,
     Sort{x} |-> d,
@@ -134,7 +132,7 @@ rules
   [[ Constraints(cs) ^ (s) ]] :=
     Map1[[ cs ^ (s) ]].
 
-  [[ CDecl(props, x, params) ^ (s) ]] :=
+  [[ CDecl(x, params, kind) ^ (s) ]] :=
     C{x} <- s,
     C{x} : CON(tys) !,
     Map1T[[ params ^ (s) : tys ]].
@@ -209,7 +207,7 @@ rules
   [[ Rules(rs) ^ (s) ]] :=
     Map1[[ rs ^ (s) ]].
 
-  [[ Rule(props, h, vs, g, c) ^ (s) ]] :=
+  [[ Rule(h, vs, g, c) ^ (s) ]] :=
     new s', s' ---> s,
     distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
     UserConstraint(VarDecl)[[ h ^ (s') ]],
