@@ -1,0 +1,59 @@
+module nabl2/ext/dynsem/generation/trans
+
+imports
+
+  libstrc
+
+  nabl2/shared/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/-
+  nabl2/lang/generation/-
+  nabl2/lang/util/stratego
+
+rules
+
+  generate-stratego-transformations:
+    (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
+    with
+      filename  := $[[name].str];
+      rule-str* := <explicate-all;collect-all(rule-to-occurrences-str)> ast;
+      module-str := Module(name, Rules(rule-str*));
+      result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
+ 
+rules
+
+  roccs-strategy-name = !$[nabl2--transform-occurrences]
+
+  rule-to-occurrences-str:
+    CGenRule(rdef, pattern-match, _, _, clause) ->
+      RDefT(<roccs-strategy-name>, [], [],
+           Rule(AnnoList(pattern, [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
+    where
+      not(InitRule() := rdef);
+      occurrence* := <collect-all(cg-decl-or-ref)> clause;
+      <not(?[])> occurrence*;
+      pattern := <strip-as-pattern> pattern-match;
+      pattern-build := <alltd(pattern-to-occurrence-str(|occurrence*))> pattern
+
+  pattern-to-occurrence-str(|occurrence*):
+    v@Var(_) -> <occ-to-occ-build> matching-occ
+    where
+      matching-occ := <fetch-elem(?Occurrence(_, v, _))> occurrence*
+    
+  occ-to-occ-build:
+    Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
+      Term |[ Occurrence(Namespace(~nspace), ~v, <is-string; has-annos; nabl2--occurrence-index-of> ~t) ]|
+    where
+      nspace := Str(nspace-str)
+  
+  cg-decl-or-ref:
+    CGRef(o@Occurrence(_, Var(_), _), _, _) -> o
+  
+  cg-decl-or-ref:
+    CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o

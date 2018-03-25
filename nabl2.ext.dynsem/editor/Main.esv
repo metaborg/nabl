@@ -5,6 +5,7 @@ language
   context  : none
   provider : target/metaborg/stratego.ctree
   on save  : generate-dynsem-ds
+  on save  : generate-dynsem-str
 
 menus
 

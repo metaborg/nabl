@@ -61,6 +61,18 @@ rules
            result := None()
          end
 
+  generate-dynsem-str:
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    with if ds-options := <get-ds-options-if-active> (path, project-path);
+            src-gen-dir := <src-gen-dir(|"nabl2/dynsem")>
+         then
+           str-result* := <generate-stratego-transformations;
+                           map((path-prepend(|src-gen-dir),id))> ast;
+           result := <unzip> str-result*
+         else
+           result := None()
+         end
+
   get-ds-options-if-active: (path, project-path) -> ds-options
     where is-ds-active
        <+ warn-msg(|"Missing dynsem compile dependency required for NaBL2 DynSem integration."); fail
