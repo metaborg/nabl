@@ -110,6 +110,7 @@ syntax
   Constraint-CF.CTellGlobalRel = "!" LCID-LEX "(" CommaTerms-CF ")"
 
   Constraint-CF.CAskScopedRel  = "?" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
+  Constraint-CF.CNotScopedRel  = "?" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "not" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
   Constraint-CF.CTellScopedRel = "!" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
 
 
@@ -225,8 +226,9 @@ context-free syntax
 
 syntax
 
-  Term-CF.PathRef  = Term-CF "." "ref"
-  Term-CF.PathDecl = Term-CF "." "decl"
+  Term-CF.PathRef    = Term-CF "." "ref"
+  Term-CF.PathScopes = Term-CF "." "scopes"
+  Term-CF.PathDecl   = Term-CF "." "decl"
 
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"

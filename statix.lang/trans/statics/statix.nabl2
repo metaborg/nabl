@@ -210,7 +210,7 @@ rules
   [[ Rule(h, vs, g, c) ^ (s) ]] :=
     new s', s' ---> s,
     distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    UserConstraint(VarDecl)[[ h ^ (s') ]],
+    UserConstraint(NonUniqueVarDecl)[[ h ^ (s') ]],
     [[ vs ^ (s') ]],
     [[ g ^ (s') ]],
     [[ c ^ (s') ]].
@@ -380,6 +380,12 @@ rules
   Build[[ t ^ (s) : ty ]] :=
     Term(VarRef)[[ t ^ (s) : ty ]].
 
+  NonUniqueVarDecl[[ Var(x) ^ (s) : ty ]] :=
+    Var{x @s} <- s,
+    Var{x @s} : ty !.
+
+  NonUniqueVarDecl[[ Wld() ^ (_) : _ ]].
+
   VarDecl[[ Var(x) ^ (s) : ty ]] :=
     Var{x} <- s,
     Var{x} : ty !.
@@ -426,6 +432,8 @@ rules
     Term(V)[[ t ^ (s) : ty ]].
 
   Term(V)[[ PathRef(t) ^ (s) : OCCURRENCE() ]] :=
+    Term(V)[[ t ^ (s) : PATH() ]].
+  Term(V)[[ PathScopes(t) ^ (s) : LIST(SCOPE()) ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
   Term(V)[[ PathDecl(t) ^ (s) : OCCURRENCE() ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
