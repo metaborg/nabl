@@ -88,7 +88,7 @@ context-free syntax
 
 context-free syntax
 
-  RelDecl.RelDecl = <<{RelProp " "}*> <LCID> : <RelType> <RelKind>>
+  RelDecl.RelDecl = <<{RelProp " "}*> <RelationId> : <RelType> <RelKind>>
 
   RelType.SimpleRelation     = [[{SortRef " * "}+]]
   RelType.FunctionalRelation = [[{SortRef " * "}+] -> [SortRef]] // FIXME Turning SortRef into a list breaks parsing
@@ -102,17 +102,20 @@ context-free syntax
 
   RelKind.GlobalRel       = <{global}>
   RelKind.ScopedRel       = <{scoped}>
-  RelKind.DefaultRelScope =
 
 syntax
 
-  Constraint-CF.CAskGlobalRel  = "?" LCID-LEX "(" CommaTerms-CF ")"
-  Constraint-CF.CTellGlobalRel = "!" LCID-LEX "(" CommaTerms-CF ")"
+  Constraint-CF.CAskGlobalRel  = "?" RelationId-LEX "(" CommaTerms-CF ")"
+  Constraint-CF.CTellGlobalRel = "!" RelationId-LEX "(" CommaTerms-CF ")"
 
-  Constraint-CF.CAskScopedRel  = "?" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
-  Constraint-CF.CNotScopedRel  = "?" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "not" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
-  Constraint-CF.CTellScopedRel = "!" LCID-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
+  Constraint-CF.CAskScopedRel  = "?" RelationId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
+  Constraint-CF.CNotScopedRel  = "?" RelationId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "not" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
+  Constraint-CF.CTellScopedRel = "!" RelationId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
 
+lexical syntax
+
+  RelationId = LCID
+  RelationId = "decl" {reject}
 
 /******************************************************************
  * Constraints                                                    *
@@ -151,7 +154,6 @@ context-free syntax
 
   CKind.InductiveC   = <{inductive}>
   CKind.CoinductiveC = <{coinductive}>
-  CKind.DefaultC     =
 
   CParam.Param = <<InOut> <SortRef>>
 
@@ -188,7 +190,7 @@ context-free syntax
   ResolutionParam.DefaultELabel = <default edge label <Label>>
   ResolutionParam.DefaultNLabel = <default named label <Label>>
   ResolutionParam.Strategy = <
-    resolve <Occurrence> with
+    resolve <Occurrence><StrategyTarget> with
       <StrategyMatch>
       <StrategyDisamb>
   >
@@ -198,11 +200,13 @@ context-free syntax
       <StrategyDisamb>
   >
 
-  StrategyMatch.NoMatch =
+  StrategyTarget.EmptyTarget = < to ()>
+  StrategyTarget.DeclTarget = < to decl>
+  StrategyTarget.Target     = < to <RelationId>>
+
   StrategyMatch.Match   = <match(<Var>) :- <{Constraint " | "}+>.>
 
-  StrategyDisamb.NoDisamb =
-  StrategyDisamb.Disamb   = <disamb(<Var>, <Var>) :- <{Constraint ";"}+>.>
+  StrategyDisamb.Disamb = <disamb(<Var>, <Var>) :- <{Constraint ";"}+>.>
 
   Label.Label = LabelId
 
@@ -232,8 +236,9 @@ context-free syntax
 
 syntax
 
-  Term-CF.PathRef    = Term-CF "." "ref"
+  Term-CF.PathSrc    = Term-CF "." "src"
   Term-CF.PathScopes = Term-CF "." "scopes"
+  Term-CF.PathDst    = Term-CF "." "dst"
   Term-CF.PathDecl   = Term-CF "." "decl"
 
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
@@ -271,7 +276,7 @@ context-free syntax
   SortRef.TupleSort      = <(<{SortRef " * "}*>)>
   SortRef.IntSort        = "int"
   SortRef.StringSort     = "string"
-  SortRef.PathSort       = "path"
+  SortRef.PathSort       = <path(<SortRef>)>
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
 

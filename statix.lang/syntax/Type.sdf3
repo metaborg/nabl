@@ -20,7 +20,7 @@ context-free syntax
   TType.SORT       = <<NaBL2Occurrence>>
   TType.INT        = <int>
   TType.STRING     = <string>
-  TType.PATH       = <path>
+  TType.PATH       = <path(<TType>)>
   TType.OCCURRENCE = <occurrence>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>

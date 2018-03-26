@@ -57,8 +57,7 @@ rules
     (OCCURRENCE(), SCOPE()     ) <in! NamedEdge(),
     (SCOPE(),      OCCURRENCE()) <in! NamedEdge(),
 
-    OCCURRENCE() <in! CanQuery(),
-    PATH()       <in! CanQuery().
+    OCCURRENCE() <in! CanQuery().
 
   [[ Module(x, sections) ^ (s) ]] :=
     new s',
@@ -112,7 +111,8 @@ rules
   SortRef[[ IntSort() ^ (_) : INT() ]].
   SortRef[[ StringSort() ^ (_) : STRING() ]].
   SortRef[[ OccurrenceSort() ^ (_) : OCCURRENCE() ]].
-  SortRef[[ PathSort() ^ (_) : PATH() ]].
+  SortRef[[ PathSort(sort) ^ (_) : PATH(ty) ]] :=
+    SortRef[[ sort ^ (s) : ty ]].
   SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
   SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
@@ -154,37 +154,42 @@ rules
     Lbl{DefaultNLabel()} <- s, 
     LabelRef[[ lbl ^ (s) ]].
 
-  [[ Strategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
+  [[ Strategy(Occurrence(x, params, pos), target, match, disamb) ^ (s) ]] :=
     Ns{x} <- s, Ns{x} : NS(tys) !,
     new s',
     s' ---> s,
     Map1T(Match)[[ params ^ (s') : tys ]],
-    [[ match ^ (s') ]],
-    [[ disamb ^ (s') ]].
+    [[ target ^ (s) : rty ]],
+    [[ match ^ (s', rty) ]],
+    [[ disamb ^ (s', rty) ]].
 
   [[ OverrideStrategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
     Ns{x} -> s, Ns{x} |-> d, d : NS(tys),
     new s',
     s' ---> s,
     Map1T(Match)[[ params ^ (s') : tys ]],
-    [[ match ^ (s') ]],
-    [[ disamb ^ (s') ]].
+    [[ match ^ (s', OCCURRENCE()) ]],
+    [[ disamb ^ (s', OCCURRENCE()) ]].
 
-  [[ NoMatch() ^ (s) ]].
+  [[ DeclTarget() ^ (s) : OCCURRENCE() ]].
 
-  [[ Match(var, clauses) ^ (s) ]] :=
+  [[ EmptyTarget() ^ (s) : TUPLE([]) ]].
+
+  [[ Target(x) ^ (s) : TUPLE(tys) ]] :=
+    RelRef[[ x ^ (s, d) : tys ]],
+    d.kind := ScopedRel() | warning $[Relation [x] is global, use a scoped relation instead.].
+
+  [[ Match(var, clauses) ^ (s, ty) ]] :=
     new s',
     s' ---> s,
-    VarDecl[[ var ^ (s') : PATH() ]],
+    VarDecl[[ var ^ (s') : PATH(ty) ]],
     Map1[[ clauses ^ (s') ]].
 
-  [[ NoDisamb() ^ (s) ]].
-
-  [[ Disamb(var1, var2, clauses) ^ (s) ]] :=
+  [[ Disamb(var1, var2, clauses) ^ (s, ty) ]] :=
     new s',
     s' ---> s,
-    VarDecl[[ var1 ^ (s') : PATH() ]],
-    VarDecl[[ var2 ^ (s') : PATH() ]],
+    VarDecl[[ var1 ^ (s') : PATH(ty) ]],
+    VarDecl[[ var2 ^ (s') : PATH(ty) ]],
     Map1[[ clauses ^ (s') ]].
 
   LabelDecl[[ Label(x) ^ (s) ]] :=
@@ -355,47 +360,50 @@ rules
 
   [[ CResolve(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : OCCURRENCE() ]],
-    Build[[ t2 ^ (s) : LIST(PATH()) ]].
+    Build[[ t2 ^ (s) : LIST(PATH(_)) ]].
 
   [[ CQuery(t1, t2, t3) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
     ty <in? CanQuery(),
     Build[[ t2 ^ (s) : SCOPE() ]],
-    Build[[ t3 ^ (s) : LIST(PATH()) ]].
+    Build[[ t3 ^ (s) : LIST(PATH(_)) ]].
 
   [[ CAskGlobalRel(x, ts) ^ (s) ]] :=
-    Rel{x} -> s,
-    Rel{x} |-> d,
-    d : REL(tys),
+    RelRef[[ x ^ (s, d) : tys ]],
     d.kind := GlobalRel() | error $[Relation [x] is scoped, use `?r(...) in s` instead.],
     Map1T(Build)[[ ts ^ (s) : tys ]].
 
   [[ CTellGlobalRel(x, ts) ^ (s) ]] :=
-    Rel{x} -> s,
-    Rel{x} |-> d,
-    d : REL(tys),
+    RelRef[[ x ^ (s, d) : tys ]],
     d.kind := GlobalRel() | error $[Relation [x] is scoped, use `!r(...) in s` instead.],
     Map1T(Build)[[ ts ^ (s): tys ]].
 
   [[ CAskScopedRel(x, ts, st) ^ (s) ]] :=
-    Rel{x} -> s,
-    Rel{x} |-> d,
-    d : REL(tys),
+    RelRef[[ x ^ (s, d) : tys ]],
     d.kind := ScopedRel() | warning $[Relation [x] is global, use `?r(...)` instead.],
     Map1T(Build)[[ ts ^ (s) : tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
+  [[ CNotScopedRel(x, ts, st) ^ (s) ]] :=
+    RelRef[[ x ^ (s, d) : tys ]],
+    d.kind := ScopedRel() | warning $[Relation [x] is global.],
+    Map1T(Build)[[ ts ^ (s) : tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
   [[ CTellScopedRel(x, ts, st) ^ (s) ]] :=
-    Rel{x} -> s,
-    Rel{x} |-> d,
-    d : REL(tys),
+    RelRef[[ x ^ (s, d) : tys ]],
     d.kind := ScopedRel() | warning $[Relation [x] is global, use `!r(...)` instead.],
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
+  RelRef[[ x ^ (s, d) : tys ]] :=
+    Rel{x} -> s,
+    Rel{x} |-> d,
+    d : REL(tys).
+
   [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
-    Build[[ p1 ^ (s) : PATH() ]],
-    Build[[ p2 ^ (s) : PATH() ]],
+    Build[[ p1 ^ (s) : PATH(ty) ]],
+    Build[[ p2 ^ (s) : PATH(ty) ]],
     Map1[[ prs ^ (s) ]].
 
   [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
@@ -404,7 +412,7 @@ rules
 
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
-    Build[[ p ^ (s) : PATH() ]].
+    Build[[ p ^ (s) : PATH(_) ]].
 
 rules
 
@@ -465,12 +473,14 @@ rules
     SortRef[[ sort ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
 
-  Term(V)[[ PathRef(t) ^ (s) : OCCURRENCE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
+  Term(V)[[ PathSrc(t) ^ (s) : SCOPE() ]] :=
+    Term(V)[[ t ^ (s) : PATH(_) ]].
+  Term(V)[[ PathDst(t) ^ (s) : SCOPE() ]] :=
+    Term(V)[[ t ^ (s) : PATH(_) ]].
   Term(V)[[ PathScopes(t) ^ (s) : LIST(SCOPE()) ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathDecl(t) ^ (s) : OCCURRENCE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
+    Term(V)[[ t ^ (s) : PATH(_) ]].
+  Term(V)[[ PathDecl(t) ^ (s) : ty ]] :=
+    Term(V)[[ t ^ (s) : PATH(ty) ]].
 
   Pos(V)[[ Position(v) ^ (s) ]] :=
     V[[ v ^ (s) : ty ]].

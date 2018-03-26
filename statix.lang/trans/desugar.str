@@ -8,13 +8,19 @@ rules
 
   desugar-all =
     desugar-params;
+    desugar-sorts;
     desugar-funrels;
     desugar-reldecls;
+    desugar-cdecls;
+    desugar-respols;
     desugar-constraints;
     desugar-rules
 
   desugar-params = try(sometd(desugar-param))
   desugar-param: Param(sort) -> Param(In(), sort)
+
+  desugar-sorts = try(sometd(desugar-sort))
+  desugar-sort: PathSort() -> PathSort(OccurrenceSort())
 
   // HACK: we cannot type check this uniformly, so for now concat here
   desugar-funrels = try(sometd(desugar-funrel))
@@ -24,9 +30,18 @@ rules
   desugar-reldecls = try(sometd(desugar-reldecl))
   desugar-reldecl: DefaultRelScope() -> GlobalRel()
 
+  desugar-cdecls = try(sometd(desugar-cdecl))
+  desugar-cdecl: DefaultC() -> InductiveC()
+
+  desugar-respols = try(sometd(desugar-respol))
+  desugar-respol: NoTarget() -> DeclTarget()
+  desugar-respol: NoMatch() -> Match(Wld(), [CTrue()])
+  desugar-respol: NoDisamb() -> Disamb(Wld(), Wld(), [CFalse()])
+
   desugar-rules = try(sometd(desugar-rule))
   desugar-rule: Rule(h) -> Rule(h, NoLocalVars(), CTrue(), CTrue())
   desugar-rule: Rule(h, vs, b) -> Rule(h, vs, CTrue(), b)
 
   desugar-constraints = try(sometd(desugar-constraint))
   desugar-constraint: CPathDisamb(ord, p1, p2) -> CPathLt(ord, p1, p2)
+

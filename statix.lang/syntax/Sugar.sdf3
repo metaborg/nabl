@@ -19,6 +19,16 @@ context-free syntax
 
   CParam.Param = <<SortRef>>
 
+  RelKind.DefaultRelScope =
+
+  CKind.DefaultC =
+
+  StrategyTarget.NoTarget =
+  StrategyMatch.NoMatch =
+  StrategyDisamb.NoDisamb =
+
+  SortRef.PathSort = <path>
+
 syntax
 
   Constraint-CF.CPathDisamb =
