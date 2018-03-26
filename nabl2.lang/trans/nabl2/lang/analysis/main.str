@@ -61,8 +61,11 @@ rules
           c* := <primitive-constraints> c;
           max-line := <map(origin-line);list-max> c*;
           min-col := <filter(where(origin-line;?max-line);origin-column);list-min> c*;
+          next-line := <origin-line> r2;
           next-col := <origin-column> r2;
-          <eq> (min-col, next-col)
+          ( <leq> (next-line, max-line)
+          + <geq> (next-col, min-col)
+          )
     with warning := (r2, $[Indentation suggests this is a constraint, but preceding full-stop makes it an axiom.])
 
   primitive-constraints = rec x(
