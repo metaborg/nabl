@@ -111,7 +111,7 @@ rules
   SortRef[[ IntSort() ^ (_) : INT() ]].
   SortRef[[ StringSort() ^ (_) : STRING() ]].
   SortRef[[ OccurrenceSort() ^ (_) : OCCURRENCE() ]].
-  SortRef[[ PathSort(sort) ^ (_) : PATH(ty) ]] :=
+  SortRef[[ PathSort(sort) ^ (s) : PATH(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
   SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
   SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
