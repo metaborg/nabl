@@ -11,6 +11,7 @@ imports
   signatures/nabl2/lang/common/-
   signatures/nabl2/lang/rules/-
   signatures/nabl2/lang/signatures/-
+  nabl2/lang/generation/modules/module
 
   nabl2/lang/analysis/-
   nabl2/lang/generation/-
@@ -18,12 +19,20 @@ imports
 
 rules
 
-  generate-stratego-transformations:
-    (_, _, ast@Module(name,_), path, project-path) -> (filename, result)
+  generate-stratego-transformations(|lang-name):
+    ast@Module(name,_) -> (filename, result)
     with
-      filename  := $[[name].str];
-      rule-str* := <explicate-all;collect-all(rule-to-occurrences-str)> ast;
-      module-str := Module(name, Rules(rule-str*));
+      filename   := $[[name]-ds.str];
+      import-str* := <collect-all(import-to-str)> ast;
+      rule-str*  := <explicate-all;collect-all(rule-to-occurrences-str)> ast;
+      module-str := Module($[[name]-ds], [
+                      Imports([
+                        Import("nabl2/runtime/-"),
+                        Import("nabl2/runtime/analysis/-")
+                      ]),
+                      Imports(import-str*),
+                      Rules(rule-str*)
+                    ]);
       result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
  
 rules

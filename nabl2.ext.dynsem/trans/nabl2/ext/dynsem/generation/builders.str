@@ -64,11 +64,11 @@ rules
   generate-dynsem-str:
     (_, _, ast@Module(name,_), path, project-path) -> result
     with if ds-options := <get-ds-options-if-active> (path, project-path);
+            lang-name := <lookup> (LangName(), ds-options);
             src-gen-dir := <src-gen-dir(|"nabl2/dynsem")>
          then
-           str-result* := <generate-stratego-transformations;
-                           map((path-prepend(|src-gen-dir),id))> ast;
-           result := <unzip> str-result*
+           result := <generate-stratego-transformations(|lang-name);
+                      (path-prepend(|src-gen-dir),id)> ast
          else
            result := None()
          end

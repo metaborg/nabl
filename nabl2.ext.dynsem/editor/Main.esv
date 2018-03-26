@@ -12,5 +12,6 @@ menus
   menu: "DynSem Integration" (openeditor) (meta) (realtime)
 
     action: "Generate All DynSem"   = generate-all-dynsem
+    action: "Generate DynSem Trans" = generate-dynsem-str
     action: "Generate DynSem Rules" = generate-dynsem-ds
     action: "Generate DynSem Java"  = generate-dynsem-java
