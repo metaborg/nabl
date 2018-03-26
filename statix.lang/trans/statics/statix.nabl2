@@ -290,12 +290,28 @@ rules
     Build[[ t2 ^ (s) : ty2 ]],
     (ty1, ty2) <in? OccurrenceEdge().
 
+  [[ CAskRightOccurrence(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? OccurrenceEdge().
+
   [[ CTellLeftOccurrence(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty1 ]],
     Build[[ t2 ^ (s) : ty2 ]],
     (ty1, ty2) <in? OccurrenceEdge().
 
+  [[ CAskLeftOccurrence(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? OccurrenceEdge().
+
   [[ CTellRightEdge(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    LabelRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? DirectEdge().
+
+  [[ CAskRightEdge(t1, lbl, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty1 ]],
     LabelRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : ty2 ]],
@@ -307,13 +323,31 @@ rules
     Build[[ t2 ^ (s) : ty2 ]],
     (ty1, ty2) <in? DirectEdge().
 
+  [[ CAskLeftEdge(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    LabelRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? DirectEdge().
+
   [[ CTellRightNamed(t1, lbl, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty1 ]],
     LabelRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : ty2 ]],
     (ty1, ty2) <in? NamedEdge().
 
+  [[ CAskRightNamed(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    LabelRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? NamedEdge().
+
   [[ CTellLeftNamed(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    LabelRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? NamedEdge().
+
+  [[ CAskLeftNamed(t1, lbl, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty1 ]],
     LabelRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : ty2 ]],

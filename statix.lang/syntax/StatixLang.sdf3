@@ -133,13 +133,19 @@ context-free syntax
 
   UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
 
-  Constraint                  = UserConstraint
-  Constraint.CEqual           = [[Term] == [Term]]
-  Constraint.CInequal         = [[Term] != [Term]]
+  Constraint = UserConstraint
+
+  Constraint.CEqual   = [[Term] == [Term]]
+  Constraint.CInequal = [[Term] != [Term]]
+
   Constraint.CTellRightOccurrence = [[Term] -> [Term]]
   Constraint.CTellLeftOccurrence  = [[Term] <- [Term]]
-  Constraint.CResolve         = [[Term] |-> [Term]]
-  Constraint.CQuery           = [[Term] in [Term] |-> [Term]]
+
+  Constraint.CAskRightOccurrence = [[Term] ?-> [Term]]
+  Constraint.CAskLeftOccurrence  = [[Term] ?<- [Term]]
+
+  Constraint.CResolve = [[Term] |-> [Term]]
+  Constraint.CQuery   = [[Term] in [Term] |-> [Term]]
 
   CDecl.CDecl = [[ConstraintId] : [{CParam " * "}+] [CKind]]
 
