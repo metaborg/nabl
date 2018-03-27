@@ -6,16 +6,15 @@ imports
 
 sorts
 
-  CType // constraint type
-  RType // relation type
-  NType // namespace type
+  IType // internal types
   TType // term type
 
 context-free syntax
 
-  CType.CON = <<{TType " * "}*>>
-  RType.REL = <<{TType " * "}*>>
-  NType.NS  = <<{TType " * "}*>>
+  IType.CON = <<{TType " * "}*>>
+  IType.REL = <<{TType " * "}*>>
+  IType.NS  = <<{TType " * "}*>>
+  IType.Q   = [[{TType " * "}*] -> [TType]]
 
   TType.SORT       = <<NaBL2Occurrence>>
   TType.INT        = <int>

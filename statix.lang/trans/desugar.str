@@ -17,7 +17,7 @@ rules
     desugar-rules
 
   desugar-params = try(sometd(desugar-param))
-  desugar-param: Param(sort) -> Param(In(), sort)
+  desugar-param: CParam(sort) -> CParam(In(), sort)
 
   desugar-sorts = try(sometd(desugar-sort))
   desugar-sort: PathSort() -> PathSort(OccurrenceSort())
@@ -34,9 +34,8 @@ rules
   desugar-cdecl: DefaultC() -> InductiveC()
 
   desugar-respols = try(sometd(desugar-respol))
-  desugar-respol: NoTarget() -> DeclTarget()
-  desugar-respol: NoMatch() -> Match(Wld(), [CTrue()])
-  desugar-respol: NoDisamb() -> Disamb(Wld(), Wld(), [CFalse()])
+  desugar-respol: NoMatch() -> Match(Wld(), NoLocalVars(), [CTrue()])
+  desugar-respol: NoDisamb() -> Disamb(Wld(), Wld(), NoLocalVars(), [CFalse()])
 
   desugar-rules = try(sometd(desugar-rule))
   desugar-rule: Rule(h) -> Rule(h, NoLocalVars(), CTrue(), CTrue())

@@ -37,6 +37,7 @@ signature
     Op
     Rel
     Sort
+    Query
 
   relations
     in  : Type * TClass
@@ -137,7 +138,7 @@ rules
     C{x} : CON(tys) !,
     Map1T[[ params ^ (s) : tys ]].
 
-  [[ Param(inOut, sort) ^ (s) : ty ]] :=
+  [[ CParam(inOut, sort) ^ (s) : ty ]] :=
     SortRef[[ sort ^ (s) : ty ]].
 
   [[ NameResolution(params) ^ (s) ]] :=
@@ -154,22 +155,27 @@ rules
     Lbl{DefaultNLabel()} <- s, 
     LabelRef[[ lbl ^ (s) ]].
 
-  [[ Strategy(Occurrence(x, params, pos), target, match, disamb) ^ (s) ]] :=
+  [[ Strategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
     Ns{x} <- s, Ns{x} : NS(tys) !,
-    new s',
-    s' ---> s,
+    new s', s' ---> s,
+    Map1T(Match)[[ params ^ (s') : tys ]],
+    [[ match ^ (s', OCCURRENCE()) ]],
+    [[ disamb ^ (s', OCCURRENCE()) ]].
+
+  [[ OverrideStrategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
+    Ns{x} -> s, Ns{x} |-> d, d : NS(tys),
+    new s', s' ---> s,
+    Map1T(Match)[[ params ^ (s') : tys ]],
+    [[ match ^ (s', OCCURRENCE()) ]],
+    [[ disamb ^ (s', OCCURRENCE()) ]].
+
+  [[ QueryDecl(x, params, target, match, disamb) ^ (s) ]] :=
+    Query{x} <- s, Query{x} : Q(tys, rty) !,
+    new s', s' ---> s,
     Map1T(Match)[[ params ^ (s') : tys ]],
     [[ target ^ (s) : rty ]],
     [[ match ^ (s', rty) ]],
     [[ disamb ^ (s', rty) ]].
-
-  [[ OverrideStrategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
-    Ns{x} -> s, Ns{x} |-> d, d : NS(tys),
-    new s',
-    s' ---> s,
-    Map1T(Match)[[ params ^ (s') : tys ]],
-    [[ match ^ (s', OCCURRENCE()) ]],
-    [[ disamb ^ (s', OCCURRENCE()) ]].
 
   [[ DeclTarget() ^ (s) : OCCURRENCE() ]].
 
@@ -179,33 +185,30 @@ rules
     RelRef[[ x ^ (s, d) : tys ]],
     d.kind := ScopedRel() | warning $[Relation [x] is global, use a scoped relation instead.].
 
-  [[ Match(var, clauses) ^ (s, ty) ]] :=
-    new s',
-    s' ---> s,
+  [[ Match(var, vs, clauses) ^ (s, ty) ]] :=
+    new s', s' ---> s,
     VarDecl[[ var ^ (s') : PATH(ty) ]],
+    [[ vs ^ (s') ]],
     Map1[[ clauses ^ (s') ]].
 
-  [[ Disamb(var1, var2, clauses) ^ (s, ty) ]] :=
-    new s',
-    s' ---> s,
+  [[ Disamb(var1, var2, vs, clauses) ^ (s, ty) ]] :=
+    new s', s' ---> s,
     VarDecl[[ var1 ^ (s') : PATH(ty) ]],
     VarDecl[[ var2 ^ (s') : PATH(ty) ]],
+    [[ vs ^ (s') ]],
     Map1[[ clauses ^ (s') ]].
 
   LabelDecl[[ Label(x) ^ (s) ]] :=
     Lbl{x} <- s.
 
   LabelRef[[ Label(x) ^ (s) ]] :=
-    Lbl{x} -> s,
-    Lbl{x} |-> _.
+    Lbl{x} -> s, Lbl{x} |-> _.
 
   LabelRef[[ lbl@DefaultELabel() ^ (s) ]] :=
-    Lbl{lbl} -> s,
-    Lbl{lbl} |-> _ | error "No default edge label declared".
+    Lbl{lbl} -> s, Lbl{lbl} |-> _ | error "No default edge label declared".
 
   LabelRef[[ lbl@DefaultNLabel() ^ (s) ]] :=
-    Lbl{lbl} -> s,
-    Lbl{lbl} |-> _ | error "No default named label declared".
+    Lbl{lbl} -> s, Lbl{lbl} |-> _ | error "No default named label declared".
 
   LabelRef[[ D() ^ (s) ]].
 
@@ -359,36 +362,25 @@ rules
     (ty1, ty2) <in? NamedEdge().
 
   [[ CResolve(t1, t2) ^ (s) ]] :=
+    Query{Ref()} -> s, Query{Ref()} |-> d, Query{Ref()} : [OCCURRENCE()],
     Build[[ t1 ^ (s) : OCCURRENCE() ]],
-    Build[[ t2 ^ (s) : LIST(PATH(_)) ]].
+    Build[[ t2 ^ (s) : LIST(PATH(OCCURRENCE())) ]].
 
-  [[ CQuery(t1, t2, t3) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty ]],
-    ty <in? CanQuery(),
+  [[ CResolveIn(t1, t2, t3) ^ (s) ]] :=
+    Query{Ref()} -> s, Query{Ref()} |-> d, Query{Ref()} : [OCCURRENCE()],
+    Build[[ t1 ^ (s) : OCCURRENCE() ]],
     Build[[ t2 ^ (s) : SCOPE() ]],
-    Build[[ t3 ^ (s) : LIST(PATH(_)) ]].
-
-  [[ CAskGlobalRel(x, ts) ^ (s) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := GlobalRel() | error $[Relation [x] is scoped, use `?r(...) in s` instead.],
-    Map1T(Build)[[ ts ^ (s) : tys ]].
+    Build[[ t3 ^ (s) : LIST(PATH(OCCURRENCE())) ]].
 
   [[ CTellGlobalRel(x, ts) ^ (s) ]] :=
     RelRef[[ x ^ (s, d) : tys ]],
     d.kind := GlobalRel() | error $[Relation [x] is scoped, use `!r(...) in s` instead.],
     Map1T(Build)[[ ts ^ (s): tys ]].
 
-  [[ CAskScopedRel(x, ts, st) ^ (s) ]] :=
+  [[ CAskGlobalRel(x, ts) ^ (s) ]] :=
     RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := ScopedRel() | warning $[Relation [x] is global, use `?r(...)` instead.],
-    Map1T(Build)[[ ts ^ (s) : tys ]],
-    Build[[ st ^ (s) : SCOPE() ]].
-
-  [[ CNotScopedRel(x, ts, st) ^ (s) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := ScopedRel() | warning $[Relation [x] is global.],
-    Map1T(Build)[[ ts ^ (s) : tys ]],
-    Build[[ st ^ (s) : SCOPE() ]].
+    d.kind := GlobalRel() | error $[Relation [x] is scoped, use `?r(...) in s` instead.],
+    Map1T(Build)[[ ts ^ (s) : tys ]].
 
   [[ CTellScopedRel(x, ts, st) ^ (s) ]] :=
     RelRef[[ x ^ (s, d) : tys ]],
@@ -396,10 +388,22 @@ rules
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
+  [[ CAskScopedRel(x, ts, st) ^ (s) ]] :=
+    RelRef[[ x ^ (s, d) : tys ]],
+    d.kind := ScopedRel() | warning $[Relation [x] is global, use `?r(...)` instead.],
+    Map1T(Build)[[ ts ^ (s): tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
   RelRef[[ x ^ (s, d) : tys ]] :=
     Rel{x} -> s,
     Rel{x} |-> d,
     d : REL(tys).
+
+  [[ CQuery(x, ts, st, pt) ^ (s) ]] :=
+    Query{x} -> s, Query{x} |-> d, d : Q(tys, rty),
+    Map1T(Build)[[ ts ^ (s) : tys ]],
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ pt ^ (s) : LIST(PATH(rty)) ]].
 
   [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
     Build[[ p1 ^ (s) : PATH(ty) ]],

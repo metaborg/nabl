@@ -17,13 +17,12 @@ context-free syntax
     <UserConstraint> :- <LocalVars> <Constraint>.
   >
 
-  CParam.Param = <<SortRef>>
+  CParam.CParam = <<SortRef>>
 
   RelKind.DefaultRelScope =
 
   CKind.DefaultC =
 
-  StrategyTarget.NoTarget =
   StrategyMatch.NoMatch =
   StrategyDisamb.NoDisamb =
 

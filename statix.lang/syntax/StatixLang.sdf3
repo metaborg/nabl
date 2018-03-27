@@ -105,12 +105,11 @@ context-free syntax
 
 syntax
 
-  Constraint-CF.CAskGlobalRel  = "?" RelationId-LEX "(" CommaTerms-CF ")"
   Constraint-CF.CTellGlobalRel = "!" RelationId-LEX "(" CommaTerms-CF ")"
+  Constraint-CF.CAskGlobalRel  = "?" RelationId-LEX "(" CommaTerms-CF ")"
 
-  Constraint-CF.CAskScopedRel  = "?" RelationId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
-  Constraint-CF.CNotScopedRel  = "?" RelationId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "not" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
-  Constraint-CF.CTellScopedRel = "!" RelationId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Var-CF
+  Constraint-CF.CTellScopedRel = "!" QueryId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CAskScopedRel  = "?" QueryId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
 lexical syntax
 
@@ -147,15 +146,15 @@ context-free syntax
   Constraint.CAskRightOccurrence = [[Term] ?-> [Term]]
   Constraint.CAskLeftOccurrence  = [[Term] ?<- [Term]]
 
-  Constraint.CResolve = [[Term] |-> [Term]]
-  Constraint.CQuery   = [[Term] in [Term] |-> [Term]]
+  Constraint.CResolve   = [[Term] |-> [Term]]
+  Constraint.CResolveIn = [[Term] in [Term] |-> [Term]]
 
   CDecl.CDecl = [[ConstraintId] : [{CParam " * "}+] [CKind]]
 
   CKind.InductiveC   = <{inductive}>
   CKind.CoinductiveC = <{coinductive}>
 
-  CParam.Param = <<InOut> <SortRef>>
+  CParam.CParam = <<InOut> <SortRef>>
 
   InOut.In = "in"
   InOut.Out = "out"
@@ -190,7 +189,7 @@ context-free syntax
   ResolutionParam.DefaultELabel = <default edge label <Label>>
   ResolutionParam.DefaultNLabel = <default named label <Label>>
   ResolutionParam.Strategy = <
-    resolve <Occurrence><StrategyTarget> with
+    resolve <Occurrence> with
       <StrategyMatch>
       <StrategyDisamb>
   >
@@ -200,13 +199,9 @@ context-free syntax
       <StrategyDisamb>
   >
 
-  StrategyTarget.EmptyTarget = < to ()>
-  StrategyTarget.DeclTarget = < to decl>
-  StrategyTarget.Target     = < to <RelationId>>
+  StrategyMatch.Match   = <match(<Var>) :- <LocalVars> <{Constraint " | "}+>.>
 
-  StrategyMatch.Match   = <match(<Var>) :- <{Constraint " | "}+>.>
-
-  StrategyDisamb.Disamb = <disamb(<Var>, <Var>) :- <{Constraint ";"}+>.>
+  StrategyDisamb.Disamb = <disamb(<Var>, <Var>) :- <LocalVars> <{Constraint ";"}+>.>
 
   Label.Label = LabelId
 
@@ -259,6 +254,32 @@ lexical syntax
   LabelId = UCID
   LabelId = "D" {reject}
 
+
+/******************************************************************
+ * Resolve & Query
+ ******************************************************************/
+
+context-free syntax
+
+  ResolutionParam.QueryDecl = <
+    query <Query>(<{Term ", "}*>) to <QueryTarget> with
+      <StrategyMatch>
+      <StrategyDisamb>
+  >
+
+  Query = QueryId
+  Query.Ref = "ref"
+
+  QueryTarget.EmptyTarget = "()"
+  QueryTarget.DeclTarget  = "decl"
+  QueryTarget.Target      = RelationId
+
+  Constraint.CQuery = <query <Query>(<{Term ", "}*>) in <Term> to <Term>>
+
+lexical syntax
+
+  QueryId = ID
+  QueryId = "ref" {reject}
 
 /******************************************************************
  * Sorts & Constructors                                           *
