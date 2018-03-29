@@ -37,44 +37,33 @@ context-free syntax
       <{Signature "\n\n"}*>
   > {longest-match}
 
-  Signature.Sorts = <
-    sorts
-      <{SortDecl "\n"}*>
-  > {longest-match}
-
-  Signature.Constraints = <
-    constraints
-      <{CDecl "\n"}*>
-  > {longest-match}
-
-  Signature.Constructors = <
-    constructors
-      <{OpDecl "\n"}*>
-  > {longest-match}
-
-  Signature.Namespaces = <
-    namespaces
-      <{NsDecl "\n"}*>
-  > {longest-match}
-
-  Signature.Relations = <
-    relations
-      <{RelDecl "\n"}*>
-  > {longest-match}
-
-  Signature.NameResolution = <
-    name-resolution
-      <{ResolutionParam "\n"}*>
-  > {longest-match}
-
   Section.Rules = <
     rules
 
     <{Rule "\n\n"}*>
   > {longest-match}
 
+/******************************************************************
+ * User Constraints                                               *
+ ******************************************************************/
+
+  Signature.Constraints = <
+    constraints
+      <{CDecl "\n"}*>
+  > {longest-match}
+
   Rule = <constraint <CDecl>>
-  Rule = <relation <RelDecl>>
+
+  CDecl.CDecl = [[ConstraintId] : [{CParam " * "}+] [CKind]]
+
+  CKind.InductiveC   =
+  CKind.CoinductiveC = <{coinductive}>
+
+  CParam.CParam = <<InOut> <SortRef>>
+
+  InOut.In = "in"
+  InOut.Out = "out"
+  
   Rule.Rule = <
     <UserConstraint> :- <LocalVars> <Constraint> | <Constraint>.
   >
@@ -82,13 +71,34 @@ context-free syntax
   LocalVars.NoLocalVars = <>
   LocalVars.LocalVars   = <{<{Var " "}+>}>
 
+  Constraint = UserConstraint
+
+  UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
+
+lexical syntax
+
+  ConstraintId = "inductive" |"coinductive" {reject}
+
 /******************************************************************
- * Constraints                                                    *
+ * Relations                                                      *
  ******************************************************************/
 
 context-free syntax
 
-  RelDecl.RelDecl = <<{RelProp " "}*> <RelationId> : <RelType> <RelKind>>
+  Signature.Relations = <
+    relations
+      <{RelDecl "\n"}*>
+  > {longest-match}
+
+  RelDecl.RelDecl = <<{RelProp " "}*> <Rel> : <RelType>>
+
+  Rule = <relation <RelDecl>>
+
+  Rel.Rel = RelationId
+  
+  RelRef      = Rel
+  RelRef.Decl = "decl"
+  RelRef.Ref  = "ref"
 
   RelType.SimpleRelation     = [[{SortRef " * "}+]]
   RelType.FunctionalRelation = [[{SortRef " * "}+] -> [SortRef]] // FIXME Turning SortRef into a list breaks parsing
@@ -100,24 +110,19 @@ context-free syntax
   RelProp.Symmetric     = <symmetric>
   RelProp.AntiSymmetric = <anti-symmetric>
 
-  RelKind.GlobalRel       = <{global}>
-  RelKind.ScopedRel       = <{scoped}>
-
 syntax
 
-  Constraint-CF.CTellGlobalRel = "!" RelationId-LEX "(" CommaTerms-CF ")"
-  Constraint-CF.CAskGlobalRel  = "?" RelationId-LEX "(" CommaTerms-CF ")"
-
-  Constraint-CF.CTellScopedRel = "!" QueryId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
-  Constraint-CF.CAskScopedRel  = "?" QueryId-LEX "(" CommaTerms-CF ")" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CTellRel = "!" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
 lexical syntax
 
-  RelationId = LCID
+  RelationId = ID
   RelationId = "decl" {reject}
+  RelationId = "ref" {reject}
 
 /******************************************************************
- * Constraints                                                    *
+ * Base Constraints                                               *
  ******************************************************************/
 
 context-free syntax
@@ -128,56 +133,18 @@ context-free syntax
   Constraint         = <(<Constraint>)> {bracket}
   Constraint.CConj   = <<Constraint>, <Constraint>> {left}
   Constraint.CNew    = <new <{Var " "}+>>
-  Constraint.CDisamb = <<Term> disamb <Term>, <Term> : <Term> <WrappedClause>>
 
   WrappedClause.CScope = <{ <{Var " "}+>: <Constraint> }>
   WrappedClause        = <{ <Constraint> }>
 
-  UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
-
-  Constraint = UserConstraint
-
   Constraint.CEqual   = [[Term] == [Term]]
   Constraint.CInequal = [[Term] != [Term]]
-
-  Constraint.CTellRightOccurrence = [[Term] -> [Term]]
-  Constraint.CTellLeftOccurrence  = [[Term] <- [Term]]
-
-  Constraint.CAskRightOccurrence = [[Term] ?-> [Term]]
-  Constraint.CAskLeftOccurrence  = [[Term] ?<- [Term]]
-
-  Constraint.CResolve   = [[Term] |-> [Term]]
-  Constraint.CResolveIn = [[Term] in [Term] |-> [Term]]
-
-  CDecl.CDecl = [[ConstraintId] : [{CParam " * "}+] [CKind]]
-
-  CKind.InductiveC   = <{inductive}>
-  CKind.CoinductiveC = <{coinductive}>
-
-  CParam.CParam = <<InOut> <SortRef>>
-
-  InOut.In = "in"
-  InOut.Out = "out"
-
-syntax
-
-  Constraint-CF.CTellRightEdge  = Term-CF LAYOUT?-CF "-" ELabel-CF "->" LAYOUT?-CF Term-CF
-  Constraint-CF.CTellLeftEdge   = Term-CF LAYOUT?-CF "<-" ELabel-CF "-" LAYOUT?-CF Term-CF
-  Constraint-CF.CTellRightNamed = Term-CF LAYOUT?-CF "=" NLabel-CF "=>" LAYOUT?-CF Term-CF
-  Constraint-CF.CTellLeftNamed  = Term-CF LAYOUT?-CF "<=" NLabel-CF "=" LAYOUT?-CF Term-CF
-
-  Constraint-CF.CAskRightEdge  = Term-CF LAYOUT?-CF "?-" ELabel-CF "->" LAYOUT?-CF Term-CF
-  Constraint-CF.CAskLeftEdge   = Term-CF LAYOUT?-CF "?<-" ELabel-CF "-" LAYOUT?-CF Term-CF
-  Constraint-CF.CAskRightNamed = Term-CF LAYOUT?-CF "?=" NLabel-CF "=>" LAYOUT?-CF Term-CF
-  Constraint-CF.CAskLeftNamed  = Term-CF LAYOUT?-CF "?<=" NLabel-CF "=" LAYOUT?-CF Term-CF
 
 lexical syntax
 
   ConstraintId = LCID
   ConstraintId = "true" | "false"
-               | "new" | "disamb"
-               | "inductive" |"coinductive" {reject}
-
+               | "new" | "disamb" {reject}
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -185,34 +152,30 @@ lexical syntax
 
 context-free syntax
 
-  ResolutionParam.Labels = <labels <{Label " "}*>>
-  ResolutionParam.DefaultELabel = <default edge label <Label>>
-  ResolutionParam.DefaultNLabel = <default named label <Label>>
-  ResolutionParam.Strategy = <
-    resolve <Occurrence> with
-      <StrategyMatch>
-      <StrategyDisamb>
-  >
-  ResolutionParam.OverrideStrategy = <
-    override resolve <Occurrence> with
-      <StrategyMatch>
-      <StrategyDisamb>
-  >
+  Signature.Namespaces = <
+    namespaces
+      <{NsDecl "\n"}*>
+  > {longest-match}
 
-  StrategyMatch.Match   = <match(<Var>) :- <LocalVars> <{Constraint " | "}+>.>
+  Signature.NameResolution = <
+    name-resolution
+      <{ResolutionParam "\n"}*>
+  > {longest-match}
 
-  StrategyDisamb.Disamb = <disamb(<Var>, <Var>) :- <LocalVars> <{Constraint ";"}+>.>
+  ResolutionParam.Labels = <labels <{Rel " "}*>>
+  ResolutionParam.ResolutionQuery = <resolve ref(<Var>) to decl<Filter><Min>>
 
-  Label.Label = LabelId
+  Label.Label = RelationId
 
-  ELabel               = Label
-  ELabel.DefaultELabel = "-"
+  LabelRef     = Label
+  LabelRef.EOP = "$"
 
-  NLabel               = Label
-  NLabel.DefaultNLabel = "="
+  NsDecl.NsDecl = <<UCID> : <{SortRef " * "}*>>
 
-  LabelRef   = Label
-  LabelRef.D = <D>
+  Rule = <namespace <NsDecl>>
+
+  LabelPairs          = <<{LabelPair ","}*>>
+  LabelPair.LabelPair = [[LabelRef] < [LabelRef]]
 
   LabelRE.Empty      = <0>
   LabelRE.Epsilon    = <e>
@@ -224,21 +187,6 @@ context-free syntax
   LabelRE.Or         = <<LabelRE> | <LabelRE>>   {left}
   LabelRE            = <(<LabelRE>)>             {bracket}
 
-  NsDecl.NsDecl = <<UCID>>
-
-  LabelPairs          = <<{LabelPair ","}*>>
-  LabelPair.LabelPair = [[LabelRef] < [LabelRef]]
-
-syntax
-
-  Term-CF.PathSrc    = Term-CF "." "src"
-  Term-CF.PathScopes = Term-CF "." "scopes"
-  Term-CF.PathDst    = Term-CF "." "dst"
-  Term-CF.PathDecl   = Term-CF "." "decl"
-
-  Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
-  Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
-
 context-free priorities
 
     LabelRE.Neg
@@ -247,13 +195,21 @@ context-free priorities
   > LabelRE.And
   > LabelRE.Or
 
+syntax
+
+  Term-CF.PathSrc    = Term-CF "." "src"
+  Term-CF.PathScopes = Term-CF "." "scopes"
+  Term-CF.PathDst    = Term-CF "." "dst"
+
+  Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
+  Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
+
+  Constraint-CF.CTellDirectEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
+  Constraint-CF.CTellNamedEdge  = Term-CF LAYOUT?-CF "=" Label-CF "=>" LAYOUT?-CF Term-CF
+
 lexical syntax
 
   ConstraintId = "pathMatch" | "pathDisamb" {reject}
-
-  LabelId = UCID
-  LabelId = "D" {reject}
-
 
 /******************************************************************
  * Resolve & Query
@@ -261,31 +217,44 @@ lexical syntax
 
 context-free syntax
 
-  ResolutionParam.QueryDecl = <
-    query <Query>(<{Term ", "}*>) to <QueryTarget> with
-      <StrategyMatch>
-      <StrategyDisamb>
-  >
+  Constraint.CResolve   = [[Term] |-> [Term]]
+  Constraint.CResolveIn = [[Term] in [Term] |-> [Term]]
 
-  Query = QueryId
-  Query.Ref = "ref"
+  Constraint.CQuery = <query <QueryTarget><Filter><Min> in <Term> to <Term>>
 
+  QueryTarget.RelTarget   = RelRef
   QueryTarget.EmptyTarget = "()"
-  QueryTarget.DeclTarget  = "decl"
-  QueryTarget.Target      = RelationId
 
-  Constraint.CQuery = <query <Query>(<{Term ", "}*>) in <Term> to <Term>>
+  Filter.NoFilter =
+  Filter.Filter   = < filter { <Term> : <Constraint> }>
+
+  Min.NoMin =
+  Min.Min   = < min <{MinClause "; "}+>>
+  
+  MinClause.MinClause = <{ <Term>, <Term> : <Constraint> }>
 
 lexical syntax
 
   QueryId = ID
   QueryId = "ref" {reject}
+  
+  RelationId = "e" {reject}
 
 /******************************************************************
  * Sorts & Constructors                                           *
  ******************************************************************/
 
 context-free syntax
+
+  Signature.Sorts = <
+    sorts
+      <{SortDecl "\n"}*>
+  > {longest-match}
+
+  Signature.Constructors = <
+    constructors
+      <{OpDecl "\n"}*>
+  > {longest-match}
 
   SortDecl.SortDecl  = SortId
   SortDecl.SortAlias = <<SortId> = <SortRef>>
@@ -297,7 +266,7 @@ context-free syntax
   SortRef.TupleSort      = <(<{SortRef " * "}*>)>
   SortRef.IntSort        = "int"
   SortRef.StringSort     = "string"
-  SortRef.PathSort       = <path(<SortRef>)>
+  SortRef.PathSort       = "path"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
 
@@ -312,7 +281,6 @@ lexical syntax
 
   SortVarId = LCID
   SortVarId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "in" | "out" {reject}
-
 
 /******************************************************************
  * Terms                                                          *

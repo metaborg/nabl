@@ -14,12 +14,11 @@ context-free syntax
   IType.CON = <<{TType " * "}*>>
   IType.REL = <<{TType " * "}*>>
   IType.NS  = <<{TType " * "}*>>
-  IType.Q   = [[{TType " * "}*] -> [TType]]
 
   TType.SORT       = <<NaBL2Occurrence>>
   TType.INT        = <int>
   TType.STRING     = <string>
-  TType.PATH       = <path(<TType>)>
+  TType.PATH       = <path>
   TType.OCCURRENCE = <occurrence>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>

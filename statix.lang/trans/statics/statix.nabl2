@@ -47,6 +47,12 @@ signature
     well-formedness P* I?
     order D < P, I < P
 
+  functions
+    normRelType : TYPE -> TYPE {
+      REL([ty]) -> ty,
+      REL(tys)  -> TUPLE(tys)
+    }
+
 rules
 
   init ^ (s) :=
@@ -59,6 +65,10 @@ rules
     (SCOPE(),      OCCURRENCE()) <in! NamedEdge(),
 
     OCCURRENCE() <in! CanQuery().
+
+/******************************************************************
+ * Modules                                                        *
+ ******************************************************************/
 
   [[ Module(x, sections) ^ (s) ]] :=
     new s',
@@ -74,6 +84,247 @@ rules
 
   [[ Signature(sigs) ^ (s) ]] :=
     Map1[[ sigs ^ (s) ]].
+
+  [[ Rules(rs) ^ (s) ]] :=
+    Map1[[ rs ^ (s) ]].
+
+/******************************************************************
+ * User Constraints                                               *
+ ******************************************************************/
+
+  [[ Constraints(cs) ^ (s) ]] :=
+    Map1[[ cs ^ (s) ]].
+
+  [[ CDecl(x, params, kind) ^ (s) ]] :=
+    C{x} <- s,
+    C{x} : CON(tys) !,
+    Map1T[[ params ^ (s) : tys ]].
+
+  [[ CParam(inOut, sort) ^ (s) : ty ]] :=
+    SortRef[[ sort ^ (s) : ty ]].
+
+  [[ Rule(h, vs, g, c) ^ (s) ]] :=
+    new s', s' ---> s,
+    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    UserConstraint(NonUniqueVarDecl)[[ h ^ (s') ]],
+    [[ vs ^ (s') ]],
+    [[ g ^ (s') ]],
+    [[ c ^ (s') ]].
+
+  [[ NoLocalVars() ^ (s) ]].
+
+  [[ LocalVars(vs) ^ (s) ]] :=
+    Map1T(VarDecl)[[ vs ^ (s) : _ ]].
+
+  UserConstraint(V)[[ C(x, args) ^ (s) ]] :=
+    C{x} -> s,
+    C{x} |-> d,
+    d : CON(tys),
+    Map1T(Term(V))[[ args ^ (s) : tys ]].
+
+  [[ c@C(_, _) ^ (s) ]] :=
+    UserConstraint(VarRef)[[ c ^ (s) ]].
+
+/******************************************************************
+ * Relations                                                      *
+ ******************************************************************/
+
+  [[ Relations(rdecls) ^ (s) ]] :=
+    Map1[[ rdecls ^ (s) ]].
+
+  [[ RelDecl(props, rel, reltype) ^ (s) ]] :=
+    RelDecl[[ rel ^ (s) : ty ]],
+    [[ reltype ^ (s) : ty ]].
+
+  [[ SimpleRelation(sorts) ^ (s) : REL(tys) ]] :=
+    Map1T(SortRef)[[ sorts ^ (s) : tys ]].
+
+  [[ FunctionalRelation(insorts, outsort) ^ (s) : REL(tys) ]] :=
+    Map1T(SortRef)[[ insorts ^ (s) : intys ]],
+    SortRef[[ outsort ^ (s) : outty ]],
+    tys is `conc` of (intys, [outty]).
+
+  [[ CTellRel(rel, ts, st) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : REL(tys) ]],
+    Map1T(Build)[[ ts ^ (s): tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
+  [[ CAskRel(rel, ts, st) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : REL(tys) ]],
+    Map1T(Build)[[ ts ^ (s): tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
+  RelDecl[[ Rel(x) ^ (s) : ty ]] :=
+    Rel{x} <- s,
+    Rel{x} : ty !.
+
+  RelRef[[ Rel(x) ^ (s) : ty ]] :=
+    Rel{x} -> s,
+    Rel{x} |-> d,
+    d : ty.
+
+  RelRef[[ x@Decl() ^ (s) : REL([OCCURRENCE()]) ]].
+
+  RelRef[[ x@Ref() ^ (s) : REL([OCCURRENCE()]) ]].
+
+/******************************************************************
+ * Base Constraints                                               *
+ ******************************************************************/
+
+  [[ CTrue() ^ (_) ]].
+
+  [[ CFalse() ^ (_) ]].
+
+  [[ CConj(c1, c2) ^ (s) ]] :=
+    [[ c1 ^ (s) ]],
+    [[ c2 ^ (s) ]].
+
+  [[ CNew(vs) ^ (s) ]] :=
+    Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
+
+  [[ CScope(vs, c) ^ (s) ]] :=
+    new s', s' ---> s,
+    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
+    [[ c ^ (s') ]].
+
+  [[ CEqual(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty ]],
+    Build[[ t2 ^ (s) : ty ]].
+
+  [[ CInequal(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty ]],
+    Build[[ t2 ^ (s) : ty ]].
+
+/******************************************************************
+ * Scope Graph                                                    *
+ ******************************************************************/
+
+  [[ Namespaces(nss) ^ (s) ]] :=
+    Map1[[ nss ^ (s) ]].
+
+  [[ NsDecl(x, sorts) ^ (s) ]] :=
+    Ns{x} <- s,
+    Map1T(SortRef)[[ sorts ^ (s) : tys ]],
+    Ns{x} : NS(tys) !.
+
+  [[ NameResolution(params) ^ (s) ]] :=
+    Map1[[ params ^ (s) ]].
+
+  [[ Labels(lbls) ^ (s) ]] :=
+    Map1(LabelDecl)[[ lbls ^ (s) ]].
+
+  LabelDecl[[ Rel(x) ^ (s) ]] :=
+    Lbl{x} <- s,
+    Rel{x} <- s.
+
+  [[ ResolutionQuery(r, filter, min) ^ (s) ]] :=
+    new s', s' ---> s,
+    VarDecl[[ r ^ (s') : OCCURRENCE() ]],
+    rty == TUPLE([PATH(), OCCURRENCE()]),
+    [[ filter ^ (s', rty) ]],
+    [[ min ^ (s', rty) ]].
+
+  [[ CPathMatch(re, p) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]],
+    Build[[ p ^ (s) : PATH() ]].
+
+  [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
+    Build[[ p1 ^ (s) : PATH() ]],
+    Build[[ p2 ^ (s) : PATH() ]],
+    Map1[[ prs ^ (s) ]].
+
+  [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
+    LabelRef[[ lbl1 ^ (s) ]],
+    LabelRef[[ lbl2 ^ (s) ]].
+
+  LabelRE[[ Empty() ^ (_) ]].
+  LabelRE[[ Epsilon() ^ (_) ]].
+  LabelRE[[ lbl@Label(_) ^ (s) ]] :=
+    LabelRef[[ lbl ^ (s) ]].
+  LabelRE[[ Closure(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
+  LabelRE[[ Neg(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
+  LabelRE[[ Concat(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+  LabelRE[[ And(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+  LabelRE[[ Or(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelDecl[[ Label(x) ^ (s) ]] :=
+    Lbl{x} <- s,
+    Rel{x} <- s, Rel{x} : REL([SCOPE()]).
+
+  LabelRef[[ Label(x) ^ (s) ]] :=
+    Lbl{x} -> s, Lbl{x} |-> _.
+
+  LabelRef[[ EOP() ^ (s) ]].
+
+  [[ CTellDirectEdge(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    LabelRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? DirectEdge().
+
+  [[ CTellNamedEdge(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty1 ]],
+    LabelRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : ty2 ]],
+    (ty1, ty2) <in? NamedEdge().
+
+/******************************************************************
+ * Resolve & Query
+ ******************************************************************/
+
+  [[ CResolve(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : OCCURRENCE() ]],
+    Build[[ t2 ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
+
+  [[ CResolveIn(t1, t2, t3) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : OCCURRENCE() ]],
+    Build[[ t2 ^ (s) : SCOPE() ]],
+    Build[[ t3 ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
+
+  [[ CQuery(target, filter, min, st, pt) ^ (s) ]] :=
+    [[ target ^ (s, rty) ]],
+    [[ filter ^ (s, rty) ]],
+    [[ min ^ (s, rty) ]],
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ pt ^ (s) : LIST(rty) ]].
+
+  [[ EmptyTarget() ^ (s, rty) ]] :=
+    rty == PATH().
+
+  [[ RelTarget(rel) ^ (s, rty) ]] :=
+    RelRef[[ rel ^ (s) : ty ]],
+    ty' is normRelType of ty,
+    rty == TUPLE([PATH(),ty']).
+
+  [[ NoFilter() ^ (s, rty) ]].
+
+  [[ Filter(p, c) ^ (s, rty) ]] :=
+    new s', s' ---> s,
+    Match[[ p ^ (s') : rty ]],
+    [[ c ^ (s') ]].
+
+  [[ NoMin() ^ (s, rty) ]].
+
+  [[ Min(mins) ^ (s, rty) ]] :=
+    Map2[[ mins ^ (s, rty) ]].
+
+  [[ MinClause(p1, p2, c) ^ (s, rty) ]] :=
+    new s', s' ---> s,
+    Match[[ p1 ^ (s') : rty ]],
+    Match[[ p2 ^ (s') : rty ]],
+    [[ c ^ (s') ]].
+
+/******************************************************************
+ * Sorts & Constructors                                           *
+ ******************************************************************/
 
   [[ Sorts(sorts) ^ (s) ]] :=
     Map1(SortDecl)[[ sorts ^ (s) ]].
@@ -112,8 +363,7 @@ rules
   SortRef[[ IntSort() ^ (_) : INT() ]].
   SortRef[[ StringSort() ^ (_) : STRING() ]].
   SortRef[[ OccurrenceSort() ^ (_) : OCCURRENCE() ]].
-  SortRef[[ PathSort(sort) ^ (s) : PATH(ty) ]] :=
-    SortRef[[ sort ^ (s) : ty ]].
+  SortRef[[ PathSort() ^ (_) : PATH() ]].
   SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
   SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
@@ -123,300 +373,6 @@ rules
     Sort{x} -> s,
     Sort{x} |-> d,
     d : ty.
-
-  [[ Namespaces(nss) ^ (s) ]] :=
-    Map1[[ nss ^ (s) ]].
-
-  [[ NsDecl(x) ^ (s) ]] :=
-    Ns{x} <- s, Ns{x} : NS([STRING()]).
-
-  [[ Constraints(cs) ^ (s) ]] :=
-    Map1[[ cs ^ (s) ]].
-
-  [[ CDecl(x, params, kind) ^ (s) ]] :=
-    C{x} <- s,
-    C{x} : CON(tys) !,
-    Map1T[[ params ^ (s) : tys ]].
-
-  [[ CParam(inOut, sort) ^ (s) : ty ]] :=
-    SortRef[[ sort ^ (s) : ty ]].
-
-  [[ NameResolution(params) ^ (s) ]] :=
-    Map1[[ params ^ (s) ]].
-
-  [[ Labels(lbls) ^ (s) ]] :=
-    Map1(LabelDecl)[[ lbls ^ (s) ]].
-
-  [[ DefaultELabel(lbl) ^ (s) ]] :=
-    Lbl{DefaultELabel()} <- s, 
-    LabelRef[[ lbl ^ (s) ]].
-
-  [[ DefaultNLabel(lbl) ^ (s) ]] :=
-    Lbl{DefaultNLabel()} <- s, 
-    LabelRef[[ lbl ^ (s) ]].
-
-  [[ Strategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
-    Ns{x} <- s, Ns{x} : NS(tys) !,
-    new s', s' ---> s,
-    Map1T(Match)[[ params ^ (s') : tys ]],
-    [[ match ^ (s', OCCURRENCE()) ]],
-    [[ disamb ^ (s', OCCURRENCE()) ]].
-
-  [[ OverrideStrategy(Occurrence(x, params, pos), match, disamb) ^ (s) ]] :=
-    Ns{x} -> s, Ns{x} |-> d, d : NS(tys),
-    new s', s' ---> s,
-    Map1T(Match)[[ params ^ (s') : tys ]],
-    [[ match ^ (s', OCCURRENCE()) ]],
-    [[ disamb ^ (s', OCCURRENCE()) ]].
-
-  [[ QueryDecl(x, params, target, match, disamb) ^ (s) ]] :=
-    Query{x} <- s, Query{x} : Q(tys, rty) !,
-    new s', s' ---> s,
-    Map1T(Match)[[ params ^ (s') : tys ]],
-    [[ target ^ (s) : rty ]],
-    [[ match ^ (s', rty) ]],
-    [[ disamb ^ (s', rty) ]].
-
-  [[ DeclTarget() ^ (s) : OCCURRENCE() ]].
-
-  [[ EmptyTarget() ^ (s) : TUPLE([]) ]].
-
-  [[ Target(x) ^ (s) : TUPLE(tys) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := ScopedRel() | warning $[Relation [x] is global, use a scoped relation instead.].
-
-  [[ Match(var, vs, clauses) ^ (s, ty) ]] :=
-    new s', s' ---> s,
-    VarDecl[[ var ^ (s') : PATH(ty) ]],
-    [[ vs ^ (s') ]],
-    Map1[[ clauses ^ (s') ]].
-
-  [[ Disamb(var1, var2, vs, clauses) ^ (s, ty) ]] :=
-    new s', s' ---> s,
-    VarDecl[[ var1 ^ (s') : PATH(ty) ]],
-    VarDecl[[ var2 ^ (s') : PATH(ty) ]],
-    [[ vs ^ (s') ]],
-    Map1[[ clauses ^ (s') ]].
-
-  LabelDecl[[ Label(x) ^ (s) ]] :=
-    Lbl{x} <- s.
-
-  LabelRef[[ Label(x) ^ (s) ]] :=
-    Lbl{x} -> s, Lbl{x} |-> _.
-
-  LabelRef[[ lbl@DefaultELabel() ^ (s) ]] :=
-    Lbl{lbl} -> s, Lbl{lbl} |-> _ | error "No default edge label declared".
-
-  LabelRef[[ lbl@DefaultNLabel() ^ (s) ]] :=
-    Lbl{lbl} -> s, Lbl{lbl} |-> _ | error "No default named label declared".
-
-  LabelRef[[ D() ^ (s) ]].
-
-  [[ Rules(rs) ^ (s) ]] :=
-    Map1[[ rs ^ (s) ]].
-
-  [[ Rule(h, vs, g, c) ^ (s) ]] :=
-    new s', s' ---> s,
-    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    UserConstraint(NonUniqueVarDecl)[[ h ^ (s') ]],
-    [[ vs ^ (s') ]],
-    [[ g ^ (s') ]],
-    [[ c ^ (s') ]].
-
-  [[ NoLocalVars() ^ (s) ]].
-
-  [[ LocalVars(vs) ^ (s) ]] :=
-    Map1T(VarDecl)[[ vs ^ (s) : _ ]].
-
-  [[ Relations(rdecls) ^ (s) ]] :=
-    Map1[[ rdecls ^ (s) ]].
-
-  [[ RelDecl(props, x, reltype, kind) ^ (s) ]] :=
-    Rel{x} <- s,
-    Rel{x} : ty !,
-    [[ reltype ^ (s) : ty ]],
-    [[ kind ^ (Rel{x}) ]].
-
-  [[ SimpleRelation(sorts) ^ (s) : REL(tys) ]] :=
-    Map1T(SortRef)[[ sorts ^ (s) : tys ]].
-
-  [[ FunctionalRelation(insorts, outsorts) ^ (s) : REL(_) ]] :=
-    Map1T(SortRef)[[ insorts ^ (s) : intys ]],
-    SortRef[[ outsorts ^ (s) : outtys ]],
-    false | error "Cannot type check functional relations correctly yet".
-
-  [[ GlobalRel() ^ (d) ]] :=
-    d.kind := GlobalRel() !.
-
-  [[ ScopedRel() ^ (d) ]] :=
-    d.kind := ScopedRel() !.
-
-rules
-
-  UserConstraint(V)[[ C(x, args) ^ (s) ]] :=
-    C{x} -> s,
-    C{x} |-> d,
-    d : CON(tys),
-    Map1T(Term(V))[[ args ^ (s) : tys ]].
-
-  [[ c@C(_, _) ^ (s) ]] :=
-    UserConstraint(VarRef)[[ c ^ (s) ]].
-
-  [[ CTrue() ^ (_) ]].
-  [[ CFalse() ^ (_) ]].
-
-  [[ CConj(c1, c2) ^ (s) ]] :=
-    [[ c1 ^ (s) ]],
-    [[ c2 ^ (s) ]].
-
-  [[ CNew(vs) ^ (s) ]] :=
-    Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
-
-  [[ CScope(vs, c) ^ (s) ]] :=
-    new s', s' ---> s,
-    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
-    [[ c ^ (s') ]].
-
-  [[ CDisamb(t1, t2, t3, t4, c) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : LIST(ty) ]],
-    new s', s' ---> s,
-    Match[[ t2 ^ (s') : ty ]],
-    Match[[ t3 ^ (s') : ty ]],
-    Build[[ t4 ^ (s) : LIST(ty) ]],
-    [[ c ^ (s') ]].
-
-  [[ CEqual(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty ]],
-    Build[[ t2 ^ (s) : ty ]].
-
-  [[ CInequal(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty ]],
-    Build[[ t2 ^ (s) : ty ]].
-
-  [[ CTellRightOccurrence(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? OccurrenceEdge().
-
-  [[ CAskRightOccurrence(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? OccurrenceEdge().
-
-  [[ CTellLeftOccurrence(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? OccurrenceEdge().
-
-  [[ CAskLeftOccurrence(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? OccurrenceEdge().
-
-  [[ CTellRightEdge(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? DirectEdge().
-
-  [[ CAskRightEdge(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? DirectEdge().
-
-  [[ CTellLeftEdge(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? DirectEdge().
-
-  [[ CAskLeftEdge(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? DirectEdge().
-
-  [[ CTellRightNamed(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? NamedEdge().
-
-  [[ CAskRightNamed(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? NamedEdge().
-
-  [[ CTellLeftNamed(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? NamedEdge().
-
-  [[ CAskLeftNamed(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? NamedEdge().
-
-  [[ CResolve(t1, t2) ^ (s) ]] :=
-    Query{Ref()} -> s, Query{Ref()} |-> d, Query{Ref()} : [OCCURRENCE()],
-    Build[[ t1 ^ (s) : OCCURRENCE() ]],
-    Build[[ t2 ^ (s) : LIST(PATH(OCCURRENCE())) ]].
-
-  [[ CResolveIn(t1, t2, t3) ^ (s) ]] :=
-    Query{Ref()} -> s, Query{Ref()} |-> d, Query{Ref()} : [OCCURRENCE()],
-    Build[[ t1 ^ (s) : OCCURRENCE() ]],
-    Build[[ t2 ^ (s) : SCOPE() ]],
-    Build[[ t3 ^ (s) : LIST(PATH(OCCURRENCE())) ]].
-
-  [[ CTellGlobalRel(x, ts) ^ (s) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := GlobalRel() | error $[Relation [x] is scoped, use `!r(...) in s` instead.],
-    Map1T(Build)[[ ts ^ (s): tys ]].
-
-  [[ CAskGlobalRel(x, ts) ^ (s) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := GlobalRel() | error $[Relation [x] is scoped, use `?r(...) in s` instead.],
-    Map1T(Build)[[ ts ^ (s) : tys ]].
-
-  [[ CTellScopedRel(x, ts, st) ^ (s) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := ScopedRel() | warning $[Relation [x] is global, use `!r(...)` instead.],
-    Map1T(Build)[[ ts ^ (s): tys ]],
-    Build[[ st ^ (s) : SCOPE() ]].
-
-  [[ CAskScopedRel(x, ts, st) ^ (s) ]] :=
-    RelRef[[ x ^ (s, d) : tys ]],
-    d.kind := ScopedRel() | warning $[Relation [x] is global, use `?r(...)` instead.],
-    Map1T(Build)[[ ts ^ (s): tys ]],
-    Build[[ st ^ (s) : SCOPE() ]].
-
-  RelRef[[ x ^ (s, d) : tys ]] :=
-    Rel{x} -> s,
-    Rel{x} |-> d,
-    d : REL(tys).
-
-  [[ CQuery(x, ts, st, pt) ^ (s) ]] :=
-    Query{x} -> s, Query{x} |-> d, d : Q(tys, rty),
-    Map1T(Build)[[ ts ^ (s) : tys ]],
-    Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ pt ^ (s) : LIST(PATH(rty)) ]].
-
-  [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
-    Build[[ p1 ^ (s) : PATH(ty) ]],
-    Build[[ p2 ^ (s) : PATH(ty) ]],
-    Map1[[ prs ^ (s) ]].
-
-  [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
-    LabelRef[[ lbl1 ^ (s) ]],
-    LabelRef[[ lbl2 ^ (s) ]].
-
-  [[ CPathMatch(re, p) ^ (s) ]] :=
-    LabelRE[[ re ^ (s) ]],
-    Build[[ p ^ (s) : PATH(_) ]].
 
 rules
 
@@ -478,36 +434,16 @@ rules
     Term(V)[[ t ^ (s) : ty ]].
 
   Term(V)[[ PathSrc(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH(_) ]].
-  Term(V)[[ PathDst(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH(_) ]].
+    Term(V)[[ t ^ (s) : PATH() ]].
   Term(V)[[ PathScopes(t) ^ (s) : LIST(SCOPE()) ]] :=
-    Term(V)[[ t ^ (s) : PATH(_) ]].
-  Term(V)[[ PathDecl(t) ^ (s) : ty ]] :=
-    Term(V)[[ t ^ (s) : PATH(ty) ]].
+    Term(V)[[ t ^ (s) : PATH() ]].
+  Term(V)[[ PathDst(t) ^ (s) : SCOPE() ]] :=
+    Term(V)[[ t ^ (s) : PATH() ]].
 
   Pos(V)[[ Position(v) ^ (s) ]] :=
     V[[ v ^ (s) : ty ]].
 
 rules
-
-  LabelRE[[ Empty() ^ (_) ]].
-  LabelRE[[ Epsilon() ^ (_) ]].
-  LabelRE[[ lbl@Label(_) ^ (s) ]] :=
-    LabelRef[[ lbl ^ (s) ]].
-  LabelRE[[ Closure(re) ^ (s) ]] :=
-    LabelRE[[ re ^ (s) ]].
-  LabelRE[[ Neg(re) ^ (s) ]] :=
-    LabelRE[[ re ^ (s) ]].
-  LabelRE[[ Concat(re1, re2) ^ (s) ]] :=
-    LabelRE[[ re1 ^ (s) ]],
-    LabelRE[[ re2 ^ (s) ]].
-  LabelRE[[ And(re1, re2) ^ (s) ]] :=
-    LabelRE[[ re1 ^ (s) ]],
-    LabelRE[[ re2 ^ (s) ]].
-  LabelRE[[ Or(re1, re2) ^ (s) ]] :=
-    LabelRE[[ re1 ^ (s) ]],
-    LabelRE[[ re2 ^ (s) ]].
 
 rules
 
