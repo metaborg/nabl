@@ -19,10 +19,14 @@ signature
   sorts
     TClass
     SKind
+    CKind
 
   constructors
     SimpleSort : SKind
     SortAlias  : SKind
+
+    DeclaredC : CKind
+    DerivedC  : CKind
 
     OccurrenceEdge : TClass
     DirectEdge     : TClass
@@ -76,11 +80,17 @@ rules
     Lang{x} -> s, Lang{x} <=== s',
     Map1[[ sections ^ (s') ]],
     (D(s')/C    lsect/name (W(s')/C    minus D(s')/C   )) subseteq 0 | error $[Duplicate constraint [NAME]] @NAMES,
-    (D(s')/Lbl  lsect/name (W(s')/Lbl  minus D(s')/Lbl )) subseteq 0 | error $[Duplicate relation [NAME]] @NAMES,
+    distinct/name D(s')/C | error $[Duplicate constraint [NAME]] @NAMES,
+    (D(s')/Lbl  lsect/name (W(s')/Lbl  minus D(s')/Lbl )) subseteq 0 | error $[Duplicate label [NAME]] @NAMES,
+    distinct/name D(s')/Lbl | error $[Duplicate label [NAME]] @NAMES,
     (D(s')/Ns   lsect/name (W(s')/Ns   minus D(s')/Ns  )) subseteq 0 | error $[Duplicate namespace [NAME]] @NAMES,
+    distinct/name D(s')/Ns | error $[Duplicate namespace [NAME]] @NAMES,
     (D(s')/Op   lsect/name (W(s')/Op   minus D(s')/Op  )) subseteq 0 | error $[Duplicate constructor [NAME]] @NAMES,
+    distinct/name D(s')/Op | error $[Duplicate constructor [NAME]] @NAMES,
     (D(s')/Rel  lsect/name (W(s')/Rel  minus D(s')/Rel )) subseteq 0 | error $[Duplicate relation [NAME]] @NAMES,
-    (D(s')/Sort lsect/name (W(s')/Sort minus D(s')/Sort)) subseteq 0 | error $[Duplicate sort [NAME]] @NAMES.
+    distinct/name D(s')/Rel | error $[Duplicate relation [NAME]] @NAMES,
+    (D(s')/Sort lsect/name (W(s')/Sort minus D(s')/Sort)) subseteq 0 | error $[Duplicate sort [NAME]] @NAMES,
+    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES.
 
   [[ Signature(sigs) ^ (s) ]] :=
     Map1[[ sigs ^ (s) ]].
@@ -95,35 +105,51 @@ rules
   [[ Constraints(cs) ^ (s) ]] :=
     Map1[[ cs ^ (s) ]].
 
-  [[ CDecl(x, params, kind) ^ (s) ]] :=
+  [[ CDecl(ind, x, params) ^ (s) ]] :=
     C{x} <- s,
     C{x} : CON(tys) !,
+    C{x}.kind := DeclaredC() !,
     Map1T[[ params ^ (s) : tys ]].
 
-  [[ CParam(inOut, sort) ^ (s) : ty ]] :=
+  [[ CLift(x, lop, x', lsorts) ^ (s) ]] :=
+    C{x} <- s,
+    C{x} : CON(tys) !,
+    C{x}.kind := DerivedC() !,
+    C{x'} -> s,
+    C{x'} |-> d,
+    d : CON(tys'),
+    tys is `lift-types` of (lsorts, tys').
+
+  [[ CParam(sort) ^ (s) : ty ]] :=
     SortRef[[ sort ^ (s) : ty ]].
 
-  [[ Rule(h, vs, g, c) ^ (s) ]] :=
+  [[ Rule(h, gvs, g, bvs, c) ^ (s) ]] :=
     new s', s' ---> s,
     distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    UserConstraint(NonUniqueVarDecl)[[ h ^ (s') ]],
-    [[ vs ^ (s') ]],
+    RuleHead[[ h ^ (s') ]],
+    [[ gvs ^ (s') ]],
     [[ g ^ (s') ]],
-    [[ c ^ (s') ]].
+    new s'', s'' ---> s',
+    distinct/name D(s'')/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    (D(s'') lsect/name D(s')) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
+    [[ bvs ^ (s'') ]],
+    [[ c ^ (s'') ]].
+
+  RuleHead[[ C(x, args) ^ (s) ]] :=
+    C{x} -> s, C{x} |-> d,
+    d : CON(tys),
+    d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    Map1T(Term(NonUniqueVarDecl))[[ args ^ (s) : tys ]].
 
   [[ NoLocalVars() ^ (s) ]].
 
   [[ LocalVars(vs) ^ (s) ]] :=
     Map1T(VarDecl)[[ vs ^ (s) : _ ]].
 
-  UserConstraint(V)[[ C(x, args) ^ (s) ]] :=
-    C{x} -> s,
-    C{x} |-> d,
+  [[ C(x, args) ^ (s) ]] :=
+    C{x} -> s, C{x} |-> d,
     d : CON(tys),
-    Map1T(Term(V))[[ args ^ (s) : tys ]].
-
-  [[ c@C(_, _) ^ (s) ]] :=
-    UserConstraint(VarRef)[[ c ^ (s) ]].
+    Map1T(Term(VarRef))[[ args ^ (s) : tys ]].
 
 /******************************************************************
  * Relations                                                      *

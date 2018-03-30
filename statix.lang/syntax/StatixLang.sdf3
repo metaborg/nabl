@@ -54,18 +54,23 @@ context-free syntax
 
   Rule = <constraint <CDecl>>
 
-  CDecl.CDecl = [[ConstraintId] : [{CParam " * "}+] [CKind]]
+  CDecl.CDecl = [[CInd] [ConstraintId] : [{CParam " * "}+]]
+  CDecl.CLift = [[ConstraintId] [LiftOp] [ConstraintId]([{LiftSort ", "}*])]
 
-  CKind.InductiveC   =
-  CKind.CoinductiveC = <{coinductive}>
+  LiftOp.Map    = "maps"
+  LiftOp.Filter = "filters"
 
-  CParam.CParam = <<InOut> <SortRef>>
+  LiftSort.Id     = "*"
+  LiftSort.ToList = "list(*)"
 
-  InOut.In = "in"
-  InOut.Out = "out"
-  
+  CInd.InductiveC   =
+  CInd.CoinductiveC = <{coinductive}>
+
+  CParam.CParam = SortRef
+  CParam.CParam = <out <SortRef>>
+
   Rule.Rule = <
-    <UserConstraint> :- <LocalVars> <Constraint> | <Constraint>.
+    <UserConstraint> | <LocalVars> <Constraint> :- <LocalVars> <Constraint>.
   >
 
   LocalVars.NoLocalVars = <>
@@ -77,7 +82,7 @@ context-free syntax
 
 lexical syntax
 
-  ConstraintId = "inductive" |"coinductive" {reject}
+  ConstraintId = "coinductive" {reject}
 
 /******************************************************************
  * Relations                                                      *
@@ -95,7 +100,7 @@ context-free syntax
   Rule = <relation <RelDecl>>
 
   Rel.Rel = RelationId
-  
+
   RelRef      = Rel
   RelRef.Decl = "decl"
   RelRef.Ref  = "ref"
@@ -230,14 +235,14 @@ context-free syntax
 
   Min.NoMin =
   Min.Min   = < min <{MinClause "; "}+>>
-  
+
   MinClause.MinClause = <{ <Term>, <Term> : <Constraint> }>
 
 lexical syntax
 
   QueryId = ID
   QueryId = "ref" {reject}
-  
+
   RelationId = "e" {reject}
 
 /******************************************************************
@@ -278,9 +283,7 @@ context-free syntax
 lexical syntax
 
   SortId = UCID
-
-  SortVarId = LCID
-  SortVarId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "in" | "out" {reject}
+  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "in" | "out" {reject}
 
 /******************************************************************
  * Terms                                                          *

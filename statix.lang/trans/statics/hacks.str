@@ -1,0 +1,13 @@
+module statics/hacks
+
+imports
+
+  signatures/-
+  statics/-
+
+rules
+
+  lift-types = zip; map(lift-type)
+
+  lift-type: (Id(), ty) -> ty
+  lift-type: (ToList(), ty) -> LIST(ty)
