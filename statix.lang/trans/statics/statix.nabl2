@@ -111,7 +111,7 @@ rules
     C{x}.kind := DeclaredC() !,
     Map1T[[ params ^ (s) : tys ]].
 
-  [[ CLift(x, lop, x', lsorts) ^ (s) ]] :=
+  [[ CDeriveMap(x, x', lsorts) ^ (s) ]] :=
     C{x} <- s,
     C{x} : CON(tys) !,
     C{x}.kind := DerivedC() !,

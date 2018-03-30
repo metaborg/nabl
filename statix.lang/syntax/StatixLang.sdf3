@@ -54,11 +54,8 @@ context-free syntax
 
   Rule = <constraint <CDecl>>
 
-  CDecl.CDecl = [[CInd] [ConstraintId] : [{CParam " * "}+]]
-  CDecl.CLift = [[ConstraintId] [LiftOp] [ConstraintId]([{LiftSort ", "}*])]
-
-  LiftOp.Map    = "maps"
-  LiftOp.Filter = "filters"
+  CDecl.CDecl      = [[CInd] [ConstraintId] : [{CParam " * "}+]]
+  CDecl.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
 
   LiftSort.Id     = "*"
   LiftSort.ToList = "list(*)"
