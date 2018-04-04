@@ -52,7 +52,7 @@ context-free syntax
       <{CDecl "\n"}*>
   > {longest-match}
 
-  Rule = <constraint <CDecl>>
+  Rule.CDecl       = [[CInd] constraint [ConstraintId] : [{CParam " * "}+]]
 
   CDecl.CDecl      = [[CInd] [ConstraintId] : [{CParam " * "}+]]
   CDecl.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
@@ -61,7 +61,7 @@ context-free syntax
   LiftSort.ToList = "list(*)"
 
   CInd.InductiveC   =
-  CInd.CoinductiveC = <{coinductive}>
+  CInd.CoinductiveC = <coinductive>
 
   CParam.CParam = SortRef
   CParam.CParam = <out <SortRef>>
