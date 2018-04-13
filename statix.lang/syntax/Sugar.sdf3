@@ -104,6 +104,11 @@ context-free syntax
   QueryMin.NoMin =
   QueryMin.Min   = < min <HoConstraint>>
 
+  // declaration constraints
+  
+  Constraint.CTellDecl        = [[Term] -> [Term]]
+  Constraint.CTellDeclWithRel = [[Term] -> [Term] with [RelRef] [Term]]
+
 syntax
 
   HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"

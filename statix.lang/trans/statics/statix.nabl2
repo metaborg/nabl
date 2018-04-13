@@ -17,7 +17,6 @@ imports
 signature
 
   sorts
-    TClass
     SKind
     CKind
 
@@ -27,9 +26,6 @@ signature
 
     DeclaredC : CKind
     DerivedC  : CKind
-
-    OccurrenceEdge : TClass
-    DirectEdge     : TClass
 
   namespaces
     C
@@ -49,20 +45,10 @@ signature
     well-formedness P* I?
     order D < P, I < P
 
-  functions
-    normTuple1 : TYPE -> TYPE {
-      TUPLE([ty]) -> ty,
-      ty          -> ty
-    }
-
 rules
 
   init ^ (s) :=
-    new s,
-
-    (SCOPE(),      SCOPE()     ) <in! DirectEdge(),
-    (OCCURRENCE(), SCOPE()     ) <in! OccurrenceEdge(),
-    (SCOPE(),      OCCURRENCE()) <in! OccurrenceEdge().
+    new s.
 
 /******************************************************************
  * Modules                                                        *
@@ -312,10 +298,21 @@ rules
   LabelRef[[ EOP() ^ (s) ]].
 
   [[ CTellDirectEdge(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
+    Build[[ t1 ^ (s) : SCOPE() ]],
     LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? DirectEdge().
+    Build[[ t2 ^ (s) : SCOPE() ]].
+
+  [[ CTellDecl(st, dt) ^ (s) ]] :=
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ dt ^ (s) : OCCURRENCE() ]].
+
+  [[ CTellDeclWithRel(st, dt, rel, rt) ^ (s) ]] :=
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ dt ^ (s) : OCCURRENCE() ]],
+    RelRef[[ rel ^ (s) : ty ]],
+    OCCURRENCE() is `in-type` of ty,
+    outty is `out-type` of ty,
+    Build[[ rt ^ (s) : outtype ]].
 
 /******************************************************************
  * Resolve & Query
