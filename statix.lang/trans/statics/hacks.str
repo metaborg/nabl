@@ -7,7 +7,35 @@ imports
 
 rules
 
-  lift-types = zip; map(lift-type)
+//lift-types : ( [L], Type ) -> Type
 
-  lift-type: (Id(), ty) -> ty
-  lift-type: (ToList(), ty) -> LIST(ty)
+  lift-type: (lsorts, TPL(tys)) -> TPL(tys')
+    where tys' := <lift-sorts> (lsorts, tys)
+
+  lift-type: (lsorts, FUN(intys, outtys)) -> FUN(intys', outtys')
+    where (inlsorts, outlsorts) := <split-at(|<length> intys)> lsorts;
+          intys'  := <lift-sorts> (inlsorts, intys);
+          outtys' := <lift-sorts> (outlsorts, outtys)
+  
+  lift-sorts = zip; map(lift-sort)
+
+  lift-sort: (Id(), ty) -> ty
+  lift-sort: (ToList(), ty) -> LIST(ty)
+
+rules
+
+  inout-types: TPL(tys)           -> tys
+  inout-types: FUN(intys, outtys) -> <conc> (intys, outtys)
+
+  inout-type: TPL(tys)           -> <tys-to-ty> tys
+  inout-type: FUN(intys, outtys) -> <conc;tys-to-ty> (intys, outtys)
+
+  in-types: TPL(tys)           -> tys
+  in-types: FUN(intys, outtys) -> intys
+
+  out-type: TPL(tys)           -> TUPLE([])
+  out-type: FUN(intys, outtys) -> <tys-to-ty> outtys
+
+  tys-to-ty: [ty] -> ty
+  tys-to-ty: tys  -> TUPLE(tys)
+    where not([_] := tys)

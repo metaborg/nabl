@@ -11,11 +11,11 @@ template options
 context-free syntax
 
   Rule.AxiomRule = <
-    <UserConstraint>.
+    <RuleHead>.
   >
   Rule.GuardRule = <
-    <UserConstraint> | <LocalVars> <Constraint>.
+    <RuleHead> | <LocalVars> <Constraint>.
   >
   Rule.BodyRule = <
-    <UserConstraint> :- <LocalVars> <Constraint>.
+    <RuleHead> :- <LocalVars> <Constraint>.
   >

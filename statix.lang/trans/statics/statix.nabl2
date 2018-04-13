@@ -52,9 +52,9 @@ signature
     order D < P, I < P
 
   functions
-    normRelType : TYPE -> TYPE {
-      REL([ty]) -> ty,
-      REL(tys)  -> TUPLE(tys)
+    normTuple1 : TYPE -> TYPE {
+      TUPLE([ty]) -> ty,
+      ty          -> ty
     }
 
 rules
@@ -105,23 +105,20 @@ rules
   [[ Constraints(cs) ^ (s) ]] :=
     Map1[[ cs ^ (s) ]].
 
-  [[ CDecl(ind, x, params) ^ (s) ]] :=
-    C{x} <- s,
-    C{x} : CON(tys) !,
-    C{x}.kind := DeclaredC() !,
-    Map1T[[ params ^ (s) : tys ]].
+  [[ CDecl(ind, x, type) ^ (s) ]] :=
+    [[ type ^ (s) : ty ]],                     // types
+    C{x} <- s,                                 // decl
+    C{x} : ty !!,
+    C{x}.kind := DeclaredC() !!.
 
   [[ CDeriveMap(x, x', lsorts) ^ (s) ]] :=
-    C{x} <- s,
-    C{x} : CON(tys) !,
-    C{x}.kind := DerivedC() !,
     C{x'} -> s,
     C{x'} |-> d,
-    d : CON(tys'),
-    tys is `lift-types` of (lsorts, tys').
-
-  [[ CParam(sort) ^ (s) : ty ]] :=
-    SortRef[[ sort ^ (s) : ty ]].
+    d : ty,
+    ty' is `lift-type` of (lsorts, ty),
+    C{x} <- s,
+    C{x} : ty' !!,
+    C{x}.kind := DerivedC() !!.
 
   [[ Rule(h, gvs, g, bvs, c) ^ (s) ]] :=
     new s', s' ---> s,
@@ -137,9 +134,19 @@ rules
 
   RuleHead[[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d,
-    d : CON(tys),
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    d : ty, ty != FUN(_, _) | note "Using `c(ts) = t | ...` for functional constraints is preferred." @x,
+    tys is `inout-types` of ty,
     Map1T(Term(NonUniqueVarDecl))[[ args ^ (s) : tys ]].
+
+  RuleHead[[ F(x, inargs, outarg) ^ (s) ]] :=
+    C{x} -> s, C{x} |-> d,
+    d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    d : ty, ty == FUN(_, _) | error "Use `c(...) | ...` for non-functional constraints.",
+    intys is `in-types` of ty,
+    outty is `out-type` of ty,
+    Map1T(Term(NonUniqueVarDecl))[[ inargs ^ (s) : intys ]],
+    Term(NonUniqueVarDecl)[[ outarg ^ (s) : outty ]].
 
   [[ NoLocalVars() ^ (s) ]].
 
@@ -148,8 +155,16 @@ rules
 
   [[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d,
-    d : CON(tys),
+    d : ty,
+    tys is `inout-types` of ty,
     Map1T(Term(VarRef))[[ args ^ (s) : tys ]].
+
+  Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
+    C{x} -> s, C{x} |-> d,
+    d : ty, ty == FUN(_, _) | error "Inline notation can only be used for functional constraints.",
+    intys is `in-types` of ty,
+    outty is `out-type` of ty,
+    Map1T(Term(V))[[ args ^ (s) : intys ]].
 
 /******************************************************************
  * Relations                                                      *
@@ -158,27 +173,28 @@ rules
   [[ Relations(rdecls) ^ (s) ]] :=
     Map1[[ rdecls ^ (s) ]].
 
-  [[ RelDecl(rel, reltype) ^ (s) ]] :=
-    RelDecl[[ rel ^ (s) : ty ]],
-    [[ reltype ^ (s) : ty ]].
-
-  [[ SimpleRelation(sorts) ^ (s) : REL(tys) ]] :=
-    Map1T(SortRef)[[ sorts ^ (s) : tys ]].
-
-  [[ FunctionalRelation(insorts, outsort) ^ (s) : REL(tys) ]] :=
-    Map1T(SortRef)[[ insorts ^ (s) : intys ]],
-    SortRef[[ outsort ^ (s) : outty ]],
-    tys is `conc` of (intys, [outty]).
+  [[ RelDecl(rel, type) ^ (s) ]] :=
+    [[ type ^ (s) : ty ]],
+    RelDecl[[ rel ^ (s) : ty ]].
 
   [[ CTellRel(rel, ts, st) ^ (s) ]] :=
-    RelRef[[ rel ^ (s) : REL(tys) ]],
+    RelRef[[ rel ^ (s) : ty ]],
+    tys is `inout-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
   [[ CAskRel(rel, ts, st) ^ (s) ]] :=
-    RelRef[[ rel ^ (s) : REL(tys) ]],
+    RelRef[[ rel ^ (s) : ty ]],
+    tys is `inout-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
+
+  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
+    RelRef[[ rel ^ (s) : ty ]], ty == FUN(_, _) | error "Inline notation can only be used for functional relations.",
+    intys is `in-types` of ty,
+    outty is `out-type` of ty,
+    Map1T(Term(V))[[ ts ^ (s) : intys ]],
+    Term(V)[[ st ^ (s) : SCOPE() ]].
 
   RelDecl[[ Rel(x) ^ (s) : ty ]] :=
     Rel{x} <- s,
@@ -189,9 +205,9 @@ rules
     Rel{x} |-> d,
     d : ty.
 
-  RelRef[[ x@Decl() ^ (s) : REL([OCCURRENCE()]) ]].
+  RelRef[[ x@Decl() ^ (s) : TPL([OCCURRENCE()]) ]].
 
-  RelRef[[ x@Ref() ^ (s) : REL([OCCURRENCE()]) ]].
+  RelRef[[ x@Ref() ^ (s) : TPL([OCCURRENCE()]) ]].
 
 /******************************************************************
  * Base Constraints                                               *
@@ -220,6 +236,8 @@ rules
   [[ CInequal(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
     Build[[ t2 ^ (s) : ty ]].
+
+  Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -283,7 +301,7 @@ rules
 
   LabelDecl[[ Label(x) ^ (s) ]] :=
     Lbl{x} <- s,
-    Rel{x} <- s, Rel{x} : REL([SCOPE()]).
+    Rel{x} <- s, Rel{x} : TPL([SCOPE()]).
 
   LabelRef[[ Label(x) ^ (s) ]] :=
     Lbl{x} -> s, Lbl{x} |-> _.
@@ -327,7 +345,7 @@ rules
 
   [[ RelTarget(rel) ^ (s, rty) ]] :=
     RelRef[[ rel ^ (s) : ty ]],
-    ty' is normRelType of ty,
+    ty' is `inout-type` of ty,
     rty == TUPLE([PATH(),ty']).
 
   [[ NoFilter() ^ (s, rty) ]].
@@ -400,6 +418,13 @@ rules
     Sort{x} |-> d,
     d : ty.
 
+  [[ SimpleType(sorts) ^ (s) : TPL(intys) ]] :=
+    Map1T(SortRef)[[ sorts ^ (s) : intys ]].
+
+  [[ FunType(insorts, outsorts) ^ (s) : FUN(intys, outtys) ]] :=
+    Map1T(SortRef)[[ insorts ^ (s) : intys ]],
+    Map1T(SortRef)[[ outsorts ^ (s) : outtys ]].
+
 rules
 
   Match[[ t ^ (s) : ty ]] :=
@@ -468,8 +493,6 @@ rules
 
   Pos(V)[[ Position(v) ^ (s) ]] :=
     V[[ v ^ (s) : ty ]].
-
-rules
 
 rules
 

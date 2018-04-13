@@ -52,13 +52,13 @@ context-free syntax
       <{CDecl "\n"}*>
   > {longest-match}
 
-  Rule.CDecl       = [[CInd] constraint [ConstraintId] : [{CParam " * "}+]]
-  Rule.CDecl       = [[CInd] [ConstraintId] : [{CParam " * "}+]]
+  Rule.CDecl       = [[CInd] constraint [ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd] [ConstraintId] : [Type]]
 
   Rule             = <constraint <CDerive>>
   Rule             = CDerive
 
-  CDecl.CDecl      = [[CInd] [ConstraintId] : [{CParam " * "}+]]
+  CDecl.CDecl      = [[CInd] [ConstraintId] : [Type]]
   CDecl            = CDerive
 
   CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
@@ -69,12 +69,12 @@ context-free syntax
   CInd.InductiveC   =
   CInd.CoinductiveC = <coinductive>
 
-  CParam.CParam = SortRef
-  CParam.CParam = <out <SortRef>>
-
   Rule.Rule = <
-    <UserConstraint> | <LocalVars> <Constraint> :- <LocalVars> <Constraint>.
+    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars> <Constraint>.
   >
+
+  RuleHead   = UserConstraint
+  RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
   LocalVars.NoLocalVars = <>
   LocalVars.LocalVars   = <{<{Var " "}+>}>
@@ -82,6 +82,10 @@ context-free syntax
   Constraint = UserConstraint
 
   UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
+
+syntax
+
+  Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
 lexical syntax
 
@@ -98,7 +102,7 @@ context-free syntax
       <{RelDecl "\n"}*>
   > {longest-match}
 
-  RelDecl.RelDecl = <<Rel> : <RelType>>
+  RelDecl.RelDecl = <<Rel> : <Type>>
 
   Rule = <relation <RelDecl>>
 
@@ -108,19 +112,25 @@ context-free syntax
   RelRef.Decl = "decl"
   RelRef.Ref  = "ref"
 
-  RelType.SimpleRelation     = [[{SortRef " * "}+]]
-  RelType.FunctionalRelation = [[{SortRef " * "}+] -> [SortRef]] // FIXME Turning SortRef into a list breaks parsing
-
 syntax
 
   Constraint-CF.CTellRel = "!" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
   Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+
+  Term-CF.AskRelOp = "?" RelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+
+context-free priorities
+
+  { Term.PathSrc Term.PathScopes Term.PathDst } >
+  { Term.AskRelOp }
 
 lexical syntax
 
   RelationId = ID
   RelationId = "decl" {reject}
   RelationId = "ref" {reject}
+
+  VARID = "in" {reject}
 
 /******************************************************************
  * Base Constraints                                               *
@@ -141,11 +151,15 @@ context-free syntax
   Constraint.CEqual   = [[Term] == [Term]]
   Constraint.CInequal = [[Term] != [Term]]
 
+  Term.NewOp = "new"
+
 lexical syntax
 
   ConstraintId = LCID
   ConstraintId = "true" | "false"
                | "new" | "disamb" {reject}
+
+  VARID = "new" {reject}
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -271,15 +285,20 @@ context-free syntax
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
 
-  OpDecl.OpDecl  = <<SID> : <OpSort>>
+  OpDecl.OpDecl  = <<OpId> : <OpSort>>
 
   OpSort.ConstOp = Sort
   OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]
+
+  Type.SimpleType = [[{SortRef " * "}+]]
+  Type.FunType    = [[{SortRef " * "}*] -> [{SortRef " * "}+]]
 
 lexical syntax
 
   SortId = UCID
   SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "in" | "out" {reject}
+
+  OpId = UCID
 
 /******************************************************************
  * Terms                                                          *
@@ -294,10 +313,13 @@ context-free syntax
   Term.Int        = INT
   Term.List       = <[<{Term ", "}*>]>
   Term.ListTail   = <[<{Term ", "}*>|<Term>]>
-  Term.Tuple      = <(<{Term ", "}*>)>
+  Term.Tuple0     = <()>
+  Term.TupleN     = <(<Term>, <{Term ", "}+>)>
+  TermNoParse.Tuple = <(<{Term ", "}*>)>
   Term            = Occurrence
   Term.As         = <<Var>@<Term>>
   Term.Ascribe    = <<Term> : <SortRef>>
+  Term            = <(<Term>)> {bracket}
 
   CommaTerms = <<{Term ", "}*>>
   SpaceTerms = <<{Term " "}*>>
@@ -305,7 +327,7 @@ context-free syntax
 syntax
 
   Term-CF.ListLength = Term-CF "." "length"
-  Term-CF.Op         = UCID-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+  Term-CF.Op         = OpId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
   Term-CF.Str        = "\"" StrChars-LEX "\""
   Term-CF.StrBuild   = "$" "[" StrBuild-CF* "]"
 
