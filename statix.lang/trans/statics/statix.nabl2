@@ -30,8 +30,6 @@ signature
 
     OccurrenceEdge : TClass
     DirectEdge     : TClass
-    NamedEdge      : TClass
-    CanQuery       : TClass
 
   namespaces
     C
@@ -64,11 +62,7 @@ rules
 
     (SCOPE(),      SCOPE()     ) <in! DirectEdge(),
     (OCCURRENCE(), SCOPE()     ) <in! OccurrenceEdge(),
-    (SCOPE(),      OCCURRENCE()) <in! OccurrenceEdge(),
-    (OCCURRENCE(), SCOPE()     ) <in! NamedEdge(),
-    (SCOPE(),      OCCURRENCE()) <in! NamedEdge(),
-
-    OCCURRENCE() <in! CanQuery().
+    (SCOPE(),      OCCURRENCE()) <in! OccurrenceEdge().
 
 /******************************************************************
  * Modules                                                        *
@@ -207,8 +201,6 @@ rules
 
   RelRef[[ x@Decl() ^ (s) : TPL([OCCURRENCE()]) ]].
 
-  RelRef[[ x@Ref() ^ (s) : TPL([OCCURRENCE()]) ]].
-
 /******************************************************************
  * Base Constraints                                               *
  ******************************************************************/
@@ -223,11 +215,6 @@ rules
 
   [[ CNew(vs) ^ (s) ]] :=
     Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
-
-  [[ CScope(vs, c) ^ (s) ]] :=
-    new s', s' ---> s,
-    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
-    [[ c ^ (s') ]].
 
   [[ CEqual(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
@@ -314,24 +301,22 @@ rules
     Build[[ t2 ^ (s) : ty2 ]],
     (ty1, ty2) <in? DirectEdge().
 
-  [[ CTellNamedEdge(t1, lbl, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : ty1 ]],
-    LabelRef[[ lbl ^ (s) ]],
-    Build[[ t2 ^ (s) : ty2 ]],
-    (ty1, ty2) <in? NamedEdge().
-
 /******************************************************************
  * Resolve & Query
  ******************************************************************/
 
-  [[ CResolve(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : OCCURRENCE() ]],
-    Build[[ t2 ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
+  [[ CResolve(rt, st, pst) ^ (s) ]] :=
+    Build[[ rt ^ (s) : OCCURRENCE() ]],
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
 
-  [[ CResolveIn(t1, t2, t3) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : OCCURRENCE() ]],
-    Build[[ t2 ^ (s) : SCOPE() ]],
-    Build[[ t3 ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
+  [[ CResolveRel(rel, rt, st, pst) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : ty ]],
+    inty is `in-type` of ty,
+    outty is `out-type` of ty,
+    Build[[ rt ^ (s) : inty ]],
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), outty])) ]].
 
   [[ CQuery(target, filter, min, st, pt) ^ (s) ]] :=
     [[ target ^ (s, rty) ]],

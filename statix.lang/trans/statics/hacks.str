@@ -24,17 +24,17 @@ rules
 
 rules
 
+  inout-type = inout-types; tys-to-ty
   inout-types: TPL(tys)           -> tys
   inout-types: FUN(intys, outtys) -> <conc> (intys, outtys)
 
-  inout-type: TPL(tys)           -> <tys-to-ty> tys
-  inout-type: FUN(intys, outtys) -> <conc;tys-to-ty> (intys, outtys)
-
+  in-type = in-types; tys-to-ty
   in-types: TPL(tys)           -> tys
   in-types: FUN(intys, outtys) -> intys
 
-  out-type: TPL(tys)           -> TUPLE([])
-  out-type: FUN(intys, outtys) -> <tys-to-ty> outtys
+  out-type = out-types; tys-to-ty
+  out-types: TPL(tys)           -> tys
+  out-types: FUN(intys, outtys) -> outtys
 
   tys-to-ty: [ty] -> ty
   tys-to-ty: tys  -> TUPLE(tys)

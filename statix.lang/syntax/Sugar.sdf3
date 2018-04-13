@@ -2,13 +2,32 @@ module Sugar
 
 imports
 
-  StatixLang
+  Common
+  Core
 
 template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
+/******************************************************************
+ * User Constraints                                               *
+ ******************************************************************/
+
 context-free syntax
+
+  // lifting of constraints
+
+  Rule             = <constraint <CDerive>>
+  Rule             = CDerive
+
+  CDecl            = CDerive
+
+  CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
+
+  LiftSort.Id     = "*"
+  LiftSort.ToList = "list(*)"
+
+  // rule shorthands
 
   Rule.AxiomRule = <
     <RuleHead>.
@@ -19,3 +38,76 @@ context-free syntax
   Rule.BodyRule = <
     <RuleHead> :- <LocalVars> <Constraint>.
   >
+
+/******************************************************************
+ * Relations                                                      *
+ ******************************************************************/
+
+context-free syntax
+
+  // built-in relations for declarations
+
+  RelRef.Decl = "decl"
+
+syntax
+
+  // short-hand for querying relations
+
+  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+
+  Term-CF.AskRelOp = "?" RelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+
+context-free priorities
+
+  { Term.PathSrc Term.PathScopes Term.PathDst } >
+  { Term.AskRelOp }
+
+lexical syntax
+
+  RelationId = "decl" {reject}
+  RelationId = "ref" {reject}
+
+/******************************************************************
+ * Base Constraints                                               *
+ ******************************************************************/
+
+context-free syntax
+ 
+  // term short-hand for new scopes 
+ 
+  Term.NewOp = "new"
+
+lexical syntax
+ 
+  VARID = "new" {reject}
+
+/******************************************************************
+ * Scope Graph                                                    *
+ ******************************************************************/
+
+context-free syntax
+ 
+  // default resolution policies 
+ 
+  ResolutionParam.ResolutionQuery = <resolve ref(<Var>) to decl<Filter><Min>>
+
+/******************************************************************
+ * Resolve & Query
+ ******************************************************************/
+
+context-free syntax
+
+  // short-hand forms for occurrences using default resolution policies
+
+  Constraint.CResolve = [[Term] in [Term] |-> [Term]]
+  Constraint.CResolveRel = [[RelRef] of [Term] in [Term] |-> [Term]]
+
+/******************************************************************
+ * Sorts & Constructors                                           *
+ ******************************************************************/
+
+context-free syntax
+
+  // convenient sort aliases
+
+  SortDecl.SortAlias = <<SortId> = <SortRef>>
