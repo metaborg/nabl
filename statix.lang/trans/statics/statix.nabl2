@@ -153,6 +153,9 @@ rules
     tys is `inout-types` of ty,
     Map1T(Term(VarRef))[[ args ^ (s) : tys ]].
 
+  [[ LC(x) ^ (s) : ty ]] :=
+    C{x} -> s, C{x} |-> d, d : ty.
+
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d,
     d : ty, ty == FUN(_, _) | error "Inline notation can only be used for functional constraints.",
@@ -199,7 +202,7 @@ rules
     Rel{x} |-> d,
     d : ty.
 
-  RelRef[[ x@Decl() ^ (s) : TPL([OCCURRENCE()]) ]].
+  RelRef[[ x@Decl() ^ (s) : PRED([OCCURRENCE()]) ]].
 
 /******************************************************************
  * Base Constraints                                               *
@@ -223,6 +226,15 @@ rules
   [[ CInequal(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
     Build[[ t2 ^ (s) : ty ]].
+
+  [[ LTrue() ^ (_) : PRED(_) ]].
+
+  [[ LFalse() ^ (_) : PRED(_) ]].
+
+  [[ LLam(vs, c) ^ (s) : PRED(tys) ]] :=
+    new s', s' ---> s,
+    Map1T(Term(NonUniqueVarDecl))[[ vs ^ (s') : tys ]],
+    [[ c ^ (s') ]].
 
   Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
 
@@ -248,12 +260,10 @@ rules
     Lbl{x} <- s,
     Rel{x} <- s.
 
-  [[ ResolutionQuery(r, filter, min) ^ (s) ]] :=
-    new s', s' ---> s,
-    VarDecl[[ r ^ (s') : OCCURRENCE() ]],
-    rty == TUPLE([PATH(), OCCURRENCE()]),
-    [[ filter ^ (s', rty) ]],
-    [[ min ^ (s', rty) ]].
+  [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
+    Ns{x} -> s, Ns{x} |-> d,
+    [[ filter ^ (s, OCCURRENCE()) ]],
+    [[ min ^ (s, OCCURRENCE()) ]]. 
 
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
@@ -262,6 +272,12 @@ rules
   [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
     Build[[ p1 ^ (s) : PATH() ]],
     Build[[ p2 ^ (s) : PATH() ]],
+    Map1[[ prs ^ (s) ]].
+
+  [[ LPathMatch(re) ^ (s) : PRED([PATH()]) ]] :=
+    LabelRE[[ re ^ (s) ]].
+
+  [[ LPathLt(prs) ^ (s) : PRED([PATH(), PATH()]) ]] :=
     Map1[[ prs ^ (s) ]].
 
   [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
@@ -288,7 +304,7 @@ rules
 
   LabelDecl[[ Label(x) ^ (s) ]] :=
     Lbl{x} <- s,
-    Rel{x} <- s, Rel{x} : TPL([SCOPE()]).
+    Rel{x} <- s, Rel{x} : PRED([SCOPE()]).
 
   LabelRef[[ Label(x) ^ (s) ]] :=
     Lbl{x} -> s, Lbl{x} |-> _.
@@ -305,7 +321,7 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  [[ CResolve(rt, st, pst) ^ (s) ]] :=
+  [[ CResolveDecl(rt, st, pst) ^ (s) ]] :=
     Build[[ rt ^ (s) : OCCURRENCE() ]],
     Build[[ st ^ (s) : SCOPE() ]],
     Build[[ pst ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
@@ -318,38 +334,27 @@ rules
     Build[[ st ^ (s) : SCOPE() ]],
     Build[[ pst ^ (s) : LIST(TUPLE([PATH(), outty])) ]].
 
-  [[ CQuery(target, filter, min, st, pt) ^ (s) ]] :=
-    [[ target ^ (s, rty) ]],
-    [[ filter ^ (s, rty) ]],
-    [[ min ^ (s, rty) ]],
+  [[ CResolve(pt, st, target, filter, min) ^ (s) ]] :=
+    [[ target ^ (s, ty) ]],
+    [[ filter ^ (s, ty) ]],
+    [[ min ^ (s, ty) ]],
     Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ pt ^ (s) : LIST(rty) ]].
+    Build[[ pt ^ (s) : LIST(TUPLE([PATH(), ty])) ]].
 
-  [[ EmptyTarget() ^ (s, rty) ]] :=
-    rty == PATH().
+  [[ EmptyTarget() ^ (s, ty) ]] :=
+    ty == SCOPE().
 
-  [[ RelTarget(rel) ^ (s, rty) ]] :=
-    RelRef[[ rel ^ (s) : ty ]],
-    ty' is `inout-type` of ty,
-    rty == TUPLE([PATH(),ty']).
+  [[ RelTarget(rel) ^ (s, ty) ]] :=
+    RelRef[[ rel ^ (s) : rty ]],
+    ty is `in-type` of rty.
 
-  [[ NoFilter() ^ (s, rty) ]].
+  [[ Filter(lp, lt) ^ (s, ty) ]] :=
+    [[ lp ^ (s) : PRED([PATH()]) ]],
+    [[ lt ^ (s) : PRED([ty]) ]].
 
-  [[ Filter(p, c) ^ (s, rty) ]] :=
-    new s', s' ---> s,
-    Match[[ p ^ (s') : rty ]],
-    [[ c ^ (s') ]].
-
-  [[ NoMin() ^ (s, rty) ]].
-
-  [[ Min(mins) ^ (s, rty) ]] :=
-    Map2[[ mins ^ (s, rty) ]].
-
-  [[ MinClause(p1, p2, c) ^ (s, rty) ]] :=
-    new s', s' ---> s,
-    Match[[ p1 ^ (s') : rty ]],
-    Match[[ p2 ^ (s') : rty ]],
-    [[ c ^ (s') ]].
+  [[ Min(lp, lt) ^ (s, ty) ]] :=
+    [[ lp ^ (s) : PRED([PATH(), PATH()]) ]],
+    [[ lt ^ (s) : PRED([ty, ty]) ]].
 
 /******************************************************************
  * Sorts & Constructors                                           *
@@ -403,7 +408,7 @@ rules
     Sort{x} |-> d,
     d : ty.
 
-  [[ SimpleType(sorts) ^ (s) : TPL(intys) ]] :=
+  [[ SimpleType(sorts) ^ (s) : PRED(intys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : intys ]].
 
   [[ FunType(insorts, outsorts) ^ (s) : FUN(intys, outtys) ]] :=

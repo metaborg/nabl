@@ -61,6 +61,8 @@ context-free syntax
 
 syntax
 
+  HoConstraint-CF.LC = "&" ConstraintId-LEX
+
   Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
 lexical syntax
@@ -110,6 +112,11 @@ context-free syntax
   Constraint.CEqual   = [[Term] == [Term]]
   Constraint.CInequal = [[Term] != [Term]]
 
+  HoConstraint.LTrue  = "true"
+  HoConstraint.LFalse = "false"
+
+  HoConstraint.LLam = <{ <{Term ", "}+> : <Constraint> }>
+
 lexical syntax
 
   ConstraintId = LCID
@@ -139,7 +146,7 @@ context-free syntax
   LabelRef     = Label
   LabelRef.EOP = "$"
 
-  NsDecl.NsDecl = <<UCID> : <{SortRef " * "}*>>
+  NsDecl.NsDecl = <<NamespaceId> : <{SortRef " * "}*>>
 
   Rule = <namespace <NsDecl>>
 
@@ -166,7 +173,7 @@ context-free priorities
 
 syntax
 
-  Term-CF.Occurrence = UCID-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
+  Term-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
 
   Position-CF.Position = "@" Var-CF
 
@@ -181,6 +188,8 @@ syntax
 
 lexical syntax
 
+  NamespaceId = UCID
+
   ConstraintId = "pathMatch" | "pathDisamb" {reject}
 
   RelationId = "e" {reject} // ambiguous with empty regex
@@ -191,18 +200,13 @@ lexical syntax
 
 context-free syntax
 
-  Constraint.CQuery = <query <QueryTarget><Filter><Min> in <Term> to <Term>>
+  Constraint.CResolve = <resolve <Term> in <Term> to <QueryTarget><QueryFilter><QueryMin>>
 
   QueryTarget.RelTarget   = RelRef
   QueryTarget.EmptyTarget = "()"
 
-  Filter.NoFilter =
-  Filter.Filter   = < filter { <Term> : <Constraint> }>
-
-  Min.NoMin =
-  Min.Min   = < min <{MinClause "; "}+>>
-
-  MinClause.MinClause = <{ <Term>, <Term> : <Constraint> }>
+  QueryFilter.Filter = < filter <HoConstraint> and <HoConstraint>>
+  QueryMin.Min       = < min <HoConstraint> and <HoConstraint>>
 
 lexical syntax
 

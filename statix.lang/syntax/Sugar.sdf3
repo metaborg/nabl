@@ -73,6 +73,8 @@ lexical syntax
 
 context-free syntax
  
+  HoConstraint.LLam = <{ <{Term ", "}+> }>
+
   // term short-hand for new scopes 
  
   Term.NewOp = "new"
@@ -88,8 +90,24 @@ lexical syntax
 context-free syntax
  
   // default resolution policies 
- 
-  ResolutionParam.ResolutionQuery = <resolve ref(<Var>) to decl<Filter><Min>>
+
+  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><QueryFilter><QueryMin>>
+
+  ResolutionParam = NamespaceQuery
+  Rule            = NamespaceQuery
+
+  // short-hand query components
+
+  QueryFilter.NoFilter =
+  QueryFilter.Filter   = < filter <HoConstraint>>
+
+  QueryMin.NoMin =
+  QueryMin.Min   = < min <HoConstraint>>
+
+syntax
+
+  HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
+  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "]"
 
 /******************************************************************
  * Resolve & Query
@@ -99,7 +117,7 @@ context-free syntax
 
   // short-hand forms for occurrences using default resolution policies
 
-  Constraint.CResolve = [[Term] in [Term] |-> [Term]]
+  Constraint.CResolveDecl = [[Term] in [Term] |-> [Term]]
   Constraint.CResolveRel = [[RelRef] of [Term] in [Term] |-> [Term]]
 
 /******************************************************************

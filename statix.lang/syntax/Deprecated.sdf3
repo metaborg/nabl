@@ -1,0 +1,22 @@
+module Deprecated
+
+imports
+
+  Common
+  Core
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free syntax
+
+  ResolutionParam.ResolutionQuery = <resolve ref(<Var>) to decl<OldFilter><OldMin>>
+
+  Constraint.CQueryOld = <query <QueryTarget><OldFilter><OldMin> in <Term> to <Term>>
+  
+  OldFilter.NoFilterOld =
+  OldFilter.FilterOld   = < filter { <Term> : <Constraint> }>
+
+  OldMin.NoMinOld =
+  OldMin.MinOld   = < min { <Term>, <Term> : <Constraint> }>

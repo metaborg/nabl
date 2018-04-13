@@ -11,10 +11,10 @@ sorts
 
 context-free syntax
 
-  IType.FUN = [[{TType " * "}*] -> [{TType " * "}*]]
-  IType.TPL = [[{TType " * "}*]]
-  IType.NS  = [[{TType " * "}*]]
-  IType.OP  = [[{TType " * "}*] -> [TType]]
+  IType.FUN  = [[{TType " * "}*] -> [{TType " * "}*]]
+  IType.PRED = [[{TType " * "}*]]
+  IType.NS   = [[{TType " * "}*]]
+  IType.OP   = [[{TType " * "}*] -> [TType]]
 
   TType.SORT       = <<NaBL2Occurrence>>
   TType.INT        = <int>

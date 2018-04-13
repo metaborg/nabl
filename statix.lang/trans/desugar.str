@@ -8,12 +8,26 @@ rules
 
   desugar-all =
     desugar-rules;
+    desugar-queries;
+    desugar-lambdas;
     desugar-terms
 
   desugar-rules = try(sometd(desugar-rule))
   desugar-rule: AxiomRule(h)        -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
   desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
   desugar-rule: BodyRule(h, vs, b)  -> Rule(h, NoLocalVars(), CTrue(), vs, b)
+
+  desugar-queries = topdown(try(desugar-query))
+  desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
+  desugar-query: Filter(l) -> Filter(l, LTrue())
+  desugar-query: NoMin() -> Min(LFalse(), LFalse())
+  desugar-query: Min(l) -> Min(l, LFalse())
+
+  desugar-query: NoFilterOld() -> FilterOld(Wld(), CTrue())
+  desugar-query: NoMinOld() -> MinOld(Wld(), Wld(), CTrue())
+
+  desugar-lambdas = topdown(try(desugar-lambda))
+  desugar-lambda: LLam(ts) -> LLam(ts, CTrue())
 
   desugar-terms = topdown(try(desugar-term))
   desugar-term: Tuple0()      -> Tuple([])

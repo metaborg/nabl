@@ -9,7 +9,7 @@ rules
 
 //lift-types : ( [L], Type ) -> Type
 
-  lift-type: (lsorts, TPL(tys)) -> TPL(tys')
+  lift-type: (lsorts, PRED(tys)) -> PRED(tys')
     where tys' := <lift-sorts> (lsorts, tys)
 
   lift-type: (lsorts, FUN(intys, outtys)) -> FUN(intys', outtys')
@@ -25,15 +25,15 @@ rules
 rules
 
   inout-type = inout-types; tys-to-ty
-  inout-types: TPL(tys)           -> tys
+  inout-types: PRED(tys)          -> tys
   inout-types: FUN(intys, outtys) -> <conc> (intys, outtys)
 
   in-type = in-types; tys-to-ty
-  in-types: TPL(tys)           -> tys
+  in-types: PRED(tys)          -> tys
   in-types: FUN(intys, outtys) -> intys
 
   out-type = out-types; tys-to-ty
-  out-types: TPL(tys)           -> tys
+  out-types: PRED(tys)          -> tys
   out-types: FUN(intys, outtys) -> outtys
 
   tys-to-ty: [ty] -> ty
