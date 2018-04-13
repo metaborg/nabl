@@ -10,5 +10,6 @@ rules
     desugar-rules
 
   desugar-rules = try(sometd(desugar-rule))
-  desugar-rule: Rule(h) -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
-  desugar-rule: Rule(h, vs, b) -> Rule(h, NoLocalVars(), CTrue(), vs, b)
+  desugar-rule: AxiomRule(h) -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
+  desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
+  desugar-rule: BodyRule(h, vs, b) -> Rule(h, NoLocalVars(), CTrue(), vs, b)
