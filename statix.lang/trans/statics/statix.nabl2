@@ -312,9 +312,9 @@ rules
 
   [[ CResolveRel(rel, rt, st, pst) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]],
-    inty is `in-type` of ty,
+    OCCURRENCE() is `in-type` of ty,
     outty is `out-type` of ty,
-    Build[[ rt ^ (s) : inty ]],
+    Build[[ rt ^ (s) : OCCURRENCE() ]],
     Build[[ st ^ (s) : SCOPE() ]],
     Build[[ pst ^ (s) : LIST(TUPLE([PATH(), outty])) ]].
 
