@@ -158,7 +158,7 @@ rules
   [[ Relations(rdecls) ^ (s) ]] :=
     Map1[[ rdecls ^ (s) ]].
 
-  [[ RelDecl(props, rel, reltype) ^ (s) ]] :=
+  [[ RelDecl(rel, reltype) ^ (s) ]] :=
     RelDecl[[ rel ^ (s) : ty ]],
     [[ reltype ^ (s) : ty ]].
 

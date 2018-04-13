@@ -95,7 +95,7 @@ context-free syntax
       <{RelDecl "\n"}*>
   > {longest-match}
 
-  RelDecl.RelDecl = <<{RelProp " "}*> <Rel> : <RelType>>
+  RelDecl.RelDecl = <<Rel> : <RelType>>
 
   Rule = <relation <RelDecl>>
 
@@ -107,13 +107,6 @@ context-free syntax
 
   RelType.SimpleRelation     = [[{SortRef " * "}+]]
   RelType.FunctionalRelation = [[{SortRef " * "}+] -> [SortRef]] // FIXME Turning SortRef into a list breaks parsing
-
-  RelProp.Reflexive     = <reflexive>
-  RelProp.Irreflexive   = <irreflexive>
-  RelProp.Transitive    = <transitive>
-  RelProp.NonTransitive = <non-transitive>
-  RelProp.Symmetric     = <symmetric>
-  RelProp.AntiSymmetric = <anti-symmetric>
 
 syntax
 
