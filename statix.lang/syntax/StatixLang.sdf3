@@ -53,7 +53,10 @@ context-free syntax
   > {longest-match}
 
   Rule.CDecl       = [[CInd] constraint [ConstraintId] : [{CParam " * "}+]]
+  Rule.CDecl       = [[CInd] [ConstraintId] : [{CParam " * "}+]]
+
   Rule             = <constraint <CDerive>>
+  Rule             = CDerive
 
   CDecl.CDecl      = [[CInd] [ConstraintId] : [{CParam " * "}+]]
   CDecl            = CDerive
