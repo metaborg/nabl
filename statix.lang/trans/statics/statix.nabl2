@@ -343,7 +343,7 @@ rules
 
   [[ RelTarget(rel) ^ (s, ty) ]] :=
     RelRef[[ rel ^ (s) : rty ]],
-    ty is `in-type` of rty.
+    ty is `inout-type` of rty.
 
   [[ Filter(lp, lt) ^ (s, ty) ]] :=
     [[ lp ^ (s) : PRED([PATH()]) ]],
