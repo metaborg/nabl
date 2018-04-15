@@ -331,7 +331,7 @@ rules
     Build[[ st ^ (s) : SCOPE() ]],
     Build[[ pst ^ (s) : LIST(TUPLE([PATH(), outty])) ]].
 
-  [[ CResolve(pt, st, target, filter, min) ^ (s) ]] :=
+  [[ CResolveQuery(target, filter, min, st, pt) ^ (s) ]] :=
     [[ target ^ (s, wfty, resty) ]],
     [[ filter ^ (s, wfty) ]],
     [[ min ^ (s, wfty) ]],
@@ -483,6 +483,8 @@ rules
 
   Pos(V)[[ Position(v) ^ (s) ]] :=
     V[[ v ^ (s) : ty ]].
+
+  Pos(V)[[ NoPosition() ^ (s) ]].
 
 rules
 

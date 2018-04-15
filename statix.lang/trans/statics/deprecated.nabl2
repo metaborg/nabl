@@ -14,6 +14,13 @@ rules
     [[ filter ^ (s', rty) ]],
     [[ min ^ (s', rty) ]].
     
+  [[ CResolveOld(pt, st, target, filter, min) ^ (s) ]] :=
+    [[ target ^ (s, wfty, resty) ]],
+    [[ filter ^ (s, wfty) ]],
+    [[ min ^ (s, wfty) ]],
+    Build[[ st ^ (s) : SCOPE() ]],
+    Build[[ pt ^ (s) : LIST(resty) ]].
+
   [[ CQueryOld(target, filter, min, st, pt) ^ (s) ]] :=
     OldTarget[[ target ^ (s, ty) ]],
     [[ filter ^ (s, rty) ]],

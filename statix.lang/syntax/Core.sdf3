@@ -175,7 +175,8 @@ syntax
 
   Term-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
 
-  Position-CF.Position = "@" Var-CF
+  Position-CF.Position   = "@" Var-CF
+  Position-CF.NoPosition = "@-"
 
   Term-CF.PathSrc    = Term-CF "." "src"
   Term-CF.PathScopes = Term-CF "." "scopes"
@@ -200,7 +201,7 @@ lexical syntax
 
 context-free syntax
 
-  Constraint.CResolve = <resolve <Term> in <Term> to <QueryTarget><QueryFilter><QueryMin>>
+  Constraint.CResolveQuery = [query [QueryTarget][QueryFilter][QueryMin] in [Term] |-> [Term]]
 
   QueryTarget.RelTarget   = RelRef
   QueryTarget.EmptyTarget = "()"

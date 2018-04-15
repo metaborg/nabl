@@ -11,9 +11,10 @@ template options
 
 context-free syntax
 
-  ResolutionParam.ResolutionQuery = <resolve ref(<Var>) to decl<OldFilter><OldMin>>
+  ResolutionParam.ResolutionQuery = <resolve ref(<Var>) to decl<OldFilter><OldMin>> {deprecated}
 
-  Constraint.CQueryOld = <query <QueryTarget><OldFilter><OldMin> in <Term> to <Term>>
+  Constraint.CQueryOld   = <query <QueryTarget><OldFilter><OldMin> in <Term> to <Term>> {deprecated}
+  Constraint.CResolveOld = <resolve <Term> in <Term> to <QueryTarget><QueryFilter><QueryMin>> {deprecated}
   
   OldFilter.NoFilterOld =
   OldFilter.FilterOld   = < filter { <Term> : <Constraint> }>
