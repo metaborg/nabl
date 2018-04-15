@@ -116,7 +116,7 @@ context-free syntax
   HoConstraint.LTrue  = "true"
   HoConstraint.LFalse = "false"
 
-  HoConstraint.LLam = <{ <{Term ", "}+> : <Constraint> }>
+  HoConstraint.LLam = <{ <{Term ", "}+> :- <Constraint> }>
 
 lexical syntax
 
