@@ -59,15 +59,15 @@ context-free syntax
 
   UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
 
-syntax
+  HoConstraint.LC = ConstraintId
 
-  HoConstraint-CF.LC = "&" ConstraintId-LEX
+syntax
 
   Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
 lexical syntax
 
-  ConstraintId = "coinductive" | "maps" {reject}
+  ConstraintId = "coinductive" | "maps" | "filter" | "and" | "min" | "in" | "of" {reject}
 
 /******************************************************************
  * Relations                                                      *
@@ -95,6 +95,7 @@ syntax
 lexical syntax
 
   RelationId = ID
+  RelationId = "coinductive" | "maps" | "filter" | "and" | "min" | "in" | "of" {reject}
 
 /******************************************************************
  * Base Constraints                                               *
