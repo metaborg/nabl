@@ -30,6 +30,10 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
 
     // IApplTerm implementation
 
+    @Override @Value.Check protected Forall check() {
+        return this;
+    }
+
     @Value.Lazy @Override public String getOp() {
         return OP;
     }
@@ -43,13 +47,6 @@ public abstract class Forall extends AbstractApplTerm implements IApplTerm {
         return M.preserveAttachments(M.appl2(OP, M.listElems(TypeVar.matcher()), M.term(), (t, vars, type) -> {
             return ImmutableForall.of(vars, type);
         }));
-    }
-
-    @Override protected Forall check() {
-        if(isLocked() && !getType().isLocked()) {
-            return ImmutableForall.copyOf(this).withType(getType().withLocked(true));
-        }
-        return this;
     }
 
     // Object implementation

@@ -151,24 +151,20 @@ public class HashcodeAndEqualsTest {
 
         @Value.Parameter public abstract int getSecondArg();
 
-        @Override protected IApplTerm check() {
-            return this;
-        }
-
         @Override public String getOp() {
             return OP;
         }
 
-        public List<ITerm> getArgs() {
+        @Override public List<ITerm> getArgs() {
             return ImmutableList.of(B.newString(getFirstArg()), B.newInt(getSecondArg()));
         }
 
-        public IApplTerm withAttachments(ImmutableClassToInstanceMap<Object> value) {
+        @Override public IApplTerm withAttachments(ImmutableClassToInstanceMap<Object> value) {
             return ImmutableSpecializedAppl.copyOf(this).withAttachments(value);
         }
 
-        public IApplTerm withLocked(boolean locked) {
-            return ImmutableSpecializedAppl.copyOf(this).withLocked(locked);
+        @Override protected SpecializedAppl check() {
+            return this;
         }
 
         @Override public int hashCode() {

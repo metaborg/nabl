@@ -12,16 +12,14 @@ import mb.nabl2.terms.ITermVar;
 
 public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm {
 
+    @Value.Check protected abstract IApplTerm check(); // return type must match the class, so cannot be
+                                                       // implemented in a superclass, but must be implemented
+                                                       // in every subclass.
+
     @Value.Parameter @Override public abstract String getOp();
 
     @Value.Lazy @Override public int getArity() {
         return getArgs().size();
-    }
-
-    @Value.Check protected abstract IApplTerm check();
-
-    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
-        return false;
     }
 
     @Value.Lazy @Override public boolean isGround() {

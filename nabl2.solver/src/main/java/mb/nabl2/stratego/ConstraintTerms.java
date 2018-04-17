@@ -23,9 +23,10 @@ public class ConstraintTerms {
 
     private final static String LIST_CTOR = "CList";
     private final static String LISTTAIL_CTOR = "CListTail";
-    private final static String LOCK_CTOR = "CLock";
-    private final static String QUOTE_CTOR = "CQuote";
     private final static String VAR_CTOR = "CVar";
+
+    private ConstraintTerms() {
+    }
 
     /**
      * Specialize appl's of NaBL2 constructors for variables and lists to actual variables and lists.
@@ -46,11 +47,7 @@ public class ConstraintTerms {
             // @formatter:on
         )).withAttachments(term.getAttachments());
         term = M.<ITerm>cases(
-        // @formatter:off
-            M.appl1(LOCK_CTOR, M.term(), (l, t) ->
-                    t.withLocked(true)),
-            M.appl1(QUOTE_CTOR, M.term(), (q, t) ->
-                    t),
+            // @formatter:off
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
                     B.newVar(resource, name)),
             M.appl1(LIST_CTOR, M.list(), (t, xs) ->
@@ -105,14 +102,13 @@ public class ConstraintTerms {
     }
 
     private static ITerm explicate(ITerm term, final boolean wasLocked) {
-        final boolean isLocked = wasLocked || term.isLocked();
         term = term.match(Terms.cases(
         // @formatter:off
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg, isLocked)).collect(Collectors.toList());
+                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
                 return B.newAppl(appl.getOp(), args);
             },
-            list -> explicateList(list, isLocked),
+            list -> explicateList(list),
             string -> string,
             integer -> integer,
             blob -> blob,
@@ -124,13 +120,10 @@ public class ConstraintTerms {
         )).withAttachments(term.getAttachments());
         // FIXME: Quoting is not restored ATM, so two round-trips could cause
         // problems when AST contains special constructors.
-        if(!wasLocked && isLocked) {
-            term = B.newAppl(LOCK_CTOR, term);
-        }
         return term;
     }
 
-    private static ITerm explicateList(IListTerm list, @SuppressWarnings("unused") final boolean wasLocked) {
+    private static ITerm explicateList(IListTerm list) {
         // toStrategoList
         final List<ITerm> terms = Lists.newArrayList();
         final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();

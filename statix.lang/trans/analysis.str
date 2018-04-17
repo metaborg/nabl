@@ -17,14 +17,8 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-prettyprint-hook       = prettyprint-StatixLang-CType
-  prettyprint-StatixLang-CType = nabl2-prettyprint-term
-
-  nabl2-prettyprint-hook       = prettyprint-StatixLang-RType
-  prettyprint-StatixLang-RType = nabl2-prettyprint-term
-
-  nabl2-prettyprint-hook       = prettyprint-StatixLang-NType
-  prettyprint-StatixLang-NType = nabl2-prettyprint-term
+  nabl2-prettyprint-hook       = prettyprint-StatixLang-IType
+  prettyprint-StatixLang-IType = nabl2-prettyprint-term
 
   nabl2-prettyprint-hook       = prettyprint-StatixLang-TType
   prettyprint-StatixLang-TType = nabl2-prettyprint-term

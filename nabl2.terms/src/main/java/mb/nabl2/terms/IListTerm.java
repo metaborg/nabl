@@ -40,6 +40,4 @@ public interface IListTerm extends ITerm {
 
     IListTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
-    @Override IListTerm withLocked(boolean locked);
-
 }

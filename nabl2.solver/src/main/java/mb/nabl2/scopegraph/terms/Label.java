@@ -83,8 +83,7 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
         );
     }
 
-    @Override
-    protected Label check() {
+    @Override @Value.Check protected Label check() {
         return this;
     }
 

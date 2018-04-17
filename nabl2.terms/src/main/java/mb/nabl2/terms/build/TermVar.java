@@ -23,10 +23,6 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
         return false;
     }
 
-    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
-        return false;
-    }
-
     @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
         return ImmutableMultiset.of(this);
     }
@@ -70,9 +66,6 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
 
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
-        if(isLocked()) {
-            sb.append(".");
-        }
         sb.append("?");
         sb.append(getResource());
         sb.append("-");

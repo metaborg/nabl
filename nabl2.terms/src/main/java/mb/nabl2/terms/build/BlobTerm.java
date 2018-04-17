@@ -19,10 +19,6 @@ abstract class BlobTerm extends AbstractTerm implements IBlobTerm {
         return true;
     }
 
-    @Value.Default @Value.Auxiliary @Override public boolean isLocked() {
-        return false;
-    }
-
     @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
         return ImmutableMultiset.of();
     }
