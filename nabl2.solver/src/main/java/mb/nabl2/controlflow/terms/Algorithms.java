@@ -130,7 +130,7 @@ public class Algorithms {
         }
 
         // Here we actually add the node to the stack, in _postorder_
-        sccStack.add(from);
+        sccStack.push(from);
 
         if (nodeLowlink.get(from) == nodeIndex.get(from)) {
             // Pop the SCC of the stack; since it's a stack, we get a reverse postorder
