@@ -1,10 +1,10 @@
 package mb.statix.scopegraph.path;
 
-public interface IResolutionPath<S, L, O> extends IPath<S, L, O> {
+public interface IResolutionPath<S, L, R, O> extends IPath<S, L, O> {
 
     IScopePath<S, L, O> getPath();
 
-    Object getLabel();
+    R getRelation();
     
     O getDeclaration();
 

@@ -12,14 +12,16 @@ import mb.statix.scopegraph.path.IScopePath;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class ResolutionPath<S, L, O>
-        implements IResolutionPath<S, L, O> {
+abstract class ResolutionPath<S, L, R, O>
+        implements IResolutionPath<S, L, R, O> {
 
     @Value.Parameter @Override public abstract IScopePath<S, L, O> getPath();
 
+    @Value.Parameter @Override public abstract R getRelation();
+
     @Value.Parameter @Override public abstract O getDeclaration();
 
-    @Value.Check public @Nullable ResolutionPath<S, L, O> check() {
+    @Value.Check public @Nullable ResolutionPath<S, L, R, O> check() {
         return this;
     }
 
@@ -35,7 +37,8 @@ abstract class ResolutionPath<S, L, O>
         StringBuilder sb = new StringBuilder();
         sb.append(getPath());
         sb.append(Paths.PATH_SEPARATOR);
-        sb.append("D");
+        sb.append(getRelation());
+        sb.append(Paths.PATH_SEPARATOR);
         sb.append(getDeclaration());
         return sb.toString();
     }
