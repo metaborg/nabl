@@ -16,7 +16,7 @@ import mb.nabl2.util.Tuple2;
 public class SG_fresh extends ScopeGraphContextPrimitive {
 
     public SG_fresh() {
-        super(SG_fresh.class.getSimpleName(), 0, 0);
+        super(SG_fresh.class.getSimpleName(), 0);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
