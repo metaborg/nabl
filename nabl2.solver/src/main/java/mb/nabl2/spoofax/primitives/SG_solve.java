@@ -83,10 +83,12 @@ public class SG_solve extends AbstractPrimitive {
 
         final IScopeGraphUnit unit =
                 ImmutableScopeGraphUnit.of().withConstraints(constraint).withSolution(solution).withFresh(fresh);
-        final IStrategoTerm errors = strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors()));
+        final IStrategoTerm errors =
+                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier()));
         final IStrategoTerm warnings =
-                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getWarnings()));
-        final IStrategoTerm notes = strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getNotes()));
+                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getWarnings(), solution.unifier()));
+        final IStrategoTerm notes =
+                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getNotes(), solution.unifier()));
         final IStrategoTerm result = env.getFactory().makeTuple(new StrategoBlob(unit), errors, warnings, notes);
         env.setCurrent(result);
         return true;
