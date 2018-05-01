@@ -7,26 +7,28 @@ imports
 rules
 
   desugar-all =
-    desugar-params;
-    desugar-funrels;
-    desugar-reldecls;
-    desugar-constraints;
-    desugar-rules
-
-  desugar-params = try(sometd(desugar-param))
-  desugar-param: Param(sort) -> Param(In(), sort)
-
-  // HACK: we cannot type check this uniformly, so for now concat here
-  desugar-funrels = try(sometd(desugar-funrel))
-  desugar-funrel: FunctionalRelation(ins,out) -> SimpleRelation(types)
-    with types := <conc> (ins, [out])
-
-  desugar-reldecls = try(sometd(desugar-reldecl))
-  desugar-reldecl: DefaultRelScope() -> GlobalRel()
+    desugar-rules;
+    desugar-queries;
+    desugar-lambdas;
+    desugar-terms
 
   desugar-rules = try(sometd(desugar-rule))
-  desugar-rule: Rule(h) -> Rule(h, NoLocalVars(), CTrue(), CTrue())
-  desugar-rule: Rule(h, vs, b) -> Rule(h, vs, CTrue(), b)
+  desugar-rule: AxiomRule(h)        -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
+  desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
+  desugar-rule: BodyRule(h, vs, b)  -> Rule(h, NoLocalVars(), CTrue(), vs, b)
 
-  desugar-constraints = try(sometd(desugar-constraint))
-  desugar-constraint: CPathDisamb(ord, p1, p2) -> CPathLt(ord, p1, p2)
+  desugar-queries = topdown(try(desugar-query))
+  desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
+  desugar-query: Filter(l) -> Filter(l, LTrue())
+  desugar-query: NoMin() -> Min(LFalse(), LFalse())
+  desugar-query: Min(l) -> Min(l, LFalse())
+
+  desugar-query: NoFilterOld() -> FilterOld(Wld(), CTrue())
+  desugar-query: NoMinOld() -> MinOld(Wld(), Wld(), CTrue())
+
+  desugar-lambdas = topdown(try(desugar-lambda))
+  desugar-lambda: LLam(ts) -> LLam(ts, CTrue())
+
+  desugar-terms = topdown(try(desugar-term))
+  desugar-term: Tuple0()      -> Tuple([])
+  desugar-term: TupleN(x, xs) -> Tuple([x|xs])
