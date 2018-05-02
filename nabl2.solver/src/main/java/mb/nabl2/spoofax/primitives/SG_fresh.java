@@ -13,6 +13,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
+/**
+ * @deprecated Depends on context, and should not be used.
+ */
 public class SG_fresh extends ScopeGraphContextPrimitive {
 
     public SG_fresh() {
