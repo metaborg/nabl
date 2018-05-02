@@ -93,7 +93,7 @@ rules
     fun@FunctionDef(_, _, _) -> fun'
     with fun' := <wlds-to-vars> fun
 
-  wlds-to-vars = topdown(try(\ Wld() -> Var(<newname> "wld") \))
+  wlds-to-vars = nabl2--with-fresh(topdown(try(\ Wld() -> Var(<nabl2--fresh> "wld") \)))
 
 rules
 
