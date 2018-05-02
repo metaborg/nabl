@@ -43,8 +43,8 @@ public class SG_solve extends AbstractPrimitive {
 
     private static ILogger logger = LoggerUtils.logger(SG_solve.class);
 
-    public SG_solve(String name) {
-        super(name, 0, 1);
+    public SG_solve() {
+        super(SG_solve.class.getSimpleName(), 0, 1);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
