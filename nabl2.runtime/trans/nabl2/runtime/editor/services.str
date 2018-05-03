@@ -2,6 +2,8 @@ module nabl2/runtime/editor/services
 
 imports
 
+  libspoofax/term/annotation
+
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
@@ -61,3 +63,8 @@ rules
     <conc> (<id>, ["<br>"]);
     concat-strings
   )
+
+  nabl2--simplify-ast-indices = topdown(try(nabl2--simplify-ast-index))
+
+  nabl2--simplify-ast-index: t{a*} -> t{i,a'*}
+    where ([_|_], a'*) := <partition(?TermIndex(_, i))> a*

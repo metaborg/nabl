@@ -431,6 +431,14 @@ rules // ###### AST Indices ######
    */
   nabl2-erase-ast-indices = nabl2--erase-ast-indices
 
+  /**
+   * Simplify AST indices from a term, preserving other annotations and
+   * attachments.
+   *
+   * @type Term -> Term
+   */
+  nabl2-simplify-ast-indices = nabl2--simplify-ast-indices
+
 rules // ###### Editor Integration ######
 
   /**
@@ -446,4 +454,3 @@ rules // ###### Editor Integration ######
    * @type (node, position, ast, path, project-path) -> label
    */
   nabl2-editor-hover = nabl2--editor-hover
-
