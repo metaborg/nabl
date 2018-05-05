@@ -39,20 +39,22 @@ import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.PersistentUnifier;
 
-public class SG_solve extends AbstractPrimitive {
+public class SG_solve_constraint extends AbstractPrimitive {
 
-    private static ILogger logger = LoggerUtils.logger(SG_solve.class);
+    private static ILogger logger = LoggerUtils.logger(SG_solve_constraint.class);
 
-    public SG_solve() {
-        super(SG_solve.class.getSimpleName(), 0, 1);
+    public SG_solve_constraint() {
+        super(SG_solve_constraint.class.getSimpleName(), 0, 1);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
 
-        final ITerm solverConfigTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(tvars[0]));
-        final SolverConfig solverConfig = SolverConfig.matcher().match(solverConfigTerm)
+        final IStrategoTerm configSTerm = tvars[0];
+        final ITerm configTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(configSTerm));
+        final SolverConfig solverConfig = SolverConfig.matcher().match(configTerm)
                 .orElseThrow(() -> new InterpreterException("Term argument is not a solver config."));
+
 
         final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(env.current()));
         final IConstraint constraint = Constraints.matchConstraintOrList().match(constraintTerm)
