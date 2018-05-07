@@ -4,41 +4,31 @@ imports
 
   signatures/-
   statics/term-projections
+  pp
   nabl2/api
 
 rules
 
-  compute-scope-extensions(|a): ast -> <debug> (ext*, error*, warning*, note*)
+  compute-scope-extensions(|a): ast -> (ext*, error*, [], note*)
     with ast' := <simplify-all(|a)> ast;
-         rule* := <collect-om(?Rule(_, _, _, _, _))> ast';
-         (base-ext*, base-error*, base-warning*, base-note*) := <map(base-extensions);unzip4;(concat, concat, concat, concat)> rule*;
-         ext* := base-ext*;
-         error* := base-error*;
-         warning* := base-warning*;
-         note* := base-note*
+         error-iset := <new-iset>;
+         note-iset := <new-iset>;
+         base-ext* := <collect-om(base-extensions(|error-iset, note-iset));concat> ast';
+         ext-iset := <new-iset>;
+         <iset-addlist(|base-ext*)> ext-iset;
+         <iset-fixpoint(derive-extensions(|ast', error-iset, note-iset))> ext-iset;
+         ext* := <iset-elements> ext-iset;
+         error* := <iset-elements> error-iset;
+         note* := <iset-elements> note-iset
 
   unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
   unzip4 = ?[(x,y,z,a)|xyza*] < <unzip4> xyza* => (x*,y*,z*,a*); !([x|x*],[y|y*],[z|z*],[a|a*]) + !([],[],[],[])
 
   raw-eq = (strip-annos, strip-annos); eq
+  raw-elem = elem(raw-eq)
+  raw-lookup = lookup((id,Fst);raw-eq)
+  raw-diff = diff(raw-eq)
 
-  in-list = elem(raw-eq)
-  in-map = lookup(raw-eq)
-  set-minus = diff(raw-eq)
-
-  // simplify the AST
-  // compute base facts for all constraints
-  //   for all rules, compute projections to base facts 
-  //   for all rules, compute variables corresponding to new scopes
-  // compute fixed point for derived constraints:
-  //   for all rules, for all vars projected by new projections
-  //     if var in new scope, ignore
-  //     if var in head, return derived fact
-  //     otherwise, return error
-  // check that queries & resolution policies do not extend the graph
-  // check that guard does not extend the graph
-  // check that body does not extend scopes created in the guard
-  
 rules // prepare AST for easier analysis
 
   simplify-all(|a) = topdown(try(simplify(|a)))
@@ -71,26 +61,37 @@ rules // prepare AST for easier analysis
 
   replace-decl(|a) = nabl2-get-ast-property(|a, "decl")
 
+rules // shared
+
+  rule-x: C(x, _) -> x
+  rule-x: F(x, _, _) -> x
+
+  rule-vars: Rule(head, _, _, var*, body) -> (head-proj*, new-var*)
+    with head-proj* := <head-projs> head;
+         new-var*   := <all-fresh> body
+
+  head-projs: C(_, arg*) -> proj*
+    with proj* := <map-with-index(Swap);filter(?(Var(_), _))> arg*
+
+  head-projs: F(_, inarg*, _) -> proj*
+    with proj* := <map-with-index(Swap);filter(?(Var(_), _))> inarg*
+
+  all-fresh = collect-om(\ CNew(var*) -> var* \); concat
+
 rules // base facts, constraints directly adding to the scope graph
 
-  base-extensions: Rule(head, _, _, var*, body) -> (base-ext*, error*, warning*, note*)
-    with (x, head-proj*) := <base-head;debug(!"(x, head-proj*) := ")> head;
-         new-var*   := <collect-om(base-fresh);concat;debug(!"new-var* := ")> body;
-         ext-var*   := <set-minus;debug(!"ext-var* := ")> (var*, new-var*);
-         all-ext*   := <collect-om(base-extension);concat;debug(!"all-ext* := ")> body;
-         new-ext* := <filter(\ (v, lbl) -> (v, lbl) where <in-list> (v, new-var*) \);debug(!"new-ext* := ")> all-ext*;
-         var-ext* := <filter(\ (v, lbl) -> (v, lbl) where <in-list> (v, ext-var*) \);debug(!"var-ext* := ")> all-ext*;
-         base-ext*  := <join(\ ((v1, i), (v2, lbl)) -> (x, i, lbl) where <raw-eq> (v1, v2) \);debug(!"rule-ext* := ")> (head-proj*, all-ext*);
-         error*     := <map(\ (v, _) -> (v, "Illegal scope extension") \)> var-ext*;
-         warning*   := [];
-         note*      := <map(\ (v, _) -> (v, "Fresh scope extension") \)> new-ext*
-
-  base-head: C(x, arg*) -> (x, var*)
-    with var* := <map-with-index(Swap);filter(?(Var(_), _))> arg*
-  base-head: F(x, inarg*, _) -> (x, var*)
-    with var* := <map-with-index(Swap);filter(?(Var(_), _))> inarg*
-
-  base-fresh: CNew(var*) -> var*
+ base-extensions(|error-iset, note-iset): rule@Rule(head, _, _, _, body) -> rule-ext*
+    with x := <rule-x> head;
+         (head-proj*, new-var*) := <rule-vars> rule;
+         head-var*  := <map(Fst)> head-proj*;
+         all-ext*   := <collect-om(base-extension);concat;filter(?(Var(_),_))> body;
+         new-ext*   := <filter(\ (v, lbl) -> (v, lbl) where <raw-elem> (v, new-var*) \)> all-ext*;
+         head-ext*  := <filter({v' : \ (v, lbl) -> (v', lbl) where (v', _) := <raw-lookup> (v, head-proj*) \})> all-ext*;
+         local-ext* := <filter(\ (v, lbl) -> (v, lbl) where <not(raw-elem)> (v, <conc> (head-var*, new-var*)) \)> all-ext*;
+       //<map(\ (v, lbl) -> <iset-add(|(v, $[Extended in [<pp-label> lbl]]))> note-iset \)> head-ext*;
+       //<map(\ (v, _) -> <iset-add(|(v, $[Extends locally fresh scope]))> note-iset \)> new-ext*;
+         <map(\ (v, _) -> <iset-add(|(v, $[Cannot extend non-local scope]))> error-iset \)> local-ext*;
+         rule-ext*  := <join(\ ((v1, i), (v2, lbl)) -> (x, i, lbl) where <raw-eq> (v1, v2) \)> (head-proj*, head-ext*)
 
   base-extension: CTellDirectEdge(s, lbl, _) -> [(s, lbl)]
   base-extension: CTellRel(rel, _, s) -> [(s, rel)]
@@ -99,10 +100,48 @@ rules // base facts, constraints directly adding to the scope graph
 
 rules // derived facts, constraints indirctly adding to the scope graph
 
-  derived-C: C(x, arg*) -> <fail>
+  derive-extensions(|ast, error-iset, note-iset): ext -> ext*
+    with ext* := <collect-om(derived-extensions(|ext, error-iset, note-iset));concat> ast
 
-  define-C: CNew(var*) -> <fail>
+  derived-extensions(|ext, error-iset, note-iset): CDeriveMap(x, x', lsorts) -> ext*
+    where (y, i, lbl) := ext;
+          <raw-eq> (y, x');
+          lsort       := <index(|i)> lsorts
+    with switch !lsort
+           case ?Id():
+             ext* := [(x, i, lbl)]
+           //<iset-add(|(lsort, $[Extended in [<pp-label> lbl]]))> note-iset
+           case ?ToList():
+             ext* := [];
+             <iset-add(|(lsort, $[Cannot extend list of scopes]))> error-iset
+         end
 
-  derived-T: NewOp() -> <fail>
+  derived-extensions(|ext, error-iset, note-iset): rule@Rule(head, _, _, var*, body) -> rule-ext*
+    where (y, i, lbl) := ext
+    with x := <rule-x> head;
+         (head-proj*, new-var*) := <rule-vars> rule;
+         head-var*  := <map(Fst)> head-proj*;
+         all-ext*   := <collect-om(derive-extension(|y, i);?Var(_))> body;
+         new-ext*   := <filter(\ v -> v where <raw-elem> (v, new-var*) \)> all-ext*;
+         head-ext*  := <filter({v' : \ v -> v' where (v', _) := <raw-lookup> (v, head-proj*) \})> all-ext*;
+         local-ext* := <filter(\ (v, lbl) -> (v, lbl) where <not(raw-elem)> (v, <conc> (head-var*, new-var*)) \)> all-ext*;
+       //<map(\ v -> <iset-add(|(v, $[Extended in [<pp-label> lbl]]))> note-iset \)> head-ext*;
+       //<map(\ v -> <iset-add(|(v, $[Extends locally fresh scope]))> note-iset \)> new-ext*;
+         <map(\ v -> <iset-add(|(v, $[Cannot extend non-local scope]))> error-iset \)> local-ext*;
+         rule-ext* := <join(\ ((v1, i), v2) -> (x, i, lbl) where <raw-eq> (v1, v2) \)> (head-proj*, head-ext*)
 
-  derived-T: COp(x, arg*) -> <fail>
+  derive-extension(|y, i): C(x, arg*) -> arg
+    where <raw-eq> (x, y);
+          arg := <index(|i)> arg*
+
+  derive-extension(|y, i): COp(x, arg*) -> arg
+    where <raw-eq> (x, y);
+          arg := <index(|i)> arg*
+
+rules
+
+  pp-label: lbl -> pp
+    with lbl' := <try( Rel(nabl2-get-occurrence-name)
+                     + Label(nabl2-get-occurrence-name)
+                     )> lbl;
+         pp := <pp-partial-StatixLang-string> lbl'
