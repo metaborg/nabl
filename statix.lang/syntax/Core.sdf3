@@ -53,7 +53,7 @@ context-free syntax
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
   LocalVars.NoLocalVars = <>
-  LocalVars.LocalVars   = <{<{Var " "}+>}>
+  LocalVars             = <{<{Var " "}+>}>
 
   Constraint = UserConstraint
 
@@ -86,7 +86,7 @@ context-free syntax
 
   Rel.Rel = RelationId
 
-  RelRef      = Rel
+  RelRef = Rel
 
 syntax
 

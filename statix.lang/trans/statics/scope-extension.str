@@ -1,0 +1,108 @@
+module statics/scope-extension
+
+imports
+
+  signatures/-
+  statics/term-projections
+  nabl2/api
+
+rules
+
+  compute-scope-extensions(|a): ast -> <debug> (ext*, error*, warning*, note*)
+    with ast' := <simplify-all(|a)> ast;
+         rule* := <collect-om(?Rule(_, _, _, _, _))> ast';
+         (base-ext*, base-error*, base-warning*, base-note*) := <map(base-extensions);unzip4;(concat, concat, concat, concat)> rule*;
+         ext* := base-ext*;
+         error* := base-error*;
+         warning* := base-warning*;
+         note* := base-note*
+
+  unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
+  unzip4 = ?[(x,y,z,a)|xyza*] < <unzip4> xyza* => (x*,y*,z*,a*); !([x|x*],[y|y*],[z|z*],[a|a*]) + !([],[],[],[])
+
+  raw-eq = (strip-annos, strip-annos); eq
+
+  in-list = elem(raw-eq)
+  in-map = lookup(raw-eq)
+  set-minus = diff(raw-eq)
+
+  // simplify the AST
+  // compute base facts for all constraints
+  //   for all rules, compute projections to base facts 
+  //   for all rules, compute variables corresponding to new scopes
+  // compute fixed point for derived constraints:
+  //   for all rules, for all vars projected by new projections
+  //     if var in new scope, ignore
+  //     if var in head, return derived fact
+  //     otherwise, return error
+  // check that queries & resolution policies do not extend the graph
+  // check that guard does not extend the graph
+  // check that body does not extend scopes created in the guard
+  
+rules // prepare AST for easier analysis
+
+  simplify-all(|a) = topdown(try(simplify(|a)))
+
+  simplify(|a) = CDecl(id, replace-decl(|a), id)
+  simplify(|a) = CDeriveMap(replace-decl(|a), replace-decl(|a), id)
+
+  simplify(|a) = C(replace-decl(|a), id)
+  simplify(|a) = F(replace-decl(|a), id, id)
+
+  simplify(|a) = C(replace-decl(|a), id) 
+  simplify(|a) = LC(replace-decl(|a)) 
+  simplify(|a) = COp(replace-decl(|a), id)
+
+  simplify(|a) = Rel(replace-decl(|a))
+  simplify(|a) = Label(replace-decl(|a))
+
+  simplify(|a) = NsDecl(replace-decl(|a), id)
+  simplify(|a) = Occurrence(replace-decl(|a), id, id)
+  simplify(|a) = NamespaceQuery(replace-decl(|a), id, id)
+
+  simplify(|a) = SortDecl(replace-decl(|a))
+  simplify(|a) = SortAlias(replace-decl(|a), id)
+  simplify(|a) = SimpleSort(replace-decl(|a))
+
+  simplify(|a) = OpDecl(replace-decl(|a), id)
+  simplify(|a) = Op(replace-decl(|a), id)
+  
+  simplify(|a) = Var(replace-decl(|a))
+
+  replace-decl(|a) = nabl2-get-ast-property(|a, "decl")
+
+rules // base facts, constraints directly adding to the scope graph
+
+  base-extensions: Rule(head, _, _, var*, body) -> (base-ext*, error*, warning*, note*)
+    with (x, head-proj*) := <base-head;debug(!"(x, head-proj*) := ")> head;
+         new-var*   := <collect-om(base-fresh);concat;debug(!"new-var* := ")> body;
+         ext-var*   := <set-minus;debug(!"ext-var* := ")> (var*, new-var*);
+         all-ext*   := <collect-om(base-extension);concat;debug(!"all-ext* := ")> body;
+         new-ext* := <filter(\ (v, lbl) -> (v, lbl) where <in-list> (v, new-var*) \);debug(!"new-ext* := ")> all-ext*;
+         var-ext* := <filter(\ (v, lbl) -> (v, lbl) where <in-list> (v, ext-var*) \);debug(!"var-ext* := ")> all-ext*;
+         base-ext*  := <join(\ ((v1, i), (v2, lbl)) -> (x, i, lbl) where <raw-eq> (v1, v2) \);debug(!"rule-ext* := ")> (head-proj*, all-ext*);
+         error*     := <map(\ (v, _) -> (v, "Illegal scope extension") \)> var-ext*;
+         warning*   := [];
+         note*      := <map(\ (v, _) -> (v, "Fresh scope extension") \)> new-ext*
+
+  base-head: C(x, arg*) -> (x, var*)
+    with var* := <map-with-index(Swap);filter(?(Var(_), _))> arg*
+  base-head: F(x, inarg*, _) -> (x, var*)
+    with var* := <map-with-index(Swap);filter(?(Var(_), _))> inarg*
+
+  base-fresh: CNew(var*) -> var*
+
+  base-extension: CTellDirectEdge(s, lbl, _) -> [(s, lbl)]
+  base-extension: CTellRel(rel, _, s) -> [(s, rel)]
+  base-extension: CTellDecl(s, _) -> [(s, Decl())]
+  base-extension: CTellDeclWithRel(s, _, rel, _) -> [(s, Decl()), (s, rel)]
+
+rules // derived facts, constraints indirctly adding to the scope graph
+
+  derived-C: C(x, arg*) -> <fail>
+
+  define-C: CNew(var*) -> <fail>
+
+  derived-T: NewOp() -> <fail>
+
+  derived-T: COp(x, arg*) -> <fail>

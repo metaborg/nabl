@@ -17,6 +17,11 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
+  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> ast
+  nabl2-custom-analysis-final-hook(|a):
+      (resource, _, [ast]) -> (error*, warning*, note*, None())
+    with (ext*, error*, warning*, note*) := <compute-scope-extensions(|a)> ast
+
   nabl2-prettyprint-hook       = prettyprint-StatixLang-IType
   prettyprint-StatixLang-IType = nabl2-prettyprint-term
 
@@ -26,11 +31,11 @@ rules // Analysis
 rules // Debugging
 
   // Prints the abstract syntax ATerm of a selection.
-  debug-show-aterm: (selected, _, _, path, project-path) -> (filename, result)
+  debug-show-aterm: (selected, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path
-       ; result   := selected
+       ; result   := ast
 
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  debug-show-analyzed: (selected, _, _, path, project-path) -> (filename, result)
+  debug-show-analyzed: (selected, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path
-       ; result   := selected
+       ; result   := <nabl2-simplify-ast-indices> ast
