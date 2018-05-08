@@ -7,6 +7,7 @@ module statics/normalize
   // FIXME: rewrite all constraints to regular form
   // FIXME: rewrite inline head patterns to equalities
   // FIXME: linearize head patterns
+  // FIXME: normalize map rules
 
 imports
 
@@ -18,6 +19,8 @@ rules
 
   normalize-all(|a) =
     normalize-names(|a)
+
+rules
 
   normalize-names(|a) = topdown(try(normalize-name(|a)))
 
