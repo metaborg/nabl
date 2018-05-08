@@ -1,0 +1,52 @@
+module statics/normalize
+
+  /////////////////////////////////////////////////////////////////////
+  // Normalization: called after analysis
+  /////////////////////////////////////////////////////////////////////
+
+  // FIXME: rewrite all constraints to regular form
+  // FIXME: rewrite inline head patterns to equalities
+  // FIXME: linearize head patterns
+
+imports
+
+  nabl2/api
+
+  signatures/-
+
+rules
+
+  normalize-all(|a) =
+    normalize-names(|a)
+
+  normalize-names(|a) = topdown(try(normalize-name(|a)))
+
+  normalize-name(|a) = Module(replace-decl(|a), id)
+
+  normalize-name(|a) = CDecl(id, replace-decl(|a), id)
+  normalize-name(|a) = CDeriveMap(replace-decl(|a), replace-decl(|a), id)
+
+  normalize-name(|a) = C(replace-decl(|a), id)
+  normalize-name(|a) = F(replace-decl(|a), id, id)
+
+  normalize-name(|a) = C(replace-decl(|a), id) 
+  normalize-name(|a) = LC(replace-decl(|a)) 
+  normalize-name(|a) = COp(replace-decl(|a), id)
+
+  normalize-name(|a) = Rel(replace-decl(|a))
+  normalize-name(|a) = Label(replace-decl(|a))
+
+  normalize-name(|a) = NsDecl(replace-decl(|a), id)
+  normalize-name(|a) = Occurrence(replace-decl(|a), id, id)
+  normalize-name(|a) = NamespaceQuery(replace-decl(|a), id, id)
+
+  normalize-name(|a) = SortDecl(replace-decl(|a))
+  normalize-name(|a) = SortAlias(replace-decl(|a), id)
+  normalize-name(|a) = SimpleSort(replace-decl(|a))
+
+  normalize-name(|a) = OpDecl(replace-decl(|a), id)
+  normalize-name(|a) = Op(replace-decl(|a), id)
+  
+  normalize-name(|a) = Var(replace-decl(|a))
+
+  replace-decl(|a) = nabl2-get-ast-property(|a, "decl")

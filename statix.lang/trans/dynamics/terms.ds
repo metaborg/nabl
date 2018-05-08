@@ -4,6 +4,7 @@ imports
 
   dynamics/sig-fixes
   ds-signatures/StatixLang-sig
+  ds-signatures/NoParse-sig
   dynamics/unification
 
 signature

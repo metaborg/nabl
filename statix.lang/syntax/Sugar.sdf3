@@ -33,11 +33,15 @@ context-free syntax
     <RuleHead>.
   >
   Rule.GuardRule = <
-    <RuleHead> | <LocalVars> <Constraint>.
+    <RuleHead> | <LocalVars>
+      <Constraint>.
   >
   Rule.BodyRule = <
-    <RuleHead> :- <LocalVars> <Constraint>.
+    <RuleHead> :- <LocalVars>
+      <Constraint>.
   >
+
+  LocalVars.NoLocalVars = <>
 
 /******************************************************************
  * Relations                                                      *
@@ -89,30 +93,10 @@ lexical syntax
 
 context-free syntax
  
-  // default resolution policies 
-
-  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><QueryFilter><QueryMin>>
-
-  ResolutionParam = NamespaceQuery
-  Rule            = NamespaceQuery
-
-  // short-hand query components
-
-  QueryFilter.NoFilter =
-  QueryFilter.Filter   = < filter <HoConstraint>>
-
-  QueryMin.NoMin =
-  QueryMin.Min   = < min <HoConstraint>>
-
   // declaration constraints
   
   Constraint.CTellDecl        = [[Term] -> [Term]]
   Constraint.CTellDeclWithRel = [[Term] -> [Term] with [RelRef] [Term]]
-
-syntax
-
-  HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
-  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "]"
 
 /******************************************************************
  * Resolve & Query
@@ -122,8 +106,11 @@ context-free syntax
 
   // short-hand forms for occurrences using default resolution policies
 
-  Constraint.CResolveDecl = [[Term] in [Term] |-> [Term]]
-  Constraint.CResolveRel = [[RelRef] of [Term] in [Term] |-> [Term]]
+  QueryFilter.NoFilter =
+  QueryMin.NoMin =
+
+  Constraint.CResolveDecl        = [[Term] in [Term] |-> [Term]]
+  Constraint.CResolveRel         = [[RelRef] of [Term] in [Term] |-> [Term]]
 
 /******************************************************************
  * Sorts & Constructors                                           *

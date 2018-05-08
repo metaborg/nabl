@@ -2,15 +2,16 @@ module statics/scope-extension
 
 imports
 
-  signatures/-
-  statics/term-projections
-  pp
   nabl2/api
+
+  signatures/-
+  statics/-
+  pp
 
 rules
 
   compute-scope-extensions(|a): ast -> (ext*, error*, [], note*)
-    with ast' := <simplify-all(|a)> ast;
+    with ast' := <normalize-all(|a)> ast;
          error-iset := <new-iset>;
          note-iset := <new-iset>;
          base-ext* := <collect-om(base-extensions(|error-iset, note-iset));concat> ast';
@@ -28,38 +29,6 @@ rules
   raw-elem = elem(raw-eq)
   raw-lookup = lookup((id,Fst);raw-eq)
   raw-diff = diff(raw-eq)
-
-rules // prepare AST for easier analysis
-
-  simplify-all(|a) = topdown(try(simplify(|a)))
-
-  simplify(|a) = CDecl(id, replace-decl(|a), id)
-  simplify(|a) = CDeriveMap(replace-decl(|a), replace-decl(|a), id)
-
-  simplify(|a) = C(replace-decl(|a), id)
-  simplify(|a) = F(replace-decl(|a), id, id)
-
-  simplify(|a) = C(replace-decl(|a), id) 
-  simplify(|a) = LC(replace-decl(|a)) 
-  simplify(|a) = COp(replace-decl(|a), id)
-
-  simplify(|a) = Rel(replace-decl(|a))
-  simplify(|a) = Label(replace-decl(|a))
-
-  simplify(|a) = NsDecl(replace-decl(|a), id)
-  simplify(|a) = Occurrence(replace-decl(|a), id, id)
-  simplify(|a) = NamespaceQuery(replace-decl(|a), id, id)
-
-  simplify(|a) = SortDecl(replace-decl(|a))
-  simplify(|a) = SortAlias(replace-decl(|a), id)
-  simplify(|a) = SimpleSort(replace-decl(|a))
-
-  simplify(|a) = OpDecl(replace-decl(|a), id)
-  simplify(|a) = Op(replace-decl(|a), id)
-  
-  simplify(|a) = Var(replace-decl(|a))
-
-  replace-decl(|a) = nabl2-get-ast-property(|a, "decl")
 
 rules // shared
 

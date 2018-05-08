@@ -1,0 +1,69 @@
+module statics/desugar
+
+  /////////////////////////////////////////////////////////////////////
+  // Desugaring: called before analysis
+  /////////////////////////////////////////////////////////////////////
+
+  // FIXME: rewrite short-hand forms to base constraints
+
+imports
+
+  libspoofax/term/origin
+
+  signatures/-
+
+rules
+
+  desugar-all =
+    desugar-rules;
+    desugar-rule-vars;
+    desugar-decl-shorthands;
+    desugar-ref-shorthands;
+    desugar-queries;
+    desugar-lambdas;
+    desugar-terms
+
+  desugar-rules = try(sometd(desugar-rule))
+  desugar-rule: AxiomRule(h)        -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
+  desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
+  desugar-rule: BodyRule(h, vs, b)  -> Rule(h, NoLocalVars(), CTrue(), vs, b)
+
+  desugar-rule-vars = try(sometd(desugar-rule-var))
+  desugar-rule-var: NoLocalVars() -> []
+
+  desugar-decl-shorthands = topdown(try(desugar-decl-shorthand))
+  desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
+    with decl := <origin-track-forced(!Decl())> c
+  desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
+    with decl := <origin-track-forced(!Decl())> c;
+         c1 := <origin-track-forced(!CTellRel(Decl(), [dt], st))> c;
+         c2 := <origin-track-forced(!CTellRel(rel, [dt,rt], st))> c
+
+  desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
+  desugar-ref-shorthand: c@CResolveDecl(rt, st, pst) -> c'
+    with decl       := <origin-track-forced(!Decl())> c;
+         rel-target := <origin-track-forced(!RelTarget(decl))> c;
+         filter     := <origin-track-forced(!ResolveFilter(rt))> rt;
+         min        := <origin-track-forced(!ResolveMin(rt))> rt;
+         c'         := CResolveQuery(rel-target, filter, min, st, pst)
+  desugar-ref-shorthand: CResolveRel(rel, rt, st, pst) -> c'
+    with rel-target := <origin-track-forced(!RelTarget(rel))> rel;
+         filter     := <origin-track-forced(!ResolveFilter(rt))> rt;
+         min        := <origin-track-forced(!ResolveMin(rt))> rt;
+         c'         := CResolveQuery(rel-target, filter, min, st, pst)
+
+  desugar-queries = topdown(try(desugar-query))
+  desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
+  desugar-query: Filter(l) -> Filter(l, LTrue())
+  desugar-query: NoMin() -> Min(LFalse(), LFalse())
+  desugar-query: Min(l) -> Min(l, LFalse())
+
+  desugar-query: NoFilterOld() -> FilterOld(Wld(), CTrue())
+  desugar-query: NoMinOld() -> MinOld(Wld(), Wld(), CTrue())
+
+  desugar-lambdas = topdown(try(desugar-lambda))
+  desugar-lambda: LLam(ts) -> LLam(ts, CTrue())
+
+  desugar-terms = topdown(try(desugar-term))
+  desugar-term: Tuple0()      -> Tuple([])
+  desugar-term: TupleN(x, xs) -> Tuple([x|xs])

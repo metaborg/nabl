@@ -296,41 +296,16 @@ rules
     LabelRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
-  [[ CTellDecl(st, dt) ^ (s) ]] :=
-    Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ dt ^ (s) : OCCURRENCE() ]].
-
-  [[ CTellDeclWithRel(st, dt, rel, rt) ^ (s) ]] :=
-    Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ dt ^ (s) : OCCURRENCE() ]],
-    RelRef[[ rel ^ (s) : ty ]],
-    OCCURRENCE() is `in-type` of ty,
-    outty is `out-type` of ty,
-    Build[[ rt ^ (s) : outtype ]].
-
 /******************************************************************
  * Resolve & Query
  ******************************************************************/
 
-  [[ CResolveDecl(rt, st, pst) ^ (s) ]] :=
-    Build[[ rt ^ (s) : OCCURRENCE() ]],
-    Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), OCCURRENCE()])) ]].
-
-  [[ CResolveRel(rel, rt, st, pst) ^ (s) ]] :=
-    RelRef[[ rel ^ (s) : ty ]],
-    OCCURRENCE() is `in-type` of ty,
-    outty is `out-type` of ty,
-    Build[[ rt ^ (s) : OCCURRENCE() ]],
-    Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), outty])) ]].
-
-  [[ CResolveQuery(target, filter, min, st, pt) ^ (s) ]] :=
+  [[ CResolveQuery(target, filter, min, st, pst) ^ (s) ]] :=
     [[ target ^ (s, wfty, resty) ]],
     [[ filter ^ (s, wfty) ]],
     [[ min ^ (s, wfty) ]],
     Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ pt ^ (s) : LIST(resty) ]].
+    Build[[ pst ^ (s) : LIST(resty) ]].
 
   [[ EmptyTarget() ^ (s, wfty, outty) ]] :=
     wfty == SCOPE(),
@@ -349,6 +324,12 @@ rules
   [[ Min(lp, lt) ^ (s, ty) ]] :=
     [[ lp ^ (s) : PRED([PATH(), PATH()]) ]],
     [[ lt ^ (s) : PRED([ty, ty]) ]].
+
+  [[ ResolveFilter(t) ^ (s, ty) ]] :=
+    Build[[ t ^ (s) : ty ]].
+
+  [[ ResolveMin(t) ^ (s, ty) ]] :=
+    Build[[ t ^ (s) : ty ]].
 
 /******************************************************************
  * Sorts & Constructors                                           *

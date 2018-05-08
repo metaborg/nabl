@@ -47,7 +47,7 @@ rules
     typeOfExp(s_fun, e) == T.
 
   typeOfExp(s, Var(x)) = T :-
-    typeOfDecl of Var{x@x} in s |-> [(_, T)].
+    typeOfDecl of Var{x@x} in s |-> [(_, (_, T))].
 
   typeOfExp(s, App(e1, e2)) = T :- {S U}
     typeOfExp(s, e1) == FUN(S, T),

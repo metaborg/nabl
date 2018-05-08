@@ -25,7 +25,7 @@ context-free syntax
   Section.Rules = <
     rules
 
-    <{Rule "\n\n"}*>
+      <{Rule "\n\n"}*>
   > {longest-match}
 
 /******************************************************************
@@ -37,23 +37,23 @@ context-free syntax
       <{CDecl "\n"}*>
   > {longest-match}
 
-  Rule.CDecl       = [[CInd] constraint [ConstraintId] : [Type]]
-  Rule.CDecl       = [[CInd] [ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd]constraint [ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd][ConstraintId] : [Type]]
 
-  CDecl.CDecl      = [[CInd] [ConstraintId] : [Type]]
+  CDecl.CDecl      = [[CInd][ConstraintId] : [Type]]
 
   CInd.InductiveC   =
-  CInd.CoinductiveC = <coinductive>
+  CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars> <Constraint>.
+    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars>
+      <Constraint>.
   >
 
   RuleHead   = UserConstraint
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
-  LocalVars.NoLocalVars = <>
-  LocalVars             = <{<{Var " "}+>}>
+  LocalVars = <{<{Var " "}*>}>
 
   Constraint = UserConstraint
 
@@ -107,7 +107,10 @@ context-free syntax
   Constraint.CFalse = <false>
 
   Constraint         = <(<Constraint>)> {bracket}
-  Constraint.CConj   = <<Constraint>, <Constraint>> {left}
+  Constraint.CConj   = <
+    <Constraint>,
+    <Constraint>
+  > {left}
   Constraint.CNew    = <new <{Var " "}+>>
 
   Constraint.CEqual   = [[Term] == [Term]]
@@ -140,12 +143,27 @@ context-free syntax
       <{ResolutionParam "\n"}*>
   > {longest-match}
 
+  // labels
+
   ResolutionParam.Labels = <labels <{Rel " "}*>>
 
   Label.Label = RelationId
 
   LabelRef     = Label
   LabelRef.EOP = "$"
+
+  // default resolution policies 
+
+  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><QueryFilter><QueryMin>>
+
+  ResolutionParam = NamespaceQuery
+  Rule            = NamespaceQuery
+
+  QueryFilter.Filter = < filter <HoConstraint>>
+
+  QueryMin.Min = < min <HoConstraint>>
+
+  // namespaces
 
   NsDecl.NsDecl = <<NamespaceId> : <{SortRef " * "}*>>
 
@@ -186,13 +204,19 @@ syntax
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
 
+  HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
+  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "]"
+
+  QueryFilter-CF.ResolveFilter = LAYOUT?-CF "resolveFilter" "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
+  QueryMin-CF.ResolveMin       = LAYOUT?-CF "resolveMin" "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
+
   Constraint-CF.CTellDirectEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
 
 lexical syntax
 
   NamespaceId = UCID
 
-  ConstraintId = "pathMatch" | "pathDisamb" {reject}
+  ConstraintId = "pathMatch" | "pathDisamb" | "resolveFilter" | "resolveMin" {reject}
 
   RelationId = "e" {reject} // ambiguous with empty regex
 
@@ -273,7 +297,6 @@ context-free syntax
   Term.ListTail   = <[<{Term ", "}*>|<Term>]>
   Term.Tuple0     = <()>
   Term.TupleN     = <(<Term>, <{Term ", "}+>)>
-  TermNoParse.Tuple = <(<{Term ", "}*>)>
   Term.As         = <<Var>@<Term>>
   Term.Ascribe    = <<Term> : <SortRef>>
   Term            = <(<Term>)> {bracket}

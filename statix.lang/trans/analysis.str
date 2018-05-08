@@ -8,7 +8,6 @@ imports
   
   signatures/-
   
-  desugar
   statics/-
 
   pp
@@ -20,6 +19,7 @@ rules // Analysis
   nabl2-custom-analysis-unit-hook: (resource, ast, _) -> ast
   nabl2-custom-analysis-final-hook(|a):
       (resource, _, [ast]) -> (error*, warning*, note*, None())
+    where <not(nabl2-analysis-has-errors)> a
     with if id then
            nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
            (ext*, error*, warning*, note*) := <compute-scope-extensions(|a)> ast;
@@ -37,11 +37,30 @@ rules // Analysis
 rules // Debugging
 
   // Prints the abstract syntax ATerm of a selection.
-  debug-show-aterm: (selected, _, ast, path, project-path) -> (filename, result)
+  debug-show-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path
        ; result   := ast
 
+  format-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"formatted.stx")> path
+       ; result   := <pp-StatixLang-string> ast
+
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  debug-show-analyzed: (selected, _, ast, path, project-path) -> (filename, result)
+  debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path
        ; result   := <nabl2-simplify-ast-indices> ast
+
+  format-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.stx")> path
+       ; result   := <pp-StatixLang-string> ast
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-normalized: (_, _, ast, path, project-path) -> (filename, result)
+    with a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+       ; filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := <normalize-all(|a);nabl2-simplify-ast-indices> ast
+
+  format-normalized: (_, _, ast, path, project-path) -> (filename, result)
+    with a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+       ; filename := <guarantee-extension(|"analyzed.stx")> path
+       ; result   := <normalize-all(|a);pp-StatixLang-string> ast
