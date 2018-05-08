@@ -20,7 +20,6 @@ menus
     action: "Format analyzed AST"   = format-analyzed
     separator
     action: "Show normalized AST"   = debug-show-normalized
-    action: "Format normalized AST" = format-normalized
 
 views
   

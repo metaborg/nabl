@@ -6,3 +6,4 @@ imports
   pp
   outline
   analysis
+  generate

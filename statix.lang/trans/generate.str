@@ -1,0 +1,27 @@
+module generate
+
+imports
+
+  libstrc
+
+  libspoofax/core/language
+  
+  signatures/-
+  statics/-
+
+rules
+
+  generate-aterm:
+    (_, _, ast@Module(name,_), path, project-path) -> ([spec-file, ext-file], [spec, ext])
+    with
+      spec-file  := <src-gen-file(|"statix/", ".aterm")> name;
+      ext-file   := <src-gen-file(|"statix/", ".ext.aterm")> name;
+      a          := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+      spec       := <normalize-all(|a)> ast;
+      ext        := <nabl2-get-custom-analysis> a
+ 
+  src-gen-file(|sub-dir, ext): name -> file-name
+  with file-name := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
+
+  src-gen-dir(|sub-dir): _ -> dir-name
+    with dir-name := <language-srcgen-dir> sub-dir
