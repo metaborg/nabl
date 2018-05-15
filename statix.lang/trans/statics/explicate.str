@@ -1,0 +1,55 @@
+module statics/explicate
+
+  /////////////////////////////////////////////////////////////////////
+  // Explication: rewrite (non-valid) AST for ease of transformation //
+  /////////////////////////////////////////////////////////////////////
+
+imports
+
+  nabl2/api
+
+  signatures/-
+
+rules
+
+  explicate-all(|a) =
+    explicate-maps(|a);
+    explicate-names(|a)
+
+rules
+
+  explicate-maps(|a) = id
+
+rules
+
+  explicate-names(|a) = topdown(try(explicate-name(|a)))
+
+  explicate-name(|a) = Module(replace-decl(|a), id)
+
+  explicate-name(|a) = CDecl(id, replace-decl(|a), id)
+  explicate-name(|a) = CDeriveMap(replace-decl(|a), replace-decl(|a), id)
+
+  explicate-name(|a) = C(replace-decl(|a), id)
+  explicate-name(|a) = F(replace-decl(|a), id, id)
+
+  explicate-name(|a) = C(replace-decl(|a), id) 
+  explicate-name(|a) = LC(replace-decl(|a)) 
+  explicate-name(|a) = COp(replace-decl(|a), id)
+
+  explicate-name(|a) = Rel(replace-decl(|a))
+  explicate-name(|a) = Label(replace-decl(|a))
+
+  explicate-name(|a) = NsDecl(replace-decl(|a), id)
+  explicate-name(|a) = Occurrence(replace-decl(|a), id, id)
+  explicate-name(|a) = NamespaceQuery(replace-decl(|a), id, id)
+
+  explicate-name(|a) = SortDecl(replace-decl(|a))
+  explicate-name(|a) = SortAlias(replace-decl(|a), id)
+  explicate-name(|a) = SimpleSort(replace-decl(|a))
+
+  explicate-name(|a) = OpDecl(replace-decl(|a), id)
+  explicate-name(|a) = Op(replace-decl(|a), id)
+  
+  explicate-name(|a) = Var(replace-decl(|a))
+
+  replace-decl(|a) = nabl2-get-ast-property(|a, "decl")

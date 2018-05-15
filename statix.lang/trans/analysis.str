@@ -45,6 +45,7 @@ rules // Debugging
     with filename := <guarantee-extension(|"formatted.stx")> path
        ; result   := <pp-StatixLang-string> ast
 
+
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
   debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path
@@ -54,8 +55,24 @@ rules // Debugging
     with filename := <guarantee-extension(|"analyzed.stx")> path
        ; result   := <pp-StatixLang-string> ast
 
-  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+
+  // Prints the normalized annotated abstract syntax ATerm of a selection.
   debug-show-normalized: (_, _, ast, path, project-path) -> (filename, result)
-    with a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-       ; filename := <guarantee-extension(|"normalized.aterm")> path
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with filename := <guarantee-extension(|"normalized.aterm")> path
        ; result   := <normalize-all(|a);nabl2-simplify-ast-indices> ast
+
+  format-normalized: (_, _, ast, path, project-path) -> (filename, result)
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with filename := <guarantee-extension(|"normalized.stx")> path
+       ; result   := <normalize-all(|a);pp-StatixLang-string> ast
+
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-explicated: (_, _, ast, path, project-path) -> (filename, result)
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with filename := <guarantee-extension(|"explicated.aterm")> path
+       ; result   := <normalize-all(|a);explicate-all(|a);nabl2-simplify-ast-indices> ast

@@ -1,55 +1,147 @@
 module statics/normalize
 
   /////////////////////////////////////////////////////////////////////
-  // Normalization: called after analysis
+  // Normalization: rewrite rules to normalized forms
   /////////////////////////////////////////////////////////////////////
 
-  // FIXME: rewrite all constraints to regular form
-  // FIXME: rewrite inline head patterns to equalities
-  // FIXME: linearize head patterns
-  // FIXME: normalize map rules
+  // FIXME: explicate map rules
+  // FIXME: explicate anonymous constraints to named constraints
 
 imports
+
+  libspoofax/term/origin
 
   nabl2/api
 
   signatures/-
+  statics/-
 
 rules
 
   normalize-all(|a) =
-    normalize-names(|a)
+    normalize-functional-heads;
+    normalize-inline-patterns(|a);
+    normalize-functional-cdecls;
+    normalize-functional-cops(|a)
 
 rules
 
-  normalize-names(|a) = topdown(try(normalize-name(|a)))
+  normalize-functional-heads = topdown(try(normalize-functional-head))
 
-  normalize-name(|a) = Module(replace-decl(|a), id)
+  normalize-functional-head: F(x, ps, t) -> C(x, ps')
+    where Tuple(ts) := t
+    with ps' := <conc> (ps, ts)
 
-  normalize-name(|a) = CDecl(id, replace-decl(|a), id)
-  normalize-name(|a) = CDeriveMap(replace-decl(|a), replace-decl(|a), id)
+  normalize-functional-head: F(x, ps, t) -> C(x, ps')
+    where not(Tuple(_) := t)
+    with ps' := <conc> (ps, [t])
 
-  normalize-name(|a) = C(replace-decl(|a), id)
-  normalize-name(|a) = F(replace-decl(|a), id, id)
+rules
 
-  normalize-name(|a) = C(replace-decl(|a), id) 
-  normalize-name(|a) = LC(replace-decl(|a)) 
-  normalize-name(|a) = COp(replace-decl(|a), id)
+  normalize-inline-patterns(|a) = topdown(try(normalize-inline-pattern(|a)))
 
-  normalize-name(|a) = Rel(replace-decl(|a))
-  normalize-name(|a) = Label(replace-decl(|a))
+  normalize-inline-pattern(|a):
+      Rule(C(x, ps), gvs, guard, bvs, body) -> Rule(C(x, ps'), gvs', guard', bvs', body')
+    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         n := <(?PRED(<length>) + ?FUN(<length>, _))> ty;
 
-  normalize-name(|a) = NsDecl(replace-decl(|a), id)
-  normalize-name(|a) = Occurrence(replace-decl(|a), id, id)
-  normalize-name(|a) = NamespaceQuery(replace-decl(|a), id, id)
+         // extract inline patterns
+         (gps', guard') := <take(|n);extract-inline-patterns(|guard)> ps;
+         (bps', body') := <drop(|n);extract-inline-patterns(|body)> ps;
+ 
+         // compute new head variables
+         ps' := <conc> (gps', bps');
+         head-var* := <collect-all(?Var(_));raw-make-set> ps';
 
-  normalize-name(|a) = SortDecl(replace-decl(|a))
-  normalize-name(|a) = SortAlias(replace-decl(|a), id)
-  normalize-name(|a) = SimpleSort(replace-decl(|a))
+         // compute new existental guard variables
+         guard-var* := <collect-all(?Var(_));raw-make-set> guard';
+         new-guard-var* := <raw-diff> (guard-var*, head-var*);
+         gvs' := <conc;raw-make-set> (new-guard-var*, gvs);
 
-  normalize-name(|a) = OpDecl(replace-decl(|a), id)
-  normalize-name(|a) = Op(replace-decl(|a), id)
-  
-  normalize-name(|a) = Var(replace-decl(|a))
+         // compute new existental body variables
+         body-var* := <collect-all(?Var(_));raw-make-set> body';
+         new-body-var* := <raw-diff> (body-var*, <conc> (head-var*, gvs'));
+         bvs' := <conc;raw-make-set> (new-body-var*, bvs)
 
-  replace-decl(|a) = nabl2-get-ast-property(|a, "decl")
+  normalize-inline-pattern(|a):
+      LLam(ps, vs, body) -> LLam(ps', vs', body')
+    with (ps', body') := <extract-inline-patterns(|body)> ps;
+         head-var* := <collect-all(?Var(_));raw-make-set> ps';
+         body-var* := <collect-all(?Var(_));raw-make-set> body';
+         new-body-var* := <raw-diff> (body-var*, head-var*);
+         vs' := <conc;raw-make-set> (new-body-var*, vs)
+
+  extract-inline-patterns(|C): [] -> ([], C)
+
+  extract-inline-patterns(|C): [p|ps] -> ([v|ps'], CConj(CEqual(v, p), C'))
+    where <not(?Var(_) + ?Wld())> p
+    with v := Var(<newname> "p");
+         (ps', C') := <extract-inline-patterns(|C)> ps
+
+  extract-inline-patterns(|C): [v|ps] -> ([v|ps'], C')
+    where <?Var(_) + ?Wld()> v
+    with (ps', C') := <extract-inline-patterns(|C)> ps
+
+rules
+
+  normalize-functional-cdecls = topdown(try(normalize-functional-cdecl))
+
+  normalize-functional-cdecl:
+      CDecl(ind, x, t@FunType(s1*, s2*)) -> CDecl(ind, x, t')
+    with s* := <conc> (s1*, s2*);
+         t' := <origin-track-forced(!SimpleType(s*))> t
+
+rules
+
+  normalize-functional-cops(|a) =
+    topdown(try(normalize-functional-cop(|a)))
+
+  normalize-functional-cop(|a):
+      Rule(head, gvs, guard, bvs, body) -> Rule(head, gvs', guard', bvs', body')
+    with (guard', gmaps) := <collect-map(replace-cop(|a))> guard;
+         guard'' := <map(cop-to-c);list-to-conj(|guard)> gmaps;
+         new-guard-var* := <map(Snd);collect-all(?Var(_))> gmaps;
+         gvs' := <conc> (gvs, new-guard-var*);
+         (body', bmaps) := <collect-map(replace-cop(|a))> body;
+         body'' := <map(cop-to-c);list-to-conj(|body)> bmaps;
+         new-body-var* := <map(Snd);collect-all(?Var(_))> bmaps;
+         bvs' := <conc> (bvs, new-body-var*)
+
+  normalize-functional-cop(|a):
+      LLam(ts, vs, body) -> LLam(ts', vs', body')
+    with (ts', tsmaps) := <collect-map(replace-cop(|a))> ts;
+         (body', bmaps) := <collect-map(replace-cop(|a))> body;
+         maps := <conc> (tsmaps, bmaps);
+         body'' := <map(cop-to-c);list-to-conj(|body)> maps;
+         new-var* := <map(Snd);collect-all(?Var(_))> maps;
+         vs' := <conc> (vs, new-var*)
+
+  normalize-functional-cop(|a):
+      CEqual(t1, t2) -> C
+    where (t2', maps@[_|_]) := <collect-map(replace-cop(|a))> t2
+    with C := <map(cop-to-c);list-to-conj(|CEqual(t1, t2'))> maps
+
+  cop-to-c: (COp(x, in_ts), out_t) -> C(x, ts)
+    with out_ts := <?Tuple(<id>) + ![<id>]> out_t;
+         ts := <conc> (in_ts, out_ts)
+
+  replace-cop(|a): COp(x, ts) -> t
+    with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         ts' := <map(!Var(<newname> "v"))> outtys;
+         t := <?[<id>] <+ !Tuple(<id>)> ts'
+
+  list-to-conj(|tl): [] -> tl
+
+  list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
+
+  // collect-map(s: a -> b) : x -> (x, [(a * b)])
+  // apply bottomup and collect the substitutions that were done
+
+  collect-map(s): t -> (t', maps)
+    where c#(ts){a*} := t
+    with (ts', tsmaps) := <map(collect-map(s)); unzip; (id, concat)> ts;
+         (t', tmaps) := <s < !(<id>, [(t, <id>)]) + !(<id>, [])> c#(ts'){a*};
+         maps := <conc> (tmaps, tsmaps)
+
+  collect-map(s): t -> (t, [])
+    where not(c#(_) := t)

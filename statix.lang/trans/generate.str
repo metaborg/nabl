@@ -12,16 +12,21 @@ imports
 rules
 
   generate-aterm:
+    (_, _, ast@Module(name,_), path, project-path) -> None()
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <nabl2-analysis-has-errors> a
+
+  generate-aterm:
     (_, _, ast@Module(name,_), path, project-path) -> ([spec-file, ext-file], [spec, ext])
-    with
-      spec-file  := <src-gen-file(|"statix/", ".aterm")> name;
-      ext-file   := <src-gen-file(|"statix/", ".ext.aterm")> name;
-      a          := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-      spec       := <normalize-all(|a)> ast;
-      ext        := <nabl2-get-custom-analysis> a
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          not(<nabl2-analysis-has-errors> a)
+    with spec-file  := <src-gen-file(|"statix/", ".aterm")> name;
+         ext-file   := <src-gen-file(|"statix/", ".ext.aterm")> name;
+         spec       := <normalize-all(|a);explicate-all(|a)> ast;
+         ext        := <nabl2-get-custom-analysis> a
  
   src-gen-file(|sub-dir, ext): name -> file-name
-  with file-name := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
+    with file-name := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
 
   src-gen-dir(|sub-dir): _ -> dir-name
     with dir-name := <language-srcgen-dir> sub-dir

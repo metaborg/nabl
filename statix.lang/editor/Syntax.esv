@@ -15,11 +15,20 @@ menus
     
     action: "Show parsed AST"       = debug-show-aterm (source)
     action: "Format parsed AST"     = format-aterm (source)
+
     separator
+
     action: "Show analyzed AST"     = debug-show-analyzed
     action: "Format analyzed AST"   = format-analyzed
+
     separator
+
     action: "Show normalized AST"   = debug-show-normalized
+    action: "Format normalized AST" = format-normalized
+
+    separator
+
+    action: "Show explicated AST"   = debug-show-explicated
 
 views
   

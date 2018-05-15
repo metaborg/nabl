@@ -23,13 +23,19 @@ rules
     desugar-lambdas;
     desugar-terms
 
+rules
+
   desugar-rules = try(sometd(desugar-rule))
   desugar-rule: AxiomRule(h)        -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
   desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
   desugar-rule: BodyRule(h, vs, b)  -> Rule(h, NoLocalVars(), CTrue(), vs, b)
 
+rules
+
   desugar-rule-vars = try(sometd(desugar-rule-var))
   desugar-rule-var: NoLocalVars() -> []
+
+rules
 
   desugar-decl-shorthands = topdown(try(desugar-decl-shorthand))
   desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
@@ -38,6 +44,8 @@ rules
     with decl := <origin-track-forced(!Decl())> c;
          c1 := <origin-track-forced(!CTellRel(Decl(), [dt], st))> c;
          c2 := <origin-track-forced(!CTellRel(rel, [dt,rt], st))> c
+
+rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
   desugar-ref-shorthand: c@CResolveDecl(rt, st, pst) -> c'
@@ -52,6 +60,8 @@ rules
          min        := <origin-track-forced(!ResolveMin(rt))> rt;
          c'         := CResolveQuery(rel-target, filter, min, st, pst)
 
+rules
+
   desugar-queries = topdown(try(desugar-query))
   desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
   desugar-query: Filter(l) -> Filter(l, LTrue())
@@ -61,8 +71,12 @@ rules
   desugar-query: NoFilterOld() -> FilterOld(Wld(), CTrue())
   desugar-query: NoMinOld() -> MinOld(Wld(), Wld(), CTrue())
 
+rules
+
   desugar-lambdas = topdown(try(desugar-lambda))
-  desugar-lambda: LLam(ts) -> LLam(ts, CTrue())
+  desugar-lambda: LLam(ts) -> LLam(ts, [], CTrue())
+
+rules
 
   desugar-terms = topdown(try(desugar-term))
   desugar-term: Tuple0()      -> Tuple([])

@@ -119,7 +119,7 @@ context-free syntax
   HoConstraint.LTrue  = "true"
   HoConstraint.LFalse = "false"
 
-  HoConstraint.LLam = <{ <{Term ", "}+> :- <Constraint> }>
+  HoConstraint.LLam = <{ <{Term ", "}+> :- <LocalVars> <Constraint> }>
 
 lexical syntax
 

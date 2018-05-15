@@ -211,9 +211,10 @@ rules
 
   [[ LFalse() ^ (_) : PRED(_) ]].
 
-  [[ LLam(vs, c) ^ (s) : PRED(tys) ]] :=
+  [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
     new s', s' ---> s,
-    Map1T(Term(NonUniqueVarDecl))[[ vs ^ (s') : tys ]],
+    Map1T(Term(NonUniqueVarDecl))[[ ps ^ (s') : tys ]],
+    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
     [[ c ^ (s') ]].
 
   Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
