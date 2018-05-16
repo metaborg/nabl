@@ -2,7 +2,7 @@ module Generate
 
 language
 
-  on save    : generate-aterm
+  on save : generate-aterm
 
 menus
   

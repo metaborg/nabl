@@ -13,12 +13,7 @@ imports
 rules
 
   explicate-all(|a) =
-    explicate-maps(|a);
     explicate-names(|a)
-
-rules
-
-  explicate-maps(|a) = id
 
 rules
 

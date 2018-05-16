@@ -89,14 +89,17 @@ rules
     [[ type ^ (s) : ty ]],                     // types
     C{x} <- s, @x.decl := C{x},                // decl
     C{x} : ty !!,
+    C{x}.ind := ind !!,
     C{x}.kind := DeclaredC() !!.
 
   [[ CDeriveMap(x, x', lsorts) ^ (s) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.decl := d,
     d : ty,
+    d.ind := ind,
     ty' is `lift-type` of (lsorts, ty),
     C{x} <- s, @x.decl := C{x},
     C{x} : ty' !!,
+    C{x}.ind := ind !!,
     C{x}.kind := DerivedC() !!.
 
   [[ Rule(h, gvs, g, bvs, c) ^ (s) ]] :=

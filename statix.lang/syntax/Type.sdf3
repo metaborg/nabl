@@ -24,4 +24,3 @@ context-free syntax
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<{TType " * "}*>)>
-  TType.OP         = [[{TType " * "}*] -> [TType]]
