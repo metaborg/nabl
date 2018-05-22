@@ -207,17 +207,3 @@ rules
   type-to-sort: PRED(tys)          -> SimpleType(<map(type-to-sort)> tys)
   type-to-sort: FUN(intys, outtys) -> SimpleType(<map(type-to-sort)> tys)
     with tys := <conc> (intys, outtys)
-
-rules
-
-  // collect-map(s: a -> b) : x -> (x, [(a * b)])
-  // apply bottomup and collect the substitutions that were done
-
-  collect-map(s): c#(ts){a*} -> (t'', maps)
-    with (ts', tsmaps) := <map(collect-map(s)); unzip; (id, concat)> ts;
-         t' := c#(ts'){a*};
-         (t'', tmaps) := <s < !(<id>, [(t', <id>)]) + !(<id>, [])> t';
-         maps := <conc> (tmaps, tsmaps)
-
-  collect-map(s): t -> (t, [])
-    where not(c#(_) := t)

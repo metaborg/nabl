@@ -5,6 +5,7 @@ imports
   nabl2shared
   nabl2runtime
   nabl2/api
+  nabl2/runtime/analysis/main
   
   signatures/-
   
@@ -16,17 +17,23 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> ast
+  nabl2-custom-analysis-unit-hook:
+      (resource, ast, _) -> ast
+
   nabl2-custom-analysis-final-hook(|a):
-      (resource, _, [ast]) -> (error*, warning*, note*, ext*)
+      (resource, _, [ast]) -> (error*, warning*, note*, (ast'', ext*))
     where <not(nabl2-analysis-has-errors)> a
-    with if id then
-           nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-           (ext*, error*, warning*, note*) := <compute-scope-extensions(|a)> ast;
-           nabl2-custom-analysis-info-msg(|"Computed scope extensions.")
-         else
-           (ext*, error*, warning*, note*) := ([], [], [], [])
-         end
+    where id
+    with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
+         (ast', a', _, _, _) := <normalize-all(|a);nabl2-analyze-oneshot(|resource)> ast;
+         if <nabl2-analysis-has-errors> a' then
+           fatal-err-msg(|"Normalized AST has errors. Normalization needs to be fixed!")
+         end;
+         nabl2-custom-analysis-info-msg(|"Normalized AST.");
+         ast'' := <explicate-all(|a')> ast';
+         nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
+         (ext*, error*, warning*, note*) := <compute-scope-extensions> ast'';
+         nabl2-custom-analysis-info-msg(|"Computed scope extensions.")
 
   nabl2-prettyprint-hook       = prettyprint-StatixLang-IType
   prettyprint-StatixLang-IType = nabl2-prettyprint-term

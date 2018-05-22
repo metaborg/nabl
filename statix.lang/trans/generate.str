@@ -19,13 +19,12 @@ rules
           <nabl2-analysis-has-errors> a
 
   generate-aterm:
-    (_, _, ast@Module(name,_), path, project-path) -> ([spec-file, ext-file], [spec, ext])
+    (_, _, ast@Module(name,_), path, project-path) -> <unzip> [(spec-file, spec), (ext-file, ext)]
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           not(<nabl2-analysis-has-errors> a)
-    with spec-file  := <src-gen-file(|"statix/", ".aterm")> name;
-         ext-file   := <src-gen-file(|"statix/", ".ext.aterm")> name;
-         spec       := <normalize-all(|a)> ast;
-         ext        := <nabl2-get-custom-analysis> a
+    with (spec, ext) := <nabl2-get-custom-analysis;strip-annos> a;
+         spec-file := <src-gen-file(|"statix/", ".spec.aterm")> name;
+         ext-file  := <src-gen-file(|"statix/", ".ext.aterm")> name
  
   src-gen-file(|sub-dir, ext): name -> file-name
     with file-name := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]

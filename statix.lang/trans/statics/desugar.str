@@ -4,13 +4,10 @@ module statics/desugar
   // Desugaring: called before analysis
   /////////////////////////////////////////////////////////////////////
 
-  // FIXME: rewrite short-hand forms to base constraints
-
 imports
 
-  libspoofax/term/origin
-
   signatures/-
+  statics/-
 
 rules
 
@@ -39,25 +36,25 @@ rules
 
   desugar-decl-shorthands = topdown(try(desugar-decl-shorthand))
   desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
-    with decl := <origin-track-forced(!Decl())> c
+    with decl := <with-origin(|c)> Decl()
   desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
-    with decl := <origin-track-forced(!Decl())> c;
-         c1 := <origin-track-forced(!CTellRel(Decl(), [dt], st))> c;
-         c2 := <origin-track-forced(!CTellRel(rel, [dt,rt], st))> c
+    with decl := <with-origin(|c)> Decl();
+         c1 := <with-origin(|c)> CTellRel(decl, [dt], st);
+         c2 := <with-origin(|c)> CTellRel(rel, [dt,rt], st)
 
 rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
   desugar-ref-shorthand: c@CResolveDecl(rt, st, pst) -> c'
-    with decl       := <origin-track-forced(!Decl())> c;
-         rel-target := <origin-track-forced(!RelTarget(decl))> c;
-         filter     := <origin-track-forced(!ResolveFilter(rt))> rt;
-         min        := <origin-track-forced(!ResolveMin(rt))> rt;
+    with decl       := <with-origin(|c)> Decl();
+         rel-target := <with-origin(|c)> RelTarget(decl);
+         filter     := <with-origin(|rt)> ResolveFilter(rt);
+         min        := <with-origin(|rt)> ResolveMin(rt);
          c'         := CResolveQuery(rel-target, filter, min, st, pst)
   desugar-ref-shorthand: CResolveRel(rel, rt, st, pst) -> c'
-    with rel-target := <origin-track-forced(!RelTarget(rel))> rel;
-         filter     := <origin-track-forced(!ResolveFilter(rt))> rt;
-         min        := <origin-track-forced(!ResolveMin(rt))> rt;
+    with rel-target := <with-origin(|rel)> RelTarget(rel);
+         filter     := <with-origin(|rt)> ResolveFilter(rt);
+         min        := <with-origin(|rt)> ResolveMin(rt);
          c'         := CResolveQuery(rel-target, filter, min, st, pst)
 
 rules

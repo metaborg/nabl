@@ -56,7 +56,7 @@ rules
 
   [[ Module(x, sections) ^ (s) ]] :=
     new s',
-    Lang{x} <- s, Lang{x} ===> s',
+    Lang{x} <- s, Lang{x} ===> s', @x.decl := Lang{x},
     Lang{x} -> s, Lang{x} <=== s',
     Map1[[ sections ^ (s') ]],
     (D(s')/C    lsect/name (W(s')/C    minus D(s')/C   )) subseteq 0 | error $[Duplicate constraint [NAME]] @NAMES,
