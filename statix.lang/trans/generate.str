@@ -19,11 +19,12 @@ rules
           <nabl2-analysis-has-errors> a
 
   generate-aterm:
-    (_, _, ast@Module(name,_), path, project-path) -> <unzip> [(spec-file, spec), (ext-file, ext)]
+    (_, _, ast@Module(name,_), path, project-path) -> <unzip> [(rule-file, rule), (ext-file, ext)]
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           not(<nabl2-analysis-has-errors> a)
     with (spec, ext) := <nabl2-get-custom-analysis;strip-annos> a;
-         spec-file := <src-gen-file(|"statix/", ".spec.aterm")> name;
+         rule := <collect-all(?Rule(_, _, _, _, _));eliminate-all> spec;
+         rule-file := <src-gen-file(|"statix/", ".rules.aterm")> name;
          ext-file  := <src-gen-file(|"statix/", ".ext.aterm")> name
  
   src-gen-file(|sub-dir, ext): name -> file-name
@@ -31,3 +32,10 @@ rules
 
   src-gen-dir(|sub-dir): _ -> dir-name
     with dir-name := <language-srcgen-dir> sub-dir
+
+rules
+
+  eliminate-all =
+    eliminate-ascribe
+
+  eliminate-ascribe = topdown(try(\ Ascribe(t, _) -> t \))

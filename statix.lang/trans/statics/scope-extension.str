@@ -10,7 +10,6 @@ imports
 
 rules
 
-  // call on explicated AST
   compute-scope-extensions: ast -> (ext*, error*, [], note*)
     with error-iset := <new-iset>;
          note-iset := <new-iset>;
@@ -94,7 +93,4 @@ rules // derived facts, constraints indirctly adding to the scope graph
 rules
 
   pp-label: lbl -> pp
-    with lbl' := <try( Rel(nabl2-get-occurrence-name)
-                     + Label(nabl2-get-occurrence-name)
-                     )> lbl;
-         pp := <pp-partial-StatixLang-string> lbl'
+    with pp := <pp-partial-StatixLang-string> lbl

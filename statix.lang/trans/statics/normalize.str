@@ -22,9 +22,11 @@ rules
     normalize-inline-patterns(|a);
     normalize-functional-cdecls;
     normalize-functional-cops(|a);
-    explicate-lambdas(|a)  // cannot move forward, because the generated named constraint
+    explicate-lambdas(|a); // cannot move forward, because the generated named constraint
                            // has no type information in the solution, and the earlier
                            // normalization strategies will crash
+    normalize-wildcards;
+    normalize-as-patterns
 
 rules
 
@@ -115,14 +117,18 @@ rules
 
   extract-inline-patterns(|C): [] -> ([], C)
 
-  extract-inline-patterns(|C): [p|ps] -> ([v|ps'], CConj(CEqual(v, p), C'))
-    where <not(?Var(_) + ?Wld())> p
-    with v := Var(<newname> "p");
-         (ps', C') := <extract-inline-patterns(|C)> ps
-
   extract-inline-patterns(|C): [v|ps] -> ([v|ps'], C')
     where <?Var(_) + ?Wld()> v
     with (ps', C') := <extract-inline-patterns(|C)> ps
+
+  extract-inline-patterns(|C): [p|ps] -> ([v|ps'], CConj(CEqual(v, p'), C'))
+    where <?As(v, p')> p
+    with (ps', C') := <extract-inline-patterns(|C)> ps
+
+  extract-inline-patterns(|C): [p|ps] -> ([v|ps'], CConj(CEqual(v, p), C'))
+    where <not(?Var(_) + ?Wld() + ?As(_, _))> p
+    with v := Var(<newname> "p");
+         (ps', C') := <extract-inline-patterns(|C)> ps
 
 rules
 
@@ -192,6 +198,37 @@ rules
          sort := <type-to-sort> ty;
          decl := CDecl(InductiveC(), x, sort);
          rule := Rule(C(x, ts), [], CTrue(), vs, body)
+
+rules
+
+  normalize-wildcards = topdown(try(normalize-wildcard))
+
+  normalize-wildcard:
+      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
+    with (ps', _) := <collect-map(replace-wld)> ps
+    with (guard', gmaps) := <collect-map(replace-wld)> guard;
+         new-gvs := <map(Snd)> gmaps;
+         gvs' := <conc> (gvs, new-gvs)
+    with (body', bmaps) := <collect-map(replace-wld)> body;
+         new-bvs := <map(Snd)> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  replace-wld: Wld() -> Var(<newname> "wld")
+
+rules
+
+  normalize-as-patterns = topdown(try(normalize-as-pattern))
+
+  normalize-as-pattern:
+      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps), gvs, guard'', bvs, body''){a*}
+    with (guard', gmaps) := <collect-map(replace-as)> guard;
+         guard'' := <map(as-to-constraint);list-to-conj(|guard')> gmaps
+    with (body', bmaps) := <collect-map(replace-as)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+
+  as-to-constraint: (As(v, t), _) -> CEqual(v, t)
+
+  replace-as: As(v, t) -> v
 
 rules
 

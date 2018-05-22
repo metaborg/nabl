@@ -21,7 +21,7 @@ rules // Analysis
       (resource, ast, _) -> ast
 
   nabl2-custom-analysis-final-hook(|a):
-      (resource, _, [ast]) -> (error*, warning*, note*, (ast'', ext*))
+      (resource, _, [ast]) -> (error*, warning*, note*, (ast', ext*))
     where <not(nabl2-analysis-has-errors)> a
     where id
     with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
@@ -30,9 +30,8 @@ rules // Analysis
            fatal-err-msg(|"Normalized AST has errors. Normalization needs to be fixed!")
          end;
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
-         ast'' := <explicate-all(|a')> ast';
          nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-         (ext*, error*, warning*, note*) := <compute-scope-extensions> ast'';
+         (ext*, error*, warning*, note*) := <compute-scope-extensions> ast';
          nabl2-custom-analysis-info-msg(|"Computed scope extensions.")
 
   nabl2-prettyprint-hook       = prettyprint-StatixLang-IType
