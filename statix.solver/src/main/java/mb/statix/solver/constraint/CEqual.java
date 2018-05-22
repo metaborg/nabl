@@ -27,11 +27,11 @@ public class CEqual implements IConstraint {
         this.term2 = term2;
     }
 
-    public IConstraint apply(Function1<ITerm, ITerm> map) {
+    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
         return new CEqual(map.apply(term1), map.apply(term2));
     }
 
-    public Optional<Config> solve(State state) {
+    @Override public Optional<Config> solve(State state) {
         IUnifier.Immutable unifier = state.unifier();
         logger.info("Solving {}", this.toString(unifier));
         try {
@@ -45,7 +45,7 @@ public class CEqual implements IConstraint {
         }
     }
 
-    public String toString(IUnifier unifier) {
+    @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
         sb.append(unifier.findRecursive(term1));
         sb.append(" == ");

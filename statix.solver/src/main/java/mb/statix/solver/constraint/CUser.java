@@ -72,7 +72,7 @@ public class CUser implements IConstraint {
         }
     }
 
-    public String toString(IUnifier unifier) {
+    @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);
         sb.append("(");

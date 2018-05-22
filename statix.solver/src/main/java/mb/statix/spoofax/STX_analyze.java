@@ -6,6 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -62,7 +63,8 @@ public class STX_analyze extends StatixPrimitive {
         }
         final Collection<IConstraint> unsolved = resultConfig.getConstraints();
         if(!unsolved.isEmpty()) {
-            logger.warn("Unsolved constraints: {}", unsolved);
+            logger.warn("Unsolved constraints: {}",
+                    unsolved.stream().map(c -> c.toString(resultState.unifier())).collect(Collectors.toList()));
             errorList.add(B.newTuple(ast, B.newString(unsolved.size() + " unsolved constraint(s).")));
         }
 

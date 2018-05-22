@@ -20,17 +20,21 @@ public class CInequal implements IConstraint {
         this.term2 = term2;
     }
 
-    public IConstraint apply(Function1<ITerm, ITerm> map) {
+    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
         return new CInequal(map.apply(term1), map.apply(term2));
     }
 
-    public Optional<Config> solve(State state) {
+    @Override public Optional<Config> solve(State state) {
         IUnifier.Immutable unifier = state.unifier();
         if(unifier.areUnequal(term1, term2)) {
             return Optional.of(Config.builder().state(state).build());
         } else {
             return Optional.empty();
         }
+    }
+
+    @Override public String toString(IUnifier unifier) {
+        return toString();
     }
 
     @Override public String toString() {
