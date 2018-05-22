@@ -45,10 +45,9 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
         final ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
-        final List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).map(ConstraintTerms::specialize)
-                .collect(Collectors.toList());
+        final List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).collect(Collectors.toList());
         final Optional<? extends ITerm> result = call(env, term, terms);
-        return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
+        return result.map(strategoTerms::toStratego);
     }
 
     protected abstract Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)

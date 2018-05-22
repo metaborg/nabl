@@ -145,15 +145,15 @@ rules
     topdown(try(normalize-functional-cop(|a)))
 
   normalize-functional-cop(|a):
-      Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard', bvs', body'){a*}
+      Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard'', bvs', body''){a*}
     with (guard', gmaps) := <collect-map(replace-cop(|a))> guard;
-         guard'' := <map(cop-to-c);list-to-conj(|guard)> gmaps;
-         new-guard-var* := <map(Snd);collect-all(?Var(_))> gmaps;
-         gvs' := <conc> (gvs, new-guard-var*);
+         guard'' := <map(cop-to-c);list-to-conj(|guard')> gmaps;
+         new-gvs := <map(Snd);collect-all(?Var(_))> gmaps;
+         gvs' := <conc> (gvs, new-gvs);
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
-         body'' := <map(cop-to-c);list-to-conj(|body)> bmaps;
-         new-body-var* := <map(Snd);collect-all(?Var(_))> bmaps;
-         bvs' := <conc> (bvs, new-body-var*)
+         body'' := <map(cop-to-c);list-to-conj(|body')> bmaps;
+         new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
 
   normalize-functional-cop(|a):
       LLam(ts, vs, body){a*} -> LLam(ts', vs', body'){a*}
@@ -166,8 +166,9 @@ rules
 
   normalize-functional-cop(|a):
       CEqual(t1, t2){a*} -> C
-    where (t2', maps@[_|_]) := <collect-map(replace-cop(|a))> t2
-    with C := <map(cop-to-c);list-to-conj(|CEqual(t1, t2'){a*})> maps
+    with (t1', maps1) := <collect-map(replace-cop(|a))> t1;
+         (t2', maps2) := <collect-map(replace-cop(|a))> t2;
+         C := <conc;map(cop-to-c);list-to-conj(|CEqual(t1, t2'){a*})> (maps1, maps2)
 
   cop-to-c: (COp(x, in_ts), out_t) -> C(x, ts)
     with out_ts := <?Tuple(<id>) + ![<id>]> out_t;

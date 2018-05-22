@@ -15,7 +15,7 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class EmptyScopePath<S, L, O>
+abstract class AEmptyScopePath<S, L, O>
         implements IScopePath<S, L, O> {
 
     @Value.Parameter public abstract S getScope();

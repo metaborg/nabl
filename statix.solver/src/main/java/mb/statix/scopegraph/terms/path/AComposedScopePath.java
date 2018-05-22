@@ -17,14 +17,14 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class ComposedScopePath<S, L, O>
+abstract class AComposedScopePath<S, L, O>
         implements IScopePath<S, L, O> {
 
     @Value.Parameter public abstract IScopePath<S, L, O> getLeft();
 
     @Value.Parameter public abstract IScopePath<S, L, O> getRight();
 
-    @Value.Check public @Nullable ComposedScopePath<S, L, O> check() {
+    @Value.Check public @Nullable AComposedScopePath<S, L, O> check() {
         // left and right are not connected
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;

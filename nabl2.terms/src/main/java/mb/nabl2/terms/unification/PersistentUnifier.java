@@ -51,6 +51,10 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         return reps().containsKey(var) || terms().containsKey(var);
     }
 
+    @Override public Set<ITermVar> repSet() {
+        return ImmutableSet.copyOf(reps().values());
+    }
+
     @Override public Set<ITermVar> varSet() {
         return Sets.union(reps().keySet(), terms().keySet());
     }
@@ -65,6 +69,29 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
 
     @Override public boolean isCyclic() {
         return isCyclic(varSet());
+    }
+
+    @Override public boolean entails(IUnifier other) {
+        final Set<ITermVar> otherVars = Sets.newHashSet();
+        for(ITermVar thisVar : Sets.union(repSet(), freeVarSet())) {
+            final ITermVar otherVar = other.findRep(thisVar);
+            if(otherVars.contains(otherVar)) {
+                return false; // something already maps there, meaning two different variables were unified
+            }
+            otherVars.add(otherVar);
+            // FIXME: this only works if other is an extension of this, and does not properly test true
+            // alpha-equivalence.
+            if(findTerm(thisVar).equals(thisVar)) {
+                if(!other.findTerm(otherVar).equals(otherVar)) {
+                    return false; // other restricts var, while we don't
+                }
+            } else {
+                if(!findTerm(thisVar).equals(other.findTerm(otherVar))) {
+                    return false; // restrictions are not the same
+                }
+            }
+        }
+        return true;
     }
 
     @Override public String toString() {

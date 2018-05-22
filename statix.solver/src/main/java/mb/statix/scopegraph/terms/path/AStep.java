@@ -13,7 +13,7 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class Step<S, L, O> implements IStep<S, L, O> {
+abstract class AStep<S, L, O> implements IStep<S, L, O> {
 
     @Value.Parameter @Override public abstract S getSource();
 

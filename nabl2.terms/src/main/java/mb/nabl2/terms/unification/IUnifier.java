@@ -57,6 +57,11 @@ public interface IUnifier {
     Set<ITermVar> varSet();
 
     /**
+     * Return the representative variables of this unifier.
+     */
+    Set<ITermVar> repSet();
+
+    /**
      * Return the set of free variables appearing in this unifier.
      */
     Set<ITermVar> freeVarSet();
@@ -68,10 +73,8 @@ public interface IUnifier {
 
     /**
      * Test if this unifier entails the given unifier.
-     * 
-     * TODO: how to implement this? do we need to explicitly specify local variables?
      */
-    // boolean entails(IUnifier unifier);
+     boolean entails(IUnifier unifier);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on a single term
