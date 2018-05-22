@@ -44,6 +44,28 @@ rules // ###### Analysis execution ######
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
 
+  /**
+   * Analyze the given AST with NaBL2.
+   *
+   * @param resource:String
+   * @type ast:Term -> (ast:Term, Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
+   */
+  nabl2-analyze-oneshot(|resource) = nabl2--analyze-oneshot(|resource)
+
+  /**
+   * Solve an NaBL2 constraint, with the given config.
+   *
+   * @param config:AnalysisConfig
+   * @type Constraint -> (Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
+   */
+  nabl2-solve-constraint(|config) = nabl2--solve-constraint(|config)
+
+  /**
+   * Get the config of the NaBL2 spec.
+   *
+   * @type _ -> AnalysisConfig
+   */
+  nabl2-analysis-config = nabl2--analysis-config
 
 rules // ###### Custom analysis hooks ######
 

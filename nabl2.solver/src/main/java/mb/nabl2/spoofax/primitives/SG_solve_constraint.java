@@ -84,7 +84,7 @@ public class SG_solve_constraint extends AbstractPrimitive {
         }
 
         final IScopeGraphUnit unit =
-                ImmutableScopeGraphUnit.of().withConstraints(constraint).withSolution(solution).withFresh(fresh);
+                ImmutableScopeGraphUnit.builder().addConstraints(constraint).solution(solution).fresh(fresh).build();
         final IStrategoTerm errors =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier()));
         final IStrategoTerm warnings =
@@ -104,14 +104,14 @@ public class SG_solve_constraint extends AbstractPrimitive {
             final IStrategoTerm prev = env.current();
             try {
                 env.setCurrent(sarg);
-                final SDefT s = env.lookupSVar(name);
+                final SDefT s = env.lookupSVar(name.replace("-", "_") + "_0_0");
                 if(!s.evaluate(env)) {
                     return Optional.empty();
                 }
                 return Optional.ofNullable(env.current()).map(strategoTerms::fromStratego)
                         .map(ConstraintTerms::specialize);
             } catch(Exception ex) {
-                logger.warn("External call to '{}' failed.", name);
+                logger.warn("External call to '{}' failed.", ex, name);
                 return Optional.empty();
             } finally {
                 env.setCurrent(prev);

@@ -11,7 +11,7 @@ import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.solver.Fresh;
 
 @SuppressWarnings("serial")
-@Value.Immutable
+@Value.Immutable(builder = true)
 @Serial.Version(42L)
 public abstract class ScopeGraphUnit implements IScopeGraphUnit {
 
