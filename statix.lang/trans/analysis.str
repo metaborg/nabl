@@ -27,7 +27,9 @@ rules // Analysis
     with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
          (ast', a', _, _, _) := <normalize-all(|a);nabl2-analyze-oneshot(|resource)> ast;
          if <nabl2-analysis-has-errors> a' then
-           fatal-err-msg(|"Normalized AST has errors. Normalization needs to be fixed!")
+           warn-msg(|"***************************************************************");
+           warn-msg(|"* Normalized AST has errors. Normalization needs to be fixed! *");
+           warn-msg(|"***************************************************************")
          end;
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
          nabl2-custom-analysis-info-msg(|"Computing scope extensions...");

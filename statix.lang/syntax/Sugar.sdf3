@@ -20,6 +20,9 @@ context-free syntax
   Rule             = <constraint <CDerive>>
   Rule             = CDerive
 
+  Rule.CDecl       = [[CInd]constraint [ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd][ConstraintId] : [Type]]
+
   CDecl            = CDerive
 
   CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
@@ -41,7 +44,31 @@ context-free syntax
       <Constraint>.
   >
 
+  RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
+
   LocalVars.NoLocalVars = <>
+
+  HoConstraint.LLam = <{ <{Term ", "}+> }>
+  HoConstraint.LLam = <{ <{Term ", "}+> :- <LocalVars> <Constraint> }>
+
+syntax
+
+  Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+
+/******************************************************************
+ * Base Constraints                                               *
+ ******************************************************************/
+
+context-free syntax
+
+  HoConstraint.LTrue  = "true"
+  HoConstraint.LFalse = "false"
+
+  Term.NewOp = "new"
+
+lexical syntax
+
+  VARID = "new" {reject}
 
 /******************************************************************
  * Relations                                                      *
@@ -63,7 +90,7 @@ syntax
 
 context-free priorities
 
-  { Term.PathSrc Term.PathScopes Term.PathDst } >
+  { Term.PathSrcOp Term.PathScopesOp Term.PathDstOp } >
   { Term.AskRelOp }
 
 lexical syntax
@@ -72,31 +99,24 @@ lexical syntax
   RelationId = "ref" {reject}
 
 /******************************************************************
- * Base Constraints                                               *
- ******************************************************************/
-
-context-free syntax
- 
-  HoConstraint.LLam = <{ <{Term ", "}+> }>
-
-  // term short-hand for new scopes 
- 
-  Term.NewOp = "new"
-
-lexical syntax
- 
-  VARID = "new" {reject}
-
-/******************************************************************
  * Scope Graph                                                    *
  ******************************************************************/
 
 context-free syntax
- 
+
   // declaration constraints
-  
+
   Constraint.CTellDecl        = [[Term] -> [Term]]
   Constraint.CTellDeclWithRel = [[Term] -> [Term] with [RelRef] [Term]]
+
+  Term.PathSrcOp    = <src(<Term>)>
+  Term.PathDstOp    = <dst(<Term>)>
+  Term.PathScopesOp = <scopes(<Term>)>
+
+syntax
+
+  HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
+  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "]"
 
 /******************************************************************
  * Resolve & Query

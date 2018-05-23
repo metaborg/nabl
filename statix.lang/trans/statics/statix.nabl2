@@ -247,8 +247,7 @@ rules
   [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
     Ns{x} -> s, Ns{x} |-> d, @x.decl := Ns{x},
     [[ filter ^ (s, OCCURRENCE()) ]],
-    [[ min ^ (s, OCCURRENCE()) ]]. 
-
+    [[ min ^ (s, OCCURRENCE()) ]].
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
     Build[[ p ^ (s) : PATH() ]].
@@ -299,6 +298,25 @@ rules
     Build[[ t1 ^ (s) : SCOPE() ]],
     LabelRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
+
+  [[ CPathSrc(pt, st) ^ (s) ]] :=
+    Build[[ pt ^ (s) : PATH() ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
+  [[ CPathDst(pt, dt) ^ (s) ]] :=
+    Build[[ pt ^ (s) : PATH() ]],
+    Build[[ dt ^ (s) : SCOPE() ]].
+
+  [[ CPathScopes(pt, st) ^ (s) ]] :=
+    Build[[ pt ^ (s) : PATH() ]],
+    Build[[ st ^ (s) : LIST(SCOPE()) ]].
+
+  Term(V)[[ PathSrcOp(t) ^ (s) : SCOPE() ]] :=
+    Term(V)[[ t ^ (s) : PATH() ]].
+  Term(V)[[ PathScopesOp(t) ^ (s) : LIST(SCOPE()) ]] :=
+    Term(V)[[ t ^ (s) : PATH() ]].
+  Term(V)[[ PathDstOp(t) ^ (s) : SCOPE() ]] :=
+    Term(V)[[ t ^ (s) : PATH() ]].
 
 /******************************************************************
  * Resolve & Query
@@ -427,8 +445,8 @@ rules
   Term(V)[[ ListTail(ts, t) ^ (s) : LIST(ty) ]] :=
     Map1t(Term(V))[[ ts ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : LIST(ty) ]].
-  Term(V)[[ ListLength(t) ^ (s): INT() ]] :=
-    Term(V)[[ t ^ (s) : LIST(_) ]].
+//Term(V)[[ ListLength(t) ^ (s): INT() ]] :=
+//  Term(V)[[ t ^ (s) : LIST(_) ]].
   Term(V)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
@@ -436,8 +454,8 @@ rules
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
   Term(V)[[ Str(_) ^ (_) : STRING() ]].
-  Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
-    Map1T(Term(V))[[ ts ^ (s) : _ ]].
+//Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
+//  Map1T(Term(V))[[ ts ^ (s) : _ ]].
   Term(V)[[ Int(_) ^ (_) : INT() ]].
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
     Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
@@ -450,13 +468,6 @@ rules
   Term(V)[[ Ascribe(t, sort) ^ (s) : ty ]] :=
     SortRef[[ sort ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
-
-  Term(V)[[ PathSrc(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathScopes(t) ^ (s) : LIST(SCOPE()) ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathDst(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
 
   Pos(V)[[ Position(v) ^ (s) ]] :=
     V[[ v ^ (s) : ty ]].

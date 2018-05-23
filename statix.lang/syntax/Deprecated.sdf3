@@ -15,9 +15,15 @@ context-free syntax
 
   Constraint.CQueryOld   = <query <QueryTarget><OldFilter><OldMin> in <Term> to <Term>> {deprecated}
   Constraint.CResolveOld = <resolve <Term> in <Term> to <QueryTarget><QueryFilter><QueryMin>> {deprecated}
-  
+
   OldFilter.NoFilterOld =
   OldFilter.FilterOld   = < filter { <Term> : <Constraint> }>
 
   OldMin.NoMinOld =
   OldMin.MinOld   = < min { <Term>, <Term> : <Constraint> }>
+
+syntax
+
+  Term-CF.PathSrcOp    = Term-CF "." "src"    {deprecated}
+  Term-CF.PathScopesOp = Term-CF "." "scopes" {deprecated}
+  Term-CF.PathDstOp    = Term-CF "." "dst"    {deprecated}
