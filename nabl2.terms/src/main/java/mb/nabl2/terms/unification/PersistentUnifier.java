@@ -72,13 +72,16 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     }
 
     @Override public boolean entails(IUnifier other) {
-        final Set<ITermVar> otherVars = Sets.newHashSet();
-        for(ITermVar thisVar : Sets.union(repSet(), freeVarSet())) {
+        final java.util.Map<ITermVar, ITermVar> otherVars = Maps.newHashMap();
+        Set<ITermVar> thisVars = Sets.union(repSet(), freeVarSet());
+        for(ITermVar thisVar : thisVars) {
             final ITermVar otherVar = other.findRep(thisVar);
-            if(otherVars.contains(otherVar)) {
-                return false; // something already maps there, meaning two different variables were unified
+            if(!thisVar.equals(otherVar)) {
+                if(otherVars.containsValue(otherVar)) {
+                    return false; // something already maps there, meaning two different variables were unified
+                }
+                otherVars.put(thisVar, otherVar);
             }
-            otherVars.add(otherVar);
             // FIXME: this only works if other is an extension of this, and does not properly test true
             // alpha-equivalence.
             if(findTerm(thisVar).equals(thisVar)) {

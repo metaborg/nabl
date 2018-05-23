@@ -54,10 +54,9 @@ public class CUser implements IConstraint {
             }
             logger.info("Try rule {}", rule);
             final Config result = Solver.solve(appl._1(), false);
-            final boolean entails = state.unifier().entails(result.state().unifier());
             if(result.state().isErroneous()) {
                 logger.info("Rule rejected");
-            } else if(result.getConstraints().isEmpty() && entails) {
+            } else if(result.getConstraints().isEmpty() && state.unifier().entails(result.state().unifier())) {
                 logger.info("Rule accepted");
                 return Optional.of(result.withConstraints(appl._2()));
             } else {
