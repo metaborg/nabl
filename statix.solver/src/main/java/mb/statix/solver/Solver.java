@@ -29,7 +29,8 @@ public class Solver {
                 }
                 final IConstraint constraint = it.next();
                 debug.info("Solving {}", constraint.toString(state.unifier()));
-                Optional<Config> maybeResult = constraint.solve(state.withErroneous(false), debug.subContext());
+                IDebugContext subDebug = debug.subContext();
+                Optional<Config> maybeResult = constraint.solve(state.withErroneous(false), subDebug);
                 if(maybeResult.isPresent()) {
                     progress = true;
                     it.remove();
@@ -40,10 +41,10 @@ public class Solver {
                         break outer;
                     }
                     // FIXME update properties in state
-                    debug.info("Simplified {} to {}", constraint.toString(state.unifier()), result.getConstraints());
+                    subDebug.info("Simplified to {}", result.getConstraints());
                     constraints.addAll(result.getConstraints());
                 } else {
-                    debug.info("Delayed {}", constraint.toString(state.unifier()));
+                    subDebug.info("Delayed");
                 }
             }
         }
