@@ -509,7 +509,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
 
     private boolean isGround(final Set<ITermVar> vars, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
-        return vars.stream().anyMatch(var -> isGround(var, stack, visited));
+        return vars.stream().allMatch(var -> isGround(var, stack, visited));
     }
 
     private boolean isGround(final ITermVar var, final Set<ITermVar> stack,

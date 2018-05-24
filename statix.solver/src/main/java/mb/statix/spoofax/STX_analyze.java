@@ -15,43 +15,40 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Config;
+import mb.statix.solver.DebugContext;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Rule;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
 import mb.statix.solver.constraint.CUser;
+import mb.statix.spec.Spec;
 
 public class STX_analyze extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_analyze.class);
 
     @Inject public STX_analyze() {
-        super(STX_analyze.class.getSimpleName(), 3);
+        super(STX_analyze.class.getSimpleName(), 2);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm ast, List<ITerm> terms)
             throws InterpreterException {
 
-        final Multimap<String, Rule> rules =
-                StatixTerms.rules().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected rules."));
+        final Spec spec =
+                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
 
-        final ITerm extTerm = terms.get(1);
-
-        final String init = M.stringValue().match(terms.get(2))
+        final String init = M.stringValue().match(terms.get(1))
                 .orElseThrow(() -> new InterpreterException("Expected init/1 name."));
 
         final IConstraint constraint = new CUser(init, Iterables2.singleton(ast));
-        final State state = State.of(rules, 0, PersistentUnifier.Immutable.of(), false);
+        final State state = State.of(spec);
         final Config config = Config.of(state, Iterables2.singleton(constraint));
         Config resultConfig;
         try {
-            resultConfig = Solver.solve(config, true);
+            resultConfig = Solver.solve(config, new DebugContext(logger));
         } catch(InterruptedException e) {
             throw new InterpreterException(e);
         }

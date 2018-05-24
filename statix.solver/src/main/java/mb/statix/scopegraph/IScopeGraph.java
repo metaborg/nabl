@@ -6,11 +6,11 @@ import mb.nabl2.util.collections.IRelation3;
 public interface IScopeGraph<S, L, R, O> {
 
     Set.Immutable<L> getLabels();
-    
+
     L getEndOfPath();
-    
+
     Set.Immutable<R> getRelations();
-    
+
     Set<S> getAllScopes();
 
     IRelation3<S, L, S> getEdges();
@@ -25,14 +25,17 @@ public interface IScopeGraph<S, L, R, O> {
 
         @Override IRelation3.Immutable<S, R, O> getData();
 
+        Immutable<S, L, R, O> addEdge(S sourceScope, L label, S targetScope);
+
+        Immutable<S, L, R, O> addDatum(S scope, R relation, O datum);
+
     }
 
-    interface Transient<S, L, R, O>
-            extends IScopeGraph<S, L, R, O> {
+    interface Transient<S, L, R, O> extends IScopeGraph<S, L, R, O> {
 
         boolean addEdge(S sourceScope, L label, S targetScope);
 
-        boolean addDatum(S sourceScope, R relation, O decl);
+        boolean addDatum(S scope, R relation, O datum);
 
         boolean addAll(IScopeGraph<S, L, R, O> other);
 

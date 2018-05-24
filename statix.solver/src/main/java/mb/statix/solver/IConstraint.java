@@ -19,7 +19,7 @@ public interface IConstraint {
      * @return true is reduced, false if delayed
      * @throws InterruptedException
      */
-    Optional<Config> solve(State state) throws InterruptedException;
+    Optional<Config> solve(State state, IDebugContext debug) throws InterruptedException;
 
     String toString(IUnifier unifier);
 

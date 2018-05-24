@@ -3,8 +3,6 @@ package mb.statix.solver.constraint;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Sets;
 
@@ -14,10 +12,10 @@ import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.UnificationException;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
 
 public class CEqual implements IConstraint {
-    @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(CEqual.class);
 
     private final ITerm term1;
     private final ITerm term2;
@@ -31,16 +29,15 @@ public class CEqual implements IConstraint {
         return new CEqual(map.apply(term1), map.apply(term2));
     }
 
-    @Override public Optional<Config> solve(State state) {
+    @Override public Optional<Config> solve(State state, IDebugContext debug) {
         IUnifier.Immutable unifier = state.unifier();
-        logger.info("Solving {}", this.toString(unifier));
         try {
             Result<IUnifier.Immutable> result = unifier.unify(term1, term2);
-            logger.info("Unification succeeded");
+            debug.info("Unification succeeded");
             final State newState = state.withUnifier(result.unifier());
             return Optional.of(Config.builder().state(newState).build());
         } catch(UnificationException e) {
-            logger.info("Unification failed");
+            debug.info("Unification failed");
             return Optional.of(Config.of(state, Sets.newHashSet(new CFalse())));
         }
     }

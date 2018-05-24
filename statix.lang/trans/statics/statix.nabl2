@@ -294,7 +294,7 @@ rules
 
   LabelRef[[ EOP() ^ (s) ]].
 
-  [[ CTellDirectEdge(t1, lbl, t2) ^ (s) ]] :=
+  [[ CTellEdge(t1, lbl, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : SCOPE() ]],
     LabelRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].

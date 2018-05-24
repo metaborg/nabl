@@ -8,6 +8,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
 
 public class CInequal implements IConstraint {
@@ -24,8 +25,8 @@ public class CInequal implements IConstraint {
         return new CInequal(map.apply(term1), map.apply(term2));
     }
 
-    @Override public Optional<Config> solve(State state) {
-        IUnifier.Immutable unifier = state.unifier();
+    @Override public Optional<Config> solve(State state, IDebugContext debug) {
+        final IUnifier.Immutable unifier = state.unifier();
         if(unifier.areUnequal(term1, term2)) {
             return Optional.of(Config.builder().state(state).build());
         } else {
@@ -34,7 +35,11 @@ public class CInequal implements IConstraint {
     }
 
     @Override public String toString(IUnifier unifier) {
-        return toString();
+        final StringBuilder sb = new StringBuilder();
+        sb.append(unifier.findRecursive(term1));
+        sb.append(" != ");
+        sb.append(unifier.findRecursive(term2));
+        return sb.toString();
     }
 
     @Override public String toString() {

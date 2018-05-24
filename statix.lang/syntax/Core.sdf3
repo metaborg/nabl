@@ -135,7 +135,7 @@ context-free syntax
 
   // labels
 
-  ResolutionParam.Labels = <labels <{Rel " "}*>>
+  ResolutionParam.Labels = <labels <{Label " "}*>>
 
   Label.Label = RelationId
 
@@ -198,7 +198,7 @@ syntax
   QueryFilter-CF.ResolveFilter = LAYOUT?-CF "resolveFilter" "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
   QueryMin-CF.ResolveMin       = LAYOUT?-CF "resolveMin" "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
 
-  Constraint-CF.CTellDirectEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
+  Constraint-CF.CTellEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
 
 lexical syntax
 

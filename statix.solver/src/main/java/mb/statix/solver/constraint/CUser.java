@@ -7,8 +7,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -19,12 +17,12 @@ import mb.nabl2.terms.unification.MatchException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Rule;
+import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.spec.Rule;
 
 public class CUser implements IConstraint {
-    @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(CUser.class);
 
     private final String name;
     private final List<ITerm> args;
@@ -39,9 +37,8 @@ public class CUser implements IConstraint {
         return new CUser(name, newArgs);
     }
 
-    public Optional<Config> solve(State state) throws InterruptedException {
-        logger.info("Solving {}", this.toString(state.unifier()));
-        final Set<Rule> rules = Sets.newHashSet(state.rules().get(name));
+    public Optional<Config> solve(State state, IDebugContext debug) throws InterruptedException {
+        final Set<Rule> rules = Sets.newHashSet(state.spec().rules().get(name));
         final Iterator<Rule> it = rules.iterator();
         while(it.hasNext()) {
             final Rule rule = it.next();
@@ -49,22 +46,22 @@ public class CUser implements IConstraint {
             try {
                 appl = rule.apply(args, state);
             } catch(MatchException e) {
-                logger.warn("Failed to instantiate {}(_) for arguments {}", name, args);
+                debug.warn("Failed to instantiate {}(_) for arguments {}", name, args);
                 continue;
             }
-            logger.info("Try rule {}", rule);
-            final Config result = Solver.solve(appl._1(), false);
+            debug.info("Try rule {}", rule);
+            final Config result = Solver.solve(appl._1(), debug.subContext());
             if(result.state().isErroneous()) {
-                logger.info("Rule rejected");
+                debug.info("Rule rejected");
             } else if(result.getConstraints().isEmpty() && state.unifier().entails(result.state().unifier())) {
-                logger.info("Rule accepted");
+                debug.info("Rule accepted");
                 return Optional.of(result.withConstraints(appl._2()));
             } else {
-                logger.info("Rule delayed");
+                debug.info("Rule delayed");
             }
         }
         if(rules.isEmpty()) {
-            logger.info("No rule applies");
+            debug.info("No rule applies");
             return Optional.of(Config.builder().state(state).addConstraints(new CFalse()).build());
         } else {
             return Optional.empty();

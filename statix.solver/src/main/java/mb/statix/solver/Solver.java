@@ -1,25 +1,21 @@
 package mb.statix.solver;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class Solver {
-    @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(Solver.class);
 
     private Solver() {
     }
 
-    public static Config solve(Config config, boolean exhaustive) throws InterruptedException {
+    public static Config solve(Config config, IDebugContext debug) throws InterruptedException {
+        debug.info("Solving constraints");
+
         // set-up
-        final Set<IConstraint> constraints = Sets.newHashSet(config.getConstraints());
+        final Set<IConstraint> constraints = Sets.newConcurrentHashSet(config.getConstraints());
         State state = config.state();
 
         // fixed point
@@ -27,30 +23,34 @@ public class Solver {
         outer: while(progress) {
             progress = false;
             final Iterator<IConstraint> it = constraints.iterator();
-            final List<IConstraint> newConstraints = Lists.newArrayList();
             while(it.hasNext()) {
                 if(Thread.interrupted()) {
                     throw new InterruptedException();
                 }
                 final IConstraint constraint = it.next();
-                Optional<Config> maybeResult = constraint.solve(state);
+                debug.info("Solving {}", constraint.toString(state.unifier()));
+                Optional<Config> maybeResult = constraint.solve(state.withErroneous(false), debug.subContext());
                 if(maybeResult.isPresent()) {
-                    it.remove();
                     progress = true;
+                    it.remove();
                     final Config result = maybeResult.get();
                     state = result.state();
-                    // FIXME update properties in state
-                    newConstraints.addAll(result.getConstraints());
-                    if(!exhaustive && state.isErroneous()) {
+                    if(!debug.isRoot() && state.isErroneous()) {
+                        debug.info("Break early because of errors.");
                         break outer;
                     }
+                    // FIXME update properties in state
+                    debug.info("Simplified {} to {}", constraint.toString(state.unifier()), result.getConstraints());
+                    constraints.addAll(result.getConstraints());
+                } else {
+                    debug.info("Delayed {}", constraint.toString(state.unifier()));
                 }
             }
-            constraints.addAll(newConstraints);
-            newConstraints.clear();
         }
 
         // return
+        debug.info("Solved {} errors and {} remaining constraints.", state.isErroneous() ? "with" : "without",
+                constraints.size());
         return Config.of(state, constraints);
     }
 

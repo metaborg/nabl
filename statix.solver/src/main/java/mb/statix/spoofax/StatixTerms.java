@@ -22,14 +22,27 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Rule;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
+import mb.statix.solver.constraint.CNew;
+import mb.statix.solver.constraint.CTellEdge;
+import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
+import mb.statix.spec.Rule;
+import mb.statix.spec.Spec;
 
 public class StatixTerms {
     private static final ILogger logger = LoggerUtils.logger(StatixTerms.class);
+
+    public static ITerm END_OF_PATH = B.newAppl("EOP");
+
+    public static IMatcher<Spec> spec() {
+        return M.tuple4(M.listElems(label()), M.listElems(relation()), rules(), M.term(),
+                (t, labels, relations, rules, ext) -> {
+                    return Spec.of(rules, labels, END_OF_PATH, relations);
+                });
+    }
 
     public static IMatcher<Multimap<String, Rule>> rules() {
         return M.listElems(rule()).map(rules -> {
@@ -78,6 +91,18 @@ public class StatixTerms {
                     constraints.add(new CEqual(t1, t2));
                     return Unit.unit;
                 }),
+                M.appl1("CNew", M.listElems(term()), (c, ts) -> {
+                    constraints.add(new CNew(ts));
+                    return Unit.unit;
+                }),
+                M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
+                    constraints.add(new CTellEdge(sourceScope, label, targetScope));
+                    return Unit.unit;
+                }),
+                M.appl3("CTellRel", relation(), M.listElems(term()), term(), (c, rel, args, scope) -> {
+                    constraints.add(new CTellRel(scope, rel, args));
+                    return Unit.unit;
+                }),
                 M.appl2("C", M.stringValue(), M.listElems(term()), (c, name, args) -> {
                     constraints.add(new CUser(name, args));
                     return Unit.unit;
@@ -89,6 +114,24 @@ public class StatixTerms {
                 // @formatter:on
             )).match(t, u).map(v -> constraints.build());
         };
+    }
+
+    public static IMatcher<ITerm> relation() {
+        return M.cases(
+        // @formatter:off
+            M.appl0("Decl"),
+            M.appl1("Rel", M.string())
+            // @formatter:on
+        );
+    }
+
+    public static IMatcher<ITerm> label() {
+        return M.cases(
+        // @formatter:off
+            M.appl0("EOP"),
+            M.appl1("Label", M.string())
+            // @formatter:on
+        );
     }
 
     public static IMatcher<ITerm> term() {
@@ -112,6 +155,9 @@ public class StatixTerms {
             }),
             M.appl1("Int", M.integer(), (t, integer) -> {
                 return integer;
+            }),
+            M.appl3("Occurrence", M.stringValue(), M.listElems(term()), M.term(), (t, ns, args, pos) -> {
+                return B.newAppl("Occurrence", args); // FIXME
             }),
             M.term(t -> {
                 throw new IllegalArgumentException("Unknown term " + t);

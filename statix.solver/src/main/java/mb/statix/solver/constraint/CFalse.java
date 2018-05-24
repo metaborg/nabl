@@ -8,6 +8,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
 
 public class CFalse implements IConstraint {
@@ -16,7 +17,7 @@ public class CFalse implements IConstraint {
         return this;
     }
 
-    @Override public Optional<Config> solve(final State state) {
+    @Override public Optional<Config> solve(final State state, IDebugContext debug) {
         final State newState = state.withErroneous(true);
         return Optional.of(Config.builder().state(newState).build());
     }

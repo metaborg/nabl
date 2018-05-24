@@ -6,6 +6,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.util.Capsules;
 
 public abstract class ScopeGraph<S, L, R, O> implements IScopeGraph<S, L, R, O> {
 
@@ -67,6 +68,18 @@ public abstract class ScopeGraph<S, L, R, O> implements IScopeGraph<S, L, R, O> 
 
         // ------------------------------------------------------------
 
+        @Override public ScopeGraph.Immutable<S, L, R, O> addEdge(S sourceScope, L label, S targetScope) {
+            return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges.put(sourceScope, label, targetScope),
+                    data);
+        }
+
+        @Override public ScopeGraph.Immutable<S, L, R, O> addDatum(S sourceScope, R relation, O decl) {
+            return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges,
+                    data.put(sourceScope, relation, decl));
+        }
+
+        // ------------------------------------------------------------
+
         public ScopeGraph.Transient<S, L, R, O> melt() {
             return new ScopeGraph.Transient<>(labels, endOfPath, relations, edges.melt(), data.melt());
         }
@@ -95,10 +108,10 @@ public abstract class ScopeGraph<S, L, R, O> implements IScopeGraph<S, L, R, O> 
             return true;
         }
 
-        public static <S, L, R, O> ScopeGraph.Immutable<S, L, R, O> of(Set.Immutable<L> labels, L endOfPath,
-                Set.Immutable<R> relations) {
-            return new ScopeGraph.Immutable<>(labels, endOfPath, relations, HashTrieRelation3.Immutable.of(),
-                    HashTrieRelation3.Immutable.of());
+        public static <S, L, R, O> ScopeGraph.Immutable<S, L, R, O> of(Iterable<L> labels, L endOfPath,
+                Iterable<R> relations) {
+            return new ScopeGraph.Immutable<>(Capsules.newSet(labels), endOfPath, Capsules.newSet(relations),
+                    HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of());
         }
 
     }

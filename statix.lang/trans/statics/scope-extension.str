@@ -46,7 +46,7 @@ rules // base facts, constraints directly adding to the scope graph
          <map(\ (v, _) -> <iset-add(|(v, $[Cannot extend non-local scope]))> error-iset \)> local-ext*;
          rule-ext*  := <join(\ ((v1, i), (v2, lbl)) -> (x, i, lbl) where <raw-eq> (v1, v2) \)> (head-proj*, head-ext*)
 
-  base-extension: CTellDirectEdge(s, lbl, _) -> [(s, lbl)]
+  base-extension: CTellEdge(s, lbl, _) -> [(s, lbl)]
   base-extension: CTellRel(rel, _, s) -> [(s, rel)]
   base-extension: CTellDecl(s, _) -> [(s, Decl())]
   base-extension: CTellDeclWithRel(s, _, rel, _) -> [(s, Decl()), (s, rel)]
