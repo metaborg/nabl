@@ -30,6 +30,8 @@ public class Solver {
                 final IConstraint constraint = it.next();
                 debug.info("Solving {}", constraint.toString(state.unifier()));
                 IDebugContext subDebug = debug.subContext();
+                // reset errors, because we want to short-cut only on errors introduced by the
+                // guard constraints, not on errors pre-existing in the state
                 Optional<Config> maybeResult = constraint.solve(state.withErroneous(false), subDebug);
                 if(maybeResult.isPresent()) {
                     progress = true;
