@@ -15,7 +15,7 @@ dependencies:
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
 runtime:
   nabl2:
-    debug: collection
+    debug: analysis files
 language:
   sdf:
     sdf2table: java

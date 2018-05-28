@@ -7,4 +7,4 @@ dependencies:
   - org.metaborg:statix.lang:${metaborgVersion}
 runtime:
   nabl2:
-    debug: analysis files
+    debug: analysis files custom
