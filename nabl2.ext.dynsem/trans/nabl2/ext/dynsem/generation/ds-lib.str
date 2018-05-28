@@ -52,7 +52,7 @@ rules
   ds-has-options      = call-ds(|"ds-has-properties")
   ds-get-options      = call-ds(|"ds-to-interp-get-options")
   ds-pp-module        = call-ds(|"pp-dynsem-string")
-  ds-sort-to-string   = call-ds(|"ds-to-interp-terms-types-name")
+  ds-sort-to-string   = call-ds(|"jclass-term")
 
 rules
   

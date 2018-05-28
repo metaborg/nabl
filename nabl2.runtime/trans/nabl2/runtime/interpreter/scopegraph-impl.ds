@@ -88,46 +88,46 @@ rules // scope graph
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- declsOf(s:Scope) --> ds
     where case ss[s?] of {
-      true =>
+      true ->
         ss[s] => SE(ds,_,_,_)
-      false =>
+      false ->
         [] => ds
     }
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- edgesOf(s:Scope) --> es
     where case ss[s?] of {
-      true =>
+      true ->
         ss[s] => SE(_,_,es,_)
-      false =>
+      false ->
         {} => es
     }
 
   NaBL2 NaBL2(G(ss,_,_),_,_) |- importsOf(s:Scope) --> ir
     where case ss[s?] of {
-      true =>
+      true ->
         ss[s] => SE(_,_,_,ir)
-      false =>
+      false ->
         {} => ir
     }
 
 
   NaBL2 NaBL2(G(_,ds,_),_,_) |- scopeOfDecl(d:Occurrence) --> s
     where case ds[d?] of {
-      true =>
+      true ->
         ds[d] => DE([s],_)
     }
 
   NaBL2 NaBL2(G(_,ds,_),_,_) |- assocsOf(d:Occurrence) --> assocs
     where case ds[d?] of {
-      true =>
+      true ->
         ds[d] => DE(_,assocs)
-      false =>
+      false ->
         {} => assocs
     }
 
   NaBL2 NaBL2(G(_,_,rs),_,_) |- scopeOfRef(r:Occurrence) --> s
     where case rs[r?] of {
-      true =>
+      true ->
         rs[r] => RE([s])
     }
 
