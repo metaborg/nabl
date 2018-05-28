@@ -27,11 +27,10 @@ rules
 rules
 
   section-to-str:
-    Rules(rule*) -> Rules([pp-str*, rule-str*, occurrences-str*])
+    Rules(rule*) -> Rules([pp-str*, rule-str*])
     with
       rule-str* := <map(rule-to-str)> rule*;
-      pp-str*   := <getfirst(?CGenRule(InitRule(), _, _, _, _));pp-rules <+ ![]> rule*;
-      occurrences-str* := <filter(rule-to-occurrences-str)> rule*
+      pp-str*   := <getfirst(?CGenRule(InitRule(), _, _, _, _));pp-rules <+ ![]> rule*
 
   rule-to-str:
     CGenRule(rdef@InitRule(), pattern, params, type, clause)
@@ -198,35 +197,3 @@ rules
      , SDefT($[prettyprint-[pp-name]-NaBL2Scope], [], [], CallT(SVar("prettyprint-NaBL2-api-term"), [], []))
      , SDefT($[prettyprint-[pp-name]-NaBL2Occurrence], [], [], CallT(SVar("prettyprint-NaBL2-api-term"), [], []))
      ]
-
-rules
-
-  roccs-strategy-name = !$[nabl2--transform-occurrences]
-
-  rule-to-occurrences-str:
-    CGenRule(rdef, pattern-match, _, _, clause) ->
-      RDefT(<roccs-strategy-name>, [], [],
-           Rule(AnnoList(pattern, [Var(ListVar("a*"))]), AnnoList(pattern-build, [Var(ListVar("a*"))]), []))
-    where
-      not(InitRule() := rdef);
-      occurrence* := <collect-all(cg-decl-or-ref)> clause;
-      <not(?[])> occurrence*;
-      pattern := <strip-as-pattern> pattern-match;
-      pattern-build := <alltd(pattern-to-occurrence-str(|occurrence*))> pattern
-
-  pattern-to-occurrence-str(|occurrence*):
-    v@Var(_) -> <occ-to-occ-build> matching-occ
-    where
-      matching-occ := <fetch-elem(?Occurrence(_, v, _))> occurrence*
-    
-  occ-to-occ-build:
-    Occurrence(Namespace(nspace-str), v@Var(_), OccurrenceIndexFrom(t)) ->
-      Term |[ Occurrence(Namespace(~nspace), ~v, <is-string; has-annos; nabl2--occurrence-index-of> ~t) ]|
-    where
-      nspace := Str(nspace-str)
-  
-  cg-decl-or-ref:
-    CGRef(o@Occurrence(_, Var(_), _), _, _) -> o
-  
-  cg-decl-or-ref:
-    CGDecl(o@Occurrence(_, Var(_), _), _, _) -> o

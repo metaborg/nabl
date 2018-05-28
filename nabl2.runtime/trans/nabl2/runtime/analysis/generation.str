@@ -11,7 +11,6 @@ imports
   nabl2/shared/-
 
   signatures/nabl2/runtime/common/-
-  signatures/nabl2/runtime/constraints/-
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
@@ -26,20 +25,24 @@ rules // top-level functions that are called during analysis
 
   nabl2-debug-constraint-generation-hook = fail
 
-  nabl2--generate-constraint-init(|source) = ?term;
-       <nabl2--generate-constraint-init-rule(|)> (source, term)
-    <+ fatal-err(|"Cannot find init rule")
+  nabl2--generate-constraint-init(|source) = nabl2--with-fresh(!"-",
+    ?term;
+    <nabl2--generate-constraint-init-rule(|)> (source, term)
+  )
+ <+ fatal-err(|"Cannot find init rule")
 
-  nabl2--generate-constraint-file(|source,args) = ?term;
-       nabl2_constraint := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source,term,args);
-       flowspec_constraint := <nabl2-generate-flowspec-constraint(|term)> (source,term,args);
+  nabl2--generate-constraint-file(|source,args) = nabl2--with-fresh(!"-",
+       ?term;
+       nabl2_constraint    := <nabl2--generate-constraint(nabl2--generate-constraint-default-rule|"default")> (source, term, args);
+       flowspec_constraint := <nabl2-generate-flowspec-constraint(|term)> (source, term, args);
        !CConj(nabl2_constraint, flowspec_constraint)
-    <+ fatal-err(|"Cannot find constraint rule")
+  )
+ <+ fatal-err(|"Cannot find constraint rule")
 
   nabl2-generate-flowspec-constraint(|term) =
     nabl2--generate-constraint-placeholder
-    <+ nabl2--generate-constraint-default-cfg-rule
-    <+ !CTrue(<nabl2--get-ast-index> term)
+ <+ nabl2--generate-constraint-default-cfg-rule
+ <+ !CTrue(<nabl2--get-ast-index> term)
 
 rules
 
@@ -50,7 +53,7 @@ rules
   nabl2--default-n-label = nabl2--custom-default-n-label <+ !I()
 
   nabl2--fresh-var(|source): n -> CVar(source, n')
-    with n' := <nabl2--fresh> (source, n)
+    with n' := <nabl2--fresh> n
 
   nabl2--local-var(|source): n -> CVar(source, n)
 
@@ -141,8 +144,3 @@ rules
   nabl2--pp-term-sig: c#(a*) -> $[[c]([a'])]
     where not(is-list)
     with a' := <map(!"_");separate-by(|",");concat-strings> a*
-
-rules
-
-  nabl2--fresh =
-    prim("SG_fresh")

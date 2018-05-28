@@ -19,6 +19,8 @@ contributions:
 generates:
 - language: ds
   directory: src-gen/nabl2/dynsem
+- language: Stratego-Sugar
+  directory: src-gen/nabl2/dynsem
 
 language:
   sdf:

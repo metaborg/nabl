@@ -1,4 +1,4 @@
-module nabl2/ext/dynsem
+module nabl2/ext/dynsem/main
 
 imports
 
