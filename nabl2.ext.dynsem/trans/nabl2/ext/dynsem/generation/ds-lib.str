@@ -15,35 +15,35 @@ signature
     TermPkg         : DSOpt
     NativePkg       : DSOpt
 
-    Module            : String * List(DSSection) -> DSModule
-    Imports           : List(DSImport) -> DSSection
-    Sorts             : List(DSSortDecl)
-    SortDecl          : String -> DSSortDecl
-    Import            : String -> DSImport
-    ArrowDecl         : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
-    NoArrowROs        : DSArrowROs
-    NoArrowRWs        : DSArrowRWs
-    SimpleSort        : String -> DSSort
-    TupleSort         : List(DSSort) -> DSSort
-    ListSort          : Sort -> DSSort
-    NativeOpDecl      : String * List(DSSort) * DSSort -> DSNativeOpDecl
-    Axiom             : DSRelation -> DSRule
-    Relation          : DSReads * DSSource * DSName * DSTarget -> DSRelation
-    NoReads           : DSReads
-    Source            : DSTerm -> DSSource
-    Target            : DSTerm -> DSTarget
-    NamedDynamic      : String -> DSName
-    Signatures        : List(DSSignature) -> DSSection
-    NativeOperators   : List(DSNativeOpDecl) -> DSSignature
-    Arrows            : List(DSArrowDecl) -> DSSignature
-    Constructors      : List(DSConsDecl) -> DSSignature
-    NullaryConsDecl   : String * DSSort * DSAnnos -> DSConsDecl
-    ConsDecl          : String * List(DSSort) * DSSort * DSAnnos -> DSConsDecl
-    NoAnnos           : DSAnnos
-    Rules             : List(DSRule) -> DSSection
-    Cast              : DSVar * DSSort -> DSTerm
-    Con               : String * List(DSTerm) -> DSTerm
-    VarRef            : String -> DSTerm
+    Module             : String * List(DSSection) -> DSModule
+    Imports            : List(DSImport) -> DSSection
+    Sorts              : List(DSSortDecl)
+    SortDecl           : String -> DSSortDecl
+    Import             : String -> DSImport
+    ArrowDecl          : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
+    NoArrowROs         : DSArrowROs
+    NoArrowRWs         : DSArrowRWs
+    SimpleSort         : String -> DSSort
+    TupleSort          : List(DSSort) -> DSSort
+    ListSort           : Sort -> DSSort
+    NativeOpDeclNoAnnos: String * List(DSSort) * DSSort -> DSNativeOpDecl
+    Axiom              : DSRelation -> DSRule
+    Relation           : DSReads * DSSource * DSName * DSTarget -> DSRelation
+    NoReads            : DSReads
+    Source             : DSTerm -> DSSource
+    Target             : DSTerm -> DSTarget
+    NamedDynamic       : String -> DSName
+    Signatures         : List(DSSignature) -> DSSection
+    NativeOperators    : List(DSNativeOpDecl) -> DSSignature
+    Arrows             : List(DSArrowDecl) -> DSSignature
+    Constructors       : List(DSConsDecl) -> DSSignature
+    NullaryConsDecl    : String * DSSort * DSAnnos -> DSConsDecl
+    ConsDecl           : String * List(DSSort) * DSSort * DSAnnos -> DSConsDecl
+    NoAnnos            : DSAnnos
+    Rules              : List(DSRule) -> DSSection
+    Cast               : DSVar * DSSort -> DSTerm
+    Con                : String * List(DSTerm) -> DSTerm
+    VarRef             : String -> DSTerm
 
 rules
 

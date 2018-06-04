@@ -22,7 +22,7 @@ rules
 
   ns-op-ds(|namespace): (src-sort, base-name, target-sort) -> (op, arrow, rule)
     with op-name := $[nabl2_[base-name][namespace]];
-         op := NativeOpDecl(op-name, [src-sort], target-sort);
+         op := NativeOpDeclNoAnnos(op-name, [src-sort], target-sort);
          arrow-name := $[[base-name][namespace]];
          arrow := ArrowDecl(NoArrowROs(),src-sort,NoArrowRWs(),arrow-name,target-sort,NoArrowRWs());
          rule := Axiom(Relation(NoReads(),Source(Cast(VarRef("t"),src-sort)),NamedDynamic(arrow-name),Target(Con(op-name, [VarRef("t")]))))

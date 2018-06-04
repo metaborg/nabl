@@ -19,7 +19,7 @@ rules
 
   cgen-op-ds(|rdef): (src-sort, base-name, target-sort) -> (op, arrow, rule)
     with op-name := <cgen-op-name(|rdef, src-sort)> base-name;
-         op := NativeOpDecl(op-name, [src-sort], target-sort);
+         op := NativeOpDeclNoAnnos(op-name, [src-sort], target-sort);
          arrow-name := <cgen-arrow-name(|rdef)> base-name;
          arrow := ArrowDecl(NoArrowROs(),src-sort,NoArrowRWs(),arrow-name,target-sort,NoArrowRWs());
          rule := Axiom(Relation(NoReads(),Source(Cast(VarRef("t"),src-sort)),NamedDynamic(arrow-name),Target(Con(op-name, [VarRef("t")]))))
