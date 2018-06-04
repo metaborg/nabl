@@ -38,28 +38,29 @@ public class CTellRel implements IConstraint {
 
     @Override public Optional<Config> solve(State state, IDebugContext debug) {
         final IUnifier.Immutable unifier = state.unifier();
-        final Optional<Scope> scope = Scope.matcher().match(scopeTerm, unifier);
-        if(!scope.isPresent()) {
+        if(!unifier.isGround(scopeTerm)) {
             return Optional.empty();
         }
+        final Scope scope = Scope.matcher().match(scopeTerm, unifier)
+                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + scopeTerm));
         final ITerm datumTerm = B.newTuple(datumTerms);
         if(!unifier.isGround(datumTerm)) {
             return Optional.empty();
         }
-        final ITerm datum = unifier.findRecursive(datumTerm);
+        final ITerm datum = unifier.findTerm(datumTerm);
         // FIXME: use relation type to check components before the arrow are ground, or return empty
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addDatum(scope.get(), relation, datum);
+                state.scopeGraph().addDatum(scope, relation, datum);
         return Optional.of(Config.builder().state(state.withScopeGraph(scopeGraph)).build());
     }
 
     @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(unifier.findRecursive(scopeTerm));
+        sb.append(unifier.toString(scopeTerm));
         sb.append(" -");
-        sb.append(unifier.findRecursive(relation));
+        sb.append(unifier.toString(relation));
         sb.append("-[] ");
-        sb.append(unifier.findRecursive(B.newTuple(datumTerms)));
+        sb.append(unifier.toString(B.newTuple(datumTerms)));
         return sb.toString();
     }
 

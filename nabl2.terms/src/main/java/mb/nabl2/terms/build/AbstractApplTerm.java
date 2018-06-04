@@ -62,7 +62,7 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         if(!(other instanceof IApplTerm)) {
             return false;
         }
-        IApplTerm that = (IApplTerm) other;
+        final IApplTerm that = (IApplTerm) other;
         if(!getOp().equals(that.getOp())) {
             return false;
         }

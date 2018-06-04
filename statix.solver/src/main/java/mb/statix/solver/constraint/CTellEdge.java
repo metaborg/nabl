@@ -43,11 +43,11 @@ public class CTellEdge implements IConstraint {
 
     @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(unifier.findRecursive(sourceTerm));
+        sb.append(unifier.toString(sourceTerm));
         sb.append(" -");
-        sb.append(unifier.findRecursive(label));
+        sb.append(unifier.toString(label));
         sb.append("-> ");
-        sb.append(unifier.findRecursive(targetTerm));
+        sb.append(unifier.toString(targetTerm));
         return sb.toString();
     }
 

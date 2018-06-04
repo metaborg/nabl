@@ -6,15 +6,15 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.MatchException;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
@@ -43,13 +43,22 @@ public class Rule {
         return name;
     }
 
-    public Tuple2<Config, Set<IConstraint>> apply(List<ITerm> args, State state) throws MatchException {
+    public Tuple3<Config, Set<ITermVar>, Set<IConstraint>> apply(List<ITerm> args, State state) throws MatchException {
         IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         for(int i = 0; i < params.size(); i++) {
             unifier.match(params.get(i), args.get(i));
         }
         State newState = state;
-        for(ITermVar var : Iterables.concat(guardVars, bodyVars)) {
+        // guard vars
+        final ImmutableSet.Builder<ITermVar> freshGuardVars = ImmutableSet.builder();
+        for(ITermVar var : guardVars) {
+            final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
+            unifier.match(var, vs._1());
+            freshGuardVars.add(vs._1());
+            newState = vs._2();
+        }
+        // body vars
+        for(ITermVar var : bodyVars) {
             final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
             unifier.match(var, vs._1());
             newState = vs._2();
@@ -58,7 +67,7 @@ public class Rule {
                 guardConstraints.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
         final Set<IConstraint> newBody =
                 bodyConstraints.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
-        return ImmutableTuple2.of(Config.of(newState, newGuard), newBody);
+        return ImmutableTuple3.of(Config.of(newState, newGuard), freshGuardVars.build(), newBody);
     }
 
     @Override public String toString() {

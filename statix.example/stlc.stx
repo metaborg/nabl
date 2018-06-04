@@ -32,7 +32,7 @@ signature
 
 rules
 
-  typeOfExp : scope * Exp ->  Type
+  typeOfExp : scope * Exp -> Type
 
   typeOfExp(s, Num(_)) = NUM().
 

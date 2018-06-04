@@ -12,9 +12,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.MatchException;
-import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
@@ -42,7 +43,7 @@ public class CUser implements IConstraint {
         final Iterator<Rule> it = rules.iterator();
         while(it.hasNext()) {
             final Rule rule = it.next();
-            Tuple2<Config, Set<IConstraint>> appl;
+            Tuple3<Config, Set<ITermVar>, Set<IConstraint>> appl;
             try {
                 appl = rule.apply(args, state);
             } catch(MatchException e) {
@@ -53,9 +54,10 @@ public class CUser implements IConstraint {
             final Config result = Solver.solve(appl._1(), debug.subContext());
             if(result.state().isErroneous()) {
                 debug.info("Rule rejected");
-            } else if(result.getConstraints().isEmpty() && state.unifier().entails(result.state().unifier())) {
+            } else if(result.getConstraints().isEmpty()
+                    && state.unifier().equals(result.state().unifier().removeAll(appl._2()).unifier())) {
                 debug.info("Rule accepted");
-                return Optional.of(result.withConstraints(appl._2()));
+                return Optional.of(result.withConstraints(appl._3()));
             } else {
                 debug.info("Rule delayed");
             }

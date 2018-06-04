@@ -90,9 +90,9 @@ public class RelationComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     public Optional<SolveResult> solve(CBuildRelation c) {
-        final ITerm left = unifier().findRecursive(c.getLeft());
-        final ITerm right = unifier().findRecursive(c.getRight());
-        if(!(left.isGround() && right.isGround())) {
+        final ITerm left = c.getLeft();
+        final ITerm right = c.getRight();
+        if(!(unifier().isGround(left) && unifier().isGround(right))) {
             return Optional.empty();
         }
         return c.getRelation().match(IRelationName.Cases.of(
@@ -114,9 +114,9 @@ public class RelationComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(CCheckRelation c) {
-        final ITerm left = unifier().findRecursive(c.getLeft());
-        final ITerm right = unifier().findRecursive(c.getRight());
-        if(!(left.isGround() && right.isGround())) {
+        final ITerm left = c.getLeft();
+        final ITerm right = c.getRight();
+        if(!(unifier().isGround(left) && unifier().isGround(right))) {
             return Optional.empty();
         }
         return c.getRelation().match(IRelationName.Cases.of(
@@ -143,8 +143,8 @@ public class RelationComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(CEvalFunction c) {
-        final ITerm term = unifier().findRecursive(c.getTerm());
-        if(!term.isGround()) {
+        final ITerm term = c.getTerm();
+        if(!unifier().isGround(term)) {
             return Optional.empty();
         }
         return c.getFunction().match(IFunctionName.Cases.of(

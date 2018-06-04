@@ -44,9 +44,9 @@ public class CEqual implements IConstraint {
 
     @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(unifier.findRecursive(term1));
+        sb.append(unifier.toString(term1));
         sb.append(" == ");
-        sb.append(unifier.findRecursive(term2));
+        sb.append(unifier.toString(term2));
         return sb.toString();
     }
 

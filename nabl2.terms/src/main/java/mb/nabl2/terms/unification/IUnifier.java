@@ -28,6 +28,7 @@ import mb.nabl2.terms.ITermVar;
  * 
  * Support for recursive terms is easy to add, but makes many operations exceptional. For example: remove(ITermVar),
  * findRecursive(ITerm).
+ *
  */
 
 public interface IUnifier {
@@ -35,6 +36,11 @@ public interface IUnifier {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on the unifier
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /*
+     * Check if the unifier is finite, or whether it allows recursive terms.
+     */
+    boolean isFinite();
 
     /**
      * Check if the substitution is empty.
@@ -71,11 +77,6 @@ public interface IUnifier {
      */
     boolean isCyclic();
 
-    /**
-     * Test if this unifier entails the given unifier.
-     */
-     boolean entails(IUnifier unifier);
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on a single term
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +87,11 @@ public interface IUnifier {
     ITermVar findRep(ITermVar var);
 
     /**
+     * Return of the variable (or it representative) has a term.
+     */
+    boolean hasTerm(ITermVar var);
+    
+    /**
      * Find the representative term for the given term. The representative itself is not instantiated, to prevent
      * exponential blowup in time or space. If the given term is a variable, the representative term is returned, or the
      * class variable if the variable is free in the unifier. If the given term is not a variable, it is returned
@@ -95,7 +101,8 @@ public interface IUnifier {
 
     /**
      * Fully instantiate the given term according to this substitution. Instantiation may result in exponential blowup
-     * of the term size. This operation preserves term sharing as much as possible.
+     * of the term size. This operation preserves term sharing as much as possible. This operation throws an exception
+     * on recursive terms.
      */
     ITerm findRecursive(ITerm term);
 
@@ -118,6 +125,11 @@ public interface IUnifier {
      * Return the size of the given term relative to this unifier.
      */
     TermSize size(ITerm term);
+
+    /**
+     * Return a string representation of the given term.
+     */
+    String toString(ITerm term);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on two terms
@@ -161,13 +173,13 @@ public interface IUnifier {
         Result<Immutable> match(ITerm pattern, ITerm term) throws MatchException;
 
         /**
-         * Return a substituion that only retains the given variable in the domain. Also returns a substitution to
+         * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
         Result<Immutable> retain(ITermVar var);
 
         /**
-         * Return a substituion that only retains the given variables in the domain. Also returns a substitution to
+         * Return a substitution that only retains the given variables in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
         Result<Immutable> retainAll(Iterable<ITermVar> vars);
