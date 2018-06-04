@@ -68,9 +68,9 @@ rules
   where
     importsOf(s) --> import-edges;
     case import-edges[l?] of {
-      false =>
+      false ->
         [] : List(Occurrence) => os
-      true =>
+      true ->
         import-edges[l] => os
     }
   
