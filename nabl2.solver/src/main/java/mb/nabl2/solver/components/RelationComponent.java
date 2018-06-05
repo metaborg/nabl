@@ -160,7 +160,7 @@ public class RelationComponent extends ASolver {
                 });
             },
             extName -> {
-                return callExternal(extName, term).map(ret -> {
+                return callExternal(extName, unifier().findRecursive(term)).map(ret -> {
                     return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 });
             }

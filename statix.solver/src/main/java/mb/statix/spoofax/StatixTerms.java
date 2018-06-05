@@ -3,7 +3,9 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.metaborg.util.iterators.Iterables2;
@@ -11,6 +13,8 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -25,20 +29,24 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CNew;
+import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
+import mb.statix.spec.Type;
 
 public class StatixTerms {
     private static final ILogger logger = LoggerUtils.logger(StatixTerms.class);
 
+    public static ITerm QUERY_SCOPES = B.EMPTY_TUPLE;
     public static ITerm END_OF_PATH = B.newAppl("EOP");
+    public static ITerm DECL_REL = B.newAppl("Decl");
 
     public static IMatcher<Spec> spec() {
-        return M.tuple4(M.listElems(label()), M.listElems(relation()), rules(), M.term(),
+        return M.tuple4(M.listElems(label()), relationDecls(), rules(), M.term(),
                 (t, labels, relations, rules, ext) -> {
                     return Spec.of(rules, labels, END_OF_PATH, relations);
                 });
@@ -103,6 +111,11 @@ public class StatixTerms {
                     constraints.add(new CTellRel(scope, rel, args));
                     return Unit.unit;
                 }),
+                M.appl5("CResolveQuery", queryTarget(), M.term(), M.term(), term(), term(),
+                        (c, rel, filter, min, scope, result) -> {
+                    constraints.add(new CResolveQuery(rel, filter, min, scope, result));
+                    return Unit.unit;
+                }),
                 M.appl2("C", M.stringValue(), M.listElems(term()), (c, name, args) -> {
                     constraints.add(new CUser(name, args));
                     return Unit.unit;
@@ -114,6 +127,39 @@ public class StatixTerms {
                 // @formatter:on
             )).match(t, u).map(v -> constraints.build());
         };
+    }
+
+    public static IMatcher<ITerm> queryTarget() {
+        return M.cases(
+        // @formatter:off
+            M.tuple0(),
+            M.appl1("RelTarget", relation(), (t, rel) -> rel)
+            // @formatter:on
+        );
+    }
+
+    public static IMatcher<Map<ITerm, Type>> relationDecls() {
+        return M.listElems(relationDecl()).map(relDecls -> {
+            final ImmutableMap.Builder<ITerm, Type> builder = ImmutableMap.builder();
+            builder.put(DECL_REL, Type.of(ImmutableList.of(B.newTuple()), ImmutableList.of()));
+            relDecls.stream().forEach(relDecl -> {
+                builder.put(relDecl._1(), relDecl._2());
+            });
+            return builder.build();
+        });
+    }
+
+    public static IMatcher<Tuple2<ITerm, Type>> relationDecl() {
+        return M.tuple2(M.appl1("Rel", M.string()), type(), (rd, rel, type) -> ImmutableTuple2.of(rel, type));
+    }
+
+    public static IMatcher<Type> type() {
+        return M.cases(
+        // @formatter:off
+            M.appl1("SimpleType", M.listElems(), (ty, intys) -> Type.of(intys, Collections.emptyList())),
+            M.appl2("FunType", M.listElems(), M.listElems(), (ty, intys, outtys) -> Type.of(intys, outtys))
+            // @formatter:on
+        );
     }
 
     public static IMatcher<ITerm> relation() {

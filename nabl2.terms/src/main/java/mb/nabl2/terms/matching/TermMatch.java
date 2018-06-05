@@ -190,6 +190,10 @@ public class TermMatch {
             return M.appl(TUPLE_OP, f);
         }
 
+        public <R> IMatcher<IApplTerm> tuple0() {
+            return M.appl0(TUPLE_OP, t -> t);
+        }
+
         public <R> IMatcher<R> tuple0(Function1<? super IApplTerm, R> f) {
             return M.appl0(TUPLE_OP, f);
         }

@@ -15,9 +15,9 @@ import mb.statix.solver.State;
 
 public class CTellEdge implements IConstraint {
 
-    final ITerm sourceTerm;
-    final ITerm label;
-    final ITerm targetTerm;
+    private final ITerm sourceTerm;
+    private final ITerm label;
+    private final ITerm targetTerm;
 
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
         this.sourceTerm = sourceTerm;
@@ -31,13 +31,15 @@ public class CTellEdge implements IConstraint {
 
     @Override public Optional<Config> solve(State state, IDebugContext debug) {
         final IUnifier.Immutable unifier = state.unifier();
-        final Optional<Scope> source = Scope.matcher().match(sourceTerm, unifier);
-        final Optional<Scope> target = Scope.matcher().match(targetTerm, unifier);
-        if(!source.isPresent() || !target.isPresent()) {
+        if(!(unifier.isGround(sourceTerm) && unifier.isGround(targetTerm))) {
             return Optional.empty();
         }
+        final Scope source = Scope.matcher().match(sourceTerm, unifier)
+                .orElseThrow(() -> new IllegalArgumentException("Expected source scope, got " + sourceTerm));
+        final Scope target = Scope.matcher().match(targetTerm, unifier)
+                .orElseThrow(() -> new IllegalArgumentException("Expected target scope, got " + targetTerm));
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addEdge(source.get(), label, target.get());
+                state.scopeGraph().addEdge(source, label, target);
         return Optional.of(Config.builder().state(state.withScopeGraph(scopeGraph)).build());
     }
 

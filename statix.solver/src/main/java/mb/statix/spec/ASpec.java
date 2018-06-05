@@ -1,5 +1,6 @@
 package mb.statix.spec;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
@@ -19,6 +20,6 @@ public abstract class ASpec {
 
     @Value.Parameter public abstract ITerm endOfPath();
 
-    @Value.Parameter public abstract Set<ITerm> relations();
+    @Value.Parameter public abstract Map<ITerm, Type> relations();
 
 }

@@ -25,7 +25,7 @@ rules
     with (ast, ext) := <nabl2-get-custom-analysis;strip-annos;eliminate-all> a;
          rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
          label* := <collect-all(?Labels(<id>));concat> ast;
-         rel* := <collect-all(?RelDecl(<id>, _))> ast;
+         rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
          spec-file := <src-gen-file(|"statix/", ".spec.aterm")> name;
          spec := (label*, rel*, rule*, ext)
  

@@ -58,7 +58,7 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
-    //       the graph
+    // the graph
     private Set<IResolutionPath<S, L, R, O>> env_L(Set<L> L, LabelWF<L> re, IScopePath<S, L, O> path)
             throws ResolutionException {
         final ImmutableSet.Builder<IResolutionPath<S, L, R, O>> envBuilder = ImmutableSet.builder();
@@ -150,6 +150,11 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
             return this;
         }
 
+        public Builder<S, L, R, O> withEdgeComplete(Predicate2<S, L> isEdgeComplete) {
+            this.isEdgeComplete = isEdgeComplete;
+            return this;
+        }
+
         public Builder<S, L, R, O> withDataWF(DataWF<O> dataWF) {
             this.dataWF = dataWF;
             return this;
@@ -157,6 +162,11 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
 
         public Builder<S, L, R, O> withDataEquiv(DataEquiv<O> dataEquiv) {
             this.dataEquiv = dataEquiv;
+            return this;
+        }
+
+        public Builder<S, L, R, O> withDataComplete(Predicate2<S, R> isDataComplete) {
+            this.isDataComplete = isDataComplete;
             return this;
         }
 

@@ -52,7 +52,7 @@ public class StrategoTerms {
             integer -> termFactory.makeInt(integer.getValue()),
             blob -> new StrategoBlob(blob.getValue()),
             var -> {
-                throw new IllegalArgumentException("Cannot convert specialized terms to Stratego.");
+                throw new IllegalArgumentException("Cannot convert specialized terms to Stratego: " + var);
             }
             // @formatter:on
         ));

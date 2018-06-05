@@ -49,7 +49,7 @@ public abstract class AState {
     }
 
     @Value.Default public IScopeGraph.Immutable<ITerm, ITerm, ITerm, ITerm> scopeGraph() {
-        return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations());
+        return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
     }
 
     @Value.Default public boolean isErroneous() {
