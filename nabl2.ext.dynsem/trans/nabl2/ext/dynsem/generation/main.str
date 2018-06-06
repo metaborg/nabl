@@ -31,21 +31,15 @@ rules
         NativeOperators([
           ast-params-op*,
           ast-type-op*
-        //ns-type-op*,
-        //ns-prop-op*
         ]),
         Arrows([
           ast-params-arrow*,
           ast-type-arrow*
-        //ns-type-arrow*,
-        //ns-prop-arrow*
         ])
       ]),
       Rules([
         ast-params-rule*,
         ast-type-rule*
-      //ns-type-rule*,
-      //ns-prop-rule*
       ])
     ])
     with (ast-params-op*, ast-params-arrow*, ast-params-rule*) := <collect-om(cgen-sig-to-params-ds);unzip3> ast;

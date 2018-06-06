@@ -13,18 +13,18 @@ rules
          target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("NaBL2");
          op-name := "nabl2_init";
          stmts := bstm* |[
-           return INaBL2Term.create(getSolution());
+           return NaBL2.create(getSolution());
          ]|;
          result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
 
 
   termindex-javas(|term-pkg,nabl2-pkg,java-dir): _ -> [result]
     with source-name := <sort-to-ds;ds-sort-to-string> TermSort();
-         target-name := <sort-to-ds;ds-sort-to-string> SortNoArgs("TermIndex");
+         target-name := $[[term-pkg].[<sort-to-ds;ds-sort-to-string> SortNoArgs("TermIndex")]];
          op-name := "nabl2_indexOf";
          stmts := bstm* |[
            TermIndex index = getTermIndex(term.getStrategoTerm());
-           return new TermIndex_2_Term(index.getResource(), index.getId());
+           return new TermIndex_2(index.getResource(), index.getId());
          ]|;
          result := <native-java(|term-pkg, nabl2-pkg, op-name, source-name, target-name,java-dir)> stmts
 
@@ -38,10 +38,11 @@ rules
     import java.util.function.Supplier;
 
     import ~x:term-pkg.*;
-    import org.metaborg.meta.lang.dynsem.interpreter.nabl2.NaBL2TermBuild;
+    import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.NativeOpBuild;
     import org.metaborg.meta.lang.dynsem.interpreter.nodes.building.TermBuild;
     import mb.nabl2.interpreter.*;
     import mb.nabl2.stratego.*;
+    import mb.nabl2.stratego.TermIndex;
     import mb.nabl2.terms.*;
     import mb.nabl2.terms.build.*;
     import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -52,7 +53,7 @@ rules
 
     @SuppressWarnings("unused")
     @NodeChild(value = "term", type = TermBuild.class)
-    public abstract class ~x:class-name extends NaBL2TermBuild {
+    public abstract class ~x:class-name extends NativeOpBuild {
 
       public ~x:class-name(SourceSection source) {
         super(source);
@@ -62,7 +63,7 @@ rules
         ~bstm*:stmts
       }
 
-      public static TermBuild create(SourceSection source, TermBuild term) {
+      public static NativeOpBuild create(SourceSection source, TermBuild term) {
         return ~x:nodegen-name.create(source, term);
       }
 
