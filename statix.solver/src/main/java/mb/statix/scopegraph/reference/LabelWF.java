@@ -1,6 +1,6 @@
 package mb.statix.scopegraph.reference;
 
-interface LabelWF<L> {
+public interface LabelWF<L> {
 
     LabelWF<L> step(L l);
 

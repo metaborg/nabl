@@ -246,8 +246,15 @@ rules
 
   [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
     Ns{x} -> s, Ns{x} |-> d, @x.decl := Ns{x},
-    [[ filter ^ (s, OCCURRENCE()) ]],
-    [[ min ^ (s, OCCURRENCE()) ]].
+    [[ filter ^ (s) ]],
+    [[ min ^ (s) ]].
+
+  [[ NamespaceFilter(lp) ^ (s) ]] :=
+    [[ lp ^ (s) : PRED([PATH()]) ]].
+
+  [[ NamespaceMin(lp) ^ (s) ]] :=
+    [[ lp ^ (s) : PRED([PATH(), PATH()]) ]].
+
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
     Build[[ p ^ (s) : PATH() ]].

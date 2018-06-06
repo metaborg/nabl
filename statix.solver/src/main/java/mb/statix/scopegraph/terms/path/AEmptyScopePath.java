@@ -15,16 +15,16 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AEmptyScopePath<S, L, O>
-        implements IScopePath<S, L, O> {
+abstract class AEmptyScopePath<V, L>
+        implements IScopePath<V, L> {
 
-    @Value.Parameter public abstract S getScope();
+    @Value.Parameter public abstract V getScope();
 
-    @Override public S getSource() {
+    @Override public V getSource() {
         return getScope();
     }
 
-    @Override public S getTarget() {
+    @Override public V getTarget() {
         return getScope();
     }
 
@@ -32,7 +32,7 @@ abstract class AEmptyScopePath<S, L, O>
         return 0;
     }
 
-    @Value.Lazy @Override public Set.Immutable<S> getScopes() {
+    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
         return Set.Immutable.of(getScope());
     }
 
@@ -40,7 +40,7 @@ abstract class AEmptyScopePath<S, L, O>
         return PSequence.of();
     }
 
-    @Override public Iterator<IStep<S, L, O>> iterator() {
+    @Override public Iterator<IStep<V, L>> iterator() {
         return Collections.emptyIterator();
     }
 
@@ -51,9 +51,9 @@ abstract class AEmptyScopePath<S, L, O>
     @Override public boolean equals(Object obj) {
         if(obj == null)
             return false;
-        if(!(obj instanceof IScopePath<?, ?, ?>))
+        if(!(obj instanceof IScopePath<?, ?>))
             return false;
-        IScopePath<?, ?, ?> other = (IScopePath<?, ?, ?>) obj;
+        IScopePath<?, ?> other = (IScopePath<?, ?>) obj;
         if(!getScope().equals(other.getSource()))
             return false;
         if(!getScope().equals(other.getTarget()))

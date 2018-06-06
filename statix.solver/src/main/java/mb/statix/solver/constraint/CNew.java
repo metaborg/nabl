@@ -15,9 +15,10 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.Config;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
+import mb.statix.solver.Result;
 import mb.statix.solver.State;
 
 public class CNew implements IConstraint {
@@ -32,7 +33,7 @@ public class CNew implements IConstraint {
         return new CNew(terms.stream().map(map::apply).collect(Collectors.toList()));
     }
 
-    @Override public Optional<Config> solve(State state, IDebugContext debug) {
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
         final List<IConstraint> constraints = Lists.newArrayList();
         State newState = state;
         for(ITerm t : terms) {
@@ -41,7 +42,7 @@ public class CNew implements IConstraint {
             constraints.add(new CEqual(t, ss._1()));
             newState = ss._2();
         }
-        return Optional.of(Config.of(newState, constraints));
+        return Optional.of(Result.of(newState, constraints));
     }
 
     @Override public String toString(IUnifier unifier) {

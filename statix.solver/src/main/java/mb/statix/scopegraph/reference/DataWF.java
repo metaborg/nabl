@@ -1,8 +1,8 @@
 package mb.statix.scopegraph.reference;
 
-interface DataWF<O> {
+public interface DataWF<O> {
 
-    boolean wf(O d);
+    boolean wf(O d) throws ResolutionException, InterruptedException;
 
     static <O> DataWF<O> ANY() {
         return new DataWF<O>() {

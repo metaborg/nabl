@@ -14,26 +14,26 @@ import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.terms.path.Paths;
 
-public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
+public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     // relations R
     // order : V x V --- isTrue
     // isDataComplete : S x R
 
-    private final IScopeGraph<S, L, R, O> scopeGraph;
-    private final R relation;
+    private final IScopeGraph<V, L, R> scopeGraph;
+    private final Optional<R> relation;
 
     private final LabelWF<L> labelWF; // default: true
     private final LabelOrder<L> labelOrder; // default: false
-    private final Predicate2<S, L> isEdgeComplete; // default: true
+    private final Predicate2<V, L> isEdgeComplete; // default: true
 
-    private final DataWF<O> dataWF; // default: true
-    private final DataEquiv<O> dataEquiv; // default: false
-    private final Predicate2<S, R> isDataComplete; // default: true
+    private final DataWF<V> dataWF; // default: true
+    private final DataEquiv<V> dataEquiv; // default: false
+    private final Predicate2<V, R> isDataComplete; // default: true
 
-    public NameResolution(IScopeGraph<S, L, R, O> scopeGraph, R relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            Predicate2<S, L> isEdgeComplete, DataWF<O> dataWF, DataEquiv<O> dataEquiv,
-            Predicate2<S, R> isDataComplete) {
+    public NameResolution(IScopeGraph<V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
+            LabelOrder<L> labelOrder, Predicate2<V, L> isEdgeComplete, DataWF<V> dataWF, DataEquiv<V> dataEquiv,
+            Predicate2<V, R> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
         this.relation = relation;
@@ -45,11 +45,12 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
         this.isDataComplete = isDataComplete;
     }
 
-    @Override public Set<IResolutionPath<S, L, R, O>> resolve(S scope) throws ResolutionException {
+    @Override public Set<IResolutionPath<V, L, R>> resolve(V scope) throws ResolutionException, InterruptedException {
         return env(labelWF, Paths.empty(scope));
     }
 
-    private Set<IResolutionPath<S, L, R, O>> env(LabelWF<L> re, IScopePath<S, L, O> path) throws ResolutionException {
+    private Set<IResolutionPath<V, L, R>> env(LabelWF<L> re, IScopePath<V, L> path)
+            throws ResolutionException, InterruptedException {
         if(re.empty()) {
             return ImmutableSet.of();
         } else {
@@ -59,15 +60,15 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Set<IResolutionPath<S, L, R, O>> env_L(Set<L> L, LabelWF<L> re, IScopePath<S, L, O> path)
-            throws ResolutionException {
-        final ImmutableSet.Builder<IResolutionPath<S, L, R, O>> envBuilder = ImmutableSet.builder();
+    private Set<IResolutionPath<V, L, R>> env_L(Set<L> L, LabelWF<L> re, IScopePath<V, L> path)
+            throws ResolutionException, InterruptedException {
+        final ImmutableSet.Builder<IResolutionPath<V, L, R>> envBuilder = ImmutableSet.builder();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
-            final Set<IResolutionPath<S, L, R, O>> env1 = env_L(smaller(L, l), re, path);
+            final Set<IResolutionPath<V, L, R>> env1 = env_L(smaller(L, l), re, path);
             envBuilder.addAll(env1);
             if(!dataEquiv.alwaysTrue() || env1.isEmpty()) {
-                final Set<IResolutionPath<S, L, R, O>> env2 = env_l(l, re, path);
+                final Set<IResolutionPath<V, L, R>> env2 = env_l(l, re, path);
                 envBuilder.addAll(minus(env2, env1));
             }
         }
@@ -82,43 +83,57 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
         return L.stream().filter(l2 -> labelOrder.lt(l2, l1)).collect(Collectors.toSet());
     }
 
-    private Set<IResolutionPath<S, L, R, O>> minus(Set<IResolutionPath<S, L, R, O>> env1,
-            Set<IResolutionPath<S, L, R, O>> env2) {
-        return env1.stream().filter(p1 -> env2.stream().noneMatch(p2 -> {
-            return dataEquiv.eq(p1.getDeclaration(), p2.getDeclaration());
-        })).collect(Collectors.toSet());
+    private Set<IResolutionPath<V, L, R>> minus(Set<IResolutionPath<V, L, R>> env1, Set<IResolutionPath<V, L, R>> env2)
+            throws ResolutionException, InterruptedException {
+        final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
+        outer: for(IResolutionPath<V, L, R> p1 : env1) {
+            for(IResolutionPath<V, L, R> p2 : env2) {
+                if(dataEquiv.eq(p1.getDeclaration(), p2.getDeclaration())) {
+                    continue outer;
+                }
+            }
+            env.add(p1);
+        }
+        return env.build();
     }
 
-    private Set<IResolutionPath<S, L, R, O>> env_l(L l, LabelWF<L> re, IScopePath<S, L, O> path)
-            throws ResolutionException {
+    private Set<IResolutionPath<V, L, R>> env_l(L l, LabelWF<L> re, IScopePath<V, L> path)
+            throws ResolutionException, InterruptedException {
         return l.equals(scopeGraph.getEndOfPath()) ? env_EOP(re, path) : env_nonEOP(l, re, path);
     }
 
-    private Set<IResolutionPath<S, L, R, O>> env_EOP(LabelWF<L> re, IScopePath<S, L, O> path)
-            throws ResolutionException {
-        if(!isDataComplete.test(path.getTarget(), relation)) {
-            throw new ResolutionException("Scope " + path.getTarget() + " is incomplete in data.");
+    private Set<IResolutionPath<V, L, R>> env_EOP(LabelWF<L> re, IScopePath<V, L> path)
+            throws ResolutionException, InterruptedException {
+        final V scope = path.getTarget();
+        if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
+            throw new ResolutionException("Scope " + scope + " is incomplete in data.");
         }
         if(!re.wf()) {
             return ImmutableSet.of();
         }
-        ImmutableSet.Builder<IResolutionPath<S, L, R, O>> env = ImmutableSet.builder();
-        for(O decl : scopeGraph.getData().get(path.getTarget(), relation)) {
-            if(dataWF.wf(decl)) {
-                env.add(Paths.resolve(path, relation, decl));
+        final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
+        if(relation.isPresent()) {
+            if(dataWF.wf(scope)) {
+                env.add(Paths.resolve(path, relation.get(), scope));
+            }
+        } else {
+            for(V decl : scopeGraph.getData().get(path.getTarget(), relation.get())) {
+                if(dataWF.wf(decl)) {
+                    env.add(Paths.resolve(path, relation.get(), decl));
+                }
             }
         }
         return env.build();
     }
 
-    private Set<IResolutionPath<S, L, R, O>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L, O> path)
-            throws ResolutionException {
+    private Set<IResolutionPath<V, L, R>> env_nonEOP(L l, LabelWF<L> re, IScopePath<V, L> path)
+            throws ResolutionException, InterruptedException {
         if(!isEdgeComplete.test(path.getTarget(), l)) {
             throw new ResolutionException("Scope " + path.getTarget() + " is incomplete in edge " + l);
         }
-        final ImmutableSet.Builder<IResolutionPath<S, L, R, O>> env = ImmutableSet.builder();
-        for(S nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
-            final Optional<IScopePath<S, L, O>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
+        final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
+        for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
+            final Optional<IScopePath<V, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
                 env.addAll(env(re.step(l), p.get()));
             }
@@ -126,51 +141,51 @@ public class NameResolution<S, L, R, O> implements INameResolution<S, L, R, O> {
         return env.build();
     }
 
-    public static <S, L, R, O> Builder<S, L, R, O> builder() {
+    public static <V, L, R> Builder<V, L, R> builder() {
         return new Builder<>();
     }
 
-    public static class Builder<S, L, R, O> {
+    public static class Builder<V, L, R> {
 
         private LabelWF<L> labelWF = LabelWF.ANY();
         private LabelOrder<L> labelOrder = LabelOrder.NONE();
-        private Predicate2<S, L> isEdgeComplete = (s, l) -> true;
+        private Predicate2<V, L> isEdgeComplete = (s, l) -> true;
 
-        private DataWF<O> dataWF = DataWF.ANY();
-        private DataEquiv<O> dataEquiv = DataEquiv.NONE();
-        private Predicate2<S, R> isDataComplete = (s, r) -> true;
+        private DataWF<V> dataWF = DataWF.ANY();
+        private DataEquiv<V> dataEquiv = DataEquiv.NONE();
+        private Predicate2<V, R> isDataComplete = (s, r) -> true;
 
-        public Builder<S, L, R, O> withLabelWF(LabelWF<L> labelWF) {
+        public Builder<V, L, R> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
             return this;
         }
 
-        public Builder<S, L, R, O> withLabelOrder(LabelOrder<L> labelOrder) {
+        public Builder<V, L, R> withLabelOrder(LabelOrder<L> labelOrder) {
             this.labelOrder = labelOrder;
             return this;
         }
 
-        public Builder<S, L, R, O> withEdgeComplete(Predicate2<S, L> isEdgeComplete) {
+        public Builder<V, L, R> withEdgeComplete(Predicate2<V, L> isEdgeComplete) {
             this.isEdgeComplete = isEdgeComplete;
             return this;
         }
 
-        public Builder<S, L, R, O> withDataWF(DataWF<O> dataWF) {
+        public Builder<V, L, R> withDataWF(DataWF<V> dataWF) {
             this.dataWF = dataWF;
             return this;
         }
 
-        public Builder<S, L, R, O> withDataEquiv(DataEquiv<O> dataEquiv) {
+        public Builder<V, L, R> withDataEquiv(DataEquiv<V> dataEquiv) {
             this.dataEquiv = dataEquiv;
             return this;
         }
 
-        public Builder<S, L, R, O> withDataComplete(Predicate2<S, R> isDataComplete) {
+        public Builder<V, L, R> withDataComplete(Predicate2<V, R> isDataComplete) {
             this.isDataComplete = isDataComplete;
             return this;
         }
 
-        public NameResolution<S, L, R, O> build(IScopeGraph<S, L, R, O> scopeGraph, R relation) {
+        public NameResolution<V, L, R> build(IScopeGraph<V, L, R> scopeGraph, Optional<R> relation) {
             return new NameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv,
                     isDataComplete);
         }

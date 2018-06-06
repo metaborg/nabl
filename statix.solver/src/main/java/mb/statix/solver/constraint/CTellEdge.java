@@ -3,15 +3,22 @@ package mb.statix.solver.constraint;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.iterators.Iterables2;
+
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.solver.Config;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
+import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.spec.Spec;
 
 public class CTellEdge implements IConstraint {
 
@@ -25,11 +32,15 @@ public class CTellEdge implements IConstraint {
         this.targetTerm = targetTerm;
     }
 
+    @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
+        return Iterables2.from(ImmutableTuple2.of(sourceTerm, label));
+    }
+
     @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
         return new CTellEdge(map.apply(sourceTerm), label, map.apply(targetTerm));
     }
 
-    @Override public Optional<Config> solve(State state, IDebugContext debug) {
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
         final IUnifier.Immutable unifier = state.unifier();
         if(!(unifier.isGround(sourceTerm) && unifier.isGround(targetTerm))) {
             return Optional.empty();
@@ -38,9 +49,8 @@ public class CTellEdge implements IConstraint {
                 .orElseThrow(() -> new IllegalArgumentException("Expected source scope, got " + sourceTerm));
         final Scope target = Scope.matcher().match(targetTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected target scope, got " + targetTerm));
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(Config.builder().state(state.withScopeGraph(scopeGraph)).build());
+        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
+        return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
     }
 
     @Override public String toString(IUnifier unifier) {

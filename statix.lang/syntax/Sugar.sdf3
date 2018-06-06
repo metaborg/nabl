@@ -127,7 +127,10 @@ context-free syntax
   // short-hand forms for occurrences using default resolution policies
 
   QueryFilter.NoFilter =
+  QueryFilter.Filter   = < filter <HoConstraint>>
+
   QueryMin.NoMin =
+  QueryMin.Min   = < min <HoConstraint>>
 
   Constraint.CResolveDecl        = [[Term] in [Term] |-> [Term]]
   Constraint.CResolveRel         = [[RelRef] of [Term] in [Term] |-> [Term]]

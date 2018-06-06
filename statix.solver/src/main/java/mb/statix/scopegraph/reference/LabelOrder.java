@@ -1,6 +1,6 @@
 package mb.statix.scopegraph.reference;
 
-interface LabelOrder<L> {
+public interface LabelOrder<L> {
 
     boolean lt(L l1, L l2);
 

@@ -1,8 +1,8 @@
 package mb.statix.scopegraph.reference;
 
-interface DataEquiv<O> {
+public interface DataEquiv<O> {
 
-    boolean eq(O d1, O d2);
+    boolean eq(O d1, O d2) throws ResolutionException, InterruptedException;
 
     boolean alwaysTrue();
 

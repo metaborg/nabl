@@ -1,6 +1,6 @@
 package mb.statix.scopegraph.path;
 
-public interface IStep<S, L, O> extends IScopePath<S, L, O> {
+public interface IStep<V, L> extends IScopePath<V, L> {
 
     L getLabel();
 

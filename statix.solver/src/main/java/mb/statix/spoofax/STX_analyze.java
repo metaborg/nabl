@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
 import mb.statix.solver.DebugContext;
 import mb.statix.solver.IConstraint;
@@ -45,7 +46,7 @@ public class STX_analyze extends StatixPrimitive {
 
         final IConstraint constraint = new CUser(init, Iterables2.singleton(ast));
         final State state = State.of(spec);
-        final Config config = Config.of(state, Iterables2.singleton(constraint));
+        final Config config = Config.of(state, Iterables2.singleton(constraint), new Completeness());
         Config resultConfig;
         try {
             resultConfig = Solver.solve(config, new DebugContext(logger));
@@ -58,7 +59,7 @@ public class STX_analyze extends StatixPrimitive {
         if(resultState.isErroneous()) {
             errorList.add(B.newTuple(ast, B.newString("Has errors.")));
         }
-        final Collection<IConstraint> unsolved = resultConfig.getConstraints();
+        final Collection<IConstraint> unsolved = resultConfig.constraints();
         if(!unsolved.isEmpty()) {
             logger.warn("Unsolved constraints: {}",
                     unsolved.stream().map(c -> c.toString(resultState.unifier())).collect(Collectors.toList()));

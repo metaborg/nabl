@@ -4,11 +4,14 @@ import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.statix.solver.Config;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
+import mb.statix.solver.Result;
 import mb.statix.solver.State;
 
 public class CInequal implements IConstraint {
@@ -25,10 +28,10 @@ public class CInequal implements IConstraint {
         return new CInequal(map.apply(term1), map.apply(term2));
     }
 
-    @Override public Optional<Config> solve(State state, IDebugContext debug) {
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
         final IUnifier.Immutable unifier = state.unifier();
         if(unifier.areUnequal(term1, term2)) {
-            return Optional.of(Config.builder().state(state).build());
+            return Optional.of(Result.of(state, ImmutableSet.of()));
         } else {
             return Optional.empty();
         }

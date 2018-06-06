@@ -1,11 +1,11 @@
 package mb.statix.scopegraph.path;
 
-public interface IScopePath<S, L, O>
-        extends IPath<S, L, O>, Iterable<IStep<S, L, O>> {
+public interface IScopePath<V, L>
+        extends IPath<V, L>, Iterable<IStep<V, L>> {
 
-    S getSource();
+    V getSource();
 
-    S getTarget();
+    V getTarget();
 
     int size();
 

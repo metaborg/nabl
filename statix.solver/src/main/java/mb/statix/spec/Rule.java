@@ -15,6 +15,7 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
@@ -43,7 +44,8 @@ public class Rule {
         return name;
     }
 
-    public Tuple3<Config, Set<ITermVar>, Set<IConstraint>> apply(List<ITerm> args, State state) throws MatchException {
+    public Tuple3<Config, Set<ITermVar>, Set<IConstraint>> apply(List<ITerm> args, State state,
+            Completeness completeness) throws MatchException {
         IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         for(int i = 0; i < params.size(); i++) {
             unifier.match(params.get(i), args.get(i));
@@ -67,7 +69,7 @@ public class Rule {
                 guardConstraints.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
         final Set<IConstraint> newBody =
                 bodyConstraints.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
-        return ImmutableTuple3.of(Config.of(newState, newGuard), freshGuardVars.build(), newBody);
+        return ImmutableTuple3.of(Config.of(newState, newGuard, completeness), freshGuardVars.build(), newBody);
     }
 
     @Override public String toString() {

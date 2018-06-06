@@ -15,8 +15,10 @@ public class Solver {
         debug.info("Solving constraints");
 
         // set-up
-        final Set<IConstraint> constraints = Sets.newConcurrentHashSet(config.getConstraints());
+        final Set<IConstraint> constraints = Sets.newConcurrentHashSet(config.constraints());
         State state = config.state();
+        Completeness completeness = config.completeness();
+        completeness = completeness.addAll(constraints);
 
         // fixed point
         boolean progress = true;
@@ -32,19 +34,22 @@ public class Solver {
                 IDebugContext subDebug = debug.subContext();
                 // reset errors, because we want to short-cut only on errors introduced by the
                 // guard constraints, not on errors pre-existing in the state
-                Optional<Config> maybeResult = constraint.solve(state.withErroneous(false), subDebug);
+                Optional<Result> maybeResult = constraint.solve(state.withErroneous(false), completeness, subDebug);
                 if(maybeResult.isPresent()) {
                     progress = true;
                     it.remove();
-                    final Config result = maybeResult.get();
+                    final Result result = maybeResult.get();
                     state = result.state();
+                    completeness = completeness.remove(constraint);
                     if(!debug.isRoot() && state.isErroneous()) {
                         debug.info("Break early because of errors.");
                         break outer;
                     }
-                    // FIXME update properties in state
-                    subDebug.info("Simplified to {}", result.getConstraints());
-                    constraints.addAll(result.getConstraints());
+                    if(!result.constraints().isEmpty()) {
+                        subDebug.info("Simplified to {}", result.constraints());
+                        constraints.addAll(result.constraints());
+                        completeness = completeness.addAll(result.constraints());
+                    }
                 } else {
                     subDebug.info("Delayed");
                 }
@@ -54,7 +59,23 @@ public class Solver {
         // return
         debug.info("Solved {} errors and {} remaining constraints.", state.isErroneous() ? "with" : "without",
                 constraints.size());
-        return Config.of(state, constraints);
+        return Config.of(state, constraints, completeness);
+    }
+
+    public static Optional<Boolean> entails(Config config, IDebugContext debug) throws InterruptedException {
+        final State state = config.state();
+        final Config result = Solver.solve(config, debug.subContext());
+        if(result.state().isErroneous()) {
+            debug.info("Rule rejected");
+            return Optional.of(false);
+        } else if(result.constraints().isEmpty() && state.unifier().equals(result.state().unifier())) {
+            debug.info("Entailment accepted");
+            return Optional.of(true);
+        } else {
+            debug.info("Entailment delayed");
+            return Optional.empty();
+        }
+
     }
 
 }

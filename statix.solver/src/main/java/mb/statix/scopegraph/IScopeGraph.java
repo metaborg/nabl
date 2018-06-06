@@ -3,7 +3,7 @@ package mb.statix.scopegraph;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.IRelation3;
 
-public interface IScopeGraph<S, L, R, O> {
+public interface IScopeGraph<V, L, R> {
 
     Set.Immutable<L> getLabels();
 
@@ -11,37 +11,37 @@ public interface IScopeGraph<S, L, R, O> {
 
     Set.Immutable<R> getRelations();
 
-    Set<S> getAllScopes();
+    Set<V> getAllScopes();
 
-    IRelation3<S, L, S> getEdges();
+    IRelation3<V, L, V> getEdges();
 
-    IRelation3<S, R, O> getData();
+    IRelation3<V, R, V> getData();
 
-    interface Immutable<S, L, R, O> extends IScopeGraph<S, L, R, O> {
+    interface Immutable<V, L, R> extends IScopeGraph<V, L, R> {
 
-        @Override Set.Immutable<S> getAllScopes();
+        @Override Set.Immutable<V> getAllScopes();
 
-        @Override IRelation3.Immutable<S, L, S> getEdges();
+        @Override IRelation3.Immutable<V, L, V> getEdges();
 
-        @Override IRelation3.Immutable<S, R, O> getData();
+        @Override IRelation3.Immutable<V, R, V> getData();
 
-        Immutable<S, L, R, O> addEdge(S sourceScope, L label, S targetScope);
+        Immutable<V, L, R> addEdge(V sourceScope, L label, V targetScope);
 
-        Immutable<S, L, R, O> addDatum(S scope, R relation, O datum);
+        Immutable<V, L, R> addDatum(V scope, R relation, V datum);
 
     }
 
-    interface Transient<S, L, R, O> extends IScopeGraph<S, L, R, O> {
+    interface Transient<V, L, R> extends IScopeGraph<V, L, R> {
 
-        boolean addEdge(S sourceScope, L label, S targetScope);
+        boolean addEdge(V sourceScope, L label, V targetScope);
 
-        boolean addDatum(S scope, R relation, O datum);
+        boolean addDatum(V scope, R relation, V datum);
 
-        boolean addAll(IScopeGraph<S, L, R, O> other);
+        boolean addAll(IScopeGraph<V, L, R> other);
 
         // -----------------------
 
-        IScopeGraph.Immutable<S, L, R, O> freeze();
+        IScopeGraph.Immutable<V, L, R> freeze();
 
     }
 

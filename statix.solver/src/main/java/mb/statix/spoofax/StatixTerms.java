@@ -6,6 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.iterators.Iterables2;
@@ -34,9 +35,17 @@ import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
+import mb.statix.solver.query.IQueryFilter;
+import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.NamespaceQuery;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.ResolveFilter;
+import mb.statix.solver.query.ResolveMin;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
+import mb.statix.terms.AOccurrence;
 
 public class StatixTerms {
     private static final ILogger logger = LoggerUtils.logger(StatixTerms.class);
@@ -46,9 +55,9 @@ public class StatixTerms {
     public static ITerm DECL_REL = B.newAppl("Decl");
 
     public static IMatcher<Spec> spec() {
-        return M.tuple4(M.listElems(label()), relationDecls(), rules(), M.term(),
-                (t, labels, relations, rules, ext) -> {
-                    return Spec.of(rules, labels, END_OF_PATH, relations);
+        return M.tuple5(M.listElems(label()), relationDecls(), namespaceQueries(), rules(), scopeExtensions(),
+                (t, labels, relations, queries, rules, ext) -> {
+                    return Spec.of(rules, labels, END_OF_PATH, relations, queries, ext);
                 });
     }
 
@@ -72,6 +81,22 @@ public class StatixTerms {
     public static IMatcher<Tuple2<String, List<ITermVar>>> head() {
         return M.appl2("C", M.stringValue(), M.listElems(var()), (h, name, params) -> {
             return ImmutableTuple2.of(name, params);
+        });
+    }
+
+    public static IMatcher<Map<String, NamespaceQuery>> namespaceQueries() {
+        return M.listElems(namespaceQuery()).map(relDecls -> {
+            final ImmutableMap.Builder<String, NamespaceQuery> builder = ImmutableMap.builder();
+            relDecls.stream().forEach(relDecl -> {
+                builder.put(relDecl._1(), relDecl._2());
+            });
+            return builder.build();
+        });
+    }
+
+    public static IMatcher<Tuple2<String, NamespaceQuery>> namespaceQuery() {
+        return M.tuple3(M.stringValue(), hoconstraint(), hoconstraint(), (t, ns, filter, min) -> {
+            return ImmutableTuple2.of(ns, new NamespaceQuery(filter, min));
         });
     }
 
@@ -111,7 +136,7 @@ public class StatixTerms {
                     constraints.add(new CTellRel(scope, rel, args));
                     return Unit.unit;
                 }),
-                M.appl5("CResolveQuery", queryTarget(), M.term(), M.term(), term(), term(),
+                M.appl5("CResolveQuery", queryTarget(), queryFilter(), queryMin(), term(), term(),
                         (c, rel, filter, min, scope, result) -> {
                     constraints.add(new CResolveQuery(rel, filter, min, scope, result));
                     return Unit.unit;
@@ -129,13 +154,43 @@ public class StatixTerms {
         };
     }
 
-    public static IMatcher<ITerm> queryTarget() {
+    public static IMatcher<Optional<ITerm>> queryTarget() {
         return M.cases(
         // @formatter:off
-            M.tuple0(),
-            M.appl1("RelTarget", relation(), (t, rel) -> rel)
+            M.tuple0(t -> Optional.empty()),
+            M.appl1("RelTarget", relation(), (t, rel) -> Optional.of(rel))
             // @formatter:on
         );
+    }
+
+    public static IMatcher<IQueryFilter> queryFilter() {
+        return M.cases(
+        // @formatter:off
+            M.appl2("Filter", hoconstraint(), hoconstraint(), (f, pathConstraint, dataConstraint) -> {
+                return new QueryFilter(pathConstraint, dataConstraint);
+            }),
+            M.appl1("ResolveFilter", term(), (f, ref) -> {
+                return new ResolveFilter(ref);
+            })
+            // @formatter:on
+        );
+    }
+
+    public static IMatcher<IQueryMin> queryMin() {
+        return M.cases(
+        // @formatter:off
+            M.appl2("Min", hoconstraint(), hoconstraint(), (m, pathConstraint, dataConstraint) -> {
+                return new QueryMin(pathConstraint, dataConstraint);
+            }),
+            M.appl1("ResolveMin", term(), (m, ref) -> {
+                return new ResolveMin(ref);
+            })
+            // @formatter:on
+        );
+    }
+
+    public static IMatcher<String> hoconstraint() {
+        return M.appl1("LC", M.stringValue(), (t, c) -> c);
     }
 
     public static IMatcher<Map<ITerm, Type>> relationDecls() {
@@ -171,6 +226,19 @@ public class StatixTerms {
         );
     }
 
+    public static IMatcher<Multimap<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
+        return M.listElems(scopeExtension(), (t, exts) -> {
+            final ImmutableMultimap.Builder<String, Tuple2<Integer, ITerm>> extmap = ImmutableMultimap.builder();
+            exts.forEach(ext -> ext.apply(extmap::put));
+            return extmap.build();
+        });
+    }
+
+    public static IMatcher<Tuple2<String, Tuple2<Integer, ITerm>>> scopeExtension() {
+        return M.tuple3(M.stringValue(), M.integerValue(), M.term(),
+                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i, lbl)));
+    }
+
     public static IMatcher<ITerm> label() {
         return M.cases(
         // @formatter:off
@@ -202,9 +270,7 @@ public class StatixTerms {
             M.appl1("Int", M.integer(), (t, integer) -> {
                 return integer;
             }),
-            M.appl3("Occurrence", M.stringValue(), M.listElems(term()), M.term(), (t, ns, args, pos) -> {
-                return B.newAppl("Occurrence", args); // FIXME
-            }),
+            AOccurrence.matcher(term()),
             M.term(t -> {
                 throw new IllegalArgumentException("Unknown term " + t);
             })

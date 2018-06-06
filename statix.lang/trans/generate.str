@@ -26,8 +26,9 @@ rules
          rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
          label* := <collect-all(?Labels(<id>));concat> ast;
          rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
+         nsq* := <collect-all(\ NamespaceQuery(ns, NamespaceFilter(filter), NamespaceMin(min)) -> (ns, filter, min) \)> ast;
          spec-file := <src-gen-file(|"statix/", ".spec.aterm")> name;
-         spec := (label*, rel*, rule*, ext)
+         spec := (label*, rel*, nsq*, rule*, ext)
  
   src-gen-file(|sub-dir, ext): name -> file-name
     with file-name := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]

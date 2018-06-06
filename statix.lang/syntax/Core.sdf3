@@ -143,14 +143,14 @@ context-free syntax
   LabelRef.EOP = "$"
 
   // default resolution policies
-  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><QueryFilter><QueryMin>>
+  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><NamespaceFilter><NamespaceMin>>
 
   ResolutionParam = NamespaceQuery
   Rule            = NamespaceQuery
 
-  QueryFilter.Filter = < filter <HoConstraint>>
+  NamespaceFilter.NamespaceFilter = < filter <HoConstraint>>
 
-  QueryMin.Min = < min <HoConstraint>>
+  NamespaceMin.NamespaceMin = < min <HoConstraint>>
 
   // namespaces
 

@@ -9,6 +9,8 @@ import org.immutables.value.Value;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.Tuple2;
+import mb.statix.solver.query.NamespaceQuery;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -21,5 +23,9 @@ public abstract class ASpec {
     @Value.Parameter public abstract ITerm endOfPath();
 
     @Value.Parameter public abstract Map<ITerm, Type> relations();
+
+    @Value.Parameter public abstract Map<String, NamespaceQuery> namespaceQueries();
+
+    @Value.Parameter public abstract Multimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
 
 }

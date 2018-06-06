@@ -4,8 +4,8 @@ import java.util.Set;
 
 import mb.statix.scopegraph.path.IResolutionPath;
 
-public interface INameResolution<S, L, R, O> {
+public interface INameResolution<V, L, R> {
 
-    Set<IResolutionPath<S, L, R, O>> resolve(S scope) throws Exception;
+    Set<IResolutionPath<V, L, R>> resolve(V scope) throws Exception;
 
 }

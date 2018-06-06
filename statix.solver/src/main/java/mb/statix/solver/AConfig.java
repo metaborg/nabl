@@ -11,6 +11,8 @@ public abstract class AConfig {
 
     @Value.Parameter public abstract State state();
 
-    @Value.Parameter public abstract Set<IConstraint> getConstraints();
+    @Value.Parameter public abstract Set<IConstraint> constraints();
+
+    @Value.Parameter public abstract Completeness completeness();
 
 }

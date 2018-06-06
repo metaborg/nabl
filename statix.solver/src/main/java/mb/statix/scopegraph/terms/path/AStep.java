@@ -13,19 +13,19 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AStep<S, L, O> implements IStep<S, L, O> {
+abstract class AStep<V, L> implements IStep<V, L> {
 
-    @Value.Parameter @Override public abstract S getSource();
+    @Value.Parameter @Override public abstract V getSource();
 
     @Value.Parameter @Override public abstract L getLabel();
 
-    @Value.Parameter @Override public abstract S getTarget();
+    @Value.Parameter @Override public abstract V getTarget();
 
     @Value.Lazy @Override public int size() {
         return 1;
     }
 
-    @Value.Lazy @Override public Set.Immutable<S> getScopes() {
+    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
         return Set.Immutable.of(getSource(), getTarget());
     }
 
@@ -33,7 +33,7 @@ abstract class AStep<S, L, O> implements IStep<S, L, O> {
         return PSequence.of(getLabel());
     }
 
-    @Override public Iterator<IStep<S, L, O>> iterator() {
+    @Override public Iterator<IStep<V, L>> iterator() {
         return Iterators.singletonIterator(this);
     }
 

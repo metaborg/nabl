@@ -4,11 +4,14 @@ import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.statix.solver.Config;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
+import mb.statix.solver.Result;
 import mb.statix.solver.State;
 
 public class CTrue implements IConstraint {
@@ -17,8 +20,8 @@ public class CTrue implements IConstraint {
         return this;
     }
 
-    @Override public Optional<Config> solve(State state, IDebugContext debug) {
-        return Optional.of(Config.builder().state(state).build());
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
+        return Optional.of(Result.of(state, ImmutableSet.of()));
     }
 
     @Override public String toString(IUnifier unifier) {

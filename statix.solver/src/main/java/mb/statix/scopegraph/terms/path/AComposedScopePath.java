@@ -17,14 +17,14 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AComposedScopePath<S, L, O>
-        implements IScopePath<S, L, O> {
+abstract class AComposedScopePath<V, L>
+        implements IScopePath<V, L> {
 
-    @Value.Parameter public abstract IScopePath<S, L, O> getLeft();
+    @Value.Parameter public abstract IScopePath<V, L> getLeft();
 
-    @Value.Parameter public abstract IScopePath<S, L, O> getRight();
+    @Value.Parameter public abstract IScopePath<V, L> getRight();
 
-    @Value.Check public @Nullable AComposedScopePath<S, L, O> check() {
+    @Value.Check public @Nullable AComposedScopePath<V, L> check() {
         // left and right are not connected
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;
@@ -36,11 +36,11 @@ abstract class AComposedScopePath<S, L, O>
         return this;
     }
 
-    @Value.Lazy @Override public S getSource() {
+    @Value.Lazy @Override public V getSource() {
         return getLeft().getSource();
     }
 
-    @Value.Lazy @Override public S getTarget() {
+    @Value.Lazy @Override public V getTarget() {
         return getRight().getTarget();
     }
 
@@ -48,7 +48,7 @@ abstract class AComposedScopePath<S, L, O>
         return getLeft().size() + getRight().size();
     }
 
-    @Value.Lazy @Override public Set.Immutable<S> getScopes() {
+    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
         return getLeft().getScopes().__insertAll(getRight().getScopes());
     }
 
@@ -56,7 +56,7 @@ abstract class AComposedScopePath<S, L, O>
         return getLeft().getLabels().appendAll(getRight().getLabels());
     }
 
-    @Override public Iterator<IStep<S, L, O>> iterator() {
+    @Override public Iterator<IStep<V, L>> iterator() {
         return Iterators.concat(getLeft().iterator(), getRight().iterator());
     }
 
@@ -67,9 +67,9 @@ abstract class AComposedScopePath<S, L, O>
     @Override public boolean equals(Object obj) {
         if(obj == null)
             return false;
-        if(!(obj instanceof IScopePath<?, ?, ?>))
+        if(!(obj instanceof IScopePath<?, ?>))
             return false;
-        IScopePath<?, ?, ?> other = (IScopePath<?, ?, ?>) obj;
+        IScopePath<?, ?> other = (IScopePath<?, ?>) obj;
         if(!getSource().equals(other.getSource()))
             return false;
         if(!getTarget().equals(other.getTarget()))

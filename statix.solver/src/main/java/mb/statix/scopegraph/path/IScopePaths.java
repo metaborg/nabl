@@ -3,10 +3,10 @@ package mb.statix.scopegraph.path;
 import java.util.Set;
 
 
-public interface IScopePaths<S, L, O> {
+public interface IScopePaths<V, L> {
 
-    IScopePaths<S, L, O> inverse();
+    IScopePaths<V, L> inverse();
 
-    Set<IScopePath<S, L, O>> get(S scope);
+    Set<IScopePath<V, L>> get(V scope);
 
 }

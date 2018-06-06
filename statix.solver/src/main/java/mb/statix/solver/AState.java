@@ -14,13 +14,13 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.spec.ASpec;
+import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class AState {
 
-    @Value.Parameter public abstract ASpec spec();
+    @Value.Parameter public abstract Spec spec();
 
     @Value.Default int varCounter() {
         return 0;
@@ -48,7 +48,7 @@ public abstract class AState {
         return PersistentUnifier.Immutable.of();
     }
 
-    @Value.Default public IScopeGraph.Immutable<ITerm, ITerm, ITerm, ITerm> scopeGraph() {
+    @Value.Default public IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
     }
 
