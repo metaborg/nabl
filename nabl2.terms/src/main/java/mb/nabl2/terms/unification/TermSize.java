@@ -76,4 +76,8 @@ public final class TermSize {
         return infinite ? "inf" : size.toString();
     }
 
+    public static TermSize of(long i) {
+        return new TermSize(BigInteger.valueOf(i));
+    }
+
 }

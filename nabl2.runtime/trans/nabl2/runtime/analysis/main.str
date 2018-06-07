@@ -9,22 +9,29 @@ imports
   nabl2/shared/-
 
   signatures/nabl2/runtime/analysis/-
+  signatures/nabl2/runtime/common/-
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
 
 
 rules
 
+  nabl2--solve-constraint(|config) = prim("SG_solve_constraint", config)
+
+  nabl2--analyze-oneshot(|resource): ast -> (ast', a, error*, warning*, note*)
+    with config := <nabl2--analysis-config>;
+         resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
+         (params, C1) := <nabl2--generate-constraint-init(|resource)> resource';
+         ast' := <nabl2--index-ast(|resource)> ast;
+         C2 := <nabl2--generate-constraint-file(|resource,params)> ast';
+         (a, error*, warning*, note*) := <nabl2--solve-constraint(|config)> CConj(C1, C2)
+
+rules
+
   nabl2--analyze(pre):
       AnalyzeInitial(resource, ast) -> InitialResult(C, params, config)
     with nabl2--collection-info-msg(|$[Initializing [resource]]);
-         labels := <nabl2--labels>;
-         wf := <nabl2--labels-wf>;
-         order := <nabl2--label-order>;
-         res-params := (labels,wf,order);
-         rel* := <nabl2--relations>;
-         fun* := <nabl2--functions>;
-         config := (res-params, rel*, fun*);
+         config := <nabl2--analysis-config>;
          (params,C) := <nabl2--generate-constraint-init(|resource)> resource
 
   nabl2--analyze(pre):
@@ -50,3 +57,14 @@ rules
       CustomFinal(resource,initial,unit*) -> result
     where a := <nabl2-get-resource-analysis> resource;
           result := <nabl2-custom-analysis-final-hook(|a)> (resource, initial, unit*)
+
+rules
+
+  nabl2--analysis-config: _ -> config
+    with labels := <nabl2--labels>;
+         wf := <nabl2--labels-wf>;
+         order := <nabl2--label-order>;
+         res-params := (labels,wf,order);
+         rel* := <nabl2--relations>;
+         fun* := <nabl2--functions>;
+         config := (res-params, rel*, fun*)

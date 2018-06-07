@@ -6,8 +6,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.concurrent.IClosableLock;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -22,25 +20,22 @@ import mb.nabl2.terms.ITerm;
 
 public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
 
-    private static ILogger logger = LoggerUtils.logger(ScopeGraphContextPrimitive.class);
+    final protected int tvars;
 
-    public ScopeGraphContextPrimitive(String name, int svars, int tvars) {
-        super(name, svars, tvars);
+    public ScopeGraphContextPrimitive(String name) {
+        this(name, 0);
+    }
+
+    public ScopeGraphContextPrimitive(String name, int tvars) {
+        super(name, 0, tvars);
+        this.tvars = tvars;
     }
 
     @Override public final boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars)
             throws InterpreterException {
-        final Object contextObj = env.contextObject();
-        if(contextObj == null) {
-            logger.warn("Context is null.");
-            return false;
-        }
-        if(!(contextObj instanceof IScopeGraphContext)) {
-            throw new InterpreterException("Context does not implement IScopeGraphContext");
-        }
-        final IScopeGraphContext<?> context = (IScopeGraphContext<?>) env.contextObject();
-        List<IStrategoTerm> termArgs = Arrays.asList(tvars);
-        Optional<? extends IStrategoTerm> result;
+        final IScopeGraphContext<?> context = PrimitiveUtil.scopeGraphContext(env);
+        final List<IStrategoTerm> termArgs = Arrays.asList(tvars);
+        final Optional<? extends IStrategoTerm> result;
         try(IClosableLock lock = context.guard()) {
             result = call(context, env.current(), termArgs, env.getFactory());
         }
@@ -50,19 +45,22 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
         }).orElse(false);
     }
 
-    public Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,
+    protected Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,
             List<IStrategoTerm> sterms, ITermFactory factory) throws InterpreterException {
-        StrategoTerms strategoTerms = new StrategoTerms(factory);
-        ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
-        List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).map(ConstraintTerms::specialize)
+        if(sterms.size() != tvars) {
+            throw new InterpreterException("Expected " + tvars + " term arguments, but got " + sterms.size());
+        }
+        final StrategoTerms strategoTerms = new StrategoTerms(factory);
+        final ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
+        final List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).map(ConstraintTerms::specialize)
                 .collect(Collectors.toList());
-        Optional<? extends ITerm> result = call(context, term, terms);
+        final Optional<? extends ITerm> result = call(context, term, terms);
         return result.map(ConstraintTerms::explicate).map(strategoTerms::toStratego);
     }
 
-    @SuppressWarnings("unused") public Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term,
+    @SuppressWarnings("unused") protected Optional<? extends ITerm> call(IScopeGraphContext<?> context, ITerm term,
             List<ITerm> terms) throws InterpreterException {
-        throw new UnsupportedOperationException("Subclasses must override call method.");
+        throw new IllegalStateException("Method must be implemented by subclass.");
     }
 
 }

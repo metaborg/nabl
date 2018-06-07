@@ -59,8 +59,8 @@ public class PolymorphismComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<SolveResult> solve(CGeneralize gen) {
-        final ITerm declTerm = unifier().findRecursive(gen.getDeclaration());
-        if(!declTerm.isGround()) {
+        final ITerm declTerm = gen.getDeclaration();
+        if(!unifier().isGround(declTerm)) {
             return Optional.empty();
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
@@ -91,8 +91,8 @@ public class PolymorphismComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CInstantiate inst) {
-        final ITerm declTerm = unifier().findRecursive(inst.getDeclaration());
-        if(!declTerm.isGround()) {
+        final ITerm declTerm = inst.getDeclaration();
+        if(!unifier().isGround(declTerm)) {
             return Optional.empty();
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())

@@ -54,9 +54,9 @@ public class ScopeGraphComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private boolean solve(CGDecl c) {
-        final ITerm scopeTerm = unifier().findRecursive(c.getScope());
-        final ITerm declTerm = unifier().findRecursive(c.getDeclaration());
-        if(!(scopeTerm.isGround() && declTerm.isGround())) {
+        final ITerm scopeTerm = c.getScope();
+        final ITerm declTerm = c.getDeclaration();
+        if(!(unifier().isGround(scopeTerm) && unifier().isGround(declTerm))) {
             return false;
         }
         Scope scope = Scope.matcher().match(scopeTerm, unifier())
@@ -68,9 +68,9 @@ public class ScopeGraphComponent extends ASolver {
     }
 
     private boolean solve(CGRef c) {
-        final ITerm scopeTerm = unifier().findRecursive((c.getScope()));
-        final ITerm refTerm = unifier().findRecursive((c.getReference()));
-        if(!(scopeTerm.isGround() && refTerm.isGround())) {
+        final ITerm scopeTerm = c.getScope();
+        final ITerm refTerm = c.getReference();
+        if(!(unifier().isGround(scopeTerm) && unifier().isGround(refTerm))) {
             return false;
         }
         Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
@@ -82,8 +82,8 @@ public class ScopeGraphComponent extends ASolver {
     }
 
     private boolean solve(CGDirectEdge c) {
-        ITerm sourceScopeRep = unifier().findRecursive(c.getSourceScope());
-        if(!sourceScopeRep.isGround()) {
+        ITerm sourceScopeRep = c.getSourceScope();
+        if(!unifier().isGround(sourceScopeRep)) {
             return false;
         }
         Scope sourceScope = Scope.matcher().match(sourceScopeRep, unifier())
@@ -98,8 +98,8 @@ public class ScopeGraphComponent extends ASolver {
     }
 
     private boolean solve(CGImportEdge c) {
-        ITerm scopeRep = unifier().findRecursive(c.getScope());
-        if(!scopeRep.isGround()) {
+        ITerm scopeRep = c.getScope();
+        if(!unifier().isGround(scopeRep)) {
             return false;
         }
         Scope scope = Scope.matcher().match(scopeRep, unifier())
@@ -114,9 +114,9 @@ public class ScopeGraphComponent extends ASolver {
     }
 
     private boolean solve(CGExportEdge c) {
-        ITerm scopeTerm = unifier().findRecursive(c.getScope());
-        ITerm declTerm = unifier().findRecursive(c.getDeclaration());
-        if(!(scopeTerm.isGround() && declTerm.isGround())) {
+        ITerm scopeTerm = c.getScope();
+        ITerm declTerm = c.getDeclaration();
+        if(!(unifier().isGround(scopeTerm) && unifier().isGround(declTerm))) {
             return false;
         }
         Scope scope = Scope.matcher().match(scopeTerm, unifier())
@@ -128,14 +128,13 @@ public class ScopeGraphComponent extends ASolver {
     }
 
     private Optional<Scope> findScope(ITerm scopeTerm) {
-        return Optional.of(unifier().findRecursive(scopeTerm)).filter(ITerm::isGround).map(st -> Scope.matcher()
+        return Optional.of(scopeTerm).filter(unifier()::isGround).map(st -> Scope.matcher()
                 .match(st, unifier()).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
     }
 
     private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
-        return Optional.of(unifier().findRecursive(occurrenceTerm)).filter(ITerm::isGround)
-                .map(ot -> Occurrence.matcher().match(ot, unifier())
-                        .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+        return Optional.of(occurrenceTerm).filter(unifier()::isGround).map(ot -> Occurrence.matcher()
+                .match(ot, unifier()).orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
     }
 
 }

@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.spoofax.analysis.IScopeGraphUnit;
+import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 
 public class SG_get_reachable_decls extends AnalysisPrimitive {
@@ -17,12 +17,10 @@ public class SG_get_reachable_decls extends AnalysisPrimitive {
         super(SG_get_reachable_decls.class.getSimpleName());
     }
 
-    @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
+    @Override public Optional<? extends ITerm> call(ISolution solution, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return unit.solution().<ITerm>flatMap(s -> {
-            return Scope.matcher().match(term, s.unifier()).<ITerm>flatMap(scope -> {
-                return s.nameResolution().reachable(scope).map(B::newList);
-            });
+        return Scope.matcher().match(term, solution.unifier()).<ITerm>flatMap(scope -> {
+            return solution.nameResolution().reachable(scope).map(B::newList);
         });
     }
 

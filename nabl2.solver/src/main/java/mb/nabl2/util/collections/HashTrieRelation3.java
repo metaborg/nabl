@@ -87,6 +87,13 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             return bwdV;
         }
 
+        @Override public IRelation3.Immutable<K, L, V> put(K key, L label, V value) {
+            return new HashTrieRelation3.Immutable<>(fwdK.__insert(key, ImmutableTuple2.of(label, value)),
+                    fwdKL.__insert(ImmutableTuple2.of(key, label), value),
+                    bwdV.__insert(value, ImmutableTuple2.of(label, key)),
+                    bwdVL.__insert(ImmutableTuple2.of(value, label), key));
+        }
+
         @Override public IRelation3.Immutable<V, L, K> inverse() {
             return new HashTrieRelation3.Immutable<>(bwdV, bwdVL, fwdK, fwdKL);
         }
@@ -125,7 +132,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                 return false;
             return true;
         }
-    
+
         public static <K, L, V> HashTrieRelation3.Immutable<K, L, V> of() {
             return new HashTrieRelation3.Immutable<>(SetMultimap.Immutable.of(), SetMultimap.Immutable.of(),
                     SetMultimap.Immutable.of(), SetMultimap.Immutable.of());

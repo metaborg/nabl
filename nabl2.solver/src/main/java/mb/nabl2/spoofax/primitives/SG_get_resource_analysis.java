@@ -15,15 +15,15 @@ import mb.nabl2.stratego.StrategoBlob;
 public class SG_get_resource_analysis extends ScopeGraphContextPrimitive {
 
     public SG_get_resource_analysis() {
-        super(SG_get_resource_analysis.class.getSimpleName(), 0, 0);
+        super(SG_get_resource_analysis.class.getSimpleName());
     }
 
-    @Override public Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,
+    @Override protected Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,
             List<IStrategoTerm> sterms, ITermFactory factory) throws InterpreterException {
         if(!Tools.isTermString(sterm)) {
             throw new InterpreterException("Expect a resource path.");
         }
-        String resource = Tools.asJavaString(sterm);
+        final String resource = Tools.asJavaString(sterm);
         final IScopeGraphUnit unit = context.unit(resource);
         return Optional.of(new StrategoBlob(unit));
     }

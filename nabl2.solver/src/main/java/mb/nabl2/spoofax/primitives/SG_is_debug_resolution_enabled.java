@@ -12,12 +12,12 @@ import mb.nabl2.spoofax.analysis.IScopeGraphContext;
 public class SG_is_debug_resolution_enabled extends ScopeGraphContextPrimitive {
 
     public SG_is_debug_resolution_enabled() {
-        super(SG_is_debug_resolution_enabled.class.getSimpleName(), 0, 0);
+        super(SG_is_debug_resolution_enabled.class.getSimpleName(), 0);
     }
 
-    @Override public Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm term,
-            List<IStrategoTerm> termVars, ITermFactory factory) throws InterpreterException {
-        return context.config().debug().resolution() ? Optional.of(term) : Optional.empty();
+    @Override protected Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,
+            List<IStrategoTerm> sterms, ITermFactory factory) throws InterpreterException {
+        return context.config().debug().resolution() ? Optional.of(sterm) : Optional.empty();
     }
 
 }

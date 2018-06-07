@@ -17,7 +17,7 @@ public abstract class ScopeGraphLogPrimitive extends ScopeGraphContextPrimitive 
     private static final ILogger logger = LoggerUtils.logger("org.metaborg.meta.nabl2");
 
     public ScopeGraphLogPrimitive(String name) {
-        super(name, 0, 1);
+        super(name, 1);
     }
 
     @Override public Optional<ITerm> call(IScopeGraphContext<?> context, ITerm term, List<ITerm> terms)
