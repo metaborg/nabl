@@ -187,6 +187,9 @@ rules
   replace-cop(|a): PathScopesOp(t) -> v
     with v := Var(<newname> "scopes")
 
+  replace-cop(|a): PathLabelsOp(t) -> v
+    with v := Var(<newname> "labels")
+
   cop-to-c: (COp(x, in_ts), out_t) -> C(x, ts)
     with out_ts := <?Tuple(<id>) + ![<id>]> out_t;
          ts := <conc> (in_ts, out_ts)
@@ -198,6 +201,8 @@ rules
   cop-to-c: (PathDstOp(t), v) -> CPathDst(t, v)
 
   cop-to-c: (PathScopesOp(t), v) -> CPathScopes(t, v)
+
+  cop-to-c: (PathLabelsOp(t), v) -> CPathLabels(t, v)
 
   list-to-conj(|tl): [] -> tl
 
@@ -246,14 +251,14 @@ rules
 
   ho-constraint-to-rules(|a):
       (LPathMatch(re), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, [v]), [], CTrue(), [], CPathMatch(re, v))]
-    with sort := <type-to-sort> PRED([PATH()]);
-         v := Var("p")
+    with sort := <type-to-sort> PRED([LIST(LABEL())]);
+         v := Var("ls")
 
   ho-constraint-to-rules(|a):
       (LPathLt(ord), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, [v1, v2]), [], CTrue(), [], CPathLt(ord, v1, v2))]
-    with sort := <type-to-sort> PRED([PATH(), PATH()]);
-         v1 := Var("p1");
-         v2 := Var("p2")
+    with sort := <type-to-sort> PRED([LABEL(), LABEL()]);
+         v1 := Var("l1");
+         v2 := Var("l2")
 
 rules
 
@@ -292,6 +297,7 @@ rules
   type-to-sort: INT()        -> IntSort()
   type-to-sort: STRING()     -> StringSort()
   type-to-sort: PATH()       -> PathSort()
+  type-to-sort: LABEL()      -> LabelSort()
   type-to-sort: OCCURRENCE() -> OccurrenceSort()
   type-to-sort: SCOPE()      -> ScopeSort()
   type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)

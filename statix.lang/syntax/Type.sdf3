@@ -20,6 +20,7 @@ context-free syntax
   TType.INT        = <int>
   TType.STRING     = <string>
   TType.PATH       = <path>
+  TType.LABEL      = <label>
   TType.OCCURRENCE = <occurrence>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>

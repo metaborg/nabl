@@ -10,10 +10,9 @@ rules
   [[ ResolutionQuery(r, filter, min) ^ (s) ]] :=
     new s', s' ---> s,
     VarDecl[[ r ^ (s') : OCCURRENCE() ]],
-    rty == TUPLE([PATH(), OCCURRENCE()]),
-    [[ filter ^ (s', rty) ]],
-    [[ min ^ (s', rty) ]].
-    
+    [[ filter ^ (s', OCCURRENCE()) ]],
+    [[ min ^ (s', OCCURRENCE()) ]].
+
   [[ CResolveOld(pt, st, target, filter, min) ^ (s) ]] :=
     [[ target ^ (s, wfty, resty) ]],
     [[ filter ^ (s, wfty) ]],
@@ -23,26 +22,25 @@ rules
 
   [[ CQueryOld(target, filter, min, st, pt) ^ (s) ]] :=
     OldTarget[[ target ^ (s, ty) ]],
-    [[ filter ^ (s, rty) ]],
-    [[ min ^ (s, rty) ]],
+    [[ filter ^ (s, ty) ]],
+    [[ min ^ (s, ty) ]],
     Build[[ st ^ (s) : SCOPE() ]],
-    Build[[ pt ^ (s) : LIST(rty) ]]. 
+    Build[[ pt ^ (s) : LIST(rty) ]].
 
-  OldTarget[[ EmptyTarget() ^ (s, rty) ]] :=
-    rty == PATH().
+  OldTarget[[ EmptyTarget() ^ (s, ty) ]] :=
+    ty == SCOPE().
 
-  OldTarget[[ RelTarget(rel) ^ (s, rty) ]] :=
-    RelRef[[ rel ^ (s) : ty ]],
-    ty' is `inout-type` of ty,
-    rty == TUPLE([PATH(),ty']). 
-    
-  [[ FilterOld(p, c) ^ (s, rty) ]] :=
+  OldTarget[[ RelTarget(rel) ^ (s, ty) ]] :=
+    RelRef[[ rel ^ (s) : ty' ]],
+    ty is `inout-type` of ty'.
+
+  [[ FilterOld(p, c) ^ (s, ty) ]] :=
     new s', s' ---> s,
-    Match[[ p ^ (s') : rty ]],
+    Match[[ p ^ (s') : TUPLE([LIST(LABEL()), ty]) ]],
     [[ c ^ (s') ]]. 
 
-  [[ MinOld(p1, p2, c) ^ (s, rty) ]] :=
+  [[ MinOld(p1, p2, c) ^ (s, ty) ]] :=
     new s', s' ---> s,
-    Match[[ p1 ^ (s') : rty ]],
-    Match[[ p2 ^ (s') : rty ]],
+    Match[[ p1 ^ (s') : TUPLE([LABEL(), ty]) ]],
+    Match[[ p2 ^ (s') : TUPLE([LABEL(), ty]) ]],
     [[ c ^ (s') ]].

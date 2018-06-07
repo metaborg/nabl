@@ -51,7 +51,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env(LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        if(re.empty()) {
+        if(!re.wf(path.getLabels()).isPresent()) {
             return ImmutableSet.of();
         } else {
             return env_L(scopeGraph.getLabels(), re, path);
@@ -108,7 +108,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
             throw new ResolutionException("Scope " + scope + " is incomplete in data.");
         }
-        if(!re.wf()) {
+        if(!re.wf(path.getLabels()).orElse(false)) {
             return ImmutableSet.of();
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
@@ -135,7 +135,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
             final Optional<IScopePath<V, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re.step(l), p.get()));
+                env.addAll(env(re/* .l */, p.get()));
             }
         }
         return env.build();

@@ -250,24 +250,24 @@ rules
     [[ min ^ (s) ]].
 
   [[ NamespaceFilter(lp) ^ (s) ]] :=
-    [[ lp ^ (s) : PRED([PATH()]) ]].
+    [[ lp ^ (s) : PRED([LIST(LABEL())]) ]].
 
   [[ NamespaceMin(lp) ^ (s) ]] :=
-    [[ lp ^ (s) : PRED([PATH(), PATH()]) ]].
+    [[ lp ^ (s) : PRED([LABEL(), LABEL()]) ]].
 
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
-    Build[[ p ^ (s) : PATH() ]].
+    Build[[ p ^ (s) : LIST(LABEL()) ]].
 
   [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
-    Build[[ p1 ^ (s) : PATH() ]],
-    Build[[ p2 ^ (s) : PATH() ]],
+    Build[[ p1 ^ (s) : LABEL() ]],
+    Build[[ p2 ^ (s) : LABEL() ]],
     Map1[[ prs ^ (s) ]].
 
-  [[ LPathMatch(re) ^ (s) : PRED([PATH()]) ]] :=
+  [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
     LabelRE[[ re ^ (s) ]].
 
-  [[ LPathLt(prs) ^ (s) : PRED([PATH(), PATH()]) ]] :=
+  [[ LPathLt(prs) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
     Map1[[ prs ^ (s) ]].
 
   [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
@@ -318,9 +318,15 @@ rules
     Build[[ pt ^ (s) : PATH() ]],
     Build[[ st ^ (s) : LIST(SCOPE()) ]].
 
+  [[ CPathLabels(pt, lt) ^ (s) ]] :=
+    Build[[ pt ^ (s) : PATH() ]],
+    Build[[ st ^ (s) : LIST(LABEL()) ]].
+
   Term(V)[[ PathSrcOp(t) ^ (s) : SCOPE() ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
   Term(V)[[ PathScopesOp(t) ^ (s) : LIST(SCOPE()) ]] :=
+    Term(V)[[ t ^ (s) : PATH() ]].
+  Term(V)[[ PathLabelsOp(t) ^ (s) : LIST(LABEL()) ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
   Term(V)[[ PathDstOp(t) ^ (s) : SCOPE() ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
@@ -347,11 +353,11 @@ rules
     outty == TUPLE([PATH(), inoutty]).
 
   [[ Filter(lp, lt) ^ (s, ty) ]] :=
-    [[ lp ^ (s) : PRED([PATH()]) ]],
+    [[ lp ^ (s) : PRED([LIST(LABEL())]) ]],
     [[ lt ^ (s) : PRED([ty]) ]].
 
   [[ Min(lp, lt) ^ (s, ty) ]] :=
-    [[ lp ^ (s) : PRED([PATH(), PATH()]) ]],
+    [[ lp ^ (s) : PRED([LABEL(), LABEL()]) ]],
     [[ lt ^ (s) : PRED([ty, ty]) ]].
 
   [[ ResolveFilter(t) ^ (s, ty) ]] :=
@@ -402,6 +408,7 @@ rules
   SortRef[[ StringSort() ^ (_) : STRING() ]].
   SortRef[[ OccurrenceSort() ^ (_) : OCCURRENCE() ]].
   SortRef[[ PathSort() ^ (_) : PATH() ]].
+  SortRef[[ LabelSort() ^ (_) : LABEL() ]].
   SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
   SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].

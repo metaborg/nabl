@@ -7,6 +7,10 @@ public interface IScopePath<V, L>
 
     V getTarget();
 
+    default boolean isEmpty() {
+        return size() == 0;
+    }
+    
     int size();
 
     String toString(boolean includeSource, boolean includeTarget);
