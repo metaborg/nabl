@@ -143,10 +143,10 @@ public class RelationComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(CEvalFunction c) {
-        final ITerm term = c.getTerm();
-        if(!unifier().isGround(term)) {
+        if(!unifier().isGround(c.getTerm())) {
             return Optional.empty();
         }
+        final ITerm term = unifier().findRecursive(c.getTerm());
         return c.getFunction().match(IFunctionName.Cases.of(
         // @formatter:off
             name -> {
@@ -160,7 +160,7 @@ public class RelationComponent extends ASolver {
                 });
             },
             extName -> {
-                return callExternal(extName, unifier().findRecursive(term)).map(ret -> {
+                return callExternal(extName, term).map(ret -> {
                     return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 });
             }
