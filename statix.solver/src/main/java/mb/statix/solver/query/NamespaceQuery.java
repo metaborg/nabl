@@ -2,6 +2,8 @@ package mb.statix.solver.query;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
@@ -11,6 +13,7 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
 import mb.statix.terms.AOccurrence;
@@ -33,19 +36,23 @@ public class NamespaceQuery {
         this.pathMinConstraint = pathMinConstraint;
     }
 
-    public LabelWF<ITerm> getLabelWF(State state, IDebugContext debug) {
+    public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
         if(pathFilterConstraint == null) {
             return LabelWF.ANY();
         } else {
-            return LabelWF.ANY(); // FIXME Use pathFilterConstraint
+            return new ConstraintLabelWF(pathFilterConstraint, state, completeness, debug);
         }
     }
 
-    public DataWF<ITerm> getDataWF(Occurrence ref, State state, IDebugContext debug) {
+    public DataWF<ITerm> getDataWF(Occurrence ref, State state, Completeness completeness, IDebugContext debug) {
         final IUnifier unifier = state.unifier();
         return new DataWF<ITerm>() {
-            public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
-                final Occurrence decl = AOccurrence.matcher(M.term()).match(datum, unifier)
+            public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+                if(datum.size() != 1) {
+                    throw new IllegalArgumentException("Argument count mismatch for decl.");
+                }
+                final ITerm declTerm = datum.get(0);
+                final Occurrence decl = AOccurrence.matcher(M.term()).match(declTerm, unifier)
                         .orElseThrow(() -> new ResolutionException());
                 if(!ref.getNamespace().equals(decl.getNamespace())) {
                     return false;
@@ -63,15 +70,15 @@ public class NamespaceQuery {
         };
     }
 
-    public LabelOrder<ITerm> getLabelOrder(State state, IDebugContext debug) {
+    public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) {
         if(pathMinConstraint == null) {
             return LabelOrder.NONE();
         } else {
-            return LabelOrder.NONE(); // FIXME User pathMinConstraint
+            return new ConstraintLabelOrder(pathMinConstraint, state, completeness, debug);
         }
     }
 
-    public DataEquiv<ITerm> getDataEquiv(State state, IDebugContext debug) {
+    public DataEquiv<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
         return DataEquiv.ALL();
     }
 

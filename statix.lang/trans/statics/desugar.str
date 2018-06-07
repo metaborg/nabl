@@ -65,9 +65,6 @@ rules
   desugar-query: NoMin() -> Min(LFalse(), LFalse())
   desugar-query: Min(l) -> Min(l, LFalse())
 
-  desugar-query: NoFilterOld() -> FilterOld(Wld(), CTrue())
-  desugar-query: NoMinOld() -> MinOld(Wld(), Wld(), CTrue())
-
 rules
 
   desugar-lambdas = topdown(try(desugar-lambda))
@@ -76,5 +73,6 @@ rules
 rules
 
   desugar-terms = topdown(try(desugar-term))
+
   desugar-term: Tuple0()      -> Tuple([])
   desugar-term: TupleN(x, xs) -> Tuple([x|xs])

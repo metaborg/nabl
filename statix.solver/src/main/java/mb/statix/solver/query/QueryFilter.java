@@ -1,5 +1,7 @@
 package mb.statix.solver.query;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -26,13 +28,13 @@ public class QueryFilter implements IQueryFilter {
     }
 
     public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
-        return LabelWF.ANY(); // FIXME Use pathConstraint
+        return new ConstraintLabelWF(pathConstraint, state, completeness, debug);
     }
 
     public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) {
         return new DataWF<ITerm>() {
-            public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
-                final IConstraint constraint = new CUser(dataConstraint, ImmutableList.of(datum));
+            public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+                final IConstraint constraint = new CUser(dataConstraint, datum);
                 final Config config = Config.of(state, ImmutableList.of(constraint), completeness);
                 return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException());
             }

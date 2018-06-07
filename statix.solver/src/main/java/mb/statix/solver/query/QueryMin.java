@@ -1,5 +1,9 @@
 package mb.statix.solver.query;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -26,14 +30,15 @@ public class QueryMin implements IQueryMin {
     }
 
     public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) {
-        return LabelOrder.NONE(); // FIXME Use pathConstraint
+        return new ConstraintLabelOrder(pathConstraint, state, completeness, debug);
     }
 
     public DataEquiv<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
         return new DataEquiv<ITerm>() {
 
-            public boolean eq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
-                final IConstraint constraint = new CUser(dataConstraint, ImmutableList.of(datum1, datum2));
+            public boolean eq(List<ITerm> datum1, List<ITerm> datum2) throws ResolutionException, InterruptedException {
+                final IConstraint constraint =
+                        new CUser(dataConstraint, ImmutableList.of(B.newTuple(datum1), B.newTuple(datum2)));
                 final Config config = Config.of(state, ImmutableList.of(constraint), completeness);
                 return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException());
             }

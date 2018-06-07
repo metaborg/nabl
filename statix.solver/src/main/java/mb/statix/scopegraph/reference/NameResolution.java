@@ -1,11 +1,12 @@
 package mb.statix.scopegraph.reference;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Predicate2;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import mb.statix.scopegraph.INameResolution;
@@ -51,7 +52,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env(LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        if(!re.wf(path.getLabels()).isPresent()) {
+        if(re.empty()) {
             return ImmutableSet.of();
         } else {
             return env_L(scopeGraph.getLabels(), re, path);
@@ -75,12 +76,27 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         return envBuilder.build();
     }
 
-    private Set<L> max(Set<L> L) {
-        return L.stream().filter(l1 -> L.stream().noneMatch(l2 -> labelOrder.lt(l1, l2))).collect(Collectors.toSet());
+    private Set<L> max(Set<L> L) throws ResolutionException, InterruptedException {
+        final ImmutableSet.Builder<L> max = ImmutableSet.builder();
+        outer: for(L l1 : L) {
+            for(L l2 : L) {
+                if(labelOrder.lt(l1, l2)) {
+                    continue outer;
+                }
+            }
+            max.add(l1);
+        }
+        return max.build();
     }
 
-    private Set<L> smaller(Set<L> L, L l1) {
-        return L.stream().filter(l2 -> labelOrder.lt(l2, l1)).collect(Collectors.toSet());
+    private Set<L> smaller(Set<L> L, L l1) throws ResolutionException, InterruptedException {
+        final ImmutableSet.Builder<L> smaller = ImmutableSet.builder();
+        for(L l2 : L) {
+            if(labelOrder.lt(l2, l1)) {
+                smaller.add(l2);
+            }
+        }
+        return smaller.build();
     }
 
     private Set<IResolutionPath<V, L, R>> minus(Set<IResolutionPath<V, L, R>> env1, Set<IResolutionPath<V, L, R>> env2)
@@ -88,7 +104,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         outer: for(IResolutionPath<V, L, R> p1 : env1) {
             for(IResolutionPath<V, L, R> p2 : env2) {
-                if(dataEquiv.eq(p1.getDeclaration(), p2.getDeclaration())) {
+                if(dataEquiv.eq(p1.getDatum(), p2.getDatum())) {
                     continue outer;
                 }
             }
@@ -108,18 +124,19 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
             throw new ResolutionException("Scope " + scope + " is incomplete in data.");
         }
-        if(!re.wf(path.getLabels()).orElse(false)) {
+        if(!re.wf()) {
             return ImmutableSet.of();
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         if(relation.isPresent()) {
-            if(dataWF.wf(scope)) {
-                env.add(Paths.resolve(path, relation.get(), scope));
+            final List<V> datum = ImmutableList.of(scope);
+            if(dataWF.wf(datum)) {
+                env.add(Paths.resolve(path, relation.get(), datum));
             }
         } else {
-            for(V decl : scopeGraph.getData().get(path.getTarget(), relation.get())) {
-                if(dataWF.wf(decl)) {
-                    env.add(Paths.resolve(path, relation.get(), decl));
+            for(List<V> datum : scopeGraph.getData().get(path.getTarget(), relation.get())) {
+                if(dataWF.wf(datum)) {
+                    env.add(Paths.resolve(path, relation.get(), datum));
                 }
             }
         }
@@ -135,7 +152,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
             final Optional<IScopePath<V, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re/* .l */, p.get()));
+                env.addAll(env(re.step(l), p.get()));
             }
         }
         return env.build();

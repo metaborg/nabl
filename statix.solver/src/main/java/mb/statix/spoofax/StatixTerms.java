@@ -54,6 +54,9 @@ public class StatixTerms {
     public static ITerm END_OF_PATH = B.newAppl("EOP");
     public static ITerm DECL_REL = B.newAppl("Decl");
 
+    public static ITerm SCOPE_SORT = B.newAppl("SCOPE");
+    public static Type SCOPE_REL_TYPE = Type.of(ImmutableList.of(SCOPE_SORT), ImmutableList.of());
+
     public static IMatcher<Spec> spec() {
         return M.tuple5(M.listElems(label()), relationDecls(), namespaceQueries(), rules(), scopeExtensions(),
                 (t, labels, relations, queries, rules, ext) -> {

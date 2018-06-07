@@ -21,12 +21,14 @@ public class ResolveMin implements IQueryMin {
         this.refTerm = refTerm;
     }
 
-    public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) throws ResolutionException {
-        return get(state).getLabelOrder(state, debug);
+    public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug)
+            throws ResolutionException {
+        return get(state).getLabelOrder(state, completeness, debug);
     }
 
-    public DataEquiv<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) throws ResolutionException {
-        return get(state).getDataEquiv(state, debug);
+    public DataEquiv<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug)
+            throws ResolutionException {
+        return get(state).getDataEquiv(state, completeness, debug);
     }
 
     private NamespaceQuery get(State state) throws ResolutionException {

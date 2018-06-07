@@ -1,24 +1,35 @@
 package mb.statix.scopegraph.reference;
 
-import java.util.Optional;
-
-import com.google.common.collect.Iterables;
-
 public interface LabelWF<L> {
 
+    LabelWF<L> step(L l);
+
     /**
-     * This predicate should be prefix-monotone:
-     * 
-     * - If p = empty, then p.p' = empty must hold.
+     * Returns if the current path is well-formed.
      */
-    Optional<Boolean> wf(Iterable<L> labels);
+    boolean wf() throws ResolutionException, InterruptedException;
+
+    /**
+     * Returns if none of the paths with the current prefix are well-formed.
+     */
+    boolean empty() throws ResolutionException, InterruptedException;
 
     static <L> LabelWF<L> ANY() {
-        return (p) -> Optional.of(true);
-    }
+        return new LabelWF<L>() {
 
-    static <L> LabelWF<L> EPSILON() {
-        return (ls) -> Iterables.isEmpty(ls) ? Optional.of(true) : Optional.empty();
+            public LabelWF<L> step(L l) {
+                return this;
+            }
+
+            public boolean wf() {
+                return true;
+            }
+
+            public boolean empty() {
+                return false;
+            }
+
+        };
     }
 
 }

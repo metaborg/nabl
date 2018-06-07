@@ -21,14 +21,16 @@ public class ResolveFilter implements IQueryFilter {
         this.refTerm = refTerm;
     }
 
-    public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) throws ResolutionException {
-        return get(state).getLabelWF(state, debug);
+    public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug)
+            throws ResolutionException {
+        return get(state).getLabelWF(state, completeness, debug);
     }
 
-    public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) throws ResolutionException {
+    public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug)
+            throws ResolutionException {
         final Occurrence ref = AOccurrence.matcher(M.term()).match(refTerm, state.unifier())
                 .orElseThrow(() -> new ResolutionException());
-        return get(state).getDataWF(ref, state, debug);
+        return get(state).getDataWF(ref, state, completeness, debug);
     }
 
     private NamespaceQuery get(State state) throws ResolutionException {

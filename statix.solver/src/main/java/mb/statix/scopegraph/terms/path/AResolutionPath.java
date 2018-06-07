@@ -1,5 +1,7 @@
 package mb.statix.scopegraph.terms.path;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
@@ -18,7 +20,7 @@ abstract class AResolutionPath<V, L, R> implements IResolutionPath<V, L, R> {
 
     @Value.Parameter @Override public abstract R getRelation();
 
-    @Value.Parameter @Override public abstract V getDeclaration();
+    @Value.Parameter @Override public abstract List<V> getDatum();
 
     @Value.Check public @Nullable AResolutionPath<V, L, R> check() {
         return this;
@@ -38,7 +40,7 @@ abstract class AResolutionPath<V, L, R> implements IResolutionPath<V, L, R> {
         sb.append(Paths.PATH_SEPARATOR);
         sb.append(getRelation());
         sb.append(Paths.PATH_SEPARATOR);
-        sb.append(getDeclaration());
+        sb.append(getDatum());
         return sb.toString();
     }
 

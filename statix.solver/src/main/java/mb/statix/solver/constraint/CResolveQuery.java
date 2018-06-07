@@ -15,6 +15,8 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.DataEquiv;
+import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.NameResolution;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
@@ -25,6 +27,7 @@ import mb.statix.solver.State;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.spec.Type;
+import mb.statix.spoofax.StatixTerms;
 
 public class CResolveQuery implements IConstraint {
 
@@ -49,12 +52,15 @@ public class CResolveQuery implements IConstraint {
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)
             throws InterruptedException {
+        final Type type;
         if(relation.isPresent()) {
-            final Type type = state.spec().relations().get(relation.get());
+            type = state.spec().relations().get(relation.get());
             if(type == null) {
                 debug.error("Ignoring query for unknown relation {}", relation.get());
                 return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
             }
+        } else {
+            type = StatixTerms.SCOPE_REL_TYPE;
         }
 
         final IUnifier.Immutable unifier = state.unifier();
@@ -68,9 +74,9 @@ public class CResolveQuery implements IConstraint {
             // @formatter:off
             final NameResolution<ITerm, ITerm, ITerm> nameResolution = NameResolution.<ITerm, ITerm, ITerm>builder()
                     .withLabelWF(filter.getLabelWF(state, completeness, debug))
-                    .withDataWF(filter.getDataWF(state, completeness, debug))
+                    .withDataWF(filter(type, filter.getDataWF(state, completeness, debug), debug))
                     .withLabelOrder(min.getLabelOrder(state, completeness, debug))
-                    .withDataEquiv(min.getDataEquiv(state, completeness, debug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, debug), debug))
                     .withEdgeComplete((s, l) -> completeness.isComplete(s, l, state))
                     .withDataComplete((s, l) -> completeness.isComplete(s, l, state))
                     .build(state.scopeGraph(), relation);
@@ -78,7 +84,7 @@ public class CResolveQuery implements IConstraint {
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms;
             if(relation.isPresent()) {
-                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), p.getDeclaration()))
+                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
                         .collect(Collectors.toList());
             } else {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
@@ -88,6 +94,36 @@ public class CResolveQuery implements IConstraint {
         } catch(ResolutionException e) {
             return Optional.empty();
         }
+    }
+
+    private DataWF<ITerm> filter(Type type, DataWF<ITerm> filter, IDebugContext debug) {
+        return new DataWF<ITerm>() {
+            public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+                return filter.wf(filter(type, datum, debug));
+            }
+        };
+    }
+
+    private DataEquiv<ITerm> filter(Type type, DataEquiv<ITerm> filter, IDebugContext debug) {
+        return new DataEquiv<ITerm>() {
+
+            public boolean eq(List<ITerm> d1, List<ITerm> d2) throws ResolutionException, InterruptedException {
+                return filter.eq(filter(type, d1, debug), filter(type, d2, debug));
+            }
+
+            public boolean alwaysTrue() {
+                return filter.alwaysTrue();
+            }
+
+        };
+    }
+
+    private List<ITerm> filter(Type type, List<ITerm> datum, IDebugContext debug) throws ResolutionException {
+        if(type.getArity() != datum.size()) {
+            debug.error("Ignoring {}-ary data for {}-ary relation {}", datum.size(), type.getArity(), relation);
+            throw new ResolutionException();
+        }
+        return datum.stream().limit(type.getInputArity()).collect(Collectors.toList());
     }
 
     @Override public String toString(IUnifier unifier) {

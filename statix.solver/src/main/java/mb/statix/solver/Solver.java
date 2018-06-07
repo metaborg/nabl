@@ -4,7 +4,11 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.iterators.Iterables2;
+
 import com.google.common.collect.Sets;
+
+import mb.nabl2.terms.ITermVar;
 
 public class Solver {
 
@@ -63,12 +67,19 @@ public class Solver {
     }
 
     public static Optional<Boolean> entails(Config config, IDebugContext debug) throws InterruptedException {
+        return entails(config, Iterables2.empty(), debug);
+    }
+
+    public static Optional<Boolean> entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
+            throws InterruptedException {
         final State state = config.state();
         final Config result = Solver.solve(config, debug.subContext());
         if(result.state().isErroneous()) {
             debug.info("Rule rejected");
             return Optional.of(false);
-        } else if(result.constraints().isEmpty() && state.unifier().equals(result.state().unifier())) {
+        } else if(result.constraints().isEmpty()
+                && state.unifier().removeAll(localVars).unifier().equals(result.state().unifier())) {
+            // FIXME check scope graph entailment
             debug.info("Entailment accepted");
             return Optional.of(true);
         } else {

@@ -68,10 +68,8 @@ public class CTellRel implements IConstraint {
         if(!datumTerms.stream().limit(type.getInputArity()).allMatch(unifier::isGround)) {
             return Optional.empty();
         }
-        final ITerm datumTerm = type.getArity() == 1 ? datumTerms.get(0) : B.newTuple(datumTerms);
-
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addDatum(scope, relation, datumTerm);
+                state.scopeGraph().addDatum(scope, relation, datumTerms);
         return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
     }
 

@@ -1,5 +1,7 @@
 package mb.statix.scopegraph;
 
+import java.util.List;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.IRelation3;
 
@@ -15,7 +17,7 @@ public interface IScopeGraph<V, L, R> {
 
     IRelation3<V, L, V> getEdges();
 
-    IRelation3<V, R, V> getData();
+    IRelation3<V, R, List<V>> getData();
 
     interface Immutable<V, L, R> extends IScopeGraph<V, L, R> {
 
@@ -23,11 +25,11 @@ public interface IScopeGraph<V, L, R> {
 
         @Override IRelation3.Immutable<V, L, V> getEdges();
 
-        @Override IRelation3.Immutable<V, R, V> getData();
+        @Override IRelation3.Immutable<V, R, List<V>> getData();
 
         Immutable<V, L, R> addEdge(V sourceScope, L label, V targetScope);
 
-        Immutable<V, L, R> addDatum(V scope, R relation, V datum);
+        Immutable<V, L, R> addDatum(V scope, R relation, Iterable<V> datum);
 
     }
 
@@ -35,7 +37,7 @@ public interface IScopeGraph<V, L, R> {
 
         boolean addEdge(V sourceScope, L label, V targetScope);
 
-        boolean addDatum(V scope, R relation, V datum);
+        boolean addDatum(V scope, R relation, Iterable<V> datum);
 
         boolean addAll(IScopeGraph<V, L, R> other);
 

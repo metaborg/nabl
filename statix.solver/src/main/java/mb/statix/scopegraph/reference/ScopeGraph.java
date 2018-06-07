@@ -1,6 +1,9 @@
 package mb.statix.scopegraph.reference;
 
 import java.io.Serializable;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -32,10 +35,10 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
         private final Set.Immutable<R> relations;
 
         private final IRelation3.Immutable<V, L, V> edges;
-        private final IRelation3.Immutable<V, R, V> data;
+        private final IRelation3.Immutable<V, R, List<V>> data;
 
         Immutable(Set.Immutable<L> labels, L endOfPath, Set.Immutable<R> relations, IRelation3.Immutable<V, L, V> edges,
-                IRelation3.Immutable<V, R, V> data) {
+                IRelation3.Immutable<V, R, List<V>> data) {
             this.labels = labels;
             this.endOfPath = endOfPath;
             assert labels.contains(endOfPath);
@@ -62,7 +65,7 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             return edges;
         }
 
-        @Override public IRelation3.Immutable<V, R, V> getData() {
+        @Override public IRelation3.Immutable<V, R, List<V>> getData() {
             return data;
         }
 
@@ -73,9 +76,9 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
                     data);
         }
 
-        @Override public ScopeGraph.Immutable<V, L, R> addDatum(V sourceScope, R relation, V decl) {
+        @Override public ScopeGraph.Immutable<V, L, R> addDatum(V sourceScope, R relation, Iterable<V> datum) {
             return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges,
-                    data.put(sourceScope, relation, decl));
+                    data.put(sourceScope, relation, ImmutableList.copyOf(datum)));
         }
 
         // ------------------------------------------------------------
@@ -99,8 +102,7 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
                 return false;
             if(getClass() != obj.getClass())
                 return false;
-            @SuppressWarnings("unchecked") ScopeGraph.Immutable<V, L, R> other =
-                    (ScopeGraph.Immutable<V, L, R>) obj;
+            @SuppressWarnings("unchecked") ScopeGraph.Immutable<V, L, R> other = (ScopeGraph.Immutable<V, L, R>) obj;
             if(!edges.equals(other.edges))
                 return false;
             if(!data.equals(other.data))
@@ -116,18 +118,17 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
 
     }
 
-    public static class Transient<V, L, R> extends ScopeGraph<V, L, R>
-            implements IScopeGraph.Transient<V, L, R> {
+    public static class Transient<V, L, R> extends ScopeGraph<V, L, R> implements IScopeGraph.Transient<V, L, R> {
 
         private final Set.Immutable<L> labels;
         private final L endOfPath;
         private final Set.Immutable<R> relations;
 
         private final IRelation3.Transient<V, L, V> edges;
-        private final IRelation3.Transient<V, R, V> data;
+        private final IRelation3.Transient<V, R, List<V>> data;
 
         Transient(Set.Immutable<L> labels, L endOfPath, Set.Immutable<R> relations, IRelation3.Transient<V, L, V> edges,
-                IRelation3.Transient<V, R, V> data) {
+                IRelation3.Transient<V, R, List<V>> data) {
             this.labels = labels;
             this.endOfPath = endOfPath;
             assert labels.contains(endOfPath);
@@ -154,7 +155,7 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             return edges;
         }
 
-        @Override public IRelation3<V, R, V> getData() {
+        @Override public IRelation3<V, R, List<V>> getData() {
             return data;
         }
 
@@ -164,8 +165,8 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             return edges.put(sourceScope, label, targetScope);
         }
 
-        @Override public boolean addDatum(V scope, R relation, V decl) {
-            return data.put(scope, relation, decl);
+        @Override public boolean addDatum(V scope, R relation, Iterable<V> datum) {
+            return data.put(scope, relation, ImmutableList.copyOf(datum));
         }
 
         @Override public boolean addAll(IScopeGraph<V, L, R> other) {
