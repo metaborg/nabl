@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IApplTerm;
@@ -25,7 +27,7 @@ public class TermBuild {
 
     public static class B {
 
-        public final IApplTerm EMPTY_TUPLE = newTuple();
+        public final IApplTerm EMPTY_TUPLE = newAppl(Terms.TUPLE_OP, ImmutableList.of());
 
         public final IListTerm EMPTY_LIST = newNil();
 
@@ -43,17 +45,18 @@ public class TermBuild {
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
-        public IApplTerm newTuple(ITerm... args) {
+        public ITerm newTuple(ITerm... args) {
             return newTuple(Arrays.asList(args));
         }
 
-        public IApplTerm newTuple(Iterable<? extends ITerm> args) {
+        public ITerm newTuple(Iterable<? extends ITerm> args) {
             return newTuple(args, null);
         }
 
-        public IApplTerm newTuple(Iterable<? extends ITerm> args,
+        public ITerm newTuple(Iterable<? extends ITerm> args,
                 @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            return newAppl(Terms.TUPLE_OP, args, attachments);
+            return Iterables.size(args) == 1 ? Iterables.getOnlyElement(args)
+                    : newAppl(Terms.TUPLE_OP, args, attachments);
         }
 
         public IListTerm newList(ITerm... elems) {

@@ -7,12 +7,16 @@ import org.immutables.value.Value;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.Terms;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
 
     @Override @Value.Check protected ApplTerm check() {
+        if(Terms.TUPLE_OP.equals(getOp()) && getArity() == 1) {
+            throw new IllegalArgumentException("1-tuples are not supported.");
+        }
         return this;
     }
 
