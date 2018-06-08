@@ -168,6 +168,19 @@ public abstract class Relation<T> implements IRelation<T> {
         return entries().stream();
     }
 
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(getDescription()).append(" { ");
+        stream().forEach(entry -> {
+            sb.append(entry._1());
+            sb.append(" < ");
+            sb.append(entry._2());
+            sb.append("; ");
+        });
+        sb.append("}");
+        return sb.toString();
+
+    }
 
     public static class Immutable<T> extends Relation<T> implements IRelation.Immutable<T>, Serializable {
         private static final long serialVersionUID = 42L;
