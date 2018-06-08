@@ -157,7 +157,7 @@ public class StatixTerms {
                     constraints.add(new CResolveQuery(rel, filter, min, scope, result));
                     return Unit.unit;
                 }),
-                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>(labels)), term(), (c, re, lbls) -> {
+                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>(labels)), list(), (c, re, lbls) -> {
                     constraints.add(new CPathMatch(re, lbls));
                     return Unit.unit;
                 }),
@@ -319,21 +319,27 @@ public class StatixTerms {
             M.appl1("Tuple", M.listElems(m), (t, args) -> {
                 return B.newTuple(args);
             }),
-            M.appl1("List", M.listElems(m), (t, elems) -> {
-                return B.newList(elems);
-            }),
-            M.appl2("ListTail", M.listElems(m), m, (t, elems, tail) -> {
-                return B.newListTail(elems, (IListTerm) tail);
-            }),
             M.appl1("Str", M.string(), (t, string) -> {
                 return string;
             }),
             M.appl1("Int", M.integer(), (t, integer) -> {
                 return integer;
             }),
-            AOccurrence.matcher(term()),
-            M.term(t -> {
-                throw new IllegalArgumentException("Unknown term " + t);
+            list(),
+            AOccurrence.matcher(term())
+            // @formatter:on
+        ));
+    }
+
+    public static IMatcher<IListTerm> list() {
+        return M.casesFix(m -> Iterables2.from(
+        // @formatter:off
+            var(),
+            M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
+                return B.newList(elems);
+            }),
+            M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
+                return B.newListTail(elems, tail);
             })
             // @formatter:on
         ));

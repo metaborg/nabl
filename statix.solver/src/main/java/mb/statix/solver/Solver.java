@@ -67,6 +67,30 @@ public class Solver {
         return Config.of(state, constraints, completeness);
     }
 
+    public static Optional<Boolean> entails(Config config, IDebugContext debug) throws InterruptedException {
+        return entails(config, Iterables2.empty(), debug);
+    }
+
+    public static Optional<Boolean> entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
+            throws InterruptedException {
+        debug.info("Checking entailment of {}", toString(config.constraints(), config.state().unifier()));
+        final State state = config.state();
+        final Config result = Solver.solve(config, debug.subContext());
+        if(result.state().isErroneous()) {
+            debug.info("Constraints not entailed");
+            return Optional.of(false);
+        } else if(result.constraints().isEmpty()
+                && state.unifier().removeAll(localVars).unifier().equals(result.state().unifier())) {
+            // FIXME check scope graph entailment
+            debug.info("Constraints entailed");
+            return Optional.of(true);
+        } else {
+            debug.info("Constraint entailment delayed");
+            return Optional.empty();
+        }
+
+    }
+
     private static String toString(Iterable<IConstraint> constraints, IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
@@ -79,30 +103,6 @@ public class Solver {
             sb.append(constraint.toString(unifier));
         }
         return sb.toString();
-    }
-
-    public static Optional<Boolean> entails(Config config, IDebugContext debug) throws InterruptedException {
-        return entails(config, Iterables2.empty(), debug);
-    }
-
-    public static Optional<Boolean> entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
-            throws InterruptedException {
-        debug.info("Checking entailment");
-        final State state = config.state();
-        final Config result = Solver.solve(config, debug.subContext());
-        if(result.state().isErroneous()) {
-            debug.info("Entailment succeeded");
-            return Optional.of(false);
-        } else if(result.constraints().isEmpty()
-                && state.unifier().removeAll(localVars).unifier().equals(result.state().unifier())) {
-            // FIXME check scope graph entailment
-            debug.info("Entailment failed");
-            return Optional.of(true);
-        } else {
-            debug.info("Entailment delayed");
-            return Optional.empty();
-        }
-
     }
 
 }

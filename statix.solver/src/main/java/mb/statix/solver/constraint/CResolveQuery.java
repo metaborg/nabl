@@ -92,6 +92,7 @@ public class CResolveQuery implements IConstraint {
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm);
             return Optional.of(Result.of(state, ImmutableSet.of(C)));
         } catch(ResolutionException e) {
+            debug.info("Query resolution delayed: {}", e.getMessage());
             return Optional.empty();
         }
     }
@@ -119,9 +120,9 @@ public class CResolveQuery implements IConstraint {
     }
 
     private List<ITerm> filter(Type type, List<ITerm> datum, IDebugContext debug) throws ResolutionException {
-        if(type.getArity() != datum.size()) {
+        if(datum.size() != type.getArity()) {
             debug.error("Ignoring {}-ary data for {}-ary relation {}", datum.size(), type.getArity(), relation);
-            throw new ResolutionException();
+            throw new ResolutionException("Wrong data arity.");
         }
         return datum.stream().limit(type.getInputArity()).collect(Collectors.toList());
     }

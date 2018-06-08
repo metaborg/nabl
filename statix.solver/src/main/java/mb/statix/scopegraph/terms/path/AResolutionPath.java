@@ -1,6 +1,7 @@
 package mb.statix.scopegraph.terms.path;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -18,7 +19,7 @@ abstract class AResolutionPath<V, L, R> implements IResolutionPath<V, L, R> {
 
     @Value.Parameter @Override public abstract IScopePath<V, L> getPath();
 
-    @Value.Parameter @Override public abstract R getRelation();
+    @Value.Parameter @Override public abstract Optional<R> getRelation();
 
     @Value.Parameter @Override public abstract List<V> getDatum();
 

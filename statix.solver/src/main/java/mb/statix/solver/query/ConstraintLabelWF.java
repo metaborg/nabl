@@ -53,7 +53,14 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         debug.info("Check {} well-formed", state.unifier().toString(term));
         final IConstraint C = new CUser(constraint, ImmutableList.of(term));
         final Config config = Config.of(state, ImmutableList.of(C), completeness);
-        return Solver.entails(config, debug.subContext()).orElseThrow(() -> new ResolutionException());
+        if(Solver.entails(config, debug.subContext())
+                .orElseThrow(() -> new ResolutionException("Label well-formedness check delayed"))) {
+            debug.info("Well-formed {}", state.unifier().toString(term));
+            return true;
+        } else {
+            debug.info("Not well-formed {}", state.unifier().toString(term));
+            return false;
+        }
     }
 
     @Override public boolean empty() throws ResolutionException, InterruptedException {
@@ -63,7 +70,13 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         debug.info("Check {} empty", state.unifier().toString(term));
         final IConstraint C = new CUser(constraint, ImmutableList.of(term));
         final Config config = Config.of(varAndState._2(), ImmutableList.of(C), completeness);
-        return !Solver.entails(config, Iterables2.singleton(var), debug.subContext()).orElse(true);
+        if(!Solver.entails(config, Iterables2.singleton(var), debug.subContext()).orElse(true)) {
+            debug.info("Empty {}", state.unifier().toString(term));
+            return true;
+        } else {
+            debug.info("Non-empty {}", state.unifier().toString(term));
+            return false;
+        }
     }
 
 }

@@ -29,13 +29,13 @@ public class ResolveFilter implements IQueryFilter {
     public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug)
             throws ResolutionException {
         final Occurrence ref = AOccurrence.matcher(M.term()).match(refTerm, state.unifier())
-                .orElseThrow(() -> new ResolutionException());
+                .orElseThrow(() -> new ResolutionException("Reference match delayed"));
         return get(state).getDataWF(ref, state, completeness, debug);
     }
 
     private NamespaceQuery get(State state) throws ResolutionException {
         final Occurrence ref = AOccurrence.matcher(M.term()).match(refTerm, state.unifier())
-                .orElseThrow(() -> new ResolutionException());
+                .orElseThrow(() -> new ResolutionException("Reference match delayed"));
         return state.spec().namespaceQueries().getOrDefault(ref.getNamespace(), NamespaceQuery.DEFAULT);
     }
 

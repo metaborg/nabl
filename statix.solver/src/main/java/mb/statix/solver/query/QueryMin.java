@@ -40,7 +40,7 @@ public class QueryMin implements IQueryMin {
                 final IConstraint constraint =
                         new CUser(dataConstraint, ImmutableList.of(B.newTuple(datum1), B.newTuple(datum2)));
                 final Config config = Config.of(state, ImmutableList.of(constraint), completeness);
-                return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException());
+                return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException("Data equivalence check delayed"));
             }
 
             public boolean alwaysTrue() {

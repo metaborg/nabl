@@ -20,7 +20,7 @@ public final class Paths {
         return EmptyScopePath.of(scope);
     }
 
-    public static <V, L, R> IResolutionPath<V, L, R> resolve(IScopePath<V, L> path, R relation, Iterable<V> datum) {
+    public static <V, L, R> IResolutionPath<V, L, R> resolve(IScopePath<V, L> path, Optional<R> relation, Iterable<V> datum) {
         return ResolutionPath.of(path, relation, ImmutableList.copyOf(datum));
     }
 

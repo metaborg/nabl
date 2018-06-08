@@ -53,7 +53,7 @@ public class NamespaceQuery {
                 }
                 final ITerm declTerm = datum.get(0);
                 final Occurrence decl = AOccurrence.matcher(M.term()).match(declTerm, unifier)
-                        .orElseThrow(() -> new ResolutionException());
+                        .orElseThrow(() -> new ResolutionException("Declaration match delayed"));
                 if(!ref.getNamespace().equals(decl.getNamespace())) {
                     return false;
                 }

@@ -33,7 +33,7 @@ public class ResolveMin implements IQueryMin {
 
     private NamespaceQuery get(State state) throws ResolutionException {
         final Occurrence ref = AOccurrence.matcher(M.term()).match(refTerm, state.unifier())
-                .orElseThrow(() -> new ResolutionException());
+                .orElseThrow(() -> new ResolutionException("Reference match delayed"));
         return state.spec().namespaceQueries().getOrDefault(ref.getNamespace(), NamespaceQuery.DEFAULT);
     }
 

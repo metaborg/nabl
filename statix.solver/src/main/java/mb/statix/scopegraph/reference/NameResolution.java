@@ -22,6 +22,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
     // isDataComplete : S x R
 
     private final IScopeGraph<V, L, R> scopeGraph;
+    private final Set<L> labels;
     private final Optional<R> relation;
 
     private final LabelWF<L> labelWF; // default: true
@@ -37,6 +38,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
             Predicate2<V, R> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
+        this.labels = ImmutableSet.<L>builder().addAll(scopeGraph.getLabels()).add(scopeGraph.getEndOfPath()).build();
         this.relation = relation;
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
@@ -55,7 +57,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         if(re.empty()) {
             return ImmutableSet.of();
         } else {
-            return env_L(scopeGraph.getLabels(), re, path);
+            return env_L(labels, re, path);
         }
     }
 
@@ -122,22 +124,22 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
             throws ResolutionException, InterruptedException {
         final V scope = path.getTarget();
         if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
-            throw new ResolutionException("Scope " + scope + " is incomplete in data.");
+            throw new ResolutionException("Scope " + scope + " is incomplete in " + relation);
         }
         if(!re.wf()) {
             return ImmutableSet.of();
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         if(relation.isPresent()) {
-            final List<V> datum = ImmutableList.of(scope);
-            if(dataWF.wf(datum)) {
-                env.add(Paths.resolve(path, relation.get(), datum));
-            }
-        } else {
             for(List<V> datum : scopeGraph.getData().get(path.getTarget(), relation.get())) {
                 if(dataWF.wf(datum)) {
-                    env.add(Paths.resolve(path, relation.get(), datum));
+                    env.add(Paths.resolve(path, relation, datum));
                 }
+            }
+        } else {
+            final List<V> datum = ImmutableList.of(scope);
+            if(dataWF.wf(datum)) {
+                env.add(Paths.resolve(path, relation, datum));
             }
         }
         return env.build();

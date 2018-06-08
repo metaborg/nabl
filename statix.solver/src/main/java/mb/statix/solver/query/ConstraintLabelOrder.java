@@ -28,10 +28,17 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
     }
 
     public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
-        debug.info("Check {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+        debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         final IConstraint C = new CUser(constraint, ImmutableList.of(l1, l2));
         final Config config = Config.of(state, ImmutableList.of(C), completeness);
-        return Solver.entails(config, debug.subContext()).orElseThrow(() -> new ResolutionException());
+        if(Solver.entails(config, debug.subContext())
+                .orElseThrow(() -> new ResolutionException("Label order check delayed"))) {
+            debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+            return true;
+        } else {
+            debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+            return false;
+        }
     }
 
 }

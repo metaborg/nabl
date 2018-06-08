@@ -36,7 +36,7 @@ public class QueryFilter implements IQueryFilter {
             public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
                 final IConstraint constraint = new CUser(dataConstraint, datum);
                 final Config config = Config.of(state, ImmutableList.of(constraint), completeness);
-                return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException());
+                return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException("Data well-formedness check delayed"));
             }
         };
     }
