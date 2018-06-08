@@ -9,6 +9,7 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.IUnifier;
 
 public class Solver {
 
@@ -50,7 +51,7 @@ public class Solver {
                         break outer;
                     }
                     if(!result.constraints().isEmpty()) {
-                        subDebug.info("Simplified to {}", result.constraints());
+                        subDebug.info("Simplified to {}", toString(result.constraints(), state.unifier()));
                         constraints.addAll(result.constraints());
                         completeness = completeness.addAll(result.constraints());
                     }
@@ -64,6 +65,20 @@ public class Solver {
         debug.info("Solved {} errors and {} remaining constraints.", state.isErroneous() ? "with" : "without",
                 constraints.size());
         return Config.of(state, constraints, completeness);
+    }
+
+    private static String toString(Iterable<IConstraint> constraints, IUnifier unifier) {
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(IConstraint constraint : constraints) {
+            if(first) {
+                first = false;
+            } else {
+                sb.append(", ");
+            }
+            sb.append(constraint.toString(unifier));
+        }
+        return sb.toString();
     }
 
     public static Optional<Boolean> entails(Config config, IDebugContext debug) throws InterruptedException {

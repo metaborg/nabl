@@ -50,18 +50,20 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
 
     @Override public boolean wf() throws ResolutionException, InterruptedException {
         final ITerm term = B.newList(labels);
+        debug.info("Check {} well-formed", state.unifier().toString(term));
         final IConstraint C = new CUser(constraint, ImmutableList.of(term));
         final Config config = Config.of(state, ImmutableList.of(C), completeness);
-        return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException());
+        return Solver.entails(config, debug.subContext()).orElseThrow(() -> new ResolutionException());
     }
 
     @Override public boolean empty() throws ResolutionException, InterruptedException {
         final Tuple2<ITermVar, State> varAndState = state.freshVar("lbls");
         final ITermVar var = varAndState._1();
         final ITerm term = B.newListTail(labels, var);
+        debug.info("Check {} empty", state.unifier().toString(term));
         final IConstraint C = new CUser(constraint, ImmutableList.of(term));
         final Config config = Config.of(varAndState._2(), ImmutableList.of(C), completeness);
-        return Solver.entails(config, Iterables2.singleton(var), debug).orElseThrow(() -> new ResolutionException());
+        return !Solver.entails(config, Iterables2.singleton(var), debug.subContext()).orElse(true);
     }
 
 }

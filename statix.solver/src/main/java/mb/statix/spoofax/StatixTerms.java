@@ -20,6 +20,15 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
+import mb.nabl2.regexp.IAlphabet;
+import mb.nabl2.regexp.IRegExp;
+import mb.nabl2.regexp.IRegExpBuilder;
+import mb.nabl2.regexp.impl.FiniteAlphabet;
+import mb.nabl2.regexp.impl.RegExpBuilder;
+import mb.nabl2.relations.IRelation;
+import mb.nabl2.relations.RelationDescription;
+import mb.nabl2.relations.RelationException;
+import mb.nabl2.relations.terms.Relation;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -30,6 +39,8 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CNew;
+import mb.statix.solver.constraint.CPathLt;
+import mb.statix.solver.constraint.CPathMatch;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -58,14 +69,16 @@ public class StatixTerms {
     public static Type SCOPE_REL_TYPE = Type.of(ImmutableList.of(SCOPE_SORT), ImmutableList.of());
 
     public static IMatcher<Spec> spec() {
-        return M.tuple5(M.listElems(label()), relationDecls(), namespaceQueries(), rules(), scopeExtensions(),
-                (t, labels, relations, queries, rules, ext) -> {
-                    return Spec.of(rules, labels, END_OF_PATH, relations, queries, ext);
-                });
+        return IMatcher.flatten(M.tuple5(labels(), relationDecls(), namespaceQueries(), M.term(), scopeExtensions(),
+                (t, labels, relations, queries, rulesTerm, ext) -> {
+                    return rules(labels).match(rulesTerm).map(rules -> {
+                        return Spec.of(rules, labels, END_OF_PATH, relations, queries, ext);
+                    });
+                }));
     }
 
-    public static IMatcher<Multimap<String, Rule>> rules() {
-        return M.listElems(rule()).map(rules -> {
+    public static IMatcher<Multimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
+        return M.listElems(rule(labels)).map(rules -> {
             final ImmutableMultimap.Builder<String, Rule> builder = ImmutableMultimap.builder();
             rules.stream().forEach(rule -> {
                 builder.put(rule.getName(), rule);
@@ -74,8 +87,8 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Rule> rule() {
-        return M.appl5("Rule", head(), M.listElems(var()), constraints(), M.listElems(var()), constraints(),
+    public static IMatcher<Rule> rule(IAlphabet<ITerm> labels) {
+        return M.appl5("Rule", head(), M.listElems(var()), constraints(labels), M.listElems(var()), constraints(labels),
                 (r, h, gvs, gc, bvs, bc) -> {
                     return new Rule(h._1(), h._2(), gvs, gc, bvs, bc);
                 });
@@ -103,7 +116,7 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Set<IConstraint>> constraints() {
+    public static IMatcher<Set<IConstraint>> constraints(IAlphabet<ITerm> labels) {
         return (t, u) -> {
             final ImmutableSet.Builder<IConstraint> constraints = ImmutableSet.builder();
             return M.casesFix(m -> Iterables2.from(
@@ -142,6 +155,14 @@ public class StatixTerms {
                 M.appl5("CResolveQuery", queryTarget(), queryFilter(), queryMin(), term(), term(),
                         (c, rel, filter, min, scope, result) -> {
                     constraints.add(new CResolveQuery(rel, filter, min, scope, result));
+                    return Unit.unit;
+                }),
+                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>(labels)), term(), (c, re, lbls) -> {
+                    constraints.add(new CPathMatch(re, lbls));
+                    return Unit.unit;
+                }),
+                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
+                    constraints.add(new CPathLt(lt, l1, l2));
                     return Unit.unit;
                 }),
                 M.appl2("C", M.stringValue(), M.listElems(term()), (c, name, args) -> {
@@ -242,6 +263,10 @@ public class StatixTerms {
                 (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i, lbl)));
     }
 
+    public static IMatcher<IAlphabet<ITerm>> labels() {
+        return M.listElems(label(), (t, ls) -> new FiniteAlphabet<>(ls));
+    }
+
     public static IMatcher<ITerm> label() {
         return M.cases(
         // @formatter:off
@@ -249,6 +274,39 @@ public class StatixTerms {
             M.appl1("Label", M.string())
             // @formatter:on
         );
+    }
+
+    private static IMatcher<IRegExp<ITerm>> labelRE(IRegExpBuilder<ITerm> builder) {
+        return M.casesFix(m -> Iterables2.from(
+        // @formatter:off
+            M.appl0("Empty", (t) -> builder.emptySet()),
+            M.appl0("Epsilon", (t) -> builder.emptyString()),
+            M.appl1("Closure", m, (t, re) -> builder.closure(re)),
+            M.appl1("Neg", m, (t, re) -> builder.complement(re)),
+            M.appl2("Concat", m, m, (t, re1, re2) -> builder.concat(re1, re2)),
+            M.appl2("And", m, m, (t, re1, re2) -> builder.and(re1, re2)),
+            M.appl2("Or", m, m, (t, re1, re2) -> builder.or(re1, re2)),
+            label().map(l -> builder.symbol(l))
+            // @formatter:on
+        ));
+    }
+
+    public static IMatcher<IRelation.Immutable<ITerm>> labelLt() {
+        return M.listElems(labelPair(), (t, ps) -> {
+            final IRelation.Transient<ITerm> order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
+            for(Tuple2<ITerm, ITerm> p : ps) {
+                try {
+                    order.add(p._1(), p._2());
+                } catch(RelationException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            return order.freeze();
+        });
+    }
+
+    public static IMatcher<Tuple2<ITerm, ITerm>> labelPair() {
+        return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> ImmutableTuple2.of(l1, l2));
     }
 
     public static IMatcher<ITerm> term() {
