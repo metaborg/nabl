@@ -98,6 +98,24 @@ public class HashcodeAndEqualsTest {
         assertTrue(t1.equals(t2));
     }
 
+    @Test public void testEqualsIgnoresAttachmentKeys() {
+        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(),
+                ImmutableClassToInstanceMap.builder().put(String.class, "a").build());
+        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(),
+                ImmutableClassToInstanceMap.builder().put(Integer.class, 3).build());
+        assertEquals(t1.hashCode(), t2.hashCode());
+        assertTrue(t1.equals(t2));
+    }
+
+    @Test public void testEqualsIgnoresAttachmentValues() {
+        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(),
+                ImmutableClassToInstanceMap.builder().put(String.class, "a").build());
+        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(),
+                ImmutableClassToInstanceMap.builder().put(String.class, "b").build());
+        assertEquals(t1.hashCode(), t2.hashCode());
+        assertTrue(t1.equals(t2));
+    }
+
     @Test public void testGenericApplEqualAfterSerialization() throws Exception {
         ITerm t1 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         ITerm t2 = deserialize(serialize(t1));

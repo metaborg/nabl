@@ -90,11 +90,11 @@ public class RelationComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     public Optional<SolveResult> solve(CBuildRelation c) {
-        final ITerm left = c.getLeft();
-        final ITerm right = c.getRight();
-        if(!(unifier().isGround(left) && unifier().isGround(right))) {
+        if(!(unifier().isGround(c.getLeft()) && unifier().isGround(c.getRight()))) {
             return Optional.empty();
         }
+        final ITerm left = unifier().findRecursive(c.getLeft());
+        final ITerm right = unifier().findRecursive(c.getRight());
         return c.getRelation().match(IRelationName.Cases.of(
         // @formatter:off
             name -> {
@@ -114,11 +114,11 @@ public class RelationComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(CCheckRelation c) {
-        final ITerm left = c.getLeft();
-        final ITerm right = c.getRight();
-        if(!(unifier().isGround(left) && unifier().isGround(right))) {
+        if(!(unifier().isGround(c.getLeft()) && unifier().isGround(c.getRight()))) {
             return Optional.empty();
         }
+        final ITerm left = unifier().findRecursive(c.getLeft());
+        final ITerm right = unifier().findRecursive(c.getRight());
         return c.getRelation().match(IRelationName.Cases.of(
         // @formatter:off
             name -> {
