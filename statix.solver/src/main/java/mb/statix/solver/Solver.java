@@ -72,15 +72,16 @@ public class Solver {
 
     public static Optional<Boolean> entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
             throws InterruptedException {
+        debug.info("Checking entailment");
         final State state = config.state();
         final Config result = Solver.solve(config, debug.subContext());
         if(result.state().isErroneous()) {
-            debug.info("Rule rejected");
+            debug.info("Entailment succeeded");
             return Optional.of(false);
         } else if(result.constraints().isEmpty()
                 && state.unifier().removeAll(localVars).unifier().equals(result.state().unifier())) {
             // FIXME check scope graph entailment
-            debug.info("Entailment accepted");
+            debug.info("Entailment failed");
             return Optional.of(true);
         } else {
             debug.info("Entailment delayed");
