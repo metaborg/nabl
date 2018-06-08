@@ -22,6 +22,7 @@ import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
+import mb.statix.solver.NullDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
 import mb.statix.solver.query.IQueryFilter;
@@ -72,11 +73,12 @@ public class CResolveQuery implements IConstraint {
 
         try {
             // @formatter:off
+            IDebugContext nullDebug = new NullDebugContext();
             final NameResolution<ITerm, ITerm, ITerm> nameResolution = NameResolution.<ITerm, ITerm, ITerm>builder()
-                    .withLabelWF(filter.getLabelWF(state, completeness, debug))
-                    .withDataWF(filter(type, filter.getDataWF(state, completeness, debug), debug))
-                    .withLabelOrder(min.getLabelOrder(state, completeness, debug))
-                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, debug), debug))
+                    .withLabelWF(filter.getLabelWF(state, completeness, nullDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, completeness, nullDebug), nullDebug))
+                    .withLabelOrder(min.getLabelOrder(state, completeness, nullDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, nullDebug), nullDebug))
                     .withEdgeComplete((s, l) -> completeness.isComplete(s, l, state))
                     .withDataComplete((s, l) -> completeness.isComplete(s, l, state))
                     .build(state.scopeGraph(), relation);
