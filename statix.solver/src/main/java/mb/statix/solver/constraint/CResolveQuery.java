@@ -48,7 +48,8 @@ public class CResolveQuery implements IConstraint {
     }
 
     @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CResolveQuery(relation, filter, min, map.apply(scopeTerm), map.apply(resultTerm));
+        return new CResolveQuery(relation, filter.apply(map), min.apply(map), map.apply(scopeTerm),
+                map.apply(resultTerm));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)

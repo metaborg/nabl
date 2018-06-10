@@ -2,6 +2,8 @@ package mb.statix.solver.query;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataEquiv;
@@ -19,6 +21,10 @@ public class ResolveMin implements IQueryMin {
 
     public ResolveMin(ITerm refTerm) {
         this.refTerm = refTerm;
+    }
+
+    public IQueryMin apply(Function1<ITerm, ITerm> map) {
+        return new ResolveMin(map.apply(refTerm));
     }
 
     public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug)

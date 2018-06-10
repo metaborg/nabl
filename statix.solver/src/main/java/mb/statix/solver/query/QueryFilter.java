@@ -1,21 +1,14 @@
 package mb.statix.solver.query;
 
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
-import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
-import mb.statix.solver.Solver;
 import mb.statix.solver.State;
-import mb.statix.solver.constraint.CUser;
 
 public class QueryFilter implements IQueryFilter {
 
@@ -27,18 +20,16 @@ public class QueryFilter implements IQueryFilter {
         this.dataConstraint = dataConstraint;
     }
 
+    public IQueryFilter apply(Function1<ITerm, ITerm> map) {
+        return this;
+    }
+
     public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
         return new ConstraintLabelWF(pathConstraint, state, completeness, debug);
     }
 
     public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) {
-        return new DataWF<ITerm>() {
-            public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
-                final IConstraint constraint = new CUser(dataConstraint, datum);
-                final Config config = Config.of(state, ImmutableList.of(constraint), completeness);
-                return Solver.entails(config, debug).orElseThrow(() -> new ResolutionException("Data well-formedness check delayed"));
-            }
-        };
+        return new ConstraintDataWF(dataConstraint, state, completeness, debug);
     }
 
     @Override public String toString(IUnifier unifier) {
