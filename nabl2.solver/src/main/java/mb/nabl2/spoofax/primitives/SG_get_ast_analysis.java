@@ -15,7 +15,7 @@ import mb.nabl2.stratego.StrategoTermIndices;
 public class SG_get_ast_analysis extends ScopeGraphContextPrimitive {
 
     public SG_get_ast_analysis() {
-        super(SG_get_ast_analysis.class.getSimpleName(), 0, 0);
+        super(SG_get_ast_analysis.class.getSimpleName(), 0);
     }
 
     @Override public Optional<? extends IStrategoTerm> call(IScopeGraphContext<?> context, IStrategoTerm sterm,

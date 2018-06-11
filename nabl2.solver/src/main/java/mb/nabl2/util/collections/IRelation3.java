@@ -40,6 +40,8 @@ public interface IRelation3<K, L, V> {
 
     interface Immutable<K, L, V> extends IRelation3<K, L, V> {
 
+        IRelation3.Immutable<K, L, V> put(K key, L label, V value);
+
         IRelation3.Transient<K, L, V> melt();
 
     }

@@ -43,10 +43,6 @@ public class TermMatch {
             return (term, unifier) -> Optional.of(term);
         }
 
-        public IMatcher<ITerm> instantiatedTerm() {
-            return (term, unifier) -> Optional.of(unifier.findRecursive(term));
-        }
-
         public <R> IMatcher<R> term(Function1<? super ITerm, R> f) {
             return (term, unifier) -> Optional.of(f.apply(term));
         }
@@ -192,6 +188,10 @@ public class TermMatch {
 
         public <R> IMatcher<R> tuple(Function1<? super IApplTerm, R> f) {
             return M.appl(TUPLE_OP, f);
+        }
+
+        public IMatcher<IApplTerm> tuple0() {
+            return M.appl0(TUPLE_OP);
         }
 
         public <R> IMatcher<R> tuple0(Function1<? super IApplTerm, R> f) {

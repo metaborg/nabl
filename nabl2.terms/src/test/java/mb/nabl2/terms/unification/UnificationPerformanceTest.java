@@ -9,17 +9,17 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.build.TermBuild;
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class UnificationPerformanceTest {
 
-    private static final String A = "a";
-    private static final String B = "b";
-    private static final String C = "c";
+    private static final String X = "a";
+    private static final String Y = "b";
+    private static final String Z = "c";
 
     public static void main(String[] args) {
         testCycle();
-        for(int n = 0; n <= 1000; n += 100) {
+        for(int n = Integer.MAX_VALUE; n <= 1000; n += 100) {
             System.out.println("Testing n = " + n);
             final long t0 = System.currentTimeMillis();
             System.out.println(testUnify(n));
@@ -30,12 +30,12 @@ public class UnificationPerformanceTest {
 
     private static void testCycle() {
         System.out.println("Testing cycle");
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
-        ITermVar varA = TermBuild.B.newVar("", A);
-        ITermVar varB = TermBuild.B.newVar("", B);
-        ITermVar varC = TermBuild.B.newVar("", C);
-        ITerm termB = TermBuild.B.newTuple(varB, varB);
-        ITerm termC = TermBuild.B.newTuple(varC, varC);
+        final IUnifier.Transient unifier = PersistentUnifier.Transient.of(false);
+        ITermVar varA = B.newVar("", X);
+        ITermVar varB = B.newVar("", Y);
+        ITermVar varC = B.newVar("", Z);
+        ITerm termB = B.newTuple(varB, varB);
+        ITerm termC = B.newTuple(varC, varC);
         try {
             unifier.unify(varA, termB);
             unifier.unify(varB, termC);
@@ -50,14 +50,17 @@ public class UnificationPerformanceTest {
         System.out.println("vars = " + unifier.getVars(termB));
         System.out.println("equal = " + unifier.areEqual(termB, termC));
         System.out.println("unequal = " + unifier.areUnequal(termB, termC));
+        System.out.println("string = " + unifier.toString(varA));
+        System.out.println("string = " + unifier.toString(varB));
+        System.out.println("string = " + unifier.toString(varC));
     }
 
     private static IUnifier testUnify(int n) {
         final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
-        final ITerm left = TermBuild.B.newTuple(
-                Iterables.concat(createVars(A, n), createTuples(B, n), Iterables2.singleton(createVar(A, n))));
-        final ITerm right = TermBuild.B.newTuple(
-                Iterables.concat(createTuples(A, n), createVars(B, n), Iterables2.singleton(createVar(B, n))));
+        final ITerm left = B.newTuple(
+                Iterables.concat(createVars(X, n), createTuples(Y, n), Iterables2.singleton(createVar(X, n))));
+        final ITerm right = B.newTuple(
+                Iterables.concat(createTuples(X, n), createVars(Y, n), Iterables2.singleton(createVar(Y, n))));
         try {
             unifier.unify(left, right);
         } catch(UnificationException e) {
@@ -90,11 +93,11 @@ public class UnificationPerformanceTest {
     }
 
     private static ITerm createVar(String name, int i) {
-        return TermBuild.B.newVar("", name + "-" + i);
+        return B.newVar("", name + "-" + i);
     }
 
     private static ITerm createTuple(String name, int i) {
-        return TermBuild.B.newTuple(createVar(name, i - 1), createVar(name, i - 1));
+        return B.newTuple(createVar(name, i - 1), createVar(name, i - 1));
     }
 
 }

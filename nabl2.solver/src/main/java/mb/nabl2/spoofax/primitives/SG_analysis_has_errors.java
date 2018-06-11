@@ -15,15 +15,9 @@ public class SG_analysis_has_errors extends AnalysisPrimitive {
         super(SG_analysis_has_errors.class.getSimpleName());
     }
 
-    @Override public Optional<? extends IStrategoTerm> call(IScopeGraphUnit unit, IStrategoTerm sterm,
+    @Override protected Optional<? extends IStrategoTerm> call(IScopeGraphUnit unit, IStrategoTerm sterm,
             List<IStrategoTerm> sterms, ITermFactory factory) throws InterpreterException {
-        return unit.solution().flatMap(s -> {
-            if(s.messages().getErrors().isEmpty()) {
-                return Optional.empty();
-            } else {
-                return Optional.of(sterm);
-            }
-        });
+        return unit.solution().filter(s -> !s.messages().getErrors().isEmpty()).map(s -> sterm);
     }
 
 }

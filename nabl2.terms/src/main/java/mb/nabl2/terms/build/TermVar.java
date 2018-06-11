@@ -67,8 +67,10 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("?");
-        sb.append(getResource());
-        sb.append("-");
+        if(!getResource().isEmpty()) {
+            sb.append(getResource());
+            sb.append("-");
+        }
         sb.append(getName());
         return sb.toString();
     }

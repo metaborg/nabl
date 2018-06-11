@@ -80,7 +80,7 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<CFGNode> findCFGNode(ITerm cfgNodeTerm) {
-        return Optional.of(unifier().findRecursive(cfgNodeTerm)).filter(ITerm::isGround).map(
+        return Optional.of(cfgNodeTerm).filter(unifier()::isGround).map(
                 st -> CFGNode.matcher().match(st, unifier()).orElseThrow(() -> new TypeException("Expected a cfg node, got " + st)));
     }
 
