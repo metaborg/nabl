@@ -18,7 +18,7 @@ rules
 
   nabl2--solve-constraint(|config) = prim("SG_solve_constraint", config)
 
-  nabl2--analyze-oneshot(|resource): ast -> (ast', a, error*, warning*, note*)
+  nabl2--analyze-ast(|resource): ast -> (ast', a, error*, warning*, note*)
     with config := <nabl2--analysis-config>;
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
          (params, C1) := <nabl2--generate-constraint-init(|resource)> resource';

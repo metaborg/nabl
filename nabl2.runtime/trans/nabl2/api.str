@@ -38,7 +38,8 @@ rules // ###### Analysis execution ######
   nabl2-prettyprint-term = fail
 
   /**
-   * Main analysis strategy for NaBL2.
+   * Main editor analysis strategy for NaBL2, when using the `(constraint)`
+   * analyzer. Supports single and multi file analysis.
    *
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
@@ -50,7 +51,7 @@ rules // ###### Analysis execution ######
    * @param resource:String
    * @type ast:Term -> (ast:Term, Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
    */
-  nabl2-analyze-oneshot(|resource) = nabl2--analyze-oneshot(|resource)
+  nabl2-analyze-ast(|resource) = nabl2--analyze-ast(|resource)
 
   /**
    * Solve an NaBL2 constraint, with the given config.
