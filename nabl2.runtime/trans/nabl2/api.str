@@ -51,7 +51,7 @@ rules // ###### Analysis execution ######
    * @param resource:String
    * @type ast:Term -> (ast:Term, Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
    */
-  nabl2-analyze-oneshot(|resource) = nabl2--analyze-oneshot(|resource)
+  nabl2-analyze-ast(|resource) = nabl2--analyze-ast(|resource)
 
   /**
    * Solve an NaBL2 constraint, with the given config.
