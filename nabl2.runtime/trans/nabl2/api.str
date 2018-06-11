@@ -44,13 +44,6 @@ rules // ###### Analysis execution ######
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
 
-  /**
-   * Auxiliary analysis strategy for NaBL2. Can be called multiple times from Stratego.
-   * Redoes the whole analysis on the AST, and does not save anything!
-   *
-   * @type ast:Term -> (analyzedAst:Term, Analysis, (errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage)))
-   */
-  nabl2-analyze-standalone = nabl2--analyze-standalone
 
 rules // ###### Custom analysis hooks ######
 
