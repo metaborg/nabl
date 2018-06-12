@@ -51,9 +51,13 @@ rules
 
 rules
 
-  declOfPath([D(_, o)]) --> o
-
-  declOfPath([_|p]) --> declOfPath(p)
+  declOfPath([p|ps]) --> o
+  where
+    case p of {
+      D(_, o) ->
+      otherwise ->
+        declOfPath(ps) --> o
+    }
 
 rules
 
