@@ -25,7 +25,7 @@ rules // Analysis
     where <not(nabl2-analysis-has-errors)> a
     where id
     with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
-         (ast', a', _, _, _) := <normalize-all(|a);nabl2-analyze-oneshot(|resource)> ast;
+         (ast', a', _, _, _) := <normalize-all(|a);nabl2-analyze-ast(|resource)> ast;
          if <nabl2-analysis-has-errors> a' then
            warn-msg(|"***************************************************************");
            warn-msg(|"* Normalized AST has errors. Normalization needs to be fixed! *");
