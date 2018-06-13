@@ -43,7 +43,7 @@ context-free syntax
   CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> | <LocalVars> <Guard> :- <LocalVars>
+    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars>
       <Constraint>.
   >
 
@@ -81,10 +81,7 @@ context-free syntax
   Constraint.CNew    = <new <{Var " "}+>>
 
   Constraint.CEqual   = [[Term] == [Term]]
-
-  Guard.CConj    = <<Guard>, <Guard>> {left}
-  Guard.CEqual   = [[Term] == [Term]]
-  Guard.CInequal = [[Term] != [Term]]
+  Constraint.CInequal = [[Term] != [Term]]
 
 lexical syntax
 

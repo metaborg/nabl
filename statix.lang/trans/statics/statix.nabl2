@@ -324,7 +324,7 @@ rules
 
   [[ CPathLabels(pt, lt) ^ (s) ]] :=
     Build[[ pt ^ (s) : PATH() ]],
-    Build[[ st ^ (s) : LIST(LABEL()) ]].
+    Build[[ lt ^ (s) : LIST(LABEL()) ]].
 
   Term(V)[[ PathSrcOp(t) ^ (s) : SCOPE() ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].

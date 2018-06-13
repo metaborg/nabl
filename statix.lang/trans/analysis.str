@@ -1,14 +1,14 @@
 module analysis
 
 imports
-  
+
   nabl2shared
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
-  
+
   signatures/-
-  
+
   statics/-
 
   pp
@@ -32,9 +32,18 @@ rules // Analysis
            warn-msg(|"***************************************************************")
          end;
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
+
+         nabl2-custom-analysis-info-msg(|"Checking guard constraints...");
+         c-e* := <check-rule-constraints> ast';
+         nabl2-custom-analysis-info-msg(|"Checked guard constraints.");
+
          nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-         (ext*, error*, warning*, note*) := <compute-scope-extensions> ast';
-         nabl2-custom-analysis-info-msg(|"Computed scope extensions.")
+         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast';
+         nabl2-custom-analysis-info-msg(|"Computed scope extensions.");
+
+         error*   := [c-e*, ext-e*];
+         warning* := [ext-w*];
+         note*    := [ext-n*]
 
   nabl2-prettyprint-hook       = prettyprint-StatixLang-IType
   prettyprint-StatixLang-IType = nabl2-prettyprint-term
