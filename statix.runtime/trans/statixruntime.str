@@ -1,0 +1,24 @@
+module statixruntime
+
+imports
+
+  libstratego-lib
+
+  libspoofax/core/language
+
+rules
+
+  stx-analyze(|spec-name, init-constraint): ast -> result
+    with spec   := <stx--find-spec(|spec-name)>;
+         result := <stx--analyze(|spec, init-constraint)> ast
+
+  stx--find-spec(|name) =
+    language-components;
+    getfirst({ loc, spec-file:
+               ?(_, _, _, loc);
+               spec-file := $[[loc]/src-gen/statix/[name].spec.aterm];
+               <file-exists> spec-file;
+               <ReadFromFile> spec-file
+            })
+
+  stx--analyze(|spec,init) = prim("STX_analyze", spec, init)

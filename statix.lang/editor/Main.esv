@@ -5,9 +5,9 @@ imports
   Syntax
   Colorer
   Analysis
+  Generate
 
 language
 
   extensions : statix, stx
-
-  provider : target/metaborg/stratego.ctree
+  provider   : target/metaborg/stratego.ctree

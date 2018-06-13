@@ -21,7 +21,7 @@ rules
     where <not(is-var)> t;
           f#(ts) := t
 
-  project-term(is-var) : (At(i, P), ts) -> <project-term(is-var)> (P, <debug;index(|i)> ts)
+  project-term(is-var) : (At(i, P), ts) -> <project-term(is-var)> (P, <index(|i)> ts)
     where <not(is-var)> ts;
           <is-list> ts
 

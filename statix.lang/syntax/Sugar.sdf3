@@ -20,6 +20,9 @@ context-free syntax
   Rule             = <constraint <CDerive>>
   Rule             = CDerive
 
+  Rule.CDecl       = [[CInd]constraint [ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd][ConstraintId] : [Type]]
+
   CDecl            = CDerive
 
   CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
@@ -33,11 +36,39 @@ context-free syntax
     <RuleHead>.
   >
   Rule.GuardRule = <
-    <RuleHead> | <LocalVars> <Constraint>.
+    <RuleHead> | <LocalVars>
+      <Constraint>.
   >
   Rule.BodyRule = <
-    <RuleHead> :- <LocalVars> <Constraint>.
+    <RuleHead> :- <LocalVars>
+      <Constraint>.
   >
+
+  RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
+
+  LocalVars.NoLocalVars = <>
+
+  HoConstraint.LLam = <{ <{Term ", "}+> }>
+  HoConstraint.LLam = <{ <{Term ", "}+> :- <LocalVars> <Constraint> }>
+
+syntax
+
+  Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+
+/******************************************************************
+ * Base Constraints                                               *
+ ******************************************************************/
+
+context-free syntax
+
+  HoConstraint.LTrue  = "true"
+  HoConstraint.LFalse = "false"
+
+  Term.NewOp = "new"
+
+lexical syntax
+
+  VARID = "new" {reject}
 
 /******************************************************************
  * Relations                                                      *
@@ -59,7 +90,7 @@ syntax
 
 context-free priorities
 
-  { Term.PathSrc Term.PathScopes Term.PathDst } >
+  { Term.PathSrcOp Term.PathScopesOp Term.PathLabelsOp Term.PathDstOp } >
   { Term.AskRelOp }
 
 lexical syntax
@@ -68,46 +99,20 @@ lexical syntax
   RelationId = "ref" {reject}
 
 /******************************************************************
- * Base Constraints                                               *
- ******************************************************************/
-
-context-free syntax
- 
-  HoConstraint.LLam = <{ <{Term ", "}+> }>
-
-  // term short-hand for new scopes 
- 
-  Term.NewOp = "new"
-
-lexical syntax
- 
-  VARID = "new" {reject}
-
-/******************************************************************
  * Scope Graph                                                    *
  ******************************************************************/
 
 context-free syntax
- 
-  // default resolution policies 
-
-  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><QueryFilter><QueryMin>>
-
-  ResolutionParam = NamespaceQuery
-  Rule            = NamespaceQuery
-
-  // short-hand query components
-
-  QueryFilter.NoFilter =
-  QueryFilter.Filter   = < filter <HoConstraint>>
-
-  QueryMin.NoMin =
-  QueryMin.Min   = < min <HoConstraint>>
 
   // declaration constraints
-  
+
   Constraint.CTellDecl        = [[Term] -> [Term]]
   Constraint.CTellDeclWithRel = [[Term] -> [Term] with [RelRef] [Term]]
+
+  Term.PathSrcOp    = <src(<Term>)>
+  Term.PathDstOp    = <dst(<Term>)>
+  Term.PathScopesOp = <scopes(<Term>)>
+  Term.PathLabelsOp = <labels(<Term>)>
 
 syntax
 
@@ -122,8 +127,14 @@ context-free syntax
 
   // short-hand forms for occurrences using default resolution policies
 
-  Constraint.CResolveDecl = [[Term] in [Term] |-> [Term]]
-  Constraint.CResolveRel = [[RelRef] of [Term] in [Term] |-> [Term]]
+  QueryFilter.NoFilter =
+  QueryFilter.Filter   = < filter <HoConstraint>>
+
+  QueryMin.NoMin =
+  QueryMin.Min   = < min <HoConstraint>>
+
+  Constraint.CResolveDecl        = [[Term] in [Term] |-> [Term]]
+  Constraint.CResolveRel         = [[RelRef] of [Term] in [Term] |-> [Term]]
 
 /******************************************************************
  * Sorts & Constructors                                           *

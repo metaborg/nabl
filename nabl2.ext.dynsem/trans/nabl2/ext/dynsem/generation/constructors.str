@@ -11,7 +11,7 @@ rules
     Sorts(sort*) -> <filter(sortdecl-to-ds)> sort*
 
   sortdecl-to-ds:
-    SortNoArgs(name) -> SortDecl(name)
+    SortNoArgs(name) -> SortDeclNoAnnos(name)
 
   opdecl-to-ds:
     OpDecl(name, [], s) -> result

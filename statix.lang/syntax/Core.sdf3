@@ -25,7 +25,7 @@ context-free syntax
   Section.Rules = <
     rules
 
-    <{Rule "\n\n"}*>
+      <{Rule "\n\n"}*>
   > {longest-match}
 
 /******************************************************************
@@ -37,23 +37,19 @@ context-free syntax
       <{CDecl "\n"}*>
   > {longest-match}
 
-  Rule.CDecl       = [[CInd] constraint [ConstraintId] : [Type]]
-  Rule.CDecl       = [[CInd] [ConstraintId] : [Type]]
-
-  CDecl.CDecl      = [[CInd] [ConstraintId] : [Type]]
+  CDecl.CDecl      = [[CInd][ConstraintId] : [Type]]
 
   CInd.InductiveC   =
-  CInd.CoinductiveC = <coinductive>
+  CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars> <Constraint>.
+    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars>
+      <Constraint>.
   >
 
   RuleHead   = UserConstraint
-  RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
-  LocalVars.NoLocalVars = <>
-  LocalVars.LocalVars   = <{<{Var " "}+>}>
+  LocalVars = <{<{Var " "}*>}>
 
   Constraint = UserConstraint
 
@@ -61,13 +57,35 @@ context-free syntax
 
   HoConstraint.LC = ConstraintId
 
-syntax
+lexical syntax
 
-  Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+  ConstraintId = LCID
+  ConstraintId = Keyword {reject}
+
+  Keyword = "coinductive"
+
+/******************************************************************
+ * Base Constraints                                               *
+ ******************************************************************/
+
+context-free syntax
+
+  Constraint.CTrue  = <true>
+  Constraint.CFalse = <false>
+
+  Constraint         = <(<Constraint>)> {bracket}
+  Constraint.CConj   = <
+    <Constraint>,
+    <Constraint>
+  > {left}
+  Constraint.CNew    = <new <{Var " "}+>>
+
+  Constraint.CEqual   = [[Term] == [Term]]
+  Constraint.CInequal = [[Term] != [Term]]
 
 lexical syntax
 
-  ConstraintId = "coinductive" | "maps" | "filter" | "and" | "min" | "in" | "of" {reject}
+  Keyword = "true" | "false" | "new"
 
 /******************************************************************
  * Relations                                                      *
@@ -86,7 +104,7 @@ context-free syntax
 
   Rel.Rel = RelationId
 
-  RelRef      = Rel
+  RelRef = Rel
 
 syntax
 
@@ -95,34 +113,9 @@ syntax
 lexical syntax
 
   RelationId = ID
-  RelationId = "coinductive" | "maps" | "filter" | "and" | "min" | "in" | "of" {reject}
+  RelationId = Keyword {reject}
 
-/******************************************************************
- * Base Constraints                                               *
- ******************************************************************/
-
-context-free syntax
-
-  Constraint.CTrue  = <true>
-  Constraint.CFalse = <false>
-
-  Constraint         = <(<Constraint>)> {bracket}
-  Constraint.CConj   = <<Constraint>, <Constraint>> {left}
-  Constraint.CNew    = <new <{Var " "}+>>
-
-  Constraint.CEqual   = [[Term] == [Term]]
-  Constraint.CInequal = [[Term] != [Term]]
-
-  HoConstraint.LTrue  = "true"
-  HoConstraint.LFalse = "false"
-
-  HoConstraint.LLam = <{ <{Term ", "}+> :- <Constraint> }>
-
-lexical syntax
-
-  ConstraintId = LCID
-  ConstraintId = "true" | "false"
-               | "new" | "disamb" {reject}
+  Keyword = "in"
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -140,12 +133,26 @@ context-free syntax
       <{ResolutionParam "\n"}*>
   > {longest-match}
 
-  ResolutionParam.Labels = <labels <{Rel " "}*>>
+  // labels
+
+  ResolutionParam.Labels = <labels <{Label " "}*>>
 
   Label.Label = RelationId
 
   LabelRef     = Label
   LabelRef.EOP = "$"
+
+  // default resolution policies
+  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><NamespaceFilter><NamespaceMin>>
+
+  ResolutionParam = NamespaceQuery
+  Rule            = NamespaceQuery
+
+  NamespaceFilter.NamespaceFilter = < filter <HoConstraint>>
+
+  NamespaceMin.NamespaceMin = < min <HoConstraint>>
+
+  // namespaces
 
   NsDecl.NsDecl = <<NamespaceId> : <{SortRef " * "}*>>
 
@@ -172,6 +179,13 @@ context-free priorities
   > LabelRE.And
   > LabelRE.Or
 
+context-free syntax
+
+  Constraint.CPathSrc    = <src(<Term>, <Term>)>
+  Constraint.CPathDst    = <dst(<Term>, <Term>)>
+  Constraint.CPathScopes = <scopes(<Term>, <Term>)>
+  Constraint.CPathLabels = <labels(<Term>, <Term>)>
+
 syntax
 
   Term-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
@@ -179,20 +193,21 @@ syntax
   Position-CF.Position   = "@" Var-CF
   Position-CF.NoPosition = "@-"
 
-  Term-CF.PathSrc    = Term-CF "." "src"
-  Term-CF.PathScopes = Term-CF "." "scopes"
-  Term-CF.PathDst    = Term-CF "." "dst"
-
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
 
-  Constraint-CF.CTellDirectEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
+  QueryFilter-CF.ResolveFilter = LAYOUT?-CF "resolveFilter" "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
+  QueryMin-CF.ResolveMin       = LAYOUT?-CF "resolveMin" "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
+
+  Constraint-CF.CTellEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
 
 lexical syntax
 
   NamespaceId = UCID
 
-  ConstraintId = "pathMatch" | "pathDisamb" {reject}
+  Keyword = "src" | "dst" | "scopes" | "labels"
+          | "pathMatch" | "pathDisamb"
+          | "resolveFilter" | "resolveMin"
 
   RelationId = "e" {reject} // ambiguous with empty regex
 
@@ -213,6 +228,8 @@ context-free syntax
 lexical syntax
 
   QueryId = ID
+
+  Keyword = "filter" | "min" | "and"
 
 /******************************************************************
  * Sorts & Constructors                                           *
@@ -240,6 +257,7 @@ context-free syntax
   SortRef.IntSort        = "int"
   SortRef.StringSort     = "string"
   SortRef.PathSort       = "path"
+  SortRef.LabelSort      = "label"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
 
@@ -248,13 +266,13 @@ context-free syntax
   OpSort.ConstOp = Sort
   OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]
 
-  Type.SimpleType = [[{SortRef " * "}+]]
+  Type.SimpleType = [[{SortRef " * "}*]]
   Type.FunType    = [[{SortRef " * "}*] -> [{SortRef " * "}+]]
 
 lexical syntax
 
   SortId = UCID
-  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "in" | "out" {reject}
+  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" {reject}
 
   OpId = UCID
 
@@ -273,7 +291,6 @@ context-free syntax
   Term.ListTail   = <[<{Term ", "}*>|<Term>]>
   Term.Tuple0     = <()>
   Term.TupleN     = <(<Term>, <{Term ", "}+>)>
-  TermNoParse.Tuple = <(<{Term ", "}*>)>
   Term.As         = <<Var>@<Term>>
   Term.Ascribe    = <<Term> : <SortRef>>
   Term            = <(<Term>)> {bracket}
@@ -283,10 +300,10 @@ context-free syntax
 
 syntax
 
-  Term-CF.ListLength = Term-CF "." "length"
+//Term-CF.ListLength = Term-CF "." "length"
   Term-CF.Op         = OpId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
   Term-CF.Str        = "\"" StrChars-LEX "\""
-  Term-CF.StrBuild   = "$" "[" StrBuild-CF* "]"
+//Term-CF.StrBuild   = "$" "[" StrBuild-CF* "]"
 
   StrBuild-CF.Str2 = StrBuildChars-LEX
   StrBuild-CF      = "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"

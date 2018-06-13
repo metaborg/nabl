@@ -5,8 +5,7 @@ imports
   libstratego-gpp
   libspoofax/sdf/pp
   libspoofax/editor/refactoring/-
-  pp/StatixLang-parenthesize
-  pp/StatixLang-pp
+  pp/-
 
 rules
 

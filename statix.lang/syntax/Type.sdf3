@@ -11,8 +11,8 @@ sorts
 
 context-free syntax
 
-  IType.FUN  = [[{TType " * "}*] -> [{TType " * "}*]]
   IType.PRED = [[{TType " * "}*]]
+  IType.FUN  = [[{TType " * "}*] -> [{TType " * "}*]]
   IType.NS   = [[{TType " * "}*]]
   IType.OP   = [[{TType " * "}*] -> [TType]]
 
@@ -20,8 +20,8 @@ context-free syntax
   TType.INT        = <int>
   TType.STRING     = <string>
   TType.PATH       = <path>
+  TType.LABEL      = <label>
   TType.OCCURRENCE = <occurrence>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<{TType " * "}*>)>
-  TType.OP         = [[{TType " * "}*] -> [TType]]
