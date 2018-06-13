@@ -13,18 +13,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.MatchException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
+import mb.statix.solver.IGuard;
 import mb.statix.solver.Result;
-import mb.statix.solver.Solver;
 import mb.statix.solver.State;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -55,22 +52,32 @@ public class CUser implements IConstraint {
         final Iterator<Rule> it = rules.iterator();
         while(it.hasNext()) {
             final Rule rule = it.next();
-            Tuple3<Config, Set<ITermVar>, Set<IConstraint>> appl;
+            final Tuple2<State, Rule> appl;
             try {
-                appl = rule.apply(args, state, completeness);
+                appl = rule.apply(args, state);
             } catch(MatchException e) {
                 debug.warn("Failed to instantiate {}(_) for arguments {}", name, args);
                 continue;
             }
-            debug.info("Try rule {}", rule);
-            final Config result = Solver.solve(appl._1(), debug.subContext());
-            if(result.state().isErroneous()) {
-                debug.info("Rule rejected");
-            } else if(result.constraints().isEmpty()
-                    && state.unifier().equals(result.state().unifier().removeAll(appl._2()).unifier())) {
-                // FIXME Check scope graph entailment
-                debug.info("Rule accepted");
-                return Optional.of(Result.of(result.state(), appl._3()));
+            debug.info("Try rule {}", appl._2().toString(appl._1().unifier()));
+            Optional<State> maybeResult = Optional.of(appl._1());
+            for(IGuard guard : appl._2().getGuard()) {
+                if(maybeResult.isPresent()) {
+                    maybeResult = guard.solve(maybeResult.get(), debug);
+                }
+            }
+            if(maybeResult.isPresent()) {
+                final State result = maybeResult.get();
+                if(result.isErroneous()) {
+                    debug.info("Rule rejected");
+                    it.remove();
+                } else if(state.unifier()
+                        .equals(maybeResult.get().unifier().removeAll(appl._2().getGuardVars()).unifier())) {
+                    debug.info("Rule accepted");
+                    return Optional.of(Result.of(maybeResult.get(), appl._2().getBody()));
+                } else {
+                    debug.info("Rule delayed");
+                }
             } else {
                 debug.info("Rule delayed");
             }

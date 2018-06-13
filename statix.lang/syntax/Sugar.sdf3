@@ -37,7 +37,7 @@ context-free syntax
   >
   Rule.GuardRule = <
     <RuleHead> | <LocalVars>
-      <Constraint>.
+      <Guard>.
   >
   Rule.BodyRule = <
     <RuleHead> :- <LocalVars>

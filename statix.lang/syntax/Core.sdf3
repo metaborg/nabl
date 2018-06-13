@@ -40,10 +40,10 @@ context-free syntax
   CDecl.CDecl      = [[CInd][ConstraintId] : [Type]]
 
   CInd.InductiveC   =
-  CInd.CoinductiveC = <coinductive >
+//  CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars>
+    <RuleHead> | <LocalVars> <Guard> :- <LocalVars>
       <Constraint>.
   >
 
@@ -81,7 +81,10 @@ context-free syntax
   Constraint.CNew    = <new <{Var " "}+>>
 
   Constraint.CEqual   = [[Term] == [Term]]
-  Constraint.CInequal = [[Term] != [Term]]
+
+  Guard.CConj    = <<Guard>, <Guard>> {left}
+  Guard.CEqual   = [[Term] == [Term]]
+  Guard.CInequal = [[Term] != [Term]]
 
 lexical syntax
 

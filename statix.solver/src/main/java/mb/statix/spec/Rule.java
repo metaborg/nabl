@@ -12,40 +12,56 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.MatchException;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
-import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IGuard;
 import mb.statix.solver.State;
 
 public class Rule {
 
     private final String name;
-    private final List<ITermVar> params;
+    private final List<ITerm> params;
     private final Set<ITermVar> guardVars;
-    private final Set<IConstraint> guardConstraints;
+    private final List<IGuard> guard;
     private final Set<ITermVar> bodyVars;
-    private final Set<IConstraint> bodyConstraints;
+    private final List<IConstraint> body;
 
-    public Rule(String name, Iterable<ITermVar> params, Iterable<ITermVar> guardVars,
-            Iterable<IConstraint> guardConstraints, Iterable<ITermVar> bodyVars,
-            Iterable<IConstraint> bodyConstraints) {
+    public Rule(String name, Iterable<? extends ITerm> params, Iterable<ITermVar> guardVars, Iterable<IGuard> guard,
+            Iterable<ITermVar> bodyVars, Iterable<IConstraint> body) {
         this.name = name;
         this.params = ImmutableList.copyOf(params);
         this.guardVars = ImmutableSet.copyOf(guardVars);
-        this.guardConstraints = ImmutableSet.copyOf(guardConstraints);
+        this.guard = ImmutableList.copyOf(guard);
         this.bodyVars = ImmutableSet.copyOf(bodyVars);
-        this.bodyConstraints = ImmutableSet.copyOf(bodyConstraints);
+        this.body = ImmutableList.copyOf(body);
     }
 
     public String getName() {
         return name;
     }
 
-    public Tuple3<Config, Set<ITermVar>, Set<IConstraint>> apply(List<ITerm> args, State state,
-            Completeness completeness) throws MatchException {
+    public List<ITerm> getParams() {
+        return params;
+    }
+
+    public Set<ITermVar> getGuardVars() {
+        return guardVars;
+    }
+
+    public List<IGuard> getGuard() {
+        return guard;
+    }
+
+    public Set<ITermVar> getBodyVars() {
+        return bodyVars;
+    }
+
+    public List<IConstraint> getBody() {
+        return body;
+    }
+
+    public Tuple2<State, Rule> apply(List<ITerm> args, State state) throws MatchException {
         IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         for(int i = 0; i < params.size(); i++) {
             unifier.match(params.get(i), args.get(i));
@@ -60,16 +76,39 @@ public class Rule {
             newState = vs._2();
         }
         // body vars
+        final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars) {
             final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
             unifier.match(var, vs._1());
+            freshBodyVars.add(vs._1());
             newState = vs._2();
         }
-        final Set<IConstraint> newGuard =
-                guardConstraints.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
+        final Set<IGuard> newGuard =
+                guard.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
         final Set<IConstraint> newBody =
-                bodyConstraints.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
-        return ImmutableTuple3.of(Config.of(newState, newGuard, completeness), freshGuardVars.build(), newBody);
+                body.stream().map(c -> c.apply(unifier::findRecursive)).collect(Collectors.toSet());
+        final Rule newRule = new Rule(name, args, freshGuardVars.build(), newGuard, freshBodyVars.build(), newBody);
+        return ImmutableTuple2.of(newState, newRule);
+    }
+
+    public String toString(IUnifier unifier) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(name);
+        sb.append("(");
+        sb.append(params.stream().map(unifier::toString).collect(Collectors.toList()));
+        sb.append(")");
+        sb.append(" | ");
+        if(!guardVars.isEmpty()) {
+            sb.append(guardVars).append(" ");
+        }
+        sb.append(guard.stream().map(g -> g.toString(unifier)).collect(Collectors.toSet()));
+        sb.append(" :- ");
+        if(!bodyVars.isEmpty()) {
+            sb.append(bodyVars).append(" ");
+        }
+        sb.append(body.stream().map(c -> c.toString(unifier)).collect(Collectors.toSet()));
+        sb.append(" .");
+        return sb.toString();
     }
 
     @Override public String toString() {
@@ -79,9 +118,15 @@ public class Rule {
         sb.append(params);
         sb.append(")");
         sb.append(" | ");
-        sb.append(guardConstraints);
+        if(!guardVars.isEmpty()) {
+            sb.append(guardVars).append(" ");
+        }
+        sb.append(guard);
         sb.append(" :- ");
-        sb.append(bodyConstraints);
+        if(!bodyVars.isEmpty()) {
+            sb.append(bodyVars).append(" ");
+        }
+        sb.append(body);
         sb.append(" .");
         return sb.toString();
     }

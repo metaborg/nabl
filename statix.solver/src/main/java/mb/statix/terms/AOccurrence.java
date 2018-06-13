@@ -14,7 +14,6 @@ import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.statix.spoofax.StatixTerms;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

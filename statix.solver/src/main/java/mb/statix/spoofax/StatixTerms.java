@@ -36,6 +36,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IGuard;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CNew;
@@ -44,8 +45,9 @@ import mb.statix.solver.constraint.CPathMatch;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
+import mb.statix.solver.guard.GEqual;
+import mb.statix.solver.guard.GInequal;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.NamespaceQuery;
@@ -88,7 +90,7 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule(IAlphabet<ITerm> labels) {
-        return M.appl5("Rule", head(), M.listElems(var()), constraints(labels), M.listElems(var()), constraints(labels),
+        return M.appl5("Rule", head(), M.listElems(var()), guards(), M.listElems(var()), constraints(labels),
                 (r, h, gvs, gc, bvs, bc) -> {
                     return new Rule(h._1(), h._2(), gvs, gc, bvs, bc);
                 });
@@ -125,7 +127,6 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.appl0("CTrue", (c) -> {
-                    constraints.add(new CTrue());
                     return Unit.unit;
                 }),
                 M.appl0("CFalse", (c) -> {
@@ -133,10 +134,6 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CEqual(t1, t2));
-                    return Unit.unit;
-                }),
-                M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
                     constraints.add(new CEqual(t1, t2));
                     return Unit.unit;
                 }),
@@ -170,11 +167,37 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.term(c -> {
-                    logger.warn("Ignoring constraint {}", c);
-                    return Unit.unit;
+                    throw new IllegalArgumentException("Unknwon constraint: " + c);
                 })
                 // @formatter:on
             )).match(t, u).map(v -> constraints.build());
+        };
+    }
+
+    public static IMatcher<Set<IGuard>> guards() {
+        return (t, u) -> {
+            final ImmutableSet.Builder<IGuard> guards = ImmutableSet.builder();
+            return M.casesFix(m -> Iterables2.from(
+            // @formatter:off
+                M.appl2("CConj", m, m, (c, t1, t2) -> {
+                    return Unit.unit;
+                }),
+                M.appl0("CTrue", (c) -> {
+                    return Unit.unit;
+                }),
+                M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
+                    guards.add(new GEqual(t1, t2));
+                    return Unit.unit;
+                }),
+                M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
+                    guards.add(new GInequal(t1, t2));
+                    return Unit.unit;
+                }),
+                M.term(c -> {
+                    throw new IllegalArgumentException("Unknwon guard: " + c);
+                })
+                // @formatter:on
+            )).match(t, u).map(v -> guards.build());
         };
     }
 
