@@ -18,7 +18,7 @@ signature
     Module             : String * List(DSSection) -> DSModule
     Imports            : List(DSImport) -> DSSection
     Sorts              : List(DSSortDecl)
-    SortDecl           : String -> DSSortDecl
+    SortDeclNoAnnos    : String -> DSSortDecl
     Import             : String -> DSImport
     ArrowDecl          : DSArrowROs * DSSort * DSArrowRWs * DSString * DSSort * DSArrowRWs -> DSArrowDecl
     NoArrowROs         : DSArrowROs

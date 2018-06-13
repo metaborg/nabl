@@ -11,6 +11,7 @@ signature
     filterOccsByName(List(Occurrence), Name) --> List(Occurrence)
     declOfPath(List(Step)) --> Occurrence
     importedOf(Scope, Label) --> List(Occurrence)
+    edgesOf(Scope, Label) --> List(Scope)
     NaBL2 |- declsOf(Scope, Namespace) --> List(Occurrence)
     NaBL2 |- declOfRef(Occurrence) --> Occurrence
     NaBL2 |- assocScopeOf(Occurrence, Label) --> Scope
@@ -51,9 +52,13 @@ rules
 
 rules
 
-  declOfPath([D(_, o)]) --> o
-
-  declOfPath([_|p]) --> declOfPath(p)
+  declOfPath([p|ps]) --> o
+  where
+    case p of {
+      D(_, o) ->
+      otherwise ->
+        declOfPath(ps) --> o
+    }
 
 rules
 
@@ -73,4 +78,8 @@ rules
       true ->
         import-edges[l] => os
     }
+  
+  edgesOf(s, l) --> edges[l]
+  where
+    edgesOf(s) --> edges
   
