@@ -40,7 +40,7 @@ context-free syntax
   CDecl.CDecl      = [[CInd][ConstraintId] : [Type]]
 
   CInd.InductiveC   =
-//  CInd.CoinductiveC = <coinductive >
+  CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
     <RuleHead> | <LocalVars> <Guard> :- <LocalVars>

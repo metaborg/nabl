@@ -86,11 +86,15 @@ rules
     Map1[[ cs ^ (s) ]].
 
   [[ CDecl(ind, x, type) ^ (s) ]] :=
+    [[ ind ]],
     [[ type ^ (s) : ty ]],                     // types
     C{x} <- s, @x.decl := C{x},                // decl
     C{x} : ty !!,
     C{x}.ind := ind !!,
     C{x}.kind := DeclaredC() !!.
+
+  [[ InductiveC() ]].
+  [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not implemented yet.".
 
   [[ CDeriveMap(x, x', lsorts) ^ (s) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.decl := d,
