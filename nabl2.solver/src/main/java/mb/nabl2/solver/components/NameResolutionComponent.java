@@ -95,8 +95,8 @@ public class NameResolutionComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<SolveResult> solve(CResolve r) {
-        final ITerm refTerm = unifier().findRecursive(r.getReference());
-        if(!refTerm.isGround()) {
+        final ITerm refTerm = r.getReference();
+        if(!unifier().isGround(refTerm)) {
             return Optional.empty();
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
@@ -135,8 +135,8 @@ public class NameResolutionComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CAssoc a) {
-        final ITerm declTerm = unifier().findRecursive(a.getDeclaration());
-        if(!declTerm.isGround()) {
+        final ITerm declTerm = a.getDeclaration();
+        if(!unifier().isGround(declTerm)) {
             return Optional.empty();
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
@@ -166,8 +166,8 @@ public class NameResolutionComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CDeclProperty c) {
-        final ITerm declTerm = unifier().findRecursive(c.getDeclaration());
-        if(!declTerm.isGround()) {
+        final ITerm declTerm = c.getDeclaration();
+        if(!unifier().isGround(declTerm)) {
             return Optional.empty();
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
@@ -200,14 +200,13 @@ public class NameResolutionComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<Scope> findScope(ITerm scopeTerm) {
-        return Optional.of(unifier().findRecursive(scopeTerm)).filter(ITerm::isGround).map(st -> Scope.matcher()
-                .match(st, unifier()).orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+        return Optional.of(scopeTerm).filter(unifier()::isGround).map(st -> Scope.matcher().match(st, unifier())
+                .orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
     }
 
     private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
-        return Optional.of(unifier().findRecursive(occurrenceTerm)).filter(ITerm::isGround)
-                .map(ot -> Occurrence.matcher().match(ot, unifier())
-                        .orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+        return Optional.of(occurrenceTerm).filter(unifier()::isGround).map(ot -> Occurrence.matcher()
+                .match(ot, unifier()).orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
     }
 
     @Value.Immutable

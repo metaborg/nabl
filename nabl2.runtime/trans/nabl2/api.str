@@ -38,12 +38,35 @@ rules // ###### Analysis execution ######
   nabl2-prettyprint-term = fail
 
   /**
-   * Main analysis strategy for NaBL2.
+   * Main editor analysis strategy for NaBL2, when using the `(constraint)`
+   * analyzer. Supports single and multi file analysis.
    *
    * @param pre : Term -> Term Strategy to preprocess (e.g. desugar) AST
    */
   nabl2-analyze(pre) = nabl2--analyze(pre)
 
+  /**
+   * Analyze the given AST with NaBL2.
+   *
+   * @param resource:String
+   * @type ast:Term -> (ast:Term, Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
+   */
+  nabl2-analyze-ast(|resource) = nabl2--analyze-ast(|resource)
+
+  /**
+   * Solve an NaBL2 constraint, with the given config.
+   *
+   * @param config:AnalysisConfig
+   * @type Constraint -> (Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
+   */
+  nabl2-solve-constraint(|config) = nabl2--solve-constraint(|config)
+
+  /**
+   * Get the config of the NaBL2 spec.
+   *
+   * @type _ -> AnalysisConfig
+   */
+  nabl2-analysis-config = nabl2--analysis-config
 
 rules // ###### Custom analysis hooks ######
 
@@ -431,6 +454,14 @@ rules // ###### AST Indices ######
    */
   nabl2-erase-ast-indices = nabl2--erase-ast-indices
 
+  /**
+   * Simplify AST indices from a term, preserving other annotations and
+   * attachments.
+   *
+   * @type Term -> Term
+   */
+  nabl2-simplify-ast-indices = nabl2--simplify-ast-indices
+
 rules // ###### Editor Integration ######
 
   /**
@@ -446,4 +477,3 @@ rules // ###### Editor Integration ######
    * @type (node, position, ast, path, project-path) -> label
    */
   nabl2-editor-hover = nabl2--editor-hover
-

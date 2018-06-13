@@ -56,9 +56,9 @@ public class SetComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     private Optional<SolveResult> solve(CSubsetEq constraint) {
-        ITerm left = unifier().findRecursive(constraint.getLeft());
-        ITerm right = unifier().findRecursive(constraint.getRight());
-        if(!left.isGround() && right.isGround()) {
+        ITerm left = constraint.getLeft();
+        ITerm right = constraint.getRight();
+        if(!unifier().isGround(left) && unifier().isGround(right)) {
             return Optional.empty();
         }
         Optional<Set<IElement<ITerm>>> maybeLeftSet = evaluator.match(left, unifier());
@@ -85,8 +85,8 @@ public class SetComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CDistinct constraint) {
-        ITerm setTerm = unifier().findRecursive(constraint.getSet());
-        if(!setTerm.isGround()) {
+        ITerm setTerm = constraint.getSet();
+        if(!unifier().isGround(setTerm)) {
             return Optional.empty();
         }
         Optional<Set<IElement<ITerm>>> maybeSet = evaluator.match(setTerm, unifier());
@@ -113,16 +113,15 @@ public class SetComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CEvalSet constraint) {
-        ITerm setTerm = unifier().findRecursive(constraint.getSet());
-        if(!setTerm.isGround()) {
+        ITerm setTerm = constraint.getSet();
+        if(!unifier().isGround(setTerm)) {
             return Optional.empty();
         }
         Optional<Set<IElement<ITerm>>> maybeSet = evaluator.match(setTerm, unifier());
         if(!(maybeSet.isPresent())) {
             return Optional.empty();
         }
-        List<ITerm> set =
-                maybeSet.get().stream().map(i -> unifier().findRecursive(i.getValue())).collect(Collectors.toList());
+        List<ITerm> set = maybeSet.get().stream().map(i -> i.getValue()).collect(Collectors.toList());
         return Optional.of(SolveResult
                 .constraints(ImmutableCEqual.of(constraint.getResult(), B.newList(set), constraint.getMessageInfo())));
 

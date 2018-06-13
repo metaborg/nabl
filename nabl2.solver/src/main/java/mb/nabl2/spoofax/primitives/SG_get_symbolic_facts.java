@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.spoofax.analysis.IScopeGraphUnit;
+import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 
 public class SG_get_symbolic_facts extends AnalysisPrimitive {
@@ -17,10 +17,10 @@ public class SG_get_symbolic_facts extends AnalysisPrimitive {
         super(SG_get_symbolic_facts.class.getSimpleName());
     }
 
-    @Override public Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms) throws InterpreterException {
-        return unit.solution().map(s -> {
-            return B.newList(s.symbolic().getFacts().stream().map(s.unifier()::findRecursive).collect(Collectors.toSet()));
-        });
+    @Override public Optional<? extends ITerm> call(ISolution solution, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
+        return Optional.of(B.newList(solution.symbolic().getFacts().stream().map(solution.unifier()::findRecursive)
+                .collect(Collectors.toSet())));
     }
 
 }
