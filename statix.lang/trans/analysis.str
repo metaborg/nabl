@@ -23,14 +23,8 @@ rules // Analysis
   nabl2-custom-analysis-final-hook(|a):
       (resource, _, [ast]) -> (error*, warning*, note*, (ast', ext*))
     where <not(nabl2-analysis-has-errors)> a
-    where id
     with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
-         (ast', a', _, _, _) := <normalize-all(|a);nabl2-analyze-ast(|resource)> ast;
-         if <nabl2-analysis-has-errors> a' then
-           warn-msg(|"***************************************************************");
-           warn-msg(|"* Normalized AST has errors. Normalization needs to be fixed! *");
-           warn-msg(|"***************************************************************")
-         end;
+         ast' := <normalize-all(|a)> (resource, ast);
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
 
          nabl2-custom-analysis-info-msg(|"Checking guard constraints...");
@@ -44,6 +38,19 @@ rules // Analysis
          error*   := [c-e*, ext-e*];
          warning* := [ext-w*];
          note*    := [ext-n*]
+
+  normalize-all(|a): (resource, ast) -> ast'
+    with (ast1, a1) := <normalize-phase1(|a);reanalyze(|resource)> ast;
+         (ast2, a2) := <normalize-phase2(|a1);reanalyze(|resource)> ast1;
+         ast' := ast2
+
+  reanalyze(|resource): ast -> (ast', a')
+    with (ast', a', _, _, _) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
+         if <nabl2-analysis-has-errors> a' then
+           warn-msg(|"***************************************************************");
+           warn-msg(|"* Normalized AST has errors. Normalization needs to be fixed! *");
+           warn-msg(|"***************************************************************")
+         end
 
   nabl2-prettyprint-hook       = prettyprint-StatixLang-IType
   prettyprint-StatixLang-IType = nabl2-prettyprint-term
@@ -77,14 +84,14 @@ rules // Debugging
   debug-show-normalized: (_, _, ast, path, project-path) -> (filename, result)
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
-    with filename := <guarantee-extension(|"normalized.aterm")> path
+    with filename := <guarantee-extension(|"normalized.aterm")> (path, path)
        ; result   := <normalize-all(|a);nabl2-simplify-ast-indices> ast
 
   format-normalized: (_, _, ast, path, project-path) -> (filename, result)
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with filename := <guarantee-extension(|"normalized.stx")> path
-       ; result   := <normalize-all(|a);pp-StatixLang-string> ast
+       ; result   := <normalize-all(|a);pp-StatixLang-string> (path, ast)
 
 
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
@@ -92,4 +99,4 @@ rules // Debugging
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with filename := <guarantee-extension(|"explicated.aterm")> path
-       ; result   := <normalize-all(|a);explicate-all(|a);nabl2-simplify-ast-indices> ast
+       ; result   := <normalize-all(|a);explicate-all(|a);nabl2-simplify-ast-indices> (path, ast)

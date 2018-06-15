@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
@@ -53,10 +54,7 @@ public class CNew implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("new ");
-        sb.append(terms);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

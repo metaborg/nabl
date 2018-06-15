@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.DataWF;
@@ -70,7 +71,7 @@ public class CResolveQuery implements IConstraint {
             return Optional.empty();
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + scopeTerm));
+                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         try {
             // @formatter:off
@@ -146,18 +147,7 @@ public class CResolveQuery implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("query ");
-        sb.append(relation);
-        sb.append(" ");
-        sb.append(filter);
-        sb.append(" ");
-        sb.append(min);
-        sb.append(" in ");
-        sb.append(scopeTerm);
-        sb.append(" |-> ");
-        sb.append(resultTerm);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

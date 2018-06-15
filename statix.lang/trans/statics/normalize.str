@@ -16,15 +16,15 @@ imports
 
 rules
 
-  normalize-all(|a) =
+  normalize-phase1(|a) =
     explicate-cmaps(|a);
     normalize-functional-heads;
     normalize-inline-patterns(|a);
     normalize-functional-cdecls;
-    normalize-functional-cops(|a);
-    explicate-ho-constraints(|a); // cannot move forward, because the generated named constraint
-                                  // has no type information in the solution, and the earlier
-                                  // normalization strategies will crash
+    normalize-functional-cops(|a)
+
+  normalize-phase2(|a) =
+    explicate-ho-constraints(|a);
     normalize-wildcards;
     normalize-as-patterns
 
@@ -147,11 +147,11 @@ rules
   normalize-functional-cop(|a):
       Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard'', bvs', body''){a*}
     with (guard', gmaps) := <collect-map(replace-cop(|a))> guard;
-         guard'' := <map(cop-to-c);list-to-conj(|guard')> gmaps;
+         guard'' := <map(cop-to-c(|a));list-to-conj(|guard')> gmaps;
          new-gvs := <map(Snd);collect-all(?Var(_))> gmaps;
          gvs' := <conc> (gvs, new-gvs);
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
-         body'' := <map(cop-to-c);list-to-conj(|body')> bmaps;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
          new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
@@ -160,7 +160,7 @@ rules
     with (ts', tsmaps) := <collect-map(replace-cop(|a))> ts;
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
          maps := <conc> (tsmaps, bmaps);
-         body'' := <map(cop-to-c);list-to-conj(|body)> maps;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body)> maps;
          new-var* := <map(Snd);collect-all(?Var(_))> maps;
          vs' := <conc> (vs, new-var*)
 
@@ -168,41 +168,69 @@ rules
       CEqual(t1, t2){a*} -> C
     with (t1', maps1) := <collect-map(replace-cop(|a))> t1;
          (t2', maps2) := <collect-map(replace-cop(|a))> t2;
-         C := <conc;map(cop-to-c);list-to-conj(|CEqual(t1, t2'){a*})> (maps1, maps2)
+         C := <conc;map(cop-to-c(|a));list-to-conj(|CEqual(t1, t2'){a*})> (maps1, maps2)
 
-  replace-cop(|a): COp(x, ts) -> t
+
+  replace-cop(|a): COp(x, in_ts) -> out_t
     with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
-         ts' := <map-with-index(\ (i, _) -> Var(<newname> $[[x][<int-to-string> i]]) \)> outtys;
-         t := <?[<id>] <+ !Tuple(<id>)> ts'
+         out_ts := <map-with-index(\ (i, _) -> Var(<newname> $[[x][<int-to-string> i]]) \)> outtys;
+         out_t := <?[<id>] <+ !Tuple(<id>)> out_ts
+
+  cop-to-c(|a): (COp(x, in_ts), out_t) -> C(x, ts)
+    with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         if [_] := outtys then
+           out_ts := <![<id>]> out_t
+         else
+           out_ts := <?Tuple(<id>)> out_t
+         end;
+         ts := <conc> (in_ts, out_ts)
+
 
   replace-cop(|a): NewOp() -> v
     with v := Var(<newname> "new")
 
-  replace-cop(|a): PathSrcOp(t) -> v
+  cop-to-c(|a): (NewOp(), v) -> CNew([v])
+
+
+  replace-cop(|a): PathSrcOp(_) -> v
     with v := Var(<newname> "src")
 
-  replace-cop(|a): PathDstOp(t) -> v
+  cop-to-c(|a): (PathSrcOp(t), v) -> CPathSrc(t, v)
+
+
+  replace-cop(|a): PathDstOp(_) -> v
     with v := Var(<newname> "dst")
 
-  replace-cop(|a): PathScopesOp(t) -> v
+  cop-to-c(|a): (PathDstOp(t), v) -> CPathDst(t, v)
+
+
+  replace-cop(|a): PathScopesOp(_) -> v
     with v := Var(<newname> "scopes")
 
-  replace-cop(|a): PathLabelsOp(t) -> v
+  cop-to-c(|a): (PathScopesOp(t), v) -> CPathScopes(t, v)
+
+
+  replace-cop(|a): PathLabelsOp(_) -> v
     with v := Var(<newname> "labels")
 
-  cop-to-c: (COp(x, in_ts), out_t) -> C(x, ts)
-    with out_ts := <?Tuple(<id>) + ![<id>]> out_t;
-         ts := <conc> (in_ts, out_ts)
+  cop-to-c(|a): (PathLabelsOp(t), v) -> CPathLabels(t, v)
 
-  cop-to-c: (NewOp(), v) -> CNew([v])
 
-  cop-to-c: (PathSrcOp(t), v) -> CPathSrc(t, v)
+  replace-cop(|a): AskRelOp(rel, in_ts, st) -> out_t
+    with FUN(_, outtys) := <nabl2-get-ast-type(|a)> rel;
+         out_ts := <map-with-index(\ (i, _) -> Var(<newname> $[t[<int-to-string> i]]) \)> outtys;
+         out_t := <?[<id>] <+ !Tuple(<id>)> out_ts
 
-  cop-to-c: (PathDstOp(t), v) -> CPathDst(t, v)
+  cop-to-c(|a): (op@AskRelOp(rel, in_ts, st), out_t) -> c
+    with FUN(_, outtys) := <nabl2-get-ast-type(|a)> rel;
+         if [_] := outtys then
+           out_ts := <![<id>]> out_t
+         else
+           out_ts := <?Tuple(<id>)> out_t
+         end;
+         ts := <conc> (in_ts, out_ts);
+         c := <with-origin(|op); desugar-rel-shorthand> CAskRel(rel, ts, st)
 
-  cop-to-c: (PathScopesOp(t), v) -> CPathScopes(t, v)
-
-  cop-to-c: (PathLabelsOp(t), v) -> CPathLabels(t, v)
 
   list-to-conj(|tl): [] -> tl
 
@@ -215,20 +243,9 @@ rules
          rule* := <map(ho-constraint-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, [Rules(rule*)])
 
+
   replace-ho-constraint: LLam(_, _, _) -> LC(x)
     with x := <newname> "lam"
-
-  replace-ho-constraint: LTrue() -> LC(x)
-    with x := <newname> "true"
-
-  replace-ho-constraint: LFalse() -> LC(x)
-    with x := <newname> "false"
-
-  replace-ho-constraint: LPathMatch(_) -> LC(x)
-    with x := <newname> "pathMatch"
-
-  replace-ho-constraint: LPathLt(_) -> LC(x)
-    with x := <newname> "pathLt"
 
   ho-constraint-to-rules(|a):
       (l@LLam(ts, vs, body), LC(x)) -> [decl, rule]
@@ -237,11 +254,19 @@ rules
          decl := CDecl(InductiveC(), x, sort);
          rule := Rule(C(x, ts), [], CTrue(), vs, body)
 
+
+  replace-ho-constraint: LTrue() -> LC(x)
+    with x := <newname> "true"
+
   ho-constraint-to-rules(|a):
       (l@LTrue(), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, args), [], CTrue(), [], CTrue())]
     with ty := <nabl2-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
          args := <sort-args;map(!Wld())> sort
+
+
+  replace-ho-constraint: LFalse() -> LC(x)
+    with x := <newname> "false"
 
   ho-constraint-to-rules(|a):
       (l@LFalse(), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, args), [], CTrue(), [], CFalse())]
@@ -249,10 +274,18 @@ rules
          sort := <type-to-sort> ty;
          args := <sort-args;map(!Wld())> sort
 
+
+  replace-ho-constraint: LPathMatch(_) -> LC(x)
+    with x := <newname> "pathMatch"
+
   ho-constraint-to-rules(|a):
       (LPathMatch(re), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, [v]), [], CTrue(), [], CPathMatch(re, v))]
     with sort := <type-to-sort> PRED([LIST(LABEL())]);
          v := Var("ls")
+
+
+  replace-ho-constraint: LPathLt(_) -> LC(x)
+    with x := <newname> "pathLt"
 
   ho-constraint-to-rules(|a):
       (LPathLt(ord), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, [v1, v2]), [], CTrue(), [], CPathLt(ord, v1, v2))]

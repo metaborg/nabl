@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
@@ -63,7 +64,7 @@ public class CTellRel implements IConstraint {
             return Optional.empty();
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + scopeTerm));
+                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         if(!datumTerms.stream().limit(type.getInputArity()).allMatch(unifier::isGround)) {
             return Optional.empty();
@@ -84,13 +85,7 @@ public class CTellRel implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(scopeTerm);
-        sb.append(" -");
-        sb.append(relation);
-        sb.append("-[] ");
-        sb.append(B.newTuple(datumTerms));
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

@@ -346,7 +346,7 @@ rules
     Build[[ st ^ (s) : SCOPE() ]],
     Build[[ pst ^ (s) : LIST(resty) ]].
 
-  [[ EmptyTarget() ^ (s, wfty, outty) ]] :=
+  [[ NoTarget() ^ (s, wfty, outty) ]] :=
     wfty == SCOPE(),
     outty == PATH().
 

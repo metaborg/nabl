@@ -9,6 +9,7 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.terms.unification.UnificationException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
@@ -52,11 +53,7 @@ public class CEqual implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(term1);
-        sb.append(" == ");
-        sb.append(term2);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }
