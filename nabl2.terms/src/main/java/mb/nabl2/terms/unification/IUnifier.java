@@ -162,17 +162,6 @@ public interface IUnifier {
         Result<Immutable> unify(IUnifier other) throws UnificationException;
 
         /**
-         * Return the composition of this unifier with another unifier.
-         */
-        Immutable compose(IUnifier other);
-
-        /**
-         * Match the term against the given pattern. Return assignments for the variables in the pattern, or throw if
-         * the match fails.
-         */
-        Result<Immutable> match(ITerm pattern, ITerm term) throws MatchException;
-
-        /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
@@ -229,17 +218,6 @@ public interface IUnifier {
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
         Immutable unify(IUnifier other) throws UnificationException;
-
-        /**
-         * Compose this unifier with another unifier.
-         */
-        void compose(IUnifier other);
-
-        /**
-         * Match the term against the given pattern. Return assignments for the variables in the pattern, or throw if
-         * the match fails.
-         */
-        Immutable match(ITerm pattern, ITerm term) throws MatchException;
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed

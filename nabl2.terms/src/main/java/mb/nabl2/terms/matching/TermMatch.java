@@ -431,7 +431,7 @@ public class TermMatch {
 
         Optional<T> match(ITerm term, IUnifier unifier);
 
-        @Deprecated default Optional<T> match(ITerm term) {
+        default Optional<T> match(ITerm term) {
             return match(term, PersistentUnifier.Immutable.of());
         }
 

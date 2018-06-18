@@ -200,7 +200,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     @Override public int hashCode() {
         return Objects.hash(isFinite(), reps(), terms()); // FIXME: not exactly equivalent to equals implementation
     }
-    
+
     ///////////////////////////////////////////
     // toString
     ///////////////////////////////////////////
@@ -898,19 +898,6 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             return new PersistentUnifier.Result<>(diff, unifier.freeze());
         }
 
-        @Override public IUnifier.Immutable compose(IUnifier other) {
-            final IUnifier.Transient unifier = melt();
-            unifier.compose(other);
-            return unifier.freeze();
-        }
-
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> match(ITerm pattern, ITerm term)
-                throws MatchException {
-            final IUnifier.Transient unifier = melt();
-            final IUnifier.Immutable diff = unifier.match(pattern, term);
-            return new PersistentUnifier.Result<>(diff, unifier.freeze());
-        }
-
         @Override public ITermVar findRep(ITermVar var) {
             final Map.Transient<ITermVar, ITermVar> reps = this.reps.get().asTransient();
             final ITermVar rep = findRep(var, reps);
@@ -1167,125 +1154,6 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 return false;
             }
             return true;
-        }
-
-        ///////////////////////////////////////////
-        // match(ITerm, ITerm)
-        ///////////////////////////////////////////
-
-        @Override public IUnifier.Immutable match(final ITerm pattern, final ITerm term) throws MatchException {
-            final Set<ITermVar> result = Sets.newHashSet();
-            final Deque<Tuple2<ITerm, ITerm>> worklist = Lists.newLinkedList();
-            worklist.push(ImmutableTuple2.of(pattern, term));
-            while(!worklist.isEmpty()) {
-                final Tuple2<ITerm, ITerm> work = worklist.pop();
-                if(!matchTerms(work._1(), work._2(), worklist, result)) {
-                    throw new MatchException(pattern, term);
-                }
-            }
-            if(isFinite() && isCyclic(result)) {
-                throw new MatchException(pattern, term);
-            }
-            return diffUnifier(result);
-        }
-
-        private boolean matchTerms(final ITerm pattern, final ITerm term, final Deque<Tuple2<ITerm, ITerm>> worklist,
-                Set<ITermVar> result) {
-            // @formatter:off
-            return pattern.match(Terms.cases(
-                applPattern -> term.match(Terms.<Boolean>cases()
-                    .appl(applTerm -> applPattern.getOp().equals(applTerm.getOp()) &&
-                                      applPattern.getArity() == applTerm.getArity() &&
-                                      matchs(applPattern.getArgs(), applTerm.getArgs(), worklist))
-                    .otherwise(t -> false)
-                ),
-                listPattern -> term.match(Terms.<Boolean>cases()
-                    .list(listTerm -> matchLists(listPattern, listTerm, worklist, result))
-                    .otherwise(t -> false)
-                ),
-                stringPattern -> term.match(Terms.<Boolean>cases()
-                    .string(stringTerm -> stringPattern.getValue().equals(stringTerm.getValue()))
-                    .otherwise(t -> false)
-                ),
-                integerPattern -> term.match(Terms.<Boolean>cases()
-                    .integer(integerTerm -> integerPattern.getValue() == integerTerm.getValue())
-                    .otherwise(t -> false)
-                ),
-                blobPattern -> term.match(Terms.<Boolean>cases()
-                    .blob(blobTerm -> blobPattern.getValue().equals(blobTerm.getValue()))
-                    .otherwise(t -> false)
-                ),
-                varPattern -> matchVar(varPattern, term, worklist, result)
-            ));
-            // @formatter:on
-        }
-
-        private boolean matchLists(final IListTerm pattern, final IListTerm term,
-                final Deque<Tuple2<ITerm, ITerm>> worklist, Set<ITermVar> result) {
-            return pattern.match(ListTerms.cases(
-            // @formatter:off
-                consPattern -> term.match(ListTerms.<Boolean>cases()
-                    .cons(consTerm -> {
-                        worklist.push(ImmutableTuple2.of(consPattern.getHead(), consTerm.getHead()));
-                        worklist.push(ImmutableTuple2.of(consPattern.getTail(), consTerm.getTail()));
-                        return true;
-                    })
-                    .otherwise(l -> false)
-                ),
-                nilPattern -> term.match(ListTerms.<Boolean>cases()
-                    .nil(nilTerm -> true)
-                    .otherwise(l -> false)
-                ),
-                varPattern -> matchVar(varPattern, term, worklist, result)
-                // @formatter:on
-            ));
-        }
-
-        private boolean matchVar(final ITermVar var, final ITerm term, final Deque<Tuple2<ITerm, ITerm>> worklist,
-                Set<ITermVar> result) {
-            final ITermVar rep = findRep(var);
-            final ITerm pattern = terms.get(rep);
-            if(pattern != null) {
-                worklist.push(ImmutableTuple2.of(pattern, term));
-            } else {
-                terms.__put(rep, term);
-                result.add(rep);
-            }
-            return true;
-        }
-
-        private boolean matchs(final Iterable<ITerm> lefts, final Iterable<ITerm> rights,
-                final Deque<Tuple2<ITerm, ITerm>> worklist) {
-            Iterator<ITerm> itLeft = lefts.iterator();
-            Iterator<ITerm> itRight = rights.iterator();
-            while(itLeft.hasNext()) {
-                if(!itRight.hasNext()) {
-                    return false;
-                }
-                worklist.push(ImmutableTuple2.of(itLeft.next(), itRight.next()));
-            }
-            if(itRight.hasNext()) {
-                return false;
-            }
-            return true;
-        }
-
-        ///////////////////////////////////////////
-        // compose(IUnifier)
-        ///////////////////////////////////////////
-
-        @Override public void compose(IUnifier other) {
-            for(ITermVar var : other.varSet()) {
-                if(!contains(var)) {
-                    final ITermVar rep = other.findRep(var);
-                    final ITerm term = other.findTerm(var);
-                    if(term.equals(rep)) {
-                        reps.__put(var, rep);
-                    } else {
-                        terms.__put(var, term);
-                    }
-                }
-            }
         }
 
         ///////////////////////////////////////////

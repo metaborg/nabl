@@ -14,9 +14,9 @@ import com.google.common.collect.ImmutableMap;
 import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.MatchException;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.MatchException;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
@@ -61,10 +61,10 @@ public class FunctionTerms {
                 throw new IllegalStateException("Term argument must be ground.");
             }
             for(Tuple2<ITerm, ITerm> c : cases) {
-                IUnifier.Transient unifier = PersistentUnifier.Transient.of();
+                final ISubstitution.Immutable subst;
                 try {
-                    unifier.match(c._1(), term);
-                    ITerm result = unifier.findRecursive(c._2());
+                    subst = PersistentSubstitution.Immutable.of().match(c._1(), term);
+                    final ITerm result = subst.apply(c._2());
                     return Optional.of(result);
                 } catch(MatchException e) {
                 }

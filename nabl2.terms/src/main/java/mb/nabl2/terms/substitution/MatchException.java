@@ -1,4 +1,4 @@
-package mb.nabl2.terms.unification;
+package mb.nabl2.terms.substitution;
 
 import mb.nabl2.terms.ITerm;
 

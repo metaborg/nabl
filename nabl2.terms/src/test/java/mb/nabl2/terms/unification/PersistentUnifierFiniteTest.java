@@ -1,7 +1,9 @@
 package mb.nabl2.terms.unification;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -70,30 +72,6 @@ public class PersistentUnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
         phi.unify(a, B.newAppl(f, b));
         phi.unify(b, B.newAppl(g, a));
-    }
-
-    @Test public void testMatchVars() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(a, b);
-        assertEquals(b, phi.findTerm(a));
-    }
-
-    @Test public void testMatchVarTerm() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(a, B.newAppl(g, x, b));
-        assertEquals(B.newAppl(g, x, b), phi.findTerm(a));
-    }
-
-    @Test public void testMatchTerms() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(B.newAppl(g, a, b), B.newAppl(g, B.newList(x), y));
-        assertEquals(B.newList(x), phi.findTerm(a));
-        assertEquals(y, phi.findTerm(b));
-    }
-
-    @Test(expected = MatchException.class) public void testMatchFail() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(B.newAppl(g, a), b);
     }
 
     @Test public void testUnifyMakeEqualReps() throws UnificationException {
