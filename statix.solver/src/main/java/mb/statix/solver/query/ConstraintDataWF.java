@@ -2,27 +2,26 @@ package mb.statix.solver.query;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.MatchException;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
-import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
-import mb.statix.solver.constraint.CUser;
+import mb.statix.spec.Lambda;
 
 public class ConstraintDataWF implements DataWF<ITerm> {
 
-    private final String constraint;
+    private final Lambda constraint;
     private final State state;
     private final Completeness completeness;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(String constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintDataWF(Lambda constraint, State state, Completeness completeness, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.completeness = completeness;
@@ -30,10 +29,15 @@ public class ConstraintDataWF implements DataWF<ITerm> {
     }
 
     public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
-        final IConstraint C = new CUser(constraint, datum);
-        final Config config = Config.of(state, ImmutableList.of(C), completeness);
-        return Solver.entails(config, debug)
+        try {
+            final Tuple2<State, Lambda> result =
+                    constraint.apply(datum, state);
+            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
+            return Solver.entails(config, result._2().getBodyVars(), debug)
                 .orElseThrow(() -> new ResolutionException("Data well-formedness check delayed"));
+        } catch(MatchException ex) {
+            return false;
+        }
     }
 
 }

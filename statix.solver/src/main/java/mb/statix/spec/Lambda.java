@@ -17,30 +17,18 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IGuard;
 import mb.statix.solver.State;
 
-public class Rule {
+public class Lambda {
 
-    private final String name;
     private final List<ITerm> params;
-    private final Set<ITermVar> guardVars;
-    private final List<IGuard> guard;
     private final Set<ITermVar> bodyVars;
     private final List<IConstraint> body;
 
-    public Rule(String name, Iterable<? extends ITerm> params, Iterable<ITermVar> guardVars, Iterable<IGuard> guard,
-            Iterable<ITermVar> bodyVars, Iterable<IConstraint> body) {
-        this.name = name;
+    public Lambda(Iterable<? extends ITerm> params, Iterable<ITermVar> bodyVars, Iterable<IConstraint> body) {
         this.params = ImmutableList.copyOf(params);
-        this.guardVars = ImmutableSet.copyOf(guardVars);
-        this.guard = ImmutableList.copyOf(guard);
         this.bodyVars = ImmutableSet.copyOf(bodyVars);
         this.body = ImmutableList.copyOf(body);
-    }
-
-    public String getName() {
-        return name;
     }
 
     public Set<ITermVar> getParamVars() {
@@ -51,14 +39,6 @@ public class Rule {
         return params;
     }
 
-    public Set<ITermVar> getGuardVars() {
-        return guardVars;
-    }
-
-    public List<IGuard> getGuard() {
-        return guard;
-    }
-
     public Set<ITermVar> getBodyVars() {
         return bodyVars;
     }
@@ -67,21 +47,18 @@ public class Rule {
         return body;
     }
 
-    public Tuple2<State, Rule> apply(List<ITerm> args, State state) throws MatchException {
+    public Lambda apply(ISubstitution.Immutable subst) {
+        final ISubstitution.Immutable bodySubst = subst.removeAll(getParamVars()).removeAll(bodyVars);
+        final List<IConstraint> newBody = body.stream().map(c -> c.apply(bodySubst)).collect(Collectors.toList());
+        return new Lambda(params, bodyVars, newBody);
+    }
+
+    public Tuple2<State, Lambda> apply(List<ITerm> args, State state) throws MatchException {
         ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         for(int i = 0; i < params.size(); i++) {
             subst.match(params.get(i), args.get(i));
         }
         State newState = state;
-        // guard vars
-        final ImmutableSet.Builder<ITermVar> freshGuardVars = ImmutableSet.builder();
-        for(ITermVar var : guardVars) {
-            final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
-            subst.match(var, vs._1());
-            freshGuardVars.add(vs._1());
-            newState = vs._2();
-        }
-        // body vars
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars) {
             final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
@@ -90,25 +67,15 @@ public class Rule {
             newState = vs._2();
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IGuard> newGuard = guard.stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         final Set<IConstraint> newBody = body.stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        final Rule newRule = new Rule(name, args, freshGuardVars.build(), newGuard, freshBodyVars.build(), newBody);
+        final Lambda newRule = new Lambda(args, freshBodyVars.build(), newBody);
         return ImmutableTuple2.of(newState, newRule);
     }
 
     public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(name);
-        sb.append("(");
+        sb.append("{ ");
         sb.append(params.stream().map(unifier::toString).collect(Collectors.toList()));
-        sb.append(")");
-        if(!guard.isEmpty()) {
-            sb.append(" | ");
-            if(!guardVars.isEmpty()) {
-                sb.append(guardVars).append(" ");
-            }
-            sb.append(guard.stream().map(g -> g.toString(unifier)).collect(Collectors.toSet()));
-        }
         if(!body.isEmpty()) {
             sb.append(" :- ");
             if(!bodyVars.isEmpty()) {
@@ -116,7 +83,7 @@ public class Rule {
             }
             sb.append(body.stream().map(c -> c.toString(unifier)).collect(Collectors.toSet()));
         }
-        sb.append(".");
+        sb.append(" }");
         return sb.toString();
     }
 

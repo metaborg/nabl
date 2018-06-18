@@ -7,12 +7,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -48,9 +47,9 @@ public class CResolveQuery implements IConstraint {
         this.resultTerm = resultTerm;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CResolveQuery(relation, filter.apply(map), min.apply(map), map.apply(scopeTerm),
-                map.apply(resultTerm));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+                subst.apply(resultTerm));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)

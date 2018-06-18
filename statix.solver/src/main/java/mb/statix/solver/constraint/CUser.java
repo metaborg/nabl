@@ -6,15 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.MatchException;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.MatchException;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -42,8 +41,8 @@ public class CUser implements IConstraint {
                 .collect(Collectors.toList());
     }
 
-    public IConstraint apply(Function1<ITerm, ITerm> map) {
-        final List<ITerm> newArgs = args.stream().map(map::apply).collect(Collectors.toList());
+    public IConstraint apply(ISubstitution.Immutable subst) {
+        final List<ITerm> newArgs = args.stream().map(subst::apply).collect(Collectors.toList());
         return new CUser(name, newArgs);
     }
 

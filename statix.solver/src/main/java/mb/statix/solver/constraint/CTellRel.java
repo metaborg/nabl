@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableList;
@@ -14,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
@@ -43,9 +43,9 @@ public class CTellRel implements IConstraint {
         return Iterables2.from(ImmutableTuple2.of(scopeTerm, relation));
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CTellRel(map.apply(scopeTerm), relation,
-                datumTerms.stream().map(map::apply).collect(Collectors.toList()));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CTellRel(subst.apply(scopeTerm), relation,
+                datumTerms.stream().map(subst::apply).collect(Collectors.toList()));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {

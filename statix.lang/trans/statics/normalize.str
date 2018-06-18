@@ -238,60 +238,31 @@ rules
 
 rules
 
-  explicate-ho-constraints(|a): Module(x, section*){a*} -> Module(x, section''*){a*}
-    with (section'*, maps) := <collect-map(replace-ho-constraint)> section*;
-         rule* := <map(ho-constraint-to-rules(|a)); concat> maps;
-         section''* := <conc> (section'*, [Rules(rule*)])
+  explicate-ho-constraints(|a) =
+    topdown(try(replace-ho-constraint(|a)))
 
-
-  replace-ho-constraint: LLam(_, _, _) -> LC(x)
-    with x := <newname> "lam"
-
-  ho-constraint-to-rules(|a):
-      (l@LLam(ts, vs, body), LC(x)) -> [decl, rule]
+  replace-ho-constraint(|a): l@LTrue() -> LLam(ps, [], CTrue())
     with ty := <nabl2-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
-         decl := CDecl(InductiveC(), x, sort);
-         rule := Rule(C(x, ts), [], CTrue(), vs, body)
+         ps := <sort-args;map(!Wld())> sort
 
-
-  replace-ho-constraint: LTrue() -> LC(x)
-    with x := <newname> "true"
-
-  ho-constraint-to-rules(|a):
-      (l@LTrue(), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, args), [], CTrue(), [], CTrue())]
+  replace-ho-constraint(|a): l@LFalse() -> LLam(ps, [], CFalse())
     with ty := <nabl2-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
-         args := <sort-args;map(!Wld())> sort
+         ps := <sort-args;map(!Wld())> sort
 
-
-  replace-ho-constraint: LFalse() -> LC(x)
-    with x := <newname> "false"
-
-  ho-constraint-to-rules(|a):
-      (l@LFalse(), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, args), [], CTrue(), [], CFalse())]
-    with ty := <nabl2-get-ast-type(|a)> l;
+  replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C("x", ps))
+    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
          sort := <type-to-sort> ty;
-         args := <sort-args;map(!Wld())> sort
+         ps := <sort-args;map(<newname> "t")> sort
 
+  replace-ho-constraint(|a): l@LPathMatch(re) -> LLam([p], [], CPathMatch(re, p))
+    with p := Var(<newname> "ls")
 
-  replace-ho-constraint: LPathMatch(_) -> LC(x)
-    with x := <newname> "pathMatch"
+  replace-ho-constraint(|a): l@LPathLt(ord) -> LLam([l1, l2], [], CPathLt(ord, l1, l2))
+    with l1 := Var(<newname> "l1");
+         l2 := Var(<newname> "l2")
 
-  ho-constraint-to-rules(|a):
-      (LPathMatch(re), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, [v]), [], CTrue(), [], CPathMatch(re, v))]
-    with sort := <type-to-sort> PRED([LIST(LABEL())]);
-         v := Var("ls")
-
-
-  replace-ho-constraint: LPathLt(_) -> LC(x)
-    with x := <newname> "pathLt"
-
-  ho-constraint-to-rules(|a):
-      (LPathLt(ord), LC(x)) -> [CDecl(InductiveC(), x, sort), Rule(C(x, [v1, v2]), [], CTrue(), [], CPathLt(ord, v1, v2))]
-    with sort := <type-to-sort> PRED([LABEL(), LABEL()]);
-         v1 := Var("l1");
-         v2 := Var("l2")
 
 rules
 

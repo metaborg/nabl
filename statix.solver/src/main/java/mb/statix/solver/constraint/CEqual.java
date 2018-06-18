@@ -2,12 +2,11 @@ package mb.statix.solver.constraint;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.terms.unification.UnificationException;
@@ -27,8 +26,8 @@ public class CEqual implements IConstraint {
         this.term2 = term2;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CEqual(map.apply(term1), map.apply(term2));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CEqual(subst.apply(term1), subst.apply(term2));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {

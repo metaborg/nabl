@@ -2,9 +2,8 @@ package mb.statix.solver.query;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import org.metaborg.util.functions.Function1;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
@@ -23,8 +22,8 @@ public class ResolveFilter implements IQueryFilter {
         this.refTerm = refTerm;
     }
 
-    public IQueryFilter apply(Function1<ITerm, ITerm> map) {
-        return new ResolveFilter(map.apply(refTerm));
+    public IQueryFilter apply(ISubstitution.Immutable subst) {
+        return new ResolveFilter(subst.apply(refTerm));
     }
 
     public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug)

@@ -2,12 +2,11 @@ package mb.statix.solver.constraint;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
@@ -29,8 +28,8 @@ public class CPathLt implements IConstraint {
         this.label2Term = l2;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CPathLt(lt, map.apply(label1Term), map.apply(label2Term));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CPathLt(lt, subst.apply(label1Term), subst.apply(label2Term));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {

@@ -4,17 +4,17 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.value.Value;
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.spec.Spec;
 
 public interface IConstraint {
 
-    IConstraint apply(Function1<ITerm, ITerm> map);
+    IConstraint apply(ISubstitution.Immutable subst);
 
     default Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
         return Iterables2.empty();

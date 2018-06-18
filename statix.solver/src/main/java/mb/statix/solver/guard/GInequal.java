@@ -2,9 +2,8 @@ package mb.statix.solver.guard;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.IGuard;
@@ -20,8 +19,8 @@ public class GInequal implements IGuard {
         this.term2 = term2;
     }
 
-    @Override public IGuard apply(Function1<ITerm, ITerm> map) {
-        return new GInequal(map.apply(term1), map.apply(term2));
+    @Override public IGuard apply(ISubstitution.Immutable subst) {
+        return new GInequal(subst.apply(term1), subst.apply(term2));
     }
 
     @Override public Optional<State> solve(State state, IDebugContext debug) {

@@ -6,13 +6,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.Tuple2;
@@ -30,8 +29,8 @@ public class CNew implements IConstraint {
         this.terms = ImmutableList.copyOf(terms);
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CNew(terms.stream().map(map::apply).collect(Collectors.toList()));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CNew(terms.stream().map(subst::apply).collect(Collectors.toList()));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {

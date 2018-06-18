@@ -2,14 +2,12 @@ package mb.statix.solver;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
-import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 
 public interface IGuard {
 
-    IGuard apply(Function1<ITerm, ITerm> map);
+    IGuard apply(ISubstitution.Immutable subst);
 
     /**
      * Solve constraint

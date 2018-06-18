@@ -55,7 +55,7 @@ context-free syntax
 
   UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
 
-  HoConstraint.LC = ConstraintId
+  HoConstraint.LLam = <{ <{Term ", "}+> :- <LocalVars> <Constraint> }>
 
 lexical syntax
 

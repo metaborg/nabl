@@ -2,13 +2,13 @@ package mb.statix.solver.constraint;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
@@ -37,8 +37,8 @@ public class CTellEdge implements IConstraint {
         return Iterables2.from(ImmutableTuple2.of(sourceTerm, label));
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CTellEdge(map.apply(sourceTerm), label, map.apply(targetTerm));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {

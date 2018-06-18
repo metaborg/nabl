@@ -10,21 +10,21 @@ import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
+import mb.statix.spec.Lambda;
 import mb.statix.terms.Occurrence;
 
-@SuppressWarnings("unused")
 public class NamespaceQuery {
 
     public static final NamespaceQuery DEFAULT = new NamespaceQuery();
 
-    private final @Nullable String pathFilterConstraint;
-    private final @Nullable String pathMinConstraint;
+    private final @Nullable Lambda pathFilterConstraint;
+    private final @Nullable Lambda pathMinConstraint;
 
     public NamespaceQuery() {
         this(null, null);
     }
 
-    public NamespaceQuery(@Nullable String pathFilterConstraint, @Nullable String pathMinConstraint) {
+    public NamespaceQuery(@Nullable Lambda pathFilterConstraint, @Nullable Lambda pathMinConstraint) {
         this.pathFilterConstraint = pathFilterConstraint;
         this.pathMinConstraint = pathMinConstraint;
     }

@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.util.Ref;
-import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -14,6 +13,7 @@ import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
@@ -33,8 +33,8 @@ public class CPathMatch implements IConstraint {
         this.labelsTerm = term;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CPathMatch(re, (IListTerm) map.apply(labelsTerm));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CPathMatch(re, (IListTerm) subst.apply(labelsTerm));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {

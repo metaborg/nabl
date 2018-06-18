@@ -1,27 +1,27 @@
 package mb.statix.solver.query;
 
-import org.metaborg.util.functions.Function1;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
+import mb.statix.spec.Lambda;
 
 public class QueryMin implements IQueryMin {
 
-    private final String pathConstraint;
-    private final String dataConstraint;
+    private final Lambda pathConstraint;
+    private final Lambda dataConstraint;
 
-    public QueryMin(String pathConstraint, String dataConstraint) {
+    public QueryMin(Lambda pathConstraint, Lambda dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }
 
-    public IQueryMin apply(Function1<ITerm, ITerm> map) {
-        return this;
+    public IQueryMin apply(ISubstitution.Immutable subst) {
+        return new QueryMin(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
     public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) {

@@ -2,9 +2,8 @@ package mb.statix.solver.query;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import org.metaborg.util.functions.Function1;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.LabelOrder;
@@ -23,8 +22,8 @@ public class ResolveMin implements IQueryMin {
         this.refTerm = refTerm;
     }
 
-    public IQueryMin apply(Function1<ITerm, ITerm> map) {
-        return new ResolveMin(map.apply(refTerm));
+    public IQueryMin apply(ISubstitution.Immutable subst) {
+        return new ResolveMin(subst.apply(refTerm));
     }
 
     public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug)

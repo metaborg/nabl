@@ -1,27 +1,27 @@
 package mb.statix.solver.query;
 
-import org.metaborg.util.functions.Function1;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
+import mb.statix.spec.Lambda;
 
 public class QueryFilter implements IQueryFilter {
 
-    private final String pathConstraint;
-    private final String dataConstraint;
+    private final Lambda pathConstraint;
+    private final Lambda dataConstraint;
 
-    public QueryFilter(String pathConstraint, String dataConstraint) {
+    public QueryFilter(Lambda pathConstraint, Lambda dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }
 
-    public IQueryFilter apply(Function1<ITerm, ITerm> map) {
-        return this;
+    public IQueryFilter apply(ISubstitution.Immutable subst) {
+        return new QueryFilter(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
     public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {

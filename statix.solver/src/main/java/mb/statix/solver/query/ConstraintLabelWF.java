@@ -10,31 +10,31 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.MatchException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
-import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
-import mb.statix.solver.constraint.CUser;
+import mb.statix.spec.Lambda;
 
 public class ConstraintLabelWF implements LabelWF<ITerm> {
 
-    private final String constraint;
+    private final Lambda constraint;
     private final State state;
     private final Completeness completeness;
     private final IDebugContext debug;
 
     private final List<ITerm> labels;
 
-    public ConstraintLabelWF(String constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintLabelWF(Lambda constraint, State state, Completeness completeness, IDebugContext debug) {
         this(constraint, state, completeness, debug, ImmutableList.of());
     }
 
-    private ConstraintLabelWF(String constraint, State state, Completeness completeness, IDebugContext debug,
+    private ConstraintLabelWF(Lambda constraint, State state, Completeness completeness, IDebugContext debug,
             Iterable<ITerm> labels) {
         this.constraint = constraint;
         this.state = state;
@@ -51,14 +51,18 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
     @Override public boolean wf() throws ResolutionException, InterruptedException {
         final ITerm term = B.newList(labels);
         debug.info("Check {} well-formed", state.unifier().toString(term));
-        final IConstraint C = new CUser(constraint, ImmutableList.of(term));
-        final Config config = Config.of(state, ImmutableList.of(C), completeness);
-        if(Solver.entails(config, debug.subContext())
-                .orElseThrow(() -> new ResolutionException("Label well-formedness check delayed"))) {
-            debug.info("Well-formed {}", state.unifier().toString(term));
-            return true;
-        } else {
-            debug.info("Not well-formed {}", state.unifier().toString(term));
+        try {
+            final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), state);
+            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
+            if(Solver.entails(config, result._2().getBodyVars(), debug.subContext())
+                    .orElseThrow(() -> new ResolutionException("Label well-formedness check delayed"))) {
+                debug.info("Well-formed {}", state.unifier().toString(term));
+                return true;
+            } else {
+                debug.info("Not well-formed {}", state.unifier().toString(term));
+                return false;
+            }
+        } catch(MatchException ex) {
             return false;
         }
     }
@@ -68,13 +72,17 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         final ITermVar var = varAndState._1();
         final ITerm term = B.newListTail(labels, var);
         debug.info("Check {} empty", state.unifier().toString(term));
-        final IConstraint C = new CUser(constraint, ImmutableList.of(term));
-        final Config config = Config.of(varAndState._2(), ImmutableList.of(C), completeness);
-        if(!Solver.entails(config, Iterables2.singleton(var), debug.subContext()).orElse(true)) {
-            debug.info("Empty {}", state.unifier().toString(term));
-            return true;
-        } else {
-            debug.info("Non-empty {}", state.unifier().toString(term));
+        try {
+            final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), varAndState._2());
+            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
+            if(!Solver.entails(config, Iterables2.singleton(var), debug.subContext()).orElse(true)) {
+                debug.info("Empty {}", state.unifier().toString(term));
+                return true;
+            } else {
+                debug.info("Non-empty {}", state.unifier().toString(term));
+                return false;
+            }
+        } catch(MatchException ex) {
             return false;
         }
     }

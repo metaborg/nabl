@@ -4,11 +4,10 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IScopePath;
@@ -28,8 +27,8 @@ public class CPathSrc implements IConstraint {
         this.srcTerm = srcTerm;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CPathSrc(map.apply(pathTerm), map.apply(srcTerm));
+    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+        return new CPathSrc(subst.apply(pathTerm), subst.apply(srcTerm));
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
