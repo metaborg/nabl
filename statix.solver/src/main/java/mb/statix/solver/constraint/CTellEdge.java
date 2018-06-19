@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
@@ -45,10 +46,10 @@ public class CTellEdge implements IConstraint {
         if(!(unifier.isGround(sourceTerm) && unifier.isGround(targetTerm))) {
             return Optional.empty();
         }
-        final Scope source = Scope.matcher().match(sourceTerm, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected source scope, got " + sourceTerm));
-        final Scope target = Scope.matcher().match(targetTerm, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected target scope, got " + targetTerm));
+        final Scope source = Scope.matcher().match(sourceTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
+        final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
         return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
     }
@@ -64,13 +65,7 @@ public class CTellEdge implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(sourceTerm);
-        sb.append(" -");
-        sb.append(label);
-        sb.append("-> ");
-        sb.append(targetTerm);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

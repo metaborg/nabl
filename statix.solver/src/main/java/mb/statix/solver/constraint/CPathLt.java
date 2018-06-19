@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
@@ -38,9 +39,9 @@ public class CPathLt implements IConstraint {
             return Optional.empty();
         }
         final ITerm label1 = StatixTerms.label().match(label1Term, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + label1Term));
+                .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label1Term)));
         final ITerm label2 = StatixTerms.label().match(label2Term, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + label2Term));
+                .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label2Term)));
         if(lt.contains(label1, label2)) {
             return Optional.of(Result.of(state, ImmutableSet.of()));
         } else {
@@ -63,15 +64,7 @@ public class CPathLt implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("pathLt[");
-        sb.append(lt);
-        sb.append("](");
-        sb.append(label1Term);
-        sb.append(",");
-        sb.append(label2Term);
-        sb.append(")");
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

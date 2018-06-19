@@ -15,6 +15,7 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
@@ -50,7 +51,7 @@ public class CPathMatch implements IConstraint {
                         return null;
                     }
                     final ITerm label = StatixTerms.label().match(labelTerm, unifier)
-                            .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + labelTerm));
+                            .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(labelTerm)));
                     re.set(re.get().match(label));
                     if(re.get().isEmpty()) {
                         return null;
@@ -94,13 +95,7 @@ public class CPathMatch implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("pathMatch[");
-        sb.append(re);
-        sb.append("](");
-        sb.append(labelsTerm);
-        sb.append(")");
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

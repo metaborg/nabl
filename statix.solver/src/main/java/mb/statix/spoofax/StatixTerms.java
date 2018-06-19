@@ -40,8 +40,12 @@ import mb.statix.solver.IGuard;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CNew;
+import mb.statix.solver.constraint.CPathDst;
+import mb.statix.solver.constraint.CPathLabels;
 import mb.statix.solver.constraint.CPathLt;
 import mb.statix.solver.constraint.CPathMatch;
+import mb.statix.solver.constraint.CPathScopes;
+import mb.statix.solver.constraint.CPathSrc;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -162,6 +166,22 @@ public class StatixTerms {
                     constraints.add(new CPathLt(lt, l1, l2));
                     return Unit.unit;
                 }),
+                M.appl2("CPathSrc", term(), term(), (c, p, rt) -> {
+                    constraints.add(new CPathSrc(p, rt));
+                    return Unit.unit;
+                }),
+                M.appl2("CPathDst", term(), term(), (c, p, rt) -> {
+                    constraints.add(new CPathDst(p, rt));
+                    return Unit.unit;
+                }),
+                M.appl2("CPathLabels", term(), term(), (c, p, rt) -> {
+                    constraints.add(new CPathLabels(p, rt));
+                    return Unit.unit;
+                }),
+                M.appl2("CPathScopes", term(), term(), (c, p, rt) -> {
+                    constraints.add(new CPathScopes(p, rt));
+                    return Unit.unit;
+                }),
                 M.appl2("C", M.stringValue(), M.listElems(term()), (c, name, args) -> {
                     constraints.add(new CUser(name, args));
                     return Unit.unit;
@@ -204,7 +224,7 @@ public class StatixTerms {
     public static IMatcher<Optional<ITerm>> queryTarget() {
         return M.cases(
         // @formatter:off
-            M.tuple0(t -> Optional.empty()),
+            M.appl0("NoTarget", t -> Optional.empty()),
             M.appl1("RelTarget", relation(), (t, rel) -> Optional.of(rel))
             // @formatter:on
         );

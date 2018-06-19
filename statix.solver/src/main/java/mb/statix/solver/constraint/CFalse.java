@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
@@ -26,11 +27,11 @@ public class CFalse implements IConstraint {
     }
 
     @Override public String toString(IUnifier unifier) {
-        return toString();
+        return "false";
     }
 
     @Override public String toString() {
-        return "false";
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

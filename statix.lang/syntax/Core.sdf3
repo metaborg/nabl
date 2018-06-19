@@ -219,8 +219,8 @@ context-free syntax
 
   Constraint.CResolveQuery = [query [QueryTarget][QueryFilter][QueryMin] in [Term] |-> [Term]]
 
-  QueryTarget.RelTarget   = RelRef
-  QueryTarget.EmptyTarget = "()"
+  QueryTarget.NoTarget  = "()"
+  QueryTarget.RelTarget = RelRef
 
   QueryFilter.Filter = < filter <HoConstraint> and <HoConstraint>>
   QueryMin.Min       = < min <HoConstraint> and <HoConstraint>>

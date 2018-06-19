@@ -15,6 +15,7 @@ import com.google.common.collect.Sets;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.MatchException;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
@@ -100,12 +101,7 @@ public class CUser implements IConstraint {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(name);
-        sb.append("(");
-        sb.append(args);
-        sb.append(")");
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }
