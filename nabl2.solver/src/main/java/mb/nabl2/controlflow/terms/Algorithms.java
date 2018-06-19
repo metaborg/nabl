@@ -49,7 +49,7 @@ public class Algorithms {
         for (N node : nodes) {
             // Every node not yet visited from the start nodes is unreachable
             if (nodeIndex.get(node) == null) {
-                unreachable.add(node);
+                unreachable = unreachable.__insert(node);
             }
         }
 
@@ -73,7 +73,7 @@ public class Algorithms {
         for (N node : nodes) {
             // Every node not yet visited from the end nodes is going nowhere
             if (nodeIndex.get(node) == null) {
-                deadEnds.add(node);
+                deadEnds = deadEnds.__insert(node);
             }
         }
 
@@ -130,7 +130,7 @@ public class Algorithms {
         }
 
         // Here we actually add the node to the stack, in _postorder_
-        sccStack.add(from);
+        sccStack.push(from);
 
         if (nodeLowlink.get(from) == nodeIndex.get(from)) {
             // Pop the SCC of the stack; since it's a stack, we get a reverse postorder

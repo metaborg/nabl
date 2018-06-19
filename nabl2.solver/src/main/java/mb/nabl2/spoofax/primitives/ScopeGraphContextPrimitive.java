@@ -62,5 +62,4 @@ public abstract class ScopeGraphContextPrimitive extends AbstractPrimitive {
             List<ITerm> terms) throws InterpreterException {
         throw new IllegalStateException("Method must be implemented by subclass.");
     }
-
 }

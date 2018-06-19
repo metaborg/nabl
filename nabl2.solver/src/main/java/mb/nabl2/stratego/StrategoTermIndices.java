@@ -43,9 +43,9 @@ public class StrategoTermIndices {
                                     appl.getAnnotations()),
                             tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
                             list -> index(list),
-                            integer -> termFactory.makeInt(integer.intValue()),
-                            real -> termFactory.makeReal(real.realValue()),
-                            string -> termFactory.makeString(string.stringValue()),
+                            integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
+                            real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
+                            string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
                             blob -> new StrategoBlob(blob.value())
                     // @formatter:on
                     ));
@@ -94,9 +94,10 @@ public class StrategoTermIndices {
                             appl -> termFactory.makeAppl(appl.getConstructor(), erase(appl.getAllSubterms()),
                                     appl.getAnnotations()),
                             tuple -> termFactory.makeTuple(erase(tuple.getAllSubterms()), tuple.getAnnotations()),
-                            list -> erase(list), integer -> termFactory.makeInt(integer.intValue()),
-                            real -> termFactory.makeReal(real.realValue()),
-                            string -> termFactory.makeString(string.stringValue()),
+                            list -> erase(list),
+                            integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
+                            real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
+                            string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
                             blob -> new StrategoBlob(blob.value())
                     // @formatter:on
                     ));
