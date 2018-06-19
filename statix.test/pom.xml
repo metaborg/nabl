@@ -72,6 +72,13 @@
       <type>spoofax-language</type>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>statix.runtime</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>
