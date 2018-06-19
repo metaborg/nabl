@@ -1,0 +1,21 @@
+module statix
+
+language StatixTest
+
+test true succeeds [[
+  resolve true
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test false fails [[
+  resolve false
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test non-linear pattern fails [[
+  resolve c([], [])
+  rules
+    c : list(string) * list(string)
+    c(xs, xs).
+]] analysis succeeds
+   run evaluate-test to FAILS()

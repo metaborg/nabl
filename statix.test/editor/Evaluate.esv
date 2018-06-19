@@ -4,4 +4,4 @@ menus
   
   menu: "Evaluate" (openeditor)
     
-    action: "Evaluate Test" = evaluate-test
+    action: "Evaluate Test" = editor-evaluate

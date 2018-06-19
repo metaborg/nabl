@@ -12,25 +12,20 @@ rules
   parenthesize-Statix = fail
 
   pp-Statix-string =
-    try(parenthesize-Statix)
-    ; prettyprint-Statix-start-symbols
-    ; !V([], <id>)
-    ; box2text-string(|120)
+    pp-Statix-string(prettyprint-Statix-start-symbols)
 
   pp-partial-Statix-string =
-    try(parenthesize-Statix)
-    ; prettyprint-Statix
-    ; !V([], <id>)
-    ; box2text-string(|120)
-
+    pp-Statix-string(prettyprint-Statix)
 
   pp-partial-Statix-string(|sort) =
+    pp-Statix-string(prettyprint-Statix(|sort))
+
+  pp-Statix-string(pp) =
     try(parenthesize-Statix)
-    ; prettyprint-Statix(|sort)
+    ; pp
     ; !V([], <id>)
     ; box2text-string(|120)
 
 rules
-
 
   construct-textual-change = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)

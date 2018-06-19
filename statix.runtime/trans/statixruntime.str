@@ -6,11 +6,15 @@ imports
 
   libspoofax/core/language
 
+signature
+  constructors
+    C : String * List(Term) -> Constraint
+
 rules
 
   stx-analyze(|spec-name, init-constraint): ast -> result
     with spec   := <stx--find-spec(|spec-name)>;
-         result := <stx--analyze(|spec, init-constraint)> ast
+         result := <stx--solve-constraint(|spec)> ([], C(init-constraint, [ast]))
 
   stx--find-spec(|name) =
     language-components;
@@ -21,4 +25,5 @@ rules
                <ReadFromFile> spec-file
             })
 
-  stx--analyze(|spec,init) = prim("STX_analyze", spec, init)
+  // solve-constraint : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
+  stx--solve-constraint(|spec) = prim("STX_solve_constraint", spec)

@@ -156,7 +156,7 @@ rules
          bvs' := <conc> (bvs, new-bvs)
 
   normalize-functional-cop(|a):
-      LLam(ts, vs, body){a*} -> LLam(ts', vs', body'){a*}
+      LLam(ts, vs, body){a*} -> LLam(ts', vs', body''){a*}
     with (ts', tsmaps) := <collect-map(replace-cop(|a))> ts;
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
          maps := <conc> (tsmaps, bmaps);

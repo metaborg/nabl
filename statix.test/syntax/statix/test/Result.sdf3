@@ -1,0 +1,39 @@
+module statix/test/Result
+
+imports
+
+  statix/lang/Layout
+  statix/lang/Common
+  statix/lang/Core
+  statix/lang/Sugar
+  statix/lang/Deprecated
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free syntax
+
+  TestResult = <
+    substitution
+      <{SubstEntry "\n"}*>
+
+    errors
+      <{EditorMessage "\n"}*>
+
+    warnings
+      <{EditorMessage "\n"}*>
+
+    notes
+      <{EditorMessage "\n"}*>
+  >
+
+  SubstEntry = [[Var] |-> [Term]]
+  
+  EditorMessage = [[MessagePos] : [String]]
+
+  MessagePos = "*"
+
+lexical syntax
+
+  String = ~[]

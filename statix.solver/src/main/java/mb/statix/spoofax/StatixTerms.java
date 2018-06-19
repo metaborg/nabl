@@ -3,22 +3,27 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.regexp.IAlphabet;
@@ -33,6 +38,8 @@ import mb.nabl2.relations.terms.Relation;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -191,7 +198,7 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.term(c -> {
-                    throw new IllegalArgumentException("Unknwon constraint: " + c);
+                    throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
                 // @formatter:on
             )).match(t, u).map(v -> constraints.build());
@@ -218,7 +225,7 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.term(c -> {
-                    throw new IllegalArgumentException("Unknwon guard: " + c);
+                    throw new IllegalArgumentException("Unknown guard: " + c);
                 })
                 // @formatter:on
             )).match(t, u).map(v -> guards.build());
@@ -397,6 +404,58 @@ public class StatixTerms {
         return M.appl1("Var", M.stringValue(), (t, name) -> {
             return B.newVar("", name);
         });
+    }
+
+    public static ITerm explicate(ITerm term) {
+        // @formatter:off
+        return term.match(Terms.cases(
+            appl -> {
+                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
+                return B.newAppl(appl.getOp(), args);
+            },
+            list -> explicate(list),
+            string -> string,
+            integer -> integer,
+            blob -> blob,
+            var -> explicate(var)
+        )).withAttachments(term.getAttachments());
+        // @formatter:on
+    }
+
+    private static ITerm explicate(IListTerm list) {
+        // @formatter:off
+        final List<ITerm> terms = Lists.newArrayList();
+        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final Ref<ITerm> varTail = new Ref<>();
+        while(list != null) {
+            list = list.match(ListTerms.cases(
+                cons -> {
+                    terms.add(explicate(cons.getHead()));
+                    attachments.add(cons.getAttachments());
+                    return cons.getTail();
+                },
+                nil -> {
+                    attachments.add(nil.getAttachments());
+                    return null;
+                },
+                var -> {
+                    varTail.set(explicate(var));
+                    attachments.add(ImmutableClassToInstanceMap.builder().build());
+                    return null;
+                }
+            ));
+            // @formatter:on
+        }
+        list = B.newList(terms, attachments);
+        if(varTail.get() != null) {
+            return B.newAppl("ListTail", list, varTail.get());
+        } else {
+            return B.newAppl("List", list);
+        }
+    }
+
+    private static ITerm explicate(ITermVar var) {
+        return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
     }
 
 }

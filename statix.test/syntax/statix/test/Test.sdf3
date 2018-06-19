@@ -21,6 +21,6 @@ context-free syntax
   Test.Test = <
     resolve <LocalVars>
       <Constraint>
-    with
-      <{Section "\n\n"}*>
+
+    <{Section "\n\n"}*>
   >

@@ -262,7 +262,7 @@ public class TermMatch {
             return listElems(M.term());
         }
 
-        public <T> IMatcher<ImmutableList<T>> listElems(IMatcher<T> m) {
+        public <T> IMatcher<List<T>> listElems(IMatcher<T> m) {
             return listElems(m, (t, ts) -> ts);
         }
 

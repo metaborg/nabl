@@ -14,4 +14,4 @@
 *.unifier
 *.symbolic
 
-*.stxtest
+*.stxresult

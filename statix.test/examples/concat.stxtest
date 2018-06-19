@@ -1,0 +1,10 @@
+resolve {l}
+
+  concat(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == l
+
+rules
+
+  concat : list(string) * list(string) -> list(string)
+  
+  concat([], ys) = zs :- ys == zs.
+  concat([x|xs], ys) = [x|concat(xs, ys)].
