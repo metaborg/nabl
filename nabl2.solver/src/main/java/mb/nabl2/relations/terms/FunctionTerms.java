@@ -3,6 +3,7 @@ package mb.nabl2.relations.terms;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,10 +51,10 @@ public class FunctionTerms {
     public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final ImmutableList<Tuple2<ITerm, ITerm>> cases;
+        private final List<Tuple2<ITerm, ITerm>> cases;
 
-        private Eval(ImmutableList<Tuple2<ITerm, ITerm>> cases) {
-            this.cases = cases;
+        private Eval(List<Tuple2<ITerm, ITerm>> cases) {
+            this.cases = ImmutableList.copyOf(cases);
         }
 
         @Override public Optional<ITerm> apply(ITerm term) {
