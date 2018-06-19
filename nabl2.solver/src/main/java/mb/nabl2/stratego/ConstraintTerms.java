@@ -108,10 +108,7 @@ public class ConstraintTerms {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> {
-                List<ITerm> args = Arrays.asList(B.newString(var.getResource()), B.newString(var.getName()));
-                return B.newAppl(VAR_CTOR, args);
-            }
+            var -> explicate(var)
         )).withAttachments(term.getAttachments());
         // @formatter:on
     }
@@ -147,6 +144,10 @@ public class ConstraintTerms {
         } else {
             return list;
         }
+    }
+
+    private static ITerm explicate(ITermVar var) {
+        return  B.newAppl(VAR_CTOR, Arrays.asList(B.newString(var.getResource()), B.newString(var.getName())));
     }
 
     public static <R> IMatcher<R> explicate(IMatcher<R> m) {
