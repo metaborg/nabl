@@ -1,0 +1,59 @@
+module statix/lang/analysis
+
+imports
+
+  nabl2shared
+  nabl2runtime
+  nabl2/api
+  nabl2/runtime/analysis/main
+
+  signatures/statix/lang/-
+
+  statix/lang/statics/-
+
+  pp
+
+rules // Analysis
+
+  editor-analyze = nabl2-analyze(desugar-all)
+
+  nabl2-custom-analysis-unit-hook:
+      (resource, ast, _) -> ast
+
+  nabl2-custom-analysis-final-hook(|a):
+      (resource, _, [ast]) -> (error*, warning*, note*, (ast', ext*))
+    where <not(nabl2-analysis-has-errors)> a
+    with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
+         ast' := <normalize-all(|a)> (resource, ast);
+         nabl2-custom-analysis-info-msg(|"Normalized AST.");
+
+         nabl2-custom-analysis-info-msg(|"Checking guard constraints...");
+         c-e* := <check-rule-constraints> ast';
+         nabl2-custom-analysis-info-msg(|"Checked guard constraints.");
+
+         nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
+         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast';
+         nabl2-custom-analysis-info-msg(|"Computed scope extensions.");
+
+         error*   := [c-e*, ext-e*];
+         warning* := [ext-w*];
+         note*    := [ext-n*]
+
+  normalize-all(|a): (resource, ast) -> ast'
+    with (ast1, a1) := <normalize-phase1(|a);reanalyze(|resource)> ast;
+         (ast2, a2) := <normalize-phase2(|a1);reanalyze(|resource)> ast1;
+         ast' := ast2
+
+  reanalyze(|resource): ast -> (ast', a')
+    with (ast', a', _, _, _) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
+         if <nabl2-analysis-has-errors> a' then
+           warn-msg(|"***************************************************************");
+           warn-msg(|"* Normalized AST has errors. Normalization needs to be fixed! *");
+           warn-msg(|"***************************************************************")
+         end
+
+  nabl2-prettyprint-hook   = prettyprint-Statix-IType
+  prettyprint-Statix-IType = nabl2-prettyprint-term
+
+  nabl2-prettyprint-hook   = prettyprint-Statix-TType
+  prettyprint-Statix-TType = nabl2-prettyprint-term

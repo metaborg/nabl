@@ -1,0 +1,90 @@
+module statix/lang/statics/term-projections
+
+signature
+
+  sorts P constructors
+    Id : P
+    At : Int * P -> P
+    Op : String * P -> P
+
+rules
+
+  // project-term : (P, Term) -> (Term, P)
+
+  project-term(is-var) : (P, v) -> (v, P)
+    where <is-var> v
+
+  project-term(is-var) : (Id(), t) -> (t, Id())
+    where <not(is-var)> t
+
+  project-term(is-var) : (Op(f, P), t) -> <project-term(is-var)> (P, ts)
+    where <not(is-var)> t;
+          f#(ts) := t
+
+  project-term(is-var) : (At(i, P), ts) -> <project-term(is-var)> (P, <index(|i)> ts)
+    where <not(is-var)> ts;
+          <is-list> ts
+
+
+  // collect-projs(is-var) : (Var, Term) -> [P]
+
+  collect-projs(is-var) : (v, t) -> <collect-projs(is-var, ?v)> t
+
+
+  // collect-all-projs(is-var) : Term -> [P]
+
+  collect-all-projs(is-var) : t -> <collect-projs(is-var, id)> t
+
+
+  // collect-projs(is-var, v) : Term -> [P]
+
+  collect-projs(is-var, v) : v -> [Id()]
+    where <is-var> v;
+          <v> v
+
+  collect-projs(is-var, v) : ts -> <map-with-index(id);
+                            filter(\ (i, t) -> <collect-projs(is-var, v);
+                                                map(\ P -> At(i, P) \)> t \);
+                            concat> ts
+    where <not(is-var)> ts;
+          <is-list> ts
+
+  collect-projs(is-var, v) : t -> <collect-projs(is-var, v);map(\ P -> Op(f, P) \)> ts
+    where <not(is-var)> t;
+          f#(ts) := t
+
+/*********************************************************************
+ * Tests                                                             *
+ *********************************************************************/
+
+//imports
+//
+//  libstratego-lib
+//
+//signature
+//  constructors
+//    Var : String -> Term
+//
+//rules
+//
+//  main =
+//    !"Done."#([]);
+//    with(
+//      test1;
+//      test2;
+//      test3;
+//      test4;
+//      test5
+//    )
+//
+//  test1 = <collect-all-projs(is-var)> "f"#([]); debug(!"expect [] = ")
+//
+//  test2 = <collect-all-projs(is-var)> "f"#([(), Var("x"), Var("y")]); debug(!"expect [f.1, f.2] = ")
+//
+//  test3 = <collect-all-projs(is-var)> "f"#(["g"#([Var("x")])]); debug(!"expect [f.1.g.0] = ")
+//
+//  test4 = <project-term(is-var)> (Op("f", At(1, Id())), "f"#([(), Var("x")])); debug(!"expect (x, e) = ")
+//
+//  test5 = <project-term(is-var)> (Op("f", At(1, Op("g", At(1, Id())))), "f"#([Var("x")])); debug(!"expect (x, g.0) = ")
+//
+//  is-var = ?Var(_)

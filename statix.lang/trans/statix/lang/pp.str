@@ -1,0 +1,36 @@
+module statix/lang/pp
+
+imports
+
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/editor/refactoring/-
+  pp/statix/lang/-
+
+rules
+
+  parenthesize-Statix = fail
+
+  pp-Statix-string =
+    try(parenthesize-Statix)
+    ; prettyprint-Statix-start-symbols
+    ; !V([], <id>)
+    ; box2text-string(|120)
+
+  pp-partial-Statix-string =
+    try(parenthesize-Statix)
+    ; prettyprint-Statix
+    ; !V([], <id>)
+    ; box2text-string(|120)
+
+
+  pp-partial-Statix-string(|sort) =
+    try(parenthesize-Statix)
+    ; prettyprint-Statix(|sort)
+    ; !V([], <id>)
+    ; box2text-string(|120)
+
+rules
+
+
+  construct-textual-change = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)

@@ -3,12 +3,12 @@ module Syntax
 imports 
 
   libspoofax/color/default
-  completion/colorer/StatixLang-cc-esv
+  completion/colorer/StatixTest-cc-esv
 
 language
 
   table         : target/metaborg/sdf.tbl
-  start symbols : Start
+  start symbols : Test
 
   line comment  : "//"
   block comment : "/*" * "*/"

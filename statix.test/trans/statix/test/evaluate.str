@@ -1,0 +1,28 @@
+module statix/test/evaluate
+
+imports
+
+  nabl2/api
+  
+  signatures/statix/lang/-
+  statix/lang/-
+  statix/lang/statics/-
+
+  signatures/statix/test/-
+  statix/test/-
+
+rules
+  
+  evaluate-test:
+    (_, _, ast, path, project-path) -> None()
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+        ; <nabl2-analysis-has-errors> a
+
+  evaluate-test:
+    (_, _, ast, path, project-path) -> (filename, result)
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+        ; not(<nabl2-analysis-has-errors> a)
+    with spec := <nabl2-get-custom-analysis;strip-annos;eliminate-all;spec-ast-to-aterm> a
+       ; filename := <guarantee-extension(|"stxresult")> path
+       ; result := ()
+ 

@@ -1,0 +1,53 @@
+module statix/lang/statics/explicate
+
+  /////////////////////////////////////////////////////////////////////
+  // Explication: rewrite (non-valid) AST for ease of transformation //
+  /////////////////////////////////////////////////////////////////////
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  explicate-all(|a) =
+    explicate-names(|a)
+
+rules
+
+  explicate-names(|a) = topdown-om(explicate-name(|a))
+
+  explicate-name(|a) = Module(replace-decl(|a), explicate-names(|a))
+
+  explicate-name(|a) = CDecl(explicate-names(|a), replace-decl(|a), explicate-names(|a))
+  explicate-name(|a) = CDeriveMap(replace-decl(|a), replace-decl(|a), explicate-names(|a))
+
+  explicate-name(|a) = C(replace-decl(|a), explicate-names(|a))
+  explicate-name(|a) = F(replace-decl(|a), explicate-names(|a), explicate-names(|a))
+
+  explicate-name(|a) = C(replace-decl(|a), explicate-names(|a)) 
+  explicate-name(|a) = LC(replace-decl(|a)) 
+  explicate-name(|a) = COp(replace-decl(|a), explicate-names(|a))
+
+  explicate-name(|a) = Rel(replace-decl(|a))
+  explicate-name(|a) = Label(replace-decl(|a))
+
+  explicate-name(|a) = NsDecl(replace-decl(|a), explicate-names(|a))
+  explicate-name(|a) = Occurrence(replace-decl(|a), explicate-names(|a), explicate-names(|a))
+  explicate-name(|a) = NamespaceQuery(replace-decl(|a), explicate-names(|a), explicate-names(|a))
+
+  explicate-name(|a) = SortDecl(replace-decl(|a))
+  explicate-name(|a) = SortAlias(replace-decl(|a), explicate-names(|a))
+  explicate-name(|a) = SimpleSort(replace-decl(|a))
+
+  explicate-name(|a) = OpDecl(replace-decl(|a), explicate-names(|a))
+  explicate-name(|a) = Op(replace-decl(|a), explicate-names(|a))
+  
+  explicate-name(|a) = Var(replace-decl(|a))
+
+  replace-decl(|a) =
+    nabl2-get-ast-property(|a, "decl")
+ <+ warn(|"Cannot find declaration for ")

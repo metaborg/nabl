@@ -11,12 +11,45 @@ dependencies:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
-runtime:
-  nabl2:
-    debug: analysis files
+exports:
+  ## Stratego
+- language: Stratego-Sugar
+  directory: trans
+  includes:
+  - "statix/lang/**/*.str"
+  - "statix/lang/**/*.meta"
+  ## SDF3
+- language: TemplateLang
+  directory: syntax
+  includes:
+  - "statix/lang/**/*.sdf3"
+- language: ATerm
+  directory: src-gen/syntax
+  includes:
+  - "statix/lang/**/*.aterm"
+- language: EditorService
+  directory: src-gen
+  includes:
+  - "completion/colorer/statix/lang/**/*.esv"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes:
+  - "completion/statix/lang/**/*.str"
+  - "pp/statix/lang/**/*.str"
+  - "signatures/statix/lang/**/*.str"
+  ## NaBL2
+- language: Stratego-Sugar
+  directory: src-gen/nabl2/collection
+  includes:
+  - "statix/lang/**/*.str"
+- language: NaBL2Lang
+  directory: trans/
+  includes:
+  - "statix/lang/**/*.nabl2"
 language:
   sdf:
     sdf2table: java
+    pretty-print: Statix
     placeholder:
       prefix: "$"
   stratego:

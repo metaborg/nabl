@@ -1,0 +1,40 @@
+module statix/lang/statics/util
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+rules
+
+  keep-origin(s) = origin-track-forced(s)
+
+  with-origin(|t) = ?u; <keep-origin(!u)> t
+
+rules
+
+  unzip3 = ?[(x,y,z)|xyz*] < <unzip3> xyz* => (x*,y*,z*); !([x|x*],[y|y*],[z|z*]) + !([],[],[])
+  unzip4 = ?[(x,y,z,a)|xyza*] < <unzip4> xyza* => (x*,y*,z*,a*); !([x|x*],[y|y*],[z|z*],[a|a*]) + !([],[],[],[])
+
+  raw-eq = (strip-annos, strip-annos); eq
+  raw-elem = elem(raw-eq)
+  raw-lookup = lookup((id,Fst);raw-eq)
+  raw-diff = diff(raw-eq) 
+  raw-make-set = foldr(![], union(raw-eq), ![<id>]) 
+
+  topdown-om(s) = s <+ all(topdown-om(s))
+
+rules
+
+  // collect-map(s: a -> b) : x -> (x, [(a * b)])
+  // apply bottomup and collect the substitutions that were done
+
+  collect-map(s): t -> (t'', maps)
+    where c#(ts){a*} := t
+    with (ts', tsmaps) := <map(collect-map(s)); unzip; (id, concat)> ts;
+         t' := <with-origin(|t)> c#(ts'){a*};
+         (t'', tmaps) := <keep-origin(s) < !(<id>, [(t', <id>)]) + !(<id>, [])> t';
+         maps := <conc> (tmaps, tsmaps)
+
+  collect-map(s): t -> (t, [])
+    where not(c#(_) := t)

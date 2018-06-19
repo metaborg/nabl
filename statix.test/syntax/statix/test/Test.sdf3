@@ -1,4 +1,4 @@
-module StatixLang
+module statix/test/Test
 
 imports
 
@@ -13,9 +13,14 @@ template options
   keyword -/- [a-zA-Z0-9\_\-\']
 
 context-free start-symbols
-
-  Start
+  
+  Test
 
 context-free syntax
 
-  Start = Module
+  Test.Test = <
+    resolve <LocalVars>
+      <Constraint>
+    with
+      <{Section "\n\n"}*>
+  >

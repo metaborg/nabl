@@ -1,0 +1,22 @@
+module statix/test/normalize
+
+imports
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+  signatures/statix/test/-
+
+rules
+
+  explicate-cmaps(|a): Test(bvs, body, section*){a*} -> Test(bvs, body, section''*){a*}
+    with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
+         rule* := <map(cmap-to-rules(|a)); concat> maps;
+         section''* := <conc> (section'*, [Rules(rule*)])
+
+  normalize-functional-cop(|a):
+      Test(bvs, body, section*){a*} -> Test(bvs', body', section*){a*}
+    with (body', bmaps) := <collect-map(replace-cop(|a))> body;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
+         new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
