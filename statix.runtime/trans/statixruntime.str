@@ -14,7 +14,8 @@ rules
 
   stx-analyze(|spec-name, init-constraint): ast -> result
     with spec   := <stx--find-spec(|spec-name)>;
-         result := <stx--solve-constraint(|spec)> ([], C(init-constraint, [ast]))
+         ast'   := <stx--explode> ast;
+         result := <stx--solve-constraint(|spec)> ([], C(init-constraint, [ast']))
 
   stx--find-spec(|name) =
     language-components;
@@ -27,3 +28,28 @@ rules
 
   // solve-constraint : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
   stx--solve-constraint(|spec) = prim("STX_solve_constraint", spec)
+
+signature
+  constructors
+    Op    : String * List(Term) -> Term
+    Tuple : List(Term)          -> Term
+    List  : List(Term)          -> Term
+    Str   : String              -> Term
+    Int   : String              -> Term
+
+rules
+
+  stx--explode: t*{a*} -> List(<map(stx--explode)> t*){a*}
+    where is-list
+
+  stx--explode: ""#(t*){a*} -> Tuple(<map(stx--explode)> t*){a*}
+    where is-tuple
+
+  stx--explode: t{a*} -> Str(t){a*}
+    where is-string
+
+  stx--explode: t{a*} -> Int(<int-to-string> t){a*}
+    where is-int
+
+  stx--explode: c#(t*){a*} -> Op(c, <map(stx--explode)> t*){a*}
+    where not(is-list + is-tuple + is-string + is-int)
