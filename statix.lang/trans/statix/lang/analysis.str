@@ -24,7 +24,7 @@ rules // Analysis
       (resource, _, [ast]) -> (error*, warning*, note*, (ast', ext*))
     where <not(nabl2-analysis-has-errors)> a
     with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
-         (ast', a') := <normalize-all(|a)> (resource, ast);
+         (ast', a') := <normalize-all(|resource)> (ast, a);
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
 
          nabl2-custom-analysis-info-msg(|"Checking guard constraints...");
@@ -39,11 +39,10 @@ rules // Analysis
          warning* := [ext-w*];
          note*    := [ext-n*]
 
-  normalize-all(|a): (resource, ast) -> (ast2', a2')
-    with ast1         := <normalize-phase1(|a)> ast;
-         (ast1', a1') := <reanalyze(|resource)> (ast1, a);
-         ast2         := <normalize-phase2(|a1')> ast1';
-         (ast2', a2') := <reanalyze(|resource)> (ast2, a1')
+  normalize-all(|resource) =
+    normalize-phase1; reanalyze(|resource)
+  ; normalize-phase2; reanalyze(|resource)
+  ; normalize-phase3; reanalyze(|resource)
 
   reanalyze(|resource): (ast, a) -> (ast', a')
     with (ast', a', _, _, _) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;

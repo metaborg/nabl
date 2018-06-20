@@ -76,10 +76,14 @@ rules
 rules
 
   desugar-queries = topdown(try(desugar-query))
+
   desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
   desugar-query: Filter(l) -> Filter(l, LTrue())
+  desugar-query: NoNamespaceFilter() -> NamespaceFilter(LTrue())
+
   desugar-query: NoMin() -> Min(LFalse(), LFalse())
   desugar-query: Min(l) -> Min(l, LFalse())
+  desugar-query: NoNamespaceMin() -> NamespaceMin(LFalse())
 
 rules
 

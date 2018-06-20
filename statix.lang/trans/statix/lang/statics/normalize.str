@@ -1,8 +1,8 @@
 module statix/lang/statics/normalize
 
-  /////////////////////////////////////////////////////////////////////
-  // Normalization: rewrite rules to normalized forms
-  /////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// Normalization: rewrite rules to normalized forms
+/////////////////////////////////////////////////////////////////////
 
 imports
 
@@ -16,57 +16,26 @@ imports
 
 rules
 
-  normalize-phase1(|a) =
-    explicate-cmaps(|a);
+  normalize-phase1 =
+    ?(<id>, a);
     normalize-functional-heads(|a);
     normalize-inline-patterns(|a);
     normalize-functional-cdecls;
-    normalize-functional-cops(|a)
+    normalize-functional-cops(|a);
+    !(<id>, a)
 
-  normalize-phase2(|a) =
+  normalize-phase2 =
+    ?(<id>, a);
     normalize-ho-constraints(|a);
     normalize-wildcards;
-    normalize-as-patterns
+    normalize-as-patterns;
+    !(<id>, a)
 
-rules
-
-  explicate-cmaps(|a): Module(x, section*){a*} -> Module(x, section''*){a*}
-    with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
-         rule* := <map(cmap-to-rules(|a)); concat> maps;
-         section''* := <conc> (section'*, [Rules(rule*)])
-
-  replace-cmap(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
-    with d   := <nabl2-get-ast-property(|a,"decl")> x;
-         ind := <nabl2-get-property(|a,"ind")> d;
-         sort  := <nabl2-get-type(|a);type-to-sort> d
-
-  cmap-to-rules(|a): (CDeriveMap(x, y, lsort*), _) -> [base-rule, elem-rule]
-    with base-rule := <cmap-base-rule> (x, y, lsort*);
-         elem-rule := <cmap-elem-rule> (x, y, lsort*)
-
-
-  cmap-base-rule: (x, y, lsort*) -> Rule(C(x, ps), [], CTrue(), [], CTrue())
-    with ps := <map(lift-base)> lsort*
-
-  lift-base: Id() -> Wld()
-
-  lift-base: ToList() -> List([])
-
-
-  cmap-elem-rule: (x, y, lsort*) -> Rule(C(x, ps), [], CTrue(), [], CConj(call, rec))
-    with ps   := <map-with-index(lift-elem-head)> lsort*;
-         call := C(y, <map-with-index(lift-elem-call)> lsort*);
-         rec  := C(x, <map-with-index(lift-elem-rec)> lsort*)
-
-  lift-elem-head: (i, Id())     -> <lift-var(|"x")> i
-  lift-elem-head: (i, ToList()) -> ListTail([<lift-var(|"x")> i], <lift-var(|"xs")> i)
-
-  lift-elem-call: (i, _) -> <lift-var(|"x")> i
-
-  lift-elem-rec: (i, Id())     -> <lift-var(|"x")> i
-  lift-elem-rec: (i, ToList()) -> <lift-var(|"xs")> i
-
-  lift-var(|base) = !Var($[[base][<int-to-string>]])
+  normalize-phase3 =
+    ?(<id>, a);
+    explicate-cmaps(|a);
+    explicate-resolve(|a);
+    !(<id>, a)
 
 rules
 
@@ -110,11 +79,11 @@ rules
 
   normalize-inline-pattern(|a):
       LLam(ps, vs, body){a*} -> LLam(ps', vs', body'){a*}
-    with (ps', body') := <extract-inline-patterns(|body)> ps;
-         head-var* := <collect-all(?Var(_));raw-make-set> ps';
-         body-var* := <collect-all(?Var(_));raw-make-set> body';
-         new-body-var* := <raw-diff> (body-var*, head-var*);
-         vs' := <conc;raw-make-set> (new-body-var*, vs)
+  with (ps', body') := <extract-inline-patterns(|body)> ps;
+       head-var* := <collect-all(?Var(_));raw-make-set> ps';
+       body-var* := <collect-all(?Var(_));raw-make-set> body';
+       new-body-var* := <raw-diff> (body-var*, head-var*);
+       vs' := <conc;raw-make-set> (new-body-var*, vs)
 
   extract-inline-patterns(|C): [] -> ([], C)
 
@@ -233,9 +202,12 @@ rules
          c := <with-origin(|op); desugar-rel-shorthand> CAskRel(rel, ts, st)
 
 
-  list-to-conj(|tl): [] -> tl
-
+  list-to-conj(|tl): []     -> tl
   list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
+
+  list-to-conj: []     -> CTrue()
+  list-to-conj: [C]    -> C
+  list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
 
 rules
 
@@ -263,7 +235,6 @@ rules
   replace-ho-constraint(|a): l@LPathLt(ord) -> LLam([l1, l2], [], CPathLt(ord, l1, l2))
     with l1 := Var("l1");
          l2 := Var("l2")
-
 
 rules
 
@@ -298,9 +269,135 @@ rules
 
 rules
 
-  make-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
+  explicate-cmaps(|a): Module(x, section*){a*} -> Module(x, section''*){a*}
+    with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
+         rule* := <map(cmap-to-rules(|a)); concat> maps;
+         section''* := <conc> (section'*, [Rules(rule*)])
+
+  replace-cmap(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
+    with d := <nabl2-get-ast-property(|a,"decl")> x;
+         ind := <nabl2-get-property(|a,"ind")> d;
+         sort := <nabl2-get-type(|a);type-to-sort> d
+
+  cmap-to-rules(|a): (CDeriveMap(x, y, lsort*), _) -> [base-rule, elem-rule]
+    with base-rule := <cmap-base-rule> (x, y, lsort*);
+         elem-rule := <cmap-elem-rule> (x, y, lsort*)
+
+
+  cmap-base-rule: (x, y, lsort*) -> Rule(C(x, ps), [], CTrue(), [], CTrue())
+    with ps := <map(lift-base)> lsort*
+
+  lift-base: Id() -> Wld()
+
+  lift-base: ToList() -> List([])
+
+
+  cmap-elem-rule: (x, y, lsort*) -> Rule(C(x, ps), [], CTrue(), [], CConj(call, rec))
+    with ps   := <map-with-index(lift-elem-head)> lsort*;
+         call := C(y, <map-with-index(lift-elem-call)> lsort*);
+         rec  := C(x, <map-with-index(lift-elem-rec)> lsort*)
+
+  lift-elem-head: (i, Id())     -> <lift-var(|"x")> i
+  lift-elem-head: (i, ToList()) -> ListTail([<lift-var(|"x")> i], <lift-var(|"xs")> i)
+
+  lift-elem-call: (i, _) -> <lift-var(|"x")> i
+
+  lift-elem-rec: (i, Id())     -> <lift-var(|"x")> i
+  lift-elem-rec: (i, ToList()) -> <lift-var(|"xs")> i
+
+  lift-var(|base) = !Var($[[base][<int-to-string>]])
 
 rules
+
+  explicate-resolve(|a) = Module(id, explicate-resolve-sections(|a))
+
+  explicate-resolve-sections(|a): section* -> section''*
+    with query* := <collect-all(?NamespaceQuery(_, _, _))> section*;
+         ns* := <collect-all(?NsDecl(<id>, _))> section*;
+         wf := <newname> "resolveFilterWf";
+         wf-rule* := <wf-rules(|a, wf, query*)> ns*;
+         eq := <newname> "resolveFilterEq";
+         eq-rule* := <eq-rules(|a, eq, query*)> ns*;
+         ord := <newname> "resolveMinOrd";
+         ord-rule* := <ord-rules(|a, ord, query*)> ns*;
+         section'* := <try(sometd(try(remove-resolve-queries);
+                                  try(normalize-resolves(|wf, eq, ord)))
+                                 )> section*;
+         new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
+         section''* := <conc> (section'*, new-section*)
+
+
+  wf-rules(|a, wf, query*): ns* -> [decl|rule*]
+    with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));
+         rule* := <map(wf-rule(|a, wf, query*))> ns*
+
+  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [], CTrue(), bvs, body)
+    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         ts := <map(!Wld())> tys;
+         r := Occurrence(ns, ts, Position(Wld()));
+         lbls := Var("lbls");
+         if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
+           (bvs, body) := <apply-lambda> (filter, [lbls])
+         else
+           bvs := [];
+           body := CTrue()
+         end
+
+
+  eq-rules(|a, eq, query*): ns* -> [decl|rule*]
+    with decl := CDecl(InductiveC(), eq, SimpleType([OccurrenceSort(), OccurrenceSort()]));
+         rule* := <map(eq-rule(|a, eq))> ns*
+
+  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), [], CTrue(), [], body)
+    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         ts := <make-vars(|"t")> tys;
+         us := <make-vars(|"u")> tys;
+         r := Occurrence(ns, ts, Position(Wld()));
+         d := Occurrence(ns, us, Position(Wld()));
+         eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
+         body := <list-to-conj> eqs
+
+
+  ord-rules(|a, ord, query*): ns* -> [decl|rule*]
+    with decl := CDecl(InductiveC(), ord, SimpleType([OccurrenceSort(), LabelSort(), LabelSort()]));
+         rule* := <map(ord-rule(|a, ord, query*))> ns*
+
+  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [], CTrue(), bvs, body)
+    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         ts := <map(!Wld())> tys;
+         r := Occurrence(ns, ts, Position(Wld()));
+         l1 := Var("l1");
+         l2 := Var("l2");
+         if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
+           (bvs, body) := <apply-lambda> (min, [l1, l2])
+         else
+           bvs := [];
+           body := CTrue()
+         end
+
+
+  remove-resolve-queries = try(sometd(remove-resolve-query))
+
+  remove-resolve-query = Rules(filter(not(?NamespaceQuery(_, _, _))))
+
+  remove-resolve-query = NameResolution(filter(not(?NamespaceQuery(_, _, _))))
+
+
+  normalize-resolves(|wf, eq, ord) = try(sometd(normalize-resolve(|wf, eq, ord)))
+
+  normalize-resolve(|wf, eq, ord): ResolveFilter(rt) -> Filter(wf-c, eq-c)
+      with wf-c := LLam([Var("lbls")], [], C(wf, [rt, Var("lbls")]));
+           eq-c := LLam([Var("d")], [], C(eq, [rt, Var("d")]))
+
+    normalize-resolve(|wf, eq, ord): ResolveMin(rt) -> Min(ord-c, LTrue())
+      with ord-c := LLam([Var("l1"), Var("l2")], [], C(ord, [rt, Var("l1"), Var("l2")]))
+
+rules
+
+  make-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
+
+  apply-lambda: (LLam(ps, bvs, body), ts) -> (bvs, body')
+    with body' := <strip-annos;substitute(?Var(_))> (ps, ts, body)
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()

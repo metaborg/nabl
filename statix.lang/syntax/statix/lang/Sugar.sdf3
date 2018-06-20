@@ -107,6 +107,9 @@ context-free syntax
 
   // declaration constraints
 
+  NamespaceFilter.NoNamespaceFilter = 
+  NamespaceMin.NoNamespaceMin       = 
+
   Constraint.CTellDecl        = [[Term] -> [Term]]
   Constraint.CTellDeclWithRel = [[Term] -> [Term] with [RelRef] [Term]]
 
