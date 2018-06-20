@@ -18,7 +18,7 @@ rules
 
   normalize-phase1(|a) =
     explicate-cmaps(|a);
-    normalize-functional-heads;
+    normalize-functional-heads(|a);
     normalize-inline-patterns(|a);
     normalize-functional-cdecls;
     normalize-functional-cops(|a)
@@ -70,15 +70,16 @@ rules
 
 rules
 
-  normalize-functional-heads = topdown(try(normalize-functional-head))
+  normalize-functional-heads(|a) = topdown(try(normalize-functional-head(|a)))
 
-  normalize-functional-head: F(x, ps, t) -> C(x, ps')
-    where Tuple(ts) := t
-    with ps' := <conc> (ps, ts)
-
-  normalize-functional-head: F(x, ps, t) -> C(x, ps')
-    where not(Tuple(_) := t)
-    with ps' := <conc> (ps, [t])
+  normalize-functional-head(|a): F(x, in_ts, out_t) -> C(x, ts)
+    with FUN(intys, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         if [_] := outtys then
+           out_ts := <![<id>]> out_t
+         else
+           out_ts := <?Tuple(<id>)> out_t
+         end;
+         ts := <conc> (in_ts, out_ts)
 
 rules
 
@@ -173,7 +174,7 @@ rules
 
   replace-cop(|a): COp(x, in_ts) -> out_t
     with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
-         out_ts := <map-with-index(\ (i, _) -> Var(<newname> $[[x][<int-to-string> i]]) \)> outtys;
+         out_ts := <make-vars(|<newname> x)> outtys;
          out_t := <?[<id>] <+ !Tuple(<id>)> out_ts
 
   cop-to-c(|a): (COp(x, in_ts), out_t) -> C(x, ts)
@@ -218,7 +219,7 @@ rules
 
   replace-cop(|a): AskRelOp(rel, in_ts, st) -> out_t
     with FUN(_, outtys) := <nabl2-get-ast-type(|a)> rel;
-         out_ts := <map-with-index(\ (i, _) -> Var(<newname> $[t[<int-to-string> i]]) \)> outtys;
+         out_ts := <make-vars(|<newname> "t")> outtys;
          out_t := <?[<id>] <+ !Tuple(<id>)> out_ts
 
   cop-to-c(|a): (op@AskRelOp(rel, in_ts, st), out_t) -> c
@@ -251,17 +252,17 @@ rules
          sort := <type-to-sort> ty;
          ps := <sort-args;map(!Wld())> sort
 
-  replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C("x", ps))
+  replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C(x, ps))
     with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
          sort := <type-to-sort> ty;
-         ps := <sort-args;map(<newname> "t")> sort
+         ps := <sort-args;make-vars(|"t")> sort
 
   replace-ho-constraint(|a): l@LPathMatch(re) -> LLam([p], [], CPathMatch(re, p))
-    with p := Var(<newname> "ls")
+    with p := Var("ls")
 
   replace-ho-constraint(|a): l@LPathLt(ord) -> LLam([l1, l2], [], CPathLt(ord, l1, l2))
-    with l1 := Var(<newname> "l1");
-         l2 := Var(<newname> "l2")
+    with l1 := Var("l1");
+         l2 := Var("l2")
 
 
 rules
@@ -294,6 +295,10 @@ rules
   as-to-constraint: (As(v, t), _) -> CEqual(v, t)
 
   replace-as: As(v, t) -> v
+
+rules
+
+  make-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
 
 rules
 
