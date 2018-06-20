@@ -24,11 +24,9 @@ signature
 
   namespaces
     Var  : string
-    Type : string
 
   name-resolution
     labels P R
-    resolve Var filter pathMatch[P*] min pathLt[$ < P]
     resolve Var filter pathMatch[P*] min pathLt[$ < P]
 
 rules
