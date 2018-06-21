@@ -280,7 +280,7 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<String, Tuple2<Integer, ITerm>>> scopeExtension() {
         return M.tuple3(M.stringValue(), M.integerValue(), M.term(),
-                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i, lbl)));
+                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i - 1, lbl)));
     }
 
     public static IMatcher<IAlphabet<ITerm>> labels() {
