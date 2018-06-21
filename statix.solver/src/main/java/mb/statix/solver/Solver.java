@@ -13,6 +13,10 @@ import mb.nabl2.terms.unification.IUnifier;
 
 public class Solver {
 
+    public static enum Entailment {
+        YES, NO, MAYBE;
+    }
+
     private Solver() {
     }
 
@@ -79,13 +83,16 @@ public class Solver {
         if(result.state().isErroneous()) {
             debug.info("Constraints not entailed");
             return Optional.of(false);
-        } else if(result.constraints().isEmpty()
-                && state.unifier().removeAll(localVars).unifier().equals(result.state().unifier())) {
-            // FIXME check scope graph entailment
-            debug.info("Constraints entailed");
-            return Optional.of(true);
+        } else if(result.constraints().isEmpty()) {
+            if(state.entails(result.state(), localVars)) {
+                debug.info("Constraints entailed");
+                return Optional.of(true);
+            } else {
+                debug.info("Cannot decide constraint entailment (instantiated variables)");
+                return Optional.empty();
+            }
         } else {
-            debug.info("Constraint entailment delayed");
+            debug.info("Cannot decide constraint entailment (unsolved constraints)");
             return Optional.empty();
         }
 

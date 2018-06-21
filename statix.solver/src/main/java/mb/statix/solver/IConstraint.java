@@ -33,6 +33,19 @@ public interface IConstraint {
 
     String toString(IUnifier unifier);
 
+    static String toString(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(IConstraint constraint : constraints) {
+            if(!first) {
+                sb.append(", ");
+            }
+            first = false;
+            sb.append(constraint.toString(unifier));
+        }
+        return sb.toString();
+    }
+
     @Value.Immutable
     abstract class AResult {
 

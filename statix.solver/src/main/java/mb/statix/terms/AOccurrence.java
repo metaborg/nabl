@@ -65,9 +65,18 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
     }
 
     public static IMatcher<Occurrence> matcher(IMatcher<ITerm> term) {
-        return M.appl3(OP, M.stringValue(), M.listElems(term), M.term(), (t, ns, name, idx) -> {
+        return M.appl3(OP, M.stringValue(), M.listElems(term), position(term), (t, ns, name, idx) -> {
             return Occurrence.of(ns, name, idx);
         });
+    }
+
+    private static IMatcher<ITerm> position(IMatcher<ITerm> term) {
+        // @formatter:off
+        return M.cases(
+            M.appl0("NoPosition"),
+            M.appl1("Position", term, (t, p) -> B.newAppl("Position", p))
+        );
+        // @formatter:on
     }
 
 }

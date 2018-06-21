@@ -48,7 +48,7 @@ public class CNew implements IConstraint {
     @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
         sb.append("new ");
-        sb.append(terms.stream().map(unifier::findRecursive).collect(Collectors.toList()));
+        sb.append(unifier.toString(terms));
         return sb.toString();
     }
 

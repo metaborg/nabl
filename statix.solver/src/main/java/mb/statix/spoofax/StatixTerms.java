@@ -346,7 +346,7 @@ public class StatixTerms {
                 return integer;
             }),
             list(),
-            AOccurrence.matcher(term())
+            AOccurrence.matcher(m)
             // @formatter:on
         ));
     }

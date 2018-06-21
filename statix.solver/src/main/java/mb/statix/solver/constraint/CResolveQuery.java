@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.functions.Predicate2;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
@@ -73,15 +75,24 @@ public class CResolveQuery implements IConstraint {
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         try {
+            final IDebugContext subDebug = new NullDebugContext();
+            final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
+                if(completeness.isComplete(s, l, state)) {
+                    subDebug.info("{} complete in {}", s, l);
+                    return true;
+                } else {
+                    subDebug.info("{} incomplete in {}", s, l);
+                    return false;
+                }
+            };
             // @formatter:off
-            IDebugContext nullDebug = new NullDebugContext();
             final NameResolution<ITerm, ITerm, ITerm> nameResolution = NameResolution.<ITerm, ITerm, ITerm>builder()
-                    .withLabelWF(filter.getLabelWF(state, completeness, nullDebug))
-                    .withDataWF(filter(type, filter.getDataWF(state, completeness, nullDebug), nullDebug))
-                    .withLabelOrder(min.getLabelOrder(state, completeness, nullDebug))
-                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, nullDebug), nullDebug))
-                    .withEdgeComplete((s, l) -> completeness.isComplete(s, l, state))
-                    .withDataComplete((s, l) -> completeness.isComplete(s, l, state))
+                    .withLabelWF(filter.getLabelWF(state, completeness, subDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, completeness, subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, completeness, subDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, subDebug), subDebug))
+                    .withEdgeComplete(isComplete)
+                    .withDataComplete(isComplete)
                     .build(state.scopeGraph(), relation);
             // @formatter:on
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);

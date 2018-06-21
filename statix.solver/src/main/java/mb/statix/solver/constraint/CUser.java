@@ -71,8 +71,7 @@ public class CUser implements IConstraint {
                 if(result.isErroneous()) {
                     debug.info("Rule rejected");
                     it.remove();
-                } else if(state.unifier()
-                        .equals(maybeResult.get().unifier().removeAll(appl._2().getGuardVars()).unifier())) {
+                } else if(state.entails(result, appl._2().getGuardVars())) {
                     debug.info("Rule accepted");
                     return Optional.of(Result.of(maybeResult.get(), appl._2().getBody()));
                 } else {
@@ -94,7 +93,7 @@ public class CUser implements IConstraint {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);
         sb.append("(");
-        sb.append(args.stream().map(unifier::findRecursive).collect(Collectors.toList()));
+        sb.append(unifier.toString(args));
         sb.append(")");
         return sb.toString();
     }

@@ -86,13 +86,13 @@ public class Lambda {
     public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
         sb.append("{ ");
-        sb.append(params.stream().map(unifier::toString).collect(Collectors.toList()));
+        sb.append(unifier.toString(params));
         if(!body.isEmpty()) {
             sb.append(" :- ");
             if(!bodyVars.isEmpty()) {
-                sb.append(bodyVars).append(" ");
+                sb.append("{").append(unifier.toString(bodyVars)).append("} ");
             }
-            sb.append(body.stream().map(c -> c.toString(unifier)).collect(Collectors.toSet()));
+            sb.append(IConstraint.toString(body, unifier));
         }
         sb.append(" }");
         return sb.toString();

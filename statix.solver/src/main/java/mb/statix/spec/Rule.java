@@ -100,21 +100,21 @@ public class Rule {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);
         sb.append("(");
-        sb.append(params.stream().map(unifier::toString).collect(Collectors.toList()));
+        sb.append(unifier.toString(params));
         sb.append(")");
         if(!guard.isEmpty()) {
             sb.append(" | ");
             if(!guardVars.isEmpty()) {
-                sb.append(guardVars).append(" ");
+                sb.append("{").append(unifier.toString(guardVars)).append("} ");
             }
-            sb.append(guard.stream().map(g -> g.toString(unifier)).collect(Collectors.toSet()));
+            sb.append(IGuard.toString(guard, unifier));
         }
         if(!body.isEmpty()) {
             sb.append(" :- ");
             if(!bodyVars.isEmpty()) {
-                sb.append(bodyVars).append(" ");
+                sb.append("{").append(unifier.toString(bodyVars)).append("} ");
             }
-            sb.append(body.stream().map(c -> c.toString(unifier)).collect(Collectors.toSet()));
+            sb.append(IConstraint.toString(body, unifier));
         }
         sb.append(".");
         return sb.toString();

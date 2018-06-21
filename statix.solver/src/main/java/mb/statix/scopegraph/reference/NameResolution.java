@@ -17,10 +17,6 @@ import mb.statix.scopegraph.terms.path.Paths;
 
 public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
-    // relations R
-    // order : V x V --- isTrue
-    // isDataComplete : S x R
-
     private final IScopeGraph<V, L, R> scopeGraph;
     private final Set<L> labels;
     private final Optional<R> relation;

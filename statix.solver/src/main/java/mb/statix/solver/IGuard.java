@@ -21,4 +21,17 @@ public interface IGuard {
 
     String toString(IUnifier unifier);
 
+    static String toString(Iterable<? extends IGuard> constraints, IUnifier unifier) {
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(IGuard constraint : constraints) {
+            if(!first) {
+                sb.append(", ");
+            }
+            first = false;
+            sb.append(constraint.toString(unifier));
+        }
+        return sb.toString();
+    }
+
 }
