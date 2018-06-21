@@ -5,6 +5,8 @@ import mb.nabl2.terms.ITermVar;
 
 public interface ISubstitution {
 
+    boolean isEmpty();
+
     boolean contains(ITermVar var);
 
     ITerm apply(ITerm term);

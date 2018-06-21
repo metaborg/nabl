@@ -23,7 +23,11 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
     protected abstract Map<ITermVar, ITerm> subst();
 
-    public boolean contains(ITermVar var) {
+    @Override public boolean isEmpty() {
+        return subst().isEmpty();
+    }
+
+    @Override public boolean contains(ITermVar var) {
         return subst().containsKey(var);
     }
 
