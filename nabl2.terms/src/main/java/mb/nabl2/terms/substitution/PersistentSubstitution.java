@@ -101,7 +101,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
         @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
-            Iterables2.stream(vars).forEach(subst::remove);
+            Iterables2.stream(vars).forEach(subst::__remove);
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
