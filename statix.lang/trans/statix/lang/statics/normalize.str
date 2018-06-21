@@ -18,6 +18,7 @@ rules
 
   normalize-phase1 =
     ?(<id>, a);
+    explicate-cmaps(|a);
     normalize-functional-heads(|a);
     normalize-inline-patterns(|a);
     normalize-functional-cdecls;
@@ -30,7 +31,6 @@ rules
     normalize-ho-constraints(|a);
     normalize-wildcards;
     normalize-as-patterns;
-    explicate-cmaps(|a);
     explicate-resolve(|a);
     !(<id>, a)
 
