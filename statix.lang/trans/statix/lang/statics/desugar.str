@@ -16,7 +16,6 @@ rules
     desugar-rule-vars;
     desugar-decl-shorthands;
     desugar-ref-shorthands;
-    desugar-rel-shorthands;
     desugar-queries;
     desugar-lambdas;
     desugar-terms
@@ -57,21 +56,6 @@ rules
          filter     := <with-origin(|rt)> ResolveFilter(rt);
          min        := <with-origin(|rt)> ResolveMin(rt);
          c'         := CResolveQuery(rel-target, filter, min, st, pst)
-
-rules
-
-  desugar-rel-shorthands = topdown(try(desugar-rel-shorthand))
-  desugar-rel-shorthand: c@CAskRel(rel, ts, st) -> c'
-    with rel-target := <with-origin(|rel)> RelTarget(rel);
-         epsilon    := <with-origin(|c)>  Epsilon();
-         match      := <with-origin(|c)> LPathMatch(epsilon);
-         filter     := <with-origin(|c)> Filter(match);
-         min        := <with-origin(|c)> NoMin();
-         p          := <with-origin(|ts)> Wld();
-         t          := <?[<id>] <+ <with-origin(|ts)> Tuple(<id>)> ts;
-         pt         := <with-origin(|ts)> Tuple([p, t]);
-         pts        := <with-origin(|ts)> List([pt]);
-         c'         := CResolveQuery(rel-target, filter, min, st, pts)
 
 rules
 

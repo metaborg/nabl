@@ -40,16 +40,17 @@ rules // Analysis
          note*    := [ext-n*]
 
   normalize-all(|resource) =
-    normalize-phase1; reanalyze(|resource)
+    nabl2-custom-analysis-info-msg(|"| Phase 1...")
+  ; normalize-phase1; reanalyze(|resource)
+  ; nabl2-custom-analysis-info-msg(|"| Phase 2...")
   ; normalize-phase2; reanalyze(|resource)
-  ; normalize-phase3; reanalyze(|resource)
 
   reanalyze(|resource): (ast, a) -> (ast', a')
     with (ast', a', _, _, _) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
          if <not(nabl2-analysis-has-errors)> a; <nabl2-analysis-has-errors> a' then
-           warn-msg(|"***************************************************************");
-           warn-msg(|"* Normalized AST has errors. Normalization needs to be fixed! *");
-           warn-msg(|"***************************************************************")
+           warn-msg(|"| ***************************************************************");
+           warn-msg(|"| * Normalized AST has errors. Normalization needs to be fixed! *");
+           warn-msg(|"| ***************************************************************")
          end
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType

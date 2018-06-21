@@ -77,7 +77,7 @@ context-free syntax
   Constraint.CConj   = <
     <Constraint>,
     <Constraint>
-  > {left}
+  > {right}
   Constraint.CNew    = <new <{Var " "}+>>
 
   Constraint.CEqual   = [[Term] == [Term]]

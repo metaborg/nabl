@@ -33,7 +33,7 @@ rules
   in-types: FUN(intys, outtys) -> intys
 
   out-type = out-types; tys-to-ty
-  out-types: PRED(tys)          -> tys
+  out-types: PRED(tys)          -> []
   out-types: FUN(intys, outtys) -> outtys
 
   tys-to-ty: [ty] -> ty

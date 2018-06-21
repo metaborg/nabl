@@ -22,6 +22,7 @@ rules
     normalize-inline-patterns(|a);
     normalize-functional-cdecls;
     normalize-functional-cops(|a);
+    normalize-rel-shorthands(|a);
     !(<id>, a)
 
   normalize-phase2 =
@@ -29,25 +30,17 @@ rules
     normalize-ho-constraints(|a);
     normalize-wildcards;
     normalize-as-patterns;
-    !(<id>, a)
-
-  normalize-phase3 =
-    ?(<id>, a);
     explicate-cmaps(|a);
     explicate-resolve(|a);
     !(<id>, a)
 
 rules
 
-  normalize-functional-heads(|a) = topdown(try(normalize-functional-head(|a)))
+  normalize-functional-heads(|a) = try(sometd(normalize-functional-head(|a)))
 
   normalize-functional-head(|a): F(x, in_ts, out_t) -> C(x, ts)
     with FUN(intys, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
-         if [_] := outtys then
-           out_ts := <![<id>]> out_t
-         else
-           out_ts := <?Tuple(<id>)> out_t
-         end;
+         out_ts := <match-terms(|outtys)> out_t;
          ts := <conc> (in_ts, out_ts)
 
 rules
@@ -57,7 +50,7 @@ rules
   normalize-inline-pattern(|a):
       Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
     with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
-         n := <(?PRED(<length>) + ?FUN(<length>, _))> ty;
+         n := <in-types;length> ty;
 
          // extract inline patterns
          (gps', guard') := <take(|n);extract-inline-patterns(|guard)> ps;
@@ -102,12 +95,12 @@ rules
 
 rules
 
-  normalize-functional-cdecls = topdown(try(normalize-functional-cdecl))
+  normalize-functional-cdecls = try(sometd(normalize-functional-cdecl))
 
   normalize-functional-cdecl:
       CDecl(ind, x, t@FunType(s1*, s2*)) -> CDecl(ind, x, t')
     with s* := <conc> (s1*, s2*);
-         t' := <origin-track-forced(!SimpleType(s*))> t
+         t' := SimpleType(s*)
 
 rules
 
@@ -144,15 +137,11 @@ rules
   replace-cop(|a): COp(x, in_ts) -> out_t
     with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
          out_ts := <make-vars(|<newname> x)> outtys;
-         out_t := <?[<id>] <+ !Tuple(<id>)> out_ts
+         out_t := <build-terms(|outtys)> out_ts
 
   cop-to-c(|a): (COp(x, in_ts), out_t) -> C(x, ts)
     with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
-         if [_] := outtys then
-           out_ts := <![<id>]> out_t
-         else
-           out_ts := <?Tuple(<id>)> out_t
-         end;
+         out_ts := <match-terms(|outtys)> out_t;
          ts := <conc> (in_ts, out_ts)
 
 
@@ -187,19 +176,15 @@ rules
 
 
   replace-cop(|a): AskRelOp(rel, in_ts, st) -> out_t
-    with FUN(_, outtys) := <nabl2-get-ast-type(|a)> rel;
+    with outtys := <nabl2-get-ast-type(|a);out-types> rel;
          out_ts := <make-vars(|<newname> "t")> outtys;
-         out_t := <?[<id>] <+ !Tuple(<id>)> out_ts
+         out_t := <build-terms(|outtys)> out_ts
 
   cop-to-c(|a): (op@AskRelOp(rel, in_ts, st), out_t) -> c
-    with FUN(_, outtys) := <nabl2-get-ast-type(|a)> rel;
-         if [_] := outtys then
-           out_ts := <![<id>]> out_t
-         else
-           out_ts := <?Tuple(<id>)> out_t
-         end;
+    with outtys := <nabl2-get-ast-type(|a);out-types> rel;
+         out_ts := <match-terms(|outtys)> out_t;
          ts := <conc> (in_ts, out_ts);
-         c := <with-origin(|op); desugar-rel-shorthand> CAskRel(rel, ts, st)
+         c := CAskRel(rel, ts, st)
 
 
   list-to-conj(|tl): []     -> tl
@@ -208,6 +193,38 @@ rules
   list-to-conj: []     -> CTrue()
   list-to-conj: [C]    -> C
   list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+
+rules
+
+  normalize-rel-shorthands(|a) = try(sometd(normalize-rel-shorthand(|a)))
+
+  normalize-rel-shorthand(|a): c@CAskRel(rel, ts, st) -> c'
+    // ?rel[t1 ... ti -> tj ... tn] in s
+    //   -> query rel filter pathMatch[e] and { (u1 ... ui) :- t1 == u1 ... ti == ui }
+    //                in s |-> [(_, (_1 ... _i * tj * ... tn))]
+    with ty     := <nabl2-get-ast-type(|a)> rel;
+         intys  := <in-types> ty;
+         outtys := <out-types> ty;
+         tys    := <conc> (intys, outtys);
+
+         n      := <length> intys;
+         in_ts  := <take(|n)> ts;
+         out_ts := <drop(|n)> ts;
+
+         rel-target := RelTarget(rel);
+         wf         := LPathMatch(Epsilon());
+         [u|us]     := <make-vars(|<newname> "u")> [()|intys];
+         eq         := CEqual(u, <build-terms(|intys)> us);
+         eqs        := <zip(!CEqual(<Fst>, <Snd>))> (in_ts, us);
+         match      := LLam([u], us, CConj(eq, <list-to-conj> eqs));
+         filter     := Filter(wf, match);
+         min        := <desugar-query> NoMin();
+
+         [p|wlds] := <map(!Wld())> [()|intys];
+         t        := <conc;build-terms(|tys)> (wlds, out_ts);
+         pts      := List([Tuple([p, t])]);
+         c'       := CResolveQuery(rel-target, filter, min, st, pts)
+
 
 rules
 
@@ -420,3 +437,17 @@ rules
     with tys := <conc> (intys, outtys)
 
   sort-args: SimpleType(args) -> args
+
+  match-terms(|tys): t -> ts
+    with if [_] := tys then
+           ts := <![<id>]> t
+         else
+           ts := <?Tuple(<id>)> t
+         end
+
+  build-terms(|tys): ts -> t
+    with if [_] := tys then
+           t := <?[<id>]> ts
+         else
+           t := <!Tuple(<id>)> ts
+         end
