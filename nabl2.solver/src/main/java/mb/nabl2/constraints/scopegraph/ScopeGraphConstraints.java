@@ -7,7 +7,7 @@ import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class ScopeGraphConstraints {
 
@@ -19,7 +19,7 @@ public final class ScopeGraphConstraints {
 
     public static IMatcher<IScopeGraphConstraint> matcher() {
         return M.<IScopeGraphConstraint>cases(
-            // @formatter:off
+        // @formatter:off
             M.appl3(CG_DECL, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, decl, scope, origin) -> {
                         return ImmutableCGDecl.of(scope, decl, origin);
@@ -46,7 +46,7 @@ public final class ScopeGraphConstraints {
 
     public static ITerm build(IScopeGraphConstraint constraint) {
         return constraint.match(IScopeGraphConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             decl -> B.newAppl(CG_DECL, decl.getDeclaration(), decl.getScope(),
                                MessageInfo.buildOnlyOriginTerm(decl.getMessageInfo())),
             ref -> B.newAppl(CG_REF, ref.getReference(), ref.getScope(),
@@ -61,34 +61,34 @@ public final class ScopeGraphConstraints {
         ));
     }
 
-    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, IUnifier unifier) {
+    public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, ISubstitution.Immutable subst) {
+        // @formatter:off
         return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
-            // @formatter:off
             decl -> ImmutableCGDecl.of(
-                        unifier.findRecursive(decl.getScope()),
-                        unifier.findRecursive(decl.getDeclaration()),
-                        decl.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(decl.getScope()),
+                        subst.apply(decl.getDeclaration()),
+                        decl.getMessageInfo().apply(subst::apply)),
             ref -> ImmutableCGRef.of(
-                        unifier.findRecursive(ref.getReference()),
-                        unifier.findRecursive(ref.getScope()),
-                        ref.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(ref.getReference()),
+                        subst.apply(ref.getScope()),
+                        ref.getMessageInfo().apply(subst::apply)),
             edge -> ImmutableCGDirectEdge.of(
-                        unifier.findRecursive(edge.getSourceScope()),
+                        subst.apply(edge.getSourceScope()),
                         edge.getLabel(),
-                        unifier.findRecursive(edge.getTargetScope()),
-                        edge.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(edge.getTargetScope()),
+                        edge.getMessageInfo().apply(subst::apply)),
             exp -> ImmutableCGExportEdge.of(
-                        unifier.findRecursive(exp.getDeclaration()),
+                        subst.apply(exp.getDeclaration()),
                         exp.getLabel(),
-                        unifier.findRecursive(exp.getScope()),
-                        exp.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(exp.getScope()),
+                        exp.getMessageInfo().apply(subst::apply)),
             imp -> ImmutableCGImportEdge.of(
-                        unifier.findRecursive(imp.getScope()),
+                        subst.apply(imp.getScope()),
                         imp.getLabel(),
-                        unifier.findRecursive(imp.getReference()),
-                        imp.getMessageInfo().apply(unifier::findRecursive))
-            // @formatter:on
+                        subst.apply(imp.getReference()),
+                        imp.getMessageInfo().apply(subst::apply))
         ));
+        // @formatter:on
     }
 
 }

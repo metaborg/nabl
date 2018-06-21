@@ -22,9 +22,8 @@ import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 
 public class BaseComponent extends ASolver {
 
@@ -51,15 +50,11 @@ public class BaseComponent extends ASolver {
     }
 
     private SolveResult solve(CExists constraint) {
-        final IUnifier.Transient tsubst = PersistentUnifier.Transient.of();
+        final ISubstitution.Transient tsubst = PersistentSubstitution.Transient.of();
         constraint.getEVars().forEach(var -> {
-            try {
-                tsubst.unify(var, B.newVar(var.getResource(), fresh(var.getName())));
-            } catch(UnificationException e) {
-                throw new IllegalArgumentException("Evars should be distinct.");
-            }
+            tsubst.put(var, B.newVar(var.getResource(), fresh(var.getName())));
         });
-        final IUnifier.Immutable subst = tsubst.freeze();
+        final ISubstitution.Immutable subst = tsubst.freeze();
         return SolveResult.constraints(Constraints.substitute(constraint.getConstraint(), subst));
     }
 
