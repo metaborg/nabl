@@ -1,6 +1,7 @@
 package mb.statix.spec;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,11 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.solver.Completeness;
+import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.NullDebugContext;
+import mb.statix.solver.Solver;
 import mb.statix.solver.State;
 
 public class Lambda {
@@ -45,6 +50,12 @@ public class Lambda {
 
     public List<IConstraint> getBody() {
         return body;
+    }
+
+    public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+        final State state = State.of(spec);
+        final Config config = Config.of(state, body, new Completeness());
+        return Solver.entails(config, bodyVars, new NullDebugContext());
     }
 
     public Lambda apply(ISubstitution.Immutable subst) {

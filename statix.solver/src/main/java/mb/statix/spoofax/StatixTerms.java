@@ -15,7 +15,6 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
@@ -62,11 +61,8 @@ import mb.statix.solver.guard.GEqual;
 import mb.statix.solver.guard.GInequal;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
-import mb.statix.solver.query.NamespaceQuery;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
-import mb.statix.solver.query.ResolveFilter;
-import mb.statix.solver.query.ResolveMin;
 import mb.statix.spec.Lambda;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -84,18 +80,17 @@ public class StatixTerms {
     public static Type SCOPE_REL_TYPE = Type.of(ImmutableList.of(SCOPE_SORT), ImmutableList.of());
 
     public static IMatcher<Spec> spec() {
-        return IMatcher.flatten(M.tuple5(labels(), relationDecls(), M.term(), M.term(), scopeExtensions(),
-                (t, labels, relations, queriesTerm, rulesTerm, ext) -> {
-                    Optional<Map<String, NamespaceQuery>> maybeQueries = namespaceQueries(labels).match(queriesTerm);
-                    Optional<Multimap<String, Rule>> maybeRules = rules(labels).match(rulesTerm);
-                    return Optionals.lift(maybeQueries, maybeRules, (queries, rules) -> {
-                        return Spec.of(rules, labels, END_OF_PATH, relations, queries, ext);
+        return IMatcher.flatten(M.tuple4(M.req(labels()), M.req(relationDecls()), M.term(), M.req(scopeExtensions()),
+                (t, labels, relations, rulesTerm, ext) -> {
+                    Optional<Multimap<String, Rule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
+                    return maybeRules.map(rules -> {
+                        return Spec.of(rules, labels, END_OF_PATH, relations, ext);
                     });
                 }));
     }
 
     public static IMatcher<Multimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
-        return M.listElems(rule(labels)).map(rules -> {
+        return M.listElems(M.req(rule(labels))).map(rules -> {
             final ImmutableMultimap.Builder<String, Rule> builder = ImmutableMultimap.builder();
             rules.stream().forEach(rule -> {
                 builder.put(rule.getName(), rule);
@@ -114,22 +109,6 @@ public class StatixTerms {
     public static IMatcher<Tuple2<String, List<ITermVar>>> head() {
         return M.appl2("C", M.stringValue(), M.listElems(var()), (h, name, params) -> {
             return ImmutableTuple2.of(name, params);
-        });
-    }
-
-    public static IMatcher<Map<String, NamespaceQuery>> namespaceQueries(IAlphabet<ITerm> labels) {
-        return M.listElems(namespaceQuery(labels)).map(relDecls -> {
-            final ImmutableMap.Builder<String, NamespaceQuery> builder = ImmutableMap.builder();
-            relDecls.stream().forEach(relDecl -> {
-                builder.put(relDecl._1(), relDecl._2());
-            });
-            return builder.build();
-        });
-    }
-
-    public static IMatcher<Tuple2<String, NamespaceQuery>> namespaceQuery(IAlphabet<ITerm> labels) {
-        return M.tuple3(M.stringValue(), hoconstraint(labels), hoconstraint(labels), (t, ns, filter, min) -> {
-            return ImmutableTuple2.of(ns, new NamespaceQuery(filter, min));
         });
     }
 
@@ -242,33 +221,19 @@ public class StatixTerms {
     }
 
     public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
-        return M.cases(
-        // @formatter:off
-            M.appl2("Filter", hoconstraint(labels), hoconstraint(labels), (f, pathConstraint, dataConstraint) -> {
-                return new QueryFilter(pathConstraint, dataConstraint);
-            }),
-            M.appl1("ResolveFilter", term(), (f, ref) -> {
-                return new ResolveFilter(ref);
-            })
-            // @formatter:on
-        );
+        return M.appl2("Filter", hoconstraint(labels), hoconstraint(labels), (f, pathConstraint, dataConstraint) -> {
+            return new QueryFilter(pathConstraint, dataConstraint);
+        });
     }
 
     public static IMatcher<IQueryMin> queryMin(IAlphabet<ITerm> labels) {
-        return M.cases(
-        // @formatter:off
-            M.appl2("Min", hoconstraint(labels), hoconstraint(labels), (m, pathConstraint, dataConstraint) -> {
-                return new QueryMin(pathConstraint, dataConstraint);
-            }),
-            M.appl1("ResolveMin", term(), (m, ref) -> {
-                return new ResolveMin(ref);
-            })
-            // @formatter:on
-        );
+        return M.appl2("Min", hoconstraint(labels), hoconstraint(labels), (m, pathConstraint, dataConstraint) -> {
+            return new QueryMin(pathConstraint, dataConstraint);
+        });
     }
 
     public static IMatcher<Lambda> hoconstraint(IAlphabet<ITerm> labels) {
-        return M.appl3("LLam", M.listElems(term()), M.listElems(M.var()), constraints(labels),
+        return M.appl3("LLam", M.listElems(term()), M.listElems(var()), constraints(labels),
                 (t, ps, vs, c) -> new Lambda(ps, vs, c));
     }
 

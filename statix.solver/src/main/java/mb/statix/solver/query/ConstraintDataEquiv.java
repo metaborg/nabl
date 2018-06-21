@@ -32,7 +32,8 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
         this.debug = debug;
     }
 
-    public boolean eq(List<ITerm> datum1, List<ITerm> datum2) throws ResolutionException, InterruptedException {
+    @Override public boolean eq(List<ITerm> datum1, List<ITerm> datum2)
+            throws ResolutionException, InterruptedException {
         try {
             final Tuple2<State, Lambda> result =
                     constraint.apply(ImmutableList.of(B.newTuple(datum1), B.newTuple(datum2)), state);
@@ -44,8 +45,8 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
         }
     }
 
-    public boolean alwaysTrue() {
-        return false;
+    @Override public boolean alwaysTrue() throws InterruptedException {
+        return constraint.isAlways(state.spec()).orElse(false);
     }
 
 }

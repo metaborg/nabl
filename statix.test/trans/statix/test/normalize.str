@@ -14,6 +14,8 @@ rules
          rule* := <map(cmap-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, [Rules(rule*)])
 
+  explicate-resolve(|a) = Test(id, id, explicate-resolve-sections(|a))
+
   normalize-functional-cop(|a):
       Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
     with (body', bmaps) := <collect-map(replace-cop(|a))> body;

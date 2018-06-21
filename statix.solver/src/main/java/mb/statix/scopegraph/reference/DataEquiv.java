@@ -6,7 +6,7 @@ public interface DataEquiv<V> {
 
     boolean eq(List<V> d1, List<V> d2) throws ResolutionException, InterruptedException;
 
-    boolean alwaysTrue();
+    boolean alwaysTrue() throws InterruptedException;
 
     static <V> DataEquiv<V> ALL() {
         return new DataEquiv<V>() {

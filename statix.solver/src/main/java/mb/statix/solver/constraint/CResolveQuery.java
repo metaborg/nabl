@@ -115,7 +115,7 @@ public class CResolveQuery implements IConstraint {
                 return filter.eq(filter(type, d1, debug), filter(type, d2, debug));
             }
 
-            public boolean alwaysTrue() {
+            public boolean alwaysTrue() throws InterruptedException {
                 return filter.alwaysTrue();
             }
 

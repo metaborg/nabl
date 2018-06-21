@@ -331,10 +331,11 @@ rules
     with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));
          rule* := <map(wf-rule(|a, wf, query*))> ns*
 
-  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [], CTrue(), bvs, body)
+  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [p|ts], eq-r, bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         ts := <map(!Wld())> tys;
-         r := Occurrence(ns, ts, Position(Wld()));
+         [p|ts] := <make-vars(|"wld")> [()|tys];
+         r := Var("r");
+         eq-r := CEqual(r, Occurrence(ns, ts, Position(p)));
          lbls := Var("lbls");
          if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (filter, [lbls])
@@ -348,24 +349,28 @@ rules
     with decl := CDecl(InductiveC(), eq, SimpleType([OccurrenceSort(), OccurrenceSort()]));
          rule* := <map(eq-rule(|a, eq))> ns*
 
-  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), [], CTrue(), [], body)
+  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), [pr|ts], eq-r, [pd|us], body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          ts := <make-vars(|"t")> tys;
          us := <make-vars(|"u")> tys;
-         r := Occurrence(ns, ts, Position(Wld()));
-         d := Occurrence(ns, us, Position(Wld()));
+         [pr, pd] := <make-vars(|"wld")> [(),()];
+         r := Var("r");
+         eq-r := CEqual(r, Occurrence(ns, ts, Position(pr)));
+         d := Var("d");
+         eq-d := CEqual(d, Occurrence(ns, us, Position(pd)));
          eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
-         body := <list-to-conj> eqs
+         body := CConj(eq-d, <list-to-conj> eqs)
 
 
   ord-rules(|a, ord, query*): ns* -> [decl|rule*]
     with decl := CDecl(InductiveC(), ord, SimpleType([OccurrenceSort(), LabelSort(), LabelSort()]));
          rule* := <map(ord-rule(|a, ord, query*))> ns*
 
-  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [], CTrue(), bvs, body)
+  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [p|ts], eq-r, bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         ts := <map(!Wld())> tys;
-         r := Occurrence(ns, ts, Position(Wld()));
+         [p|ts] := <make-vars(|"wld")> [()|tys];
+         r := Var("r");
+         eq-r := CEqual(r, Occurrence(ns, ts, Position(p)));
          l1 := Var("l1");
          l2 := Var("l2");
          if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
@@ -389,8 +394,9 @@ rules
       with wf-c := LLam([Var("lbls")], [], C(wf, [rt, Var("lbls")]));
            eq-c := LLam([Var("d")], [], C(eq, [rt, Var("d")]))
 
-    normalize-resolve(|wf, eq, ord): ResolveMin(rt) -> Min(ord-c, LTrue())
-      with ord-c := LLam([Var("l1"), Var("l2")], [], C(ord, [rt, Var("l1"), Var("l2")]))
+  normalize-resolve(|wf, eq, ord): ResolveMin(rt) -> Min(ord-c, eq-c)
+    with ord-c := LLam([Var("l1"), Var("l2")], [], C(ord, [rt, Var("l1"), Var("l2")]));
+         eq-c  := LLam([Var("d1"), Var("d2")], [], CTrue())
 
 rules
 

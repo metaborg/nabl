@@ -37,8 +37,7 @@ rules
     with rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
          label* := <collect-all(?Labels(<id>));concat> ast;
          rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
-         nsq* := <collect-all(\ NamespaceQuery(ns, NamespaceFilter(filter), NamespaceMin(min)) -> (ns, filter, min) \)> ast;
-         spec := (label*, rel*, nsq*, rule*, ext)
+         spec := (label*, rel*, rule*, ext)
 
   eliminate-all =
     eliminate-ascribe

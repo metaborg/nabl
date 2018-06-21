@@ -43,8 +43,8 @@ public class STX_solve_constraint extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final Spec spec =
-                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        final Spec spec = M.req(StatixTerms.spec()).match(terms.get(0))
+                .orElseThrow(() -> new InterpreterException("Expected spec."));
 
         final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
                 .tuple2(M.listElems(StatixTerms.var()), StatixTerms.constraints(spec.labels()),
