@@ -90,7 +90,7 @@ public interface IUnifier {
      * Return of the variable (or it representative) has a term.
      */
     boolean hasTerm(ITermVar var);
-    
+
     /**
      * Find the representative term for the given term. The representative itself is not instantiated, to prevent
      * exponential blowup in time or space. If the given term is a variable, the representative term is returned, or the
@@ -130,6 +130,22 @@ public interface IUnifier {
      * Return a string representation of the given term.
      */
     String toString(ITerm term);
+
+    /**
+     * Return a string representation of the given terms.
+     */
+    default String toString(Iterable<? extends ITerm> terms) {
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(ITerm term : terms) {
+            if(!first) {
+                sb.append(", ");
+            }
+            first = false;
+            sb.append(toString(term));
+        }
+        return sb.toString();
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on two terms

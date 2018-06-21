@@ -864,7 +864,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         private final Map.Immutable<ITermVar, Integer> ranks;
         private final Map.Immutable<ITermVar, ITerm> terms;
 
-        private Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
+        Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = new Ref<>(reps);
@@ -958,7 +958,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         private final Map.Transient<ITermVar, Integer> ranks;
         private final Map.Transient<ITermVar, ITerm> terms;
 
-        private Transient(final boolean finite, final Map.Transient<ITermVar, ITermVar> reps,
+        Transient(final boolean finite, final Map.Transient<ITermVar, ITermVar> reps,
                 final Map.Transient<ITermVar, Integer> ranks, final Map.Transient<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = reps;
@@ -1173,34 +1173,50 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         ///////////////////////////////////////////
 
         @Override public IUnifier.Immutable removeAll(Iterable<ITermVar> vars) {
+            final Set<ITermVar> _vars = ImmutableSet.copyOf(vars);
+
             // 1. Build substitution
             final Map.Transient<ITermVar, ITermVar> diffReps = Map.Transient.of();
+            final Map.Transient<ITermVar, Integer> diffSize = Map.Transient.of();
             final Map.Transient<ITermVar, ITerm> diffTerms = Map.Transient.of();
-            for(ITermVar var : vars) {
+            for(ITermVar var : _vars) {
                 if(reps.containsKey(var)) { // var |-> rep
-                    final ITermVar rep = reps.__remove(var);
-                    diffReps.__put(var, rep);
+                    diffReps.__put(var, reps.__remove(var));
+                    if(ranks.containsKey(var)) {
+                        diffSize.__put(var, ranks.__remove(var));
+                    }
                 } else if(terms.containsKey(var)) { // var (= rep) |-> term
                     final ITerm term = terms.__remove(var);
                     diffTerms.__put(var, term);
                 }
             }
-            final IUnifier.Immutable diff =
-                    new PersistentUnifier.Immutable(finite, diffReps.freeze(), Map.Immutable.of(), diffTerms.freeze());
-            if(diff.isCyclic()) {
+            final IUnifier.Transient diff = new PersistentUnifier.Transient(finite, diffReps, diffSize, diffTerms);
+            for(ITermVar var : _vars) {
+                if(!diff.contains(var)) { // var is free
+                    ImmutableSet.copyOf(reps.entrySet()).stream().filter(e -> e.getValue().equals(var)).findFirst()
+                            .ifPresent(e -> {
+                                final ITermVar newRep = e.getKey();
+                                reps.__remove(newRep); // = var
+                                diffReps.__put(var, newRep);
+                                if(ranks.containsKey(var)) {
+                                    ranks.__put(newRep, ranks.get(var));
+                                }
+                            });
+                }
+            }
+            if(!finite && diff.isCyclic()) {
                 throw new IllegalStateException("Cannot remove cyclic terms.");
             }
-            // update reps and terms
+
+            // 2. Update reps and terms
             for(ITermVar var : ImmutableSet.copyOf(reps.keySet())) {
                 final ITermVar rep = reps.get(var);
                 if(diff.contains(rep)) {
-                    final ITermVar newRep = diff.findRep(rep);
-                    final ITerm newTerm = diff.findTerm(rep);
-                    if(newTerm.equals(newRep)) { // replace rep
-                        reps.__put(var, newRep);
-                    } else { // remove rep and add term
+                    if(diff.hasTerm(rep)) {
                         reps.__remove(var);
-                        terms.__put(var, newTerm);
+                        terms.__put(var, diff.findTerm(rep));
+                    } else {
+                        reps.__put(var, diff.findRep(rep));
                     }
                 }
             }
@@ -1208,7 +1224,8 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 final ITerm term = terms.get(var);
                 terms.__put(var, diff.findRecursive(term));
             }
-            return diff;
+
+            return diff.freeze();
         }
 
         @Override public IUnifier.Immutable remove(ITermVar var) {

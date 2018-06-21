@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -16,6 +17,7 @@ public class PersistentUnifierFiniteTest {
     private final ITermVar a = B.newVar("", "a");
     private final ITermVar b = B.newVar("", "b");
     private final ITermVar c = B.newVar("", "c");
+    private final ITermVar d = B.newVar("", "d");
 
     private final String f = "f";
     private final String g = "g";
@@ -98,12 +100,37 @@ public class PersistentUnifierFiniteTest {
         assertEquals("f(\"x\",\"y\")", phi.toString(a));
     }
 
-    @Test public void testRemove() throws UnificationException {
-        IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, x);
+    @Test public void testRemoveUnifiedVar() throws UnificationException {
+        final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+        final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        reps.__put(a, b);
+        reps.__put(b, c);
+        terms.__put(d, B.newAppl(f, a));
+        final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(b);
-        assertTrue(phi.areEqual(a, B.newAppl(f, x)));
+        assertTrue(phi.areEqual(a, c));
+        assertTrue(phi.areEqual(d, B.newAppl(f, c)));
+    }
+
+    @Test public void testRemoveFreeVar() throws UnificationException {
+        final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+        final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        reps.__put(a, b);
+        reps.__put(b, c);
+        final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
+        phi.remove(c);
+        assertFalse(phi.areEqual(b, c));
+        assertTrue(phi.areEqual(a, b));
+    }
+
+    @Test public void testRemoveVarWithTerm() throws UnificationException {
+        final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+        final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        reps.__put(a, b);
+        terms.__put(b, B.newAppl(f, c));
+        final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
+        phi.remove(b);
+        assertTrue(phi.areEqual(a, B.newAppl(f, c)));
     }
 
     @Test public void testRetain() throws UnificationException {
