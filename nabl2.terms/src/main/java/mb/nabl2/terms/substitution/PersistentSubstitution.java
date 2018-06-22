@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
@@ -89,12 +88,6 @@ public abstract class PersistentSubstitution implements ISubstitution {
             return subst;
         }
 
-        @Override public ISubstitution.Immutable match(ITerm pattern, ITerm term) throws MatchException {
-            final ISubstitution.Transient lala = this.melt();
-            lala.match(pattern, term);
-            return lala.freeze();
-        }
-
         @Override public ISubstitution.Immutable put(ITermVar var, ITerm term) {
             return new PersistentSubstitution.Immutable(subst.__put(var, term));
         }
@@ -129,84 +122,6 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
         @Override protected Map<ITermVar, ITerm> subst() {
             return subst;
-        }
-
-        @Override public void match(ITerm pattern, ITerm term) throws MatchException {
-            if(!matchTerms(pattern, term)) {
-                throw new MatchException(pattern, term);
-            }
-        }
-
-        private boolean matchTerms(ITerm pattern, ITerm term) {
-            // @formatter:off
-            return pattern.<Boolean>match(Terms.cases(
-                applPattern -> term.match(Terms.<Boolean>cases()
-                    .appl(applTerm -> applPattern.getOp().equals(applTerm.getOp()) &&
-                                      applPattern.getArity() == applTerm.getArity() &&
-                                      matchs(applPattern.getArgs(), applTerm.getArgs()))
-                    .otherwise(t -> false)
-                ),
-                listPattern -> term.match(Terms.<Boolean>cases()
-                    .list(listTerm -> matchLists(listPattern, listTerm))
-                    .otherwise(t -> false)
-                ),
-                stringPattern -> term.match(Terms.<Boolean>cases()
-                    .string(stringTerm -> stringPattern.getValue().equals(stringTerm.getValue()))
-                    .otherwise(t -> false)
-                ),
-                integerPattern -> term.match(Terms.<Boolean>cases()
-                    .integer(integerTerm -> integerPattern.getValue() == integerTerm.getValue())
-                    .otherwise(t -> false)
-                ),
-                blobPattern -> term.match(Terms.<Boolean>cases()
-                    .blob(blobTerm -> blobPattern.getValue().equals(blobTerm.getValue()))
-                    .otherwise(t -> false)
-                ),
-                varPattern -> matchVar(varPattern, term)
-            ));
-            // @formatter:on
-        }
-
-        private boolean matchLists(IListTerm pattern, IListTerm term) {
-            // @formatter:off
-            return pattern.<Boolean>match(ListTerms.cases(
-                consPattern -> term.match(ListTerms.<Boolean>cases()
-                    .cons(consTerm -> matchTerms(consPattern.getHead(), consTerm.getHead()) &&
-                                      matchLists(consPattern.getTail(), consTerm.getTail()))
-                    .otherwise(l -> false)
-                ),
-                nilPattern -> term.match(ListTerms.<Boolean>cases()
-                    .nil(nilTerm -> true)
-                    .otherwise(l -> false)
-                ),
-                varPattern -> matchVar(varPattern, term)
-            ));
-            // @formatter:on
-        }
-
-        private boolean matchVar(ITermVar var, ITerm term) {
-            if(subst.containsKey(var)) {
-                return false;
-            }
-            subst.__put(var, term);
-            return true;
-        }
-
-        private boolean matchs(final Iterable<ITerm> patterns, final Iterable<ITerm> terms) {
-            Iterator<ITerm> itPattern = patterns.iterator();
-            Iterator<ITerm> itTerm = terms.iterator();
-            while(itPattern.hasNext()) {
-                if(!itTerm.hasNext()) {
-                    return false;
-                }
-                if(!matchTerms(itPattern.next(), itTerm.next())) {
-                    return false;
-                }
-            }
-            if(itTerm.hasNext()) {
-                return false;
-            }
-            return true;
         }
 
         @Override public void put(ITermVar var, ITerm term) {

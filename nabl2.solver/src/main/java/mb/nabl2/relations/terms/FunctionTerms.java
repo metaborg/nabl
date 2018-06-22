@@ -14,10 +14,11 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.matching.IPattern;
+import mb.nabl2.terms.matching.IPattern.MatchResult;
+import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.MatchException;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
@@ -39,21 +40,21 @@ public class FunctionTerms {
         });
     }
 
-    private static IMatcher<Tuple2<ITerm, ITerm>> functionCase() {
-        return M.tuple2(M.term(), M.term(), (t, t1, t2) -> {
-            if(!t1.getVars().containsAll(t2.getVars())) {
+    private static IMatcher<Tuple2<IPattern, ITerm>> functionCase() {
+        return M.tuple2(M.term(), M.term(), (t, pattern, term) -> {
+            if(!term.getVars().containsAll(pattern.getVars())) {
                 throw new IllegalStateException("Function case is not closed.");
             }
-            return ImmutableTuple2.of(t1, t2);
+            return ImmutableTuple2.of(new TermPattern(pattern), term);
         });
     }
 
     public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final List<Tuple2<ITerm, ITerm>> cases;
+        private final List<Tuple2<IPattern, ITerm>> cases;
 
-        private Eval(List<Tuple2<ITerm, ITerm>> cases) {
+        private Eval(List<Tuple2<IPattern, ITerm>> cases) {
             this.cases = ImmutableList.copyOf(cases);
         }
 
@@ -61,11 +62,11 @@ public class FunctionTerms {
             if(!term.isGround()) {
                 throw new IllegalStateException("Term argument must be ground.");
             }
-            for(Tuple2<ITerm, ITerm> c : cases) {
-                final ISubstitution.Immutable subst;
+            for(Tuple2<IPattern, ITerm> c : cases) {
+                final IPattern pattern = c._1();
                 try {
-                    subst = PersistentSubstitution.Immutable.of().match(c._1(), term);
-                    final ITerm result = subst.apply(c._2());
+                    final MatchResult matchResult = pattern.match(term);
+                    final ITerm result = matchResult.apply(c._2());
                     return Optional.of(result);
                 } catch(MatchException e) {
                 }

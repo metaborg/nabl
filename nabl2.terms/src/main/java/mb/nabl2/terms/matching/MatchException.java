@@ -1,4 +1,4 @@
-package mb.nabl2.terms.substitution;
+package mb.nabl2.terms.matching;
 
 import mb.nabl2.terms.ITerm;
 

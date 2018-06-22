@@ -15,8 +15,6 @@ public interface ISubstitution {
 
     interface Immutable extends ISubstitution {
 
-        Immutable match(ITerm pattern, ITerm term) throws MatchException;
-
         Immutable put(ITermVar var, ITerm term);
 
         Immutable remove(ITermVar var);
@@ -28,8 +26,6 @@ public interface ISubstitution {
     }
 
     interface Transient extends ISubstitution {
-
-        void match(ITerm pattern, ITerm term) throws MatchException;
 
         void put(ITermVar var, ITerm term);
 
