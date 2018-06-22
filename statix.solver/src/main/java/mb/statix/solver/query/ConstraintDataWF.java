@@ -3,7 +3,8 @@ package mb.statix.solver.query;
 import java.util.List;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.MatchException;
+import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -30,12 +31,11 @@ public class ConstraintDataWF implements DataWF<ITerm> {
 
     public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
         try {
-            final Tuple2<State, Lambda> result =
-                    constraint.apply(datum, state);
+            final Tuple2<State, Lambda> result = constraint.apply(datum, state);
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             return Solver.entails(config, result._2().getBodyVars(), debug)
-                .orElseThrow(() -> new ResolutionException("Data well-formedness check delayed"));
-        } catch(MatchException ex) {
+                    .orElseThrow(() -> new ResolutionException("Data well-formedness check delayed"));
+        } catch(MatchException | UnificationException ex) {
             return false;
         }
     }

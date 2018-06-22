@@ -11,10 +11,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.MatchException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
@@ -55,7 +56,7 @@ public class CUser implements IConstraint {
             final Tuple2<State, Rule> appl;
             try {
                 appl = rule.apply(args, state);
-            } catch(MatchException e) {
+            } catch(MatchException | UnificationException e) {
                 debug.warn("Failed to instantiate {}(_) for arguments {}", name, args);
                 continue;
             }

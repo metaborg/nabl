@@ -3,7 +3,8 @@ package mb.statix.solver.query;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.MatchException;
+import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -41,7 +42,7 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
                 debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
                 return false;
             }
-        } catch(MatchException ex) {
+        } catch(MatchException | UnificationException ex) {
             return false;
         }
     }

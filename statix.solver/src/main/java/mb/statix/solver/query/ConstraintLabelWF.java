@@ -10,7 +10,8 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.substitution.MatchException;
+import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -62,7 +63,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
                 debug.info("Not well-formed {}", state.unifier().toString(term));
                 return false;
             }
-        } catch(MatchException ex) {
+        } catch(MatchException | UnificationException ex) {
             return false;
         }
     }
@@ -82,7 +83,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
                 debug.info("Non-empty {}", state.unifier().toString(term));
                 return false;
             }
-        } catch(MatchException ex) {
+        } catch(MatchException | UnificationException ex) {
             return false;
         }
     }

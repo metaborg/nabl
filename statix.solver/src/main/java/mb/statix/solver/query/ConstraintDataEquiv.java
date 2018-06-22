@@ -7,7 +7,8 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.MatchException;
+import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -40,7 +41,7 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             return Solver.entails(config, result._2().getBodyVars(), debug)
                     .orElseThrow(() -> new ResolutionException("Data equivalence check delayed"));
-        } catch(MatchException ex) {
+        } catch(MatchException | UnificationException ex) {
             return false;
         }
     }

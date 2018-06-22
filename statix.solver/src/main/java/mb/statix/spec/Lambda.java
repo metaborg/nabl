@@ -10,11 +10,13 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.matching.IPattern.MatchResult;
+import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.MatchException;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
@@ -64,16 +66,14 @@ public class Lambda {
         return new Lambda(params, bodyVars, newBody);
     }
 
-    public Tuple2<State, Lambda> apply(List<ITerm> args, State state) throws MatchException {
-        ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        for(int i = 0; i < params.size(); i++) {
-            subst.match(params.get(i), args.get(i));
-        }
-        State newState = state;
+    public Tuple2<State, Lambda> apply(List<ITerm> args, State state) throws MatchException, UnificationException {
+        final MatchResult matchResult = new TermPattern(params).match(args);
+        ISubstitution.Transient subst = matchResult.substitution().melt();
+        State newState = state.withUnifier(state.unifier().unify(matchResult.unifier()).unifier());
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars) {
             final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
-            subst.match(var, vs._1());
+            subst.put(var, vs._1());
             freshBodyVars.add(vs._1());
             newState = vs._2();
         }
