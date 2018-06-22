@@ -42,7 +42,7 @@ public class FunctionTerms {
 
     private static IMatcher<Tuple2<IPattern, ITerm>> functionCase() {
         return M.tuple2(M.term(), M.term(), (t, pattern, term) -> {
-            if(!term.getVars().containsAll(pattern.getVars())) {
+            if(!pattern.getVars().containsAll(term.getVars())) {
                 throw new IllegalStateException("Function case is not closed.");
             }
             return ImmutableTuple2.of(new TermPattern(pattern), term);
