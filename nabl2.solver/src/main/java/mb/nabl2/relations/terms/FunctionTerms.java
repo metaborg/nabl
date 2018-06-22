@@ -15,10 +15,10 @@ import com.google.common.collect.ImmutableMap;
 import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.IPattern;
-import mb.nabl2.terms.matching.IPattern.MatchResult;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.TermPattern;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
@@ -65,7 +65,7 @@ public class FunctionTerms {
             for(Tuple2<IPattern, ITerm> c : cases) {
                 final IPattern pattern = c._1();
                 try {
-                    final MatchResult matchResult = pattern.match(term);
+                    final ISubstitution.Immutable matchResult = pattern.match(term);
                     final ITerm result = matchResult.apply(c._2());
                     return Optional.of(result);
                 } catch(MatchException e) {

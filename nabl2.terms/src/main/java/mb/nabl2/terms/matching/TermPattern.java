@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.metaborg.util.functions.Predicate2;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IListTerm;
@@ -15,44 +17,50 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.UnificationException;
 
 public class TermPattern implements IPattern {
 
     private final List<ITerm> patterns;
+    private final Predicate2<ITerm, ITerm> equals;
 
-    public TermPattern(List<ITerm> patterns) {
+    public TermPattern(Predicate2<ITerm, ITerm> equals, Iterable<ITerm> patterns) {
+        this.equals = equals;
         this.patterns = ImmutableList.copyOf(patterns);
+    }
+
+    public TermPattern(Predicate2<ITerm, ITerm> equals, ITerm... patterns) {
+        this(equals, Arrays.asList(patterns));
+    }
+
+    public TermPattern(Iterable<ITerm> patterns) {
+        this((t1, t2) -> t1.equals(t2), patterns);
     }
 
     public TermPattern(ITerm... patterns) {
         this(Arrays.asList(patterns));
     }
 
-    @Override public MatchResult match(Iterable<ITerm> terms) throws MatchException {
+    @Override public ISubstitution.Immutable match(Iterable<ITerm> terms) throws MatchException {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
         final ITerm pattern = B.newTuple(patterns);
         final ITerm term = B.newTuple(terms);
-        if(!matchTerms(pattern, term, subst, unifier)) {
+        if(!matchTerms(pattern, term, subst)) {
             throw new MatchException(pattern, term);
         }
-        return ImmutableMatchResult.of(subst.freeze(), unifier.freeze());
+        return subst.freeze();
     }
 
-    private boolean matchTerms(ITerm pattern, ITerm term, ISubstitution.Transient subst, IUnifier.Transient unifier) {
+    private boolean matchTerms(ITerm pattern, ITerm term, ISubstitution.Transient subst) {
         // @formatter:off
         return pattern.<Boolean>match(Terms.cases(
             applPattern -> term.match(Terms.<Boolean>cases()
                 .appl(applTerm -> applPattern.getOp().equals(applTerm.getOp()) &&
                                   applPattern.getArity() == applTerm.getArity() &&
-                                  matchs(applPattern.getArgs(), applTerm.getArgs(), subst, unifier))
+                                  matchs(applPattern.getArgs(), applTerm.getArgs(), subst))
                 .otherwise(t -> false)
             ),
             listPattern -> term.match(Terms.<Boolean>cases()
-                .list(listTerm -> matchLists(listPattern, listTerm, subst, unifier))
+                .list(listTerm -> matchLists(listPattern, listTerm, subst))
                 .otherwise(t -> false)
             ),
             stringPattern -> term.match(Terms.<Boolean>cases()
@@ -67,51 +75,45 @@ public class TermPattern implements IPattern {
                 .blob(blobTerm -> blobPattern.getValue().equals(blobTerm.getValue()))
                 .otherwise(t -> false)
             ),
-            varPattern -> matchVar(varPattern, term, subst, unifier)
+            varPattern -> matchVar(varPattern, term, subst)
         ));
         // @formatter:on
     }
 
-    private boolean matchLists(IListTerm pattern, IListTerm term, ISubstitution.Transient subst,
-            IUnifier.Transient unifier) {
+    private boolean matchLists(IListTerm pattern, IListTerm term, ISubstitution.Transient subst) {
         // @formatter:off
         return pattern.<Boolean>match(ListTerms.cases(
             consPattern -> term.match(ListTerms.<Boolean>cases()
-                .cons(consTerm -> matchTerms(consPattern.getHead(), consTerm.getHead(), subst, unifier) &&
-                                  matchLists(consPattern.getTail(), consTerm.getTail(), subst, unifier))
+                .cons(consTerm -> matchTerms(consPattern.getHead(), consTerm.getHead(), subst) &&
+                                  matchLists(consPattern.getTail(), consTerm.getTail(), subst))
                 .otherwise(l -> false)
             ),
             nilPattern -> term.match(ListTerms.<Boolean>cases()
                 .nil(nilTerm -> true)
                 .otherwise(l -> false)
             ),
-            varPattern -> matchVar(varPattern, term, subst, unifier)
+            varPattern -> matchVar(varPattern, term, subst)
         ));
         // @formatter:on
     }
 
-    private boolean matchVar(ITermVar var, ITerm term, ISubstitution.Transient subst, IUnifier.Transient unifier) {
+    private boolean matchVar(ITermVar var, ITerm term, ISubstitution.Transient subst) {
         if(subst.contains(var)) {
-            try {
-                unifier.unify(term, subst.apply(var));
-            } catch(UnificationException e) {
-                return false;
-            }
+            return equals.test(term, subst.apply(var));
         } else {
             subst.put(var, term);
         }
         return true;
     }
 
-    private boolean matchs(final Iterable<ITerm> patterns, final Iterable<ITerm> terms, ISubstitution.Transient subst,
-            IUnifier.Transient unifier) {
+    private boolean matchs(final Iterable<ITerm> patterns, final Iterable<ITerm> terms, ISubstitution.Transient subst) {
         Iterator<ITerm> itPattern = patterns.iterator();
         Iterator<ITerm> itTerm = terms.iterator();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
                 return false;
             }
-            if(!matchTerms(itPattern.next(), itTerm.next(), subst, unifier)) {
+            if(!matchTerms(itPattern.next(), itTerm.next(), subst)) {
                 return false;
             }
         }

@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.IPattern.MatchResult;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -67,9 +66,8 @@ public class Lambda {
     }
 
     public Tuple2<State, Lambda> apply(List<ITerm> args, State state) throws MatchException, UnificationException {
-        final MatchResult matchResult = new TermPattern(params).match(args);
-        ISubstitution.Transient subst = matchResult.substitution().melt();
-        State newState = state.withUnifier(state.unifier().unify(matchResult.unifier()).unifier());
+        final ISubstitution.Transient subst = new TermPattern(state.unifier()::areEqual, params).match(args).melt();
+        State newState = state;
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars) {
             final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
