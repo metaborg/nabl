@@ -12,10 +12,10 @@ test false fails [[
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
-test non-linear pattern fails [[
+test non-linear pattern succeeds [[
   resolve c([], [])
   rules
     c : list(string) * list(string)
     c(xs, xs).
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to SUCCEEDS()

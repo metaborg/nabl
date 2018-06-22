@@ -16,7 +16,7 @@ dependencies:
   - org.metaborg:statix.runtime:${metaborgVersion}
 runtime:
   nabl2:
-    debug: analysis
+    debug: analysis custom
 language:
   sdf:
     sdf2table: java
