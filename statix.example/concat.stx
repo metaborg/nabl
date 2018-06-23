@@ -1,0 +1,15 @@
+module test
+
+rules
+
+  concatF : list(string) * list(string) -> list(string)
+  
+  concatF([], ys) = ys.
+  concatF([x|xs], ys) = [x|concatF(xs, ys)].
+
+rules
+
+  concatP : list(string) * list(string) * list(string)
+  
+  concatP([], ys, ys).
+  concatP([x|xs], ys, [x|zs]) :- concatP(xs, ys, zs).
