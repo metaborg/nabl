@@ -342,8 +342,8 @@ public class StatixTerms {
             M.appl1("Str", M.string(), (t, string) -> {
                 return string;
             }),
-            M.appl1("Int", M.integer(), (t, integer) -> {
-                return integer;
+            M.appl1("Int", M.stringValue(), (t, integer) -> {
+                return B.newInt(Integer.parseInt(integer));
             }),
             list(),
             AOccurrence.matcher(m)
