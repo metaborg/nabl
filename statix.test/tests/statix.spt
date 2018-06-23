@@ -2,6 +2,8 @@ module statix
 
 language StatixTest
 
+//---------------------------------------------------------------------
+
 test true succeeds [[
   resolve true
 ]] analysis succeeds
@@ -12,11 +14,82 @@ test false fails [[
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
-test non-linear pattern succeeds [[
+//---------------------------------------------------------------------
+
+test list pattern succeeds [[
+  resolve c(["x", "y"])
+  rules
+    c : list(string)
+    c([]).
+    c([x|xs]) :- c(xs).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test list inequality succeeds [[
+  resolve c([3, 6])
+  rules
+    c : list(int)
+    c(xs) | xs != [].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+//---------------------------------------------------------------------
+
+test free variable not unified by guard [[
+  resolve {x} c(x)
+  rules
+    c : int
+    c(x) | x == 0.
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test free variable not considered inequal by guard [[
+  resolve {x} c(x)
+  rules
+    c : int
+    c(x) | x != 0.
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test equal terms in same-level non-linear pattern succeeds [[
   resolve c([], [])
   rules
     c : list(string) * list(string)
     c(xs, xs).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unified terms in same-level non-linear pattern succeeds [[
+  resolve {i j} c([i], [j]), i == j
+  rules
+    c : list(string) * list(string)
+    c(xs, xs).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test equal terms in different-level non-linear pattern succeeds [[
+  resolve c(1, [1|_])
+  rules
+    c : int * list(int)
+    c(i, [i|_]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test different terms in different-level non-linear pattern fails [[
+  resolve c(1, [2|_])
+  rules
+    c : int * list(int)
+    c(i, [i|_]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+// --------------------------------------------------------------------
+
+test output variable not treated as guard [[
+  resolve {x} f(1, x)
+  rules
+    f : int -> int
+    f(x) = x.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
