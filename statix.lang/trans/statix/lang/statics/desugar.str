@@ -18,7 +18,8 @@ rules
     desugar-ref-shorthands;
     desugar-queries;
     desugar-lambdas;
-    desugar-terms
+    desugar-terms;
+    fix-rules-variables
 
 rules
 
@@ -80,3 +81,12 @@ rules
 
   desugar-term: Tuple0()      -> Tuple([])
   desugar-term: TupleN(x, xs) -> Tuple([x|xs])
+
+rules
+
+  fix-rules-variables = try(sometd(fix-rule-variables))
+
+  fix-rule-variables:
+      Rule(hd@F(x, in_ts, out_t), gvs, guard, bvs, body) -> Rule(hd, gvs, guard, bvs', body)
+    with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
+         bvs'   := <conc> (bvs, out-vs)

@@ -100,32 +100,35 @@ rules
     C{x}.kind := DerivedC() !!.
 
   [[ Rule(h, gvs, g, bvs, c) ^ (s) ]] :=
-    new s', s' ---> s,
-    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    RuleHead[[ h ^ (s') ]],
-    Map1T(VarDecl)[[ gvs ^ (s') : _ ]],
-    [[ g ^ (s') ]],
-    new s'', s'' ---> s',
-    distinct/name D(s'')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    (D(s'') lsect/name D(s')) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
-    Map1T(VarDecl)[[ bvs ^ (s'') : _ ]],
-    [[ c ^ (s'') ]].
+    new s_rule, s_rule ---> s,
+    distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    RuleHead[[ h ^ (s_rule, s_body) ]],
+    new s_guard, s_guard ---> s_rule,
+    distinct/name D(s_guard)/Var | error $[Duplicate guard variable [NAME]] @NAMES,
+    (D(s_guard) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
+    Map1T(VarDecl)[[ gvs ^ (s_guard) : _ ]],
+    [[ g ^ (s_guard) ]],
+    new s_body, s_body ---> s_guard,
+    distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
+    (D(s_body) lsect/name D(s_guard)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
+    Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
+    [[ c ^ (s_body) ]].
 
-  RuleHead[[ C(x, args) ^ (s) ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+  RuleHead[[ C(x, args) ^ (s_rule, _) ]] :=
+    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
-    d : ty, ty != FUN(_, _) | note "Using `c(ts) = t | ...` for functional constraints is preferred." @x,
+    d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
     tys is `inout-types` of ty,
-    Map1T(Term(NonUniqueVarDecl))[[ args ^ (s) : tys ]].
+    Map1T(Match)[[ args ^ (s_rule) : tys ]].
 
-  RuleHead[[ F(x, inargs, outarg) ^ (s) ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+  RuleHead[[ F(x, inargs, outarg) ^ (s_rule, s_body) ]] :=
+    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
-    d : ty, ty == FUN(_, _) | error "Use `c(...) | ...` for non-functional constraints.",
+    d : ty, ty == FUN(_, _) | error "Use `c(...) | ...` for non-functional constraints." @x,
     intys is `in-types` of ty,
     outty is `out-type` of ty,
-    Map1T(Term(NonUniqueVarDecl))[[ inargs ^ (s) : intys ]],
-    Term(NonUniqueVarDecl)[[ outarg ^ (s) : outty ]].
+    Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
+    Term(Build)[[ outarg ^ (s_body) : outty ]].
 
   [[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
@@ -213,7 +216,7 @@ rules
 
   [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
     new s', s' ---> s,
-    Map1T(Term(NonUniqueVarDecl))[[ ps ^ (s') : tys ]],
+    Map1T(Match)[[ ps ^ (s') : tys ]],
     Map1T(VarDecl)[[ vs ^ (s') : _ ]],
     [[ c ^ (s') ]].
 
@@ -425,7 +428,7 @@ rules
 rules
 
   Match[[ t ^ (s) : ty ]] :=
-    Term(VarDecl)[[ t ^ (s) : ty ]].
+    Term(NonUniqueVarDecl)[[ t ^ (s) : ty ]].
 
   Build[[ t ^ (s) : ty ]] :=
     Term(VarRef)[[ t ^ (s) : ty ]].

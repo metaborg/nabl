@@ -1,0 +1,10 @@
+module problems
+
+language StatixTest
+
+test return var for tuple fails [[
+  resolve true
+  rules
+    c : int -> int * int
+    c(i) = r :- r == (i, i).
+]] analysis fails

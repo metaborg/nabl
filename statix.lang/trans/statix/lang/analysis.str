@@ -24,7 +24,7 @@ rules // Analysis
       (resource, _, [ast]) -> (error*, warning*, note*, (ast', ext*))
     where <not(nabl2-analysis-has-errors)> a
     with nabl2-custom-analysis-info-msg(|"Normalizing AST...");
-         (ast', a') := <normalize-all(|resource)> (ast, a);
+         (ast', a') := <normalize-all(reanalyze(|resource))> (ast, a);
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
 
          nabl2-custom-analysis-info-msg(|"Checking guard constraints...");
@@ -39,18 +39,13 @@ rules // Analysis
          warning* := [ext-w*];
          note*    := [ext-n*]
 
-  normalize-all(|resource) =
-    nabl2-custom-analysis-info-msg(|"| Phase 1...")
-  ; normalize-phase1; reanalyze(|resource)
-  ; nabl2-custom-analysis-info-msg(|"| Phase 2...")
-  ; normalize-phase2; reanalyze(|resource)
-
   reanalyze(|resource): (ast, a) -> (ast', a')
-    with (ast', a', _, _, _) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
+    with (ast', a', e*, w*, n*) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
          if <not(nabl2-analysis-has-errors)> a; <nabl2-analysis-has-errors> a' then
-           warn-msg(|"| ***************************************************************");
-           warn-msg(|"| * Normalized AST has errors. Normalization needs to be fixed! *");
-           warn-msg(|"| ***************************************************************")
+           err-msg(|"| ***************************************************************");
+           err-msg(|"| * Normalized AST has errors. Normalization needs to be fixed! *");
+           err-msg(|"| ***************************************************************");
+           <map(\ (_, msg) -> <err-msg(|$[| ERR [msg]])> \)> e*
          end
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType

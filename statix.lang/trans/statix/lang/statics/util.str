@@ -5,6 +5,12 @@ imports
   libspoofax/term/annotation
   libspoofax/term/origin
 
+  signatures/statix/lang/-
+
+rules
+
+  all-vars = collect-all(?Var(_))
+
 rules
 
   keep-origin(s) = origin-track-forced(s)
