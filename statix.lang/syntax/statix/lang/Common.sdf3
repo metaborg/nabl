@@ -12,7 +12,8 @@ lexical syntax
   SID = [A-Z] [a-zA-Z0-9\_\-\']*
   SID = [a-z] [a-zA-Z0-9\_\-\']*
 
-  ModuleId = ID ("/" ID)*
+  FileId   = [a-zA-Z0-9\_\-\.\~\']+
+  ModuleId = FileId ("/" FileId)*
 
 lexical restrictions
 
@@ -23,4 +24,5 @@ lexical restrictions
 
   SID -/- [a-zA-Z0-9\_\-\']
 
+  FileId   -/- [a-zA-Z0-9\_\-\.\~\']
   ModuleId -/- [\/]
