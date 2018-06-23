@@ -9,6 +9,24 @@ imports
 
 rules
 
+  normalize-functional-cop(|a):
+      Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
+    with (body', bmaps) := <collect-map(replace-cop(|a))> body;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
+         new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-wildcard:
+      Test(bvs, body, section*){a*} -> Test(bvs', body', section*){a*}
+    with (body', bmaps) := <collect-map(replace-wld)> body;
+         new-bvs := <map(Snd)> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-as-pattern:
+      Test(bvs, body, section*){a*} -> Test(bvs, body'', section*){a*}
+    with (body', bmaps) := <collect-map(replace-as)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+
   explicate-cmaps(|a): Test(bvs, body, section*){a*} -> Test(bvs, body, section''*){a*}
     with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
          rule* := <map(cmap-to-rules(|a)); concat> maps;
@@ -16,9 +34,3 @@ rules
 
   explicate-resolve(|a) = Test(id, id, explicate-resolve-sections(|a))
 
-  normalize-functional-cop(|a):
-      Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
-    with (body', bmaps) := <collect-map(replace-cop(|a))> body;
-         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
-         new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
