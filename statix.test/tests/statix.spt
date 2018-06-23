@@ -2,6 +2,27 @@ module statix
 
 language StatixTest
 
+/* TODO:
+ *
+ * - Regular constraints 0, 1, 2+ args args
+ * - Inline functional constraints for 0, 1, 2+ outputs
+ * - Predicate syntax for functional constraints
+ * - Use of wildcards in head (regular, and functional in & out), guard, body
+ * - Use of as-patterns in head (regular, and functional in & out), guard, body
+ *
+ * - New scope creation
+ * - Adding scope edges (successful, and delayed)
+ * - Adding relation data (successful, and delayed)
+ * - Queries (successful, and delayed)
+ * - Queries depending on defaults
+ * - Resolution queries on declarations
+ * - Explicitly refering to resolution policy in a query
+ * - Resolution queries on `occurrence -> ...` relations
+ * - Variable scoping in lambda's (local variables, context variables, wildcards)
+ * - Lambda's in lambda's (shadowing of names, correct behavior)
+ *
+ */
+
 //---------------------------------------------------------------------
 
 test true succeeds [[
