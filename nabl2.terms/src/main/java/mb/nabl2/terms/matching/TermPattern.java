@@ -99,7 +99,7 @@ public class TermPattern implements IPattern {
 
     private boolean matchVar(ITermVar var, ITerm term, ISubstitution.Transient subst) {
         if(subst.contains(var)) {
-            return equals.test(term, subst.apply(var));
+            return equals.test(subst.apply(var), term);
         } else {
             subst.put(var, term);
         }
