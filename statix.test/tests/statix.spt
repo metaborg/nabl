@@ -19,3 +19,11 @@ test non-linear pattern succeeds [[
     c(xs, xs).
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test return var for tuple output succeeds [[
+  resolve c(1) == (1, 1)
+  rules
+    c : int -> int * int
+    c(i) = r :- r == (i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
