@@ -11,3 +11,5 @@ template options
 context-free syntax
 
   Term.Tuple = <(<{Term ", "}*>)>
+
+  SortRef.TupleSort = <(<{SortRef " * "}*>)>

@@ -253,13 +253,15 @@ context-free syntax
 
   SortRef                = Sort
   SortRef.ListSort       = <list(<SortRef>)>
-  SortRef.TupleSort      = <(<{SortRef " * "}*>)>
+  SortRef.Tuple0Sort     = <()>
+  SortRef.TupleNSort     = <(<SortRef> * <{SortRef " * "}+>)>
   SortRef.IntSort        = "int"
   SortRef.StringSort     = "string"
   SortRef.PathSort       = "path"
   SortRef.LabelSort      = "label"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
+  SortRef                = <(<SortRef>)> {bracket}
 
   OpDecl.OpDecl  = <<OpId> : <OpSort>>
 
