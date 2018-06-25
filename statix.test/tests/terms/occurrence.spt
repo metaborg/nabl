@@ -75,6 +75,14 @@ test unify occurrences with and without positions fails [[
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
+test unify occurrences without position and wildcard position succeeds [[
+  resolve Var{"x"@_} == Var{"x"@-}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
 test match occurrence without position succeeds [[
   resolve c(Var{"x" @-})
   signature

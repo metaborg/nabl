@@ -36,7 +36,7 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getNamespace()), B.newList(getName()), getIndex());
+        return ImmutableList.of(B.newString(getNamespace()), B.newList(getName()), B.newAppl("Position", getIndex()));
     }
 
     @Override protected Occurrence check() {
@@ -71,12 +71,7 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
     }
 
     private static IMatcher<ITerm> position(IMatcher<ITerm> term) {
-        // @formatter:off
-        return M.cases(
-            M.appl0("NoPosition"),
-            M.appl1("Position", term, (t, p) -> B.newAppl("Position", p))
-        );
-        // @formatter:on
+        return M.appl1("Position", term, (t, p) -> p);
     }
 
 }

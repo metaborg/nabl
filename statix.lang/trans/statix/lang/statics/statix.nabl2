@@ -484,9 +484,7 @@ rules
     Term(V)[[ t ^ (s) : ty ]].
 
   Pos(V)[[ Position(v) ^ (s) ]] :=
-    V[[ v ^ (s) : ty ]].
-
-  Pos(V)[[ NoPosition() ^ (s) ]].
+    Term(V)[[ v ^ (s) : ty ]].
 
 rules
 

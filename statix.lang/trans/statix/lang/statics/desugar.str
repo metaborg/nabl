@@ -89,6 +89,7 @@ rules
 
   desugar-term: Tuple0()      -> Tuple([])
   desugar-term: TupleN(x, xs) -> Tuple([x|xs])
+  desugar-term: NoPosition()  -> Position(Tuple([]))
 
 rules
 
