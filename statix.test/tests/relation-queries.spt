@@ -1,0 +1,25 @@
+module relation-queries
+
+language StatixTest
+
+// query decl
+
+// query nullary relations
+
+// query unary relations
+
+// query binary relations
+
+// several functional variants
+
+// query incomplete graphs
+
+// default filter and min
+
+// pathmatch
+
+// pathlt
+
+// custom constraint wf
+
+// custom constraint ord

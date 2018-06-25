@@ -1,0 +1,29 @@
+module string
+
+language StatixTest
+
+test unifying equal strings succeeds [[
+  resolve "Spoofax" == "Spoofax"
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying inequal strings fails [[
+  resolve "Spoofax" == "Stratego"
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching same string succeeds [[
+  resolve c("Statix")
+  rules
+    c : string
+    c("Statix").
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching inequal string fails [[
+  resolve c("NaBL2")
+  rules
+    c : string
+    c("Statix").
+]] analysis succeeds
+   run evaluate-test to FAILS()

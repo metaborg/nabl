@@ -1,0 +1,21 @@
+module relation-queries
+
+language StatixTest
+
+// New scope creation
+
+// Different scopes are not equal
+
+// Adding scope edges works
+
+// Adding scopes to variable scope is delayed
+
+// Adding relation data succeeds
+
+// Adding relation to variable scope is delayed
+
+// Adding variable input data to relation is delayed
+
+// Adding variable output data to relation succeeds
+
+// Built-in constraints on paths (dst, src, labels)

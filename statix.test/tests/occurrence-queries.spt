@@ -1,0 +1,9 @@
+module occurrence-queries
+
+language StatixTest
+
+// resolve declarations
+
+// resolve decl -> ... relation
+
+// explicitly refer to resolution policy in query
