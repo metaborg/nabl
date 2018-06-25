@@ -49,7 +49,7 @@ test matching same list with inequal construction succeeds [[[
 test matching empty list with singleton list fails [[
   resolve c([])
   rules
-    c : int
+    c : list(int)
     c([7]).
 ]] analysis succeeds
    run evaluate-test to FAILS()
@@ -57,7 +57,7 @@ test matching empty list with singleton list fails [[
 test matching singleton list with empty list fails [[
   resolve c([7])
   rules
-    c : int
+    c : list(int)
     c([]).
 ]] analysis succeeds
    run evaluate-test to FAILS()
@@ -65,7 +65,7 @@ test matching singleton list with empty list fails [[
 test matching long list with singleton list fails [[
   resolve c([7, 8])
   rules
-    c : int
+    c : list(int)
     c([7]).
 ]] analysis succeeds
    run evaluate-test to FAILS()
@@ -73,7 +73,7 @@ test matching long list with singleton list fails [[
 test matching singleton list with long list fails [[
   resolve c([7])
   rules
-    c : int
+    c : list(int)
     c([7, 8]).
 ]] analysis succeeds
    run evaluate-test to FAILS()
