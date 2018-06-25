@@ -1,0 +1,109 @@
+module terms-occurrence
+
+language StatixTest
+
+test nullary namespace succeeds [[
+  resolve Var{@_} == _
+  signature
+    namespaces
+      Var :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unary namespace succeeds [[
+  resolve Var{1@_} == _
+  signature
+    namespaces
+      Var : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test binary namespace succeeds [[
+  resolve Var{"x" 1 @_} == _
+  signature
+    namespaces
+      Var : string * int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify equal occurrences succeeds [[
+  resolve Var{"x"@_} == Var{"x"@_}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify inequal occurrences with same namespace succeeds [[
+  resolve Var{"x"@_} == Var{"y"@_}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test unify  occurrences with inequal namespace and equal name succeeds [[
+  resolve Var1{"x"@_} == Var2{"y"@_}
+  signature
+    namespaces
+      Var1 : string
+      Var2 : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test unify occurrences with inequal positions fails [[
+  resolve {s1 s2} new s1 s2, Var{"x"@s1} == Var{"x"@s2}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test unify occurrences without positions succeeds [[
+  resolve Var{"x"@-} == Var{"x"@-}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify occurrences with and without positions fails [[
+  resolve {s} new s, Var{"x"@s} == Var{"x"@-}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test match occurrence without position succeeds [[
+  resolve c(Var{"x" @-})
+  signature
+    namespaces
+      Var : string
+  rules
+    c : occurrence
+    c(Var{x@-}).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test match occurrence with position succeeds [[
+  resolve {s} new s, c(Var{"x" @s})
+  signature
+    namespaces
+      Var : string
+  rules
+    c : occurrence
+    c(Var{x@_}).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test match occurrence with different name fails [[
+  resolve c(Var{"x" @-})
+  signature
+    namespaces
+      Var : string
+  rules
+    c : occurrence
+    c(Var{"y" @-}).
+]] analysis succeeds
+   run evaluate-test to FAILS()
