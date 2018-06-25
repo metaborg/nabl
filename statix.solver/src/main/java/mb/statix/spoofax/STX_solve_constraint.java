@@ -89,7 +89,7 @@ public class STX_solve_constraint extends StatixPrimitive {
             final ITerm key = isubst.apply(var);
             final ITerm value = unifier.findRecursive(key);
             final ITerm varTerm = isubst.apply(value);
-            if(!var.equals(value)) {
+            if(!var.equals(varTerm)) {
                 vsubst.add(B.newTuple(StatixTerms.explicate(var), StatixTerms.explicate(varTerm)));
             }
         }
