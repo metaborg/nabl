@@ -76,10 +76,10 @@ public class CUser implements IConstraint {
                     debug.info("Rule accepted");
                     return Optional.of(Result.of(maybeResult.get(), appl._2().getBody()));
                 } else {
-                    debug.info("Rule delayed");
+                    debug.info("Rule delayed (instantiated variables)");
                 }
             } else {
-                debug.info("Rule delayed");
+                debug.info("Rule delayed (unsolved guard constraint)");
             }
         }
         if(rules.isEmpty()) {
