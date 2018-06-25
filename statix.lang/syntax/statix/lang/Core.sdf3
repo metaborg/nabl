@@ -209,7 +209,7 @@ lexical syntax
           | "pathMatch" | "pathDisamb"
           | "resolveFilter" | "resolveMin"
 
-  RelationId = "e" {reject} // ambiguous with empty regex
+  RelationId = "e" | "resolve" | "labels" {reject} // ambiguous with empty regex
 
 /******************************************************************
  * Resolve & Query
