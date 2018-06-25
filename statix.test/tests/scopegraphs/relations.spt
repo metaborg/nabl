@@ -1,4 +1,4 @@
-module relation-queries
+module scopegraph-relations
 
 language StatixTest
 

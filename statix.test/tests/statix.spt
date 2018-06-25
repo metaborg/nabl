@@ -4,7 +4,7 @@ language StatixTest
 
 /* TODO:
  *
- * - Base constraints: equalities, true, false
+ * - Built-in constraints on paths (dst, src, labels)
  * - Variable scoping in lambda's (local variables, context variables, wildcards)
  * - Lambda's in lambda's (shadowing of names, correct behavior)
  *

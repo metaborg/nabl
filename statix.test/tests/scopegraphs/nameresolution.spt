@@ -1,4 +1,4 @@
-module occurrence-queries
+module scopegraphs-nameresolution
 
 language StatixTest
 
