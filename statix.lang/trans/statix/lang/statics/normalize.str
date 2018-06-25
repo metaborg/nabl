@@ -352,9 +352,11 @@ rules
 
 rules
 
-  explicate-resolve(|a) = Module(id, explicate-resolve-sections(|a))
+  explicate-resolve(|a):
+      Module(x, section*) -> Module(x, section'*)
+    with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*
 
-  explicate-resolve-sections(|a): section* -> section''*
+  explicate-resolve-sections(|a): section* -> (section''*, wf, eq, ord)
     with query* := <collect-all(?NamespaceQuery(_, _, _))> section*;
          ns* := <collect-all(?NsDecl(<id>, _))> section*;
          wf := <newname> "resolveFilterWf";
@@ -368,7 +370,6 @@ rules
                                  )> section*;
          new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
          section''* := <conc> (section'*, new-section*)
-
 
   wf-rules(|a, wf, query*): ns* -> [decl|rule*]
     with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));

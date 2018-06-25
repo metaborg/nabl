@@ -32,5 +32,7 @@ rules
          rule* := <map(cmap-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, [Rules(rule*)])
 
-  explicate-resolve(|a) = Test(id, id, explicate-resolve-sections(|a))
-
+  explicate-resolve(|a):
+      Test(bvs, body, section*) -> Test(bvs, body', section'*)
+    with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*;
+         body' := <try(sometd(normalize-resolves(|wf, eq, ord)))> body
