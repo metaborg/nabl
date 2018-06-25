@@ -71,7 +71,7 @@ test inequal terms in different-level non-linear pattern fails [[
     c(i, [i|_]).
 ]] analysis succeeds
    run evaluate-test to FAILS()
-   
+
 test unified terms in same-level non-linear pattern succeeds [[
   resolve {i j} c([i], [j]), i == j
   rules
@@ -96,7 +96,7 @@ test guard inequality on terms succeeds [[
     c(xs) | xs != [].
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
-   
+
 test free variable not unified by guard [[
   resolve {x} c(x)
   rules
@@ -161,7 +161,7 @@ rules
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test no mathcing cases fails [[
+test rule without matching cases fails [[
 resolve c([2, 3])
 rules
   c : list(int)
