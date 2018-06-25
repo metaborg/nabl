@@ -66,12 +66,25 @@ public class CTellRel implements IConstraint {
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
-        if(!datumTerms.stream().limit(type.getInputArity()).allMatch(unifier::isGround)) {
+        final ITerm key = B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(Collectors.toList()));
+        if(!unifier.isGround(key)) {
             return Optional.empty();
         }
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addDatum(scope, relation, datumTerms);
-        return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+        Optional<ITerm> existingValue = state.scopeGraph().getData().stream().filter(dt -> {
+            return unifier.areEqual(key,
+                    B.newTuple(dt._3().stream().limit(type.getInputArity()).collect(Collectors.toList())));
+        }).map(dt -> {
+            return B.newTuple(dt._3().stream().skip(type.getInputArity()).collect(Collectors.toList()));
+        }).findFirst();
+        if(existingValue.isPresent()) {
+            final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
+            final IConstraint eq = new CEqual(value, existingValue.get());
+            return Optional.of(Result.of(state, ImmutableSet.of(eq)));
+        } else {
+            final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
+                    state.scopeGraph().addDatum(scope, relation, datumTerms);
+            return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+        }
     }
 
     @Override public String toString(IUnifier unifier) {
