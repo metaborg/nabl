@@ -37,14 +37,14 @@ abstract class AStep<V, L> implements IStep<V, L> {
         return Iterators.singletonIterator(this);
     }
 
-    @Override public String toString(boolean includeTo, boolean includeFrom) {
+    @Override public String toString(boolean includeSource, boolean includeTarget) {
         StringBuilder sb = new StringBuilder();
-        if(includeFrom) {
+        if(includeSource) {
             sb.append(getSource());
             sb.append(Paths.PATH_SEPARATOR);
         }
         sb.append(getLabel());
-        if(includeTo) {
+        if(includeTarget) {
             sb.append(Paths.PATH_SEPARATOR);
             sb.append(getTarget());
         }
