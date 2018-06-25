@@ -29,6 +29,12 @@ public class Solver {
         Completeness completeness = config.completeness();
         completeness = completeness.addAll(constraints);
 
+        // if not root, reset errors, because we want to short-cut only on errors introduced by the
+        // guard constraints, not on errors pre-existing in the state
+        if(!debug.isRoot()) {
+            state = state.withErroneous(false);
+        }
+
         // fixed point
         boolean progress = true;
         outer: while(progress) {
@@ -41,9 +47,7 @@ public class Solver {
                 final IConstraint constraint = it.next();
                 debug.info("Solving {}", constraint.toString(state.unifier()));
                 IDebugContext subDebug = debug.subContext();
-                // reset errors, because we want to short-cut only on errors introduced by the
-                // guard constraints, not on errors pre-existing in the state
-                Optional<Result> maybeResult = constraint.solve(state.withErroneous(false), completeness, subDebug);
+                Optional<Result> maybeResult = constraint.solve(state, completeness, subDebug);
                 if(maybeResult.isPresent()) {
                     progress = true;
                     it.remove();

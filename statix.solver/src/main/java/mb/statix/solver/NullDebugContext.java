@@ -2,11 +2,18 @@ package mb.statix.solver;
 
 public class NullDebugContext implements IDebugContext {
 
+    private final boolean isRoot;
+
     public NullDebugContext() {
+        this(false);
+    }
+
+    public NullDebugContext(boolean isRoot) {
+        this.isRoot = isRoot;
     }
 
     public boolean isRoot() {
-        return false;
+        return isRoot;
     }
 
     @Override public IDebugContext subContext() {
