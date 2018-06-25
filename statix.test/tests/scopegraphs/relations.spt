@@ -2,24 +2,169 @@ module scopegraph-relations
 
 language StatixTest
 
-// query decl
+test query single item in the same scope succeeds [[
+  resolve {s}
+    new s, !r[7] in s,
+    query r in s |-> [(_, 7)]
+  signature
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// query nullary relations
+test query multiple items in the same scope succeeds [[
+  resolve {s}
+    new s, !r[7] in s, !r[42] in s,
+    query r in s |-> [_, _]
+  signature
+    relations
+      r : int
+  rules
+    eq : int * int
+    eq(x, x).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// query unary relations
+test multiple data for same key gives a single result [[
+  resolve {s i j k}
+    new s, !r[7, j] in s, !r[7, i] in s,
+    query r filter true and { 7 } in s |-> [(_, (7, k))],
+    eq(i, k), eq(j, k)
+  signature
+    relations
+      r : int -> int
+  rules
+    eq : int * int
+    eq(x, x).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// query binary relations
+test match path labels with regular expression [[
+  resolve {s1 s2}
+    new s1 s2, s1 -P-> s2, !r[7] in s2,
+    query r filter pathMatch[P*] in s1 |-> [_]
+  signature
+    name-resolution
+      labels P
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// several functional variants
+test reject path with regular expression [[
+  resolve {s1 s2 s3}
+    new s1 s2 s3, s1 -P-> s2, s2 -P-> s3, !r[7] in s3,
+    query r filter pathMatch[P] in s1 |-> []
+  signature
+    name-resolution
+      labels P
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// query incomplete graphs
+test default accepts all paths [[
+  resolve {s1 s2 s3}
+    new s1 s2 s3, s1 -P-> s2, s2 -P-> s3, !r[7] in s3,
+    query r in s1 |-> [_]
+  signature
+    name-resolution
+      labels P
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// default filter and min
+test query one reachable and one unreachable item [[
+  resolve {s1 s2 s3}
+    new s1 s2 s3,
+    s1 -P-> s2, !r[7] in s2,
+    s2 -P-> s3, !r[1] in s3,
+    query r filter pathMatch[P] in s1 |-> [(_, 7)]
+  signature
+    name-resolution
+      labels P
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// pathmatch
+test one item shadowing another [[
+  resolve {s1 s2 s3}
+    new s1 s2 s3,
+    s1 -P-> s2, !r[4] in s2,
+    s1 -Q-> s3, !r[7] in s3,
+    query r min pathLt[Q < P] and true in s1 |-> [(_, 7)]
+  signature
+    name-resolution
+      labels P Q
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// pathlt
+test query complete relation with another incomplete relation [[
+  resolve {s1 x}
+    new s1, !r1[4, 5] in s1,
+    query r1 filter true and { 4 } in s1 |-> [(_, (4, x))],
+    !r2[x, 6] in s1
+  signature
+    relations
+      r1 : int -> int
+      r2 : int -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// custom constraint wf
+test query via specific edge to instantiate more incomplete edge [[
+  resolve {s1 s2 s3}
+    new s1 s2,
+    s1 -P-> s2, !r[4, new] in s2,
+    query r filter true and { 4 } min pathLt[P < Q] and true in s1 |-> [(_, (4, s3))],
+    s1 -Q-> s3
+  signature
+    relations
+      r : int -> scope
+    name-resolution
+      labels P Q
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
-// custom constraint ord
+test adding same data multiple times is idempotent [[
+  resolve {s1}
+    new s1, !r[4] in s1, !r[4] in s1,
+    query r in s1 |-> [_]
+  signature
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test same data in different scopes does not shadow by default [[
+  resolve {s1 s2 s3}
+    new s1 s2 s3,
+    s1 -P-> s2, !r[4] in s2,
+    s1 -Q-> s3, !r[4] in s3,
+    query r in s1 |-> [_, _]
+  signature
+    relations
+      r : int
+    name-resolution
+      labels P Q
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test default filter allows all paths and all data [[
+  resolve {s1 s2 s3 s4}
+    new s1 s2 s3 s4,
+    !r[3] in s1,
+    s1 -P-> s2, !r[4] in s2,
+    s2 -Q-> s3, !r[5] in s3, !r[6] in s3,
+    s2 -P-> s4, !r[7] in s4,
+    query r in s1 |-> [_, _, _, _, _]
+  signature
+    relations
+      r : int
+    name-resolution
+      labels P Q
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
