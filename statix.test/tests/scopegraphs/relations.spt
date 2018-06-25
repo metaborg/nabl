@@ -274,3 +274,45 @@ test ask functional relation inline succeeds [[
       r : int -> int * int
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test predicate path projections succeed [[
+  resolve {s1 s2 s3 p}
+    new s1 s2 s3,
+    s1 -P-> s2, s2 -P-> s3,
+    query () min pathLt[P < $] and true in s1 |-> [p],
+    src(p, s1), dst(p, s3), scopes(p, [s1, s2, s3])
+  signature
+    name-resolution
+      labels P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test functional path projections succeed [[
+  resolve {s1 s2 s3 p}
+    new s1 s2 s3,
+    s1 -P-> s2, s2 -P-> s3,
+    query () min pathLt[P < $] and true in s1 |-> [p],
+    src(p) == s1, dst(p) == s3, scopes(p) == [s1, s2, s3]
+  signature
+    name-resolution
+      labels P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test labels projections succeed [[
+  resolve {s1 s2 s3 s4 p1 p2}
+    new s1 s2 s3 s4,
+    s1 -P-> s2,
+    s3 -P-> s4,
+    query () min pathLt[P < $] and true in s1 |-> [p1],
+    query () min pathLt[P < $] and true in s3 |-> [p2],
+    eq(labels(p1), labels(p2))
+  signature
+    name-resolution
+      labels P
+  rules
+    eq : list(label) * list(label)
+    eq(ls, ls).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
