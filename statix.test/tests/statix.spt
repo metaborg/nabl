@@ -9,15 +9,3 @@ language StatixTest
  * - Lambda's in lambda's (shadowing of names, correct behavior)
  *
  */
-
-//---------------------------------------------------------------------
-
-test true succeeds [[
-  resolve true
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test false fails [[
-  resolve false
-]] analysis succeeds
-   run evaluate-test to FAILS()
