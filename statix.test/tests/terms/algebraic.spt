@@ -1,3 +1,51 @@
 module terms-algebraic
 
 language StatixTest
+
+test unify equal 'none' constructors succeeds [[
+resolve None() == None()
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify equal 'some' constructors succeeds [[
+resolve {i} Some(1) == Some(i)
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify inequal constructors fails [[
+resolve None() == Some(_)
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test unify inequal constructor arguments fails [[
+resolve Some(1) == Some(2)
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test match constructor succeeds [[
+resolve c(None())
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+rules
+  c : MaybeInt
+  c(None()).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
