@@ -5,6 +5,7 @@ import java.util.Optional;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.IGuard;
 import mb.statix.solver.State;
@@ -43,11 +44,7 @@ public class GInequal implements IGuard {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(term1);
-        sb.append(" != ");
-        sb.append(term2);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

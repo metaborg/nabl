@@ -58,7 +58,9 @@ import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.guard.GEqual;
+import mb.statix.solver.guard.GFalse;
 import mb.statix.solver.guard.GInequal;
+import mb.statix.solver.guard.GTrue;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
@@ -187,12 +189,17 @@ public class StatixTerms {
     public static IMatcher<Set<IGuard>> guards() {
         return (t, u) -> {
             final ImmutableSet.Builder<IGuard> guards = ImmutableSet.builder();
-            return M.casesFix(m -> Iterables2.from(
             // @formatter:off
+            return M.casesFix(m -> Iterables2.from(
                 M.appl2("CConj", m, m, (c, t1, t2) -> {
                     return Unit.unit;
                 }),
                 M.appl0("CTrue", (c) -> {
+                    guards.add(new GTrue());
+                    return Unit.unit;
+                }),
+                M.appl0("CFalse", (c) -> {
+                    guards.add(new GFalse());
                     return Unit.unit;
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
@@ -206,8 +213,8 @@ public class StatixTerms {
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown guard: " + c);
                 })
-                // @formatter:on
             )).match(t, u).map(v -> guards.build());
+            // @formatter:on
         };
     }
 
