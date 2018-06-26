@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
@@ -73,7 +71,6 @@ import mb.statix.terms.AOccurrence;
 import mb.statix.terms.Occurrence;
 
 public class StatixTerms {
-    private static final ILogger logger = LoggerUtils.logger(StatixTerms.class);
 
     public static ITerm QUERY_SCOPES = B.EMPTY_TUPLE;
     public static ITerm END_OF_PATH = B.newAppl("EOP");

@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.build.TermBuild.B;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
