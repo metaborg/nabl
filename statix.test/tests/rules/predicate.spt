@@ -195,6 +195,17 @@ test free variable not considered inequal by guard [[
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
+test guard matches are retained in body [[
+  resolve c([5])
+  rules
+    c : list(int)
+    c(xs) | {x} xs == [x] :- eq(x, 5).
+  rules
+    eq : int * int
+    eq(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
 test wildcards in head succeeds [[
 resolve c(2, 3)
 rules
