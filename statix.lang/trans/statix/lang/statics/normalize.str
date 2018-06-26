@@ -17,9 +17,16 @@ imports
 rules
 
   normalize-all(reanalyze) =
-    normalize-1; reanalyze
+    normalize-0; reanalyze
+  ; normalize-1; reanalyze
   ; normalize-2; reanalyze
   ; normalize-3; reanalyze
+
+  normalize-0 =
+    ?(<id>, a);
+    nabl2-custom-analysis-info-msg(|"| Explicate mapping constraints...");
+    explicate-cmaps(|a);
+    !(<id>, a)
 
   normalize-1 =
     ?(<id>, a);
@@ -41,8 +48,6 @@ rules
     normalize-ho-constraints(|a);
     nabl2-custom-analysis-info-msg(|"| Explicate namespace queries...");
     explicate-resolve(|a);
-    nabl2-custom-analysis-info-msg(|"| Explicate mapping constraints...");
-    explicate-cmaps(|a);
     !(<id>, a)
 
   normalize-3 =
@@ -326,30 +331,47 @@ rules
          sort := <nabl2-get-type(|a);type-to-sort> d
 
   cmap-to-rules(|a): (CDeriveMap(x, y, lsort*), _) -> [base-rule, elem-rule]
-    with base-rule := <cmap-base-rule> (x, y, lsort*);
-         elem-rule := <cmap-elem-rule> (x, y, lsort*)
+    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         n := <in-types;length> ty;
+         in-lsort* := <take(|n)> lsort*;
+         out-lsort* := <drop(|n)> lsort*
+    with base-rule := <cmap-base-rule> (x, y, in-lsort*, out-lsort*);
+         elem-rule := <cmap-elem-rule> (x, y, in-lsort*, out-lsort*)
 
 
-  cmap-base-rule: (x, y, lsort*) -> Rule(C(x, ps), [], CTrue(), [], CTrue())
+  cmap-base-rule: (x, y, lsort*, []) -> Rule(C(x, ps), [], CTrue(), [], CTrue())
     with ps := <map(lift-base)> lsort*
+
+  cmap-base-rule: (x, y, in-lsort*, out-lsort*@[_|_]) -> Rule(F(x, inps, outp), [], CTrue(), [], CTrue())
+    with inps := <map(lift-base)> in-lsort*;
+         outp := <map(lift-base);build-terms(|out-lsort*)> out-lsort*
 
   lift-base: Id() -> Wld()
 
   lift-base: ToList() -> List([])
 
 
-  cmap-elem-rule: (x, y, lsort*) -> Rule(C(x, ps), [], CTrue(), [], CConj(call, rec))
-    with ps   := <map-with-index(lift-elem-head)> lsort*;
-         call := C(y, <map-with-index(lift-elem-call)> lsort*);
-         rec  := C(x, <map-with-index(lift-elem-rec)> lsort*)
+  cmap-elem-rule: (x, y, lsort*, []) -> Rule(C(x, ps), [], CTrue(), [], CConj(call, rec))
+    with ps   := <map-with-index(lift-elem-head(|"x"))> lsort*;
+         call := C(y, <map-with-index(lift-elem-call(|"x"))> lsort*);
+         rec  := C(x, <map-with-index(lift-elem-rec(|"x"))> lsort*)
 
-  lift-elem-head: (i, Id())     -> <lift-var(|"x")> i
-  lift-elem-head: (i, ToList()) -> ListTail([<lift-var(|"x")> i], <lift-var(|"xs")> i)
+  cmap-elem-rule: (x, y, in-lsort*, out-lsort*@[_|_]) -> Rule(F(x, inps, outp), [], CTrue(), bvs, CConj(call, rec))
+    with inps := <map-with-index(lift-elem-head(|"x"))> in-lsort*;
+         outp := <map-with-index(lift-elem-head(|"y"));build-terms(|out-lsort*)> out-lsort*;
+         bvs  := <all-vars> outp;
+         call := CEqual(COp(y, <map-with-index(lift-elem-call(|"x"))> in-lsort*),
+                        <map-with-index(lift-elem-call(|"y"));build-terms(|out-lsort*)> out-lsort*);
+         rec  := CEqual(COp(x, <map-with-index(lift-elem-rec(|"x"))> in-lsort*),
+                        <map-with-index(lift-elem-rec(|"y"));build-terms(|out-lsort*)> out-lsort*)
 
-  lift-elem-call: (i, _) -> <lift-var(|"x")> i
+  lift-elem-head(|x): (i, Id())     -> <lift-var(|x)> i
+  lift-elem-head(|x): (i, ToList()) -> ListTail([<lift-var(|x)> i], <lift-var(|$[[x]s])> i)
 
-  lift-elem-rec: (i, Id())     -> <lift-var(|"x")> i
-  lift-elem-rec: (i, ToList()) -> <lift-var(|"xs")> i
+  lift-elem-call(|x): (i, _) -> <lift-var(|x)> i
+
+  lift-elem-rec(|x): (i, Id())     -> <lift-var(|x)> i
+  lift-elem-rec(|x): (i, ToList()) -> <lift-var(|$[[x]s])> i
 
   lift-var(|base) = !Var($[[base][<int-to-string>]])
 
@@ -471,8 +493,7 @@ rules
   type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
 
   type-to-sort: PRED(tys)          -> SimpleType(<map(type-to-sort)> tys)
-  type-to-sort: FUN(intys, outtys) -> SimpleType(<map(type-to-sort)> tys)
-    with tys := <conc> (intys, outtys)
+  type-to-sort: FUN(intys, outtys) -> FunType(<map(type-to-sort)> intys, <map(type-to-sort)> outtys)
 
   sort-args: SimpleType(args) -> args
 

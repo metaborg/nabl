@@ -2,13 +2,6 @@ module rules-functional
 
 language StatixTest
 
-// TODO:
-// - head input variables visible in guard and body
-// - head output variables visible in body
-// - head output variables not visible in guard
-// - guard variables visible in body
-// - body variables not visible in guard
-
 // static
 
 test functional constraint defined in signature [[
@@ -152,12 +145,24 @@ test predicate use of functional constraint succeeds [[
    run evaluate-test to SUCCEEDS()
 
 test output variable not treated as guard [[
-  resolve {x} f(1, _)
+  resolve f(1, _)
   rules
     f : int -> int
     f(x) = x.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test output variable in lifted constraint not treated as guard [[
+  resolve fs([1], _)
+  rules
+    f : int -> int
+    f(x) = x.
+
+    fs maps f(list(*), list(*))
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+
 
 test wildcards in head input succeeds [[
 resolve f(2) == _
