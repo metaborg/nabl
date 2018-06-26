@@ -92,13 +92,13 @@ rules
          bvs' := <conc> (bvs, new-bvs)
 
   normalize-functional-cop(|a):
-      LLam(ts, vs, body){a*} -> LLam(ts', vs', body''){a*}
+      LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
     with (ts', tsmaps) := <collect-map(replace-cop(|a))> ts;
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
          maps := <conc> (tsmaps, bmaps);
-         body'' := <map(cop-to-c(|a));list-to-conj(|body)> maps;
          new-var* := <map(Snd);all-vars> maps;
-         vs' := <conc> (vs, new-var*)
+         bvs' := <conc> (bvs, new-var*);
+         body'' := <map(cop-to-c(|a));list-to-conj(|body)> maps
 
 
   replace-cop(|a): COp(x, in_ts) -> out_t
@@ -171,46 +171,49 @@ rules
          n := <in-types;length> ty;
 
          // extract inline patterns
-         (gps', guard') := <take(|n);extract-inline-patterns(|guard)> ps;
-         (bps', body') := <drop(|n);extract-inline-patterns(|body)> ps;
+         (gps', guard-eq*) := <take(|n);extract-inline-patterns> ps;
+         (bps', body-eq*) := <drop(|n);extract-inline-patterns> ps;
 
          // compute new head variables
          ps' := <conc> (gps', bps');
          head-var* := <all-vars;raw-make-set> ps';
 
          // compute new existental guard variables
-         guard-var* := <all-vars;raw-make-set> guard';
-         new-guard-var* := <raw-diff> (guard-var*, head-var*);
+         guard-eq-var* := <all-vars;raw-make-set> guard-eq*;
+         new-guard-var* := <raw-diff> (guard-eq-var*, head-var*);
          gvs' := <conc;raw-make-set> (new-guard-var*, gvs);
+         guard' := <list-to-conj(|guard)> guard-eq*;
 
          // compute new existental body variables
-         body-var* := <all-vars;raw-make-set> body';
-         new-body-var* := <raw-diff> (body-var*, <conc> (head-var*, gvs'));
-         bvs' := <conc;raw-make-set> (new-body-var*, bvs)
+         body-eq-var* := <all-vars;raw-make-set> body-eq*;
+         new-body-var* := <raw-diff> (body-eq-var*, <conc> (head-var*, gvs'));
+         bvs' := <conc;raw-make-set> (new-body-var*, bvs);
+         body' := <list-to-conj(|body)> body-eq*
 
   normalize-inline-pattern(|a):
-      LLam(ps, vs, body){a*} -> LLam(ps', vs', body'){a*}
-  with (ps', body') := <extract-inline-patterns(|body)> ps;
+      LLam(ps, bvs, body){a*} -> LLam(ps', bvs', body'){a*}
+  with (ps', eq*) := <extract-inline-patterns> ps;
        head-var* := <all-vars;raw-make-set> ps';
-       body-var* := <all-vars;raw-make-set> body';
-       new-body-var* := <raw-diff> (body-var*, head-var*);
-       vs' := <conc;raw-make-set> (new-body-var*, vs)
+       body-eq-var* := <all-vars;raw-make-set> eq*;
+       new-body-var* := <raw-diff> (body-eq-var*, head-var*);
+       bvs' := <conc;raw-make-set> (new-body-var*, bvs);
+       body' := <list-to-conj(|body)> eq*
 
 
-  extract-inline-patterns(|C): [] -> ([], C)
+  extract-inline-patterns: [] -> ([], [])
 
-  extract-inline-patterns(|C): [v|ps] -> ([v|ps'], C')
+  extract-inline-patterns: [v|ps] -> ([v|ps'], C*)
     where <?Var(_) + ?Wld()> v
-    with (ps', C') := <extract-inline-patterns(|C)> ps
+    with (ps', C*) := <extract-inline-patterns> ps
 
-  extract-inline-patterns(|C): [p|ps] -> ([v|ps'], CConj(CEqual(v, p'), C'))
+  extract-inline-patterns: [p|ps] -> ([v|ps'], [CEqual(v, p')|C*])
     where <?As(v, p')> p
-    with (ps', C') := <extract-inline-patterns(|C)> ps
+    with (ps', C*) := <extract-inline-patterns> ps
 
-  extract-inline-patterns(|C): [p|ps] -> ([v|ps'], CConj(CEqual(v, p), C'))
+  extract-inline-patterns: [p|ps] -> ([v|ps'], [CEqual(v, p)|C*])
     where <not(?Var(_) + ?Wld() + ?As(_, _))> p
     with v := Var(<newname> "p");
-         (ps', C') := <extract-inline-patterns(|C)> ps
+         (ps', C*) := <extract-inline-patterns> ps
 
 rules
 
