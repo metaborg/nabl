@@ -40,4 +40,4 @@ rules
   evaluate: ast@Test(bvs, body, _) -> result
     with a := <nabl2-get-ast-analysis> ast
        ; spec := <nabl2-get-custom-analysis;strip-annos;eliminate-all;spec-ast-to-aterm> a
-       ; result := <stx--solve-constraint(|spec)> (bvs, body)
+       ; result := <stx--solve-constraint(|spec)> (bvs, <eliminate-all> body)
