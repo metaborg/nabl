@@ -163,6 +163,7 @@ context-free syntax
 
   LabelRE.Empty      = <0>
   LabelRE.Epsilon    = <e>
+//LabelRE.Any        = <.>
   LabelRE            = Label
   LabelRE.Closure    = <<LabelRE>*>
   LabelRE.Neg        = <~<LabelRE>>
@@ -209,7 +210,8 @@ lexical syntax
           | "pathMatch" | "pathDisamb"
           | "resolveFilter" | "resolveMin"
 
-  RelationId = "e" | "resolve" | "labels" {reject} // ambiguous with empty regex
+  RelationId = "e" {reject}                     // ambiguous with empty regex
+  RelationId = "resolve" | "labels" {reject}    // ambiguous with signature keywords
 
 /******************************************************************
  * Resolve & Query

@@ -118,6 +118,9 @@ context-free syntax
   Term.PathScopesOp = <scopes(<Term>)>
   Term.PathLabelsOp = <labels(<Term>)>
 
+//LabelRE = <<LabelRE>?>
+//LabelRE = <<LabelRE>+>
+
 syntax
 
   HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
