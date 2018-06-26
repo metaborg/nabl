@@ -84,11 +84,11 @@ rules
       Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard'', bvs', body''){a*}
     with (guard', gmaps) := <collect-map(replace-cop(|a))> guard;
          guard'' := <map(cop-to-c(|a));list-to-conj(|guard')> gmaps;
-         new-gvs := <map(Snd);collect-all(?Var(_))> gmaps;
+         new-gvs := <map(Snd);all-vars> gmaps;
          gvs' := <conc> (gvs, new-gvs);
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
          body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
-         new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
+         new-bvs := <map(Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
   normalize-functional-cop(|a):
@@ -97,7 +97,7 @@ rules
          (body', bmaps) := <collect-map(replace-cop(|a))> body;
          maps := <conc> (tsmaps, bmaps);
          body'' := <map(cop-to-c(|a));list-to-conj(|body)> maps;
-         new-var* := <map(Snd);collect-all(?Var(_))> maps;
+         new-var* := <map(Snd);all-vars> maps;
          vs' := <conc> (vs, new-var*)
 
 
@@ -191,8 +191,8 @@ rules
   normalize-inline-pattern(|a):
       LLam(ps, vs, body){a*} -> LLam(ps', vs', body'){a*}
   with (ps', body') := <extract-inline-patterns(|body)> ps;
-       head-var* := <collect-all(?Var(_));raw-make-set> ps';
-       body-var* := <collect-all(?Var(_));raw-make-set> body';
+       head-var* := <all-vars;raw-make-set> ps';
+       body-var* := <all-vars;raw-make-set> body';
        new-body-var* := <raw-diff> (body-var*, head-var*);
        vs' := <conc;raw-make-set> (new-body-var*, vs)
 
@@ -375,12 +375,12 @@ rules
     with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));
          rule* := <map(wf-rule(|a, wf, query*))> ns*
 
-  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [p|ts], eq-r, bvs, body)
+  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [], eq-r, bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         [p|ts] := <make-seq-vars(|"wld")> [()|tys];
-         r := Var("r");
+         [p|ts] := <map(!Wld())> [()|tys];
+         r := Var(<newname> "r");
          eq-r := CEqual(r, Occurrence(ns, ts, Position(p)));
-         lbls := Var("lbls");
+         lbls := Var(<newname> "lbls");
          if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (filter, [lbls])
          else
@@ -393,14 +393,14 @@ rules
     with decl := CDecl(InductiveC(), eq, SimpleType([OccurrenceSort(), OccurrenceSort()]));
          rule* := <map(eq-rule(|a, eq))> ns*
 
-  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), [pr|ts], eq-r, [pd|us], body)
+  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), ts, eq-r, us, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         ts := <make-seq-vars(|"t")> tys;
-         us := <make-seq-vars(|"u")> tys;
-         [pr, pd] := <make-seq-vars(|"wld")> [(),()];
-         r := Var("r");
+         ts := <make-fresh-vars(|"t")> tys;
+         us := <make-fresh-vars(|"u")> tys;
+         [pr, pd] := <map(!Wld())> [(),()];
+         r := Var(<newname> "r");
          eq-r := CEqual(r, Occurrence(ns, ts, Position(pr)));
-         d := Var("d");
+         d := Var(<newname> "d");
          eq-d := CEqual(d, Occurrence(ns, us, Position(pd)));
          eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
          body := CConj(eq-d, <list-to-conj> eqs)
@@ -410,13 +410,13 @@ rules
     with decl := CDecl(InductiveC(), ord, SimpleType([OccurrenceSort(), LabelSort(), LabelSort()]));
          rule* := <map(ord-rule(|a, ord, query*))> ns*
 
-  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [p|ts], eq-r, bvs, body)
+  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [], eq-r, bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         [p|ts] := <make-seq-vars(|"wld")> [()|tys];
-         r := Var("r");
+         [p|ts] := <map(!Wld())> [()|tys];
+         r := Var(<newname> "r");
          eq-r := CEqual(r, Occurrence(ns, ts, Position(p)));
-         l1 := Var("l1");
-         l2 := Var("l2");
+         l1 := Var(<newname> "l1");
+         l2 := Var(<newname> "l2");
          if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (min, [l1, l2])
          else
@@ -435,12 +435,16 @@ rules
   normalize-resolves(|wf, eq, ord) = try(sometd(normalize-resolve(|wf, eq, ord)))
 
   normalize-resolve(|wf, eq, ord): ResolveFilter(rt) -> Filter(wf-c, eq-c)
-      with wf-c := LLam([Var("lbls")], [], C(wf, [rt, Var("lbls")]));
-           eq-c := LLam([Var("d")], [], C(eq, [rt, Var("d")]))
+    with lbls := Var(<newname> "lbls");
+         wf-c := LLam([lbls], [], C(wf, [rt, lbls]));
+         d := Var(<newname> "d");
+         eq-c := LLam([d], [], C(eq, [rt, d]))
 
   normalize-resolve(|wf, eq, ord): ResolveMin(rt) -> Min(ord-c, eq-c)
-    with ord-c := LLam([Var("l1"), Var("l2")], [], C(ord, [rt, Var("l1"), Var("l2")]));
-         eq-c  := LLam([Var("d1"), Var("d2")], [], CTrue())
+    with l1 := Var(<newname> "l1");
+         l2 := Var(<newname> "l2");
+         ord-c := LLam([l1, l2], [], C(ord, [rt, l1, l2]));
+         eq-c  := LLam([Wld(), Wld()], [], CTrue())
 
 rules
 
