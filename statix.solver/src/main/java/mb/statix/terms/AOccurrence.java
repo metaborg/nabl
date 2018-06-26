@@ -1,7 +1,6 @@
 package mb.statix.terms;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
 
@@ -13,13 +12,10 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm {
-
-    private static final String OP = "Occurrence";
 
     // IOccurrence implementation
 
@@ -32,7 +28,7 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
     // IApplTerm implementation
 
     @Value.Lazy @Override public String getOp() {
-        return OP;
+        return "Occurrence";
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
@@ -62,16 +58,6 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
         sb.append(getIndex());
         sb.append("}");
         return sb.toString();
-    }
-
-    public static IMatcher<Occurrence> matcher(IMatcher<ITerm> term) {
-        return M.appl3(OP, M.stringValue(), M.listElems(term), position(term), (t, ns, name, idx) -> {
-            return Occurrence.of(ns, name, idx);
-        });
-    }
-
-    private static IMatcher<ITerm> position(IMatcher<ITerm> term) {
-        return M.appl1("Position", term, (t, p) -> p);
     }
 
 }
