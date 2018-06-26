@@ -187,12 +187,14 @@ context-free syntax
   Constraint.CPathScopes = <scopes(<Term>, <Term>)>
   Constraint.CPathLabels = <labels(<Term>, <Term>)>
 
+  PositionTerm = Var
+  PositionTerm = "-"
+
 syntax
 
   Term-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
 
-  Position-CF.Position   = "@" Var-CF
-  Position-CF.NoPosition = "@-"
+  Position-CF.Position   = "@" PositionTerm-CF
 
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
