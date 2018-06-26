@@ -51,6 +51,20 @@ test match path labels with regular expression [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
+test match exact steps with regular expression [[
+  resolve {s1 s2 s3}
+    new s1 s2 s3,
+    s1 -P-> s2, !r[7] in s2,
+    s2 -P-> s3, !r[9] in s3,
+    query r filter pathMatch[P P] in s1 |-> [(_, 9)]
+  signature
+    name-resolution
+      labels P
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
 test reject path with regular expression [[
   resolve {s1 s2 s3}
     new s1 s2 s3, s1 -P-> s2, s2 -P-> s3, !r[7] in s3,
@@ -120,6 +134,34 @@ test query via specific edge to instantiate more incomplete edge [[
     new s1 s2,
     s1 -P-> s2, !r[4, new] in s2,
     query r filter true and { 4 } min pathLt[P < Q] and true in s1 |-> [(_, (4, s3))],
+    s1 -Q-> s3
+  signature
+    relations
+      r : int -> scope
+    name-resolution
+      labels P Q
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test query ignores non-wellformed incomplete relation [[
+  resolve {s1 s2 s3 x}
+    new s1 s2 s3,
+    s1 -P-> s2, !r[x] in s2,
+    s2 -P-> s3, !r[4] in s3,
+    query r filter pathMatch[P P] in s1 |-> [(_, x)]
+  signature
+    relations
+      r : int
+    name-resolution
+      labels P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test query ignores non-wellformed incomplete edge [[
+  resolve {s1 s2 s3}
+    new s1 s2,
+    s1 -P-> s2, !r[4, new] in s2,
+    query r filter pathMatch[P*] and { 4 } in s1 |-> [(_, (4, s3))],
     s1 -Q-> s3
   signature
     relations
