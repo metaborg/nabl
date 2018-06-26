@@ -32,15 +32,17 @@ rules
 
 rules
 
-  // collect-map(s: a -> b) : x -> (x, [(a * b)])
+  // collect-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
   // apply bottomup and collect the substitutions that were done
 
-  collect-map(s): t -> (t'', maps)
-    where c#(ts){a*} := t
-    with (ts', tsmaps) := <map(collect-map(s)); unzip; (id, concat)> ts;
+  collect-map(s) = collect-map(s, id)
+
+  collect-map(s, guard): t -> (t'', maps)
+    where where(guard); c#(ts){a*} := t
+    with (ts', tsmaps) := <map(collect-map(s, guard)); unzip; (id, concat)> ts;
          t' := <with-origin(|t)> c#(ts'){a*};
          (t'', tmaps) := <keep-origin(s) < !(<id>, [(t', <id>)]) + !(<id>, [])> t';
          maps := <conc> (tmaps, tsmaps)
 
-  collect-map(s): t -> (t, [])
-    where not(c#(_) := t)
+  collect-map(s, guard): t{a*} -> (t{a*}, [])
+    where not(guard) + not(c#(_) := t)

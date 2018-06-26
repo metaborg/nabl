@@ -11,20 +11,20 @@ rules
 
   normalize-functional-cop(|a):
       Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
-    with (body', bmaps) := <collect-map(replace-cop(|a))> body;
+    with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
          body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
-         new-bvs := <map(Snd);collect-all(?Var(_))> bmaps;
+         new-bvs := <map(Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
   normalize-wildcard:
       Test(bvs, body, section*){a*} -> Test(bvs', body', section*){a*}
-    with (body', bmaps) := <collect-map(replace-wld)> body;
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
   normalize-as-pattern:
       Test(bvs, body, section*){a*} -> Test(bvs, body'', section*){a*}
-    with (body', bmaps) := <collect-map(replace-as)> body;
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
          body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
 
   explicate-cmaps(|a): Test(bvs, body, section*){a*} -> Test(bvs, body, section''*){a*}

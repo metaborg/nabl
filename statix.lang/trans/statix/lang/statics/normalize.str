@@ -82,11 +82,11 @@ rules
 
   normalize-functional-cop(|a):
       Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard'', bvs', body''){a*}
-    with (guard', gmaps) := <collect-map(replace-cop(|a))> guard;
+    with (guard', gmaps) := <collect-map(replace-cop(|a), not-in-lambda)> guard;
          guard'' := <map(cop-to-c(|a));list-to-conj(|guard')> gmaps;
          new-gvs := <map(Snd);all-vars> gmaps;
          gvs' := <conc> (gvs, new-gvs);
-         (body', bmaps) := <collect-map(replace-cop(|a))> body;
+         (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
          body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
          new-bvs := <map(Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
@@ -94,7 +94,7 @@ rules
   normalize-functional-cop(|a):
       LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
     with (ts', tsmaps) := <collect-map(replace-cop(|a))> ts;
-         (body', bmaps) := <collect-map(replace-cop(|a))> body;
+         (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
          maps := <conc> (tsmaps, bmaps);
          new-var* := <map(Snd);all-vars> maps;
          bvs' := <conc> (bvs, new-var*);
@@ -277,17 +277,17 @@ rules
   normalize-wildcard:
       Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
     with (ps', _) := <collect-map(replace-wld)> ps
-    with (guard', gmaps) := <collect-map(replace-wld)> guard;
+    with (guard', gmaps) := <collect-map(replace-wld, not-in-lambda)> guard;
          new-gvs := <map(Snd)> gmaps;
          gvs' := <conc> (gvs, new-gvs)
-    with (body', bmaps) := <collect-map(replace-wld)> body;
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
   normalize-wildcard:
-      LLam(ps, bvs, body){a*} -> LLam(ps, bvs', body'){a*}
+      LLam(ps, bvs, body){a*} -> LLam(ps', bvs', body'){a*}
     with (ps', _) := <collect-map(replace-wld)> ps
-    with (body', bmaps) := <collect-map(replace-wld)> body;
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
@@ -299,14 +299,14 @@ rules
 
   normalize-as-pattern:
       Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps), gvs, guard'', bvs, body''){a*}
-    with (guard', gmaps) := <collect-map(replace-as)> guard;
+    with (guard', gmaps) := <collect-map(replace-as, not-in-lambda)> guard;
          guard'' := <map(as-to-constraint);list-to-conj(|guard')> gmaps
-    with (body', bmaps) := <collect-map(replace-as)> body;
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
          body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
 
   normalize-as-pattern:
       LLam(ps, bvs, body){a*} -> LLam(ps, bvs, body''){a*}
-    with (body', bmaps) := <collect-map(replace-as)> body;
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
          body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
 
   as-to-constraint: (As(v, t), _) -> CEqual(v, t)
@@ -457,6 +457,8 @@ rules
 
   apply-lambda: (LLam(ps, bvs, body), ts) -> (bvs, body')
     with body' := <strip-annos;substitute(?Var(_))> (ps, ts, body)
+
+  not-in-lambda = not(?LLam(_, _, _))
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()
