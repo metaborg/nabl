@@ -70,12 +70,10 @@ public class CTellRel implements IConstraint {
         if(!unifier.isGround(key)) {
             return Optional.empty();
         }
-        Optional<ITerm> existingValue = state.scopeGraph().getData().stream().filter(dt -> {
-            return unifier.areEqual(scope, dt._1()) && unifier.areEqual(key,
-                    B.newTuple(dt._3().stream().limit(type.getInputArity()).collect(Collectors.toList())));
-        }).map(dt -> {
-            return B.newTuple(dt._3().stream().skip(type.getInputArity()).collect(Collectors.toList()));
-        }).findFirst();
+        Optional<ITerm> existingValue =
+                state.scopeGraph().getData().get(scope, relation).stream().findFirst().map(dt -> {
+                    return B.newTuple(dt.stream().skip(type.getInputArity()).collect(Collectors.toList()));
+                });
         if(existingValue.isPresent()) {
             final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
             final IConstraint eq = new CEqual(value, existingValue.get());
