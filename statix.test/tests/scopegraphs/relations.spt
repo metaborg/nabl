@@ -299,6 +299,34 @@ test functional path projections succeed [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
  
+test end-of-path label for shortest path [[
+  resolve {s1 s2 s3 p}
+    new s1 s2 s3, s1 -P-> s2, s2 -P-> s3,
+    query () min pathLt[$ < P] and true in s1 |-> [p],
+    dst(p) == s1
+  signature
+    name-resolution
+      labels P
+  rules
+    eq : list(label) * list(label)
+    eq(ls, ls).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test end-of-path label for longest path [[
+  resolve {s1 s2 s3 p}
+    new s1 s2 s3, s1 -P-> s2, s2 -P-> s3,
+    query () min pathLt[P < $] and true in s1 |-> [p],
+    dst(p) == s3
+  signature
+    name-resolution
+      labels P
+  rules
+    eq : list(label) * list(label)
+    eq(ls, ls).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
 test labels projections succeed [[
   resolve {s1 s2 s3 s4 p1 p2}
     new s1 s2 s3 s4,
