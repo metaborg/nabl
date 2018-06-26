@@ -339,7 +339,7 @@ public class StatixTerms {
 
     public static IMatcher<ITerm> term() {
         // @formatter:off
-        return M.casesFix(m -> Iterables2.from(
+        return M.<ITerm>casesFix(m -> Iterables2.from(
             var(),
             M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
                 return B.newAppl(op, args);
@@ -361,8 +361,9 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    private static IMatcher<ITerm> position(IMatcher<ITerm> term) {
-        return M.appl1("Position", term, (t, p) -> p);
+    private static IMatcher<Optional<ITerm>> position(IMatcher<ITerm> term) {
+        return M.appl1("Position", M.cases(var().map(Optional::of), M.tuple0(t -> Optional.<ITerm>empty())),
+                (ITerm t, Optional<ITerm> p) -> p);
     }
 
     public static IMatcher<IListTerm> list() {
@@ -387,12 +388,13 @@ public class StatixTerms {
 
     public static ITerm explicate(ITerm term) {
         // @formatter:off
-        return term.<ITerm>match(Terms.cases(
+        return term.match(Terms.cases(
             appl -> {
                 if(appl instanceof AOccurrence) {
                     final AOccurrence occ = (AOccurrence) appl;
                     final List<ITerm> args = occ.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
-                    return B.newAppl("Occurrence", B.newString(occ.getNamespace()), B.newList(args), B.newAppl("Position", explicate(occ.getIndex())));
+                    final ITerm index = B.newAppl("Position", occ.getIndex().map(t -> explicate(t)).orElse(B.newTuple()));
+                    return B.newAppl("Occurrence", B.newString(occ.getNamespace()), B.newList(args), index);
                 } else {
                     final List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
                     return B.newAppl("Op", B.newString(appl.getOp()), B.newList(args));

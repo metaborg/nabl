@@ -3,6 +3,7 @@ package mb.statix.terms;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -23,7 +24,7 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
 
     @Value.Parameter public abstract List<ITerm> getName();
 
-    @Value.Parameter public abstract ITerm getIndex();
+    @Value.Parameter public abstract Optional<ITerm> getIndex();
 
     // IApplTerm implementation
 
@@ -32,7 +33,8 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getNamespace()), B.newList(getName()), B.newAppl("Position", getIndex()));
+        return ImmutableList.of(B.newString(getNamespace()), B.newList(getName()),
+                B.newAppl("Position", getIndex().orElse(B.newTuple())));
     }
 
     @Override protected Occurrence check() {

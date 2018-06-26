@@ -483,6 +483,7 @@ rules
     SortRef[[ sort ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
 
+  Pos(V)[[ Position(()) ^ (s) ]].
   Pos(V)[[ Position(v) ^ (s) ]] :=
     Term(V)[[ v ^ (s) : ty ]].
 
