@@ -403,7 +403,7 @@ public class StatixTerms {
             list -> explicate(list),
             string -> B.newAppl("Str", string),
             integer -> B.newAppl("Int", B.newString(integer.toString())),
-            blob -> blob,
+            blob -> B.newString(blob.toString()),
             var -> explicate(var)
         )).withAttachments(term.getAttachments());
         // @formatter:on
