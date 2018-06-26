@@ -2,8 +2,6 @@ module scopegraphs-nameresolution
 
 language StatixTest
 
-// a reference term with variables `lbls`, `l1`, `l2`, `d`
-
 test resolve reference with same name in the same scope succeeds [[
   resolve {s}
     new s, s -> Var{"x"@-},
