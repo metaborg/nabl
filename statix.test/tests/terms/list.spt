@@ -2,6 +2,33 @@ module terms-list
 
 language StatixTest
 
+// static
+
+test integer type ascription [[
+  resolve _:list(int) == [42]
+]] analysis succeeds
+
+test different element types make different list types [[
+  resolve _:list(int) == _:list(string)
+]] analysis fails
+
+test integer constructor argument [[
+  resolve Some([]) == Some([5])
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : list(int) -> Maybe
+]] analysis succeeds
+
+test integer constraint argument [[
+  resolve c([1,1,2,3,5])
+  signature
+    constraints
+      c : list(int)
+]] analysis succeeds
+
+// dynamic
+
 test unifying equal empty lists succeeds [[
   resolve [] == []
 ]] analysis succeeds

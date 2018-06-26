@@ -2,6 +2,45 @@ module terms-occurrence
 
 language StatixTest
 
+// static
+
+test occurrence type ascription [[
+  resolve _:occurrence == Var{"x"@-}
+  rules
+    namespace Var : string
+]] analysis succeeds
+
+test occurrence constructor argument [[
+  resolve Some(Var{"x"@-}) == None()
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : occurrence -> Maybe
+    namespaces
+      Var : string
+]] analysis succeeds
+
+test occurrence constraint argument [[
+  resolve c(Var{"x"@-})
+  signature
+    constraints
+      c : occurrence
+    namespaces
+      Var : string
+]] analysis succeeds
+
+test different namespaces are all occurrences [[
+  resolve c(Var1{"x"@-}, Var2{"y"@-})
+  signature
+    constraints
+      c : occurrence * occurrence
+    namespaces
+      Var1 : string
+      Var2 : string
+]] analysis succeeds
+
+// dynamic
+
 test nullary namespace succeeds [[
   resolve Var{@_} == _
   signature
