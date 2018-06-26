@@ -2,10 +2,92 @@ module rules-predicate
 
 language StatixTest
 
-// TODO:
-// - head variables visible in guard and body
-// - guard variables visible in body
-// - body variables not visible in guard
+// static
+
+test predicate constraint defined in signature [[
+  module test
+  signature
+    constraints
+      d : int
+]] analysis succeeds
+
+test predicate constraint defined in rules [[
+  module test
+  rules
+    d : int
+]] analysis succeeds
+
+test defining co-inductive predicate constraint fails [[
+  module test
+  signature
+    constraints
+      coinductive d : int
+]] analysis fails
+
+test full rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | i == j :- true.
+]] analysis succeeds
+
+test guard only rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | i == j.
+]] analysis succeeds
+
+test body only rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, j) :- i == j.
+]] analysis succeeds
+
+test head only rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, i).
+]] analysis succeeds
+
+test head variables visible in guard [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | i == j.
+]] analysis succeeds
+
+test head variables visible in body [[
+  module test
+  rules
+    d : int * int
+    d(i, j) :- i == j.
+]] analysis succeeds
+
+test guard variables visible in guard [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | {k} i == k, k == j.
+]] analysis succeeds
+
+test guard variables visible in body [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | {k} i == k :- k == j.
+]] analysis succeeds
+
+test body variables visible in body [[
+  module test
+  rules
+    d : int * int
+    d(i, j) :- {k} i == k, k == j.
+]] analysis succeeds
+
+// dynamic
 
 test nullary constraint succeeds [[
   resolve c()
@@ -158,6 +240,30 @@ resolve c([2, 3])
 rules
   c : list(int)
   c(xs) :- xs@[_|_] == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in head succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs:list(int)) :- xs == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in guard succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs) | xs:list(int) == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in body succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs) :- xs:list(int) == [2, 3].
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 

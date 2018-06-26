@@ -9,6 +9,100 @@ language StatixTest
 // - guard variables visible in body
 // - body variables not visible in guard
 
+// static
+
+test functional constraint defined in signature [[
+  module test
+  signature
+    constraints
+      d : int -> int
+]] analysis succeeds
+
+test functional constraint defined in rules [[
+  module test
+  rules
+    d : int -> int
+]] analysis succeeds
+
+test full rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == 4 :- true.
+]] analysis succeeds
+
+test guard only rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == 4.
+]] analysis succeeds
+
+test body only rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- i == j.
+]] analysis succeeds
+
+test head only rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = i.
+]] analysis succeeds
+
+test head input variables visible in guard [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == 4.
+]] analysis succeeds
+
+test head output variables not visible in guard [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == j.
+]] analysis fails
+
+test head input variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- i == j.
+]] analysis succeeds
+
+test head output variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- i == j.
+]] analysis succeeds
+
+test guard variables visible in guard [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | {k} i == k, k == 4.
+]] analysis succeeds
+
+test guard variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | {k} i == k :- k == j.
+]] analysis succeeds
+
+test body variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- {k} i == k, k == j.
+]] analysis succeeds
+
+// dynamic
+
 test nullary output succeeds [[
   resolve f(1) == ()
   rules
