@@ -1,0 +1,18 @@
+module base-test
+
+language StatixTest
+
+test as-pattern in test succeeds [[
+  resolve {x} x@42 == x
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in test succeeds [[
+  resolve {x} x:int == 42
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test wildcard in test succeeds [[
+  resolve _ == 42
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
