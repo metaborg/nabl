@@ -3,6 +3,7 @@ package mb.statix.solver.query;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.Completeness;
@@ -33,16 +34,16 @@ public class QueryFilter implements IQueryFilter {
     }
 
     @Override public String toString(IUnifier unifier) {
-        return toString();
+        final StringBuilder sb = new StringBuilder();
+        sb.append("filter ");
+        sb.append(pathConstraint.toString(unifier));
+        sb.append(" and ");
+        sb.append(dataConstraint.toString(unifier));
+        return sb.toString();
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("filter ");
-        sb.append(pathConstraint);
-        sb.append(" and ");
-        sb.append(dataConstraint);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }
