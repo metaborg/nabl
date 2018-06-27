@@ -33,7 +33,7 @@ public class GEqual implements IGuard {
             return Optional.of(state.withUnifier(result.unifier()));
         } catch(UnificationException e) {
             debug.info("Unification failed");
-            return Optional.of(state.withErroneous(true));
+            return Optional.of(state.addErroneous(true));
         }
     }
 

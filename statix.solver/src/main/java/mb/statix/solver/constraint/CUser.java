@@ -61,7 +61,7 @@ public class CUser implements IConstraint {
                 continue;
             }
             debug.info("Try rule {}", appl._2().toString(appl._1().unifier()));
-            Optional<State> maybeResult = Optional.of(appl._1());
+            Optional<State> maybeResult = Optional.of(appl._1().withErroneous(false));
             for(IGuard guard : appl._2().getGuard()) {
                 if(maybeResult.isPresent()) {
                     maybeResult = guard.solve(maybeResult.get(), debug);
@@ -74,7 +74,8 @@ public class CUser implements IConstraint {
                     it.remove();
                 } else if(state.entails(result, appl._2().getGuardVars())) {
                     debug.info("Rule accepted");
-                    return Optional.of(Result.of(maybeResult.get(), appl._2().getBody()));
+                    return Optional
+                            .of(Result.of(maybeResult.get().addErroneous(state.isErroneous()), appl._2().getBody()));
                 } else {
                     debug.info("Rule delayed (instantiated variables)");
                 }

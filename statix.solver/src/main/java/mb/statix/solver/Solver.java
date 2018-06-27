@@ -31,6 +31,7 @@ public class Solver {
 
         // if not root, reset errors, because we want to short-cut only on errors introduced by the
         // guard constraints, not on errors pre-existing in the state
+        final boolean wasErroneous = state.isErroneous();
         if(!debug.isRoot()) {
             state = state.withErroneous(false);
         }
@@ -67,6 +68,11 @@ public class Solver {
                     subDebug.info("Delayed");
                 }
             }
+        }
+
+        // reset original error state, in case this state is used by the caller
+        if(!debug.isRoot()) {
+            state = state.addErroneous(wasErroneous);
         }
 
         // return

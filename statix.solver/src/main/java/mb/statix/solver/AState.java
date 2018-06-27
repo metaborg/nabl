@@ -83,6 +83,10 @@ public abstract class AState {
         return false;
     }
 
+    public State addErroneous(boolean erroneous) {
+        return State.copyOf(this).withErroneous(isErroneous() || erroneous);
+    }
+    
     public boolean entails(State other) {
         return entails(other, ImmutableSet.of());
     }

@@ -20,7 +20,7 @@ public class CFalse implements IConstraint {
     }
 
     @Override public Optional<Result> solve(final State state, Completeness completeness, IDebugContext debug) {
-        return Optional.of(Result.of(state.withErroneous(true), ImmutableSet.of()));
+        return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
     }
 
     @Override public String toString(IUnifier unifier) {
