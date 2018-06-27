@@ -46,7 +46,7 @@ public class CPathDst implements IConstraint {
         final StringBuilder sb = new StringBuilder();
         sb.append("dst(");
         sb.append(unifier.toString(pathTerm));
-        sb.append(",");
+        sb.append(", ");
         sb.append(unifier.toString(dstTerm));
         sb.append(")");
         return sb.toString();

@@ -46,7 +46,7 @@ public class CPathSrc implements IConstraint {
         final StringBuilder sb = new StringBuilder();
         sb.append("src(");
         sb.append(unifier.toString(pathTerm));
-        sb.append(",");
+        sb.append(", ");
         sb.append(unifier.toString(srcTerm));
         sb.append(")");
         return sb.toString();

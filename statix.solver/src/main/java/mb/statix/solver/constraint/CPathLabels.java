@@ -47,7 +47,7 @@ public class CPathLabels implements IConstraint {
         final StringBuilder sb = new StringBuilder();
         sb.append("labels(");
         sb.append(unifier.toString(pathTerm));
-        sb.append(",");
+        sb.append(", ");
         sb.append(unifier.toString(labelsTerm));
         sb.append(")");
         return sb.toString();
