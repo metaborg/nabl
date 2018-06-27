@@ -23,7 +23,7 @@ rules
     ast@Module(name,_) -> (filename, result)
     with
       filename   := $[[name]-ds.str];
-      import-str* := <collect-all(import-to-str)> ast;
+      import-str* := <collect-all(import-to-str-ds)> ast;
       rule-str*  := <explicate-all;collect-all(rule-to-occurrences-str)> ast;
       module-str := Module($[[name]-ds], [
                       Imports([
@@ -34,7 +34,13 @@ rules
                       Rules(rule-str*)
                     ]);
       result     := <pp-stratego-string<+fatal-err(|"Cannot prettyprint Stratego")> module-str
- 
+
+  import-to-str-ds:
+    Import(name) -> Import($[[name]-ds])
+    
+  import-to-str-ds:
+    ImportWildcard(name) -> Import($[[name]/-])
+
 rules
 
   roccs-strategy-name = !$[nabl2--transform-occurrences]
