@@ -61,10 +61,10 @@ rules // derived facts, constraints indirctly adding to the scope graph
           <raw-eq> (y, x');
           lsort       := <index(|i)> lsorts
     with switch !lsort
-           case ?Id():
+           case ?IdLift():
              ext* := [(x, i, lbl)]
            //<iset-add(|(lsort, $[Extended in [<pp-label> lbl]]))> note-iset
-           case ?ToList():
+           case ?ListLift():
              ext* := [];
              <iset-add(|(lsort, $[Cannot extend list of scopes]))> error-iset
          end

@@ -25,10 +25,16 @@ context-free syntax
 
   CDecl            = CDerive
 
-  CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{LiftSort ", "}*])]
+  CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*])]
+  CDerive.FDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*]) = [LiftTerm]]
 
-  LiftSort.Id     = "*"
-  LiftSort.ToList = "list(*)"
+  Lift.IdLift   = "*"
+  Lift.ListLift = "list(*)"
+
+  LiftTerm.Tuple0Lift = <()>
+  LiftTerm            = Lift
+  LiftTerm.TupleNLift = <(<Lift>, <{Lift ", "}+>)>
+  LiftTerm            = <(<LiftTerm>)> {bracket}
 
   // rule shorthands
 

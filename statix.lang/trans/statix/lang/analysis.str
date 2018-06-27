@@ -40,7 +40,8 @@ rules // Analysis
          note*    := [ext-n*]
 
   reanalyze(|resource): (ast, a) -> (ast', a')
-    with (ast', a', e*, w*, n*) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
+    with nabl2-custom-analysis-info-msg(|"| Re-analyzing...");
+         (ast', a', e*, w*, n*) := <nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)> ast;
          if <not(nabl2-analysis-has-errors)> a; <nabl2-analysis-has-errors> a' then
            err-msg(|"| ***************************************************************");
            err-msg(|"| * Normalized AST has errors. Normalization needs to be fixed! *");

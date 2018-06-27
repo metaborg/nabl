@@ -18,8 +18,7 @@ rules
     desugar-ref-shorthands;
     desugar-queries;
     desugar-lambdas;
-    desugar-sorts;
-    desugar-terms;
+    desugar-tuples;
     fix-rules-variables
 
 rules
@@ -78,17 +77,16 @@ rules
 
 rules
 
-  desugar-sorts = topdown(try(desugar-sort))
+  desugar-tuples = topdown(try(desugar-tuple))
 
-  desugar-sort: Tuple0Sort()      -> TupleSort([])
-  desugar-sort: TupleNSort(s, ss) -> TupleSort([s|ss])
+  desugar-tuple: Tuple0Sort()      -> TupleSort([])
+  desugar-tuple: TupleNSort(s, ss) -> TupleSort([s|ss])
 
-rules
+  desugar-tuple: Tuple0()      -> Tuple([])
+  desugar-tuple: TupleN(x, xs) -> Tuple([x|xs])
 
-  desugar-terms = topdown(try(desugar-term))
-
-  desugar-term: Tuple0()      -> Tuple([])
-  desugar-term: TupleN(x, xs) -> Tuple([x|xs])
+  desugar-tuple: Tuple0Lift()      -> TupleLift([])
+  desugar-tuple: TupleNLift(x, xs) -> TupleLift([x|xs])
 
 rules
 

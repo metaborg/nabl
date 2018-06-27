@@ -152,18 +152,6 @@ test output variable not treated as guard [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test output variable in lifted constraint not treated as guard [[
-  resolve fs([1], _)
-  rules
-    f : int -> int
-    f(x) = x.
-
-    fs maps f(list(*), list(*))
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-
-
 test wildcards in head input succeeds [[
 resolve f(2) == _
 rules

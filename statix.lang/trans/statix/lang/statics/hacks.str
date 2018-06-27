@@ -2,25 +2,15 @@ module statix/lang/statics/hacks
 
 imports
 
+  signatures/nabl2/shared/constraints/-
+
   signatures/statix/lang/-
   statix/lang/statics/-
 
 rules
 
-//lift-types : ( [L], Type ) -> Type
-
-  lift-type: (lsorts, PRED(tys)) -> PRED(tys')
-    where tys' := <lift-sorts> (lsorts, tys)
-
-  lift-type: (lsorts, FUN(intys, outtys)) -> FUN(intys', outtys')
-    where (inlsorts, outlsorts) := <split-at(|<length> intys)> lsorts;
-          intys'  := <lift-sorts> (inlsorts, intys);
-          outtys' := <lift-sorts> (outlsorts, outtys)
-  
-  lift-sorts = zip; map(lift-sort)
-
-  lift-sort: (Id(), ty) -> ty
-  lift-sort: (ToList(), ty) -> LIST(ty)
+  lifts-some: (lifts, _, msginfo) -> CTrue(msginfo)
+    where <getfirst(?ListLift())> lifts
 
 rules
 
@@ -39,3 +29,14 @@ rules
   tys-to-ty: [ty] -> ty
   tys-to-ty: tys  -> TUPLE(tys)
     where not([_] := tys)
+
+rules
+
+  lift-to-lifts: TupleLift(lifts) -> lifts
+  lift-to-lifts: lift -> [lift]
+    where not(TupleLift(_) := lift)
+
+  lift-types = zip; map(lift-type)
+
+  lift-type: (IdLift(), ty) -> ty
+  lift-type: (ListLift(), ty) -> LIST(ty)

@@ -87,15 +87,36 @@ rules
     C{x}.kind := DeclaredC() !!.
 
   [[ InductiveC() ]].
-  [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not implemented yet.".
+  [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
-  [[ CDeriveMap(x, x', lsorts) ^ (s) ]] :=
+  [[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.decl := d,
-    d : ty,
+    d : ty, ty != FUN(_, _) | error "Use `c maps c(...) = ...` for functional constraints." @x,
     d.ind := ind,
-    ty' is `lift-type` of (lsorts, ty),
+
+    tys is `in-types` of ty,
+    lifts <`lifts-some`? () | error "At least one argument must be lifted.",
+    tys' is `lift-types` of (lifts, tys),
+
     C{x} <- s, @x.decl := C{x},
-    C{x} : ty' !!,
+    C{x} : PRED(tys') !!,
+    C{x}.ind := ind !!,
+    C{x}.kind := DerivedC() !!.
+
+  [[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
+    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
+    d : ty, ty != PRED(_) | error "Use `c maps c(...)` for non-functional constraints." @x,
+    d.ind := ind,
+
+    intys is `in-types` of ty,
+    outtys is `out-types` of ty,
+    inlifts <`lifts-some`? () | error "At least one input argument must be lifted.",
+    outlifts is `lift-to-lifts` of outlift,
+    intys' is `lift-types` of (inlifts, intys),
+    outtys' is `lift-types` of (outlifts, outtys),
+
+    C{x} <- s, @x.decl := C{x},
+    C{x} : FUN(intys', outtys') !!,
     C{x}.ind := ind !!,
     C{x}.kind := DerivedC() !!.
 
@@ -118,13 +139,13 @@ rules
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
-    tys is `inout-types` of ty,
+    tys is `in-types` of ty,
     Map1T(Match)[[ args ^ (s_rule) : tys ]].
 
   RuleHead[[ F(x, inargs, outarg) ^ (s_rule, s_body) ]] :=
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
-    d : ty, ty == FUN(_, _) | error "Use `c(...) | ...` for non-functional constraints." @x,
+    d : ty, ty != PRED(_) | error "Use `c(...) | ...` for non-functional constraints." @x,
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
@@ -134,7 +155,7 @@ rules
     C{x} -> s, C{x} |-> d, @x.decl := d,
     d : ty,
     tys is `inout-types` of ty,
-    Map1T(Term(VarRef))[[ args ^ (s) : tys ]].
+    Map1T(Build)[[ args ^ (s) : tys ]].
 
   [[ LC(x) ^ (s) : ty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
@@ -142,8 +163,7 @@ rules
 
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
-    d : ty, ty == FUN(_, _) | error "Inline notation can only be used for functional constraints.",
-    intys is `in-types` of ty,
+    d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
     outty is `out-type` of ty,
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
@@ -171,8 +191,7 @@ rules
     Build[[ st ^ (s) : SCOPE() ]].
 
   Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
-    RelRef[[ rel ^ (s) : ty ]], ty == FUN(_, _) | error "Inline notation can only be used for functional relations.",
-    intys is `in-types` of ty,
+    RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Inline notation can only be used for functional relations.",
     outty is `out-type` of ty,
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
     Term(V)[[ st ^ (s) : SCOPE() ]].

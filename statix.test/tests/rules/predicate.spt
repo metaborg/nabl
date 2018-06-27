@@ -286,22 +286,3 @@ rules
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
-test constraint lifting all arguments [[
-resolve cs([], []), cs([1], [1])
-rules
-  c : int * int
-  c(i, i).
-
-  cs maps c(list(*), list(*))
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test constraint lifting some arguments [[
-resolve cs(2, []), cs(1, [1, 1])
-rules
-  c : int * int
-  c(i, i).
-
-  cs maps c(*, list(*))
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
