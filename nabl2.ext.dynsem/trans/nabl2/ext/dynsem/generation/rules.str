@@ -48,7 +48,7 @@ rules
          target-name := <param-sorts-to-ds;ds-sort-to-string> param*;
          op-name := <cgen-op-name(|rdef,src-sort)> "paramsOf";
          stmts := bstm* |[
-           return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), "Params"));
+           return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), getAstPropertyKey("Params")));
          ]|;
          result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
 
@@ -60,7 +60,7 @@ rules
          target-name := <ds-sort-to-string> type-sort;
          op-name := <cgen-op-name(|rdef,src-sort)> "typeOf";
          stmts := bstm* |[
-           return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), "Type"));
+           return ~x:target-name.create(getAstProperty(term.getStrategoTerm(), getAstPropertyKey("Type")));
          ]|;
          result := <native-java(|term-pkg,nabl2-pkg,op-name,src-name,target-name,java-dir)> stmts
 
