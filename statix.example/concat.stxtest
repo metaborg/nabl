@@ -2,9 +2,12 @@ resolve {l}
 
   concat(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == l
 
-rules
+signature
+  constraints
+    concat : list(string) * list(string) -> list(string)
 
-  concat : list(string) * list(string) -> list(string)
+rules
   
   concat([], ys) = zs :- ys == zs.
   concat([x|xs], ys) = [x|concat(xs, ys)].
+

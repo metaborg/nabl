@@ -1,15 +1,20 @@
 module test
 
-rules
+signature
+  constraints
+    concatF : list(string) * list(string) -> list(string)
 
-  concatF : list(string) * list(string) -> list(string)
+rules
   
   concatF([], ys) = ys.
   concatF([x|xs], ys) = [x|concatF(xs, ys)].
 
-rules
+signature
+  constraints
+    concatP : list(string) * list(string) * list(string)
 
-  concatP : list(string) * list(string) * list(string)
+rules
   
   concatP([], ys, ys).
   concatP([x|xs], ys, [x|zs]) :- concatP(xs, ys, zs).
+
