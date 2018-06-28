@@ -4,6 +4,7 @@ import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 /**
  * Unification
@@ -181,25 +182,25 @@ public interface IUnifier {
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
-        Result<Immutable> retain(ITermVar var);
+        Result<ISubstitution.Immutable> retain(ITermVar var);
 
         /**
          * Return a substitution that only retains the given variables in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
-        Result<Immutable> retainAll(Iterable<ITermVar> vars);
+        Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars);
 
         /**
          * Return a unifier with the given variable removed from the domain. Returns a substitution to eliminate the
          * variable from terms.
          */
-        Result<Immutable> remove(ITermVar var);
+        Result<ISubstitution.Immutable> remove(ITermVar var);
 
         /**
          * Return a unifier with the given variables removed from the domain. Returns a substitution to eliminate the
          * variable from terms.
          */
-        Result<Immutable> removeAll(Iterable<ITermVar> vars);
+        Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars);
 
         /**
          * Return transient version of this unifier.
@@ -239,25 +240,25 @@ public interface IUnifier {
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed
          * variables from terms.
          */
-        Immutable retain(ITermVar var);
+        ISubstitution.Immutable retain(ITermVar var);
 
         /**
          * Retain only the given variables in the domain of this unifier. Returns a substitution to eliminate the
          * removed variables from terms.
          */
-        Immutable retainAll(Iterable<ITermVar> vars);
+        ISubstitution.Immutable retainAll(Iterable<ITermVar> vars);
 
         /**
          * Remove the given variable from the domain of this unifier. Returns a substitution to eliminate the variable
          * from terms.
          */
-        Immutable remove(ITermVar var);
+        ISubstitution.Immutable remove(ITermVar var);
 
         /**
          * Remove the given variables from the domain of this unifier. Returns a substitution to eliminate the variable
          * from terms.
          */
-        Immutable removeAll(Iterable<ITermVar> vars);
+        ISubstitution.Immutable removeAll(Iterable<ITermVar> vars);
 
         /**
          * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.

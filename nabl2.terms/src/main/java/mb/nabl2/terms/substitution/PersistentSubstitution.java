@@ -1,15 +1,13 @@
 package mb.nabl2.terms.substitution;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
@@ -17,6 +15,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.util.CapsuleUtil;
 
 public abstract class PersistentSubstitution implements ISubstitution {
 
@@ -28,6 +27,14 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
     @Override public boolean contains(ITermVar var) {
         return subst().containsKey(var);
+    }
+
+    @Override public Set<ITermVar> varSet() {
+        return subst().keySet();
+    }
+
+    @Override public Set<Entry<ITermVar, ITerm>> entrySet() {
+        return subst().entrySet();
     }
 
     @Override public ITerm apply(ITerm term) {
@@ -57,23 +64,6 @@ public abstract class PersistentSubstitution implements ISubstitution {
         return subst().getOrDefault(var, var);
     }
 
-    @Override public boolean isRenaming() {
-        final Multiset<ITermVar> vars = HashMultiset.create();
-        if(!subst().values().stream().allMatch(t -> M.var(v -> {
-            vars.add(v);
-            return true;
-        }).match(t).orElse(false))) {
-            return false;
-        }
-        if(!vars.entrySet().stream().allMatch(e -> e.getCount() <= 1)) {
-            return false;
-        }
-        if(!subst().keySet().equals(vars.elementSet())) {
-            return false;
-        }
-        return true;
-    }
-
     public static class Immutable extends PersistentSubstitution implements ISubstitution.Immutable, Serializable {
 
         private static final long serialVersionUID = 1L;
@@ -99,6 +89,13 @@ public abstract class PersistentSubstitution implements ISubstitution {
         @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
             Iterables2.stream(vars).forEach(subst::__remove);
+            return new PersistentSubstitution.Immutable(subst.freeze());
+        }
+
+        @Override public ISubstitution.Immutable compose(ISubstitution.Immutable other) {
+            final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
+            CapsuleUtil.replace(subst, (v, t) -> other.apply(t));
+            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
@@ -136,6 +133,11 @@ public abstract class PersistentSubstitution implements ISubstitution {
             Iterables2.stream(vars).forEach(subst::remove);
         }
 
+        @Override public void compose(ISubstitution.Immutable other) {
+            CapsuleUtil.replace(subst, (v, t) -> other.apply(t));
+            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+        }
+
         public ISubstitution.Immutable freeze() {
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
@@ -144,6 +146,10 @@ public abstract class PersistentSubstitution implements ISubstitution {
             return new PersistentSubstitution.Transient(Map.Transient.of());
         }
 
+    }
+
+    @Override public String toString() {
+        return subst().toString();
     }
 
 }

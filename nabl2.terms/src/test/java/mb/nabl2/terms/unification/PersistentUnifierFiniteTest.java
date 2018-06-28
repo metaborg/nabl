@@ -143,11 +143,19 @@ public class PersistentUnifierFiniteTest {
 
     @Test public void testEquals() throws UnificationException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
         phi.unify(b, x);
+        phi.unify(a, B.newAppl(f, b));
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
         theta.unify(a, B.newAppl(f, x));
         theta.unify(b, x);
+        assertEquals(phi, theta);
+    }
+
+    @Test public void testEquivalenceClasses() throws UnificationException {
+        final IUnifier.Immutable phi =
+                new PersistentUnifier.Immutable(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of());
+        final IUnifier.Immutable theta =
+                new PersistentUnifier.Immutable(true, Map.Immutable.of(b, a), Map.Immutable.of(), Map.Immutable.of());
         assertEquals(phi, theta);
     }
 

@@ -9,12 +9,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.util.Ref;
-import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -26,6 +28,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Set2;
 import mb.nabl2.util.Tuple2;
@@ -93,101 +98,115 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     }
 
     public boolean equals(IUnifier other) {
-        if(!varSet().equals(other.varSet())) {
-            return false;
-        }
-        return varSet().stream().allMatch(v -> equalVars(v, v, other));
+        BiMap<ITermVar, ITermVar> mapping = HashBiMap.create();
+        Set<ITermVar> vars = Sets.union(varSet(), other.varSet());
+        boolean equal = vars.stream().allMatch(v -> equalVars(v, v, other, mapping));
+        return equal;
     }
 
-    private boolean equalTerms(ITerm thisTerm, ITerm thatTerm, IUnifier other) {
+    private boolean equalTerms(ITerm thisTerm, ITerm thatTerm, IUnifier other, BiMap<ITermVar, ITermVar> mapping) {
         // @formatter:off
         return thisTerm.match(Terms.cases(
             applThis -> thatTerm.match(Terms.<Boolean>cases()
                 .appl(applThat -> applThis.getOp().equals(applThat.getOp()) &&
                                    applThis.getArity() == applThat.getArity() &&
-                                   equals(applThis.getArgs(), applThat.getArgs(), other))
-                .var(varThat -> equalTermVar(applThis, varThat, other))
+                                   equals(applThis.getArgs(), applThat.getArgs(), other, mapping))
+                .var(varThat -> equalTermVar(applThis, varThat, other, mapping))
                 .otherwise(t -> false)
             ),
             listThis -> thatTerm.match(Terms.<Boolean>cases()
                 .list(listThat -> listThis.match(ListTerms.cases(
                     consThis -> listThat.match(ListTerms.<Boolean>cases()
                         .cons(consThat -> {
-                            return equalTerms(consThis.getHead(), consThat.getHead(), other) && 
-                            equalTerms(consThis.getTail(), consThat.getTail(), other);
+                            return equalTerms(consThis.getHead(), consThat.getHead(), other, mapping) && 
+                            equalTerms(consThis.getTail(), consThat.getTail(), other, mapping);
                         })
-                        .var(varThat -> equalTermVar(consThis, varThat, other))
+                        .var(varThat -> equalTermVar(consThis, varThat, other, mapping))
                         .otherwise(l -> false)
                     ),
                     nilThis -> listThat.match(ListTerms.<Boolean>cases()
                         .nil(nilThat -> true)
-                        .var(varThat -> equalTermVar(nilThis, varThat, other))
+                        .var(varThat -> equalTermVar(nilThis, varThat, other, mapping))
                         .otherwise(l -> false)
                     ),
                     varThis -> listThat.match(ListTerms.<Boolean>cases()
-                        .var(varThat -> equalVars(varThis, varThat, other))
-                        .otherwise(termThat -> equalVarTerm(varThis, termThat, other))
+                        .var(varThat -> equalVars(varThis, varThat, other, mapping))
+                        .otherwise(termThat -> equalVarTerm(varThis, termThat, other, mapping))
                     )
                 )))
-                .var(varThat -> equalTermVar(listThis, varThat, other))
+                .var(varThat -> equalTermVar(listThis, varThat, other, mapping))
                 .otherwise(t -> false)
             ),
             stringThis -> thatTerm.match(Terms.<Boolean>cases()
                 .string(stringThat -> stringThis.getValue().equals(stringThat.getValue()))
-                .var(varThat -> equalTermVar(stringThis, varThat, other))
+                .var(varThat -> equalTermVar(stringThis, varThat, other, mapping))
                 .otherwise(t -> false)
             ),
             integerThis -> thatTerm.match(Terms.<Boolean>cases()
                 .integer(integerThat -> integerThis.getValue() == integerThat.getValue())
-                .var(varThat -> equalTermVar(integerThis, varThat, other))
+                .var(varThat -> equalTermVar(integerThis, varThat, other, mapping))
                 .otherwise(t -> false)
             ),
             blobThis -> thatTerm.match(Terms.<Boolean>cases()
                 .blob(blobThat -> blobThis.getValue().equals(blobThat.getValue()))
-                .var(varThat -> equalTermVar(blobThis, varThat, other))
+                .var(varThat -> equalTermVar(blobThis, varThat, other, mapping))
                 .otherwise(t -> false)
             ),
             varThis -> thatTerm.match(Terms.<Boolean>cases()
                 // match var before term, or term will always match
-                .var(varThat -> equalVars(varThis, varThat, other))
-                .otherwise(termThat -> equalVarTerm(varThis, termThat, other))
+                .var(varThat -> equalVars(varThis, varThat, other, mapping))
+                .otherwise(termThat -> equalVarTerm(varThis, termThat, other, mapping))
             )
         ));
         // @formatter:on
     }
 
-    private boolean equalVarTerm(final ITermVar thisVar, final ITerm thatTerm, final IUnifier other) {
+    private boolean equalVarTerm(final ITermVar thisVar, final ITerm thatTerm, final IUnifier other,
+            BiMap<ITermVar, ITermVar> mapping) {
         if(hasTerm(thisVar)) {
-            return equalTerms(findTerm(thisVar), thatTerm, other);
+            return equalTerms(findTerm(thisVar), thatTerm, other, mapping);
         }
         return false;
     }
 
-    private boolean equalTermVar(final ITerm thisTerm, final ITermVar thatVar, final IUnifier other) {
+    private boolean equalTermVar(final ITerm thisTerm, final ITermVar thatVar, final IUnifier other,
+            BiMap<ITermVar, ITermVar> mapping) {
         if(other.hasTerm(thatVar)) {
-            return equalTerms(thisTerm, other.findTerm(thatVar), other);
+            return equalTerms(thisTerm, other.findTerm(thatVar), other, mapping);
         }
         return false;
     }
 
-    private boolean equalVars(ITermVar thisVar, ITermVar thatVar, IUnifier other) {
-        if(findRep(thisVar).equals(other.findRep(thatVar))) {
+    private boolean equalVars(ITermVar thisVar, ITermVar thatVar, IUnifier other, BiMap<ITermVar, ITermVar> mapping) {
+        final ITermVar thisRep = findRep(thisVar);
+        final ITermVar thatRep = other.findRep(thatVar);
+        if(!thisRep.equals(thatRep)) {
+            if(mapping.containsKey(thisRep) || mapping.containsValue(thatRep)) {
+                if(!mapping.get(thisRep).equals(thatRep)) {
+                    return false; // different equivalence classes
+                }
+            } else {
+                mapping.put(thisRep, thatRep);
+            }
+        }
+        if(!hasTerm(thisRep) && !other.hasTerm(thatRep)) {
             return true;
+        } if(hasTerm(thisRep) && other.hasTerm(thatRep)) {
+            return equalTerms(findTerm(thisRep), other.findTerm(thatRep), other, mapping);
+        } else {
+            return false; // term and no term
         }
-        if(hasTerm(thisVar) && other.hasTerm(thatVar)) {
-            return equalTerms(findTerm(thisVar), other.findTerm(thatVar), other);
-        }
-        return false;
     }
 
-    private boolean equals(final Iterable<ITerm> thisTerms, final Iterable<ITerm> thatTerms, final IUnifier other) {
+    private boolean equals(final Iterable<ITerm> thisTerms, final Iterable<ITerm> thatTerms, final IUnifier other,
+            BiMap<ITermVar, ITermVar> mapping) {
         Iterator<ITerm> itLeft = thisTerms.iterator();
         Iterator<ITerm> itRight = thatTerms.iterator();
         while(itLeft.hasNext()) {
             if(!itRight.hasNext()) {
                 return false;
             }
-            if(!equalTerms(itLeft.next(), itRight.next(), other)) {
+            if(!equalTerms(itLeft.next(), itRight.next(), other, mapping)) {
                 return false;
             }
         }
@@ -905,27 +924,27 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             return rep;
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> retain(ITermVar var) {
+        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retain(ITermVar var) {
             final IUnifier.Transient unifier = melt();
-            IUnifier.Immutable result = unifier.retain(var);
+            ISubstitution.Immutable result = unifier.retain(var);
             return new PersistentUnifier.Result<>(result, unifier.freeze());
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> retainAll(Iterable<ITermVar> vars) {
+        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
             final IUnifier.Transient unifier = melt();
-            IUnifier.Immutable result = unifier.retainAll(vars);
+            ISubstitution.Immutable result = unifier.retainAll(vars);
             return new PersistentUnifier.Result<>(result, unifier.freeze());
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> remove(ITermVar var) {
+        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> remove(ITermVar var) {
             final IUnifier.Transient unifier = melt();
-            IUnifier.Immutable result = unifier.remove(var);
+            ISubstitution.Immutable result = unifier.remove(var);
             return new PersistentUnifier.Result<>(result, unifier.freeze());
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> removeAll(Iterable<ITermVar> vars) {
+        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final IUnifier.Transient unifier = melt();
-            IUnifier.Immutable result = unifier.removeAll(vars);
+            ISubstitution.Immutable result = unifier.removeAll(vars);
             return new PersistentUnifier.Result<>(result, unifier.freeze());
         }
 
@@ -1160,76 +1179,57 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // retain(ITermVar)
         ///////////////////////////////////////////
 
-        public IUnifier.Immutable retain(ITermVar var) {
+        public ISubstitution.Immutable retain(ITermVar var) {
             return retainAll(Collections.singleton(var));
         }
 
-        @Override public IUnifier.Immutable retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Sets.difference(varSet(), ImmutableSet.copyOf(vars)));
+        @Override public ISubstitution.Immutable retainAll(Iterable<ITermVar> vars) {
+            return removeAll(Sets.difference(ImmutableSet.copyOf(varSet()), ImmutableSet.copyOf(vars)));
         }
 
         ///////////////////////////////////////////
         // remove(ITermVar)
         ///////////////////////////////////////////
 
-        @Override public IUnifier.Immutable removeAll(Iterable<ITermVar> vars) {
-            final Set<ITermVar> _vars = ImmutableSet.copyOf(vars);
-
-            // 1. Build substitution
-            final Map.Transient<ITermVar, ITermVar> diffReps = Map.Transient.of();
-            final Map.Transient<ITermVar, Integer> diffSize = Map.Transient.of();
-            final Map.Transient<ITermVar, ITerm> diffTerms = Map.Transient.of();
-            for(ITermVar var : _vars) {
-                if(reps.containsKey(var)) { // var |-> rep
-                    diffReps.__put(var, reps.__remove(var));
-                    if(ranks.containsKey(var)) {
-                        diffSize.__put(var, ranks.__remove(var));
-                    }
-                } else if(terms.containsKey(var)) { // var (= rep) |-> term
-                    final ITerm term = terms.__remove(var);
-                    diffTerms.__put(var, term);
-                }
+        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
+            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+            for(ITermVar var : vars) {
+                subst.compose(remove(var));
             }
-            final IUnifier.Transient diff = new PersistentUnifier.Transient(finite, diffReps, diffSize, diffTerms);
-            for(ITermVar var : _vars) {
-                if(!diff.contains(var)) { // var is free
-                    ImmutableSet.copyOf(reps.entrySet()).stream().filter(e -> e.getValue().equals(var)).findFirst()
-                            .ifPresent(e -> {
-                                final ITermVar newRep = e.getKey();
-                                reps.__remove(newRep); // = var
-                                diffReps.__put(var, newRep);
-                                if(ranks.containsKey(var)) {
-                                    ranks.__put(newRep, ranks.get(var));
-                                }
-                            });
-                }
-            }
-            if(!finite && diff.isCyclic()) {
-                throw new IllegalStateException("Cannot remove cyclic terms.");
-            }
-
-            // 2. Update reps and terms
-            for(ITermVar var : ImmutableSet.copyOf(reps.keySet())) {
-                final ITermVar rep = reps.get(var);
-                if(diff.contains(rep)) {
-                    if(diff.hasTerm(rep)) {
-                        reps.__remove(var);
-                        terms.__put(var, diff.findTerm(rep));
-                    } else {
-                        reps.__put(var, diff.findRep(rep));
-                    }
-                }
-            }
-            for(ITermVar var : terms.keySet()) {
-                final ITerm term = terms.get(var);
-                terms.__put(var, diff.findRecursive(term));
-            }
-
-            return diff.freeze();
+            return subst.freeze();
         }
 
-        @Override public IUnifier.Immutable remove(ITermVar var) {
-            return removeAll(Iterables2.singleton(var));
+        @Override public ISubstitution.Immutable remove(ITermVar var) {
+            final ISubstitution.Immutable subst;
+            if(reps.containsKey(var)) {
+                final ITermVar rep = reps.__remove(var);
+                subst = PersistentSubstitution.Immutable.of().put(var, rep);
+                CapsuleUtil.replace(reps, (v, r) -> r.equals(var) ? rep : r);
+            } else if(terms.containsKey(var)) {
+                final ITerm term = terms.__remove(var);
+                subst = PersistentSubstitution.Immutable.of().put(var, term);
+                CapsuleUtil.replace(reps, (v, r) -> {
+                    if(r.equals(var)) {
+                        terms.__put(v, term);
+                        return null;
+                    } else {
+                        return r;
+                    }
+                });
+            } else {
+                final Optional<ITermVar> maybeRep =
+                        reps.entrySet().stream().filter(e -> e.getValue().equals(var)).findFirst().map(e -> e.getKey());
+                if(maybeRep.isPresent()) {
+                    final ITermVar newRep = maybeRep.get();
+                    reps.__remove(newRep);
+                    subst = PersistentSubstitution.Immutable.of().put(var, newRep);
+                    CapsuleUtil.replace(reps, (v, r) -> r.equals(var) ? newRep : r);
+                } else {
+                    subst = PersistentSubstitution.Immutable.of();
+                }
+            }
+            CapsuleUtil.replace(terms, (v, t) -> subst.apply(t));
+            return subst;
         }
 
         ///////////////////////////////////////////

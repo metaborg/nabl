@@ -1,5 +1,8 @@
 package mb.nabl2.terms.substitution;
 
+import java.util.Map.Entry;
+import java.util.Set;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -9,9 +12,11 @@ public interface ISubstitution {
 
     boolean contains(ITermVar var);
 
-    ITerm apply(ITerm term);
+    Set<ITermVar> varSet();
 
-    boolean isRenaming();
+    Set<Entry<ITermVar, ITerm>> entrySet();
+
+    ITerm apply(ITerm term);
 
     interface Immutable extends ISubstitution {
 
@@ -20,6 +25,8 @@ public interface ISubstitution {
         Immutable remove(ITermVar var);
 
         Immutable removeAll(Iterable<ITermVar> var);
+
+        Immutable compose(ISubstitution.Immutable other);
 
         ISubstitution.Transient melt();
 
@@ -32,6 +39,8 @@ public interface ISubstitution {
         void remove(ITermVar var);
 
         void removeAll(Iterable<ITermVar> var);
+
+        void compose(ISubstitution.Immutable other);
 
         ISubstitution.Immutable freeze();
 
