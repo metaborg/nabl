@@ -71,12 +71,13 @@ public class Solver {
         }
 
         // reset original error state, in case this state is used by the caller
+        final boolean addedErrors = state.isErroneous();
         if(!debug.isRoot()) {
             state = state.addErroneous(wasErroneous);
         }
 
         // return
-        debug.info("Solved {} errors and {} remaining constraints.", state.isErroneous() ? "with" : "without",
+        debug.info("Solved {} errors and {} remaining constraints.", addedErrors ? "with" : "without",
                 constraints.size());
         return Config.of(state, constraints, completeness);
     }

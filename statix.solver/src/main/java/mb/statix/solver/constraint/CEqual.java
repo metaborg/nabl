@@ -34,11 +34,11 @@ public class CEqual implements IConstraint {
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result = unifier.unify(term1, term2);
-            debug.info("Unification succeeded");
+            debug.info("Unification succeeded: {}", result.result());
             final State newState = state.withUnifier(result.unifier());
             return Optional.of(Result.of(newState, ImmutableSet.of()));
         } catch(UnificationException e) {
-            debug.info("Unification failed");
+            debug.info("Unification failed: {}", e.getMessage());
             return Optional.of(Result.of(state, Sets.newHashSet(new CFalse())));
         }
     }

@@ -8,6 +8,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.scopegraph.terms.ImmutableScope;
@@ -84,20 +85,24 @@ public abstract class AState {
     }
 
     public State addErroneous(boolean erroneous) {
-        return State.copyOf(this).withErroneous(isErroneous() || erroneous);
+        return State.copyOf(this).withErroneous(erroneous || isErroneous());
     }
-    
+
+    /** Test if this unifier entails the other unifier. */
     public boolean entails(State other) {
         return entails(other, ImmutableSet.of());
     }
 
+    /** Test if this unifier entails the other unifier, assuming some local variables. */
     public boolean entails(State other, Iterable<ITermVar> localVars) {
         if(!isErroneous() && other.isErroneous()) {
             return false;
         }
-        final Set<ITermVar> extraVars = ImmutableSet.<ITermVar>builder().addAll(localVars)
-                .addAll(Sets.difference(other.vars(), vars())).build();
-        if(!other.unifier().removeAll(extraVars).unifier().equals(unifier())) {
+        final Set<ITermVar> newVars = Sets.difference(other.vars(), vars());
+        final IUnifier.Immutable unifier = unifier().removeAll(localVars).unifier();
+        final IUnifier.Immutable otherUnifier =
+                other.unifier().removeAll(Iterables.concat(localVars, newVars)).unifier();
+        if(!otherUnifier.equals(unifier)) {
             return false;
         }
         return true;

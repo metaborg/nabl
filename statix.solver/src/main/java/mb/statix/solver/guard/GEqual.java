@@ -29,10 +29,10 @@ public class GEqual implements IGuard {
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result = unifier.unify(term1, term2);
-            debug.info("Unification succeeded");
+            debug.info("Unification succeeded: {}", result.result());
             return Optional.of(state.withUnifier(result.unifier()));
         } catch(UnificationException e) {
-            debug.info("Unification failed");
+            debug.info("Unification failed: {}", e.getMessage());
             return Optional.of(state.addErroneous(true));
         }
     }

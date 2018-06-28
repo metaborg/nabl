@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
@@ -47,43 +48,51 @@ public class CUser implements IConstraint {
         return new CUser(name, newArgs);
     }
 
-    public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)
+    public Optional<Result> solve(final State state, Completeness completeness, IDebugContext debug)
             throws InterruptedException {
+        final boolean wasErroneous = state.isErroneous();
         final Set<Rule> rules = Sets.newHashSet(state.spec().rules().get(name));
+        final List<Result> results = Lists.newArrayListWithExpectedSize(1);
         final Iterator<Rule> it = rules.iterator();
-        while(it.hasNext()) {
-            final Rule rule = it.next();
-            final Tuple2<State, Rule> appl;
+        outer: while(it.hasNext()) {
+            State result = state.withErroneous(false); // clear errors
+            final Rule rule;
             try {
-                appl = rule.apply(args, state);
+                final Tuple2<State, Rule> appl = it.next().apply(args, result);
+                result = appl._1();
+                rule = appl._2();
             } catch(MatchException | UnificationException e) {
                 debug.warn("Failed to instantiate {}(_) for arguments {}", name, args);
                 continue;
             }
-            debug.info("Try rule {}", appl._2().toString(appl._1().unifier()));
-            Optional<State> maybeResult = Optional.of(appl._1().withErroneous(false));
-            for(IGuard guard : appl._2().getGuard()) {
-                if(maybeResult.isPresent()) {
-                    maybeResult = guard.solve(maybeResult.get(), debug);
+            debug.info("Try rule {}", rule.toString(result.unifier()));
+            for(IGuard guard : rule.getGuard()) {
+                Optional<State> maybeResult = guard.solve(result, debug);
+                if(!maybeResult.isPresent()) {
+                    debug.info("Rule delayed (unsolved guard constraint)");
+                    continue outer;
+                } else if ((result = maybeResult.get()).isErroneous()) {
+                    debug.info("Rule rejected (unsatisfied guard constraint)");
+                    it.remove();
+                    continue outer;
                 }
             }
-            if(maybeResult.isPresent()) {
-                final State result = maybeResult.get();
-                if(result.isErroneous()) {
-                    debug.info("Rule rejected");
-                    it.remove();
-                } else if(state.entails(result, appl._2().getGuardVars())) {
-                    debug.info("Rule accepted");
-                    return Optional
-                            .of(Result.of(maybeResult.get().addErroneous(state.isErroneous()), appl._2().getBody()));
-                } else {
-                    debug.info("Rule delayed (instantiated variables)");
-                }
+            if(state.entails(result, rule.getGuardVars())) {
+                debug.info("Rule accepted");
+                result = result.addErroneous(wasErroneous); // restore errors
+                results.add(Result.of(result, rule.getBody()));
             } else {
-                debug.info("Rule delayed (unsolved guard constraint)");
+                debug.info("Rule delayed (instantiated variables)");
             }
         }
-        if(rules.isEmpty()) {
+        if(!results.isEmpty()) {
+            if(results.size() > 1) {
+                debug.error("Found overlapping rules");
+                throw new IllegalArgumentException("Found overlapping rules");
+            } else {
+                return Optional.of(results.get(0));
+            }
+        } else if(rules.isEmpty()) {
             debug.info("No rule applies");
             return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
         } else {
