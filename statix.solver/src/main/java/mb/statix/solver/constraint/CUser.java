@@ -94,7 +94,7 @@ public class CUser implements IConstraint {
             }
         } else if(rules.isEmpty()) {
             debug.info("No rule applies");
-            return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
         } else {
             return Optional.empty();
         }

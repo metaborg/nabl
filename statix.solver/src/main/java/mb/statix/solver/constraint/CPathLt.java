@@ -44,7 +44,7 @@ public class CPathLt implements IConstraint {
         if(lt.contains(label1, label2)) {
             return Optional.of(Result.of(state, ImmutableSet.of()));
         } else {
-            return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
         }
 
 

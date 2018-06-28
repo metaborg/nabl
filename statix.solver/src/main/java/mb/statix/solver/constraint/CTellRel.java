@@ -52,11 +52,11 @@ public class CTellRel implements IConstraint {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
             debug.error("Ignoring data for unknown relation {}", relation);
-            return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
         }
         if(type.getArity() != datumTerms.size()) {
             debug.error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(), relation);
-            return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
         }
 
         final IUnifier.Immutable unifier = state.unifier();

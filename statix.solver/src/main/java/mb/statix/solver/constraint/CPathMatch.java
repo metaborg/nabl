@@ -73,11 +73,11 @@ public class CPathMatch implements IConstraint {
             if(re.get().isAccepting()) {
                 return Optional.of(Result.of(state, ImmutableSet.of()));
             } else {
-                return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+                return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
             }
         } else {
             if(re.get().isEmpty()) {
-                return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+                return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
             } else {
                 return Optional.empty();
             }

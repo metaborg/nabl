@@ -61,7 +61,7 @@ public class CResolveQuery implements IConstraint {
             type = state.spec().relations().get(relation.get());
             if(type == null) {
                 debug.error("Ignoring query for unknown relation {}", relation.get());
-                return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+                return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
             }
         } else {
             type = StatixTerms.SCOPE_REL_TYPE;

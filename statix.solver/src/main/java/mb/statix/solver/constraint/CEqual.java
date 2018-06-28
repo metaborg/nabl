@@ -3,7 +3,6 @@ package mb.statix.solver.constraint;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -38,8 +37,8 @@ public class CEqual implements IConstraint {
             final State newState = state.withUnifier(result.unifier());
             return Optional.of(Result.of(newState, ImmutableSet.of()));
         } catch(UnificationException e) {
-            debug.info("Unification failed: {}", e.getMessage());
-            return Optional.of(Result.of(state, Sets.newHashSet(new CFalse())));
+            debug.info("Unification failed: {} != {}", unifier.toString(e.getLeft()), unifier.toString(e.getRight()));
+            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
         }
     }
 
