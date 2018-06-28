@@ -180,21 +180,19 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private boolean equalVars(ITermVar thisVar, ITermVar thatVar, IUnifier other, BiMap<ITermVar, ITermVar> mapping) {
         final ITermVar thisRep = findRep(thisVar);
         final ITermVar thatRep = other.findRep(thatVar);
-        if(!thisRep.equals(thatRep)) {
-            if(mapping.containsKey(thisRep) || mapping.containsValue(thatRep)) {
-                if(!mapping.get(thisRep).equals(thatRep)) {
-                    return false; // different equivalence classes
-                }
-            } else {
-                mapping.put(thisRep, thatRep);
-            }
-        }
-        if(!hasTerm(thisRep) && !other.hasTerm(thatRep)) {
-            return true;
-        } if(hasTerm(thisRep) && other.hasTerm(thatRep)) {
-            return equalTerms(findTerm(thisRep), other.findTerm(thatRep), other, mapping);
+        if(mapping.containsKey(thisRep) && mapping.containsValue(thatRep)) {
+            return mapping.get(thisRep).equals(thatRep);
+        } else if(mapping.containsKey(thisRep) || mapping.containsValue(thatRep)) {
+            return false;
         } else {
-            return false; // term and no term
+            mapping.put(thisRep, thatRep);
+            if(hasTerm(thisRep) && other.hasTerm(thatRep)) {
+                return equalTerms(findTerm(thisRep), other.findTerm(thatRep), other, mapping);
+            } else if(!hasTerm(thisRep) && !other.hasTerm(thatRep)) {
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 
