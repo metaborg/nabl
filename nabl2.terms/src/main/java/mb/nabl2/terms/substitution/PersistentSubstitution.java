@@ -107,6 +107,10 @@ public abstract class PersistentSubstitution implements ISubstitution {
             return new PersistentSubstitution.Immutable(Map.Immutable.of());
         }
 
+        public static ISubstitution.Immutable of(ITermVar var, ITerm term) {
+            return new PersistentSubstitution.Immutable(Map.Immutable.of(var, term));
+        }
+
     }
 
     public static class Transient extends PersistentSubstitution implements ISubstitution.Transient {
