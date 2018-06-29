@@ -5,3 +5,4 @@
 /META-INF
 /target
 /bin
+/.apt_generated_tests
