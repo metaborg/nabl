@@ -12,10 +12,15 @@ signature
 
 rules
 
-  stx-analyze(|spec-name, init-constraint): ast -> result
-    with spec   := <stx--find-spec(|spec-name)>;
-         ast'   := <stx--explode> ast;
-         result := <stx--solve-constraint(|spec)> ([], C(init-constraint, [ast']))
+  stx-analyze(|spec-name, init-constraint):
+      ast -> <stx-editor-analyze(id|spec-name, init-constraint)> (ast, "", "")
+
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      (ast, path, project-path) -> (ast', error*, warning*, note*)
+    with spec := <stx--find-spec(|spec-name)>;
+         ast' := <desugar;stx--index-ast(|""/*path*/)> ast;
+         C    := C(init-constraint, [<stx--explode> ast']);
+         (a, error*, warning*, note*) := <stx--solve-constraint(|spec)> ([], C)
 
   stx--find-spec(|name) =
     language-components;
@@ -28,6 +33,19 @@ rules
 
   // solve-constraint : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
   stx--solve-constraint(|spec) = prim("STX_solve_constraint", spec)
+
+rules
+
+  stx--index-ast(|source) =
+    prim("SG_index_ast", source)
+
+rules
+
+  stx-editor-resolve:
+      (node, position, ast, path, project-path) -> <fail>
+
+  stx-editor-hover:
+      (node, position, ast, path, project-path) -> <fail>
 
 signature
   constructors
