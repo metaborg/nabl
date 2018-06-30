@@ -80,13 +80,25 @@ public abstract class AState {
         return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
     }
 
-    @Value.Default public boolean isErroneous() {
-        return false;
+    // --- errors ---
+
+    @Value.Default public int getErrors() {
+        return 0;
     }
 
-    public State addErroneous(boolean erroneous) {
-        return State.copyOf(this).withErroneous(erroneous || isErroneous());
+    public boolean isErroneous() {
+        return getErrors() > 0;
     }
+
+    public State resetErrors() {
+        return State.copyOf(this).withErrors(0);
+    }
+
+    public State addError() {
+        return State.copyOf(this).withErrors(getErrors() + 1);
+    }
+
+    // --- entailment ---
 
     /** Test if this unifier entails the other unifier. */
     public boolean entails(State other) {
@@ -95,7 +107,7 @@ public abstract class AState {
 
     /** Test if this unifier entails the other unifier, assuming some local variables. */
     public boolean entails(State other, Iterable<ITermVar> localVars) {
-        if(!isErroneous() && other.isErroneous()) {
+        if(other.getErrors() > getErrors()) {
             return false;
         }
         final Set<ITermVar> newVars = Sets.difference(other.vars(), vars());

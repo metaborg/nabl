@@ -52,11 +52,11 @@ public class CTellRel implements IConstraint {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
             debug.error("Ignoring data for unknown relation {}", relation);
-            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
+            return Optional.of(Result.of(state.addError(), ImmutableSet.of()));
         }
         if(type.getArity() != datumTerms.size()) {
             debug.error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(), relation);
-            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
+            return Optional.of(Result.of(state.addError(), ImmutableSet.of()));
         }
 
         final IUnifier.Immutable unifier = state.unifier();
@@ -71,7 +71,8 @@ public class CTellRel implements IConstraint {
             return Optional.empty();
         }
         Optional<ITerm> existingValue = state.scopeGraph().getData().get(scope, relation).stream().filter(dt -> {
-            return unifier.areEqual(key, B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())));
+            return unifier.areEqual(key,
+                    B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())));
         }).findFirst().map(dt -> {
             return B.newTuple(dt.stream().skip(type.getInputArity()).collect(Collectors.toList()));
         });

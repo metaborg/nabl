@@ -74,7 +74,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         final ITerm ast = B.EMPTY_TUPLE;
         final List<ITerm> errorList = Lists.newArrayList();
         if(resultState.isErroneous()) {
-            errorList.add(B.newTuple(ast, B.newString("Has errors.")));
+            errorList.add(B.newTuple(ast, B.newString(resultState.getErrors() + " error(s).")));
         }
         final Collection<IConstraint> unsolved = resultConfig.constraints();
         if(!unsolved.isEmpty()) {

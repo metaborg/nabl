@@ -29,7 +29,7 @@ public class GInequal implements IGuard {
         if(unifier.areUnequal(term1, term2)) {
             return Optional.of(state);
         } else if(unifier.areEqual(term1, term2)) {
-            return Optional.of(state.addErroneous(true));
+            return Optional.of(state.addError());
         } else {
             return Optional.empty();
         }

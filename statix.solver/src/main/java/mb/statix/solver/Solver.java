@@ -29,13 +29,6 @@ public class Solver {
         Completeness completeness = config.completeness();
         completeness = completeness.addAll(constraints);
 
-        // if not root, reset errors, because we want to short-cut only on errors introduced by the
-        // guard constraints, not on errors pre-existing in the state
-        final boolean wasErroneous = state.isErroneous();
-        if(!debug.isRoot()) {
-            state = state.withErroneous(false);
-        }
-
         // fixed point
         boolean progress = true;
         outer: while(progress) {
@@ -53,9 +46,13 @@ public class Solver {
                     progress = true;
                     it.remove();
                     final Result result = maybeResult.get();
-                    state = result.state();
+                    final boolean failed = result.state().getErrors() > state.getErrors();
+                    state = result.state(); // must be after deciding failed
                     completeness = completeness.remove(constraint);
-                    if(!debug.isRoot() && state.isErroneous()) {
+                    if(failed) {
+                        subDebug.info("Failed");
+                    }
+                    if(!debug.isRoot() && failed) {
                         debug.info("Break early because of errors.");
                         break outer;
                     }
@@ -70,15 +67,9 @@ public class Solver {
             }
         }
 
-        // reset original error state, in case this state is used by the caller
-        final boolean addedErrors = state.isErroneous();
-        if(!debug.isRoot()) {
-            state = state.addErroneous(wasErroneous);
-        }
-
         // return
-        debug.info("Solved {} errors and {} remaining constraints.", addedErrors ? "with" : "without",
-                constraints.size());
+        final int addedErrors = state.getErrors() - config.state().getErrors();
+        debug.info("Solved with {} error(s) and {} remaining constraint(s).", addedErrors, constraints.size());
         return Config.of(state, constraints, completeness);
     }
 

@@ -38,7 +38,7 @@ public class CEqual implements IConstraint {
             return Optional.of(Result.of(newState, ImmutableSet.of()));
         } catch(UnificationException e) {
             debug.info("Unification failed: {} != {}", unifier.toString(e.getLeft()), unifier.toString(e.getRight()));
-            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
+            return Optional.of(Result.of(state.addError(), ImmutableSet.of()));
         }
     }
 

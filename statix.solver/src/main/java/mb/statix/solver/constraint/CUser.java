@@ -50,12 +50,12 @@ public class CUser implements IConstraint {
 
     public Optional<Result> solve(final State state, Completeness completeness, IDebugContext debug)
             throws InterruptedException {
-        final boolean wasErroneous = state.isErroneous();
+        final int hadErrors = state.getErrors();
         final Set<Rule> rules = Sets.newHashSet(state.spec().rules().get(name));
         final List<Result> results = Lists.newArrayListWithExpectedSize(1);
         final Iterator<Rule> it = rules.iterator();
         outer: while(it.hasNext()) {
-            State result = state.withErroneous(false); // clear errors
+            State result = state.resetErrors(); // clear errors
             final Rule rule;
             try {
                 final Tuple2<State, Rule> appl = it.next().apply(args, result);
@@ -71,7 +71,7 @@ public class CUser implements IConstraint {
                 if(!maybeResult.isPresent()) {
                     debug.info("Rule delayed (unsolved guard constraint)");
                     continue outer;
-                } else if ((result = maybeResult.get()).isErroneous()) {
+                } else if((result = maybeResult.get()).isErroneous()) {
                     debug.info("Rule rejected (unsatisfied guard constraint)");
                     it.remove();
                     continue outer;
@@ -79,7 +79,7 @@ public class CUser implements IConstraint {
             }
             if(state.entails(result, rule.getGuardVars())) {
                 debug.info("Rule accepted");
-                result = result.addErroneous(wasErroneous); // restore errors
+                result = result.withErrors(hadErrors); // restore errors
                 results.add(Result.of(result, rule.getBody()));
             } else {
                 debug.info("Rule delayed (instantiated variables)");
@@ -94,7 +94,7 @@ public class CUser implements IConstraint {
             }
         } else if(rules.isEmpty()) {
             debug.info("No rule applies");
-            return Optional.of(Result.of(state.addErroneous(true), ImmutableSet.of()));
+            return Optional.of(Result.of(state.addError(), ImmutableSet.of()));
         } else {
             return Optional.empty();
         }
