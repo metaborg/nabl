@@ -17,7 +17,7 @@ public interface IGuard {
      * @return new state if reduced, or none
      * @throws InterruptedException
      */
-    Optional<State> solve(State state, IDebugContext debug) throws InterruptedException;
+    Optional<State> solve(State state, IDebugContext debug) throws InterruptedException, Delay;
 
     String toString(IUnifier unifier);
 

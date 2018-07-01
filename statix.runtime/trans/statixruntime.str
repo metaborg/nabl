@@ -18,9 +18,12 @@ rules
   stx-editor-analyze(desugar|spec-name, init-constraint):
       (ast, path, project-path) -> (ast', error*, warning*, note*)
     with spec := <stx--find-spec(|spec-name)>;
-         ast' := <desugar;stx--index-ast(|""/*path*/)> ast;
+         ast' := <desugar;nabl2--index-ast(|""/*path*/)> ast;
          C    := C(init-constraint, [<stx--explode> ast']);
-         (a, error*, warning*, note*) := <stx--solve-constraint(|spec)> ([], C)
+         level := <stx--log-level>;
+         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+
+  stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"Error"
 
   stx--find-spec(|name) =
     language-components;
@@ -31,14 +34,16 @@ rules
                <ReadFromFile> spec-file
             })
 
-  // solve-constraint : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
-  stx--solve-constraint(|spec) = prim("STX_solve_constraint", spec)
+  // solve-constraint : ([Var], Constraint, LogLevel) -> (Solution, [Error], [Warning], [Note])
+  stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
 
 rules
 
-  stx--index-ast(|source) =
+  nabl2--index-ast(|source) =
     prim("SG_index_ast", source)
 
+  nabl2--is-debug-custom-enabled =
+    prim("SG_is_debug_custom_enabled")
 rules
 
   stx-editor-resolve:

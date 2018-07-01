@@ -14,6 +14,7 @@ import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
@@ -36,11 +37,22 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
     @Override public boolean eq(List<ITerm> datum1, List<ITerm> datum2)
             throws ResolutionException, InterruptedException {
         try {
-            final Tuple2<State, Lambda> result =
-                    constraint.apply(ImmutableList.of(B.newTuple(datum1), B.newTuple(datum2)), state);
+            final ITerm term1 = B.newTuple(datum1);
+            final ITerm term2 = B.newTuple(datum2);
+            final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term1, term2), state);
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
-            return Solver.entails(config, result._2().getBodyVars(), debug)
-                    .orElseThrow(() -> new ResolutionException("Data equivalence check delayed"));
+            try {
+                if(Solver.entails(config, result._2().getBodyVars(), debug)) {
+                    debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
+                    return true;
+                } else {
+                    debug.info("{} does not shadow {}", state.unifier().toString(term1),
+                            state.unifier().toString(term2));
+                    return false;
+                }
+            } catch(Delay d) {
+                throw new ResolutionException("Data equivalence check delayed");
+            }
         } catch(MatchException | UnificationException ex) {
             return false;
         }

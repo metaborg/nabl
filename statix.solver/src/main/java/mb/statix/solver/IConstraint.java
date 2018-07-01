@@ -1,7 +1,7 @@
 package mb.statix.solver;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
@@ -28,10 +28,16 @@ public interface IConstraint {
      * @param completeness
      * @return true is reduced, false if delayed
      * @throws InterruptedException
+     * @throws Delay
      */
-    Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws InterruptedException;
+    Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)
+            throws InterruptedException, Delay;
 
     String toString(IUnifier unifier);
+
+    Optional<IConstraint> cause();
+
+    IConstraint withCause(IConstraint cause);
 
     static String toString(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
@@ -51,7 +57,7 @@ public interface IConstraint {
 
         @Value.Parameter public abstract State state();
 
-        @Value.Parameter public abstract Set<IConstraint> constraints();
+        @Value.Parameter public abstract List<IConstraint> constraints();
 
     }
 

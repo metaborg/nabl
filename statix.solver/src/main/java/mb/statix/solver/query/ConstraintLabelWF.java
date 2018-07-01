@@ -17,6 +17,7 @@ import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
@@ -55,13 +56,16 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), state);
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
-            if(Solver.entails(config, result._2().getBodyVars(), debug.subContext())
-                    .orElseThrow(() -> new ResolutionException("Label well-formedness check delayed"))) {
-                debug.info("Well-formed {}", state.unifier().toString(term));
-                return true;
-            } else {
-                debug.info("Not well-formed {}", state.unifier().toString(term));
-                return false;
+            try {
+                if(Solver.entails(config, result._2().getBodyVars(), debug.subContext())) {
+                    debug.info("Well-formed {}", state.unifier().toString(term));
+                    return true;
+                } else {
+                    debug.info("Not well-formed {}", state.unifier().toString(term));
+                    return false;
+                }
+            } catch(Delay d) {
+                throw new ResolutionException("Label well-formedness check delayed");
             }
         } catch(MatchException | UnificationException ex) {
             return false;
@@ -76,11 +80,15 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), varAndState._2());
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
-            if(!Solver.entails(config, Iterables2.singleton(var), debug.subContext()).orElse(true)) {
-                debug.info("Empty {}", state.unifier().toString(term));
-                return true;
-            } else {
-                debug.info("Non-empty {}", state.unifier().toString(term));
+            try {
+                if(Solver.entails(config, Iterables2.singleton(var), debug.subContext())) {
+                    debug.info("Non-empty {}", state.unifier().toString(term));
+                    return false;
+                } else {
+                    debug.info("Empty {}", state.unifier().toString(term));
+                    return true;
+                }
+            } catch(Delay d) {
                 return false;
             }
         } catch(MatchException | UnificationException ex) {

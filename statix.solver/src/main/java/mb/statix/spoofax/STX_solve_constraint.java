@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
@@ -27,8 +28,8 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
-import mb.statix.solver.DebugContext;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.LoggerDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
@@ -37,14 +38,17 @@ public class STX_solve_constraint extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
 
     @Inject public STX_solve_constraint() {
-        super(STX_solve_constraint.class.getSimpleName(), 1);
+        super(STX_solve_constraint.class.getSimpleName(), 2);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final Spec spec = M.req(StatixTerms.spec()).match(terms.get(0))
-                .orElseThrow(() -> new InterpreterException("Expected spec."));
+        final Spec spec =
+                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+
+        final Level level = M.stringValue().match(terms.get(1)).map(Level::parse)
+                .orElseThrow(() -> new InterpreterException("Expected log level."));
 
         final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
                 .tuple2(M.listElems(StatixTerms.var()), StatixTerms.constraints(spec.labels()),
@@ -63,19 +67,20 @@ public class STX_solve_constraint extends StatixPrimitive {
         final Set<IConstraint> constraints =
                 vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         final Config config = Config.of(state, constraints, new Completeness());
-        Config resultConfig;
+        final Config resultConfig;
         try {
-            resultConfig = Solver.solve(config, new DebugContext(logger));
+            resultConfig = Solver.solve(config, new LoggerDebugContext(logger, level));
         } catch(InterruptedException e) {
             throw new InterpreterException(e);
         }
-        final State resultState = resultConfig.state();
 
         final ITerm ast = B.EMPTY_TUPLE;
         final List<ITerm> errorList = Lists.newArrayList();
-        if(resultState.isErroneous()) {
-            errorList.add(B.newTuple(ast, B.newString(resultState.getErrors() + " error(s).")));
+        if(resultConfig.hasErrors()) {
+            errorList.add(B.newTuple(ast, B.newString(resultConfig.errors().size() + " error(s).")));
         }
+
+        final State resultState = resultConfig.state();
         final Collection<IConstraint> unsolved = resultConfig.constraints();
         if(!unsolved.isEmpty()) {
             logger.warn("Unsolved constraints: {}",

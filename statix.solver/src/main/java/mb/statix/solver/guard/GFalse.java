@@ -16,7 +16,7 @@ public class GFalse implements IGuard {
     }
 
     @Override public Optional<State> solve(State state, IDebugContext debug) {
-        return Optional.of(state.addError());
+        return Optional.empty();
     }
 
     @Override public String toString(IUnifier unifier) {

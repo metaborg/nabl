@@ -20,6 +20,7 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.NullDebugContext;
 import mb.statix.solver.Solver;
@@ -56,7 +57,11 @@ public class Lambda {
     public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
         final State state = State.of(spec);
         final Config config = Config.of(state, body, new Completeness());
-        return Solver.entails(config, bodyVars, new NullDebugContext());
+        try {
+            return Optional.of(Solver.entails(config, bodyVars, new NullDebugContext()));
+        } catch(Delay d) {
+            return Optional.empty();
+        }
     }
 
     public Lambda apply(ISubstitution.Immutable subst) {

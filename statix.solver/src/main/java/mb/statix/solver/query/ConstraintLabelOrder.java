@@ -10,6 +10,7 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
@@ -34,13 +35,16 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(l1, l2), state);
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
-            if(Solver.entails(config, result._2().getBodyVars(), debug.subContext())
-                    .orElseThrow(() -> new ResolutionException("Label order check delayed"))) {
-                debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
-                return true;
-            } else {
-                debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
-                return false;
+            try {
+                if(Solver.entails(config, result._2().getBodyVars(), debug.subContext())) {
+                    debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                    return true;
+                } else {
+                    debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                    return false;
+                }
+            } catch(Delay d) {
+                throw new ResolutionException("Label order check delayed");
             }
         } catch(MatchException | UnificationException ex) {
             return false;

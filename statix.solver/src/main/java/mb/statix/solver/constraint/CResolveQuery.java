@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableSet;
@@ -22,6 +24,7 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.NameResolution;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.NullDebugContext;
@@ -40,28 +43,44 @@ public class CResolveQuery implements IConstraint {
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
+    private final @Nullable IConstraint cause;
+
     public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
             ITerm resultTerm) {
+        this(relation, filter, min, scopeTerm, resultTerm, null);
+    }
+
+    public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
+            ITerm resultTerm, @Nullable IConstraint cause) {
         this.relation = relation;
         this.filter = filter;
         this.min = min;
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
+        this.cause = cause;
     }
 
-    @Override public IConstraint apply(ISubstitution.Immutable subst) {
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
+    }
+
+    @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
+        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause);
+    }
+
+    @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
         return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
-                subst.apply(resultTerm));
+                subst.apply(resultTerm), cause);
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)
-            throws InterruptedException {
+            throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {
             type = state.spec().relations().get(relation.get());
             if(type == null) {
                 debug.error("Ignoring query for unknown relation {}", relation.get());
-                return Optional.of(Result.of(state.addError(), ImmutableSet.of()));
+                return Optional.empty();
             }
         } else {
             type = StatixTerms.SCOPE_REL_TYPE;
@@ -69,7 +88,7 @@ public class CResolveQuery implements IConstraint {
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            return Optional.empty();
+            throw new Delay();
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
@@ -103,11 +122,11 @@ public class CResolveQuery implements IConstraint {
             } else {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
             }
-            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm);
+            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
             return Optional.of(Result.of(state, ImmutableSet.of(C)));
         } catch(ResolutionException e) {
             debug.info("Query resolution delayed: {}", e.getMessage());
-            return Optional.empty();
+            throw new Delay();
         }
     }
 

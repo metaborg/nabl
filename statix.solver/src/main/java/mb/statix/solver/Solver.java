@@ -1,8 +1,12 @@
 package mb.statix.solver;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.util.iterators.Iterables2;
 
@@ -20,7 +24,7 @@ public class Solver {
     private Solver() {
     }
 
-    public static Config solve(Config config, IDebugContext debug) throws InterruptedException {
+    public static Config solve(final Config config, final IDebugContext debug) throws InterruptedException {
         debug.info("Solving constraints");
 
         // set-up
@@ -30,6 +34,7 @@ public class Solver {
         completeness = completeness.addAll(constraints);
 
         // fixed point
+        final Set<IConstraint> failed = Sets.newHashSet();
         boolean progress = true;
         outer: while(progress) {
             progress = false;
@@ -41,63 +46,75 @@ public class Solver {
                 final IConstraint constraint = it.next();
                 debug.info("Solving {}", constraint.toString(state.unifier()));
                 IDebugContext subDebug = debug.subContext();
-                Optional<Result> maybeResult = constraint.solve(state, completeness, subDebug);
-                if(maybeResult.isPresent()) {
+                try {
+                    Optional<Result> maybeResult = constraint.solve(state, completeness, subDebug);
                     progress = true;
                     it.remove();
-                    final Result result = maybeResult.get();
-                    final boolean failed = result.state().getErrors() > state.getErrors();
-                    state = result.state(); // must be after deciding failed
                     completeness = completeness.remove(constraint);
-                    if(failed) {
-                        subDebug.info("Failed");
+                    if(maybeResult.isPresent()) {
+                        final Result result = maybeResult.get();
+                        state = result.state();
+                        if(!result.constraints().isEmpty()) {
+                            final List<IConstraint> newConstaints = result.constraints().stream()
+                                    .map(c -> c.withCause(constraint)).collect(Collectors.toList());
+                            subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
+                            constraints.addAll(newConstaints);
+                            completeness = completeness.addAll(newConstaints);
+                        }
+                    } else {
+                        subDebug.error("Failed");
+                        failed.add(constraint);
+                        if(debug.isRoot()) {
+                            printTrace(constraint, state.unifier(), subDebug);
+                        } else {
+                            debug.info("Break early because of errors.");
+                            break outer;
+                        }
                     }
-                    if(!debug.isRoot() && failed) {
-                        debug.info("Break early because of errors.");
-                        break outer;
-                    }
-                    if(!result.constraints().isEmpty()) {
-                        subDebug.info("Simplified to {}", toString(result.constraints(), state.unifier()));
-                        constraints.addAll(result.constraints());
-                        completeness = completeness.addAll(result.constraints());
-                    }
-                } else {
+                } catch(Delay d) {
                     subDebug.info("Delayed");
                 }
             }
         }
 
         // return
-        final int addedErrors = state.getErrors() - config.state().getErrors();
-        debug.info("Solved with {} error(s) and {} remaining constraint(s).", addedErrors, constraints.size());
-        return Config.of(state, constraints, completeness);
+        debug.info("Solved with {} failed and {} remaining constraint(s).", failed.size(), constraints.size());
+        return Config.of(state, constraints, completeness).withErrors(config.errors()).withErrors(failed);
     }
 
-    public static Optional<Boolean> entails(Config config, IDebugContext debug) throws InterruptedException {
+    public static boolean entails(Config config, IDebugContext debug) throws InterruptedException, Delay {
         return entails(config, Iterables2.empty(), debug);
     }
 
-    public static Optional<Boolean> entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
-            throws InterruptedException {
+    public static boolean entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
+            throws InterruptedException, Delay {
         debug.info("Checking entailment of {}", toString(config.constraints(), config.state().unifier()));
         final State state = config.state();
         final Config result = Solver.solve(config, debug.subContext());
-        if(result.state().isErroneous()) {
+        if(result.hasErrors()) {
             debug.info("Constraints not entailed");
-            return Optional.of(false);
+            return false;
         } else if(result.constraints().isEmpty()) {
             if(state.entails(result.state(), localVars)) {
                 debug.info("Constraints entailed");
-                return Optional.of(true);
+                return true;
             } else {
                 debug.info("Cannot decide constraint entailment (instantiated variables)");
-                return Optional.empty();
+                throw new Delay();
             }
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            return Optional.empty();
+            throw new Delay();
         }
 
+    }
+
+    private static void printTrace(IConstraint failed, IUnifier unifier, IDebugContext debug) {
+        @Nullable IConstraint constraint = failed;
+        while(constraint != null) {
+            debug.error(" * {}", constraint.toString(unifier));
+            constraint = constraint.cause().orElse(null);
+        }
     }
 
     private static String toString(Iterable<IConstraint> constraints, IUnifier unifier) {

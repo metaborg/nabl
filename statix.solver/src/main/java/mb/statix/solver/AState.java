@@ -80,24 +80,6 @@ public abstract class AState {
         return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
     }
 
-    // --- errors ---
-
-    @Value.Default public int getErrors() {
-        return 0;
-    }
-
-    public boolean isErroneous() {
-        return getErrors() > 0;
-    }
-
-    public State resetErrors() {
-        return State.copyOf(this).withErrors(0);
-    }
-
-    public State addError() {
-        return State.copyOf(this).withErrors(getErrors() + 1);
-    }
-
     // --- entailment ---
 
     /** Test if this unifier entails the other unifier. */
@@ -107,7 +89,8 @@ public abstract class AState {
 
     /** Test if this unifier entails the other unifier, assuming some local variables. */
     public boolean entails(State other, Iterable<ITermVar> localVars) {
-        if(other.getErrors() > getErrors()) {
+        final Set<ITermVar> lostVars = Sets.difference(vars(), other.vars());
+        if(!lostVars.isEmpty()) {
             return false;
         }
         final Set<ITermVar> newVars = Sets.difference(other.vars(), vars());

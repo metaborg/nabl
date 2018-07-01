@@ -2,6 +2,8 @@ package mb.statix.solver.constraint;
 
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -15,6 +17,7 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Result;
@@ -27,24 +30,39 @@ public class CTellEdge implements IConstraint {
     private final ITerm label;
     private final ITerm targetTerm;
 
+    private final @Nullable IConstraint cause;
+
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
+        this(sourceTerm, label, targetTerm, null);
+    }
+
+    public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm, @Nullable IConstraint cause) {
         this.sourceTerm = sourceTerm;
         this.label = label;
         this.targetTerm = targetTerm;
+        this.cause = cause;
+    }
+
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
+    }
+
+    @Override public CTellEdge withCause(@Nullable IConstraint cause) {
+        return new CTellEdge(sourceTerm, label, targetTerm, cause);
     }
 
     @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
         return Iterables2.from(ImmutableTuple2.of(sourceTerm, label));
     }
 
-    @Override public IConstraint apply(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm));
+    @Override public CTellEdge apply(ISubstitution.Immutable subst) {
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();
         if(!(unifier.isGround(sourceTerm) && unifier.isGround(targetTerm))) {
-            return Optional.empty();
+            throw new Delay();
         }
         final Scope source = Scope.matcher().match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));

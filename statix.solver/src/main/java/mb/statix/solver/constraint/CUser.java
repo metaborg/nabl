@@ -6,8 +6,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -20,6 +21,7 @@ import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IDebugContext;
 import mb.statix.solver.IGuard;
@@ -33,9 +35,24 @@ public class CUser implements IConstraint {
     private final String name;
     private final List<ITerm> args;
 
+    private final @Nullable IConstraint cause;
+
     public CUser(String name, Iterable<? extends ITerm> args) {
+        this(name, args, null);
+    }
+
+    public CUser(String name, Iterable<? extends ITerm> args, @Nullable IConstraint cause) {
         this.name = name;
         this.args = ImmutableList.copyOf(args);
+        this.cause = cause;
+    }
+
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
+    }
+
+    @Override public CUser withCause(@Nullable IConstraint cause) {
+        return new CUser(name, args, cause);
     }
 
     @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
@@ -43,19 +60,17 @@ public class CUser implements IConstraint {
                 .collect(Collectors.toList());
     }
 
-    public IConstraint apply(ISubstitution.Immutable subst) {
-        final List<ITerm> newArgs = args.stream().map(subst::apply).collect(Collectors.toList());
-        return new CUser(name, newArgs);
+    @Override public CUser apply(ISubstitution.Immutable subst) {
+        return new CUser(name, subst.apply(args), cause);
     }
 
     public Optional<Result> solve(final State state, Completeness completeness, IDebugContext debug)
-            throws InterruptedException {
-        final int hadErrors = state.getErrors();
+            throws InterruptedException, Delay {
         final Set<Rule> rules = Sets.newHashSet(state.spec().rules().get(name));
         final List<Result> results = Lists.newArrayListWithExpectedSize(1);
         final Iterator<Rule> it = rules.iterator();
         outer: while(it.hasNext()) {
-            State result = state.resetErrors(); // clear errors
+            State result = state;
             final Rule rule;
             try {
                 final Tuple2<State, Rule> appl = it.next().apply(args, result);
@@ -67,19 +82,22 @@ public class CUser implements IConstraint {
             }
             debug.info("Try rule {}", rule.toString(result.unifier()));
             for(IGuard guard : rule.getGuard()) {
-                Optional<State> maybeResult = guard.solve(result, debug);
-                if(!maybeResult.isPresent()) {
+                try {
+                    Optional<State> maybeResult = guard.solve(result, debug);
+                    if(!maybeResult.isPresent()) {
+                        debug.info("Rule rejected (unsatisfied guard constraint)");
+                        it.remove();
+                        continue outer;
+                    } else {
+                        result = maybeResult.get();
+                    }
+                } catch(Delay e) {
                     debug.info("Rule delayed (unsolved guard constraint)");
-                    continue outer;
-                } else if((result = maybeResult.get()).isErroneous()) {
-                    debug.info("Rule rejected (unsatisfied guard constraint)");
-                    it.remove();
                     continue outer;
                 }
             }
             if(state.entails(result, rule.getGuardVars())) {
                 debug.info("Rule accepted");
-                result = result.withErrors(hadErrors); // restore errors
                 results.add(Result.of(result, rule.getBody()));
             } else {
                 debug.info("Rule delayed (instantiated variables)");
@@ -94,9 +112,9 @@ public class CUser implements IConstraint {
             }
         } else if(rules.isEmpty()) {
             debug.info("No rule applies");
-            return Optional.of(Result.of(state.addError(), ImmutableSet.of()));
-        } else {
             return Optional.empty();
+        } else {
+            throw new Delay();
         }
     }
 
