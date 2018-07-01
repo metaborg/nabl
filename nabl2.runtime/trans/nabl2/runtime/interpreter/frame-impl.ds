@@ -4,114 +4,115 @@ imports
   nabl2/runtime/interpreter/frame-api
   nabl2/runtime/interpreter/util
 
-// FIXME: All named arrows should be meta-functions, once we get better support for overloaded default arrows.
-
 signature
-
   constructors
     Addr : Frame * Occurrence -> Addr
-
+  
+  sort aliases
+    Slots = Map(Occurrence, Val)
+  
   constructors
-    FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Occurrence, Val) -> Frame
+    FC_ : Scope * Map(Label, Map(Scope, Frame)) * Map(Label, Map(Occurrence, Frame)) * Slots -> Frame
     
   constructors
-    F_ : Int -> Frame // {implicit}
-    H_ : Map(Frame, Frame) -> Heap // {implicit}
+    F_ : Int -> Frame
+    H_ : Map(Frame, Frame) -> Heap
 
   arrows
+    newframe(Scope) :: H --> Frame :: H
+    newframe(Scope, Slots) :: H --> Frame :: H
+    H |- linksOfF(Frame) --> Map(Label, Map(Scope, Frame))
+    H |- importsOfF(Frame) --> Map(Label, Map(Occurrence, Frame))
+    H |- slotsOfF(Frame) --> Slots
+    F |- _lookup(Path) --> Addr
     getScopeOfFirstElem(Path) --> Scope
 
-//////////////////////////////
-// VANILLA FRAMES AND HEAPS //
-//////////////////////////////
-
 rules
-
-  // Operations on heap
-  
   initHeap(_) --> H_({})
 
-  // Operations on frames
+  frame(s, links) --> links(newframe(s), links)
 
-  initFrame(s, ks, slots) :: H H_(x) --> ff :: H H_({ ff |--> FC_(s, ks, slots), x })
+  frame(s, links, slots) --> links(newframe(s, slots), links)
+
+  framed(ast, links) --> frame(scopeOfTerm(ast), links)
+  
+  frame(ast, links, slots) --> frame(scopeOfTerm(ast), links, slots)
+  
+  newframe(s) --> newframe(s, DefaultSlots(declsOf(s)))
+  
+  newframe(s, slots) :: H H_(x) --> F :: H H_({F |--> FC_(s, {}, {}, slots), x})
   where
-    F_(fresh) => ff
+    F_(fresh) => F
+  
+  links(F, []) --> F
+  
+  links(F, [l|ls]) --> links(F, ls)
+  where
+    link(F, l) --> _ 
+ 
+  link(F, L(l, F_to)) :: H H_(x) --> F :: H H_({F |--> FC_(s, {l |--> {s_to |--> F_to}, lks}, imps, slots), x})
+  where
+    x[F] => FC_(s, lks, imps, slots);
+    scopeOf(F_to) --> s_to
+  
+  link(F, L(l, occ, F_to)) :: H H_(x) --> F :: H H_({F |--> FC_(s, lks, {l |--> {occ |--> F_to}, imps}, slots), x})
+  where
+    x[F] => FC_(s, lks, imps, slots)
  
   H H_(x) |- scopeOf(f) --> s
   where
-    x[f] => FC_(s, _, _)
+    x[f] => FC_(s, _, _, _)
   
-  // Dynamic address lookup  
-  F f |- lookup([D(_, d)]) --> Addr(f, d)
+  lookup(ref) --> _lookup(pathOf(ref))
+  
+  F |- _lookup([D(_, d)]) --> Addr(F, d)
 
-  H h, F f1 |- lookup([E(s, l)|p]) --> addr
+  H, F1 |- _lookup([E(_, l)|p]) --> addr
   where
     getScopeOfFirstElem(p) --> s';
-    H h |- linksOf(f1) --> ks;
-    ks[l][s'] => f2;
-    H h, F f2 |- lookup(p) --> addr
+    H |- linksOfF(F1) --> lks;
+    lks[l][s'] => F2;
+    H, F2 |- _lookup(p) --> addr
   
-  H h, F f1 |- lookup([N(s, l, _, _) | p]) --> addr
+  H, F1 |- _lookup([N(_, l, o, _) | p]) --> addr
   where
-    getScopeOfFirstElem(p) --> s';
-    H h |- linksOf(f1) --> ks;
-    ks[l][s'] => f2;
-    H h, F f2 |- lookup(p) --> addr
+    H |- importsOfF(F1) --> imps;
+    imps[l][o] => F2;
+    H, F2 |- _lookup(p) --> addr
     
  getScopeOfFirstElem([D(s, _)|_]) --> s
  getScopeOfFirstElem([E(s, _)|_]) --> s
  getScopeOfFirstElem([N(s, _, _, _)|_]) --> s
 
  
-  // Fetching and mutating slot values
-    
-  H h |- get(Addr(f', d)) --> v
+  H h |- get(Addr(F, d)) --> slots[d]
   where
-    H h |- slotsOf(f') --> slots;
-    slots[d] => v
+    H h |- slotsOfF(F) --> slots
 
-  set(Addr(f, d), v) :: H H_(x) --> v :: H H_({f |--> FC_(s, ks, {d |--> v, slots}), x})
+  set(Addr(F, d), v) :: H H_(x) --> v :: H H_({F |--> FC_(s, lks, imps, {d |--> v, slots}), x})
   where
-    x[f] => FC_(s, ks, slots)
+    x[F] => FC_(s, lks, imps, slots)
   
-  mkAddr(f, d) --> Addr(f, d)
-
 rules
   
-  H H_(x) |- linksOf(f) --> ks
+  H H_(x) |- linksOfF(F) --> lks
   where
-    x[f] => FC_(_, ks, _)
-    
-  H H_(x) |- slotsOf(f) --> slots
-  where
-    x[f] => FC_(_, _, slots)
+    x[F] => FC_(_, lks, _, _)
   
-  
-  addLink(f1, l, f2) :: H H_(x) --> f1 :: H H_({ f1 |--> FC_(s, {l |--> {s2 |--> f2}, ks}, slots), x})
+  H H_(x) |- importsOfF(F) --> imps
   where
-    x[f1] => FC_(s, ks, slots);
-    scopeOf(f2) --> s2
-    
-
-//////////////////////////////
-// DEFAULT FRAMES AND HEAPS //
-//////////////////////////////
-
-signature // Utility function
+    x[F] => FC_(_, _, imps, _)
+  
+  H H_(x) |- slotsOfF(F) --> slots
+  where
+    x[F] => FC_(_, _, _, slots)
+  
+signature
   
   arrows
-    initDefaultSlots(Scope, List(Namespace)) --> Map(Occurrence, Val)
     DefaultSlots(List(Occurrence)) --> Map(Occurrence, Val)
 
 rules // Utility function
-
-  initDefaultSlots(_, []) --> {}
-  
-  initDefaultSlots(s, [ns|namespaces]) --> slots + tail
-  where
-    declsOf(s, ns) --> ds;
-    DefaultSlots(ds) --> slots;
-    initDefaultSlots(s, namespaces) --> tail
 
   DefaultSlots([]) --> {}
 
@@ -121,40 +122,4 @@ rules // Utility function
     default(t) --> v;
     DefaultSlots(ds) --> slots
 
-rules // initDefault
-  
-  initDefault(s, ks) --> initFrame(s, ks, slots)
-  where
-    DefaultSlots(declsOf(s)) --> slots
-    
-//    
-//signature // initEager helpers
-//  
-//  arrows
-//    initEagerEdges(Map(Label, List(Scope)), List(Label), List(Namespace)) :: H -->
-//      Map(Label, Map(Scope, Frame)) :: H
-//    initEagerEdge(List(Scope), List(Namespace)) :: H --> Map(Scope, Frame) :: H
-//
-//rules // initEager takes a scope and recursively traverses its edges to construct frame links
-//
-//  initEager(s, namespaces) --> initDefaultNS(s, links, namespaces)
-//  where
-//    edgesOf(s) --> es;
-//    allkeys(es) => ls;
-//    initEagerEdges(es, ls, namespaces) --> links
-//    
-//  initEagerEdges(_, [], _) --> {}
-//  
-//  initEagerEdges(m, [l|ls], ns) -->
-//    { l |--> link, tail }
-//  where
-//    initEagerEdge(m[l], ns) --> link;
-//    initEagerEdges(m, ls, ns) --> tail
-//
-//  initEagerEdge([], _) --> {}
-//  
-//  initEagerEdge([s|ss], ns) --> { s |--> F, link }
-//  where
-//    initEager(s, ns) --> F;
-//    initEagerEdge(ss, ns) --> link
-
+ 

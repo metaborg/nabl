@@ -37,9 +37,9 @@ signature
     NaBL2 |- declsOf(Scope) --> List(Occurrence)
     NaBL2 |- edgesOf(Scope) --> Map(Label, List(Scope))
     NaBL2 |- importsOf(Scope) --> Map(Label, List(Occurrence))
-
     NaBL2 |- scopeOfDecl(Occurrence) --> Scope
     NaBL2 |- scopeOfRef(Occurrence) --> Scope
+    NaBL2 |- scopeOfTerm(AST) --> Scope
     NaBL2 |- assocsOf(Occurrence) --> Map(Label, List(Scope))
     NaBL2 |- typeOf(Occurrence) --> Type
     
