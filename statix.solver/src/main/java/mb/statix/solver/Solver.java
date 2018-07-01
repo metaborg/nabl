@@ -36,6 +36,8 @@ public class Solver {
         // fixed point
         final Set<IConstraint> failed = Sets.newHashSet();
         boolean progress = true;
+        int reduced = 0;
+        int delayed = 0;
         outer: while(progress) {
             progress = false;
             final Iterator<IConstraint> it = constraints.iterator();
@@ -51,6 +53,7 @@ public class Solver {
                     progress = true;
                     it.remove();
                     completeness = completeness.remove(constraint);
+                    reduced += 1;
                     if(maybeResult.isPresent()) {
                         final Result result = maybeResult.get();
                         state = result.state();
@@ -73,12 +76,14 @@ public class Solver {
                     }
                 } catch(Delay d) {
                     subDebug.info("Delayed");
+                    delayed += 1;
                 }
             }
         }
 
         // return
-        debug.info("Solved with {} failed and {} remaining constraint(s).", failed.size(), constraints.size());
+        debug.info("Solved {} constraints ({} delays) with {} failed and {} remaining constraint(s).", reduced, delayed,
+                failed.size(), constraints.size());
         return Config.of(state, constraints, completeness).withErrors(config.errors()).withErrors(failed);
     }
 
