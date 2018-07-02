@@ -7,8 +7,8 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public interface IQueryFilter {
 

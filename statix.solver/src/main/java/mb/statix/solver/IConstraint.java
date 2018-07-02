@@ -10,6 +10,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public interface IConstraint {

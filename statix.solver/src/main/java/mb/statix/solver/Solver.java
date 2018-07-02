@@ -14,6 +14,9 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.solver.log.Log;
 
 public class Solver {
 
@@ -26,6 +29,7 @@ public class Solver {
 
     public static Config solve(final Config config, final IDebugContext debug) throws InterruptedException {
         debug.info("Solving constraints");
+        final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
         // set-up
         final Set<IConstraint> constraints = Sets.newConcurrentHashSet(config.constraints());
@@ -35,19 +39,21 @@ public class Solver {
 
         // fixed point
         final Set<IConstraint> failed = Sets.newHashSet();
+        final Log delayedLog = new Log();
         boolean progress = true;
         int reduced = 0;
         int delayed = 0;
         outer: while(progress) {
             progress = false;
+            delayedLog.clear();
             final Iterator<IConstraint> it = constraints.iterator();
             while(it.hasNext()) {
                 if(Thread.interrupted()) {
                     throw new InterruptedException();
                 }
                 final IConstraint constraint = it.next();
-                debug.info("Solving {}", constraint.toString(state.unifier()));
-                IDebugContext subDebug = debug.subContext();
+                proxyDebug.info("Solving {}", constraint.toString(state.unifier()));
+                IDebugContext subDebug = proxyDebug.subContext();
                 try {
                     Optional<Result> maybeResult = constraint.solve(state, completeness, subDebug);
                     progress = true;
@@ -67,23 +73,26 @@ public class Solver {
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
-                        if(debug.isRoot()) {
+                        if(proxyDebug.isRoot()) {
                             printTrace(constraint, state.unifier(), subDebug);
                         } else {
-                            debug.info("Break early because of errors.");
+                            proxyDebug.info("Break early because of errors.");
                             break outer;
                         }
                     }
+                    proxyDebug.commit();
                 } catch(Delay d) {
                     subDebug.info("Delayed");
+                    delayedLog.absorb(proxyDebug.clear());
                     delayed += 1;
                 }
             }
         }
 
-        // return
+        delayedLog.flush(debug);
         debug.info("Solved {} constraints ({} delays) with {} failed and {} remaining constraint(s).", reduced, delayed,
                 failed.size(), constraints.size());
+
         return Config.of(state, constraints, completeness).withErrors(config.errors()).withErrors(failed);
     }
 

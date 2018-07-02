@@ -7,8 +7,8 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Lambda;
 
 public class QueryMin implements IQueryMin {

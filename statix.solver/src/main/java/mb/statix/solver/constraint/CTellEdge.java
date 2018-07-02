@@ -19,9 +19,9 @@ import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public class CTellEdge implements IConstraint {

@@ -12,9 +12,9 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public class CTrue implements IConstraint {
 

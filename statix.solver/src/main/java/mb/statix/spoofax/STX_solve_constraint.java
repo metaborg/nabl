@@ -29,9 +29,9 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.LoggerDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixPrimitive {

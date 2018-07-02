@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.solver.log.IDebugContext;
 
 public interface IGuard {
 

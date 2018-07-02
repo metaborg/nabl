@@ -1,4 +1,4 @@
-package mb.statix.solver;
+package mb.statix.solver.log;
 
 import java.util.Collections;
 
@@ -21,8 +21,12 @@ public class LoggerDebugContext implements IDebugContext {
         this.depth = depth;
     }
 
-    public boolean isRoot() {
-        return depth == 0;
+    @Override public Level getLevel() {
+        return level;
+    }
+
+    @Override public int getDepth() {
+        return depth;
     }
 
     @Override public IDebugContext subContext() {
@@ -36,25 +40,11 @@ public class LoggerDebugContext implements IDebugContext {
         logger.info(prefix(depth) + fmt, args);
     }
 
-    @Override public void info(String fmt, Throwable t, Object... args) {
-        if(Level.Info.compareTo(level) < 0) {
-            return;
-        }
-        logger.info(prefix(depth) + fmt, t, args);
-    }
-
     @Override public void warn(String fmt, Object... args) {
         if(Level.Warn.compareTo(level) < 0) {
             return;
         }
         logger.warn(prefix(depth) + fmt, args);
-    }
-
-    @Override public void warn(String fmt, Throwable t, Object... args) {
-        if(Level.Warn.compareTo(level) < 0) {
-            return;
-        }
-        logger.warn(prefix(depth) + fmt, t, args);
     }
 
     @Override public void error(String fmt, Object... args) {
@@ -64,11 +54,11 @@ public class LoggerDebugContext implements IDebugContext {
         logger.error(prefix(depth) + fmt, args);
     }
 
-    @Override public void error(String fmt, Throwable t, Object... args) {
-        if(Level.Error.compareTo(level) < 0) {
+    @Override public void log(Level level, String fmt, Object... args) {
+        if(level.compareTo(level) < 0) {
             return;
         }
-        logger.error(prefix(depth) + fmt, t, args);
+        logger.log(level, prefix(depth) + fmt, args);
     }
 
     private String prefix(int depth) {

@@ -23,10 +23,12 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.IGuard;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
@@ -69,38 +71,43 @@ public class CUser implements IConstraint {
         final Set<Rule> rules = Sets.newHashSet(state.spec().rules().get(name));
         final List<Result> results = Lists.newArrayListWithExpectedSize(1);
         final Iterator<Rule> it = rules.iterator();
+        final Log unsuccessfulLog = new Log();
         outer: while(it.hasNext()) {
+            final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
             State result = state;
-            final Rule rule;
+            final Rule rawRule = it.next();
+            final Rule instantiatedRule;
             try {
-                final Tuple2<State, Rule> appl = it.next().apply(args, result);
+                final Tuple2<State, Rule> appl = rawRule.apply(args, result);
                 result = appl._1();
-                rule = appl._2();
+                instantiatedRule = appl._2();
             } catch(MatchException | UnificationException e) {
-                debug.warn("Failed to instantiate {}(_) for arguments {}", name, args);
+                proxyDebug.warn("Failed to instantiate {} for arguments {}", rawRule, args);
                 continue;
             }
-            debug.info("Try rule {}", rule.toString(result.unifier()));
-            for(IGuard guard : rule.getGuard()) {
+            proxyDebug.info("Try rule {}", instantiatedRule.toString(result.unifier()));
+            for(IGuard guard : instantiatedRule.getGuard()) {
                 try {
-                    Optional<State> maybeResult = guard.solve(result, debug);
+                    Optional<State> maybeResult = guard.solve(result, proxyDebug);
                     if(!maybeResult.isPresent()) {
-                        debug.info("Rule rejected (unsatisfied guard constraint)");
+                        proxyDebug.info("Rule rejected (unsatisfied guard constraint)");
                         it.remove();
                         continue outer;
                     } else {
                         result = maybeResult.get();
                     }
                 } catch(Delay e) {
-                    debug.info("Rule delayed (unsolved guard constraint)");
+                    proxyDebug.info("Rule delayed (unsolved guard constraint)");
                     continue outer;
                 }
             }
-            if(state.entails(result, rule.getGuardVars())) {
-                debug.info("Rule accepted");
-                results.add(Result.of(result, rule.getBody()));
+            if(state.entails(result, instantiatedRule.getGuardVars())) {
+                proxyDebug.info("Rule accepted");
+                proxyDebug.commit();
+                results.add(Result.of(result, instantiatedRule.getBody()));
             } else {
-                debug.info("Rule delayed (instantiated variables)");
+                proxyDebug.info("Rule delayed (instantiated variables)");
+                unsuccessfulLog.absorb(proxyDebug.clear());
             }
         }
         if(!results.isEmpty()) {
@@ -112,8 +119,10 @@ public class CUser implements IConstraint {
             }
         } else if(rules.isEmpty()) {
             debug.info("No rule applies");
+            unsuccessfulLog.flush(debug);
             return Optional.empty();
         } else {
+            unsuccessfulLog.flush(debug);
             throw new Delay();
         }
     }

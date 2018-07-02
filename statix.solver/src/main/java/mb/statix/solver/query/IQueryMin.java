@@ -7,8 +7,8 @@ import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public interface IQueryMin {
 

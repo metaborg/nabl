@@ -18,9 +18,9 @@ import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
 import mb.statix.solver.Delay;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Lambda;
 
 public class ConstraintLabelWF implements LabelWF<ITerm> {

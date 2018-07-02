@@ -22,9 +22,9 @@ import mb.statix.solver.Completeness;
 import mb.statix.solver.Config;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.NullDebugContext;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.log.NullDebugContext;
 
 public class Lambda {
 
