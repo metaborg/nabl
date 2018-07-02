@@ -17,9 +17,11 @@ import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -82,16 +84,16 @@ public class StatixTerms {
     public static IMatcher<Spec> spec() {
         return IMatcher.flatten(M.tuple4(M.req(labels()), M.req(relationDecls()), M.term(), M.req(scopeExtensions()),
                 (t, labels, relations, rulesTerm, ext) -> {
-                    Optional<Multimap<String, Rule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
+                    Optional<ListMultimap<String, Rule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
                     return maybeRules.map(rules -> {
                         return Spec.of(rules, labels, END_OF_PATH, relations, ext);
                     });
                 }));
     }
 
-    public static IMatcher<Multimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
+    public static IMatcher<ListMultimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
         return M.listElems(M.req(rule(labels))).map(rules -> {
-            final ImmutableMultimap.Builder<String, Rule> builder = ImmutableMultimap.builder();
+            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.builder();
             rules.stream().forEach(rule -> {
                 builder.put(rule.getName(), rule);
             });

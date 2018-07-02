@@ -3,14 +3,12 @@ package mb.statix.solver.constraint;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.MatchException;
@@ -68,7 +66,7 @@ public class CUser implements IConstraint {
 
     public Optional<Result> solve(final State state, Completeness completeness, IDebugContext debug)
             throws InterruptedException, Delay {
-        final Set<Rule> rules = Sets.newHashSet(state.spec().rules().get(name));
+        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final List<Result> results = Lists.newArrayListWithExpectedSize(1);
         final Iterator<Rule> it = rules.iterator();
         final Log unsuccessfulLog = new Log();
@@ -92,12 +90,14 @@ public class CUser implements IConstraint {
                     if(!maybeResult.isPresent()) {
                         proxyDebug.info("Rule rejected (unsatisfied guard constraint)");
                         it.remove();
+                        unsuccessfulLog.absorb(proxyDebug.clear());
                         continue outer;
                     } else {
                         result = maybeResult.get();
                     }
                 } catch(Delay e) {
                     proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                    unsuccessfulLog.absorb(proxyDebug.clear());
                     continue outer;
                 }
             }
@@ -113,6 +113,7 @@ public class CUser implements IConstraint {
         if(!results.isEmpty()) {
             if(results.size() > 1) {
                 debug.error("Found overlapping rules");
+                unsuccessfulLog.flush(debug);
                 return Optional.empty();
             } else {
                 return Optional.of(results.get(0));
