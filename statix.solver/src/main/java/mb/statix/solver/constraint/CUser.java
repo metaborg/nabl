@@ -113,7 +113,7 @@ public class CUser implements IConstraint {
         if(!results.isEmpty()) {
             if(results.size() > 1) {
                 debug.error("Found overlapping rules");
-                throw new IllegalArgumentException("Found overlapping rules");
+                return Optional.empty();
             } else {
                 return Optional.of(results.get(0));
             }
