@@ -7,6 +7,7 @@ import org.immutables.value.Value;
 
 import com.google.common.collect.Iterators;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.PSequence;
 import mb.statix.scopegraph.path.IStep;
 
@@ -26,6 +27,10 @@ abstract class AStep<V, L> implements IStep<V, L> {
 
     @Value.Lazy @Override public PSequence<V> scopes() {
         return PSequence.of(getSource(), getTarget());
+    }
+
+    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
+        return Set.Immutable.of(getSource(), getTarget());
     }
 
     @Value.Lazy @Override public PSequence<L> labels() {

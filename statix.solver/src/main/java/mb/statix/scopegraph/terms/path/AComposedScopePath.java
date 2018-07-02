@@ -7,10 +7,10 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Iterators;
 import com.google.common.math.IntMath;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.PSequence;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -29,7 +29,7 @@ abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
             return null;
         }
         // path is cyclic
-        if(ImmutableMultiset.copyOf(scopes()).entrySet().stream().anyMatch(e -> e.getCount() > 1)) {
+        if(scopeSet().size() < size()) {
             return null;
         }
         return this;
@@ -49,6 +49,10 @@ abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
 
     @Value.Lazy @Override public PSequence<V> scopes() {
         return getLeft().scopes().appendAll(getRight().scopes().tail());
+    }
+
+    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
+        return getLeft().scopeSet().__insertAll(getRight().scopeSet());
     }
 
     @Value.Lazy @Override public PSequence<L> labels() {
