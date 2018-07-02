@@ -7,18 +7,17 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Iterators;
 import com.google.common.math.IntMath;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.PSequence;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AComposedScopePath<V, L>
-        implements IScopePath<V, L> {
+abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
 
     @Value.Parameter public abstract IScopePath<V, L> getLeft();
 
@@ -30,7 +29,7 @@ abstract class AComposedScopePath<V, L>
             return null;
         }
         // path is cyclic
-        if(getScopes().size() <= size()) {
+        if(ImmutableMultiset.copyOf(scopes()).entrySet().stream().anyMatch(e -> e.getCount() > 1)) {
             return null;
         }
         return this;
@@ -48,12 +47,12 @@ abstract class AComposedScopePath<V, L>
         return getLeft().size() + getRight().size();
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
-        return getLeft().getScopes().__insertAll(getRight().getScopes());
+    @Value.Lazy @Override public PSequence<V> scopes() {
+        return getLeft().scopes().appendAll(getRight().scopes().tail());
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
-        return getLeft().getLabels().appendAll(getRight().getLabels());
+    @Value.Lazy @Override public PSequence<L> labels() {
+        return getLeft().labels().appendAll(getRight().labels());
     }
 
     @Override public Iterator<IStep<V, L>> iterator() {

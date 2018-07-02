@@ -8,7 +8,6 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.PSequence;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -27,12 +26,12 @@ abstract class AResolutionPath<V, L, R> implements IResolutionPath<V, L, R> {
         return this;
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
-        return getPath().getScopes();
+    @Value.Lazy @Override public PSequence<V> scopes() {
+        return getPath().scopes();
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
-        return getPath().getLabels();
+    @Value.Lazy @Override public PSequence<L> labels() {
+        return getPath().labels();
     }
 
     @Override public String toString() {

@@ -59,7 +59,7 @@ public class CPathScopes implements IConstraint {
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
         return Optional
-                .of(Result.of(state, ImmutableSet.of(new CEqual(B.newList(path.getScopes()), scopesTerm, this))));
+                .of(Result.of(state, ImmutableSet.of(new CEqual(B.newList(path.scopes()), scopesTerm, this))));
     }
 
     @Override public String toString(IUnifier unifier) {

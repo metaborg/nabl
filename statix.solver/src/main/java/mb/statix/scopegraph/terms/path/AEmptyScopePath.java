@@ -8,15 +8,13 @@ import org.immutables.value.Value;
 
 import com.google.common.collect.Iterators;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.PSequence;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AEmptyScopePath<V, L>
-        implements IScopePath<V, L> {
+abstract class AEmptyScopePath<V, L> implements IScopePath<V, L> {
 
     @Value.Parameter public abstract V getScope();
 
@@ -32,11 +30,11 @@ abstract class AEmptyScopePath<V, L>
         return 0;
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
-        return Set.Immutable.of(getScope());
+    @Value.Lazy @Override public PSequence<V> scopes() {
+        return PSequence.of(getScope());
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
+    @Value.Lazy @Override public PSequence<L> labels() {
         return PSequence.of();
     }
 
