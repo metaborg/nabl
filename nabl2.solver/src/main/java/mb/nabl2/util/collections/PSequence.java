@@ -30,11 +30,11 @@ public class PSequence<E> implements Iterable<E>, Serializable {
     }
 
     public PSequence<E> init() {
-        return new PSequence<>(elems.subList(1, elems.size()));
+        return new PSequence<>(elems.subList(0, elems.size() - 1));
     }
 
     public PSequence<E> tail() {
-        return new PSequence<>(elems.subList(0, elems.size() - 1));
+        return new PSequence<>(elems.subList(1, elems.size()));
     }
 
     public PSequence<E> prepend(E elem) {
