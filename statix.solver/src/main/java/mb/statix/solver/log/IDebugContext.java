@@ -5,7 +5,7 @@ import org.metaborg.util.log.Level;
 public interface IDebugContext {
 
     default boolean isRoot() {
-        return getDepth() > 0;
+        return getDepth() == 0;
     }
 
     Level getLevel();
