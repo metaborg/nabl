@@ -364,8 +364,8 @@ rules
     Pos(V)[[ pos ^ (s) : _ ]].
 
   Pos(V)[[ NoId() ^ (s) : TERM_ID() ]].
-  Pos(V)[[ v@Var(_) ^ (s) : ty ]] :=
-    V[[ v ^ (s) : ty ]].
+  Pos(V)[[ t ^ (s) : ty ]] :=
+    Term(V)[[ t ^ (s) : ty ]].
 
 /******************************************************************
  * Resolve & Query
