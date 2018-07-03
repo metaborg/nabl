@@ -120,9 +120,9 @@ rules
          else if CFGParams(params) := args then
            ast-constraint* := [CAstProperty(index, CFGParams(), params)];
            msg := ${Missing flowspec cfg rule: {name} {<nabl2--pp-flat-term> term}};
-           if nabl2-debug-constraint-generation-hook then
-             warn(|msg)
-           end;
+           //if nabl2-debug-constraint-generation-hook then
+             warn(|msg);
+           //end;
            constraint := CFalse(Message(Warning(),msg,index))
          end end end
 

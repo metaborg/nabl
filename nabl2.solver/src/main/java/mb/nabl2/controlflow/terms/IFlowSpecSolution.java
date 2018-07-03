@@ -7,7 +7,7 @@ import mb.nabl2.util.Tuple2;
 
 public interface IFlowSpecSolution<N extends ICFGNode> {
     ICompleteControlFlowGraph.Immutable<N> controlFlowGraph();
-    // TODO: change to Map.Immutable<String, Map<TermIndex, ITerm>>?
+    // TODO: change to Map.Immutable<String, Map<CFGNode, ITerm>>?
     Map.Immutable<Tuple2<CFGNode, String>, ITerm> preProperties();
     Map.Immutable<Tuple2<CFGNode, String>, ITerm> postProperties();
     /**
