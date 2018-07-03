@@ -1,10 +1,13 @@
 package mb.nabl2.terms.unification;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -14,6 +17,7 @@ public class PersistentUnifierFiniteTest {
     private final ITermVar a = B.newVar("", "a");
     private final ITermVar b = B.newVar("", "b");
     private final ITermVar c = B.newVar("", "c");
+    private final ITermVar d = B.newVar("", "d");
 
     private final String f = "f";
     private final String g = "g";
@@ -72,30 +76,6 @@ public class PersistentUnifierFiniteTest {
         phi.unify(b, B.newAppl(g, a));
     }
 
-    @Test public void testMatchVars() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(a, b);
-        assertEquals(b, phi.findTerm(a));
-    }
-
-    @Test public void testMatchVarTerm() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(a, B.newAppl(g, x, b));
-        assertEquals(B.newAppl(g, x, b), phi.findTerm(a));
-    }
-
-    @Test public void testMatchTerms() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(B.newAppl(g, a, b), B.newAppl(g, B.newList(x), y));
-        assertEquals(B.newList(x), phi.findTerm(a));
-        assertEquals(y, phi.findTerm(b));
-    }
-
-    @Test(expected = MatchException.class) public void testMatchFail() throws MatchException {
-        final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.match(B.newAppl(g, a), b);
-    }
-
     @Test public void testUnifyMakeEqualReps() throws UnificationException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
         phi.unify(a, b);
@@ -120,12 +100,37 @@ public class PersistentUnifierFiniteTest {
         assertEquals("f(\"x\",\"y\")", phi.toString(a));
     }
 
-    @Test public void testRemove() throws UnificationException {
-        IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, x);
+    @Test public void testRemoveUnifiedVar() throws UnificationException {
+        final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+        final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        reps.__put(a, b);
+        reps.__put(b, c);
+        terms.__put(d, B.newAppl(f, a));
+        final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(b);
-        assertTrue(phi.areEqual(a, B.newAppl(f, x)));
+        assertTrue(phi.areEqual(a, c));
+        assertTrue(phi.areEqual(d, B.newAppl(f, c)));
+    }
+
+    @Test public void testRemoveFreeVar() throws UnificationException {
+        final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+        final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        reps.__put(a, b);
+        reps.__put(b, c);
+        final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
+        phi.remove(c);
+        assertFalse(phi.areEqual(b, c));
+        assertTrue(phi.areEqual(a, b));
+    }
+
+    @Test public void testRemoveVarWithTerm() throws UnificationException {
+        final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+        final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        reps.__put(a, b);
+        terms.__put(b, B.newAppl(f, c));
+        final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
+        phi.remove(b);
+        assertTrue(phi.areEqual(a, B.newAppl(f, c)));
     }
 
     @Test public void testRetain() throws UnificationException {
@@ -138,11 +143,19 @@ public class PersistentUnifierFiniteTest {
 
     @Test public void testEquals() throws UnificationException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
         phi.unify(b, x);
+        phi.unify(a, B.newAppl(f, b));
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
         theta.unify(a, B.newAppl(f, x));
         theta.unify(b, x);
+        assertEquals(phi, theta);
+    }
+
+    @Test public void testEquivalenceClasses() throws UnificationException {
+        final IUnifier.Immutable phi =
+                new PersistentUnifier.Immutable(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of());
+        final IUnifier.Immutable theta =
+                new PersistentUnifier.Immutable(true, Map.Immutable.of(b, a), Map.Immutable.of(), Map.Immutable.of());
         assertEquals(phi, theta);
     }
 

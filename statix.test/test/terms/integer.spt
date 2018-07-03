@@ -1,0 +1,52 @@
+module terms-integer
+
+language StatixTest
+
+// static
+
+test integer type ascription [[
+  resolve _:int == 42
+]] analysis succeeds
+
+test integer constructor argument [[
+  resolve Some(12) == None()
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : int -> Maybe
+]] analysis succeeds
+
+test integer constraint argument [[
+  resolve c(3)
+  signature
+    constraints
+      c : int
+]] analysis succeeds
+
+// dynamic
+
+test unifying equal integers succeeds [[
+  resolve 12 == 12
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying inequal integers fails [[
+  resolve 12 == 7
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching same integer succeeds [[
+  resolve c(12)
+  rules
+    c : int
+    c(12).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching inequal integer fails [[
+  resolve c(7)
+  rules
+    c : int
+    c(9).
+]] analysis succeeds
+   run evaluate-test to FAILS()

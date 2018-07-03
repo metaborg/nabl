@@ -7,7 +7,7 @@ import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class AstConstraints {
 
@@ -32,14 +32,14 @@ public final class AstConstraints {
 
     }
 
-    public static IAstConstraint substitute(IAstConstraint constraint, IUnifier unifier) {
+    public static IAstConstraint substitute(IAstConstraint constraint, ISubstitution.Immutable subst) {
         return constraint.match(IAstConstraint.Cases.<IAstConstraint>of(
             // @formatter:off
             prop -> ImmutableCAstProperty.of(
                         prop.getIndex(),
                         prop.getKey(),
-                        unifier.findRecursive(prop.getValue()),
-                        prop.getMessageInfo().apply(unifier::findRecursive))
+                        subst.apply(prop.getValue()),
+                        prop.getMessageInfo().apply(subst::apply))
             // @formatter:on
         ));
     }

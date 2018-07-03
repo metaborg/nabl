@@ -9,7 +9,7 @@ import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class BaseConstraints {
 
@@ -56,26 +56,26 @@ public final class BaseConstraints {
         ));
     }
 
-    public static IBaseConstraint substitute(IBaseConstraint constraint, IUnifier.Immutable subst) {
+    public static IBaseConstraint substitute(IBaseConstraint constraint, ISubstitution.Immutable subst) {
         return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
         // @formatter:off
-            t -> ImmutableCTrue.of(t.getMessageInfo().apply(subst::findRecursive)),
-            f -> ImmutableCFalse.of(f.getMessageInfo().apply(subst::findRecursive)),
+            t -> ImmutableCTrue.of(t.getMessageInfo().apply(subst::apply)),
+            f -> ImmutableCFalse.of(f.getMessageInfo().apply(subst::apply)),
             c -> {
                 return ImmutableCConj.of(
                         Constraints.substitute(c.getLeft(), subst),
                         Constraints.substitute(c.getRight(), subst),
-                        c.getMessageInfo().apply(subst::findRecursive));
+                        c.getMessageInfo().apply(subst::apply));
             },
             e -> {
-                final IUnifier.Immutable restrictedSubst = subst.removeAll(e.getEVars()).unifier();
+                final ISubstitution.Immutable restrictedSubst = subst.removeAll(e.getEVars());
                 return ImmutableCExists.of(e.getEVars(),
                         Constraints.substitute(e.getConstraint(), restrictedSubst),
-                        e.getMessageInfo().apply(restrictedSubst::findRecursive));
+                        e.getMessageInfo().apply(restrictedSubst::apply));
             },
             n -> {
-                return ImmutableCNew.of(n.getNVars().stream().map(subst::findRecursive).collect(Collectors.toSet()),
-                        n.getMessageInfo().apply(subst::findRecursive));
+                return ImmutableCNew.of(n.getNVars().stream().map(subst::apply).collect(Collectors.toSet()),
+                        n.getMessageInfo().apply(subst::apply));
             }
             // @formatter:on
         ));

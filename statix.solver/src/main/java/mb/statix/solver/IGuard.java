@@ -2,14 +2,13 @@ package mb.statix.solver;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
-import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.solver.log.IDebugContext;
 
 public interface IGuard {
 
-    IGuard apply(Function1<ITerm, ITerm> map);
+    IGuard apply(ISubstitution.Immutable subst);
 
     /**
      * Solve constraint
@@ -19,8 +18,21 @@ public interface IGuard {
      * @return new state if reduced, or none
      * @throws InterruptedException
      */
-    Optional<State> solve(State state, IDebugContext debug) throws InterruptedException;
+    Optional<State> solve(State state, IDebugContext debug) throws InterruptedException, Delay;
 
     String toString(IUnifier unifier);
+
+    static String toString(Iterable<? extends IGuard> constraints, IUnifier unifier) {
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(IGuard constraint : constraints) {
+            if(!first) {
+                sb.append(", ");
+            }
+            first = false;
+            sb.append(constraint.toString(unifier));
+        }
+        return sb.toString();
+    }
 
 }

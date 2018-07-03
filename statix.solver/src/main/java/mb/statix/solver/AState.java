@@ -2,8 +2,14 @@ package mb.statix.solver;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Set;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.scopegraph.terms.ImmutableScope;
 import mb.nabl2.terms.ITerm;
@@ -22,27 +28,49 @@ public abstract class AState {
 
     @Value.Parameter public abstract Spec spec();
 
-    @Value.Default int varCounter() {
+    // --- variables ---
+
+    @Value.Default int __varCounter() {
         return 0;
+    }
+
+    @Value.Default Set<ITermVar> __vars() {
+        return ImmutableSet.of();
     }
 
     public Tuple2<ITermVar, State> freshVar(String base) {
-        final int i = varCounter() + 1;
+        final int i = __varCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final ITermVar var = B.newVar("", name);
-        return ImmutableTuple2.of(var, State.copyOf(this).withVarCounter(i));
+        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).add__vars(var).build());
     }
 
-    @Value.Default int scopeCounter() {
+    public Set<ITermVar> vars() {
+        return __vars();
+    }
+
+    // --- scopes ---
+
+    @Value.Default int __scopeCounter() {
         return 0;
     }
 
+    @Value.Default Set<ITerm> __scopes() {
+        return ImmutableSet.of();
+    }
+
     public Tuple2<ITerm, State> freshScope(String base) {
-        final int i = scopeCounter() + 1;
+        final int i = __scopeCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final ITerm scope = ImmutableScope.of("", name);
-        return ImmutableTuple2.of(scope, State.copyOf(this).withScopeCounter(i));
+        return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).add__scopes(scope).build());
     }
+
+    public Set<ITerm> scopes() {
+        return __scopes();
+    }
+
+    // --- solution ---
 
     @Value.Default public IUnifier.Immutable unifier() {
         return PersistentUnifier.Immutable.of();
@@ -52,8 +80,27 @@ public abstract class AState {
         return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
     }
 
-    @Value.Default public boolean isErroneous() {
-        return false;
+    // --- entailment ---
+
+    /** Test if this unifier entails the other unifier. */
+    public boolean entails(State other) {
+        return entails(other, ImmutableSet.of());
+    }
+
+    /** Test if this unifier entails the other unifier, assuming some local variables. */
+    public boolean entails(State other, Iterable<ITermVar> localVars) {
+        final Set<ITermVar> lostVars = Sets.difference(vars(), other.vars());
+        if(!lostVars.isEmpty()) {
+            return false;
+        }
+        final Set<ITermVar> newVars = Sets.difference(other.vars(), vars());
+        final IUnifier.Immutable unifier = unifier().removeAll(localVars).unifier();
+        final IUnifier.Immutable otherUnifier =
+                other.unifier().removeAll(Iterables.concat(localVars, newVars)).unifier();
+        if(!otherUnifier.equals(unifier)) {
+            return false;
+        }
+        return true;
     }
 
 }

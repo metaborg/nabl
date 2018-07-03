@@ -1,0 +1,17 @@
+/.cache
+/bin
+/src-gen
+/target
+/.polyglot.metaborg.yaml
+
+/.classpath
+/.project
+/.settings
+
+*.constraints
+*.scope-graph
+*.name-resolution
+*.unifier
+*.symbolic
+
+*.stxresult

@@ -2,45 +2,61 @@ package mb.statix.solver.constraint;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.terms.unification.UnificationException;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public class CEqual implements IConstraint {
 
     private final ITerm term1;
     private final ITerm term2;
 
+    private final @Nullable IConstraint cause;
+
     public CEqual(ITerm term1, ITerm term2) {
+        this(term1, term2, null);
+    }
+
+    public CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause) {
         this.term1 = term1;
         this.term2 = term2;
+        this.cause = cause;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CEqual(map.apply(term1), map.apply(term2));
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
+    @Override public CEqual withCause(@Nullable IConstraint cause) {
+        return new CEqual(term1, term2, cause);
+    }
+
+    @Override public CEqual apply(ISubstitution.Immutable subst) {
+        return new CEqual(subst.apply(term1), subst.apply(term2), cause);
+    }
+
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result = unifier.unify(term1, term2);
-            debug.info("Unification succeeded");
+            debug.info("Unification succeeded: {}", result.result());
             final State newState = state.withUnifier(result.unifier());
             return Optional.of(Result.of(newState, ImmutableSet.of()));
         } catch(UnificationException e) {
-            debug.info("Unification failed");
-            return Optional.of(Result.of(state, Sets.newHashSet(new CFalse())));
+            debug.info("Unification failed: {} != {}", unifier.toString(e.getLeft()), unifier.toString(e.getRight()));
+            return Optional.empty();
         }
     }
 

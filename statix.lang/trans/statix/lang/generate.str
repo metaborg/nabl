@@ -1,0 +1,45 @@
+module statix/lang/generate
+
+imports
+
+  libstrc
+
+  libspoofax/core/language
+  
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  generate-aterm:
+    (_, _, ast@Module(name,_), path, project-path) -> None()
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <nabl2-analysis-has-errors> a
+
+  generate-aterm:
+    (_, _, Module(name,_), path, project-path) -> (filename, spec)
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          not(<nabl2-analysis-has-errors> a)
+    with spec := <nabl2-get-custom-analysis;strip-annos;eliminate-all;spec-ast-to-aterm> a;
+         filename := <src-gen-file(|"statix/", ".spec.aterm")> name
+ 
+  src-gen-file(|sub-dir, ext): name -> filename
+    with filename := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
+
+  src-gen-dir(|sub-dir): _ -> dirname
+    with dirname := <language-srcgen-dir> sub-dir
+
+rules
+
+  spec-ast-to-aterm: (ast, ext) -> spec
+    with rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
+         label* := <collect-all(?Labels(<id>));concat> ast;
+         rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
+         spec := (label*, rel*, rule*, ext)
+
+  eliminate-all =
+    eliminate-ascribe
+
+  eliminate-ascribe = topdown(try(\ Ascribe(t, _) -> t \))

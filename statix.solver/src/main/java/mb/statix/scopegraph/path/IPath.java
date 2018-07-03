@@ -5,8 +5,10 @@ import mb.nabl2.util.collections.PSequence;
 
 public interface IPath<V, L> {
 
-    Set.Immutable<V> getScopes();
+    PSequence<V> scopes();
 
-    PSequence<L> getLabels();
+    Set.Immutable<V> scopeSet();
+
+    PSequence<L> labels();
 
 }

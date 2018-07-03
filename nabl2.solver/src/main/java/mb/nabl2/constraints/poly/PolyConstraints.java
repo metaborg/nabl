@@ -6,7 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class PolyConstraints {
 
@@ -15,7 +15,7 @@ public final class PolyConstraints {
 
     public static IMatcher<IPolyConstraint> matcher() {
         return M.<IPolyConstraint>cases(
-            // @formatter:off
+        // @formatter:off
             M.appl4(C_GEN, M.term(), M.var(), M.term(), MessageInfo.matcher(), (c, scheme, genVars, type, origin) -> {
                 return ImmutableCGeneralize.of(scheme, genVars, type, origin);
             }),
@@ -28,28 +28,28 @@ public final class PolyConstraints {
 
     public static ITerm build(IPolyConstraint constraint) {
         return constraint.match(IPolyConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             gen -> B.newAppl(C_GEN, gen.getDeclaration(), gen.getType(), MessageInfo.build(gen.getMessageInfo())),
             inst -> B.newAppl(C_INST, inst.getType(), inst.getDeclaration(), MessageInfo.build(inst.getMessageInfo()))
             // @formatter:on
         ));
     }
 
-    public static IPolyConstraint substitute(IPolyConstraint constraint, IUnifier unifier) {
+    public static IPolyConstraint substitute(IPolyConstraint constraint, ISubstitution.Immutable subst) {
+        // @formatter:off
         return constraint.match(IPolyConstraint.Cases.of(
-            // @formatter:off
             gen -> ImmutableCGeneralize.of(
-                        unifier.findRecursive(gen.getDeclaration()),
+                        subst.apply(gen.getDeclaration()),
                         gen.getGenVars(),
-                        unifier.findRecursive(gen.getType()),
-                        gen.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(gen.getType()),
+                        gen.getMessageInfo().apply(subst::apply)),
             inst -> ImmutableCInstantiate.of(
-                        unifier.findRecursive(inst.getType()),
+                        subst.apply(inst.getType()),
                         inst.getInstVars(),
-                        unifier.findRecursive(inst.getDeclaration()),
-                        inst.getMessageInfo().apply(unifier::findRecursive))
-            // @formatter:on
+                        subst.apply(inst.getDeclaration()),
+                        inst.getMessageInfo().apply(subst::apply))
         ));
+        // @formatter:on
     }
 
 }

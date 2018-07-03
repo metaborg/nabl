@@ -1,0 +1,94 @@
+module rules-lifting
+
+language StatixTest
+
+test predicate constraint lifting all arguments [[
+resolve cs([], []), cs([1], [1])
+rules
+  c : int * int
+  c(i, i).
+
+  cs maps c(list(*), list(*))
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test predicate constraint lifting some arguments [[
+resolve cs(2, []), cs(1, [1, 1])
+rules
+  c : int * int
+  c(i, i).
+
+  cs maps c(*, list(*))
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test functional constraint lifting all arguments [[
+resolve {xs' ys'}
+  fs([], xs'), eqs(xs', []),
+  fs([1], ys'), eqs(ys', [1])
+rules
+  fs maps f(list(*)) = list(*)
+  f : int -> int
+  f(i) =  i.
+rules
+  eqs maps eq(list(*), list(*))
+  eq : int * int
+  eq(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test functional constraint lifting some input and some output arguments [[
+resolve {xs' x'}
+  fs([2, 3], 7) == (xs', x'), eqs(xs', [2, 3]), eq(x', 7)
+rules
+  fs maps f(list(*), *) = (list(*), *)
+  f : int * int -> int * int
+  f(i, x) =  (i, x).
+rules
+  eqs maps eq(list(*), list(*))
+  eq : int * int
+  eq(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test functional constraint lifting some input and all output arguments [[
+resolve {t1 t2}
+  fs([2, 3], 8, [t1, t2]), eq(t1, (2, 8)), eq(t2, (3, 8))
+rules
+  fs maps f(list(*), *) = list(*)
+  f : int * int -> (int * int)
+  f(i, x) =  (i, x).
+rules
+  eq : (int * int) * (int * int)
+  eq(is, is).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test functional constraint lifting only input arguments [[
+resolve {x} fs([2, 2], x), eq(x, 2)
+rules
+  fs maps f(list(*)) = *
+  f : int -> int
+  f(i) =  i.
+rules
+  eq : int * int
+  eq(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test functional constraint lifting only output arguments [[
+resolve fs([2], _)
+rules
+  fs maps f(*) = list(*)
+  f : int -> int
+  f(i) =  i.
+]] analysis fails
+
+test output variable in lifted constraint not treated as guard [[
+  resolve fs([1], _)
+  rules
+    fs maps f(list(*)) = list(*)
+    f : int -> int
+    f(x) = x.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

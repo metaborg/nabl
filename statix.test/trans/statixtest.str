@@ -1,0 +1,8 @@
+module statixtest
+
+imports
+  
+  statix/lang/-
+  statix/test/-
+
+  pp

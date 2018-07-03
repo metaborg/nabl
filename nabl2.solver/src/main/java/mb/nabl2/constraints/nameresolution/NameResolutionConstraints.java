@@ -8,7 +8,7 @@ import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class NameResolutionConstraints {
 
@@ -48,26 +48,26 @@ public final class NameResolutionConstraints {
         ));
     }
 
-    public static INameResolutionConstraint substitute(INameResolutionConstraint constraint, IUnifier unifier) {
+    public static INameResolutionConstraint substitute(INameResolutionConstraint constraint, ISubstitution.Immutable unifier) {
+        // @formatter:off
         return constraint.match(INameResolutionConstraint.Cases.<INameResolutionConstraint>of(
-            // @formatter:off
             res -> ImmutableCResolve.of(
-                        unifier.findRecursive(res.getReference()),
-                        unifier.findRecursive(res.getDeclaration()),
-                        res.getMessageInfo().apply(unifier::findRecursive)),
+                        unifier.apply(res.getReference()),
+                        unifier.apply(res.getDeclaration()),
+                        res.getMessageInfo().apply(unifier::apply)),
             assoc -> ImmutableCAssoc.of(
-                        unifier.findRecursive(assoc.getDeclaration()),
+                        unifier.apply(assoc.getDeclaration()),
                         assoc.getLabel(),
-                        unifier.findRecursive(assoc.getScope()),
-                        assoc.getMessageInfo().apply(unifier::findRecursive)),
+                        unifier.apply(assoc.getScope()),
+                        assoc.getMessageInfo().apply(unifier::apply)),
             prop -> ImmutableCDeclProperty.of(
-                        unifier.findRecursive(prop.getDeclaration()),
+                        unifier.apply(prop.getDeclaration()),
                         prop.getKey(),
-                        unifier.findRecursive(prop.getValue()),
+                        unifier.apply(prop.getValue()),
                         prop.getPriority(),
-                        prop.getMessageInfo().apply(unifier::findRecursive))
-            // @formatter:on
+                        prop.getMessageInfo().apply(unifier::apply))
         ));
+        // @formatter:on
     }
 
 }

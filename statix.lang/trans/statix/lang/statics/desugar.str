@@ -1,0 +1,98 @@
+module statix/lang/statics/desugar
+
+  /////////////////////////////////////////////////////////////////////
+  // Desugaring: called before analysis
+  /////////////////////////////////////////////////////////////////////
+
+imports
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  desugar-all =
+    desugar-rules;
+    desugar-rule-vars;
+    desugar-decl-shorthands;
+    desugar-ref-shorthands;
+    desugar-queries;
+    desugar-lambdas;
+    desugar-tuples;
+    fix-rules-variables
+
+rules
+
+  desugar-rules = try(sometd(desugar-rule))
+  desugar-rule: AxiomRule(h)        -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
+  desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
+  desugar-rule: BodyRule(h, vs, b)  -> Rule(h, NoLocalVars(), CTrue(), vs, b)
+
+rules
+
+  desugar-rule-vars = try(sometd(desugar-rule-var))
+  desugar-rule-var: NoLocalVars() -> []
+
+rules
+
+  desugar-decl-shorthands = topdown(try(desugar-decl-shorthand))
+  desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
+    with decl := <with-origin(|c)> Decl()
+  desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
+    with decl := <with-origin(|c)> Decl();
+         c1 := <with-origin(|c)> CTellRel(decl, [dt], st);
+         c2 := <with-origin(|c)> CTellRel(rel, [dt,rt], st)
+
+rules
+
+  desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
+  desugar-ref-shorthand: c@CResolveDecl(rt, st, pst) -> c'
+    with decl       := <with-origin(|c)> Decl();
+         rel-target := <with-origin(|c)> RelTarget(decl);
+         filter     := <with-origin(|rt)> ResolveFilter(rt);
+         min        := <with-origin(|rt)> ResolveMin(rt);
+         c'         := CResolveQuery(rel-target, filter, min, st, pst)
+  desugar-ref-shorthand: CResolveRel(rel, rt, st, pst) -> c'
+    with rel-target := <with-origin(|rel)> RelTarget(rel);
+         filter     := <with-origin(|rt)> ResolveFilter(rt);
+         min        := <with-origin(|rt)> ResolveMin(rt);
+         c'         := CResolveQuery(rel-target, filter, min, st, pst)
+
+rules
+
+  desugar-queries = topdown(try(desugar-query))
+
+  desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
+  desugar-query: Filter(l) -> Filter(l, LTrue())
+  desugar-query: NoNamespaceFilter() -> NamespaceFilter(LTrue())
+
+  desugar-query: NoMin() -> Min(LFalse(), LFalse())
+  desugar-query: Min(l) -> Min(l, LFalse())
+  desugar-query: NoNamespaceMin() -> NamespaceMin(LFalse())
+
+rules
+
+  desugar-lambdas = topdown(try(desugar-lambda))
+  desugar-lambda: LLam(ts) -> LLam(ts, [], CTrue())
+
+rules
+
+  desugar-tuples = topdown(try(desugar-tuple))
+
+  desugar-tuple: Tuple0Sort()      -> TupleSort([])
+  desugar-tuple: TupleNSort(s, ss) -> TupleSort([s|ss])
+
+  desugar-tuple: Tuple0()      -> Tuple([])
+  desugar-tuple: TupleN(x, xs) -> Tuple([x|xs])
+
+  desugar-tuple: Tuple0Lift()      -> TupleLift([])
+  desugar-tuple: TupleNLift(x, xs) -> TupleLift([x|xs])
+
+rules
+
+  fix-rules-variables = try(sometd(fix-rule-variables))
+
+  fix-rule-variables:
+      Rule(hd@F(x, in_ts, out_t), gvs, guard, bvs, body) -> Rule(hd, gvs, guard, bvs', body)
+    with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
+         bvs'   := <conc> (bvs, out-vs)

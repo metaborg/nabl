@@ -7,12 +7,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Function1;
+import javax.annotation.Nullable;
+
+import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -21,11 +24,12 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.NameResolution;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
-import mb.statix.solver.NullDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.spec.Type;
@@ -39,28 +43,44 @@ public class CResolveQuery implements IConstraint {
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
+    private final @Nullable IConstraint cause;
+
     public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
             ITerm resultTerm) {
+        this(relation, filter, min, scopeTerm, resultTerm, null);
+    }
+
+    public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
+            ITerm resultTerm, @Nullable IConstraint cause) {
         this.relation = relation;
         this.filter = filter;
         this.min = min;
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
+        this.cause = cause;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CResolveQuery(relation, filter.apply(map), min.apply(map), map.apply(scopeTerm),
-                map.apply(resultTerm));
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
+    }
+
+    @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
+        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause);
+    }
+
+    @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
+        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+                subst.apply(resultTerm), cause);
     }
 
     @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)
-            throws InterruptedException {
+            throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {
             type = state.spec().relations().get(relation.get());
             if(type == null) {
                 debug.error("Ignoring query for unknown relation {}", relation.get());
-                return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+                return Optional.empty();
             }
         } else {
             type = StatixTerms.SCOPE_REL_TYPE;
@@ -68,21 +88,30 @@ public class CResolveQuery implements IConstraint {
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            return Optional.empty();
+            throw new Delay();
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         try {
+            final IDebugContext subDebug = new NullDebugContext();
+            final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
+                if(completeness.isComplete(s, l, state)) {
+                    subDebug.info("{} complete in {}", s, l);
+                    return true;
+                } else {
+                    subDebug.info("{} incomplete in {}", s, l);
+                    return false;
+                }
+            };
             // @formatter:off
-            IDebugContext nullDebug = new NullDebugContext();
             final NameResolution<ITerm, ITerm, ITerm> nameResolution = NameResolution.<ITerm, ITerm, ITerm>builder()
-                    .withLabelWF(filter.getLabelWF(state, completeness, nullDebug))
-                    .withDataWF(filter(type, filter.getDataWF(state, completeness, nullDebug), nullDebug))
-                    .withLabelOrder(min.getLabelOrder(state, completeness, nullDebug))
-                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, nullDebug), nullDebug))
-                    .withEdgeComplete((s, l) -> completeness.isComplete(s, l, state))
-                    .withDataComplete((s, l) -> completeness.isComplete(s, l, state))
+                    .withLabelWF(filter.getLabelWF(state, completeness, subDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, completeness, subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, completeness, subDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, subDebug), subDebug))
+                    .withEdgeComplete(isComplete)
+                    .withDataComplete(isComplete)
                     .build(state.scopeGraph(), relation);
             // @formatter:on
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
@@ -93,11 +122,11 @@ public class CResolveQuery implements IConstraint {
             } else {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
             }
-            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm);
+            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
             return Optional.of(Result.of(state, ImmutableSet.of(C)));
         } catch(ResolutionException e) {
             debug.info("Query resolution delayed: {}", e.getMessage());
-            return Optional.empty();
+            throw new Delay();
         }
     }
 
@@ -116,7 +145,7 @@ public class CResolveQuery implements IConstraint {
                 return filter.eq(filter(type, d1, debug), filter(type, d2, debug));
             }
 
-            public boolean alwaysTrue() {
+            public boolean alwaysTrue() throws InterruptedException {
                 return filter.alwaysTrue();
             }
 

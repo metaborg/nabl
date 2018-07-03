@@ -2,11 +2,11 @@ module StatixLang
 
 imports
 
-  Layout
-  Common
-  Core
-  Sugar
-  Deprecated
+  statix/lang/Layout
+  statix/lang/Common
+  statix/lang/Core
+  statix/lang/Sugar
+  statix/lang/Deprecated
 
 template options
 

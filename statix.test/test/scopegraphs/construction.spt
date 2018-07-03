@@ -1,0 +1,128 @@
+module scopegraphs-construction
+
+language StatixTest
+
+test new scope succeeds [[
+  resolve {s} new s
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test new scopes are different [[
+  resolve {s1 s2} new s1 s2, s1 == s2
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding edge succeeds [[
+  resolve {s1 s2} new s1 s2, s1 -P-> s2
+  signature
+    name-resolution
+      labels P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test adding edge with free source fails [[
+  resolve {s1 s2} new s1, s1 -P-> s2
+  signature
+    name-resolution
+      labels P
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding edge with free target fails [[
+  resolve {s1 s2} new s2, s1 -P-> s2
+  signature
+    name-resolution
+      labels P
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding declaration succeeds [[
+  resolve {s} new s, s -> Var{"x"@-}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test adding declaration to free scope fails [[
+  resolve {s} s -> Var{"x"@-}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding declaration with free name fails [[
+  resolve {s x} new s, s -> Var{x@-}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding declaration with free position fails [[
+  resolve {s x} new s, s -> Var{"x"@x}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding predicate relation tuple succeeds [[
+  resolve {s} new s, !r[1, 2] in s
+  signature
+    relations
+      r : int * int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test adding predicate relation tuple with free component fails [[
+  resolve {s i} new s, !r[1, i] in s
+  signature
+    relations
+      r : int * int
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding unary relation succeeds [[
+  resolve {s} new s, !r[1] in s
+  signature
+    relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test adding functional relation tuple with succeeds [[
+  resolve {s} new s, !r[1, 2] in s
+  signature
+    relations
+      r : int -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test adding functional relation tuple with free output succeeds [[
+  resolve {s i} new s, !r[1, i] in s
+  signature
+    relations
+      r : int -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test adding functional relation tuple with free input fails [[
+  resolve {s i} new s, !r[i, 2] in s
+  signature
+    relations
+      r : int -> int
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test adding functional relation tuple twice unifies outputs [[
+  resolve {s i j} new s, !r[1, i] in s, !r[1, j] in s, eq(i, j)
+  signature
+    relations
+      r : int -> int
+  rules
+    eq : int * int
+    eq(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

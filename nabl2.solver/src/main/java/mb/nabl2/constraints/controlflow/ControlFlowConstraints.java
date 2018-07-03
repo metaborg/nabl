@@ -9,7 +9,7 @@ import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.controlflow.terms.CFGNode;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class ControlFlowConstraints {
 
@@ -37,19 +37,19 @@ public final class ControlFlowConstraints {
         ));
     }
 
-    public static IControlFlowConstraint substitute(IControlFlowConstraint constraint, IUnifier unifier) {
+    public static IControlFlowConstraint substitute(IControlFlowConstraint constraint, ISubstitution.Immutable subst) {
         return constraint.match(IControlFlowConstraint.Cases.<IControlFlowConstraint>of(
             // @formatter:off
             edge -> ImmutableCFDirectEdge.of(
-                        unifier.findRecursive(edge.getSourceNode()),
-                        unifier.findRecursive(edge.getTargetNode()),
-                        edge.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(edge.getSourceNode()),
+                        subst.apply(edge.getTargetNode()),
+                        edge.getMessageInfo().apply(subst::apply)),
             tfAppl -> ImmutableCTFAppl.of(
                     tfAppl.getCFGNode(),
                     tfAppl.getPropertyName(),
                     tfAppl.getOffset(),
-                    tfAppl.getArguments().stream().map(unifier::findRecursive).collect(Collectors.toList()),
-                    tfAppl.getMessageInfo().apply(unifier::findRecursive))
+                    tfAppl.getArguments().stream().map(subst::apply).collect(Collectors.toList()),
+                    tfAppl.getMessageInfo().apply(subst::apply))
             // @formatter:on
         ));
     }

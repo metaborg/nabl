@@ -12,7 +12,6 @@ import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
-import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
 
@@ -44,7 +43,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             throw new InterpreterException("Expected " + tvars + " term arguments, but got " + sterms.size());
         }
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
-        final ITerm term = ConstraintTerms.specialize(strategoTerms.fromStratego(sterm));
+        final ITerm term = strategoTerms.fromStratego(sterm);
         final List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).collect(Collectors.toList());
         final Optional<? extends ITerm> result = call(env, term, terms);
         return result.map(strategoTerms::toStratego);

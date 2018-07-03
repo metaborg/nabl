@@ -1,5 +1,10 @@
 module Syntax
 
+imports 
+
+  libspoofax/color/default
+  completion/colorer/StatixLang-cc-esv
+
 language
 
   table         : target/metaborg/sdf.tbl
@@ -29,8 +34,3 @@ menus
     separator
 
     action: "Show explicated AST"   = debug-show-explicated
-
-views
-  
-  outline view: editor-outline (source)
-    expand to level: 3

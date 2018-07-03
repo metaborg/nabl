@@ -25,11 +25,15 @@ abstract class AStep<V, L> implements IStep<V, L> {
         return 1;
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
+    @Value.Lazy @Override public PSequence<V> scopes() {
+        return PSequence.of(getSource(), getTarget());
+    }
+
+    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
         return Set.Immutable.of(getSource(), getTarget());
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
+    @Value.Lazy @Override public PSequence<L> labels() {
         return PSequence.of(getLabel());
     }
 
@@ -37,14 +41,14 @@ abstract class AStep<V, L> implements IStep<V, L> {
         return Iterators.singletonIterator(this);
     }
 
-    @Override public String toString(boolean includeTo, boolean includeFrom) {
+    @Override public String toString(boolean includeSource, boolean includeTarget) {
         StringBuilder sb = new StringBuilder();
-        if(includeFrom) {
+        if(includeSource) {
             sb.append(getSource());
             sb.append(Paths.PATH_SEPARATOR);
         }
         sb.append(getLabel());
-        if(includeTo) {
+        if(includeTarget) {
             sb.append(Paths.PATH_SEPARATOR);
             sb.append(getTarget());
         }

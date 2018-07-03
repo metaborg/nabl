@@ -17,10 +17,6 @@ import mb.statix.scopegraph.terms.path.Paths;
 
 public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
-    // relations R
-    // order : V x V --- isTrue
-    // isDataComplete : S x R
-
     private final IScopeGraph<V, L, R> scopeGraph;
     private final Set<L> labels;
     private final Optional<R> relation;
@@ -54,11 +50,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env(LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        if(re.empty()) {
-            return ImmutableSet.of();
-        } else {
-            return env_L(labels, re, path);
-        }
+        return env_L(labels, re, path);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
@@ -122,12 +114,12 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env_EOP(LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
+        if(!re.wf()) {
+            return ImmutableSet.of();
+        }
         final V scope = path.getTarget();
         if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
             throw new ResolutionException("Scope " + scope + " is incomplete in " + relation);
-        }
-        if(!re.wf()) {
-            return ImmutableSet.of();
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         if(relation.isPresent()) {
@@ -147,6 +139,10 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env_nonEOP(L l, LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
+        final LabelWF<L> newRe = re.step(l);
+        if(newRe.empty()) {
+            return ImmutableSet.of();
+        }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
             throw new ResolutionException("Scope " + path.getTarget() + " is incomplete in edge " + l);
         }
@@ -154,7 +150,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
             final Optional<IScopePath<V, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re.step(l), p.get()));
+                env.addAll(env(newRe, p.get()));
             }
         }
         return env.build();

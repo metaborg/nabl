@@ -1,0 +1,28 @@
+module statix/test/Test
+
+imports
+
+  statix/lang/Layout
+  statix/lang/Common
+  statix/lang/Core
+  statix/lang/Sugar
+  statix/lang/Deprecated
+ 
+  statix/runtime/Terms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free start-symbols
+  
+  Test
+
+context-free syntax
+
+  Test.Test = <
+    resolve <LocalVars>
+      <Constraint>
+
+    <{Section "\n\n"}*>
+  >

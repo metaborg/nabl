@@ -262,7 +262,7 @@ public class TermMatch {
             return listElems(M.term());
         }
 
-        public <T> IMatcher<ImmutableList<T>> listElems(IMatcher<T> m) {
+        public <T> IMatcher<List<T>> listElems(IMatcher<T> m) {
             return listElems(m, (t, ts) -> ts);
         }
 
@@ -431,7 +431,7 @@ public class TermMatch {
 
         Optional<T> match(ITerm term, IUnifier unifier);
 
-        @Deprecated default Optional<T> match(ITerm term) {
+        default Optional<T> match(ITerm term) {
             return match(term, PersistentUnifier.Immutable.of());
         }
 

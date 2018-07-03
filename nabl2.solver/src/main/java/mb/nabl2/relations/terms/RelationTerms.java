@@ -2,9 +2,9 @@ package mb.nabl2.relations.terms;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.relations.ImmutableRelationDescription;
@@ -26,14 +26,14 @@ public class RelationTerms {
     public static IMatcher<Map<String, VariantRelationDescription<ITerm>>> relations() {
         return M.listElems(relationDef(), (l, defs) -> {
             ImmutableMap.Builder<String, VariantRelationDescription<ITerm>> relations = ImmutableMap.builder();
-            for(Tuple3<String, RelationDescription, ImmutableList<IVariantMatcher<ITerm>>> def : defs) {
+            for(Tuple3<String, RelationDescription, List<IVariantMatcher<ITerm>>> def : defs) {
                 relations.put(def._1(), ImmutableVariantRelationDescription.of(def._2(), def._3()));
             }
             return relations.build();
         });
     }
 
-    public static IMatcher<Tuple3<String, RelationDescription, ImmutableList<IVariantMatcher<ITerm>>>> relationDef() {
+    public static IMatcher<Tuple3<String, RelationDescription, List<IVariantMatcher<ITerm>>>> relationDef() {
         return M.tuple3(NamedRelation.matcher(), relationDescription(), M.listElems(VariantMatchers.matcher()),
                 (t, name, relationDescription, matchers) -> ImmutableTuple3.of(name.getName(), relationDescription,
                         matchers));

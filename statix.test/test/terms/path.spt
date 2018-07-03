@@ -1,0 +1,9 @@
+module terms-path
+
+language StatixTest
+
+// static
+
+test path, label, and scope type ascriptions [[
+  resolve {p lbls s} p:path == _, labels(p, lbls:list(label)), dst(p, s:scope)
+]] analysis succeeds

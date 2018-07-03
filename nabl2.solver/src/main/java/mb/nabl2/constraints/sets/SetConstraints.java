@@ -7,7 +7,7 @@ import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.sets.SetTerms;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class SetConstraints {
 
@@ -17,7 +17,7 @@ public final class SetConstraints {
 
     public static IMatcher<ISetConstraint> matcher() {
         return M.<ISetConstraint>cases(
-            // @formatter:off
+        // @formatter:off
             M.appl4(C_SUBSET_EQ, M.term(), SetTerms.projectionMatcher(), M.term(), MessageInfo.matcher(), (c, left, proj, right, origin) -> {
                 return ImmutableCSubsetEq.of(left, right, proj, origin);
             }),
@@ -33,7 +33,7 @@ public final class SetConstraints {
 
     public static ITerm build(ISetConstraint constraint) {
         return constraint.match(ISetConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             subseteq -> B.newAppl(C_SUBSET_EQ, subseteq.getLeft(), SetTerms.buildProjection(subseteq.getProjection()),
                                    subseteq.getRight(), MessageInfo.build(subseteq.getMessageInfo())),
             distinct -> B.newAppl(C_DISTINCT, SetTerms.buildProjection(distinct.getProjection()), distinct.getSet(),
@@ -43,24 +43,24 @@ public final class SetConstraints {
         ));
     }
 
-    public static ISetConstraint substitute(ISetConstraint constraint, IUnifier unifier) {
+    public static ISetConstraint substitute(ISetConstraint constraint, ISubstitution.Immutable unifier) {
+        // @formatter:off
         return constraint.match(ISetConstraint.Cases.of(
-            // @formatter:off
             subseteq -> ImmutableCSubsetEq.of(
-                            unifier.findRecursive(subseteq.getLeft()),
-                            unifier.findRecursive(subseteq.getRight()),
+                            unifier.apply(subseteq.getLeft()),
+                            unifier.apply(subseteq.getRight()),
                             subseteq.getProjection(),
-                            subseteq.getMessageInfo().apply(unifier::findRecursive)),
+                            subseteq.getMessageInfo().apply(unifier::apply)),
             distinct -> ImmutableCDistinct.of(
-                            unifier.findRecursive(distinct.getSet()),
+                            unifier.apply(distinct.getSet()),
                             distinct.getProjection(),
-                            distinct.getMessageInfo().apply(unifier::findRecursive)),
+                            distinct.getMessageInfo().apply(unifier::apply)),
             eval -> ImmutableCEvalSet.of(
-                            unifier.findRecursive(eval.getResult()),
-                            unifier.findRecursive(eval.getSet()),
-                            eval.getMessageInfo().apply(unifier::findRecursive))
-            // @formatter:on
+                            unifier.apply(eval.getResult()),
+                            unifier.apply(eval.getSet()),
+                            eval.getMessageInfo().apply(unifier::apply))
         ));
+        // @formatter:on
     }
 
 }

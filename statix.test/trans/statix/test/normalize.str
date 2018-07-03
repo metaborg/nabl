@@ -1,0 +1,38 @@
+module statix/test/normalize
+
+imports
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+  signatures/statix/test/-
+
+rules
+
+  normalize-functional-cop(|a):
+      Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
+    with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
+         new-bvs := <map(Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-wildcard:
+      Test(bvs, body, section*){a*} -> Test(bvs', body', section*){a*}
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
+         new-bvs := <map(Snd)> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-as-pattern:
+      Test(bvs, body, section*){a*} -> Test(bvs, body'', section*){a*}
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+
+  explicate-cmaps(|a): Test(bvs, body, section*){a*} -> Test(bvs, body, section''*){a*}
+    with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
+         rule* := <map(cmap-to-rules(|a)); concat> maps;
+         section''* := <conc> (section'*, [Rules(rule*)])
+
+  explicate-resolve(|a):
+      Test(bvs, body, section*) -> Test(bvs, body', section'*)
+    with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*;
+         body' := <try(sometd(normalize-resolves(|wf, eq, ord)))> body

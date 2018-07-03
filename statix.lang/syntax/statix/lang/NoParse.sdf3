@@ -1,0 +1,18 @@
+module statix/lang/NoParse // DO NOT INCLUDE IN OTHER SYNTAX FILES
+
+imports
+
+  statix/lang/Common
+  statix/lang/Sugar
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free syntax
+
+  Term.Tuple = <(<{Term ", "}*>)>
+
+  SortRef.TupleSort = <(<{SortRef " * "}*>)>
+
+  LiftTerm.TupleLift = <(<{Lift ", "}*>)>

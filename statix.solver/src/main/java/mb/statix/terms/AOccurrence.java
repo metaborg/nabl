@@ -1,9 +1,9 @@
 package mb.statix.terms;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -13,13 +13,10 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm {
-
-    private static final String OP = "Occurrence";
 
     // IOccurrence implementation
 
@@ -27,16 +24,17 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
 
     @Value.Parameter public abstract List<ITerm> getName();
 
-    @Value.Parameter public abstract ITerm getIndex();
+    @Value.Parameter public abstract Optional<ITerm> getIndex();
 
     // IApplTerm implementation
 
     @Value.Lazy @Override public String getOp() {
-        return OP;
+        return "Occurrence";
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getNamespace()), B.newList(getName()), getIndex());
+        return ImmutableList.of(B.newString(getNamespace()), B.newList(getName()),
+                B.newAppl("Position", getIndex().orElse(B.newTuple())));
     }
 
     @Override protected Occurrence check() {
@@ -62,12 +60,6 @@ public abstract class AOccurrence extends AbstractApplTerm implements IApplTerm 
         sb.append(getIndex());
         sb.append("}");
         return sb.toString();
-    }
-
-    public static IMatcher<Occurrence> matcher(IMatcher<ITerm> term) {
-        return M.appl3(OP, M.stringValue(), M.listElems(term), M.term(), (t, ns, name, idx) -> {
-            return Occurrence.of(ns, name, idx);
-        });
     }
 
 }

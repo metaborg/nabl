@@ -1,0 +1,9 @@
+module statix/runtime/Terms
+
+context-free syntax
+
+  Term.Scope = <#<String>-<String>>
+
+lexical syntax
+
+  String = ~[]

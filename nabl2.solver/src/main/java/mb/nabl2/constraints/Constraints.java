@@ -21,7 +21,7 @@ import mb.nabl2.constraints.sets.SetConstraints;
 import mb.nabl2.constraints.sym.SymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public class Constraints {
 
@@ -80,7 +80,7 @@ public class Constraints {
         return B.newString(String.join("", Collections.nCopies(prio, "!")));
     }
 
-    public static IConstraint substitute(IConstraint constraint, IUnifier.Immutable subst) {
+    public static IConstraint substitute(IConstraint constraint, ISubstitution.Immutable subst) {
         return subst.isEmpty() ? constraint : constraint.match(IConstraint.Cases.<IConstraint>of(
         // @formatter:off
             c -> AstConstraints.substitute(c, subst),

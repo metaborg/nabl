@@ -5,50 +5,68 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public class CPathScopes implements IConstraint {
 
     private final ITerm pathTerm;
     private final ITerm scopesTerm;
 
+    private final @Nullable IConstraint cause;
+
     public CPathScopes(ITerm pathTerm, ITerm scopesTerm) {
+        this(pathTerm, scopesTerm, null);
+    }
+
+    public CPathScopes(ITerm pathTerm, ITerm scopesTerm, @Nullable IConstraint cause) {
         this.pathTerm = pathTerm;
         this.scopesTerm = scopesTerm;
+        this.cause = cause;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CPathScopes(map.apply(pathTerm), map.apply(scopesTerm));
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
+    @Override public CPathScopes withCause(@Nullable IConstraint cause) {
+        return new CPathScopes(pathTerm, scopesTerm, cause);
+    }
+
+    @Override public CPathScopes apply(ISubstitution.Immutable subst) {
+        return new CPathScopes(subst.apply(pathTerm), subst.apply(scopesTerm), cause);
+    }
+
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(pathTerm))) {
-            return Optional.empty();
+            throw new Delay();
         }
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(Result.of(state, ImmutableSet.of(new CEqual(B.newList(path.getScopes()), scopesTerm))));
+        return Optional
+                .of(Result.of(state, ImmutableSet.of(new CEqual(B.newList(path.scopes()), scopesTerm, this))));
     }
 
     @Override public String toString(IUnifier unifier) {
         final StringBuilder sb = new StringBuilder();
         sb.append("scopes(");
         sb.append(unifier.toString(pathTerm));
-        sb.append(",");
+        sb.append(", ");
         sb.append(unifier.toString(scopesTerm));
         sb.append(")");
         return sb.toString();

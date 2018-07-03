@@ -1,6 +1,7 @@
 package mb.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -28,6 +29,14 @@ public class PSequence<E> implements Iterable<E>, Serializable {
         return elems.iterator();
     }
 
+    public PSequence<E> init() {
+        return new PSequence<>(elems.subList(0, elems.size() - 1));
+    }
+
+    public PSequence<E> tail() {
+        return new PSequence<>(elems.subList(1, elems.size()));
+    }
+
     public PSequence<E> prepend(E elem) {
         return new PSequence<>(ImmutableList.<E>builder().add(elem).addAll(this.elems).build());
     }
@@ -48,8 +57,8 @@ public class PSequence<E> implements Iterable<E>, Serializable {
         return new PSequence<>(ImmutableList.of());
     }
 
-    public static <E> PSequence<E> of(E elem) {
-        return new PSequence<>(ImmutableList.of(elem));
+    @SafeVarargs public static <E> PSequence<E> of(E... elems) {
+        return of(Arrays.asList(elems));
     }
 
     public static <E> PSequence<E> of(Iterable<E> elems) {

@@ -1,0 +1,96 @@
+module statix/lang/statics/scope-extension
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  compute-scope-extensions: ast -> (ext*, error*, [], note*)
+    with error-iset := <new-iset>;
+         note-iset := <new-iset>;
+         base-ext* := <collect-om(base-extensions(|error-iset, note-iset));concat> ast;
+         ext-iset := <new-iset>;
+         <iset-addlist(|base-ext*)> ext-iset;
+         <iset-fixpoint(derive-extensions(|ast, error-iset, note-iset))> ext-iset;
+         ext* := <iset-elements> ext-iset;
+         error* := <iset-elements> error-iset;
+         note* := <iset-elements> note-iset
+
+rules // shared
+
+  rule-vars: Rule(C(_, arg*), _, _, var*, body) -> (head-proj*, new-var*)
+    with head-proj* := <head-projs> arg*;
+         new-var*   := <all-fresh> body
+
+  head-projs: arg* -> proj*
+    with proj* := <map-with-index(Swap);filter(?(Var(_), _))> arg*
+
+  all-fresh = collect-om(\ CNew(var*) -> var* \); concat
+
+rules // base facts, constraints directly adding to the scope graph
+
+ base-extensions(|error-iset, note-iset): rule@Rule(C(x, _), _, _, _, body) -> rule-ext*
+    with (head-proj*, new-var*) := <rule-vars> rule;
+         head-var*  := <map(Fst)> head-proj*;
+         all-ext*   := <collect-om(base-extension);concat;filter(?(Var(_),_))> body;
+         new-ext*   := <filter(\ (v, lbl) -> (v, lbl) where <raw-elem> (v, new-var*) \)> all-ext*;
+         head-ext*  := <filter({v' : \ (v, lbl) -> (v', lbl) where (v', _) := <raw-lookup> (v, head-proj*) \})> all-ext*;
+         local-ext* := <filter(\ (v, lbl) -> (v, lbl) where <not(raw-elem)> (v, <conc> (head-var*, new-var*)) \)> all-ext*;
+       //<map(\ (v, lbl) -> <iset-add(|(v, $[Extended in [<pp-label> lbl]]))> note-iset \)> head-ext*;
+       //<map(\ (v, _) -> <iset-add(|(v, $[Extends locally fresh scope]))> note-iset \)> new-ext*;
+         <map(\ (v, _) -> <iset-add(|(v, $[Cannot extend non-local scope]))> error-iset \)> local-ext*;
+         rule-ext*  := <join(\ ((v1, i), (v2, lbl)) -> (x, i, lbl) where <raw-eq> (v1, v2) \)> (head-proj*, head-ext*)
+
+  base-extension: CTellEdge(s, lbl, _) -> [(s, lbl)]
+  base-extension: CTellRel(rel, _, s) -> [(s, rel)]
+  base-extension: CTellDecl(s, _) -> [(s, Decl())]
+  base-extension: CTellDeclWithRel(s, _, rel, _) -> [(s, Decl()), (s, rel)]
+
+rules // derived facts, constraints indirctly adding to the scope graph
+
+  derive-extensions(|ast, error-iset, note-iset): ext -> ext*
+    with ext* := <collect-om(derived-extensions(|ext, error-iset, note-iset));concat> ast
+
+  derived-extensions(|ext, error-iset, note-iset): CDeriveMap(x, x', lsorts) -> ext*
+    where (y, i, lbl) := ext;
+          <raw-eq> (y, x');
+          lsort       := <index(|i)> lsorts
+    with switch !lsort
+           case ?IdLift():
+             ext* := [(x, i, lbl)]
+           //<iset-add(|(lsort, $[Extended in [<pp-label> lbl]]))> note-iset
+           case ?ListLift():
+             ext* := [];
+             <iset-add(|(lsort, $[Cannot extend list of scopes]))> error-iset
+         end
+
+  derived-extensions(|ext, error-iset, note-iset): rule@Rule(C(x, _), _, _, var*, body) -> rule-ext*
+    where(y, i, lbl) := ext
+    with (head-proj*, new-var*) := <rule-vars> rule;
+         head-var*  := <map(Fst)> head-proj*;
+         all-ext*   := <collect-om(derive-extension(|y, i);?Var(_))> body;
+         new-ext*   := <filter(\ v -> v where <raw-elem> (v, new-var*) \)> all-ext*;
+         head-ext*  := <filter({v' : \ v -> v' where (v', _) := <raw-lookup> (v, head-proj*) \})> all-ext*;
+         local-ext* := <filter(\ (v, lbl) -> (v, lbl) where <not(raw-elem)> (v, <conc> (head-var*, new-var*)) \)> all-ext*;
+       //<map(\ v -> <iset-add(|(v, $[Extended in [<pp-label> lbl]]))> note-iset \)> head-ext*;
+       //<map(\ v -> <iset-add(|(v, $[Extends locally fresh scope]))> note-iset \)> new-ext*;
+         <map(\ v -> <iset-add(|(v, $[Cannot extend non-local scope]))> error-iset \)> local-ext*;
+         rule-ext* := <join(\ ((v1, i), v2) -> (x, i, lbl) where <raw-eq> (v1, v2) \)> (head-proj*, head-ext*)
+
+  derive-extension(|y, i): C(x, arg*) -> arg
+    where <raw-eq> (x, y);
+          arg := <index(|i)> arg*
+
+  derive-extension(|y, i): COp(x, arg*) -> arg
+    where <raw-eq> (x, y);
+          arg := <index(|i)> arg*
+
+rules
+
+  pp-label: lbl -> pp
+    with pp := <pp-partial-Statix-string> lbl

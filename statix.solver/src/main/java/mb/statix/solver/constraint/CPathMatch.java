@@ -3,8 +3,9 @@ package mb.statix.solver.constraint;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.Ref;
-import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -14,13 +15,15 @@ import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.Completeness;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.spoofax.StatixTerms;
 
 public class CPathMatch implements IConstraint {
@@ -28,23 +31,38 @@ public class CPathMatch implements IConstraint {
     private final IRegExp<ITerm> re;
     private final IListTerm labelsTerm;
 
-    public CPathMatch(IRegExp<ITerm> re, IListTerm term) {
+    private final @Nullable IConstraint cause;
+
+    public CPathMatch(IRegExp<ITerm> re, IListTerm labelsTerm) {
+        this(re, labelsTerm, null);
+    }
+
+    public CPathMatch(IRegExp<ITerm> re, IListTerm labelsTerm, @Nullable IConstraint cause) {
         this.re = re;
-        this.labelsTerm = term;
+        this.labelsTerm = labelsTerm;
+        this.cause = cause;
     }
 
-    @Override public IConstraint apply(Function1<ITerm, ITerm> map) {
-        return new CPathMatch(re, (IListTerm) map.apply(labelsTerm));
+    @Override public Optional<IConstraint> cause() {
+        return Optional.ofNullable(cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) {
+    @Override public CPathMatch withCause(@Nullable IConstraint cause) {
+        return new CPathMatch(re, labelsTerm, cause);
+    }
+
+    @Override public CPathMatch apply(ISubstitution.Immutable subst) {
+        return new CPathMatch(re, (IListTerm) subst.apply(labelsTerm), cause);
+    }
+
+    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
         final IUnifier unifier = state.unifier();
         IListTerm labels = labelsTerm;
         Ref<IRegExpMatcher<ITerm>> re = new Ref<>(RegExpMatcher.create(this.re));
         AtomicBoolean complete = new AtomicBoolean(false);
         while(labels != null) {
-            labels = labels.match(ListTerms.cases(
             // @formatter:off
+            labels = labels.match(ListTerms.cases(
                 cons -> {
                     final ITerm labelTerm = cons.getHead();
                     if(!unifier.isGround(labelTerm)) {
@@ -65,21 +83,20 @@ public class CPathMatch implements IConstraint {
                 var -> {
                     return null;
                 }
-                // @formatter:on
             ));
-            // match again
+            // @formatter:on
         }
         if(complete.get()) {
             if(re.get().isAccepting()) {
                 return Optional.of(Result.of(state, ImmutableSet.of()));
             } else {
-                return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
+                return Optional.empty();
             }
         } else {
             if(re.get().isEmpty()) {
-                return Optional.of(Result.of(state, ImmutableSet.of(new CFalse())));
-            } else {
                 return Optional.empty();
+            } else {
+                throw new Delay();
             }
         }
     }

@@ -17,8 +17,7 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AComposedScopePath<V, L>
-        implements IScopePath<V, L> {
+abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
 
     @Value.Parameter public abstract IScopePath<V, L> getLeft();
 
@@ -30,7 +29,7 @@ abstract class AComposedScopePath<V, L>
             return null;
         }
         // path is cyclic
-        if(getScopes().size() <= size()) {
+        if(scopeSet().size() < size()) {
             return null;
         }
         return this;
@@ -48,12 +47,16 @@ abstract class AComposedScopePath<V, L>
         return getLeft().size() + getRight().size();
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> getScopes() {
-        return getLeft().getScopes().__insertAll(getRight().getScopes());
+    @Value.Lazy @Override public PSequence<V> scopes() {
+        return getLeft().scopes().appendAll(getRight().scopes().tail());
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
-        return getLeft().getLabels().appendAll(getRight().getLabels());
+    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
+        return getLeft().scopeSet().__insertAll(getRight().scopeSet());
+    }
+
+    @Value.Lazy @Override public PSequence<L> labels() {
+        return getLeft().labels().appendAll(getRight().labels());
     }
 
     @Override public Iterator<IStep<V, L>> iterator() {

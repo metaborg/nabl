@@ -6,7 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.substitution.ISubstitution;
 
 public final class SymbolicConstraints {
 
@@ -35,15 +35,15 @@ public final class SymbolicConstraints {
         ));
     }
 
-    public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, IUnifier unifier) {
+    public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, ISubstitution.Immutable subst) {
         return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
             // @formatter:off
             fact -> ImmutableCFact.of(
-                        unifier.findRecursive(fact.getFact()),
-                        fact.getMessageInfo().apply(unifier::findRecursive)),
+                        subst.apply(fact.getFact()),
+                        fact.getMessageInfo().apply(subst::apply)),
             goal ->  ImmutableCGoal.of(
-                        unifier.findRecursive(goal.getGoal()),
-                        goal.getMessageInfo().apply(unifier::findRecursive))
+                        subst.apply(goal.getGoal()),
+                        goal.getMessageInfo().apply(subst::apply))
             // @formatter:on
         ));
     }

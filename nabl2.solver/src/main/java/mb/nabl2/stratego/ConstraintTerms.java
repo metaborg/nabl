@@ -98,32 +98,22 @@ public class ConstraintTerms {
      * Encode variables and lists in NaBL2 constructors.
      */
     public static ITerm explicate(ITerm term) {
-        return explicate(term, false);
-    }
-
-    private static ITerm explicate(ITerm term, final boolean wasLocked) {
-        term = term.match(Terms.cases(
         // @formatter:off
+        return term.match(Terms.cases(
             appl -> {
                 List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
                 return B.newAppl(appl.getOp(), args);
             },
-            list -> explicateList(list),
+            list -> explicate(list),
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> {
-                List<ITerm> args = Arrays.asList(B.newString(var.getResource()), B.newString(var.getName()));
-                return B.newAppl(VAR_CTOR, args);
-            }
-            // @formatter:on
+            var -> explicate(var)
         )).withAttachments(term.getAttachments());
-        // FIXME: Quoting is not restored ATM, so two round-trips could cause
-        // problems when AST contains special constructors.
-        return term;
+        // @formatter:on
     }
 
-    private static ITerm explicateList(IListTerm list) {
+    private static ITerm explicate(IListTerm list) {
         // toStrategoList
         final List<ITerm> terms = Lists.newArrayList();
         final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
@@ -154,6 +144,10 @@ public class ConstraintTerms {
         } else {
             return list;
         }
+    }
+
+    private static ITerm explicate(ITermVar var) {
+        return  B.newAppl(VAR_CTOR, Arrays.asList(B.newString(var.getResource()), B.newString(var.getName())));
     }
 
     public static <R> IMatcher<R> explicate(IMatcher<R> m) {

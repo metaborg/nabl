@@ -37,18 +37,17 @@ public class StrategoTermIndices {
 
         private IStrategoTerm index(final IStrategoTerm term) {
             IStrategoTerm result = StrategoTerms.match(term,
+                    // @formatter:off
                     StrategoTerms.<IStrategoTerm>cases(
-                            // @formatter:off
-                            appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()),
-                                    appl.getAnnotations()),
-                            tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
-                            list -> index(list),
-                            integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
-                            real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
-                            string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
-                            blob -> new StrategoBlob(blob.value())
-                    // @formatter:on
+                        appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
+                        tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
+                        list -> index(list),
+                        integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
+                        real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
+                        string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
+                        blob -> new StrategoBlob(blob.value())
                     ));
+                    // @formatter:on
             result = put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
             termFactory.copyAttachments(term, result);
             return result;

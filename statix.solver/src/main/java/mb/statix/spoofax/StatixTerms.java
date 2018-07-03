@@ -3,21 +3,26 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.regexp.IAlphabet;
@@ -32,6 +37,8 @@ import mb.nabl2.relations.terms.Relation;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -51,21 +58,21 @@ import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.guard.GEqual;
+import mb.statix.solver.guard.GFalse;
 import mb.statix.solver.guard.GInequal;
+import mb.statix.solver.guard.GTrue;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
-import mb.statix.solver.query.NamespaceQuery;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
-import mb.statix.solver.query.ResolveFilter;
-import mb.statix.solver.query.ResolveMin;
+import mb.statix.spec.Lambda;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 import mb.statix.terms.AOccurrence;
+import mb.statix.terms.Occurrence;
 
 public class StatixTerms {
-    private static final ILogger logger = LoggerUtils.logger(StatixTerms.class);
 
     public static ITerm QUERY_SCOPES = B.EMPTY_TUPLE;
     public static ITerm END_OF_PATH = B.newAppl("EOP");
@@ -75,17 +82,18 @@ public class StatixTerms {
     public static Type SCOPE_REL_TYPE = Type.of(ImmutableList.of(SCOPE_SORT), ImmutableList.of());
 
     public static IMatcher<Spec> spec() {
-        return IMatcher.flatten(M.tuple5(labels(), relationDecls(), namespaceQueries(), M.term(), scopeExtensions(),
-                (t, labels, relations, queries, rulesTerm, ext) -> {
-                    return rules(labels).match(rulesTerm).map(rules -> {
-                        return Spec.of(rules, labels, END_OF_PATH, relations, queries, ext);
+        return IMatcher.flatten(M.tuple4(M.req(labels()), M.req(relationDecls()), M.term(), M.req(scopeExtensions()),
+                (t, labels, relations, rulesTerm, ext) -> {
+                    Optional<ListMultimap<String, Rule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
+                    return maybeRules.map(rules -> {
+                        return Spec.of(rules, labels, END_OF_PATH, relations, ext);
                     });
                 }));
     }
 
-    public static IMatcher<Multimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
-        return M.listElems(rule(labels)).map(rules -> {
-            final ImmutableMultimap.Builder<String, Rule> builder = ImmutableMultimap.builder();
+    public static IMatcher<ListMultimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
+        return M.listElems(M.req(rule(labels))).map(rules -> {
+            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.builder();
             rules.stream().forEach(rule -> {
                 builder.put(rule.getName(), rule);
             });
@@ -103,22 +111,6 @@ public class StatixTerms {
     public static IMatcher<Tuple2<String, List<ITermVar>>> head() {
         return M.appl2("C", M.stringValue(), M.listElems(var()), (h, name, params) -> {
             return ImmutableTuple2.of(name, params);
-        });
-    }
-
-    public static IMatcher<Map<String, NamespaceQuery>> namespaceQueries() {
-        return M.listElems(namespaceQuery()).map(relDecls -> {
-            final ImmutableMap.Builder<String, NamespaceQuery> builder = ImmutableMap.builder();
-            relDecls.stream().forEach(relDecl -> {
-                builder.put(relDecl._1(), relDecl._2());
-            });
-            return builder.build();
-        });
-    }
-
-    public static IMatcher<Tuple2<String, NamespaceQuery>> namespaceQuery() {
-        return M.tuple3(M.stringValue(), hoconstraint(), hoconstraint(), (t, ns, filter, min) -> {
-            return ImmutableTuple2.of(ns, new NamespaceQuery(filter, min));
         });
     }
 
@@ -153,7 +145,7 @@ public class StatixTerms {
                     constraints.add(new CTellRel(scope, rel, args));
                     return Unit.unit;
                 }),
-                M.appl5("CResolveQuery", queryTarget(), queryFilter(), queryMin(), term(), term(),
+                M.appl5("CResolveQuery", queryTarget(), queryFilter(labels), queryMin(labels), term(), term(),
                         (c, rel, filter, min, scope, result) -> {
                     constraints.add(new CResolveQuery(rel, filter, min, scope, result));
                     return Unit.unit;
@@ -187,7 +179,7 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.term(c -> {
-                    throw new IllegalArgumentException("Unknwon constraint: " + c);
+                    throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
                 // @formatter:on
             )).match(t, u).map(v -> constraints.build());
@@ -197,12 +189,17 @@ public class StatixTerms {
     public static IMatcher<Set<IGuard>> guards() {
         return (t, u) -> {
             final ImmutableSet.Builder<IGuard> guards = ImmutableSet.builder();
-            return M.casesFix(m -> Iterables2.from(
             // @formatter:off
+            return M.casesFix(m -> Iterables2.from(
                 M.appl2("CConj", m, m, (c, t1, t2) -> {
                     return Unit.unit;
                 }),
                 M.appl0("CTrue", (c) -> {
+                    guards.add(new GTrue());
+                    return Unit.unit;
+                }),
+                M.appl0("CFalse", (c) -> {
+                    guards.add(new GFalse());
                     return Unit.unit;
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
@@ -214,10 +211,10 @@ public class StatixTerms {
                     return Unit.unit;
                 }),
                 M.term(c -> {
-                    throw new IllegalArgumentException("Unknwon guard: " + c);
+                    throw new IllegalArgumentException("Unknown guard: " + c);
                 })
-                // @formatter:on
             )).match(t, u).map(v -> guards.build());
+            // @formatter:on
         };
     }
 
@@ -230,34 +227,21 @@ public class StatixTerms {
         );
     }
 
-    public static IMatcher<IQueryFilter> queryFilter() {
-        return M.cases(
-        // @formatter:off
-            M.appl2("Filter", hoconstraint(), hoconstraint(), (f, pathConstraint, dataConstraint) -> {
-                return new QueryFilter(pathConstraint, dataConstraint);
-            }),
-            M.appl1("ResolveFilter", term(), (f, ref) -> {
-                return new ResolveFilter(ref);
-            })
-            // @formatter:on
-        );
+    public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
+        return M.appl2("Filter", hoconstraint(labels), hoconstraint(labels), (f, pathConstraint, dataConstraint) -> {
+            return new QueryFilter(pathConstraint, dataConstraint);
+        });
     }
 
-    public static IMatcher<IQueryMin> queryMin() {
-        return M.cases(
-        // @formatter:off
-            M.appl2("Min", hoconstraint(), hoconstraint(), (m, pathConstraint, dataConstraint) -> {
-                return new QueryMin(pathConstraint, dataConstraint);
-            }),
-            M.appl1("ResolveMin", term(), (m, ref) -> {
-                return new ResolveMin(ref);
-            })
-            // @formatter:on
-        );
+    public static IMatcher<IQueryMin> queryMin(IAlphabet<ITerm> labels) {
+        return M.appl2("Min", hoconstraint(labels), hoconstraint(labels), (m, pathConstraint, dataConstraint) -> {
+            return new QueryMin(pathConstraint, dataConstraint);
+        });
     }
 
-    public static IMatcher<String> hoconstraint() {
-        return M.appl1("LC", M.stringValue(), (t, c) -> c);
+    public static IMatcher<Lambda> hoconstraint(IAlphabet<ITerm> labels) {
+        return M.appl3("LLam", M.listElems(term()), M.listElems(var()), constraints(labels),
+                (t, ps, vs, c) -> new Lambda(ps, vs, c));
     }
 
     public static IMatcher<Map<ITerm, Type>> relationDecls() {
@@ -303,7 +287,7 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<String, Tuple2<Integer, ITerm>>> scopeExtension() {
         return M.tuple3(M.stringValue(), M.integerValue(), M.term(),
-                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i, lbl)));
+                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i - 1, lbl)));
     }
 
     public static IMatcher<IAlphabet<ITerm>> labels() {
@@ -353,8 +337,8 @@ public class StatixTerms {
     }
 
     public static IMatcher<ITerm> term() {
-        return M.casesFix(m -> Iterables2.from(
         // @formatter:off
+        return M.<ITerm>casesFix(m -> Iterables2.from(
             var(),
             M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
                 return B.newAppl(op, args);
@@ -365,18 +349,25 @@ public class StatixTerms {
             M.appl1("Str", M.string(), (t, string) -> {
                 return string;
             }),
-            M.appl1("Int", M.integer(), (t, integer) -> {
-                return integer;
+            M.appl1("Int", M.stringValue(), (t, integer) -> {
+                return B.newInt(Integer.parseInt(integer));
             }),
             list(),
-            AOccurrence.matcher(term())
-            // @formatter:on
+            M.appl3("Occurrence", M.stringValue(), M.listElems(m), position(m), (t, ns, name, idx) -> {
+                return Occurrence.of(ns, name, idx);
+            })
         ));
+        // @formatter:on
+    }
+
+    private static IMatcher<Optional<ITerm>> position(IMatcher<ITerm> term) {
+        return M.appl1("Position", M.cases(var().map(Optional::of), M.tuple0(t -> Optional.<ITerm>empty())),
+                (ITerm t, Optional<ITerm> p) -> p);
     }
 
     public static IMatcher<IListTerm> list() {
-        return M.casesFix(m -> Iterables2.from(
         // @formatter:off
+        return M.casesFix(m -> Iterables2.from(
             var(),
             M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
                 return B.newList(elems);
@@ -384,14 +375,73 @@ public class StatixTerms {
             M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
                 return B.newListTail(elems, tail);
             })
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
     public static IMatcher<ITermVar> var() {
         return M.appl1("Var", M.stringValue(), (t, name) -> {
             return B.newVar("", name);
         });
+    }
+
+    public static ITerm explicate(ITerm term) {
+        // @formatter:off
+        return term.match(Terms.cases(
+            appl -> {
+                if(appl instanceof AOccurrence) {
+                    final AOccurrence occ = (AOccurrence) appl;
+                    final List<ITerm> args = occ.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
+                    final ITerm index = B.newAppl("Position", occ.getIndex().map(t -> explicate(t)).orElse(B.newTuple()));
+                    return B.newAppl("Occurrence", B.newString(occ.getNamespace()), B.newList(args), index);
+                } else {
+                    final List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
+                    return B.newAppl("Op", B.newString(appl.getOp()), B.newList(args));
+                }
+            },
+            list -> explicate(list),
+            string -> B.newAppl("Str", string),
+            integer -> B.newAppl("Int", B.newString(integer.toString())),
+            blob -> B.newString(blob.toString()),
+            var -> explicate(var)
+        )).withAttachments(term.getAttachments());
+        // @formatter:on
+    }
+
+    private static ITerm explicate(IListTerm list) {
+        // @formatter:off
+        final List<ITerm> terms = Lists.newArrayList();
+        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final Ref<ITerm> varTail = new Ref<>();
+        while(list != null) {
+            list = list.match(ListTerms.cases(
+                cons -> {
+                    terms.add(explicate(cons.getHead()));
+                    attachments.add(cons.getAttachments());
+                    return cons.getTail();
+                },
+                nil -> {
+                    attachments.add(nil.getAttachments());
+                    return null;
+                },
+                var -> {
+                    varTail.set(explicate(var));
+                    attachments.add(ImmutableClassToInstanceMap.builder().build());
+                    return null;
+                }
+            ));
+            // @formatter:on
+        }
+        list = B.newList(terms, attachments);
+        if(varTail.get() != null) {
+            return B.newAppl("ListTail", list, varTail.get());
+        } else {
+            return B.newAppl("List", list);
+        }
+    }
+
+    private static ITerm explicate(ITermVar var) {
+        return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
     }
 
 }

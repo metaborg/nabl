@@ -2,14 +2,14 @@ package mb.statix.solver.guard;
 
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.terms.unification.UnificationException;
-import mb.statix.solver.IDebugContext;
 import mb.statix.solver.IGuard;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public class GEqual implements IGuard {
 
@@ -21,19 +21,19 @@ public class GEqual implements IGuard {
         this.term2 = term2;
     }
 
-    @Override public IGuard apply(Function1<ITerm, ITerm> map) {
-        return new GEqual(map.apply(term1), map.apply(term2));
+    @Override public IGuard apply(ISubstitution.Immutable subst) {
+        return new GEqual(subst.apply(term1), subst.apply(term2));
     }
 
     @Override public Optional<State> solve(State state, IDebugContext debug) {
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result = unifier.unify(term1, term2);
-            debug.info("Unification succeeded");
+            debug.info("Unification succeeded: {}", result.result());
             return Optional.of(state.withUnifier(result.unifier()));
         } catch(UnificationException e) {
-            debug.info("Unification failed");
-            return Optional.of(state.withErroneous(true));
+            debug.info("Unification failed: {} != {}", unifier.toString(e.getLeft()), unifier.toString(e.getRight()));
+            return Optional.empty();
         }
     }
 
@@ -46,11 +46,7 @@ public class GEqual implements IGuard {
     }
 
     @Override public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(term1);
-        sb.append(" == ");
-        sb.append(term2);
-        return sb.toString();
+        return toString(PersistentUnifier.Immutable.of());
     }
 
 }

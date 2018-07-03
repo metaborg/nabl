@@ -1,0 +1,27 @@
+module statix/lang/Type
+
+imports
+
+  nabl2/API
+
+sorts
+
+  IType // internal types
+  TType // term type
+
+context-free syntax
+
+  IType.PRED = [[{TType " * "}*]]
+  IType.FUN  = [[{TType " * "}*] -> [{TType " * "}*]]
+  IType.NS   = [[{TType " * "}*]]
+  IType.OP   = [[{TType " * "}*] -> [TType]]
+
+  TType.SORT       = <<NaBL2Occurrence>>
+  TType.INT        = <int>
+  TType.STRING     = <string>
+  TType.PATH       = <path>
+  TType.LABEL      = <label>
+  TType.OCCURRENCE = <occurrence>
+  TType.SCOPE      = <scope>
+  TType.LIST       = <list(<TType>)>
+  TType.TUPLE      = <(<{TType " * "}*>)>
