@@ -10,6 +10,9 @@ imports
   nabl2/api
   signatures/nabl2/runtime/common/-
 
+signature constructors
+  HyperlinkText : Term -> Term
+
 rules
 
   // HACK: all these rules test if the node has a term index, because
@@ -21,7 +24,10 @@ rules
     where refs := <nabl2-get-ast-refs(|a)> node
     where not([] := refs) // failure has Spoofax Core try a parent node
     with decls := <mapconcat(nabl2-get-resolved-names(|a);
-                             map(Fst;nabl2-get-occurrence-index))> refs
+                             map(nabl2-prepare-resolved-name))> refs
+
+  nabl2-prepare-resolved-name: (name, path) -> result{a*, HyperlinkText(path)}
+    with result{a*} := <nabl2-get-occurrence-index> name
 
   nabl2--editor-hover: (node, _, _, _, _) -> label
     where <nabl2-get-ast-index> node;
