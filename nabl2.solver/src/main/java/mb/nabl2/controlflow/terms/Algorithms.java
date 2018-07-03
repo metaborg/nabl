@@ -7,6 +7,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -26,13 +27,12 @@ public class Algorithms {
      */
     public static <N> TopoSCCResult<N> topoSCCs(Collection<N> nodes, Collection<N> startNodes, Collection<N> endNodes, BinaryRelation.Immutable<N, N> edges) {
         int index = 0;
-        HashMap<N, Integer> nodeIndex = new HashMap<>(nodes.size());
-        HashMap<N, Integer> nodeLowlink = new HashMap<>(nodeIndex);
-        Deque<N> sccStack = new ArrayDeque<>();
-        java.util.Set<N> stackSet = new HashSet<>();
+        final HashMap<N, Integer> nodeIndex = new HashMap<>(nodes.size());
+        final HashMap<N, Integer> nodeLowlink = new HashMap<>(nodeIndex);
+        final Deque<N> sccStack = new ArrayDeque<>();
+        final java.util.Set<N> stackSet = new HashSet<>();
         Deque<java.util.Set<N>> sccs = new ArrayDeque<>();
         Set.Immutable<N> unreachable = Set.Immutable.of();
-        Set.Immutable<N> deadEnds = Set.Immutable.of();
 
         /* Note these deviations: 
          * (1) We seed the traversal with the start nodes.
@@ -54,19 +54,19 @@ public class Algorithms {
         }
 
         // Now the inverse graph
+        index = 0;
         nodeIndex.clear();
         nodeLowlink.clear();
-        assert sccStack.isEmpty();
-        assert stackSet.isEmpty();
+        sccStack.clear();
+        stackSet.clear();
         Deque<java.util.Set<N>> revSCCs = new ArrayDeque<>();
-        BinaryRelation.Immutable<N, N> inverseEdges = edges.inverse();
-        index = 0;
+        Set.Immutable<N> deadEnds = Set.Immutable.of();
 
         for (N node : endNodes) {
             // For each start node that hasn't been visited already,
             if (nodeIndex.get(node) == null) {
                 // do the recursive strong-connect
-                index = sccStrongConnect(inverseEdges, node, index, nodeIndex, nodeLowlink, sccStack, stackSet, revSCCs);
+                index = sccStrongConnect(edges.inverse(), node, index, nodeIndex, nodeLowlink, sccStack, stackSet, revSCCs);
             }
         }
 
@@ -132,7 +132,7 @@ public class Algorithms {
         // Here we actually add the node to the stack, in _postorder_
         sccStack.push(from);
 
-        if (nodeLowlink.get(from) == nodeIndex.get(from)) {
+        if (Objects.equals(nodeLowlink.get(from), nodeIndex.get(from))) {
             // Pop the SCC of the stack; since it's a stack, we get a reverse postorder
             java.util.LinkedHashSet<N> scc = new LinkedHashSet<>();
             for(int i = stackSet.size(); i > stackSetSizeBefore; i--) {
