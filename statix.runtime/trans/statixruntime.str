@@ -3,8 +3,11 @@ module statixruntime
 imports
 
   libstratego-lib
+  libstratego-gpp
 
   libspoofax/core/language
+
+  pp/statix/runtime/-
 
 signature
   constructors
@@ -19,7 +22,7 @@ rules
       (ast, path, project-path) -> (ast', error*, warning*, note*)
     with spec := <stx--find-spec(|spec-name)>;
          ast' := <desugar;nabl2--index-ast(|""/*path*/)> ast;
-         C    := C(init-constraint, [<stx--explode> ast']);
+         C    := C(init-constraint, [<debug;stx--explode;debug> ast']);
          level := <stx--log-level>;
          (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
 
@@ -76,3 +79,8 @@ rules
 
   stx--explode: c#(t*){a*} -> Op(c, <map(stx--explode)> t*){a*}
     where not(is-list + is-tuple + is-string + is-int)
+
+rules
+
+  prettyprint-Statix-Int = debug;
+    ![S(<is-int;int-to-string>)]

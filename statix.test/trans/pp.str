@@ -6,6 +6,8 @@ imports
   libspoofax/sdf/pp
   libspoofax/editor/refactoring/-
 
+  statixruntime
+
   pp/-
   pp/statix/lang/-
   statix/lang/pp

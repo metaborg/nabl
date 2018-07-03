@@ -9,6 +9,7 @@ imports
   libspoofax/term/annotation
   libspoofax/term/origin
 
+  nabl2/shared/vars
   nabl2/api
 
   signatures/statix/lang/-
@@ -26,6 +27,8 @@ rules
     ?(<id>, a);
     nabl2-custom-analysis-info-msg(|"| Explicate mapping constraints...");
     explicate-cmaps(|a);
+    nabl2-custom-analysis-info-msg(|"| Normalize occurrence positions...");
+    normalize-occurrence-positions(|a);
     !(<id>, a)
 
   normalize-1 =
@@ -83,6 +86,16 @@ rules
 
 rules
 
+  normalize-occurrence-positions(|a) = try(sometd(normalize-occurrence-position(|a)))
+
+  normalize-occurrence-position(|a):
+      Occurrence(ns, ts, p) -> Occurrence(ns, ts, p')
+  with ty := <nabl2-get-ast-type(|a)> p
+  where <not(?TERM_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
+  with p' := TermIdOp(p)
+
+rules
+
   normalize-functional-cops(|a) = bottomup(try(normalize-functional-cop(|a)))
 
   normalize-functional-cop(|a):
@@ -121,6 +134,12 @@ rules
     with v := Var(<newname> "new")
 
   cop-to-c(|a): (NewOp(), v) -> CNew([v])
+
+
+  replace-cop(|a): TermIdOp(_) -> v
+    with v := Var(<newname> "termId")
+
+  cop-to-c(|a): (TermIdOp(t), v) -> CTermId(t, v)
 
 
   replace-cop(|a): PathSrcOp(_) -> v
@@ -410,7 +429,7 @@ rules
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
          r := Var(<newname> "r");
-         eq-r := CEqual(r, Occurrence(ns, ts, Position(p)));
+         eq-r := CEqual(r, Occurrence(ns, ts, p));
          lbls := Var(<newname> "lbls");
          if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (filter, [lbls])
@@ -430,9 +449,9 @@ rules
          us := <make-fresh-vars(|"u")> tys;
          [pr, pd] := <map(!Wld())> [(),()];
          r := Var(<newname> "r");
-         eq-r := CEqual(r, Occurrence(ns, ts, Position(pr)));
+         eq-r := CEqual(r, Occurrence(ns, ts, pr));
          d := Var(<newname> "d");
-         eq-d := CEqual(d, Occurrence(ns, us, Position(pd)));
+         eq-d := CEqual(d, Occurrence(ns, us, pd));
          eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
          body := CConj(eq-d, <list-to-conj> eqs)
 
@@ -445,7 +464,7 @@ rules
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
          r := Var(<newname> "r");
-         eq-r := CEqual(r, Occurrence(ns, ts, Position(p)));
+         eq-r := CEqual(r, Occurrence(ns, ts, p));
          l1 := Var(<newname> "l1");
          l2 := Var(<newname> "l2");
          if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
@@ -495,6 +514,7 @@ rules
   type-to-sort: LABEL()      -> LabelSort()
   type-to-sort: OCCURRENCE() -> OccurrenceSort()
   type-to-sort: SCOPE()      -> ScopeSort()
+  type-to-sort: TERM_ID()    -> TermIdSort()
   type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)
   type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
 

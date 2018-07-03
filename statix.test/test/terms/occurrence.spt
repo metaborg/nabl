@@ -154,3 +154,35 @@ test match occurrence with different name fails [[
     c(Var{"y" @-}).
 ]] analysis succeeds
    run evaluate-test to FAILS()
+
+test occurrence positions of same scope are equal [[
+  resolve {s} new s, Var{"x"@s} == Var{"x"@s}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test occurrence positions of different scopes are equal [[
+  resolve {s1 s2} new s1 s2, Var{"x"@s1} == Var{"x"@s2}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test occurrence positions of same term are equal [[
+  resolve {x} x == "x", Var{x@x} == Var{x@x}
+  signature
+    namespaces
+      Var : string
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+//test occurrence positions of different terms are inequal [[
+//  resolve {x1 x2} x1 == "x", x2 == "x", Var{x1@x1} == Var{x2@x2}
+//  signature
+//    namespaces
+//      Var : string
+//]] analysis succeeds
+//   run evaluate-test to FAILS()
