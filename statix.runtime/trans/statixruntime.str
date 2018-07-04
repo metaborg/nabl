@@ -22,7 +22,7 @@ rules
       (ast, path, project-path) -> (ast', error*, warning*, note*)
     with spec := <stx--find-spec(|spec-name)>;
          ast' := <desugar;nabl2--index-ast(|""/*path*/)> ast;
-         C    := C(init-constraint, [<debug;stx--explode;debug> ast']);
+         C    := C(init-constraint, [<stx--explode> ast']);
          level := <stx--log-level>;
          (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
 
@@ -82,5 +82,5 @@ rules
 
 rules
 
-  prettyprint-Statix-Int = debug;
+  prettyprint-Statix-Int =
     ![S(<is-int;int-to-string>)]
