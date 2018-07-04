@@ -31,6 +31,7 @@ import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.spec.Spec;
 
@@ -69,7 +70,8 @@ public class STX_solve_constraint extends StatixPrimitive {
         final Config config = Config.of(state, constraints, new Completeness());
         final Config resultConfig;
         try {
-            resultConfig = Solver.solve(config, new LoggerDebugContext(logger, level));
+            final IDebugContext debug = new LoggerDebugContext(logger, level);
+            resultConfig = Solver.solve(config, debug);
         } catch(InterruptedException e) {
             throw new InterpreterException(e);
         }
