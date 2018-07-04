@@ -6,20 +6,15 @@ imports
 
 signature
   constructors
-    Project : String -> Marker
-    File    : String * Term -> Marker
- 
-  constructors
-    AnalyzeInitial : String/* source */ * Term/* ast */ -> AnalysisAction
-    AnalyzeUnit    : String/* source */ * Term/* ast */ * Term/* parameters */ -> AnalysisAction
-    AnalyzeFinal   : String/* source */ -> AnalysisAction
+    AnalyzeUnit : String/* source */ * Term/* ast */ -> AnalysisAction
+    UnitResult  : Term/* processed ast */ * Analysis * List(EditorMessage)/* errors */ * List(EditorMessage)/* warnings */ * List(EditorMessage)/* notes */ -> AnalysisResult
 
   constructors
-    CustomInitial : String/* source */ * Term/* ast */ -> AnalysisAction
-    CustomUnit    : String/* source */ * Term/* ast */ * Term/* initial */ -> AnalysisAction
-    CustomFinal   : String/* source */ * Term/* custom initial */ * Term/* custom final */  -> AnalysisAction
+    AnalyzeInitial : String/* source */ -> AnalysisAction
+    InitialResult  : Term/* initial analysis */ -> AnalysisResult
 
-  constructors
-    InitialResult : List(Constraint) * Term/* cgen args */ * Term/* config */ -> InitialResult
-    UnitResult    : Term/* processed ast */ * List(Constraint) -> UnitResult
-    FinalResult   : FinalResult
+    AnalyzeUnit : String/* source */ * Term/* ast */ * Term/* initial analysis */ -> AnalysisAction
+    UnitResult  : Term/* analyzed ast */ * Term/* file analysis */ -> AnalysisResult
+
+    AnalyzeFinal : String/* source */ * Term/* initial analysis */ * List(Term)/* file analyses */ -> AnalysisAction
+    FinalResult  : Term/* final analysis */ * List(EditorMessage)/* errors */ * List(EditorMessage)/* warnings */ * List(EditorMessage)/* notes */ -> AnalysisResult

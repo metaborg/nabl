@@ -71,7 +71,7 @@ rules // ###### Analysis execution ######
 rules // ###### Custom analysis hooks ######
 
   /**
-   * @type resource:String -> CustomInitialResult
+   * @type (resource:String, ast:Term) -> CustomInitialResult
    */
   nabl2-custom-analysis-init-hook = fail
 

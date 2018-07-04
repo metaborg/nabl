@@ -30,8 +30,8 @@ import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.ImmutableBaseSolution;
 import mb.nabl2.solver.solvers.SingleFileSolver;
-import mb.nabl2.spoofax.analysis.IScopeGraphUnit;
-import mb.nabl2.spoofax.analysis.ImmutableScopeGraphUnit;
+import mb.nabl2.spoofax.analysis.ImmutableUnitResult;
+import mb.nabl2.spoofax.analysis.UnitResult;
 import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.stratego.MessageTerms;
 import mb.nabl2.stratego.StrategoBlob;
@@ -83,16 +83,15 @@ public class SG_solve_constraint extends AbstractPrimitive {
             throw new InterpreterException(ex);
         }
 
-        final IScopeGraphUnit unit =
-                ImmutableScopeGraphUnit.builder().addConstraints(constraint).solution(solution).fresh(fresh).build();
+        final UnitResult result = ImmutableUnitResult.of(constraint, solution);
         final IStrategoTerm errors =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier()));
         final IStrategoTerm warnings =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getWarnings(), solution.unifier()));
         final IStrategoTerm notes =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getNotes(), solution.unifier()));
-        final IStrategoTerm result = env.getFactory().makeTuple(new StrategoBlob(unit), errors, warnings, notes);
-        env.setCurrent(result);
+        final IStrategoTerm resultTerm = env.getFactory().makeTuple(new StrategoBlob(result), errors, warnings, notes);
+        env.setCurrent(resultTerm);
         return true;
     }
 
