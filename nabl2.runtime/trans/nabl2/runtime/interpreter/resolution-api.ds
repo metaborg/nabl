@@ -1,0 +1,11 @@
+module nabl2/runtime/interpreter/resolution-api
+
+imports
+  nabl2/runtime/interpreter/scopegraph-api
+  nabl2/runtime/interpreter/frame-api
+
+signature
+  arrows // API is parameterised with these two language-specific meta-functions
+    labelInvOrder(Label, Label) --> Bool
+    wfPath(List(Label)) --> Bool
+    

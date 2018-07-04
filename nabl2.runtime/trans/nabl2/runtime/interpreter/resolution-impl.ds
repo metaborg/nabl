@@ -1,0 +1,146 @@
+module nabl2/runtime/interpreter/resolution-impl
+
+imports
+  nabl2/runtime/interpreter/resolution-api
+  nabl2/runtime/interpreter/frame-impl
+
+signature
+  arrows
+    resolve(Occurrence, List((Frame * Path))) --> Path
+    filter-wf(List((Frame * Path))) --> List((Frame * Path))
+    
+    makeEdgeCandidates(List(Label), Map(Label, List(Scope)), Frame, Path) --> List((Frame * Path))
+    edgeCandidates(Label, List(Scope), Frame, Path) --> List((Frame * Path))
+    
+    makeImportCandidates(List(Label), Map(Label, List(Occurrence)), Frame, Path) --> List((Frame * Path))
+    importCandidates(Label, List(Occurrence), Frame, Path) --> List((Frame * Path))
+    labelsOfPath(Path) --> List(Label)
+    labelOfStep(Step) --> Label
+    
+
+rules
+  // implements the frame-api meta-function
+  F |- resolveLookup(occ) --> _lookup(path)
+  where
+    resolve(occ, [(F, [] : Path)]) --> path
+
+rules
+//  _resolve(x, []) --> unresolved name
+  
+  resolve(x, [(F, p) | cs]) --> p'
+  where
+    scopeOf(F) --> s;
+    filterOccsByNamespace(filterOccsByName(declsOf(s), nameOf(x)), namespaceOf(x)) --> decs;
+    case decs of {
+      [dec] ->
+        // found
+        `[D(s, dec) | p] => p'
+      [] ->
+        // not found
+        edgesOf(s) --> edges;
+        importsOf(s) --> imps;
+        makeEdgeCandidates(allkeys(edges), edges, F, p) --> edgeCandidates;
+        makeImportCandidates(allkeys(imps), imps, F, p) --> impCandidates;
+        edgeCandidates ++ impCandidates ++ cs => cs';
+        resolve(x, qsortCandidates(filter-wf(cs'))) --> p'
+    }
+  
+  filter-wf([]) --> []
+  
+  filter-wf([c@(_, p)|cs]) --> candidates
+  where
+    filter-wf(cs) --> cs';
+    case wfPath(labelsOfPath(p)) : Bool of {
+      true ->
+        [c|cs'] => candidates
+      false ->
+        cs' => candidates
+    }
+  
+  makeEdgeCandidates([], _, _, _) --> []
+    
+  makeEdgeCandidates([l|ls], edges, F, p) --> candidates1 ++ candidates2
+  where
+    makeEdgeCandidates(ls, edges, F, p) --> candidates1;
+    edgeCandidates(l, edges[l], F, p) --> candidates2
+  
+  edgeCandidates(_, [], _, _) --> []
+  
+  edgeCandidates(l, [s|ss], F, p) --> [c|cs]
+  where
+    linksOfF(F) --> lks;
+    lks[l][s] => F';
+    (F', [E(s, l)|p]) => c;
+    edgeCandidates(l, ss, F, p) --> cs
+  
+  makeImportCandidates([], _, _, _) --> []
+  
+  makeImportCandidates([l|ls], imps, s, p) --> candidates1 ++ candidates2
+  where
+    makeImportCandidates(ls, imps, s, p) --> candidates1;
+    importCandidates(l, imps[l], s, p) --> candidates2
+  
+  importCandidates(_, [], _, _) --> []
+  
+  importCandidates(l, [o|os], F, p) --> [c|cs]
+  where
+    importsOfF(F) --> imps;
+    imps[l][o] => F';
+    scopeOf(F') --> s;
+    (F', [N(s, l, o, p) | p]) => c;
+    importCandidates(l, os, F, p) --> cs
+
+  labelsOfPath([]) --> []
+  
+  labelsOfPath([s | ss]) --> [l|ls]
+  where
+    labelOfStep(s) --> l;
+    labelsOfPath(ss) --> ls
+  
+  labelOfStep(D(_, _)) --> D()
+  labelOfStep(E(_, l)) --> l
+  labelOfStep(N(_, l, _, _)) --> l
+
+  
+signature
+  arrows
+    qsortCandidates(List((Frame * Path))) --> List((Frame * Path))
+    fltLtCandidates((Frame * Path), List((Frame * Path))) --> List((Frame * Path))
+    fltGteCandidates((Frame * Path), List((Frame * Path))) --> List((Frame * Path))
+
+
+rules
+  qsortCandidates([]) --> []
+  
+  qsortCandidates([c | cs]) --> lesser' ++ [c] ++ greater'
+  where
+    fltLtCandidates(c, cs) --> lesser;
+    fltGteCandidates(c, cs) --> greater;
+    qsortCandidates(lesser) --> lesser';
+    qsortCandidates(greater) --> greater'
+  
+  fltLtCandidates(_, []) --> []
+  
+  fltLtCandidates(ref@(_, [l1|_]), [c@(_, [l2|_])|cs]) --> cs''
+  where
+     fltLtCandidates(ref, cs) --> cs';
+    labelInvOrder(labelOfStep(l1), labelOfStep(l2)) --> lesser;
+     case lesser of {
+      true ->
+        [c|cs'] => cs''
+      false ->
+        cs' => cs''
+     }
+  
+  fltGteCandidates(_, []) --> []
+  
+  fltGteCandidates(ref@(_, [l1|_]), [c@(_, [l2|_])|cs]) --> cs''
+  where
+     fltGteCandidates(ref, cs) --> cs';
+     labelInvOrder(labelOfStep(l1), labelOfStep(l2)) --> lesser;
+     case lesser of {
+      false ->
+        [c|cs'] => cs''
+      true ->
+        cs' => cs''
+     }

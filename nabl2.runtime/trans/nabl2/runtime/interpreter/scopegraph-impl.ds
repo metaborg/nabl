@@ -59,6 +59,13 @@ rules
  
 rules // occurrences
 
+  scopeEq(Scope(s11, s12), Scope(s21, s22)) --> true
+  where
+    s11 == s21;
+    s12 == s22
+  
+  _ : scopeEq_2_Meta --> false 
+
   mkOccurrence(t:Name) --> Occurrence(ns,t,idx)
     where DefaultNamespace() => ns;
           nabl2_indexOf(t) => idx
