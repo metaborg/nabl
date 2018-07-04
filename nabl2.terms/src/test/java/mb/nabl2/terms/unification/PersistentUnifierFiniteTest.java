@@ -3,6 +3,7 @@ package mb.nabl2.terms.unification;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -149,6 +150,30 @@ public class PersistentUnifierFiniteTest {
         theta.unify(a, B.newAppl(f, x));
         theta.unify(b, x);
         assertEquals(phi, theta);
+    }
+
+    @Test public void testEquals2() throws UnificationException {
+        IUnifier.Transient phi = PersistentUnifier.Transient.of();
+        phi.unify(b, c);
+        IUnifier.Transient theta = PersistentUnifier.Transient.of();
+        assertNotEquals(phi, theta);
+    }
+
+    @Test public void testEquals3() throws UnificationException {
+        IUnifier.Transient phi = PersistentUnifier.Transient.of();
+        phi.unify(a, B.newAppl(f, b));
+        IUnifier.Transient theta = PersistentUnifier.Transient.of();
+        theta.unify(a, B.newAppl(f, c));
+        assertNotEquals(phi, theta);
+    }
+
+    @Test public void testEquals4() throws UnificationException {
+        IUnifier.Transient phi = PersistentUnifier.Transient.of();
+        phi.unify(a, B.newAppl(f, b));
+        phi.unify(b, B.newAppl(g));
+        IUnifier.Transient theta = PersistentUnifier.Transient.of();
+        theta.unify(a, B.newAppl(f, B.newAppl(g)));
+        assertNotEquals(phi, theta);
     }
 
     @Test public void testEquivalenceClasses() throws UnificationException {

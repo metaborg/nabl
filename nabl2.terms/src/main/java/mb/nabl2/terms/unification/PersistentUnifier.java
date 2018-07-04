@@ -3,6 +3,7 @@ package mb.nabl2.terms.unification;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
@@ -100,135 +101,152 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     }
 
     public boolean equals(IUnifier other) {
-        final boolean equal;
-        if(isFinite() != other.isFinite()) {
-            equal = false;
-        } else {
-            final BiMap<ITermVar, ITermVar> freeMap = HashBiMap.create();
-            final Multimap<ITermVar, ITermVar> instMap = HashMultimap.create();
-            final Set<ITermVar> vars = Sets.union(varSet(), other.varSet());
-            equal = vars.stream().allMatch(v -> equalVars(v, v, other, freeMap, instMap));
+        return new Equals(other).apply();
+    }
+
+    private class Equals {
+
+        private final IUnifier other;
+        private BiMap<ITermVar, ITermVar> freeMap = HashBiMap.create();
+        private Multimap<ITermVar, ITermVar> instMap = HashMultimap.create();
+        private Deque<ITermVar> vars = Lists.newLinkedList();
+
+        public Equals(IUnifier other) {
+            this.other = other;
         }
-        return equal;
-    }
 
-    private boolean equalTerms(ITerm thisTerm, ITerm thatTerm, IUnifier other, BiMap<ITermVar, ITermVar> freeMap,
-            Multimap<ITermVar, ITermVar> instMap) {
-        // @formatter:off
-        return thisTerm.match(Terms.cases(
-            applThis -> thatTerm.match(Terms.<Boolean>cases()
-                .appl(applThat -> applThis.getOp().equals(applThat.getOp()) &&
-                                   applThis.getArity() == applThat.getArity() &&
-                                   equals(applThis.getArgs(), applThat.getArgs(), other, freeMap, instMap))
-                .var(varThat -> equalTermVar(applThis, varThat, other, freeMap, instMap))
-                .otherwise(t -> false)
-            ),
-            listThis -> thatTerm.match(Terms.<Boolean>cases()
-                .list(listThat -> listThis.match(ListTerms.cases(
-                    consThis -> listThat.match(ListTerms.<Boolean>cases()
-                        .cons(consThat -> {
-                            return equalTerms(consThis.getHead(), consThat.getHead(), other, freeMap, instMap) && 
-                            equalTerms(consThis.getTail(), consThat.getTail(), other, freeMap, instMap);
-                        })
-                        .var(varThat -> equalTermVar(consThis, varThat, other, freeMap, instMap))
-                        .otherwise(l -> false)
-                    ),
-                    nilThis -> listThat.match(ListTerms.<Boolean>cases()
-                        .nil(nilThat -> true)
-                        .var(varThat -> equalTermVar(nilThis, varThat, other, freeMap, instMap))
-                        .otherwise(l -> false)
-                    ),
-                    varThis -> listThat.match(ListTerms.<Boolean>cases()
-                        .var(varThat -> equalVars(varThis, varThat, other, freeMap, instMap))
-                        .otherwise(termThat -> equalVarTerm(varThis, termThat, other, freeMap, instMap))
-                    )
-                )))
-                .var(varThat -> equalTermVar(listThis, varThat, other, freeMap, instMap))
-                .otherwise(t -> false)
-            ),
-            stringThis -> thatTerm.match(Terms.<Boolean>cases()
-                .string(stringThat -> stringThis.getValue().equals(stringThat.getValue()))
-                .var(varThat -> equalTermVar(stringThis, varThat, other, freeMap, instMap))
-                .otherwise(t -> false)
-            ),
-            integerThis -> thatTerm.match(Terms.<Boolean>cases()
-                .integer(integerThat -> integerThis.getValue() == integerThat.getValue())
-                .var(varThat -> equalTermVar(integerThis, varThat, other, freeMap, instMap))
-                .otherwise(t -> false)
-            ),
-            blobThis -> thatTerm.match(Terms.<Boolean>cases()
-                .blob(blobThat -> blobThis.getValue().equals(blobThat.getValue()))
-                .var(varThat -> equalTermVar(blobThis, varThat, other, freeMap, instMap))
-                .otherwise(t -> false)
-            ),
-            varThis -> thatTerm.match(Terms.<Boolean>cases()
-                // match var before term, or term will always match
-                .var(varThat -> equalVars(varThis, varThat, other, freeMap, instMap))
-                .otherwise(termThat -> equalVarTerm(varThis, termThat, other, freeMap, instMap))
-            )
-        ));
-        // @formatter:on
-    }
-
-    private boolean equalVarTerm(final ITermVar thisVar, final ITerm thatTerm, final IUnifier other,
-            BiMap<ITermVar, ITermVar> freeMap, Multimap<ITermVar, ITermVar> instMap) {
-        if(hasTerm(thisVar)) {
-            return equalTerms(findTerm(thisVar), thatTerm, other, freeMap, instMap);
-        }
-        return false;
-    }
-
-    private boolean equalTermVar(final ITerm thisTerm, final ITermVar thatVar, final IUnifier other,
-            BiMap<ITermVar, ITermVar> freeMap, Multimap<ITermVar, ITermVar> instMap) {
-        if(other.hasTerm(thatVar)) {
-            return equalTerms(thisTerm, other.findTerm(thatVar), other, freeMap, instMap);
-        }
-        return false;
-    }
-
-    private boolean equalVars(ITermVar thisVar, ITermVar thatVar, IUnifier other, BiMap<ITermVar, ITermVar> freeMap,
-            Multimap<ITermVar, ITermVar> instMap) {
-        final ITermVar thisRep = findRep(thisVar);
-        final ITermVar thatRep = other.findRep(thatVar);
-        final boolean result;
-        if(hasTerm(thisRep) && other.hasTerm(thatRep)) {
-            if(instMap.containsEntry(thisRep, thatRep)) {
-                result = true;
-            } else {
-                instMap.put(thisRep, thatRep);
-                result = equalTerms(findTerm(thisRep), other.findTerm(thatRep), other, freeMap, instMap);
-            }
-        } else if(!hasTerm(thisRep) && !other.hasTerm(thatRep)) {
-            if(freeMap.containsKey(thisRep) && freeMap.containsValue(thatRep)) {
-                result = freeMap.get(thisRep).equals(thatRep);
-            } else if(freeMap.containsKey(thisRep) || freeMap.containsValue(thatRep)) {
-                result = false;
-            } else {
-                freeMap.put(thisRep, thatRep);
-                result = true;
-            }
-        } else {
-            result = false;
-        }
-        return result;
-    }
-
-    private boolean equals(final Iterable<ITerm> thisTerms, final Iterable<ITerm> thatTerms, final IUnifier other,
-            BiMap<ITermVar, ITermVar> freeMap, Multimap<ITermVar, ITermVar> instMap) {
-        Iterator<ITerm> itLeft = thisTerms.iterator();
-        Iterator<ITerm> itRight = thatTerms.iterator();
-        while(itLeft.hasNext()) {
-            if(!itRight.hasNext()) {
+        public boolean apply() {
+            if(isFinite() != other.isFinite()) {
                 return false;
-            }
-            if(!equalTerms(itLeft.next(), itRight.next(), other, freeMap, instMap)) {
-                return false;
+            } else {
+                vars.addAll(varSet());
+                vars.addAll(other.varSet());
+                while(!vars.isEmpty()) {
+                    final ITermVar var = vars.pop();
+                    if(!equalVars(var, var)) {
+                        return false;
+                    }
+                }
+                return true;
             }
         }
-        if(itRight.hasNext()) {
+
+        private boolean equalTerms(ITerm thisTerm, ITerm thatTerm) {
+            // @formatter:off
+            return thisTerm.match(Terms.cases(
+                applThis -> thatTerm.match(Terms.<Boolean>cases()
+                    .appl(applThat -> applThis.getOp().equals(applThat.getOp()) &&
+                                       applThis.getArity() == applThat.getArity() &&
+                                       equals(applThis.getArgs(), applThat.getArgs()))
+                    .var(varThat -> equalTermVar(applThis, varThat))
+                    .otherwise(t -> false)
+                ),
+                listThis -> thatTerm.match(Terms.<Boolean>cases()
+                    .list(listThat -> listThis.match(ListTerms.cases(
+                        consThis -> listThat.match(ListTerms.<Boolean>cases()
+                            .cons(consThat -> {
+                                return equalTerms(consThis.getHead(), consThat.getHead()) && 
+                                equalTerms(consThis.getTail(), consThat.getTail());
+                            })
+                            .var(varThat -> equalTermVar(consThis, varThat))
+                            .otherwise(l -> false)
+                        ),
+                        nilThis -> listThat.match(ListTerms.<Boolean>cases()
+                            .nil(nilThat -> true)
+                            .var(varThat -> equalTermVar(nilThis, varThat))
+                            .otherwise(l -> false)
+                        ),
+                        varThis -> listThat.match(ListTerms.<Boolean>cases()
+                            .var(varThat -> equalVars(varThis, varThat))
+                            .otherwise(termThat -> equalVarTerm(varThis, termThat))
+                        )
+                    )))
+                    .var(varThat -> equalTermVar(listThis, varThat))
+                    .otherwise(t -> false)
+                ),
+                stringThis -> thatTerm.match(Terms.<Boolean>cases()
+                    .string(stringThat -> stringThis.getValue().equals(stringThat.getValue()))
+                    .var(varThat -> equalTermVar(stringThis, varThat))
+                    .otherwise(t -> false)
+                ),
+                integerThis -> thatTerm.match(Terms.<Boolean>cases()
+                    .integer(integerThat -> integerThis.getValue() == integerThat.getValue())
+                    .var(varThat -> equalTermVar(integerThis, varThat))
+                    .otherwise(t -> false)
+                ),
+                blobThis -> thatTerm.match(Terms.<Boolean>cases()
+                    .blob(blobThat -> blobThis.getValue().equals(blobThat.getValue()))
+                    .var(varThat -> equalTermVar(blobThis, varThat))
+                    .otherwise(t -> false)
+                ),
+                varThis -> thatTerm.match(Terms.<Boolean>cases()
+                    // match var before term, or term will always match
+                    .var(varThat -> equalVars(varThis, varThat))
+                    .otherwise(termThat -> equalVarTerm(varThis, termThat))
+                )
+            ));
+            // @formatter:on
+        }
+
+        private boolean equalVarTerm(final ITermVar thisVar, final ITerm thatTerm) {
+            if(hasTerm(thisVar)) {
+                return equalTerms(findTerm(thisVar), thatTerm);
+            }
             return false;
         }
-        return true;
+
+        private boolean equalTermVar(final ITerm thisTerm, final ITermVar thatVar) {
+            if(other.hasTerm(thatVar)) {
+                return equalTerms(thisTerm, other.findTerm(thatVar));
+            }
+            return false;
+        }
+
+        private boolean equalVars(ITermVar thisVar, ITermVar thatVar) {
+            final ITermVar thisRep = findRep(thisVar);
+            final ITermVar thatRep = other.findRep(thatVar);
+            final boolean result;
+            if(hasTerm(thisRep) && other.hasTerm(thatRep)) {
+                if(instMap.containsEntry(thisRep, thatRep)) {
+                    result = true;
+                } else {
+                    instMap.put(thisRep, thatRep);
+                    vars.addAll(Arrays.asList(thisVar, thisRep, thatVar, thatRep));
+                    result = equalTerms(findTerm(thisRep), other.findTerm(thatRep));
+                }
+            } else if(!hasTerm(thisRep) && !other.hasTerm(thatRep)) {
+                if(freeMap.containsKey(thisRep) && freeMap.containsValue(thatRep)) {
+                    result = freeMap.get(thisRep).equals(thatRep);
+                } else if(freeMap.containsKey(thisRep) || freeMap.containsValue(thatRep)) {
+                    result = false;
+                } else {
+                    freeMap.put(thisRep, thatRep);
+                    vars.addAll(Arrays.asList(thisVar, thisRep, thatVar, thatRep));
+                    result = true;
+                }
+            } else {
+                result = false;
+            }
+            return result;
+        }
+
+        private boolean equals(final Iterable<ITerm> thisTerms, final Iterable<ITerm> thatTerms) {
+            Iterator<ITerm> itLeft = thisTerms.iterator();
+            Iterator<ITerm> itRight = thatTerms.iterator();
+            while(itLeft.hasNext()) {
+                if(!itRight.hasNext()) {
+                    return false;
+                }
+                if(!equalTerms(itLeft.next(), itRight.next())) {
+                    return false;
+                }
+            }
+            if(itRight.hasNext()) {
+                return false;
+            }
+            return true;
+        }
+
     }
 
     @Override public int hashCode() {
