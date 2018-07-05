@@ -75,7 +75,7 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
     }
 
     @Override public String toString() {
-        return "BLOB(\"" + value.getClass() + "\")";
+        return value.getClass().getSimpleName();
     }
 
     @SuppressWarnings("unchecked") public static <T> Optional<T> match(IStrategoTerm term, Class<T> blobClass) {

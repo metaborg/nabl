@@ -90,7 +90,8 @@ rules // ###### Custom analysis hooks ######
   /**
    * @type Analysis -> CustomFinalResult
    */
-  nabl2-get-custom-analysis = nabl2--get-custom-analysis
+  nabl2-get-custom-analysis =
+    nabl2--get-custom-analysis
 
   /**
    * Use for logging a message during custom analysis. The message

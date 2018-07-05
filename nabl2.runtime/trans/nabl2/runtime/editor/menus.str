@@ -2,7 +2,7 @@ module nabl2/runtime/editor/menus
 
 imports
 
-  nabl2/runtime/analysis/debug
+  nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
   nabl2/api
@@ -34,9 +34,9 @@ rules
   nabl2--debug-file-result(s,pp|ext):
     (_, _, _, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|ext)> path;
-         analysis := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+         analysis := <nabl2--get-resource-partial-analysis> $[[project-path]/[path]]
     with ( s(|analysis)
-         < pp
+         < nabl2--focus-term(|path);pp
          + !"(no result)"
          ) => result
 
@@ -63,10 +63,10 @@ rules
   nabl2--debug-project-result(s|ext) = nabl2--debug-project-result(s,pp-NaBL2-AnalysisResult|ext)
 
   nabl2--debug-project-result(s,pp|ext):
-    (_, _, _, _, project-path) -> (filename, result)
+    (_, _, _, path, project-path) -> (filename, result)
     with filename := $[[project-path]/project.[ext]];
-         analysis := <nabl2-get-resource-analysis> project-path
+         analysis := <nabl2--get-resource-analysis> project-path
     with ( s(|analysis)
-         < pp
+         < nabl2--focus-term(|path);pp
          + !"(no result)"
          ) => result

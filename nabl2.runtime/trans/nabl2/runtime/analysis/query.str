@@ -73,16 +73,24 @@ rules
 rules
 
   nabl2--get-ast-analysis =
-    prim("SG_get_ast_analysis")
+    nabl2--get-ast-index;
+    ?TermIndex(<id>, _);
+    nabl2--get-resource-analysis
 
   nabl2--get-resource-analysis =
-    prim("SG_get_resource_analysis")
+    prim("C_get_resource_analysis")
+
+  nabl2--get-resource-partial-analysis =
+    prim("C_get_resource_partial_analysis")
 
   nabl2--analysis-has-errors =
     ?a; prim("SG_analysis_has_errors", a)
 
   nabl2--get-custom-analysis =
     ?a; prim("SG_get_custom_analysis", a)
+
+  nabl2--set-custom-analysis(|a) =
+    prim("SG_set_custom_analysis", a)
 
 rules
 

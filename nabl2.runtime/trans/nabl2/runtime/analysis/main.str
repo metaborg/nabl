@@ -16,7 +16,7 @@ imports
 
 rules
 
-  nabl2--solve-constraint(|config) = prim("SG_solve_constraint", config)
+  nabl2--solve-constraint(|config) = prim("SG_solve_single_constraint", config)
 
   nabl2--analyze-ast(|resource): ast -> (ast', analysis, error*, warning*, note*)
     with config := <nabl2--analysis-config>;
@@ -33,7 +33,7 @@ rules
 rules // single file analysis
 
   nabl2--analyze(pre):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast', a, error*, warning*, note*)
+      AnalyzeUnit(resource, ast) -> UnitResult(ast', a', error*, warning*, note*)
     with config := <nabl2--analysis-config>;
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
          nabl2--collection-info-msg(|$[Initializing [resource]]);
@@ -45,8 +45,14 @@ rules // single file analysis
          file-C := <nabl2--generate-constraint-file(|resource, params)> ast';
          file-custom := <nabl2-custom-analysis-unit-hook <+ !None()> (resource, ast', initial-custom);
          nabl2--collection-info-msg(|$[Solving constraints [resource]]);
-         (a, constraint-error*, constraint-warning*, constraint-note*) := <nabl2--solve-constraint(|config)> CConj(initial-C, file-C);
-         (custom-error*, custom-warning*, custom-note*, final-custom) := <nabl2-custom-analysis-final-hook(|a) <+ !None()> (resource, initial-custom, [file-custom]);
+         (a, constraint-error*, constraint-warning*, constraint-note*) :=
+             <nabl2--solve-constraint(|config)> CConj(initial-C, file-C);
+         if (custom-error*, custom-warning*, custom-note*, final-custom) :=
+                <nabl2-custom-analysis-final-hook(|a)> (resource, initial-custom, [file-custom]) then
+           a' :=  <nabl2--set-custom-analysis(|a)> final-custom
+         else
+           (custom-error*, custom-warning*, custom-note*, a') := ([], [], [], a)
+         end;
          nabl2--collection-info-msg(|$[Finished analyzing [resource]]);
          error*   := [constraint-error*, custom-error*];
          warning* := [constraint-warning*, custom-warning*];
@@ -60,33 +66,44 @@ rules // multi file analysis
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
          nabl2--collection-info-msg(|$[Initializing [resource]]);
          (params, C) := <nabl2--generate-constraint-init(|resource)> resource';
-         (initial-analysis, intf-vars, intf-scopes) := <prim("SG_solve_initial_constraint", config)> (params, C);
-         initial-custom := <nabl2-custom-analysis-init-hook <+ !None()> (resource, resource');
-         initial-result := (params, initial-analysis, initial-custom)
+         initial-analysis := <prim("SG_solve_multi_initial_constraint", config)> (params, C);
+         if initial-custom := <nabl2-custom-analysis-init-hook> (resource, resource') then
+           initial-analysis' :=  <nabl2--set-custom-analysis(|initial-analysis)> initial-custom
+         else
+           initial-analysis' := initial-analysis
+         end;
+         initial-result := (params, initial-analysis')
 
   nabl2--analyze(pre):
-      AnalyzeUnit(resource, ast, initial-result) -> UnitResult(ast', unit-result)
-    with (params, initial-analysis, initial-custom) := initial-result
-    with config := <nabl2--analysis-config>;
-         nabl2--collection-info-msg(|$[Preprocessing AST [resource]]);
+      AnalyzeUnit(resource, ast, initial-result) -> UnitResult(ast', unit-analysis')
+    with (params, initial-analysis) := initial-result;
+         initial-custom := <nabl2--get-custom-analysis <+ !None()> initial-analysis
+    with nabl2--collection-info-msg(|$[Preprocessing AST [resource]]);
          ast' := <pre;nabl2--index-ast(|resource)> ast;
          nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          C := <nabl2--generate-constraint-file(|resource, params)> ast';
-         unit-analysis := <prim("SG_solve_unit_constraint", config)> ();
-         unit-custom := <nabl2-custom-analysis-unit-hook <+ !None()> (resource, ast', initial-custom);
-         unit-result := (unit-analysis, unit-custom)
+         unit-analysis := <prim("SG_solve_multi_unit_constraint")> (initial-analysis, C);
+         if unit-custom := <nabl2-custom-analysis-unit-hook> (resource, ast', initial-custom) then
+           unit-analysis' :=  <nabl2--set-custom-analysis(|unit-analysis)> unit-custom
+         else
+           unit-analysis' := unit-analysis
+         end
 
   nabl2--analyze(pre):
-      AnalyzeFinal(resource, initial-analysis, file-analysis*) -> FinalResult(final-result, error*, warning*, note*)
-    with (params, initial-analysis, initial-custom) := initial-analysis;
-         (unit-analysis*, unit-custom*) := <unzip> file-analysis*
-    with config := <nabl2--analysis-config>;
-         nabl2--collection-info-msg(|$[Solving constraints [resource]]);
+      AnalyzeFinal(resource, initial-result, unit-analysis*) -> FinalResult(final-analysis', error*, warning*, note*)
+    with (params, initial-analysis) := initial-result;
+         initial-custom := <nabl2--get-custom-analysis <+ !None()> initial-analysis;
+         unit-custom* := <filter(nabl2--get-custom-analysis)> unit-analysis*
+    with nabl2--collection-info-msg(|$[Solving constraints [resource]]);
          (final-analysis, constraint-error*, constraint-warning*, constraint-note*) :=
-             <prim("SG_solve_final_constraint", config)> (initial-analysis, unit-analysis*);
-         (custom-error*, custom-warning*, custom-note*, final-custom) :=
-             <nabl2-custom-analysis-final-hook(|final-analysis) <+ !None()> (resource, initial-custom, unit-custom*);
-         final-result := (final-analysis, final-custom);
+             <prim("SG_solve_multi_final_constraint")> (initial-analysis, unit-analysis*);
+         if (custom-error*, custom-warning*, custom-note*, final-custom) :=
+               <nabl2-custom-analysis-final-hook(|final-analysis)> (resource, initial-custom, unit-custom*) then
+           final-analysis' :=  <nabl2--set-custom-analysis(|final-analysis)> final-custom
+         else
+           (custom-error*, custom-warning*, custom-note*, final-analysis') :=
+               ([], [], [], final-analysis)
+         end;
          nabl2--collection-info-msg(|$[Finished analyzing [resource]]);
          error*   := [constraint-error*, custom-error*];
          warning* := [constraint-warning*, custom-warning*];

@@ -26,11 +26,11 @@ import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
 
-public abstract class ScopeGraphAnalysisPrimitive extends AbstractPrimitive {
+public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
 
-    private static ILogger logger = LoggerUtils.logger(ScopeGraphAnalysisPrimitive.class);
+    private static ILogger logger = LoggerUtils.logger(ScopeGraphMultiFileAnalysisPrimitive.class);
 
-    public ScopeGraphAnalysisPrimitive(String name, int tvars) {
+    public ScopeGraphMultiFileAnalysisPrimitive(String name, int tvars) {
         super(name, 0, tvars);
     }
 
@@ -47,12 +47,7 @@ public abstract class ScopeGraphAnalysisPrimitive extends AbstractPrimitive {
         final ICancel cancel = new NullCancel();
         final IProgress progress = new NullProgress();
 
-        NaBL2DebugConfig debugConfig;
-        try {
-            debugConfig = PrimitiveUtil.scopeGraphContext(env).config().debug();
-        } catch(InterpreterException ex) {
-            debugConfig = NaBL2DebugConfig.NONE;
-        }
+        NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get the debug level?
         final SemiIncrementalMultiFileSolver solver =
                 new SemiIncrementalMultiFileSolver(debugConfig, callExternal(env, strategoTerms));
 
