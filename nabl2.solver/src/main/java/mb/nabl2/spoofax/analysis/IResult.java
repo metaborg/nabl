@@ -15,6 +15,8 @@ public interface IResult {
 
     ISolution solution();
 
+    IResult withSolution(ISolution solution);
+
     Optional<ITerm> customAnalysis();
 
     IResult withCustomAnalysis(ITerm term);
