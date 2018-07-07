@@ -2,8 +2,8 @@ module nabl2/runtime/prelude/path
 
 imports
 
-  signatures/nabl2/shared/common/Resolution-sig
-  signatures/nabl2/runtime/common/AST-sig
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/runtime/common/-
 
 strategies
 
@@ -28,11 +28,11 @@ strategies
           <?[_|_]> path1;
           <zip;rec x([eq|x] <+ [nabl2-path-elem-gt|id])> (path1, path2)
 
-  nabl2-path-elem-gt: (D(_, _), E(_,_)) -> <id>
+  nabl2-path-elem-gt: (E(_, _), D(_,_)) -> <id>
 
-  nabl2-path-elem-gt: (D(_, _), N(_,_,_,_)) -> <id>
+  nabl2-path-elem-gt: (N(_,_,_,_), D(_, _)) -> <id>
 
-  nabl2-path-elem-gt: (E(_, _), N(_,_,_,_)) -> <id>
+  nabl2-path-elem-gt: (N(_,_,_,_), E(_, _)) -> <id>
 
   nabl2-path-elem-gt:
     (D(_,Occurrence(_, _, TermIndex(_, index1))),
