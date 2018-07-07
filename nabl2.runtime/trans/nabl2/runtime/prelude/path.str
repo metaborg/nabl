@@ -23,7 +23,7 @@ strategies
   nabl2-path-gt: (path1, path2) -> <id>
     where <gt> (<length> path1, <length> path2)
 
-  nabl2-path-gt: (path1, path2) -> <debug>
+  nabl2-path-gt: (path1, path2) -> <id>
     where <eq> (<length> path1, <length> path2);
           <?[_|_]> path1;
           <zip;rec x([eq|x] <+ [nabl2-path-elem-gt|id])> (path1, path2)
