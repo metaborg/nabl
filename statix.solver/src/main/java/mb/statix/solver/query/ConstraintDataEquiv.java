@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.MatchException;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -51,9 +51,9 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
                     return false;
                 }
             } catch(Delay d) {
-                throw new ResolutionException("Data equivalence check delayed");
+                throw new ResolutionDelayException("Data order delayed.", d);
             }
-        } catch(MatchException | UnificationException ex) {
+        } catch(MatchException | CannotUnifyException ex) {
             return false;
         }
     }

@@ -14,7 +14,7 @@ import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
@@ -64,7 +64,7 @@ public class Rule {
         return body;
     }
 
-    public Tuple2<State, Rule> apply(List<ITerm> args, State state) throws MatchException, UnificationException {
+    public Tuple2<State, Rule> apply(List<ITerm> args, State state) throws MatchException, CannotUnifyException {
         final ISubstitution.Transient subst = new TermPattern(state.unifier()::areEqual, params).match(args).melt();
         State newState = state;
         // guard vars

@@ -13,12 +13,11 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 
 public class CPathSrc implements IConstraint {
 
@@ -49,10 +48,10 @@ public class CPathSrc implements IConstraint {
         return new CPathSrc(subst.apply(pathTerm), subst.apply(srcTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
+    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(pathTerm))) {
-            throw new Delay();
+            throw Delay.ofVars(unifier.getVars(pathTerm));
         }
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(

@@ -8,8 +8,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.scopegraph.terms.ImmutableScope;
 import mb.nabl2.terms.ITerm;
@@ -78,29 +76,6 @@ public abstract class AState {
 
     @Value.Default public IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
-    }
-
-    // --- entailment ---
-
-    /** Test if this unifier entails the other unifier. */
-    public boolean entails(State other) {
-        return entails(other, ImmutableSet.of());
-    }
-
-    /** Test if this unifier entails the other unifier, assuming some local variables. */
-    public boolean entails(State other, Iterable<ITermVar> localVars) {
-        final Set<ITermVar> lostVars = Sets.difference(vars(), other.vars());
-        if(!lostVars.isEmpty()) {
-            return false;
-        }
-        final Set<ITermVar> newVars = Sets.difference(other.vars(), vars());
-        final IUnifier.Immutable unifier = unifier().removeAll(localVars).unifier();
-        final IUnifier.Immutable otherUnifier =
-                other.unifier().removeAll(Iterables.concat(localVars, newVars)).unifier();
-        if(!otherUnifier.equals(unifier)) {
-            return false;
-        }
-        return true;
     }
 
 }

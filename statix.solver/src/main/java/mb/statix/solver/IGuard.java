@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.statix.solver.log.IDebugContext;
 
 public interface IGuard {
 
@@ -17,8 +16,9 @@ public interface IGuard {
      *            -- monotonic from one call to the next
      * @return new state if reduced, or none
      * @throws InterruptedException
+     * @throws VarDelay
      */
-    Optional<State> solve(State state, IDebugContext debug) throws InterruptedException, Delay;
+    Optional<State> solve(State state, GuardContext params) throws InterruptedException, Delay;
 
     String toString(IUnifier unifier);
 

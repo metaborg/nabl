@@ -6,7 +6,7 @@ import java.util.List;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.MatchException;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -45,9 +45,9 @@ public class ConstraintDataWF implements DataWF<ITerm> {
                     return false;
                 }
             } catch(Delay d) {
-                throw new ResolutionException("Data well-formedness check delayed");
+                throw new ResolutionDelayException("Data well-formedness delayed.", d);
             }
-        } catch(MatchException | UnificationException ex) {
+        } catch(MatchException | CannotUnifyException ex) {
             return false;
         }
     }

@@ -11,12 +11,11 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Result;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.spoofax.StatixTerms;
 
 public class CPathLt implements IConstraint {
@@ -50,10 +49,13 @@ public class CPathLt implements IConstraint {
         return new CPathLt(lt, subst.apply(label1Term), subst.apply(label2Term), cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
+    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(label1Term) && unifier.isGround(label2Term))) {
-            throw new Delay();
+        if(!(unifier.isGround(label1Term))) {
+            throw Delay.ofVars(unifier.getVars(label1Term));
+        }
+        if(!(unifier.isGround(label2Term))) {
+            throw Delay.ofVars(unifier.getVars(label2Term));
         }
         final ITerm label1 = StatixTerms.label().match(label1Term, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label1Term)));

@@ -69,7 +69,7 @@ public class LazyDebugContext implements IDebugContext {
     }
 
     private String prefix() {
-        return String.join("", Collections.nCopies(getDepth(), "| "));
+        return String.join("", Collections.nCopies(offset, "| "));
     }
 
 }

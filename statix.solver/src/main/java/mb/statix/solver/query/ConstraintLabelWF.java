@@ -3,15 +3,15 @@ package mb.statix.solver.query;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
-
-import org.metaborg.util.iterators.Iterables2;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchException;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -65,9 +65,9 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
                     return false;
                 }
             } catch(Delay d) {
-                throw new ResolutionException("Label well-formedness check delayed");
+                throw new ResolutionDelayException("Label well-formedness delayed.", d);
             }
-        } catch(MatchException | UnificationException ex) {
+        } catch(MatchException | CannotUnifyException ex) {
             return false;
         }
     }
@@ -81,7 +81,9 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), varAndState._2());
             final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             try {
-                if(Solver.entails(config, Iterables2.singleton(var), debug.subContext())) {
+                final Set<ITermVar> localVars =
+                        ImmutableSet.<ITermVar>builder().addAll(result._2().getBodyVars()).add(var).build();
+                if(Solver.entails(config, localVars, debug.subContext())) {
                     debug.info("Non-empty {}", state.unifier().toString(term));
                     return false;
                 } else {
@@ -89,9 +91,15 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
                     return true;
                 }
             } catch(Delay d) {
-                return false;
+                // if stuck only on the tail variable, we are not empty,
+                // otherwise we require more context and delay
+                if(d.vars().size() == 1 && d.vars().contains(var)) {
+                    return false;
+                } else {
+                    throw new ResolutionDelayException("Label well-formedness delayed.", d); // WAS: false?
+                }
             }
-        } catch(MatchException | UnificationException ex) {
+        } catch(MatchException | CannotUnifyException ex) {
             return false;
         }
     }

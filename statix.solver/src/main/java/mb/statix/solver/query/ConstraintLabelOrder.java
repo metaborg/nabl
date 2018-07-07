@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.MatchException;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -44,9 +44,9 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
                     return false;
                 }
             } catch(Delay d) {
-                throw new ResolutionException("Label order check delayed");
+                throw new ResolutionDelayException("Label order delayed.", d);
             }
-        } catch(MatchException | UnificationException ex) {
+        } catch(MatchException | CannotUnifyException ex) {
             return false;
         }
     }

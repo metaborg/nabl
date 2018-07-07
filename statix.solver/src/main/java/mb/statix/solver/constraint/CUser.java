@@ -3,23 +3,31 @@ package mb.statix.solver.constraint;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Predicate1;
+
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
+import mb.statix.solver.GuardContext;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IGuard;
 import mb.statix.solver.Result;
@@ -64,12 +72,15 @@ public class CUser implements IConstraint {
         return new CUser(name, subst.apply(args), cause);
     }
 
-    public Optional<Result> solve(final State state, Completeness completeness, IDebugContext debug)
-            throws InterruptedException, Delay {
+    public Optional<Result> solve(final State state, ConstraintContext params) throws InterruptedException, Delay {
+        final IDebugContext debug = params.debug();
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final List<Result> results = Lists.newArrayListWithExpectedSize(1);
-        final Iterator<Rule> it = rules.iterator();
         final Log unsuccessfulLog = new Log();
+        final Set<ITermVar> delayVars = Sets.newHashSet();
+        final Multimap<ITerm, ITerm> delayScopes = HashMultimap.create();
+        final Predicate1<ITermVar> isRigid = v -> params.isRigid(v) || state.vars().contains(v);
+        final Iterator<Rule> it = rules.iterator();
         outer: while(it.hasNext()) {
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
             State result = state;
@@ -79,14 +90,14 @@ public class CUser implements IConstraint {
                 final Tuple2<State, Rule> appl = rawRule.apply(args, result);
                 result = appl._1();
                 instantiatedRule = appl._2();
-            } catch(MatchException | UnificationException e) {
+            } catch(MatchException | CannotUnifyException e) {
                 proxyDebug.warn("Failed to instantiate {} for arguments {}", rawRule, args);
                 continue;
             }
             proxyDebug.info("Try rule {}", instantiatedRule.toString(result.unifier()));
             for(IGuard guard : instantiatedRule.getGuard()) {
                 try {
-                    Optional<State> maybeResult = guard.solve(result, proxyDebug);
+                    Optional<State> maybeResult = guard.solve(result, new GuardContext(isRigid, proxyDebug));
                     if(!maybeResult.isPresent()) {
                         proxyDebug.info("Rule rejected (unsatisfied guard constraint)");
                         it.remove();
@@ -97,18 +108,15 @@ public class CUser implements IConstraint {
                     }
                 } catch(Delay e) {
                     proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                    delayVars.addAll(e.vars());
+                    delayScopes.putAll(e.scopes());
                     unsuccessfulLog.absorb(proxyDebug.clear());
                     continue outer;
                 }
             }
-            if(state.entails(result, instantiatedRule.getGuardVars())) {
-                proxyDebug.info("Rule accepted");
-                proxyDebug.commit();
-                results.add(Result.of(result, instantiatedRule.getBody()));
-            } else {
-                proxyDebug.info("Rule delayed (instantiated variables)");
-                unsuccessfulLog.absorb(proxyDebug.clear());
-            }
+            proxyDebug.info("Rule accepted");
+            proxyDebug.commit();
+            results.add(Result.of(result, instantiatedRule.getBody()));
         }
         if(!results.isEmpty()) {
             if(results.size() > 1) {
@@ -124,7 +132,7 @@ public class CUser implements IConstraint {
             return Optional.empty();
         } else {
             unsuccessfulLog.flush(debug);
-            throw new Delay();
+            throw new Delay(delayVars, delayScopes);
         }
     }
 
