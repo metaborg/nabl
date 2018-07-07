@@ -3,6 +3,7 @@ module nabl2/runtime/editor/services
 imports
 
   libspoofax/term/annotation
+  libspoofax/editor/resolution
 
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
@@ -10,24 +11,33 @@ imports
   nabl2/api
   signatures/nabl2/runtime/common/-
 
-signature constructors
-  HyperlinkText : Term -> Term
-
 rules
+
+  nabl2--editor-resolve-show-all = fail
 
   // HACK: all these rules test if the node has a term index, because
   //       sometimes Spoofax Core passes a node without one
 
-  nabl2--editor-resolve: (node, _, _, _, _) -> decls
+  nabl2--editor-resolve =
+    if nabl2--editor-resolve-show-all
+      then nabl2--editor-resolve(id)
+      else nabl2--editor-resolve(![<Hd>])
+    end
+
+  nabl2--editor-resolve(filter): (node, _, _, _, _) -> decls
     where <nabl2-get-ast-index> node;
           a := <nabl2-get-ast-analysis> node
     where refs := <nabl2-get-ast-refs(|a)> node
     where not([] := refs) // failure has Spoofax Core try a parent node
-    with decls := <mapconcat(nabl2-get-resolved-names(|a);
-                             map(nabl2-prepare-resolved-name))> refs
+    with decls := <mapconcat(nabl2-get-resolved-names(|a));
+                   nabl2-sort-paths;
+                   map(nabl2-prepare-resolved-name);
+                   filter> refs
 
-  nabl2-prepare-resolved-name: (name, path) -> result{a*, HyperlinkText(path)}
-    with result{a*} := <nabl2-get-occurrence-index> name
+  nabl2-prepare-resolved-name: (name, path) -> result
+    with index := <nabl2-get-occurrence-index> name;
+         text := <nabl2-pp-path> path;
+         result := <set-resolution-text(|text)> index
 
   nabl2--editor-hover: (node, _, _, _, _) -> label
     where <nabl2-get-ast-index> node;
