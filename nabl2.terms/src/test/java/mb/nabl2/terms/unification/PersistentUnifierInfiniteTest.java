@@ -25,25 +25,25 @@ public class PersistentUnifierInfiniteTest {
     private final ITerm y = B.newString("y");
     private final ITerm z = B.newString("z");
 
-    @Test public void testCyclicVarFree() throws UnificationException {
+    @Test public void testCyclicVarFree() throws CannotUnifyException, OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
         phi.unify(a, B.newAppl(f, a));
         assertFalse(phi.freeVarSet().contains(a));
     }
 
-    @Test public void testCyclicSize() throws UnificationException {
+    @Test public void testCyclicSize() throws CannotUnifyException, OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
         phi.unify(a, B.newAppl(f, a));
         assertEquals(TermSize.INF, phi.size(a));
     }
 
-    @Test public void testCyclicGround() throws UnificationException {
+    @Test public void testCyclicGround() throws CannotUnifyException, OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
         phi.unify(a, B.newAppl(f, a));
         assertTrue(phi.isGround(a));
     }
 
-    @Test public void testCyclicEquals() throws UnificationException {
+    @Test public void testCyclicEquals() throws CannotUnifyException, OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
         phi.unify(a, B.newAppl(f, a));
         IUnifier.Transient theta = PersistentUnifier.Transient.of(false);

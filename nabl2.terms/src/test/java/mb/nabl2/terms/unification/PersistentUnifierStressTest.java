@@ -85,7 +85,7 @@ public class PersistentUnifierStressTest {
                 }
             }
             return unifier.freeze();
-        } catch(UnificationException e) {
+        } catch(CannotUnifyException | OccursException e) {
             throw new IllegalStateException("Inconsistent equalities list.", e);
         }
     }
