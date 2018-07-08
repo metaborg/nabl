@@ -218,7 +218,7 @@ public class StatixTerms {
 
     public static IMatcher<Lambda> hoconstraint(IAlphabet<ITerm> labels) {
         return M.appl3("LLam", M.listElems(term()), M.listElems(var()), constraints(labels),
-                (t, ps, vs, c) -> new Lambda(ps, vs, c));
+                (t, ps, vs, c) -> Lambda.of(ps, vs, c));
     }
 
     public static IMatcher<Map<ITerm, Type>> relationDecls() {

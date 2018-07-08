@@ -30,7 +30,7 @@ public interface IConstraint {
      * @throws InterruptedException
      * @throws Delay
      */
-    Optional<Result> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
+    Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
 
     String toString(IUnifier unifier);
 

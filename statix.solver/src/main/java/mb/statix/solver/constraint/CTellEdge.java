@@ -17,9 +17,9 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 
@@ -58,7 +58,7 @@ public class CTellEdge implements IConstraint {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {
             throw Delay.ofVars(unifier.getVars(sourceTerm));
@@ -74,7 +74,7 @@ public class CTellEdge implements IConstraint {
         final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
     }
 
     @Override public String toString(IUnifier unifier) {

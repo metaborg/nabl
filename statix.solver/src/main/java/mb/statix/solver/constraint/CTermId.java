@@ -15,9 +15,9 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
 
@@ -50,7 +50,7 @@ public class CTermId implements IConstraint {
         return new CTermId(subst.apply(term), subst.apply(idTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
             throw Delay.ofVars(unifier.getVars(term));
@@ -69,7 +69,7 @@ public class CTermId implements IConstraint {
                 eq = new CEqual(idTerm, B.newAppl(StatixTerms.NOID_OP));
             }
         }
-        return Optional.of(Result.of(state, ImmutableSet.of(eq)));
+        return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
     }
 
     @Override public String toString(IUnifier unifier) {

@@ -34,7 +34,7 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(l1, l2), state);
             try {
-                if(Solver.entails(result._1(), result._2().getBody(), completeness, result._2().getBodyVars(),
+                if(Solver.entails(result._1(), result._2().body(), completeness, result._2().bodyVars(),
                         debug.subContext()).isPresent()) {
                     debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
                     return true;

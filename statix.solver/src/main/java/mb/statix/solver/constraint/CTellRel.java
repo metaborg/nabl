@@ -22,9 +22,9 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
@@ -64,7 +64,7 @@ public class CTellRel implements IConstraint {
         return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerms));
     }
 
-    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
             params.debug().error("Ignoring data for unknown relation {}", relation);
@@ -99,11 +99,11 @@ public class CTellRel implements IConstraint {
         if(existingValue.isPresent()) {
             final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
             final IConstraint eq = new CEqual(value, existingValue.get(), this);
-            return Optional.of(Result.of(state, ImmutableSet.of(eq)));
+            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
         } else {
             final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
                     state.scopeGraph().addDatum(scope, relation, datumTerms);
-            return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
         }
     }
 

@@ -12,9 +12,9 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 
 public class CInequal implements IConstraint {
@@ -46,10 +46,10 @@ public class CInequal implements IConstraint {
         return new CInequal(subst.apply(term1), subst.apply(term2), cause);
     }
 
-    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         IUnifier.Immutable unifier = state.unifier();
         if(unifier.areUnequal(term1, term2)) {
-            return Optional.of(Result.of(state, ImmutableSet.of()));
+            return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
         } else if(unifier.areEqual(term1, term2)) {
             return Optional.empty();
         } else {

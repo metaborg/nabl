@@ -70,14 +70,14 @@ public class Solver {
                 proxyDebug.info("Solving {}", constraint.toString(state.unifier()));
                 IDebugContext subDebug = proxyDebug.subContext();
                 try {
-                    Optional<Result> maybeResult =
+                    Optional<ConstraintResult> maybeResult =
                             constraint.solve(state, new ConstraintContext(completeness, isRigid, isClosed, subDebug));
                     progress = true;
                     it.remove();
                     completeness = completeness.remove(constraint);
                     reduced += 1;
                     if(maybeResult.isPresent()) {
-                        final Result result = maybeResult.get();
+                        final ConstraintResult result = maybeResult.get();
                         state = result.state();
                         if(!result.constraints().isEmpty()) {
                             final List<IConstraint> newConstaints = result.constraints().stream()

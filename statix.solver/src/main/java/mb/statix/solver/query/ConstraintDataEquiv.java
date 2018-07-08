@@ -40,7 +40,7 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
             final ITerm term2 = B.newTuple(datum2);
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term1, term2), state);
             try {
-                if(Solver.entails(result._1(), result._2().getBody(), completeness, result._2().getBodyVars(), debug)
+                if(Solver.entails(result._1(), result._2().body(), completeness, result._2().bodyVars(), debug)
                         .isPresent()) {
                     debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
                     return true;

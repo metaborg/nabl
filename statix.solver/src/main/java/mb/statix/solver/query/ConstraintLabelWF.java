@@ -55,7 +55,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), state);
             try {
-                if(Solver.entails(result._1(), result._2().getBody(), completeness, result._2().getBodyVars(),
+                if(Solver.entails(result._1(), result._2().body(), completeness, result._2().bodyVars(),
                         debug.subContext()).isPresent()) {
                     debug.info("Well-formed {}", state.unifier().toString(term));
                     return true;
@@ -80,8 +80,8 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), varAndState._2());
             try {
                 final Set<ITermVar> localVars =
-                        ImmutableSet.<ITermVar>builder().addAll(result._2().getBodyVars()).add(var).build();
-                if(Solver.entails(result._1(), result._2().getBody(), completeness, localVars, debug.subContext())
+                        ImmutableSet.<ITermVar>builder().addAll(result._2().bodyVars()).add(var).build();
+                if(Solver.entails(result._1(), result._2().body(), completeness, localVars, debug.subContext())
                         .isPresent()) {
                     debug.info("Non-empty {}", state.unifier().toString(term));
                     return false;

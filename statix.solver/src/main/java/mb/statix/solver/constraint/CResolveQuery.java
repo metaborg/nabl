@@ -26,9 +26,9 @@ import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.NameResolution;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.NullDebugContext;
@@ -76,7 +76,7 @@ public class CResolveQuery implements IConstraint {
                 subst.apply(resultTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, ConstraintContext params) throws InterruptedException, Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {
             type = state.spec().relations().get(relation.get());
@@ -125,7 +125,7 @@ public class CResolveQuery implements IConstraint {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
             }
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-            return Optional.of(Result.of(state, ImmutableSet.of(C)));
+            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(C)));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofScope(e.scope(), e.relation());

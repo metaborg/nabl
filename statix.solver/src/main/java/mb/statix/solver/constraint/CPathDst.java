@@ -14,9 +14,9 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 
 public class CPathDst implements IConstraint {
@@ -48,7 +48,7 @@ public class CPathDst implements IConstraint {
         return new CPathDst(subst.apply(pathTerm), subst.apply(dstTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(pathTerm))) {
             throw Delay.ofVars(unifier.getVars(pathTerm));
@@ -56,7 +56,7 @@ public class CPathDst implements IConstraint {
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(Result.of(state, ImmutableSet.of(new CEqual(path.getTarget(), dstTerm, this))));
+        return Optional.of(ConstraintResult.of(state, ImmutableSet.of(new CEqual(path.getTarget(), dstTerm, this))));
     }
 
     @Override public String toString(IUnifier unifier) {

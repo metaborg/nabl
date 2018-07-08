@@ -35,7 +35,7 @@ public class ConstraintDataWF implements DataWF<ITerm> {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(datum, state);
             try {
-                if(Solver.entails(result._1(), result._2().getBody(), completeness, result._2().getBodyVars(), debug)
+                if(Solver.entails(result._1(), result._2().body(), completeness, result._2().bodyVars(), debug)
                         .isPresent()) {
                     debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
                     return true;

@@ -24,9 +24,9 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
@@ -70,10 +70,11 @@ public class CUser implements IConstraint {
         return new CUser(name, subst.apply(args), cause);
     }
 
-    public Optional<Result> solve(final State state, ConstraintContext params) throws InterruptedException, Delay {
+    public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
+            throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
-        final List<Result> results = Lists.newArrayListWithExpectedSize(1);
+        final List<ConstraintResult> results = Lists.newArrayListWithExpectedSize(1);
         final Log unsuccessfulLog = new Log();
         final Set<ITermVar> delayVars = Sets.newHashSet();
         final Multimap<ITerm, ITerm> delayScopes = HashMultimap.create();
@@ -100,7 +101,7 @@ public class CUser implements IConstraint {
                     final SolverResult result = maybeResult.get();
                     proxyDebug.info("Rule accepted");
                     proxyDebug.commit();
-                    results.add(Result.of(result.state(), instantiatedRule.getBody()));
+                    results.add(ConstraintResult.of(result.state(), instantiatedRule.getBody()));
                 } else {
                     proxyDebug.info("Rule rejected (unsatisfied guard constraint)");
                     it.remove();
