@@ -13,13 +13,12 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
@@ -56,9 +55,9 @@ public class Lambda {
 
     public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
         final State state = State.of(spec);
-        final Config config = Config.of(state, body, new Completeness());
         try {
-            return Optional.of(Solver.entails(config, bodyVars, new NullDebugContext()));
+            return Optional.of(Solver.entails(state, body, new Completeness(), bodyVars, new NullDebugContext())
+                    .map(r -> true).orElse(false));
         } catch(Delay d) {
             return Optional.empty();
         }

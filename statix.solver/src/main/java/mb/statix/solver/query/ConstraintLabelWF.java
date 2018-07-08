@@ -16,7 +16,6 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.Delay;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
@@ -55,9 +54,9 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         debug.info("Check {} well-formed", state.unifier().toString(term));
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), state);
-            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             try {
-                if(Solver.entails(config, result._2().getBodyVars(), debug.subContext())) {
+                if(Solver.entails(result._1(), result._2().getBody(), completeness, result._2().getBodyVars(),
+                        debug.subContext()).isPresent()) {
                     debug.info("Well-formed {}", state.unifier().toString(term));
                     return true;
                 } else {
@@ -79,11 +78,11 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         debug.info("Check {} empty", state.unifier().toString(term));
         try {
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term), varAndState._2());
-            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             try {
                 final Set<ITermVar> localVars =
                         ImmutableSet.<ITermVar>builder().addAll(result._2().getBodyVars()).add(var).build();
-                if(Solver.entails(config, localVars, debug.subContext())) {
+                if(Solver.entails(result._1(), result._2().getBody(), completeness, localVars, debug.subContext())
+                        .isPresent()) {
                     debug.info("Non-empty {}", state.unifier().toString(term));
                     return false;
                 } else {

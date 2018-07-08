@@ -29,9 +29,9 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
+import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
@@ -72,10 +72,9 @@ public class STX_solve_constraint extends StatixPrimitive {
         final ISubstitution.Immutable isubst = subst.freeze();
         final Set<IConstraint> constraints =
                 vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        final Config config = Config.of(state, constraints, new Completeness());
-        final Config resultConfig;
+        final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(config, debug);
+            resultConfig = Solver.solve(state, constraints, new Completeness(), debug);
         } catch(InterruptedException e) {
             throw new InterpreterException(e);
         }
@@ -87,7 +86,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         }
 
         final State resultState = resultConfig.state();
-        final Collection<IConstraint> unsolved = resultConfig.constraints();
+        final Collection<IConstraint> unsolved = resultConfig.delays().keySet();
         if(!unsolved.isEmpty()) {
             debug.warn("Unsolved constraints: {}",
                     unsolved.stream().map(c -> c.toString(resultState.unifier())).collect(Collectors.toList()));

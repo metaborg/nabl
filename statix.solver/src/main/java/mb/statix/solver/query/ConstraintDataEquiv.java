@@ -13,7 +13,6 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.Delay;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
@@ -40,9 +39,9 @@ public class ConstraintDataEquiv implements DataEquiv<ITerm> {
             final ITerm term1 = B.newTuple(datum1);
             final ITerm term2 = B.newTuple(datum2);
             final Tuple2<State, Lambda> result = constraint.apply(ImmutableList.of(term1, term2), state);
-            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             try {
-                if(Solver.entails(config, result._2().getBodyVars(), debug)) {
+                if(Solver.entails(result._1(), result._2().getBody(), completeness, result._2().getBodyVars(), debug)
+                        .isPresent()) {
                     debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
                     return true;
                 } else {

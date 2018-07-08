@@ -8,8 +8,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.functions.Predicate1;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -27,10 +25,10 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
-import mb.statix.solver.GuardContext;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IGuard;
 import mb.statix.solver.Result;
+import mb.statix.solver.Solver;
+import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
@@ -79,44 +77,41 @@ public class CUser implements IConstraint {
         final Log unsuccessfulLog = new Log();
         final Set<ITermVar> delayVars = Sets.newHashSet();
         final Multimap<ITerm, ITerm> delayScopes = HashMultimap.create();
-        final Predicate1<ITermVar> isRigid = v -> params.isRigid(v) || state.vars().contains(v);
         final Iterator<Rule> it = rules.iterator();
-        outer: while(it.hasNext()) {
+        while(it.hasNext()) {
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-            State result = state;
             final Rule rawRule = it.next();
+            final State instantiatedState;
             final Rule instantiatedRule;
             try {
-                final Tuple2<State, Rule> appl = rawRule.apply(args, result);
-                result = appl._1();
+                final Tuple2<State, Rule> appl = rawRule.apply(args, state);
+                instantiatedState = appl._1();
                 instantiatedRule = appl._2();
             } catch(MatchException | CannotUnifyException e) {
                 proxyDebug.warn("Failed to instantiate {} for arguments {}", rawRule, args);
                 continue;
             }
-            proxyDebug.info("Try rule {}", instantiatedRule.toString(result.unifier()));
-            for(IGuard guard : instantiatedRule.getGuard()) {
-                try {
-                    Optional<State> maybeResult = guard.solve(result, new GuardContext(isRigid, proxyDebug));
-                    if(!maybeResult.isPresent()) {
-                        proxyDebug.info("Rule rejected (unsatisfied guard constraint)");
-                        it.remove();
-                        unsuccessfulLog.absorb(proxyDebug.clear());
-                        continue outer;
-                    } else {
-                        result = maybeResult.get();
-                    }
-                } catch(Delay e) {
-                    proxyDebug.info("Rule delayed (unsolved guard constraint)");
-                    delayVars.addAll(e.vars());
-                    delayScopes.putAll(e.scopes());
+            proxyDebug.info("Try rule {}", instantiatedRule.toString(instantiatedState.unifier()));
+            try {
+                final Optional<SolverResult> maybeResult =
+                        Solver.entails(instantiatedState, instantiatedRule.getGuard(), params.completeness(),
+                                instantiatedRule.getGuardVars(), proxyDebug);
+                if(maybeResult.isPresent()) {
+                    final SolverResult result = maybeResult.get();
+                    proxyDebug.info("Rule accepted");
+                    proxyDebug.commit();
+                    results.add(Result.of(result.state(), instantiatedRule.getBody()));
+                } else {
+                    proxyDebug.info("Rule rejected (unsatisfied guard constraint)");
+                    it.remove();
                     unsuccessfulLog.absorb(proxyDebug.clear());
-                    continue outer;
                 }
+            } catch(Delay e) {
+                proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                delayVars.addAll(e.vars());
+                delayScopes.putAll(e.scopes());
+                unsuccessfulLog.absorb(proxyDebug.clear());
             }
-            proxyDebug.info("Rule accepted");
-            proxyDebug.commit();
-            results.add(Result.of(result, instantiatedRule.getBody()));
         }
         if(!results.isEmpty()) {
             if(results.size() > 1) {

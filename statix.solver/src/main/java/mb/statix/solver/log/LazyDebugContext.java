@@ -11,7 +11,7 @@ public class LazyDebugContext implements IDebugContext {
     private final Log log;
 
     public LazyDebugContext(IDebugContext debug) {
-        this(debug, debug.getDepth(), new Log());
+        this(debug, 0, new Log());
     }
 
     private LazyDebugContext(IDebugContext debug, int offset, Log log) {

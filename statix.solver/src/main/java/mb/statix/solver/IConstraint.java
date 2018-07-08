@@ -30,8 +30,7 @@ public interface IConstraint {
      * @throws InterruptedException
      * @throws Delay
      */
-    Optional<Result> solve(State state, ConstraintContext params)
-            throws InterruptedException, Delay;
+    Optional<Result> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
 
     String toString(IUnifier unifier);
 
@@ -53,7 +52,7 @@ public interface IConstraint {
     }
 
     @Value.Immutable
-    abstract class AResult {
+    static abstract class AConstraintResult {
 
         @Value.Parameter public abstract State state();
 
