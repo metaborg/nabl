@@ -2,16 +2,22 @@ package mb.statix.solver;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.iterators.Iterables2;
+import org.immutables.value.Value;
+import org.metaborg.util.functions.Predicate1;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.solver.log.IDebugContext;
@@ -27,25 +33,34 @@ public class Solver {
     private Solver() {
     }
 
-    public static Config solve(final Config config, final IDebugContext debug) throws InterruptedException {
+    public static SolverResult solve(final State state, final Iterable<IConstraint> constraints,
+            final Completeness completeness, final IDebugContext debug) throws InterruptedException {
+        return solve(state, constraints, completeness, v -> false, s -> false, debug);
+    }
+
+    public static SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
+            final Completeness _completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed,
+            final IDebugContext debug) throws InterruptedException {
         debug.info("Solving constraints");
         final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
         // set-up
-        final Set<IConstraint> constraints = Sets.newConcurrentHashSet(config.constraints());
-        State state = config.state();
-        Completeness completeness = config.completeness();
+        final Set<IConstraint> constraints = Sets.newConcurrentHashSet(_constraints);
+        State state = _state;
+        Completeness completeness = _completeness;
         completeness = completeness.addAll(constraints);
 
         // fixed point
         final Set<IConstraint> failed = Sets.newHashSet();
         final Log delayedLog = new Log();
+        final Map<IConstraint, Delay> delays = Maps.newHashMap();
         boolean progress = true;
         int reduced = 0;
         int delayed = 0;
         outer: while(progress) {
             progress = false;
             delayedLog.clear();
+            delays.clear();
             final Iterator<IConstraint> it = constraints.iterator();
             while(it.hasNext()) {
                 if(Thread.interrupted()) {
@@ -55,13 +70,14 @@ public class Solver {
                 proxyDebug.info("Solving {}", constraint.toString(state.unifier()));
                 IDebugContext subDebug = proxyDebug.subContext();
                 try {
-                    Optional<Result> maybeResult = constraint.solve(state, completeness, subDebug);
+                    Optional<ConstraintResult> maybeResult =
+                            constraint.solve(state, new ConstraintContext(completeness, isRigid, isClosed, subDebug));
                     progress = true;
                     it.remove();
                     completeness = completeness.remove(constraint);
                     reduced += 1;
                     if(maybeResult.isPresent()) {
-                        final Result result = maybeResult.get();
+                        final ConstraintResult result = maybeResult.get();
                         state = result.state();
                         if(!result.constraints().isEmpty()) {
                             final List<IConstraint> newConstaints = result.constraints().stream()
@@ -84,6 +100,7 @@ public class Solver {
                 } catch(Delay d) {
                     subDebug.info("Delayed");
                     delayedLog.absorb(proxyDebug.clear());
+                    delays.put(constraint, d);
                     delayed += 1;
                 }
             }
@@ -93,32 +110,31 @@ public class Solver {
         debug.info("Solved {} constraints ({} delays) with {} failed and {} remaining constraint(s).", reduced, delayed,
                 failed.size(), constraints.size());
 
-        return Config.of(state, constraints, completeness).withErrors(config.errors()).withErrors(failed);
+        return SolverResult.of(state, completeness, failed, delays);
     }
 
-    public static boolean entails(Config config, IDebugContext debug) throws InterruptedException, Delay {
-        return entails(config, Iterables2.empty(), debug);
+    public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
+            final Completeness completeness, final IDebugContext debug) throws InterruptedException, Delay {
+        return entails(state, constraints, completeness, ImmutableSet.of(), debug);
     }
 
-    public static boolean entails(Config config, Iterable<ITermVar> localVars, IDebugContext debug)
+    public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
+            final Completeness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
-        debug.info("Checking entailment of {}", toString(config.constraints(), config.state().unifier()));
-        final State state = config.state();
-        final Config result = Solver.solve(config, debug.subContext());
+        debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
+        final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
+        final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
+        final SolverResult result = Solver.solve(state, constraints, completeness, rigidVars::contains,
+                state.scopes()::contains, debug.subContext());
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
-            return false;
-        } else if(result.constraints().isEmpty()) {
-            if(state.entails(result.state(), localVars)) {
-                debug.info("Constraints entailed");
-                return true;
-            } else {
-                debug.info("Cannot decide constraint entailment (instantiated variables)");
-                throw new Delay();
-            }
+            return Optional.empty();
+        } else if(result.delays().isEmpty()) {
+            debug.info("Constraints entailed");
+            return Optional.of(result);
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            throw new Delay();
+            throw result.delay();
         }
 
     }
@@ -143,6 +159,33 @@ public class Solver {
             sb.append(constraint.toString(unifier));
         }
         return sb.toString();
+    }
+
+    @Value.Immutable
+    public static abstract class ASolverResult {
+
+        @Value.Parameter public abstract State state();
+
+        @Value.Parameter public abstract Completeness completeness();
+
+        @Value.Parameter public abstract Set<IConstraint> errors();
+
+        public boolean hasErrors() {
+            return !errors().isEmpty();
+        }
+
+        @Value.Parameter public abstract Map<IConstraint, Delay> delays();
+
+        public Delay delay() {
+            ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
+            ImmutableMultimap.Builder<ITerm, ITerm> scopes = ImmutableMultimap.builder();
+            delays().values().stream().forEach(d -> {
+                vars.addAll(d.vars());
+                scopes.putAll(d.scopes());
+            });
+            return new Delay(vars.build(), scopes.build());
+        }
+
     }
 
 }

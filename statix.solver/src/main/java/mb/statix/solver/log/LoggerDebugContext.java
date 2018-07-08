@@ -11,6 +11,10 @@ public class LoggerDebugContext implements IDebugContext {
     private final Level level;
     private final int depth;
 
+    public LoggerDebugContext(ILogger logger) {
+        this(logger, Level.Info, 0);
+    }
+
     public LoggerDebugContext(ILogger logger, Level level) {
         this(logger, level, 0);
     }
@@ -29,39 +33,39 @@ public class LoggerDebugContext implements IDebugContext {
         return depth;
     }
 
+    public boolean isEnabled(Level level) {
+        return this.level.compareTo(level) <= 0;
+    }
+
     @Override public IDebugContext subContext() {
         return new LoggerDebugContext(logger, level, depth + 1);
     }
 
     @Override public void info(String fmt, Object... args) {
-        if(Level.Info.compareTo(level) < 0) {
-            return;
+        if(isEnabled(Level.Info)) {
+            logger.info(prefix() + fmt, args);
         }
-        logger.info(prefix(depth) + fmt, args);
     }
 
     @Override public void warn(String fmt, Object... args) {
-        if(Level.Warn.compareTo(level) < 0) {
-            return;
+        if(isEnabled(Level.Warn)) {
+            logger.warn(prefix() + fmt, args);
         }
-        logger.warn(prefix(depth) + fmt, args);
     }
 
     @Override public void error(String fmt, Object... args) {
-        if(Level.Error.compareTo(level) < 0) {
-            return;
+        if(isEnabled(Level.Error)) {
+            logger.error(prefix() + fmt, args);
         }
-        logger.error(prefix(depth) + fmt, args);
     }
 
     @Override public void log(Level level, String fmt, Object... args) {
-        if(level.compareTo(level) < 0) {
-            return;
+        if(isEnabled(level)) {
+            logger.log(level, prefix() + fmt, args);
         }
-        logger.log(level, prefix(depth) + fmt, args);
     }
 
-    private String prefix(int depth) {
+    private String prefix() {
         return String.join("", Collections.nCopies(depth, "| "));
     }
 

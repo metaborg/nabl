@@ -119,7 +119,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         }
         final V scope = path.getTarget();
         if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
-            throw new ResolutionException("Scope " + scope + " is incomplete in " + relation);
+            throw new IncompleteDataException(scope, relation.get());
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         if(relation.isPresent()) {
@@ -144,7 +144,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
             return ImmutableSet.of();
         }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
-            throw new ResolutionException("Scope " + path.getTarget() + " is incomplete in edge " + l);
+            throw new IncompleteEdgeException(path.getTarget(), l);
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {

@@ -2,6 +2,8 @@ package mb.nabl2.terms.unification;
 
 import java.util.Set;
 
+import org.metaborg.util.functions.Predicate1;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -171,12 +173,18 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Result<Immutable> unify(ITerm term1, ITerm term2) throws UnificationException;
+        Result<Immutable> unify(ITerm term1, ITerm term2) throws CannotUnifyException, OccursException;
+
+        Result<Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws CannotUnifyException, OccursException, RigidVarsException;
 
         /**
          * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Result<Immutable> unify(IUnifier other) throws UnificationException;
+        Result<Immutable> unify(IUnifier other) throws CannotUnifyException, OccursException;
+
+        Result<Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws CannotUnifyException, OccursException, RigidVarsException;
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -229,12 +237,18 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Immutable unify(ITerm term1, ITerm term2) throws UnificationException;
+        Immutable unify(ITerm term1, ITerm term2) throws CannotUnifyException, OccursException;
+
+        Immutable unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws CannotUnifyException, OccursException, RigidVarsException;
 
         /**
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Immutable unify(IUnifier other) throws UnificationException;
+        Immutable unify(IUnifier other) throws CannotUnifyException, OccursException;
+
+        Immutable unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws CannotUnifyException, OccursException, RigidVarsException;
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed

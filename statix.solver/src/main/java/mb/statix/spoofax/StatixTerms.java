@@ -43,9 +43,9 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IGuard;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
+import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
 import mb.statix.solver.constraint.CPathDst;
 import mb.statix.solver.constraint.CPathLabels;
@@ -58,10 +58,6 @@ import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
 import mb.statix.solver.constraint.CUser;
-import mb.statix.solver.guard.GEqual;
-import mb.statix.solver.guard.GFalse;
-import mb.statix.solver.guard.GInequal;
-import mb.statix.solver.guard.GTrue;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
@@ -107,7 +103,7 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule(IAlphabet<ITerm> labels) {
-        return M.appl5("Rule", head(), M.listElems(var()), guards(), M.listElems(var()), constraints(labels),
+        return M.appl5("Rule", head(), M.listElems(var()), constraints(labels), M.listElems(var()), constraints(labels),
                 (r, h, gvs, gc, bvs, bc) -> {
                     return new Rule(h._1(), h._2(), gvs, gc, bvs, bc);
                 });
@@ -136,6 +132,10 @@ public class StatixTerms {
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
                     constraints.add(new CEqual(t1, t2));
+                    return Unit.unit;
+                }),
+                M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
+                    constraints.add(new CInequal(t1, t2));
                     return Unit.unit;
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
@@ -195,38 +195,6 @@ public class StatixTerms {
         };
     }
 
-    public static IMatcher<Set<IGuard>> guards() {
-        return (t, u) -> {
-            final ImmutableSet.Builder<IGuard> guards = ImmutableSet.builder();
-            // @formatter:off
-            return M.casesFix(m -> Iterables2.from(
-                M.appl2("CConj", m, m, (c, t1, t2) -> {
-                    return Unit.unit;
-                }),
-                M.appl0("CTrue", (c) -> {
-                    guards.add(new GTrue());
-                    return Unit.unit;
-                }),
-                M.appl0("CFalse", (c) -> {
-                    guards.add(new GFalse());
-                    return Unit.unit;
-                }),
-                M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    guards.add(new GEqual(t1, t2));
-                    return Unit.unit;
-                }),
-                M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
-                    guards.add(new GInequal(t1, t2));
-                    return Unit.unit;
-                }),
-                M.term(c -> {
-                    throw new IllegalArgumentException("Unknown guard: " + c);
-                })
-            )).match(t, u).map(v -> guards.build());
-            // @formatter:on
-        };
-    }
-
     public static IMatcher<Optional<ITerm>> queryTarget() {
         return M.cases(
         // @formatter:off
@@ -250,7 +218,7 @@ public class StatixTerms {
 
     public static IMatcher<Lambda> hoconstraint(IAlphabet<ITerm> labels) {
         return M.appl3("LLam", M.listElems(term()), M.listElems(var()), constraints(labels),
-                (t, ps, vs, c) -> new Lambda(ps, vs, c));
+                (t, ps, vs, c) -> Lambda.of(ps, vs, c));
     }
 
     public static IMatcher<Map<ITerm, Type>> relationDecls() {

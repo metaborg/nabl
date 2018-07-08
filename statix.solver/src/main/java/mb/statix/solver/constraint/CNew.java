@@ -16,12 +16,11 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 
 public class CNew implements IConstraint {
 
@@ -50,7 +49,7 @@ public class CNew implements IConstraint {
         return new CNew(subst.apply(terms), cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final List<IConstraint> constraints = Lists.newArrayList();
         State newState = state;
         for(ITerm t : terms) {
@@ -59,7 +58,7 @@ public class CNew implements IConstraint {
             constraints.add(new CEqual(t, ss._1(), this));
             newState = ss._2();
         }
-        return Optional.of(Result.of(newState, constraints));
+        return Optional.of(ConstraintResult.of(newState, constraints));
     }
 
     @Override public String toString(IUnifier unifier) {

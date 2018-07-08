@@ -26,7 +26,7 @@ rules
          level := <stx--log-level>;
          (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
 
-  stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"Error"
+  stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"None"
 
   stx--find-spec(|name) =
     language-components;

@@ -14,10 +14,10 @@ public interface IQueryMin {
 
     IQueryMin apply(ISubstitution.Immutable subst);
 
-    LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug)
+    LabelOrder<ITerm> getLabelOrder(State state, Completeness iCompleteness, IDebugContext debug)
             throws ResolutionException;
 
-    DataEquiv<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug)
+    DataEquiv<ITerm> getDataEquiv(State state, Completeness iCompleteness, IDebugContext debug)
             throws ResolutionException;
 
     String toString(IUnifier unifier);

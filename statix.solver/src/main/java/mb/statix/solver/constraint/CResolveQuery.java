@@ -21,17 +21,20 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.DataEquiv;
 import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.IncompleteDataException;
+import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.NameResolution;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
 
@@ -73,13 +76,12 @@ public class CResolveQuery implements IConstraint {
                 subst.apply(resultTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug)
-            throws InterruptedException, Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {
             type = state.spec().relations().get(relation.get());
             if(type == null) {
-                debug.error("Ignoring query for unknown relation {}", relation.get());
+                params.debug().error("Ignoring query for unknown relation {}", relation.get());
                 return Optional.empty();
             }
         } else {
@@ -88,15 +90,15 @@ public class CResolveQuery implements IConstraint {
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            throw new Delay();
+            throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         try {
-            final IDebugContext subDebug = new NullDebugContext();
+            final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
             final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
-                if(completeness.isComplete(s, l, state)) {
+                if(params.completeness().isComplete(s, l, state)) {
                     subDebug.info("{} complete in {}", s, l);
                     return true;
                 } else {
@@ -106,10 +108,10 @@ public class CResolveQuery implements IConstraint {
             };
             // @formatter:off
             final NameResolution<ITerm, ITerm, ITerm> nameResolution = NameResolution.<ITerm, ITerm, ITerm>builder()
-                    .withLabelWF(filter.getLabelWF(state, completeness, subDebug))
-                    .withDataWF(filter(type, filter.getDataWF(state, completeness, subDebug), subDebug))
-                    .withLabelOrder(min.getLabelOrder(state, completeness, subDebug))
-                    .withDataEquiv(filter(type, min.getDataEquiv(state, completeness, subDebug), subDebug))
+                    .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
                     .build(state.scopeGraph(), relation);
@@ -123,10 +125,19 @@ public class CResolveQuery implements IConstraint {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
             }
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-            return Optional.of(Result.of(state, ImmutableSet.of(C)));
+            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(C)));
+        } catch(IncompleteDataException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofScope(e.scope(), e.relation());
+        } catch(IncompleteEdgeException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofScope(e.scope(), e.label());
+        } catch(ResolutionDelayException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw e.getCause();
         } catch(ResolutionException e) {
-            debug.info("Query resolution delayed: {}", e.getMessage());
-            throw new Delay();
+            params.debug().info("Query resolution failed: {}", e.getMessage());
+            return Optional.empty();
         }
     }
 
