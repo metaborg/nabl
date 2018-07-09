@@ -21,7 +21,7 @@ rules
           a := <nabl2-get-ast-analysis> node
     where refs := <nabl2-get-ast-refs(|a)> node
     where not([] := refs) // failure has Spoofax Core try a parent node
-    with decls := <mapconcat(nabl2-get-refs-to-decl(|a);
+    with decls := <mapconcat(nabl2-get-resolved-names(|a);
                              map(Fst;nabl2-get-occurrence-index));
                    sort-resolutions> refs
 
@@ -30,7 +30,7 @@ rules
           a := <nabl2-get-ast-analysis> node
     where decls := <nabl2-get-ast-decls(|a)> node
     where not([] := decls) // failure has Spoofax Core try a parent node
-    with refs := <mapconcat(nabl2-get-resolved-names(|a);
+    with refs := <mapconcat(nabl2-get-refs-to-decl(|a);
                              map(Fst;nabl2-get-occurrence-index));
                    sort-resolutions> decls
 
