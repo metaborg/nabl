@@ -26,11 +26,11 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
     private final Predicate2<V, L> isEdgeComplete; // default: true
 
     private final DataWF<V> dataWF; // default: true
-    private final DataEquiv<V> dataEquiv; // default: false
+    private final DataLeq<V> dataEquiv; // default: false
     private final Predicate2<V, R> isDataComplete; // default: true
 
     public NameResolution(IScopeGraph<V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
-            LabelOrder<L> labelOrder, Predicate2<V, L> isEdgeComplete, DataWF<V> dataWF, DataEquiv<V> dataEquiv,
+            LabelOrder<L> labelOrder, Predicate2<V, L> isEdgeComplete, DataWF<V> dataWF, DataLeq<V> dataEquiv,
             Predicate2<V, R> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
@@ -98,7 +98,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         outer: for(IResolutionPath<V, L, R> p1 : env1) {
             for(IResolutionPath<V, L, R> p2 : env2) {
-                if(dataEquiv.eq(p1.getDatum(), p2.getDatum())) {
+                if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
                     continue outer;
                 }
             }
@@ -167,7 +167,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         private Predicate2<V, L> isEdgeComplete = (s, l) -> true;
 
         private DataWF<V> dataWF = DataWF.ANY();
-        private DataEquiv<V> dataEquiv = DataEquiv.NONE();
+        private DataLeq<V> dataEquiv = DataLeq.NONE();
         private Predicate2<V, R> isDataComplete = (s, r) -> true;
 
         public Builder<V, L, R> withLabelWF(LabelWF<L> labelWF) {
@@ -190,7 +190,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
             return this;
         }
 
-        public Builder<V, L, R> withDataEquiv(DataEquiv<V> dataEquiv) {
+        public Builder<V, L, R> withDataEquiv(DataLeq<V> dataEquiv) {
             this.dataEquiv = dataEquiv;
             return this;
         }
