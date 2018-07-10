@@ -90,9 +90,10 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
                     return true;
                 }
             } catch(Delay d) {
-                // if stuck only on the tail variable, we are not empty,
-                // otherwise we require more context and delay
-                if(d.vars().size() == 1 && d.vars().contains(var)) {
+                // If we are stuck on the tail variable, it means we are not empty.
+                // This is regardless of whether we are also stuck on other context
+                // variables. Otherwise we require more context and delay.
+                if(d.vars().contains(var)) {
                     return false;
                 } else {
                     throw new ResolutionDelayException("Label well-formedness delayed.", d); // WAS: false?
