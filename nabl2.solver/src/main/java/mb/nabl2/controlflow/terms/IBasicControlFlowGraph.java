@@ -1,10 +1,14 @@
 package mb.nabl2.controlflow.terms;
 
+import java.util.Optional;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.stratego.TermIndex;
 
 public interface IBasicControlFlowGraph<N extends ICFGNode> {
     static final ILogger logger = LoggerUtils.logger(IBasicControlFlowGraph.class);
@@ -52,6 +56,52 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
          * @return A completed control flow graph that has pre-computed SCCs and no artificial nodes
          */
         ICompleteControlFlowGraph.Immutable<N> asCompleteControlFlowGraph();
+        
+        default Map.Immutable<TermIndex, N> startNodeMap() {
+            Map.Transient<TermIndex, N> map = Map.Transient.of();
+            startNodes().stream().forEach(node -> {
+                map.__put(node.getIndex(), node);
+            });
+            return map.freeze();
+        }
+        
+        default Map.Immutable<TermIndex, N> endNodeMap() {
+            Map.Transient<TermIndex, N> map = Map.Transient.of();
+            endNodes().stream().forEach(node -> {
+                map.__put(node.getIndex(), node);
+            });
+            return map.freeze();
+        }
+        
+        default Map.Immutable<TermIndex, N> normalNodeMap() {
+            Map.Transient<TermIndex, N> map = Map.Transient.of();
+            normalNodes().stream().forEach(node -> {
+                map.__put(node.getIndex(), node);
+            });
+            return map.freeze();
+        }
+
+        /**
+         * @return Find the CFG node associated with the following TermIndex, of the right kind
+         */
+        default Optional<N> findNode(TermIndex index, ICFGNode.Kind kind) {
+            final Map<TermIndex, N> map;
+            switch(kind) {
+                case Normal:
+                    map = normalNodeMap();
+                    break;
+                case Start:
+                    map = startNodeMap();
+                    break;
+                case End:
+                    map = endNodeMap();
+                    break;
+                default:
+                    map = Map.Immutable.of();
+                    break;
+            }
+            return Optional.ofNullable(map.get(index));
+        }
     }
 
     interface Transient<N extends ICFGNode> extends IBasicControlFlowGraph<N> {

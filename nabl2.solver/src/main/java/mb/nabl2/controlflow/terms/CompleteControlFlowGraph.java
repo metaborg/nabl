@@ -7,8 +7,10 @@ import org.immutables.value.Value.Lazy;
 import org.immutables.value.Value.Parameter;
 
 import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.controlflow.terms.Algorithms.TopoSCCResult;
+import mb.nabl2.stratego.TermIndex;
 
 @org.immutables.value.Value.Immutable
 public abstract class CompleteControlFlowGraph<N extends ICFGNode>
@@ -58,6 +60,24 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
     @Auxiliary
     @Parameter
     public abstract Iterable<java.util.Set<N>> revTopoSCCs();
+
+    @Override
+    @Lazy
+    public Map.Immutable<TermIndex, N> startNodeMap() {
+        return ICompleteControlFlowGraph.Immutable.super.startNodeMap();
+    }
+
+    @Override
+    @Lazy
+    public Map.Immutable<TermIndex, N> endNodeMap() {
+        return ICompleteControlFlowGraph.Immutable.super.endNodeMap();
+    }
+
+    @Override
+    @Lazy
+    public Map.Immutable<TermIndex, N> normalNodeMap() {
+        return ICompleteControlFlowGraph.Immutable.super.normalNodeMap();
+    }
 
     public static <N extends ICFGNode> ICompleteControlFlowGraph.Immutable<N> of(Set.Immutable<N> normalNodes,
             BinaryRelation.Immutable<N, N> edges, Set.Immutable<N> startNodes, Set.Immutable<N> endNodes) {

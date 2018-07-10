@@ -7,7 +7,9 @@ import org.immutables.value.Value.Lazy;
 import org.immutables.value.Value.Parameter;
 
 import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.stratego.TermIndex;
 
 @Value.Immutable
 public abstract class ControlFlowGraph<N extends ICFGNode> implements IControlFlowGraph.Immutable<N>, Serializable {
@@ -41,6 +43,24 @@ public abstract class ControlFlowGraph<N extends ICFGNode> implements IControlFl
     @Override
     @Parameter
     public abstract Set.Immutable<N> artificialNodes();
+
+    @Override
+    @Lazy
+    public Map.Immutable<TermIndex, N> startNodeMap() {
+        return IControlFlowGraph.Immutable.super.startNodeMap();
+    }
+
+    @Override
+    @Lazy
+    public Map.Immutable<TermIndex, N> endNodeMap() {
+        return IControlFlowGraph.Immutable.super.endNodeMap();
+    }
+
+    @Override
+    @Lazy
+    public Map.Immutable<TermIndex, N> normalNodeMap() {
+        return IControlFlowGraph.Immutable.super.normalNodeMap();
+    }
 
     public static <N extends ICFGNode> IControlFlowGraph.Immutable<N> of() {
         return ImmutableControlFlowGraph.of(BinaryRelation.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(),
