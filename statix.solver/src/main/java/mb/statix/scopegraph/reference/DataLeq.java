@@ -2,16 +2,16 @@ package mb.statix.scopegraph.reference;
 
 import java.util.List;
 
-public interface DataEquiv<V> {
+public interface DataLeq<V> {
 
-    boolean eq(List<V> d1, List<V> d2) throws ResolutionException, InterruptedException;
+    boolean leq(List<V> d1, List<V> d2) throws ResolutionException, InterruptedException;
 
     boolean alwaysTrue() throws InterruptedException;
 
-    static <V> DataEquiv<V> ALL() {
-        return new DataEquiv<V>() {
+    static <V> DataLeq<V> ALL() {
+        return new DataLeq<V>() {
 
-            public boolean eq(List<V> d1, List<V> d2) {
+            public boolean leq(List<V> d1, List<V> d2) {
                 return true;
             }
 
@@ -22,10 +22,10 @@ public interface DataEquiv<V> {
         };
     }
 
-    static <V> DataEquiv<V> NONE() {
-        return new DataEquiv<V>() {
+    static <V> DataLeq<V> NONE() {
+        return new DataLeq<V>() {
 
-            public boolean eq(List<V> d1, List<V> d2) {
+            public boolean leq(List<V> d1, List<V> d2) {
                 return false;
             }
 

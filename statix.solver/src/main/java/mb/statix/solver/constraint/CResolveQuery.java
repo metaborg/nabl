@@ -19,7 +19,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.DataEquiv;
+import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
@@ -149,11 +149,11 @@ public class CResolveQuery implements IConstraint {
         };
     }
 
-    private DataEquiv<ITerm> filter(Type type, DataEquiv<ITerm> filter, IDebugContext debug) {
-        return new DataEquiv<ITerm>() {
+    private DataLeq<ITerm> filter(Type type, DataLeq<ITerm> filter, IDebugContext debug) {
+        return new DataLeq<ITerm>() {
 
-            public boolean eq(List<ITerm> d1, List<ITerm> d2) throws ResolutionException, InterruptedException {
-                return filter.eq(filter(type, d1, debug), filter(type, d2, debug));
+            public boolean leq(List<ITerm> d1, List<ITerm> d2) throws ResolutionException, InterruptedException {
+                return filter.leq(filter(type, d1, debug), filter(type, d2, debug));
             }
 
             public boolean alwaysTrue() throws InterruptedException {
