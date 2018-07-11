@@ -26,10 +26,6 @@ import mb.statix.solver.log.Log;
 
 public class Solver {
 
-    public static enum Entailment {
-        YES, NO, MAYBE;
-    }
-
     private Solver() {
     }
 
@@ -134,7 +130,7 @@ public class Solver {
             return Optional.of(result);
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            throw result.delay();
+            throw result.delay(); // FIXME Remove local vars and scopes
         }
 
     }

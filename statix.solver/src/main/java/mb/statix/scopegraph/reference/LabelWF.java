@@ -1,32 +1,22 @@
 package mb.statix.scopegraph.reference;
 
+import java.util.Optional;
+
 public interface LabelWF<L> {
 
-    LabelWF<L> step(L l);
+    Optional<LabelWF<L>> step(L l) throws ResolutionException, InterruptedException;
 
-    /**
-     * Returns if the current path is well-formed.
-     */
-    boolean wf() throws ResolutionException, InterruptedException;
-
-    /**
-     * Returns if none of the paths with the current prefix are well-formed.
-     */
-    boolean empty() throws ResolutionException, InterruptedException;
+    boolean accepting() throws ResolutionException, InterruptedException;
 
     static <L> LabelWF<L> ANY() {
         return new LabelWF<L>() {
 
-            public LabelWF<L> step(L l) {
-                return this;
+            @Override public Optional<LabelWF<L>> step(L l) {
+                return Optional.of(this);
             }
 
-            public boolean wf() {
+            @Override public boolean accepting() {
                 return true;
-            }
-
-            public boolean empty() {
-                return false;
             }
 
         };

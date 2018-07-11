@@ -54,6 +54,7 @@ public class CPathMatch implements IConstraint {
         return new CPathMatch(re, (IListTerm) subst.apply(labelsTerm), cause);
     }
 
+    // FIXME Make incremental, if we do at least one step, return a new constraint with the new regular expression
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         IListTerm labels = labelsTerm;
@@ -61,26 +62,27 @@ public class CPathMatch implements IConstraint {
         Ref<ITermVar> varTail = new Ref<>();
         while(labels != null) {
             // @formatter:off
+            labels = (IListTerm) unifier.findTerm(labels);
             labels = labels.match(ListTerms.cases(
                 cons -> {
                     final ITerm labelTerm = cons.getHead();
                     if(!unifier.isGround(labelTerm)) {
-                        return null;
+                        return null; // FIXME throw Delay
                     }
                     final ITerm label = StatixTerms.label().match(labelTerm, unifier)
                             .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(labelTerm)));
                     re.set(re.get().match(label));
                     if(re.get().isEmpty()) {
-                        return null;
+                        return null; // return false
                     }
                     return cons.getTail();
                 },
                 nil -> {
-                    return null;
+                    return null; // FIXME return accepting or not
                 },
                 var -> {
                     varTail.set(var);
-                    return null;
+                    return null; // FIXME remaining constraint (unless no progress was made at all)
                 }
             ));
             // @formatter:on

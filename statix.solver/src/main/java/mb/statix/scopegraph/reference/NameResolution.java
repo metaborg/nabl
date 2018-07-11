@@ -114,7 +114,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env_EOP(LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        if(!re.wf()) {
+        if(!re.accepting()) {
             return ImmutableSet.of();
         }
         final V scope = path.getTarget();
@@ -139,8 +139,8 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env_nonEOP(L l, LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        final LabelWF<L> newRe = re.step(l);
-        if(newRe.empty()) {
+        final Optional<LabelWF<L>> newRe = re.step(l);
+        if(!newRe.isPresent()) {
             return ImmutableSet.of();
         }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
@@ -150,7 +150,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
             final Optional<IScopePath<V, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(newRe, p.get()));
+                env.addAll(env(newRe.get(), p.get()));
             }
         }
         return env.build();
