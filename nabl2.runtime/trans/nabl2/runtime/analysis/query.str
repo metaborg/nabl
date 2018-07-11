@@ -54,6 +54,12 @@ rules
     prim("SG_get_ref_resolution", a)
 
   /**
+   * @type decl -> (ref:Occurrence,Path))
+   */
+  nabl2--get-decl-resolution(|a) =
+    prim("SG_get_decl_resolution", a)
+
+  /**
    * @param key : Term
    * @type decl:Occurrence -> value:Term
    */

@@ -3,6 +3,7 @@ module nabl2/runtime/editor/services
 imports
 
   libspoofax/term/annotation
+  libspoofax/editor/resolution
 
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
@@ -21,7 +22,17 @@ rules
     where refs := <nabl2-get-ast-refs(|a)> node
     where not([] := refs) // failure has Spoofax Core try a parent node
     with decls := <mapconcat(nabl2-get-resolved-names(|a);
-                             map(Fst;nabl2-get-occurrence-index))> refs
+                             map(Fst;nabl2-get-occurrence-index));
+                   sort-resolutions> refs
+
+  nabl2--editor-resolve: (node, _, _, _, _) -> refs
+    where <nabl2-get-ast-index> node;
+          a := <nabl2-get-ast-analysis> node
+    where decls := <nabl2-get-ast-decls(|a)> node
+    where not([] := decls) // failure has Spoofax Core try a parent node
+    with refs := <mapconcat(nabl2-get-refs-to-decl(|a);
+                             map(Fst;nabl2-get-occurrence-index));
+                   sort-resolutions> decls
 
   nabl2--editor-hover: (node, _, _, path, project-path) -> label
     where <nabl2-get-ast-index> node;
