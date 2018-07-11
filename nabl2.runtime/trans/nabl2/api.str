@@ -210,6 +210,12 @@ rules // ###### Analysis results ######
    */
   nabl2-get-resolved-names(|a) = nabl2--get-ref-resolution(|a)
 
+  /**
+   * @param a : Analysis
+   * @type decl:Occurrence -> List((ref:Occurrence, Path))
+   */
+  nabl2-get-refs-to-decl(|a) = nabl2--get-decl-resolution(|a)
+
 
 rules // ###### Scope graphs ######
 
