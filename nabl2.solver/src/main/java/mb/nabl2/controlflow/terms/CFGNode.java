@@ -4,14 +4,12 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
@@ -65,33 +63,9 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
 
     public static IMatcher<CFGNode> matcher() {
         return M.appl3("CFGNode", TermIndex.matcher(), M.stringValue(), 
-                    M.appl().flatMap(appl -> Optional.ofNullable(ICFGNode.Kind.valueOf(appl.getOp()))),
+                    M.appl().flatMap(appl -> Optionals.ofThrowing(() -> ICFGNode.Kind.valueOf(appl.getOp()))),
                     (t, index, name, kind) -> 
                         ImmutableCFGNode.of(index, name, kind).withAttachments(t.getAttachments()));
-    }
-
-    // Object implementation
-
-    @Override public boolean equals(@Nullable Object another) {
-      if (this == another) return true;
-      return another instanceof ImmutableCFGNode
-          && equalTo((ImmutableCFGNode) another);
-    }
-
-    private boolean equalTo(ImmutableCFGNode another) {
-      return getIndex().equals(another.getIndex())
-          && getKind().equals(another.getKind())
-          && (getKind() != Kind.Artificial || Objects.equals(getName(), another.getName()));
-    }
-
-    @Override public int hashCode() {
-        int h = 5381;
-        h += (h << 5) + getIndex().hashCode();
-        h += (h << 5) + getKind().hashCode();
-        if (getKind() == Kind.Artificial) {
-            h += (h << 5) + getName().hashCode();
-        }
-        return h;
     }
 
     @Override public String toString() {
@@ -122,8 +96,20 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
         return ImmutableCFGNode.of(index, name, Kind.End);
     }
 
-    public static CFGNode artificial(TermIndex index, @Nonnull String name) {
-        return ImmutableCFGNode.of(index, Objects.requireNonNull(name), Kind.Artificial);
+    public static CFGNode entry(TermIndex index) {
+        return entry(index, null);
+    }
+
+    public static CFGNode entry(TermIndex index, @Nullable String name) {
+        return ImmutableCFGNode.of(index, name, Kind.Entry);
+    }
+
+    public static CFGNode exit(TermIndex index) {
+        return exit(index, null);
+    }
+
+    public static CFGNode exit(TermIndex index, @Nullable String name) {
+        return ImmutableCFGNode.of(index, name, Kind.Exit);
     }
 
 }

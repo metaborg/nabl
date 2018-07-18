@@ -8,12 +8,12 @@ import mb.nabl2.constraints.controlflow.CTFAppl;
 import mb.nabl2.constraints.controlflow.IControlFlowConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.controlflow.terms.CFGNode;
-import mb.nabl2.controlflow.terms.IControlFlowGraph;
+import mb.nabl2.controlflow.terms.ICompleteControlFlowGraph;
 import mb.nabl2.controlflow.terms.IFlowSpecSolution;
 import mb.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import mb.nabl2.controlflow.terms.ImmutableTransferFunctionAppl;
-import mb.nabl2.controlflow.terms.ImmutableTransientControlFlowGraph;
 import mb.nabl2.controlflow.terms.TransferFunctionAppl;
+import mb.nabl2.controlflow.terms.TransientCompleteControlFlowGraph;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
@@ -24,18 +24,18 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public class ControlFlowComponent extends ASolver {
-    private final IControlFlowGraph.Transient<CFGNode> cfg;
+    private final ICompleteControlFlowGraph.Transient<CFGNode> cfg;
     private final Map.Transient<Tuple2<CFGNode, String>, TransferFunctionAppl> tfAppls;
 
     public ControlFlowComponent(SolverCore core, IFlowSpecSolution<CFGNode> solution) {
         super(core);
-        this.cfg = ImmutableTransientControlFlowGraph.of();
+        this.cfg = TransientCompleteControlFlowGraph.of();
         this.cfg.addAll(solution.controlFlowGraph());
         this.tfAppls = solution.tfAppls().asTransient();
     }
 
     public IFlowSpecSolution<CFGNode> finish() {
-        return ImmutableFlowSpecSolution.of(this.cfg.freeze().asCompleteControlFlowGraph(), tfAppls.freeze());
+        return ImmutableFlowSpecSolution.of(this.cfg.freeze(), tfAppls.freeze());
     }
 
     public void update() throws InterruptedException {
@@ -59,18 +59,21 @@ public class ControlFlowComponent extends ASolver {
 
     private void addCFGNode(CFGNode node) {
         switch (node.getKind()) {
-        case Artificial:
-            cfg.artificialNodes().__insert(node);
-            break;
-        case End:
-            cfg.endNodes().__insert(node);
-            break;
-        case Normal:
-            cfg.normalNodes().__insert(node);
-            break;
-        case Start:
-            cfg.startNodes().__insert(node);
-            break;
+            case Start:
+                cfg.startNodes().__insert(node);
+                break;
+            case End:
+                cfg.endNodes().__insert(node);
+                break;
+            case Entry:
+                cfg.entryNodes().__insert(node);
+                break;
+            case Exit:
+                cfg.exitNodes().__insert(node);
+                break;
+            case Normal:
+                cfg.normalNodes().__insert(node);
+                break;
         }
     }
 

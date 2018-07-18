@@ -32,6 +32,6 @@ public abstract class FlowSpecSolution<N extends ICFGNode> implements IFlowSpecS
     }
 
     public static <N extends ICFGNode> IFlowSpecSolution<N> of() {
-        return ImmutableFlowSpecSolution.of(ControlFlowGraph.<N>of().asCompleteControlFlowGraph(), Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+        return ImmutableFlowSpecSolution.of(CompleteControlFlowGraph.<N>of(), Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
     }
 }

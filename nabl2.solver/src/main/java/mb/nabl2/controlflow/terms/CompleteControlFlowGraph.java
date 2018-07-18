@@ -5,6 +5,7 @@ import java.io.Serializable;
 import org.immutables.value.Value.Auxiliary;
 import org.immutables.value.Value.Lazy;
 import org.immutables.value.Value.Parameter;
+import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.Map;
@@ -19,9 +20,11 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
     @Lazy
     public Set.Immutable<N> nodes() {
         Set.Transient<N> allNodes = Set.Transient.of();
-        allNodes.__insertAll(startNodes());
         allNodes.__insertAll(normalNodes());
+        allNodes.__insertAll(startNodes());
         allNodes.__insertAll(endNodes());
+        allNodes.__insertAll(entryNodes());
+        allNodes.__insertAll(exitNodes());
         return allNodes.freeze();
     }
 
@@ -35,11 +38,19 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
 
     @Override
     @Parameter
-    public abstract Set.Immutable<N> normalNodes();
+    public abstract Set.Immutable<N> endNodes();
 
     @Override
     @Parameter
-    public abstract Set.Immutable<N> endNodes();
+    public abstract Set.Immutable<N> entryNodes();
+
+    @Override
+    @Parameter
+    public abstract Set.Immutable<N> exitNodes();
+
+    @Override
+    @Parameter
+    public abstract Set.Immutable<N> normalNodes();
 
     @Override
     @Auxiliary
@@ -78,11 +89,18 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
     public Map.Immutable<TermIndex, N> normalNodeMap() {
         return ICompleteControlFlowGraph.Immutable.super.normalNodeMap();
     }
+    
+    public static <N extends ICFGNode> ICompleteControlFlowGraph.Immutable<N> of() {
+        return ImmutableCompleteControlFlowGraph.of(BinaryRelation.Immutable.of(), Set.Immutable.of(),
+                Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(),
+                Set.Immutable.of(), Iterables2.empty(), Iterables2.empty());
+    }
 
     public static <N extends ICFGNode> ICompleteControlFlowGraph.Immutable<N> of(Set.Immutable<N> normalNodes,
-            BinaryRelation.Immutable<N, N> edges, Set.Immutable<N> startNodes, Set.Immutable<N> endNodes) {
+            BinaryRelation.Immutable<N, N> edges, Set.Immutable<N> startNodes, Set.Immutable<N> endNodes,
+            Set.Immutable<N> entryNodes, Set.Immutable<N> exitNodes) {
         /*
-         * TODO: can we do better? SCCs are the same, topo order can be reversed, just
+         * NOTE: can we do better? SCCs are the same, topo order can be reversed, just
          * the order within the SCCs needs to be different. Perhaps faster to do
          * ordering within SCCs as post processing?
          */
@@ -90,7 +108,7 @@ public abstract class CompleteControlFlowGraph<N extends ICFGNode>
         Set.Immutable<N> allNodes = normalNodes.__insertAll(startNodes).__insertAll(endNodes);
         TopoSCCResult<N> result = Algorithms.topoSCCs(allNodes, startNodes, endNodes, edges);
 
-        return ImmutableCompleteControlFlowGraph.of(edges, startNodes, normalNodes, endNodes,
+        return ImmutableCompleteControlFlowGraph.of(edges, startNodes, endNodes, entryNodes, exitNodes, normalNodes,
                 result.unreachables(), result.deadEnds(), result.topoSCCs(), result.revTopoSCCs());
     }
 }

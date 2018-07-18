@@ -36,14 +36,24 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
     Set<N> startNodes();
 
     /**
-     * @return All nodes that are not start or end nodes
-     */
-    Set<N> normalNodes();
-
-    /**
      * @return The end nodes of the control flow graph(s).
      */
     Set<N> endNodes();
+
+    /**
+     * @return The entry nodes of the control flow graph(s).
+     */
+    Set<N> entryNodes();
+
+    /**
+     * @return The exit nodes of the control flow graph(s).
+     */
+    Set<N> exitNodes();
+
+    /**
+     * @return All nodes that are not start or end nodes
+     */
+    Set<N> normalNodes();
 
     interface Immutable<N extends ICFGNode> extends IBasicControlFlowGraph<N> {
         @Override Set.Immutable<N> nodes();
@@ -51,6 +61,8 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
         @Override Set.Immutable<N> startNodes();
         @Override Set.Immutable<N> normalNodes();
         @Override Set.Immutable<N> endNodes();
+        @Override Set.Immutable<N> entryNodes();
+        @Override Set.Immutable<N> exitNodes();
 
         /**
          * @return A completed control flow graph that has pre-computed SCCs and no artificial nodes
@@ -68,6 +80,22 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
         default Map.Immutable<TermIndex, N> endNodeMap() {
             Map.Transient<TermIndex, N> map = Map.Transient.of();
             endNodes().stream().forEach(node -> {
+                map.__put(node.getIndex(), node);
+            });
+            return map.freeze();
+        }
+        
+        default Map.Immutable<TermIndex, N> entryNodeMap() {
+            Map.Transient<TermIndex, N> map = Map.Transient.of();
+            entryNodes().stream().forEach(node -> {
+                map.__put(node.getIndex(), node);
+            });
+            return map.freeze();
+        }
+        
+        default Map.Immutable<TermIndex, N> exitNodeMap() {
+            Map.Transient<TermIndex, N> map = Map.Transient.of();
+            exitNodes().stream().forEach(node -> {
                 map.__put(node.getIndex(), node);
             });
             return map.freeze();
@@ -96,6 +124,12 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
                 case End:
                     map = endNodeMap();
                     break;
+                case Entry:
+                    map = entryNodeMap();
+                    break;
+                case Exit:
+                    map = exitNodeMap();
+                    break;
                 default:
                     map = Map.Immutable.of();
                     break;
@@ -109,5 +143,7 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
         @Override Set.Transient<N> startNodes();
         @Override Set.Transient<N> normalNodes();
         @Override Set.Transient<N> endNodes();
+        @Override Set.Transient<N> entryNodes();
+        @Override Set.Transient<N> exitNodes();
     }
 }

@@ -25,7 +25,8 @@ public interface ICFGNode extends ITerm {
         Normal,
         Start,
         End,
-        Artificial;
+        Entry,
+        Exit;
 
         private static final ImmutableMultiset<ITermVar> NO_VARS = ImmutableMultiset.<ITermVar>builder().build();
 
