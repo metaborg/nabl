@@ -63,10 +63,14 @@ public abstract class CFGNode extends AbstractApplTerm implements ICFGNode, IApp
 
     public static IMatcher<CFGNode> matcher() {
         return M.appl3("CFGNode", TermIndex.matcher(), M.stringValue(), 
-                    M.appl().flatMap(appl -> Optionals.ofThrowing(() -> ICFGNode.Kind.valueOf(appl.getOp()))),
+                    M.appl().<ICFGNode.Kind>flatMap(appl -> Optionals.ofThrowing(() -> ICFGNode.Kind.valueOf(appl.getOp()))),
                     (t, index, name, kind) -> 
                         ImmutableCFGNode.of(index, name, kind).withAttachments(t.getAttachments()));
     }
+
+    @Override public abstract boolean equals(Object other);
+
+    @Override public abstract int hashCode();
 
     @Override public String toString() {
         return "##" + getName() + this.getIndex().toString();

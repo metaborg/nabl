@@ -63,11 +63,6 @@ public interface IBasicControlFlowGraph<N extends ICFGNode> {
         @Override Set.Immutable<N> endNodes();
         @Override Set.Immutable<N> entryNodes();
         @Override Set.Immutable<N> exitNodes();
-
-        /**
-         * @return A completed control flow graph that has pre-computed SCCs and no artificial nodes
-         */
-        ICompleteControlFlowGraph.Immutable<N> asCompleteControlFlowGraph();
         
         default Map.Immutable<TermIndex, N> startNodeMap() {
             Map.Transient<TermIndex, N> map = Map.Transient.of();
