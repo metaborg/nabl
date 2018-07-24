@@ -78,7 +78,7 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CTFAppl c) {
-        tfAppls.__put(ImmutableTuple2.of(c.getCFGNode(), c.getPropertyName()), ImmutableTransferFunctionAppl.of(c.getOffset(), c.getArguments()));
+        tfAppls.__put(ImmutableTuple2.of(c.getCFGNode(), c.getPropertyName()), ImmutableTransferFunctionAppl.of(c.getOffset(), c.isIdentity(), c.getArguments()));
         return Optional.ofNullable(SolveResult.empty());
     }
 

@@ -13,6 +13,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 @Immutable
 public abstract class TransferFunctionAppl {
     @Parameter public abstract int offset();
+    @Parameter public abstract boolean isIdentity();
     @Parameter protected abstract List<ITerm> otherArgs();
 
     public ITerm[] args(ITerm firstArg) {
@@ -27,6 +28,10 @@ public abstract class TransferFunctionAppl {
         return args;
     }
 
+    public Object[] args() {
+        return otherArgs().toArray();
+    }
+
     @Override
     public String toString() {
         return "(" + offset() + ", " + otherArgs().toString() + ")";
@@ -34,7 +39,7 @@ public abstract class TransferFunctionAppl {
 
     public static IMatcher<TransferFunctionAppl> match() {
         return M.appl2("", M.integer(), M.listElems(), (applTerm, intTerm, argsTerm) -> {
-            return ImmutableTransferFunctionAppl.of(intTerm.getValue(), argsTerm);
+            return ImmutableTransferFunctionAppl.of(intTerm.getValue(), false, argsTerm);
         });
     }
 }
