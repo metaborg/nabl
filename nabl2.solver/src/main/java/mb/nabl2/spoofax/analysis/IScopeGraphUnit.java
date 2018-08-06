@@ -26,4 +26,6 @@ public interface IScopeGraphUnit extends Serializable {
      */
     boolean isPrimary();
 
+    IScopeGraphUnit withSolution(ISolution solution);
+
 }
