@@ -2,6 +2,8 @@ module nabl2/runtime/analysis/query
 
 imports
 
+  libspoofax/analysis/constraint
+
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
@@ -84,10 +86,10 @@ rules
     nabl2--get-resource-analysis
 
   nabl2--get-resource-analysis =
-    prim("C_get_resource_analysis")
+    get-resource-constraint-analysis
 
   nabl2--get-resource-partial-analysis =
-    prim("C_get_resource_partial_analysis")
+    get-resource-partial-constraint-analysis
 
   nabl2--analysis-has-errors =
     ?a; prim("SG_analysis_has_errors", a)

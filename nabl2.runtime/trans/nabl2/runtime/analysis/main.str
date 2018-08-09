@@ -2,6 +2,8 @@ module nabl2/runtime/analysis/main
 
 imports
 
+  libspoofax/analysis/constraint
+
   nabl2/api
  
   signatures/nabl2/shared/common/-
