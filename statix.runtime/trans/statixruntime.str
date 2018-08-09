@@ -16,13 +16,20 @@ signature
 
 rules
 
-  stx-analyze(|spec-name, init-constraint):
-      ast -> <stx-editor-analyze(id|spec-name, init-constraint)> (ast, "", "")
+  stx-analyze(|spec-name, init-constraint) =
+    with(warn-msg(|"Using 'stx-analyze' is deprecated, use 'stx-editor-analyze' instead."));
+  ( stx-editor-analyze(id|spec-name, init-constraint)
+ <+ <stx-editor-analyze(id|spec-name, init-constraint)> (<id>, "", "")
+  )
+
+rules
+
+  stx-editor-analyze(|spec-name, init-constraint) =
+    stx-editor-analyze(id|spec-name, init-constraint)
 
   // editor analyze for stratego analyzer
   stx-editor-analyze(desugar|spec-name, init-constraint):
       (ast, path, project-path) -> (ast', error*, warning*, note*)
-    with warn-msg(|"Using Statix with the Stratego analyzer is deprecated, add the '(constraint)' option in ESV.")
     with spec := <stx--find-spec(|spec-name)>;
          ast' := <desugar;nabl2--index-ast(|""/*path*/)> ast;
          C    := C(init-constraint, [<stx--explode> ast']);
@@ -37,6 +44,9 @@ rules
          C    := C(init-constraint, [<stx--explode> ast']);
          level := <stx--log-level>;
          (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+
+  stx-editor-analyze(desugar|spec-name, init-constraint) =
+    debug(!"stx-editor-analyze "); fail
 
   stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"None"
 
