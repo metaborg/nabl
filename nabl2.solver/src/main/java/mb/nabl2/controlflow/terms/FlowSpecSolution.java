@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
+import org.metaborg.util.Ref;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
@@ -21,11 +22,11 @@ public abstract class FlowSpecSolution<N extends ICFGNode> implements IFlowSpecS
 
     @Override
     @Parameter
-    public abstract Map.Immutable<Tuple2<CFGNode, String>, ITerm> preProperties();
+    public abstract Map.Immutable<Tuple2<CFGNode, String>, Ref<ITerm>> preProperties();
 
     @Override
     @Parameter
-    public abstract Map.Immutable<Tuple2<CFGNode, String>, ITerm> postProperties();
+    public abstract Map.Immutable<Tuple2<CFGNode, String>, Ref<ITerm>> postProperties();
 
     public static <N extends ICFGNode> IFlowSpecSolution<N> of(ICompleteControlFlowGraph.Immutable<N> controlFlowGraph, Map.Immutable<Tuple2<CFGNode, String>, TransferFunctionAppl> tfAppls) {
         return ImmutableFlowSpecSolution.of(controlFlowGraph, tfAppls, Map.Immutable.of(), Map.Immutable.of());

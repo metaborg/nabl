@@ -49,7 +49,8 @@ public class ControlFlowComponent extends ASolver {
         Optional<CFGNode> sourceNode = findCFGNode(c.getSourceNode());
         Optional<CFGNode> targetNode = findCFGNode(c.getTargetNode());
 
-        return sourceNode.flatMap(sn -> targetNode.map(tn -> {
+        return sourceNode.flatMap(
+                sn -> targetNode.map(tn -> {
             this.addCFGNode(sn);
             this.addCFGNode(tn);
             this.cfg.edges().__insert(sn, tn);
@@ -78,7 +79,7 @@ public class ControlFlowComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CTFAppl c) {
-        tfAppls.__put(ImmutableTuple2.of(c.getCFGNode(), c.getPropertyName()), ImmutableTransferFunctionAppl.of(c.getOffset(), c.isIdentity(), c.getArguments()));
+        tfAppls.__put(ImmutableTuple2.of(c.getCFGNode(), c.getPropertyName()), ImmutableTransferFunctionAppl.of(c.getOffset(), c.getArguments()));
         return Optional.ofNullable(SolveResult.empty());
     }
 
