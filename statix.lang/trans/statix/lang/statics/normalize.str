@@ -17,22 +17,13 @@ imports
 
 rules
 
-  normalize-all(reanalyze) =
-    normalize-0; reanalyze
-  ; normalize-1; reanalyze
-  ; normalize-2; reanalyze
-  ; normalize-3; reanalyze
-
-  normalize-0 =
-    ?(<id>, a);
+  normalize-0(|a) =
     nabl2-custom-analysis-info-msg(|"| Explicate mapping constraints...");
     explicate-cmaps(|a);
     nabl2-custom-analysis-info-msg(|"| Normalize occurrence positions...");
-    normalize-occurrence-positions(|a);
-    !(<id>, a)
+    normalize-occurrence-positions(|a)
 
-  normalize-1 =
-    ?(<id>, a);
+  normalize-1(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize functional constraint declarations...");
     normalize-functional-cdecls;
     nabl2-custom-analysis-info-msg(|"| Normalize functional rule heads...");
@@ -42,26 +33,21 @@ rules
     nabl2-custom-analysis-info-msg(|"| Normalize functional constraint terms...");
     normalize-functional-cops(|a);
     nabl2-custom-analysis-info-msg(|"| Normalize query shorthands...");
-    normalize-rel-shorthands(|a);
-    !(<id>, a)
+    normalize-rel-shorthands(|a)
 
-  normalize-2 =
-    ?(<id>, a);
+  normalize-2(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize higer-order constraints...");
     normalize-ho-constraints(|a);
     nabl2-custom-analysis-info-msg(|"| Explicate namespace queries...");
-    explicate-resolve(|a);
-    !(<id>, a)
+    explicate-resolve(|a)
 
-  normalize-3 =
-    ?(<id>, a);
+  normalize-3(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize inline patterns...");
     normalize-inline-patterns(|a);
     nabl2-custom-analysis-info-msg(|"| Normalize as patterns...");
     normalize-as-patterns;
     nabl2-custom-analysis-info-msg(|"| Normalize wildcards...");
-    normalize-wildcards;
-    !(<id>, a)
+    normalize-wildcards
 
 rules
 

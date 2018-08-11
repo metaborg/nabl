@@ -28,9 +28,4 @@ menus
 
     separator
 
-    action: "Show normalized AST"   = debug-show-normalized
-    action: "Format normalized AST" = format-normalized
-
-    separator
-
     action: "Show explicated AST"   = debug-show-explicated

@@ -23,23 +23,20 @@ rules
   
   editor-evaluate:
     (_, _, ast, path, project-path) -> (filename, result)
-    with a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-       ; (ast', _) := <nabl2-get-custom-analysis> a
-       ; result := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast'
-       ; filename := <guarantee-extension(|"stxresult")> path
+    with result := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
+         filename := <guarantee-extension(|"stxresult")> path
 
   evaluate-test: ast -> result
-    with a := <nabl2-get-ast-analysis> ast
-       ; (ast', _) := <nabl2-get-custom-analysis> a
-       ; if (_, [], _, _) := <evaluate> ast' then
+    with if (_, [], _, _) := <evaluate> ast then
            result := SUCCEEDS()
          else
            result := FAILS()
          end
 
   evaluate: ast@Test(bvs, body, _) -> result
-    with a := <nabl2-get-ast-analysis> ast
-       ; spec := <nabl2-get-custom-analysis;strip-annos;eliminate-all;spec-ast-to-aterm> a
-       ; level := <stx--log-level>
-       ; body' := <eliminate-all;nabl2--index-ast(|""/*path*/)> body
-       ; result := <stx--solve-constraint(|spec, level)> (bvs, body')
+    with a      := <nabl2-get-ast-analysis> ast;
+         ext    := <nabl2-get-custom-analysis> a;
+         spec   := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
+         level  := <stx--log-level>;
+         body'  := <eliminate-all;nabl2--index-ast(|""/*path*/)> body;
+         result := <stx--solve-constraint(|spec, level)> (bvs, body')

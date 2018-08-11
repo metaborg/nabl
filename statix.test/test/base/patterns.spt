@@ -1,4 +1,4 @@
-module base-test
+module base-patterns
 
 language StatixTest
 
