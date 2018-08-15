@@ -19,6 +19,8 @@ public abstract class CTFAppl implements IControlFlowConstraint {
     @Value.Parameter public abstract CFGNode getCFGNode();
 
     @Value.Parameter public abstract String getPropertyName();
+
+    @Value.Parameter public abstract String getModuleName();
     
     @Value.Parameter public abstract int getOffset();
 

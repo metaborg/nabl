@@ -21,8 +21,8 @@ public final class ControlFlowConstraints {
             // @formatter:off
             M.appl3(CF_DIRECT_EDGE, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, node1, node2, origin) -> ImmutableCFDirectEdge.of(node1, node2, origin)),
-            M.appl4(C_TF_APPL, CFGNode.matcher(), M.stringValue(), M.integerValue(), M.listElems(),
-                    (c, index, propname, offset, args) -> ImmutableCTFAppl.of(index, propname, offset, args, MessageInfo.of(index)))
+            M.appl5(C_TF_APPL, CFGNode.matcher(), M.stringValue(), M.stringValue(), M.integerValue(), M.listElems(),
+                    (c, index, propname, modname, offset, args) -> ImmutableCTFAppl.of(index, propname, modname, offset, args, MessageInfo.of(index)))
             // @formatter:on
         );
     }
@@ -47,6 +47,7 @@ public final class ControlFlowConstraints {
             tfAppl -> ImmutableCTFAppl.of(
                     tfAppl.getCFGNode(),
                     tfAppl.getPropertyName(),
+                    tfAppl.getModuleName(),
                     tfAppl.getOffset(),
                     tfAppl.getArguments().stream().map(subst::apply).collect(Collectors.toList()),
                     tfAppl.getMessageInfo().apply(subst::apply))

@@ -12,6 +12,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 @Immutable
 public abstract class TransferFunctionAppl {
+    @Parameter public abstract String moduleName();
     @Parameter public abstract int offset();
     @Parameter protected abstract List<ITerm> otherArgs();
 
@@ -33,12 +34,12 @@ public abstract class TransferFunctionAppl {
 
     @Override
     public String toString() {
-        return "(" + offset() + ", " + otherArgs().toString() + ")";
+        return "(" + moduleName() + ", " + offset() + ", " + otherArgs().toString() + ")";
     }
 
     public static IMatcher<TransferFunctionAppl> match() {
-        return M.appl2("", M.integer(), M.listElems(), (applTerm, intTerm, argsTerm) -> {
-            return ImmutableTransferFunctionAppl.of(intTerm.getValue(), argsTerm);
+        return M.appl3("", M.stringValue(), M.integerValue(), M.listElems(), (applTerm, strTerm, intTerm, argsTerm) -> {
+            return ImmutableTransferFunctionAppl.of(strTerm, intTerm, argsTerm);
         });
     }
 }
