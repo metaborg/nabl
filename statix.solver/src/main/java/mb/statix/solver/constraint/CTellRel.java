@@ -21,12 +21,11 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 
@@ -65,27 +64,31 @@ public class CTellRel implements IConstraint {
         return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerms));
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
-            debug.error("Ignoring data for unknown relation {}", relation);
+            params.debug().error("Ignoring data for unknown relation {}", relation);
             return Optional.empty();
         }
         if(type.getArity() != datumTerms.size()) {
-            debug.error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(), relation);
+            params.debug().error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(),
+                    relation);
             return Optional.empty();
         }
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            throw new Delay();
+            throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
+        if(params.isClosed(scope)) {
+            return Optional.empty();
+        }
 
         final ITerm key = B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(Collectors.toList()));
         if(!unifier.isGround(key)) {
-            throw new Delay();
+            throw Delay.ofVars(unifier.getVars(key));
         }
         Optional<ITerm> existingValue = state.scopeGraph().getData().get(scope, relation).stream().filter(dt -> {
             return unifier.areEqual(key,
@@ -96,11 +99,11 @@ public class CTellRel implements IConstraint {
         if(existingValue.isPresent()) {
             final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
             final IConstraint eq = new CEqual(value, existingValue.get(), this);
-            return Optional.of(Result.of(state, ImmutableSet.of(eq)));
+            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
         } else {
             final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
                     state.scopeGraph().addDatum(scope, relation, datumTerms);
-            return Optional.of(Result.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
         }
     }
 

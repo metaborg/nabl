@@ -71,7 +71,8 @@ context-free syntax
   HoConstraint.LTrue  = "true"
   HoConstraint.LFalse = "false"
 
-  Term.NewOp = "new"
+  Term.NewOp    = "new"
+  Term.TermIdOp = <termId(<Term>)>
 
 lexical syntax
 

@@ -12,6 +12,8 @@ public interface IDebugContext {
 
     int getDepth();
 
+    boolean isEnabled(Level level);
+
     IDebugContext subContext();
 
     void info(String fmt, Object... args);

@@ -26,11 +26,11 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
     private final Predicate2<V, L> isEdgeComplete; // default: true
 
     private final DataWF<V> dataWF; // default: true
-    private final DataEquiv<V> dataEquiv; // default: false
+    private final DataLeq<V> dataEquiv; // default: false
     private final Predicate2<V, R> isDataComplete; // default: true
 
     public NameResolution(IScopeGraph<V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
-            LabelOrder<L> labelOrder, Predicate2<V, L> isEdgeComplete, DataWF<V> dataWF, DataEquiv<V> dataEquiv,
+            LabelOrder<L> labelOrder, Predicate2<V, L> isEdgeComplete, DataWF<V> dataWF, DataLeq<V> dataEquiv,
             Predicate2<V, R> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
@@ -98,7 +98,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         outer: for(IResolutionPath<V, L, R> p1 : env1) {
             for(IResolutionPath<V, L, R> p2 : env2) {
-                if(dataEquiv.eq(p1.getDatum(), p2.getDatum())) {
+                if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
                     continue outer;
                 }
             }
@@ -114,12 +114,12 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env_EOP(LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        if(!re.wf()) {
+        if(!re.accepting()) {
             return ImmutableSet.of();
         }
         final V scope = path.getTarget();
         if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
-            throw new ResolutionException("Scope " + scope + " is incomplete in " + relation);
+            throw new IncompleteDataException(scope, relation.get());
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         if(relation.isPresent()) {
@@ -139,18 +139,18 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
 
     private Set<IResolutionPath<V, L, R>> env_nonEOP(L l, LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
-        final LabelWF<L> newRe = re.step(l);
-        if(newRe.empty()) {
+        final Optional<LabelWF<L>> newRe = re.step(l);
+        if(!newRe.isPresent()) {
             return ImmutableSet.of();
         }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
-            throw new ResolutionException("Scope " + path.getTarget() + " is incomplete in edge " + l);
+            throw new IncompleteEdgeException(path.getTarget(), l);
         }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> env = ImmutableSet.builder();
         for(V nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
             final Optional<IScopePath<V, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(newRe, p.get()));
+                env.addAll(env(newRe.get(), p.get()));
             }
         }
         return env.build();
@@ -167,7 +167,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
         private Predicate2<V, L> isEdgeComplete = (s, l) -> true;
 
         private DataWF<V> dataWF = DataWF.ANY();
-        private DataEquiv<V> dataEquiv = DataEquiv.NONE();
+        private DataLeq<V> dataEquiv = DataLeq.NONE();
         private Predicate2<V, R> isDataComplete = (s, r) -> true;
 
         public Builder<V, L, R> withLabelWF(LabelWF<L> labelWF) {
@@ -190,7 +190,7 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
             return this;
         }
 
-        public Builder<V, L, R> withDataEquiv(DataEquiv<V> dataEquiv) {
+        public Builder<V, L, R> withDataEquiv(DataLeq<V> dataEquiv) {
             this.dataEquiv = dataEquiv;
             return this;
         }

@@ -9,9 +9,10 @@ import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.UnificationException;
 
 public class TermMultisetTest {
 
@@ -55,7 +56,7 @@ public class TermMultisetTest {
         assertEquals(2, terms.count(t1, unifier));
     }
 
-    @Test public void testContainsOriginalAndUnifiedTerm() throws UnificationException {
+    @Test public void testContainsOriginalAndUnifiedTerm() throws CannotUnifyException, OccursException {
         final ITermVar v1 = B.newVar("", "v1");
         final ITerm t1 = B.newInt(1);
         final ITerm t2 = B.newTuple(v1);

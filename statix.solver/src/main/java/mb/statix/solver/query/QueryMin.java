@@ -4,7 +4,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.statix.scopegraph.reference.DataEquiv;
+import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
@@ -29,8 +29,8 @@ public class QueryMin implements IQueryMin {
         return new ConstraintLabelOrder(pathConstraint, state, completeness, debug);
     }
 
-    public DataEquiv<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
-        return new ConstraintDataEquiv(dataConstraint, state, completeness, debug);
+    public DataLeq<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
+        return new ConstraintDataLeq(dataConstraint, state, completeness, debug);
     }
 
     @Override public String toString(IUnifier unifier) {

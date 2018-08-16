@@ -1,0 +1,17 @@
+module statix/runtime/NoParse
+
+sorts
+
+  Int
+
+lexical syntax
+
+  String = ~[]
+
+context-free syntax
+
+  Term.Scope   = <#<String>-<String>>
+
+  Term.NoId    = <@->
+  Term.TermId  = <@<String>-<Int>>
+  Term.ScopeId = <#<String>-<Int>>

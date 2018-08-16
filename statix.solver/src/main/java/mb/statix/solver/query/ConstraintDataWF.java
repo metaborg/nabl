@@ -6,12 +6,11 @@ import java.util.List;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.MatchException;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
-import mb.statix.solver.Config;
 import mb.statix.solver.Delay;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
@@ -35,9 +34,9 @@ public class ConstraintDataWF implements DataWF<ITerm> {
     public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
         try {
             final Tuple2<State, Lambda> result = constraint.apply(datum, state);
-            final Config config = Config.of(result._1(), result._2().getBody(), completeness);
             try {
-                if(Solver.entails(config, result._2().getBodyVars(), debug)) {
+                if(Solver.entails(result._1(), result._2().body(), completeness, result._2().bodyVars(), debug)
+                        .isPresent()) {
                     debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
                     return true;
                 } else {
@@ -45,9 +44,9 @@ public class ConstraintDataWF implements DataWF<ITerm> {
                     return false;
                 }
             } catch(Delay d) {
-                throw new ResolutionException("Data well-formedness check delayed");
+                throw new ResolutionDelayException("Data well-formedness delayed.", d);
             }
-        } catch(MatchException | UnificationException ex) {
+        } catch(MatchException | CannotUnifyException ex) {
             return false;
         }
     }

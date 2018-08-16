@@ -8,8 +8,6 @@ imports
   statix/lang/Sugar
   statix/lang/Deprecated
  
-  statix/runtime/Terms
-
 template options
 
   keyword -/- [a-zA-Z0-9\_\-\']

@@ -1,11 +1,8 @@
 package mb.statix.solver.constraint;
 
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
-
-import org.metaborg.util.Ref;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -18,26 +15,25 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.statix.solver.Completeness;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Result;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.spoofax.StatixTerms;
 
 public class CPathMatch implements IConstraint {
 
-    private final IRegExp<ITerm> re;
+    private final IRegExpMatcher<ITerm> re;
     private final IListTerm labelsTerm;
 
     private final @Nullable IConstraint cause;
 
     public CPathMatch(IRegExp<ITerm> re, IListTerm labelsTerm) {
-        this(re, labelsTerm, null);
+        this(RegExpMatcher.create(re), labelsTerm, null);
     }
 
-    public CPathMatch(IRegExp<ITerm> re, IListTerm labelsTerm, @Nullable IConstraint cause) {
+    private CPathMatch(IRegExpMatcher<ITerm> re, IListTerm labelsTerm, @Nullable IConstraint cause) {
         this.re = re;
         this.labelsTerm = labelsTerm;
         this.cause = cause;
@@ -55,50 +51,36 @@ public class CPathMatch implements IConstraint {
         return new CPathMatch(re, (IListTerm) subst.apply(labelsTerm), cause);
     }
 
-    @Override public Optional<Result> solve(State state, Completeness completeness, IDebugContext debug) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
-        IListTerm labels = labelsTerm;
-        Ref<IRegExpMatcher<ITerm>> re = new Ref<>(RegExpMatcher.create(this.re));
-        AtomicBoolean complete = new AtomicBoolean(false);
-        while(labels != null) {
-            // @formatter:off
-            labels = labels.match(ListTerms.cases(
-                cons -> {
-                    final ITerm labelTerm = cons.getHead();
-                    if(!unifier.isGround(labelTerm)) {
-                        return null;
-                    }
-                    final ITerm label = StatixTerms.label().match(labelTerm, unifier)
-                            .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(labelTerm)));
-                    re.set(re.get().match(label));
-                    if(re.get().isEmpty()) {
-                        return null;
-                    }
-                    return cons.getTail();
-                },
-                nil -> {
-                    complete.set(true);
-                    return null;
-                },
-                var -> {
-                    return null;
+        // @formatter:off
+        return ((IListTerm) unifier.findTerm(labelsTerm)).matchOrThrow(ListTerms.checkedCases(
+            cons -> {
+                final ITerm labelTerm = cons.getHead();
+                if(!unifier.isGround(labelTerm)) {
+                    throw Delay.ofVars(unifier.getVars(labelTerm));
                 }
-            ));
-            // @formatter:on
-        }
-        if(complete.get()) {
-            if(re.get().isAccepting()) {
-                return Optional.of(Result.of(state, ImmutableSet.of()));
-            } else {
-                return Optional.empty();
+                final ITerm label = StatixTerms.label().match(labelTerm, unifier)
+                        .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(labelTerm)));
+                final IRegExpMatcher<ITerm> re = this.re.match(label);
+                if(re.isEmpty()) {
+                    return Optional.empty();
+                } else {
+                    return Optional.of(ConstraintResult.of(state, ImmutableSet.of(new CPathMatch(re, cons.getTail(), cause))));
+                }
+            },
+            nil -> {
+                if(re.isAccepting()) {
+                    return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
+                } else {
+                    return Optional.empty();
+                }
+            },
+            var -> {
+                throw Delay.ofVar(var);
             }
-        } else {
-            if(re.get().isEmpty()) {
-                return Optional.empty();
-            } else {
-                throw new Delay();
-            }
-        }
+        ));
+        // @formatter:on
     }
 
     @Override public String toString(IUnifier unifier) {

@@ -221,6 +221,10 @@ rules
   [[ CNew(vs) ^ (s) ]] :=
     Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
 
+  [[ CTermId(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : _ ]],
+    Build[[ t2 ^ (s) : TERM_ID() ]].
+
   [[ CEqual(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
     Build[[ t2 ^ (s) : ty ]].
@@ -240,6 +244,9 @@ rules
     [[ c ^ (s') ]].
 
   Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
+
+  Term(V)[[ TermIdOp(t) ^ (s) : TERM_ID() ]] :=
+    Term(V)[[ t ^ (s) : _ ]].
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -350,6 +357,16 @@ rules
   Term(V)[[ PathDstOp(t) ^ (s) : SCOPE() ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
 
+  Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
+    Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
+    d : NS(tys),
+    Map1T(Term(V))[[ ts ^ (s) : tys ]],
+    Pos(V)[[ pos ^ (s) : _ ]].
+
+  Pos(V)[[ NoId() ^ (s) : TERM_ID() ]].
+  Pos(V)[[ t ^ (s) : ty ]] :=
+    Term(V)[[ t ^ (s) : ty ]].
+
 /******************************************************************
  * Resolve & Query
  ******************************************************************/
@@ -429,6 +446,7 @@ rules
   SortRef[[ PathSort() ^ (_) : PATH() ]].
   SortRef[[ LabelSort() ^ (_) : LABEL() ]].
   SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
+  SortRef[[ TermIdSort() ^ (_) : TERM_ID() ]].
   SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
@@ -490,21 +508,12 @@ rules
 //Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
 //  Map1T(Term(V))[[ ts ^ (s) : _ ]].
   Term(V)[[ Int(_) ^ (_) : INT() ]].
-  Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
-    Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
-    d : NS(tys),
-    Map1T(Term(V))[[ ts ^ (s) : tys ]],
-    Pos(V)[[ pos ^ (s) ]].
   Term(V)[[ As(v, t) ^ (s) : ty ]] :=
     V[[ v ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
   Term(V)[[ Ascribe(t, sort) ^ (s) : ty ]] :=
     SortRef[[ sort ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
-
-  Pos(V)[[ Position(()) ^ (s) ]].
-  Pos(V)[[ Position(v) ^ (s) ]] :=
-    Term(V)[[ v ^ (s) : ty ]].
 
 rules
 

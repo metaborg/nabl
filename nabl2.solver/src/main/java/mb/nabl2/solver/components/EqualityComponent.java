@@ -22,8 +22,9 @@ import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.UnificationException;
+import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.unification.UnificationMessages;
 
 public class EqualityComponent extends ASolver {
@@ -42,8 +43,11 @@ public class EqualityComponent extends ASolver {
             final IUnifier.Transient unifier = this.unifier.get().melt();
             unifier.unify(solution);
             this.unifier.set(unifier.freeze());
-        } catch(UnificationException e) {
+        } catch(CannotUnifyException e) {
             messages.add(message.withContent(UnificationMessages.getError(e.getLeft(), e.getRight())));
+        } catch(OccursException e) {
+            final MessageContent content = MessageContent.of("Recursive unifier");
+            messages.add(message.withContent(content));
         }
         return ImmutableSeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
     }
@@ -67,9 +71,8 @@ public class EqualityComponent extends ASolver {
             final SolveResult solveResult = ImmutableSolveResult.builder().unifierDiff(unifyResult).build();
             this.unifier.set(unifier.freeze());
             return Optional.of(solveResult);
-        } catch(UnificationException ex) {
-            final MessageContent content = MessageContent.builder().append("Cannot unify ").append(left)
-                    .append(" with ").append(right).build();
+        } catch(CannotUnifyException | OccursException ex) {
+            final MessageContent content = UnificationMessages.getError(left, right);
             final IMessageInfo message = (constraint.getMessageInfo().withDefaultContent(content));
             final SolveResult solveResult = SolveResult.messages(message);
             return Optional.of(solveResult);

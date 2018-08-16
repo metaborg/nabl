@@ -22,6 +22,10 @@ public class NullDebugContext implements IDebugContext {
         return depth;
     }
 
+    public boolean isEnabled(Level level) {
+        return false;
+    }
+
     @Override public IDebugContext subContext() {
         return new NullDebugContext(depth + 1);
     }

@@ -83,9 +83,11 @@ context-free syntax
   Constraint.CEqual   = [[Term] == [Term]]
   Constraint.CInequal = [[Term] != [Term]]
 
+  Constraint.CTermId = <termId(<Term>, <Term>)>
+
 lexical syntax
 
-  Keyword = "true" | "false" | "new"
+  Keyword = "true" | "false" | "new" | "termId"
 
 /******************************************************************
  * Relations                                                      *
@@ -187,14 +189,12 @@ context-free syntax
   Constraint.CPathScopes = <scopes(<Term>, <Term>)>
   Constraint.CPathLabels = <labels(<Term>, <Term>)>
 
-  PositionTerm = Var
-  PositionTerm = "-"
+  Position.NoId = "-"
+  Position      = Var
 
 syntax
 
-  Term-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF Position-CF LAYOUT?-CF "}"
-
-  Position-CF.Position   = "@" PositionTerm-CF
+  Term-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" Position-CF LAYOUT?-CF "}"
 
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
@@ -265,6 +265,7 @@ context-free syntax
   SortRef.LabelSort      = "label"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
+  SortRef.TermIdSort     = "termId"
   SortRef                = <(<SortRef>)> {bracket}
 
   OpDecl.OpDecl  = <<OpId> : <OpSort>>
@@ -278,7 +279,7 @@ context-free syntax
 lexical syntax
 
   SortId = UCID
-  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" {reject}
+  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "termId" {reject}
 
   OpId = UCID
 

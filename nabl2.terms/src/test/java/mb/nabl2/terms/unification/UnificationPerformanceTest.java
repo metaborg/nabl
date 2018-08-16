@@ -1,5 +1,7 @@
 package mb.nabl2.terms.unification;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 
 import org.metaborg.util.iterators.Iterables2;
@@ -9,7 +11,6 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import static mb.nabl2.terms.build.TermBuild.B;
 
 public class UnificationPerformanceTest {
 
@@ -41,7 +42,7 @@ public class UnificationPerformanceTest {
             unifier.unify(varB, termC);
             unifier.unify(varC, termB);
             System.out.println(unifier);
-        } catch(UnificationException e) {
+        } catch(CannotUnifyException | OccursException e) {
             System.out.println("Could not unify");
         }
         System.out.println("ground = " + unifier.isGround(termB));
@@ -63,7 +64,7 @@ public class UnificationPerformanceTest {
                 Iterables.concat(createTuples(X, n), createVars(Y, n), Iterables2.singleton(createVar(Y, n))));
         try {
             unifier.unify(left, right);
-        } catch(UnificationException e) {
+        } catch(CannotUnifyException | OccursException e) {
             System.err.println("Unification failed");
             e.printStackTrace(System.err);
         }

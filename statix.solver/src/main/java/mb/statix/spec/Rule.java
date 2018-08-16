@@ -12,13 +12,12 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.terms.unification.UnificationException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IGuard;
 import mb.statix.solver.State;
 
 public class Rule {
@@ -26,12 +25,12 @@ public class Rule {
     private final String name;
     private final List<ITerm> params;
     private final Set<ITermVar> guardVars;
-    private final List<IGuard> guard;
+    private final List<IConstraint> guard;
     private final Set<ITermVar> bodyVars;
     private final List<IConstraint> body;
 
-    public Rule(String name, Iterable<? extends ITerm> params, Iterable<ITermVar> guardVars, Iterable<IGuard> guard,
-            Iterable<ITermVar> bodyVars, Iterable<IConstraint> body) {
+    public Rule(String name, Iterable<? extends ITerm> params, Iterable<ITermVar> guardVars,
+            Iterable<IConstraint> guard, Iterable<ITermVar> bodyVars, Iterable<IConstraint> body) {
         this.name = name;
         this.params = ImmutableList.copyOf(params);
         this.guardVars = ImmutableSet.copyOf(guardVars);
@@ -52,7 +51,7 @@ public class Rule {
         return guardVars;
     }
 
-    public List<IGuard> getGuard() {
+    public List<IConstraint> getGuard() {
         return guard;
     }
 
@@ -64,7 +63,7 @@ public class Rule {
         return body;
     }
 
-    public Tuple2<State, Rule> apply(List<ITerm> args, State state) throws MatchException, UnificationException {
+    public Tuple2<State, Rule> apply(List<ITerm> args, State state) throws MatchException, CannotUnifyException {
         final ISubstitution.Transient subst = new TermPattern(state.unifier()::areEqual, params).match(args).melt();
         State newState = state;
         // guard vars
@@ -84,7 +83,7 @@ public class Rule {
             newState = vs._2();
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IGuard> newGuard = guard.stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+        final Set<IConstraint> newGuard = guard.stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         final Set<IConstraint> newBody = body.stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         final Rule newRule = new Rule(name, args, freshGuardVars.build(), newGuard, freshBodyVars.build(), newBody);
         return ImmutableTuple2.of(newState, newRule);
@@ -101,7 +100,7 @@ public class Rule {
             if(!guardVars.isEmpty()) {
                 sb.append("{").append(unifier.toString(guardVars)).append("} ");
             }
-            sb.append(IGuard.toString(guard, unifier));
+            sb.append(IConstraint.toString(guard, unifier));
         }
         if(!body.isEmpty()) {
             sb.append(" :- ");

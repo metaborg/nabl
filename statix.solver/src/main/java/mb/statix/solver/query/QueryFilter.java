@@ -26,7 +26,7 @@ public class QueryFilter implements IQueryFilter {
     }
 
     public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
-        return new ConstraintLabelWF(pathConstraint, state, completeness, debug);
+        return ConstraintLabelWF.of(pathConstraint, state, completeness, debug);
     }
 
     public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) {

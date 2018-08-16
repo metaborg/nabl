@@ -22,6 +22,7 @@ context-free syntax
   TType.PATH       = <path>
   TType.LABEL      = <label>
   TType.OCCURRENCE = <occurrence>
+  TType.TERM_ID    = <termId>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<{TType " * "}*>)>
