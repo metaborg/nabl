@@ -71,7 +71,7 @@ public class Constraints {
         ));
     }
 
-    public static ITerm build(Collection<IConstraint> constraints) {
+    public static ITerm buildAll(Collection<IConstraint> constraints) {
         List<ITerm> constraintTerms = constraints.stream().map(Constraints::build).collect(Collectors.toList());
         return B.newAppl("Constraints", (ITerm) B.newList(constraintTerms));
     }

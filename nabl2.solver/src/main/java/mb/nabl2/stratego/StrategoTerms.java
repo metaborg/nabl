@@ -38,8 +38,8 @@ public class StrategoTerms {
     // to
 
     public IStrategoTerm toStratego(ITerm term) {
+        // @formatter:off
         IStrategoTerm strategoTerm = term.match(Terms.cases(
-            // @formatter:off
             appl -> {
                 List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
                 IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
@@ -54,9 +54,11 @@ public class StrategoTerms {
             var -> {
                 throw new IllegalArgumentException("Cannot convert specialized terms to Stratego: " + var);
             }
-            // @formatter:on
         ));
-        strategoTerm = putAttachments(strategoTerm, term.getAttachments());
+        // @formatter:on
+        if(strategoTerm.getTermType() != IStrategoTerm.BLOB) {
+            strategoTerm = putAttachments(strategoTerm, term.getAttachments());
+        }
         return strategoTerm;
     }
 
@@ -67,7 +69,7 @@ public class StrategoTerms {
         while(list != null) {
             attachments.push(list.getAttachments());
             list = list.match(ListTerms.<IListTerm>cases(
-                // @formatter:off
+            // @formatter:off
                 cons -> {
                     terms.push(toStratego(cons.getHead()));
                     return cons.getTail();
@@ -186,7 +188,7 @@ public class StrategoTerms {
     }
 
     public static <T> ICases<T> cases(
-        // @formatter:off
+    // @formatter:off
         Function1<IStrategoAppl, T> onAppl,
         Function1<IStrategoTuple, T> onTuple,
         Function1<IStrategoList, T> onList,

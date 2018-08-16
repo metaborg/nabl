@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.spoofax.TermSimplifier;
-import mb.nabl2.spoofax.analysis.IScopeGraphUnit;
+import mb.nabl2.solver.ISolution;
+import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.unification.UnifierTerms;
 
@@ -16,11 +16,13 @@ public class SG_debug_unifier extends AnalysisPrimitive {
         super(SG_debug_unifier.class.getSimpleName());
     }
 
-    @Override protected Optional<? extends ITerm> call(IScopeGraphUnit unit, ITerm term, List<ITerm> terms)
+    @Override protected Optional<? extends ITerm> call(IResult result, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return unit.solution().filter(sol -> unit.isPrimary()).map(sol -> {
-            return TermSimplifier.focus(unit.resource(), UnifierTerms.build(sol.unifier()));
-        });
+        if(result.partial()) {
+            return Optional.empty();
+        }
+        final ISolution sol = result.solution();
+        return Optional.of(UnifierTerms.build(sol.unifier()));
     }
 
 }

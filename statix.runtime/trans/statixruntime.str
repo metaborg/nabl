@@ -5,6 +5,7 @@ imports
   libstratego-lib
   libstratego-gpp
 
+  libspoofax/analysis/constraint
   libspoofax/core/language
 
   pp/statix/runtime/-
@@ -15,9 +16,18 @@ signature
 
 rules
 
-  stx-analyze(|spec-name, init-constraint):
-      ast -> <stx-editor-analyze(id|spec-name, init-constraint)> (ast, "", "")
+  stx-analyze(|spec-name, init-constraint) =
+    with(warn-msg(|"Using 'stx-analyze' is deprecated, use 'stx-editor-analyze' instead."));
+  ( stx-editor-analyze(id|spec-name, init-constraint)
+ <+ <stx-editor-analyze(id|spec-name, init-constraint)> (<id>, "", "")
+  )
 
+rules
+
+  stx-editor-analyze(|spec-name, init-constraint) =
+    stx-editor-analyze(id|spec-name, init-constraint)
+
+  // editor analyze for stratego analyzer
   stx-editor-analyze(desugar|spec-name, init-constraint):
       (ast, path, project-path) -> (ast', error*, warning*, note*)
     with spec := <stx--find-spec(|spec-name)>;
@@ -25,6 +35,18 @@ rules
          C    := C(init-constraint, [<stx--explode> ast']);
          level := <stx--log-level>;
          (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+
+  // editor analyze for constraint analyzer
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeUnit(resource, ast) -> UnitResult(ast', a, error*, warning*, note*)
+    with spec := <stx--find-spec(|spec-name)>;
+         ast' := <desugar;nabl2--index-ast(|resource)> ast;
+         C    := C(init-constraint, [<stx--explode> ast']);
+         level := <stx--log-level>;
+         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+
+  stx-editor-analyze(desugar|spec-name, init-constraint) =
+    debug(!"stx-editor-analyze "); fail
 
   stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"None"
 
@@ -40,6 +62,7 @@ rules
   // solve-constraint : ([Var], Constraint, LogLevel) -> (Solution, [Error], [Warning], [Note])
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
 
+
 rules
 
   nabl2--index-ast(|source) =
@@ -47,6 +70,7 @@ rules
 
   nabl2--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")
+
 rules
 
   stx-editor-resolve:

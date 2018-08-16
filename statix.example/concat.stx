@@ -1,4 +1,4 @@
-module test
+module concat
 
 signature
   constraints
@@ -17,4 +17,3 @@ rules
   
   concatP([], ys, ys).
   concatP([x|xs], ys, [x|zs]) :- concatP(xs, ys, zs).
-

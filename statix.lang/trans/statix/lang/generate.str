@@ -14,16 +14,16 @@ imports
 rules
 
   generate-aterm:
-    (_, _, ast@Module(name,_), path, project-path) -> None()
-    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          <nabl2-analysis-has-errors> a
-
-  generate-aterm:
-    (_, _, Module(name,_), path, project-path) -> (filename, spec)
-    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          not(<nabl2-analysis-has-errors> a)
-    with spec := <nabl2-get-custom-analysis;strip-annos;eliminate-all;spec-ast-to-aterm> a;
-         filename := <src-gen-file(|"statix/", ".spec.aterm")> name
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    where a   := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          ext := <nabl2-get-custom-analysis> a
+    with if <nabl2-analysis-has-errors> a then
+           result := None()
+         else
+           filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
+           spec     := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
+           result   := (filename, spec)
+         end
  
   src-gen-file(|sub-dir, ext): name -> filename
     with filename := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]

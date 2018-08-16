@@ -1,5 +1,6 @@
 package mb.nabl2.spoofax.primitives;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -17,7 +18,7 @@ import org.spoofax.interpreter.stratego.SDefT;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.Constraints;
@@ -30,8 +31,8 @@ import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.ImmutableBaseSolution;
 import mb.nabl2.solver.solvers.SingleFileSolver;
-import mb.nabl2.spoofax.analysis.IScopeGraphUnit;
-import mb.nabl2.spoofax.analysis.ImmutableScopeGraphUnit;
+import mb.nabl2.spoofax.analysis.IResult;
+import mb.nabl2.spoofax.analysis.ImmutableSingleUnitResult;
 import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.stratego.MessageTerms;
 import mb.nabl2.stratego.StrategoBlob;
@@ -39,12 +40,12 @@ import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.PersistentUnifier;
 
-public class SG_solve_constraint extends AbstractPrimitive {
+public class SG_solve_single_constraint extends AbstractPrimitive {
 
-    private static ILogger logger = LoggerUtils.logger(SG_solve_constraint.class);
+    private static ILogger logger = LoggerUtils.logger(SG_solve_single_constraint.class);
 
-    public SG_solve_constraint() {
-        super(SG_solve_constraint.class.getSimpleName(), 0, 1);
+    public SG_solve_single_constraint() {
+        super(SG_solve_single_constraint.class.getSimpleName(), 0, 1);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
@@ -57,15 +58,10 @@ public class SG_solve_constraint extends AbstractPrimitive {
 
 
         final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(env.current()));
-        final IConstraint constraint = Constraints.matchConstraintOrList().match(constraintTerm)
-                .orElseThrow(() -> new InterpreterException("Current term is not a constraint."));
+        final List<IConstraint> constraints = Constraints.matchConstraintOrList().map(ImmutableList::of)
+                .match(constraintTerm).orElseThrow(() -> new InterpreterException("Current term is not a constraint."));
 
-        NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE;
-        try {
-            debugConfig = PrimitiveUtil.scopeGraphContext(env).config().debug();
-        } catch(InterpreterException ex) {
-            // ignore
-        }
+        NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get debug configuration in here?
         final Fresh fresh = new Fresh();
 
         final ICancel cancel = new NullCancel();
@@ -73,8 +69,9 @@ public class SG_solve_constraint extends AbstractPrimitive {
         final SingleFileSolver solver = new SingleFileSolver(debugConfig, callExternal(env, strategoTerms));
         final ISolution solution;
         try {
-            GraphSolution graphSolution = solver.solveGraph(ImmutableBaseSolution.of(solverConfig,
-                    ImmutableSet.of(constraint), PersistentUnifier.Immutable.of()), fresh::fresh, cancel, progress);
+            GraphSolution graphSolution = solver.solveGraph(
+                    ImmutableBaseSolution.of(solverConfig, constraints, PersistentUnifier.Immutable.of()), fresh::fresh,
+                    cancel, progress);
             graphSolution = solver.reportUnsolvedGraphConstraints(graphSolution);
             ISolution constraintSolution = solver.solve(graphSolution, fresh::fresh, cancel, progress);
             constraintSolution = solver.reportUnsolvedConstraints(constraintSolution);
@@ -83,16 +80,15 @@ public class SG_solve_constraint extends AbstractPrimitive {
             throw new InterpreterException(ex);
         }
 
-        final IScopeGraphUnit unit =
-                ImmutableScopeGraphUnit.builder().addConstraints(constraint).solution(solution).fresh(fresh).build();
+        final IResult result = ImmutableSingleUnitResult.of(constraints, solution, Optional.empty());
         final IStrategoTerm errors =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier()));
         final IStrategoTerm warnings =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getWarnings(), solution.unifier()));
         final IStrategoTerm notes =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getNotes(), solution.unifier()));
-        final IStrategoTerm result = env.getFactory().makeTuple(new StrategoBlob(unit), errors, warnings, notes);
-        env.setCurrent(result);
+        final IStrategoTerm resultTerm = env.getFactory().makeTuple(new StrategoBlob(result), errors, warnings, notes);
+        env.setCurrent(resultTerm);
         return true;
     }
 

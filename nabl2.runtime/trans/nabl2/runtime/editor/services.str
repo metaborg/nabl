@@ -16,7 +16,7 @@ rules
   // HACK: all these rules test if the node has a term index, because
   //       sometimes Spoofax Core passes a node without one
 
-  nabl2--editor-resolve: (node, _, _, _, _) -> decls
+  nabl2--editor-resolve: (node, _, _, path, project-path) -> decls
     where <nabl2-get-ast-index> node;
           a := <nabl2-get-ast-analysis> node
     where refs := <nabl2-get-ast-refs(|a)> node
@@ -34,37 +34,38 @@ rules
                              map(Fst;nabl2-get-occurrence-index));
                    sort-resolutions> decls
 
-  nabl2--editor-hover: (node, _, _, _, _) -> label
+  nabl2--editor-hover: (node, _, _, path, project-path) -> label
     where <nabl2-get-ast-index> node;
           a := <nabl2-get-ast-analysis> node
-    with  ast-labels  := <nabl2--ast-hover(|a)> node;
-          decl-labels := <nabl2--decl-hover(|a)> node;
-          labels := <conc> (ast-labels, decl-labels)
+    with resource := path;
+         ast-labels  := <nabl2--ast-hover(|a, resource)> node;
+         decl-labels := <nabl2--decl-hover(|a, resource)> node;
+         labels := <conc> (ast-labels, decl-labels)
     where not([] := labels) // failure has Spoofax Core try a parent node
-    with  label := <nabl2--lines> labels
+    with label := <nabl2--lines> labels
 
-  nabl2--ast-hover(|a): node -> labels
+  nabl2--ast-hover(|a, resource): node -> labels
     with if type := <nabl2-get-ast-type(|a)> node then
-           labels := [$[Type: [<nabl2--hover-type-string(|a)> type]]]
+           labels := [$[Type: [<nabl2--hover-type-string(|resource)> type]]]
          else
            labels := []
          end
 
-  nabl2--decl-hover(|a): node -> labels
+  nabl2--decl-hover(|a, resource): node -> labels
     with decls := <nabl2-get-ast-decls(|a)> node;
          declTypes := <filter(!(<id>, <nabl2-get-type(|a)>))> decls;
-         labels := <map(\ (decl, type) -> $[[<nabl2--hover-decl-string(|a)> decl] : [<nabl2--hover-type-string(|a)> type]] \)> declTypes
+         labels := <map(\ (decl, type) -> $[[<nabl2--hover-decl-string(|resource)> decl] : [<nabl2--hover-type-string(|resource)> type]] \)> declTypes
 
-  nabl2--hover-decl-string(|a) = nabl2--strict(
+  nabl2--hover-decl-string(|resource) = nabl2--strict(
     topdown(try(nabl2--strip-occurrence-index));
-    nabl2--focus-term(|a);
+    nabl2--focus-term(|resource);
     pp-NaBL2-CTerm;
     nabl2--xmlencode
   )
 
-  nabl2--hover-type-string(|a) = nabl2--strict(
+  nabl2--hover-type-string(|resource) = nabl2--strict(
     topdown(try(nabl2--strip-occurrence-index));
-    nabl2--focus-term(|a);
+    nabl2--focus-term(|resource);
     pp-NaBL2-objlangterm;
     nabl2--xmlencode
   )

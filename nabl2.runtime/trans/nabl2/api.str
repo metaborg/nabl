@@ -71,7 +71,7 @@ rules // ###### Analysis execution ######
 rules // ###### Custom analysis hooks ######
 
   /**
-   * @type resource:String -> CustomInitialResult
+   * @type (resource:String, ast:Term) -> CustomInitialResult
    */
   nabl2-custom-analysis-init-hook = fail
 
@@ -90,7 +90,8 @@ rules // ###### Custom analysis hooks ######
   /**
    * @type Analysis -> CustomFinalResult
    */
-  nabl2-get-custom-analysis = nabl2--get-custom-analysis
+  nabl2-get-custom-analysis =
+    nabl2--get-custom-analysis
 
   /**
    * Use for logging a message during custom analysis. The message
