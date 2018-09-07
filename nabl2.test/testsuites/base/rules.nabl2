@@ -29,3 +29,11 @@ rules
 
   [[ FormattedNote(x) ^ () ]] :=
     false | note $[Note about [x]].
+
+  [[ ErrorsOnSameTerms(xs) ^ () ]] :=
+    Map0(ErrorsOnSameTerms)[[ xs ^ () ]].
+
+  ErrorsOnSameTerms[[ x ^ () ]] :=
+    false.
+
+  [[ CustomErrorsOnSameTerms(xs) ^ () ]].

@@ -38,3 +38,11 @@ test formatted note [[
   formatted note about X
 ]] 1 note
    note like "Note about "
+
+test errors on same terms [[
+  errors on x x x
+]] 3 errors
+
+test custom errors on same terms [[
+  custom errors on x x x
+]] 3 errors

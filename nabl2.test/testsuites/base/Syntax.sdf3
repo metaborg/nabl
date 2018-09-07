@@ -16,3 +16,7 @@ context-free syntax
   Test.StringError      = <string error on <X>>
   Test.FormattedWarning = <formatted warning on <X>>
   Test.FormattedNote    = <formatted note about <X>>
+
+  Test.ErrorsOnSameTerms = <errors on <{X " "}+>>
+
+  Test.CustomErrorsOnSameTerms = <custom errors on <{X " "}+>>
