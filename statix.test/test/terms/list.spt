@@ -1,0 +1,106 @@
+module terms-list
+
+language StatixTest
+
+// static
+
+test integer type ascription [[
+  resolve _:list(int) == [42]
+]] analysis succeeds
+
+test different element types make different list types [[
+  resolve _:list(int) == _:list(string)
+]] analysis fails
+
+test integer constructor argument [[
+  resolve Some([]) == Some([5])
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : list(int) -> Maybe
+]] analysis succeeds
+
+test integer constraint argument [[
+  resolve c([1,1,2,3,5])
+  signature
+    constraints
+      c : list(int)
+]] analysis succeeds
+
+// dynamic
+
+test unifying equal empty lists succeeds [[
+  resolve [] == []
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying equal singleton lists succeeds [[
+  resolve [7] == [7]
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying equal lists with inequal construction succeeds [[[
+  resolve [7|[8,9]] == [7,8,9]
+]]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying inequal lists fails [[
+  resolve [] == [7]
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching same empty list succeeds [[
+  resolve c([])
+  rules
+    c : list(int)
+    c([]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching same singleton list succeeds [[
+  resolve c([7])
+  rules
+    c : list(int)
+    c([7]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching same list with inequal construction succeeds [[[
+  resolve c([7|[8,9]])
+  rules
+    c : list(int)
+    c([7,8|[9]]).
+]]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching empty list with singleton list fails [[
+  resolve c([])
+  rules
+    c : list(int)
+    c([7]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching singleton list with empty list fails [[
+  resolve c([7])
+  rules
+    c : list(int)
+    c([]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching long list with singleton list fails [[
+  resolve c([7, 8])
+  rules
+    c : list(int)
+    c([7]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching singleton list with long list fails [[
+  resolve c([7])
+  rules
+    c : list(int)
+    c([7, 8]).
+]] analysis succeeds
+   run evaluate-test to FAILS()

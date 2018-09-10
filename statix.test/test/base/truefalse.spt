@@ -1,0 +1,45 @@
+module base-truefalse
+
+language StatixTest
+
+test true succeeds [[
+  resolve true
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test true in guard succeeds [[
+  resolve c(1)
+  rules
+    c : int
+    c(i) | true.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test true in body succeeds [[
+  resolve c(1)
+  rules
+    c : int
+    c(i) :- true.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test false fails [[
+  resolve false
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test false in guard fails [[
+  resolve c(1)
+  rules
+    c : int
+    c(i) | false.
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test false in body succeeds [[
+  resolve c(1)
+  rules
+    c : int
+    c(i) :- false.
+]] analysis succeeds
+   run evaluate-test to FAILS()

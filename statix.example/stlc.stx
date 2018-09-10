@@ -1,0 +1,62 @@
+module stlc // Static semantics of Simply Typed Lambda Calculus
+
+signature
+  sorts ID = string                         // $x$
+  sorts BinOp                               // $op$
+
+  sorts Exp constructors                    // $e$ :=
+    Num     : ID -> Exp                     //      | $n$
+    BinExp  : Exp * BinOp * Exp -> Exp      //      | $e$ $\oplus$ $e$
+    Fun     : ID * TypeExp * Exp -> Exp     //      | fun ($x$ : $te$) { $e$ }
+    Var     : ID -> Exp                     //      | $x$
+    App     : Exp * Exp -> Exp              //      | $e$ $e$
+
+  sorts TypeExp constructors                // $te$ :=
+    NumType : TypeExp                       //       | num
+    FunType : TypeExp * TypeExp -> TypeExp  //       | $te$ -> $te$
+
+  sorts Type constructors
+    NUM   : Type
+    FUN   : Type * Type -> Type
+
+  relations
+    typeOfDecl : occurrence -> Type
+
+  namespaces
+    Var  : string
+
+  name-resolution
+    labels P R
+    resolve Var filter pathMatch[P*] min pathLt[$ < P]
+
+rules
+
+  typeOfExp : scope * Exp -> Type
+
+  typeOfExp(s, Num(_)) = NUM().
+
+  typeOfExp(s, BinExp(e1, _, e2)) = NUM() :-
+    typeOfExp(s, e1) == NUM(),
+    typeOfExp(s, e2) == NUM().
+
+  typeOfExp(s, Fun(x, te, e)) = FUN(S, T) :- {s_fun}
+    typeOfTypeExp(s, te) == S,
+    new s_fun, s_fun -P-> s,
+    s_fun -> Var{x@x} with typeOfDecl S,
+    typeOfExp(s_fun, e) == T.
+
+  typeOfExp(s, Var(x)) = T :-
+    typeOfDecl of Var{x@x} in s |-> [(_, (_, T))].
+
+  typeOfExp(s, App(e1, e2)) = T :- {S U}
+    typeOfExp(s, e1) == FUN(S, T),
+    typeOfExp(s, e2) == U,
+    U == S.
+
+rules
+
+  typeOfTypeExp : scope * TypeExp ->  Type
+
+  typeOfTypeExp(s, NumType()) = NUM().
+
+  typeOfTypeExp(s, FunType(te1, te2)) = FUN(typeOfTypeExp(s, te1), typeOfTypeExp(s, te2)).

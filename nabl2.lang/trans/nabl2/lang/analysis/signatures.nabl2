@@ -1,0 +1,118 @@
+module nabl2/lang/analysis/signatures
+/*
+
+imports
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/common
+
+rules
+
+  [[ Signature(signatures) ^ (s_mod, s_root) ]] :=
+    Map2(Sig)[[ signatures ^ (s_mod, s_root) ]].
+
+rules
+
+  Sig[[ CGen(rulesigs) ^ (s_mod, s_root) ]] :=
+    Map1(Sig)[[ rulesigs ^ (s_root) ]].
+
+  Sig[[ CGenSig(def, sort, params, type) ^ (s) ]] :=
+    // TODO: def
+    // TODO: sort (AST sort)
+    Map1(SortRef)[[ params ^ (s) ]],
+    CGenSigType[[ type ^ (s) ]].
+
+  CGenSigType[[ NoType() ^ (s) ]].
+
+  CGenSigType[[ Type(sort) ^ (s) ]] :=
+    SortRef[[ sort ^ (s) ]].
+
+rules 
+
+  Sig[[ Sorts(sorts) ^ (s_mod, s_root) ]] :=
+    Map1(SortDef)[[ sorts ^ (s_root) ]].
+
+  Sig[[ Constructors(cons) ^ (s_mod, s_root) ]] :=
+    Map1(Sig)[[ cons ^ (s_root) ]].
+
+  Sig[[ OpDecl(name,sorts,sort) ^ (s) ]] :=
+    Cons{name} <- s,
+    Map1(SortRef)[[ sorts ^ (s) ]],
+    SortRef[[ sort ^ (s) ]].
+
+rules
+
+  Sig[[ NameResolution(nameresparams) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "name resolution parameters must be specified in module with init rule",
+    Map1(Sig)[[ nameresparams ^ (s_root) ]].
+
+  Sig[[ Labels(labels) ^ (s) ]] :=
+    Map1(LabelDef)[[ labels ^ (s) ]].
+
+  Sig[[ Order(orders) ^ (s) ]] :=
+    Map1(LabelOrder)[[ orders ^ (s) ]].
+
+  Sig[[ WF(re) ^ (s) ]] :=
+    WellFormednessMarker{()} <- s,
+    LabelRE[[ re ^ (s) ]].
+
+rules
+
+  Sig[[ Namespaces(namespacedefs) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "namespaces must be specified in module with init rule",
+    Map1(Sig)[[ namespacedefs ^ (s_root) ]].
+
+  Sig[[ NamespaceDef(ns,type,properties) ^ (s) ]] :=
+    NamespaceDef[[ ns ^ (s) ]],
+    NamespaceType[[ type ^ (s) ]]
+    // TODO: properties
+    .
+
+  NamespaceType[[ NoType() ^ (s) ]].
+
+  NamespaceType[[ Type(sort) ^ (s) ]] :=
+    SortRef[[ sort ^ (s) ]].
+
+rules 
+
+  Sig[[ Relations(relsigs) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "relations must be specified in module with init rule",
+    Map1(Sig)[[ relsigs ^ (s_root) ]].
+
+  Sig[[ RelationDef(opts,rel,type,variancepatterns) ^ (s) ]] :=
+    RelationDef[[ rel ^ (s) ]],
+    RelationType[[ type ^ (s) ]],
+    Map1(VariancePattern)[[ variancepatterns ^ (s) ]].
+
+  RelationType[[ (sort1,sort2) ^ (s) ]] :=
+    SortRef[[ sort1 ^ (s) ]],
+    SortRef[[ sort2 ^ (s) ]].
+
+rules
+
+  Sig[[ Functions(funsigs) ^ (s_mod, s_root) ]] :=
+    new s_init, s_init -L-> s_mod, InitMarker{()} -> s_init,
+    InitMarker{()} |-> _ | error "functions must be specified in module with init rule",
+    Map1(Sig)[[ funsigs ^ (s_root) ]].
+
+  Sig[[ FunctionDef(fun,type,cases) ^ (s) ]] :=
+    FunctionDef[[ fun ^ (s) ]],
+    FunctionType[[ type ^ (s) ]],
+    Map1(FunctionCase)[[ cases ^ (s) ]].
+
+  FunctionCase[[ (arg, result) ^ (s) ]] :=
+    new s_case,
+    s_case ---> s,
+    CTerm(ScopeVarDecl)[[ arg ^ (s_case) ]],
+    CTerm(VarRef)[[ result ^ (s_case) ]].
+ 
+  FunctionType[[ (param_sort,result_sort)  ^ (s) ]] :=
+    SortRef[[ param_sort ^ (s) ]],
+    SortRef[[ result_sort ^ (s) ]].
+ 
+*/

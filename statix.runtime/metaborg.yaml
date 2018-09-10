@@ -1,0 +1,60 @@
+---
+id: org.metaborg:statix.runtime:${metaborgVersion}
+name: StatixRuntime
+metaborgVersion: 2.5.0-SNAPSHOT
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+exports:
+  ## Stratego-Sugar
+- language: Stratego-Sugar
+  directory: trans
+  includes:
+  - "statixruntime.str"
+  - "statix/**/*.str"
+  - "statix/**/*.meta"
+  ## SDF3
+- language: TemplateLang
+  directory: syntax
+  includes:
+  - "statix/**/*.sdf3"
+- language: ATerm
+  directory: src-gen/syntax
+  includes:
+  - "**/*.aterm"
+- language: EditorService
+  directory: src-gen
+  includes:
+  - "completion/colorer/statix/**/*.esv"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes:
+  - "completion/statix/**/*.str"
+  - "pp/statix/**/*.str"
+  - "signatures/statix/**/*.str"
+language:
+  sdf:
+    sdf2table: java
+    pretty-print: Statix
+    placeholder:
+      prefix: "$"
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc

@@ -1,0 +1,20 @@
+module nabl2/shared/constraints/Relations
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/Relations
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-Constraint.CBuildRel = <<NaBL2-CTerm> <NaBL2-RelationBuildOp> <NaBL2-CTerm> <NaBL2-Message>>
+
+  NaBL2-Constraint.CCheckRel = <<NaBL2-CTerm> <NaBL2-RelationCheckOp> <NaBL2-CTerm> <NaBL2-Message>>
+
+  NaBL2-FunctionRef = NaBL2-RelationFunction

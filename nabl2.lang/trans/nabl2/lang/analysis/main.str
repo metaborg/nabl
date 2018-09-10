@@ -1,0 +1,75 @@
+module nabl2/lang/analysis/main
+
+imports
+
+  libspoofax/resource/path
+  libspoofax/term/origin
+
+  nabl2/shared/-
+
+  signatures/nabl2/lang/-
+  nabl2/lang/analysis/-
+
+rules
+
+  editor-analyze:
+      (ast, path, project-path) -> (analyzed-ast, error*, warning*, note*)
+    with name-error*    := <check-module-name> (ast, path, project-path);
+         axiom-warning* := <check-accidental-axioms> ast;
+         analyzed-ast   := <normalize-all;desugar-all> ast;
+         error*         := [name-error*];
+         warning*       := [axiom-warning*];
+         note*          := []
+
+  editor-normalize:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext            := <get-extension> path;
+      filename       := <guarantee-extension(|$[normalized.[ext]])> path;
+      normalized-ast := <normalize-all> Module($[[name].normalized],section*);
+      result         := <resugar-all;pp-NaBL2-string> normalized-ast
+
+  editor-explicate:
+    (node, position, Module(name,section*), path, project-path) -> (filename, result)
+    with
+      ext            := <get-extension> path;
+      filename       := <guarantee-extension(|$[explicated.[ext]])> path;
+      explicated-ast := <explicate-all> Module($[[name].explicated],section*);
+      result         := <resugar-all;pp-NaBL2-string> explicated-ast
+
+rules
+
+  check-module-name: (Module(name, _), path, project-path) -> error*
+    with rel-path := <current-language-relative-source-or-include-path> path;
+         rel-name := <remove-extension> rel-path;
+         if <eq> (rel-name, name) then
+           error* := []
+         else
+           error* := [(name, $[module [name] does not agree with relative filename [rel-name]])]
+         end
+
+rules
+
+  check-accidental-axioms = collect-all(check-accidental-axiom-rules); flatten-list
+
+  check-accidental-axiom-rules:
+      Rules(rs) -> <zip;filter(check-accidental-axiom)> (<init> rs, <Tl> rs)
+
+  check-accidental-axiom: (r1, r2) -> warning
+    where CGenRule(_, _, _, _, c) := r1;
+          CGenRuleNoConstraint(_, _, _, _) := r2;
+          c* := <primitive-constraints> c;
+          max-line := <map(origin-line);list-max> c*;
+          min-col := <filter(where(origin-line;?max-line);origin-column);list-min> c*;
+          next-line := <origin-line> r2;
+          next-col := <origin-column> r2;
+          ( <leq> (next-line, max-line)
+          + <geq> (next-col, min-col)
+          )
+    with warning := (r2, $[Indentation suggests this is a constraint, but preceding full-stop makes it an axiom.])
+
+  primitive-constraints = rec x(
+    ?CExists(_, c); <x> c
+ <+ ?CConj(c1, c2); <conc> (<x> c1, <x> c2)
+ <+ MkSingleton
+  )

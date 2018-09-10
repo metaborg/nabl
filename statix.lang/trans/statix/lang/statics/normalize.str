@@ -1,0 +1,524 @@
+module statix/lang/statics/normalize
+
+/////////////////////////////////////////////////////////////////////
+// Normalization: rewrite rules to normalized forms
+/////////////////////////////////////////////////////////////////////
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  normalize-0(|a) =
+    nabl2-custom-analysis-info-msg(|"| Explicate mapping constraints...");
+    explicate-cmaps(|a);
+    nabl2-custom-analysis-info-msg(|"| Normalize occurrence positions...");
+    normalize-occurrence-positions(|a)
+
+  normalize-1(|a) =
+    nabl2-custom-analysis-info-msg(|"| Normalize functional constraint declarations...");
+    normalize-functional-cdecls;
+    nabl2-custom-analysis-info-msg(|"| Normalize functional rule heads...");
+    normalize-functional-heads(|a);
+    nabl2-custom-analysis-info-msg(|"| Normalize inline head patterns...");
+    normalize-inline-patterns(|a);
+    nabl2-custom-analysis-info-msg(|"| Normalize functional constraint terms...");
+    normalize-functional-cops(|a);
+    nabl2-custom-analysis-info-msg(|"| Normalize query shorthands...");
+    normalize-rel-shorthands(|a)
+
+  normalize-2(|a) =
+    nabl2-custom-analysis-info-msg(|"| Normalize higer-order constraints...");
+    normalize-ho-constraints(|a);
+    nabl2-custom-analysis-info-msg(|"| Explicate namespace queries...");
+    explicate-resolve(|a)
+
+  normalize-3(|a) =
+    nabl2-custom-analysis-info-msg(|"| Normalize inline patterns...");
+    normalize-inline-patterns(|a);
+    nabl2-custom-analysis-info-msg(|"| Normalize as patterns...");
+    normalize-as-patterns;
+    nabl2-custom-analysis-info-msg(|"| Normalize wildcards...");
+    normalize-wildcards
+
+rules
+
+  normalize-functional-cdecls = try(sometd(normalize-functional-cdecl))
+
+  normalize-functional-cdecl:
+      CDecl(ind, x, t@FunType(s1*, s2*)) -> CDecl(ind, x, t')
+    with s* := <conc> (s1*, s2*);
+         t' := SimpleType(s*)
+
+rules
+
+  normalize-functional-heads(|a) = try(sometd(normalize-functional-head(|a)))
+
+  normalize-functional-head(|a):
+      Rule(F(x, in_ts, out_t), gvs, guard, bvs, body){a*} -> Rule(C(x, ts), gvs, guard, bvs', body'){a*}
+    with FUN(intys, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         out_ts := <make-fresh-vars(|"out")> outtys;
+         bvs' := bvs;
+         body' := CConj(body, CEqual(out_t, <build-terms(|outtys)> out_ts));
+         ts := <conc> (in_ts, out_ts)
+
+rules
+
+  normalize-occurrence-positions(|a) = try(sometd(normalize-occurrence-position(|a)))
+
+  normalize-occurrence-position(|a):
+      Occurrence(ns, ts, p) -> Occurrence(ns, ts, p')
+  with ty := <nabl2-get-ast-type(|a)> p
+  where <not(?TERM_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
+  with p' := TermIdOp(p)
+
+rules
+
+  normalize-functional-cops(|a) = bottomup(try(normalize-functional-cop(|a)))
+
+  normalize-functional-cop(|a):
+      Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard'', bvs', body''){a*}
+    with (guard', gmaps) := <collect-map(replace-cop(|a), not-in-lambda)> guard;
+         guard'' := <map(cop-to-c(|a));list-to-conj(|guard')> gmaps;
+         new-gvs := <map(Snd);all-vars> gmaps;
+         gvs' := <conc> (gvs, new-gvs);
+         (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
+         new-bvs := <map(Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-functional-cop(|a):
+      LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
+    with (ts', tsmaps) := <collect-map(replace-cop(|a))> ts;
+         (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
+         maps := <conc> (tsmaps, bmaps);
+         new-var* := <map(Snd);all-vars> maps;
+         bvs' := <conc> (bvs, new-var*);
+         body'' := <map(cop-to-c(|a));list-to-conj(|body)> maps
+
+
+  replace-cop(|a): COp(x, in_ts) -> out_t
+    with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         out_ts := <make-fresh-vars(|x)> outtys;
+         out_t := <build-terms(|outtys)> out_ts
+
+  cop-to-c(|a): (COp(x, in_ts), out_t) -> C(x, ts)
+    with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         out_ts := <match-terms(|outtys)> out_t;
+         ts := <conc> (in_ts, out_ts)
+
+
+  replace-cop(|a): NewOp() -> v
+    with v := Var(<newname> "new")
+
+  cop-to-c(|a): (NewOp(), v) -> CNew([v])
+
+
+  replace-cop(|a): TermIdOp(_) -> v
+    with v := Var(<newname> "termId")
+
+  cop-to-c(|a): (TermIdOp(t), v) -> CTermId(t, v)
+
+
+  replace-cop(|a): PathSrcOp(_) -> v
+    with v := Var(<newname> "src")
+
+  cop-to-c(|a): (PathSrcOp(t), v) -> CPathSrc(t, v)
+
+
+  replace-cop(|a): PathDstOp(_) -> v
+    with v := Var(<newname> "dst")
+
+  cop-to-c(|a): (PathDstOp(t), v) -> CPathDst(t, v)
+
+
+  replace-cop(|a): PathScopesOp(_) -> v
+    with v := Var(<newname> "scopes")
+
+  cop-to-c(|a): (PathScopesOp(t), v) -> CPathScopes(t, v)
+
+
+  replace-cop(|a): PathLabelsOp(_) -> v
+    with v := Var(<newname> "labels")
+
+  cop-to-c(|a): (PathLabelsOp(t), v) -> CPathLabels(t, v)
+
+
+  replace-cop(|a): AskRelOp(rel, in_ts, st) -> out_t
+    with outtys := <nabl2-get-ast-type(|a);out-types> rel;
+         out_ts := <make-fresh-vars(|"t")> outtys;
+         out_t := <build-terms(|outtys)> out_ts
+
+  cop-to-c(|a): (op@AskRelOp(rel, in_ts, st), out_t) -> c
+    with outtys := <nabl2-get-ast-type(|a);out-types> rel;
+         out_ts := <match-terms(|outtys)> out_t;
+         ts := <conc> (in_ts, out_ts);
+         c := CAskRel(rel, ts, st)
+
+
+  list-to-conj(|tl): []     -> tl
+  list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
+
+  list-to-conj: []     -> CTrue()
+  list-to-conj: [C]    -> C
+  list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+
+rules
+
+  normalize-inline-patterns(|a) = bottomup(try(normalize-inline-pattern(|a)))
+
+  normalize-inline-pattern(|a):
+      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
+    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         n := <in-types;length> ty;
+
+         // extract inline patterns
+         (gps', guard-eq*) := <take(|n);extract-inline-patterns> ps;
+         (bps', body-eq*) := <drop(|n);extract-inline-patterns> ps;
+
+         // compute new head variables
+         ps' := <conc> (gps', bps');
+         head-var* := <all-vars;raw-make-set> ps';
+
+         // compute new existental guard variables
+         guard-eq-var* := <all-vars;raw-make-set> guard-eq*;
+         new-guard-var* := <raw-diff> (guard-eq-var*, head-var*);
+         gvs' := <conc;raw-make-set> (new-guard-var*, gvs);
+         guard' := <list-to-conj(|guard)> guard-eq*;
+
+         // compute new existental body variables
+         body-eq-var* := <all-vars;raw-make-set> body-eq*;
+         new-body-var* := <raw-diff> (body-eq-var*, <conc> (head-var*, gvs'));
+         bvs' := <conc;raw-make-set> (new-body-var*, bvs);
+         body' := <list-to-conj(|body)> body-eq*
+
+  normalize-inline-pattern(|a):
+      LLam(ps, bvs, body){a*} -> LLam(ps', bvs', body'){a*}
+  with (ps', eq*) := <extract-inline-patterns> ps;
+       head-var* := <all-vars;raw-make-set> ps';
+       body-eq-var* := <all-vars;raw-make-set> eq*;
+       new-body-var* := <raw-diff> (body-eq-var*, head-var*);
+       bvs' := <conc;raw-make-set> (new-body-var*, bvs);
+       body' := <list-to-conj(|body)> eq*
+
+
+  extract-inline-patterns: [] -> ([], [])
+
+  extract-inline-patterns: [v|ps] -> ([v|ps'], C*)
+    where <?Var(_) + ?Wld()> v
+    with (ps', C*) := <extract-inline-patterns> ps
+
+  extract-inline-patterns: [p|ps] -> ([v|ps'], [CEqual(v, p')|C*])
+    where <?As(v, p')> p
+    with (ps', C*) := <extract-inline-patterns> ps
+
+  extract-inline-patterns: [p|ps] -> ([v|ps'], [CEqual(v, p)|C*])
+    where <not(?Var(_) + ?Wld() + ?As(_, _))> p
+    with v := Var(<newname> "p");
+         (ps', C*) := <extract-inline-patterns> ps
+
+rules
+
+  normalize-rel-shorthands(|a) = try(sometd(normalize-rel-shorthand(|a)))
+
+  normalize-rel-shorthand(|a): c@CAskRel(rel, ts, st) -> c'
+    with ty     := <nabl2-get-ast-type(|a)> rel;
+         intys  := <in-types> ty;
+         outtys := <out-types> ty;
+         tys    := <conc> (intys, outtys);
+
+         n      := <length> intys;
+         in_ts  := <take(|n)> ts;
+         out_ts := <drop(|n)> ts;
+
+         rel-target := RelTarget(rel);
+         wf         := LPathMatch(Epsilon());
+         [u|us]     := <make-fresh-vars(|"u")> [()|intys];
+         eq         := CEqual(u, <build-terms(|intys)> us);
+         eqs        := <zip(!CEqual(<Fst>, <Snd>))> (in_ts, us);
+         match      := LLam([u], us, CConj(eq, <list-to-conj> eqs));
+         filter     := Filter(wf, match);
+         min        := <desugar-query> NoMin();
+
+         [p|wlds] := <map(!Wld())> [()|intys];
+         t        := <conc;build-terms(|tys)> (wlds, out_ts);
+         pts      := List([Tuple([p, t])]);
+         c'       := CResolveQuery(rel-target, filter, min, st, pts)
+
+
+rules
+
+  normalize-ho-constraints(|a) = bottomup(try(replace-ho-constraint(|a)))
+
+  replace-ho-constraint(|a): l@LTrue() -> LLam(ps, [], CTrue())
+    with ty := <nabl2-get-ast-type(|a)> l;
+         sort := <type-to-sort> ty;
+         ps := <sort-args;map(!Wld())> sort
+
+  replace-ho-constraint(|a): l@LFalse() -> LLam(ps, [], CFalse())
+    with ty := <nabl2-get-ast-type(|a)> l;
+         sort := <type-to-sort> ty;
+         ps := <sort-args;map(!Wld())> sort
+
+  replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C(x, ps))
+    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         sort := <type-to-sort> ty;
+         ps := <sort-args;make-seq-vars(|"t")> sort
+
+  replace-ho-constraint(|a): l@LPathMatch(re) -> LLam([p], [], CPathMatch(re, p))
+    with p := Var("ls")
+
+  replace-ho-constraint(|a): l@LPathLt(ord) -> LLam([l1, l2], [], CPathLt(ord, l1, l2))
+    with l1 := Var("l1");
+         l2 := Var("l2")
+
+rules
+
+  normalize-wildcards = bottomup(try(normalize-wildcard))
+
+  normalize-wildcard:
+      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
+    with (ps', _) := <collect-map(replace-wld)> ps
+    with (guard', gmaps) := <collect-map(replace-wld, not-in-lambda)> guard;
+         new-gvs := <map(Snd)> gmaps;
+         gvs' := <conc> (gvs, new-gvs)
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
+         new-bvs := <map(Snd)> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-wildcard:
+      LLam(ps, bvs, body){a*} -> LLam(ps', bvs', body'){a*}
+    with (ps', _) := <collect-map(replace-wld)> ps
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
+         new-bvs := <map(Snd)> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  replace-wld: Wld() -> Var(<newname> "wld")
+
+rules
+
+  normalize-as-patterns = bottomup(try(normalize-as-pattern))
+
+  normalize-as-pattern:
+      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps), gvs, guard'', bvs, body''){a*}
+    with (guard', gmaps) := <collect-map(replace-as, not-in-lambda)> guard;
+         guard'' := <map(as-to-constraint);list-to-conj(|guard')> gmaps
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+
+  normalize-as-pattern:
+      LLam(ps, bvs, body){a*} -> LLam(ps, bvs, body''){a*}
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+
+  as-to-constraint: (As(v, t), _) -> CEqual(v, t)
+
+  replace-as: As(v, t) -> v
+
+rules
+
+  explicate-cmaps(|a): Module(x, section*){a*} -> Module(x, section''*){a*}
+    with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
+         rule* := <map(cmap-to-rules(|a)); concat> maps;
+         section''* := <conc> (section'*, [Rules(rule*)])
+
+
+  replace-cmap(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
+    with d := <nabl2-get-ast-property(|a,"decl")> x;
+         ind := <nabl2-get-property(|a,"ind")> d;
+         sort := <nabl2-get-type(|a);type-to-sort> d
+
+  cmap-to-rules(|a): (CDeriveMap(x, y, lift*), _) -> [base-rule, elem-rule]
+    with base-rule := <cmap-base-rule> (x, y, lift*);
+         elem-rule := <cmap-elem-rule> (x, y, lift*)
+
+  cmap-base-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue(), [], CTrue())
+    with ps := <map(lift-base)> lift*
+
+  cmap-elem-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue(), [], CConj(call, rec))
+    with ps   := <map-with-index(lift-elem-head(|"x"))> lift*;
+         call := C(y, <map-with-index(lift-elem-call(|"x"))> lift*);
+         rec  := C(x, <map-with-index(lift-elem-rec(|"x"))> lift*)
+
+
+  replace-cmap(|a): FDeriveMap(x, _, _, _) -> CDecl(ind, x, sort)
+    with d := <nabl2-get-ast-property(|a,"decl")> x;
+         ind := <nabl2-get-property(|a,"ind")> d;
+         sort := <nabl2-get-type(|a);type-to-sort> d
+
+  cmap-to-rules(|a): (FDeriveMap(x, y, in-lift*, out-lift), _) -> [base-rule, elem-rule]
+    with out-lift* := <lift-to-lifts> out-lift;
+         base-rule := <fmap-base-rule> (x, y, in-lift*, out-lift*);
+         elem-rule := <fmap-elem-rule> (x, y, in-lift*, out-lift*)
+
+  fmap-base-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue(), [], CTrue())
+    with inps := <map(lift-base)> in-lift*;
+         outp := <map(lift-base);build-terms(|out-lift*)> out-lift*
+
+  fmap-elem-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue(), bvs, CConj(call, rec))
+    with inps := <map-with-index(lift-elem-head(|"x"))> in-lift*;
+         outp := <map-with-index(lift-elem-head(|"y"));build-terms(|out-lift*)> out-lift*;
+         bvs  := <all-vars> outp;
+         call := CEqual(COp(y, <map-with-index(lift-elem-call(|"x"))> in-lift*),
+                        <map-with-index(lift-elem-call(|"y"));build-terms(|out-lift*)> out-lift*);
+         rec  := CEqual(COp(x, <map-with-index(lift-elem-rec(|"x"))> in-lift*),
+                        <map-with-index(lift-elem-rec(|"y"));build-terms(|out-lift*)> out-lift*)
+
+
+  lift-base: IdLift() -> Wld()
+  lift-base: ListLift() -> List([])
+
+  lift-elem-head(|x): (i, IdLift())     -> <lift-var(|x)> i
+  lift-elem-head(|x): (i, ListLift()) -> ListTail([<lift-var(|x)> i], <lift-var(|$[[x]s])> i)
+
+  lift-elem-call(|x): (i, _) -> <lift-var(|x)> i
+
+  lift-elem-rec(|x): (i, IdLift())     -> <lift-var(|x)> i
+  lift-elem-rec(|x): (i, ListLift()) -> <lift-var(|$[[x]s])> i
+
+  lift-var(|base) = !Var($[[base][<int-to-string>]])
+
+rules
+
+  explicate-resolve(|a):
+      Module(x, section*) -> Module(x, section'*)
+    with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*
+
+  explicate-resolve-sections(|a): section* -> (section''*, wf, eq, ord)
+    with query* := <collect-all(?NamespaceQuery(_, _, _))> section*;
+         ns* := <collect-all(?NsDecl(<id>, _))> section*;
+         wf := <newname> "resolveFilterWf";
+         wf-rule* := <wf-rules(|a, wf, query*)> ns*;
+         eq := <newname> "resolveFilterEq";
+         eq-rule* := <eq-rules(|a, eq, query*)> ns*;
+         ord := <newname> "resolveMinOrd";
+         ord-rule* := <ord-rules(|a, ord, query*)> ns*;
+         section'* := <try(sometd(try(remove-resolve-queries);
+                                  try(normalize-resolves(|wf, eq, ord)))
+                                 )> section*;
+         new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
+         section''* := <conc> (section'*, new-section*)
+
+  wf-rules(|a, wf, query*): ns* -> [decl|rule*]
+    with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));
+         rule* := <map(wf-rule(|a, wf, query*))> ns*
+
+  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [], eq-r, bvs, body)
+    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         [p|ts] := <map(!Wld())> [()|tys];
+         r := Var(<newname> "r");
+         eq-r := CEqual(r, Occurrence(ns, ts, p));
+         lbls := Var(<newname> "lbls");
+         if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
+           (bvs, body) := <apply-lambda> (filter, [lbls])
+         else
+           bvs := [];
+           body := CTrue()
+         end
+
+
+  eq-rules(|a, eq, query*): ns* -> [decl|rule*]
+    with decl := CDecl(InductiveC(), eq, SimpleType([OccurrenceSort(), OccurrenceSort()]));
+         rule* := <map(eq-rule(|a, eq))> ns*
+
+  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), ts, eq-r, us, body)
+    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         ts := <make-fresh-vars(|"t")> tys;
+         us := <make-fresh-vars(|"u")> tys;
+         [pr, pd] := <map(!Wld())> [(),()];
+         r := Var(<newname> "r");
+         eq-r := CEqual(r, Occurrence(ns, ts, pr));
+         d := Var(<newname> "d");
+         eq-d := CEqual(d, Occurrence(ns, us, pd));
+         eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
+         body := CConj(eq-d, <list-to-conj> eqs)
+
+
+  ord-rules(|a, ord, query*): ns* -> [decl|rule*]
+    with decl := CDecl(InductiveC(), ord, SimpleType([OccurrenceSort(), LabelSort(), LabelSort()]));
+         rule* := <map(ord-rule(|a, ord, query*))> ns*
+
+  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [], eq-r, bvs, body)
+    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         [p|ts] := <map(!Wld())> [()|tys];
+         r := Var(<newname> "r");
+         eq-r := CEqual(r, Occurrence(ns, ts, p));
+         l1 := Var(<newname> "l1");
+         l2 := Var(<newname> "l2");
+         if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
+           (bvs, body) := <apply-lambda> (min, [l1, l2])
+         else
+           bvs := [];
+           body := CFalse()
+         end
+
+
+  remove-resolve-queries = try(sometd(remove-resolve-query))
+
+  remove-resolve-query = Rules(filter(not(?NamespaceQuery(_, _, _))))
+
+  remove-resolve-query = NameResolution(filter(not(?NamespaceQuery(_, _, _))))
+
+
+  normalize-resolves(|wf, eq, ord) = try(sometd(normalize-resolve(|wf, eq, ord)))
+
+  normalize-resolve(|wf, eq, ord): ResolveFilter(rt) -> Filter(wf-c, eq-c)
+    with lbls := Var(<newname> "lbls");
+         wf-c := LLam([lbls], [], C(wf, [rt, lbls]));
+         d := Var(<newname> "d");
+         eq-c := LLam([d], [], C(eq, [rt, d]))
+
+  normalize-resolve(|wf, eq, ord): ResolveMin(rt) -> Min(ord-c, eq-c)
+    with l1 := Var(<newname> "l1");
+         l2 := Var(<newname> "l2");
+         ord-c := LLam([l1, l2], [], C(ord, [rt, l1, l2]));
+         eq-c  := LLam([Wld(), Wld()], [], CTrue())
+
+rules
+
+  make-fresh-vars(|x) = map(!Var(<newname> x))
+
+  make-seq-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
+
+  apply-lambda: (LLam(ps, bvs, body), ts) -> (bvs, body')
+    with body' := <strip-annos;substitute(?Var(_))> (ps, ts, body)
+
+  not-in-lambda = not(?LLam(_, _, _))
+
+  type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
+  type-to-sort: INT()        -> IntSort()
+  type-to-sort: STRING()     -> StringSort()
+  type-to-sort: PATH()       -> PathSort()
+  type-to-sort: LABEL()      -> LabelSort()
+  type-to-sort: OCCURRENCE() -> OccurrenceSort()
+  type-to-sort: SCOPE()      -> ScopeSort()
+  type-to-sort: TERM_ID()    -> TermIdSort()
+  type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)
+  type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
+
+  type-to-sort: PRED(tys)          -> SimpleType(<map(type-to-sort)> tys)
+  type-to-sort: FUN(intys, outtys) -> FunType(<map(type-to-sort)> intys, <map(type-to-sort)> outtys)
+
+  sort-args: SimpleType(args) -> args
+
+  match-terms(|tys): t -> ts
+    with if [_] := tys then
+           ts := <![<id>]> t
+         else
+           ts := <?Tuple(<id>)> t
+         end
+
+  build-terms(|tys): ts -> t
+    with if [_] := tys then
+           t := <?[<id>]> ts
+         else
+           t := <!Tuple(<id>)> ts
+         end

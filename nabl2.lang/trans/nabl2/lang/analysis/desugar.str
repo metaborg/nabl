@@ -1,0 +1,42 @@
+module nabl2/lang/analysis/desugar
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/-
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+/**************************************
+ * Sugaring rules
+ * - make AST more uniform
+ * - might break pretty-printability
+ **************************************/
+
+rules
+
+  desugar-all =
+    desugar-constructors
+
+  resugar-all =
+    resugar-constructors
+
+rules
+
+  desugar-constructors = topdown(try(desugar-constructor))
+
+  desugar-constructor:
+      NullaryOpDecl(op,sort) -> OpDecl(op,[],sort)
+
+  resugar-constructors = topdown(try(resugar-constructor))
+
+  resugar-constructor:
+      OpDecl(op,[],sort) -> NullaryOpDecl(op,sort)

@@ -1,0 +1,20 @@
+module Syntax
+
+imports
+
+  libspoofax/color/default
+  completion/colorer/NaBL2Lang-cc-esv
+
+language
+
+  table         : target/metaborg/sdf.tbl
+  start symbols : NaBL2-Module
+
+  line comment  : "//"
+  block comment : "/*" * "*/"
+  fences        : [[ ]] ( ) { } [ ]
+
+views
+
+  outline view  : editor-outline
+    expand to level: 3

@@ -1,0 +1,24 @@
+module StatixTest
+
+imports
+
+  statix/lang/Layout
+  statix/lang/Common
+  statix/lang/Core
+  statix/lang/Sugar
+  statix/lang/Deprecated
+
+  statix/test/Test
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free start-symbols
+  
+  Start
+
+context-free syntax
+
+  Start = Module
+  Start = Test

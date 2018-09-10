@@ -1,0 +1,31 @@
+module nabl2/shared/common/ScopeGraph
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+sorts
+
+  NaBL2-Scope
+  NaBL2-OccurrenceIndex
+
+context-free syntax
+
+  NaBL2-Scope                          = NaBL2-CVar
+  NaBL2-CTerm                          = NaBL2-Scope
+
+  NaBL2-Occurrence.Occurrence          = <<NaBL2-NamespaceRef>{<NaBL2-CTerm><NaBL2-OccurrenceIndex>}>
+  NaBL2-Occurrence                     = NaBL2-CVar
+  NaBL2-CTerm                          = NaBL2-Occurrence
+
+  NaBL2-Namespace.Namespace            = NaBL2-NamespaceId
+
+  NaBL2-NamespaceRef                   = NaBL2-Namespace
+  NaBL2-NamespaceRef.DefaultNamespace  =
+

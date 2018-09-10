@@ -1,0 +1,16 @@
+module nabl2/shared/constraints/Equality
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-Constraint.CEqual   = [[NaBL2-CTerm] == [NaBL2-CTerm] [NaBL2-Message]]
+  NaBL2-Constraint.CInequal = [[NaBL2-CTerm] != [NaBL2-CTerm] [NaBL2-Message]]
+

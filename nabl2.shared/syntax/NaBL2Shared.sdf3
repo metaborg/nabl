@@ -1,0 +1,6 @@
+module NaBL2Shared
+
+imports
+
+  nabl2/Shared
+

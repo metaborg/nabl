@@ -1,0 +1,38 @@
+module nabl2/lang/modules/Module
+
+template options
+
+  keyword -/- [a-zA-Z0-9\.\-\_]
+
+context-free syntax
+
+  NaBL2-Module.Module = <
+    module <NaBL2-ModuleId>
+
+    <{NaBL2-ModuleSection "\n"}*>
+  >
+ 
+  NaBL2-ModuleSection.Imports = <
+    imports <NaBL2-ImportModule*>
+  >
+ 
+  NaBL2-ImportModule.Import = <<NaBL2-ModuleId>> 
+
+syntax
+
+  NaBL2-ImportModule-CF.ImportWildcard = NaBL2-ModuleId-CF "/-"
+
+lexical syntax
+
+  NaBL2-ModuleId = {NaBL2-ModuleIdPart "/"}+
+  NaBL2-ModuleIdPart = [a-zA-Z\_] [a-zA-Z0-9\.\-\_]*
+  NaBL2-ModuleId = NaBL2-SectionKeyword {reject}
+  
+  NaBL2-RuleId = NaBL2-SectionKeyword {reject}
+  
+  NaBL2-SectionKeyword = "imports"
+
+lexical restrictions
+
+  NaBL2-ModuleId -/- [a-zA-Z0-9\.\-\_]
+

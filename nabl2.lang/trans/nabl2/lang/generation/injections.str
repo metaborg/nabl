@@ -1,0 +1,40 @@
+module nabl2/lang/generation/injections
+
+imports
+
+  nabl2/shared/main
+  
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/shared/constraints/-
+  generation/nabl2/lang/cgen/-
+  generation/nabl2/lang/-
+  nabl2/lang/generation/-
+  nabl2/lang/util/-
+ 
+rules
+
+  injection-to-term(e) = term-to-term(e)
+  injection-to-term(e):
+    TermIndexFrom(t) -> Term |[ <nabl2--get-ast-index> ~(<e> t) ]|
+  injection-to-term(e):
+    MessagePositionFrom(t) -> Term |[ <nabl2--get-ast-index> ~(<e> t) ]|
+  injection-to-term(e):
+    OccurrenceIndexFrom(t) -> Term |[ <nabl2--occurrence-index-of> ~(<e> t) ]|
+  injection-to-term(e):
+    NAMEPosition() -> Term |[ NAME() ]|
+  injection-to-term(e):
+    NAMETerm() -> Term |[ NAME() ]|
+  injection-to-term(e):
+    Text(str) -> Term |[ Text(~(<unescape-message;e> str)) ]|
+  injection-to-term(e):
+    DefaultELabel() -> Term |[ <nabl2--default-e-label> ]|
+  injection-to-term(e):
+    DefaultNLabel() -> Term |[ <nabl2--default-n-label> ]|
+
+  injection-to-pattern(e) = pattern-to-pattern(e)
+
+  unescape-message =
+    string-replace(|"\\[","[");
+    string-replace(|"\\]","]");
+    string-replace(|"\\\\","\\")

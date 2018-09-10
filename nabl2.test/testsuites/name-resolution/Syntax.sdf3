@@ -1,0 +1,100 @@
+module testsuites/name-resolution/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.ScopeOccurrencesAreEqual = <scope occurrences of <X> and <X> are equal>
+
+  Test.OccurrenceOfXInVarScope = <occurrence of <X> in var scope>
+
+  Test.ResolveXToScopeOccurrenceX = <resolve <X> to scope occurrence <X>>
+
+context-free syntax
+
+  Test.ResolveXToXInSameScope = <resolve <X> to <X> in same scope>
+
+  Test.ResolveXToYInSameScope = <resolve <X> to <Y> in same scope>
+
+  Test.ResolveNs1XToNs2XInSameScope = <resolve ns1 <X> to ns2 <X> in same scope>
+
+  Test.ResolveXToXOrXInSameScope = <resolve <X> to <X> or <X> in same scope>
+
+context-free syntax
+
+  Test.ResolveXToXInParentScope = <resolve <X> to <X> in parent scope>
+
+  Test.ResolveXToXOrXInParentScopes = <resolve <X> to <X> and <X> in parent scopes>
+
+  Test.ResolveXToXInImportScopeNotInParentScope = <resolve <X> to <X> in import scope over <X> parent scope>
+
+  Test.ResolveXViaIOrJParent = <resolve <X> to <X> in I parent or <X> in J parent>
+
+  Test.ResolveXViaLongerMoreSpecificPath = <resolve <X> to <X> via longer more specific path over <X> via less specific path>
+
+  Test.ResolveXViaParentAfterImport = <resolve <X> to <X> via import after parent>
+
+  Test.ResolveXViaNonTransitiveImport = <resolve <X> to <X> via non-transitive import>
+
+context-free syntax
+
+  Test.ResolveXViaY = <resolve <X> via <Y> in <Y> { <X> }>
+
+  Test.ResolveXViaYAndZ = <resolve <X> via <Y> where <Y> imports <Z> in <Z> { <X> }>
+
+  Test.ResolveXViaAmbiguousImport = <resolve <X> via <Y> in <Y> { <X> } or <Y> { <X> }>
+
+  Test.ResolveXViaUnorderedImports = <resolve <X> via <Y> in <Y> { <X> } or via <Y> in <Y> { <X> }>
+
+  Test.ResolveInParentWithNonResolvingImport = <resolve <X> to <X> in parent with non-resolving import <Y>>
+
+  Test.ResolveViaImportNotInSameScope = <resolve <X> via <Y> in different scope in <Y> { <X> }>
+
+context-free syntax
+
+  Test.ResolveYViaTypeOfX = <resolve <Y> via type of <X> in <X> { <Y> } >
+
+context-free syntax
+
+  Test.DirectCycle = <direct cycle <X> to <X>>
+
+  Test.ImportCycle = <resolve <X> via <Y> in <Y> imports <Z> { } and <Z> imports <Y> { <X> }>
+
+  Test.ImportNested = <resolve <X> via <Y> and <Y> in <Y> { <Y> { <X> } }>
+
+  Test.SelfImport = <resolve <X> via itself to <X> { <X> }>
+
+context-free syntax
+
+  Test.ImportAnomaly = <
+    anomaly {
+      mod <A> {
+        mod <B> {
+          def <X> = 1
+        }
+      }
+      mod <B> {
+        mod <A> {
+          def <Y> = 2
+        }
+      }
+      mod <C> {
+        import <A>
+        import <B>
+        def <Z> = <X> + <Y>
+      }
+    }
+  >
+
+context-free syntax
+
+  Test.ResolveImplicitCompoundName = <resolve compound <X> to <X> with implicit position>
+
+  Test.ResolveExplicitCompoundName = <resolve compound <X> to <X> with explicit position>
+
+  Test.ResolveAstCompoundName = <resolve ast compound <AstCompoundName> to <AstCompoundName>>
+
+  AstCompoundName.Wrapped = <wrapped <X>>
+

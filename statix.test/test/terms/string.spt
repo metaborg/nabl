@@ -1,0 +1,52 @@
+module string
+
+language StatixTest
+
+// static
+
+test string type ascription [[
+  resolve _:string == "x"
+]] analysis succeeds
+
+test string constructor argument [[
+  resolve Some("fourteen") == None()
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : string -> Maybe
+]] analysis succeeds
+
+test string constraint argument [[
+  resolve c("five")
+  signature
+    constraints
+      c : string
+]] analysis succeeds
+
+// dynamic
+
+test unifying equal strings succeeds [[
+  resolve "Spoofax" == "Spoofax"
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying inequal strings fails [[
+  resolve "Spoofax" == "Stratego"
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test matching same string succeeds [[
+  resolve c("Statix")
+  rules
+    c : string
+    c("Statix").
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching inequal string fails [[
+  resolve c("NaBL2")
+  rules
+    c : string
+    c("Statix").
+]] analysis succeeds
+   run evaluate-test to FAILS()

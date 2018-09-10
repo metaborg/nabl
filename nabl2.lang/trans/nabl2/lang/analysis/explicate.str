@@ -1,0 +1,138 @@
+module nabl2/lang/analysis/explicate
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/-
+  nabl2/lang/generation/-
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+/**************************************
+ * Explication rules
+ * - make implicit things explicit
+ * - preserve pretty-printability
+ **************************************/
+
+rules
+
+  explicate-all =
+    explicate-rule-matches;
+    explicate-rule-params;
+    explicate-rule-types;
+    explicate-rule-wildcards;
+    explicate-messages;
+    explicate-indices;
+    normalize-rule-clauses
+
+rules
+
+  explicate-rule-matches = try(sometd(explicate-rule-match))
+
+  explicate-rule-match:
+    CGenRule(rdef, pattern, param, type, clause)
+      -> CGenRule(rdef, As(Var(<newname> "term"), pattern), param, type, clause)
+
+  get-rule-match-var:
+    CGenRule(_, match, _, _, _) -> var
+    with As(var@Var(_), _) := match
+
+rules
+
+  explicate-rule-params = try(sometd(explicate-rule-param))
+
+  explicate-rule-param:
+    r@CGenRule(rdef, pattern, param, type, clause)
+      -> CGenRule(rdef, pattern, param, type, <nabl2--make-cconj> [clause'*, clause])
+    with match-var := <get-rule-match-var> r
+    with if InitRule() := rdef then
+           clause'* := []
+         else
+           clause'* := [ CAstProperty(TermIndexFrom(match-var), Params(), param)
+                       ]
+         end
+
+rules
+
+  explicate-rule-types = try(sometd(explicate-rule-type))
+
+  explicate-rule-type:
+    r@CGenRule(rdef, pattern, param, Type(type), clause)
+      -> CGenRule(rdef, pattern, param, Type(type-var), <nabl2--make-cconj> [clause'*, clause])
+    with match-var := <get-rule-match-var> r;
+         type-var  := Var(<newname> "type")
+    with if InitRule() := rdef then
+           clause'* := []
+         else
+           clause'* := [ CEqual(type-var, type, DefaultMessage())
+                       , CAstProperty(TermIndexFrom(match-var), Type(), type-var)
+                       ]
+         end
+
+  get-rule-type-var:
+    CGenRule(_, _, _, Type(type), _) -> var
+    with var@Var(_) := type
+
+rules
+
+  explicate-rule-wildcards = try(sometd(explicate-rule-wildcard))
+
+  explicate-rule-wildcard:
+    rule@CGenRule(_, _, _, _, _) -> rule'
+    with rule' := <wlds-to-vars> rule
+
+  explicate-rule-wildcard:
+    fun@FunctionDef(_, _, _) -> fun'
+    with fun' := <wlds-to-vars> fun
+
+  wlds-to-vars = nabl2--with-fresh(topdown(try(\ Wld() -> Var(<nabl2--fresh> "wld") \)))
+
+rules
+
+  explicate-messages = topdown(try(explicate-message))
+
+  // create default error message
+  explicate-message:
+    DefaultMessage() ->
+      Message(Error(), Default(), DefaultMessagePosition())
+
+rules
+
+  explicate-indices =
+    topdown(try(explicate-occurrence-indices));
+    topdown(try(explicate-default-indices))
+
+  // record pattern vars to see if we can get index from name itself
+  // otherwise, use matched term
+  explicate-occurrence-indices:
+    r@CGenRule(rdef, pattern, params, type, clause)
+      -> CGenRule(rdef, pattern, params, type, clause')
+    with match-var := <get-rule-match-var> r
+    with pattern-var* := <all-vars> pattern;
+         {| PatternVar:
+           <map({v: ?v; rules(PatternVar: v -> v) })> pattern-var*;
+           clause' := <topdown(try(explicate-occurrence-index(|match-var)))> clause
+         |}
+
+  explicate-occurrence-index(|match-var):
+    Occurrence(ns, name, DefaultOccurrenceIndex()) ->
+      Occurrence(ns, name, OccurrenceIndexFrom(index))
+    with index := <(is-var;PatternVar) <+ !match-var> name
+
+  explicate-default-indices:
+    r@CGenRule(rdef, pattern, params, type, clause)
+      -> CGenRule(rdef, pattern, params, type, clause')
+    with match-var := <get-rule-match-var> r
+    with clause' := <topdown(try(explicate-default-index(|match-var)))> clause
+
+  // get index from matched term
+  explicate-default-index(|match-var):
+    DefaultMessagePosition() -> MessagePositionFrom(match-var)

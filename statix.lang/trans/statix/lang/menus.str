@@ -1,0 +1,39 @@
+module statix/lang/menus
+
+imports
+
+  signatures/statix/lang/-
+  statix/lang/-
+
+  pp
+
+rules // Debugging
+
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path;
+         result   := ast
+
+  format-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[formatted.[ext]])> path;
+         result   := <pp-Statix-string> ast
+
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path;
+         result   := <nabl2-simplify-ast-indices> ast
+
+  format-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[analyzed.[ext]])> path;
+         result   := <pp-Statix-string> ast
+
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-explicated: (_, _, ast, path, project-path) -> (filename, result)
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with filename := <guarantee-extension(|"explicated.aterm")> path;
+         result   := <explicate-all(|a);nabl2-simplify-ast-indices> ast

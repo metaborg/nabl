@@ -1,0 +1,193 @@
+module rules-functional
+
+language StatixTest
+
+// static
+
+test functional constraint defined in signature [[
+  module test
+  signature
+    constraints
+      d : int -> int
+]] analysis succeeds
+
+test functional constraint defined in rules [[
+  module test
+  rules
+    d : int -> int
+]] analysis succeeds
+
+test full rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == 4 :- true.
+]] analysis succeeds
+
+test guard only rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == 4.
+]] analysis succeeds
+
+test body only rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- i == j.
+]] analysis succeeds
+
+test head only rule form succeeds [[
+  module test
+  rules
+    d : int -> int
+    d(i) = i.
+]] analysis succeeds
+
+test head input variables visible in guard [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == 4.
+]] analysis succeeds
+
+test head output variables not visible in guard [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | i == j.
+]] analysis fails
+
+test head input variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- i == j.
+]] analysis succeeds
+
+test head output variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- i == j.
+]] analysis succeeds
+
+test guard variables visible in guard [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | {k} i == k, k == 4.
+]] analysis succeeds
+
+test guard variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j | {k} i == k :- k == j.
+]] analysis succeeds
+
+test body variables visible in body [[
+  module test
+  rules
+    d : int -> int
+    d(i) = j :- {k} i == k, k == j.
+]] analysis succeeds
+
+// dynamic
+
+test nullary output succeeds [[
+  resolve f(1) == ()
+  rules
+    f : int -> ()
+    f(i) = ().
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unary output succeeds [[
+  resolve f(1) == 1
+  rules
+    f : int -> int
+    f(i) = i.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unary tuple output matches value succeeds [[
+  resolve f(1) == 1
+  rules
+    f : int -> (int)
+    f(i) = i.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test ternary output tuple succeeds [[
+  resolve f(1) == (1, 1)
+  rules
+    f : int -> int * int
+    f(i) = (i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test output variable succeeds [[
+  resolve f(1) == (1, 1)
+  rules
+    f : int -> int * int
+    f(i) = r :- r == (i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test predicate use of functional constraint succeeds [[
+  resolve f(1, 1, 1)
+  rules
+    f : int -> int * int
+    f(i) = (i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test output variable not treated as guard [[
+  resolve f(1, _)
+  rules
+    f : int -> int
+    f(x) = x.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test wildcards in head input succeeds [[
+resolve f(2) == _
+rules
+  f : int -> int
+  f(_) = 42.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test wildcards in head output succeeds [[
+resolve f(3) == 2
+rules
+  f : int -> int
+  f(3) = _.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test as-pattern in head input visible in output succeeds [[
+resolve f(1, 2) == 1
+rules
+  f : int * int -> int
+  f(i@1, j) = i.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test as-pattern in head input visible in guard succeeds [[
+resolve f(1, 2) == 1
+rules
+  f : int * int -> int
+  f(i@_, j) = i | i == 1.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test as-pattern in head input visible in body succeeds [[
+resolve f(1, 2) == 1
+rules
+  f : int * int -> int
+  f(i@_, j) = k :- i == k.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

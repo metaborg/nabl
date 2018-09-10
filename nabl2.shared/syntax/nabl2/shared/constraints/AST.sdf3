@@ -1,0 +1,21 @@
+module nabl2/shared/constraints/AST
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Messages
+
+context-free syntax
+
+  NaBL2-Constraint.CAstProperty =  [[NaBL2-TermIndex].[NaBL2-AstProperty] := [NaBL2-CTerm]]
+
+  NaBL2-AstProperty.Property = NaBL2-AstPropertyId
+  NaBL2-AstProperty.Type     = "type"
+  NaBL2-AstProperty.Params   = "params"
+
+lexical syntax
+
+  NaBL2-AstPropertyId = NaBL2-PropertyId
+  NaBL2-AstPropertyId = "type" | "params" {reject}

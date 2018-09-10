@@ -1,0 +1,25 @@
+module pp
+
+imports
+
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/editor/refactoring/-
+
+  statixruntime
+
+  pp/-
+  pp/statix/lang/-
+  statix/lang/pp
+
+  pp/statix/test/-
+
+rules
+
+  parenthesize-Statix = parenthesize-StatixTest
+
+  pp-StatixTest-string = pp-Statix-string
+
+  pp-partial-StatixTest-string = pp-partial-Statix-string
+    
+  pp-partial-StatixTest-string(|sort) = pp-partial-Statix-string(|sort)

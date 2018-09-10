@@ -1,0 +1,7 @@
+/target
+/src-gen
+/.classpath
+/.project
+/.settings
+
+/.polyglot.metaborg.yaml

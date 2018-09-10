@@ -1,0 +1,11 @@
+module nabl2/runtime/common/CTerms
+
+imports
+
+  nabl2/runtime/common/Native
+
+context-free syntax
+
+  NaBL2-CVar.CVar = <?<NaBL2-String>-<NaBL2-String>>
+
+  NaBL2-CTerm.NAME = "NAME"

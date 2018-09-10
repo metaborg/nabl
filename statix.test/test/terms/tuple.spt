@@ -1,0 +1,94 @@
+module terms-tuple
+
+language StatixTest
+
+// static
+
+test unit type ascription [[
+  resolve _:() == ()
+]] analysis succeeds
+
+test tuple type ascription [[
+  resolve _:(int * string) == (1, "x")
+]] analysis succeeds
+
+test unary tuple equals element type [[
+  resolve _:(int) == 1
+]] analysis succeeds
+
+test different element types make different tuple types [[
+  resolve _:(int * string) == _:(int * int)
+]] analysis fails
+
+test tuple constructor argument [[
+  resolve Some((1, "x")) == None()
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : (int * string) -> Maybe
+]] analysis succeeds
+
+test tuple constraint argument [[
+  resolve c((1, 5))
+  signature
+    constraints
+      c : (int * int)
+]] analysis succeeds
+
+// dynamic
+
+test unifying equal nullary tuples succeeds [[
+  resolve () == ()
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying equal binary tuples succeeds [[
+  resolve (7, "x") == (7, "x")
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unifying inequal binary tuples fails [[
+  resolve (7, "int") == (8, "int")
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test equality on inequal arity tuples typing fails [[
+  resolve (_, _, _) == (_, _)
+]] analysis fails
+
+test unifying unary tuple and value succeeds [[
+  resolve (4) == 4
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching nullary tuple succeeds [[
+  resolve c(())
+  rules
+    c : ()
+    c(()).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching binary tuple succeeds [[
+  resolve c((1, 2))
+  rules
+    c : (int * int)
+    c((1, 2)).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching unary tuple against value succeeds [[
+  resolve c((1))
+  rules
+    c : (int)
+    c(1).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching value against unary tuple succeeds [[
+  resolve c(1)
+  rules
+    c : int
+    c((1)).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

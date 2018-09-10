@@ -1,0 +1,83 @@
+module terms-algebraic
+
+language StatixTest
+
+// static
+
+test sort type ascription [[
+  resolve _:Exp == Var("x")
+  signature
+    sorts Exp constructors
+      Var : string -> Exp
+]] analysis succeeds
+
+test sort constructor argument [[
+  resolve Some(Var("x")) == Some(Int("1"))
+  signature
+    sorts Maybe constructors
+      None : Maybe
+      Some : Exp -> Maybe
+    sorts Exp constructors
+      Var : string -> Exp
+      Int : string -> Exp
+]] analysis succeeds
+
+test sort constraint argument [[
+  resolve c(Int("3"))
+  signature
+    constraints
+      c : Exp
+    sorts Exp constructors
+      Var : string -> Exp
+      Int : string -> Exp
+]] analysis succeeds
+
+// dynamic
+
+test unify equal 'none' constructors succeeds [[
+resolve None() == None()
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify equal 'some' constructors succeeds [[
+resolve {i} Some(1) == Some(i)
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unify inequal constructors fails [[
+resolve None() == Some(_)
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test unify inequal constructor arguments fails [[
+resolve Some(1) == Some(2)
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test match constructor succeeds [[
+resolve c(None())
+signature
+  sorts MaybeInt constructors
+    None : MaybeInt
+    Some : int -> MaybeInt
+rules
+  c : MaybeInt
+  c(None()).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

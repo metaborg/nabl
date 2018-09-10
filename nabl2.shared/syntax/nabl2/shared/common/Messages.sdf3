@@ -1,0 +1,23 @@
+module nabl2/shared/common/Messages
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/CTerms
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+sorts
+
+  NaBL2-MessageContent
+  NaBL2-MessagePosition
+
+context-free syntax
+
+  NaBL2-Message.Message        = <| <NaBL2-MessageKind> <NaBL2-MessageContent><NaBL2-MessagePosition>>
+
+  NaBL2-MessageKind.Error      = <error>
+  NaBL2-MessageKind.Warning    = <warning>
+  NaBL2-MessageKind.Note       = <note>

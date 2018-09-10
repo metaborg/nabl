@@ -1,0 +1,307 @@
+module rules-predicate
+
+language StatixTest
+
+// static
+
+test predicate constraint defined in signature [[
+  module test
+  signature
+    constraints
+      d : int
+]] analysis succeeds
+
+test predicate constraint defined in rules [[
+  module test
+  rules
+    d : int
+]] analysis succeeds
+
+test defining co-inductive predicate constraint fails [[
+  module test
+  signature
+    constraints
+      coinductive d : int
+]] analysis fails
+
+test full rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | i == j :- true.
+]] analysis succeeds
+
+test guard only rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | i == j.
+]] analysis succeeds
+
+test body only rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, j) :- i == j.
+]] analysis succeeds
+
+test head only rule form succeeds [[
+  module test
+  rules
+    d : int * int
+    d(i, i).
+]] analysis succeeds
+
+test head variables visible in guard [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | i == j.
+]] analysis succeeds
+
+test head variables visible in body [[
+  module test
+  rules
+    d : int * int
+    d(i, j) :- i == j.
+]] analysis succeeds
+
+test guard variables visible in guard [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | {k} i == k, k == j.
+]] analysis succeeds
+
+test guard variables visible in body [[
+  module test
+  rules
+    d : int * int
+    d(i, j) | {k} i == k :- k == j.
+]] analysis succeeds
+
+test body variables visible in body [[
+  module test
+  rules
+    d : int * int
+    d(i, j) :- {k} i == k, k == j.
+]] analysis succeeds
+
+// dynamic
+
+test nullary constraint succeeds [[
+  resolve c()
+  rules
+    c : 
+    c().
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test unary constraint succeeds [[
+  resolve c(1)
+  rules
+    c : int
+    c(i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test binary constraint succeeds [[
+  resolve c(1, 2)
+  rules
+    c : int * int
+    c(i, j).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test non-linear binary constraint with equal args succeeds [[
+  resolve c(1, 1)
+  rules
+    c : int * int
+    c(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test non-linear binary constraint with inequal args fails [[
+  resolve c(1, 2)
+  rules
+    c : int * int
+    c(i, i).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test inline list pattern succeeds [[
+  resolve c(["x", "y"])
+  rules
+    c : list(string)
+    c([]).
+    c([x|xs]) :- c(xs).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test equal terms in different-level non-linear pattern succeeds [[
+  resolve c(1, [1|_])
+  rules
+    c : int * list(int)
+    c(i, [i|_]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test inequal terms in different-level non-linear pattern fails [[
+  resolve c(1, [2|_])
+  rules
+    c : int * list(int)
+    c(i, [i|_]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test unified terms in same-level non-linear pattern succeeds [[
+  resolve {i j} c([i], [j]), i == j
+  rules
+    c : list(string) * list(string)
+    c(xs, xs).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test guard equalities on terms succeeds [[
+  resolve c(["x", "y"])
+  rules
+    c : list(string)
+    c(xs) | xs == [].
+    c(xs) | {xs'} xs == [_|xs'] :- c(xs').
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test guard inequality on terms succeeds [[
+  resolve c([3, 6])
+  rules
+    c : list(int)
+    c(xs) | xs != [].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test free variable not unified by guard [[
+  resolve {x} c(x)
+  rules
+    c : int
+    c(x) | x == 0.
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test free variable not considered inequal by guard [[
+  resolve {x} c(x)
+  rules
+    c : int
+    c(x) | x != 0.
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test guard matches are retained in body [[
+  resolve c([5])
+  rules
+    c : list(int)
+    c(xs) | {x} xs == [x] :- eq(x, 5).
+  rules
+    eq : int * int
+    eq(i, i).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test wildcards in head succeeds [[
+resolve c(2, 3)
+rules
+  c : int * int
+  c(_, _).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test wildcards in guard succeeds [[
+resolve c([2])
+rules
+  c : list(int)
+  c(xs) | xs == [_].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test wildcards in body succeeds [[
+resolve c([2])
+rules
+  c : list(int)
+  c(xs) :- xs == [_].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test as-pattern in head succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs@[_|_]) :- xs == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test as-pattern in guard succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs) | xs@[_|_] == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test as-pattern in body succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs) :- xs@[_|_] == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in head succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs:list(int)) :- xs == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in guard succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs) | xs:list(int) == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test type-ascription in body succeeds [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c(xs) :- xs:list(int) == [2, 3].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test rule without matching cases fails [[
+resolve c([2, 3])
+rules
+  c : list(int)
+  c([]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test number of stuck constraints is non-deterministic [[
+resolve {xs ys}
+  c(xs, ys),   // (1)
+  xs == [],    // (2)
+  xs == [2, 3] // (3)
+rules
+  c : list(int) * list(int)
+  c([],    ys).
+  c([_|_], ys) :- hd(ys) == _, tl(ys) == _.
+
+  hd : list(int) -> int
+  hd([x|_]) = x.
+
+  tl : list(int) -> list(int)
+  tl([_|tl]) = tl.
+]] analysis succeeds
+   run evaluate-test to FAILS()
+   // stuck with 0 constraints if (2) is solved before (3)
+   //    or with 2 constraints if (3) is solved before (2)

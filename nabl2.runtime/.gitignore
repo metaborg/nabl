@@ -1,0 +1,17 @@
+# Build artifacts
+/src-gen
+/bin
+/target
+/.cache
+/.polyglot.metaborg.yaml
+
+# Eclipse
+/.project
+/.classpath
+/.settings
+
+*.constraints
+*.scope-graph
+*.name-resolution
+*.unifier
+*.symbolic

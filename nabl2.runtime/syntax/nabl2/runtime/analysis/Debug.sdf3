@@ -1,0 +1,105 @@
+module nabl2/runtime/analysis/Debug
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/ScopeGraph
+  nabl2/shared/common/Resolution
+  nabl2/shared/constraints/Base
+
+context-free syntax
+
+  NaBL2-AnalysisResult.Constraints = <
+    constraints {
+      <{NaBL2-Constraint "\n"}*>
+    }
+  >
+
+context-free syntax
+
+  NaBL2-AnalysisResult.ScopeGraph = <
+    scope graph {
+      <{NaBL2-ScopeEntry "\n"}*>
+    }
+  >
+
+  NaBL2-ScopeEntry.Scope = <
+    scope <NaBL2-Scope> {
+      <{NaBL2-ScopePartEntry "\n"}*>
+    }
+  >
+
+  NaBL2-ScopePartEntry.Decls = <
+    declarations {
+      <{NaBL2-DeclEntry "\n"}*>
+    }
+  >
+  NaBL2-ScopePartEntry.Refs = <
+    references {
+      <{NaBL2-RefEntry "\n"}*>
+    }
+  >
+  NaBL2-ScopePartEntry.DirectEdges = <
+    direct edges {
+      <{NaBL2-DirectEntry "\n"}*>
+    }
+  >
+  NaBL2-ScopePartEntry.ImportEdges = <
+    import edges {
+      <{NaBL2-ImportEntry "\n"}*>
+    }
+  >
+  NaBL2-ScopePartEntry.AssocEdges = <
+    associated declarations {
+      <{NaBL2-AssocEntry "\n"}*>
+    }
+  >
+
+  NaBL2-DeclEntry.Decl         = <<NaBL2-Occurrence><NaBL2-DeclType>>
+  NaBL2-RefEntry.Ref           = <<NaBL2-Occurrence>>
+  NaBL2-DirectEntry.DirectEdge = [[NaBL2-PathLabel] ~ [NaBL2-Scope]]
+  NaBL2-ImportEntry.ImportEdge = [[NaBL2-PathLabel] ~ [NaBL2-Occurrence]]
+  NaBL2-AssocEntry.AssocEdge   = [[NaBL2-PathLabel] ~ [NaBL2-Occurrence]]
+
+  NaBL2-DeclType.Type   = < : <NaBL2-CTerm>>
+  NaBL2-DeclType.NoType = <>
+
+context-free syntax
+
+  NaBL2-AnalysisResult.Unifier = <
+    unifier {
+      <{NaBL2-UnifierEntry "\n"}*>
+    }
+  >
+
+  NaBL2-UnifierEntry = <<NaBL2-CVar> := <NaBL2-CTerm>>
+
+context-free syntax
+
+  NaBL2-AnalysisResult.NameResolution = <
+    name resolution {
+      <{NaBL2-ResolutionEntry "\n"}*>
+    }
+  >
+
+  NaBL2-ResolutionEntry = <<NaBL2-Occurrence> <NaBL2-ResolutionResult>>
+
+  NaBL2-ResolutionResult.NoResolution = <(does not resolve)>
+  NaBL2-ResolutionResult.Resolution = [
+    |-> [{NaBL2-ResolutionPath "\n"}*]
+  ]
+
+  NaBL2-ResolutionPath = <
+    <NaBL2-Occurrence> via <NaBL2-Path>
+  >
+
+context-free syntax
+
+  NaBL2-AnalysisResult.SymbolicConstraints = <
+    facts {
+      <{NaBL2-CTerm "\n"}*>
+    }
+    goals {
+      <{NaBL2-CTerm "\n"}*>
+    }
+  >

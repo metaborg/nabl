@@ -1,0 +1,71 @@
+---
+id: org.metaborg:statix.lang:${metaborgVersion}
+name: StatixLang
+metaborgVersion: 2.5.0-SNAPSHOT
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
+exports:
+  ## Stratego
+- language: Stratego-Sugar
+  directory: trans
+  includes:
+  - "statix/lang/**/*.str"
+  - "statix/lang/**/*.meta"
+  ## SDF3
+- language: TemplateLang
+  directory: syntax
+  includes:
+  - "statix/lang/**/*.sdf3"
+- language: ATerm
+  directory: src-gen/syntax
+  includes:
+  - "**/*.aterm"
+- language: EditorService
+  directory: src-gen
+  includes:
+  - "completion/colorer/statix/lang/**/*.esv"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes:
+  - "completion/statix/lang/**/*.str"
+  - "pp/statix/lang/**/*.str"
+  - "signatures/statix/lang/**/*.str"
+  ## NaBL2
+- language: Stratego-Sugar
+  directory: src-gen/nabl2/collection
+  includes:
+  - "statix/lang/**/*.str"
+- language: NaBL2Lang
+  directory: trans/
+  includes:
+  - "statix/lang/**/*.nabl2"
+language:
+  sdf:
+    sdf2table: java
+    pretty-print: Statix
+    placeholder:
+      prefix: "$"
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc

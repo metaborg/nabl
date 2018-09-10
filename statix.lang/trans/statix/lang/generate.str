@@ -1,0 +1,45 @@
+module statix/lang/generate
+
+imports
+
+  libstrc
+
+  libspoofax/core/language
+  
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  generate-aterm:
+    (_, _, ast@Module(name,_), path, project-path) -> result
+    where a   := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          ext := <nabl2-get-custom-analysis> a
+    with if <nabl2-analysis-has-errors> a then
+           result := None()
+         else
+           filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
+           spec     := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
+           result   := (filename, spec)
+         end
+ 
+  src-gen-file(|sub-dir, ext): name -> filename
+    with filename := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
+
+  src-gen-dir(|sub-dir): _ -> dirname
+    with dirname := <language-srcgen-dir> sub-dir
+
+rules
+
+  spec-ast-to-aterm: (ast, ext) -> spec
+    with rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
+         label* := <collect-all(?Labels(<id>));concat> ast;
+         rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
+         spec := (label*, rel*, rule*, ext)
+
+  eliminate-all =
+    eliminate-ascribe
+
+  eliminate-ascribe = topdown(try(\ Ascribe(t, _) -> t \))

@@ -1,0 +1,15 @@
+module name-sets
+
+language NaBL2Test
+
+test eval empty set [[
+  eval empty set
+]] 0 errors
+
+test eval singleton set [[
+  eval singleton set
+]] 0 errors
+
+test errors on names [[
+  errors on names [[x]], [[x]], [[x]]
+]] 3 error at #1, #2, #3

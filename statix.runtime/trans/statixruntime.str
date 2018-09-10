@@ -1,0 +1,110 @@
+module statixruntime
+
+imports
+
+  libstratego-lib
+  libstratego-gpp
+
+  libspoofax/analysis/constraint
+  libspoofax/core/language
+
+  pp/statix/runtime/-
+
+signature
+  constructors
+    C : String * List(Term) -> Constraint
+
+rules
+
+  stx-analyze(|spec-name, init-constraint) =
+    with(warn-msg(|"Using 'stx-analyze' is deprecated, use 'stx-editor-analyze' instead."));
+  ( stx-editor-analyze(id|spec-name, init-constraint)
+ <+ <stx-editor-analyze(id|spec-name, init-constraint)> (<id>, "", "")
+  )
+
+rules
+
+  stx-editor-analyze(|spec-name, init-constraint) =
+    stx-editor-analyze(id|spec-name, init-constraint)
+
+  // editor analyze for stratego analyzer
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      (ast, path, project-path) -> (ast', error*, warning*, note*)
+    with spec := <stx--find-spec(|spec-name)>;
+         ast' := <desugar;nabl2--index-ast(|""/*path*/)> ast;
+         C    := C(init-constraint, [<stx--explode> ast']);
+         level := <stx--log-level>;
+         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+
+  // editor analyze for constraint analyzer
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeUnit(resource, ast) -> UnitResult(ast', a, error*, warning*, note*)
+    with spec := <stx--find-spec(|spec-name)>;
+         ast' := <desugar;nabl2--index-ast(|resource)> ast;
+         C    := C(init-constraint, [<stx--explode> ast']);
+         level := <stx--log-level>;
+         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+
+  stx-editor-analyze(desugar|spec-name, init-constraint) =
+    debug(!"stx-editor-analyze "); fail
+
+  stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"None"
+
+  stx--find-spec(|name) =
+    language-components;
+    getfirst({ loc, spec-file:
+               ?(_, _, _, loc);
+               spec-file := $[[loc]/src-gen/statix/[name].spec.aterm];
+               <file-exists> spec-file;
+               <ReadFromFile> spec-file
+            })
+
+  // solve-constraint : ([Var], Constraint, LogLevel) -> (Solution, [Error], [Warning], [Note])
+  stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
+
+
+rules
+
+  nabl2--index-ast(|source) =
+    prim("SG_index_ast", source)
+
+  nabl2--is-debug-custom-enabled =
+    prim("SG_is_debug_custom_enabled")
+
+rules
+
+  stx-editor-resolve:
+      (node, position, ast, path, project-path) -> <fail>
+
+  stx-editor-hover:
+      (node, position, ast, path, project-path) -> <fail>
+
+signature
+  constructors
+    Op    : String * List(Term) -> Term
+    Tuple : List(Term)          -> Term
+    List  : List(Term)          -> Term
+    Str   : String              -> Term
+    Int   : String              -> Term
+
+rules
+
+  stx--explode: t*{a*} -> List(<map(stx--explode)> t*){a*}
+    where is-list
+
+  stx--explode: ""#(t*){a*} -> Tuple(<map(stx--explode)> t*){a*}
+    where is-tuple
+
+  stx--explode: t{a*} -> Str(t){a*}
+    where is-string
+
+  stx--explode: t{a*} -> Int(<int-to-string> t){a*}
+    where is-int
+
+  stx--explode: c#(t*){a*} -> Op(c, <map(stx--explode)> t*){a*}
+    where not(is-list + is-tuple + is-string + is-int)
+
+rules
+
+  prettyprint-Statix-Int =
+    ![S(<is-int;int-to-string>)]

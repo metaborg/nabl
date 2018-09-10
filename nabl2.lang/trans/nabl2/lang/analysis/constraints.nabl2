@@ -1,0 +1,157 @@
+module nabl2/lang/analysis/constraints
+/*
+
+imports
+
+  signatures/nabl2/shared/constraints/-
+  signatures/nabl2/lang/common/-
+
+  nabl2/lang/analysis/common
+
+rules
+
+  Clause[[ CTrue(pos) ^ (s) ]] :=
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CFalse(msg) ^ (s) ]] :=
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CConj(constraint1,constraint2) ^ (s) ]] :=
+    Map1(Clause)[[ constraint1 ^ (s) ]],
+    Map1(Clause)[[ constraint2 ^ (s) ]].
+
+  Clause[[ CExists(vars,constraint) ^ (s) ]] :=
+    new s', s' ---> s,
+    Map1(VarDecl)[[ vars ^ (s') ]],
+    Clause[[ constraint ^ (s') ]].
+
+  Clause[[ CNew(vars,pos) ^ (s) ]] :=
+    Map1(VarDecl)[[ vars ^ (s') ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+rules
+
+  Clause[[ CAstProperty(pos,prop,value) ^ (s) ]] :=
+    MessagePosition[[ pos ^ (s) ]],
+    Property[[ prop ^ (s) ]],
+    CTerm(VarRef)[[ value ^ (s) ]].
+
+rules
+
+  Clause[[ CEqual(term1, term2, msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ term1 ^ (s) ]],
+    CTerm(VarRef)[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+  Clause[[ CInequal(term1, term2, msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ term1 ^ (s) ]],
+    CTerm(VarRef)[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+rules 
+ 
+  Clause[[ CGDecl(decl,scope,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ decl ^ (s) ]],
+    CTerm(VarRef)[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CGRef(ref,scope,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ ref ^ (s) ]],
+    CTerm(VarRef)[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CGDirectEdge(scope1,label,scope2,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ scope1 ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
+    CTerm(VarRef)[[ scope2 ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+ 
+  Clause[[ CGNamedEdge(ref,label,scope,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ ref ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
+    CTerm(VarRef)[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+ 
+  Clause[[ CGAssoc(decl,label,scope,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ decl ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
+    CTerm(VarRef)[[ scope ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+  
+rules 
+
+  Clause[[ CResolve(ref,decl,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ ref ^ (s) ]],
+    CTerm(VarRef)[[ decl ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+  
+  Clause[[ CAssoc(decl,label,scope,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ decl ^ (s) ]],
+    LabelRef[[ label ^ (s) ]],
+    CTerm(VarRef)[[ scope ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+  
+  Clause[[ CDeclProperty(decl,prop,value,prio,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ decl ^ (s) ]],
+    Property[[ prop ^ (s) ]],
+    CTerm(VarRef)[[ value ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+rules
+
+  Clause[[ CDistinct(proj,set,msg) ^ (s) ]] :=
+    Projection[[ proj ^ () ]],
+    CSet[[ set ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CSubsetEq(set1,proj,set2,msg) ^ (s) ]] :=
+    CSet[[ set1 ^ (s) ]],
+    Projection[[ proj ^ () ]],
+    CSet[[ set2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+rules
+
+  Clause[[ CBuildRel(term1,rel,term2,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ term1 ^ (s) ]],
+    RelationRef[[ rel ^ (s) ]],
+    CTerm(VarRef)[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CCheckRel(term1,rel,term2,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ term1 ^ (s) ]],
+    RelationRef[[ rel ^ (s) ]],
+    CTerm(VarRef)[[ term2 ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CEval(result,fun,term,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ result ^ (s) ]],
+    FunctionRef[[ fun ^ (s) ]],
+    CTerm(VarRef)[[ term ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+rules
+
+  Clause[[ CGen(scheme,vars,term,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ scheme ^ (s) ]],
+    CTerm(VarRef)[[ vars ^ (s) ]],
+    CTerm(VarRef)[[ term ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+
+  Clause[[ CInst(term,vars,scheme,msg) ^ (s) ]] :=
+    CTerm(VarRef)[[ term ^ (s) ]],
+    CTerm(VarRef)[[ vars ^ (s) ]],
+    CTerm(VarRef)[[ scheme ^ (s) ]],
+    Message[[ msg ^ (s) ]].
+ 
+rules
+
+  Clause[[ CFact(term,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ term ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+  Clause[[ CGoal(term,pos) ^ (s) ]] :=
+    CTerm(VarRef)[[ term ^ (s) ]],
+    MessagePosition[[ pos ^ (s) ]].
+
+*/

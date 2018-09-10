@@ -1,0 +1,15 @@
+module nabl2/runtime/analysis/Generation
+
+imports
+
+  nabl2/shared/common/CTerms
+
+context-free syntax
+
+  NaBL2-AnalysisResult.Params = <params <NaBL2-CGenArgs>>
+
+  NaBL2-CGenArgs.Params        = <<NaBL2-CGenParams>>
+  NaBL2-CGenArgs.ParamsAndType = <<NaBL2-CGenParams> : <NaBL2-CTerm>>
+
+  NaBL2-CGenParams = <^ (<{NaBL2-CTerm ","}*>)>
+  NaBL2-CGenParams = <^ (<NaBL2-CTerm>)>

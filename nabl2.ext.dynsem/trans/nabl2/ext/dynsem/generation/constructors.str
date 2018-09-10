@@ -1,0 +1,22 @@
+module nabl2/ext/dynsem/generation/constructors
+
+imports
+
+  signatures/nabl2/lang/signatures/-
+  nabl2/ext/dynsem/generation/-
+
+rules
+
+  sortdecls-to-ds:
+    Sorts(sort*) -> <filter(sortdecl-to-ds)> sort*
+
+  sortdecl-to-ds:
+    SortNoArgs(name) -> SortDeclNoAnnos(name)
+
+  opdecl-to-ds:
+    OpDecl(name, [], s) -> result
+    with result := NullaryConsDecl(name, <sort-to-ds> s, NoAnnos())
+
+  opdecl-to-ds:
+    OpDecl(name, arg*, s) -> result
+    with result := ConsDecl(name, <map(sort-to-ds)> arg*, <sort-to-ds> s, NoAnnos())

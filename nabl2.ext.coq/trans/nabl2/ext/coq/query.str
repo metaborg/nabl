@@ -1,0 +1,39 @@
+module nabl2/ext/coq/query
+
+imports
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/rules/-
+  nabl2/ext/coq/util/mbind-err
+  
+
+// Various operations for querying NaBL2 definitions
+
+rules // Name projection/normalization
+
+	get-name:
+		Rule(x,rs) -> $[[x]_[<length;int-to-string> rs]]
+
+	get-name:
+		DefaultRule() -> "Default_0"
+
+	get-name:
+		x ->
+			<concat-strings; err>
+				["Encountered an unexpected name kind: ",
+					<write-to-string> x, ". Please report."]
+		where
+			not(?Rule(_,_) <+ ?DefaultRule())
+
+	// Following DynSem's sort name projection conventions (dynsem/trans/lib-ds.str)
+	get-sort-name:
+		SortNoArgs(name) -> name
+	
+	get-sort-name:
+    ListSort(s) -> <concat-strings> ["L_", <get-sort-name> s]
+
+	get-sort-name:
+		x ->
+			<concat-strings; err>
+				["Encountered unexpected sort while trying to read sort name: ",
+					<write-to-string> x, ". Please report."]

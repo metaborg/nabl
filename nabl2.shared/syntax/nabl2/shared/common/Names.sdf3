@@ -1,0 +1,26 @@
+module nabl2/shared/common/Names
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/shared/common/Identifiers
+  nabl2/shared/common/Messages
+  nabl2/shared/common/ScopeGraph
+
+template options
+
+  keyword -/- [a-zA-Z0-9\'\_]
+
+context-free syntax
+
+  NaBL2-CSet = NaBL2-Names
+
+syntax
+
+  NaBL2-Names-CF.Declarations   = "D" "(" NaBL2-Scope-CF ")" NaBL2-NamespacePattern-CF
+  NaBL2-Names-CF.References     = "R" "(" NaBL2-Scope-CF ")" NaBL2-NamespacePattern-CF
+  NaBL2-Names-CF.Visibles       = "V" "(" NaBL2-Scope-CF ")" NaBL2-NamespacePattern-CF
+  NaBL2-Names-CF.Reachables     = "W" "(" NaBL2-Scope-CF ")" NaBL2-NamespacePattern-CF
+
+  NaBL2-NamespacePattern-CF.DefaultNamespace = 
+  NaBL2-NamespacePattern-CF.Namespace        = "/" NaBL2-NamespaceId-LEX

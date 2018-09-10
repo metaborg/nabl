@@ -1,0 +1,11 @@
+module nabl2/runtime/common/AST
+
+imports
+
+  nabl2/shared/common/CTerms
+  nabl2/runtime/common/Native
+  nabl2/runtime/analysis/Generation
+
+context-free syntax
+
+  NaBL2-TermIndex.TermIndex = <@<NaBL2-String>:<NaBL2-Int>>

@@ -1,0 +1,7 @@
+module Generate
+
+menus
+  
+  menu: "Evaluate" (openeditor)
+    
+    action: "Evaluate Test" = editor-evaluate

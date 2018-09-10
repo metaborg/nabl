@@ -1,0 +1,12 @@
+module statix/lang/Deprecated
+
+imports
+
+  statix/lang/Common
+  statix/lang/Core
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free syntax

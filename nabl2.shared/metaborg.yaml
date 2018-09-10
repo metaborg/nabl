@@ -1,0 +1,68 @@
+---
+id: org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
+name: NaBL2Shared
+metaborgVersion: 2.5.0-SNAPSHOT
+metaborgBaselineVersion: 2.3.0
+dependencies:
+  compile:
+  # org.metaborg:org.metaborg.meta.lang.stratego:${metaborgBaselineVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+
+exports:
+
+  ## Stratego
+- language: Stratego-Sugar
+  directory: trans
+  includes:
+  - "nabl2shared.str"
+  - "nabl2/**/*.str"
+
+  ## SDF3
+- language: TemplateLang
+  directory: syntax
+  includes:
+  - "nabl2/**/*.sdf3"
+- language: ATerm
+  directory: src-gen/syntax
+  includes:
+  - "**/*.aterm"
+# language: ds
+ #directory: src-gen
+ #includes:
+ #- "ds-signatures/nabl2/**/*.ds"
+- language: EditorService
+  directory: src-gen
+  includes:
+  - "completion/colorer/nabl2/**/*.esv"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes:
+  - "completion/nabl2/**/*.str"
+  - "pp/nabl2/**/*.str"
+  - "signatures/nabl2/**/*.str"
+
+language:
+  sdf:
+    sdf2table: java
+    pretty-print: NaBL2
+    placeholder:
+      prefix: "$"
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc

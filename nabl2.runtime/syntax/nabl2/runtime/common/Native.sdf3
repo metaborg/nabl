@@ -1,0 +1,8 @@
+module nabl2/runtime/common/Native
+
+lexical syntax
+
+  NaBL2-Int      = []
+  NaBL2-Real     = []
+  NaBL2-String   = []
+  NaBL2-Term     = []

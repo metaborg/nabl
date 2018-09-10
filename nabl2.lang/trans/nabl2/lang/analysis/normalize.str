@@ -1,0 +1,101 @@
+module nabl2/lang/analysis/normalize
+
+imports
+
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/shared/constraints/-
+
+  signatures/nabl2/lang/common/-
+  signatures/nabl2/lang/modules/-
+  signatures/nabl2/lang/rules/-
+  signatures/nabl2/lang/signatures/-
+
+  nabl2/lang/analysis/-
+  nabl2/lang/util/-
+
+  nabl2/shared/-
+
+/**************************************
+ * Normalization rules
+ * - stay close to user-written spec
+ * - preserve pretty-printability
+ **************************************/
+
+rules
+
+  normalize-all =
+    normalize-axioms;
+    normalize-rule-names;
+    normalize-regexes;
+    normalize-constraints;
+    normalize-init-rules;
+    normalize-rule-clauses
+
+rules
+
+  normalize-axioms = try(sometd(normalize-axiom))
+
+  normalize-axiom:
+    CGenInitRuleNoConstraint(params,type)
+      -> CGenInitRule(params,type,CTrue(DefaultMessagePosition()))
+
+  normalize-axiom:
+    CGenRuleNoConstraint(rdef,pattern,params,type)
+      -> CGenRule(rdef,pattern,params,type,CTrue(DefaultMessagePosition()))
+
+rules
+
+  normalize-rule-names = try(sometd(normalize-rule-name))
+
+  normalize-rule-name:
+    RuleNoArgs(name) -> Rule(name,[])
+
+rules
+
+  normalize-regexes = topdown(try(normalize-regex))
+
+  normalize-regex:
+    Option(re) -> Or(Epsilon(),re)
+
+  normalize-regex:
+    ConcatDot(re1,re2) -> Concat(re1,re2)
+
+  normalize-regex:
+    NonEmpty(re) -> Concat(re,Closure(re))
+
+rules
+
+  normalize-constraints = topdown(try(normalize-constraint))
+  
+  normalize-constraint:
+    CDeclType(o,ty,prio,msginfo) ->
+      CDeclProperty(o,Type(),ty,prio,msginfo)
+
+  normalize-constraint:
+    CGen(t1,t2,msginfo) ->
+      CGen(t1,Wld(),t2,msginfo)
+
+  normalize-constraint:
+    CInst(t1,t2,msginfo) ->
+      CInst(t1,Wld(),t2,msginfo)
+
+  normalize-constraint:
+    CSetEq(s1,proj,s2,msginfo) ->
+      <nabl2--make-cconj> [CSubsetEq(s1,proj,s2,msginfo) ,CSubsetEq(s2,proj,s1,msginfo)]
+
+rules
+
+  normalize-init-rules = try(sometd(normalize-init-rule))
+
+  normalize-init-rule:
+    CGenInitRule(params,type,clause)
+      -> CGenRule(InitRule(),Wld(),params,type,clause)
+
+rules
+
+  normalize-rule-clauses = try(sometd(normalize-rule-clause))
+
+  normalize-rule-clause:
+    CGenRule(rdef,pattern,params,type,clause)
+      -> CGenRule(rdef,pattern,params,type,clause')
+    with clause' := <nabl2--normalize-constraint> clause

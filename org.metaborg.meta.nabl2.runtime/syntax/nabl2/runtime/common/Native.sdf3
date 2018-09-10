@@ -1,8 +1,0 @@
-module nabl2/runtime/common/Native
-
-lexical syntax
-
-  Int      = []
-  Real     = []
-  String   = []
-  Term     = []

@@ -1,0 +1,49 @@
+module nabl2/lang/common/Terms
+
+imports
+
+  nabl2/shared/common/Identifiers
+
+template options
+
+  keyword -/- [a-zA-Z0-9\']
+
+context-free syntax
+
+  NaBL2-Var.Var   = NaBL2-VarId
+  NaBL2-Wld.Wld   = "_"
+
+  NaBL2-VarOrWld  = NaBL2-Var
+  NaBL2-VarOrWld  = NaBL2-Wld
+
+  NaBL2-Pattern          = NaBL2-VarOrWld
+  NaBL2-Pattern.List     = <[<{NaBL2-Pattern ", "}*>]>
+  NaBL2-Pattern.ListTail = <[<{NaBL2-Pattern ", "}*>|<NaBL2-Pattern>]>
+  NaBL2-Pattern.Tuple    = <(<{NaBL2-Pattern ", "}*>)>
+  NaBL2-Pattern.As       = <<NaBL2-Var>@<NaBL2-Pattern>>
+  NaBL2-Pattern          = NaBL2-OpTerm
+  NaBL2-Pattern          = NaBL2-IntTerm
+  NaBL2-Pattern          = NaBL2-StringTerm
+
+  NaBL2-Patterns         = <<{NaBL2-Pattern ", "}*>>
+
+context-free syntax
+
+  NaBL2-IntTerm.Int = NaBL2-INT
+
+syntax
+ 
+  NaBL2-OpTerm-CF.Op      = NaBL2-OpId-LEX "(" LAYOUT?-CF NaBL2-Patterns-CF LAYOUT?-CF  ")"
+
+  NaBL2-StringTerm-CF.Str = "\"" NaBL2-StringChars-LEX "\""
+ 
+lexical syntax
+
+  NaBL2-StringChars   = NaBL2-StringChar*
+  NaBL2-StringChar    = ~[\"\\\t\r\n]
+  NaBL2-StringChar    =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
+
+lexical restrictions
+
+  NaBL2-StringChars -/- ~[\"]
+

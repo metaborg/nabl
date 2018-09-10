@@ -1,0 +1,16 @@
+module nabl2/runtime/common/ScopeGraph
+
+imports
+
+  nabl2/shared/common/AST
+  nabl2/shared/common/Resolution
+  nabl2/shared/common/ScopeGraph
+  nabl2/runtime/common/Native
+
+context-free syntax
+
+  NaBL2-Scope.Scope = <#<NaBL2-String>-<NaBL2-String>>
+
+  NaBL2-OccurrenceIndex         = < <NaBL2-TermIndex>>
+  NaBL2-OccurrenceIndex         = < @<NaBL2-Scope>>
+  NaBL2-OccurrenceIndex.NoIndex =

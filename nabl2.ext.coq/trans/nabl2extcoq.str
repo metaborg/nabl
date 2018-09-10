@@ -1,0 +1,7 @@
+module nabl2extcoq
+
+imports
+
+  libstratego-lib
+
+  nabl2/ext/coq/-

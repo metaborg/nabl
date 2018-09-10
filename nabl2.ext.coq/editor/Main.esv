@@ -1,0 +1,16 @@
+module Main
+
+language
+
+  context  : none
+  provider : target/metaborg/stratego.ctree
+//on save  : extract-sigs
+
+menus
+
+  menu: "Coq Integration" (openeditor) (meta) (realtime)
+
+    action: "Generate Signatures"   = extract-sigs
+    action: "Explicate Wildcards"   = explicate-module-wildcards
+    action: "Generate Coq"          = generate-coq
+
