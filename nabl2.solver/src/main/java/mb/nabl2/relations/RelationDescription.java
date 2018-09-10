@@ -3,7 +3,7 @@ package mb.nabl2.relations;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-@Value.Immutable
+@Value.Immutable(prehash = false, builder = false)
 @Serial.Version(value = 42L)
 public abstract class RelationDescription {
 
