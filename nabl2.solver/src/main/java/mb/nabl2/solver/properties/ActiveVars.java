@@ -64,17 +64,18 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private Multiset<ITermVar> findActiveVars(IConstraint constraint) {
         final Multiset<ITermVar> vars = HashMultiset.create();
-        getActiveVars(constraint).stream().map(unifier.get()::findRecursive).map(ITerm::getVars).forEach(vars::addAll);
+        getActiveVars(constraint).stream().map(t -> unifier.get().findRecursive(t)).map(ITerm::getVars)
+                .forEach(vars::addAll);
         return vars;
     }
 
     private static Multiset<ITermVar> getActiveVars(IConstraint constraint) {
         final Multiset<ITermVar> vars = HashMultiset.create();
-        constraint.match(
-                IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::emptyActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
+        constraint
+                .match(IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars,
                         ActiveVars::getActiveVars, ActiveVars::emptyActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::emptyActiveVars))
+                        ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::emptyActiveVars,
+                        ActiveVars::getActiveVars, ActiveVars::emptyActiveVars))
                 .stream().map(ITerm::getVars).forEach(vars::addAll);
         return vars;
     }
