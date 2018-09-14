@@ -115,7 +115,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         final StringBuilder message = new StringBuilder();
         message.append(prefix).append(": ").append(constraint.toString(unifier)).append("\n");
         formatTrace(constraint, unifier, message);
-        return B.newTuple(astTerm, B.newString(message.toString()));
+        return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
     }
 
     private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
@@ -123,6 +123,10 @@ public class STX_solve_constraint extends StatixPrimitive {
                 .findAny().orElseGet(() -> {
                     return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
                 });
+    }
+
+    private ITerm makeOriginTerm(ITerm term) {
+        return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
     }
 
     private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
