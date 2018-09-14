@@ -53,6 +53,10 @@ public class CUser implements IConstraint {
         this.cause = cause;
     }
 
+    @Override public Iterable<ITerm> terms() {
+        return args;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }

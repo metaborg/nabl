@@ -21,6 +21,15 @@ public interface IConstraint {
     }
 
     /**
+     * Return the terms that are used as constraint arguments.
+     *
+     * @return Constraint argument terms.
+     */
+    default Iterable<ITerm> terms() {
+        return Iterables2.empty();
+    }
+
+    /**
      * Solve constraint
      * 
      * @param state
