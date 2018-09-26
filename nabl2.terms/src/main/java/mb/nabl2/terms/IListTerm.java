@@ -16,10 +16,6 @@ public interface IListTerm extends ITerm {
 
         T caseVar(ITermVar var);
 
-        default T caseLock(IListTerm list) {
-            return list.match(this);
-        }
-
     }
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E;

@@ -9,6 +9,7 @@ import java.util.List;
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -121,6 +122,211 @@ public class TermPattern implements IPattern {
             return false;
         }
         return true;
+    }
+
+    @Override public String toString() {
+        return B.newTuple(patterns).toString();
+    }
+
+    public static java.util.Comparator<TermPattern> leftRightOrdering = new LeftRightOrder();
+
+    /**
+     * Note: this comparator imposes orderings that are inconsistent with equals.
+     */
+    private static class LeftRightOrder implements java.util.Comparator<TermPattern> {
+
+        public int compare(TermPattern p1, TermPattern p2) {
+            return new LeftRightPatternOrder().compare(B.newTuple(p1.patterns), B.newTuple(p2.patterns));
+        }
+
+    }
+
+    /**
+     * Note: this comparator imposes orderings that are inconsistent with equals.
+     */
+    private static class LeftRightPatternOrder implements java.util.Comparator<ITerm> {
+
+        public int compare(ITerm p1, ITerm p2) {
+            // @formatter:off
+            return p1.match(Terms.<Integer>cases(
+                appl1 -> p2.match(Terms.<Integer>cases(
+                    appl2 -> {
+                        int c = 0;
+                        if(c == 0) {
+                            c = appl1.getOp().compareTo(appl2.getOp());
+                        }
+                        if(c == 0) {
+                            c = Ordering.from(this).lexicographical().compare(appl1.getArgs(), appl2.getArgs());
+                        }
+                        return c;
+                    },
+                    list2 -> {
+                        return -1;
+                    },
+                    string2 -> {
+                        return -1;
+                    },
+                    integer2 -> {
+                        return -1;
+                    },
+                    blob2 -> {
+                        return -1;
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                list1 -> p2.match(Terms.<Integer>cases(
+                    appl2 -> {
+                        return 1;
+                    },
+                    list2 -> {
+                        return compare(list1, list2);
+                    },
+                    string2 -> {
+                        return -1;
+                    },
+                    integer2 -> {
+                        return -1;
+                    },
+                    blob2 -> {
+                        return -1;
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                string1 -> p2.match(Terms.<Integer>cases(
+                    appl2 -> {
+                        return 1;
+                    },
+                    list2 -> {
+                        return 1;
+                    },
+                    string2 -> {
+                        return string1.getValue().compareTo(string2.getValue());
+                    },
+                    integer2 -> {
+                        return -1;
+                    },
+                    blob2 -> {
+                        return -1;
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                integer1 -> p2.match(Terms.<Integer>cases(
+                    appl2 -> {
+                        return 1;
+                    },
+                    list2 -> {
+                        return 1;
+                    },
+                    string2 -> {
+                        return 1;
+                    },
+                    integer2 -> {
+                        return Integer.compare(integer1.getValue(), integer2.getValue());
+                    },
+                    blob2 -> {
+                        return -1;
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                blob1 -> p2.match(Terms.<Integer>cases(
+                    appl2 -> {
+                        return 1;
+                    },
+                    list2 -> {
+                        return 1;
+                    },
+                    string2 -> {
+                        return 1;
+                    },
+                    integer2 -> {
+                        return 1;
+                    },
+                    blob2 -> {
+                        return 0; // all blobs considered equal, since we cannot compare them in a meaningful way
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                var1 -> p2.match(Terms.<Integer>cases(
+                    appl2 -> {
+                        return 1;
+                    },
+                    list2 -> {
+                        return 1;
+                    },
+                    string2 -> {
+                        return 1;
+                    },
+                    integer2 -> {
+                        return 1;
+                    },
+                    blob2 -> {
+                        return 1;
+                    },
+                    var2 -> {
+                        return 0; // all vars are equally general
+                    }
+                ))
+            ));
+            // @formatter:on
+        }
+
+        private int compare(IListTerm p1, IListTerm p2) {
+            // @formatter:off
+            return p1.match(ListTerms.<Integer>cases(
+                cons1 -> p2.match(ListTerms.<Integer>cases(
+                    cons2 -> {
+                        int c = 0;
+                        if(c == 0) {
+                            c = compare(cons1.getHead(), cons2.getHead());
+                        }
+                        if(c == 0) {
+                            c = compare(cons1.getTail(), cons2.getTail());
+                        }
+                        return c;
+                    },
+                    nil2 -> {
+                        return -1;
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                nil1 -> p2.match(ListTerms.<Integer>cases(
+                    cons2 -> {
+                        return 1;
+                    },
+                    nil2 -> {
+                        return 0;
+                    },
+                    var2 -> {
+                        return -1;
+                    }
+                )),
+                var1 -> p2.match(ListTerms.<Integer>cases(
+                    cons2 -> {
+                        return 1;
+                    },
+                    nil2 -> {
+                        return 1;
+                    },
+                    var2 -> {
+                        return 0;
+                    }
+                ))
+            ));
+            // @formatter:on
+        }
+
     }
 
 }
