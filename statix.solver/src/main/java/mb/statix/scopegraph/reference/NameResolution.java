@@ -57,6 +57,9 @@ public class NameResolution<V, L, R> implements INameResolution<V, L, R> {
     // the graph
     private Set<IResolutionPath<V, L, R>> env_L(Set<L> L, LabelWF<L> re, IScopePath<V, L> path)
             throws ResolutionException, InterruptedException {
+        if(Thread.interrupted()) {
+            throw new InterruptedException();
+        }
         final ImmutableSet.Builder<IResolutionPath<V, L, R>> envBuilder = ImmutableSet.builder();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
