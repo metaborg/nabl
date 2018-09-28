@@ -35,6 +35,11 @@ exports:
   - "completion/statix/**/*.str"
   - "pp/statix/**/*.str"
   - "signatures/statix/**/*.str"
+  ## ESV
+- language: EditorService
+  directory: editor
+  includes:
+  - "statix/**/*.esv"
 language:
   sdf:
     sdf2table: java
