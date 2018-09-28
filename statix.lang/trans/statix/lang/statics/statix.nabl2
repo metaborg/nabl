@@ -120,20 +120,15 @@ rules
     C{x}.ind := ind !!,
     C{x}.kind := DerivedC() !!.
 
-  [[ Rule(h, gvs, g, bvs, c) ^ (s) ]] :=
+  [[ Rule(h, bvs, body) ^ (s) ]] :=
     new s_rule, s_rule ---> s,
     distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
     RuleHead[[ h ^ (s_rule, s_body) ]],
-    new s_guard, s_guard ---> s_rule,
-    distinct/name D(s_guard)/Var | error $[Duplicate guard variable [NAME]] @NAMES,
-    (D(s_guard) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
-    Map1T(VarDecl)[[ gvs ^ (s_guard) : _ ]],
-    [[ g ^ (s_guard) ]],
-    new s_body, s_body ---> s_guard,
+    new s_body, s_body ---> s_rule,
     distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
-    (D(s_body) lsect/name D(s_guard)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
+    (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
     Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
-    [[ c ^ (s_body) ]].
+    [[ body ^ (s_body) ]].
 
   RuleHead[[ C(x, args) ^ (s_rule, _) ]] :=
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,

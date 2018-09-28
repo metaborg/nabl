@@ -77,7 +77,7 @@ public abstract class ALambda {
     }
 
     public Tuple2<State, Lambda> apply(List<ITerm> args, State state) throws MatchException, CannotUnifyException {
-        final ISubstitution.Transient subst = new TermPattern(state.unifier()::areEqual, params()).match(args).melt();
+        final ISubstitution.Transient subst = new TermPattern(params()).match(state.unifier()::areEqual, args).melt();
         State newState = state;
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {

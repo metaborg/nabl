@@ -24,9 +24,7 @@ rules
 rules
 
   desugar-rules = try(sometd(desugar-rule))
-  desugar-rule: AxiomRule(h)        -> Rule(h, NoLocalVars(), CTrue(), NoLocalVars(), CTrue())
-  desugar-rule: GuardRule(h, vs, g) -> Rule(h, vs, g, NoLocalVars(), CTrue())
-  desugar-rule: BodyRule(h, vs, b)  -> Rule(h, NoLocalVars(), CTrue(), vs, b)
+  desugar-rule: AxiomRule(h) -> Rule(h, NoLocalVars(), CTrue())
 
 rules
 
@@ -93,6 +91,6 @@ rules
   fix-rules-variables = try(sometd(fix-rule-variables))
 
   fix-rule-variables:
-      Rule(hd@F(x, in_ts, out_t), gvs, guard, bvs, body) -> Rule(hd, gvs, guard, bvs', body)
+      Rule(hd@F(x, in_ts, out_t), bvs, body) -> Rule(hd, bvs', body)
     with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
          bvs'   := <conc> (bvs, out-vs)

@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
@@ -19,104 +20,114 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 
-public class TermPattern implements IPattern {
+public class TermPattern {
 
     private final List<ITerm> patterns;
-    private final Predicate2<ITerm, ITerm> equals;
-
-    public TermPattern(Predicate2<ITerm, ITerm> equals, Iterable<ITerm> patterns) {
-        this.equals = equals;
-        this.patterns = ImmutableList.copyOf(patterns);
-    }
-
-    public TermPattern(Predicate2<ITerm, ITerm> equals, ITerm... patterns) {
-        this(equals, Arrays.asList(patterns));
-    }
 
     public TermPattern(Iterable<ITerm> patterns) {
-        this((t1, t2) -> t1.equals(t2), patterns);
+        this.patterns = ImmutableList.copyOf(patterns);
     }
 
     public TermPattern(ITerm... patterns) {
         this(Arrays.asList(patterns));
     }
 
-    @Override public ISubstitution.Immutable match(Iterable<ITerm> terms) throws MatchException {
+    public ISubstitution.Immutable match(Iterable<ITerm> terms) throws MatchException {
+        return match((t1, t2) -> t1.equals(t2), terms);
+    }
+
+    public ISubstitution.Immutable match(Predicate2<ITerm, ITerm> equals, ITerm... terms) throws MatchException {
+        return match(equals, Arrays.asList(terms));
+    }
+
+    public ISubstitution.Immutable match(ITerm... terms) throws MatchException {
+        return match(Arrays.asList(terms));
+    }
+
+    public ISubstitution.Immutable match(Predicate2<ITerm, ITerm> equals, Iterable<ITerm> terms) throws MatchException {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         final ITerm pattern = B.newTuple(patterns);
         final ITerm term = B.newTuple(terms);
-        if(!matchTerms(pattern, term, subst)) {
-            throw new MatchException(pattern, term);
-        }
+        matchTerms(pattern, term, subst, equals);
         return subst.freeze();
     }
 
-    private boolean matchTerms(ITerm pattern, ITerm term, ISubstitution.Transient subst) {
+    private Unit matchTerms(ITerm pattern, ITerm term, ISubstitution.Transient subst, Predicate2<ITerm, ITerm> equals)
+            throws MatchException {
         // @formatter:off
-        return pattern.<Boolean>match(Terms.cases(
-            applPattern -> term.match(Terms.<Boolean>cases()
-                .appl(applTerm -> applPattern.getOp().equals(applTerm.getOp()) &&
-                                  applPattern.getArity() == applTerm.getArity() &&
-                                  matchs(applPattern.getArgs(), applTerm.getArgs(), subst))
-                .otherwise(t -> false)
+        return pattern.matchOrThrow(Terms.<Unit, MatchException>checkedCases(
+            applPattern -> term.matchOrThrow(Terms.<Unit, MatchException>checkedCases()
+                .appl(applTerm -> matchIf(pattern, term, applPattern.getOp().equals(applTerm.getOp()) &&
+                                                         applPattern.getArity() == applTerm.getArity() &&
+                                                         matchs(applPattern.getArgs(), applTerm.getArgs(), subst, equals)))
+                .otherwise(t -> matchIf(pattern, term, false))
             ),
-            listPattern -> term.match(Terms.<Boolean>cases()
-                .list(listTerm -> matchLists(listPattern, listTerm, subst))
-                .otherwise(t -> false)
+            listPattern -> term.matchOrThrow(Terms.<Unit, MatchException>checkedCases()
+                .list(listTerm -> matchLists(listPattern, listTerm, subst, equals))
+                .otherwise(t -> matchIf(pattern, term, false))
             ),
-            stringPattern -> term.match(Terms.<Boolean>cases()
-                .string(stringTerm -> stringPattern.getValue().equals(stringTerm.getValue()))
-                .otherwise(t -> false)
+            stringPattern -> term.matchOrThrow(Terms.<Unit, MatchException>checkedCases()
+                .string(stringTerm -> matchIf(pattern, term, stringPattern.getValue().equals(stringTerm.getValue())))
+                .otherwise(t -> matchIf(pattern, term, false))
             ),
-            integerPattern -> term.match(Terms.<Boolean>cases()
-                .integer(integerTerm -> integerPattern.getValue() == integerTerm.getValue())
-                .otherwise(t -> false)
+            integerPattern -> term.matchOrThrow(Terms.<Unit, MatchException>checkedCases()
+                .integer(integerTerm -> matchIf(pattern, term, integerPattern.getValue() == integerTerm.getValue()))
+                .otherwise(t -> matchIf(pattern, term, false))
             ),
-            blobPattern -> term.match(Terms.<Boolean>cases()
-                .blob(blobTerm -> blobPattern.getValue().equals(blobTerm.getValue()))
-                .otherwise(t -> false)
+            blobPattern -> term.matchOrThrow(Terms.<Unit, MatchException>checkedCases()
+                .blob(blobTerm -> matchIf(pattern, term, blobPattern.getValue().equals(blobTerm.getValue())))
+                .otherwise(t -> matchIf(pattern, term, false))
             ),
-            varPattern -> matchVar(varPattern, term, subst)
+            varPattern -> matchVar(varPattern, term, subst, equals)
         ));
         // @formatter:on
     }
 
-    private boolean matchLists(IListTerm pattern, IListTerm term, ISubstitution.Transient subst) {
+    private Unit matchLists(IListTerm pattern, IListTerm term, ISubstitution.Transient subst,
+            Predicate2<ITerm, ITerm> equals) throws MatchException {
         // @formatter:off
-        return pattern.<Boolean>match(ListTerms.cases(
-            consPattern -> term.match(ListTerms.<Boolean>cases()
-                .cons(consTerm -> matchTerms(consPattern.getHead(), consTerm.getHead(), subst) &&
-                                  matchLists(consPattern.getTail(), consTerm.getTail(), subst))
-                .otherwise(l -> false)
+        return pattern.matchOrThrow(ListTerms.<Unit, MatchException>checkedCases(
+            consPattern -> term.matchOrThrow(ListTerms.<Unit, MatchException>checkedCases()
+                .cons(consTerm -> matchTerms(consPattern.getHead(), consTerm.getHead(), subst, equals).andThenOrThrow(() ->
+                                      matchLists(consPattern.getTail(), consTerm.getTail(), subst, equals)))
+                .otherwise(l -> matchIf(pattern, term, false))
             ),
-            nilPattern -> term.match(ListTerms.<Boolean>cases()
-                .nil(nilTerm -> true)
-                .otherwise(l -> false)
+            nilPattern -> term.matchOrThrow(ListTerms.<Unit, MatchException>checkedCases()
+                .nil(nilTerm -> Unit.unit)
+                .otherwise(l -> matchIf(pattern, term, false))
             ),
-            varPattern -> matchVar(varPattern, term, subst)
+            varPattern -> matchVar(varPattern, term, subst, equals)
         ));
         // @formatter:on
     }
 
-    private boolean matchVar(ITermVar var, ITerm term, ISubstitution.Transient subst) {
+    private Unit matchVar(ITermVar var, ITerm term, ISubstitution.Transient subst, Predicate2<ITerm, ITerm> equals)
+            throws MatchException {
         if(subst.contains(var)) {
-            return equals.test(subst.apply(var), term);
+            return matchIf(var, term, equals.test(subst.apply(var), term));
         } else {
             subst.put(var, term);
+            return Unit.unit;
         }
-        return true;
     }
 
-    private boolean matchs(final Iterable<ITerm> patterns, final Iterable<ITerm> terms, ISubstitution.Transient subst) {
+    private Unit matchIf(ITerm pattern, ITerm term, boolean condition) throws MatchException {
+        if(condition) {
+            return Unit.unit;
+        } else {
+            throw new MatchException(pattern, term);
+        }
+    }
+
+    private boolean matchs(final Iterable<ITerm> patterns, final Iterable<ITerm> terms, ISubstitution.Transient subst,
+            Predicate2<ITerm, ITerm> equals) throws MatchException {
         Iterator<ITerm> itPattern = patterns.iterator();
         Iterator<ITerm> itTerm = terms.iterator();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
                 return false;
             }
-            if(!matchTerms(itPattern.next(), itTerm.next(), subst)) {
-                return false;
-            }
+            matchTerms(itPattern.next(), itTerm.next(), subst, equals);
         }
         if(itTerm.hasNext()) {
             return false;
@@ -128,6 +139,9 @@ public class TermPattern implements IPattern {
         return B.newTuple(patterns).toString();
     }
 
+    /**
+     * Note: this comparator imposes orderings that are inconsistent with equals.
+     */
     public static java.util.Comparator<TermPattern> leftRightOrdering = new LeftRightOrder();
 
     /**

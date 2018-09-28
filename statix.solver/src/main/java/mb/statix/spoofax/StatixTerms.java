@@ -94,7 +94,8 @@ public class StatixTerms {
 
     public static IMatcher<ListMultimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
         return M.listElems(M.req(rule(labels))).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.builder();
+            final ImmutableListMultimap.Builder<String, Rule> builder =
+                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
             rules.stream().forEach(rule -> {
                 builder.put(rule.getName(), rule);
             });
@@ -103,15 +104,15 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule(IAlphabet<ITerm> labels) {
-        return M.appl5("Rule", head(), M.listElems(var()), constraints(labels), M.listElems(var()), constraints(labels),
-                (r, h, gvs, gc, bvs, bc) -> {
-                    return new Rule(h._1(), h._2(), gvs, gc, bvs, bc);
+        return M.appl3("Rule", head(), M.listElems(var()), constraints(labels),
+                (r, h, bvs, bc) -> {
+                    return new Rule(h._1(), h._2(), bvs, bc);
                 });
     }
 
-    public static IMatcher<Tuple2<String, List<ITermVar>>> head() {
-        return M.appl2("C", M.stringValue(), M.listElems(var()), (h, name, params) -> {
-            return ImmutableTuple2.of(name, params);
+    public static IMatcher<Tuple2<String, List<ITerm>>> head() {
+        return M.appl2("C", M.stringValue(), M.listElems(term()), (h, name, patterns) -> {
+            return ImmutableTuple2.of(name, patterns);
         });
     }
 

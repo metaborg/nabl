@@ -1,6 +1,7 @@
 package mb.nabl2.terms;
 
 import org.metaborg.util.functions.CheckedFunction1;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
@@ -8,13 +9,17 @@ public interface IListTerm extends ITerm {
 
     <T> T match(Cases<T> cases);
 
-    interface Cases<T> {
+    interface Cases<T> extends Function1<IListTerm, T> {
 
         T caseCons(IConsTerm cons);
 
         T caseNil(INilTerm nil);
 
         T caseVar(ITermVar var);
+
+        default T apply(IListTerm list) {
+            return list.match(this);
+        }
 
     }
 
@@ -28,7 +33,7 @@ public interface IListTerm extends ITerm {
 
         T caseVar(ITermVar var) throws E;
 
-        default T caseLock(IListTerm list) throws E {
+        default T apply(IListTerm list) throws E {
             return list.matchOrThrow(this);
         }
 

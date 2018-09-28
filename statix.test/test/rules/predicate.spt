@@ -28,20 +28,6 @@ test full rule form succeeds [[
   module test
   rules
     d : int * int
-    d(i, j) | i == j :- true.
-]] analysis succeeds
-
-test guard only rule form succeeds [[
-  module test
-  rules
-    d : int * int
-    d(i, j) | i == j.
-]] analysis succeeds
-
-test body only rule form succeeds [[
-  module test
-  rules
-    d : int * int
     d(i, j) :- i == j.
 ]] analysis succeeds
 
@@ -52,32 +38,11 @@ test head only rule form succeeds [[
     d(i, i).
 ]] analysis succeeds
 
-test head variables visible in guard [[
-  module test
-  rules
-    d : int * int
-    d(i, j) | i == j.
-]] analysis succeeds
-
 test head variables visible in body [[
   module test
   rules
     d : int * int
     d(i, j) :- i == j.
-]] analysis succeeds
-
-test guard variables visible in guard [[
-  module test
-  rules
-    d : int * int
-    d(i, j) | {k} i == k, k == j.
-]] analysis succeeds
-
-test guard variables visible in body [[
-  module test
-  rules
-    d : int * int
-    d(i, j) | {k} i == k :- k == j.
 ]] analysis succeeds
 
 test body variables visible in body [[
@@ -166,16 +131,8 @@ test guard equalities on terms succeeds [[
   resolve c(["x", "y"])
   rules
     c : list(string)
-    c(xs) | xs == [].
-    c(xs) | {xs'} xs == [_|xs'] :- c(xs').
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test guard inequality on terms succeeds [[
-  resolve c([3, 6])
-  rules
-    c : list(int)
-    c(xs) | xs != [].
+    c([]).
+    c([_|xs']) :- c(xs').
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -183,23 +140,15 @@ test free variable not unified by guard [[
   resolve {x} c(x)
   rules
     c : int
-    c(x) | x == 0.
+    c(0).
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
-test free variable not considered inequal by guard [[
-  resolve {x} c(x)
-  rules
-    c : int
-    c(x) | x != 0.
-]] analysis succeeds
-   run evaluate-test to FAILS()
-
-test guard matches are retained in body [[
+test head matches are retained in body [[
   resolve c([5])
   rules
     c : list(int)
-    c(xs) | {x} xs == [x] :- eq(x, 5).
+    c([x]) :- eq(x, 5).
   rules
     eq : int * int
     eq(i, i).
@@ -211,14 +160,6 @@ resolve c(2, 3)
 rules
   c : int * int
   c(_, _).
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test wildcards in guard succeeds [[
-resolve c([2])
-rules
-  c : list(int)
-  c(xs) | xs == [_].
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -238,14 +179,6 @@ rules
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test as-pattern in guard succeeds [[
-resolve c([2, 3])
-rules
-  c : list(int)
-  c(xs) | xs@[_|_] == [2, 3].
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
 test as-pattern in body succeeds [[
 resolve c([2, 3])
 rules
@@ -259,14 +192,6 @@ resolve c([2, 3])
 rules
   c : list(int)
   c(xs:list(int)) :- xs == [2, 3].
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test type-ascription in guard succeeds [[
-resolve c([2, 3])
-rules
-  c : list(int)
-  c(xs) | xs:list(int) == [2, 3].
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 

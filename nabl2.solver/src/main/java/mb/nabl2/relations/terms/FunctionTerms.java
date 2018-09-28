@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.IPattern;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.TermPattern;
@@ -40,7 +39,7 @@ public class FunctionTerms {
         });
     }
 
-    private static IMatcher<Tuple2<IPattern, ITerm>> functionCase() {
+    private static IMatcher<Tuple2<TermPattern, ITerm>> functionCase() {
         return M.tuple2(M.term(), M.term(), (t, pattern, term) -> {
             if(!pattern.getVars().containsAll(term.getVars())) {
                 throw new IllegalStateException("Function case is not closed.");
@@ -52,9 +51,9 @@ public class FunctionTerms {
     public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final List<Tuple2<IPattern, ITerm>> cases;
+        private final List<Tuple2<TermPattern, ITerm>> cases;
 
-        private Eval(List<Tuple2<IPattern, ITerm>> cases) {
+        private Eval(List<Tuple2<TermPattern, ITerm>> cases) {
             this.cases = ImmutableList.copyOf(cases);
         }
 
@@ -62,8 +61,8 @@ public class FunctionTerms {
             if(!term.isGround()) {
                 throw new IllegalStateException("Term argument must be ground.");
             }
-            for(Tuple2<IPattern, ITerm> c : cases) {
-                final IPattern pattern = c._1();
+            for(Tuple2<TermPattern, ITerm> c : cases) {
+                final TermPattern pattern = c._1();
                 try {
                     final ISubstitution.Immutable matchResult = pattern.match(term);
                     final ITerm result = matchResult.apply(c._2());

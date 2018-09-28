@@ -15,20 +15,8 @@ rules
          <collect-om(check-rule-constraints(|error-iset))> ast;
          error* := <iset-elements> error-iset
 
-  check-rule-constraints(|error-iset): Rule(h, gvs, g, bvs, b) -> <id>
-    with <check-guard-constraints(|error-iset)> g;
-         <check-body-constraints(|error-iset)> b
-
-  check-guard-constraints(|error-iset): CConj(c1, c2) -> <id>
-    with <check-guard-constraints(|error-iset)> c1;
-         <check-guard-constraints(|error-iset)> c2
-
-  check-guard-constraints(|error-iset): CTrue() -> <id>
-  check-guard-constraints(|error-iset): CFalse() -> <id>
-  check-guard-constraints(|error-iset): CEqual(_, _) -> <id>
-  check-guard-constraints(|error-iset): CInequal(_, _) -> <id>
-  check-guard-constraints(|error-iset): c -> <id>
-    with <iset-add(|(c, $[Constraint not allowed here. Only `true`, `false`, `_ == _` and `_ != _` constraints can appear in guards.]))> error-iset
+  check-rule-constraints(|error-iset): Rule(h, bvs, b) -> <id>
+    with <check-body-constraints(|error-iset)> b
 
   check-body-constraints(|error-iset): CConj(c1, c2) -> <id>
     with <check-body-constraints(|error-iset)> c1;
