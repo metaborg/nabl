@@ -1,33 +1,69 @@
 package mb.nabl2.solver;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.Maps;
 
-public class Fresh implements Serializable {
+import io.usethesource.capsule.Map;
 
-    private static final long serialVersionUID = 42L;
+public abstract class Fresh {
 
-    private final Map<String,Integer> counters;
+    public static class Immutable extends Fresh implements Serializable {
 
-    public Fresh() {
-        counters = Maps.newConcurrentMap();
+        private static final long serialVersionUID = 42L;
+
+        private final Map.Immutable<String, Integer> counters;
+
+        public Immutable(Map.Immutable<String, Integer> counters) {
+            this.counters = counters;
+        }
+
+        public Transient melt() {
+            final ConcurrentMap<String, Integer> transientCounters = Maps.newConcurrentMap();
+            transientCounters.putAll(counters);
+            return new Transient(transientCounters);
+        }
+
+        public static Fresh.Immutable of() {
+            return new Immutable(Map.Immutable.of());
+        }
+
     }
 
-    public String fresh(String base) {
-        // remove any number suffix from the base
-        base = base.replaceFirst("-[0-9]+$", "");
-        // to prevent accidental name clashes, ensure the base contains no dashes,
-        // and then use dashes as our connecting character.
-        base = base.replaceAll("-", "_");
-        int k = counters.getOrDefault(base, 0) + 1;
-        counters.put(base, k);
-        return base + "-" + k;
-    }
+    public static class Transient extends Fresh {
 
-    public void reset() {
-        counters.clear();
+        private final ConcurrentMap<String, Integer> counters;
+
+        public Transient(ConcurrentMap<String, Integer> counters) {
+            this.counters = counters;
+        }
+
+        public String fresh(String base) {
+            // remove any number suffix from the base
+            base = base.replaceFirst("-[0-9]+$", "");
+            // to prevent accidental name clashes, ensure the base contains no dashes,
+            // and then use dashes as our connecting character.
+            base = base.replaceAll("-", "_");
+            int k = counters.getOrDefault(base, 0) + 1;
+            counters.put(base, k);
+            return base + "-" + k;
+        }
+
+        public void reset() {
+            counters.clear();
+        }
+
+        public Immutable freeze() {
+            final Map.Transient<String, Integer> transientCounters = Map.Transient.of();
+            transientCounters.__putAll(counters);
+            return new Immutable(transientCounters.freeze());
+        }
+
+        public static Fresh.Transient of() {
+            return new Transient(Maps.newConcurrentMap());
+        }
+
     }
 
 }

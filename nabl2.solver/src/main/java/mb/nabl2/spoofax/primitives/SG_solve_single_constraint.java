@@ -62,7 +62,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
                 .match(constraintTerm).orElseThrow(() -> new InterpreterException("Current term is not a constraint."));
 
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get debug configuration in here?
-        final Fresh fresh = new Fresh();
+        final Fresh.Transient fresh = Fresh.Transient.of();
 
         final ICancel cancel = new NullCancel();
         final IProgress progress = new NullProgress();
@@ -80,7 +80,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
             throw new InterpreterException(ex);
         }
 
-        final IResult result = ImmutableSingleUnitResult.of(constraints, solution, Optional.empty());
+        final IResult result = ImmutableSingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
         final IStrategoTerm errors =
                 strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier()));
         final IStrategoTerm warnings =
