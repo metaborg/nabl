@@ -7,6 +7,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 
@@ -24,4 +25,6 @@ public abstract class SingleUnitResult implements IResult {
 
     @Override @Value.Parameter public abstract Optional<ITerm> customAnalysis();
 
+    @Override @Value.Parameter public abstract Fresh.Immutable fresh();
+    
 }

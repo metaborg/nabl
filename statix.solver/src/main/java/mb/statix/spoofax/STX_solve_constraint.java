@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
@@ -20,6 +21,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
+import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -78,22 +80,19 @@ public class STX_solve_constraint extends StatixPrimitive {
         } catch(InterruptedException e) {
             throw new InterpreterException(e);
         }
+        final State resultState = resultConfig.state();
+        final IUnifier unifier = resultState.unifier();
 
-        final ITerm ast = B.EMPTY_TUPLE;
         final List<ITerm> errorList = Lists.newArrayList();
         if(resultConfig.hasErrors()) {
-            errorList.add(B.newTuple(ast, B.newString(resultConfig.errors().size() + " error(s).")));
+            resultConfig.errors().stream().map(c -> makeMessage("Failed", c, unifier)).forEach(errorList::add);
         }
 
-        final State resultState = resultConfig.state();
         final Collection<IConstraint> unsolved = resultConfig.delays().keySet();
         if(!unsolved.isEmpty()) {
-            debug.warn("Unsolved constraints: {}",
-                    unsolved.stream().map(c -> c.toString(resultState.unifier())).collect(Collectors.toList()));
-            errorList.add(B.newTuple(ast, B.newString(unsolved.size() + " unsolved constraint(s).")));
+            unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
         }
 
-        final IUnifier unifier = resultState.unifier();
         List<ITerm> vsubst = Lists.newArrayList();
         for(ITermVar var : vars_constraint._1()) {
             final ITerm key = isubst.apply(var);
@@ -109,6 +108,34 @@ public class STX_solve_constraint extends StatixPrimitive {
         final IListTerm notes = B.EMPTY_LIST;
         final ITerm resultTerm = B.newTuple(solution, errors, warnings, notes);
         return Optional.of(resultTerm);
+    }
+
+    private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier unifier) {
+        final ITerm astTerm = findClosestASTTerm(constraint, unifier);
+        final StringBuilder message = new StringBuilder();
+        message.append(prefix).append(": ").append(constraint.toString(unifier)).append("\n");
+        formatTrace(constraint, unifier, message);
+        return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
+    }
+
+    private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
+        return Iterables2.stream(constraint.terms()).map(unifier::findTerm).filter(t -> TermIndex.get(t).isPresent())
+                .findAny().orElseGet(() -> {
+                    return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
+                });
+    }
+
+    private ITerm makeOriginTerm(ITerm term) {
+        return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
+    }
+
+    private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
+        while(constraint != null) {
+            sb.append("<br>");
+            sb.append("&gt;&nbsp;");
+            sb.append(constraint.toString(unifier));
+            constraint = constraint.cause().orElse(null);
+        }
     }
 
 }

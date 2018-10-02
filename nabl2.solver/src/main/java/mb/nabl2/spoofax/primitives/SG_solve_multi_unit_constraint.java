@@ -48,7 +48,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
         final MultiInitialResult initialResult = input._1();
         final List<IConstraint> constraints = ImmutableList.of(input._2());
 
-        final Fresh unitFresh = new Fresh();
+        final Fresh.Transient unitFresh = Fresh.Transient.of();
 
         final ISolution solution;
         try {
@@ -62,7 +62,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
             throw new InterpreterException(ex);
         }
 
-        final IResult result = ImmutableMultiUnitResult.of(constraints, solution, Optional.empty());
+        final IResult result = ImmutableMultiUnitResult.of(constraints, solution, Optional.empty(), unitFresh.freeze());
         return Optional.of(B.newBlob(result));
     }
 

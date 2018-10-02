@@ -55,7 +55,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final List<IConstraint> constraints = ImmutableList.of(input._2());
 
         final Collection<ITermVar> globalVars = params.getVars();
-        final Fresh globalFresh = new Fresh();
+        final Fresh.Transient globalFresh = Fresh.Transient.of();
 
         final ISolution solution;
         try {
@@ -72,7 +72,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
                 T.collecttd(t -> Scope.matcher().match(t, solution.unifier())).apply(params);
 
         final IResult result = ImmutableMultiInitialResult.of(constraints, solution, Optional.empty(), globalVars,
-                globalScopes, globalFresh);
+                globalScopes, globalFresh.freeze());
         return Optional.of(B.newBlob(result));
     }
 

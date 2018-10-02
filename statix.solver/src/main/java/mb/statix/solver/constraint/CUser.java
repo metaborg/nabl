@@ -53,6 +53,10 @@ public class CUser implements IConstraint {
         this.cause = cause;
     }
 
+    @Override public Iterable<ITerm> terms() {
+        return args;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -80,6 +84,9 @@ public class CUser implements IConstraint {
         final Multimap<ITerm, ITerm> delayScopes = HashMultimap.create();
         final Iterator<Rule> it = rules.iterator();
         while(it.hasNext()) {
+            if(Thread.interrupted()) {
+                throw new InterruptedException();
+            }
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
             final Rule rawRule = it.next();
             final State instantiatedState;

@@ -1,0 +1,5 @@
+module statix/Menus
+
+menus
+
+  menu: "Analysis" (meta) (openeditor)

@@ -52,7 +52,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
         final MultiInitialResult initialResult = input._1();
         final List<MultiUnitResult> unitResults = input._2();
 
-        final Fresh globalFresh = initialResult.fresh();
+        final Fresh.Transient globalFresh = initialResult.fresh().melt();
         final ISolution initialSolution = initialResult.solution();
         final List<ISolution> unitSolutions =
                 unitResults.stream().map(MultiUnitResult::solution).collect(Collectors.toList());
@@ -72,7 +72,8 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
 
         final List<IConstraint> constraints = Stream.concat(initialResult.constraints().stream(),
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());
-        final IResult result = ImmutableMultiFinalResult.of(constraints, solution, Optional.empty());
+        final IResult result =
+                ImmutableMultiFinalResult.of(constraints, solution, Optional.empty(), globalFresh.freeze());
         final ITerm errors = MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier());
         final ITerm warnings = MessageTerms.toTerms(solution.messages().getWarnings(), solution.unifier());
         final ITerm notes = MessageTerms.toTerms(solution.messages().getNotes(), solution.unifier());

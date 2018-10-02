@@ -27,7 +27,11 @@ public interface ISolution {
 
     IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
 
+    ISolution withAstProperties(IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties);
+
     IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+
+    ISolution withScopeGraph(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph);
 
     IEsopNameResolution<Scope, Label, Occurrence> nameResolution();
 
@@ -37,19 +41,30 @@ public interface ISolution {
 
     IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
+    ISolution withDeclProperties(IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties);
+
     Map<String, IVariantRelation.Immutable<ITerm>> relations();
 
+    ISolution withRelations(Map<String, ? extends IVariantRelation.Immutable<ITerm>> relations);
+
     ISymbolicConstraints symbolic();
-    
+
+    ISolution withSymbolic(ISymbolicConstraints symbolic);
+
     IFlowSpecSolution<CFGNode> flowSpecSolution();
+
+    ISolution withFlowSpecSolution(IFlowSpecSolution<CFGNode> value);
 
     IUnifier.Immutable unifier();
 
+    ISolution withUnifier(IUnifier.Immutable unifier);
+
     IMessages.Immutable messages();
+
+    ISolution withMessages(IMessages.Immutable messages);
 
     java.util.Set<IConstraint> constraints();
 
-    ISolution findAndLock();
+    ISolution withConstraints(Iterable<? extends IConstraint> constraints);
 
-    ISolution withFlowSpecSolution(IFlowSpecSolution<CFGNode> value);
 }
