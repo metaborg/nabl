@@ -63,7 +63,7 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract IUnifier.Immutable unifier();
 
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
-    
+
     @Value.Parameter @Override public abstract IFlowSpecSolution<CFGNode> flowSpecSolution();
 
     @Value.Parameter @Override public abstract IMessages.Immutable messages();
@@ -73,21 +73,8 @@ public abstract class Solution implements ISolution {
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
-                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(),
-                FlowSpecSolution.of(), Messages.Immutable.of(), Collections.emptySet());
-    }
-
-    @Override public ISolution findAndLock() {
-        final IProperties.Transient<TermIndex, ITerm, ITerm> astProperties = astProperties().melt();
-        astProperties.mapValues(unifier()::findRecursive);
-
-        final IProperties.Transient<Occurrence, ITerm, ITerm> declProperties = declProperties().melt();
-        declProperties.mapValues(unifier()::findRecursive);
-
-        final ISymbolicConstraints symbolic = symbolic().map(unifier()::findRecursive);
-
-        return ImmutableSolution.builder().from(this).astProperties(astProperties.freeze())
-                .declProperties(declProperties.freeze()).symbolic(symbolic).build();
+                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), FlowSpecSolution.of(),
+                Messages.Immutable.of(), Collections.emptySet());
     }
 
 }

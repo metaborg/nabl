@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 
@@ -20,5 +21,9 @@ public interface IResult {
     Optional<ITerm> customAnalysis();
 
     IResult withCustomAnalysis(ITerm term);
+
+    Fresh.Immutable fresh();
+
+    IResult withFresh(Fresh.Immutable fresh);
 
 }

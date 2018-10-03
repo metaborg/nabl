@@ -32,6 +32,6 @@ public abstract class MultiInitialResult implements IResult {
 
     @Value.Parameter public abstract Set<Scope> globalScopes();
 
-    @Value.Parameter public abstract Fresh fresh();
+    @Value.Parameter public abstract Fresh.Immutable fresh();
 
 }
