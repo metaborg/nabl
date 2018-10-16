@@ -73,11 +73,11 @@ public class CompletionSolver {
 
         // shared
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
-        final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
+        final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
@@ -133,12 +133,12 @@ public class CompletionSolver {
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
+                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
-        final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
+        final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
         // polymorphism solver
         final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
