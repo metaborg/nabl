@@ -113,7 +113,8 @@ public class STX_solve_constraint extends StatixPrimitive {
     private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier unifier) {
         final ITerm astTerm = findClosestASTTerm(constraint, unifier);
         final StringBuilder message = new StringBuilder();
-        message.append(prefix).append(": ").append(constraint.toString(unifier)).append("\n");
+        message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
+                .append("\n");
         formatTrace(constraint, unifier, message);
         return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
     }
@@ -133,7 +134,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");
-            sb.append(constraint.toString(unifier));
+            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
             constraint = constraint.cause().orElse(null);
         }
     }

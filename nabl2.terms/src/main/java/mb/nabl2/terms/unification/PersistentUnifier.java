@@ -813,25 +813,38 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public String toString(final ITerm term) {
-        return toString(term, Maps.newHashMap(), Maps.newHashMap());
+        return toString(term, Maps.newHashMap(), Maps.newHashMap(), -1);
+    }
+
+    @Override public String toString(final ITerm term, int n) {
+        if(n < 0) {
+            throw new IllegalArgumentException("Depth must be positive, but is " + n);
+        }
+        return toString(term, Maps.newHashMap(), Maps.newHashMap(), n);
     }
 
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited) {
-        return term.match(Terms.cases(
+            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+        if(maxDepth == 0) {
+            return "_";
+        }
         // @formatter:off
-            appl -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited) + ")",
-            list -> toString(list, stack, visited),
+        return term.match(Terms.cases(
+            appl -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1) + ")",
+            list -> toString(list, stack, visited, maxDepth),
             string -> string.toString(),
             integer -> integer.toString(),
             blob -> blob.toString(),
-            var -> toString(var, stack, visited)
-            // @formatter:on
+            var -> toString(var, stack, visited, maxDepth)
         ));
+        // @formatter:on
     }
 
     private String toString(IListTerm list, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+        if(maxDepth == 0) {
+            return "_";
+        }
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
         sb.append("[");
@@ -842,7 +855,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                     if(tail.getAndSet(true)) {
                         sb.append(",");
                     }
-                    sb.append(toString(cons.getHead(), stack, visited));
+                    sb.append(toString(cons.getHead(), stack, visited, maxDepth - 1));
                     return cons.getTail();
                 },
                 nil -> {
@@ -850,7 +863,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 },
                 var -> {
                     sb.append("|");
-                    sb.append(toString(var, stack, visited));
+                    sb.append(toString(var, stack, visited, maxDepth - 1));
                     return null;
                 }
                 // @formatter:on
@@ -861,7 +874,10 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     }
 
     private String toString(final ITermVar var, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+        if(maxDepth == 0) {
+            return "_";
+        }
         final ITermVar rep = findRep(var);
         final String toString;
         if(!visited.containsKey(rep)) {
@@ -869,7 +885,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             visited.put(rep, null);
             final ITerm term = terms().get(rep);
             if(term != null) {
-                final String termString = toString(term, stack, visited);
+                final String termString = toString(term, stack, visited, maxDepth);
                 toString = (stack.get(rep) != null ? "μ" + stack.get(rep) + "." : "") + termString;
             } else {
                 toString = rep.toString();
@@ -893,14 +909,14 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     }
 
     private String toStrings(final Iterable<ITerm> terms, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
         for(ITerm term : terms) {
             if(tail.getAndSet(true)) {
                 sb.append(",");
             }
-            sb.append(toString(term, stack, visited));
+            sb.append(toString(term, stack, visited, maxDepth));
         }
         return sb.toString();
     }

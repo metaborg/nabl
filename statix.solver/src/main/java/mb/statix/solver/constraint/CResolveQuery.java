@@ -17,7 +17,7 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
@@ -76,7 +76,8 @@ public class CResolveQuery implements IConstraint {
                 subst.apply(resultTerm), cause);
     }
 
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params)
+            throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {
             type = state.spec().relations().get(relation.get());
@@ -171,23 +172,23 @@ public class CResolveQuery implements IConstraint {
         return datum.stream().limit(type.getInputArity()).collect(Collectors.toList());
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("query ");
         sb.append(relation);
         sb.append(" ");
-        sb.append(filter.toString(unifier));
+        sb.append(filter.toString(termToString));
         sb.append(" ");
-        sb.append(min.toString(unifier));
+        sb.append(min.toString(termToString));
         sb.append(" in ");
-        sb.append(unifier.toString(scopeTerm));
+        sb.append(termToString.apply(scopeTerm));
         sb.append(" |-> ");
-        sb.append(unifier.toString(resultTerm));
+        sb.append(termToString.apply(resultTerm));
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

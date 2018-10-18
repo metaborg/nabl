@@ -2,8 +2,7 @@ package mb.statix.solver.query;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Completeness;
@@ -33,17 +32,17 @@ public class QueryMin implements IQueryMin {
         return new ConstraintDataLeq(dataConstraint, state, completeness, debug);
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("min ");
-        sb.append(pathConstraint.toString(unifier));
+        sb.append(pathConstraint.toString(termToString));
         sb.append(" and ");
-        sb.append(dataConstraint.toString(unifier));
+        sb.append(dataConstraint.toString(termToString));
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

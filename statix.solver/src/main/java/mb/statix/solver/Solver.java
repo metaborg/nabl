@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -63,7 +64,7 @@ public class Solver {
                     throw new InterruptedException();
                 }
                 final IConstraint constraint = it.next();
-                proxyDebug.info("Solving {}", constraint.toString(state.unifier()));
+                proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 IDebugContext subDebug = proxyDebug.subContext();
                 try {
                     Optional<ConstraintResult> maybeResult =
@@ -138,7 +139,7 @@ public class Solver {
     private static void printTrace(IConstraint failed, IUnifier unifier, IDebugContext debug) {
         @Nullable IConstraint constraint = failed;
         while(constraint != null) {
-            debug.error(" * {}", constraint.toString(unifier));
+            debug.error(" * {}", constraint.toString(Solver.shallowTermFormatter(unifier)));
             constraint = constraint.cause().orElse(null);
         }
     }
@@ -152,7 +153,7 @@ public class Solver {
             } else {
                 sb.append(", ");
             }
-            sb.append(constraint.toString(unifier));
+            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
         }
         return sb.toString();
     }
@@ -182,6 +183,10 @@ public class Solver {
             return new Delay(vars.build(), scopes.build());
         }
 
+    }
+
+    public static TermFormatter shallowTermFormatter(final IUnifier unifier) {
+        return t -> unifier.toString(t, 3);
     }
 
 }

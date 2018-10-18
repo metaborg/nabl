@@ -19,9 +19,8 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.CannotUnifyException;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
@@ -99,7 +98,7 @@ public class CUser implements IConstraint {
                 proxyDebug.warn("Failed to instantiate {} for arguments {}", rawRule, args);
                 continue;
             }
-            proxyDebug.info("Try rule {}", instantiatedRule.toString(instantiatedState.unifier()));
+            proxyDebug.info("Try rule {}", instantiatedRule.toString(Solver.shallowTermFormatter(instantiatedState.unifier())));
             try {
                 final Optional<SolverResult> maybeResult =
                         Solver.entails(instantiatedState, instantiatedRule.getGuard(), params.completeness(),
@@ -139,17 +138,17 @@ public class CUser implements IConstraint {
         }
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);
         sb.append("(");
-        sb.append(unifier.toString(args));
+        sb.append(termToString.apply(args));
         sb.append(")");
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

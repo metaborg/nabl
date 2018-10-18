@@ -135,20 +135,9 @@ public interface IUnifier {
     String toString(ITerm term);
 
     /**
-     * Return a string representation of the given terms.
+     * Return a string representation of the given term, up to a certain term depth.
      */
-    default String toString(Iterable<? extends ITerm> terms) {
-        final StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(ITerm term : terms) {
-            if(!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append(toString(term));
-        }
-        return sb.toString();
-    }
+    String toString(ITerm term, int n);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on two terms

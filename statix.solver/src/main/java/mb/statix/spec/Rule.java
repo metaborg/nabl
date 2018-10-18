@@ -13,9 +13,8 @@ import mb.nabl2.terms.matching.MatchException;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.CannotUnifyException;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
@@ -89,32 +88,32 @@ public class Rule {
         return ImmutableTuple2.of(newState, newRule);
     }
 
-    public String toString(IUnifier unifier) {
+    public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);
         sb.append("(");
-        sb.append(unifier.toString(params));
+        sb.append(termToString.apply(params));
         sb.append(")");
         if(!guard.isEmpty()) {
             sb.append(" | ");
             if(!guardVars.isEmpty()) {
-                sb.append("{").append(unifier.toString(guardVars)).append("} ");
+                sb.append("{").append(termToString.apply(guardVars)).append("} ");
             }
-            sb.append(IConstraint.toString(guard, unifier));
+            sb.append(IConstraint.toString(guard, termToString));
         }
         if(!body.isEmpty()) {
             sb.append(" :- ");
             if(!bodyVars.isEmpty()) {
-                sb.append("{").append(unifier.toString(bodyVars)).append("} ");
+                sb.append("{").append(termToString.apply(bodyVars)).append("} ");
             }
-            sb.append(IConstraint.toString(body, unifier));
+            sb.append(IConstraint.toString(body, termToString));
         }
         sb.append(".");
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

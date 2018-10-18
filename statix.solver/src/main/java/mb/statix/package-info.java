@@ -1,5 +1,5 @@
 @Value.Style(
-    // @formatter:off
+// @formatter:off
     typeAbstract = { "A*" },
     typeImmutable = "*",
     get = { "is*", "get*" },

@@ -2,7 +2,7 @@ package mb.statix.solver.query;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -20,6 +20,6 @@ public interface IQueryMin {
     DataLeq<ITerm> getDataEquiv(State state, Completeness iCompleteness, IDebugContext debug)
             throws ResolutionException;
 
-    String toString(IUnifier unifier);
+    String toString(TermFormatter termToString);
 
 }
