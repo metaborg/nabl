@@ -17,7 +17,6 @@ import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
-import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
@@ -46,10 +45,8 @@ import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.solver.properties.HasRelationBuildConstraints;
 import mb.nabl2.solver.properties.PolySafe;
 import mb.nabl2.symbolic.ISymbolicConstraints;
-import mb.nabl2.symbolic.SymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.collections.Properties;
 
 public class CompletionSolver {
 
