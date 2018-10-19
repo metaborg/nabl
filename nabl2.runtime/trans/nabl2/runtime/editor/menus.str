@@ -18,7 +18,7 @@ rules
     nabl2--debug-file-result(nabl2--debug-scope-graph|"scope-graph")
 
   nabl2--debug-file-scope-graph-dot =
-    nabl2--debug-file-result(nabl2--debug-scope-graph,scope-graph-to-dot|"scope-graph.gv")
+    nabl2--debug-file-result(nabl2--debug-scope-graph,scope-graph-to-dot|"scope-graph.dot")
 
   nabl2--debug-file-name-resolution =
     nabl2--debug-file-result(nabl2--debug-name-resolution|"name-resolution")
@@ -49,7 +49,7 @@ rules
     nabl2--debug-project-result(nabl2--debug-scope-graph|"scope-graph")
 
   nabl2--debug-project-scope-graph-dot =
-    nabl2--debug-project-result(nabl2--debug-scope-graph,scope-graph-to-dot|"scope-graph.gv")
+    nabl2--debug-project-result(nabl2--debug-scope-graph,scope-graph-to-dot|"scope-graph.dot")
 
   nabl2--debug-project-name-resolution =
     nabl2--debug-project-result(nabl2--debug-name-resolution|"name-resolution")
