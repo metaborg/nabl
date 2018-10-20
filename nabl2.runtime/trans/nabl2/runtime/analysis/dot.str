@@ -9,6 +9,8 @@ rules
 
 scope-graph-to-dot: ScopeGraph(entries) ->
 $[digraph scope_graph {
+  layout=sfdp;
+  overlap=scale;
   rankdir="BT";
   [scopes]
 }] with scopes := <map(scope-to-dot);lines> entries
