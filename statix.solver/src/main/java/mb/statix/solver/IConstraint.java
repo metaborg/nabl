@@ -8,7 +8,7 @@ import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.spec.Spec;
 
@@ -41,13 +41,13 @@ public interface IConstraint {
      */
     Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
 
-    String toString(IUnifier unifier);
+    String toString(TermFormatter termToString);
 
     Optional<IConstraint> cause();
 
     IConstraint withCause(IConstraint cause);
 
-    static String toString(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
+    static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
         for(IConstraint constraint : constraints) {
@@ -55,7 +55,7 @@ public interface IConstraint {
                 sb.append(", ");
             }
             first = false;
-            sb.append(constraint.toString(unifier));
+            sb.append(constraint.toString(termToString));
         }
         return sb.toString();
     }

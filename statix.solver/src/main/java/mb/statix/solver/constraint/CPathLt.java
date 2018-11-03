@@ -10,7 +10,7 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -70,20 +70,20 @@ public class CPathLt implements IConstraint {
 
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("pathLt[");
         sb.append(lt);
         sb.append("](");
-        sb.append(unifier.toString(label1Term));
+        sb.append(termToString.apply(label1Term));
         sb.append(", ");
-        sb.append(unifier.toString(label2Term));
+        sb.append(termToString.apply(label2Term));
         sb.append(")");
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

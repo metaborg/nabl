@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
@@ -59,18 +59,18 @@ public class CPathSrc implements IConstraint {
         return Optional.of(ConstraintResult.of(state, ImmutableSet.of(new CEqual(path.getSource(), srcTerm, this))));
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("src(");
-        sb.append(unifier.toString(pathTerm));
+        sb.append(termToString.apply(pathTerm));
         sb.append(", ");
-        sb.append(unifier.toString(srcTerm));
+        sb.append(termToString.apply(srcTerm));
         sb.append(")");
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

@@ -17,8 +17,8 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.solver.ConstraintContext;
@@ -107,18 +107,18 @@ public class CTellRel implements IConstraint {
         }
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(unifier.toString(scopeTerm));
+        sb.append(termToString.apply(scopeTerm));
         sb.append(" -");
-        sb.append(unifier.toString(relation));
+        sb.append(termToString.apply(relation));
         sb.append("-[] ");
-        sb.append(unifier.toString(B.newTuple(datumTerms)));
+        sb.append(termToString.apply(B.newTuple(datumTerms)));
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

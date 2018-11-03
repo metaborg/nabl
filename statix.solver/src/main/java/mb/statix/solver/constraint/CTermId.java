@@ -13,7 +13,7 @@ import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -72,18 +72,18 @@ public class CTermId implements IConstraint {
         return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("termId(");
-        sb.append(unifier.toString(term));
+        sb.append(termToString.apply(term));
         sb.append(", ");
-        sb.append(unifier.toString(idTerm));
+        sb.append(termToString.apply(idTerm));
         sb.append(")");
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }
