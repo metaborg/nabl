@@ -59,7 +59,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         final IDebugContext debug = level != null ? new LoggerDebugContext(logger, level) : new NullDebugContext();
 
         final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
-                .tuple2(M.listElems(StatixTerms.var()), StatixTerms.constraints(spec.labels()),
+                .tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
                         (t, vs, c) -> ImmutableTuple2.of(vs, c))
                 .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
 
@@ -81,7 +81,7 @@ public class STX_solve_constraint extends StatixPrimitive {
             throw new InterpreterException(e);
         }
         final State resultState = resultConfig.state();
-        final IUnifier unifier = resultState.unifier();
+        final IUnifier.Immutable unifier = resultState.unifier();
 
         final List<ITerm> errorList = Lists.newArrayList();
         if(resultConfig.hasErrors()) {
@@ -110,7 +110,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         return Optional.of(resultTerm);
     }
 
-    private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier unifier) {
+    private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier.Immutable unifier) {
         final ITerm astTerm = findClosestASTTerm(constraint, unifier);
         final StringBuilder message = new StringBuilder();
         message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
@@ -130,7 +130,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
     }
 
-    private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
+    private static void formatTrace(@Nullable IConstraint constraint, IUnifier.Immutable unifier, StringBuilder sb) {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");

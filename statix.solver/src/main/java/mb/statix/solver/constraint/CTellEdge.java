@@ -79,11 +79,11 @@ public class CTellEdge implements IConstraint {
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(termToString.apply(sourceTerm));
+        sb.append(termToString.format(sourceTerm));
         sb.append(" -");
-        sb.append(termToString.apply(label));
+        sb.append(termToString.format(label));
         sb.append("-> ");
-        sb.append(termToString.apply(targetTerm));
+        sb.append(termToString.format(targetTerm));
         return sb.toString();
     }
 

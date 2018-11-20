@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMultiset;
 
 import mb.nabl2.terms.IListTerm;
@@ -18,6 +19,11 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
     @Value.Parameter @Override public abstract String getResource();
 
     @Value.Parameter @Override public abstract String getName();
+
+    @Value.Check protected void check() {
+        Preconditions.checkState(!(getResource().isEmpty() && getName().isEmpty()),
+                "'resource' and 'name' cannot both be empty");
+    }
 
     @Override public boolean isGround() {
         return false;

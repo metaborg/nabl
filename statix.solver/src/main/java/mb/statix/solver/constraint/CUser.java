@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -14,14 +15,12 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.CannotUnifyException;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -85,12 +84,12 @@ public class CUser implements IConstraint {
             final Rule rawRule = it.next();
             proxyDebug.info("Try rule {}", rawRule.toString());
             final State instantiatedState;
-            final Rule instantiatedRule;
+            final Set<IConstraint> instantiatedBody;
             try {
-                final Tuple2<State, Rule> appl = rawRule.apply(args, state);
+                final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl = rawRule.apply(args, state);
                 instantiatedState = appl._1();
-                instantiatedRule = appl._2();
-            } catch(MatchException e) {
+                instantiatedBody = appl._3();
+            } catch(MismatchException e) {
                 Optional<ITermVar> stuckVar = M.var().match(e.getTerm(), state.unifier());
                 if(stuckVar.isPresent()) {
                     proxyDebug.info("Rule delayed (unsolved guard constraint)");
@@ -105,7 +104,7 @@ public class CUser implements IConstraint {
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.of(instantiatedState, instantiatedRule.getBody()));
+            return Optional.of(ConstraintResult.of(instantiatedState, instantiatedBody));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);
@@ -116,7 +115,7 @@ public class CUser implements IConstraint {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);
         sb.append("(");
-        sb.append(termToString.apply(args));
+        sb.append(termToString.format(args));
         sb.append(")");
         return sb.toString();
     }

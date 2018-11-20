@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
@@ -136,7 +137,7 @@ public class Solver {
 
     }
 
-    private static void printTrace(IConstraint failed, IUnifier unifier, IDebugContext debug) {
+    private static void printTrace(IConstraint failed, IUnifier.Immutable unifier, IDebugContext debug) {
         @Nullable IConstraint constraint = failed;
         while(constraint != null) {
             debug.error(" * {}", constraint.toString(Solver.shallowTermFormatter(unifier)));
@@ -144,7 +145,7 @@ public class Solver {
         }
     }
 
-    private static String toString(Iterable<IConstraint> constraints, IUnifier unifier) {
+    private static String toString(Iterable<IConstraint> constraints, IUnifier.Immutable unifier) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
         for(IConstraint constraint : constraints) {
@@ -185,8 +186,8 @@ public class Solver {
 
     }
 
-    public static TermFormatter shallowTermFormatter(final IUnifier unifier) {
-        return t -> unifier.toString(t, 3);
+    public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
+        return new UnifierFormatter(unifier, 3);
     }
 
 }

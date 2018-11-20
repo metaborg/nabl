@@ -8,14 +8,14 @@ import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Lambda;
+import mb.statix.spec.Rule;
 
 public class QueryFilter implements IQueryFilter {
 
-    private final Lambda pathConstraint;
-    private final Lambda dataConstraint;
+    private final Rule pathConstraint;
+    private final Rule dataConstraint;
 
-    public QueryFilter(Lambda pathConstraint, Lambda dataConstraint) {
+    public QueryFilter(Rule pathConstraint, Rule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }

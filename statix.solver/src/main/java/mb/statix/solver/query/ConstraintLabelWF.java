@@ -15,11 +15,12 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
@@ -29,7 +30,7 @@ import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Lambda;
+import mb.statix.spec.Rule;
 
 public class ConstraintLabelWF implements LabelWF<ITerm> {
 
@@ -110,16 +111,16 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         }
     }
 
-    public static ConstraintLabelWF of(Lambda constraint, State state, Completeness completeness, IDebugContext debug) {
+    public static ConstraintLabelWF of(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
         final Tuple2<ITermVar, State> lbls = state.freshVar("lbls");
-        final Tuple2<State, Lambda> inst;
+        final Tuple3<State, Set<ITermVar>, Set<IConstraint>> inst;
         try {
             inst = constraint.apply(ImmutableList.of(lbls._1()), lbls._2());
-        } catch(MatchException | CannotUnifyException e) {
+        } catch(MismatchException | Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
-        return new ConstraintLabelWF(inst._2().body(), inst._1(), state.vars(), state.scopes(), completeness, debug,
-                lbls._1(), lbls._1());
+        return new ConstraintLabelWF(inst._3(), inst._1(), state.vars(), state.scopes(), completeness, debug, lbls._1(),
+                lbls._1());
     }
 
 }

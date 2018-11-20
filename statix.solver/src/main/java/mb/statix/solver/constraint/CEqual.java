@@ -69,9 +69,9 @@ public class CEqual implements IConstraint {
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(termToString.apply(term1));
+        sb.append(termToString.format(term1));
         sb.append(" == ");
-        sb.append(termToString.apply(term2));
+        sb.append(termToString.format(term2));
         return sb.toString();
     }
 

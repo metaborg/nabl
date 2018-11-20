@@ -181,9 +181,9 @@ public class CResolveQuery implements IConstraint {
         sb.append(" ");
         sb.append(min.toString(termToString));
         sb.append(" in ");
-        sb.append(termToString.apply(scopeTerm));
+        sb.append(termToString.format(scopeTerm));
         sb.append(" |-> ");
-        sb.append(termToString.apply(resultTerm));
+        sb.append(termToString.format(resultTerm));
         return sb.toString();
     }
 

@@ -1,24 +1,29 @@
 package mb.statix.spec;
 
+import static mb.nabl2.terms.matching.TermPattern.P;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
+import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MatchException;
-import mb.nabl2.terms.matching.TermPattern;
+import mb.nabl2.terms.matching.InsufficientInstantiationException;
+import mb.nabl2.terms.matching.MismatchException;
+import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.CannotUnifyException;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -28,9 +33,11 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
 
 @Value.Immutable
-public abstract class ALambda {
+public abstract class ARule {
 
-    @Value.Parameter public abstract List<ITerm> params();
+    @Value.Parameter public abstract String name();
+
+    @Value.Parameter public abstract List<Pattern> params();
 
     public Set<ITermVar> paramVars() {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(Collectors.toSet());
@@ -43,22 +50,23 @@ public abstract class ALambda {
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
         State state = State.of(spec);
         List<ITerm> args = Lists.newArrayList();
-        for(@SuppressWarnings("unused") ITerm param : params()) {
+        for(@SuppressWarnings("unused") Pattern param : params()) {
             final Tuple2<ITermVar, State> stateAndVar = state.freshVar("arg");
             args.add(stateAndVar._1());
             state = stateAndVar._2();
         }
-        Tuple2<State, Lambda> stateAndInst;
+        Tuple3<State, Set<ITermVar>, Set<IConstraint>> stateAndInst;
         try {
             stateAndInst = apply(args, state);
-        } catch(MatchException | CannotUnifyException e) {
+        } catch(MismatchException | Delay e) {
             throw new IllegalStateException();
         }
         state = stateAndInst._1();
-        final Lambda inst = stateAndInst._2();
+        final Set<ITermVar> instVars = stateAndInst._2();
+        final Set<IConstraint> instBody = stateAndInst._3();
         try {
             Optional<SolverResult> solverResult =
-                    Solver.entails(state, inst.body(), new Completeness(), inst.bodyVars(), new NullDebugContext());
+                    Solver.entails(state, instBody, new Completeness(), instVars, new NullDebugContext());
             if(solverResult.isPresent()) {
                 return Optional.of(true);
             } else {
@@ -69,14 +77,20 @@ public abstract class ALambda {
         }
     }
 
-    public Lambda apply(ISubstitution.Immutable subst) {
+    public Rule apply(ISubstitution.Immutable subst) {
         final ISubstitution.Immutable bodySubst = subst.removeAll(paramVars()).removeAll(bodyVars());
         final List<IConstraint> newBody = body().stream().map(c -> c.apply(bodySubst)).collect(Collectors.toList());
-        return Lambda.of(params(), bodyVars(), newBody);
+        return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
-    public Tuple2<State, Lambda> apply(List<ITerm> args, State state) throws MatchException, CannotUnifyException {
-        final ISubstitution.Transient subst = new TermPattern(params()).match(state.unifier()::areEqual, args).melt();
+    public Tuple3<State, Set<ITermVar>, Set<IConstraint>> apply(List<ITerm> args, State state)
+            throws MismatchException, Delay {
+        final ISubstitution.Transient subst;
+        try {
+            subst = P.match(params(), args, state.unifier()).melt();
+        } catch(InsufficientInstantiationException e) {
+            throw Delay.ofVars(Iterables2.empty());
+        }
         State newState = state;
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {
@@ -87,27 +101,52 @@ public abstract class ALambda {
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        final Lambda newRule = Lambda.of(args, freshBodyVars.build(), newBody);
-        return ImmutableTuple2.of(newState, newRule);
+        return ImmutableTuple3.of(newState, freshBodyVars.build(), newBody);
     }
 
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
-        sb.append(termToString.apply(params()));
+        if(name().isEmpty()) {
+            sb.append("{ ").append(params());
+        } else {
+            sb.append(name()).append("(").append(params()).append(")");
+        }
         if(!body().isEmpty()) {
             sb.append(" :- ");
             if(!bodyVars().isEmpty()) {
-                sb.append("{").append(termToString.apply(bodyVars())).append("} ");
+                sb.append("{").append(bodyVars()).append("} ");
             }
-            sb.append(IConstraint.toString(body(), termToString));
+            sb.append(IConstraint.toString(body(), termToString.removeAll(bodyVars())));
         }
-        sb.append(" }");
+        if(name().isEmpty()) {
+            sb.append(" }");
+        } else {
+            sb.append(".");
+
+        }
         return sb.toString();
     }
 
     @Override public String toString() {
         return toString(ITerm::toString);
+    }
+
+    /**
+     * Note: this comparator imposes orderings that are inconsistent with equals.
+     */
+    public static java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
+
+    /**
+     * Note: this comparator imposes orderings that are inconsistent with equals.
+     */
+    private static class LeftRightPatternOrder implements Comparator<Rule> {
+
+        @Override public int compare(Rule r1, Rule r2) {
+            final Pattern p1 = P.newTuple(r1.params());
+            final Pattern p2 = P.newTuple(r2.params());
+            return Pattern.leftRightOrdering.compare(p1, p2);
+        }
+
     }
 
 }

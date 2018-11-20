@@ -14,7 +14,8 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.MatchException;
+import mb.nabl2.terms.matching.MismatchException;
+import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -39,21 +40,21 @@ public class FunctionTerms {
         });
     }
 
-    private static IMatcher<Tuple2<TermPattern, ITerm>> functionCase() {
+    private static IMatcher<Tuple2<Pattern, ITerm>> functionCase() {
         return M.tuple2(M.term(), M.term(), (t, pattern, term) -> {
             if(!pattern.getVars().containsAll(term.getVars())) {
                 throw new IllegalStateException("Function case is not closed.");
             }
-            return ImmutableTuple2.of(new TermPattern(pattern), term);
+            return ImmutableTuple2.of(TermPattern.P.fromTerm(pattern), term);
         });
     }
 
     public static class Eval implements PartialFunction1<ITerm, ITerm>, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final List<Tuple2<TermPattern, ITerm>> cases;
+        private final List<Tuple2<Pattern, ITerm>> cases;
 
-        private Eval(List<Tuple2<TermPattern, ITerm>> cases) {
+        private Eval(List<Tuple2<Pattern, ITerm>> cases) {
             this.cases = ImmutableList.copyOf(cases);
         }
 
@@ -61,13 +62,13 @@ public class FunctionTerms {
             if(!term.isGround()) {
                 throw new IllegalStateException("Term argument must be ground.");
             }
-            for(Tuple2<TermPattern, ITerm> c : cases) {
-                final TermPattern pattern = c._1();
+            for(Tuple2<Pattern, ITerm> c : cases) {
+                final Pattern pattern = c._1();
                 try {
                     final ISubstitution.Immutable matchResult = pattern.match(term);
                     final ITerm result = matchResult.apply(c._2());
                     return Optional.of(result);
-                } catch(MatchException e) {
+                } catch(MismatchException e) {
                 }
             }
             return Optional.empty();

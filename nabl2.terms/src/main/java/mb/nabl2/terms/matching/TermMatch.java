@@ -299,6 +299,10 @@ public class TermMatch {
 
         }
 
+        public IMatcher<INilTerm> nil() {
+            return nil(t -> t);
+        }
+
         public <R> IMatcher<R> nil(Function1<? super INilTerm, R> f) {
             return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
                 return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.empty(),
