@@ -47,7 +47,7 @@ rules
 
 rules
 
-  normalize-functional-cdecls = try(sometd(normalize-functional-cdecl))
+  normalize-functional-cdecls = bottomup(try(normalize-functional-cdecl))
 
   normalize-functional-cdecl:
       CDecl(ind, x, t@FunType(s1*, s2*)) -> CDecl(ind, x, t')
@@ -56,7 +56,7 @@ rules
 
 rules
 
-  normalize-functional-heads(|a) = try(sometd(normalize-functional-head(|a)))
+  normalize-functional-heads(|a) = bottomup(try(normalize-functional-head(|a)))
 
   normalize-functional-head(|a):
       Rule(F(x, in_ts, out_t), bvs, body){a*} -> Rule(C(x, ts), bvs', body'){a*}
@@ -68,7 +68,7 @@ rules
 
 rules
 
-  normalize-occurrence-positions(|a) = try(sometd(normalize-occurrence-position(|a)))
+  normalize-occurrence-positions(|a) = bottomup(try(normalize-occurrence-position(|a)))
 
   normalize-occurrence-position(|a):
       Occurrence(ns, ts, p) -> Occurrence(ns, ts, p')
@@ -165,7 +165,7 @@ rules
 
 rules
 
-  normalize-rel-shorthands(|a) = try(sometd(normalize-rel-shorthand(|a)))
+  normalize-rel-shorthands(|a) = bottomup(try(normalize-rel-shorthand(|a)))
 
   normalize-rel-shorthand(|a): c@CAskRel(rel, ts, st) -> c'
     with ty     := <nabl2-get-ast-type(|a)> rel;
@@ -334,9 +334,9 @@ rules
          eq-rule* := <eq-rules(|a, eq, query*)> ns*;
          ord := <newname> "resolveMinOrd";
          ord-rule* := <ord-rules(|a, ord, query*)> ns*;
-         section'* := <try(sometd(try(remove-resolve-queries);
-                                  try(normalize-resolves(|wf, eq, ord)))
-                                 )> section*;
+         section'* := <try(remove-resolve-queries);
+                       try(normalize-resolves(|wf, eq, ord))
+                      > section*;
          new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
          section''* := <conc> (section'*, new-section*)
 
@@ -391,14 +391,14 @@ rules
          end
 
 
-  remove-resolve-queries = try(sometd(remove-resolve-query))
+  remove-resolve-queries = bottomup(try(remove-resolve-query))
 
   remove-resolve-query = Rules(filter(not(?NamespaceQuery(_, _, _))))
 
   remove-resolve-query = NameResolution(filter(not(?NamespaceQuery(_, _, _))))
 
 
-  normalize-resolves(|wf, eq, ord) = try(sometd(normalize-resolve(|wf, eq, ord)))
+  normalize-resolves(|wf, eq, ord) = bottomup(try(normalize-resolve(|wf, eq, ord)))
 
   normalize-resolve(|wf, eq, ord): ResolveFilter(rt) -> Filter(wf-c, eq-c)
     with lbls := Var(<newname> "lbls");
