@@ -89,7 +89,8 @@ public abstract class Pattern {
                 } else if(p2 instanceof PatternVar) {
                     return -1;
                 } else if(p2 instanceof PatternAs) {
-                    return -1;
+                    final PatternAs as2 = (PatternAs) p2;
+                    return compare(p1, as2.getPattern());
                 } else {
                     throw new IllegalStateException();
                 }
@@ -116,7 +117,8 @@ public abstract class Pattern {
                 } else if(p2 instanceof PatternVar) {
                     return -1;
                 } else if(p2 instanceof PatternAs) {
-                    return -1;
+                    final PatternAs as2 = (PatternAs) p2;
+                    return compare(p1, as2.getPattern());
                 } else {
                     throw new IllegalStateException();
                 }
@@ -134,7 +136,8 @@ public abstract class Pattern {
                 } else if(p2 instanceof PatternVar) {
                     return -1;
                 } else if(p2 instanceof PatternAs) {
-                    return -1;
+                    final PatternAs as2 = (PatternAs) p2;
+                    return compare(p1, as2.getPattern());
                 } else {
                     throw new IllegalStateException();
                 }
@@ -154,7 +157,8 @@ public abstract class Pattern {
                 } else if(p2 instanceof PatternVar) {
                     return -1;
                 } else if(p2 instanceof PatternAs) {
-                    return -1;
+                    final PatternAs as2 = (PatternAs) p2;
+                    return compare(p1, as2.getPattern());
                 } else {
                     throw new IllegalStateException();
                 }
@@ -174,7 +178,8 @@ public abstract class Pattern {
                 } else if(p2 instanceof PatternVar) {
                     return -1;
                 } else if(p2 instanceof PatternAs) {
-                    return -1;
+                    final PatternAs as2 = (PatternAs) p2;
+                    return compare(p1, as2.getPattern());
                 } else {
                     throw new IllegalStateException();
                 }
@@ -192,30 +197,14 @@ public abstract class Pattern {
                 } else if(p2 instanceof PatternVar) {
                     return 0; // all vars are equally general
                 } else if(p2 instanceof PatternAs) {
-                    return -1;
+                    final PatternAs as2 = (PatternAs) p2;
+                    return compare(p1, as2.getPattern());
                 } else {
                     throw new IllegalStateException();
                 }
             } else if(p1 instanceof PatternAs) {
                 final PatternAs as1 = (PatternAs) p1;
-                if(p2 instanceof ApplPattern) {
-                    return 1;
-                } else if(p2 instanceof ConsPattern) {
-                    return 1;
-                } else if(p2 instanceof NilPattern) {
-                    return 1;
-                } else if(p2 instanceof StringPattern) {
-                    return 1;
-                } else if(p2 instanceof IntPattern) {
-                    return 1;
-                } else if(p2 instanceof PatternVar) {
-                    return 1;
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    return compare(as1.getPattern(), as2.getPattern());
-                } else {
-                    throw new IllegalStateException();
-                }
+                return compare(as1.getPattern(), p2);
             } else {
                 throw new IllegalStateException();
             }
