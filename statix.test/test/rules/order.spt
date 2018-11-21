@@ -8,10 +8,10 @@ test overlapping, orderable rules succeed [[
 module test
 rules
   f : int * int
-  f(1, 2).
-  f(1, _).
   f(_, 2).
+  f(1, _).
   f(_, _).
+  f(1, 2).
 ]] analysis succeeds
 
 test overlapping, non-orderable rules fails [[
@@ -20,7 +20,7 @@ rules
   f : int * int
   f(1, a).
   f(1, b).
-]] analysis succeeds // expected: fails
+]] analysis fails
 
 // dynamic
 
@@ -28,10 +28,10 @@ test match most specific rule [[
 resolve f(1, 2)
 rules
   f : int * int
-  f(_, 2) :- false.
-  f(_, _) :- false.
   f(1, _) :- false.
+  f(_, _) :- false.
   f(1, 2) :- true.
+  f(_, 2) :- false.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -39,10 +39,10 @@ test match left-specific rule [[
 resolve f(1, 4)
 rules
   f : int * int
-  f(_, 2) :- false.
-  f(_, _) :- false.
   f(1, _) :- true.
+  f(_, 2) :- false.
   f(1, 2) :- false.
+  f(_, _) :- false.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -50,10 +50,10 @@ test match right-specific rule [[
 resolve f(3, 2)
 rules
   f : int * int
-  f(_, 2) :- true.
-  f(_, _) :- false.
   f(1, _) :- false.
+  f(_, 2) :- true.
   f(1, 2) :- false.
+  f(_, _) :- false.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -61,9 +61,27 @@ test match least specific rule [[
 resolve f(3, 1)
 rules
   f : int * int
-  f(_, 2) :- false.
-  f(_, _) :- true.
-  f(1, _) :- false.
   f(1, 2) :- false.
+  f(_, 2) :- false.
+  f(1, _) :- false.
+  f(_, _) :- true.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test match left-specific rule with as-patterns [[
+resolve f([3], [1])
+rules
+  f : list(int) * list(int)
+  f(_, x@[_]) :- false.
+  f(x@[_], _) :- true.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test match right-specific rule with as-patterns [[
+resolve f([], [1])
+rules
+  f : list(int) * list(int)
+  f(_, x@[_]) :- true.
+  f(x@[_], _) :- false.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
