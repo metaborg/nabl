@@ -38,28 +38,22 @@ class ConsPattern extends Pattern {
         return vars.build();
     }
 
-    @Override protected void matchTerm(ITerm term, Transient subst, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier unifier)
+            throws InsufficientInstantiationException {
         // @formatter:off
-        if(!CM.<Boolean, InsufficientInstantiationException>cases(
+        return CM.<Boolean, InsufficientInstantiationException>cases(
             CM.cons(consTerm -> {
-                try {
-                    if(matchTerms(Iterables2.from(head, tail), Iterables2.from(consTerm.getHead(), consTerm.getTail()), subst,
-                            unifier)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } catch (MismatchException e) {
+                if(matchTerms(Iterables2.from(head, tail), Iterables2.from(consTerm.getHead(), consTerm.getTail()), subst,
+                        unifier)) {
+                    return true;
+                } else {
                     return false;
                 }
             }),
             CM.var(v -> {
-                throw new InsufficientInstantiationException(this, v);
+                throw new InsufficientInstantiationException(v);
             })
-        ).matchOrThrow(term, unifier).orElse(false)) {
-            throw new MismatchException(this, term);
-        }
+        ).matchOrThrow(term, unifier).orElse(false);
         // @formatter:on
     }
 

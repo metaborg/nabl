@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
@@ -51,14 +50,15 @@ public class CEqual implements IConstraint {
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         IUnifier.Immutable unifier = state.unifier();
         try {
-            final IUnifier.Immutable.Result<IUnifier.Immutable> result = unifier.unify(term1, term2, params::isRigid);
-            params.debug().info("Unification succeeded: {}", result.result());
-            final State newState = state.withUnifier(result.unifier());
-            return Optional.of(ConstraintResult.of(newState, ImmutableSet.of()));
-        } catch(CannotUnifyException e) {
-            params.debug().info("Unification failed: {} != {}", unifier.toString(e.getLeft()),
-                    unifier.toString(e.getRight()));
-            return Optional.empty();
+            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
+            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
+                params.debug().info("Unification succeeded: {}", result.result());
+                final State newState = state.withUnifier(result.unifier());
+                return Optional.of(ConstraintResult.of(newState, ImmutableSet.of()));
+            } else {
+                params.debug().info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                return Optional.empty();
+            }
         } catch(OccursException e) {
             params.debug().info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
             return Optional.empty();

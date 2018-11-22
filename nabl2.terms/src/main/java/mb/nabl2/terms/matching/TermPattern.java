@@ -2,6 +2,7 @@ package mb.nabl2.terms.matching;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -11,7 +12,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.TermBuild;
-import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.unification.IUnifier;
 
 public class TermPattern {
@@ -115,13 +116,12 @@ public class TermPattern {
             // @formatter:on
         }
 
-        public ISubstitution.Immutable match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms)
-                throws MismatchException {
+        public Optional<Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms) {
             return TermPattern.P.newTuple(patterns).match(TermBuild.B.newTuple(terms));
         }
 
-        public ISubstitution.Immutable match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
-                IUnifier unifier) throws MismatchException, InsufficientInstantiationException {
+        public Optional<Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
+                IUnifier unifier) throws InsufficientInstantiationException {
             return TermPattern.P.newTuple(patterns).match(TermBuild.B.newTuple(terms), unifier);
         }
 

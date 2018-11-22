@@ -5,9 +5,9 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.matching.InsufficientInstantiationException;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
@@ -48,12 +48,14 @@ public class CInequal implements IConstraint {
 
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         IUnifier.Immutable unifier = state.unifier();
-        if(unifier.areUnequal(term1, term2)) {
-            return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
-        } else if(unifier.areEqual(term1, term2)) {
-            return Optional.empty();
-        } else {
-            throw Delay.ofVars(Iterables.concat(unifier.getVars(term1), unifier.getVars(term2)));
+        try {
+            if(unifier.areEqual(term1, term2)) {
+                return Optional.empty();
+            } else {
+                return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
+            }
+        } catch(InsufficientInstantiationException e) {
+            throw Delay.ofVar(e.getVar());
         }
     }
 

@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.matching.InsufficientInstantiationException;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
@@ -91,8 +92,12 @@ public class CTellRel implements IConstraint {
             throw Delay.ofVars(unifier.getVars(key));
         }
         Optional<ITerm> existingValue = state.scopeGraph().getData().get(scope, relation).stream().filter(dt -> {
-            return unifier.areEqual(key,
-                    B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())));
+            try {
+                return unifier.areEqual(key,
+                        B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())));
+            } catch(InsufficientInstantiationException e) {
+                return false;
+            }
         }).findFirst().map(dt -> {
             return B.newTuple(dt.stream().skip(type.getInputArity()).collect(Collectors.toList()));
         });

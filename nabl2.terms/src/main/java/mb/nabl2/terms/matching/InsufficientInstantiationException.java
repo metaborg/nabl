@@ -6,8 +6,20 @@ public class InsufficientInstantiationException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    public InsufficientInstantiationException(Pattern pattern, ITermVar... vars) {
-        super("Insufficiently instantiated " + vars + " to match against " + pattern);
+    private final ITermVar var;
+
+    public InsufficientInstantiationException(ITermVar var) {
+        this.var = var;
+    }
+
+    public ITermVar getVar() {
+        return var;
+    }
+
+    @Override public String getMessage() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(var).append(" insufficiently instantiated");
+        return sb.toString();
     }
 
 }

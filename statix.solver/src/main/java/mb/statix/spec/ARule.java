@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -17,7 +16,6 @@ import com.google.common.collect.Lists;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.InsufficientInstantiationException;
-import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.ImmutableTuple3;
@@ -57,8 +55,10 @@ public abstract class ARule {
         }
         Tuple3<State, Set<ITermVar>, Set<IConstraint>> stateAndInst;
         try {
-            stateAndInst = apply(args, state);
-        } catch(MismatchException | Delay e) {
+            if((stateAndInst = apply(args, state).orElse(null)) == null) {
+                throw new IllegalStateException();
+            }
+        } catch(Delay e) {
             throw new IllegalStateException();
         }
         state = stateAndInst._1();
@@ -83,13 +83,14 @@ public abstract class ARule {
         return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
-    public Tuple3<State, Set<ITermVar>, Set<IConstraint>> apply(List<ITerm> args, State state)
-            throws MismatchException, Delay {
+    public Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
         final ISubstitution.Transient subst;
         try {
-            subst = P.match(params(), args, state.unifier()).melt();
+            if((subst = P.match(params(), args, state.unifier()).map(u -> u.melt()).orElse(null)) == null) {
+                return Optional.empty();
+            }
         } catch(InsufficientInstantiationException e) {
-            throw Delay.ofVars(Iterables2.empty());
+            throw Delay.ofVar(e.getVar());
         }
         State newState = state;
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
@@ -101,7 +102,7 @@ public abstract class ARule {
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        return ImmutableTuple3.of(newState, freshBodyVars.build(), newBody);
+        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
     }
 
     public String toString(TermFormatter termToString) {

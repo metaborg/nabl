@@ -39,22 +39,15 @@ class PatternVar extends Pattern {
         return ImmutableSet.of(var);
     }
 
-    @Override protected void matchTerm(ITerm term, Transient subst, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier unifier)
+            throws InsufficientInstantiationException {
         if(isWildcard()) {
-            return;
-        }
-        if(subst.contains(var)) {
-            final ITerm boundTerm = subst.apply(var);
-            if(unifier.areEqual(boundTerm, term)) {
-                return;
-            } else if(unifier.areUnequal(boundTerm, term)) {
-                throw new MismatchException(this, term);
-            } else {
-                throw new InsufficientInstantiationException(this);
-            }
+            return true;
+        } else if(subst.contains(var)) {
+            return unifier.areEqual(subst.apply(var), term);
         } else {
             subst.put(var, term);
+            return true;
         }
     }
 

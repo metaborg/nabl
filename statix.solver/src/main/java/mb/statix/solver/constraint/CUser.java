@@ -1,7 +1,5 @@
 package mb.statix.solver.constraint;
 
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +13,6 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
@@ -85,22 +82,21 @@ public class CUser implements IConstraint {
             proxyDebug.info("Try rule {}", rawRule.toString());
             final State instantiatedState;
             final Set<IConstraint> instantiatedBody;
+            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl;
             try {
-                final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl = rawRule.apply(args, state);
-                instantiatedState = appl._1();
-                instantiatedBody = appl._3();
-            } catch(MismatchException e) {
-                Optional<ITermVar> stuckVar = M.var().match(e.getTerm(), state.unifier());
-                if(stuckVar.isPresent()) {
-                    proxyDebug.info("Rule delayed (unsolved guard constraint)");
-                    unsuccessfulLog.absorb(proxyDebug.clear());
-                    unsuccessfulLog.flush(debug);
-                    throw Delay.ofVar(stuckVar.get());
+                if((appl = rawRule.apply(args, state).orElse(null)) != null) {
+                    instantiatedState = appl._1();
+                    instantiatedBody = appl._3();
                 } else {
                     proxyDebug.info("Rule rejected (mismatching arguments)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
                     continue;
                 }
+            } catch(Delay d) {
+                proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                unsuccessfulLog.absorb(proxyDebug.clear());
+                unsuccessfulLog.flush(debug);
+                throw d;
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();

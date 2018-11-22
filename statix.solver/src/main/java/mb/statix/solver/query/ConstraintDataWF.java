@@ -7,7 +7,6 @@ import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -35,7 +34,10 @@ public class ConstraintDataWF implements DataWF<ITerm> {
 
     public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result = constraint.apply(datum, state);
+            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            if((result = constraint.apply(datum, state).orElse(null)) == null) {
+                return false;
+            }
             if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
                 debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
                 return true;
@@ -45,8 +47,6 @@ public class ConstraintDataWF implements DataWF<ITerm> {
             }
         } catch(Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
-        } catch(MismatchException ex) {
-            return false;
         }
     }
 

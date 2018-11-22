@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -40,8 +39,10 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
         final ITerm term1 = B.newTuple(datum1);
         final ITerm term2 = B.newTuple(datum2);
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result =
-                    constraint.apply(ImmutableList.of(term1, term2), state);
+            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            if((result = constraint.apply(ImmutableList.of(term1, term2), state).orElse(null)) == null) {
+                return false;
+            }
             if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
                 debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
                 return true;
@@ -51,8 +52,6 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
             }
         } catch(Delay d) {
             throw new ResolutionDelayException("Data order delayed.", d);
-        } catch(MismatchException e) {
-            return false;
         }
     }
 

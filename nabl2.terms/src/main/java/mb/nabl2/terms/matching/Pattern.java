@@ -1,7 +1,10 @@
 package mb.nabl2.terms.matching;
 
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
+
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.Ordering;
 
@@ -16,34 +19,34 @@ public abstract class Pattern {
 
     public abstract Set<ITermVar> getVars();
 
-    public ISubstitution.Immutable match(ITerm term) throws MismatchException {
+    public Optional<ISubstitution.Immutable> match(ITerm term) {
         try {
             return match(term, PersistentUnifier.Immutable.of());
         } catch(InsufficientInstantiationException e) {
-            throw new MismatchException(this, term);
+            return Optional.empty();
         }
     }
 
-    public ISubstitution.Immutable match(ITerm term, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException {
+    public Optional<ISubstitution.Immutable> match(ITerm term, IUnifier unifier)
+            throws InsufficientInstantiationException {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        matchTerm(term, subst, unifier);
-        return subst.freeze();
+        return Optionals.when(matchTerm(term, subst, unifier)).map(u -> subst.freeze());
     }
 
-    protected abstract void matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException;
+    protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier unifier)
+            throws InsufficientInstantiationException;
 
     protected static boolean matchTerms(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
-            ISubstitution.Transient subst, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException {
+            ISubstitution.Transient subst, IUnifier unifier) throws InsufficientInstantiationException {
         Iterator<Pattern> itPattern = patterns.iterator();
         Iterator<ITerm> itTerm = terms.iterator();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
                 return false;
             }
-            itPattern.next().matchTerm(itTerm.next(), subst, unifier);
+            if(!itPattern.next().matchTerm(itTerm.next(), subst, unifier)) {
+                return false;
+            }
         }
         if(itTerm.hasNext()) {
             return false;

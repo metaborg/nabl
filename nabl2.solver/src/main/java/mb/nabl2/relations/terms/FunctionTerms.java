@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.MismatchException;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.TermPattern;
@@ -64,11 +63,10 @@ public class FunctionTerms {
             }
             for(Tuple2<Pattern, ITerm> c : cases) {
                 final Pattern pattern = c._1();
-                try {
-                    final ISubstitution.Immutable matchResult = pattern.match(term);
+                final ISubstitution.Immutable matchResult;
+                if((matchResult = pattern.match(term).orElse(null)) != null) {
                     final ITerm result = matchResult.apply(c._2());
                     return Optional.of(result);
-                } catch(MismatchException e) {
                 }
             }
             return Optional.empty();

@@ -39,10 +39,9 @@ class PatternAs extends Pattern {
         return vars.build();
     }
 
-    @Override protected void matchTerm(ITerm term, Transient subst, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException {
-        var.matchTerm(term, subst, unifier);
-        pattern.matchTerm(term, subst, unifier);
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier unifier)
+            throws InsufficientInstantiationException {
+        return var.matchTerm(term, subst, unifier) && pattern.matchTerm(term, subst, unifier);
     }
 
     @Override public String toString() {

@@ -15,9 +15,8 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MismatchException;
-import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
@@ -59,12 +58,15 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
     @Override public Optional<LabelWF<ITerm>> step(ITerm l) throws ResolutionException, InterruptedException {
         debug.info("Try step {} after {}", state.unifier().toString(l), state.unifier().toString(labels));
         final Tuple2<ITermVar, State> newTail = state.freshVar("lbls");
-        IUnifier.Immutable newUnifier;
+        final Result<IUnifier.Immutable> unifyResult;
         try {
-            newUnifier = newTail._2().unifier().unify(tail, B.newCons(l, newTail._1())).unifier();
-        } catch(CannotUnifyException | OccursException e) {
-            throw new ResolutionException("Intantiation tail failed unexpectedly.");
+            if((unifyResult = newTail._2().unifier().unify(tail, B.newCons(l, newTail._1())).orElse(null)) == null) {
+                throw new ResolutionException("Instantiation tail failed unexpectedly.");
+            }
+        } catch(OccursException e) {
+            throw new ResolutionException("Instantiation tail failed unexpectedly.");
         }
+        final IUnifier.Immutable newUnifier = unifyResult.unifier();
         final State newState = newTail._2().withUnifier(newUnifier);
         final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v) || newTail._1().equals(v);
         final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
@@ -89,12 +91,15 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
 
     @Override public boolean accepting() throws ResolutionException, InterruptedException {
         debug.info("Check well-formedness of {}", state.unifier().toString(labels));
-        IUnifier.Immutable newUnifier;
+        final Result<IUnifier.Immutable> unifyResult;
         try {
-            newUnifier = state.unifier().unify(tail, B.newNil()).unifier();
-        } catch(CannotUnifyException | OccursException e) {
-            throw new ResolutionException("Intantiation tail failed unexpectedly.");
+            if((unifyResult = state.unifier().unify(tail, B.newNil()).orElse(null)) == null) {
+                throw new ResolutionException("Instantiation tail failed unexpectedly.");
+            }
+        } catch(OccursException e) {
+            throw new ResolutionException("Instantiation tail failed unexpectedly.");
         }
+        final IUnifier.Immutable newUnifier = unifyResult.unifier();
         final State newState = state.withUnifier(newUnifier);
         final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v);
         final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
@@ -115,8 +120,10 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         final Tuple2<ITermVar, State> lbls = state.freshVar("lbls");
         final Tuple3<State, Set<ITermVar>, Set<IConstraint>> inst;
         try {
-            inst = constraint.apply(ImmutableList.of(lbls._1()), lbls._2());
-        } catch(MismatchException | Delay e) {
+            if((inst = constraint.apply(ImmutableList.of(lbls._1()), lbls._2()).orElse(null)) == null) {
+                throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");
+            }
+        } catch(Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
         return new ConstraintLabelWF(inst._3(), inst._1(), state.vars(), state.scopes(), completeness, debug, lbls._1(),

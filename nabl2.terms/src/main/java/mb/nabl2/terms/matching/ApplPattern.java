@@ -39,28 +39,22 @@ class ApplPattern extends Pattern {
         return vars.build();
     }
 
-    @Override protected void matchTerm(ITerm term, Transient subst, IUnifier unifier)
-            throws MismatchException, InsufficientInstantiationException {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier unifier)
+            throws InsufficientInstantiationException {
         // @formatter:off
-        if(!CM.<Boolean, InsufficientInstantiationException>cases(
+        return CM.<Boolean, InsufficientInstantiationException>cases(
             CM.appl(applTerm -> {
-                try {
-                    if(applTerm.getOp().equals(op) && applTerm.getArity() == args.size()
-                            && matchTerms(args, applTerm.getArgs(), subst, unifier)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } catch (MismatchException e) {
+                if(applTerm.getOp().equals(op) && applTerm.getArity() == args.size()
+                        && matchTerms(args, applTerm.getArgs(), subst, unifier)) {
+                    return true;
+                } else {
                     return false;
                 }
             }),
             CM.var(v -> {
-                throw new InsufficientInstantiationException(this, v);
+                throw new InsufficientInstantiationException(v);
             })
-        ).matchOrThrow(term, unifier).orElse(false)) {
-            throw new MismatchException(this, term);
-        }
+        ).matchOrThrow(term, unifier).orElse(false);
         // @formatter:on
     }
 
