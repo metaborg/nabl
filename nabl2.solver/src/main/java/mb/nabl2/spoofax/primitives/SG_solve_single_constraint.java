@@ -9,8 +9,8 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -65,7 +65,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get debug configuration in here?
         final Fresh.Transient fresh = Fresh.Transient.of();
 
-        final ICancel cancel = new NullCancel();
+        final ICancel cancel = new ThreadCancel();
         final IProgress progress = new NullProgress();
         final SingleFileSolver solver = new SingleFileSolver(debugConfig, callExternal(env, strategoTerms));
         final ISolution solution;
