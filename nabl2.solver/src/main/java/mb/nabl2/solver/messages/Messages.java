@@ -62,7 +62,7 @@ public abstract class Messages implements IMessages {
                 return false;
             return true;
         }
-    
+
         public static Messages.Immutable of() {
             return new Messages.Immutable(Set.Immutable.of());
         }

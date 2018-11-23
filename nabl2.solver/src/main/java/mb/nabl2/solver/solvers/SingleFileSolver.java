@@ -95,20 +95,19 @@ public class SingleFileSolver extends BaseSolver {
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
                 polySafe::isInstSafe, nameResolutionSolver::getProperty);
 
-        final ISolver component =
-                c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
-                    // @formatter:off
-                    .onBase(baseSolver::solve)
-                    .onEquality(equalitySolver::solve)
-                    .onNameResolution(nameResolutionSolver::solve)
-                    .onPoly(polySolver::solve)
-                    .onRelation(relationSolver::solve)
-                    .onSet(setSolver::solve)
-                    .onSym(symSolver::solve)
-                    .onControlflow(cfgSolver::solve)
-                    .otherwise(ISolver.deny("Not allowed in this phase"))
-                    // @formatter:on
-                );
+                // @formatter:off
+        final ISolver component = c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
+                .onBase(baseSolver::solve)
+                .onEquality(equalitySolver::solve)
+                .onNameResolution(nameResolutionSolver::solve)
+                .onPoly(polySolver::solve)
+                .onRelation(relationSolver::solve)
+                .onSet(setSolver::solve)
+                .onSym(symSolver::solve)
+                .onControlflow(cfgSolver::solve)
+                .otherwise(ISolver.defer())
+        );
+        // @formatter:on
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
                 Iterables2.from(activeVars, hasRelationBuildConstraints));
 

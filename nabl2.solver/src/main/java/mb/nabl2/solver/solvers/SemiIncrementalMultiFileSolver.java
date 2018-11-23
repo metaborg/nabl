@@ -110,7 +110,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
                     .onControlflow(cfgSolver::solve)
-                    .otherwise(ISolver.deny("Not allowed in this phase"))
+                    .otherwise(ISolver.defer())
                     // @formatter:on
                 );
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
@@ -156,7 +156,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
-            
+
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                     fsSolution, messages.freeze(), solveResult.constraints())

@@ -27,6 +27,7 @@ import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverException;
+import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.ImmutableBaseSolution;
@@ -72,21 +73,20 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
             GraphSolution graphSolution = solver.solveGraph(
                     ImmutableBaseSolution.of(solverConfig, constraints, PersistentUnifier.Immutable.of()), fresh::fresh,
                     cancel, progress);
-            graphSolution = solver.reportUnsolvedGraphConstraints(graphSolution);
             ISolution constraintSolution = solver.solve(graphSolution, fresh::fresh, cancel, progress);
-            constraintSolution = solver.reportUnsolvedConstraints(constraintSolution);
             solution = constraintSolution;
         } catch(InterruptedException | SolverException ex) {
             throw new InterpreterException(ex);
         }
 
         final IResult result = ImmutableSingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
+        final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();
         final IStrategoTerm errors =
-                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier()));
+                strategoTerms.toStratego(MessageTerms.toTerms(messages.getErrors(), solution.unifier()));
         final IStrategoTerm warnings =
-                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getWarnings(), solution.unifier()));
+                strategoTerms.toStratego(MessageTerms.toTerms(messages.getWarnings(), solution.unifier()));
         final IStrategoTerm notes =
-                strategoTerms.toStratego(MessageTerms.toTerms(solution.messages().getNotes(), solution.unifier()));
+                strategoTerms.toStratego(MessageTerms.toTerms(messages.getNotes(), solution.unifier()));
         final IStrategoTerm resultTerm = env.getFactory().makeTuple(new StrategoBlob(result), errors, warnings, notes);
         env.setCurrent(resultTerm);
         return true;

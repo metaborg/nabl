@@ -104,7 +104,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
                     .onControlflow(cfgSolver::solve)
-                    .otherwise(ISolver.deny("Not allowed in this phase"))
+                    .otherwise(ISolver.defer())
                     // @formatter:on
                 );
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.from(activeVars));
