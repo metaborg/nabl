@@ -5,7 +5,6 @@ metaborgVersion: 2.6.0-SNAPSHOT
 dependencies:
   compile:
   - org.metaborg:statix.lang:${metaborgVersion}
-  - org.metaborg:statix.test:${metaborgVersion}
 runtime:
   nabl2:
     debug: analysis files custom
