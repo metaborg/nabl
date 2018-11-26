@@ -38,14 +38,6 @@
         <groupId>org.metaborg</groupId>
         <artifactId>spoofax-maven-plugin</artifactId>
         <version>${metaborg-version}</version>
-        <executions>
-          <execution>
-            <phase>test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
           <languageUnderTest>org.metaborg:statix.lang:${metaborg-version}</languageUnderTest>
         </configuration>
