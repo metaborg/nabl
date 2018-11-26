@@ -6,7 +6,7 @@
 >
   <modelVersion>4.0.0</modelVersion>
   <artifactId>statix.test</artifactId>
-  <packaging>spoofax-language</packaging>
+  <packaging>spoofax-test</packaging>
 
   <parent>
     <groupId>org.metaborg</groupId>
@@ -19,19 +19,7 @@
     <!-- compile -->
     <dependency>
       <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.lang.esv</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.lang.template</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.nabl2.lang</artifactId>
+      <artifactId>statix.lang</artifactId>
       <version>${metaborg-version}</version>
       <type>spoofax-language</type>
     </dependency>
@@ -41,43 +29,6 @@
       <version>${metaborg-version}</version>
       <type>spoofax-language</type>
       <scope>test</scope>
-    </dependency>
-
-    <!-- source -->
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>meta.lib.spoofax</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.nabl2.shared</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>org.metaborg.meta.nabl2.runtime</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>statix.lang</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>statix.runtime</artifactId>
-      <version>${metaborg-version}</version>
-      <type>spoofax-language</type>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -96,7 +47,7 @@
           </execution>
         </executions>
         <configuration>
-          <languageUnderTest>org.metaborg:statix.test:${metaborg-version}</languageUnderTest>
+          <languageUnderTest>org.metaborg:statix.lang:${metaborg-version}</languageUnderTest>
         </configuration>
       </plugin>
     </plugins>

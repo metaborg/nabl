@@ -8,6 +8,7 @@ imports
 
   pp/-
   pp/statix/lang/-
+  pp/statix/test/-
   statix/lang/pp
 
 rules
