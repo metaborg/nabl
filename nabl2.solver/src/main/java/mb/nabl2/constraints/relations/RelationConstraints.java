@@ -3,6 +3,8 @@ package mb.nabl2.constraints.relations;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.relations.terms.FunctionName;
 import mb.nabl2.relations.terms.RelationName;
@@ -63,6 +65,28 @@ public final class RelationConstraints {
                         eval.getFunction(),
                         subst.apply(eval.getTerm()),
                         eval.getMessageInfo().apply(subst::apply))
+        ));
+        // @formatter:on
+    }
+
+    public static IRelationConstraint transform(IRelationConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(IRelationConstraint.Cases.<IRelationConstraint>of(
+            build -> ImmutableCBuildRelation.of(
+                        map.apply(build.getLeft()),
+                        build.getRelation(),
+                        map.apply(build.getRight()),
+                        build.getMessageInfo().apply(map::apply)),
+            check -> ImmutableCCheckRelation.of(
+                        map.apply(check.getLeft()),
+                        check.getRelation(),
+                        map.apply(check.getRight()),
+                        check.getMessageInfo().apply(map::apply)),
+            eval -> ImmutableCEvalFunction.of(
+                        map.apply(eval.getResult()),
+                        eval.getFunction(),
+                        map.apply(eval.getTerm()),
+                        eval.getMessageInfo().apply(map::apply))
         ));
         // @formatter:on
     }

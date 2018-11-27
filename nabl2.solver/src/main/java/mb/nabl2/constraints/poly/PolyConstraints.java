@@ -3,6 +3,8 @@ package mb.nabl2.constraints.poly;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -48,6 +50,23 @@ public final class PolyConstraints {
                         inst.getInstVars(),
                         subst.apply(inst.getDeclaration()),
                         inst.getMessageInfo().apply(subst::apply))
+        ));
+        // @formatter:on
+    }
+
+    public static IPolyConstraint transform(IPolyConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(IPolyConstraint.Cases.of(
+            gen -> ImmutableCGeneralize.of(
+                        map.apply(gen.getDeclaration()),
+                        gen.getGenVars(),
+                        map.apply(gen.getType()),
+                        gen.getMessageInfo().apply(map::apply)),
+            inst -> ImmutableCInstantiate.of(
+                        map.apply(inst.getType()),
+                        inst.getInstVars(),
+                        map.apply(inst.getDeclaration()),
+                        inst.getMessageInfo().apply(map::apply))
         ));
         // @formatter:on
     }
