@@ -4,4 +4,5 @@ imports
   
   completion/completion
   statix/lang/-
+  statix/test/-
   pp

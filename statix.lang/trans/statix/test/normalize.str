@@ -35,4 +35,4 @@ rules
   explicate-resolve(|a):
       Test(bvs, body, section*) -> Test(bvs, body', section'*)
     with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*;
-         body' := <try(sometd(normalize-resolves(|wf, eq, ord)))> body
+         body' := <bottomup(try(normalize-resolves(|wf, eq, ord)))> body

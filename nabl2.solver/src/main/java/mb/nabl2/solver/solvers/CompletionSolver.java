@@ -1,6 +1,5 @@
 package mb.nabl2.solver.solvers;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,7 +22,6 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolution;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.SolverException;
@@ -39,7 +37,6 @@ import mb.nabl2.solver.components.ScopeGraphComponent;
 import mb.nabl2.solver.components.SetComponent;
 import mb.nabl2.solver.components.SymbolicComponent;
 import mb.nabl2.solver.messages.IMessages;
-import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.solver.properties.ActiveDeclTypes;
 import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.solver.properties.HasRelationBuildConstraints;
@@ -58,9 +55,9 @@ public class CompletionSolver {
 
     public ISolution solve(ISolution initial, Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
-        final ISolution graphSolution = solveGraph(initial, fresh, cancel, progress);
-        final ISolution constraintSolution = solveConstraints(graphSolution, fresh, cancel, progress);
-        final ISolution solution = reportUnsolvedConstraints(constraintSolution);
+        ISolution solution;
+        solution = solveGraph(initial, fresh, cancel, progress);
+        solution = solveConstraints(solution, fresh, cancel, progress);
         return solution;
     }
 
@@ -193,13 +190,6 @@ public class CompletionSolver {
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
-    }
-
-    private ISolution reportUnsolvedConstraints(ISolution initial) {
-        IMessages.Transient messages = initial.messages().melt();
-        messages.addAll(Messages.unsolvedErrors(initial.constraints()));
-        return ImmutableSolution.builder().from(initial).messages(messages.freeze()).constraints(Collections.emptySet())
-                .build();
     }
 
 }

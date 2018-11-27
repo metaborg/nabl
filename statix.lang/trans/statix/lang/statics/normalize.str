@@ -334,9 +334,9 @@ rules
          eq-rule* := <eq-rules(|a, eq, query*)> ns*;
          ord := <newname> "resolveMinOrd";
          ord-rule* := <ord-rules(|a, ord, query*)> ns*;
-         section'* := <try(remove-resolve-queries);
-                       try(normalize-resolves(|wf, eq, ord))
-                      > section*;
+         section'* := <bottomup(try(try(remove-resolve-queries);
+                                  try(normalize-resolves(|wf, eq, ord)))
+                                 )> section*;
          new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
          section''* := <conc> (section'*, new-section*)
 

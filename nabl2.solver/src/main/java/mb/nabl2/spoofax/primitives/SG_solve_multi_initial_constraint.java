@@ -62,7 +62,6 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
             BaseSolution baseSolution =
                     ImmutableBaseSolution.of(solverConfig, constraints, PersistentUnifier.Immutable.of());
             GraphSolution preSolution = solver.solveGraph(baseSolution, globalFresh::fresh, cancel, progress);
-            preSolution = solver.reportUnsolvedGraphConstraints(preSolution);
             solution = solver.solveIntra(preSolution, globalVars, null, globalFresh::fresh, cancel, progress);
         } catch(InterruptedException | SolverException ex) {
             throw new InterpreterException(ex);
