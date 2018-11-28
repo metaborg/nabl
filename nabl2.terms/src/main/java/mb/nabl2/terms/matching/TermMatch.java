@@ -52,6 +52,10 @@ public class TermMatch {
             return (term, unifier) -> m.match(term, unifier).map(t -> f.apply(term, t));
         }
 
+        public <R> IMatcher<R> term(ITerm.Cases<Optional<R>> cases) {
+            return (term, unifier) -> unifier.findTerm(term).match(cases);
+        }
+
         // appl
 
         public IMatcher<IApplTerm> appl() {
@@ -255,8 +259,11 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> list(Function1<? super IListTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty,
-                    list -> Optional.of(f.apply(list)), this::empty, this::empty, this::empty, this::empty));
+            final Function1<? super IListTerm, ? extends Optional<R>> g = list -> Optional.of(f.apply(list));
+            return (term, unifier) -> {
+                return unifier.findTerm(term)
+                        .match(Terms.<Optional<R>>cases(this::empty, g, this::empty, this::empty, this::empty, g));
+            };
         }
 
         public IMatcher<? extends List<? extends ITerm>> listElems() {

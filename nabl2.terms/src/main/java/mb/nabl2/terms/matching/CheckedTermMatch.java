@@ -2,6 +2,7 @@ package mb.nabl2.terms.matching;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.CheckedFunction2;
@@ -37,6 +38,10 @@ public class CheckedTermMatch {
 
         public <R, E extends Throwable> ICheckedMatcher<R, E> term(CheckedFunction1<? super ITerm, R, ? extends E> f) {
             return (term, unifier) -> Optional.of(f.apply(term));
+        }
+
+        public <R, E extends Throwable> ICheckedMatcher<R, E> term(ITerm.CheckedCases<Optional<R>, E> cases) {
+            return (term, unifier) -> unifier.findTerm(term).matchOrThrow(cases);
         }
 
         // appl
@@ -134,9 +139,19 @@ public class CheckedTermMatch {
 
         public <R, E extends Throwable> ICheckedMatcher<R, E>
                 list(CheckedFunction1<? super IListTerm, R, ? extends E> f) {
-            return (term, unifier) -> unifier.findTerm(term)
-                    .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> Optional.of(f.apply(list)),
-                            this::empty, this::empty, this::empty, this::empty));
+            final CheckedFunction1<? super IListTerm, Optional<R>, E> g = list -> Optional.of(f.apply(list));
+            return (term, unifier) -> {
+                return unifier.findTerm(term).matchOrThrow(
+                        Terms.<Optional<R>, E>checkedCases(this::empty, g, this::empty, this::empty, this::empty, g));
+            };
+        }
+
+        public <R, E extends Throwable> ICheckedMatcher<R, E> list(IListTerm.CheckedCases<Optional<R>, E> cases) {
+            final CheckedFunction1<? super IListTerm, Optional<R>, E> g = list -> list.matchOrThrow(cases);
+            return (term, unifier) -> {
+                return unifier.findTerm(term).matchOrThrow(
+                        Terms.<Optional<R>, E>checkedCases(this::empty, g, this::empty, this::empty, this::empty, g));
+            };
         }
 
         public <T, R, E extends Throwable> ICheckedMatcher<R, E> listElems(ICheckedMatcher<? extends T, ? extends E> m,
@@ -233,6 +248,14 @@ public class CheckedTermMatch {
 
         default Optional<T> matchOrThrow(ITerm term) throws E {
             return matchOrThrow(term, PersistentUnifier.Immutable.of());
+        }
+
+        default <R> ICheckedMatcher<R, E> map(Function<T, R> fun) {
+            return (term, unifier) -> this.matchOrThrow(term, unifier).<R>map(fun);
+        }
+
+        default <R> ICheckedMatcher<R, E> flatMap(Function<T, Optional<R>> fun) {
+            return (term, unifier) -> this.matchOrThrow(term, unifier).<R>flatMap(fun);
         }
 
     }
