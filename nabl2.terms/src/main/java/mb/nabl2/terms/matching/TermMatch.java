@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Function3;
@@ -394,15 +395,18 @@ public class TermMatch {
         }
 
         public <T> IMatcher<T> casesFix(Function1<IMatcher<T>, Iterable<IMatcher<? extends T>>> f) {
-            return (term, unifier) -> {
-                for(IMatcher<? extends T> matcher : f.apply(casesFix(f))) {
+            final Ref<IMatcher<T>> ref = new Ref<>();
+            final IMatcher<T> fix = (term, unifier) -> ref.get().match(term, unifier);
+            ref.set((term, unifier) -> {
+                for(IMatcher<? extends T> matcher : f.apply(fix)) {
                     Optional<? extends T> result = matcher.match(term, unifier);
                     if(result.isPresent()) {
                         return Optional.of(result.get());
                     }
                 }
                 return Optional.empty();
-            };
+            });
+            return ref.get();
         }
 
         // metadata
