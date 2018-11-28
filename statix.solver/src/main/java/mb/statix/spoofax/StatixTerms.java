@@ -272,14 +272,16 @@ public class StatixTerms {
         return M.listElems(label(), (t, ls) -> new FiniteAlphabet<>(ls));
     }
 
+    // @formatter:off
+    private static final IMatcher<ITerm> LABEL_MATCHER =
+            M.cases(
+                M.appl0("EOP"),
+                M.appl1("Label", M.string())
+            );
     public static IMatcher<ITerm> label() {
-        // @formatter:off
-        return M.cases(
-            M.appl0("EOP"),
-            M.appl1("Label", M.string())
-        );
-        // @formatter:on
+        return LABEL_MATCHER;
     }
+    // @formatter:on
 
     private static IMatcher<IRegExp<ITerm>> labelRE(IRegExpBuilder<ITerm> builder) {
         // @formatter:off
