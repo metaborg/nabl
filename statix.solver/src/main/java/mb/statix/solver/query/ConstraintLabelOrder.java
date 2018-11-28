@@ -2,6 +2,8 @@ package mb.statix.solver.query;
 
 import java.util.Set;
 
+import org.metaborg.util.log.Level;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -32,17 +34,23 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
     }
 
     public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
-        debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+        if(debug.isEnabled(Level.Info)) {
+            debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+        }
         try {
             final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(l1, l2), state).orElse(null)) == null) {
                 return false;
             }
             if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug.subContext()).isPresent()) {
-                debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                }
                 return true;
             } else {
-                debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                }
                 return false;
             }
         } catch(Delay d) {

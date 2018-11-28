@@ -5,6 +5,8 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.List;
 import java.util.Set;
 
+import org.metaborg.util.log.Level;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -44,10 +46,15 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
                 return false;
             }
             if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
-                debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
+                }
                 return true;
             } else {
-                debug.info("{} does not shadow {}", state.unifier().toString(term1), state.unifier().toString(term2));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("{} does not shadow {}", state.unifier().toString(term1),
+                            state.unifier().toString(term2));
+                }
                 return false;
             }
         } catch(Delay d) {

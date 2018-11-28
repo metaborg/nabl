@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.log.Level;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -79,7 +81,9 @@ public class CUser implements IConstraint {
             }
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
             final Rule rawRule = it.next();
-            proxyDebug.info("Try rule {}", rawRule.toString());
+            if(proxyDebug.isEnabled(Level.Info)) {
+                proxyDebug.info("Try rule {}", rawRule.toString());
+            }
             final State instantiatedState;
             final Set<IConstraint> instantiatedBody;
             final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl;

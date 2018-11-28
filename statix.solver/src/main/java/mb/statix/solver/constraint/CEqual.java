@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.log.Level;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -17,6 +19,7 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public class CEqual implements IConstraint {
 
@@ -48,19 +51,26 @@ public class CEqual implements IConstraint {
     }
 
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
+        IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result;
             if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
-                params.debug().info("Unification succeeded: {}", result.result());
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification succeeded: {}", result.result());
+                }
                 final State newState = state.withUnifier(result.unifier());
                 return Optional.of(ConstraintResult.of(newState, ImmutableSet.of()));
             } else {
-                params.debug().info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                }
                 return Optional.empty();
             }
         } catch(OccursException e) {
-            params.debug().info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            }
             return Optional.empty();
         } catch(RigidVarsException e) {
             throw Delay.ofVars(e.vars());

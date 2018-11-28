@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -56,7 +57,9 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
     }
 
     @Override public Optional<LabelWF<ITerm>> step(ITerm l) throws ResolutionException, InterruptedException {
-        debug.info("Try step {} after {}", state.unifier().toString(l), state.unifier().toString(labels));
+        if(debug.isEnabled(Level.Info)) {
+            debug.info("Try step {} after {}", state.unifier().toString(l), state.unifier().toString(labels));
+        }
         final Tuple2<ITermVar, State> newTail = state.freshVar("lbls");
         final Result<IUnifier.Immutable> unifyResult;
         try {
@@ -73,24 +76,32 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         final SolverResult result =
                 Solver.solve(newState, constraints, completeness, isRigid, isClosed, debug.subContext());
         if(result.hasErrors()) {
-            debug.info("Cannot step {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Cannot step {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
+            }
             return Optional.empty();
         } else {
             final Delay d = result.delay();
             if(result.delays().isEmpty() || d.vars().equals(ImmutableSet.of(newTail._1()))) { // stuck on the tail
-                debug.info("Stepped {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Stepped {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
+                }
                 final Set<IConstraint> newConstraints = result.delays().keySet();
                 return Optional.of(new ConstraintLabelWF(newConstraints, result.state(), rigidVars, closedScopes,
                         result.completeness(), debug, labels, newTail._1()));
             } else { // stuck on the context
-                debug.info("Stepping {} after {} delayed", newUnifier.toString(l), newUnifier.toString(labels));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Stepping {} after {} delayed", newUnifier.toString(l), newUnifier.toString(labels));
+                }
                 throw new ResolutionDelayException("Well-formedness step delayed.", d); // FIXME Remove local vars and scopes
             }
         }
     }
 
     @Override public boolean accepting() throws ResolutionException, InterruptedException {
-        debug.info("Check well-formedness of {}", state.unifier().toString(labels));
+        if(debug.isEnabled(Level.Info)) {
+            debug.info("Check well-formedness of {}", state.unifier().toString(labels));
+        }
         final Result<IUnifier.Immutable> unifyResult;
         try {
             if((unifyResult = state.unifier().unify(tail, B.newNil()).orElse(null)) == null) {
@@ -106,10 +117,14 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         final SolverResult result =
                 Solver.solve(newState, constraints, completeness, isRigid, isClosed, debug.subContext());
         if(result.hasErrors()) {
-            debug.info("Not well-formed {}", newUnifier.toString(labels));
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Not well-formed {}", newUnifier.toString(labels));
+            }
             return false;
         } else if(result.delays().isEmpty()) {
-            debug.info("Well-formed {}", newUnifier.toString(labels));
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Well-formed {}", newUnifier.toString(labels));
+            }
             return true;
         } else {
             throw new ResolutionDelayException("Label well-formedness delayed.", result.delay()); // FIXME Remove local vars and scopes

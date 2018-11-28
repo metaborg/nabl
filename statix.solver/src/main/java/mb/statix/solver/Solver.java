@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -65,7 +66,9 @@ public class Solver {
                     throw new InterruptedException();
                 }
                 final IConstraint constraint = it.next();
-                proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+                if(proxyDebug.isEnabled(Level.Info)) {
+                    proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+                }
                 IDebugContext subDebug = proxyDebug.subContext();
                 try {
                     Optional<ConstraintResult> maybeResult =
@@ -80,7 +83,9 @@ public class Solver {
                         if(!result.constraints().isEmpty()) {
                             final List<IConstraint> newConstaints = result.constraints().stream()
                                     .map(c -> c.withCause(constraint)).collect(Collectors.toList());
-                            subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
+                            if(subDebug.isEnabled(Level.Info)) {
+                                subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
+                            }
                             constraints.addAll(newConstaints);
                             completeness = completeness.addAll(newConstaints);
                         }
@@ -119,7 +124,9 @@ public class Solver {
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
             final Completeness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
-        debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
+        if(debug.isEnabled(Level.Info)) {
+            debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
+        }
         final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
         final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
         final SolverResult result = Solver.solve(state, constraints, completeness, rigidVars::contains,

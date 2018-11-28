@@ -5,6 +5,8 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.List;
 import java.util.Set;
 
+import org.metaborg.util.log.Level;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.Tuple3;
@@ -39,10 +41,14 @@ public class ConstraintDataWF implements DataWF<ITerm> {
                 return false;
             }
             if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
-                debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                }
                 return true;
             } else {
-                debug.info("Not well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Not well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                }
                 return false;
             }
         } catch(Delay d) {
