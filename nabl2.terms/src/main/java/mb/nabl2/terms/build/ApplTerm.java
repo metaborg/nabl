@@ -14,7 +14,7 @@ import mb.nabl2.terms.Terms;
 abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
 
     @Override @Value.Check protected ApplTerm check() {
-        if(Terms.TUPLE_OP.equals(getOp()) && getArity() == 1) {
+        if(getArity() == 1 && Terms.TUPLE_OP.equals(getOp())) {
             throw new IllegalArgumentException("1-tuples are not supported.");
         }
         return this;

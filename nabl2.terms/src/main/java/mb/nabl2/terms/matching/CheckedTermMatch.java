@@ -52,7 +52,7 @@ public class CheckedTermMatch {
                 CheckedFunction1<? super IApplTerm, R, ? extends E> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
+                    if(!(appl.getArity() == 0 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
@@ -65,7 +65,7 @@ public class CheckedTermMatch {
                 CheckedFunction2<? super IApplTerm, ? super T, R, ? extends E> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 1)) {
+                    if(!(appl.getArity() == 1 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T> o1 = m.matchOrThrow(appl.getArgs().get(0), unifier);
@@ -83,7 +83,7 @@ public class CheckedTermMatch {
                 CheckedFunction3<? super IApplTerm, ? super T1, ? super T2, R, ? extends E> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 2)) {
+                    if(!(appl.getArity() == 2 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.matchOrThrow(appl.getArgs().get(0), unifier);
@@ -107,7 +107,7 @@ public class CheckedTermMatch {
                 CheckedFunction4<? super IApplTerm, ? super T1, ? super T2, ? super T3, R, ? extends E> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 3)) {
+                    if(!(appl.getArity() == 3 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.matchOrThrow(appl.getArgs().get(0), unifier);

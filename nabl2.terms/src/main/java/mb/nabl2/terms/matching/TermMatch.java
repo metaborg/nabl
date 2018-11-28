@@ -76,7 +76,7 @@ public class TermMatch {
         public <R> IMatcher<R> appl0(String op, Function1<? super IApplTerm, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
+                    if(!(appl.getArity() == 0 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
@@ -92,7 +92,7 @@ public class TermMatch {
                 Function2<? super IApplTerm, ? super T, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 1)) {
+                    if(!(appl.getArity() == 1 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return m.match(appl.getArgs().get(0), unifier).map(t -> f.apply(appl, t));
@@ -108,7 +108,7 @@ public class TermMatch {
                 Function3<? super IApplTerm, ? super T1, ? super T2, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 2)) {
+                    if(!(appl.getArity() == 2 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -127,7 +127,7 @@ public class TermMatch {
                 IMatcher<? extends T3> m3, Function4<? super IApplTerm, ? super T1, ? super T2, ? super T3, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 3)) {
+                    if(!(appl.getArity() == 3 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -148,7 +148,7 @@ public class TermMatch {
                 Function5<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 4)) {
+                    if(!(appl.getArity() == 4 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -171,7 +171,7 @@ public class TermMatch {
                 Function6<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, ? super T5, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 5)) {
+                    if(!(appl.getArity() == 5 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);

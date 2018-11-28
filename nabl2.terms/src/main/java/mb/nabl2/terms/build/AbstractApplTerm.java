@@ -63,10 +63,10 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
             return false;
         }
         final IApplTerm that = (IApplTerm) other;
-        if(!getOp().equals(that.getOp())) {
+        if(getArity() != getArity()) {
             return false;
         }
-        if(getArity() != getArity()) {
+        if(!getOp().equals(that.getOp())) {
             return false;
         }
         for(int i = 0; i < getArity(); i++) {

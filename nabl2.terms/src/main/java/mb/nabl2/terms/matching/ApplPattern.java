@@ -43,7 +43,7 @@ class ApplPattern extends Pattern {
         // @formatter:off
         return unifier.findTerm(term).matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
             .appl(applTerm -> {
-                if(applTerm.getOp().equals(op) && applTerm.getArity() == args.size()
+                if(applTerm.getArity() == args.size() && applTerm.getOp().equals(op)
                         && matchTerms(args, applTerm.getArgs(), subst, unifier)) {
                     return true;
                 } else {

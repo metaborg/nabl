@@ -138,8 +138,8 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             // @formatter:off
             return thisTerm.match(Terms.cases(
                 applThis -> thatTerm.match(Terms.<Boolean>cases()
-                    .appl(applThat -> applThis.getOp().equals(applThat.getOp()) &&
-                                       applThis.getArity() == applThat.getArity() &&
+                    .appl(applThat -> applThis.getArity() == applThat.getArity() &&
+                                       applThis.getOp().equals(applThat.getOp()) &&
                                        equals(applThis.getArgs(), applThat.getArgs()))
                     .var(varThat -> equalTermVar(applThis, varThat))
                     .otherwise(t -> false)
@@ -406,8 +406,8 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // @formatter:off
         return left.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases(
             applLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
-                .appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
-                                   applLeft.getArity() == applRight.getArity() &&
+                .appl(applRight -> applLeft.getArity() == applRight.getArity() &&
+                                   applLeft.getOp().equals(applRight.getOp()) &&
                                    equals(applLeft.getArgs(), applRight.getArgs(), stack, visited))
                 .var(varRight -> equalVarTerm(varRight, applLeft, stack, visited))
                 .otherwise(t -> false)
@@ -1067,8 +1067,8 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 return left.match(Terms.<Boolean>cases(
                     applLeft -> right.match(Terms.<Boolean>cases()
                         .appl(applRight -> {
-                            return applLeft.getOp().equals(applRight.getOp()) &&
-                                    applLeft.getArity() == applRight.getArity() &&
+                            return applLeft.getArity() == applRight.getArity() &&
+                                    applLeft.getOp().equals(applRight.getOp()) &&
                                     unifys(applLeft.getArgs(), applRight.getArgs());
                         })
                         .var(varRight -> {
