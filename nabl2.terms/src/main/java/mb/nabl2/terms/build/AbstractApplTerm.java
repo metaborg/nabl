@@ -59,11 +59,14 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         if(other == this) {
             return true;
         }
+        if(hashCode() != other.hashCode()) {
+            return false;
+        }
         if(!(other instanceof IApplTerm)) {
             return false;
         }
         final IApplTerm that = (IApplTerm) other;
-        if(getArity() != getArity()) {
+        if(getArity() != that.getArity()) {
             return false;
         }
         if(!getOp().equals(that.getOp())) {
