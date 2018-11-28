@@ -1,6 +1,6 @@
 module terms-algebraic
 
-language StatixTest
+language StatixLang
 
 // static
 

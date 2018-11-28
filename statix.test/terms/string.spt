@@ -1,6 +1,6 @@
 module string
 
-language StatixTest
+language StatixLang
 
 // static
 

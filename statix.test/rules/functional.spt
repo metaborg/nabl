@@ -1,6 +1,6 @@
 module rules-functional
 
-language StatixTest
+language StatixLang
 
 // static
 

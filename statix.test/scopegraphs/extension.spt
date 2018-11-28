@@ -1,6 +1,6 @@
 module scopegraphs-extension
 
-language StatixTest
+language StatixLang
 
 // direct extensions
 

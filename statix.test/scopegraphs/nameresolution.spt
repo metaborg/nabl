@@ -1,6 +1,6 @@
 module scopegraphs-nameresolution
 
-language StatixTest
+language StatixLang
 
 test resolve reference with same name in the same scope succeeds [[
   resolve {s}

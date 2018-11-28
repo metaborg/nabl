@@ -1,6 +1,6 @@
 module terms-path
 
-language StatixTest
+language StatixLang
 
 // static
 

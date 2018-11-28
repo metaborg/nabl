@@ -1,6 +1,6 @@
 module scopegraphs-construction
 
-language StatixTest
+language StatixLang
 
 test new scope succeeds [[
   resolve {s} new s

@@ -1,6 +1,6 @@
 module terms-tuple
 
-language StatixTest
+language StatixLang
 
 // static
 

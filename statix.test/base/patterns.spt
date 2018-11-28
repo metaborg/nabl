@@ -1,6 +1,6 @@
 module base-patterns
 
-language StatixTest
+language StatixLang
 
 test as-pattern in test succeeds [[
   resolve {x} x@42 == x

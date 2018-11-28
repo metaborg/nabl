@@ -1,6 +1,6 @@
 module scopegraph-relations
 
-language StatixTest
+language StatixLang
 
 test query single item in the same scope succeeds [[
   resolve {s}
