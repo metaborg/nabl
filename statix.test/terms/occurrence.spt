@@ -1,6 +1,6 @@
 module terms-occurrence
 
-language StatixTest
+language StatixLang
 
 // static
 

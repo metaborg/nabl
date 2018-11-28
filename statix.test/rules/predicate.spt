@@ -1,6 +1,6 @@
 module rules-predicate
 
-language StatixTest
+language StatixLang
 
 // static
 

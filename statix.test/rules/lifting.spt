@@ -1,6 +1,6 @@
 module rules-lifting
 
-language StatixTest
+language StatixLang
 
 test predicate constraint lifting all arguments [[
 resolve cs([], []), cs([1], [1])

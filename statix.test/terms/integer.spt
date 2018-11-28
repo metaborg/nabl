@@ -1,6 +1,6 @@
 module terms-integer
 
-language StatixTest
+language StatixLang
 
 // static
 

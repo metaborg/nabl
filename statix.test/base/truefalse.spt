@@ -1,6 +1,6 @@
 module base-truefalse
 
-language StatixTest
+language StatixLang
 
 test true succeeds [[
   resolve true
