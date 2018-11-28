@@ -2,13 +2,10 @@ package mb.statix.solver;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Set;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.terms.ImmutableScope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -32,18 +29,19 @@ public abstract class AState {
         return 0;
     }
 
-    @Value.Default Set<ITermVar> __vars() {
-        return ImmutableSet.of();
+    @Value.Default Set.Immutable<ITermVar> __vars() {
+        return Set.Immutable.of();
     }
 
     public Tuple2<ITermVar, State> freshVar(String base) {
         final int i = __varCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final ITermVar var = B.newVar("", name);
-        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).add__vars(var).build());
+        final Set.Immutable<ITermVar> vars = __vars().__insert(var);
+        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());
     }
 
-    public Set<ITermVar> vars() {
+    public Set.Immutable<ITermVar> vars() {
         return __vars();
     }
 
@@ -53,18 +51,19 @@ public abstract class AState {
         return 0;
     }
 
-    @Value.Default Set<ITerm> __scopes() {
-        return ImmutableSet.of();
+    @Value.Default Set.Immutable<ITerm> __scopes() {
+        return Set.Immutable.of();
     }
 
     public Tuple2<ITerm, State> freshScope(String base) {
         final int i = __scopeCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final ITerm scope = ImmutableScope.of("", name);
-        return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).add__scopes(scope).build());
+        final Set.Immutable<ITerm> scopes = __scopes().__insert(scope);
+        return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());
     }
 
-    public Set<ITerm> scopes() {
+    public Set.Immutable<ITerm> scopes() {
         return __scopes();
     }
 
