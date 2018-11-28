@@ -21,7 +21,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.NameResolution;
+import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -108,7 +108,7 @@ public class CResolveQuery implements IConstraint {
                 }
             };
             // @formatter:off
-            final NameResolution<ITerm, ITerm, ITerm> nameResolution = NameResolution.<ITerm, ITerm, ITerm>builder()
+            final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
                     .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
                     .withDataWF(filter(type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
                     .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
