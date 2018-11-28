@@ -392,10 +392,10 @@ public class StatixTerms {
             M.appl1("Tuple", M.listElems(m), (t, args) -> {
                 return P.newTuple(args);
             }),
-            M.appl1("List", M.listElems((t, u) -> pattern().match(t, u)), (t, elems) -> {
+            M.appl1("List", M.listElems((t, u) -> m.match(t, u)), (t, elems) -> {
                 return P.newList(elems);
             }),
-            M.appl2("ListTail", M.listElems((t, u) -> pattern().match(t, u)), m, (t, elems, tail) -> {
+            M.appl2("ListTail", M.listElems((t, u) -> m.match(t, u)), m, (t, elems, tail) -> {
                 return P.newListTail(elems, tail);
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
