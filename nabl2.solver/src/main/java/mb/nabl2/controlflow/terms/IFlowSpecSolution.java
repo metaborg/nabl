@@ -1,5 +1,7 @@
 package mb.nabl2.controlflow.terms;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.Ref;
 
 import io.usethesource.capsule.Map;
@@ -17,7 +19,7 @@ public interface IFlowSpecSolution<N extends ICFGNode> {
      */
     Map.Immutable<Tuple2<CFGNode, String>, TransferFunctionAppl> tfAppls();
 
-    default TransferFunctionAppl getTFAppl(CFGNode node, String prop) {
+    default @Nullable TransferFunctionAppl getTFAppl(CFGNode node, String prop) {
         return tfAppls().get(ImmutableTuple2.of(node, prop));
     }
 
