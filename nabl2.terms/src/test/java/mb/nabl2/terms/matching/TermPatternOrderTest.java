@@ -2,8 +2,6 @@ package mb.nabl2.terms.matching;
 
 import static mb.nabl2.terms.matching.TermPattern.P;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -29,50 +27,47 @@ public class TermPatternOrderTest {
     private final Pattern z = P.newString("z");
 
     @Test public void testEqualStrings() {
-        assertEquals(0, Pattern.leftRightOrdering.compare(y, y));
+        assertEqualPatterns(y, y);
     }
 
     @Test public void testInequalStrings() {
-        assertNotEquals(0, Pattern.leftRightOrdering.compare(x, y));
+        assertInequalPatterns(x, y);
     }
 
     @Test public void testInequalAppls() {
         Pattern p1 = P.newAppl(f, x, y);
         Pattern p2 = P.newAppl(g, a, b, c);
-        assertNotEquals(0, Pattern.leftRightOrdering.compare(p1, p2));
+        assertInequalPatterns(p1, p2);
     }
 
     @Test public void testSmallerLonger() {
         Pattern p1 = a;
         Pattern p2 = P.newTuple(b, c);
-        assertNotEquals(0, Pattern.leftRightOrdering.compare(p1, p2));
+        assertInequalPatterns(p1, p2);
     }
 
     @Test public void testLongerGreaterThanSmaller() {
         Pattern p1 = P.newTuple(a, b);
         Pattern p2 = a;
-        assertNotEquals(0, Pattern.leftRightOrdering.compare(p1, p2));
+        assertInequalPatterns(p1, p2);
     }
 
     @Test public void testVarGreaterThanString() {
         Pattern p1 = a;
         Pattern p2 = x;
-        assertTrue(Pattern.leftRightOrdering.compare(p1, p2) > 0);
-        assertTrue(Pattern.leftRightOrdering.compare(p2, p1) < 0);
+        assertLargerPattern(p1, p2);
     }
 
     @Test public void testVarGreaterThanTuple() {
         Pattern p1 = a;
         Pattern p2 = P.newTuple();
-        assertTrue(Pattern.leftRightOrdering.compare(p1, p2) > 0);
-        assertTrue(Pattern.leftRightOrdering.compare(p2, p1) < 0);
+        assertLargerPattern(p1, p2);
     }
 
     @Test public void testEmptyTupleGreaterThanProduct() {
         Pattern p1 = P.newTuple(x, a);
         Pattern p2 = P.newTuple();
-        assertTrue(Pattern.leftRightOrdering.compare(p1, p2) > 0);
-        assertTrue(Pattern.leftRightOrdering.compare(p2, p1) < 0);
+        assertLargerPattern(p1, p2);
     }
 
     @Test public void testFirstLevelDifference() {
@@ -101,4 +96,51 @@ public class TermPatternOrderTest {
         assertArrayEquals(new Pattern[] { p1, p2, p3, p4 }, sps.toArray());
     }
 
+    @Test public void testSameNonlinear() {
+        Pattern p1 = P.newTuple(a, a);
+        Pattern p2 = P.newTuple(b, b);
+        assertEqualPatterns(p1, p2);
+    }
+
+    @Test public void testNonlinearAndLinear() {
+        Pattern p1 = P.newTuple(a, a);
+        Pattern p2 = P.newTuple(b, c);
+        assertSmallerPattern(p1, p2);
+    }
+
+    @Test public void testNonlinearAs() {
+        Pattern p1 = P.newTuple(P.newAs("x", x), P.newVar("x"));
+        Pattern p2 = P.newTuple(P.newVar("x"), P.newVar("x"));
+        assertSmallerPattern(p1, p2);
+    }
+
+    //----------------------------------------------------------------------
+
+    private static void assertEqualPatterns(Pattern p1, Pattern p2) {
+        final int c1 = Pattern.leftRightOrdering.compare(p1, p2);
+        final int c2 = Pattern.leftRightOrdering.compare(p2, p1);
+        assertTrue("Patterns not equal", c1 == 0);
+        assertTrue("Assymetric order", c2 == 0);
+    }
+
+    private static void assertInequalPatterns(Pattern p1, Pattern p2) {
+        final int c1 = Pattern.leftRightOrdering.compare(p1, p2);
+        final int c2 = Pattern.leftRightOrdering.compare(p2, p1);
+        assertTrue("Patterns not inequal", c1 != 0);
+        assertTrue("Asymmetric order", c2 != 0);
+    }
+
+    private static void assertSmallerPattern(Pattern p1, Pattern p2) {
+        final int c1 = Pattern.leftRightOrdering.compare(p1, p2);
+        final int c2 = Pattern.leftRightOrdering.compare(p2, p1);
+        assertTrue("Pattern not smaller", c1 < 0);
+        assertTrue("Asymmetric order", c2 > 0);
+    }
+
+    private static void assertLargerPattern(Pattern p1, Pattern p2) {
+        final int c1 = Pattern.leftRightOrdering.compare(p1, p2);
+        final int c2 = Pattern.leftRightOrdering.compare(p2, p1);
+        assertTrue("Pattern not larger", c1 > 0);
+        assertTrue("Asymmetric order", c2 < 0);
+    }
 }

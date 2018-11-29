@@ -31,6 +31,10 @@ class PatternVar extends Pattern {
         this.var = var;
     }
 
+    @Nullable ITermVar getVar() {
+        return var;
+    }
+
     public boolean isWildcard() {
         return var == null;
     }

@@ -16,7 +16,7 @@ class PatternAs extends Pattern {
     private final Pattern pattern;
 
     public PatternAs(String name, Pattern pattern) {
-        this(TermBuild.B.newVar("'", name), pattern);
+        this(TermBuild.B.newVar("", name), pattern);
     }
 
     public PatternAs(ITermVar var, Pattern pattern) {
