@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,6 +19,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
@@ -38,6 +40,7 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixPrimitive {
@@ -52,6 +55,7 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final Spec spec =
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        reportOverlappingRules(spec);
 
         final String levelString =
                 M.stringValue().match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected log level."));
@@ -108,6 +112,22 @@ public class STX_solve_constraint extends StatixPrimitive {
         final IListTerm notes = B.EMPTY_LIST;
         final ITerm resultTerm = B.newTuple(solution, errors, warnings, notes);
         return Optional.of(resultTerm);
+    }
+
+    private void reportOverlappingRules(final Spec spec) {
+        final ListMultimap<String, Rule> overlappingRules = spec.overlappingRules();
+        if(!overlappingRules.isEmpty()) {
+            logger.error("+-------------------------+");
+            logger.error("| FOUND OVERLAPPING RULES |");
+            logger.error("+-------------------------+");
+            for(Map.Entry<String, Collection<Rule>> entry : overlappingRules.asMap().entrySet()) {
+                logger.error("| Overlapping rules for: {}", entry.getKey());
+                for(Rule rule : entry.getValue()) {
+                    logger.error("| * {}", rule);
+                }
+            }
+            logger.error("+-------------------------+");
+        }
     }
 
     private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier.Immutable unifier) {
