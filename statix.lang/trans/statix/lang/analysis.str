@@ -43,16 +43,12 @@ rules // Analysis
          ?(ast', a', e*, w*, n*);
          nabl2-custom-analysis-info-msg(|"Normalized AST.");
 
-         nabl2-custom-analysis-info-msg(|"Checking guard constraints...");
-         c-e* := <check-rule-constraints> ast';
-         nabl2-custom-analysis-info-msg(|"Checked guard constraints.");
-
          nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
          (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast';
          nabl2-custom-analysis-info-msg(|"Computed scope extensions.");
 
          result := <nabl2--set-custom-analysis(|a')> ext*;
-         error*   := [e*, c-e*, ext-e*];
+         error*   := [e*, ext-e*];
          warning* := [w*, ext-w*];
          note*    := [n*, ext-n*]
 

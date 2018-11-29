@@ -1,10 +1,13 @@
 package mb.statix.spec;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -17,6 +20,21 @@ import mb.nabl2.util.Tuple2;
 public abstract class ASpec {
 
     @Value.Parameter public abstract ListMultimap<String, Rule> rules();
+
+    public ListMultimap<String, Rule> overlappingRules() {
+        final ImmutableListMultimap.Builder<String, Rule> overlappingRules = ImmutableListMultimap.builder();
+        rules().asMap().forEach((name, rules) -> {
+            overlappingRules.putAll(name, overlappingRules(rules));
+        });
+        return overlappingRules.build();
+    }
+
+    private Collection<Rule> overlappingRules(Collection<Rule> rules) {
+        return rules.stream()
+                .filter(r1 -> rules.stream()
+                        .anyMatch(r2 -> !r1.equals(r2) && ARule.leftRightPatternOrdering.compare(r1, r2) == 0))
+                .collect(Collectors.toList());
+    }
 
     @Value.Parameter public abstract IAlphabet<ITerm> labels();
 

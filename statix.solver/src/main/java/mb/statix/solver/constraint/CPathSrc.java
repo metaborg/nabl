@@ -62,9 +62,9 @@ public class CPathSrc implements IConstraint {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("src(");
-        sb.append(termToString.apply(pathTerm));
+        sb.append(termToString.format(pathTerm));
         sb.append(", ");
-        sb.append(termToString.apply(srcTerm));
+        sb.append(termToString.format(srcTerm));
         sb.append(")");
         return sb.toString();
     }

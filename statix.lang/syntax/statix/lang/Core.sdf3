@@ -43,7 +43,7 @@ context-free syntax
   CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> | <LocalVars> <Constraint> :- <LocalVars>
+    <RuleHead> :- <LocalVars>
       <Constraint>.
   >
 

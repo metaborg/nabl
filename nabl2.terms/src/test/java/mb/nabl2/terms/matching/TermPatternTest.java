@@ -1,7 +1,10 @@
 package mb.nabl2.terms.matching;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermPattern.P;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -24,28 +27,62 @@ public class TermPatternTest {
     private final ITerm y = B.newString("y");
     private final ITerm z = B.newString("z");
 
-    @Test public void testMatchVars() throws MatchException {
-        final IPattern pattern = new TermPattern(a);
-        final ISubstitution.Immutable result = pattern.match(b);
+    @Test public void testMatchVars() {
+        final Pattern pattern = P.newVar(a);
+        final ISubstitution.Immutable result = pattern.match(b).get();
         assertEquals(b, result.apply(a));
     }
 
-    @Test public void testMatchVarTerm() throws MatchException {
-        final IPattern pattern = new TermPattern(a);
-        final ISubstitution.Immutable result = pattern.match(B.newAppl(g, x, b));
+    @Test public void testMatchVarTerm() {
+        final Pattern pattern = P.newVar(a);
+        final ISubstitution.Immutable result = pattern.match(B.newAppl(g, x, b)).get();
         assertEquals(B.newAppl(g, x, b), result.apply(a));
     }
 
-    @Test public void testMatchTerms() throws MatchException {
-        final IPattern pattern = new TermPattern(B.newAppl(g, a, b));
-        final ISubstitution.Immutable result = pattern.match(B.newAppl(g, B.newList(x), y));
+    @Test public void testMatchTerms() {
+        final Pattern pattern = P.newAppl(g, P.newVar(a), P.newVar(b));
+        final ISubstitution.Immutable result = pattern.match(B.newAppl(g, B.newList(x), y)).get();
         assertEquals(B.newList(x), result.apply(a));
         assertEquals(y, result.apply(b));
     }
 
-    @Test(expected = MatchException.class) public void testMatchFail() throws MatchException {
-        final IPattern pattern = new TermPattern(B.newAppl(g, a));
-        pattern.match(b);
+    @Test public void testMatchFail() throws MismatchException {
+        final Pattern pattern = P.newAppl(g, P.newVar(a));
+        assertFalse(pattern.match(b).isPresent());
+    }
+
+    @Test public void testMatchStrings() {
+        assertTrue(P.newString(f).match(B.newString(f)).isPresent());
+    }
+
+    @Test public void testMismatchStrings() {
+        assertFalse(P.newString(f).match(B.newString(g)).isPresent());
+    }
+
+    @Test public void testMatchInts() {
+        assertTrue(P.newInt(42).match(B.newInt(42)).isPresent());
+    }
+
+    @Test public void testMismatchInts() {
+        assertFalse(P.newInt(42).match(B.newInt(1)).isPresent());
+    }
+
+    @Test public void testMatchNils() {
+        assertTrue(P.newNil().match(B.newNil()).isPresent());
+    }
+
+    @Test public void testMismatchNilAndList() {
+        assertFalse(P.newNil().match(B.newList(x)).isPresent());
+    }
+
+    @Test public void testMatchGroundAppls() {
+        Pattern pattern = P.newAppl(f, P.newNil());
+        assertTrue(pattern.match(B.newAppl(f, B.newNil())).isPresent());
+    }
+
+    @Test public void testMatchWildcardWithNil() {
+        Pattern pattern = P.newAppl(f, P.newWld());
+        assertTrue(pattern.match(B.newAppl(f, B.newNil())).isPresent());
     }
 
 }

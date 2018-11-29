@@ -75,9 +75,9 @@ public class CPathLt implements IConstraint {
         sb.append("pathLt[");
         sb.append(lt);
         sb.append("](");
-        sb.append(termToString.apply(label1Term));
+        sb.append(termToString.format(label1Term));
         sb.append(", ");
-        sb.append(termToString.apply(label2Term));
+        sb.append(termToString.format(label2Term));
         sb.append(")");
         return sb.toString();
     }

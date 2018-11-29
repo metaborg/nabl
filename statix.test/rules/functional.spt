@@ -17,20 +17,6 @@ test functional constraint defined in rules [[
     d : int -> int
 ]] analysis succeeds
 
-test full rule form succeeds [[
-  module test
-  rules
-    d : int -> int
-    d(i) = j | i == 4 :- true.
-]] analysis succeeds
-
-test guard only rule form succeeds [[
-  module test
-  rules
-    d : int -> int
-    d(i) = j | i == 4.
-]] analysis succeeds
-
 test body only rule form succeeds [[
   module test
   rules
@@ -45,20 +31,6 @@ test head only rule form succeeds [[
     d(i) = i.
 ]] analysis succeeds
 
-test head input variables visible in guard [[
-  module test
-  rules
-    d : int -> int
-    d(i) = j | i == 4.
-]] analysis succeeds
-
-test head output variables not visible in guard [[
-  module test
-  rules
-    d : int -> int
-    d(i) = j | i == j.
-]] analysis fails
-
 test head input variables visible in body [[
   module test
   rules
@@ -71,20 +43,6 @@ test head output variables visible in body [[
   rules
     d : int -> int
     d(i) = j :- i == j.
-]] analysis succeeds
-
-test guard variables visible in guard [[
-  module test
-  rules
-    d : int -> int
-    d(i) = j | {k} i == k, k == 4.
-]] analysis succeeds
-
-test guard variables visible in body [[
-  module test
-  rules
-    d : int -> int
-    d(i) = j | {k} i == k :- k == j.
 ]] analysis succeeds
 
 test body variables visible in body [[
@@ -173,14 +131,6 @@ resolve f(1, 2) == 1
 rules
   f : int * int -> int
   f(i@1, j) = i.
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test as-pattern in head input visible in guard succeeds [[
-resolve f(1, 2) == 1
-rules
-  f : int * int -> int
-  f(i@_, j) = i | i == 1.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 

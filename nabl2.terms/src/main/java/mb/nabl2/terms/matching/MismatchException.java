@@ -2,20 +2,20 @@ package mb.nabl2.terms.matching;
 
 import mb.nabl2.terms.ITerm;
 
-public class MatchException extends Exception {
+public class MismatchException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    private final ITerm pattern;
+    private final Pattern pattern;
     private final ITerm term;
 
-    public MatchException(ITerm pattern, ITerm term) {
+    public MismatchException(Pattern pattern, ITerm term) {
         super("Cannot match " + term + " against " + pattern);
         this.pattern = pattern;
         this.term = term;
     }
 
-    public ITerm getPattern() {
+    public Pattern getPattern() {
         return pattern;
     }
 

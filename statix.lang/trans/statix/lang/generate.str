@@ -39,7 +39,7 @@ rules
 rules
 
   spec-ast-to-aterm: (ast, ext) -> spec
-    with rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
+    with rule* := <collect-all(?Rule(_, _, _))> ast;
          label* := <collect-all(?Labels(<id>));concat> ast;
          rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
          spec := (label*, rel*, rule*, ext)

@@ -28,8 +28,6 @@ rules
     normalize-functional-cdecls;
     nabl2-custom-analysis-info-msg(|"| Normalize functional rule heads...");
     normalize-functional-heads(|a);
-    nabl2-custom-analysis-info-msg(|"| Normalize inline head patterns...");
-    normalize-inline-patterns(|a);
     nabl2-custom-analysis-info-msg(|"| Normalize functional constraint terms...");
     normalize-functional-cops(|a);
     nabl2-custom-analysis-info-msg(|"| Normalize query shorthands...");
@@ -42,8 +40,6 @@ rules
     explicate-resolve(|a)
 
   normalize-3(|a) =
-    nabl2-custom-analysis-info-msg(|"| Normalize inline patterns...");
-    normalize-inline-patterns(|a);
     nabl2-custom-analysis-info-msg(|"| Normalize as patterns...");
     normalize-as-patterns;
     nabl2-custom-analysis-info-msg(|"| Normalize wildcards...");
@@ -63,7 +59,7 @@ rules
   normalize-functional-heads(|a) = bottomup(try(normalize-functional-head(|a)))
 
   normalize-functional-head(|a):
-      Rule(F(x, in_ts, out_t), gvs, guard, bvs, body){a*} -> Rule(C(x, ts), gvs, guard, bvs', body'){a*}
+      Rule(F(x, in_ts, out_t), bvs, body){a*} -> Rule(C(x, ts), bvs', body'){a*}
     with FUN(intys, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
          out_ts := <make-fresh-vars(|"out")> outtys;
          bvs' := bvs;
@@ -85,12 +81,8 @@ rules
   normalize-functional-cops(|a) = bottomup(try(normalize-functional-cop(|a)))
 
   normalize-functional-cop(|a):
-      Rule(head, gvs, guard, bvs, body){a*} -> Rule(head, gvs', guard'', bvs', body''){a*}
-    with (guard', gmaps) := <collect-map(replace-cop(|a), not-in-lambda)> guard;
-         guard'' := <map(cop-to-c(|a));list-to-conj(|guard')> gmaps;
-         new-gvs := <map(Snd);all-vars> gmaps;
-         gvs' := <conc> (gvs, new-gvs);
-         (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
+      Rule(head, bvs, body){a*} -> Rule(head, bvs', body''){a*}
+    with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
          body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
          new-bvs := <map(Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
@@ -173,60 +165,6 @@ rules
 
 rules
 
-  normalize-inline-patterns(|a) = bottomup(try(normalize-inline-pattern(|a)))
-
-  normalize-inline-pattern(|a):
-      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
-    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
-         n := <in-types;length> ty;
-
-         // extract inline patterns
-         (gps', guard-eq*) := <take(|n);extract-inline-patterns> ps;
-         (bps', body-eq*) := <drop(|n);extract-inline-patterns> ps;
-
-         // compute new head variables
-         ps' := <conc> (gps', bps');
-         head-var* := <all-vars;raw-make-set> ps';
-
-         // compute new existental guard variables
-         guard-eq-var* := <all-vars;raw-make-set> guard-eq*;
-         new-guard-var* := <raw-diff> (guard-eq-var*, head-var*);
-         gvs' := <conc;raw-make-set> (new-guard-var*, gvs);
-         guard' := <list-to-conj(|guard)> guard-eq*;
-
-         // compute new existental body variables
-         body-eq-var* := <all-vars;raw-make-set> body-eq*;
-         new-body-var* := <raw-diff> (body-eq-var*, <conc> (head-var*, gvs'));
-         bvs' := <conc;raw-make-set> (new-body-var*, bvs);
-         body' := <list-to-conj(|body)> body-eq*
-
-  normalize-inline-pattern(|a):
-      LLam(ps, bvs, body){a*} -> LLam(ps', bvs', body'){a*}
-  with (ps', eq*) := <extract-inline-patterns> ps;
-       head-var* := <all-vars;raw-make-set> ps';
-       body-eq-var* := <all-vars;raw-make-set> eq*;
-       new-body-var* := <raw-diff> (body-eq-var*, head-var*);
-       bvs' := <conc;raw-make-set> (new-body-var*, bvs);
-       body' := <list-to-conj(|body)> eq*
-
-
-  extract-inline-patterns: [] -> ([], [])
-
-  extract-inline-patterns: [v|ps] -> ([v|ps'], C*)
-    where <?Var(_) + ?Wld()> v
-    with (ps', C*) := <extract-inline-patterns> ps
-
-  extract-inline-patterns: [p|ps] -> ([v|ps'], [CEqual(v, p')|C*])
-    where <?As(v, p')> p
-    with (ps', C*) := <extract-inline-patterns> ps
-
-  extract-inline-patterns: [p|ps] -> ([v|ps'], [CEqual(v, p)|C*])
-    where <not(?Var(_) + ?Wld() + ?As(_, _))> p
-    with v := Var(<newname> "p");
-         (ps', C*) := <extract-inline-patterns> ps
-
-rules
-
   normalize-rel-shorthands(|a) = bottomup(try(normalize-rel-shorthand(|a)))
 
   normalize-rel-shorthand(|a): c@CAskRel(rel, ts, st) -> c'
@@ -285,11 +223,8 @@ rules
   normalize-wildcards = bottomup(try(normalize-wildcard))
 
   normalize-wildcard:
-      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps'), gvs', guard', bvs', body'){a*}
+      Rule(C(x, ps), bvs, body){a*} -> Rule(C(x, ps'), bvs', body'){a*}
     with (ps', _) := <collect-map(replace-wld)> ps
-    with (guard', gmaps) := <collect-map(replace-wld, not-in-lambda)> guard;
-         new-gvs := <map(Snd)> gmaps;
-         gvs' := <conc> (gvs, new-gvs)
     with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
@@ -308,9 +243,7 @@ rules
   normalize-as-patterns = bottomup(try(normalize-as-pattern))
 
   normalize-as-pattern:
-      Rule(C(x, ps), gvs, guard, bvs, body){a*} -> Rule(C(x, ps), gvs, guard'', bvs, body''){a*}
-    with (guard', gmaps) := <collect-map(replace-as, not-in-lambda)> guard;
-         guard'' := <map(as-to-constraint);list-to-conj(|guard')> gmaps
+      Rule(C(x, ps), bvs, body){a*} -> Rule(C(x, ps), bvs, body''){a*}
     with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
          body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
 
@@ -340,10 +273,10 @@ rules
     with base-rule := <cmap-base-rule> (x, y, lift*);
          elem-rule := <cmap-elem-rule> (x, y, lift*)
 
-  cmap-base-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue(), [], CTrue())
+  cmap-base-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue())
     with ps := <map(lift-base)> lift*
 
-  cmap-elem-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue(), [], CConj(call, rec))
+  cmap-elem-rule: (x, y, lift*) -> Rule(C(x, ps), [], CConj(call, rec))
     with ps   := <map-with-index(lift-elem-head(|"x"))> lift*;
          call := C(y, <map-with-index(lift-elem-call(|"x"))> lift*);
          rec  := C(x, <map-with-index(lift-elem-rec(|"x"))> lift*)
@@ -359,11 +292,11 @@ rules
          base-rule := <fmap-base-rule> (x, y, in-lift*, out-lift*);
          elem-rule := <fmap-elem-rule> (x, y, in-lift*, out-lift*)
 
-  fmap-base-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue(), [], CTrue())
+  fmap-base-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue())
     with inps := <map(lift-base)> in-lift*;
          outp := <map(lift-base);build-terms(|out-lift*)> out-lift*
 
-  fmap-elem-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue(), bvs, CConj(call, rec))
+  fmap-elem-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), bvs, CConj(call, rec))
     with inps := <map-with-index(lift-elem-head(|"x"))> in-lift*;
          outp := <map-with-index(lift-elem-head(|"y"));build-terms(|out-lift*)> out-lift*;
          bvs  := <all-vars> outp;
@@ -411,11 +344,10 @@ rules
     with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));
          rule* := <map(wf-rule(|a, wf, query*))> ns*
 
-  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), [], eq-r, bvs, body)
+  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
-         r := Var(<newname> "r");
-         eq-r := CEqual(r, Occurrence(ns, ts, p));
+         r := Occurrence(ns, ts, p);
          lbls := Var(<newname> "lbls");
          if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (filter, [lbls])
@@ -429,13 +361,12 @@ rules
     with decl := CDecl(InductiveC(), eq, SimpleType([OccurrenceSort(), OccurrenceSort()]));
          rule* := <map(eq-rule(|a, eq))> ns*
 
-  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), ts, eq-r, us, body)
+  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), us, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          ts := <make-fresh-vars(|"t")> tys;
          us := <make-fresh-vars(|"u")> tys;
          [pr, pd] := <map(!Wld())> [(),()];
-         r := Var(<newname> "r");
-         eq-r := CEqual(r, Occurrence(ns, ts, pr));
+         r := Occurrence(ns, ts, pr);
          d := Var(<newname> "d");
          eq-d := CEqual(d, Occurrence(ns, us, pd));
          eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
@@ -446,11 +377,10 @@ rules
     with decl := CDecl(InductiveC(), ord, SimpleType([OccurrenceSort(), LabelSort(), LabelSort()]));
          rule* := <map(ord-rule(|a, ord, query*))> ns*
 
-  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), [], eq-r, bvs, body)
+  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
-         r := Var(<newname> "r");
-         eq-r := CEqual(r, Occurrence(ns, ts, p));
+         r := Occurrence(ns, ts, p);
          l1 := Var(<newname> "l1");
          l2 := Var(<newname> "l2");
          if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then

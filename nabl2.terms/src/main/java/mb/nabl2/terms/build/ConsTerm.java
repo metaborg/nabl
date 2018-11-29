@@ -58,6 +58,9 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
         if(other == null) {
             return false;
         }
+        if(hashCode() != other.hashCode()) {
+            return false;
+        }
         if(!(other instanceof IConsTerm)) {
             return false;
         }

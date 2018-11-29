@@ -8,14 +8,14 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Lambda;
+import mb.statix.spec.Rule;
 
 public class QueryMin implements IQueryMin {
 
-    private final Lambda pathConstraint;
-    private final Lambda dataConstraint;
+    private final Rule pathConstraint;
+    private final Rule dataConstraint;
 
-    public QueryMin(Lambda pathConstraint, Lambda dataConstraint) {
+    public QueryMin(Rule pathConstraint, Rule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }

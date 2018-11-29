@@ -75,9 +75,9 @@ public class CTermId implements IConstraint {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("termId(");
-        sb.append(termToString.apply(term));
+        sb.append(termToString.format(term));
         sb.append(", ");
-        sb.append(termToString.apply(idTerm));
+        sb.append(termToString.format(idTerm));
         sb.append(")");
         return sb.toString();
     }

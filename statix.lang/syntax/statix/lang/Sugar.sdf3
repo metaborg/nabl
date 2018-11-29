@@ -41,14 +41,6 @@ context-free syntax
   Rule.AxiomRule = <
     <RuleHead>.
   >
-  Rule.GuardRule = <
-    <RuleHead> | <LocalVars>
-      <Constraint>.
-  >
-  Rule.BodyRule = <
-    <RuleHead> :- <LocalVars>
-      <Constraint>.
-  >
 
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 

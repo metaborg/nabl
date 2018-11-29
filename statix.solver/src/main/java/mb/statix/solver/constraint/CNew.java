@@ -63,7 +63,7 @@ public class CNew implements IConstraint {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("new ");
-        sb.append(termToString.apply(terms));
+        sb.append(termToString.format(terms));
         return sb.toString();
     }
 

@@ -1,126 +1,130 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-
-import org.metaborg.util.functions.Predicate2;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.build.TermBuild;
+import mb.nabl2.terms.substitution.ISubstitution.Immutable;
+import mb.nabl2.terms.unification.IUnifier;
 
-public class TermPattern implements IPattern {
+public class TermPattern {
 
-    private final List<ITerm> patterns;
-    private final Predicate2<ITerm, ITerm> equals;
+    public static P P = new P();
 
-    public TermPattern(Predicate2<ITerm, ITerm> equals, Iterable<ITerm> patterns) {
-        this.equals = equals;
-        this.patterns = ImmutableList.copyOf(patterns);
-    }
+    public static class P {
 
-    public TermPattern(Predicate2<ITerm, ITerm> equals, ITerm... patterns) {
-        this(equals, Arrays.asList(patterns));
-    }
+        public final Pattern EMPTY_TUPLE = new ApplPattern(Terms.TUPLE_OP, ImmutableList.of());
+        public final Pattern EMPTY_LIST = new NilPattern();
 
-    public TermPattern(Iterable<ITerm> patterns) {
-        this((t1, t2) -> t1.equals(t2), patterns);
-    }
-
-    public TermPattern(ITerm... patterns) {
-        this(Arrays.asList(patterns));
-    }
-
-    @Override public ISubstitution.Immutable match(Iterable<ITerm> terms) throws MatchException {
-        final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        final ITerm pattern = B.newTuple(patterns);
-        final ITerm term = B.newTuple(terms);
-        if(!matchTerms(pattern, term, subst)) {
-            throw new MatchException(pattern, term);
+        public Pattern newAppl(String op, Pattern... args) {
+            return newAppl(op, Arrays.asList(args));
         }
-        return subst.freeze();
-    }
 
-    private boolean matchTerms(ITerm pattern, ITerm term, ISubstitution.Transient subst) {
-        // @formatter:off
-        return pattern.<Boolean>match(Terms.cases(
-            applPattern -> term.match(Terms.<Boolean>cases()
-                .appl(applTerm -> applPattern.getOp().equals(applTerm.getOp()) &&
-                                  applPattern.getArity() == applTerm.getArity() &&
-                                  matchs(applPattern.getArgs(), applTerm.getArgs(), subst))
-                .otherwise(t -> false)
-            ),
-            listPattern -> term.match(Terms.<Boolean>cases()
-                .list(listTerm -> matchLists(listPattern, listTerm, subst))
-                .otherwise(t -> false)
-            ),
-            stringPattern -> term.match(Terms.<Boolean>cases()
-                .string(stringTerm -> stringPattern.getValue().equals(stringTerm.getValue()))
-                .otherwise(t -> false)
-            ),
-            integerPattern -> term.match(Terms.<Boolean>cases()
-                .integer(integerTerm -> integerPattern.getValue() == integerTerm.getValue())
-                .otherwise(t -> false)
-            ),
-            blobPattern -> term.match(Terms.<Boolean>cases()
-                .blob(blobTerm -> blobPattern.getValue().equals(blobTerm.getValue()))
-                .otherwise(t -> false)
-            ),
-            varPattern -> matchVar(varPattern, term, subst)
-        ));
-        // @formatter:on
-    }
-
-    private boolean matchLists(IListTerm pattern, IListTerm term, ISubstitution.Transient subst) {
-        // @formatter:off
-        return pattern.<Boolean>match(ListTerms.cases(
-            consPattern -> term.match(ListTerms.<Boolean>cases()
-                .cons(consTerm -> matchTerms(consPattern.getHead(), consTerm.getHead(), subst) &&
-                                  matchLists(consPattern.getTail(), consTerm.getTail(), subst))
-                .otherwise(l -> false)
-            ),
-            nilPattern -> term.match(ListTerms.<Boolean>cases()
-                .nil(nilTerm -> true)
-                .otherwise(l -> false)
-            ),
-            varPattern -> matchVar(varPattern, term, subst)
-        ));
-        // @formatter:on
-    }
-
-    private boolean matchVar(ITermVar var, ITerm term, ISubstitution.Transient subst) {
-        if(subst.contains(var)) {
-            return equals.test(subst.apply(var), term);
-        } else {
-            subst.put(var, term);
-        }
-        return true;
-    }
-
-    private boolean matchs(final Iterable<ITerm> patterns, final Iterable<ITerm> terms, ISubstitution.Transient subst) {
-        Iterator<ITerm> itPattern = patterns.iterator();
-        Iterator<ITerm> itTerm = terms.iterator();
-        while(itPattern.hasNext()) {
-            if(!itTerm.hasNext()) {
-                return false;
+        public Pattern newAppl(String op, Iterable<? extends Pattern> args) {
+            if(op.equals("")) {
+                throw new IllegalArgumentException();
             }
-            if(!matchTerms(itPattern.next(), itTerm.next(), subst)) {
-                return false;
+            return new ApplPattern(op, args);
+        }
+
+        public Pattern newTuple(Pattern... args) {
+            return newTuple(Arrays.asList(args));
+        }
+
+        public Pattern newTuple(Iterable<? extends Pattern> args) {
+            final List<Pattern> argList = ImmutableList.copyOf(args);
+            if(argList.size() == 1) {
+                return argList.get(0);
+            } else {
+                return new ApplPattern(Terms.TUPLE_OP, argList);
             }
         }
-        if(itTerm.hasNext()) {
-            return false;
+
+        public Pattern newList(Iterable<? extends Pattern> args) {
+            return newListTail(args, EMPTY_LIST);
         }
-        return true;
+
+        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail) {
+            Pattern list = tail;
+            for(Pattern elem : ImmutableList.copyOf(args).reverse()) {
+                list = newCons(elem, list);
+            }
+            return list;
+        }
+
+        public Pattern newCons(Pattern head, Pattern tail) {
+            return new ConsPattern(head, tail);
+        }
+
+        public Pattern newNil() {
+            return new NilPattern();
+        }
+
+        public Pattern newString(String value) {
+            return new StringPattern(value);
+        }
+
+        public Pattern newInt(int value) {
+            return new IntPattern(value);
+        }
+
+        public Pattern newWld() {
+            return new PatternVar();
+        }
+
+        public Pattern newVar(String name) {
+            return new PatternVar(name);
+        }
+
+        public Pattern newVar(ITermVar var) {
+            return new PatternVar(var);
+        }
+
+        public Pattern newAs(String name, Pattern pattern) {
+            return new PatternAs(name, pattern);
+        }
+
+        public Pattern newAs(ITermVar var, Pattern pattern) {
+            return new PatternAs(var, pattern);
+        }
+
+        public Pattern fromTerm(ITerm term) {
+            // @formatter:off
+            return term.match(Terms.cases(
+                appl -> new ApplPattern(appl.getOp(),
+                        appl.getArgs().stream().map(this::fromTerm).collect(Collectors.toList())),
+                list -> list.match(ListTerms.cases(
+                    cons -> new ConsPattern(fromTerm(cons.getHead()), fromTerm(cons.getTail())),
+                    nil -> new NilPattern(),
+                    var -> new PatternVar(var)
+                )),
+                string -> new StringPattern(string.getValue()),
+                integer -> new IntPattern(integer.getValue()),
+                blob -> {
+                    throw new IllegalArgumentException("Cannot create blob patterns.");
+                },
+                var -> new PatternVar(var)
+            ));
+            // @formatter:on
+        }
+
+        public Optional<Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms) {
+            return TermPattern.P.newTuple(patterns).match(TermBuild.B.newTuple(terms));
+        }
+
+        public Optional<Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
+                IUnifier unifier) throws InsufficientInstantiationException {
+            return TermPattern.P.newTuple(patterns).match(TermBuild.B.newTuple(terms), unifier);
+        }
+
     }
 
 }

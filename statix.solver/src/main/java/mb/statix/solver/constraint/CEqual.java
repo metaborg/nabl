@@ -4,11 +4,12 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.log.Level;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
@@ -18,6 +19,7 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.solver.log.IDebugContext;
 
 public class CEqual implements IConstraint {
 
@@ -49,18 +51,26 @@ public class CEqual implements IConstraint {
     }
 
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
+        IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {
-            final IUnifier.Immutable.Result<IUnifier.Immutable> result = unifier.unify(term1, term2, params::isRigid);
-            params.debug().info("Unification succeeded: {}", result.result());
-            final State newState = state.withUnifier(result.unifier());
-            return Optional.of(ConstraintResult.of(newState, ImmutableSet.of()));
-        } catch(CannotUnifyException e) {
-            params.debug().info("Unification failed: {} != {}", unifier.toString(e.getLeft()),
-                    unifier.toString(e.getRight()));
-            return Optional.empty();
+            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
+            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification succeeded: {}", result.result());
+                }
+                final State newState = state.withUnifier(result.unifier());
+                return Optional.of(ConstraintResult.of(newState, ImmutableSet.of()));
+            } else {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                }
+                return Optional.empty();
+            }
         } catch(OccursException e) {
-            params.debug().info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            }
             return Optional.empty();
         } catch(RigidVarsException e) {
             throw Delay.ofVars(e.vars());
@@ -69,9 +79,9 @@ public class CEqual implements IConstraint {
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(termToString.apply(term1));
+        sb.append(termToString.format(term1));
         sb.append(" == ");
-        sb.append(termToString.apply(term2));
+        sb.append(termToString.format(term2));
         return sb.toString();
     }
 

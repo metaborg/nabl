@@ -206,4 +206,79 @@ public class Terms {
         };
     }
 
+    public static <T, E extends Throwable> CheckedCaseBuilder<T, E> checkedCases() {
+        return new CheckedCaseBuilder<>();
+    }
+
+    public static class CheckedCaseBuilder<T, E extends Throwable> {
+
+        private CheckedFunction1<? super IApplTerm, ? extends T, E> onAppl = null;
+        private CheckedFunction1<? super IListTerm, ? extends T, E> onList = null;
+        private CheckedFunction1<? super IStringTerm, ? extends T, E> onString = null;
+        private CheckedFunction1<? super IIntTerm, ? extends T, E> onInt = null;
+        private CheckedFunction1<? super IBlobTerm, ? extends T, E> onBlob = null;
+        private CheckedFunction1<? super ITermVar, ? extends T, E> onVar = null;
+
+        public CheckedCaseBuilder<T, E> appl(CheckedFunction1<? super IApplTerm, ? extends T, E> onAppl) {
+            this.onAppl = onAppl;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> list(CheckedFunction1<? super IListTerm, ? extends T, E> onList) {
+            this.onList = onList;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> string(CheckedFunction1<? super IStringTerm, ? extends T, E> onString) {
+            this.onString = onString;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> integer(CheckedFunction1<? super IIntTerm, ? extends T, E> onInt) {
+            this.onInt = onInt;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> blob(CheckedFunction1<? super IBlobTerm, ? extends T, E> onBlob) {
+            this.onBlob = onBlob;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> var(CheckedFunction1<? super ITermVar, ? extends T, E> onVar) {
+            this.onVar = onVar;
+            return this;
+        }
+
+        public ITerm.CheckedCases<T, E> otherwise(CheckedFunction1<? super ITerm, ? extends T, E> otherwise) {
+            return new ITerm.CheckedCases<T, E>() {
+
+                @Override public T caseAppl(IApplTerm appl) throws E {
+                    return onAppl != null ? onAppl.apply(appl) : otherwise.apply(appl);
+                }
+
+                @Override public T caseList(IListTerm list) throws E {
+                    return onList != null ? onList.apply(list) : otherwise.apply(list);
+                }
+
+                @Override public T caseString(IStringTerm string) throws E {
+                    return onString != null ? onString.apply(string) : otherwise.apply(string);
+                }
+
+                @Override public T caseInt(IIntTerm integer) throws E {
+                    return onInt != null ? onInt.apply(integer) : otherwise.apply(integer);
+                }
+
+                @Override public T caseBlob(IBlobTerm blob) throws E {
+                    return onBlob != null ? onBlob.apply(blob) : otherwise.apply(blob);
+                }
+
+                @Override public T caseVar(ITermVar var) throws E {
+                    return onVar != null ? onVar.apply(var) : otherwise.apply(var);
+                }
+
+            };
+        }
+
+    }
+
 }
