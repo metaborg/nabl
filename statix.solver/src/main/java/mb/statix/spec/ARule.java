@@ -56,10 +56,10 @@ public abstract class ARule {
         Tuple3<State, Set<ITermVar>, Set<IConstraint>> stateAndInst;
         try {
             if((stateAndInst = apply(args, state).orElse(null)) == null) {
-                throw new IllegalStateException();
+                return Optional.of(false);
             }
         } catch(Delay e) {
-            throw new IllegalStateException();
+            return Optional.of(false);
         }
         state = stateAndInst._1();
         final Set<ITermVar> instVars = stateAndInst._2();
