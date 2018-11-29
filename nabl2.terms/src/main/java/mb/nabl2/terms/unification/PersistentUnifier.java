@@ -713,7 +713,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
             final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         if(maxDepth == 0) {
-            return "_";
+            return "…";
         }
         // @formatter:off
         return term.match(Terms.cases(
@@ -730,7 +730,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private String toString(IListTerm list, final java.util.Map<ITermVar, String> stack,
             final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         if(maxDepth == 0) {
-            return "_";
+            return "…";
         }
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
@@ -763,7 +763,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private String toString(final ITermVar var, final java.util.Map<ITermVar, String> stack,
             final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         if(maxDepth == 0) {
-            return "_";
+            return "…";
         }
         final ITermVar rep = findRep(var);
         final String toString;
