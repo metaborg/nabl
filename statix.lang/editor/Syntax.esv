@@ -14,6 +14,11 @@ language
   block comment : "/*" * "*/"
   fences        : [ ] ( ) { }
 
+views
+
+  outline view  : editor-outline
+    expand to level: 2
+
 menus
 
   menu: "Syntax" (openeditor)

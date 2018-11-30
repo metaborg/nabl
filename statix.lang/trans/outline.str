@@ -1,0 +1,32 @@
+module outline
+
+imports
+
+  libspoofax/editor/outline
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  pp
+
+rules
+
+  editor-outline:
+    (_, _, ast, path, project-path) -> outline
+    with outline := <desugar-all;outline(|path)> ast
+
+  outline(|path): ast -> node*
+    with
+      entry* := <collect-om(outline-pred(|ast), conc)> ast
+    ; node* := <qsort((Fst,Fst);string-lt);map(Snd)> entry*
+
+  outline-pred(|ast): CDecl(_, x, ty) -> (x, Node(<keep-origin(pp-partial-Statix-string)>, node*))
+    with
+      head* := <collect-om(?Rule(<keep-origin(outline-rule-head(|x))>, _, _), conc)> ast
+    ; sorted* := <qsort(rule-head-cmp(patterns-lt))> head*
+    ; node* := <map(!Node(<keep-origin(pp-partial-Statix-string)>, []))> sorted*
+
+  outline-pred(|ast): CDeriveMap(x, _, _) -> (x, Node(<keep-origin(pp-partial-Statix-string)>, []))
+  outline-pred(|ast): FDeriveMap(x, _, _, _) -> (x, Node(<keep-origin(pp-partial-Statix-string)>, []))
+
+  outline-rule-head(|x) = C(?x, id)
+  outline-rule-head(|x) = F(?x, id, !Wld())
