@@ -55,7 +55,7 @@ public final class ControlFlowGraphTerms {
             for(CFGNode from : froms) {
                 result.__remove(from, node); // remove froms ->> node
                 for(CFGNode to : tos) {
-                    result.__put(from, to); // add froms -->> tos
+                    result.__insert(from, to); // add froms -->> tos
                 }
             }
         }
