@@ -326,8 +326,8 @@ rules
     with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*
 
   explicate-resolve-sections(|a): section* -> (section''*, wf, eq, ord)
-    with query* := <collect-all(?NamespaceQuery(_, _, _))> section*;
-         ns* := <collect-all(?NsDecl(<id>, _))> section*;
+    with query* := <collect-all(?NamespaceQuery(_, _, _), conc)> section*;
+         ns* := <collect-all(?NsDecl(<id>, _), conc)> section*;
          wf := <newname> "resolveFilterWf";
          wf-rule* := <wf-rules(|a, wf, query*)> ns*;
          eq := <newname> "resolveFilterEq";

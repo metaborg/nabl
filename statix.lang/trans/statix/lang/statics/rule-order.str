@@ -1,0 +1,50 @@
+module statix/lang/statics/rule-order
+
+imports
+
+  libspoofax/term/origin
+
+  signatures/statix/lang/-
+
+  statix/lang/statics/util
+  statix/lang/pp
+
+rules
+
+  detect-overlapping-rules: ast -> or-e*
+    with
+      head*   := <collect-all(?Rule(<id>, _, _), conc)> ast
+    ; o-head* := <group-by(rule-eq)> head*
+    ; or-e*   := <filter(overlap-errors);concat> o-head*
+
+  rule-eq: (C(x1, p1*), C(x2, p2*)) -> <id>
+    where
+      <raw-eq> (x1, x2)
+    ; <patterns-eq> (Tuple(p1*), Tuple(p2*))
+
+  rule-eq: (F(x1, p1*, _), F(x2, p2*, _)) -> <id>
+    where
+      <raw-eq> (x1, x2)
+    ; <patterns-eq> (Tuple(p1*), Tuple(p2*))
+
+  overlap-errors: heads -> e*
+    where
+      [_,_|_] := heads
+    with
+      head-str* := <map(!$[`[<pp-partial-Statix-string>]' at line [<origin-line;inc;int-to-string>]])> heads
+    ; heads-str := <separate-by(|", ");concat-strings> head-str*
+    ; e* := <map(\ c -> (c, $[Overlapping rules [heads-str]]) \)> heads
+
+rules
+
+  compare-patterns =
+    prim("STX_compare_patterns")
+
+  patterns-eq =
+    compare-patterns; <eq> (<id>, 0)
+
+  patterns-lt =
+    compare-patterns; <lt> (<id>, 0)
+
+  patterns-gt =
+    compare-patterns; <gt> (<id>, 0)

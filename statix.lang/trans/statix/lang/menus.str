@@ -10,18 +10,31 @@ imports
 rules // Debugging
 
   // Prints the abstract syntax ATerm of a selection.
-  debug-show-aterm: (_, _, ast, path, project-path) -> (filename, result)
+  show-parsed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path;
          result   := ast
 
-  format-aterm: (_, _, ast, path, project-path) -> (filename, result)
+  format-parsed: (_, _, ast, path, project-path) -> (filename, result)
     with ext      := <get-extension> path;
          filename := <guarantee-extension(|$[formatted.[ext]])> path;
          result   := <pp-Statix-string> ast
 
+rules // Debugging
+
+  // Prints the abstract syntax ATerm of a selection.
+  show-desugared-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path;
+         result   := <desugar-all> ast
+
+  format-desugared: (_, _, ast, path, project-path) -> (filename, result)
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[formatted.[ext]])> path;
+         result   := <desugar-all;pp-Statix-string> ast
+
+rules // Debugging
 
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+  show-analyzed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path;
          result   := <nabl2-simplify-ast-indices> ast
 
@@ -30,9 +43,10 @@ rules // Debugging
          filename := <guarantee-extension(|$[analyzed.[ext]])> path;
          result   := <pp-Statix-string> ast
 
+rules // Debugging
 
   // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  debug-show-explicated: (_, _, ast, path, project-path) -> (filename, result)
+  show-explicated-aterm: (_, _, ast, path, project-path) -> (filename, result)
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with filename := <guarantee-extension(|"explicated.aterm")> path;

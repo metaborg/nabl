@@ -17,9 +17,9 @@ imports
 rules // Analysis
 
   editor-analyze:
-      AnalyzeUnit(resource, ast) -> UnitResult(ast', result, error*, warning*, note*)
+      AnalyzeUnit(resource, ast) -> UnitResult(ast'', result, error*, warning*, note*)
     with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
-         <desugar-all> ast;
+         ast' := <desugar-all> ast;
          nabl2-custom-analysis-info-msg(|"Desugared AST.");
 
          nabl2-custom-analysis-info-msg(|"Normalizing AST...");
@@ -34,21 +34,22 @@ rules // Analysis
                            end
                          }
          in
-           step(normalize-0,
-           step(normalize-1,
-           step(normalize-2,
-           step(normalize-3,
-           analyze))))
+           <step(normalize-0,
+            step(normalize-1,
+            step(normalize-2,
+            step(normalize-3,
+            analyze))))> ast'
          end;
-         ?(ast', a', e*, w*, n*);
-         nabl2-custom-analysis-info-msg(|"Normalized AST.");
+         ?(ast'', a', e*, w*, n*);
+
+         nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
+         or-e* := <detect-overlapping-rules> ast';
 
          nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast';
-         nabl2-custom-analysis-info-msg(|"Computed scope extensions.");
+         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast'';
 
          result := <nabl2--set-custom-analysis(|a')> ext*;
-         error*   := [e*, ext-e*];
+         error*   := [e*, ext-e*, or-e*];
          warning* := [w*, ext-w*];
          note*    := [n*, ext-n*]
 

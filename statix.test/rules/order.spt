@@ -20,7 +20,7 @@ rules
   f : int * int
   f(1, a).
   f(1, b).
-]] // analysis fails
+]] analysis fails
 
 // dynamic
 
