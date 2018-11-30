@@ -385,6 +385,9 @@ public class StatixTerms {
             M.appl1("Var", M.stringValue(), (t, name) -> {
                 return P.newVar(name);
             }),
+            M.appl0("Wld", (t) -> {
+                return P.newWld();
+            }),
             M.appl2("As", varTerm(), m, (t, var, pattern) -> {
                 return P.newAs(var, pattern);
             }),
