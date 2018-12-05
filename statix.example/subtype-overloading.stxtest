@@ -1,0 +1,55 @@
+/** Type-based overload resolution with subtyping
+ * Goal:
+ * Result:
+ * - Function resolution does select compatible functions based on the `subType`
+ *   relation.
+ * - Currently there is now way to select the _best_ compatible function.
+ */
+resolve {s result}
+
+  new s,
+  s -> Fun{"f"@-} with funType INT(),
+  s -> Fun{"f"@-} with funType NAT(),
+  s -> Fun{"f"@-} with funType POS(),
+  resolve(s, Fun{"f"@-}, NAT()) == result
+
+signature
+
+  sorts ID = string
+
+  sorts TYPE constructors
+    INT : TYPE
+    NAT : TYPE
+    POS : TYPE
+
+  namespaces
+    Fun : ID
+
+  relations
+    funType : occurrence * TYPE
+
+rules
+
+  resolve : scope * occurrence * TYPE -> list((occurrence * TYPE))
+
+  resolve(s, Fun{x@_}, T) = pots2ots(funs) :- {}
+    query funType
+      filter true and { (Fun{y@_}, U) :- x == y, subType(T, U) }
+      min false and { (_, T1), (_, T2) :- subType(T1, T2) }
+      in s
+      |-> funs.
+
+rules
+
+  subType : TYPE * TYPE
+
+  subType(T, T).
+  subType(POS(), NAT()).
+  subType(POS(), INT()).
+  subType(NAT(), INT()).
+
+rules
+
+  pots2ots maps pot2ot(list(*)) = list(*)
+  pot2ot : (path * (occurrence * TYPE)) -> (occurrence * TYPE)
+  pot2ot((_, ot)) = ot.
