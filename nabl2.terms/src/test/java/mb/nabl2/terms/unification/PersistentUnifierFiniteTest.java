@@ -11,7 +11,6 @@ import org.junit.Test;
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
 
 @SuppressWarnings("unused")
 public class PersistentUnifierFiniteTest {
@@ -44,16 +43,14 @@ public class PersistentUnifierFiniteTest {
         assertEquals(2, phi.size());
     }
 
-    @Test public void testVarIdentity()
-            throws OccursException, InsufficientInstantiationException {
+    @Test public void testVarIdentity() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        assertTrue(phi.areEqual(a, a));
+        assertTrue(phi.areEqual(a, a).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testTermIdentity()
-            throws OccursException, InsufficientInstantiationException {
+    @Test public void testTermIdentity() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        assertTrue(phi.areEqual(B.newAppl(f, a), B.newAppl(f, a)));
+        assertTrue(phi.areEqual(B.newAppl(f, a), B.newAppl(f, a)).orElseThrow(v -> new RuntimeException()));
     }
 
     @Test public void testUnifySameVar() throws OccursException {
@@ -62,22 +59,19 @@ public class PersistentUnifierFiniteTest {
         assertFalse(phi.contains(a));
     }
 
-    @Test public void testUnifyTermArgs()
-            throws OccursException, InsufficientInstantiationException {
+    @Test public void testUnifyTermArgs() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
         phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
         phi.unify(a, B.newAppl(f, x)).orElseThrow(() -> new IllegalArgumentException());
-        assertTrue(phi.areEqual(b, x));
+        assertTrue(phi.areEqual(b, x).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test(expected = OccursException.class) public void testUnifyOccursDirect()
-            throws OccursException {
+    @Test(expected = OccursException.class) public void testUnifyOccursDirect() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
     }
 
-    @Test(expected = OccursException.class) public void testUnifyOccursIndirect()
-            throws OccursException {
+    @Test(expected = OccursException.class) public void testUnifyOccursIndirect() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
         phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
         phi.unify(b, B.newAppl(g, a)).orElseThrow(() -> new IllegalArgumentException());
@@ -107,8 +101,7 @@ public class PersistentUnifierFiniteTest {
         assertEquals("f(\"x\",\"y\")", phi.toString(a));
     }
 
-    @Test public void testRemoveUnifiedVar()
-            throws OccursException, InsufficientInstantiationException {
+    @Test public void testRemoveUnifiedVar() throws OccursException {
         final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
@@ -116,39 +109,37 @@ public class PersistentUnifierFiniteTest {
         terms.__put(d, B.newAppl(f, a));
         final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(b);
-        assertTrue(phi.areEqual(a, c));
-        assertTrue(phi.areEqual(d, B.newAppl(f, c)));
+        assertTrue(phi.areEqual(a, c).orElseThrow(v -> new RuntimeException()));
+        assertTrue(phi.areEqual(d, B.newAppl(f, c)).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test(expected = InsufficientInstantiationException.class) public void testRemoveFreeVar()
-            throws OccursException, InsufficientInstantiationException {
+    @Test public void testRemoveFreeVar() throws OccursException {
         final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         reps.__put(b, c);
         final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(c);
-        assertTrue(phi.areEqual(a, b));
-        phi.areEqual(b, c); // this throws, should be last
+        assertTrue(phi.areEqual(a, b).orElseThrow(v -> new RuntimeException()));
+        assertTrue(phi.areEqual(b, c).match(r -> false, r -> true)); // this throws, should be last
     }
 
-    @Test public void testRemoveVarWithTerm()
-            throws OccursException, InsufficientInstantiationException {
+    @Test public void testRemoveVarWithTerm() throws OccursException {
         final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         terms.__put(b, B.newAppl(f, c));
         final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(b);
-        assertTrue(phi.areEqual(a, B.newAppl(f, c)));
+        assertTrue(phi.areEqual(a, B.newAppl(f, c)).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testRetain() throws OccursException, InsufficientInstantiationException {
+    @Test public void testRetain() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
         phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
         phi.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         phi.retain(a);
-        assertTrue(phi.areEqual(a, B.newAppl(f, x)));
+        assertTrue(phi.areEqual(a, B.newAppl(f, x)).orElseThrow(v -> new RuntimeException()));
     }
 
     @Test public void testEquals() throws OccursException {

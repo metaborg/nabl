@@ -33,7 +33,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
+import mb.nabl2.terms.matching.MaybeNotInstantiated;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.CapsuleUtil;
@@ -397,60 +397,70 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     // areEqual(ITerm, ITerm)
     ///////////////////////////////////////////
 
-    @Override public boolean areEqual(final ITerm left, final ITerm right) throws InsufficientInstantiationException {
+    @Override public MaybeNotInstantiated<Boolean> areEqual(final ITerm left, final ITerm right) {
         return equalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private boolean equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) throws InsufficientInstantiationException {
+    private MaybeNotInstantiated<Boolean> equalTerms(final ITerm left, final ITerm right,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         // @formatter:off
-        return left.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases(
-            applLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
-                .appl(applRight -> applLeft.getArity() == applRight.getArity() &&
-                                   applLeft.getOp().equals(applRight.getOp()) &&
-                                   equals(applLeft.getArgs(), applRight.getArgs(), stack, visited))
+        return left.match(Terms.<MaybeNotInstantiated<Boolean>>cases(
+            applLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .appl(applRight -> {
+                    if(applLeft.getArity() == applRight.getArity() &&
+                            applLeft.getOp().equals(applRight.getOp())) { 
+                        return equals(applLeft.getArgs(), applRight.getArgs(), stack, visited);
+                    } else {
+                        return MaybeNotInstantiated.ofResult(false);
+                    }
+                 })
                 .var(varRight -> equalVarTerm(varRight, applLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            listLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
-                .list(listRight -> listLeft.matchOrThrow(ListTerms.<Boolean, InsufficientInstantiationException>checkedCases(
-                    consLeft -> listRight.matchOrThrow(ListTerms.<Boolean, InsufficientInstantiationException>checkedCases()
+            listLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .list(listRight -> listLeft.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases(
+                    consLeft -> listRight.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
                         .cons(consRight -> {
-                            return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited) && 
-                            equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
+                            return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited).flatMap(m -> {
+                                if(m) {
+                                    return equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
+                                } else {
+                                    return MaybeNotInstantiated.ofResult(false);
+                                }
+                            });
                         })
                         .var(varRight -> equalVarTerm(varRight, consLeft, stack, visited))
-                        .otherwise(l -> false)
+                        .otherwise(l -> MaybeNotInstantiated.ofResult(false))
                     ),
-                    nilLeft -> listRight.matchOrThrow(ListTerms.<Boolean, InsufficientInstantiationException>checkedCases()
-                        .nil(nilRight -> true)
+                    nilLeft -> listRight.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
+                        .nil(nilRight -> MaybeNotInstantiated.ofResult(true))
                         .var(varRight -> equalVarTerm(varRight, nilLeft, stack, visited))
-                        .otherwise(l -> false)
+                        .otherwise(l -> MaybeNotInstantiated.ofResult(false))
                     ),
-                    varLeft -> listRight.matchOrThrow(ListTerms.<Boolean, InsufficientInstantiationException>checkedCases()
+                    varLeft -> listRight.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
                         .var(varRight -> equalVars(varLeft, varRight, stack, visited))
                         .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
                     )
                 )))
                 .var(varRight -> equalVarTerm(varRight, listLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            stringLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
-                .string(stringRight -> stringLeft.getValue().equals(stringRight.getValue()))
+            stringLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .string(stringRight -> MaybeNotInstantiated.ofResult(stringLeft.getValue().equals(stringRight.getValue())))
                 .var(varRight -> equalVarTerm(varRight, stringLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            integerLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
-                .integer(integerRight -> integerLeft.getValue() == integerRight.getValue())
+            integerLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .integer(integerRight -> MaybeNotInstantiated.ofResult(integerLeft.getValue() == integerRight.getValue()))
                 .var(varRight -> equalVarTerm(varRight, integerLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            blobLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
-                .blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue()))
+            blobLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .blob(blobRight -> MaybeNotInstantiated.ofResult(blobLeft.getValue().equals(blobRight.getValue())))
                 .var(varRight -> equalVarTerm(varRight, blobLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            varLeft -> right.matchOrThrow(Terms.<Boolean, InsufficientInstantiationException>checkedCases()
+            varLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
                 // match var before term, or term will always match
                 .var(varRight -> equalVars(varLeft, varRight, stack, visited))
                 .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
@@ -459,62 +469,65 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // @formatter:on
     }
 
-    private boolean equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) throws InsufficientInstantiationException {
+    private MaybeNotInstantiated<Boolean> equalVarTerm(final ITermVar var, final ITerm term,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar rep = findRep(var);
         if(terms().containsKey(rep)) {
             return equalTerms(terms().get(rep), term, stack, visited);
         } else {
-            throw new InsufficientInstantiationException(var);
+            return MaybeNotInstantiated.ofNotInstantiated(var);
         }
     }
 
-    private boolean equalVars(final ITermVar left, final ITermVar right, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) throws InsufficientInstantiationException {
+    private MaybeNotInstantiated<Boolean> equalVars(final ITermVar left, final ITermVar right,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar leftRep = findRep(left);
         final ITermVar rightRep = findRep(right);
         if(leftRep.equals(rightRep)) {
-            return true;
+            return MaybeNotInstantiated.ofResult(true);
         }
         final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
-        final boolean equal;
+        final MaybeNotInstantiated<Boolean> equal;
         if(!visited.containsKey(pair)) {
             stack.add(pair);
             visited.put(pair, null);
             final ITerm leftTerm = terms().get(leftRep);
             final ITerm rightTerm = terms().get(rightRep);
             if(leftTerm == null) {
-                throw new InsufficientInstantiationException(leftRep);
+                return MaybeNotInstantiated.ofNotInstantiated(leftRep);
             } else if(rightTerm == null) {
-                throw new InsufficientInstantiationException(rightRep);
+                return MaybeNotInstantiated.ofNotInstantiated(rightRep);
             }
             equal = equalTerms(leftTerm, rightTerm, stack, visited);
-            visited.put(pair, equal);
+            equal.onResult(eq -> {
+                visited.put(pair, eq);
+            });
             stack.remove(pair);
         } else if(stack.contains(pair)) {
-            equal = false;
+            equal = MaybeNotInstantiated.ofResult(false);
         } else {
-            equal = visited.get(pair);
+            equal = MaybeNotInstantiated.ofResult(visited.get(pair));
         }
         return equal;
     }
 
-    private boolean equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) throws InsufficientInstantiationException {
+    private MaybeNotInstantiated<Boolean> equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         Iterator<ITerm> itLeft = lefts.iterator();
         Iterator<ITerm> itRight = rights.iterator();
         while(itLeft.hasNext()) {
             if(!itRight.hasNext()) {
-                return false;
+                return MaybeNotInstantiated.ofResult(false);
             }
-            if(!equalTerms(itLeft.next(), itRight.next(), stack, visited)) {
-                return false;
+            final MaybeNotInstantiated<Boolean> result = equalTerms(itLeft.next(), itRight.next(), stack, visited);
+            if(!result.orElse(false)) {
+                return result;
             }
         }
         if(itRight.hasNext()) {
-            return false;
+            return MaybeNotInstantiated.ofResult(false);
         }
-        return true;
+        return MaybeNotInstantiated.ofResult(true);
     }
 
     ///////////////////////////////////////////

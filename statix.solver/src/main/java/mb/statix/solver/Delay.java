@@ -9,7 +9,7 @@ import com.google.common.collect.Multimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
-public class Delay extends Exception {
+public class Delay extends Throwable {
 
     private static final long serialVersionUID = 1L;
 

@@ -22,7 +22,6 @@ import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.unification.UnificationMessages;
@@ -87,19 +86,24 @@ public class EqualityComponent extends ASolver {
     private Optional<SolveResult> solve(CInequal constraint) {
         final ITerm left = constraint.getLeft();
         final ITerm right = constraint.getRight();
-        try {
-            if(unifier().areEqual(left, right)) {
-                MessageContent content = MessageContent.builder().append(constraint.getLeft().toString())
-                        .append(" and ").append(constraint.getRight().toString())
-                        .append(" must be inequal, but are not.").build();
-                IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
-                return Optional.of(SolveResult.messages(message));
-            } else {
-                return Optional.of(SolveResult.empty());
+        // @formatter:off
+        return unifier().areEqual(left, right).match(
+            result -> {
+                if(result) {
+                    MessageContent content = MessageContent.builder().append(constraint.getLeft().toString())
+                            .append(" and ").append(constraint.getRight().toString())
+                            .append(" must be inequal, but are not.").build();
+                    IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
+                    return Optional.of(SolveResult.messages(message));
+                } else {
+                    return Optional.of(SolveResult.empty());
+                }
+            },
+            var -> {
+                return Optional.empty();
             }
-        } catch(InsufficientInstantiationException e) {
-            return Optional.empty();
-        }
+        );
+        // @formatter:on
     }
 
     // ------------------------------------------------------------------------------------------------------//

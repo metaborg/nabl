@@ -11,7 +11,6 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
 
 public class UnificationPerformanceTest {
 
@@ -50,11 +49,7 @@ public class UnificationPerformanceTest {
         System.out.println("cyclic = " + unifier.isCyclic(termB));
         System.out.println("size = " + unifier.size(termB));
         System.out.println("vars = " + unifier.getVars(termB));
-        try {
-            System.out.println("equal = " + unifier.areEqual(termB, termC));
-        } catch(InsufficientInstantiationException e) {
-            System.out.println("incomparable " + termB + " <-> " + termC);
-        }
+        System.out.println("equal = " + unifier.areEqual(termB, termC));
         System.out.println("string = " + unifier.toString(varA));
         System.out.println("string = " + unifier.toString(varB));
         System.out.println("string = " + unifier.toString(varC));
@@ -76,11 +71,7 @@ public class UnificationPerformanceTest {
         System.out.println("cyclic = " + unifier.isCyclic(left));
         System.out.println("size = " + unifier.size(left));
         System.out.println("vars = " + unifier.getVars(left));
-        try {
-            System.out.println("equal = " + unifier.areEqual(left, right));
-        } catch(InsufficientInstantiationException e) {
-            System.out.println("incomaprable " + left + " <-> " + right);
-        }
+        System.out.println("equal = " + unifier.areEqual(left, right));
         return unifier;
     }
 

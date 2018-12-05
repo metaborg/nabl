@@ -43,15 +43,14 @@ class PatternVar extends Pattern {
         return ImmutableSet.of(var);
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier unifier)
-            throws InsufficientInstantiationException {
+    @Override protected MaybeNotInstantiated<Boolean> matchTerm(ITerm term, Transient subst, IUnifier unifier) {
         if(isWildcard()) {
-            return true;
+            return MaybeNotInstantiated.ofResult(true);
         } else if(subst.contains(var)) {
             return unifier.areEqual(subst.apply(var), term);
         } else {
             subst.put(var, term);
-            return true;
+            return MaybeNotInstantiated.ofResult(true);
         }
     }
 

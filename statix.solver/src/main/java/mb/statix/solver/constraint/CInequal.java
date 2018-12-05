@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
@@ -47,16 +46,16 @@ public class CInequal implements IConstraint {
     }
 
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        IUnifier.Immutable unifier = state.unifier();
-        try {
-            if(unifier.areEqual(term1, term2)) {
+        final IUnifier.Immutable unifier = state.unifier();
+        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
+            if(result) {
                 return Optional.empty();
             } else {
                 return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
             }
-        } catch(InsufficientInstantiationException e) {
-            throw Delay.ofVar(e.getVar());
-        }
+        }, var -> {
+            throw Delay.ofVar(var);
+        });
     }
 
     @Override public String toString(TermFormatter termToString) {

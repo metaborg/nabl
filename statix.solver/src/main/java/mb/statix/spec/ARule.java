@@ -15,9 +15,9 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
@@ -85,12 +85,11 @@ public abstract class ARule {
 
     public Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
         final ISubstitution.Transient subst;
-        try {
-            if((subst = P.match(params(), args, state.unifier()).map(u -> u.melt()).orElse(null)) == null) {
-                return Optional.empty();
-            }
-        } catch(InsufficientInstantiationException e) {
-            throw Delay.ofVar(e.getVar());
+        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, var -> {
+            throw Delay.ofVar(var);
+        });
+        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
+            return Optional.empty();
         }
         State newState = state;
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();

@@ -7,7 +7,7 @@ import org.metaborg.util.functions.Predicate1;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.InsufficientInstantiationException;
+import mb.nabl2.terms.matching.MaybeNotInstantiated;
 import mb.nabl2.terms.substitution.ISubstitution;
 
 /**
@@ -149,7 +149,7 @@ public interface IUnifier {
      * Test if the two terms are equal relative to this unifier. If terms are incomparable under this unifier an
      * exception is thrown.
      */
-    boolean areEqual(ITerm term1, ITerm term2) throws InsufficientInstantiationException;
+    MaybeNotInstantiated<Boolean> areEqual(ITerm term1, ITerm term2);
 
     public interface Immutable extends IUnifier {
 

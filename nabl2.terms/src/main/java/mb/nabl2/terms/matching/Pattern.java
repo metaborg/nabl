@@ -9,11 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.optionals.Optionals;
-
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
@@ -23,38 +22,34 @@ public abstract class Pattern {
     public abstract Set<ITermVar> getVars();
 
     public Optional<ISubstitution.Immutable> match(ITerm term) {
-        try {
-            return match(term, PersistentUnifier.Immutable.of());
-        } catch(InsufficientInstantiationException e) {
-            return Optional.empty();
-        }
+        return match(term, PersistentUnifier.Immutable.of()).match(t -> t, v -> Optional.empty());
     }
 
-    public Optional<ISubstitution.Immutable> match(ITerm term, IUnifier unifier)
-            throws InsufficientInstantiationException {
+    public MaybeNotInstantiated<Optional<Immutable>> match(ITerm term, IUnifier unifier) {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        return Optionals.when(matchTerm(term, subst, unifier)).map(u -> subst.freeze());
+        return matchTerm(term, subst, unifier).map(u -> u ? Optional.of(subst.freeze()) : Optional.empty());
     }
 
-    protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier unifier)
-            throws InsufficientInstantiationException;
+    protected abstract MaybeNotInstantiated<Boolean> matchTerm(ITerm term, ISubstitution.Transient subst,
+            IUnifier unifier);
 
-    protected static boolean matchTerms(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
-            ISubstitution.Transient subst, IUnifier unifier) throws InsufficientInstantiationException {
+    protected static MaybeNotInstantiated<Boolean> matchTerms(final Iterable<Pattern> patterns,
+            final Iterable<ITerm> terms, ISubstitution.Transient subst, IUnifier unifier) {
         Iterator<Pattern> itPattern = patterns.iterator();
         Iterator<ITerm> itTerm = terms.iterator();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
-                return false;
+                return MaybeNotInstantiated.ofResult(false);
             }
-            if(!itPattern.next().matchTerm(itTerm.next(), subst, unifier)) {
-                return false;
+            final MaybeNotInstantiated<Boolean> result = itPattern.next().matchTerm(itTerm.next(), subst, unifier);
+            if(!result.orElse(false)) {
+                return result;
             }
         }
         if(itTerm.hasNext()) {
-            return false;
+            return MaybeNotInstantiated.ofResult(false);
         }
-        return true;
+        return MaybeNotInstantiated.ofResult(true);
     }
 
     ///////////////////////////////////////////////////////////////////////////
