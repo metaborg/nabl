@@ -3,7 +3,11 @@ module statixlang
 imports
   
   completion/completion
+
   statix/lang/-
   statix/test/-
+
   outline
   pp
+
+  statixruntime
