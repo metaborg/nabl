@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 import org.metaborg.util.functions.Function2;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 
 public final class CapsuleUtil {
 
@@ -33,6 +34,17 @@ public final class CapsuleUtil {
             }
         }
         return newMap.freeze();
+    }
+
+    @SuppressWarnings("unchecked") public static <V> Set.Immutable<V> toSet(Iterable<? extends V> values) {
+        if(values instanceof Set.Immutable) {
+            return (Set.Immutable<V>) values;
+        }
+        Set.Transient<V> set = Set.Transient.of();
+        for(V value : values) {
+            set.__insert(value);
+        }
+        return set.freeze();
     }
 
 }
