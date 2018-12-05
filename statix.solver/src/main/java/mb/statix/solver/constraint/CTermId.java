@@ -6,8 +6,6 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
@@ -69,7 +67,7 @@ public class CTermId implements IConstraint {
                 eq = new CEqual(idTerm, B.newAppl(StatixTerms.NOID_OP));
             }
         }
-        return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
+        return Optional.of(ConstraintResult.ofConstraints(state, eq));
     }
 
     @Override public String toString(TermFormatter termToString) {

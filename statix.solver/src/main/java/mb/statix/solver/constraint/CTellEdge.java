@@ -6,8 +6,6 @@ import javax.annotation.Nullable;
 
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -74,7 +72,7 @@ public class CTellEdge implements IConstraint {
         final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 
     @Override public String toString(TermFormatter termToString) {

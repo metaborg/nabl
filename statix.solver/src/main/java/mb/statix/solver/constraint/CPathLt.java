@@ -4,8 +4,6 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -62,7 +60,7 @@ public class CPathLt implements IConstraint {
         final ITerm label2 = StatixTerms.label().match(label2Term, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label2Term)));
         if(lt.contains(label1, label2)) {
-            return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
+            return Optional.of(ConstraintResult.of(state));
         } else {
             return Optional.empty();
         }

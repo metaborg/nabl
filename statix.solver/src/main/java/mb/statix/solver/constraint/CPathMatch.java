@@ -4,8 +4,6 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
@@ -66,12 +64,12 @@ public class CPathMatch implements IConstraint {
                 if(re.isEmpty()) {
                     return Optional.empty();
                 } else {
-                    return Optional.of(ConstraintResult.of(state, ImmutableSet.of(new CPathMatch(re, cons.getTail(), cause))));
+                    return Optional.of(ConstraintResult.ofConstraints(state, new CPathMatch(re, cons.getTail(), cause)));
                 }
             },
             nil -> {
                 if(re.isAccepting()) {
-                    return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
+                    return Optional.of(ConstraintResult.of(state));
                 } else {
                     return Optional.empty();
                 }

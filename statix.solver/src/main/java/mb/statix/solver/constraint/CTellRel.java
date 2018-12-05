@@ -11,7 +11,6 @@ import javax.annotation.Nullable;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
@@ -99,12 +98,11 @@ public class CTellRel implements IConstraint {
         });
         if(existingValue.isPresent()) {
             final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
-            final IConstraint eq = new CEqual(value, existingValue.get(), this);
-            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
+            return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(value, existingValue.get(), this)));
         } else {
             final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
                     state.scopeGraph().addDatum(scope, relation, datumTerms);
-            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
         }
     }
 

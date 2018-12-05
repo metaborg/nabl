@@ -11,14 +11,13 @@ import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.FastNameResolution;
@@ -126,13 +125,13 @@ public class CResolveQuery implements IConstraint {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
             }
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(C)));
+            return Optional.of(ConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofScope(e.scope(), e.relation());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
         } catch(IncompleteEdgeException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofScope(e.scope(), e.label());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
         } catch(ResolutionDelayException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw e.getCause();

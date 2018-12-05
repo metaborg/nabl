@@ -6,8 +6,6 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
@@ -56,7 +54,7 @@ public class CPathSrc implements IConstraint {
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.of(state, ImmutableSet.of(new CEqual(path.getSource(), srcTerm, this))));
+        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(path.getSource(), srcTerm, this)));
     }
 
     @Override public String toString(TermFormatter termToString) {

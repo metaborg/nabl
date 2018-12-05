@@ -104,7 +104,7 @@ public class CUser implements IConstraint {
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.of(instantiatedState, instantiatedBody));
+            return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);
