@@ -1346,7 +1346,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         }
 
         public _RigidVarsException(RigidVarsException exception) {
-            super(exception);
+            super("rigid vars", exception, false, false);
             this.exception = exception;
         }
 

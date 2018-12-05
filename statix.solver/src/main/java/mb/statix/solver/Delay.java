@@ -17,7 +17,7 @@ public class Delay extends Exception {
     private final Multimap<ITerm, ITerm> scopes;
 
     public Delay(Set<ITermVar> vars, Multimap<ITerm, ITerm> scopes) {
-        super();
+        super("delayed", null, false, false);
         this.vars = ImmutableSet.copyOf(vars);
         this.scopes = ImmutableMultimap.copyOf(scopes);
     }

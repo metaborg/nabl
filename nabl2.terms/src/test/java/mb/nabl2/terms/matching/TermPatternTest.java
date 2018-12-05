@@ -46,7 +46,7 @@ public class TermPatternTest {
         assertEquals(y, result.apply(b));
     }
 
-    @Test public void testMatchFail() throws MismatchException {
+    @Test public void testMatchFail() {
         final Pattern pattern = P.newAppl(g, P.newVar(a));
         assertFalse(pattern.match(b).isPresent());
     }

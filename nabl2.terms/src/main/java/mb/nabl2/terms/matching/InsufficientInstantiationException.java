@@ -9,6 +9,7 @@ public class InsufficientInstantiationException extends Exception {
     private final ITermVar var;
 
     public InsufficientInstantiationException(ITermVar var) {
+        super("insufficiently instantiated", null, false, false);
         this.var = var;
     }
 
