@@ -2,6 +2,8 @@ package mb.nabl2.terms.matching;
 
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -24,8 +26,18 @@ class PatternAs extends Pattern {
         this.pattern = pattern;
     }
 
-    public PatternVar getVar() {
-        return var;
+    PatternAs(PatternVar var, Pattern pattern) {
+        this.var = var;
+        this.pattern = pattern;
+    }
+
+    PatternAs(Pattern pattern) {
+        this.var = new PatternVar();
+        this.pattern = pattern;
+    }
+
+    @Nullable ITermVar getVar() {
+        return var.getVar();
     }
 
     public Pattern getPattern() {

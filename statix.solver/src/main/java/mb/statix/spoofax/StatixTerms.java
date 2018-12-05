@@ -382,19 +382,14 @@ public class StatixTerms {
     public static IMatcher<Pattern> pattern() {
         // @formatter:off
         return M.<Pattern>casesFix(m -> Iterables2.from(
-            M.appl1("Var", M.stringValue(), (t, name) -> {
-                return P.newVar(name);
-            }),
-            M.appl0("Wld", (t) -> {
-                return P.newWld();
-            }),
-            M.appl2("As", varTerm(), m, (t, var, pattern) -> {
-                return P.newAs(var, pattern);
+            varPattern(),
+            M.appl2("As", varOrWld(), m, (t, var, pattern) -> {
+                return var.map(v -> P.newAs(v, pattern)).orElseGet(() -> P.newAs(pattern));
             }),
             M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
                 return P.newAppl(op, args);
             }),
-            M.appl1("Tuple", M.listElems(m), (t, args) -> {
+            M.appl1("Tuple", M.listElems(M.req(m)), (t, args) -> {
                 return P.newTuple(args);
             }),
             M.appl1("List", M.listElems((t, u) -> m.match(t, u)), (t, elems) -> {
@@ -417,10 +412,21 @@ public class StatixTerms {
         // @formatter:on
     }
 
+    public static IMatcher<Optional<ITermVar>> varOrWld() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("Wld", (t) -> {
+                return Optional.empty();
+            }),
+            M.appl1("Var", M.stringValue(), (t, name) -> {
+                return Optional.of(B.newVar("", name));
+            })
+        );
+        // @formatter:on
+    }
+
     public static IMatcher<Pattern> varPattern() {
-        return M.appl1("Var", M.stringValue(), (t, name) -> {
-            return P.newVar(name);
-        });
+        return varOrWld().map(v -> v.map(P::newVar).orElse(P.newWld()));
     }
 
     private static IMatcher<Pattern> positionPattern() {

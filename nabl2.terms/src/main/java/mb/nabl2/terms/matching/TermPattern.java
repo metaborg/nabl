@@ -96,6 +96,10 @@ public class TermPattern {
             return new PatternAs(var, pattern);
         }
 
+        public Pattern newAs(Pattern pattern) {
+            return new PatternAs(pattern);
+        }
+
         public Pattern fromTerm(ITerm term) {
             // @formatter:off
             return term.match(Terms.cases(

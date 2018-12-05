@@ -110,7 +110,7 @@ public abstract class Pattern {
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar().getVar(), vars2, pos.get());
+                    bind(as2.getVar(), vars2, pos.get());
                     return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
                     throw new IllegalStateException();
@@ -141,7 +141,7 @@ public abstract class Pattern {
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar().getVar(), vars2, pos.get());
+                    bind(as2.getVar(), vars2, pos.get());
                     return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
                     throw new IllegalStateException();
@@ -163,7 +163,7 @@ public abstract class Pattern {
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar().getVar(), vars2, pos.get());
+                    bind(as2.getVar(), vars2, pos.get());
                     return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
                     throw new IllegalStateException();
@@ -187,7 +187,7 @@ public abstract class Pattern {
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar().getVar(), vars2, pos.get());
+                    bind(as2.getVar(), vars2, pos.get());
                     return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
                     throw new IllegalStateException();
@@ -210,7 +210,7 @@ public abstract class Pattern {
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar().getVar(), vars2, pos.get());
+                    bind(as2.getVar(), vars2, pos.get());
                     return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
                     throw new IllegalStateException();
@@ -238,14 +238,14 @@ public abstract class Pattern {
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar().getVar(), vars2, pos.get());
+                    bind(as2.getVar(), vars2, pos.get());
                     return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
                     throw new IllegalStateException();
                 }
             } else if(p1 instanceof PatternAs) {
                 final PatternAs as1 = (PatternAs) p1;
-                bind(as1.getVar().getVar(), vars1, pos.get());
+                bind(as1.getVar(), vars1, pos.get());
                 return compare(as1.getPattern(), p2, pos, vars1, vars2);
             } else {
                 throw new IllegalStateException();
