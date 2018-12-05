@@ -2,13 +2,12 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
-
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableList;
 
@@ -16,10 +15,9 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -55,8 +53,8 @@ public class CTellRel implements IConstraint {
         return new CTellRel(scopeTerm, relation, datumTerms, cause);
     }
 
-    @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
-        return Iterables2.from(ImmutableTuple2.of(scopeTerm, relation));
+    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
+        return ImmutableList.of(CriticalEdge.of(scopeTerm, relation));
     }
 
     @Override public CTellRel apply(ISubstitution.Immutable subst) {

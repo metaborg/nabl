@@ -22,3 +22,15 @@ either one of them, since the unification could result in `i` being
 substituted for `j`, or the other way around. Therefore, if a constraint
 is stuck on multiple variables, we treat it as stuck on any of them,
 but not all of them.
+
+Tracking completeness
+---------------------
+
+The completeness tracking relies on well-formed constraints and
+specification. A constraint such as
+
+    new s, s == s', s' -P-> s''
+
+will not work correctly. The solver does not currently check that
+constraints are well-formed, and relies on the Statix language to check
+that specifications are well-formed.

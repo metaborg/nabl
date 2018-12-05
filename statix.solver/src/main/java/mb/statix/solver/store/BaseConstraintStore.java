@@ -101,8 +101,7 @@ public class BaseConstraintStore implements IConstraintStore {
                                 } else if(!d.criticalEdges().isEmpty()) {
                                     debug.info("delayed {} on critical edges {}", c, d.criticalEdges());
                                     for(CriticalEdge edge : d.criticalEdges()) {
-                                        // stuckOnEdge.put(edge, c);
-                                        stuckBecauseStuck.add(c);
+                                        stuckOnEdge.put(edge, c);
                                     }
                                 } else {
                                     debug.info("delayed for no apparent reason ");
@@ -116,6 +115,7 @@ public class BaseConstraintStore implements IConstraintStore {
 
                         };
                     }
+
                 };
             }
         };

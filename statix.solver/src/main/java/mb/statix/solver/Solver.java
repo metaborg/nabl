@@ -87,6 +87,7 @@ public class Solver {
                             completeness = completeness.addAll(newConstaints);
                         }
                         constraints.activateFromVars(result.vars());
+                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()));
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);

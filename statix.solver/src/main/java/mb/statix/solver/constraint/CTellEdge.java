@@ -1,19 +1,19 @@
 package mb.statix.solver.constraint;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.iterators.Iterables2;
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -48,8 +48,8 @@ public class CTellEdge implements IConstraint {
         return new CTellEdge(sourceTerm, label, targetTerm, cause);
     }
 
-    @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
-        return Iterables2.from(ImmutableTuple2.of(sourceTerm, label));
+    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
+        return ImmutableList.of(CriticalEdge.of(sourceTerm, label));
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
