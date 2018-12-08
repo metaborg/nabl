@@ -3,6 +3,8 @@ package mb.nabl2.constraints.nameresolution;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.scopegraph.terms.Label;
@@ -18,7 +20,7 @@ public final class NameResolutionConstraints {
 
     public static IMatcher<INameResolutionConstraint> matcher() {
         return M.<INameResolutionConstraint>cases(
-            // @formatter:off
+        // @formatter:off
             M.appl3(C_RESOLVE, M.term(), M.term(), MessageInfo.matcher(),
                     (c, ref, decl, origin) -> {
                         return ImmutableCResolve.of(ref, decl, origin);
@@ -37,7 +39,7 @@ public final class NameResolutionConstraints {
 
     public static ITerm build(INameResolutionConstraint constraint) {
         return constraint.match(INameResolutionConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             res -> B.newAppl(C_RESOLVE, res.getReference(), res.getDeclaration(),
                               MessageInfo.build(res.getMessageInfo())),
             assoc -> B.newAppl(C_ASSOC, assoc.getDeclaration(), assoc.getLabel(), assoc.getScope(),
@@ -48,24 +50,48 @@ public final class NameResolutionConstraints {
         ));
     }
 
-    public static INameResolutionConstraint substitute(INameResolutionConstraint constraint, ISubstitution.Immutable unifier) {
+    public static INameResolutionConstraint substitute(INameResolutionConstraint constraint,
+            ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(INameResolutionConstraint.Cases.<INameResolutionConstraint>of(
             res -> ImmutableCResolve.of(
-                        unifier.apply(res.getReference()),
-                        unifier.apply(res.getDeclaration()),
-                        res.getMessageInfo().apply(unifier::apply)),
+                        subst.apply(res.getReference()),
+                        subst.apply(res.getDeclaration()),
+                        res.getMessageInfo().apply(subst::apply)),
             assoc -> ImmutableCAssoc.of(
-                        unifier.apply(assoc.getDeclaration()),
+                        subst.apply(assoc.getDeclaration()),
                         assoc.getLabel(),
-                        unifier.apply(assoc.getScope()),
-                        assoc.getMessageInfo().apply(unifier::apply)),
+                        subst.apply(assoc.getScope()),
+                        assoc.getMessageInfo().apply(subst::apply)),
             prop -> ImmutableCDeclProperty.of(
-                        unifier.apply(prop.getDeclaration()),
+                        subst.apply(prop.getDeclaration()),
                         prop.getKey(),
-                        unifier.apply(prop.getValue()),
+                        subst.apply(prop.getValue()),
                         prop.getPriority(),
-                        prop.getMessageInfo().apply(unifier::apply))
+                        prop.getMessageInfo().apply(subst::apply))
+        ));
+        // @formatter:on
+    }
+
+    public static INameResolutionConstraint transform(INameResolutionConstraint constraint,
+            Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(INameResolutionConstraint.Cases.<INameResolutionConstraint>of(
+            res -> ImmutableCResolve.of(
+                        map.apply(res.getReference()),
+                        map.apply(res.getDeclaration()),
+                        res.getMessageInfo().apply(map::apply)),
+            assoc -> ImmutableCAssoc.of(
+                        map.apply(assoc.getDeclaration()),
+                        assoc.getLabel(),
+                        map.apply(assoc.getScope()),
+                        assoc.getMessageInfo().apply(map::apply)),
+            prop -> ImmutableCDeclProperty.of(
+                        map.apply(prop.getDeclaration()),
+                        prop.getKey(),
+                        map.apply(prop.getValue()),
+                        prop.getPriority(),
+                        prop.getMessageInfo().apply(map::apply))
         ));
         // @formatter:on
     }

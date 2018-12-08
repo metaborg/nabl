@@ -4,7 +4,7 @@
     typeImmutable = "*",
     get = { "is*", "get*" },
     with = "with*",
-    defaults = @Value.Immutable(builder = true, prehash = true)
+    defaults = @Value.Immutable(builder = true)
     // @formatter:on
 )
 package mb.statix;

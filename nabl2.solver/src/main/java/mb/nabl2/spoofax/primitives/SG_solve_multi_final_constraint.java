@@ -23,6 +23,7 @@ import mb.nabl2.constraints.messages.MessageKind;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverException;
+import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.analysis.Actions;
 import mb.nabl2.spoofax.analysis.IResult;
@@ -64,7 +65,6 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
                     ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), Actions.sourceTerm(""));
             ISolution preSolution =
                     solver.solveInter(initialSolution, unitSolutions, defaultMessage, fresh, cancel, progress);
-            preSolution = solver.reportUnsolvedConstraints(preSolution);
             solution = preSolution;
         } catch(InterruptedException | SolverException ex) {
             throw new InterpreterException(ex);
@@ -74,9 +74,10 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());
         final IResult result =
                 ImmutableMultiFinalResult.of(constraints, solution, Optional.empty(), globalFresh.freeze());
-        final ITerm errors = MessageTerms.toTerms(solution.messages().getErrors(), solution.unifier());
-        final ITerm warnings = MessageTerms.toTerms(solution.messages().getWarnings(), solution.unifier());
-        final ITerm notes = MessageTerms.toTerms(solution.messages().getNotes(), solution.unifier());
+        final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();
+        final ITerm errors = MessageTerms.toTerms(messages.getErrors(), solution.unifier());
+        final ITerm warnings = MessageTerms.toTerms(messages.getWarnings(), solution.unifier());
+        final ITerm notes = MessageTerms.toTerms(messages.getNotes(), solution.unifier());
         final ITerm resultTerm = B.newTuple(B.newBlob(result), errors, warnings, notes);
         return Optional.of(resultTerm);
     }

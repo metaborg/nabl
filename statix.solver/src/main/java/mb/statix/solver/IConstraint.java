@@ -16,7 +16,7 @@ public interface IConstraint {
 
     IConstraint apply(ISubstitution.Immutable subst);
 
-    default Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
+    default Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(@SuppressWarnings("unused") Spec spec) {
         return Iterables2.empty();
     }
 

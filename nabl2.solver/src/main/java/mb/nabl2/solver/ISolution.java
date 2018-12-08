@@ -15,6 +15,7 @@ import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.messages.IMessages;
+import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
@@ -62,6 +63,12 @@ public interface ISolution {
     IMessages.Immutable messages();
 
     ISolution withMessages(IMessages.Immutable messages);
+
+    default IMessages.Immutable messagesAndUnsolvedErrors() {
+        IMessages.Transient messages = messages().melt();
+        messages.addAll(Messages.unsolvedErrors(constraints()));
+        return messages.freeze();
+    }
 
     java.util.Set<IConstraint> constraints();
 

@@ -91,8 +91,9 @@ public class CTellRel implements IConstraint {
             throw Delay.ofVars(unifier.getVars(key));
         }
         Optional<ITerm> existingValue = state.scopeGraph().getData().get(scope, relation).stream().filter(dt -> {
-            return unifier.areEqual(key,
-                    B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())));
+            return unifier
+                    .areEqual(key, B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())))
+                    .orElse(false);
         }).findFirst().map(dt -> {
             return B.newTuple(dt.stream().skip(type.getInputArity()).collect(Collectors.toList()));
         });
@@ -109,11 +110,11 @@ public class CTellRel implements IConstraint {
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(termToString.apply(scopeTerm));
+        sb.append(termToString.format(scopeTerm));
         sb.append(" -");
-        sb.append(termToString.apply(relation));
+        sb.append(termToString.format(relation));
         sb.append("-[] ");
-        sb.append(termToString.apply(B.newTuple(datumTerms)));
+        sb.append(termToString.format(B.newTuple(datumTerms)));
         return sb.toString();
     }
 

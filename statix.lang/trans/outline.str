@@ -1,0 +1,82 @@
+module outline
+
+imports
+
+  libspoofax/editor/outline
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/pp
+  pp
+
+rules
+
+  editor-outline:
+    (_, _, ast, path, project-path) -> outline
+    with outline := <desugar-all;outline(|path)> ast
+
+  outline(|path): ast -> [ Node("sort", sort-node*) 
+                         , Node("relations", rel-node*)
+                         , Node("namespaces", ns-node*)
+                         , Node("namespace queries", nsq-node*)
+                         , Node("rules", pred-node*)
+                         ]
+    with
+      sort-entry* := <collect-om(outline-sort(|ast), conc)> ast
+    ; sort-node*  := <qsort(entry-lt);map(Snd)> sort-entry*
+    with
+      rel-entry* := <collect-om(outline-rel(|ast), conc)> ast
+    ; rel-node*  := <qsort(entry-lt);map(Snd)> rel-entry*
+    with
+      ns-entry* := <collect-om(outline-ns(|ast), conc)> ast
+    ; ns-node*  := <qsort(entry-lt);map(Snd)> ns-entry*
+    with
+      nsq-entry* := <collect-om(outline-ns-query(|ast), conc)> ast
+    ; nsq-node*  := <qsort(entry-lt);map(Snd)> nsq-entry*
+    with
+      pred-entry* := <collect-om(outline-pred(|ast), conc)> ast
+    ; pred-node* := <qsort(entry-lt);map(Snd)> pred-entry*
+
+rules
+
+  outline-sort(|ast): SortAlias(x, _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"SortDecl"))>, []))
+
+  outline-sort(|ast): SortDecl(x) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"SortDecl"))>, node*))
+    with
+      ctor* := <collect-om(keep-origin(outline-ctor(|x)), conc)> ast
+    ; sorted* := <qsort(opdecl-lt)> ctor*
+    ; node* := <map(!Node(<keep-origin(pp-partial-Statix-string(|"OpDecl"))>, []))> sorted*
+
+  outline-ctor(|x) = OpDecl(id, ConstOp(SimpleSort(?x))) 
+  outline-ctor(|x) = OpDecl(id, ArrowOp(id, SimpleSort(?x))) 
+
+  opdecl-lt: (OpDecl(x, _), OpDecl(y, _)) -> <string-lt> (x, y)
+
+rules
+
+  outline-pred(|ast): CDecl(_, x, ty) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"CDecl"))>, node*))
+    with
+      head* := <collect-om(?Rule(<keep-origin(outline-rule-head(|x))>, _, _), conc)> ast
+    ; sorted* := <qsort(rule-head-cmp(patterns-lt))> head*
+    ; node* := <map(!Node(<keep-origin(pp-partial-Statix-string(|"RuleHead"))>, []))> sorted*
+
+  outline-rule-head(|x) = C(?x, id)
+  outline-rule-head(|x) = F(?x, id, !Wld())
+
+  outline-pred(|ast): CDeriveMap(x, _, _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"CDecl"))>, []))
+
+  outline-pred(|ast): FDeriveMap(x, _, _, _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"CDecl"))>, []))
+
+rules
+
+  outline-rel(|ast): RelDecl(Rel(x), _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"RelDecl"))>, []))
+
+rules
+
+  outline-ns(|ast): NsDecl(x, _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"NsDecl"))>, []))
+
+  outline-ns-query(|ast): NamespaceQuery(x, _, _) -> (x, Node(x, []))
+
+rules
+
+  entry-lt: ((x, _), (y, _)) -> <string-lt> (x, y)

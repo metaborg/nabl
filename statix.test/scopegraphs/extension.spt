@@ -1,0 +1,140 @@
+module scopegraphs-extension
+
+language StatixLang
+
+// direct extensions
+
+test extend parameter scope in same rule succeeds [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c : scope
+    c(s) :- !foo[""] in s.
+]] analysis succeeds
+
+test extend new scope in same rule succeeds [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c : 
+    c() :- {s} new s, !foo[""] in s.
+]] analysis succeeds
+
+test extend local scope in same rule fails [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c : 
+    c() :- {s} !foo[""] in s.
+]] analysis fails
+
+// extension in one step
+
+test extend parameter scope in via other constraint succeeds [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c0 : scope
+    c0(s) :- c1(s).
+
+    c1 : scope
+    c1(s) :- !foo[""] in s.
+]] analysis succeeds
+
+test extend new scope in via other constraint succeeds [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c0 : 
+    c0() :- {s} new s, c1(s).
+
+    c1 : scope
+    c1(s) :- !foo[""] in s.
+]] analysis succeeds
+
+test extend local scope in via other constraint fails [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c0 : 
+    c0() :- {s} c1(s).
+
+    c1 : scope
+    c1(s) :- !foo[""] in s.
+]] analysis fails
+
+// extension in two steps
+
+test extend parameter scope in via two other constraints succeeds [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c0 : scope
+    c0(s) :- c1(s).
+
+    c1 : scope
+    c1(s) :- c2(s).
+
+    c2 : scope
+    c2(s) :- !foo[""] in s.
+]] analysis succeeds
+
+test extend new scope in via two other constraints succeeds [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c0 : 
+    c0() :- {s} new s, c1(s).
+
+    c1 : scope
+    c1(s) :- c2(s).
+
+    c2 : scope
+    c2(s) :- !foo[""] in s.
+]] analysis succeeds
+
+test extend local scope in via two other constraints fails [[
+  module test
+  signature
+    relations foo : string
+  rules
+    c0 : 
+    c0() :- {s} c1(s).
+
+    c1 : scope
+    c1(s) :- c2(s).
+
+    c2 : scope
+    c2(s) :- !foo[""] in s.
+]] analysis fails
+
+// extension via sugar construct
+
+test extend local scope via declaration sugar fails [[
+  module test
+  signature
+    namespaces Var : string
+  rules
+    c : 
+    c() :- {s} s -> Var{"x"@-}.
+]] analysis fails
+
+test extend local scope via functional constraint fails [[
+  module test
+  signature
+    namespaces Var : string
+  rules
+    c0 : 
+    c0() :- {s} c1(s) == _.
+
+    c1 : scope -> ()
+    c1(s) = () :- s -> Var{"x"@-}.
+]] analysis fails

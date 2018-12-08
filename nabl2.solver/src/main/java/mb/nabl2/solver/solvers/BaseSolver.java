@@ -1,6 +1,5 @@
 package mb.nabl2.solver.solvers;
 
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
@@ -13,22 +12,17 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.constraints.ast.IAstConstraint;
-import mb.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolution;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.SolverException;
@@ -37,7 +31,6 @@ import mb.nabl2.solver.components.BaseComponent;
 import mb.nabl2.solver.components.EqualityComponent;
 import mb.nabl2.solver.components.ScopeGraphComponent;
 import mb.nabl2.solver.messages.IMessages;
-import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
@@ -76,7 +69,7 @@ public class BaseSolver {
                     .onBase(baseSolver::solve)
                     .onEquality(equalitySolver::solve)
                     .onScopeGraph(scopeGraphSolver::solve)
-                    .otherwise(cc -> Optional.empty())
+                    .otherwise(ISolver.defer())
                     // @formatter:on
                     );
 
@@ -89,28 +82,6 @@ public class BaseSolver {
             throw new SolverException("Internal solver error.", ex);
         }
 
-    }
-
-    public GraphSolution reportUnsolvedGraphConstraints(GraphSolution initial) {
-        java.util.Set<IConstraint> graphConstraints = Sets.newHashSet();
-        java.util.Set<IConstraint> otherConstraints = Sets.newHashSet();
-        initial.constraints().stream().forEach(c -> {
-            if(IAstConstraint.is(c) || IScopeGraphConstraint.is(c)) {
-                graphConstraints.add(c);
-            } else {
-                otherConstraints.add(c);
-            }
-        });
-        IMessages.Transient messages = initial.messages().melt();
-        messages.addAll(Messages.unsolvedErrors(graphConstraints));
-        return ImmutableGraphSolution.copyOf(initial).withMessages(messages.freeze()).withConstraints(otherConstraints);
-    }
-
-    public ISolution reportUnsolvedConstraints(ISolution initial) {
-        IMessages.Transient messages = initial.messages().melt();
-        messages.addAll(Messages.unsolvedErrors(initial.constraints()));
-        return ImmutableSolution.builder().from(initial).messages(messages.freeze()).constraints(Collections.emptySet())
-                .build();
     }
 
     protected boolean seed(SeedResult result, IMessages.Transient messages, Set<IConstraint> constraints) {

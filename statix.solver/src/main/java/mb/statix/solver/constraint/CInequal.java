@@ -5,7 +5,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -47,21 +46,23 @@ public class CInequal implements IConstraint {
     }
 
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        IUnifier.Immutable unifier = state.unifier();
-        if(unifier.areUnequal(term1, term2)) {
-            return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
-        } else if(unifier.areEqual(term1, term2)) {
-            return Optional.empty();
-        } else {
-            throw Delay.ofVars(Iterables.concat(unifier.getVars(term1), unifier.getVars(term2)));
-        }
+        final IUnifier.Immutable unifier = state.unifier();
+        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
+            if(result) {
+                return Optional.empty();
+            } else {
+                return Optional.of(ConstraintResult.of(state, ImmutableSet.of()));
+            }
+        }, var -> {
+            throw Delay.ofVar(var);
+        });
     }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(termToString.apply(term1));
+        sb.append(termToString.format(term1));
         sb.append(" != ");
-        sb.append(termToString.apply(term2));
+        sb.append(termToString.format(term2));
         return sb.toString();
     }
 

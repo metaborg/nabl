@@ -11,6 +11,7 @@ dependencies:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.shared:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
+  - org.metaborg:statix.runtime:${metaborgVersion}
 exports:
   ## Stratego
 - language: Stratego-Sugar

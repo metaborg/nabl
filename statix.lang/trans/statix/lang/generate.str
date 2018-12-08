@@ -14,7 +14,7 @@ imports
 rules
 
   generate-aterm:
-    (_, _, ast@Module(name,_), path, project-path) -> result
+    (_, _, ast@Module(name, _), path, project-path) -> result
     where a   := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           ext := <nabl2-get-custom-analysis> a
     with if <nabl2-analysis-has-errors> a then
@@ -25,6 +25,11 @@ rules
            result   := (filename, spec)
          end
  
+  generate-aterm:
+    (_, _, Test(_, _, _), path, project-path) -> None()
+
+rules
+
   src-gen-file(|sub-dir, ext): name -> filename
     with filename := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
 
@@ -34,7 +39,7 @@ rules
 rules
 
   spec-ast-to-aterm: (ast, ext) -> spec
-    with rule* := <collect-all(?Rule(_, _, _, _, _))> ast;
+    with rule* := <collect-all(?Rule(_, _, _))> ast;
          label* := <collect-all(?Labels(<id>));concat> ast;
          rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
          spec := (label*, rel*, rule*, ext)

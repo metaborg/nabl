@@ -3,6 +3,8 @@ package mb.nabl2.constraints.sym;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -15,7 +17,7 @@ public final class SymbolicConstraints {
 
     public static IMatcher<ISymbolicConstraint> matcher() {
         return M.<ISymbolicConstraint>cases(
-            // @formatter:off
+        // @formatter:off
             M.appl2(C_FACT, M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, fact, origin) -> {
                 return ImmutableCFact.of(fact, origin);
             }),
@@ -28,7 +30,7 @@ public final class SymbolicConstraints {
 
     public static ITerm build(ISymbolicConstraint constraint) {
         return constraint.match(ISymbolicConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             fact -> B.newAppl(C_FACT, fact.getFact(), MessageInfo.buildOnlyOriginTerm(fact.getMessageInfo())),
             goal ->  B.newAppl(C_GOAL, goal.getGoal(), MessageInfo.buildOnlyOriginTerm(goal.getMessageInfo()))
             // @formatter:on
@@ -36,16 +38,29 @@ public final class SymbolicConstraints {
     }
 
     public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, ISubstitution.Immutable subst) {
+        // @formatter:off
         return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
-            // @formatter:off
             fact -> ImmutableCFact.of(
                         subst.apply(fact.getFact()),
                         fact.getMessageInfo().apply(subst::apply)),
             goal ->  ImmutableCGoal.of(
                         subst.apply(goal.getGoal()),
                         goal.getMessageInfo().apply(subst::apply))
-            // @formatter:on
         ));
+        // @formatter:on
+    }
+
+    public static ISymbolicConstraint transform(ISymbolicConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
+            fact -> ImmutableCFact.of(
+                        map.apply(fact.getFact()),
+                        fact.getMessageInfo().apply(map::apply)),
+            goal ->  ImmutableCGoal.of(
+                        map.apply(goal.getGoal()),
+                        goal.getMessageInfo().apply(map::apply))
+        ));
+        // @formatter:on
     }
 
 }

@@ -3,6 +3,8 @@ package mb.nabl2.constraints.scopegraph;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.terms.ITerm;
@@ -87,6 +89,36 @@ public final class ScopeGraphConstraints {
                         imp.getLabel(),
                         subst.apply(imp.getReference()),
                         imp.getMessageInfo().apply(subst::apply))
+        ));
+        // @formatter:on
+    }
+
+    public static IScopeGraphConstraint transform(IScopeGraphConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
+            decl -> ImmutableCGDecl.of(
+                        map.apply(decl.getScope()),
+                        map.apply(decl.getDeclaration()),
+                        decl.getMessageInfo().apply(map::apply)),
+            ref -> ImmutableCGRef.of(
+                        map.apply(ref.getReference()),
+                        map.apply(ref.getScope()),
+                        ref.getMessageInfo().apply(map::apply)),
+            edge -> ImmutableCGDirectEdge.of(
+                        map.apply(edge.getSourceScope()),
+                        edge.getLabel(),
+                        map.apply(edge.getTargetScope()),
+                        edge.getMessageInfo().apply(map::apply)),
+            exp -> ImmutableCGExportEdge.of(
+                        map.apply(exp.getDeclaration()),
+                        exp.getLabel(),
+                        map.apply(exp.getScope()),
+                        exp.getMessageInfo().apply(map::apply)),
+            imp -> ImmutableCGImportEdge.of(
+                        map.apply(imp.getScope()),
+                        imp.getLabel(),
+                        map.apply(imp.getReference()),
+                        imp.getMessageInfo().apply(map::apply))
         ));
         // @formatter:on
     }

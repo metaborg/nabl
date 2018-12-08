@@ -1,0 +1,145 @@
+/** Type-classes a la Haskell
+ * Goal:
+ * Limitations:
+ * - No support for non-linear patterns
+ * Result:
+ */
+resolve {s m}
+
+  m == Module([
+
+//  class () => Eq a where
+//    eq :: a -> a -> Bool   -- eq :: Eq a => a -> a -> Bool
+    ClassDef([], "Eq", TVar("a"), [
+      Fun("eq", [TVar("a"), TVar("a")], Bool(), [])
+    ])
+
+//  instance () => Eq Bool where
+//    eq True True = True 
+//    eq False False = True 
+  , InstanceDef([], "Eq", Bool(), [
+      Fun("eq", [Bool(), Bool()], Bool(), [
+        Case([True() , True() ], Term(True()))
+      , Case([False(), False()], Term(True()))
+      ])
+    ])
+
+// instance Eq a => Eq (a * a) where
+//  (x1, x2) == (y1, y2) = x1 == y1 && x2 == y2
+
+  ]),
+
+  new s,
+  moduleOk(s, m),
+  instanceOf(s, "Eq", Bool()) == _
+
+signature
+
+  sorts ID = string
+
+  sorts Module constructors
+    Module : list(Def) -> Module
+
+  sorts Def constructors
+    ClassDef    : list(TC) * ID * Type * list(FunDef) -> Def
+    InstanceDef : list(TC) * ID * Type * list(FunDef) -> Def
+
+  sorts Type constructors
+    Bool : Type
+    Int  : Type
+    TVar : ID -> Type
+
+  sorts FunDef constructors
+    Fun : ID * list(Type) * Type * list(FunCase) -> FunDef
+
+  sorts FunCase constructors
+    Case : list(Term) * Exp -> FunCase
+
+  sorts Exp constructors
+    App  : ID * list(Exp) -> Exp
+    Term : Term -> Exp
+
+  sorts Term constructors
+    True  : Term
+    False : Term
+    Var   : ID -> Term
+
+signature
+
+  sorts TYPE constructors
+    CLASS : Type * scope -> TYPE
+    FUN   : list(TC) * list(Type) * Type -> TYPE
+
+  sorts TC constructors
+    TC : ID * Type -> TC
+
+  namespaces
+    Class    : ID
+    Instance : ID
+    Fun      : ID
+
+  name-resolution
+    labels P
+    resolve Class filter pathMatch[P*] min pathLt[$ < P]
+    resolve Instance filter pathMatch[P*] min pathLt[$ < P]
+    resolve Fun filter pathMatch[P*] min pathLt[$ < P]
+    
+  relations
+    type  : occurrence * TYPE
+    subst : string -> Type
+
+rules
+
+  moduleOk : scope * Module
+
+  moduleOk(s, Module(defs)) :-
+    defsOk(s, defs).
+
+rules
+
+  defsOk maps defOk(*, list(*))
+
+  defOk : scope * Def    
+
+  defOk(s, ClassDef([], x, ty, funs)) :- {s_class}
+    varType(ty),
+    new s_class,
+    s -> Class{x@x} with type CLASS(ty, s_class).
+
+  defOk(s, InstanceDef([], x, ty, funs)) :- {s_inst}
+    headNormalType(ty),
+    new s_inst,
+    s -> Instance{x@x} with type CLASS(ty, s_inst).
+
+rules
+
+  varType : Type
+  varType(TVar(_)).
+
+  headNormalType : Type
+  headNormalType(TVar(_)) :- false.
+  headNormalType(_).
+
+rules
+
+  instanceOf : scope * string * Type -> occurrence * scope
+
+  instanceOf(s, x, ty) = (d, s_inst) :- {ty_inst}
+    query type
+      filter pathMatch[P*]
+          and { (Instance{x_inst@_}, CLASS(ty_inst, _)) :- x == x_inst, match(ty, ty_inst) }
+      min pathLt[$ < P] and true
+      in s |-> [(_, (d, CLASS(ty_inst, s_inst)))].
+
+rules
+
+  match : Type * Type
+
+  match(P, T) :- matchIn(new, P, T).
+    
+  matchIn : scope * Type * Type
+  
+  matchIn(s, TVar(x), T) :-
+    !subst[x, T] in s.
+
+  matchIn(s, Bool(), Bool()).

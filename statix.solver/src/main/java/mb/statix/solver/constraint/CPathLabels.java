@@ -65,9 +65,9 @@ public class CPathLabels implements IConstraint {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("labels(");
-        sb.append(termToString.apply(pathTerm));
+        sb.append(termToString.format(pathTerm));
         sb.append(", ");
-        sb.append(termToString.apply(labelsTerm));
+        sb.append(termToString.format(labelsTerm));
         sb.append(")");
         return sb.toString();
     }

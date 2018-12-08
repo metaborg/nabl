@@ -64,9 +64,9 @@ public class CPathScopes implements IConstraint {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("scopes(");
-        sb.append(termToString.apply(pathTerm));
+        sb.append(termToString.format(pathTerm));
         sb.append(", ");
-        sb.append(termToString.apply(scopesTerm));
+        sb.append(termToString.format(scopesTerm));
         sb.append(")");
         return sb.toString();
     }

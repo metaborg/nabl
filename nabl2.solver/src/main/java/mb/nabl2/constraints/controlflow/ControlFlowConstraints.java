@@ -5,6 +5,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.stream.Collectors;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.controlflow.terms.CFGNode;
 import mb.nabl2.terms.ITerm;
@@ -18,7 +20,7 @@ public final class ControlFlowConstraints {
 
     public static IMatcher<IControlFlowConstraint> matcher() {
         return M.cases(
-            // @formatter:off
+        // @formatter:off
             M.appl3(CF_DIRECT_EDGE, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, node1, node2, origin) -> ImmutableCFDirectEdge.of(node1, node2, origin)),
             M.appl5(C_TF_APPL, CFGNode.matcher(), M.stringValue(), M.stringValue(), M.integerValue(), M.listElems(),
@@ -29,7 +31,7 @@ public final class ControlFlowConstraints {
 
     public static ITerm build(IControlFlowConstraint constraint) {
         return constraint.match(IControlFlowConstraint.Cases.<ITerm>of(
-            // @formatter:off
+        // @formatter:off
             edge -> B.newAppl(CF_DIRECT_EDGE, edge.getSourceNode(), edge.getTargetNode(),
                                MessageInfo.buildOnlyOriginTerm(edge.getMessageInfo())),
             tfAppl -> B.newAppl(C_TF_APPL, tfAppl.getCFGNode(), B.newString(tfAppl.getPropertyName()),
@@ -38,8 +40,8 @@ public final class ControlFlowConstraints {
     }
 
     public static IControlFlowConstraint substitute(IControlFlowConstraint constraint, ISubstitution.Immutable subst) {
+        // @formatter:off
         return constraint.match(IControlFlowConstraint.Cases.<IControlFlowConstraint>of(
-            // @formatter:off
             edge -> ImmutableCFDirectEdge.of(
                         subst.apply(edge.getSourceNode()),
                         subst.apply(edge.getTargetNode()),
@@ -51,8 +53,26 @@ public final class ControlFlowConstraints {
                     tfAppl.getOffset(),
                     tfAppl.getArguments().stream().map(subst::apply).collect(Collectors.toList()),
                     tfAppl.getMessageInfo().apply(subst::apply))
-            // @formatter:on
         ));
+        // @formatter:on
+    }
+
+    public static IControlFlowConstraint transform(IControlFlowConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(IControlFlowConstraint.Cases.<IControlFlowConstraint>of(
+            edge -> ImmutableCFDirectEdge.of(
+                        map.apply(edge.getSourceNode()),
+                        map.apply(edge.getTargetNode()),
+                        edge.getMessageInfo().apply(map::apply)),
+            tfAppl -> ImmutableCTFAppl.of(
+                    tfAppl.getCFGNode(),
+                    tfAppl.getPropertyName(),
+                    tfAppl.getModuleName(),
+                    tfAppl.getOffset(),
+                    tfAppl.getArguments().stream().map(map::apply).collect(Collectors.toList()),
+                    tfAppl.getMessageInfo().apply(map::apply))
+        ));
+        // @formatter:on
     }
 
 }

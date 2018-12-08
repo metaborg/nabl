@@ -16,7 +16,7 @@ public class SG_analysis_has_errors extends AnalysisPrimitive {
 
     @Override protected Optional<? extends ITerm> call(ISolution solution, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return solution.messages().getErrors().isEmpty() ? Optional.empty() : Optional.of(term);
+        return solution.messagesAndUnsolvedErrors().getErrors().isEmpty() ? Optional.empty() : Optional.of(term);
     }
 
 }

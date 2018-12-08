@@ -30,6 +30,12 @@ rules
 
   topdown-om(s) = s <+ all(topdown-om(s))
 
+  group-by(s): [] -> []
+  group-by(s): [x|ys] -> [xs|<group-by(s)> ys']
+    with
+      (xs', ys') := <partition(\ x' -> x' where <s> (x, x') \)> ys
+    ; xs := [x|xs']
+
 rules
 
   // collect-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])

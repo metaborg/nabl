@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Predicate1;
-import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -34,6 +33,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.matching.MaybeNotInstantiated;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.CapsuleUtil;
@@ -138,8 +138,8 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             // @formatter:off
             return thisTerm.match(Terms.cases(
                 applThis -> thatTerm.match(Terms.<Boolean>cases()
-                    .appl(applThat -> applThis.getOp().equals(applThat.getOp()) &&
-                                       applThis.getArity() == applThat.getArity() &&
+                    .appl(applThat -> applThis.getArity() == applThat.getArity() &&
+                                       applThis.getOp().equals(applThat.getOp()) &&
                                        equals(applThis.getArgs(), applThat.getArgs()))
                     .var(varThat -> equalTermVar(applThis, varThat))
                     .otherwise(t -> false)
@@ -397,60 +397,70 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     // areEqual(ITerm, ITerm)
     ///////////////////////////////////////////
 
-    @Override public boolean areEqual(final ITerm left, final ITerm right) {
+    @Override public MaybeNotInstantiated<Boolean> areEqual(final ITerm left, final ITerm right) {
         return equalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private boolean equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
+    private MaybeNotInstantiated<Boolean> equalTerms(final ITerm left, final ITerm right,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         // @formatter:off
-        return left.match(Terms.cases(
-            applLeft -> right.match(Terms.<Boolean>cases()
-                .appl(applRight -> applLeft.getOp().equals(applRight.getOp()) &&
-                                   applLeft.getArity() == applRight.getArity() &&
-                                   equals(applLeft.getArgs(), applRight.getArgs(), stack, visited))
+        return left.match(Terms.<MaybeNotInstantiated<Boolean>>cases(
+            applLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .appl(applRight -> {
+                    if(applLeft.getArity() == applRight.getArity() &&
+                            applLeft.getOp().equals(applRight.getOp())) { 
+                        return equals(applLeft.getArgs(), applRight.getArgs(), stack, visited);
+                    } else {
+                        return MaybeNotInstantiated.ofResult(false);
+                    }
+                 })
                 .var(varRight -> equalVarTerm(varRight, applLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            listLeft -> right.match(Terms.<Boolean>cases()
-                .list(listRight -> listLeft.match(ListTerms.cases(
-                    consLeft -> listRight.match(ListTerms.<Boolean>cases()
+            listLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .list(listRight -> listLeft.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases(
+                    consLeft -> listRight.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
                         .cons(consRight -> {
-                            return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited) && 
-                            equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
+                            return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited).flatMap(m -> {
+                                if(m) {
+                                    return equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
+                                } else {
+                                    return MaybeNotInstantiated.ofResult(false);
+                                }
+                            });
                         })
                         .var(varRight -> equalVarTerm(varRight, consLeft, stack, visited))
-                        .otherwise(l -> false)
+                        .otherwise(l -> MaybeNotInstantiated.ofResult(false))
                     ),
-                    nilLeft -> listRight.match(ListTerms.<Boolean>cases()
-                        .nil(nilRight -> true)
+                    nilLeft -> listRight.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
+                        .nil(nilRight -> MaybeNotInstantiated.ofResult(true))
                         .var(varRight -> equalVarTerm(varRight, nilLeft, stack, visited))
-                        .otherwise(l -> false)
+                        .otherwise(l -> MaybeNotInstantiated.ofResult(false))
                     ),
-                    varLeft -> listRight.match(ListTerms.<Boolean>cases()
+                    varLeft -> listRight.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
                         .var(varRight -> equalVars(varLeft, varRight, stack, visited))
                         .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
                     )
                 )))
                 .var(varRight -> equalVarTerm(varRight, listLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            stringLeft -> right.match(Terms.<Boolean>cases()
-                .string(stringRight -> stringLeft.getValue().equals(stringRight.getValue()))
+            stringLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .string(stringRight -> MaybeNotInstantiated.ofResult(stringLeft.getValue().equals(stringRight.getValue())))
                 .var(varRight -> equalVarTerm(varRight, stringLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            integerLeft -> right.match(Terms.<Boolean>cases()
-                .integer(integerRight -> integerLeft.getValue() == integerRight.getValue())
+            integerLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .integer(integerRight -> MaybeNotInstantiated.ofResult(integerLeft.getValue() == integerRight.getValue()))
                 .var(varRight -> equalVarTerm(varRight, integerLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            blobLeft -> right.match(Terms.<Boolean>cases()
-                .blob(blobRight -> blobLeft.getValue().equals(blobRight.getValue()))
+            blobLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+                .blob(blobRight -> MaybeNotInstantiated.ofResult(blobLeft.getValue().equals(blobRight.getValue())))
                 .var(varRight -> equalVarTerm(varRight, blobLeft, stack, visited))
-                .otherwise(t -> false)
+                .otherwise(t -> MaybeNotInstantiated.ofResult(false))
             ),
-            varLeft -> right.match(Terms.<Boolean>cases()
+            varLeft -> right.match(Terms.<MaybeNotInstantiated<Boolean>>cases()
                 // match var before term, or term will always match
                 .var(varRight -> equalVars(varLeft, varRight, stack, visited))
                 .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
@@ -459,175 +469,65 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // @formatter:on
     }
 
-    private boolean equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
+    private MaybeNotInstantiated<Boolean> equalVarTerm(final ITermVar var, final ITerm term,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar rep = findRep(var);
         if(terms().containsKey(rep)) {
             return equalTerms(terms().get(rep), term, stack, visited);
+        } else {
+            return MaybeNotInstantiated.ofNotInstantiated(var);
         }
-        return false;
     }
 
-    private boolean equalVars(final ITermVar left, final ITermVar right, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
+    private MaybeNotInstantiated<Boolean> equalVars(final ITermVar left, final ITermVar right,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar leftRep = findRep(left);
         final ITermVar rightRep = findRep(right);
         if(leftRep.equals(rightRep)) {
-            return true;
+            return MaybeNotInstantiated.ofResult(true);
         }
         final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
-        final boolean equal;
+        final MaybeNotInstantiated<Boolean> equal;
         if(!visited.containsKey(pair)) {
             stack.add(pair);
             visited.put(pair, null);
             final ITerm leftTerm = terms().get(leftRep);
             final ITerm rightTerm = terms().get(rightRep);
-            equal = (leftTerm != null && rightTerm != null) ? equalTerms(leftTerm, rightTerm, stack, visited) : false;
-            visited.put(pair, equal);
+            if(leftTerm == null) {
+                return MaybeNotInstantiated.ofNotInstantiated(leftRep);
+            } else if(rightTerm == null) {
+                return MaybeNotInstantiated.ofNotInstantiated(rightRep);
+            }
+            equal = equalTerms(leftTerm, rightTerm, stack, visited);
+            equal.onResult(eq -> {
+                visited.put(pair, eq);
+            });
             stack.remove(pair);
         } else if(stack.contains(pair)) {
-            equal = false;
+            equal = MaybeNotInstantiated.ofResult(false);
         } else {
-            equal = visited.get(pair);
+            equal = MaybeNotInstantiated.ofResult(visited.get(pair));
         }
         return equal;
     }
 
-    private boolean equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
+    private MaybeNotInstantiated<Boolean> equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights,
+            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         Iterator<ITerm> itLeft = lefts.iterator();
         Iterator<ITerm> itRight = rights.iterator();
         while(itLeft.hasNext()) {
             if(!itRight.hasNext()) {
-                return false;
+                return MaybeNotInstantiated.ofResult(false);
             }
-            if(!equalTerms(itLeft.next(), itRight.next(), stack, visited)) {
-                return false;
-            }
-        }
-        if(itRight.hasNext()) {
-            return false;
-        }
-        return true;
-    }
-
-    ///////////////////////////////////////////
-    // areUnequal(ITerm, ITerm)
-    ///////////////////////////////////////////
-
-    @Override public boolean areUnequal(final ITerm left, final ITerm right) {
-        return unequalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
-    }
-
-    private boolean unequalTerms(final ITerm left, final ITerm right, Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        // @formatter:off
-        return left.match(Terms.cases(
-            applLeft -> right.match(Terms.<Boolean>cases()
-                .appl(applRight -> !applLeft.getOp().equals(applRight.getOp()) ||
-                                    applLeft.getArity() != applRight.getArity() ||
-                                    unequals(applLeft.getArgs(), applRight.getArgs(), stack, visited))
-                .var(varRight -> unequalVarTerm(varRight, applLeft, stack, visited))
-                .otherwise(t -> true)
-            ),
-            listLeft -> right.match(Terms.<Boolean>cases()
-                .list(listRight -> listLeft.match(ListTerms.cases(
-                    consLeft -> listRight.match(ListTerms.<Boolean>cases()
-                        .cons(consRight -> {
-                            return unequalTerms(consLeft.getHead(), consRight.getHead(), stack, visited) || 
-                                   unequalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
-                        })
-                        .var(varRight -> unequalVarTerm(varRight, consLeft, stack, visited))
-                        .otherwise(t -> true)
-                    ),
-                    nilLeft -> listRight.match(ListTerms.<Boolean>cases()
-                        .nil(nilRight -> false)
-                        .var(varRight -> unequalVarTerm(varRight, nilLeft, stack, visited))
-                        .otherwise(t -> true)
-                    ),
-                    varLeft -> listRight.match(ListTerms.<Boolean>cases()
-                        .var(varRight -> unequalVars(varLeft, varRight, stack, visited))
-                        .otherwise(termRight -> unequalVarTerm(varLeft, termRight, stack, visited))
-                    )
-                )))
-                .var(varRight -> unequalVarTerm(varRight, listLeft, stack, visited))
-                .otherwise(t -> true)
-            ),
-            stringLeft -> right.match(Terms.<Boolean>cases()
-                .string(stringRight -> !stringLeft.getValue().equals(stringRight.getValue()))
-                .var(varRight -> unequalVarTerm(varRight, stringLeft, stack, visited))
-                .otherwise(t -> true)
-            ),
-            integerLeft -> right.match(Terms.<Boolean>cases()
-                .integer(integerRight -> integerLeft.getValue() != integerRight.getValue())
-                .var(varRight -> unequalVarTerm(varRight, integerLeft, stack, visited))
-                .otherwise(t -> true)
-            ),
-            blobLeft -> right.match(Terms.<Boolean>cases()
-                .blob(blobRight -> !blobLeft.getValue().equals(blobRight.getValue()))
-                .var(varRight -> unequalVarTerm(varRight, blobLeft, stack, visited))
-                .otherwise(t -> true)
-            ),
-            varLeft -> right.match(Terms.<Boolean>cases()
-                // match var before term, or term will always match
-                .var(varRight -> unequalVars(varLeft, varRight, stack, visited))
-                .otherwise(termRight -> unequalVarTerm(varLeft, termRight, stack, visited))
-            )
-        ));
-        // @formatter:on
-    }
-
-    private boolean unequalVarTerm(final ITermVar var, final ITerm term, Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        final ITermVar rep = findRep(var);
-        if(terms().containsKey(rep)) {
-            return unequalTerms(terms().get(rep), term, stack, visited);
-        }
-        return false;
-    }
-
-    private boolean unequalVars(final ITermVar left, final ITermVar right, Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        final ITermVar leftRep = findRep(left);
-        final ITermVar rightRep = findRep(right);
-        if(leftRep.equals(rightRep)) {
-            return false;
-        }
-        final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
-        final boolean unequal;
-        if(!visited.containsKey(pair)) {
-            stack.add(pair);
-            visited.put(pair, null);
-            final ITerm leftTerm = terms().get(leftRep);
-            final ITerm rightTerm = terms().get(rightRep);
-            unequal =
-                    (leftTerm != null && rightTerm != null) ? unequalTerms(leftTerm, rightTerm, stack, visited) : false;
-            visited.put(pair, unequal);
-            stack.remove(pair);
-        } else if(stack.contains(pair)) {
-            unequal = false;
-        } else {
-            unequal = visited.get(pair);
-        }
-        return unequal;
-    }
-
-    private boolean unequals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights, Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        Iterator<ITerm> itLeft = lefts.iterator();
-        Iterator<ITerm> itRight = rights.iterator();
-        while(itLeft.hasNext()) {
-            if(!itRight.hasNext()) {
-                return true;
-            }
-            if(unequalTerms(itLeft.next(), itRight.next(), stack, visited)) {
-                return true;
+            final MaybeNotInstantiated<Boolean> result = equalTerms(itLeft.next(), itRight.next(), stack, visited);
+            if(!result.orElse(false)) {
+                return result;
             }
         }
         if(itRight.hasNext()) {
-            return true;
+            return MaybeNotInstantiated.ofResult(false);
         }
-        return false;
+        return MaybeNotInstantiated.ofResult(true);
     }
 
     ///////////////////////////////////////////
@@ -826,7 +726,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
             final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         if(maxDepth == 0) {
-            return "_";
+            return "…";
         }
         // @formatter:off
         return term.match(Terms.cases(
@@ -843,7 +743,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private String toString(IListTerm list, final java.util.Map<ITermVar, String> stack,
             final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         if(maxDepth == 0) {
-            return "_";
+            return "…";
         }
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
@@ -876,7 +776,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
     private String toString(final ITermVar var, final java.util.Map<ITermVar, String> stack,
             final java.util.Map<ITermVar, String> visited, final int maxDepth) {
         if(maxDepth == 0) {
-            return "_";
+            return "…";
         }
         final ITermVar rep = findRep(var);
         final String toString;
@@ -955,32 +855,36 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             return terms;
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> unify(ITerm left, ITerm right)
-                throws CannotUnifyException, OccursException {
+        @Override public Optional<IUnifier.Immutable.Result<mb.nabl2.terms.unification.IUnifier.Immutable>>
+                unify(ITerm left, ITerm right) throws OccursException {
             final IUnifier.Transient unifier = melt();
-            final IUnifier.Immutable diff = unifier.unify(left, right);
-            return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(left, right).map(diff -> {
+                return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            });
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> unify(ITerm left, ITerm right,
-                Predicate1<ITermVar> isRigid) throws CannotUnifyException, OccursException, RigidVarsException {
+        @Override public Optional<IUnifier.Immutable.Result<mb.nabl2.terms.unification.IUnifier.Immutable>> unify(
+                ITerm left, ITerm right, Predicate1<ITermVar> isRigid) throws OccursException, RigidVarsException {
             final IUnifier.Transient unifier = melt();
-            final IUnifier.Immutable diff = unifier.unify(left, right, isRigid);
-            return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(left, right, isRigid).map(diff -> {
+                return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            });
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> unify(IUnifier other)
-                throws CannotUnifyException, OccursException {
+        @Override public Optional<IUnifier.Immutable.Result<mb.nabl2.terms.unification.IUnifier.Immutable>>
+                unify(IUnifier other) throws OccursException {
             final IUnifier.Transient unifier = melt();
-            final IUnifier.Immutable diff = unifier.unify(other);
-            return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(other).map(diff -> {
+                return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            });
         }
 
-        @Override public IUnifier.Immutable.Result<IUnifier.Immutable> unify(IUnifier other,
-                Predicate1<ITermVar> isRigid) throws CannotUnifyException, OccursException, RigidVarsException {
+        @Override public Optional<IUnifier.Immutable.Result<mb.nabl2.terms.unification.IUnifier.Immutable>>
+                unify(IUnifier other, Predicate1<ITermVar> isRigid) throws OccursException, RigidVarsException {
             final IUnifier.Transient unifier = melt();
-            final IUnifier.Immutable diff = unifier.unify(other, isRigid);
-            return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(other, isRigid).map(diff -> {
+                return new PersistentUnifier.Result<>(diff, unifier.freeze());
+            });
         }
 
         @Override public ITermVar findRep(ITermVar var) {
@@ -1083,8 +987,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public IUnifier.Immutable unify(ITerm left, ITerm right)
-                throws CannotUnifyException, OccursException {
+        @Override public Optional<IUnifier.Immutable> unify(ITerm left, ITerm right) throws OccursException {
             try {
                 return new Unify(left, right).apply();
             } catch(RigidVarsException e) {
@@ -1092,12 +995,12 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             }
         }
 
-        @Override public IUnifier.Immutable unify(ITerm left, ITerm right, Predicate1<ITermVar> isRigid)
-                throws CannotUnifyException, OccursException, RigidVarsException {
+        @Override public Optional<IUnifier.Immutable> unify(ITerm left, ITerm right, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidVarsException {
             return new Unify(left, right, isRigid).apply();
         }
 
-        @Override public IUnifier.Immutable unify(IUnifier other) throws CannotUnifyException, OccursException {
+        @Override public Optional<IUnifier.Immutable> unify(IUnifier other) throws OccursException {
             try {
                 return new Unify(other).apply();
             } catch(RigidVarsException e) {
@@ -1105,8 +1008,8 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             }
         }
 
-        @Override public IUnifier.Immutable unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws CannotUnifyException, OccursException {
+        @Override public Optional<IUnifier.Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException {
             try {
                 return new Unify(other, isRigid).apply();
             } catch(RigidVarsException e) {
@@ -1149,14 +1052,14 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 }
             }
 
-            public IUnifier.Immutable apply() throws CannotUnifyException, OccursException, RigidVarsException {
+            public Optional<IUnifier.Immutable> apply() throws OccursException, RigidVarsException {
                 while(!worklist.isEmpty()) {
                     final Tuple2<ITerm, ITerm> work = worklist.pop();
                     try {
-                        unifyTerms(work._1(), work._2());
+                        if(!unifyTerms(work._1(), work._2())) {
+                            return Optional.empty();
+                        }
                     } catch(_RigidVarsException ex) {
-                        throw ex.exception;
-                    } catch(_CannotUnifyException ex) {
                         throw ex.exception;
                     }
                 }
@@ -1167,152 +1070,125 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                         throw new OccursException(cyclicVars);
                     }
                 }
-                return diffUnifier(result);
+                return Optional.of(diffUnifier(result));
             }
 
-            private void unifyTerms(final ITerm _left, final ITerm _right) {
+            private boolean unifyTerms(final ITerm _left, final ITerm _right) {
                 final ITerm left = findTerm(_left);
                 final ITerm right = findTerm(_right);
-                final RuntimeException exception = new _CannotUnifyException(left, right);
                 // @formatter:off
-                left.match(Terms.cases(
-                    applLeft -> right.match(Terms.cases()
+                return left.match(Terms.<Boolean>cases(
+                    applLeft -> right.match(Terms.<Boolean>cases()
                         .appl(applRight -> {
-                            if(!(applLeft.getOp().equals(applRight.getOp()) &&
-                                    applLeft.getArity() == applRight.getArity() &&
-                                    unifys(applLeft.getArgs(), applRight.getArgs()))) {
-                                throw exception;
-                            }
-                            return Unit.unit;
+                            return applLeft.getArity() == applRight.getArity() &&
+                                    applLeft.getOp().equals(applRight.getOp()) &&
+                                    unifys(applLeft.getArgs(), applRight.getArgs());
                         })
                         .var(varRight -> {
-                            unifyTerms(varRight, applLeft)  ;
-                            return Unit.unit;
+                            return unifyTerms(varRight, applLeft)  ;
                         })
                         .otherwise(t -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    listLeft -> right.match(Terms.cases()
+                    listLeft -> right.match(Terms.<Boolean>cases()
                         .list(listRight -> {
-                            unifyLists(listLeft, listRight);
-                            return Unit.unit;
+                            return unifyLists(listLeft, listRight);
                         })
                         .var(varRight -> { 
-                            unifyTerms(varRight, listLeft);
-                            return Unit.unit;
+                            return unifyTerms(varRight, listLeft);
                         })
                         .otherwise(t -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    stringLeft -> right.match(Terms.cases()
+                    stringLeft -> right.match(Terms.<Boolean>cases()
                         .string(stringRight -> {
-                            if(!stringLeft.getValue().equals(stringRight.getValue())) {
-                                throw exception;
-                            }
-                            return Unit.unit;
+                            return stringLeft.getValue().equals(stringRight.getValue());
                         })
                         .var(varRight -> {
-                            unifyTerms(varRight, stringLeft);
-                            return Unit.unit;
+                            return unifyTerms(varRight, stringLeft);
                         })
                         .otherwise(t -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    integerLeft -> right.match(Terms.cases()
+                    integerLeft -> right.match(Terms.<Boolean>cases()
                         .integer(integerRight -> {
-                            if(integerLeft.getValue() != integerRight.getValue()) {
-                                throw exception;
-                            }
-                            return Unit.unit;
+                            return integerLeft.getValue() == integerRight.getValue();
                         })
                         .var(varRight -> {
-                            unifyTerms(varRight, integerLeft);
-                            return Unit.unit;
+                            return unifyTerms(varRight, integerLeft);
                         })
                         .otherwise(t -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    blobLeft -> right.match(Terms.cases()
+                    blobLeft -> right.match(Terms.<Boolean>cases()
                         .blob(blobRight -> {
-                            if(!blobLeft.getValue().equals(blobRight.getValue())) {
-                                throw exception;
-                            }
-                            return Unit.unit;
+                            return blobLeft.getValue().equals(blobRight.getValue());
                         })
                         .var(varRight -> {
-                            unifyTerms(varRight, blobLeft);
-                            return Unit.unit;
+                            return unifyTerms(varRight, blobLeft);
                         })
                         .otherwise(t -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    varLeft -> right.match(Terms.cases()
-                        // match var before term, or term will always match
+                    varLeft -> right.match(Terms.<Boolean>cases()
                         .var(varRight -> {
-                            unifyVars(varLeft, varRight);
-                            return Unit.unit;
+                            return unifyVars(varLeft, varRight);
                         })
                         .otherwise(termRight -> {
-                            unifyVarTerm(varLeft, termRight);
-                            return Unit.unit;
+                            return unifyVarTerm(varLeft, termRight);
                         })
                     )
                 ));
                 // @formatter:on
             }
 
-            private void unifyLists(final IListTerm _left, final IListTerm _right) {
+            private boolean unifyLists(final IListTerm _left, final IListTerm _right) {
                 final IListTerm left = (IListTerm) findTerm(_left);
                 final IListTerm right = (IListTerm) findTerm(_right);
-                final RuntimeException exception = new _CannotUnifyException(left, right);
                 // @formatter:off
-                left.match(ListTerms.cases(
-                    consLeft -> right.match(ListTerms.cases()
+                return left.match(ListTerms.<Boolean>cases(
+                    consLeft -> right.match(ListTerms.<Boolean>cases()
                         .cons(consRight -> {
                             worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
                             worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
-                            return Unit.unit;
+                            return true;
                         })
                         .var(varRight -> {
-                            unifyLists(varRight, consLeft);
-                            return Unit.unit;
+                            return unifyLists(varRight, consLeft);
                         })
                         .otherwise(l -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    nilLeft -> right.match(ListTerms.cases()
+                    nilLeft -> right.match(ListTerms.<Boolean>cases()
                         .nil(nilRight -> {
-                            return Unit.unit;
+                            return true;
                         })
                         .var(varRight -> {
-                            unifyVarTerm(varRight, nilLeft)  ;
-                            return Unit.unit;
+                            return unifyVarTerm(varRight, nilLeft)  ;
                         })
                         .otherwise(l -> {
-                            throw exception;
+                            return false;
                         })
                     ),
-                    varLeft -> right.match(ListTerms.cases()
+                    varLeft -> right.match(ListTerms.<Boolean>cases()
                         .var(varRight -> {
-                            unifyVars(varLeft, varRight);
-                            return Unit.unit;
+                            return unifyVars(varLeft, varRight);
                         })
                         .otherwise(termRight -> {
-                            unifyVarTerm(varLeft, termRight);
-                            return Unit.unit;
+                            return unifyVarTerm(varLeft, termRight);
                         })
                     )
                 ));
                 // @formatter:on
             }
 
-            private void unifyVarTerm(final ITermVar var, final ITerm term) {
+            private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
                 final ITermVar rep = findRep(var);
                 assert !(term instanceof ITermVar);
                 if(terms.containsKey(rep)) {
@@ -1323,13 +1199,14 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                     terms.__put(rep, term);
                     result.add(rep);
                 }
+                return true;
             }
 
-            private void unifyVars(final ITermVar left, final ITermVar right) {
+            private boolean unifyVars(final ITermVar left, final ITermVar right) {
                 final ITermVar leftRep = findRep(left);
                 final ITermVar rightRep = findRep(right);
                 if(leftRep.equals(rightRep)) {
-                    return;
+                    return true;
                 }
                 if(isRigid.test(leftRep) && isRigid.test(rightRep)) {
                     throw new _RigidVarsException(leftRep, rightRep);
@@ -1353,6 +1230,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 if(term != null) {
                     worklist.push(ImmutableTuple2.of(term, terms.getOrDefault(with, with)));
                 }
+                return true;
             }
 
             private boolean unifys(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
@@ -1470,23 +1348,6 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
 
     }
 
-    private static class _CannotUnifyException extends RuntimeException {
-
-        private static final long serialVersionUID = 1L;
-
-        public final CannotUnifyException exception;
-
-        public _CannotUnifyException(ITerm left, ITerm right) {
-            this(new CannotUnifyException(left, right));
-        }
-
-        public _CannotUnifyException(CannotUnifyException exception) {
-            super(exception);
-            this.exception = exception;
-        }
-
-    }
-
     private static class _RigidVarsException extends RuntimeException {
 
         private static final long serialVersionUID = 1L;
@@ -1498,7 +1359,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         }
 
         public _RigidVarsException(RigidVarsException exception) {
-            super(exception);
+            super("rigid vars", exception, false, false);
             this.exception = exception;
         }
 

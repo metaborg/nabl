@@ -55,7 +55,6 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
             BaseSolution baseSolution = ImmutableBaseSolution.of(initialResult.solution().config(), constraints,
                     initialResult.solution().unifier());
             GraphSolution preSolution = solver.solveGraph(baseSolution, unitFresh::fresh, cancel, progress);
-            preSolution = solver.reportUnsolvedGraphConstraints(preSolution);
             solution = solver.solveIntra(preSolution, initialResult.globalVars(), initialResult.globalScopes(),
                     unitFresh::fresh, cancel, progress);
         } catch(InterruptedException | SolverException ex) {

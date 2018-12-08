@@ -23,6 +23,8 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class Transform {
 
+    public static final T T = new T();
+
     public static class T {
 
         public static Function1<ITerm, ITerm> sometd(PartialFunction1<ITerm, ITerm> m) {

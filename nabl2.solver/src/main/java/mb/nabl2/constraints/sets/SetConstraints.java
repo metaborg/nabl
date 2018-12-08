@@ -3,6 +3,8 @@ package mb.nabl2.constraints.sets;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.sets.SetTerms;
 import mb.nabl2.terms.ITerm;
@@ -43,22 +45,42 @@ public final class SetConstraints {
         ));
     }
 
-    public static ISetConstraint substitute(ISetConstraint constraint, ISubstitution.Immutable unifier) {
+    public static ISetConstraint substitute(ISetConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(ISetConstraint.Cases.of(
             subseteq -> ImmutableCSubsetEq.of(
-                            unifier.apply(subseteq.getLeft()),
-                            unifier.apply(subseteq.getRight()),
+                            subst.apply(subseteq.getLeft()),
+                            subst.apply(subseteq.getRight()),
                             subseteq.getProjection(),
-                            subseteq.getMessageInfo().apply(unifier::apply)),
+                            subseteq.getMessageInfo().apply(subst::apply)),
             distinct -> ImmutableCDistinct.of(
-                            unifier.apply(distinct.getSet()),
+                            subst.apply(distinct.getSet()),
                             distinct.getProjection(),
-                            distinct.getMessageInfo().apply(unifier::apply)),
+                            distinct.getMessageInfo().apply(subst::apply)),
             eval -> ImmutableCEvalSet.of(
-                            unifier.apply(eval.getResult()),
-                            unifier.apply(eval.getSet()),
-                            eval.getMessageInfo().apply(unifier::apply))
+                            subst.apply(eval.getResult()),
+                            subst.apply(eval.getSet()),
+                            eval.getMessageInfo().apply(subst::apply))
+        ));
+        // @formatter:on
+    }
+
+    public static ISetConstraint transform(ISetConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(ISetConstraint.Cases.of(
+            subseteq -> ImmutableCSubsetEq.of(
+                            map.apply(subseteq.getLeft()),
+                            map.apply(subseteq.getRight()),
+                            subseteq.getProjection(),
+                            subseteq.getMessageInfo().apply(map::apply)),
+            distinct -> ImmutableCDistinct.of(
+                            map.apply(distinct.getSet()),
+                            distinct.getProjection(),
+                            distinct.getMessageInfo().apply(map::apply)),
+            eval -> ImmutableCEvalSet.of(
+                            map.apply(eval.getResult()),
+                            map.apply(eval.getSet()),
+                            eval.getMessageInfo().apply(map::apply))
         ));
         // @formatter:on
     }

@@ -88,7 +88,7 @@ public class CPathMatch implements IConstraint {
         sb.append("pathMatch[");
         sb.append(re);
         sb.append("](");
-        sb.append(termToString.apply(labelsTerm));
+        sb.append(termToString.format(labelsTerm));
         sb.append(")");
         return sb.toString();
     }

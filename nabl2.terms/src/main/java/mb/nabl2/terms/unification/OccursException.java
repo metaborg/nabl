@@ -13,7 +13,7 @@ public class OccursException extends Exception {
     private final Set<ITermVar> vars;
 
     public OccursException(Iterable<ITermVar> vars) {
-        super("Recursive " + vars);
+        super("occurs", null, false, false);
         this.vars = ImmutableSet.copyOf(vars);
     }
 
@@ -21,4 +21,7 @@ public class OccursException extends Exception {
         return vars;
     }
 
+    @Override public String getMessage() {
+        return "Recursive " + vars;
+    }
 }

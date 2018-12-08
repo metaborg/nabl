@@ -28,82 +28,80 @@ public class PersistentUnifierFiniteTest {
     private final ITerm y = B.newString("y");
     private final ITerm z = B.newString("z");
 
-    @Test public void testEmpty() throws CannotUnifyException, OccursException {
+    @Test public void testEmpty() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, a);
+        phi.unify(a, a).orElseThrow(() -> new IllegalArgumentException());
         assertTrue(phi.isEmpty());
         assertEquals(0, phi.size());
     }
 
-    @Test public void testNonEmpty() throws CannotUnifyException, OccursException {
+    @Test public void testNonEmpty() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, x);
-        phi.unify(b, y);
+        phi.unify(a, x).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, y).orElseThrow(() -> new IllegalArgumentException());
         assertFalse(phi.isEmpty());
         assertEquals(2, phi.size());
     }
 
-    @Test public void testVarIdentity() throws CannotUnifyException, OccursException {
+    @Test public void testVarIdentity() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        assertTrue(phi.areEqual(a, a));
+        assertTrue(phi.areEqual(a, a).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testTermIdentity() throws CannotUnifyException, OccursException {
+    @Test public void testTermIdentity() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        assertTrue(phi.areEqual(B.newAppl(f, a), B.newAppl(f, a)));
+        assertTrue(phi.areEqual(B.newAppl(f, a), B.newAppl(f, a)).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testUnifySameVar() throws CannotUnifyException, OccursException {
+    @Test public void testUnifySameVar() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, a);
+        phi.unify(a, a).orElseThrow(() -> new IllegalArgumentException());
         assertFalse(phi.contains(a));
     }
 
-    @Test public void testUnifyTermArgs() throws CannotUnifyException, OccursException {
+    @Test public void testUnifyTermArgs() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(a, B.newAppl(f, x));
-        assertTrue(phi.areEqual(b, x));
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(a, B.newAppl(f, x)).orElseThrow(() -> new IllegalArgumentException());
+        assertTrue(phi.areEqual(b, x).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test(expected = OccursException.class) public void testUnifyOccursDirect()
-            throws CannotUnifyException, OccursException {
+    @Test(expected = OccursException.class) public void testUnifyOccursDirect() throws OccursException {
         final IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, a));
+        phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
     }
 
-    @Test(expected = OccursException.class) public void testUnifyOccursIndirect()
-            throws CannotUnifyException, OccursException {
+    @Test(expected = OccursException.class) public void testUnifyOccursIndirect() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, B.newAppl(g, a));
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, B.newAppl(g, a)).orElseThrow(() -> new IllegalArgumentException());
     }
 
-    @Test public void testUnifyMakeEqualReps() throws CannotUnifyException, OccursException {
+    @Test public void testUnifyMakeEqualReps() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, b);
+        phi.unify(a, b).orElseThrow(() -> new IllegalArgumentException());
         assertEquals(phi.findRep(a), phi.findRep(b));
     }
 
-    @Test public void testGround() throws CannotUnifyException, OccursException {
+    @Test public void testGround() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, x);
+        phi.unify(a, x).orElseThrow(() -> new IllegalArgumentException());
         assertTrue(phi.isGround(a));
     }
 
-    @Test public void testSize() throws CannotUnifyException, OccursException {
+    @Test public void testSize() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, x, y));
+        phi.unify(a, B.newAppl(f, x, y)).orElseThrow(() -> new IllegalArgumentException());
         assertEquals(TermSize.of(3), phi.size(a));
     }
 
-    @Test public void testString() throws CannotUnifyException, OccursException {
+    @Test public void testString() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, x, y));
+        phi.unify(a, B.newAppl(f, x, y)).orElseThrow(() -> new IllegalArgumentException());
         assertEquals("f(\"x\",\"y\")", phi.toString(a));
     }
 
-    @Test public void testRemoveUnifiedVar() throws CannotUnifyException, OccursException {
+    @Test public void testRemoveUnifiedVar() throws OccursException {
         final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
@@ -111,74 +109,74 @@ public class PersistentUnifierFiniteTest {
         terms.__put(d, B.newAppl(f, a));
         final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(b);
-        assertTrue(phi.areEqual(a, c));
-        assertTrue(phi.areEqual(d, B.newAppl(f, c)));
+        assertTrue(phi.areEqual(a, c).orElseThrow(v -> new RuntimeException()));
+        assertTrue(phi.areEqual(d, B.newAppl(f, c)).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testRemoveFreeVar() throws CannotUnifyException, OccursException {
+    @Test public void testRemoveFreeVar() throws OccursException {
         final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         reps.__put(b, c);
         final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(c);
-        assertFalse(phi.areEqual(b, c));
-        assertTrue(phi.areEqual(a, b));
+        assertTrue(phi.areEqual(a, b).orElseThrow(v -> new RuntimeException()));
+        assertTrue(phi.areEqual(b, c).match(r -> false, r -> true)); // this throws, should be last
     }
 
-    @Test public void testRemoveVarWithTerm() throws CannotUnifyException, OccursException {
+    @Test public void testRemoveVarWithTerm() throws OccursException {
         final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         terms.__put(b, B.newAppl(f, c));
         final IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms);
         phi.remove(b);
-        assertTrue(phi.areEqual(a, B.newAppl(f, c)));
+        assertTrue(phi.areEqual(a, B.newAppl(f, c)).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testRetain() throws CannotUnifyException, OccursException {
+    @Test public void testRetain() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, x);
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         phi.retain(a);
-        assertTrue(phi.areEqual(a, B.newAppl(f, x)));
+        assertTrue(phi.areEqual(a, B.newAppl(f, x)).orElseThrow(v -> new RuntimeException()));
     }
 
-    @Test public void testEquals() throws CannotUnifyException, OccursException {
+    @Test public void testEquals() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(b, x);
-        phi.unify(a, B.newAppl(f, b));
+        phi.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
-        theta.unify(a, B.newAppl(f, x));
-        theta.unify(b, x);
+        theta.unify(a, B.newAppl(f, x)).orElseThrow(() -> new IllegalArgumentException());
+        theta.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         assertEquals(phi, theta);
     }
 
-    @Test public void testEquals2() throws CannotUnifyException, OccursException {
+    @Test public void testEquals2() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(b, c);
+        phi.unify(b, c).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
         assertNotEquals(phi, theta);
     }
 
-    @Test public void testEquals3() throws CannotUnifyException, OccursException {
+    @Test public void testEquals3() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
-        theta.unify(a, B.newAppl(f, c));
+        theta.unify(a, B.newAppl(f, c)).orElseThrow(() -> new IllegalArgumentException());
         assertNotEquals(phi, theta);
     }
 
-    @Test public void testEquals4() throws CannotUnifyException, OccursException {
+    @Test public void testEquals4() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, B.newAppl(g));
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, B.newAppl(g)).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
-        theta.unify(a, B.newAppl(f, B.newAppl(g)));
+        theta.unify(a, B.newAppl(f, B.newAppl(g))).orElseThrow(() -> new IllegalArgumentException());
         assertNotEquals(phi, theta);
     }
 
-    @Test public void testEquivalenceClasses() throws CannotUnifyException, OccursException {
+    @Test public void testEquivalenceClasses() throws OccursException {
         final IUnifier.Immutable phi =
                 new PersistentUnifier.Immutable(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of());
         final IUnifier.Immutable theta =
@@ -186,24 +184,24 @@ public class PersistentUnifierFiniteTest {
         assertEquals(phi, theta);
     }
 
-    @Test public void testRetainRemoveInverse() throws CannotUnifyException, OccursException {
+    @Test public void testRetainRemoveInverse() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, x);
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Immutable theta = phi.freeze();
         IUnifier.Immutable theta1 = theta.remove(b).unifier();
         IUnifier.Immutable theta2 = theta.retain(a).unifier();
         assertEquals(theta1, theta2);
     }
 
-    @Test public void testEntailment() throws CannotUnifyException, OccursException {
+    @Test public void testEntailment() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Transient.of();
-        phi.unify(a, B.newAppl(f, b));
-        phi.unify(b, x);
+        phi.unify(a, B.newAppl(f, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Transient theta = PersistentUnifier.Transient.of();
-        theta.unify(a, B.newAppl(f, x));
-        theta.unify(b, x);
-        theta.unify(b, c);
+        theta.unify(a, B.newAppl(f, x)).orElseThrow(() -> new IllegalArgumentException());
+        theta.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
+        theta.unify(b, c).orElseThrow(() -> new IllegalArgumentException());
         theta.remove(c);
         assertEquals(phi, theta);
     }
