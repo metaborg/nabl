@@ -143,7 +143,7 @@ public class StrategoTerms {
         return B.newList(terms, attachments);
     }
 
-    private ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
+    public static ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
         Builder<Object> b = ImmutableClassToInstanceMap.builder();
 
         TermOrigin.get(term).ifPresent(origin -> {

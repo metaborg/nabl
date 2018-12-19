@@ -15,9 +15,6 @@ import com.google.common.collect.Sets;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
-import mb.nabl2.controlflow.terms.CFGNode;
-import mb.nabl2.controlflow.terms.IFlowSpecSolution;
-import mb.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -35,7 +32,6 @@ import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.SolverException;
 import mb.nabl2.solver.components.AstComponent;
 import mb.nabl2.solver.components.BaseComponent;
-import mb.nabl2.solver.components.ControlFlowComponent;
 import mb.nabl2.solver.components.EqualityComponent;
 import mb.nabl2.solver.components.ImmutableNameResolutionResult;
 import mb.nabl2.solver.components.NameResolutionComponent;
@@ -93,7 +89,6 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 VariantRelations.melt(initial.relations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableFlowSpecSolution.of());
 
         final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
@@ -109,7 +104,6 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                     .onRelation(relationSolver::solve)
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
-                    .onControlflow(cfgSolver::solve)
                     .otherwise(ISolver.defer())
                     // @formatter:on
                 );
@@ -139,7 +133,6 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 seed(nameResolutionSolver.seed(nameResult, message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(unitSolution.symbolic(), message), messages, constraints);
-                seed(cfgSolver.seed(unitSolution.flowSpecSolution(), message), messages, constraints);
                 constraints.addAll(unitSolution.constraints());
                 messages.addAll(unitSolution.messages());
             }
@@ -155,11 +148,10 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
 
             return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
-                    fsSolution, messages.freeze(), solveResult.constraints())
+                    messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);

@@ -35,7 +35,6 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
             c -> false,
             c -> false,
             c -> false,
-            c -> false,
             c -> false
             // @formatter:on
         ));
@@ -63,7 +62,6 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
                 assert i >= 0 : "Removed more constraints than were added.";
                 return true;
             },
-            c -> false,
             c -> false,
             c -> false,
             c -> false,

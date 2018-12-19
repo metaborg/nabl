@@ -6,8 +6,6 @@ import java.util.Optional;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.controlflow.terms.CFGNode;
-import mb.nabl2.controlflow.terms.IFlowSpecSolution;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -51,10 +49,6 @@ public interface ISolution {
     ISymbolicConstraints symbolic();
 
     ISolution withSymbolic(ISymbolicConstraints symbolic);
-
-    IFlowSpecSolution<CFGNode> flowSpecSolution();
-
-    ISolution withFlowSpecSolution(IFlowSpecSolution<CFGNode> value);
 
     IUnifier.Immutable unifier();
 

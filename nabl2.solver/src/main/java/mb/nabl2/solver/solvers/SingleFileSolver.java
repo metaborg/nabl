@@ -12,9 +12,6 @@ import org.metaborg.util.task.IProgress;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.controlflow.terms.CFGNode;
-import mb.nabl2.controlflow.terms.IFlowSpecSolution;
-import mb.nabl2.controlflow.terms.ImmutableFlowSpecSolution;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -31,7 +28,6 @@ import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.SolverException;
 import mb.nabl2.solver.components.BaseComponent;
-import mb.nabl2.solver.components.ControlFlowComponent;
 import mb.nabl2.solver.components.EqualityComponent;
 import mb.nabl2.solver.components.NameResolutionComponent;
 import mb.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
@@ -88,7 +84,6 @@ public class SingleFileSolver extends BaseSolver {
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
-        final ControlFlowComponent cfgSolver = new ControlFlowComponent(core, ImmutableFlowSpecSolution.of());
 
         // polymorphism solver
         final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
@@ -104,7 +99,6 @@ public class SingleFileSolver extends BaseSolver {
                 .onRelation(relationSolver::solve)
                 .onSet(setSolver::solve)
                 .onSym(symSolver::solve)
-                .onControlflow(cfgSolver::solve)
                 .otherwise(ISolver.defer())
         );
         // @formatter:on
@@ -132,12 +126,11 @@ public class SingleFileSolver extends BaseSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
-            IFlowSpecSolution<CFGNode> fsSolution = cfgSolver.finish();
 
             return ImmutableSolution
                     .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                             nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
-                            fsSolution, messages.freeze(), solveResult.constraints())
+                            messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
