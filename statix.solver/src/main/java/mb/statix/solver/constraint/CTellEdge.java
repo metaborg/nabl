@@ -23,6 +23,11 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 
+/**
+ * Implementation for a tell edge constraint.
+ * 
+ * <pre>sourceScope -label-> targetScope</pre>
+ */
 public class CTellEdge implements IConstraint {
 
     private final ITerm sourceTerm;
@@ -31,6 +36,16 @@ public class CTellEdge implements IConstraint {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new tell edge constraint with the given source, label and target.
+     * 
+     * @param sourceTerm
+     *      the term representing the source scope
+     * @param label
+     *      the label of the edge
+     * @param targetTerm
+     *      the term representing the target scope
+     */
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
         this(sourceTerm, label, targetTerm, null);
     }
@@ -58,6 +73,14 @@ public class CTellEdge implements IConstraint {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws IllegalArgumentException
+     *      If the source or target is not a scope.
+     * @throws Delay
+     *      If the source or target is not ground.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {

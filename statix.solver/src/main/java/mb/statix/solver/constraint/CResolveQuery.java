@@ -38,6 +38,15 @@ import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
 
+/**
+ * Implementation for a query constraint.
+ * 
+ * <pre>query [relation]
+ * filter [filters]
+ * min [min]
+ * in [scope]
+ * |-> [result]</pre>
+ */
 public class CResolveQuery implements IConstraint {
 
     private final Optional<ITerm> relation;
@@ -76,6 +85,28 @@ public class CResolveQuery implements IConstraint {
                 subst.apply(resultTerm), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws IllegalArgumentException
+     *      If the query is applied on a term that is not a scope.
+     * @throws InterruptedException
+     *      If this thread has been interrupted when the name resolution is executed.
+     * @throws Delay
+     *      If the scope we are querying is not ground relative to the unifier.
+     * @throws Delay
+     *      If the scope we are querying is incomplete in terms of relations or edges we are
+     *      interested in.
+     * @throws Delay
+     *      If the filter throws a ResolutionDelayException from {@link IQueryFilter#getDataWF}
+     *      or {@link IQueryFilter#getLabelWF}.
+     * @throws Delay
+     *      If the min throws a ResolutionDelayException from {@link IQueryMin#getLabelOrder}
+     *      or {@link IQueryMin#getDataEquiv}.
+     * @throws Delay
+     *      If the resolution throws a ResolutionDelayException from
+     *      {@link FastNameResolution#resolve}.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params)
             throws InterruptedException, Delay {
         final Type type;

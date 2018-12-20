@@ -17,10 +17,14 @@ import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 
+/**
+ * Implementation for the new (scope) constraint.
+ * 
+ * <pre>new scopes</pre>
+ */
 public class CNew implements IConstraint {
 
     private final List<ITerm> terms;
@@ -48,7 +52,7 @@ public class CNew implements IConstraint {
         return new CNew(subst.apply(terms), cause);
     }
 
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) {
         final List<IConstraint> constraints = Lists.newArrayList();
         State newState = state;
         for(ITerm t : terms) {
