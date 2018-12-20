@@ -82,9 +82,9 @@ public class CPathMatch implements IConstraint {
      * @throws IllegalArgumentException
      *      If the given labels term contains non-labels.
      * @throws Delay
-     *      If (one of) the given label terms is not ground.
+     *      If one of the given label terms is not ground.
      * @throws Delay
-     *      If the labels term is not ground.
+     *      If the given labels term is not ground.
      */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
