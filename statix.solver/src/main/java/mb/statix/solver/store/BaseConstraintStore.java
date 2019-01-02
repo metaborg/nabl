@@ -25,14 +25,11 @@ public class BaseConstraintStore implements IConstraintStore {
     private final Multimap<ITermVar, IConstraint> stuckOnVar;
     private final Multimap<CriticalEdge, IConstraint> stuckOnEdge;
 
-    private final IDebugContext debug;
-
     public BaseConstraintStore(Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.active = Sets.newConcurrentHashSet();
         this.stuckBecauseStuck = Sets.newHashSet();
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
-        this.debug = debug;
         addAll(constraints);
     }
 
@@ -55,7 +52,7 @@ public class BaseConstraintStore implements IConstraintStore {
         stuckBecauseStuck.clear();
     }
 
-    public void activateFromVars(Iterable<? extends ITermVar> vars) {
+    public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         for(ITermVar var : vars) {
             final Collection<IConstraint> activated = stuckOnVar.removeAll(var);
             stuckOnVar.values().removeAll(activated);
@@ -64,7 +61,7 @@ public class BaseConstraintStore implements IConstraintStore {
         }
     }
 
-    public void activateFromEdges(Iterable<? extends CriticalEdge> edges) {
+    public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
         for(CriticalEdge edge : edges) {
             final Collection<IConstraint> activated = stuckOnEdge.removeAll(edge);
             stuckOnEdge.values().removeAll(activated);
@@ -73,7 +70,7 @@ public class BaseConstraintStore implements IConstraintStore {
         }
     }
 
-    public Iterable<Entry> active() {
+    public Iterable<Entry> active(IDebugContext debug) {
         return new Iterable<IConstraintStore.Entry>() {
             public Iterator<Entry> iterator() {
                 final Iterator<IConstraint> it = active.iterator();
@@ -104,7 +101,7 @@ public class BaseConstraintStore implements IConstraintStore {
                                         stuckOnEdge.put(edge, c);
                                     }
                                 } else {
-                                    debug.info("delayed for no apparent reason ");
+                                    debug.warn("delayed for no apparent reason ");
                                     stuckBecauseStuck.add(c);
                                 }
                             }

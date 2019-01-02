@@ -4,6 +4,7 @@ import java.util.Map;
 
 import mb.nabl2.terms.ITermVar;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.log.IDebugContext;
 
 public interface IConstraintStore {
 
@@ -15,11 +16,11 @@ public interface IConstraintStore {
 
     void activateStray();
 
-    void activateFromVars(Iterable<? extends ITermVar> vars);
+    void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);
 
-    void activateFromEdges(Iterable<? extends CriticalEdge> edges);
+    void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug);
 
-    Iterable<Entry> active();
+    Iterable<Entry> active(IDebugContext debug);
 
     Map<IConstraint, Delay> delayed();
 

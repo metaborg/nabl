@@ -13,6 +13,7 @@ import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
@@ -48,6 +49,10 @@ public class Solver {
         Completeness completeness = _completeness;
         completeness = completeness.addAll(_constraints);
 
+        // time log
+        final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
+        final Map<Class<? extends IConstraint>, Long> delayCount = Maps.newHashMap();
+
         // fixed point
         final Set<IConstraint> failed = Sets.newHashSet();
         final Log delayedLog = new Log();
@@ -58,18 +63,20 @@ public class Solver {
             progress = false;
             constraints.activateStray();
             delayedLog.clear();
-            for(IConstraintStore.Entry entry : constraints.active()) {
+            for(IConstraintStore.Entry entry : constraints.active(debug)) {
                 if(Thread.interrupted()) {
                     throw new InterruptedException();
                 }
+                IDebugContext subDebug = proxyDebug.subContext();
                 final IConstraint constraint = entry.constraint();
                 if(proxyDebug.isEnabled(Level.Info)) {
                     proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 }
-                IDebugContext subDebug = proxyDebug.subContext();
                 try {
-                    Optional<ConstraintResult> maybeResult =
+                    final Optional<ConstraintResult> maybeResult;
+                    maybeResult =
                             constraint.solve(state, new ConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    addTime(constraint, 1, successCount, debug);
                     progress = true;
                     entry.remove();
                     completeness = completeness.remove(constraint);
@@ -86,8 +93,8 @@ public class Solver {
                             constraints.addAll(newConstaints);
                             completeness = completeness.addAll(newConstaints);
                         }
-                        constraints.activateFromVars(result.vars());
-                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()));
+                        constraints.activateFromVars(result.vars(), subDebug);
+                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
@@ -100,6 +107,7 @@ public class Solver {
                     }
                     proxyDebug.commit();
                 } catch(Delay d) {
+                    addTime(constraint, 1, delayCount, debug);
                     subDebug.info("Delayed");
                     delayedLog.absorb(proxyDebug.clear());
                     entry.delay(d);
@@ -117,8 +125,28 @@ public class Solver {
         delayedLog.flush(debug);
         debug.info("Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).", reductions,
                 delays, failed.size(), constraints.delayedSize());
+        logTimes("success", successCount, debug);
+        logTimes("delay", delayCount, debug);
 
         return SolverResult.of(state, completeness, failed, delayed);
+    }
+
+    private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
+            IDebugContext debug) {
+        if(!debug.isEnabled(Level.Info)) {
+            return;
+        }
+        final Class<? extends IConstraint> key = c.getClass();
+        final long t = times.getOrDefault(key, 0L).longValue() + dt;
+        times.put(key, t);
+    }
+
+    private static void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
+        debug.info("# ----- {} -----", name);
+        for(Map.Entry<Class<? extends IConstraint>, Long> entry : times.entrySet()) {
+            debug.info("{} : {}x", entry.getKey().getSimpleName(), entry.getValue());
+        }
+        debug.info("# ----- {} -----", "-");
     }
 
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,

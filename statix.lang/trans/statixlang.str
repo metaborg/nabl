@@ -4,6 +4,7 @@ imports
   
   completion/completion
 
+  statix/cli/-
   statix/lang/-
   statix/test/-
 

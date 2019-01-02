@@ -2,6 +2,8 @@ module statix/lang/analysis
 
 imports
 
+  libspoofax/analysis/constraint
+
   nabl2shared
   nabl2runtime
   nabl2/api

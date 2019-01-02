@@ -1,4 +1,4 @@
-module StatixLang
+module statix/cli/CLI
 
 imports
 
@@ -6,11 +6,6 @@ imports
   statix/lang/Common
   statix/lang/Core
   statix/lang/Sugar
-  statix/lang/Deprecated
-
-  statix/test/Test
-
-  statix/cli/CLI
 
 template options
 
@@ -18,9 +13,8 @@ template options
 
 context-free start-symbols
 
-  Start
+  CommandLine
 
 context-free syntax
 
-  Start = Module
-  Start = Test
+  CommandLine.Eval = <<LocalVars><Constraint>>

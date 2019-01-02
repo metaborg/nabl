@@ -35,8 +35,12 @@ public abstract class MaybeNotInstantiated<T> {
         return new OnResult<>(result);
     }
 
-    public static <T> MaybeNotInstantiated<T> ofNotInstantiated(ITermVar... var) {
-        return new NotInstantiated<>(Arrays.asList(var));
+    public static <T> MaybeNotInstantiated<T> ofNotInstantiated(ITermVar... vars) {
+        return ofNotInstantiated(Arrays.asList(vars));
+    }
+
+    public static <T> MaybeNotInstantiated<T> ofNotInstantiated(Iterable<? extends ITermVar> vars) {
+        return new NotInstantiated<>(vars);
     }
 
     private static class OnResult<T> extends MaybeNotInstantiated<T> {

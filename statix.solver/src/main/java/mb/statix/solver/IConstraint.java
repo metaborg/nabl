@@ -21,7 +21,7 @@ public interface IConstraint {
 
     IConstraint apply(ISubstitution.Immutable subst);
 
-    default Collection<CriticalEdge> criticalEdges(@SuppressWarnings("unused") Spec spec) {
+    default Collection<CriticalEdge> criticalEdges(Spec spec) {
         return ImmutableList.of();
     }
 

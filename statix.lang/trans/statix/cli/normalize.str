@@ -1,0 +1,34 @@
+module statix/cli/normalize
+
+imports
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+  signatures/statix/cli/-
+
+rules
+
+  normalize-functional-cop(|a):
+      Eval(vs, body){a*} -> Eval(vs', body''){a*}
+    with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
+         new-vs := <map(Snd);all-vars> bmaps;
+         vs' := <conc> (vs, new-vs)
+
+  normalize-wildcard:
+      Eval(vs, body){a*} -> Eval(vs', body'){a*}
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
+         new-vs := <map(Snd)> bmaps;
+         vs' := <conc> (vs, new-vs)
+
+  normalize-as-pattern:
+      Eval(vs, body){a*} -> Eval(vs, body''){a*}
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+
+  explicate-cmaps(|a): Eval(vs, body){a*} -> Eval(vs, body){a*}
+
+  explicate-resolve(|a):
+      Eval(vs, body) -> Eval(vs, body')
+    with body' := body // FIXME : <bottomup(try(normalize-resolves(|wf, eq, ord)))> body
