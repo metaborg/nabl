@@ -57,7 +57,7 @@ public class CNew implements IConstraint {
             constraints.add(new CEqual(t, ss._1(), this));
             newState = ss._2();
         }
-        return Optional.of(ConstraintResult.of(newState, constraints));
+        return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
     }
 
     @Override public String toString(TermFormatter termToString) {

@@ -4,6 +4,8 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.iterators.Iterables2;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -52,13 +54,7 @@ class PatternAs extends Pattern {
     }
 
     @Override protected MaybeNotInstantiated<Boolean> matchTerm(ITerm term, Transient subst, IUnifier unifier) {
-        return var.matchTerm(term, subst, unifier).flatMap(m -> {
-            if(m) {
-                return pattern.matchTerm(term, subst, unifier);
-            } else {
-                return MaybeNotInstantiated.ofResult(false);
-            }
-        });
+        return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier);
     }
 
     @Override public String toString() {

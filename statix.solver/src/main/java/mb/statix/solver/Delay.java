@@ -1,45 +1,55 @@
 package mb.statix.solver;
 
-import java.util.Set;
-
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.CapsuleUtil;
+import mb.statix.scopegraph.reference.CriticalEdge;
 
 public class Delay extends Throwable {
 
     private static final long serialVersionUID = 1L;
 
-    private final Set<ITermVar> vars;
-    private final Multimap<ITerm, ITerm> scopes;
+    private final Set.Immutable<ITermVar> vars;
+    private final Set.Immutable<CriticalEdge> criticalEdges;
 
-    public Delay(Set<ITermVar> vars, Multimap<ITerm, ITerm> scopes) {
+    public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges) {
         super("delayed", null, false, false);
-        this.vars = ImmutableSet.copyOf(vars);
-        this.scopes = ImmutableMultimap.copyOf(scopes);
+        this.vars = CapsuleUtil.toSet(vars);
+        this.criticalEdges = CapsuleUtil.toSet(criticalEdges);
     }
 
-    public Set<ITermVar> vars() {
+    public Set.Immutable<ITermVar> vars() {
         return vars;
     }
 
-    public Multimap<ITerm, ITerm> scopes() {
-        return scopes;
+    public Set.Immutable<CriticalEdge> criticalEdges() {
+        return criticalEdges;
+    }
+
+    public Delay retainAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
+        final Set.Immutable<ITermVar> retainedVars = this.vars.__retainAll(CapsuleUtil.toSet(vars));
+        final Set.Immutable<ITerm> scopeSet = CapsuleUtil.toSet(scopes);
+        final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
+        this.criticalEdges.stream().filter(ce -> scopeSet.contains(ce.scope()))
+                .forEach(retainedCriticalEdges::__insert);
+        return new Delay(retainedVars, retainedCriticalEdges.freeze());
+    }
+
+    public static Delay of() {
+        return new Delay(Set.Immutable.of(), Set.Immutable.of());
     }
 
     public static Delay ofVar(ITermVar var) {
-        return ofVars(ImmutableSet.of(var));
+        return ofVars(Set.Immutable.of(var));
     }
 
     public static Delay ofVars(Iterable<ITermVar> vars) {
-        return new Delay(ImmutableSet.copyOf(vars), ImmutableMultimap.of());
+        return new Delay(vars, Set.Immutable.of());
     }
 
-    public static Delay ofScope(ITerm scope, ITerm label) {
-        return new Delay(ImmutableSet.of(), ImmutableMultimap.of(scope, label));
+    public static Delay ofCriticalEdge(CriticalEdge edge) {
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge));
     }
 
 }

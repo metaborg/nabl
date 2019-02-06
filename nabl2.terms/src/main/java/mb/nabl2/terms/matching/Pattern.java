@@ -2,12 +2,15 @@ package mb.nabl2.terms.matching;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
+
+import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -35,21 +38,31 @@ public abstract class Pattern {
 
     protected static MaybeNotInstantiated<Boolean> matchTerms(final Iterable<Pattern> patterns,
             final Iterable<ITerm> terms, ISubstitution.Transient subst, IUnifier unifier) {
-        Iterator<Pattern> itPattern = patterns.iterator();
-        Iterator<ITerm> itTerm = terms.iterator();
+        final Iterator<Pattern> itPattern = patterns.iterator();
+        final Iterator<ITerm> itTerm = terms.iterator();
+        final List<ITermVar> stuckVars = Lists.newArrayList();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
                 return MaybeNotInstantiated.ofResult(false);
             }
             final MaybeNotInstantiated<Boolean> result = itPattern.next().matchTerm(itTerm.next(), subst, unifier);
-            if(!result.orElse(false)) {
-                return result;
+            final boolean canStillMatch = result.match(m -> m, vars -> {
+                // continue the match, it might still fail, but collect stuck vars
+                stuckVars.addAll(vars);
+                return true;
+            });
+            if(!canStillMatch) {
+                return MaybeNotInstantiated.ofResult(false);
             }
         }
         if(itTerm.hasNext()) {
             return MaybeNotInstantiated.ofResult(false);
         }
-        return MaybeNotInstantiated.ofResult(true);
+        if(stuckVars.isEmpty()) {
+            return MaybeNotInstantiated.ofResult(true);
+        } else {
+            return MaybeNotInstantiated.ofNotInstantiated(stuckVars);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////

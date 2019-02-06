@@ -1,6 +1,5 @@
 package mb.statix.solver;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,7 +12,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -23,9 +21,11 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
+import mb.statix.solver.store.BaseConstraintStore;
 
 public class Solver {
 
@@ -44,39 +44,43 @@ public class Solver {
         final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
         // set-up
-        final Set<IConstraint> constraints = Sets.newConcurrentHashSet(_constraints);
+        final IConstraintStore constraints = new BaseConstraintStore(_constraints, debug);
         State state = _state;
         Completeness completeness = _completeness;
-        completeness = completeness.addAll(constraints);
+        completeness = completeness.addAll(_constraints);
+
+        // time log
+        final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
+        final Map<Class<? extends IConstraint>, Long> delayCount = Maps.newHashMap();
 
         // fixed point
         final Set<IConstraint> failed = Sets.newHashSet();
         final Log delayedLog = new Log();
-        final Map<IConstraint, Delay> delays = Maps.newHashMap();
         boolean progress = true;
-        int reduced = 0;
-        int delayed = 0;
+        int reductions = 0;
+        int delays = 0;
         outer: while(progress) {
             progress = false;
+            constraints.activateStray();
             delayedLog.clear();
-            delays.clear();
-            final Iterator<IConstraint> it = constraints.iterator();
-            while(it.hasNext()) {
+            for(IConstraintStore.Entry entry : constraints.active(debug)) {
                 if(Thread.interrupted()) {
                     throw new InterruptedException();
                 }
-                final IConstraint constraint = it.next();
+                IDebugContext subDebug = proxyDebug.subContext();
+                final IConstraint constraint = entry.constraint();
                 if(proxyDebug.isEnabled(Level.Info)) {
                     proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 }
-                IDebugContext subDebug = proxyDebug.subContext();
                 try {
-                    Optional<ConstraintResult> maybeResult =
+                    final Optional<ConstraintResult> maybeResult;
+                    maybeResult =
                             constraint.solve(state, new ConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    addTime(constraint, 1, successCount, debug);
                     progress = true;
-                    it.remove();
+                    entry.remove();
                     completeness = completeness.remove(constraint);
-                    reduced += 1;
+                    reductions += 1;
                     if(maybeResult.isPresent()) {
                         final ConstraintResult result = maybeResult.get();
                         state = result.state();
@@ -89,6 +93,8 @@ public class Solver {
                             constraints.addAll(newConstaints);
                             completeness = completeness.addAll(newConstaints);
                         }
+                        constraints.activateFromVars(result.vars(), subDebug);
+                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
@@ -101,19 +107,46 @@ public class Solver {
                     }
                     proxyDebug.commit();
                 } catch(Delay d) {
+                    addTime(constraint, 1, delayCount, debug);
                     subDebug.info("Delayed");
                     delayedLog.absorb(proxyDebug.clear());
-                    delays.put(constraint, d);
-                    delayed += 1;
+                    entry.delay(d);
+                    delays += 1;
                 }
             }
         }
 
-        delayedLog.flush(debug);
-        debug.info("Solved {} constraints ({} delays) with {} failed and {} remaining constraint(s).", reduced, delayed,
-                failed.size(), constraints.size());
+        // invariant: there should be no remaining active constraints
+        if(constraints.activeSize() > 0) {
+            debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
+        }
 
-        return SolverResult.of(state, completeness, failed, delays);
+        final Map<IConstraint, Delay> delayed = constraints.delayed();
+        delayedLog.flush(debug);
+        debug.info("Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).", reductions,
+                delays, failed.size(), constraints.delayedSize());
+        logTimes("success", successCount, debug);
+        logTimes("delay", delayCount, debug);
+
+        return SolverResult.of(state, completeness, failed, delayed);
+    }
+
+    private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
+            IDebugContext debug) {
+        if(!debug.isEnabled(Level.Info)) {
+            return;
+        }
+        final Class<? extends IConstraint> key = c.getClass();
+        final long t = times.getOrDefault(key, 0L).longValue() + dt;
+        times.put(key, t);
+    }
+
+    private static void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
+        debug.info("# ----- {} -----", name);
+        for(Map.Entry<Class<? extends IConstraint>, Long> entry : times.entrySet()) {
+            debug.info("{} : {}x", entry.getKey().getSimpleName(), entry.getValue());
+        }
+        debug.info("# ----- {} -----", "-");
     }
 
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
@@ -139,7 +172,7 @@ public class Solver {
             return Optional.of(result);
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            throw result.delay(); // FIXME Remove local vars and scopes
+            throw result.delay().retainAll(state.vars(), state.scopes());
         }
 
     }
@@ -183,10 +216,10 @@ public class Solver {
 
         public Delay delay() {
             ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-            ImmutableMultimap.Builder<ITerm, ITerm> scopes = ImmutableMultimap.builder();
+            ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
             delays().values().stream().forEach(d -> {
                 vars.addAll(d.vars());
-                scopes.putAll(d.scopes());
+                scopes.addAll(d.criticalEdges());
             });
             return new Delay(vars.build(), scopes.build());
         }

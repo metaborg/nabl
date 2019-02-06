@@ -475,7 +475,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         if(terms().containsKey(rep)) {
             return equalTerms(terms().get(rep), term, stack, visited);
         } else {
-            return MaybeNotInstantiated.ofNotInstantiated(var);
+            return MaybeNotInstantiated.ofNotInstantiated(rep);
         }
     }
 
@@ -493,7 +493,9 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             visited.put(pair, null);
             final ITerm leftTerm = terms().get(leftRep);
             final ITerm rightTerm = terms().get(rightRep);
-            if(leftTerm == null) {
+            if(leftTerm == null && rightTerm == null) {
+                return MaybeNotInstantiated.ofNotInstantiated(leftRep, rightRep);
+            } else if(leftTerm == null) {
                 return MaybeNotInstantiated.ofNotInstantiated(leftRep);
             } else if(rightTerm == null) {
                 return MaybeNotInstantiated.ofNotInstantiated(rightRep);

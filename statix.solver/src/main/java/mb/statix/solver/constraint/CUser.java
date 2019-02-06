@@ -1,5 +1,6 @@
 package mb.statix.solver.constraint;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +17,9 @@ import com.google.common.collect.Lists;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -60,8 +60,8 @@ public class CUser implements IConstraint {
         return new CUser(name, args, cause);
     }
 
-    @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
-        return spec.scopeExtensions().get(name).stream().map(il -> ImmutableTuple2.of(args.get(il._1()), il._2()))
+    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
+        return spec.scopeExtensions().get(name).stream().map(il -> CriticalEdge.of(args.get(il._1()), il._2()))
                 .collect(Collectors.toList());
     }
 
@@ -104,7 +104,7 @@ public class CUser implements IConstraint {
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.of(instantiatedState, instantiatedBody));
+            return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);

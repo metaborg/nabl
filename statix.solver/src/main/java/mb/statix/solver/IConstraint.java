@@ -1,23 +1,28 @@
 package mb.statix.solver;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableList;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.spec.Spec;
 
 public interface IConstraint {
 
     IConstraint apply(ISubstitution.Immutable subst);
 
-    default Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(@SuppressWarnings("unused") Spec spec) {
-        return Iterables2.empty();
+    default Collection<CriticalEdge> criticalEdges(Spec spec) {
+        return ImmutableList.of();
     }
 
     /**
@@ -66,6 +71,24 @@ public interface IConstraint {
         @Value.Parameter public abstract State state();
 
         @Value.Parameter public abstract List<IConstraint> constraints();
+
+        @Value.Parameter public abstract List<ITermVar> vars();
+
+        public static ConstraintResult of(State state) {
+            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.of());
+        }
+
+        public static ConstraintResult ofConstraints(State state, IConstraint... constraints) {
+            return ofConstraints(state, Arrays.asList(constraints));
+        }
+
+        public static ConstraintResult ofConstraints(State state, Iterable<? extends IConstraint> constraints) {
+            return ConstraintResult.of(state, ImmutableList.copyOf(constraints), ImmutableList.of());
+        }
+
+        public static ConstraintResult ofVars(State state, Iterable<? extends ITermVar> vars) {
+            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.copyOf(vars));
+        }
 
     }
 
