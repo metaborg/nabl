@@ -14,6 +14,11 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 
+/**
+ * Implementation for the inequality constraint.
+ * 
+ * <pre>term1 != term2</pre>
+ */
 public class CInequal implements IConstraint {
 
     private final ITerm term1;
@@ -43,6 +48,12 @@ public class CInequal implements IConstraint {
         return new CInequal(subst.apply(term1), subst.apply(term2), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws Delay
+     *      If either of the terms contain variables that cannot be solved yet.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();
         return unifier.areEqual(term1, term2).matchOrThrow(result -> {

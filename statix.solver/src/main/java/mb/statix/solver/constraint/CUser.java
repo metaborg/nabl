@@ -31,6 +31,11 @@ import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
+/**
+ * Implementation for a user constraint (rule application).
+ * 
+ * <pre>ruleName(arguments)</pre>
+ */
 public class CUser implements IConstraint {
 
     private final String name;
@@ -38,10 +43,28 @@ public class CUser implements IConstraint {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new user constraint without a cause.
+     * 
+     * @param name
+     *      the name of the rule to invoke
+     * @param args
+     *      the arguments
+     */
     public CUser(String name, Iterable<? extends ITerm> args) {
         this(name, args, null);
     }
 
+    /**
+     * Creates a new user constraint with a cause.
+     * 
+     * @param name
+     *      the name of the rule to invoke
+     * @param args
+     *      the arguments
+     * @param cause
+     *      the constraint that caused this constraint to be added
+     */
     public CUser(String name, Iterable<? extends ITerm> args, @Nullable IConstraint cause) {
         this.name = name;
         this.args = ImmutableList.copyOf(args);
@@ -69,6 +92,14 @@ public class CUser implements IConstraint {
         return new CUser(name, subst.apply(args), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws InterruptedException
+     *      If the current thread has been interrupted.
+     * @throws Delay
+     *      If the guard constraints on one of the rule candidates are not solved.
+     */
     public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
             throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();

@@ -26,6 +26,11 @@ import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 
+/**
+ * Implementation for a tell relation constraint.
+ * 
+ * <pre>scope -relation->[] data</pre>
+ */
 public class CTellRel implements IConstraint {
 
     private final ITerm scopeTerm;
@@ -34,10 +39,32 @@ public class CTellRel implements IConstraint {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new tell relation constraint without a cause.
+     * 
+     * @param scopeTerm
+     *      the scope to add the relation to
+     * @param relation
+     *      the relation to add
+     * @param datumTerms
+     *      the data to add on the relation
+     */
     public CTellRel(ITerm scopeTerm, ITerm relation, Iterable<ITerm> datumTerms) {
         this(scopeTerm, relation, datumTerms, null);
     }
 
+    /**
+     * Creates a new tell relation constraint with a cause.
+     * 
+     * @param scopeTerm
+     *      the scope to add the relation to
+     * @param relation
+     *      the relation to add
+     * @param datumTerms
+     *      the data to add on the relation
+     * @param cause
+     *      the constraint that caused this constraint to be created
+     */
     public CTellRel(ITerm scopeTerm, ITerm relation, Iterable<ITerm> datumTerms, @Nullable IConstraint cause) {
         this.scopeTerm = scopeTerm;
         this.relation = relation;
@@ -61,6 +88,14 @@ public class CTellRel implements IConstraint {
         return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerms));
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws IllegalArgumentException
+     *      If the relation is being added to a term that is not a scope.
+     * @throws Delay
+     *      If the scope we are querying is not ground relative to the unifier.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {

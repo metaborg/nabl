@@ -10,14 +10,40 @@ import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 
+/**
+ * Interface to represent query filters.
+ * 
+ * <pre>filter &lt;pathConstraint&gt; and &lt;dataConstraint&gt;</pre>
+ */
 public interface IQueryFilter {
 
+    /**
+     * Creates a copy of this query filter and then applies the given substitution to the copy.
+     * 
+     * @param subst
+     *      the substitution to apply
+     * 
+     * @return
+     *      the new query filter
+     */
     IQueryFilter apply(ISubstitution.Immutable subst);
 
     LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) throws ResolutionException;
 
     DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) throws ResolutionException;
 
+    /**
+     * Converts this query filter into string representation, where terms are formatted with the
+     * given term formatter.
+     * 
+     * <pre>filter pathFilter and dataFilter</pre>
+     * 
+     * @param termToString
+     *      the term formatter
+     * 
+     * @return
+     *      the string
+     */
     String toString(TermFormatter termToString);
 
 }

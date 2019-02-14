@@ -48,6 +48,12 @@ public class CTermId implements IConstraint {
         return new CTermId(subst.apply(term), subst.apply(idTerm), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws Delay
+     *      If the term of this constraint is NOT ground relative to the unifier in the given state.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {

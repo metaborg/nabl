@@ -16,6 +16,11 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
 
+/**
+ * Implementation for the pathlt constraint.
+ * 
+ * <pre>pathLt[priorities](label1, label2)</pre>
+ */
 public class CPathLt implements IConstraint {
 
     private final IRelation.Immutable<ITerm> lt;
@@ -24,10 +29,32 @@ public class CPathLt implements IConstraint {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new pathLt constraint without a cause.
+     * 
+     * @param lt
+     *      the priorities
+     * @param l1
+     *      the first label term (variable)
+     * @param l2
+     *      the second label term (variable)
+     */
     public CPathLt(IRelation.Immutable<ITerm> lt, ITerm l1, ITerm l2) {
         this(lt, l1, l2, null);
     }
 
+    /**
+     * Creates a new pathLt constraint with the given cause.
+     * 
+     * @param lt
+     *      the priorities
+     * @param l1
+     *      the first label term (variable)
+     * @param l2
+     *      the second label term (variable)
+     * @param cause
+     *      the cause of this constraint
+     */
     public CPathLt(IRelation.Immutable<ITerm> lt, ITerm l1, ITerm l2, @Nullable IConstraint cause) {
         this.lt = lt;
         this.label1Term = l1;
@@ -46,7 +73,15 @@ public class CPathLt implements IConstraint {
     @Override public CPathLt apply(ISubstitution.Immutable subst) {
         return new CPathLt(lt, subst.apply(label1Term), subst.apply(label2Term), cause);
     }
-
+    
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws IllegalArgumentException
+     *      If one of the label terms is not a label.
+     * @throws Delay
+     *      If one of the given label terms is not ground.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(label1Term))) {

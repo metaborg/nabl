@@ -19,6 +19,11 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 
+/**
+ * Implementation for an equality constraint.
+ * 
+ * <pre>term1 == term2</pre>
+ */
 public class CEqual implements IConstraint {
 
     private final ITerm term1;
@@ -48,6 +53,12 @@ public class CEqual implements IConstraint {
         return new CEqual(subst.apply(term1), subst.apply(term2), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws Delay
+     *      If the unification between the terms encounters rigid variables.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();

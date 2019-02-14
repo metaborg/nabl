@@ -10,6 +10,11 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
+/**
+ * Class to represent query filters.
+ * 
+ * <pre>filter &lt;path&gt; and &lt;data&gt;</pre>
+ */
 public class QueryFilter implements IQueryFilter {
 
     private final Rule pathConstraint;

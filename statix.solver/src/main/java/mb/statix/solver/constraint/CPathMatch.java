@@ -20,6 +20,11 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
 
+/**
+ * Implementation for a path match constraint.
+ * 
+ * <pre>pathMatch[pathRegex](labelsTerm)</pre>
+ */
 public class CPathMatch implements IConstraint {
 
     private final IRegExpMatcher<ITerm> re;
@@ -27,10 +32,30 @@ public class CPathMatch implements IConstraint {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new path match constraint with the given path regex and the given labels.
+     * No cause for this constraint is added.
+     * 
+     * @param re
+     *      the path regex
+     * @param labelsTerm
+     *      the term representing the list of labels
+     */
     public CPathMatch(IRegExp<ITerm> re, IListTerm labelsTerm) {
         this(RegExpMatcher.create(re), labelsTerm, null);
     }
 
+    /**
+     * Creates a new path match constraint with the given path regex and the given labels, with a
+     * causing constraint.
+     * 
+     * @param re
+     *      the path regex
+     * @param labelsTerm
+     *      the term representing the list of labels
+     * @param cause
+     *      the constraint that caused this constraint
+     */
     private CPathMatch(IRegExpMatcher<ITerm> re, IListTerm labelsTerm, @Nullable IConstraint cause) {
         this.re = re;
         this.labelsTerm = labelsTerm;
@@ -49,6 +74,16 @@ public class CPathMatch implements IConstraint {
         return new CPathMatch(re, (IListTerm) subst.apply(labelsTerm), cause);
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @throws IllegalArgumentException
+     *      If the given labels term contains non-labels.
+     * @throws Delay
+     *      If one of the given label terms is not ground.
+     * @throws Delay
+     *      If the given labels term is not ground.
+     */
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         // @formatter:off

@@ -13,6 +13,11 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 
+/**
+ * Implementation for the {@code false} constraint.
+ * 
+ * <pre>false</pre>
+ */
 public class CFalse implements IConstraint {
 
     private final @Nullable IConstraint cause;
@@ -37,6 +42,12 @@ public class CFalse implements IConstraint {
         return this;
     }
 
+    /**
+     * @see IConstraint#solve
+     * 
+     * @return
+     *      an empty optional
+     */
     @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params) throws Delay {
         return Optional.empty();
     }

@@ -13,10 +13,18 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 
+/**
+ * Implementation for the true constraint.
+ * 
+ * <pre>true</pre>
+ */
 public class CTrue implements IConstraint {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new true constraint without a cause.
+     */
     public CTrue() {
         this(null);
     }
