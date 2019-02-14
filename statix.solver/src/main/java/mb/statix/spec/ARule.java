@@ -30,19 +30,46 @@ import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
 
+/**
+ * Class which describes a statix rule.
+ * 
+ * <pre>ruleName(paramVars) :- {bodyVars} constraints.</pre>
+ * or
+ * <pre>{ paramVars :- {bodyVars} constraints }</pre>
+ */
 @Value.Immutable
 public abstract class ARule {
 
+    /**
+     * @return
+     *      the name of this rule
+     */
     @Value.Parameter public abstract String name();
 
+    /**
+     * @return
+     *      the list of parameter patterns
+     */
     @Value.Parameter public abstract List<Pattern> params();
 
+    /**
+     * @return
+     *      the set of variables that occur in the parameters
+     */
     public Set<ITermVar> paramVars() {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(Collectors.toSet());
     }
 
+    /**
+     * @return
+     *      the set of variables specified for the body
+     */
     @Value.Parameter public abstract Set<ITermVar> bodyVars();
 
+    /**
+     * @return
+     *      the list of constraints that make up the body of this rule
+     */
     @Value.Parameter public abstract List<IConstraint> body();
 
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
@@ -77,12 +104,35 @@ public abstract class ARule {
         }
     }
 
+    /**
+     * @param subst
+     *      the substitution to apply
+     * 
+     * @return
+     *      a copy of this rule with the given substitution applied to the body
+     */
     public Rule apply(ISubstitution.Immutable subst) {
         final ISubstitution.Immutable bodySubst = subst.removeAll(paramVars()).removeAll(bodyVars());
         final List<IConstraint> newBody = body().stream().map(c -> c.apply(bodySubst)).collect(Collectors.toList());
         return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
+    /**
+     * Applies the given arguments to this rule.
+     * 
+     * @param args
+     *      the arguments to apply
+     * @param state
+     *      the current state
+     * 
+     * @return
+     *      a tuple with the new state, new variables and the set of new constraints. If the
+     *      arguments do not match the parameters, an empty optional is returned
+     * 
+     * @throws Delay
+     *      If the arguments cannot be matched to the parameters of this rule because one or more
+     *      terms are not ground.
+     */
     public Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, var -> {
@@ -104,6 +154,18 @@ public abstract class ARule {
         return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
     }
 
+    /**
+     * Formats this rule where constraints are formatted with the given TermFormatter.
+     * 
+     * <pre>&lt;name&gt;(&lt;params&gt;) [:- [{&lt;bodyVars&gt;}] &lt;constraints&gt;].</pre>
+     * <pre>{ &lt;params&gt; [:- [{&lt;bodyVars&gt;}] &lt;constraints&gt;] }</pre>
+     * 
+     * @param termToString
+     *      the term formatter to format constraints with
+     * 
+     * @return
+     *      the string
+     */
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         if(name().isEmpty()) {

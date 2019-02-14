@@ -10,7 +10,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -19,6 +18,9 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
+/**
+ * Class to represent a label order imposed in the form of a constraint (rule).
+ */
 public class ConstraintLabelOrder implements LabelOrder<ITerm> {
 
     private final Rule constraint;
@@ -33,7 +35,17 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
         this.debug = debug;
     }
 
-    public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
+    /**
+     * @see LabelOrder#lt
+     * 
+     * @throws ResolutionDelayException
+     *      If applying the labels to the constraint causes a delay.
+     * @throws ResolutionDelayException
+     *      If {@link Solver#entails(State, Iterable, Completeness, IDebugContext)} causes a delay.
+     * @throws InterruptedException
+     *      {@inheritDoc}
+     */
+    public boolean lt(ITerm l1, ITerm l2) throws ResolutionDelayException, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }

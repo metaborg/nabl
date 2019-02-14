@@ -10,6 +10,11 @@ import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 
+/**
+ * Interface to represent query min.
+ * 
+ * <pre>min &lt;pathConstraint&gt; and &lt;dataConstraint&gt;</pre>
+ */
 public interface IQueryMin {
 
     IQueryMin apply(ISubstitution.Immutable subst);
