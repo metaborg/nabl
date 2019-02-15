@@ -5,16 +5,11 @@ import java.util.List;
 import io.usethesource.capsule.Set;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMScopeGraph<V extends IOwnable<V, L, R>, L, R> {
+public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
     
+    L getEndOfPath();
     Set.Immutable<L> getLabels();
     Set.Immutable<R> getRelations();
-    
-    /**
-     * @return
-     *      the scopes that belong to this scope graph
-     */
-    Iterable<V> getScopes();
     
     /**
      * Gets the collection of edges from the given scope with the given label.
@@ -26,7 +21,7 @@ public interface IMScopeGraph<V extends IOwnable<V, L, R>, L, R> {
      * @return
      *      an iterable with all the edges
      */
-    Iterable<IEdge<V, L, V>> getEdges(V scope, L label);
+    java.util.Set<IEdge<V, L, V>> getEdges(V scope, L label);
     
     /**
      * Gets the collection of data edges from the given scope with the given label.
@@ -38,7 +33,7 @@ public interface IMScopeGraph<V extends IOwnable<V, L, R>, L, R> {
      * @return
      *      an iterable with all the edges
      */
-    Iterable<IEdge<V, R, List<V>>> getData(V scope, R label);
+    java.util.Set<IEdge<V, R, List<V>>> getData(V scope, R label);
     
     /**
      * @param sourceScope
@@ -65,5 +60,14 @@ public interface IMScopeGraph<V extends IOwnable<V, L, R>, L, R> {
      *      true if this scope graph changed as a result of this call, false otherwise
      */
     boolean addDatum(V scope, R relation, Iterable<V> datum);
+    
+    
+    /**
+     * Creates a new scope in this scope graph.
+     * 
+     * @return
+     *      the newly created scope
+     */
+    V createScope();
     
 }

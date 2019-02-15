@@ -1,22 +1,34 @@
 package mb.statix.taico.module;
 
 import java.util.Set;
+import java.util.stream.StreamSupport;
 
+import mb.nabl2.terms.ITerm;
 import mb.statix.taico.paths.IQuery;
-import mb.statix.taico.scopegraph.IMScopeGraph;
-import mb.statix.taico.util.IOwnable;
+import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.scopegraph.IOwnableScope;
 
 /**
  * Interface to represent a module.
  */
-public interface IModule<V extends IOwnable<V, L, R>, L, R> {
+public interface IModule {
     String getId();
     
-    Set<IQuery<V, L, R>> queries();
+    Set<IQuery<IOwnableScope, ITerm, ITerm>> queries();
     
-    IModule<V, L, R> getParent();
+    IModule getParent();
     
-    Set<IModule<V, L, R>> getChildren();
+    Set<IModule> getChildren();
     
-    IMScopeGraph<V, L, R> getScopeGraph();
+    IMInternalScopeGraph<IOwnableScope, ITerm, ITerm> getScopeGraph();
+    
+    /**
+     * @return
+     *      all the modules that are descendent from this module
+     */
+    default Iterable<IModule> getDescendants() {
+        return getChildren().stream()
+                .flatMap(m -> StreamSupport.stream(m.getDescendants().spliterator(), false))
+                ::iterator;
+    }
 }

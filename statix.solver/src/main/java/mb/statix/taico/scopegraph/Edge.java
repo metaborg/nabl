@@ -3,20 +3,20 @@ package mb.statix.taico.scopegraph;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 
-public class Edge<S extends IOwnable<S, ?, ?>, L, T> implements IEdge<S, L, T> {
-    private final IModule<S, ?, ?> owner;
+public class Edge<S extends IOwnable, L, T> implements IEdge<S, L, T> {
+    private final IModule owner;
     private final S source;
     private final T target;
     private final L label;
     
-    public Edge(IModule<S, ?, ?> owner, S source, L label, T target) {
+    public Edge(IModule owner, S source, L label, T target) {
         this.owner = owner;
         this.source = source;
         this.label = label;
         this.target = target;
     }
     
-    public IModule<S, ?, ?> getOwner() {
+    public IModule getOwner() {
         return owner;
     }
     

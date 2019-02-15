@@ -6,7 +6,7 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.taico.util.IOwnable;
 
-public interface IQuery<V extends IOwnable<V, L, R>, L, R> extends IOwnable<V, L, R> {
+public interface IQuery<V extends IOwnable, L, R> extends IOwnable {
     LabelWF<L> getWFL();
     DataWF<V> getWFD();
     LabelOrder<L> getLabelOrder();

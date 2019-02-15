@@ -119,6 +119,8 @@ public class CUser implements IConstraint {
             final Set<IConstraint> instantiatedBody;
             final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl;
             try {
+                // TODO TAICO
+                // TODO Instantiate new solver here (If module boundary)
                 if((appl = rawRule.apply(args, state).orElse(null)) != null) {
                     instantiatedState = appl._1();
                     instantiatedBody = appl._3();

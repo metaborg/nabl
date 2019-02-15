@@ -12,7 +12,7 @@ import mb.statix.taico.util.IOwnable;
  * @param <T>
  *      the type of targets
  */
-public interface IEdge<S extends IOwnable<S, ?, ?>, L, T> extends IOwnable {
+public interface IEdge<S extends IOwnable, L, T> extends IOwnable {
     S getSource();
     L getLabel();
     T getTarget();
