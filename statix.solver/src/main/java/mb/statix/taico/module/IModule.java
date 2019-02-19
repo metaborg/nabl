@@ -31,4 +31,12 @@ public interface IModule {
                 .flatMap(m -> StreamSupport.stream(m.getDescendants().spliterator(), false))
                 ::iterator;
     }
+    
+    /**
+     * @param canExtend
+     *      the scopes from this module and parents that the child can extend
+     * @return
+     *      the child
+     */
+    IModule createChild(io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend);
 }

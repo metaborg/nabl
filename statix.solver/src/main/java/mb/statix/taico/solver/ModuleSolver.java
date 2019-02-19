@@ -1,9 +1,12 @@
 package mb.statix.taico.solver;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -13,7 +16,6 @@ import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
@@ -28,28 +30,58 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
-import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
-import mb.statix.solver.IConstraintStore.Entry;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.store.BaseConstraintStore;
 
-public class ModuleSolver {
+public class ModuleSolver implements Callable<SolverResult> {
+    private State initState;
+    private Iterable<IConstraint> initConstraints;
+    private Completeness initCompleteness;
+    private IDebugContext initDebug;
+    private Predicate1<ITermVar> initIsRigid;
+    private Predicate1<ITerm> initIsClosed;
+    
 
-    private ModuleSolver() {
+    public ModuleSolver(State state, Iterable<IConstraint> constraints, Completeness completeness, IDebugContext debug) {
+        this(state, constraints, completeness, v -> false, s -> false, debug);
+    }
+    
+    public ModuleSolver(State state, Iterable<IConstraint> constraints, Completeness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, IDebugContext debug) {
+        this.initState = state;
+        this.initConstraints = constraints;
+        this.initCompleteness = completeness;
+        this.initDebug = debug;
+        this.initIsRigid = isRigid;
+        this.initIsClosed = isClosed;
+    }
+    
+    public ModuleSolver() {
+    }
+    
+    @Override
+    public SolverResult call() throws InterruptedException {
+        return solve();
+    }
+    
+    public SolverResult solve() throws InterruptedException {
+        return solve(initState, initConstraints, initCompleteness, initIsRigid, initIsClosed, initDebug);
     }
 
-    public static SolverResult solve(final State state, final Iterable<IConstraint> constraints,
+    protected SolverResult solve(final State state, final Iterable<IConstraint> constraints,
             final Completeness completeness, final IDebugContext debug) throws InterruptedException {
         return solve(state, constraints, completeness, v -> false, s -> false, debug);
     }
 
-    public static SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
+    protected SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
             final Completeness _completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed,
             final IDebugContext debug) throws InterruptedException {
         debug.info("Solving constraints");
+        
+        //TODO Solve and store state continuously. If no more progress is being made then throw delay exception
+        //TODO the parent solver will then handle the delay
         final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
         // set-up
@@ -59,11 +91,11 @@ public class ModuleSolver {
         completeness = completeness.addAll(_constraints);
 
         // time log
-        final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
-        final Map<Class<? extends IConstraint>, Long> delayCount = Maps.newHashMap();
+        final Map<Class<? extends IConstraint>, Long> successCount = new HashMap<>();
+        final Map<Class<? extends IConstraint>, Long> delayCount = new HashMap<>();
 
         // fixed point
-        final Set<IConstraint> failed = Sets.newHashSet();
+        final Set<IConstraint> failed = new HashSet<>();
         final Log delayedLog = new Log();
         boolean progress = true;
         int reductions = 0;
@@ -140,7 +172,7 @@ public class ModuleSolver {
         return SolverResult.of(state, completeness, failed, delayed);
     }
 
-    private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
+    private void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
             IDebugContext debug) {
         if(!debug.isEnabled(Level.Info)) {
             return;
@@ -150,7 +182,7 @@ public class ModuleSolver {
         times.put(key, t);
     }
 
-    private static void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
+    private void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
         debug.info("# ----- {} -----", name);
         for(Map.Entry<Class<? extends IConstraint>, Long> entry : times.entrySet()) {
             debug.info("{} : {}x", entry.getKey().getSimpleName(), entry.getValue());
@@ -158,12 +190,12 @@ public class ModuleSolver {
         debug.info("# ----- {} -----", "-");
     }
 
-    public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
+    public Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
             final Completeness completeness, final IDebugContext debug) throws InterruptedException, Delay {
         return entails(state, constraints, completeness, ImmutableSet.of(), debug);
     }
 
-    public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
+    public Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
             final Completeness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
         if(debug.isEnabled(Level.Info)) {
@@ -171,7 +203,7 @@ public class ModuleSolver {
         }
         final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
         final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
-        final SolverResult result = ModuleSolver.solve(state, constraints, completeness, rigidVars::contains,
+        final SolverResult result = solve(state, constraints, completeness, rigidVars::contains,
                 state.scopes()::contains, debug.subContext());
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");

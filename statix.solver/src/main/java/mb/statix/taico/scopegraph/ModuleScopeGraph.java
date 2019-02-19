@@ -23,6 +23,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableScope, ITe
     private IRelation3.Transient<IOwnableScope, ITerm, IEdge<IOwnableScope, ITerm, IOwnableScope>> edges = HashTrieRelation3.Transient.of();
     private IRelation3.Transient<IOwnableScope, ITerm, IEdge<IOwnableScope, ITerm, List<IOwnableScope>>> data = HashTrieRelation3.Transient.of();
 
+    private int scopeCounter;
+    
     public ModuleScopeGraph(
             IModule owner,
             Set.Immutable<ITerm> labels,
@@ -35,7 +37,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableScope, ITe
         assert labels.contains(endOfPath);
         this.relations = relations;
         this.canExtend = canExtend;
-        //TODO Children?
     }
     
     @Override
@@ -96,9 +97,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableScope, ITe
     }
     
     @Override
-    public IOwnableScope createScope() {
-        // TODO Auto-generated method stub
-        return null;
+    public IOwnableScope createScope(String base) {
+        int i = ++scopeCounter;
+        
+        String name = owner.getId().replaceAll("-", "_") + "_" + base.replaceAll("-", "_") + "-" + i;
+        IOwnableScope scope = new OwnableScope(owner, "", name);
+        scopes.add(scope);
+        return scope;
     }
 
     @Override
@@ -142,5 +147,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableScope, ITe
     @Override
     public IModule getOwner() {
         return this.owner;
+    }
+    
+    @Override
+    public IMInternalScopeGraph<IOwnableScope, ITerm, ITerm> createChild(IModule module, Set.Immutable<IOwnableScope> canExtend) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

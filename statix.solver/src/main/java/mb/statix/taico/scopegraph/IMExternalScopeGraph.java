@@ -65,9 +65,11 @@ public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
     /**
      * Creates a new scope in this scope graph.
      * 
+     * @param base
+     *      the base string to use for the scope name
      * @return
      *      the newly created scope
      */
-    V createScope();
+    V createScope(String base);
     
 }

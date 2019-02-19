@@ -2,6 +2,8 @@ package mb.statix.taico.scopegraph;
 
 import java.util.List;
 
+import io.usethesource.capsule.Set;
+import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 
 public interface IMInternalScopeGraph<V extends IOwnable, L, R> extends IMExternalScopeGraph<V, L, R> {
@@ -30,4 +32,16 @@ public interface IMInternalScopeGraph<V extends IOwnable, L, R> extends IMExtern
      *      an iterable with all the data
      */
     java.util.Set<IEdge<V, R, List<V>>> getTransitiveData(V scope, R label);
+    
+    /**
+     * Creates a child scope graph from this scope graph.
+     * 
+     * @param module
+     *      the module that will own the child graph
+     * @param canExtend
+     *      the scopes that this child can extend
+     * @return
+     *      the new scope graph
+     */
+    IMInternalScopeGraph<V, L, R> createChild(IModule module, Set.Immutable<IOwnableScope> canExtend);
 }

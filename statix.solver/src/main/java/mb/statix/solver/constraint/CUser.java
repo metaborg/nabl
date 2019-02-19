@@ -1,6 +1,7 @@
 package mb.statix.solver.constraint;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -30,6 +32,8 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
+import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.SolverResult;
 
 /**
  * Implementation for a user constraint (rule application).
@@ -91,6 +95,14 @@ public class CUser implements IConstraint {
     @Override public CUser apply(ISubstitution.Immutable subst) {
         return new CUser(name, subst.apply(args), cause);
     }
+    
+    /**
+     * @return
+     *      true if this rule crosses a module boundary, false otherwise
+     */
+    public boolean isModuleBoundary() {
+        return name.startsWith("modbound_");
+    }
 
     /**
      * @see IConstraint#solve
@@ -135,6 +147,18 @@ public class CUser implements IConstraint {
                 unsuccessfulLog.flush(debug);
                 throw d;
             }
+            
+            if (isModuleBoundary()) {
+                //TODO IMPORTANT Create new state
+                State newState = State.of(instantiatedState.spec());
+                Set<IConstraint> newConstraints = Collections.singleton(new CModule(instantiatedState, instantiatedBody, this));
+                proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
+                proxyDebug.info("Rule accepted");
+                proxyDebug.commit();
+                
+                return Optional.of(ConstraintResult.ofConstraints(instantiatedState, newConstraints));
+            }
+            
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
             return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
