@@ -42,9 +42,14 @@ import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
+import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.Module;
+import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.SolverCoordinator;
 
 public class STX_solve_constraint extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
+    private static final boolean MODULES = true; 
 
     @Inject public STX_solve_constraint() {
         super(STX_solve_constraint.class.getSimpleName(), 2);
@@ -67,25 +72,52 @@ public class STX_solve_constraint extends StatixPrimitive {
                         (t, vs, c) -> ImmutableTuple2.of(vs, c))
                 .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
 
-        State state = State.of(spec);
-        final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        for(ITermVar var : vars_constraint._1()) {
-            final Tuple2<ITermVar, State> var_state = state.freshVar(var.getName());
-            state = var_state._2();
-            subst.put(var, var_state._1());
-            subst.put(var_state._1(), var);
-        }
-        final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IConstraint> constraints =
-                vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         final SolverResult resultConfig;
-        try {
-            resultConfig = Solver.solve(state, constraints, new Completeness(), debug);
-        } catch(InterruptedException e) {
-            throw new InterpreterException(e);
+        final ISubstitution.Immutable isubst;
+        final IUnifier.Immutable unifier;
+        if (MODULES) {
+
+            //TODO TAICO Determine ID from somewhere for this module
+            final IModule module = new Module("TOPLVL-MOD-PLACEHOLDER", spec);
+            final SolverCoordinator coordinator = new SolverCoordinator();
+            final MState state = new MState(coordinator, module, spec);
+            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+            for(ITermVar var : vars_constraint._1()) {
+                final ITermVar nvar = state.freshVar(var.getName());
+                subst.put(var, nvar);
+                subst.put(nvar, var);
+            }
+            isubst = subst.freeze();
+            final Set<IConstraint> constraints =
+                    vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+            
+            try {
+                resultConfig = coordinator.solve(state, constraints, debug);
+            } catch(InterruptedException e) {
+                throw new InterpreterException(e);
+            }
+            
+            unifier = state.unifier();
+        } else {
+            State state = State.of(spec);
+            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+            for(ITermVar var : vars_constraint._1()) {
+                final Tuple2<ITermVar, State> var_state = state.freshVar(var.getName());
+                state = var_state._2();
+                subst.put(var, var_state._1());
+                subst.put(var_state._1(), var);
+            }
+            isubst = subst.freeze();
+            final Set<IConstraint> constraints =
+                    vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+            try {
+                resultConfig = Solver.solve(state, constraints, new Completeness(), debug);
+            } catch(InterruptedException e) {
+                throw new InterpreterException(e);
+            }
+            final State resultState = resultConfig.state();
+            unifier = resultState.unifier();
         }
-        final State resultState = resultConfig.state();
-        final IUnifier.Immutable unifier = resultState.unifier();
 
         final List<ITerm> errorList = Lists.newArrayList();
         if(resultConfig.hasErrors()) {

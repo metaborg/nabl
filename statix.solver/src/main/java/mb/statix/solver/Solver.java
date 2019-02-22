@@ -154,6 +154,23 @@ public class Solver {
         return entails(state, constraints, completeness, ImmutableSet.of(), debug);
     }
 
+    /**
+     * Determines if the given set of constraints are satisfied in the given solution,
+     * regardless of how free variables are instantiated.
+     * 
+     * @param state
+     *      the state
+     * @param constraints
+     *      the constraints to check
+     * @param completeness
+     *      the completeness to use
+     * @param _localVars
+     *      the variables that are local
+     * @param debug
+     * @return
+     * @throws InterruptedException
+     * @throws Delay
+     */
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
             final Completeness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {

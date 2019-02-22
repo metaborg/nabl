@@ -20,6 +20,10 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
+import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for a tell edge constraint.
@@ -96,6 +100,27 @@ public class CTellEdge implements IConstraint {
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        //Modifies the scope graph
+        final IUnifier.Immutable unifier = state.unifier();
+        if(!unifier.isGround(sourceTerm)) {
+            throw Delay.ofVars(unifier.getVars(sourceTerm));
+        }
+        if(!unifier.isGround(targetTerm)) {
+            throw Delay.ofVars(unifier.getVars(targetTerm));
+        }
+        final OwnableScope source = OwnableScope.ownableMatcher(ModuleManager::getModule).match(sourceTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
+        if(params.isClosed(source)) {
+            return Optional.empty();
+        }
+        final OwnableScope target = OwnableScope.ownableMatcher(ModuleManager::getModule).match(targetTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
+        state.scopeGraph().addEdge(source, label, target);
+        return Optional.of(new MConstraintResult(state));
     }
 
     @Override public String toString(TermFormatter termToString) {

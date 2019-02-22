@@ -9,9 +9,10 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for the {@code false} constraint.
@@ -48,7 +49,12 @@ public class CFalse implements IConstraint {
      * @return
      *      an empty optional
      */
-    @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params) {
+        return Optional.empty();
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) {
         return Optional.empty();
     }
 

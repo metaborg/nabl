@@ -18,6 +18,10 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
+import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 public class CTermId implements IConstraint {
 
@@ -74,6 +78,29 @@ public class CTermId implements IConstraint {
             }
         }
         return Optional.of(ConstraintResult.ofConstraints(state, eq));
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        final IUnifier unifier = state.unifier();
+        if(!(unifier.isGround(term))) {
+            throw Delay.ofVars(unifier.getVars(term));
+        }
+        final CEqual eq;
+        final Optional<OwnableScope> maybeScope = OwnableScope.ownableMatcher(ModuleManager::getModule).match(term, unifier);
+        if(maybeScope.isPresent()) {
+            final OwnableScope scope = maybeScope.get();
+            eq = new CEqual(idTerm, B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs()));
+        } else {
+            final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
+            if(maybeIndex.isPresent()) {
+                final TermIndex index = maybeIndex.get();
+                eq = new CEqual(idTerm, B.newAppl(StatixTerms.TERMID_OP, index.getArgs()));
+            } else {
+                eq = new CEqual(idTerm, B.newAppl(StatixTerms.NOID_OP));
+            }
+        }
+        return Optional.of(new MConstraintResult(state, eq));
     }
 
     @Override public String toString(TermFormatter termToString) {

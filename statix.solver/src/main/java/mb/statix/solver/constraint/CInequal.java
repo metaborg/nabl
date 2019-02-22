@@ -13,6 +13,8 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for the inequality constraint.
@@ -61,6 +63,20 @@ public class CInequal implements IConstraint {
                 return Optional.empty();
             } else {
                 return Optional.of(ConstraintResult.of(state));
+            }
+        }, vars -> {
+            throw Delay.ofVars(vars);
+        });
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        final IUnifier.Immutable unifier = state.unifier();
+        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
+            if(result) {
+                return Optional.empty();
+            } else {
+                return Optional.of(new MConstraintResult(state));
             }
         }, vars -> {
             throw Delay.ofVars(vars);

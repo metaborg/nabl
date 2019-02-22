@@ -6,14 +6,14 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.taico.util.IOwnable;
 
-public interface IQuery<V extends IOwnable, L, R> extends IOwnable {
+public interface IQuery<S extends IOwnable, V, L, R> extends IOwnable {
     LabelWF<L> getWFL();
     DataWF<V> getWFD();
     LabelOrder<L> getLabelOrder();
     DataLeq<V> getDataOrder();
     
     //TODO Queries need to be thrown away with the scope identities of the source scope
-    V getSourceScope();
+    S getSourceScope();
     
     
 }

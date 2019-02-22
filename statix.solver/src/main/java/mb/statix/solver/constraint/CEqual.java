@@ -18,6 +18,8 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for an equality constraint.
@@ -70,6 +72,34 @@ public class CEqual implements IConstraint {
                 }
                 final State newState = state.withUnifier(result.unifier());
                 return Optional.of(ConstraintResult.ofVars(newState, result.result().varSet()));
+            } else {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                }
+                return Optional.empty();
+            }
+        } catch(OccursException e) {
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            }
+            return Optional.empty();
+        } catch(RigidVarsException e) {
+            throw Delay.ofVars(e.vars());
+        }
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        IDebugContext debug = params.debug();
+        IUnifier.Immutable unifier = state.unifier();
+        try {
+            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
+            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification succeeded: {}", result.result());
+                }
+                state.setUnifier(result.unifier());
+                return Optional.of(MConstraintResult.ofVars(state, result.result().varSet()));
             } else {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));

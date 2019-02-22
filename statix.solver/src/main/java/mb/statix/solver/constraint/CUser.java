@@ -19,9 +19,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -32,8 +32,10 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
-import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverResult;
+import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.IOwnableScope;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for a user constraint (rule application).
@@ -88,6 +90,7 @@ public class CUser implements IConstraint {
     }
 
     @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
+        //TODO IMPORTANT TAICO CRITICALEDGE this does not work on the correct scope graph yet.
         return spec.scopeExtensions().get(name).stream().map(il -> CriticalEdge.of(args.get(il._1()), il._2()))
                 .collect(Collectors.toList());
     }
@@ -100,7 +103,7 @@ public class CUser implements IConstraint {
      * @return
      *      true if this rule crosses a module boundary, false otherwise
      */
-    public boolean isModuleBoundary() {
+    public final boolean isModuleBoundary() {
         return name.startsWith("modbound_");
     }
 
@@ -148,20 +151,77 @@ public class CUser implements IConstraint {
                 throw d;
             }
             
-            if (isModuleBoundary()) {
-                //TODO IMPORTANT Create new state
-                State newState = State.of(instantiatedState.spec());
-                Set<IConstraint> newConstraints = Collections.singleton(new CModule(instantiatedState, instantiatedBody, this));
-                proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
-                proxyDebug.info("Rule accepted");
-                proxyDebug.commit();
-                
-                return Optional.of(ConstraintResult.ofConstraints(instantiatedState, newConstraints));
-            }
+//            if (isModuleBoundary()) {
+//                //TODO IMPORTANT Create new state
+//                State newState = State.of(instantiatedState.spec());
+//                Set<IConstraint> newConstraints = Collections.singleton(new CModule(instantiatedState, instantiatedBody, this));
+//                proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
+//                proxyDebug.info("Rule accepted");
+//                proxyDebug.commit();
+//                
+//                return Optional.of(ConstraintResult.ofConstraints(instantiatedState, newConstraints));
+//            }
             
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
             return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
+        }
+        debug.info("No rule applies");
+        unsuccessfulLog.flush(debug);
+        return Optional.empty();
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params)
+            throws InterruptedException, Delay {
+        final IDebugContext debug = params.debug();
+        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
+        final Log unsuccessfulLog = new Log();
+        final Iterator<Rule> it = rules.iterator();
+        while(it.hasNext()) {
+            if(Thread.interrupted()) {
+                throw new InterruptedException();
+            }
+            final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
+            final Rule rawRule = it.next();
+            if(proxyDebug.isEnabled(Level.Info)) {
+                proxyDebug.info("Try rule {}", rawRule.toString());
+            }
+            final Set<IConstraint> instantiatedBody;
+            final Tuple2<Set<ITermVar>, Set<IConstraint>> appl;
+            try {
+                if((appl = rawRule.apply(args, state).orElse(null)) != null) {
+                    instantiatedBody = appl._2();
+                } else {
+                    proxyDebug.info("Rule rejected (mismatching arguments)");
+                    unsuccessfulLog.absorb(proxyDebug.clear());
+                    continue;
+                }
+            } catch(Delay d) {
+                proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                unsuccessfulLog.absorb(proxyDebug.clear());
+                unsuccessfulLog.flush(debug);
+                throw d;
+            }
+            
+            if (isModuleBoundary()) {
+                //TODO Determine scopes from arguments to create canExtend set
+                //TODO Check if terms are ground (state.unifier().isGround(term))
+                io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend = io.usethesource.capsule.Set.Immutable.of();
+                
+                IModule child = state.owner().createChild(canExtend);
+                MState childState = new MState(state.coordinator(), child, state.spec());
+                Set<IConstraint> newConstraints = Collections.singleton(new CModule(state.solver(), childState, instantiatedBody, debug, this));
+                proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
+                proxyDebug.info("Rule accepted");
+                proxyDebug.commit();
+                
+                return Optional.of(MConstraintResult.ofConstraints(state, newConstraints));
+            }
+            
+            proxyDebug.info("Rule accepted");
+            proxyDebug.commit();
+            return Optional.of(MConstraintResult.ofConstraints(state, instantiatedBody));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);

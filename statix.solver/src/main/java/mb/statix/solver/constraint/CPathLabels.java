@@ -17,6 +17,8 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 public class CPathLabels implements IConstraint {
 
@@ -58,6 +60,20 @@ public class CPathLabels implements IConstraint {
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
         return Optional
                 .of(ConstraintResult.ofConstraints(state, new CEqual(B.newList(path.labels()), labelsTerm, this)));
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        final IUnifier unifier = state.unifier();
+        if(!(unifier.isGround(pathTerm))) {
+            throw Delay.ofVars(unifier.getVars(pathTerm));
+
+        }
+        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
+                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
+                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
+        return Optional
+                .of(new MConstraintResult(state, new CEqual(B.newList(path.labels()), labelsTerm, this)));
     }
 
     @Override public String toString(TermFormatter termToString) {

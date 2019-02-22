@@ -5,7 +5,7 @@ import java.util.List;
 import io.usethesource.capsule.Set;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
+public interface IMExternalScopeGraph<S extends IOwnable, V, L, R> {
     
     L getEndOfPath();
     Set.Immutable<L> getLabels();
@@ -21,7 +21,7 @@ public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<V, L, V>> getEdges(V scope, L label);
+    java.util.Set<IEdge<S, L, S>> getEdges(S scope, L label);
     
     /**
      * Gets the collection of data edges from the given scope with the given label.
@@ -33,7 +33,7 @@ public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<V, R, List<V>>> getData(V scope, R label);
+    java.util.Set<IEdge<S, R, List<V>>> getData(S scope, R label);
     
     /**
      * @param sourceScope
@@ -46,7 +46,7 @@ public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
      * @return
      *      true if this edge was added, false if it already existed
      */
-    boolean addEdge(V sourceScope, L label, V targetScope);
+    boolean addEdge(S sourceScope, L label, S targetScope);
     
     /**
      * @param scope
@@ -59,7 +59,7 @@ public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
      * @return
      *      true if this scope graph changed as a result of this call, false otherwise
      */
-    boolean addDatum(V scope, R relation, Iterable<V> datum);
+    boolean addDatum(S scope, R relation, Iterable<V> datum);
     
     
     /**
@@ -70,6 +70,6 @@ public interface IMExternalScopeGraph<V extends IOwnable, L, R> {
      * @return
      *      the newly created scope
      */
-    V createScope(String base);
+    S createScope(String base);
     
 }

@@ -6,12 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
@@ -23,140 +21,203 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.concurrent.solver.ConcurrentSolver;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IConstraintStore;
+import mb.statix.solver.IConstraintStore.Entry;
+import mb.statix.solver.Solver;
+import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
-import mb.statix.solver.store.BaseConstraintStore;
+import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.store.ModuleConstraintStore;
+import mb.statix.taico.util.IOwnable;
 
-public class ModuleSolver implements Callable<SolverResult> {
-    private State initState;
-    private Iterable<IConstraint> initConstraints;
-    private Completeness initCompleteness;
-    private IDebugContext initDebug;
-    private Predicate1<ITermVar> initIsRigid;
-    private Predicate1<ITerm> initIsClosed;
+public class ModuleSolver implements IOwnable {
+    private ModuleSolver parent;
+    private MState state;
+    private ModuleConstraintStore constraints;
+    private MCompleteness completeness;
+    private IDebugContext debug;
+    private final LazyDebugContext proxyDebug;
     
+    private Predicate1<ITermVar> isRigid;
+    private Predicate1<ITerm> isClosed;
+    
+    // time log
+    private final Map<Class<? extends IConstraint>, Long> successCount = new HashMap<>();
+    private final Map<Class<? extends IConstraint>, Long> delayCount = new HashMap<>();
 
-    public ModuleSolver(State state, Iterable<IConstraint> constraints, Completeness completeness, IDebugContext debug) {
-        this(state, constraints, completeness, v -> false, s -> false, debug);
+    // fixed point
+    private final Set<IConstraint> failed = new HashSet<>();
+    private final Log delayedLog = new Log();
+    private int reductions = 0;
+    private int delays = 0;
+    
+    public static ModuleSolver topLevelSolver(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
+        return new ModuleSolver(null, state, constraints, new MCompleteness(), v -> false, s -> false, debug);
     }
     
-    public ModuleSolver(State state, Iterable<IConstraint> constraints, Completeness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, IDebugContext debug) {
-        this.initState = state;
-        this.initConstraints = constraints;
-        this.initCompleteness = completeness;
-        this.initDebug = debug;
-        this.initIsRigid = isRigid;
-        this.initIsClosed = isClosed;
+    private ModuleSolver(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, MCompleteness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, IDebugContext debug) {
+        this.parent = parent;
+        this.state = state;
+        this.constraints = new ModuleConstraintStore(constraints, debug);
+        this.completeness = completeness;
+        this.completeness.addAll(constraints);
+        this.isRigid = isRigid;
+        this.isClosed = isClosed;
+        this.debug = debug;
+        this.proxyDebug = new LazyDebugContext(debug);
     }
     
-    public ModuleSolver() {
+    /**
+     * Creates a solver as a child of this solver.
+     * 
+     * @param state
+     *      the newly created state for this solver
+     * @param constraints
+     * @param isRigid
+     * @param isClosed
+     * @param debug
+     * @return
+     */
+    public ModuleSolver childSolver(MState state, Iterable<IConstraint> constraints, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, IDebugContext debug) {
+        ModuleSolver solver = new ModuleSolver(this, state, constraints, new MCompleteness(), isRigid, isClosed, debug);
+        
+        this.state.coordinator().addSolver(solver);
+        
+        return solver;
     }
     
     @Override
-    public SolverResult call() throws InterruptedException {
-        return solve();
+    public IModule getOwner() {
+        return state.owner();
     }
     
-    public SolverResult solve() throws InterruptedException {
-        return solve(initState, initConstraints, initCompleteness, initIsRigid, initIsClosed, initDebug);
+    /**
+     * @return
+     *      the parent solver of this solver, or null if this is the top level solver
+     */
+    public ModuleSolver getParent() {
+        return parent;
     }
-
-    protected SolverResult solve(final State state, final Iterable<IConstraint> constraints,
-            final Completeness completeness, final IDebugContext debug) throws InterruptedException {
-        return solve(state, constraints, completeness, v -> false, s -> false, debug);
+    
+    /**
+     * Reports if any progress has been made since the last check.
+     * 
+     * @return
+     *      true if progress has been made, false otherwise
+     */
+    protected boolean checkAndResetProgress() {
+        return constraints.checkProgressAndReset();
     }
-
-    protected SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
-            final Completeness _completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed,
-            final IDebugContext debug) throws InterruptedException {
-        debug.info("Solving constraints");
-        
-        //TODO Solve and store state continuously. If no more progress is being made then throw delay exception
-        //TODO the parent solver will then handle the delay
-        final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-
-        // set-up
-        final IConstraintStore constraints = new BaseConstraintStore(_constraints, debug);
-        State state = _state;
-        Completeness completeness = _completeness;
-        completeness = completeness.addAll(_constraints);
-
-        // time log
-        final Map<Class<? extends IConstraint>, Long> successCount = new HashMap<>();
-        final Map<Class<? extends IConstraint>, Long> delayCount = new HashMap<>();
-
-        // fixed point
-        final Set<IConstraint> failed = new HashSet<>();
-        final Log delayedLog = new Log();
-        boolean progress = true;
-        int reductions = 0;
-        int delays = 0;
-        outer: while(progress) {
-            progress = false;
-            constraints.activateStray();
-            delayedLog.clear();
-            for(IConstraintStore.Entry entry : constraints.active(debug)) {
-                if(Thread.interrupted()) {
-                    throw new InterruptedException();
-                }
-                IDebugContext subDebug = proxyDebug.subContext();
-                final IConstraint constraint = entry.constraint();
-                if(proxyDebug.isEnabled(Level.Info)) {
-                    proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
-                }
-                try {
-                    final Optional<ConstraintResult> maybeResult;
-                    maybeResult =
-                            constraint.solve(state, new ConstraintContext(completeness, isRigid, isClosed, subDebug));
-                    addTime(constraint, 1, successCount, debug);
-                    progress = true;
-                    entry.remove();
-                    completeness = completeness.remove(constraint);
-                    reductions += 1;
-                    if(maybeResult.isPresent()) {
-                        final ConstraintResult result = maybeResult.get();
-                        state = result.state();
-                        if(!result.constraints().isEmpty()) {
-                            final List<IConstraint> newConstaints = result.constraints().stream()
-                                    .map(c -> c.withCause(constraint)).collect(Collectors.toList());
-                            if(subDebug.isEnabled(Level.Info)) {
-                                subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
-                            }
-                            constraints.addAll(newConstaints);
-                            completeness = completeness.addAll(newConstaints);
-                        }
-                        constraints.activateFromVars(result.vars(), subDebug);
-                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
-                    } else {
-                        subDebug.error("Failed");
-                        failed.add(constraint);
-                        if(proxyDebug.isRoot()) {
-                            printTrace(constraint, state.unifier(), subDebug);
-                        } else {
-                            proxyDebug.info("Break early because of errors.");
-                            break outer;
-                        }
+    
+    //TODO TAICO Are critical edges determined from the constraints that are left?
+    
+    //TODO TAICO Orchestrate the solvers in such a way that 
+    
+    /**
+     * The solver is guaranteed to be done if it has no more constraints.
+     * It should be able to be done even if there are child solvers still solving.
+     * 
+     * @return
+     *      true if this solver is done, false otherwise
+     */
+    public boolean isDone() {
+        return constraints.isDone();
+    }
+    
+    /**
+     * @return
+     *      true if this solver is stuck waiting, false otherwise
+     */
+    public boolean isStuck() {
+        return constraints.isStuck();
+    }
+    
+    /**
+     * This method notifies this solver of progress that has been made by other solvers.
+     */
+    public void externalProgress() {
+        constraints.externalProgress();
+    }
+    
+    /**
+     * @return
+     *      true if this solver has failed constraints, false otherwise
+     */
+    public boolean hasFailed() {
+        return !failed.isEmpty();
+    }
+    
+    /**
+     * @return
+     *      true if another step is required, false otherwise
+     * @throws InterruptedException
+     */
+    public boolean solveStep() throws InterruptedException {
+        Entry entry = constraints.getActiveConstraint(debug);
+        if (entry == null) return false;
+    
+        IDebugContext subDebug = proxyDebug.subContext();
+        final IConstraint constraint = entry.constraint();
+        if(proxyDebug.isEnabled(Level.Info)) {
+            proxyDebug.info("Solving {}", constraint.toString(ConcurrentSolver.shallowTermFormatter(state.unifier())));
+        }
+        try {
+            final Optional<MConstraintResult> maybeResult;
+            maybeResult =
+                    constraint.solveMutable(state, new ConstraintContext(completeness.freeze(), isRigid, isClosed, subDebug));
+            addTime(constraint, 1, successCount, debug);
+            entry.remove();
+            completeness.remove(constraint);
+            reductions += 1;
+            if(maybeResult.isPresent()) {
+                final MConstraintResult result = maybeResult.get();
+                if(!result.constraints().isEmpty()) {
+                    final List<IConstraint> newConstaints = result.constraints().stream()
+                            .map(c -> c.withCause(constraint)).collect(Collectors.toList());
+                    if(subDebug.isEnabled(Level.Info)) {
+                        subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
                     }
-                    proxyDebug.commit();
-                } catch(Delay d) {
-                    addTime(constraint, 1, delayCount, debug);
-                    subDebug.info("Delayed");
-                    delayedLog.absorb(proxyDebug.clear());
-                    entry.delay(d);
-                    delays += 1;
+                    constraints.addAll(newConstaints);
+                    completeness.addAll(newConstaints);
+                }
+                constraints.activateFromVars(result.vars(), subDebug);
+                //TODO TAICO CRITICALEDGES Fix critical edge mechanism
+                //constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
+            } else {
+                subDebug.error("Failed");
+                failed.add(constraint);
+                if(proxyDebug.isRoot()) {
+                    printTrace(constraint, state.unifier(), subDebug);
+                } else {
+                    proxyDebug.info("Break early because of errors.");
+                    return false;
                 }
             }
+            proxyDebug.commit();
+        } catch(Delay d) {
+            addTime(constraint, 1, delayCount, debug);
+            subDebug.info("Delayed");
+            delayedLog.absorb(proxyDebug.clear());
+            entry.delay(d);
+            delays += 1;
         }
-
+        return true;
+    }
+    
+    /**
+     * Called to finish the solving.
+     * 
+     * @return
+     * @throws InterruptedException
+     */
+    public SolverResult finishSolver() throws InterruptedException {
         // invariant: there should be no remaining active constraints
         if(constraints.activeSize() > 0) {
             debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
@@ -164,12 +225,12 @@ public class ModuleSolver implements Callable<SolverResult> {
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         delayedLog.flush(debug);
-        debug.info("Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).", reductions,
-                delays, failed.size(), constraints.delayedSize());
+        debug.info("[{}] Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).",
+                getOwner().getId(), reductions, delays, failed.size(), constraints.delayedSize());
         logTimes("success", successCount, debug);
         logTimes("delay", delayCount, debug);
 
-        return SolverResult.of(state, completeness, failed, delayed);
+        return SolverResult.of(null, completeness, failed, delayed);
     }
 
     private void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
@@ -203,7 +264,7 @@ public class ModuleSolver implements Callable<SolverResult> {
         }
         final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
         final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
-        final SolverResult result = solve(state, constraints, completeness, rigidVars::contains,
+        final SolverResult result = Solver.solve(state, constraints, completeness, rigidVars::contains,
                 state.scopes()::contains, debug.subContext());
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
@@ -240,35 +301,7 @@ public class ModuleSolver implements Callable<SolverResult> {
         return sb.toString();
     }
 
-    @Value.Immutable
-    public static abstract class ASolverResult {
-
-        @Value.Parameter public abstract State state();
-
-        @Value.Parameter public abstract Completeness completeness();
-
-        @Value.Parameter public abstract Set<IConstraint> errors();
-
-        public boolean hasErrors() {
-            return !errors().isEmpty();
-        }
-
-        @Value.Parameter public abstract Map<IConstraint, Delay> delays();
-
-        public Delay delay() {
-            ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-            ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
-            delays().values().stream().forEach(d -> {
-                vars.addAll(d.vars());
-                scopes.addAll(d.criticalEdges());
-            });
-            return new Delay(vars.build(), scopes.build());
-        }
-
-    }
-
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
         return new UnifierFormatter(unifier, 3);
     }
-
 }

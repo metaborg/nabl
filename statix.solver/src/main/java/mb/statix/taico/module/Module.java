@@ -7,9 +7,11 @@ import java.util.regex.Pattern;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
+import mb.statix.spec.Spec;
 import mb.statix.taico.paths.IQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
+import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 
 /**
@@ -20,8 +22,7 @@ public class Module implements IModule {
     private final String id;
     private IModule parent;
     private Set<IModule> children = new HashSet<>();
-    private IMInternalScopeGraph<IOwnableScope, ITerm, ITerm> scopeGraph;
-    
+    private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     
     /**
      * Creates a new top level module.
@@ -35,15 +36,40 @@ public class Module implements IModule {
      * @param relations
      *      the labels on data edges of the scope graph
      */
-    public Module(String id, Immutable<ITerm> labels, ITerm endOfPath, Immutable<ITerm> relations) {
+    public Module(String id, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
         this.id = id;
         this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Immutable.of());
+        ModuleManager.addModule(this);
     }
     
-    public Module(String id, IModule parent) {
+    /**
+     * Creates a new top level module.
+     * 
+     * @param id
+     *      the id of the module
+     * @param spec
+     *      the spec
+     */
+    public Module(String id, Spec spec) {
+        this.id = id;
+        this.parent = null;
+        this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Immutable.of());
+        ModuleManager.addModule(this);
+    }
+    
+    /**
+     * Constructor for creating child modules.
+     * 
+     * @param id
+     *      the id of the child
+     * @param parent
+     *      the parent module
+     */
+    private Module(String id, IModule parent) {
         this.id = id;
         this.parent = parent;
+        ModuleManager.addModule(this);
     }
 
     @Override
@@ -52,7 +78,7 @@ public class Module implements IModule {
     }
 
     @Override
-    public Set<IQuery<IOwnableScope, ITerm, ITerm>> queries() {
+    public Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries() {
         // TODO Auto-generated method stub
         return null;
     }
@@ -70,7 +96,7 @@ public class Module implements IModule {
     }
 
     @Override
-    public IMInternalScopeGraph<IOwnableScope, ITerm, ITerm> getScopeGraph() {
+    public IMInternalScopeGraph<IOwnableTerm,  ITerm, ITerm, ITerm> getScopeGraph() {
         return scopeGraph;
     }
 

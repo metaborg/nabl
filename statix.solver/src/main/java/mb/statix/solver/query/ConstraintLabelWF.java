@@ -72,6 +72,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         final IUnifier.Immutable newUnifier = unifyResult.unifier();
         final State newState = newTail._2().withUnifier(newUnifier);
         final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v) || newTail._1().equals(v);
+        //TODO TAICO This might need to be done differently, as we cannot determine closed scopes any more?
         final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
         final SolverResult result =
                 Solver.solve(newState, constraints, completeness, isRigid, isClosed, debug.subContext());

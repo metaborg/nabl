@@ -25,6 +25,10 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
+import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for a tell relation constraint.
@@ -135,7 +139,53 @@ public class CTellRel implements IConstraint {
         } else {
             final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
                     state.scopeGraph().addDatum(scope, relation, datumTerms);
+            
+            //TODO TAICO Mutable state
             return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
+        }
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        final Type type = state.spec().relations().get(relation);
+        if(type == null) {
+            params.debug().error("Ignoring data for unknown relation {}", relation);
+            return Optional.empty();
+        }
+        if(type.getArity() != datumTerms.size()) {
+            params.debug().error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(),
+                    relation);
+            return Optional.empty();
+        }
+
+        final IUnifier.Immutable unifier = state.unifier();
+        if(!unifier.isGround(scopeTerm)) {
+            throw Delay.ofVars(unifier.getVars(scopeTerm));
+        }
+        final OwnableScope scope = OwnableScope.ownableMatcher(ModuleManager::getModule).match(scopeTerm, unifier)
+                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
+        if(params.isClosed(scope)) {
+            return Optional.empty();
+        }
+
+        final ITerm key = B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(Collectors.toList()));
+        if(!unifier.isGround(key)) {
+            throw Delay.ofVars(unifier.getVars(key));
+        }
+        Optional<ITerm> existingValue = state.scopeGraph().getData(scope, relation).stream().filter(dt -> {
+            return unifier
+                    .areEqual(key, B.newTuple(dt.getTarget().stream().limit(type.getInputArity()).collect(Collectors.toList())))
+                    .orElse(false);
+        }).findFirst().map(dt -> {
+            return B.newTuple(dt.getTarget().stream().skip(type.getInputArity()).collect(Collectors.toList()));
+        });
+        if(existingValue.isPresent()) {
+            final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
+            return Optional.of(new MConstraintResult(state, new CEqual(value, existingValue.get(), this)));
+        } else {
+            state.scopeGraph().addDatum(scope, relation, datumTerms);
+            
+            return Optional.of(new MConstraintResult(state));
         }
     }
 

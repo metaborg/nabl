@@ -6,7 +6,7 @@ import io.usethesource.capsule.Set;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMInternalScopeGraph<V extends IOwnable, L, R> extends IMExternalScopeGraph<V, L, R> {
+public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExternalScopeGraph<S, V, L, R> {
     /**
      * Gets the collection of edges from the given scope with the given label, that are
      * either edges owned by the current scope graph, or owned by any of its children.
@@ -18,7 +18,7 @@ public interface IMInternalScopeGraph<V extends IOwnable, L, R> extends IMExtern
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<V, L, V>> getTransitiveEdges(V scope, L label);
+    java.util.Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label);
     
     /**
      * Gets the collection of data from the given scope with the given label, that are
@@ -31,7 +31,7 @@ public interface IMInternalScopeGraph<V extends IOwnable, L, R> extends IMExtern
      * @return
      *      an iterable with all the data
      */
-    java.util.Set<IEdge<V, R, List<V>>> getTransitiveData(V scope, R label);
+    java.util.Set<IEdge<S, R, List<V>>> getTransitiveData(S scope, R label);
     
     /**
      * Creates a child scope graph from this scope graph.
@@ -43,5 +43,5 @@ public interface IMInternalScopeGraph<V extends IOwnable, L, R> extends IMExtern
      * @return
      *      the new scope graph
      */
-    IMInternalScopeGraph<V, L, R> createChild(IModule module, Set.Immutable<IOwnableScope> canExtend);
+    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, Set.Immutable<IOwnableScope> canExtend);
 }

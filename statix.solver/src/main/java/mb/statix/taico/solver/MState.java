@@ -12,13 +12,14 @@ import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.IOwnableScope;
+import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.OwnableScope;
 
 public class MState {
+    private final SolverCoordinator coordinator;
     private final IModule owner;
     private Spec spec;
-    private IMInternalScopeGraph<IOwnableScope, ITerm, ITerm> scopeGraph;
+    private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     
     private int varCounter;
     private Set<ITermVar> vars = new HashSet<>();
@@ -28,7 +29,10 @@ public class MState {
     
     private IUnifier.Immutable unifier = PersistentUnifier.Immutable.of();
     
-    public MState(IModule owner, Spec spec) {
+    private ModuleSolver solver;
+    
+    public MState(SolverCoordinator coordinator, IModule owner, Spec spec) {
+        this.coordinator = coordinator;
         this.owner = owner;
         this.spec = spec;
         this.scopeGraph = owner.getScopeGraph();
@@ -40,6 +44,18 @@ public class MState {
     
     public Spec spec() {
         return spec;
+    }
+    
+    public SolverCoordinator coordinator() {
+        return coordinator;
+    }
+    
+    public ModuleSolver solver() {
+        return solver;
+    }
+    
+    public void setSolver(ModuleSolver solver) {
+        this.solver = solver;
     }
 
     // --- variables ---
@@ -61,8 +77,8 @@ public class MState {
     public ITerm freshScope(String base) {
         int i = ++scopeCounter;
         
-        String name = owner.getId().replaceAll("-", "_") + "_" + base.replaceAll("-", "_") + "-" + i;
-        ITerm scope = new OwnableScope(owner, "", name);
+        String name = base.replaceAll("-", "_") + "-" + i;
+        ITerm scope = new OwnableScope(owner, name);
         scopes.add(scope);
         return scope;
     }
@@ -76,8 +92,12 @@ public class MState {
     public IUnifier.Immutable unifier() {
         return unifier;
     }
+    
+    public void setUnifier(IUnifier.Immutable unifier) {
+        this.unifier = unifier;
+    }
 
-    public IMInternalScopeGraph<IOwnableScope, ITerm, ITerm> scopeGraph() {
+    public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph() {
         return scopeGraph;
     }
 

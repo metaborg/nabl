@@ -19,6 +19,8 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for a path match constraint.
@@ -105,6 +107,39 @@ public class CPathMatch implements IConstraint {
             nil -> {
                 if(re.isAccepting()) {
                     return Optional.of(ConstraintResult.of(state));
+                } else {
+                    return Optional.empty();
+                }
+            },
+            var -> {
+                throw Delay.ofVar(var);
+            }
+        ));
+        // @formatter:on
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+        final IUnifier unifier = state.unifier();
+        // @formatter:off
+        return ((IListTerm) unifier.findTerm(labelsTerm)).matchOrThrow(ListTerms.checkedCases(
+            cons -> {
+                final ITerm labelTerm = cons.getHead();
+                if(!unifier.isGround(labelTerm)) {
+                    throw Delay.ofVars(unifier.getVars(labelTerm));
+                }
+                final ITerm label = StatixTerms.label().match(labelTerm, unifier)
+                        .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(labelTerm)));
+                final IRegExpMatcher<ITerm> re = this.re.match(label);
+                if(re.isEmpty()) {
+                    return Optional.empty();
+                } else {
+                    return Optional.of(new MConstraintResult(state, new CPathMatch(re, cons.getTail(), cause)));
+                }
+            },
+            nil -> {
+                if(re.isAccepting()) {
+                    return Optional.of(new MConstraintResult(state));
                 } else {
                     return Optional.empty();
                 }

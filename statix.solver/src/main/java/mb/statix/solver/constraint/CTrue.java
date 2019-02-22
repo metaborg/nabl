@@ -9,9 +9,10 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Implementation for the true constraint.
@@ -45,8 +46,13 @@ public class CTrue implements IConstraint {
         return this;
     }
 
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) {
         return Optional.of(ConstraintResult.of(state));
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) {
+        return Optional.of(new MConstraintResult(state));
     }
 
     @Override public String toString(TermFormatter termToString) {

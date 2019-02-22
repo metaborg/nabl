@@ -6,7 +6,6 @@ import mb.statix.taico.util.IOwnable;
 /**
  * Interface to represent an ITerm that can be owned.
  */
-public interface IOwnableTerm extends IOwnable {
+public interface IOwnableTerm extends IOwnable, ITerm {
     
-    ITerm getTerm();
 }

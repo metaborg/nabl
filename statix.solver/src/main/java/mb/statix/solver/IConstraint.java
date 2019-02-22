@@ -16,6 +16,8 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.spec.Spec;
+import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MState;
 
 /**
  * Interface to represent a constraint.
@@ -64,6 +66,25 @@ public interface IConstraint {
      *      The exception contains the information about what information is required to solve.
      */
     Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
+    
+    /**
+     * Solves this constraint with mutable state.
+     * 
+     * @param state
+     *      mutable state
+     * @param params
+     *      
+     * @return
+     *      true is reduced, false if delayed
+     * 
+     * @throws InterruptedException
+     *      Optional exception that is thrown when solving this constraint is interrupted.
+     *      
+     * @throws Delay
+     *      If this constraint cannot be solved in the current state with the given context.
+     *      The exception contains the information about what information is required to solve.
+     */
+    Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws InterruptedException, Delay;
 
     /**
      * Converts this constraint to a string, where terms are formatted using the given term
