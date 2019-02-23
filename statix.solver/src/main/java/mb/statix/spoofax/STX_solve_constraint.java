@@ -44,12 +44,14 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
+import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverCoordinator;
 
 public class STX_solve_constraint extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
-    private static final boolean MODULES = true; 
+    private static final boolean MODULES = true;
+    private static final boolean DEBUG = true;
 
     @Inject public STX_solve_constraint() {
         super(STX_solve_constraint.class.getSimpleName(), 2);
@@ -65,7 +67,12 @@ public class STX_solve_constraint extends StatixPrimitive {
         final String levelString =
                 M.stringValue().match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected log level."));
         final @Nullable Level level = levelString.equalsIgnoreCase("None") ? null : Level.parse(levelString);
-        final IDebugContext debug = level != null ? new LoggerDebugContext(logger, level) : new NullDebugContext();
+        final IDebugContext debug;
+        if (DEBUG) {
+            debug = new LoggerDebugContext(logger, Level.Info);
+        } else {
+            debug = level != null ? new LoggerDebugContext(logger, level) : new NullDebugContext();
+        }
 
         final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
                 .tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
@@ -78,9 +85,10 @@ public class STX_solve_constraint extends StatixPrimitive {
         if (MODULES) {
 
             //TODO TAICO Determine ID from somewhere for this module
-            final IModule module = new Module("TOPLVL-MOD-PLACEHOLDER", spec);
+            final ModuleManager manager = new ModuleManager();
+            final IModule module = new Module(manager, "G", spec);
             final SolverCoordinator coordinator = new SolverCoordinator();
-            final MState state = new MState(coordinator, module, spec);
+            final MState state = new MState(manager, coordinator, module, spec);
             final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
             for(ITermVar var : vars_constraint._1()) {
                 final ITermVar nvar = state.freshVar(var.getName());

@@ -1,17 +1,18 @@
 package mb.statix.taico.module;
 
+import java.util.Map;
 import java.util.WeakHashMap;
 
 public class ModuleManager {
-    private static WeakHashMap<String, IModule> modules = new WeakHashMap<>();
+    private Map<String, IModule> modules = new WeakHashMap<>(); //TODO No longer has to be a weak hashmap?
     
-    private ModuleManager() {}
+    public ModuleManager() {}
     
-    public static synchronized IModule getModule(String id) {
+    public synchronized IModule getModule(String id) {
         return modules.get(id);
     }
     
-    public static synchronized void addModule(IModule module) {
+    public synchronized void addModule(IModule module) {
         final IModule old = modules.putIfAbsent(module.getId(), module);
         if (old == null) return;
         
@@ -22,7 +23,7 @@ public class ModuleManager {
         }
     }
     
-    public static synchronized void removeModule(IModule module) {
+    public synchronized void removeModule(IModule module) {
         modules.remove(module.getId());
     }
     
@@ -31,7 +32,7 @@ public class ModuleManager {
      * 
      * @param module
      */
-    public static synchronized void purgeModules(IModule module) {
+    public synchronized void purgeModules(IModule module) {
         modules.remove(module.getId());
         for (IModule child : module.getChildren()) {
             purgeModules(child);

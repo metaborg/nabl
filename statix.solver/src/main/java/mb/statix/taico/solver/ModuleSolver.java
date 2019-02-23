@@ -33,6 +33,7 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
+import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
@@ -42,7 +43,7 @@ public class ModuleSolver implements IOwnable {
     private MState state;
     private ModuleConstraintStore constraints;
     private MCompleteness completeness;
-    private IDebugContext debug;
+    private PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
     
     private Predicate1<ITermVar> isRigid;
@@ -59,10 +60,11 @@ public class ModuleSolver implements IOwnable {
     private int delays = 0;
     
     public static ModuleSolver topLevelSolver(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
-        return new ModuleSolver(null, state, constraints, new MCompleteness(), v -> false, s -> false, debug);
+        PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
+        return new ModuleSolver(null, state, constraints, new MCompleteness(), v -> false, s -> false, topDebug);
     }
     
-    private ModuleSolver(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, MCompleteness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, IDebugContext debug) {
+    private ModuleSolver(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, MCompleteness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, PrefixedDebugContext debug) {
         this.parent = parent;
         this.state = state;
         this.constraints = new ModuleConstraintStore(constraints, debug);
@@ -72,6 +74,8 @@ public class ModuleSolver implements IOwnable {
         this.isClosed = isClosed;
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
+        
+        state.setSolver(this);
     }
     
     /**
@@ -80,12 +84,16 @@ public class ModuleSolver implements IOwnable {
      * @param state
      *      the newly created state for this solver
      * @param constraints
+     *      the constraints to solve
      * @param isRigid
+     *      predicate to determine if term variables are rigid
      * @param isClosed
-     * @param debug
+     *      predicate to determine of scopes are closed
      * @return
+     *      the new solver
      */
-    public ModuleSolver childSolver(MState state, Iterable<IConstraint> constraints, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, IDebugContext debug) {
+    public ModuleSolver childSolver(MState state, Iterable<IConstraint> constraints, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed) {
+        PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         ModuleSolver solver = new ModuleSolver(this, state, constraints, new MCompleteness(), isRigid, isClosed, debug);
         
         this.state.coordinator().addSolver(solver);
@@ -203,7 +211,12 @@ public class ModuleSolver implements IOwnable {
             proxyDebug.commit();
         } catch(Delay d) {
             addTime(constraint, 1, delayCount, debug);
-            subDebug.info("Delayed");
+            if (!d.vars().isEmpty()) {
+                subDebug.info("Delayed on " + d.vars());
+            } else if (!d.criticalEdges().isEmpty()) {
+                subDebug.info("Delayed on " + d.criticalEdges());
+            }
+            
             delayedLog.absorb(proxyDebug.clear());
             entry.delay(d);
             delays += 1;
@@ -225,12 +238,12 @@ public class ModuleSolver implements IOwnable {
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         delayedLog.flush(debug);
-        debug.info("[{}] Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).",
-                getOwner().getId(), reductions, delays, failed.size(), constraints.delayedSize());
+        debug.info("Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).",
+                reductions, delays, failed.size(), constraints.delayedSize());
         logTimes("success", successCount, debug);
         logTimes("delay", delayCount, debug);
 
-        return SolverResult.of(null, completeness, failed, delayed);
+        return SolverResult.of(State.of(state.spec()), completeness, failed, delayed);
     }
 
     private void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
@@ -303,5 +316,10 @@ public class ModuleSolver implements IOwnable {
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
         return new UnifierFormatter(unifier, 3);
+    }
+    
+    @Override
+    public String toString() {
+        return "ModuleSolver<" + getOwner().getId() + ">";
     }
 }

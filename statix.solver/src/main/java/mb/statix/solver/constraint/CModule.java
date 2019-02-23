@@ -12,7 +12,6 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
@@ -22,9 +21,9 @@ public class CModule implements IConstraint {
     private final @Nullable IConstraint cause;
     private ModuleSolver solver;
     
-    public CModule(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, IDebugContext debug, @Nullable IConstraint cause) {
+    public CModule(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, @Nullable IConstraint cause) {
         this.cause = cause;
-        this.solver = parent.childSolver(state, constraints, v -> false, s -> false, debug);
+        this.solver = parent.childSolver(state, constraints, v -> false, s -> false);
     }
     
     private CModule(ModuleSolver solver, @Nullable IConstraint cause) {
@@ -58,13 +57,14 @@ public class CModule implements IConstraint {
 
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws InterruptedException, Delay {
-        if (solver.isDone()) {
-            return Optional.of(new MConstraintResult(state));
-        } else if (solver.hasFailed()) {
-            return Optional.empty();
-        } else {
-            throw Delay.of();
-        }
+        return Optional.of(new MConstraintResult(state));
+//        if (solver.isDone()) {
+//            return Optional.of(new MConstraintResult(state));
+//        } else if (solver.hasFailed()) {
+//            return Optional.empty();
+//        } else {
+//            throw Delay.of();
+//        }
         
         //TODO store solver state to as far as it gets.
         //TODO Solver state is important since we might be only able to solve this partially, with mutual dependencies with other modules

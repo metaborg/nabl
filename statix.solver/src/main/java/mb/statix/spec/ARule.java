@@ -18,7 +18,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
@@ -30,6 +29,9 @@ import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.IOwnableScope;
+import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MState;
 
 /**
@@ -164,20 +166,23 @@ public abstract class ARule {
     /**
      * Applies the given arguments to this rule.
      * 
+     * <p>The state returned by this method is the state of the child module if this rule is a
+     * module boundary. Otherwise, the given state is returned.</p>
+     * 
      * @param args
      *      the arguments to apply
      * @param state
      *      the current state
      * 
      * @return
-     *      a tuple with the new variables and the set of new constraints. If the
+     *      a tuple with the state, the new variables and the set of new constraints. If the
      *      arguments do not match the parameters, an empty optional is returned
      * 
      * @throws Delay
      *      If the arguments cannot be matched to the parameters of this rule because one or more
      *      terms are not ground.
      */
-    public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
+    public Optional<Tuple3<MState, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
@@ -185,6 +190,19 @@ public abstract class ARule {
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
             return Optional.empty();
         }
+        
+        if (isModuleBoundary()) {
+            //TODO Determine which arguments are scopes
+            io.usethesource.capsule.Set.Transient<IOwnableScope> canExtend = io.usethesource.capsule.Set.Transient.of();
+            for (ITerm term : args) {
+                OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
+                if (scope != null) canExtend.__insert(scope);
+            }
+            
+            IModule child = state.owner().createChild(canExtend.freeze());
+            state = new MState(state.manager(), state.coordinator(), child, state.spec());
+        }
+        
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {
             final ITermVar term = state.freshVar(var.getName());
@@ -193,7 +211,15 @@ public abstract class ARule {
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        return Optional.of(ImmutableTuple2.of(freshBodyVars.build(), newBody));
+        return Optional.of(ImmutableTuple3.of(state, freshBodyVars.build(), newBody));
+    }
+    
+    /**
+     * @return
+     *      true if this rule crosses a module boundary, false otherwise
+     */
+    public final boolean isModuleBoundary() {
+        return name().startsWith("modbound_");
     }
 
     /**

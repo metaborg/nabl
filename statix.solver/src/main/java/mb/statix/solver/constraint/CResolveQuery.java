@@ -196,7 +196,7 @@ public class CResolveQuery implements IConstraint {
         if(!unifier.isGround(scopeTerm)) {
             throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
-        final OwnableScope scope = OwnableScope.ownableMatcher(ModuleManager::getModule).match(scopeTerm, unifier)
+        final OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         try {

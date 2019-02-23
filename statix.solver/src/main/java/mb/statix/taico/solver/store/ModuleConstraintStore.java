@@ -53,6 +53,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         for (IConstraint constraint : stuckBecauseStuck) {
             active.add(constraint);
         }
+        stuckBecauseStuck.clear();
         progress = false;
     }
     

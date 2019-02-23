@@ -112,12 +112,12 @@ public class CTellEdge implements IConstraint {
         if(!unifier.isGround(targetTerm)) {
             throw Delay.ofVars(unifier.getVars(targetTerm));
         }
-        final OwnableScope source = OwnableScope.ownableMatcher(ModuleManager::getModule).match(sourceTerm, unifier).orElseThrow(
+        final OwnableScope source = OwnableScope.ownableMatcher(state.manager()::getModule).match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
         if(params.isClosed(source)) {
             return Optional.empty();
         }
-        final OwnableScope target = OwnableScope.ownableMatcher(ModuleManager::getModule).match(targetTerm, unifier).orElseThrow(
+        final OwnableScope target = OwnableScope.ownableMatcher(state.manager()::getModule).match(targetTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         state.scopeGraph().addEdge(source, label, target);
         return Optional.of(new MConstraintResult(state));

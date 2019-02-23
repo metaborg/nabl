@@ -2,8 +2,6 @@ package mb.statix.taico.module;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
@@ -20,6 +18,7 @@ import mb.statix.taico.scopegraph.ModuleScopeGraph;
 //TODO This would be a StatixModule or SGModule
 public class Module implements IModule {
     private final String id;
+    private final ModuleManager manager;
     private IModule parent;
     private Set<IModule> children = new HashSet<>();
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
@@ -36,11 +35,12 @@ public class Module implements IModule {
      * @param relations
      *      the labels on data edges of the scope graph
      */
-    public Module(String id, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
+    public Module(ModuleManager manager, String id, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
+        this.manager = manager;
         this.id = id;
         this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Immutable.of());
-        ModuleManager.addModule(this);
+        manager.addModule(this);
     }
     
     /**
@@ -51,11 +51,12 @@ public class Module implements IModule {
      * @param spec
      *      the spec
      */
-    public Module(String id, Spec spec) {
+    public Module(ModuleManager manager, String id, Spec spec) {
+        this.manager = manager;
         this.id = id;
         this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Immutable.of());
-        ModuleManager.addModule(this);
+        manager.addModule(this);
     }
     
     /**
@@ -66,10 +67,11 @@ public class Module implements IModule {
      * @param parent
      *      the parent module
      */
-    private Module(String id, IModule parent) {
+    private Module(ModuleManager manager, String id, IModule parent) {
+        this.manager = manager;
         this.id = id;
         this.parent = parent;
-        ModuleManager.addModule(this);
+        manager.addModule(this);
     }
 
     @Override
@@ -104,7 +106,7 @@ public class Module implements IModule {
     public synchronized Module createChild(io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend) {
         final String newId = generateNewChildId();
         
-        Module child = new Module(newId, this);
+        Module child = new Module(manager, newId, this);
         child.scopeGraph = new ModuleScopeGraph(child, scopeGraph.getLabels(), scopeGraph.getEndOfPath(), scopeGraph.getRelations(), canExtend);
         children.add(child);
         return child;
@@ -117,15 +119,7 @@ public class Module implements IModule {
      *      the new identifier
      */
     protected String generateNewChildId() {
-        Matcher matcher = Pattern.compile("(.*)\\_(\\d+)").matcher(id);
-        
-        final String newId;
-        if (matcher.matches()) {
-            newId = matcher.group(1) + "_" + (Integer.parseInt(matcher.group(2)) + 1);
-        } else {
-            newId = id + "_0";
-        }
-        return newId;
+        return id + "_" + children.size();
     }
     
     @Override

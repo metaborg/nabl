@@ -1,5 +1,6 @@
 package mb.statix.solver.constraint;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -18,8 +19,8 @@ import com.google.common.collect.Lists;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
@@ -32,8 +33,6 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -134,8 +133,6 @@ public class CUser implements IConstraint {
             final Set<IConstraint> instantiatedBody;
             final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl;
             try {
-                // TODO TAICO
-                // TODO Instantiate new solver here (If module boundary)
                 if((appl = rawRule.apply(args, state).orElse(null)) != null) {
                     instantiatedState = appl._1();
                     instantiatedBody = appl._3();
@@ -151,17 +148,6 @@ public class CUser implements IConstraint {
                 throw d;
             }
             
-//            if (isModuleBoundary()) {
-//                //TODO IMPORTANT Create new state
-//                State newState = State.of(instantiatedState.spec());
-//                Set<IConstraint> newConstraints = Collections.singleton(new CModule(instantiatedState, instantiatedBody, this));
-//                proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
-//                proxyDebug.info("Rule accepted");
-//                proxyDebug.commit();
-//                
-//                return Optional.of(ConstraintResult.ofConstraints(instantiatedState, newConstraints));
-//            }
-            
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
             return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
@@ -175,6 +161,30 @@ public class CUser implements IConstraint {
     public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params)
             throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();
+        
+        //--- Make the arguments ground if we are dealing with a module boundary
+        final List<ITerm> args;
+        if (isModuleBoundary()) {
+            final IUnifier.Immutable unifier = state.unifier();
+            args = new ArrayList<>();
+            for (ITerm term : this.args) {
+                if (!unifier.isGround(term)) {
+                    //TODO IMPORTANT Is this correct? How about a term where some of it's innards are unknown, but not all of them?
+                    throw Delay.ofVars(unifier.getVars(term));
+                }
+                
+                if (term instanceof ITermVar) {
+                    //TODO IMPOTANT try catch?
+                    ITerm actual = unifier.findRecursive(term);
+                    args.add(actual);
+                } else {
+                    args.add(term);
+                }
+            }
+        } else {
+            args = this.args;
+        }
+        
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
         final Iterator<Rule> it = rules.iterator();
@@ -187,11 +197,15 @@ public class CUser implements IConstraint {
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try rule {}", rawRule.toString());
             }
+            
             final Set<IConstraint> instantiatedBody;
-            final Tuple2<Set<ITermVar>, Set<IConstraint>> appl;
+            final Tuple3<MState, Set<ITermVar>, Set<IConstraint>> appl;
+            
+            final MState childState;
             try {
                 if((appl = rawRule.apply(args, state).orElse(null)) != null) {
-                    instantiatedBody = appl._2();
+                    childState = appl._1();
+                    instantiatedBody = appl._3();
                 } else {
                     proxyDebug.info("Rule rejected (mismatching arguments)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
@@ -205,13 +219,8 @@ public class CUser implements IConstraint {
             }
             
             if (isModuleBoundary()) {
-                //TODO Determine scopes from arguments to create canExtend set
                 //TODO Check if terms are ground (state.unifier().isGround(term))
-                io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend = io.usethesource.capsule.Set.Immutable.of();
-                
-                IModule child = state.owner().createChild(canExtend);
-                MState childState = new MState(state.coordinator(), child, state.spec());
-                Set<IConstraint> newConstraints = Collections.singleton(new CModule(state.solver(), childState, instantiatedBody, debug, this));
+                Set<IConstraint> newConstraints = Collections.singleton(new CModule(state.solver(), childState, instantiatedBody, this));
                 proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
                 proxyDebug.info("Rule accepted");
                 proxyDebug.commit();

@@ -82,11 +82,6 @@ public class OwnableScope extends Scope implements IOwnableScope {
         return "Scope<name: " + name + ", resource: " + resource + ", owner: " + owner + ">";
     }
     
-    @SuppressWarnings("unchecked")
-    public static IMatcher<Scope> matcher() {
-        return (IMatcher<Scope>) (IMatcher<? extends Scope>) ownableMatcher(ModuleManager::getModule);
-    }
-    
     public static IMatcher<OwnableScope> ownableMatcher(Function1<String,IModule> lookup) {
         //TODO Scopes used to be immutable, do we want to have them as mutable objects now?
         //TODO Ask Hendrik if this is okay

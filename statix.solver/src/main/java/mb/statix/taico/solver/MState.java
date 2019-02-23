@@ -11,11 +11,13 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.OwnableScope;
 
 public class MState {
+    private final ModuleManager manager;
     private final SolverCoordinator coordinator;
     private final IModule owner;
     private Spec spec;
@@ -31,7 +33,8 @@ public class MState {
     
     private ModuleSolver solver;
     
-    public MState(SolverCoordinator coordinator, IModule owner, Spec spec) {
+    public MState(ModuleManager manager, SolverCoordinator coordinator, IModule owner, Spec spec) {
+        this.manager = manager;
         this.coordinator = coordinator;
         this.owner = owner;
         this.spec = spec;
@@ -44,6 +47,10 @@ public class MState {
     
     public Spec spec() {
         return spec;
+    }
+    
+    public ModuleManager manager() {
+        return manager;
     }
     
     public SolverCoordinator coordinator() {

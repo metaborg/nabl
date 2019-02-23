@@ -87,7 +87,7 @@ public class CTermId implements IConstraint {
             throw Delay.ofVars(unifier.getVars(term));
         }
         final CEqual eq;
-        final Optional<OwnableScope> maybeScope = OwnableScope.ownableMatcher(ModuleManager::getModule).match(term, unifier);
+        final Optional<OwnableScope> maybeScope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term, unifier);
         if(maybeScope.isPresent()) {
             final OwnableScope scope = maybeScope.get();
             eq = new CEqual(idTerm, B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs()));
