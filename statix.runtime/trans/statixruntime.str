@@ -46,7 +46,7 @@ rules
   stx--editor-analyze(desugar|spec-name, init-constraint):
       (resource, ast) -> (ast', a, error*, warning*, note*)
     with spec := <stx--find-spec(|spec-name)>;
-         ast' := <desugar;nabl2--index-ast(|resource)> ast;
+         ast' := <desugar;stx--index-ast(|resource)> ast;
          C    := C(init-constraint, [<stx--explode> ast']);
          level := <stx--log-level>;
          (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
@@ -54,26 +54,30 @@ rules
 rules
 
   stx-editor-elaborate(desugar|spec-name, init-constraint):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast', a, error*, warning*, note*)
-    with (ast', a, error*, warning*, note*) :=
-             <stx--editor-elaborate(desugar|spec-name, init-constraint)> (resource, ast)
+      AnalyzeUnit(resource, ast) -> UnitResult(ast'', a, error*, warning*, note*)
+    with ast' := <desugar;stx--index-ast(|resource)> ast
+       ; (ast'', a, error*, warning*, note*) :=
+             <stx--evaluate(|spec-name, init-constraint)> [ast']
 
   stx-editor-elaborate(desugar|spec-name, init-constraint) =
     debug(!"stx-editor-elaborate "); fail
 
-  stx--editor-elaborate(desugar|spec-name, init-constraint):
-      (resource, ast) -> (ast'', a, error*, warning*, note*)
-    with spec := <stx--find-spec(|spec-name)>;
-         ast' := <desugar;nabl2--index-ast(|resource)> ast;
-         V    := Var("out");
-         C    := C(init-constraint, [<stx--explode> ast', V]);
-         level := <stx--log-level>;
-         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C);
-         ast'' := <substitute(stx--is-var);debug;stx--implode;debug> (a, V)
+  stx-evaluate(|spec-name, constraint): in* -> out
+    where (out, a, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
+
+  stx--evaluate(|spec-name, constraint):
+      in* -> (out, a, error*, warning*, note*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; T*    := <map(stx--explode)> in*
+       ; V     := Var("out")
+       ; C     := C(constraint, [T*, V])
+       ; level := <stx--log-level>
+       ; (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; out := <substitute(stx--is-var);stx--implode> (a, V)
 
 rules
 
-  stx--log-level = nabl2--is-debug-custom-enabled < !"Info" + !"None"
+  stx--log-level = stx--is-debug-custom-enabled < !"Info" + !"None"
 
   stx--find-spec(|name) =
     language-components;
@@ -89,10 +93,13 @@ rules
 
 rules
 
-  nabl2--index-ast(|source) =
+  stx-index-ast(|source) =
+    stx--index-ast(|source)
+
+  stx--index-ast(|source) =
     prim("SG_index_ast", source)
 
-  nabl2--is-debug-custom-enabled =
+  stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")
 
 rules
