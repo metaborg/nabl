@@ -16,6 +16,9 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.OwnableScope;
 
+/**
+ * Implementation of mutable state.
+ */
 public class MState {
     private final ModuleManager manager;
     private final SolverCoordinator coordinator;
@@ -24,12 +27,12 @@ public class MState {
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     
     private int varCounter;
-    private Set<ITermVar> vars = new HashSet<>();
+    private Set<ITermVar> vars;
     
     private int scopeCounter;
-    private Set<ITerm> scopes = new HashSet<>();
+    private Set<ITerm> scopes;
     
-    private IUnifier.Immutable unifier = PersistentUnifier.Immutable.of();
+    private volatile IUnifier.Immutable unifier;
     
     private ModuleSolver solver;
     
@@ -39,6 +42,25 @@ public class MState {
         this.owner = owner;
         this.spec = spec;
         this.scopeGraph = owner.getScopeGraph();
+        this.vars = new HashSet<>();
+        this.scopes = new HashSet<>();
+        this.unifier = PersistentUnifier.Immutable.of();
+    }
+    
+    private MState(MState orig) {
+        this.manager = orig.manager;
+        this.coordinator = orig.coordinator;
+        this.owner = orig.owner;
+        this.spec = orig.spec;
+        this.scopeGraph = orig.scopeGraph;
+        this.solver = orig.solver;
+        this.unifier = orig.unifier;
+        
+        //TODO CONCURRENT the copy needs to lock the old state in order to copy correctly.
+        this.scopeCounter = orig.scopeCounter;
+        this.scopes = new HashSet<>(orig.scopes);
+        this.varCounter = orig.varCounter;
+        this.vars = new HashSet<>(orig.vars);
     }
     
     public IModule owner() {
@@ -67,10 +89,10 @@ public class MState {
 
     // --- variables ---
 
-    public ITermVar freshVar(String base) {
+    public synchronized ITermVar freshVar(String base) {
         int i = ++varCounter;
-        String name = owner.getId().replaceAll("-", "_") + "_" + base.replaceAll("-", "_") + "-" + i;
-        ITermVar var = B.newVar("", name);
+        String name = base.replaceAll("-", "_") + "-" + i;
+        ITermVar var = B.newVar(owner.getId(), name);
         vars.add(var);
         return var;
     }
@@ -81,13 +103,14 @@ public class MState {
 
     // --- scopes ---
 
-    public ITerm freshScope(String base) {
-        int i = ++scopeCounter;
-        
-        String name = base.replaceAll("-", "_") + "-" + i;
-        ITerm scope = new OwnableScope(owner, name);
-        scopes.add(scope);
-        return scope;
+    public synchronized ITerm freshScope(String base) {
+        return scopeGraph.createScope(base);
+//        int i = ++scopeCounter;
+//        
+//        String name = base.replaceAll("-", "_") + "-" + i;
+//        ITerm scope = new OwnableScope(owner, name);
+//        scopes.add(scope);
+//        return scope;
     }
 
     public Set<ITerm> scopes() {
@@ -108,4 +131,17 @@ public class MState {
         return scopeGraph;
     }
 
+    // --- other ---
+    /**
+     * Creates a copy of this mutable state. The copy uses the same mutable scope graph, but all
+     * other aspects are cloned.
+     * 
+     * <p>Any modifications made directly on the clone will not end up in the original state.</p>
+     * 
+     * @return
+     *      a copy of this mutable state
+     */
+    public synchronized MState copy() {
+        return new MState(this);
+    }
 }

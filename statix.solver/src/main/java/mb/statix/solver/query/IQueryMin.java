@@ -9,6 +9,7 @@ import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.solver.query.IMQueryMin;
 
 /**
  * Interface to represent query min.
@@ -27,4 +28,11 @@ public interface IQueryMin {
 
     String toString(TermFormatter termToString);
 
+    /**
+     * Converts this query min to a mutable query min.
+     * 
+     * @return
+     *      the mutable copy of this query min
+     */
+    IMQueryMin toMutable();
 }

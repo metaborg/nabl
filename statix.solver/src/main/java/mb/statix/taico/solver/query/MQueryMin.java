@@ -1,37 +1,36 @@
-package mb.statix.solver.query;
+package mb.statix.taico.solver.query;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.solver.Completeness;
-import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
+import mb.statix.taico.solver.MCompleteness;
+import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.query.IMQueryMin;
-import mb.statix.taico.solver.query.MQueryMin;
 
-public class QueryMin implements IQueryMin {
+public class MQueryMin implements IMQueryMin {
 
     private final Rule pathConstraint;
     private final Rule dataConstraint;
 
-    public QueryMin(Rule pathConstraint, Rule dataConstraint) {
+    public MQueryMin(Rule pathConstraint, Rule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }
 
-    public IQueryMin apply(ISubstitution.Immutable subst) {
-        return new QueryMin(pathConstraint.apply(subst), dataConstraint.apply(subst));
+    public IMQueryMin apply(ISubstitution.Immutable subst) {
+        return new MQueryMin(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) {
-        return new ConstraintLabelOrder(pathConstraint, state, completeness, debug);
+    public LabelOrder<ITerm> getLabelOrder(MState state, MCompleteness completeness, IDebugContext debug) {
+        return new MConstraintLabelOrder(pathConstraint, state, completeness, debug);
     }
 
-    public DataLeq<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
-        return new ConstraintDataLeq(dataConstraint, state, completeness, debug);
+    public DataLeq<ITerm> getDataEquiv(MState state, MCompleteness completeness, IDebugContext debug) {
+        return new MConstraintDataLeq(dataConstraint, state, completeness, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -46,10 +45,4 @@ public class QueryMin implements IQueryMin {
     @Override public String toString() {
         return toString(ITerm::toString);
     }
-    
-    @Override
-    public IMQueryMin toMutable() {
-        return new MQueryMin(pathConstraint, dataConstraint);
-    }
-
 }

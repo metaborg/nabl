@@ -11,8 +11,10 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleManager;
 
+/**
+ * (Immutable) Scope implementation with an owner.
+ */
 public class OwnableScope extends Scope implements IOwnableScope {
     private final IModule owner;
     private final String resource;
@@ -83,8 +85,6 @@ public class OwnableScope extends Scope implements IOwnableScope {
     }
     
     public static IMatcher<OwnableScope> ownableMatcher(Function1<String,IModule> lookup) {
-        //TODO Scopes used to be immutable, do we want to have them as mutable objects now?
-        //TODO Ask Hendrik if this is okay
         return M.preserveAttachments(M.appl2("Scope", M.stringValue(), M.stringValue(),
                 (t, resource, name) -> new OwnableScope(lookup.apply(resource), name)));
     }

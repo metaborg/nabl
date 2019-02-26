@@ -4,7 +4,10 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Predicate1;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.ConstraintContext;
@@ -21,9 +24,9 @@ public class CModule implements IConstraint {
     private final @Nullable IConstraint cause;
     private ModuleSolver solver;
     
-    public CModule(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, @Nullable IConstraint cause) {
+    public CModule(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, @Nullable IConstraint cause) {
         this.cause = cause;
-        this.solver = parent.childSolver(state, constraints, v -> false, s -> false);
+        this.solver = parent.childSolver(state, constraints, isRigid, isClosed);
     }
     
     private CModule(ModuleSolver solver, @Nullable IConstraint cause) {
@@ -45,8 +48,8 @@ public class CModule implements IConstraint {
     
     @Override
     public CModule apply(ISubstitution.Immutable subst) {
-        //TODO TAICO we don't need to do anything here since this crosses a module boundary?
-        System.out.println("[MODULE] CModule constraint on which a substitution is being applied: " + subst);
+        //We don't need to do anything here since this crosses a module boundary.
+        System.err.println("[MODULE] CModule constraint on which a substitution is being applied: " + subst);
         return this;
     }
     

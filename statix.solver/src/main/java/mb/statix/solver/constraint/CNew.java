@@ -17,7 +17,6 @@ import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.taico.solver.MConstraintResult;
@@ -67,16 +66,15 @@ public class CNew implements IConstraint {
         return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
     }
     
-    @Override
-        public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) {
-            final List<IConstraint> constraints = Lists.newArrayList();
-            for(ITerm t : terms) {
-                final String base = M.var(ITermVar::getName).match(t).orElse("s");
-                ITerm ss = state.freshScope(base);
-                constraints.add(new CEqual(t, ss, this));
-            }
-            return Optional.of(MConstraintResult.ofConstraints(state, constraints));
+    @Override public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) {
+        final List<IConstraint> constraints = Lists.newArrayList();
+        for(ITerm t : terms) {
+            final String base = M.var(ITermVar::getName).match(t).orElse("s");
+            ITerm ss = state.freshScope(base);
+            constraints.add(new CEqual(t, ss, this));
         }
+        return Optional.of(MConstraintResult.ofConstraints(state, constraints));
+    }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();

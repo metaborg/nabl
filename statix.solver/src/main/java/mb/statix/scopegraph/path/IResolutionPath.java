@@ -7,7 +7,7 @@ import java.util.Optional;
  * Interface to represent a resolution path.
  *
  * @param <V>
- *      the type of scopes
+ *      the type of scopes and data
  * @param <L>
  *      the type of labels
  * @param <R>

@@ -1,20 +1,23 @@
-package mb.statix.scopegraph;
+package mb.statix.taico.scopegraph;
 
 import java.util.Set;
 
 import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.taico.util.IOwnable;
 
 /**
- * Interface to represent a particular name resolution.
+ * Interface to represent a particular name resolution algorithm.
  *
+ * @param <S>
+ *      the type of scopes
  * @param <V>
- *      the type of scopes and data
+ *      the type of data
  * @param <L>
  *      the type of edges
  * @param <R>
  *      the type of relations
  */
-public interface INameResolution<V, L, R> {
+public interface IMNameResolution<S extends IOwnable, V, L, R> {
 
     /**
      * Attempts to resolve a name in the given scope.
@@ -28,6 +31,6 @@ public interface INameResolution<V, L, R> {
      * @throws Exception
      *      If an error occurs during resolution.
      */
-    Set<IResolutionPath<V, L, R>> resolve(V scope) throws Exception;
+    Set<IResolutionPath<V, L, R>> resolve(S scope) throws Exception;
 
 }

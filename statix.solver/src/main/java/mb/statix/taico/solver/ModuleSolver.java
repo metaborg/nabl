@@ -22,12 +22,10 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.concurrent.solver.ConcurrentSolver;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
-import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
@@ -45,6 +43,7 @@ public class ModuleSolver implements IOwnable {
     private MCompleteness completeness;
     private PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
+    private boolean separateSolver;
     
     private Predicate1<ITermVar> isRigid;
     private Predicate1<ITerm> isClosed;
@@ -101,6 +100,34 @@ public class ModuleSolver implements IOwnable {
         return solver;
     }
     
+    /**
+     * Solves the given arguments separately from other solvers, in an isolated context.
+     * 
+     * @param state
+     * @param constraints
+     * @param completeness
+     * @param isRigid
+     * @param isClosed
+     * @param debug
+     * @return
+     * @throws InterruptedException
+     */
+    public static SolverResult solveSeparately(
+            MState state,
+            Iterable<IConstraint> constraints,
+            MCompleteness completeness,
+            Predicate1<ITermVar> isRigid,
+            Predicate1<ITerm> isClosed,
+            IDebugContext debug) throws InterruptedException {
+        PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
+        //TODO IMPORTANT TAICO Is this correct?
+        //TODO TAICO can this cross module boundaries?
+        ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness, isRigid, isClosed, debug2);
+        solver.separateSolver = true;
+        while (solver.solveStep());
+        return solver.finishSolver();
+    }
+    
     @Override
     public IModule getOwner() {
         return state.owner();
@@ -112,6 +139,23 @@ public class ModuleSolver implements IOwnable {
      */
     public ModuleSolver getParent() {
         return parent;
+    }
+    
+    public Predicate1<ITermVar> isRigid() {
+        return isRigid;
+    }
+    
+    public Predicate1<ITerm> isClosed() {
+        return isClosed;
+    }
+    
+    /**
+     * 
+     * @return
+     *      true if this solver is only solving entails, false otherwise
+     */
+    public boolean isSeparateSolver() {
+        return separateSolver;
     }
     
     /**
@@ -178,6 +222,7 @@ public class ModuleSolver implements IOwnable {
         }
         try {
             final Optional<MConstraintResult> maybeResult;
+            //TODO TAICO Freeze the completeness
             maybeResult =
                     constraint.solveMutable(state, new ConstraintContext(completeness.freeze(), isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
@@ -264,21 +309,27 @@ public class ModuleSolver implements IOwnable {
         debug.info("# ----- {} -----", "-");
     }
 
-    public Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
-            final Completeness completeness, final IDebugContext debug) throws InterruptedException, Delay {
+    public static Optional<SolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
+            final MCompleteness completeness, final IDebugContext debug) throws InterruptedException, Delay {
         return entails(state, constraints, completeness, ImmutableSet.of(), debug);
     }
 
-    public Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
-            final Completeness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
+    public static Optional<SolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
+            final MCompleteness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
+        System.err.println("Running entailment check with modularized solver on entire scope graph of module " + state.owner().getId());
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
         }
         final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
         final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
-        final SolverResult result = Solver.solve(state, constraints, completeness, rigidVars::contains,
-                state.scopes()::contains, debug.subContext());
+        PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
+        //TODO IMPORTANT TAICO Is this correct?
+        //TODO TAICO can this cross module boundaries?
+        ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness, rigidVars::contains, state.scopes()::contains, debug2);
+        solver.separateSolver = true;
+        while (solver.solveStep());
+        final SolverResult result = solver.finishSolver();
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
             return Optional.empty();

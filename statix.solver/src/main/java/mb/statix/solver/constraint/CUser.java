@@ -160,6 +160,10 @@ public class CUser implements IConstraint {
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params)
             throws InterruptedException, Delay {
+        if (state.solver().isSeparateSolver() && isModuleBoundary()) {
+            System.err.println("Separated solver reaching module boundary!!!!");
+            throw new AAAAAAAAAAAAAAException("AAAAAAAAAAAAAAAAAAAAAAAAAA");
+        }
         final IDebugContext debug = params.debug();
         
         //--- Make the arguments ground if we are dealing with a module boundary
@@ -220,7 +224,8 @@ public class CUser implements IConstraint {
             
             if (isModuleBoundary()) {
                 //TODO Check if terms are ground (state.unifier().isGround(term))
-                Set<IConstraint> newConstraints = Collections.singleton(new CModule(state.solver(), childState, instantiatedBody, this));
+                Set<IConstraint> newConstraints = Collections.singleton(
+                        new CModule(state.solver(), childState, instantiatedBody, state.solver().isRigid(), state.solver().isClosed(), this));
                 proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
                 proxyDebug.info("Rule accepted");
                 proxyDebug.commit();

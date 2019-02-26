@@ -1,5 +1,11 @@
 package mb.statix.scopegraph.path;
 
+/**
+ * @param <V>
+ *      the type of scopes
+ * @param <L>
+ *      the type of labels
+ */
 public interface IScopePath<V, L>
         extends IPath<V, L>, Iterable<IStep<V, L>> {
 

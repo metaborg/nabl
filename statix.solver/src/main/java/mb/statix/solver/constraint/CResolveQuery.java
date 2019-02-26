@@ -36,11 +36,14 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
-import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.scopegraph.reference.MFastNameResolution;
 import mb.statix.taico.solver.MCompleteness;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.query.IMQueryFilter;
+import mb.statix.taico.solver.query.IMQueryMin;
 
 /**
  * Implementation for a query constraint.
@@ -193,6 +196,7 @@ public class CResolveQuery implements IConstraint {
         }
 
         final IUnifier.Immutable unifier = state.unifier();
+        //TODO TAICO We might be trying to query a scope that is not ours, will our unifier still call it ground?
         if(!unifier.isGround(scopeTerm)) {
             throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
@@ -202,7 +206,7 @@ public class CResolveQuery implements IConstraint {
         try {
             final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
             final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
-                if(((MCompleteness) params.completeness()).isComplete(s, l, state)) {
+                if(params.completeness().melt().isComplete(s, l, state)) {
                     subDebug.info("{} complete in {}", s, l);
                     return true;
                 } else {
@@ -210,44 +214,42 @@ public class CResolveQuery implements IConstraint {
                     return false;
                 }
             };
+            IMQueryFilter filter = this.filter.toMutable();
+            IMQueryMin min = this.min.toMutable();
             //TODO TAICO fix queries
-//            // @formatter:off
-//            final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
-//                    .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
-//                    .withDataWF(filter(type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
-//                    .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
-//                    .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
-//                    .withEdgeComplete(isComplete)
-//                    .withDataComplete(isComplete)
-//                    .build(state.scopeGraph(), relation);
-//            // @formatter:on
-//            final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
-//            final List<ITerm> pathTerms;
-//            if(relation.isPresent()) {
-//                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-//                        .collect(Collectors.toList());
-//            } else {
-//                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
-//            }
-//            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-//            return Optional.of(MConstraintResult.ofConstraints(state, C));
-              return Optional.of(new MConstraintResult(state));
-        } catch (Exception ex) {
-            throw ex;
+            // @formatter:off
+            final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
+                    .withLabelWF(filter.getLabelWF(state, params.completeness().melt(), subDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, params.completeness().melt(), subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, params.completeness().melt(), subDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness().melt(), subDebug), subDebug))
+                    .withEdgeComplete(isComplete)
+                    .withDataComplete(isComplete)
+                    .build(state.scopeGraph(), relation);
+            // @formatter:on
+            final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            final List<ITerm> pathTerms;
+            if(relation.isPresent()) {
+                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
+                        .collect(Collectors.toList());
+            } else {
+                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
+            }
+            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
+            return Optional.of(MConstraintResult.ofConstraints(state, C));
+        } catch(IncompleteDataException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
+        } catch(IncompleteEdgeException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
+        } catch(ResolutionDelayException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw e.getCause();
+        } catch(ResolutionException e) {
+            params.debug().info("Query resolution failed: {}", e.getMessage());
+            return Optional.empty();
         }
-//        catch(IncompleteDataException e) {
-//            params.debug().info("Query resolution delayed: {}", e.getMessage());
-//            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
-//        } catch(IncompleteEdgeException e) {
-//            params.debug().info("Query resolution delayed: {}", e.getMessage());
-//            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
-//        } catch(ResolutionDelayException e) {
-//            params.debug().info("Query resolution delayed: {}", e.getMessage());
-//            throw e.getCause();
-//        } catch(ResolutionException e) {
-//            params.debug().info("Query resolution failed: {}", e.getMessage());
-//            return Optional.empty();
-//        }
     }
 
     private DataWF<ITerm> filter(Type type, DataWF<ITerm> filter, IDebugContext debug) {

@@ -2,6 +2,12 @@ package mb.statix.scopegraph.reference;
 
 import java.util.List;
 
+/**
+ * @author taico
+ *
+ * @param <V>
+ *      the type of data
+ */
 public interface DataWF<V> {
 
     boolean wf(List<V> d) throws ResolutionException, InterruptedException;
