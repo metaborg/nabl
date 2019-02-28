@@ -34,6 +34,7 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.ISolverResult;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
@@ -79,7 +80,7 @@ public class STX_solve_constraint extends StatixPrimitive {
                         (t, vs, c) -> ImmutableTuple2.of(vs, c))
                 .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
 
-        final SolverResult resultConfig;
+        final ISolverResult resultConfig;
         final ISubstitution.Immutable isubst;
         final IUnifier.Immutable unifier;
         if (MODULES) {
@@ -100,7 +101,7 @@ public class STX_solve_constraint extends StatixPrimitive {
                     vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
             
             try {
-                resultConfig = coordinator.solve(state, constraints, debug).toSolverResult();
+                resultConfig = coordinator.solve(state, constraints, debug);
             } catch(InterruptedException e) {
                 throw new InterpreterException(e);
             }
@@ -118,12 +119,13 @@ public class STX_solve_constraint extends StatixPrimitive {
             isubst = subst.freeze();
             final Set<IConstraint> constraints =
                     vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+            SolverResult resultConfig2;
             try {
-                resultConfig = Solver.solve(state, constraints, new Completeness(), debug);
+                resultConfig = resultConfig2 = Solver.solve(state, constraints, new Completeness(), debug);
             } catch(InterruptedException e) {
                 throw new InterpreterException(e);
             }
-            final State resultState = resultConfig.state();
+            final State resultState = resultConfig2.state();
             unifier = resultState.unifier();
         }
 

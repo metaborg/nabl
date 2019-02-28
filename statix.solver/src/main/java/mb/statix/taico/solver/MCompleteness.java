@@ -70,6 +70,11 @@ public class MCompleteness implements IOwnable {
     }
     
     public boolean isComplete(ITerm scope, ITerm label, MState state) {
+        if (state.owner() != owner) {
+            throw new IllegalArgumentException("isComplete request with state of " + state.owner() + " redirected to completeness of " + owner);
+        }
+        
+        //TODO Do we need to use unifiers of other states as well?
         final IUnifier unifier = state.unifier();
         final Predicate2<ITerm, ITerm> equal = (t1, t2) -> {
             return t2.equals(label) && unifier.areEqual(t1, scope).orElse(false /* (1) */);
@@ -81,65 +86,84 @@ public class MCompleteness implements IOwnable {
         
         if (scope instanceof IOwnable) {
             System.err.println("Scope is ownable!");
+        } else {
+            System.err.println("Scope is not ownable!");
         }
         
         OwnableScope oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier).orElse(null);
         if (oscope == null) {
             System.err.println("Cannot turn scope " + scope + " into ownable scope via matcher!");
+            return isCompleteFinal(equal);
         } else if (oscope.getOwner() == state.owner()) {
+            System.err.println("Completeness of " + owner + " got isComplete query from matching owner: " + scope);
             //Transitive
-            oscope.getOwner();
+            return isCompleteFinal(equal);
         } else {
+            System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + oscope.getOwner() + ". Redirecting there");
             //TODO CONCURRENCY This is a concurrency problem, delegation to solvers
-            oscope.getOwner().getCurrentState().solver().getCompleteness().isComplete(oscope, label, state);
+            MCompleteness target = oscope.getOwner().getCurrentState().solver().getCompleteness();
+            return target.isCompleteFinal(equal);
         }
-        
-        //TODO TAICO SPEC is used for determining CRITICALEDGES
-        return incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(state.spec())))
-                .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
     }
     
-    public boolean isCompleteFinal(ITerm scope, ITerm label, MState state, IUnifier unifier) {
+    /**
+     * Determines if the terms matching the given predicate are complete according to the view of
+     * this completeness.
+     * 
+     * @param equal
+     *      the predicate to determine which terms we should match 
+     * @return
+     *      true if these terms are complete, false otherwise 
+     */
+    public boolean isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
+        System.err.println("Completeness of " + owner + " got isCompleteFinal query");
+        //Ask children
+        for (MCompleteness child : children) {
+            if (!child.isCompleteFinal(equal)) {
+                System.err.println("Completeness of " + owner + " result: (child) false");
+                return false;
+            }
+        }
         
+        //TODO OPTIMIZATION point
+        //Use passed spec instead?
+        boolean tbr = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))
+                .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
+        System.err.println("Completeness of " + owner + " result: " + tbr);
+        return tbr;
     }
 
     public MCompleteness add(IConstraint constraint) {
         incomplete.add(constraint);
-        frozen = null;
         return this;
     }
     
     public MCompleteness addAll(Iterable<IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             incomplete.add(constraint);
-            frozen = null;
         }
         return this;
     }
     
     public MCompleteness addAll(Collection<IConstraint> constraints) {
         incomplete.addAll(constraints);
-        frozen = null;
         return this;
     }
 
     public MCompleteness remove(IConstraint constraint) {
         incomplete.remove(constraint);
-        frozen = null;
         return this;
     }
 
     public MCompleteness removeAll(Iterable<IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             incomplete.remove(constraint);
-            frozen = null;
         }
         return this;
     }
     
     public MCompleteness removeAll(Collection<IConstraint> constraints) {
         incomplete.removeAll(constraints);
-        frozen = null;
         return this;
     }
     
