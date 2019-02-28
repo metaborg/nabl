@@ -18,6 +18,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -89,7 +90,7 @@ public class CEqual implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
         IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {

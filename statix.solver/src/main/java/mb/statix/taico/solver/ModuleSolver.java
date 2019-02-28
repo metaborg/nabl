@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
@@ -22,12 +23,13 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.concurrent.solver.ConcurrentSolver;
-import mb.statix.solver.ConstraintContext;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IConstraintStore.Entry;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
+import mb.statix.solver.IConstraintStore.Entry;
+import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -60,7 +62,8 @@ public class ModuleSolver implements IOwnable {
     
     public static ModuleSolver topLevelSolver(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
-        return new ModuleSolver(null, state, constraints, new MCompleteness(), v -> false, s -> false, topDebug);
+        MCompleteness completeness = MCompleteness.topLevelCompleteness(state.owner());
+        return new ModuleSolver(null, state, constraints, completeness, v -> false, s -> false, topDebug);
     }
     
     private ModuleSolver(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, MCompleteness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, PrefixedDebugContext debug) {
@@ -93,7 +96,8 @@ public class ModuleSolver implements IOwnable {
      */
     public ModuleSolver childSolver(MState state, Iterable<IConstraint> constraints, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
-        ModuleSolver solver = new ModuleSolver(this, state, constraints, new MCompleteness(), isRigid, isClosed, debug);
+        MCompleteness childCompleteness = completeness.createChild(state.owner());
+        ModuleSolver solver = new ModuleSolver(this, state, constraints, childCompleteness, isRigid, isClosed, debug);
         
         this.state.coordinator().addSolver(solver);
         
@@ -112,7 +116,7 @@ public class ModuleSolver implements IOwnable {
      * @return
      * @throws InterruptedException
      */
-    public static SolverResult solveSeparately(
+    public static MSolverResult solveSeparately(
             MState state,
             Iterable<IConstraint> constraints,
             MCompleteness completeness,
@@ -147,6 +151,10 @@ public class ModuleSolver implements IOwnable {
     
     public Predicate1<ITerm> isClosed() {
         return isClosed;
+    }
+    
+    public MCompleteness getCompleteness() {
+        return completeness;
     }
     
     /**
@@ -224,7 +232,7 @@ public class ModuleSolver implements IOwnable {
             final Optional<MConstraintResult> maybeResult;
             //TODO TAICO Freeze the completeness
             maybeResult =
-                    constraint.solveMutable(state, new ConstraintContext(completeness.freeze(), isRigid, isClosed, subDebug));
+                    constraint.solveMutable(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
             entry.remove();
             completeness.remove(constraint);
@@ -275,7 +283,7 @@ public class ModuleSolver implements IOwnable {
      * @return
      * @throws InterruptedException
      */
-    public SolverResult finishSolver() throws InterruptedException {
+    public MSolverResult finishSolver() throws InterruptedException {
         // invariant: there should be no remaining active constraints
         if(constraints.activeSize() > 0) {
             debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
@@ -288,7 +296,7 @@ public class ModuleSolver implements IOwnable {
         logTimes("success", successCount, debug);
         logTimes("delay", delayCount, debug);
 
-        return SolverResult.of(State.of(state.spec()), completeness, failed, delayed);
+        return MSolverResult.of(state, completeness, failed, delayed);
     }
 
     private void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
@@ -309,12 +317,12 @@ public class ModuleSolver implements IOwnable {
         debug.info("# ----- {} -----", "-");
     }
 
-    public static Optional<SolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
+    public static Optional<MSolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
             final MCompleteness completeness, final IDebugContext debug) throws InterruptedException, Delay {
         return entails(state, constraints, completeness, ImmutableSet.of(), debug);
     }
 
-    public static Optional<SolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
+    public static Optional<MSolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
             final MCompleteness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
         System.err.println("Running entailment check with modularized solver on entire scope graph of module " + state.owner().getId());
@@ -329,7 +337,7 @@ public class ModuleSolver implements IOwnable {
         ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness, rigidVars::contains, state.scopes()::contains, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
-        final SolverResult result = solver.finishSolver();
+        final MSolverResult result = solver.finishSolver();
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
             return Optional.empty();
@@ -363,6 +371,38 @@ public class ModuleSolver implements IOwnable {
             sb.append(constraint.toString(ModuleSolver.shallowTermFormatter(unifier)));
         }
         return sb.toString();
+    }
+    
+    @Value.Immutable
+    public static abstract class AMSolverResult implements ISolverResult {
+
+        @Value.Parameter public abstract MState state();
+
+        @Value.Parameter public abstract MCompleteness completeness();
+
+        @Value.Parameter public abstract Set<IConstraint> errors();
+
+        
+//        public boolean hasErrors() {
+//            return !errors().isEmpty();
+//        }
+
+        @Value.Parameter public abstract Map<IConstraint, Delay> delays();
+
+//        public Delay delay() {
+//            ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
+//            ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
+//            delays().values().stream().forEach(d -> {
+//                vars.addAll(d.vars());
+//                scopes.addAll(d.criticalEdges());
+//            });
+//            return new Delay(vars.build(), scopes.build());
+//        }
+        
+        @SuppressWarnings("deprecation")
+        public SolverResult toSolverResult() {
+            return SolverResult.of(State.of(state().spec()), completeness().toCompleteness(), errors(), delays());
+        }
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {

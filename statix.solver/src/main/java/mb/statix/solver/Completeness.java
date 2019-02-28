@@ -15,7 +15,6 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.taico.solver.MCompleteness;
 
 public class Completeness {
 
@@ -64,15 +63,6 @@ public class Completeness {
                     Scope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
-    }
-    
-    /**
-     * Melts this immutable completeness to a mutable completeness.
-     * 
-     * @return
-     */
-    public MCompleteness melt() {
-        return new MCompleteness(incomplete);
     }
 
 }

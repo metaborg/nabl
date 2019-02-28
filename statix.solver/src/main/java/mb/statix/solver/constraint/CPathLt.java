@@ -15,6 +15,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -104,7 +105,7 @@ public class CPathLt implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(label1Term))) {
             throw Delay.ofVars(unifier.getVars(label1Term));

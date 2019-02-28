@@ -15,6 +15,7 @@ import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
@@ -59,7 +60,7 @@ public class CModule implements IConstraint {
     }
 
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws InterruptedException, Delay {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws InterruptedException, Delay {
         return Optional.of(new MConstraintResult(state));
 //        if (solver.isDone()) {
 //            return Optional.of(new MConstraintResult(state));

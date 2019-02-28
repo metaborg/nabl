@@ -26,6 +26,7 @@ import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -145,7 +146,7 @@ public class CTellRel implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
             params.debug().error("Ignoring data for unknown relation {}", relation);

@@ -20,8 +20,8 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spec.Spec;
-import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -103,7 +103,7 @@ public class CTellEdge implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
         //Modifies the scope graph
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {

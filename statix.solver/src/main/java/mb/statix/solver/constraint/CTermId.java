@@ -18,8 +18,8 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.spoofax.StatixTerms;
-import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -81,7 +81,7 @@ public class CTermId implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
             throw Delay.ofVars(unifier.getVars(term));

@@ -33,6 +33,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -158,7 +159,7 @@ public class CUser implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params)
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
         if (state.solver().isSeparateSolver() && isModuleBoundary()) {
             System.err.println("Separated solver reaching module boundary!!!!");
@@ -223,7 +224,7 @@ public class CUser implements IConstraint {
             }
             
             if (isModuleBoundary()) {
-                //TODO Check if terms are ground (state.unifier().isGround(term))
+                //TODO Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
                 Set<IConstraint> newConstraints = Collections.singleton(
                         new CModule(state.solver(), childState, instantiatedBody, state.solver().isRigid(), state.solver().isClosed(), this));
                 proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);

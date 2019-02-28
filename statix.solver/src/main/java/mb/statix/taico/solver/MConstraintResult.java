@@ -41,6 +41,7 @@ public class MConstraintResult {
     }
     
     public MState state() {
+        //TODO Remove
         return this.state;
     }
 

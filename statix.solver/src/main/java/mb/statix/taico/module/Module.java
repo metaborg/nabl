@@ -11,6 +11,7 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
+import mb.statix.taico.solver.MState;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.
@@ -22,6 +23,7 @@ public class Module implements IModule {
     private IModule parent;
     private Set<IModule> children = new HashSet<>();
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
+    private MState state;
     
     /**
      * Creates a new top level module.
@@ -100,6 +102,17 @@ public class Module implements IModule {
     @Override
     public IMInternalScopeGraph<IOwnableTerm,  ITerm, ITerm, ITerm> getScopeGraph() {
         return scopeGraph;
+    }
+    
+    @Override
+    public MState getCurrentState() {
+        return state;
+    }
+    
+    @Override
+    public void setCurrentState(MState state) {
+        if (this.state != null) throw new IllegalStateException("The state of module " + id + " is already set");
+        this.state = state;
     }
 
     @Override

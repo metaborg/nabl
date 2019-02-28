@@ -100,7 +100,7 @@ public class STX_solve_constraint extends StatixPrimitive {
                     vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
             
             try {
-                resultConfig = coordinator.solve(state, constraints, debug);
+                resultConfig = coordinator.solve(state, constraints, debug).toSolverResult();
             } catch(InterruptedException e) {
                 throw new InterpreterException(e);
             }

@@ -13,21 +13,19 @@ import org.metaborg.util.log.Level;
 
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.taico.module.IModule;
 
 public class SolverCoordinator {
     private final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
-    private final Map<IModule, SolverResult> results = Collections.synchronizedMap(new HashMap<>());
+    private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
     private ModuleSolver root;
     private MState rootState;
     
     public SolverCoordinator() {}
     
-    public SolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug)
+    public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug)
         throws InterruptedException {
         rootState = state;
         root = ModuleSolver.topLevelSolver(state, constraints, debug);
@@ -115,7 +113,7 @@ public class SolverCoordinator {
             lazyDebug.commit();
         }
         
-        SolverResult result = aggregateResults();
+        MSolverResult result = aggregateResults();
         
         return result;
     }
@@ -126,14 +124,14 @@ public class SolverCoordinator {
      * @return
      *      the aggregated results
      */
-    public SolverResult aggregateResults() {
+    public MSolverResult aggregateResults() {
         Set<IConstraint> errors = new LinkedHashSet<>();
         Map<IConstraint, Delay> delays = new LinkedHashMap<>();
-        for (Entry<IModule, SolverResult> result : results.entrySet()) {
+        for (Entry<IModule, MSolverResult> result : results.entrySet()) {
             errors.addAll(result.getValue().errors());
             delays.putAll(result.getValue().delays());
         }
-        return SolverResult.of(State.of(rootState.spec()), new MCompleteness(), errors, delays);
+        return MSolverResult.of(rootState, rootState.solver().getCompleteness(), errors, delays);
     }
     
     /**
@@ -149,7 +147,7 @@ public class SolverCoordinator {
         
         debug.info("[Coordinator] Finished modules:");
         IDebugContext sub = debug.subContext();
-        for (Entry<IModule, SolverResult> entry : results.entrySet()) {
+        for (Entry<IModule, MSolverResult> entry : results.entrySet()) {
             sub.info(entry.getKey().getId());
         }
         

@@ -11,6 +11,7 @@ import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -54,7 +55,7 @@ public class CFalse implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) {
+    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) {
         return Optional.empty();
     }
 

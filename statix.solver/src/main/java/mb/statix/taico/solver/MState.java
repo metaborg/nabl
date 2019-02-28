@@ -14,7 +14,6 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableTerm;
-import mb.statix.taico.scopegraph.OwnableScope;
 
 /**
  * Implementation of mutable state.
@@ -45,6 +44,8 @@ public class MState {
         this.vars = new HashSet<>();
         this.scopes = new HashSet<>();
         this.unifier = PersistentUnifier.Immutable.of();
+        
+        owner.setCurrentState(this);
     }
     
     private MState(MState orig) {
@@ -105,12 +106,6 @@ public class MState {
 
     public synchronized ITerm freshScope(String base) {
         return scopeGraph.createScope(base);
-//        int i = ++scopeCounter;
-//        
-//        String name = base.replaceAll("-", "_") + "-" + i;
-//        ITerm scope = new OwnableScope(owner, name);
-//        scopes.add(scope);
-//        return scope;
     }
 
     public Set<ITerm> scopes() {

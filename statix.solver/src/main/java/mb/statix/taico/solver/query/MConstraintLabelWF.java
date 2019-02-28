@@ -19,20 +19,16 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Rule;
 import mb.statix.taico.solver.MCompleteness;
+import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
 
@@ -81,7 +77,8 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
         
         //TODO IMPORTANT TAICO redirect this to the correct solvers?
-        final SolverResult result = ModuleSolver.solveSeparately(newState, constraints, completeness, isRigid, isClosed, debug.subContext());
+        MCompleteness ncompleteness = completeness.copy();
+        final MSolverResult result = ModuleSolver.solveSeparately(newState, constraints, ncompleteness, isRigid, isClosed, debug.subContext());
         if(result.hasErrors()) {
             if(debug.isEnabled(Level.Info)) {
                 debug.info("Cannot step {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
@@ -95,7 +92,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
                 }
                 final Set<IConstraint> newConstraints = result.delays().keySet();
                 return Optional.of(new MConstraintLabelWF(newConstraints, newState, rigidVars, closedScopes,
-                        result.completeness().melt(), debug, labels, newTail));
+                        ncompleteness, debug, labels, newTail));
             } else { // stuck on the context
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Stepping {} after {} delayed", newUnifier.toString(l), newUnifier.toString(labels));
@@ -123,8 +120,9 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         
         final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v);
         final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
-        final SolverResult result =
-                ModuleSolver.solveSeparately(newState, constraints, completeness, isRigid, isClosed, debug.subContext());
+        //TODO Fix solver result
+        final MSolverResult result =
+                ModuleSolver.solveSeparately(newState, constraints, completeness.copy(), isRigid, isClosed, debug.subContext());
         if(result.hasErrors()) {
             if(debug.isEnabled(Level.Info)) {
                 debug.info("Not well-formed {}", newUnifier.toString(labels));

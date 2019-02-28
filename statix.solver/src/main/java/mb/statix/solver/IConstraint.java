@@ -16,6 +16,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.spec.Spec;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -54,6 +55,7 @@ public interface IConstraint {
      * @param state
      *            -- monotonic from one call to the next
      * @param params
+     *      the context containing info about completeness, rigid and closed as well as debug
      * 
      * @return
      *      true is reduced, false if delayed
@@ -73,6 +75,7 @@ public interface IConstraint {
      * @param state
      *      mutable state
      * @param params
+     *      the context containing info about completeness, rigid and closed as well as debug
      *      
      * @return
      *      true is reduced, false if delayed
@@ -84,7 +87,7 @@ public interface IConstraint {
      *      If this constraint cannot be solved in the current state with the given context.
      *      The exception contains the information about what information is required to solve.
      */
-    Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) throws InterruptedException, Delay;
+    Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws InterruptedException, Delay;
 
     /**
      * Converts this constraint to a string, where terms are formatted using the given term

@@ -19,6 +19,7 @@ import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
+import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
@@ -66,7 +67,7 @@ public class CNew implements IConstraint {
         return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
     }
     
-    @Override public Optional<MConstraintResult> solveMutable(MState state, ConstraintContext params) {
+    @Override public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) {
         final List<IConstraint> constraints = Lists.newArrayList();
         for(ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");

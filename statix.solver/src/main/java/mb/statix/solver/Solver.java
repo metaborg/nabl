@@ -21,7 +21,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -217,7 +216,7 @@ public class Solver {
     }
 
     @Value.Immutable
-    public static abstract class ASolverResult {
+    public static abstract class ASolverResult implements ISolverResult {
 
         @Value.Parameter public abstract State state();
 
@@ -225,22 +224,7 @@ public class Solver {
 
         @Value.Parameter public abstract Set<IConstraint> errors();
 
-        public boolean hasErrors() {
-            return !errors().isEmpty();
-        }
-
         @Value.Parameter public abstract Map<IConstraint, Delay> delays();
-
-        public Delay delay() {
-            ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-            ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
-            delays().values().stream().forEach(d -> {
-                vars.addAll(d.vars());
-                scopes.addAll(d.criticalEdges());
-            });
-            return new Delay(vars.build(), scopes.build());
-        }
-
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {

@@ -79,7 +79,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     
     @Override
     public java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label) {
-        return data.get(scope, label);
+        if (scope.getOwner() == this.owner) {
+            return getTransitiveData(scope, label);
+        } else {
+            return scope.getOwner().getScopeGraph().getData(scope, label);
+        }
     }
     
     @Override
@@ -88,6 +92,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         // TODO relevant for dependency determination?
         java.util.Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>();
         set.addAll(edges.get(scope, label));
+        //TODO Use the canExtend set to only build this for our children.
         for (IModule child : owner.getChildren()) {
             set.addAll(child.getScopeGraph().getTransitiveEdges(scope, label));
         }

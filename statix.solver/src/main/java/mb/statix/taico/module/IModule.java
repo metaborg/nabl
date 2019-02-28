@@ -8,6 +8,7 @@ import mb.statix.taico.paths.IQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
+import mb.statix.taico.solver.MState;
 
 /**
  * Interface to represent a module.
@@ -40,4 +41,21 @@ public interface IModule {
      *      the child
      */
     IModule createChild(io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend);
+    
+    /**
+     * @return
+     *      the state of this module
+     */
+    MState getCurrentState();
+    
+    /**
+     * Method used once when a module state has been constructed.
+     * 
+     * @param state
+     *      the state of this module
+     *      
+     * @throws IllegalStateException
+     *      If the state of this module has already been set.
+     */
+    void setCurrentState(MState state);
 }
