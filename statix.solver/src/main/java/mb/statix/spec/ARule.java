@@ -3,6 +3,7 @@ package mb.statix.spec;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +19,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
@@ -33,6 +35,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MState;
+import mb.statix.util.Capsules;
 
 /**
  * Class which describes a statix rule.
@@ -166,8 +169,47 @@ public abstract class ARule {
     /**
      * Applies the given arguments to this rule.
      * 
-     * <p>The state returned by this method is the state of the child module if this rule is a
-     * module boundary. Otherwise, the given state is returned.</p>
+     * @param args
+     *      the arguments to apply
+     * @param state
+     *      the current state
+     * 
+     * @return
+     *      a tuple with the state, the new variables and the set of new constraints. If the
+     *      arguments do not match the parameters, an empty optional is returned
+     * 
+     * @throws Delay
+     *      If the arguments cannot be matched to the parameters of this rule because one or more
+     *      terms are not ground.
+     * @throws IllegalStateException
+     *      If this rule is a module boundary.
+     */
+    public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
+        if (isModuleBoundary()) throw new IllegalStateException("Cannot apply as non module boundary, since this rule is a module boundary!");
+        
+        final ISubstitution.Transient subst;
+        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
+            throw Delay.ofVars(vars);
+        });
+        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
+            return Optional.empty();
+        }
+        
+        final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
+        for(ITermVar var : bodyVars()) {
+            final ITermVar term = state.freshVar(var.getName());
+            subst.put(var, term);
+            freshBodyVars.add(term);
+        }
+        final ISubstitution.Immutable isubst = subst.freeze();
+        final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+        return Optional.of(ImmutableTuple2.of(freshBodyVars.build(), newBody));
+    }
+    
+    /**
+     * Applies the given arguments to this rule.
+     * 
+     * <p>The state returned by this method is the state of the child module.</p>
      * 
      * @param args
      *      the arguments to apply
@@ -181,8 +223,12 @@ public abstract class ARule {
      * @throws Delay
      *      If the arguments cannot be matched to the parameters of this rule because one or more
      *      terms are not ground.
+     * @throws IllegalStateException
+     *      If this rule is not a module boundary.
      */
-    public Optional<Tuple3<MState, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
+    public Optional<Tuple3<MState, Set<ITermVar>, Set<IConstraint>>> applyModuleBoundary(List<ITerm> args, MState state) throws Delay {
+        if (!isModuleBoundary()) throw new IllegalStateException("Cannot appy as module boundary to a non module boundary rule!");
+        
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
@@ -191,17 +237,15 @@ public abstract class ARule {
             return Optional.empty();
         }
         
-        if (isModuleBoundary()) {
-            //TODO Determine which arguments are scopes
-            io.usethesource.capsule.Set.Transient<IOwnableScope> canExtend = io.usethesource.capsule.Set.Transient.of();
-            for (ITerm term : args) {
-                OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
-                if (scope != null) canExtend.__insert(scope);
-            }
-            
-            IModule child = state.owner().createChild(canExtend.freeze());
-            state = new MState(state.manager(), state.coordinator(), child, state.spec());
+        //We don't always want to statically store the child relation. We want to base this on the current owner.
+        Set<IOwnableScope> canExtend = new HashSet<>();
+        for (ITerm term : args) {
+            OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
+            if (scope != null) canExtend.add(scope);
         }
+        
+        IModule child = state.owner().createChild(Capsules.newSet(canExtend));
+        state = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {

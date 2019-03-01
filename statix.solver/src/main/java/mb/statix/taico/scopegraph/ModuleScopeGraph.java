@@ -13,16 +13,17 @@ import mb.statix.taico.util.IOwnable;
 import mb.statix.util.Capsules;
 
 public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>, IOwnable {
-    private final IModule owner;
-    private final Set.Immutable<ITerm> labels;
-    private final ITerm endOfPath;
-    private final Set.Immutable<ITerm> relations;
+    protected final IModule owner;
+    protected final Set.Immutable<ITerm> labels;
+    protected final ITerm endOfPath;
+    protected final Set.Immutable<ITerm> relations;
     /** Scopes from parent that you can extend. Used for checking if an edge addition is valid. */
-    private final Set.Immutable<IOwnableScope> canExtend;
-    private HashSet<IOwnableScope> scopes = new HashSet<>();
+    protected final Set.Immutable<IOwnableScope> canExtend;
+    protected HashSet<IOwnableScope> scopes = new HashSet<>();
+    protected HashSet<ModuleScopeGraph> children = new HashSet<>();
     
-    private IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> edges = HashTrieRelation3.Transient.of();
-    private IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
+    protected IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> edges = HashTrieRelation3.Transient.of();
+    protected IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
 
     private int scopeCounter;
     
@@ -79,9 +80,12 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     
     @Override
     public java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label) {
+        System.err.println("[getData] on " + owner.getId() + " scope: " + scope);
         if (scope.getOwner() == this.owner) {
+            System.err.println("[getData] | is our scope, checking transitively...");
             return getTransitiveData(scope, label);
         } else {
+            System.err.println("[getData] | redirecting to " + scope.getOwner().getId());
             return scope.getOwner().getScopeGraph().getData(scope, label);
         }
     }
@@ -93,26 +97,28 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         java.util.Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>();
         set.addAll(edges.get(scope, label));
         //TODO Use the canExtend set to only build this for our children.
-        for (IModule child : owner.getChildren()) {
-            set.addAll(child.getScopeGraph().getTransitiveEdges(scope, label));
+        for (ModuleScopeGraph child : children) {
+            set.addAll(child.getTransitiveEdges(scope, label));
         }
         return set;
     }
 
     @Override
     public java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label) {
+        System.err.println("[traData] | | getting transitive data of " + owner.getId() + " scope: " + scope);
         // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
         // TODO relevant for dependency determination?
         java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>();
         set.addAll(data.get(scope, label));
-        for (IModule child : owner.getChildren()) {
-            set.addAll(child.getScopeGraph().getTransitiveData(scope, label));
+        for (ModuleScopeGraph child : children) {
+            set.addAll(child.getTransitiveData(scope, label));
         }
         return set;
     }
     
     @Override
     public IOwnableTerm createScope(String base) {
+        System.err.println("[" + owner.getId() + "] Creating scope " + base);
         int i = ++scopeCounter;
         
         String name = base.replaceAll("-", "_") + "-" + i;
@@ -165,8 +171,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> createChild(IModule module, Set.Immutable<IOwnableScope> canExtend) {
-        // TODO Auto-generated method stub
-        return null;
+    public ModuleScopeGraph createChild(IModule module, Set.Immutable<IOwnableScope> canExtend) {
+        ModuleScopeGraph child = new ModuleScopeGraph(module, labels, endOfPath, relations, canExtend);
+        children.add(child);
+        return child;
     }
 }

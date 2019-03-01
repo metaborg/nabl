@@ -19,7 +19,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -27,10 +27,13 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Rule;
+import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MCompleteness;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.util.IOwnable;
 
 public class MConstraintLabelWF implements LabelWF<ITerm> {
 
@@ -72,9 +75,32 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         }
         final IUnifier.Immutable newUnifier = unifyResult.unifier();
         newState.setUnifier(newUnifier);
-        final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v) || newTail.equals(v);
+        final Predicate1<ITermVar> isRigid = v -> {
+            if (rigidVars.contains(v) || newTail.equals(v)) return true;
+            
+            IModule owner = state.manager().getModule(v.getResource());
+            System.err.println("[2] isRigid in MConstraintLabelWF matcher with new owner " + owner);
+            return owner != state.owner();
+        };
         //TODO TAICO This might need to be done differently, as we cannot determine closed scopes any more?
-        final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
+        final Predicate1<ITerm> isClosed = s -> {
+            if (closedScopes.contains(s)) return true;
+            
+            IModule owner;
+            if (s instanceof IOwnable) {
+                System.err.println("isClosed in MConstraintLabelWF, s is ownable");
+                owner = ((IOwnable) s).getOwner();
+            } else {
+                System.err.println("isClosed in MConstraintLabelWF, s is NOT ownable");
+                OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(s, state.unifier()).orElse(null);
+                if (scope == null) {
+                    System.err.println("Unable to convert scope term to scope in isClosed predicate in MConstraintLabelWF");
+                    return false;
+                }
+                owner = scope.getOwner();
+            }
+            return owner != state.owner();
+        };
         
         //TODO IMPORTANT TAICO redirect this to the correct solvers?
         MCompleteness ncompleteness = completeness.copy();
@@ -118,9 +144,35 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         final MState newState = state.copy();
         newState.setUnifier(newUnifier);
         
-        final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v);
-        final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
-        //TODO Fix solver result
+        final Predicate1<ITermVar> isRigid = v -> {
+            if (rigidVars.contains(v)) return true;
+            
+            IModule owner = state.manager().getModule(v.getResource());
+            System.err.println("[3] isRigid in MConstraintLabelWF (accepting) matcher with new owner " + owner);
+            return owner != state.owner();
+        };
+        //TODO TAICO This might need to be done differently, as we cannot determine closed scopes any more?
+        final Predicate1<ITerm> isClosed = s -> {
+            if (closedScopes.contains(s)) return true;
+            
+            IModule owner;
+            if (s instanceof IOwnable) {
+                System.err.println("isClosed in MConstraintLabelWF (accepting), s is ownable");
+                owner = ((IOwnable) s).getOwner();
+            } else {
+                System.err.println("isClosed in MConstraintLabelWF (accepting), s is NOT ownable");
+                OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(s, state.unifier()).orElse(null);
+                if (scope == null) {
+                    System.err.println("Unable to convert scope term to scope in isClosed predicate in MConstraintLabelWF (accepting)");
+                    return false;
+                }
+                owner = scope.getOwner();
+            }
+            return owner != state.owner();
+        };
+        
+//        final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v);
+//        final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
         final MSolverResult result =
                 ModuleSolver.solveSeparately(newState, constraints, completeness.copy(), isRigid, isClosed, debug.subContext());
         if(result.hasErrors()) {
@@ -141,7 +193,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
     public static MConstraintLabelWF of(Rule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
         MState newState = state.copy();
         final ITermVar lbls = newState.freshVar("lbls");
-        final Tuple3<MState, Set<ITermVar>, Set<IConstraint>> inst;
+        final Tuple2<Set<ITermVar>, Set<IConstraint>> inst;
         try {
             if((inst = constraint.apply(ImmutableList.of(lbls), newState).orElse(null)) == null) {
                 throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");
@@ -149,7 +201,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         } catch(Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
-        return new MConstraintLabelWF(inst._3(), inst._1(), state.vars(), state.scopes(), completeness, debug, lbls, lbls);
+        return new MConstraintLabelWF(inst._2(), newState, state.vars(), state.scopes(), completeness, debug, lbls, lbls);
     }
 
 }

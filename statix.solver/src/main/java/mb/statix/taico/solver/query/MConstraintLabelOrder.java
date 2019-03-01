@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -52,18 +52,19 @@ public class MConstraintLabelOrder implements LabelOrder<ITerm> {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }
         try {
-            final Tuple3<MState, Set<ITermVar>, Set<IConstraint>> result;
-            if((result = constraint.apply(ImmutableList.of(l1, l2), state).orElse(null)) == null) {
+            MState resultState = state.copy();
+            final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
+            if((result = constraint.apply(ImmutableList.of(l1, l2), resultState).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(result._1(), result._3(), completeness, result._2(), debug.subContext()).isPresent()) {
+            if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug.subContext()).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                    debug.info("Ordered {} < {}", resultState.unifier().toString(l1), resultState.unifier().toString(l2));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
+                    debug.info("Unordered {} < {}", resultState.unifier().toString(l1), resultState.unifier().toString(l2));
                 }
                 return false;
             }

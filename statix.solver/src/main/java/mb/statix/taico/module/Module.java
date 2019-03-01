@@ -120,7 +120,7 @@ public class Module implements IModule {
         final String newId = generateNewChildId();
         
         Module child = new Module(manager, newId, this);
-        child.scopeGraph = new ModuleScopeGraph(child, scopeGraph.getLabels(), scopeGraph.getEndOfPath(), scopeGraph.getRelations(), canExtend);
+        child.scopeGraph = scopeGraph.createChild(child, canExtend);
         children.add(child);
         return child;
     }

@@ -1,6 +1,5 @@
 package mb.statix.solver.constraint;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -19,8 +18,8 @@ import com.google.common.collect.Lists;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
@@ -161,35 +160,12 @@ public class CUser implements IConstraint {
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
-        if (state.solver().isSeparateSolver() && isModuleBoundary()) {
-            System.err.println("Separated solver reaching module boundary!!!!");
-            throw new AAAAAAAAAAAAAAException("AAAAAAAAAAAAAAAAAAAAAAAAAA");
-        }
-        final IDebugContext debug = params.debug();
-        
-        //--- Make the arguments ground if we are dealing with a module boundary
-        final List<ITerm> args;
         if (isModuleBoundary()) {
-            final IUnifier.Immutable unifier = state.unifier();
-            args = new ArrayList<>();
-            for (ITerm term : this.args) {
-                if (!unifier.isGround(term)) {
-                    //TODO IMPORTANT Is this correct? How about a term where some of it's innards are unknown, but not all of them?
-                    throw Delay.ofVars(unifier.getVars(term));
-                }
-                
-                if (term instanceof ITermVar) {
-                    //TODO IMPOTANT try catch?
-                    ITerm actual = unifier.findRecursive(term);
-                    args.add(actual);
-                } else {
-                    args.add(term);
-                }
-            }
-        } else {
-            args = this.args;
+            IConstraint moduleConstraint = new CModule(this.name, this.args, this);
+            return Optional.of(MConstraintResult.ofConstraints(state, Collections.singleton(moduleConstraint)));
         }
-        
+
+        final IDebugContext debug = params.debug();
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
         final Iterator<Rule> it = rules.iterator();
@@ -204,13 +180,11 @@ public class CUser implements IConstraint {
             }
             
             final Set<IConstraint> instantiatedBody;
-            final Tuple3<MState, Set<ITermVar>, Set<IConstraint>> appl;
+            final Tuple2<Set<ITermVar>, Set<IConstraint>> appl;
             
-            final MState childState;
             try {
                 if((appl = rawRule.apply(args, state).orElse(null)) != null) {
-                    childState = appl._1();
-                    instantiatedBody = appl._3();
+                    instantiatedBody = appl._2();
                 } else {
                     proxyDebug.info("Rule rejected (mismatching arguments)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
@@ -221,17 +195,6 @@ public class CUser implements IConstraint {
                 unsuccessfulLog.absorb(proxyDebug.clear());
                 unsuccessfulLog.flush(debug);
                 throw d;
-            }
-            
-            if (isModuleBoundary()) {
-                //TODO Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
-                Set<IConstraint> newConstraints = Collections.singleton(
-                        new CModule(state.solver(), childState, instantiatedBody, state.solver().isRigid(), state.solver().isClosed(), this));
-                proxyDebug.warn("[Module] Creating new solver constraint for module boundary in {}", this.name);
-                proxyDebug.info("Rule accepted");
-                proxyDebug.commit();
-                
-                return Optional.of(MConstraintResult.ofConstraints(state, newConstraints));
             }
             
             proxyDebug.info("Rule accepted");

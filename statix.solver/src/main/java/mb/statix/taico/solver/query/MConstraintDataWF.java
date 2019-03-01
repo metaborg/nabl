@@ -9,7 +9,7 @@ import org.metaborg.util.log.Level;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -36,19 +36,21 @@ public class MConstraintDataWF implements DataWF<ITerm> {
     }
 
     public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+        //TODO IMPORTANT For the separate solvers/entails solvers, the completeness is sometimes obtained via modules, which will not be the completeness in the solver in question.
         try {
-            final Tuple3<MState, Set<ITermVar>, Set<IConstraint>> result;
-            if((result = constraint.apply(datum, state).orElse(null)) == null) {
+            MState resultState = state.copy();
+            final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
+            if((result = constraint.apply(datum, resultState).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
+            if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                    debug.info("Well-formed {}", resultState.unifier().toString(B.newTuple(datum)));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Not well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                    debug.info("Not well-formed {}", resultState.unifier().toString(B.newTuple(datum)));
                 }
                 return false;
             }

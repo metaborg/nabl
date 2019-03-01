@@ -58,7 +58,7 @@ public interface IConstraint {
      *      the context containing info about completeness, rigid and closed as well as debug
      * 
      * @return
-     *      true is reduced, false if delayed
+     *      true if reduced, false if delayed
      * 
      * @throws InterruptedException
      *      Optional exception that is thrown when solving this constraint is interrupted.

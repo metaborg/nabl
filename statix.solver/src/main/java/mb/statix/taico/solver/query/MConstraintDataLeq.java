@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -42,20 +42,22 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
         final ITerm term1 = B.newTuple(datum1);
         final ITerm term2 = B.newTuple(datum2);
         try {
-            final Tuple3<MState, Set<ITermVar>, Set<IConstraint>> result;
-            if((result = constraint.apply(ImmutableList.of(term1, term2), state).orElse(null)) == null) {
+            MState resultState = state.copy();
+            final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
+            if((result = constraint.apply(ImmutableList.of(term1, term2), resultState).orElse(null)) == null) {
                 return false;
             }
             //TODO TAICO Fix entails
-            if(ModuleSolver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
+            if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
+                    debug.info("{} shadows {}", resultState.unifier().toString(term1), resultState.unifier().toString(term2));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} does not shadow {}", state.unifier().toString(term1),
-                            state.unifier().toString(term2));
+                    debug.info("{} does not shadow {}",
+                            resultState.unifier().toString(term1),
+                            resultState.unifier().toString(term2));
                 }
                 return false;
             }

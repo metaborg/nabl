@@ -123,7 +123,7 @@ public class ModuleSolver implements IOwnable {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
         //TODO IMPORTANT TAICO Is this correct?
         //TODO TAICO can this cross module boundaries?
-        ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness, isRigid, isClosed, debug2);
+        ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness.copy(), isRigid, isClosed, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
         return solver.finishSolver();
@@ -255,6 +255,7 @@ public class ModuleSolver implements IOwnable {
                     printTrace(constraint, state.unifier(), subDebug);
                 } else {
                     proxyDebug.info("Break early because of errors.");
+                    /* TODO TAICO TEMPORARY */ proxyDebug.commit();
                     return false;
                 }
             }
@@ -270,6 +271,7 @@ public class ModuleSolver implements IOwnable {
             delayedLog.absorb(proxyDebug.clear());
             entry.delay(d);
             delays += 1;
+            /* TODO TAICO TEMPORARY */ proxyDebug.commit();
         }
         return true;
     }
@@ -326,12 +328,22 @@ public class ModuleSolver implements IOwnable {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
         }
+        
+        //Rigid vars = all variables in the state that are not in the local variables + all variables owned by other modules
         final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
         final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
+        
+        final Predicate1<ITermVar> isRigid = v -> {
+            if (rigidVars.contains(v)) return true;
+            IModule owner = state.manager().getModule(v.getResource());
+            System.err.println("[1] isRigid matcher with new owner " + owner);
+            //TODO Is this correct?
+            return owner != state.owner();
+        };
         //TODO IMPORTANT TAICO Is this correct?
         //TODO TAICO can this cross module boundaries?
-        ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness, rigidVars::contains, state.scopes()::contains, debug2);
+        ModuleSolver solver = new ModuleSolver(null, state, constraints, completeness, isRigid, state.scopes()::contains, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
         final MSolverResult result = solver.finishSolver();
