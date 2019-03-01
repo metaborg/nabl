@@ -2,7 +2,6 @@ package mb.statix.taico.scopegraph;
 
 import java.util.List;
 
-import io.usethesource.capsule.Set;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 
@@ -43,5 +42,5 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      * @return
      *      the new scope graph
      */
-    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, Set.Immutable<IOwnableScope> canExtend);
+    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, Iterable<IOwnableScope> canExtend);
 }

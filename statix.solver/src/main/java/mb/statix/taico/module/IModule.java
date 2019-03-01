@@ -40,7 +40,7 @@ public interface IModule {
      * @return
      *      the child
      */
-    IModule createChild(io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend);
+    IModule createChild(Iterable<IOwnableScope> canExtend);
     
     /**
      * @return

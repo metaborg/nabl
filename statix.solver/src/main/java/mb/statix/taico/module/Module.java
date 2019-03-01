@@ -116,7 +116,7 @@ public class Module implements IModule {
     }
 
     @Override
-    public synchronized Module createChild(io.usethesource.capsule.Set.Immutable<IOwnableScope> canExtend) {
+    public synchronized Module createChild(Iterable<IOwnableScope> canExtend) {
         final String newId = generateNewChildId();
         
         Module child = new Module(manager, newId, this);

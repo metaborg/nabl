@@ -32,8 +32,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             Iterable<ITerm> labels,
             ITerm endOfPath,
             Iterable<ITerm> relations,
-            Set.Immutable<IOwnableScope> canExtend) {
-        this(owner, Capsules.newSet(labels), endOfPath, Capsules.newSet(relations), canExtend);
+            Iterable<IOwnableScope> canExtend) {
+        this(owner, Capsules.newSet(labels), endOfPath, Capsules.newSet(relations), Capsules.newSet(canExtend));
     }
     
     public ModuleScopeGraph(
@@ -171,7 +171,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public ModuleScopeGraph createChild(IModule module, Set.Immutable<IOwnableScope> canExtend) {
+    public ModuleScopeGraph createChild(IModule module, Iterable<IOwnableScope> canExtend) {
         ModuleScopeGraph child = new ModuleScopeGraph(module, labels, endOfPath, relations, canExtend);
         children.add(child);
         return child;
