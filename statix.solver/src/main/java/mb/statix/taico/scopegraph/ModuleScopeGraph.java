@@ -112,10 +112,14 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         System.err.println("[getData] on " + owner.getId() + " scope: " + scope);
         if (scope.getOwner() == this.owner) {
             System.err.println("[getData] | is our scope, checking transitively...");
-            return getTransitiveData(scope, label);
+            Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = getTransitiveData(scope, label);
+            System.err.println("[getData] | found " + data.size() + " datums: " + data);
+            return data;
         } else {
             System.err.println("[getData] | redirecting to " + scope.getOwner().getId());
-            return scope.getOwner().getScopeGraph().getData(scope, label);
+            Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = scope.getOwner().getScopeGraph().getData(scope, label);
+            System.err.println("[getData] | result from redirect: " + data.size() + " datums: " + data);
+            return data;
         }
     }
     

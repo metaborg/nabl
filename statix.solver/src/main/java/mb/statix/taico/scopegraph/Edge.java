@@ -58,4 +58,9 @@ public class Edge<S extends IOwnable, L, T> implements IEdge<S, L, T> {
         if (!owner.equals(other.owner))   return false;
         return true;
     }
+    
+    @Override
+    public String toString() {
+        return "Edge<@" + owner.getId() + ", " + source + " -" + label + "-> " + target + ">";
+    }
 }
