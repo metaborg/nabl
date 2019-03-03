@@ -35,7 +35,6 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MState;
-import mb.statix.util.Capsules;
 
 /**
  * Class which describes a statix rule.
@@ -244,7 +243,7 @@ public abstract class ARule {
             if (scope != null) canExtend.add(scope);
         }
         
-        IModule child = state.owner().createChild(Capsules.newSet(canExtend));
+        IModule child = state.owner().createChild(canExtend);
         state = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();

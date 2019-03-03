@@ -5,11 +5,11 @@ import java.util.List;
 import io.usethesource.capsule.Set;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMExternalScopeGraph<S extends IOwnable, V, L, R> {
+public interface IMExternalScopeGraph<S extends IOwnable, V, L, R> extends IOwnable {
     
     L getEndOfPath();
-    Set.Immutable<L> getLabels();
-    Set.Immutable<R> getRelations();
+    Set.Immutable<? extends L> getLabels();
+    Set.Immutable<? extends R> getRelations();
     
     /**
      * Gets the collection of edges from the given scope with the given label.

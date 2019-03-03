@@ -28,6 +28,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Rule;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MCompleteness;
 import mb.statix.taico.solver.MSolverResult;
@@ -190,6 +191,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static MConstraintLabelWF of(Rule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
         MState newState = state.copy();
         final ITermVar lbls = newState.freshVar("lbls");
@@ -201,7 +203,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         } catch(Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
-        return new MConstraintLabelWF(inst._2(), newState, state.vars(), state.scopes(), completeness, debug, lbls, lbls);
+        return new MConstraintLabelWF(inst._2(), newState, state.vars(), (Set<ITerm>) (Set<? extends IOwnableTerm>) state.scopes(), completeness, debug, lbls, lbls);
     }
 
 }

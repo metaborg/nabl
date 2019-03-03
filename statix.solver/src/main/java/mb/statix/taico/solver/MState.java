@@ -14,6 +14,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableTerm;
+import mb.statix.taico.scopegraph.ViewModuleScopeGraph;
 
 /**
  * Implementation of mutable state.
@@ -28,9 +29,6 @@ public class MState {
     private int varCounter;
     private Set<ITermVar> vars;
     
-    private int scopeCounter;
-    private Set<ITerm> scopes;
-    
     private volatile IUnifier.Immutable unifier;
     
     private ModuleSolver solver;
@@ -42,7 +40,6 @@ public class MState {
         this.spec = spec;
         this.scopeGraph = owner.getScopeGraph();
         this.vars = new HashSet<>();
-        this.scopes = new HashSet<>();
         this.unifier = PersistentUnifier.Immutable.of();
         
         owner.setCurrentState(this);
@@ -53,13 +50,9 @@ public class MState {
         this.coordinator = orig.coordinator;
         this.owner = orig.owner;
         this.spec = orig.spec;
-        this.scopeGraph = orig.scopeGraph;
+        this.scopeGraph = new ViewModuleScopeGraph(orig.scopeGraph);
         this.solver = orig.solver;
         this.unifier = orig.unifier;
-        
-        //TODO CONCURRENT the copy needs to lock the old state in order to copy correctly.
-        this.scopeCounter = orig.scopeCounter;
-        this.scopes = new HashSet<>(orig.scopes);
         this.varCounter = orig.varCounter;
         this.vars = new HashSet<>(orig.vars);
     }
@@ -108,8 +101,8 @@ public class MState {
         return scopeGraph.createScope(base);
     }
 
-    public Set<ITerm> scopes() {
-        return scopes;
+    public Set<? extends IOwnableTerm> scopes() {
+        return scopeGraph().getScopes();
     }
 
     // --- solution ---

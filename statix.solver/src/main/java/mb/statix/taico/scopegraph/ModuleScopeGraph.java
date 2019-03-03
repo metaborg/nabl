@@ -1,10 +1,12 @@
 package mb.statix.taico.scopegraph;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
@@ -13,35 +15,42 @@ import mb.statix.taico.util.IOwnable;
 import mb.statix.util.Capsules;
 
 public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>, IOwnable {
+    //Constants for this module
     protected final IModule owner;
-    protected final Set.Immutable<ITerm> labels;
+    protected final Immutable<? extends ITerm> labels;
     protected final ITerm endOfPath;
-    protected final Set.Immutable<ITerm> relations;
+    protected final Immutable<? extends ITerm> relations;
     /** Scopes from parent that you can extend. Used for checking if an edge addition is valid. */
-    protected final Set.Immutable<IOwnableScope> canExtend;
-    protected HashSet<IOwnableScope> scopes = new HashSet<>();
-    protected HashSet<ModuleScopeGraph> children = new HashSet<>();
+    protected final Immutable<? extends IOwnableScope> canExtend;
     
-    protected IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> edges = HashTrieRelation3.Transient.of();
-    protected IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
+    //Scope graph graph
+    protected final ModuleScopeGraph parent;
+    protected final HashSet<ModuleScopeGraph> children = new HashSet<>();
+    
+    protected final HashSet<IOwnableScope> scopes = new HashSet<>();
+    protected final IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> edges = HashTrieRelation3.Transient.of();
+    protected final IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
 
     private int scopeCounter;
     
     public ModuleScopeGraph(
+            ModuleScopeGraph parent,
             IModule owner,
-            Iterable<ITerm> labels,
+            Iterable<? extends ITerm> labels,
             ITerm endOfPath,
-            Iterable<ITerm> relations,
-            Iterable<IOwnableScope> canExtend) {
-        this(owner, Capsules.newSet(labels), endOfPath, Capsules.newSet(relations), Capsules.newSet(canExtend));
+            Iterable<? extends ITerm> relations,
+            Iterable<? extends IOwnableScope> canExtend) {
+        this(parent, owner, Capsules.newSet(labels), endOfPath, Capsules.newSet(relations), Capsules.newSet(canExtend));
     }
     
     public ModuleScopeGraph(
+            ModuleScopeGraph parent,
             IModule owner,
-            Set.Immutable<ITerm> labels,
+            Immutable<? extends ITerm> labels,
             ITerm endOfPath,
-            Set.Immutable<ITerm> relations,
-            Set.Immutable<IOwnableScope> canExtend) {
+            Immutable<? extends ITerm> relations,
+            Immutable<? extends IOwnableScope> canExtend) {
+        this.parent = parent;
         this.owner = owner;
         this.labels = labels;
         this.endOfPath = endOfPath;
@@ -51,26 +60,46 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
+    public IModule getOwner() {
+        return this.owner;
+    }
+    
+    @Override
     public ITerm getEndOfPath() {
         return this.endOfPath;
     }
     
     @Override
-    public Set.Immutable<ITerm> getLabels() {
+    public Immutable<? extends ITerm> getLabels() {
         return labels;
     }
 
     @Override
-    public Set.Immutable<ITerm> getRelations() {
+    public Immutable<? extends ITerm> getRelations() {
         return relations;
     }
     
-    public Iterable<IOwnableScope> getScopes() {
+    @Override
+    public IRelation3<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData() {
+        return data;
+    }
+    
+    @Override
+    public IRelation3<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges() {
+        return edges;
+    }
+    
+    public Set<IOwnableScope> getScopes() {
         return scopes;
+    }
+    
+    @Override
+    public Immutable<? extends IOwnableScope> getExtensibleScopes() {
+        return canExtend;
     }
 
     @Override
-    public java.util.Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label) {
+    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label) {
         if (scope.getOwner() == this.owner) {
             return getTransitiveEdges(scope, label);
         } else {
@@ -79,7 +108,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label) {
+    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label) {
         System.err.println("[getData] on " + owner.getId() + " scope: " + scope);
         if (scope.getOwner() == this.owner) {
             System.err.println("[getData] | is our scope, checking transitively...");
@@ -91,10 +120,10 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public java.util.Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label) {
+    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label) {
         // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
         // TODO relevant for dependency determination?
-        java.util.Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>();
+        Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>();
         set.addAll(edges.get(scope, label));
         //TODO Use the canExtend set to only build this for our children.
         for (ModuleScopeGraph child : children) {
@@ -104,11 +133,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
 
     @Override
-    public java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label) {
+    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label) {
         System.err.println("[traData] | | getting transitive data of " + owner.getId() + " scope: " + scope);
         // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
         // TODO relevant for dependency determination?
-        java.util.Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>();
+        Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>();
         set.addAll(data.get(scope, label));
         for (ModuleScopeGraph child : children) {
             set.addAll(child.getTransitiveData(scope, label));
@@ -165,15 +194,19 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         return data.put(scope, relation, edge);
     }
     
-    @Override
-    public IModule getOwner() {
-        return this.owner;
+    public ModuleScopeGraph getParent() {
+        return parent;
     }
     
     @Override
     public ModuleScopeGraph createChild(IModule module, Iterable<IOwnableScope> canExtend) {
-        ModuleScopeGraph child = new ModuleScopeGraph(module, labels, endOfPath, relations, canExtend);
+        ModuleScopeGraph child = new ModuleScopeGraph(this, module, labels, endOfPath, relations, canExtend);
         children.add(child);
         return child;
+    }
+    
+    @Override
+    public Collection<ModuleScopeGraph> getChildren() {
+        return children;
     }
 }

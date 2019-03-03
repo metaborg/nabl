@@ -1,9 +1,9 @@
 package mb.statix.taico.module;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.statix.spec.Spec;
 import mb.statix.taico.paths.IQuery;
@@ -41,7 +41,7 @@ public class Module implements IModule {
         this.manager = manager;
         this.id = id;
         this.parent = null;
-        this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Immutable.of());
+        this.scopeGraph = new ModuleScopeGraph(null, this, labels, endOfPath, relations, Collections.emptySet());
         manager.addModule(this);
     }
     
@@ -57,7 +57,7 @@ public class Module implements IModule {
         this.manager = manager;
         this.id = id;
         this.parent = null;
-        this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Immutable.of());
+        this.scopeGraph = new ModuleScopeGraph(null, this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptySet());
         manager.addModule(this);
     }
     

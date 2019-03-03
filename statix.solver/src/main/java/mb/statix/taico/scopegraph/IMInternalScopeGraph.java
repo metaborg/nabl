@@ -1,7 +1,11 @@
 package mb.statix.taico.scopegraph;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
+import io.usethesource.capsule.Set.Immutable;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 
@@ -17,7 +21,7 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label);
+    Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label);
     
     /**
      * Gets the collection of data from the given scope with the given label, that are
@@ -30,7 +34,15 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      * @return
      *      an iterable with all the data
      */
-    java.util.Set<IEdge<S, R, List<V>>> getTransitiveData(S scope, R label);
+    Set<IEdge<S, R, List<V>>> getTransitiveData(S scope, R label);
+    
+    //Scope graph tree
+    
+    /**
+     * @return
+     *      the parent of this scope graph, or null if this is the top level scope graph
+     */
+    IMInternalScopeGraph<S, V, L, R> getParent();
     
     /**
      * Creates a child scope graph from this scope graph.
@@ -43,4 +55,36 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      the new scope graph
      */
     IMInternalScopeGraph<S, V, L, R> createChild(IModule module, Iterable<IOwnableScope> canExtend);
+    
+    /**
+     * @return
+     *      a collection of all the children of this scope graph
+     */
+    Collection<? extends IMInternalScopeGraph<S, V, L, R>> getChildren();
+    
+    //Getters for the internal data structures of the scope graph
+    
+    /**
+     * @return
+     *      a relation of all the edges directly owned by this module
+     */
+    IRelation3<S, L, IEdge<S, L, S>> getEdges();
+    
+    /**
+     * @return
+     *      a relation of all the data edges directly owned by this module
+     */
+    IRelation3<S, R, IEdge<S, R, List<V>>> getData();
+    
+    /**
+     * @return
+     *      a set of all the scopes owned by this module directly
+     */
+    Set<? extends S> getScopes();
+    
+    /**
+     * @return
+     *      the set of scopes that can be extended by this scope graph
+     */
+    Immutable<? extends S> getExtensibleScopes();
 }

@@ -32,6 +32,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
 
@@ -341,9 +342,28 @@ public class ModuleSolver implements IOwnable {
             //TODO Is this correct?
             return owner != state.owner();
         };
+        
+        final Predicate1<ITerm> isClosed = s -> {
+            if (state.scopeGraph().getScopes().contains(s)) return true;
+            
+            IModule owner;
+            if (s instanceof IOwnable) {
+                System.err.println("isClosed in MConstraintLabelWF (accepting), s is ownable");
+                owner = ((IOwnable) s).getOwner();
+            } else {
+                System.err.println("isClosed in MConstraintLabelWF (accepting), s is NOT ownable");
+                OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(s, state.unifier()).orElse(null);
+                if (scope == null) {
+                    System.err.println("Unable to convert scope term to scope in isClosed predicate in MConstraintLabelWF (accepting)");
+                    return false;
+                }
+                owner = scope.getOwner();
+            }
+            return owner != state.owner();
+        };
         //TODO IMPORTANT TAICO Is this correct?
         //TODO TAICO can this cross module boundaries?
-        ModuleSolver solver = new ModuleSolver(null, state, constraints, completeness, isRigid, state.scopes()::contains, debug2);
+        ModuleSolver solver = new ModuleSolver(null, state, constraints, completeness, isRigid, isClosed, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
         final MSolverResult result = solver.finishSolver();
