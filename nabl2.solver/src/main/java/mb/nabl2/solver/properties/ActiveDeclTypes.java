@@ -69,7 +69,7 @@ public class ActiveDeclTypes implements IConstraintSetProperty {
         return constraint.match(IConstraint.Cases.of(ActiveDeclTypes::emptyActiveDecls, ActiveDeclTypes::getActiveDecls,
                 ActiveDeclTypes::emptyActiveDecls, ActiveDeclTypes::emptyActiveDecls, ActiveDeclTypes::getActiveDecls,
                 ActiveDeclTypes::emptyActiveDecls, ActiveDeclTypes::emptyActiveDecls, ActiveDeclTypes::emptyActiveDecls,
-                ActiveDeclTypes::getActiveDecls, ActiveDeclTypes::emptyActiveDecls));
+                ActiveDeclTypes::getActiveDecls));
     }
 
     private static Multiset<ITerm> emptyActiveDecls(@SuppressWarnings("unused") IConstraint constraint) {
