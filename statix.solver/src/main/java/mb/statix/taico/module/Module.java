@@ -1,10 +1,14 @@
 package mb.statix.taico.module;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.paths.IQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
@@ -24,6 +28,7 @@ public class Module implements IModule {
     private Set<IModule> children = new HashSet<>();
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     private MState state;
+    private Map<CResolveQuery, Collection<IModule>> dependencies = new HashMap<>();
     
     /**
      * Creates a new top level module.
@@ -136,6 +141,16 @@ public class Module implements IModule {
     }
     
     @Override
+    public Map<CResolveQuery, Collection<IModule>> getDependencies() {
+        return dependencies;
+    }
+    
+    @Override
+    public void addQuery(CResolveQuery query, Collection<IModule> modules) {
+        dependencies.put(query, modules);
+    }
+    
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Module)) return false;
@@ -150,7 +165,7 @@ public class Module implements IModule {
     
     @Override
     public String toString() {
-        return "Module<" + id + ">";
+        return "@" + id;
     }
 
 }

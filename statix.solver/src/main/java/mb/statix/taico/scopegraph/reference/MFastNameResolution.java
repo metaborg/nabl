@@ -55,6 +55,12 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
         this.dataEquiv = dataEquiv;
         this.isDataComplete = isDataComplete;
     }
+    
+    //we need to know:
+    //per scope what types of edges we are interested in?
+    //A customized path which adds potential attempts?
+    //Do we calculate it statically or with the help of the solver "attempting" all the different routes?
+//    public Tuple2<java.util.Set<IResolutionPath<V, L, R>, >>
 
     @Override public java.util.Set<IResolutionPath<V, L, R>> resolve(S scope)
             throws ResolutionException, InterruptedException {
