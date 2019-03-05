@@ -34,12 +34,24 @@ public class CPathDst implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm pathTerm() {
+        return pathTerm;
+    }
+
+    public ITerm dstTerm() {
+        return dstTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CPathDst withCause(@Nullable IConstraint cause) {
         return new CPathDst(pathTerm, dstTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathDst(this);
     }
 
     @Override public CPathDst apply(ISubstitution.Immutable subst) {

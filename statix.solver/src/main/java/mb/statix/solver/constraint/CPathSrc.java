@@ -34,12 +34,24 @@ public class CPathSrc implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm pathTerm() {
+        return pathTerm;
+    }
+
+    public ITerm srcTerm() {
+        return srcTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CPathSrc withCause(@Nullable IConstraint cause) {
         return new CPathSrc(pathTerm, srcTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathSrc(this);
     }
 
     @Override public CPathSrc apply(ISubstitution.Immutable subst) {

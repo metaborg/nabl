@@ -36,6 +36,14 @@ public class CNew implements IConstraint {
         this.cause = cause;
     }
 
+    public List<ITerm> terms() {
+        return terms;
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseNew(this);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }

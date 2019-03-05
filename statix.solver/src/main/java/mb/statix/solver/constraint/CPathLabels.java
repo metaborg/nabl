@@ -35,12 +35,24 @@ public class CPathLabels implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm pathTerm() {
+        return pathTerm;
+    }
+
+    public ITerm labelsTerm() {
+        return labelsTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CPathLabels withCause(@Nullable IConstraint cause) {
         return new CPathLabels(pathTerm, labelsTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathLabels(this);
     }
 
     @Override public CPathLabels apply(ISubstitution.Immutable subst) {

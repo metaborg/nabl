@@ -1,11 +1,8 @@
 package mb.statix.solver.constraint;
 
-import java.util.Collection;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
@@ -13,13 +10,11 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
-import mb.statix.spec.Spec;
 
 public class CTellEdge implements IConstraint {
 
@@ -40,6 +35,18 @@ public class CTellEdge implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm sourceTerm() {
+        return sourceTerm;
+    }
+
+    public ITerm label() {
+        return label;
+    }
+
+    public ITerm targetTerm() {
+        return targetTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -48,8 +55,8 @@ public class CTellEdge implements IConstraint {
         return new CTellEdge(sourceTerm, label, targetTerm, cause);
     }
 
-    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return ImmutableList.of(CriticalEdge.of(sourceTerm, label));
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTellEdge(this);
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {

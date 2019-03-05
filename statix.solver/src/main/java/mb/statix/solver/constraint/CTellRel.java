@@ -2,7 +2,6 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -17,13 +16,11 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
-import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 
 public class CTellRel implements IConstraint {
@@ -45,6 +42,18 @@ public class CTellRel implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm scopeTerm() {
+        return scopeTerm;
+    }
+
+    public ITerm relation() {
+        return relation;
+    }
+
+    public List<ITerm> datumTerms() {
+        return datumTerms;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -53,8 +62,8 @@ public class CTellRel implements IConstraint {
         return new CTellRel(scopeTerm, relation, datumTerms, cause);
     }
 
-    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return ImmutableList.of(CriticalEdge.of(scopeTerm, relation));
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTellRel(this);
     }
 
     @Override public CTellRel apply(ISubstitution.Immutable subst) {

@@ -31,12 +31,24 @@ public class CInequal implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm term1() {
+        return term1;
+    }
+
+    public ITerm term2() {
+        return term2;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CInequal withCause(@Nullable IConstraint cause) {
         return new CInequal(term1, term2, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseInequal(this);
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {

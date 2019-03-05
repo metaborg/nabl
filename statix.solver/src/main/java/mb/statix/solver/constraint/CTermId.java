@@ -36,12 +36,24 @@ public class CTermId implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm term() {
+        return term;
+    }
+
+    public ITerm idTerm() {
+        return idTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CTermId withCause(@Nullable IConstraint cause) {
         return new CTermId(term, idTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTermId(this);
     }
 
     @Override public CTermId apply(ISubstitution.Immutable subst) {

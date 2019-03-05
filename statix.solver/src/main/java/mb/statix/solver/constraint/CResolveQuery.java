@@ -62,12 +62,36 @@ public class CResolveQuery implements IConstraint {
         this.cause = cause;
     }
 
+    public Optional<ITerm> relation() {
+        return relation;
+    }
+
+    public IQueryFilter filter() {
+        return filter;
+    }
+
+    public IQueryMin min() {
+        return min;
+    }
+
+    public ITerm scopeTerm() {
+        return scopeTerm;
+    }
+
+    public ITerm resultTerm() {
+        return resultTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
         return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseResolveQuery(this);
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
