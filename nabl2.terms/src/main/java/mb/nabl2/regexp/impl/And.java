@@ -14,6 +14,7 @@ abstract class And<S> implements IRegExp<S> {
 
     @Value.Parameter public abstract IRegExp<S> getRight();
 
+    @Override
     @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Value.Lazy @Override public boolean isNullable() {

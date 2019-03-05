@@ -22,6 +22,7 @@ public interface IInverseFunction<K, V> {
 
     interface Immutable<K, V> extends IInverseFunction<K, V> {
 
+        @Override
         IFunction.Immutable<V, K> inverse();
 
         Transient<K, V> melt();
@@ -34,6 +35,7 @@ public interface IInverseFunction<K, V> {
 
         boolean remove(K key, V value);
 
+        @Override
         IFunction.Transient<V, K> inverse();
 
         Immutable<K, V> freeze();

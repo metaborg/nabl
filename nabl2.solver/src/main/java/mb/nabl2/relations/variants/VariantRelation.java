@@ -13,7 +13,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.IRelation2;
 

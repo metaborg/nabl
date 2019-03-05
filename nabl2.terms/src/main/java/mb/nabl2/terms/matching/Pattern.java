@@ -79,6 +79,7 @@ public abstract class Pattern {
      */
     private static class LeftRightOrder implements java.util.Comparator<Pattern> {
 
+        @Override
         public int compare(Pattern p1, Pattern p2) {
             return compare(p1, p2, new AtomicInteger(), new HashMap<>(), new HashMap<>());
         }

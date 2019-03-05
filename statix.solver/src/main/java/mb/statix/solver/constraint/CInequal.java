@@ -6,13 +6,8 @@ import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 
 public class CInequal implements IConstraint {
 
@@ -57,19 +52,6 @@ public class CInequal implements IConstraint {
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {
         return new CInequal(subst.apply(term1), subst.apply(term2), cause);
-    }
-
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        final IUnifier.Immutable unifier = state.unifier();
-        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
-            if(result) {
-                return Optional.empty();
-            } else {
-                return Optional.of(ConstraintResult.of(state));
-            }
-        }, vars -> {
-            throw Delay.ofVars(vars);
-        });
     }
 
     @Override public String toString(TermFormatter termToString) {

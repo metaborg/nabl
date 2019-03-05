@@ -17,6 +17,7 @@ public interface IListTerm extends ITerm {
 
         T caseVar(ITermVar var);
 
+        @Override
         default T apply(IListTerm list) {
             return list.match(this);
         }
@@ -33,12 +34,14 @@ public interface IListTerm extends ITerm {
 
         T caseVar(ITermVar var) throws E;
 
+        @Override
         default T apply(IListTerm list) throws E {
             return list.matchOrThrow(this);
         }
 
     }
 
+    @Override
     IListTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

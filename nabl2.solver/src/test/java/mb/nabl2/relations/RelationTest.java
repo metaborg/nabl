@@ -10,7 +10,7 @@ import com.google.common.collect.Iterables;
 import mb.nabl2.relations.RelationDescription.Reflexivity;
 import mb.nabl2.relations.RelationDescription.Symmetry;
 import mb.nabl2.relations.RelationDescription.Transitivity;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 
 public class RelationTest {
 

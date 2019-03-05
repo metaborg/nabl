@@ -22,7 +22,7 @@ import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IResolutionParameters;

@@ -8,24 +8,25 @@ import mb.nabl2.regexp.IRegExpBuilder;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class Concat<S> implements IRegExp<S> {
+abstract class Or<S> implements IRegExp<S> {
 
     @Value.Parameter public abstract IRegExp<S> getLeft();
 
     @Value.Parameter public abstract IRegExp<S> getRight();
 
+    @Override
     @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Value.Lazy @Override public boolean isNullable() {
-        return getLeft().isNullable() && getRight().isNullable();
+        return getLeft().isNullable() || getRight().isNullable();
     }
 
     @Override public <T> T match(IRegExp.ICases<S, T> visitor) {
-        return visitor.concat(getLeft(), getRight());
+        return visitor.or(getLeft(), getRight());
     }
 
     @Override public String toString() {
-        return "(" + getLeft() + " . " + getRight() + ")";
+        return "(" + getLeft() + " | " + getRight() + ")";
     }
 
 }

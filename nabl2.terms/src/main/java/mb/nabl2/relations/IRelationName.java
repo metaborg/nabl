@@ -20,10 +20,12 @@ public interface IRelationName {
         ) {
             return new Cases<T>() {
 
+                @Override
                 public T caseNamed(String name) {
                     return onNamed.apply(name);
                 }
 
+                @Override
                 public T caseExt(String name) {
                     return onExt.apply(name);
                 }

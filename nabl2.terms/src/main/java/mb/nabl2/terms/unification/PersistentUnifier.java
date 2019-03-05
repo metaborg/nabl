@@ -1256,6 +1256,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // retain(ITermVar)
         ///////////////////////////////////////////
 
+        @Override
         public ISubstitution.Immutable retain(ITermVar var) {
             return retainAll(Collections.singleton(var));
         }
@@ -1344,6 +1345,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             return result;
         }
 
+        @Override
         public IUnifier.Immutable unifier() {
             return unifier;
         }
