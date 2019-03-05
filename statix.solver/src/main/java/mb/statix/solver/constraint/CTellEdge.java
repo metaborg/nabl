@@ -4,17 +4,10 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 
 public class CTellEdge implements IConstraint {
 
@@ -65,25 +58,6 @@ public class CTellEdge implements IConstraint {
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
-    }
-
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        final IUnifier.Immutable unifier = state.unifier();
-        if(!unifier.isGround(sourceTerm)) {
-            throw Delay.ofVars(unifier.getVars(sourceTerm));
-        }
-        if(!unifier.isGround(targetTerm)) {
-            throw Delay.ofVars(unifier.getVars(targetTerm));
-        }
-        final Scope source = Scope.matcher().match(sourceTerm, unifier).orElseThrow(
-                () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
-        if(params.isClosed(source)) {
-            return Optional.empty();
-        }
-        final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
-                () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 
     @Override public String toString(TermFormatter termToString) {

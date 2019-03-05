@@ -25,6 +25,7 @@ public class PSequence<E> implements Iterable<E>, Serializable {
         return elems.isEmpty();
     }
 
+    @Override
     public Iterator<E> iterator() {
         return elems.iterator();
     }

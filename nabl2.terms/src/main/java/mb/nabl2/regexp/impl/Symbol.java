@@ -8,22 +8,23 @@ import mb.nabl2.regexp.IRegExpBuilder;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class Closure<S> implements IRegExp<S> {
+abstract class Symbol<S> implements IRegExp<S> {
 
-    @Value.Parameter public abstract IRegExp<S> getRE();
+    @Value.Parameter public abstract S getSymbol();
 
+    @Override
     @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
     @Override public boolean isNullable() {
-        return true;
+        return false;
     }
 
-    @Override public <T> T match(IRegExp.ICases<S, T> visitor) {
-        return visitor.closure(getRE());
+    @Override public <T> T match(IRegExp.ICases<S,T> visitor) {
+        return visitor.symbol(getSymbol());
     }
 
     @Override public String toString() {
-        return "(" + getRE() + ")*";
+        return getSymbol().toString();
     }
 
 }

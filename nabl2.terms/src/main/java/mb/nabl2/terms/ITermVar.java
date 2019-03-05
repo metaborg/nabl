@@ -8,6 +8,7 @@ public interface ITermVar extends ITerm, IListTerm {
 
     String getName();
 
+    @Override
     ITermVar withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

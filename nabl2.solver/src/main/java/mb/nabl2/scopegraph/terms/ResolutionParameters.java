@@ -16,7 +16,7 @@ import mb.nabl2.regexp.impl.RegExpBuilder;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.scopegraph.IResolutionParameters;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;

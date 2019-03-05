@@ -253,6 +253,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             this.rel2 = rel2;
         }
 
+        @Override
         public IRelation3<V, L, K> inverse() {
             return new Union<>(rel1.inverse(), rel2.inverse());
         }
@@ -277,6 +278,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             return Sets.union(rel1.get(key), rel2.get(key));
         }
 
+        @Override
         public Set<V> get(K key, L label) {
             return Sets.union(rel1.get(key, label), rel2.get(key, label));
         }

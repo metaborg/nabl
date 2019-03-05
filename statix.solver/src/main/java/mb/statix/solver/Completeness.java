@@ -14,10 +14,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.constraint.Constraints;
 import mb.statix.spec.Spec;
 
@@ -91,7 +91,7 @@ public class Completeness {
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, State state) {
         return criticalEdges(constraint, state.spec()).stream().flatMap(ce -> {
             final Optional<CriticalEdge> edge =
-                    Scope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
+                    AScope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
     }

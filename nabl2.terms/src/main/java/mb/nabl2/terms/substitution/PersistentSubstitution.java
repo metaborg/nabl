@@ -99,6 +99,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
+        @Override
         public ISubstitution.Transient melt() {
             return new PersistentSubstitution.Transient(subst.asTransient());
         }
@@ -142,6 +143,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
             other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
         }
 
+        @Override
         public ISubstitution.Immutable freeze() {
             return new PersistentSubstitution.Immutable(subst.freeze());
         }

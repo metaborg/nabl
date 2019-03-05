@@ -74,8 +74,8 @@ public class Solver {
                 }
                 try {
                     final Optional<ConstraintResult> maybeResult;
-                    maybeResult =
-                            constraint.solve(state, new ConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    final ConstraintContext params = new ConstraintContext(completeness, isRigid, isClosed, subDebug);
+                    maybeResult = new StepSolver(state, params).solve(constraint);
                     addTime(constraint, 1, successCount, debug);
                     progress = true;
                     entry.remove();
@@ -198,6 +198,7 @@ public class Solver {
         }
         return sb.toString();
     }
+
 
     @Value.Immutable
     public static abstract class ASolverResult {
