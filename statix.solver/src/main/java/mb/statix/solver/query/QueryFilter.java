@@ -20,15 +20,15 @@ public class QueryFilter implements IQueryFilter {
         this.dataConstraint = dataConstraint;
     }
 
-    public IQueryFilter apply(ISubstitution.Immutable subst) {
+    @Override public IQueryFilter apply(ISubstitution.Immutable subst) {
         return new QueryFilter(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
+    @Override public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
         return ConstraintLabelWF.of(pathConstraint, state, completeness, debug);
     }
 
-    public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) {
+    @Override public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) {
         return new ConstraintDataWF(dataConstraint, state, completeness, debug);
     }
 

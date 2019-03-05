@@ -11,10 +11,12 @@ public interface DataLeq<V> {
     static <V> DataLeq<V> ALL() {
         return new DataLeq<V>() {
 
+            @Override
             public boolean leq(List<V> d1, List<V> d2) {
                 return true;
             }
 
+            @Override
             public boolean alwaysTrue() {
                 return true;
             }
@@ -25,10 +27,12 @@ public interface DataLeq<V> {
     static <V> DataLeq<V> NONE() {
         return new DataLeq<V>() {
 
+            @Override
             public boolean leq(List<V> d1, List<V> d2) {
                 return false;
             }
 
+            @Override
             public boolean alwaysTrue() {
                 return false;
             }

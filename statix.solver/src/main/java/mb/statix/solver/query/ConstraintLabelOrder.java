@@ -33,7 +33,7 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
         this.debug = debug;
     }
 
-    public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
+    @Override public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }

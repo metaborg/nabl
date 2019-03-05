@@ -47,15 +47,15 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             this.data = data;
         }
 
-        public Set.Immutable<L> getLabels() {
+        @Override public Set.Immutable<L> getLabels() {
             return labels;
         }
 
-        public L getEndOfPath() {
+        @Override public L getEndOfPath() {
             return endOfPath;
         }
 
-        public Set.Immutable<R> getRelations() {
+        @Override public Set.Immutable<R> getRelations() {
             return relations;
         }
 
@@ -137,15 +137,15 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             this.data = data;
         }
 
-        public Set.Immutable<L> getLabels() {
+        @Override public Set.Immutable<L> getLabels() {
             return labels;
         }
 
-        public L getEndOfPath() {
+        @Override public L getEndOfPath() {
             return endOfPath;
         }
 
-        public Set.Immutable<R> getRelations() {
+        @Override public Set.Immutable<R> getRelations() {
             return relations;
         }
 
@@ -178,7 +178,7 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
 
         // ------------------------------------------------------------
 
-        public ScopeGraph.Immutable<V, L, R> freeze() {
+        @Override public ScopeGraph.Immutable<V, L, R> freeze() {
             return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges.freeze(), data.freeze());
         }
 
