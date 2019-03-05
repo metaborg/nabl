@@ -22,7 +22,7 @@ public class NullDebugContext implements IDebugContext {
         return depth;
     }
 
-    public boolean isEnabled(Level level) {
+    @Override public boolean isEnabled(Level level) {
         return false;
     }
 

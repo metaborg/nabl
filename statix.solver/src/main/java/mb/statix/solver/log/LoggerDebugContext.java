@@ -33,7 +33,7 @@ public class LoggerDebugContext implements IDebugContext {
         return depth;
     }
 
-    public boolean isEnabled(Level level) {
+    @Override public boolean isEnabled(Level level) {
         return this.level.compareTo(level) <= 0;
     }
 

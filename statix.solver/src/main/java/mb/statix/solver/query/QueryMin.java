@@ -20,15 +20,15 @@ public class QueryMin implements IQueryMin {
         this.dataConstraint = dataConstraint;
     }
 
-    public IQueryMin apply(ISubstitution.Immutable subst) {
+    @Override public IQueryMin apply(ISubstitution.Immutable subst) {
         return new QueryMin(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) {
+    @Override public LabelOrder<ITerm> getLabelOrder(State state, Completeness completeness, IDebugContext debug) {
         return new ConstraintLabelOrder(pathConstraint, state, completeness, debug);
     }
 
-    public DataLeq<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
+    @Override public DataLeq<ITerm> getDataEquiv(State state, Completeness completeness, IDebugContext debug) {
         return new ConstraintDataLeq(dataConstraint, state, completeness, debug);
     }
 
