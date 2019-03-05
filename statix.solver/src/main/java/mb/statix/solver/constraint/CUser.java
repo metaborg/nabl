@@ -64,11 +64,15 @@ public class CUser implements IConstraint {
         return cases.caseUser(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseUser(this);
+    }
+
     @Override public CUser apply(ISubstitution.Immutable subst) {
         return new CUser(name, subst.apply(args), cause);
     }
 
-    public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
+    @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
             throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.immutables.value.Value;
+import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
@@ -48,6 +49,8 @@ public interface IConstraint {
     IConstraint withCause(IConstraint cause);
 
     <R> R match(Cases<R> cases);
+
+    <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
     IConstraint apply(ISubstitution.Immutable subst);
 
@@ -127,8 +130,48 @@ public interface IConstraint {
 
         R caseUser(CUser c);
 
-        default R apply(IConstraint c) {
+        @Override default R apply(IConstraint c) {
             return c.match(this);
+        }
+
+    }
+
+    interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
+
+        R caseEqual(CEqual c) throws E;
+
+        R caseFalse(CFalse c) throws E;
+
+        R caseInequal(CInequal c) throws E;
+
+        R caseNew(CNew c) throws E;
+
+        R casePathDst(CPathDst c) throws E;
+
+        R casePathLabels(CPathLabels c) throws E;
+
+        R casePathLt(CPathLt c) throws E;
+
+        R casePathMatch(CPathMatch c) throws E;
+
+        R casePathScopes(CPathScopes c) throws E;
+
+        R casePathSrc(CPathSrc c) throws E;
+
+        R caseResolveQuery(CResolveQuery c) throws E;
+
+        R caseTellEdge(CTellEdge c) throws E;
+
+        R caseTellRel(CTellRel c) throws E;
+
+        R caseTermId(CTermId c) throws E;
+
+        R caseTrue(CTrue c) throws E;
+
+        R caseUser(CUser c) throws E;
+
+        @Override default R apply(IConstraint c) throws E {
+            return c.matchOrThrow(this);
         }
 
     }

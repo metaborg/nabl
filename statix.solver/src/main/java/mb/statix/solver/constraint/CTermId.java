@@ -56,6 +56,10 @@ public class CTermId implements IConstraint {
         return cases.caseTermId(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseTermId(this);
+    }
+
     @Override public CTermId apply(ISubstitution.Immutable subst) {
         return new CTermId(subst.apply(term), subst.apply(idTerm), cause);
     }

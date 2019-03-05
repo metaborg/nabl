@@ -37,6 +37,10 @@ public class CTrue implements IConstraint {
         return cases.caseTrue(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseTrue(this);
+    }
+
     @Override public CTrue apply(ISubstitution.Immutable subst) {
         return this;
     }

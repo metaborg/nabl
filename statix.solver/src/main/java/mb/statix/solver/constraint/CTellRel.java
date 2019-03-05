@@ -66,6 +66,10 @@ public class CTellRel implements IConstraint {
         return cases.caseTellRel(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseTellRel(this);
+    }
+
     @Override public CTellRel apply(ISubstitution.Immutable subst) {
         return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerms));
     }

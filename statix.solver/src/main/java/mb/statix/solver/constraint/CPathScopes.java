@@ -55,6 +55,10 @@ public class CPathScopes implements IConstraint {
         return cases.casePathScopes(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.casePathScopes(this);
+    }
+
     @Override public CPathScopes apply(ISubstitution.Immutable subst) {
         return new CPathScopes(subst.apply(pathTerm), subst.apply(scopesTerm), cause);
     }

@@ -94,6 +94,10 @@ public class CResolveQuery implements IConstraint {
         return cases.caseResolveQuery(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseResolveQuery(this);
+    }
+
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
         return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
                 subst.apply(resultTerm), cause);
@@ -167,7 +171,7 @@ public class CResolveQuery implements IConstraint {
 
     private DataWF<ITerm> filter(Type type, DataWF<ITerm> filter, IDebugContext debug) {
         return new DataWF<ITerm>() {
-            public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+            @Override public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
                 return filter.wf(filter(type, datum, debug));
             }
         };
@@ -176,11 +180,12 @@ public class CResolveQuery implements IConstraint {
     private DataLeq<ITerm> filter(Type type, DataLeq<ITerm> filter, IDebugContext debug) {
         return new DataLeq<ITerm>() {
 
-            public boolean leq(List<ITerm> d1, List<ITerm> d2) throws ResolutionException, InterruptedException {
+            @Override public boolean leq(List<ITerm> d1, List<ITerm> d2)
+                    throws ResolutionException, InterruptedException {
                 return filter.leq(filter(type, d1, debug), filter(type, d2, debug));
             }
 
-            public boolean alwaysTrue() throws InterruptedException {
+            @Override public boolean alwaysTrue() throws InterruptedException {
                 return filter.alwaysTrue();
             }
 
