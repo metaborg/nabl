@@ -54,6 +54,10 @@ public class CPathSrc implements IConstraint {
         return cases.casePathSrc(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.casePathSrc(this);
+    }
+
     @Override public CPathSrc apply(ISubstitution.Immutable subst) {
         return new CPathSrc(subst.apply(pathTerm), subst.apply(srcTerm), cause);
     }

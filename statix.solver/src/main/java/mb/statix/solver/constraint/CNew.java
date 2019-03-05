@@ -44,6 +44,10 @@ public class CNew implements IConstraint {
         return cases.caseNew(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseNew(this);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }

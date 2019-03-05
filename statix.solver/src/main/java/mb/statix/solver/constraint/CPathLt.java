@@ -59,6 +59,10 @@ public class CPathLt implements IConstraint {
         return cases.casePathLt(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.casePathLt(this);
+    }
+
     @Override public CPathLt apply(ISubstitution.Immutable subst) {
         return new CPathLt(lt, subst.apply(label1Term), subst.apply(label2Term), cause);
     }

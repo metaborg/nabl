@@ -56,6 +56,10 @@ public class CEqual implements IConstraint {
         return cases.caseEqual(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseEqual(this);
+    }
+
     @Override public CEqual apply(ISubstitution.Immutable subst) {
         return new CEqual(subst.apply(term1), subst.apply(term2), cause);
     }

@@ -51,6 +51,10 @@ public class CInequal implements IConstraint {
         return cases.caseInequal(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseInequal(this);
+    }
+
     @Override public CInequal apply(ISubstitution.Immutable subst) {
         return new CInequal(subst.apply(term1), subst.apply(term2), cause);
     }

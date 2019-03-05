@@ -59,6 +59,10 @@ public class CTellEdge implements IConstraint {
         return cases.caseTellEdge(this);
     }
 
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseTellEdge(this);
+    }
+
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
     }
