@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
@@ -19,6 +20,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
@@ -37,6 +39,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
+import mb.statix.solver.constraint.Constraints;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
@@ -140,8 +143,28 @@ public class STX_solve_constraint extends StatixPrimitive {
     }
 
     private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
-        return Iterables2.stream(constraint.terms()).map(unifier::findTerm).filter(t -> TermIndex.get(t).isPresent())
-                .findAny().orElseGet(() -> {
+        // @formatter:off
+        final Function1<IConstraint, Collection<ITerm>> terms = Constraints.cases(
+            onEqual -> ImmutableList.of(),
+            onFalse -> ImmutableList.of(),
+            onInequal -> ImmutableList.of(),
+            onNew -> ImmutableList.of(),
+            onPathDst -> ImmutableList.of(),
+            onPathLabels -> ImmutableList.of(),
+            onPathLt -> ImmutableList.of(),
+            onPathMatch -> ImmutableList.of(),
+            onPathScopes -> ImmutableList.of(),
+            onPathSrc -> ImmutableList.of(),
+            onResolveQuery -> ImmutableList.of(),
+            onTellEdge -> ImmutableList.of(),
+            onTellRel -> ImmutableList.of(),
+            onTermId -> ImmutableList.of(),
+            onTrue -> ImmutableList.of(),
+            onUser -> onUser.args()
+        );
+        // @formatter:on
+        return Iterables2.stream(terms.apply(constraint)).map(unifier::findTerm)
+                .filter(t -> TermIndex.get(t).isPresent()).findAny().orElseGet(() -> {
                     return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
                 });
     }

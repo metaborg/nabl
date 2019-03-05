@@ -35,12 +35,24 @@ public class CPathScopes implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm pathTerm() {
+        return pathTerm;
+    }
+
+    public ITerm scopesTerm() {
+        return scopesTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CPathScopes withCause(@Nullable IConstraint cause) {
         return new CPathScopes(pathTerm, scopesTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathScopes(this);
     }
 
     @Override public CPathScopes apply(ISubstitution.Immutable subst) {

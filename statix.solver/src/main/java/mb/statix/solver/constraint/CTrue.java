@@ -33,6 +33,10 @@ public class CTrue implements IConstraint {
         return new CTrue(cause);
     }
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTrue(this);
+    }
+
     @Override public CTrue apply(ISubstitution.Immutable subst) {
         return this;
     }

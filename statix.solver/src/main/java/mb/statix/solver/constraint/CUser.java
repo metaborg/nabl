@@ -1,11 +1,9 @@
 package mb.statix.solver.constraint;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -19,7 +17,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple3;
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -29,7 +26,6 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.Rule;
-import mb.statix.spec.Spec;
 
 public class CUser implements IConstraint {
 
@@ -48,7 +44,11 @@ public class CUser implements IConstraint {
         this.cause = cause;
     }
 
-    @Override public Iterable<ITerm> terms() {
+    public String name() {
+        return name;
+    }
+
+    public List<ITerm> args() {
         return args;
     }
 
@@ -60,9 +60,8 @@ public class CUser implements IConstraint {
         return new CUser(name, args, cause);
     }
 
-    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return spec.scopeExtensions().get(name).stream().map(il -> CriticalEdge.of(args.get(il._1()), il._2()))
-                .collect(Collectors.toList());
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseUser(this);
     }
 
     @Override public CUser apply(ISubstitution.Immutable subst) {

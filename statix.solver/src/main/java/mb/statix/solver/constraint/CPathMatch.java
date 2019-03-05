@@ -28,7 +28,11 @@ public class CPathMatch implements IConstraint {
     private final @Nullable IConstraint cause;
 
     public CPathMatch(IRegExp<ITerm> re, IListTerm labelsTerm) {
-        this(RegExpMatcher.create(re), labelsTerm, null);
+        this(RegExpMatcher.create(re), labelsTerm);
+    }
+
+    public CPathMatch(IRegExpMatcher<ITerm> re, IListTerm labelsTerm) {
+        this(re, labelsTerm, null);
     }
 
     private CPathMatch(IRegExpMatcher<ITerm> re, IListTerm labelsTerm, @Nullable IConstraint cause) {
@@ -37,12 +41,24 @@ public class CPathMatch implements IConstraint {
         this.cause = cause;
     }
 
+    public IRegExpMatcher<ITerm> re() {
+        return re;
+    }
+
+    public IListTerm labelsTerm() {
+        return labelsTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CPathMatch withCause(@Nullable IConstraint cause) {
         return new CPathMatch(re, labelsTerm, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathMatch(this);
     }
 
     @Override public CPathMatch apply(ISubstitution.Immutable subst) {

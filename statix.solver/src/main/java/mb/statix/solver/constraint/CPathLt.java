@@ -35,12 +35,28 @@ public class CPathLt implements IConstraint {
         this.cause = cause;
     }
 
+    public IRelation.Immutable<ITerm> lt() {
+        return lt;
+    }
+
+    public ITerm label1Term() {
+        return label1Term;
+    }
+
+    public ITerm label2Term() {
+        return label2Term;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CPathLt withCause(@Nullable IConstraint cause) {
         return new CPathLt(lt, label1Term, label2Term, cause);
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathLt(this);
     }
 
     @Override public CPathLt apply(ISubstitution.Immutable subst) {
