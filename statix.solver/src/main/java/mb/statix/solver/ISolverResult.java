@@ -25,6 +25,14 @@ public interface ISolverResult {
     default boolean hasErrors() {
         return !errors().isEmpty();
     }
+    
+    /**
+     * @return
+     *      true if there are delays, false otherwise
+     */
+    default boolean hasDelays() {
+        return !delays().isEmpty();
+    }
 
     /**
      * A map from constraints to the delay on which that constraint is delayed.

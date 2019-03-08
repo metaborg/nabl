@@ -422,14 +422,7 @@ public class ModuleSolver implements IOwnable {
         @Value.Parameter public abstract Set<IConstraint> errors();
 
         @Value.Parameter public abstract Map<IConstraint, Delay> delays();
-        
-        public boolean isStuck() {
-            return !delays().isEmpty();
-        }
-        
-        public boolean hasFailed() {
-            return !errors().isEmpty();
-        }
+
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
