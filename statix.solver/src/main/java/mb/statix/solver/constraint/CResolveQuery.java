@@ -223,10 +223,10 @@ public class CResolveQuery implements IConstraint {
             //TODO TAICO in theory, there shouldn't need to be copies of the state and completeness.
             // @formatter:off
             final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
-                    .withLabelWF(filter.getLabelWF(state.copy(), params.completeness().copy(), subDebug))
-                    .withDataWF(filter(type, filter.getDataWF(state.copy(), params.completeness().copy(), subDebug), subDebug))
-                    .withLabelOrder(min.getLabelOrder(state.copy(), params.completeness().copy(), subDebug))
-                    .withDataEquiv(filter(type, min.getDataEquiv(state.copy(), params.completeness().copy(), subDebug), subDebug))
+                    .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
                     .build(state.scopeGraph(), relation);

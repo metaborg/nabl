@@ -26,11 +26,11 @@ public class MQueryMin implements IMQueryMin {
     }
 
     public LabelOrder<ITerm> getLabelOrder(MState state, MCompleteness completeness, IDebugContext debug) {
-        return new MConstraintLabelOrder(pathConstraint, state, completeness, debug);
+        return new MConstraintLabelOrder(pathConstraint, state.copy(), completeness.copy(), debug);
     }
 
     public DataLeq<ITerm> getDataEquiv(MState state, MCompleteness completeness, IDebugContext debug) {
-        return new MConstraintDataLeq(dataConstraint, state, completeness, debug);
+        return new MConstraintDataLeq(dataConstraint, state.copy(), completeness.copy(), debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

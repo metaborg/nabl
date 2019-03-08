@@ -192,17 +192,16 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
 
     @SuppressWarnings("unchecked")
     public static MConstraintLabelWF of(Rule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
-        MState newState = state.copy();
-        final ITermVar lbls = newState.freshVar("lbls");
+        final ITermVar lbls = state.freshVar("lbls");
         final Tuple2<Set<ITermVar>, Set<IConstraint>> inst;
         try {
-            if((inst = constraint.apply(ImmutableList.of(lbls), newState).orElse(null)) == null) {
+            if((inst = constraint.apply(ImmutableList.of(lbls), state).orElse(null)) == null) {
                 throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");
             }
         } catch(Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
-        return new MConstraintLabelWF(inst._2(), newState, state.vars(), (Set<ITerm>) state.scopes(), completeness, debug, lbls, lbls);
+        return new MConstraintLabelWF(inst._2(), state, state.vars(), (Set<ITerm>) state.scopes(), completeness, debug, lbls, lbls);
     }
 
 }

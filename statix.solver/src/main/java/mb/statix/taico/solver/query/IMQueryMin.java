@@ -19,9 +19,35 @@ public interface IMQueryMin {
 
     IMQueryMin apply(ISubstitution.Immutable subst);
 
+    /**
+     * @param state
+     *      the state (will be copied)
+     * @param iCompleteness
+     *      the completeness (will be copied)
+     * @param debug
+     *      the debug context
+     * 
+     * @return
+     *      the label ordering
+     * 
+     * @throws ResolutionException
+     */
     LabelOrder<ITerm> getLabelOrder(MState state, MCompleteness iCompleteness, IDebugContext debug)
             throws ResolutionException;
 
+    /**
+     * @param state
+     *      the state (will be copied)
+     * @param iCompleteness
+     *      the completeness (will be copied)
+     * @param debug
+     *      the debug context
+     * 
+     * @return
+     *      the data ordering
+     * 
+     * @throws ResolutionException
+     */
     DataLeq<ITerm> getDataEquiv(MState state, MCompleteness iCompleteness, IDebugContext debug)
             throws ResolutionException;
 

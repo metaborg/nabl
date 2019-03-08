@@ -30,11 +30,11 @@ public class MQueryFilter implements IMQueryFilter {
     }
 
     public LabelWF<ITerm> getLabelWF(MState state, MCompleteness completeness, IDebugContext debug) {
-        return MConstraintLabelWF.of(pathConstraint, state, completeness, debug);
+        return MConstraintLabelWF.of(pathConstraint, state.copy(), completeness.copy(), debug);
     }
 
     public DataWF<ITerm> getDataWF(MState state, MCompleteness completeness, IDebugContext debug) {
-        return new MConstraintDataWF(dataConstraint, state, completeness, debug);
+        return new MConstraintDataWF(dataConstraint, state.copy(), completeness.copy(), debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

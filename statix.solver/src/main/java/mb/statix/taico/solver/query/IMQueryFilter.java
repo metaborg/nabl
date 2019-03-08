@@ -28,8 +28,34 @@ public interface IMQueryFilter {
      */
     IMQueryFilter apply(ISubstitution.Immutable subst);
 
+    /**
+     * @param state
+     *      the state (will be copied)
+     * @param completeness
+     *      the completeness (will be copied)
+     * @param debug
+     *      the debug
+     * 
+     * @return
+     *      the label wellformedness
+     * 
+     * @throws ResolutionException
+     */
     LabelWF<ITerm> getLabelWF(MState state, MCompleteness completeness, IDebugContext debug) throws ResolutionException;
 
+    /**
+     * @param state
+     *      the state (will be copied)
+     * @param completeness
+     *      the completeness (will be copied)
+     * @param debug
+     *      the debug
+     * 
+     * @return
+     *      the data wellformedness
+     * 
+     * @throws ResolutionException
+     */
     DataWF<ITerm> getDataWF(MState state, MCompleteness completeness, IDebugContext debug) throws ResolutionException;
 
     /**
