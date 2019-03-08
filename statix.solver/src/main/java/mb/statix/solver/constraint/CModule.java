@@ -158,7 +158,7 @@ public class CModule implements IConstraint {
                 throw d;
             }
             
-            //TODO Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
+            //TODO IMPORTANT Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
             proxyDebug.info("Creating new solver for module boundary in {}", this.name);
             state.solver().childSolver(childState, instantiatedBody, state.solver().isRigid(), state.solver().isClosed());
             proxyDebug.info("Module boundary accepted");

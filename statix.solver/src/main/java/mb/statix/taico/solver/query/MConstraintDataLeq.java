@@ -47,7 +47,6 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
             if((result = constraint.apply(ImmutableList.of(term1, term2), resultState).orElse(null)) == null) {
                 return false;
             }
-            //TODO TAICO Fix entails
             if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("{} shadows {}", resultState.unifier().toString(term1), resultState.unifier().toString(term2));

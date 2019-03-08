@@ -78,6 +78,30 @@ public interface IDebugContext {
      *      the arguments to format with
      */
     void error(String fmt, Object... args);
+    
+    /**
+     * Logs the given message at the debug level, formatting it with the given arguments.
+     * 
+     * @param fmt
+     *      the message to format and log
+     * @param args
+     *      the arguments to format with
+     */
+    default void debug(String fmt, Object... args) {
+        log(Level.Debug, fmt, args);
+    }
+    
+    /**
+     * Logs the given message at the trace level, formatting it with the given arguments.
+     * 
+     * @param fmt
+     *      the message to format and log
+     * @param args
+     *      the arguments to format with
+     */
+    default void trace(String fmt, Object... args) {
+        log(Level.Trace, fmt, args);
+    }
 
     /**
      * Logs the given message at the given level, formatting it with the given arguments.

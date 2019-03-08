@@ -15,7 +15,6 @@ import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -229,8 +228,6 @@ public class ModuleSolver implements IOwnable {
         }
         try {
             final Optional<MConstraintResult> maybeResult;
-            subDebug.info("CAN YOU SEE ME? (0)");
-            //TODO TAICO Freeze the completeness
             maybeResult =
                     constraint.solveMutable(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
@@ -253,7 +250,6 @@ public class ModuleSolver implements IOwnable {
                 //TODO TAICO CRITICALEDGES Fix critical edge mechanism
                 constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, result.state()), subDebug);
             } else {
-                System.out.println("FAILED");
                 subDebug.error("Failed");
                 failed.add(constraint);
                 if(proxyDebug.isRoot()) {
@@ -266,7 +262,6 @@ public class ModuleSolver implements IOwnable {
             }
             proxyDebug.commit();
         } catch(Delay d) {
-            System.out.println("DELAY");
             addTime(constraint, 1, delayCount, debug);
             if (!d.vars().isEmpty()) {
                 subDebug.info("Delayed on " + d.vars());
@@ -331,7 +326,7 @@ public class ModuleSolver implements IOwnable {
     public static Optional<MSolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
             final MCompleteness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
-        System.err.println("Running entailment check with modularized solver on entire scope graph of module " + state.owner().getId());
+        debug.debug("Entails for {}", state.owner().getId());
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
         }
@@ -376,7 +371,7 @@ public class ModuleSolver implements IOwnable {
         while (solver.solveStep());
         final MSolverResult result = solver.finishSolver();
         
-        System.err.println("Completed entails");
+        debug.trace("Completed entails");
         
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
