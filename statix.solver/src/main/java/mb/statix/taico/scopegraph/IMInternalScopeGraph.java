@@ -1,6 +1,7 @@
 package mb.statix.taico.scopegraph;
 
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Set;
 
@@ -87,4 +88,27 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      the set of scopes that can be extended by this scope graph
      */
     Immutable<? extends S> getExtensibleScopes();
+    
+    /**
+     * Creates a deep copy of this scope graph, using the given scope graph as a parent.
+     * 
+     * @param parent
+     *      the parent of the copy scope graph
+     */
+    IMInternalScopeGraph<S, V, L, R> deepCopy(IMInternalScopeGraph<S, V, L, R> parent);
+    
+    /**
+     * Updates this scope graph to the state of the given copy.
+     * 
+     * @param copy
+     *      the copy of this scope graph
+     * @param checkConcurrency
+     *      
+     * 
+     * @throws IllegalArgumentException
+     *      If the given scope graph is not a copy of this one.
+     * @throws ConcurrentModificationException
+     *      If this scope graph has been updated after the copy was created.
+     */
+    void updateToCopy(IMInternalScopeGraph<S, V, L, R> copy, boolean checkConcurrency);
 }

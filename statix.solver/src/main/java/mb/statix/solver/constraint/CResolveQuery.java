@@ -198,6 +198,7 @@ public class CResolveQuery implements IConstraint {
         final IUnifier.Immutable unifier = state.unifier();
         //TODO TAICO We might be trying to query a scope that is not ours, will our unifier still call it ground?
         if(!unifier.isGround(scopeTerm)) {
+            System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
             throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
         final OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scopeTerm, unifier)
@@ -238,12 +239,15 @@ public class CResolveQuery implements IConstraint {
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
             return Optional.of(MConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
+            System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
         } catch(IncompleteEdgeException e) {
+            System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
         } catch(ResolutionDelayException e) {
+            System.err.println("Delaying query for unknown reason");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw e.getCause();
         } catch(ResolutionException e) {

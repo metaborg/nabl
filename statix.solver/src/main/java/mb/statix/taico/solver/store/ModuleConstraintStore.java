@@ -171,7 +171,8 @@ public class ModuleConstraintStore implements IConstraintStore {
                         stuckOnVar.put(var, constraint);
                     }
                 }
-                //TODO TAICO Implement system for delaying on critical edges
+                //TODO TAICO CRITICALEDGES Implement event based system for propagating this information to other solvers that are interested in it
+                //TODO TAICO CRITICALEDGES Implement system for delaying on critical edges
 //                else if (!d.criticalEdges().isEmpty()) {
 //                    debug.info("delayed {} on critical edges {}", constraint, d.criticalEdges());
 //                    for (CriticalEdge edge : d.criticalEdges()) {

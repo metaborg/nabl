@@ -2,9 +2,11 @@ package mb.statix.taico.scopegraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
@@ -15,6 +17,7 @@ import mb.statix.taico.util.IOwnable;
 import mb.statix.util.Capsules;
 
 public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>, IOwnable {
+    private static AtomicInteger idCounter = new AtomicInteger();
     //Constants for this module
     protected final IModule owner;
     protected final Immutable<? extends ITerm> labels;
@@ -32,6 +35,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     protected final IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
 
     private int scopeCounter;
+    private int id;
+    private int copyId;
+    private ModuleScopeGraph original;
     
     public ModuleScopeGraph(
             ModuleScopeGraph parent,
@@ -40,23 +46,25 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             ITerm endOfPath,
             Iterable<? extends ITerm> relations,
             Iterable<? extends IOwnableScope> canExtend) {
-        this(parent, owner, Capsules.newSet(labels), endOfPath, Capsules.newSet(relations), Capsules.newSet(canExtend));
+        this(idCounter.getAndIncrement(), parent, owner, labels, endOfPath, relations, canExtend);
     }
     
-    public ModuleScopeGraph(
+    private ModuleScopeGraph(
+            int id,
             ModuleScopeGraph parent,
             IModule owner,
-            Immutable<? extends ITerm> labels,
+            Iterable<? extends ITerm> labels,
             ITerm endOfPath,
-            Immutable<? extends ITerm> relations,
-            Immutable<? extends IOwnableScope> canExtend) {
+            Iterable<? extends ITerm> relations,
+            Iterable<? extends IOwnableScope> canExtend) {
+        this.id = id;
         this.parent = parent;
         this.owner = owner;
-        this.labels = labels;
+        this.labels = labels instanceof Immutable ? (Immutable<? extends ITerm>) labels : Capsules.newSet(labels);
         this.endOfPath = endOfPath;
-        assert labels.contains(endOfPath);
-        this.relations = relations;
-        this.canExtend = canExtend;
+        assert this.labels.contains(endOfPath);
+        this.relations = relations instanceof Immutable ? (Immutable<? extends ITerm>) relations : Capsules.newSet(relations);
+        this.canExtend = canExtend instanceof Immutable ? (Immutable<? extends IOwnableScope>) canExtend : Capsules.newSet(canExtend);
     }
     
     @Override
@@ -212,5 +220,88 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     @Override
     public Collection<ModuleScopeGraph> getChildren() {
         return children;
+    }
+    
+    @Override
+    public synchronized ModuleScopeGraph deepCopy(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> parent) {
+        if (parent != null && !(parent instanceof ModuleScopeGraph)) throw new IllegalArgumentException("the parent must be a module scope graph");
+        ModuleScopeGraph msg = new ModuleScopeGraph(id, (ModuleScopeGraph) parent, owner, labels, endOfPath, relations, canExtend);
+        msg.original = this;
+        msg.copyId = this.copyId + 1;
+        msg.scopeCounter = this.scopeCounter;
+        msg.scopes.addAll(this.scopes);
+        msg.edges.putAll(this.edges);
+        msg.data.putAll(this.data);
+        for (ModuleScopeGraph child : this.children) {
+            msg.children.add(child.deepCopy(msg));
+        }
+        
+        return msg;
+    }
+    
+    @Override
+    public synchronized void updateToCopy(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> copyI, boolean checkConcurrency) {
+        if (!(copyI instanceof ModuleScopeGraph)) throw new IllegalArgumentException("The copy must be a module scope graph");
+        ModuleScopeGraph copy = (ModuleScopeGraph) copyI;
+        
+        System.err.println("Updating " + this + " with " + copy);
+        
+        if (copy.id != this.id) {
+            throw new IllegalArgumentException("The given scope graph is not a copy of this scope graph!");
+        }
+        
+        if (checkConcurrency) {
+            if (this.scopeCounter > copy.scopeCounter) {
+                throw new ConcurrentModificationException("Concurrent modification detected in the scope graph when updating to a copy (scope counter)");
+            } else if (!copy.scopes.containsAll(this.scopes)) {
+                throw new ConcurrentModificationException("Concurrent modification detected in the scope graph when updating to a copy (scopes)");
+            } else if (!containsAll(copy.edges, this.edges)) {
+                throw new ConcurrentModificationException("Concurrent modification detected in the scope graph when updating to a copy (edges)");
+            } else if (!containsAll(copy.data, this.data)) {
+                throw new ConcurrentModificationException("Concurrent modification detected in the scope graph when updating to a copy (data)");
+            } else if (!copy.children.containsAll(this.children)) {
+                throw new ConcurrentModificationException("Concurrent modification detected in the scope graph when updating to a copy (children)");
+            }
+        }
+        
+        this.scopeCounter = copy.scopeCounter;
+        this.scopes.addAll(copy.scopes);
+        this.edges.putAll(copy.edges);
+        this.data.putAll(copy.data);
+        for (ModuleScopeGraph copyChild : copy.children) {
+            if (copyChild.original != null) {
+                copyChild.original.updateToCopy(copyChild, checkConcurrency);
+            } else {
+                //Create a copy, make it the original
+                ModuleScopeGraph copyChildCopy = copyChild.deepCopy(this);
+                copyChildCopy.original = copyChild.original; //Mark the new child as the original
+                copyChild.original = copyChildCopy; //Create a link from the copy to the "original"
+                this.children.add(copyChildCopy);
+            }
+        }
+    }
+    
+    @Override
+    public int hashCode() {
+        return this.id;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (!(obj instanceof ModuleScopeGraph)) return false;
+        ModuleScopeGraph other = (ModuleScopeGraph) obj;
+        return this.id == other.id;
+    }
+    
+    @Override
+    public String toString() {
+        return "SG<@" + owner.getId() + ", " + id + "_" + copyId + ">";
+    }
+    
+    private static <A, B, C> boolean containsAll(IRelation3<A, B, C> haystack, IRelation3<A, B, C> needle) {
+        //If there is ANY element that is not contained (anyMatch(c -> !c) == true), then the result should be false.
+        return !needle.stream(haystack::contains).anyMatch(c -> !c);
     }
 }

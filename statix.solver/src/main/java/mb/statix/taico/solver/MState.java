@@ -2,6 +2,7 @@ package mb.statix.taico.solver;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -50,7 +51,8 @@ public class MState {
         this.coordinator = orig.coordinator;
         this.owner = orig.owner;
         this.spec = orig.spec;
-        this.scopeGraph = new ViewModuleScopeGraph(orig.scopeGraph);
+        //TODO The parent should also be copied, we need a tree copy of the entire scope graph for consistency.
+        this.scopeGraph = orig.scopeGraph.deepCopy(orig.scopeGraph.getParent());
         this.solver = orig.solver;
         this.unifier = orig.unifier;
         this.varCounter = orig.varCounter;
@@ -131,5 +133,34 @@ public class MState {
      */
     public synchronized MState copy() {
         return new MState(this);
+    }
+    
+    /**
+     * Updates this state to the given state.
+     * The given state must be a clone from this state, and this state must not have been modified
+     * after the copy.
+     * 
+     * @param state
+     *      the state to update to
+     * 
+     * @throws IllegalArgumentException
+     *      If the given state is not a copy of this state.
+     * @throws ConcurrentModificationException
+     *      If this state was modified after the copy was made.
+     */
+    public synchronized void updateTo(MState state) {
+        if (this.owner != state.owner) throw new IllegalArgumentException("Cannot update to an unrelated state");
+        
+        System.err.println("Updating state of @" + owner.getId());
+        if (!state.vars.containsAll(this.vars)) {
+            throw new ConcurrentModificationException("The original state was modified after the copy was made but before the updates were applied! (vars)");
+        } else if (this.varCounter > state.varCounter) {
+            throw new ConcurrentModificationException("The original state was modified after the copy was made but before the updates were applied! (varCounter)");
+        }
+        
+        this.scopeGraph.updateToCopy(state.scopeGraph, false);
+        this.unifier = state.unifier;
+        this.varCounter = state.varCounter;
+        this.vars = state.vars;
     }
 }

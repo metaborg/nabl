@@ -27,6 +27,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
 import mb.statix.solver.ISolverResult;
+import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -229,14 +230,16 @@ public class ModuleSolver implements IOwnable {
         try {
             final Optional<MConstraintResult> maybeResult;
             //TODO TAICO Freeze the completeness
+            MState copyState = state.copy();
             maybeResult =
-                    constraint.solveMutable(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    constraint.solveMutable(copyState, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
             entry.remove();
             completeness.remove(constraint);
             reductions += 1;
             if(maybeResult.isPresent()) {
                 final MConstraintResult result = maybeResult.get();
+                state.updateTo(result.state());
                 if(!result.constraints().isEmpty()) {
                     final List<IConstraint> newConstaints = result.constraints().stream()
                             .map(c -> c.withCause(constraint)).collect(Collectors.toList());
@@ -248,7 +251,7 @@ public class ModuleSolver implements IOwnable {
                 }
                 constraints.activateFromVars(result.vars(), subDebug);
                 //TODO TAICO CRITICALEDGES Fix critical edge mechanism
-                //constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
+                constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, result.state()), subDebug);
             } else {
                 subDebug.error("Failed");
                 failed.add(constraint);
@@ -269,6 +272,7 @@ public class ModuleSolver implements IOwnable {
                 subDebug.info("Delayed on " + d.criticalEdges());
             }
             
+            if (constraint instanceof CResolveQuery) System.err.println("Delayed query!");
             delayedLog.absorb(proxyDebug.clear());
             entry.delay(d);
             delays += 1;
@@ -336,10 +340,11 @@ public class ModuleSolver implements IOwnable {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
         
         final Predicate1<ITermVar> isRigid = v -> {
+            //if owner == state.owner, return false.
             if (rigidVars.contains(v)) return true;
+            
             IModule owner = state.manager().getModule(v.getResource());
             System.err.println("[1] isRigid matcher with new owner " + owner);
-            //TODO Is this correct?
             return owner != state.owner();
         };
         
@@ -367,6 +372,9 @@ public class ModuleSolver implements IOwnable {
         solver.separateSolver = true;
         while (solver.solveStep());
         final MSolverResult result = solver.finishSolver();
+        
+        System.err.println("Completed entails");
+        
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
             return Optional.empty();

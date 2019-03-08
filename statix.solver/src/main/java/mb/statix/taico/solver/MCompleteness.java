@@ -2,13 +2,19 @@ package mb.statix.taico.solver;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
 
+import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.module.IModule;
@@ -84,24 +90,35 @@ public class MCompleteness implements IOwnable {
              */
         };
         
-        if (scope instanceof IOwnable) {
-            System.err.println("Scope is ownable!");
+        IModule scopeOwner;
+        OwnableScope oscope;
+        if (scope instanceof OwnableScope) {
+            System.err.println("Scope is ownableScope!");
+            oscope = (OwnableScope) scope;
+            scopeOwner = oscope.getOwner();
+        } else if (scope instanceof IOwnable) {
+            System.err.println("Scope is ownable: " + scope.getClass().getName());
+            scopeOwner = ((IOwnable) scope).getOwner();
+            oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier).orElse(null);
+            if (oscope != null && oscope.getOwner() != scopeOwner) System.err.println("FATAL: Scope owner does not match iownable");
         } else {
-            System.err.println("Scope is not ownable!");
+            System.err.println("FATAL Scope is not ownable!");
+            oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier).orElse(null);
+            scopeOwner = oscope == null ? null : oscope.getOwner();
         }
         
-        OwnableScope oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier).orElse(null);
         if (oscope == null) {
             System.err.println("Cannot turn scope " + scope + " into ownable scope via matcher!");
             return isCompleteFinal(equal);
-        } else if (oscope.getOwner() == state.owner()) {
+        } else if (scopeOwner == state.owner()) {
             System.err.println("Completeness of " + owner + " got isComplete query from matching owner: " + scope);
             //Transitive
             return isCompleteFinal(equal);
         } else {
-            System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + oscope.getOwner() + ". Redirecting there");
+            System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + scopeOwner + ". Redirecting there");
             //TODO CONCURRENCY This is a concurrency problem, delegation to solvers
-            MCompleteness target = oscope.getOwner().getCurrentState().solver().getCompleteness();
+            //TODO Possible state leaking point
+            MCompleteness target = scopeOwner.getCurrentState().solver().getCompleteness();
             return target.isCompleteFinal(equal);
         }
     }
@@ -127,6 +144,7 @@ public class MCompleteness implements IOwnable {
         
         //TODO OPTIMIZATION point
         //Use passed spec instead?
+        //TODO Possible state inconsistency point (uses current state of module)
         boolean tbr = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))
                 .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
         System.err.println("Completeness of " + owner + " result: " + tbr);
@@ -178,5 +196,13 @@ public class MCompleteness implements IOwnable {
     @Deprecated
     public Completeness toCompleteness() {
         return new Completeness(Capsules.newSet(incomplete));
+    }
+    
+    public static List<CriticalEdge> criticalEdges(IConstraint constraint, MState state) {
+        return constraint.criticalEdges(state.spec()).stream().flatMap(ce -> {
+            final Optional<CriticalEdge> edge =
+                    Scope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
+            return Optionals.stream(edge);
+        }).collect(Collectors.toList());
     }
 }
