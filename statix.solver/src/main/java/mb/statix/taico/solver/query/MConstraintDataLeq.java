@@ -29,6 +29,7 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
     private final MState state;
     private final MCompleteness completeness;
     private final IDebugContext debug;
+    private volatile Boolean alwaysTrue;
 
     public MConstraintDataLeq(Rule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
         this.constraint = constraint;
@@ -66,7 +67,9 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
     }
 
     @Override public boolean alwaysTrue() throws InterruptedException {
-        return constraint.isAlways(state.spec()).orElse(false);
+        if (alwaysTrue != null) return alwaysTrue;
+        
+        return alwaysTrue = constraint.isAlways(state.spec()).orElse(false);
     }
 
 }
