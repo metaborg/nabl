@@ -30,7 +30,6 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.query.IQueryFilter;
