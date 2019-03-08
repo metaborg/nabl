@@ -30,7 +30,9 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -205,7 +207,9 @@ public class CResolveQuery implements IConstraint {
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         try {
-            final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
+            //TODO TAICO Hide the debug of the query again
+            final IDebugContext subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
+            //final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
             final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
                 if(params.completeness().isComplete(s, l, state)) {
                     subDebug.info("{} complete in {}", s, l);
@@ -217,7 +221,7 @@ public class CResolveQuery implements IConstraint {
             };
             IMQueryFilter filter = this.filter.toMutable();
             IMQueryMin min = this.min.toMutable();
-            //TODO TAICO fix queries
+            //TODO TAICO in theory, there shouldn't need to be copies of the state and completeness.
             // @formatter:off
             final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
                     .withLabelWF(filter.getLabelWF(state.copy(), params.completeness().copy(), subDebug))

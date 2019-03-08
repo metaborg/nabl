@@ -111,4 +111,12 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      If this scope graph has been updated after the copy was created.
      */
     void updateToCopy(IMInternalScopeGraph<S, V, L, R> copy, boolean checkConcurrency);
+    
+    /**
+     * Deletes the given scope (e.g. for a rollback).
+     * 
+     * @param scope
+     *      the scope to delete
+     */
+    void revokeScope(S scope);
 }

@@ -229,10 +229,10 @@ public class ModuleSolver implements IOwnable {
         }
         try {
             final Optional<MConstraintResult> maybeResult;
+            subDebug.info("CAN YOU SEE ME? (0)");
             //TODO TAICO Freeze the completeness
-            MState copyState = state.copy();
             maybeResult =
-                    constraint.solveMutable(copyState, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    constraint.solveMutable(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
             entry.remove();
             completeness.remove(constraint);
@@ -253,6 +253,7 @@ public class ModuleSolver implements IOwnable {
                 //TODO TAICO CRITICALEDGES Fix critical edge mechanism
                 constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, result.state()), subDebug);
             } else {
+                System.out.println("FAILED");
                 subDebug.error("Failed");
                 failed.add(constraint);
                 if(proxyDebug.isRoot()) {
@@ -265,6 +266,7 @@ public class ModuleSolver implements IOwnable {
             }
             proxyDebug.commit();
         } catch(Delay d) {
+            System.out.println("DELAY");
             addTime(constraint, 1, delayCount, debug);
             if (!d.vars().isEmpty()) {
                 subDebug.info("Delayed on " + d.vars());
@@ -336,7 +338,8 @@ public class ModuleSolver implements IOwnable {
         
         //Rigid vars = all variables in the state that are not in the local variables + all variables owned by other modules
         final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
-        final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
+        final Set<ITermVar> rigidVars = new HashSet<>(state.vars());
+        rigidVars.removeAll(localVars);
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
         
         final Predicate1<ITermVar> isRigid = v -> {
@@ -385,7 +388,6 @@ public class ModuleSolver implements IOwnable {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
             throw result.delay().retainAll(state.vars(), state.scopes());
         }
-
     }
 
     private static void printTrace(IConstraint failed, IUnifier.Immutable unifier, IDebugContext debug) {
@@ -420,6 +422,14 @@ public class ModuleSolver implements IOwnable {
         @Value.Parameter public abstract Set<IConstraint> errors();
 
         @Value.Parameter public abstract Map<IConstraint, Delay> delays();
+        
+        public boolean isStuck() {
+            return !delays().isEmpty();
+        }
+        
+        public boolean hasFailed() {
+            return !errors().isEmpty();
+        }
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {

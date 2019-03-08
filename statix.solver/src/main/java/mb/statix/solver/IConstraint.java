@@ -88,6 +88,14 @@ public interface IConstraint {
      *      The exception contains the information about what information is required to solve.
      */
     Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws InterruptedException, Delay;
+    
+    /**
+     * @return
+     *      true if this constraint could cause state modifications, false otherwise
+     */
+    default boolean canModifyState() {
+        return false;
+    }
 
     /**
      * Converts this constraint to a string, where terms are formatted using the given term

@@ -167,6 +167,14 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         scopes.add(scope);
         return scope;
     }
+    
+    @Override
+    public void revokeScope(IOwnableTerm scope) {
+        System.err.println("[" + owner.getId() + "] Deleting scope " + scope);
+        if (!scopes.remove(scope)) {
+            throw new IllegalStateException("Scope is already removed!");
+        }
+    }
 
     @Override
     public boolean addEdge(IOwnableTerm sourceScope, ITerm label, IOwnableTerm targetScope) {
@@ -241,6 +249,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     
     @Override
     public synchronized void updateToCopy(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> copyI, boolean checkConcurrency) {
+        if (this == copyI) return;
         if (!(copyI instanceof ModuleScopeGraph)) throw new IllegalArgumentException("The copy must be a module scope graph");
         ModuleScopeGraph copy = (ModuleScopeGraph) copyI;
         

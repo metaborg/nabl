@@ -55,6 +55,11 @@ public class CEqual implements IConstraint {
     @Override public CEqual apply(ISubstitution.Immutable subst) {
         return new CEqual(subst.apply(term1), subst.apply(term2), cause);
     }
+    
+    @Override
+    public boolean canModifyState() {
+        return true;
+    }
 
     /**
      * @see IConstraint#solve
@@ -99,6 +104,7 @@ public class CEqual implements IConstraint {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification succeeded: {}", result.result());
                 }
+                //TODO Concurrency point for unifier modifications
                 state.setUnifier(result.unifier());
                 return Optional.of(MConstraintResult.ofVars(state, result.result().varSet()));
             } else {

@@ -1,9 +1,12 @@
 package mb.statix.taico.solver.store;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.HashMultimap;
@@ -20,7 +23,8 @@ import mb.statix.solver.log.IDebugContext;
 
 public class ModuleConstraintStore implements IConstraintStore {
     private final Queue<IConstraint> active;
-    private final Queue<IConstraint> stuckBecauseStuck;
+//    private final Queue<IConstraint> stuckBecauseStuck;
+    private final Set<IConstraint> stuckBecauseStuck;
     private final Multimap<ITermVar, IConstraint> stuckOnVar;
     private final Multimap<CriticalEdge, IConstraint> stuckOnEdge;
     
@@ -29,7 +33,8 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     public ModuleConstraintStore(Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.active = new LinkedList<>();
-        this.stuckBecauseStuck = new LinkedList<>();
+//        this.stuckBecauseStuck = new LinkedList<>();
+        this.stuckBecauseStuck = new HashSet<>();
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
         addAll(constraints);
@@ -197,9 +202,23 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     public Map<IConstraint, Delay> delayed() {
         Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
-        stuckBecauseStuck.stream().forEach(c -> delayed.put(c, Delay.of()));
-        stuckOnVar.entries().stream().forEach(e -> delayed.put(e.getValue(), Delay.ofVar(e.getKey())));
-        stuckOnEdge.entries().stream().forEach(e -> delayed.put(e.getValue(), Delay.ofCriticalEdge(e.getKey())));
+        
+        stuckBecauseStuck.stream().forEach(c -> {
+            System.out.println("Stuck because stuck: " + c);
+            delayed.put(c, Delay.of());
+        });
+        Multimap<IConstraint, ITermVar> stuckOnVarInverse = HashMultimap.create();
+        for (Map.Entry<ITermVar, IConstraint> e : stuckOnVar.entries()) {
+            stuckOnVarInverse.put(e.getValue(), e.getKey());
+        }
+        stuckOnVarInverse.asMap().entrySet().stream().forEach(e -> {
+            System.out.println("Stuck on vars " + e.getValue() + ": " + e.getKey());
+            delayed.put(e.getKey(), Delay.ofVars(e.getValue()));
+        });
+        stuckOnEdge.entries().stream().forEach(e -> {
+            System.out.println("Stuck on edge " + e.getKey() + ": " + e.getValue());
+            delayed.put(e.getValue(), Delay.ofCriticalEdge(e.getKey()));
+        });
         return delayed.build();
     }
 }

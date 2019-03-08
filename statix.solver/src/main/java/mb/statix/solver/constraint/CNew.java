@@ -2,13 +2,13 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -54,9 +54,14 @@ public class CNew implements IConstraint {
     @Override public CNew apply(ISubstitution.Immutable subst) {
         return new CNew(subst.apply(terms), cause);
     }
+    
+    @Override
+    public boolean canModifyState() {
+        return true;
+    }
 
     @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) {
-        final List<IConstraint> constraints = Lists.newArrayList();
+        final List<IConstraint> constraints = new ArrayList<>();
         State newState = state;
         for(ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");
@@ -68,8 +73,8 @@ public class CNew implements IConstraint {
     }
     
     @Override public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) {
-        final List<IConstraint> constraints = Lists.newArrayList();
-        for(ITerm t : terms) {
+        final List<IConstraint> constraints = new ArrayList<>();
+        for (ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");
             ITerm ss = state.freshScope(base);
             constraints.add(new CEqual(t, ss, this));

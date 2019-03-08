@@ -91,26 +91,15 @@ public class MCompleteness implements IOwnable {
         };
         
         IModule scopeOwner;
-        OwnableScope oscope;
-        if (scope instanceof OwnableScope) {
-            System.err.println("Scope is ownableScope!");
-            oscope = (OwnableScope) scope;
-            scopeOwner = oscope.getOwner();
-        } else if (scope instanceof IOwnable) {
-            System.err.println("Scope is ownable: " + scope.getClass().getName());
+        if (scope instanceof IOwnable) {
             scopeOwner = ((IOwnable) scope).getOwner();
-            oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier).orElse(null);
-            if (oscope != null && oscope.getOwner() != scopeOwner) System.err.println("FATAL: Scope owner does not match iownable");
         } else {
-            System.err.println("FATAL Scope is not ownable!");
-            oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier).orElse(null);
-            scopeOwner = oscope == null ? null : oscope.getOwner();
+            OwnableScope oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier)
+                    .orElseThrow(() -> new IllegalArgumentException("Scope " + scope + " is not an ownable scope!"));
+            scopeOwner = oscope.getOwner();
         }
         
-        if (oscope == null) {
-            System.err.println("Cannot turn scope " + scope + " into ownable scope via matcher!");
-            return isCompleteFinal(equal);
-        } else if (scopeOwner == state.owner()) {
+        if (scopeOwner == state.owner()) {
             System.err.println("Completeness of " + owner + " got isComplete query from matching owner: " + scope);
             //Transitive
             return isCompleteFinal(equal);

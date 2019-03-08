@@ -91,6 +91,11 @@ public class CTellRel implements IConstraint {
     @Override public CTellRel apply(ISubstitution.Immutable subst) {
         return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerms));
     }
+    
+    @Override
+    public boolean canModifyState() {
+        return true;
+    }
 
     /**
      * @see IConstraint#solve
@@ -183,8 +188,11 @@ public class CTellRel implements IConstraint {
             final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
             return Optional.of(new MConstraintResult(state, new CEqual(value, existingValue.get(), this)));
         } else {
-            state.scopeGraph().addDatum(scope, relation, datumTerms);
+            //TODO Short moment of inconsistent completeness
             
+            //TODO Synchronization point
+            state.scopeGraph().addDatum(scope, relation, datumTerms);
+            //TODO CONSISTENCY params.completeness().remove(this);
             return Optional.of(new MConstraintResult(state));
         }
     }

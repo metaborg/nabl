@@ -98,6 +98,11 @@ public class CUser implements IConstraint {
         return new CUser(name, subst.apply(args), cause);
     }
     
+    @Override
+    public boolean canModifyState() {
+        return true;
+    }
+    
     /**
      * @return
      *      true if this rule crosses a module boundary, false otherwise
@@ -161,11 +166,13 @@ public class CUser implements IConstraint {
     public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
         if (isModuleBoundary()) {
+            System.out.println("Module Boundary!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
             IConstraint moduleConstraint = new CModule(this.name, this.args, this);
             return Optional.of(MConstraintResult.ofConstraints(state, Collections.singleton(moduleConstraint)));
         }
 
         final IDebugContext debug = params.debug();
+        debug.info("CAN YOU SEE ME? (1)");
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
         final Iterator<Rule> it = rules.iterator();
@@ -173,7 +180,9 @@ public class CUser implements IConstraint {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
             }
+            debug.info("CAN YOU SEE ME? (2)");
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
+            proxyDebug.info("CAN YOU SEE ME? (3)");
             final Rule rawRule = it.next();
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try rule {}", rawRule.toString());

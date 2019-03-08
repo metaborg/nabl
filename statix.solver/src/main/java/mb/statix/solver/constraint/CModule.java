@@ -97,6 +97,11 @@ public class CModule implements IConstraint {
     @Override public CModule apply(ISubstitution.Immutable subst) {
         return new CModule(name, subst.apply(args), cause);
     }
+    
+    @Override
+    public boolean canModifyState() {
+        return true;
+    }
 
     /**
      * Not supported.
@@ -136,9 +141,11 @@ public class CModule implements IConstraint {
             
             final MState childState;
             try {
-                if((appl = rawRule.applyModuleBoundary(args, state).orElse(null)) != null) {
+                MState copyState = state.copy();
+                if((appl = rawRule.applyModuleBoundary(args, copyState).orElse(null)) != null) {
                     childState = appl._1();
                     instantiatedBody = appl._3();
+                    state = copyState;
                 } else {
                     proxyDebug.info("Module boundary rejected (mismatching arguments)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
