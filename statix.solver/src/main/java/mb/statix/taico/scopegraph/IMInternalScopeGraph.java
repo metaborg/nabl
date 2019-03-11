@@ -3,6 +3,7 @@ package mb.statix.taico.scopegraph;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import io.usethesource.capsule.Set.Immutable;
@@ -119,4 +120,22 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      the scope to delete
      */
     void revokeScope(S scope);
+    
+    /**
+     * @return
+     *      a new tracking graph for this scope graph
+     */
+    ITrackingScopeGraph<S, V, L, R> trackingGraph();
+    
+    /**
+     * When creating tracking graphs from one view, all views must share the same set of trackers.
+     * As such, the passed map is the reference to the single map that contains all trackers.
+     * 
+     * @param trackers
+     *      a map with the trackers of the current view
+     * 
+     * @return
+     *      a new tracking graph for this scope graph
+     */
+    ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<IModule, ITrackingScopeGraph<S, V, L, R>> trackers);
 }
