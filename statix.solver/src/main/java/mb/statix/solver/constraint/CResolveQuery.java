@@ -38,6 +38,7 @@ import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.IOwnableTerm;
+import mb.statix.taico.scopegraph.ITrackingScopeGraph;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.scopegraph.reference.MFastNameResolution;
 import mb.statix.taico.solver.MConstraintContext;
@@ -220,7 +221,9 @@ public class CResolveQuery implements IConstraint {
             };
             IMQueryFilter filter = this.filter.toMutable();
             IMQueryMin min = this.min.toMutable();
-            //TODO TAICO in theory, there shouldn't need to be copies of the state and completeness.
+            
+            ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
+            
             // @formatter:off
             final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
                     .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
@@ -229,8 +232,12 @@ public class CResolveQuery implements IConstraint {
                     .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
-                    .build(state.scopeGraph(), relation);
+                    .build(trackingGraph, relation);
             // @formatter:on
+            
+            //TODO TAICO determine from the tracking graph which dependencies this query has.
+            //TODO TAICO figure out how to store these dependencies properly.
+            
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms;
             if(relation.isPresent()) {
