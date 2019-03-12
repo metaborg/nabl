@@ -22,7 +22,6 @@ import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.CannotUnifyException;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.unification.UnificationMessages;
@@ -41,10 +40,11 @@ public class EqualityComponent extends ASolver {
         final IMessages.Transient messages = Messages.Transient.of();
         try {
             final IUnifier.Transient unifier = this.unifier.get().melt();
-            unifier.unify(solution);
-            this.unifier.set(unifier.freeze());
-        } catch(CannotUnifyException e) {
-            messages.add(message.withContent(UnificationMessages.getError(e.getLeft(), e.getRight())));
+            if(!unifier.unify(solution).isPresent()) {
+                messages.add(message.withContent(MessageContent.of("Unification failed.")));
+            } else {
+                this.unifier.set(unifier.freeze());
+            }
         } catch(OccursException e) {
             final MessageContent content = MessageContent.of("Recursive unifier");
             messages.add(message.withContent(content));
@@ -65,13 +65,17 @@ public class EqualityComponent extends ASolver {
     private Optional<SolveResult> solve(CEqual constraint) {
         final ITerm left = constraint.getLeft();
         final ITerm right = constraint.getRight();
+        final IUnifier.Transient unifier = this.unifier.get().melt();
+        IUnifier.Immutable unifyResult = null;
         try {
-            final IUnifier.Transient unifier = this.unifier.get().melt();
-            final IUnifier.Immutable unifyResult = unifier.unify(left, right);
+            unifyResult = unifier.unify(left, right).orElse(null);
+        } catch(OccursException ex) {
+        }
+        if(unifyResult != null) {
             final SolveResult solveResult = ImmutableSolveResult.builder().unifierDiff(unifyResult).build();
             this.unifier.set(unifier.freeze());
             return Optional.of(solveResult);
-        } catch(CannotUnifyException | OccursException ex) {
+        } else {
             final MessageContent content = UnificationMessages.getError(left, right);
             final IMessageInfo message = (constraint.getMessageInfo().withDefaultContent(content));
             final SolveResult solveResult = SolveResult.messages(message);
@@ -80,16 +84,26 @@ public class EqualityComponent extends ASolver {
     }
 
     private Optional<SolveResult> solve(CInequal constraint) {
-        ITerm left = constraint.getLeft();
-        ITerm right = constraint.getRight();
-        if(unifier().areEqual(left, right)) {
-            MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
-                    .append(constraint.getRight().toString()).append(" must be inequal, but are not.").build();
-            IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
-            return Optional.of(SolveResult.messages(message));
-        } else {
-            return unifier().areUnequal(left, right) ? Optional.of(SolveResult.empty()) : Optional.empty();
-        }
+        final ITerm left = constraint.getLeft();
+        final ITerm right = constraint.getRight();
+        // @formatter:off
+        return unifier().areEqual(left, right).match(
+            result -> {
+                if(result) {
+                    MessageContent content = MessageContent.builder().append(constraint.getLeft().toString())
+                            .append(" and ").append(constraint.getRight().toString())
+                            .append(" must be inequal, but are not.").build();
+                    IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
+                    return Optional.of(SolveResult.messages(message));
+                } else {
+                    return Optional.of(SolveResult.empty());
+                }
+            },
+            var -> {
+                return Optional.empty();
+            }
+        );
+        // @formatter:on
     }
 
     // ------------------------------------------------------------------------------------------------------//

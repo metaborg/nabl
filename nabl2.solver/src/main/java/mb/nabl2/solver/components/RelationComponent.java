@@ -128,7 +128,7 @@ public class RelationComponent extends ASolver {
                 if(relation(name).contains(left, right)) {
                     return Optional.of(SolveResult.empty());
                 } else {
-                    return Optional.empty();
+                    return Optional.of(SolveResult.messages(c.getMessageInfo()));
                 }
             },
             extName -> {

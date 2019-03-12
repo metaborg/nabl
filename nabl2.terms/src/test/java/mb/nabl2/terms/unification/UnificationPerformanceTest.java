@@ -38,11 +38,11 @@ public class UnificationPerformanceTest {
         ITerm termB = B.newTuple(varB, varB);
         ITerm termC = B.newTuple(varC, varC);
         try {
-            unifier.unify(varA, termB);
-            unifier.unify(varB, termC);
-            unifier.unify(varC, termB);
+            unifier.unify(varA, termB).orElseThrow(() -> new IllegalArgumentException());
+            unifier.unify(varB, termC).orElseThrow(() -> new IllegalArgumentException());
+            unifier.unify(varC, termB).orElseThrow(() -> new IllegalArgumentException());
             System.out.println(unifier);
-        } catch(CannotUnifyException | OccursException e) {
+        } catch(OccursException e) {
             System.out.println("Could not unify");
         }
         System.out.println("ground = " + unifier.isGround(termB));
@@ -50,7 +50,6 @@ public class UnificationPerformanceTest {
         System.out.println("size = " + unifier.size(termB));
         System.out.println("vars = " + unifier.getVars(termB));
         System.out.println("equal = " + unifier.areEqual(termB, termC));
-        System.out.println("unequal = " + unifier.areUnequal(termB, termC));
         System.out.println("string = " + unifier.toString(varA));
         System.out.println("string = " + unifier.toString(varB));
         System.out.println("string = " + unifier.toString(varC));
@@ -63,8 +62,8 @@ public class UnificationPerformanceTest {
         final ITerm right = B.newTuple(
                 Iterables.concat(createTuples(X, n), createVars(Y, n), Iterables2.singleton(createVar(Y, n))));
         try {
-            unifier.unify(left, right);
-        } catch(CannotUnifyException | OccursException e) {
+            unifier.unify(left, right).orElseThrow(() -> new IllegalArgumentException());
+        } catch(OccursException e) {
             System.err.println("Unification failed");
             e.printStackTrace(System.err);
         }
@@ -73,7 +72,6 @@ public class UnificationPerformanceTest {
         System.out.println("size = " + unifier.size(left));
         System.out.println("vars = " + unifier.getVars(left));
         System.out.println("equal = " + unifier.areEqual(left, right));
-        System.out.println("unequal = " + unifier.areUnequal(left, right));
         return unifier;
     }
 

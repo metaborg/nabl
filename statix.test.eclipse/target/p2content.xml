@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<units size='1'>
+  <unit id='statix.test.eclipse' version='2.5.1' generation='2'>
+    <update id='statix.test.eclipse' range='[0.0.0,2.5.1)' severity='0'/>
+    <properties size='5'>
+      <property name='org.eclipse.equinox.p2.name' value='StatixTest language Eclipse plugin'/>
+      <property name='org.eclipse.equinox.p2.provider' value='org.metaborg'/>
+      <property name='maven-groupId' value='org.metaborg'/>
+      <property name='maven-artifactId' value='statix.test.eclipse'/>
+      <property name='maven-version' value='2.5.1'/>
+    </properties>
+    <provides size='4'>
+      <provided namespace='org.eclipse.equinox.p2.iu' name='statix.test.eclipse' version='2.5.1'/>
+      <provided namespace='osgi.bundle' name='statix.test.eclipse' version='2.5.1'/>
+      <provided namespace='osgi.identity' name='statix.test.eclipse' version='2.5.1'>
+        <properties size='1'>
+          <property name='type' value='osgi.bundle'/>
+        </properties>
+      </provided>
+      <provided namespace='org.eclipse.equinox.p2.eclipse.type' name='bundle' version='1.0.0'/>
+    </provides>
+    <requires size='2'>
+      <required namespace='osgi.bundle' name='org.metaborg.spoofax.eclipse' range='0.0.0'/>
+      <requiredProperties namespace='osgi.ee' match='(&amp;(osgi.ee=JavaSE)(version=1.8))'/>
+    </requires>
+    <artifacts size='1'>
+      <artifact classifier='osgi.bundle' id='statix.test.eclipse' version='2.5.1'/>
+    </artifacts>
+    <touchpoint id='org.eclipse.equinox.p2.osgi' version='1.0.0'/>
+    <touchpointData size='1'>
+      <instructions size='1'>
+        <instruction key='manifest'>
+          Bundle-SymbolicName: statix.test.eclipse;singleton:=true&#xA;Bundle-Version: 2.5.1&#xA;
+        </instruction>
+      </instructions>
+    </touchpointData>
+  </unit>
+</units>

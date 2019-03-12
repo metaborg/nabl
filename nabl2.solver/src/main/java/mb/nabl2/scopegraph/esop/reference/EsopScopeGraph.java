@@ -287,7 +287,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                 }).orElse(Stream.empty());
             }).map(slv -> {
                 return relation.remove(slv._1(), slv._2(), slv._3());
-            }).findAny().isPresent();
+            }).count() != 0; // Do not use findAny().isPresent(), which short-cuts the side-effecty flatMap+map
         }
 
         // ------------------------------------------------------------

@@ -8,10 +8,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.ast.AstConstraints;
 import mb.nabl2.constraints.base.BaseConstraints;
 import mb.nabl2.constraints.base.CConj;
-import mb.nabl2.constraints.controlflow.ControlFlowConstraints;
 import mb.nabl2.constraints.equality.EqualityConstraints;
 import mb.nabl2.constraints.nameresolution.NameResolutionConstraints;
 import mb.nabl2.constraints.poly.PolyConstraints;
@@ -44,8 +45,7 @@ public class Constraints {
             RelationConstraints.matcher(),
             SetConstraints.matcher(),
             SymbolicConstraints.matcher(),
-            PolyConstraints.matcher(),
-            ControlFlowConstraints.matcher()
+            PolyConstraints.matcher()
             // @formatter:on
         ));
     }
@@ -65,8 +65,7 @@ public class Constraints {
             RelationConstraints::build,
             SetConstraints::build,
             SymbolicConstraints::build,
-            PolyConstraints::build,
-            ControlFlowConstraints::build
+            PolyConstraints::build
             // @formatter:on
         ));
     }
@@ -91,8 +90,23 @@ public class Constraints {
             c -> RelationConstraints.substitute(c, subst),
             c -> SetConstraints.substitute(c, subst),
             c -> SymbolicConstraints.substitute(c, subst),
-            c -> PolyConstraints.substitute(c, subst),
-            c -> ControlFlowConstraints.substitute(c, subst)
+            c -> PolyConstraints.substitute(c, subst)
+            // @formatter:on
+        ));
+    }
+
+    public static IConstraint transform(IConstraint constraint, Function1<ITerm, ITerm> map) {
+        return constraint.match(IConstraint.Cases.<IConstraint>of(
+        // @formatter:off
+            c -> AstConstraints.transform(c, map),
+            c -> BaseConstraints.transform(c, map),
+            c -> EqualityConstraints.transform(c, map),
+            c -> ScopeGraphConstraints.transform(c, map),
+            c -> NameResolutionConstraints.transform(c, map),
+            c -> RelationConstraints.transform(c, map),
+            c -> SetConstraints.transform(c, map),
+            c -> SymbolicConstraints.transform(c, map),
+            c -> PolyConstraints.transform(c, map)
             // @formatter:on
         ));
     }

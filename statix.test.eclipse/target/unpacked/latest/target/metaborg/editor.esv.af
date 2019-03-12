@@ -1,0 +1,295 @@
+Module(
+  "editor"
+, Imports([Import("Syntax"), Import("Analysis"), Import("Evaluate")])
+, [ Language(
+      ""
+    , [Extensions(Values(["stxtest"])), SemanticProvider("target/metaborg/stratego.ctree")]
+    )
+  , Language(
+      ""
+    , [ Table("target/metaborg/sdf.tbl")
+      , StartSymbols([Sort("Start")])
+      , LineCommentPrefix(String("\"//\""))
+      , BlockCommentDefs(BlockCommentDef(String("\"/*\""), "*", String("\"*/\"")))
+      , FenceDefs(
+          [FenceDef("[", "]"), FenceDef("(", ")"), FenceDef("{", "}")]
+        )
+      ]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Syntax\""))
+        , [OpenEditor()]
+        , [ Action(String("\"Show parsed AST\""), Strategy("debug-show-aterm"), [Source()])
+          , Action(String("\"Format parsed AST\""), Strategy("format-aterm"), [Source()])
+          , Separator()
+          , Action(String("\"Show analyzed AST\""), Strategy("debug-show-analyzed"), [])
+          , Action(String("\"Format analyzed AST\""), Strategy("format-analyzed"), [])
+          , Separator()
+          , Action(String("\"Show normalized AST\""), Strategy("debug-show-normalized"), [])
+          , Action(String("\"Format normalized AST\""), Strategy("format-normalized"), [])
+          , Separator()
+          , Action(String("\"Show explicated AST\""), Strategy("debug-show-explicated"), [])
+          ]
+        )
+      ]
+    )
+  , Colorer(
+      " "
+    , [ ColorRule(
+          Token(TK_KEYWORD())
+        , Attribute(ColorRGB("127", "0", "85"), NoColor(), BOLD())
+        )
+      , ColorRule(Token(TK_IDENTIFIER()), Attribute(ColorDefault(), NoColor(), NORMAL()))
+      , ColorRule(
+          Token(TK_STRING())
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_NUMBER())
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_VAR())
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), ITALIC())
+        )
+      , ColorRule(
+          Token(TK_OPERATOR())
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorRule(
+          Token(TK_LAYOUT())
+        , Attribute(ColorRGB("63", "127", "95"), NoColor(), ITALIC())
+        )
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorDef(
+          "darkred"
+        , Attribute(ColorRGB("128", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "red"
+        , Attribute(ColorRGB("255", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkgreen"
+        , Attribute(ColorRGB("0", "128", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "green"
+        , Attribute(ColorRGB("0", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "darkblue"
+        , Attribute(ColorRGB("0", "0", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "blue"
+        , Attribute(ColorRGB("0", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "cyan"
+        , Attribute(ColorRGB("0", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "magenta"
+        , Attribute(ColorRGB("255", "0", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "yellow"
+        , Attribute(ColorRGB("255", "255", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "white"
+        , Attribute(ColorRGB("255", "255", "255"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "black"
+        , Attribute(ColorRGB("0", "0", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "gray"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "grey"
+        , Attribute(ColorRGB("128", "128", "128"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "orange"
+        , Attribute(ColorRGB("255", "165", "0"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "pink"
+        , Attribute(ColorRGB("255", "105", "180"), NoColor(), NORMAL())
+        )
+      , ColorDef(
+          "brown"
+        , Attribute(ColorRGB("139", "69", "19"), NoColor(), NORMAL())
+        )
+      , ColorDef("default", Attribute(ColorDefault(), NoColor(), NORMAL()))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Module-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Start-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Test-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer("", [])
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Module-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ModuleId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Section-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Signature-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("CDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("CInd-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleHead-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("UserConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ConstraintId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("HoConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LocalVars-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Signature-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelationId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rel-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Signature-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelationId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ResolutionParam-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NamespaceQuery-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NamespaceFilter-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NamespaceMin-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("HoConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NamespaceId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NsDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LabelPairs-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LabelPair-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LabelRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Label-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LabelRE-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Position-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QueryTarget-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QueryFilter-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QueryMin-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("HoConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Signature-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("OpSort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Sort-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("VARID-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("INT-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Var-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("CommaTerms-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SpaceTerms-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("CInd-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Type-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("CDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("CDerive-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Lift-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LiftTerm-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Rule-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RuleHead-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LocalVars-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("HoConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("ConstraintId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("HoConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NamespaceFilter-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("NamespaceMin-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QueryFilter-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("QueryMin-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("HoConstraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("RelRef-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Term-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortDecl-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortId-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("SortRef-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Colorer("", [])
+  , Colorer(
+      ""
+    , [ ColorRule(ConstructorOnly(Constructor("Test-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("LocalVars-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Constraint-Plhdr")), AttributeRef("gray"))
+      , ColorRule(ConstructorOnly(Constructor("Section-Plhdr")), AttributeRef("gray"))
+      ]
+    )
+  , Language("", [SemanticObserver(Strategy("editor-analyze"), [Constraint()])])
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"NaBL2 Analysis\""))
+        , [Meta(), OpenEditor()]
+        , [ Action(String("\"Debug file constraints\""), Strategy("nabl2--debug-file-constraints"), [RealTime()])
+          , Action(String("\"Debug file scope graph\""), Strategy("nabl2--debug-file-scope-graph"), [RealTime()])
+          , Action(String("\"Debug file scope graph (DOT)\""), Strategy("nabl2--debug-file-scope-graph-dot"), [RealTime()])
+          , Action(String("\"Debug file name resolution\""), Strategy("nabl2--debug-file-name-resolution"), [RealTime()])
+          , Action(String("\"Debug file unifier\""), Strategy("nabl2--debug-file-unifier"), [RealTime()])
+          , Action(String("\"Debug file symbolic constraints\""), Strategy("nabl2--debug-file-symbolic-constraints"), [])
+          , Separator()
+          , Action(String("\"Debug project constraints\""), Strategy("nabl2--debug-project-constraints"), [RealTime()])
+          , Action(String("\"Debug project scope graph\""), Strategy("nabl2--debug-project-scope-graph"), [RealTime()])
+          , Action(String("\"Debug project scope graph (DOT)\""), Strategy("nabl2--debug-project-scope-graph-dot"), [RealTime()])
+          , Action(String("\"Debug project name resolution\""), Strategy("nabl2--debug-project-name-resolution"), [RealTime()])
+          , Action(String("\"Debug project unifier\""), Strategy("nabl2--debug-project-unifier"), [RealTime()])
+          , Action(String("\"Debug project symbolic constraints\""), Strategy("nabl2--debug-project-symbolic-constraints"), [])
+          ]
+        )
+      ]
+    )
+  , References(
+      ""
+    , [ReferenceRule("_", Strategy("nabl2--editor-resolve")), HoverRule("_", Strategy("nabl2--editor-hover"))]
+    )
+  , Menus(
+      [ ToolbarMenu(
+          Label(String("\"Evaluate\""))
+        , [OpenEditor()]
+        , [Action(String("\"Evaluate Test\""), Strategy("editor-evaluate"), [])]
+        )
+      ]
+    )
+  ]
+)

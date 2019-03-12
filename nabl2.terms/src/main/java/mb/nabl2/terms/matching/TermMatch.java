@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Function3;
@@ -51,6 +52,10 @@ public class TermMatch {
             return (term, unifier) -> m.match(term, unifier).map(t -> f.apply(term, t));
         }
 
+        public <R> IMatcher<R> term(ITerm.Cases<Optional<R>> cases) {
+            return (term, unifier) -> unifier.findTerm(term).match(cases);
+        }
+
         // appl
 
         public IMatcher<IApplTerm> appl() {
@@ -75,7 +80,7 @@ public class TermMatch {
         public <R> IMatcher<R> appl0(String op, Function1<? super IApplTerm, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 0)) {
+                    if(!(appl.getArity() == 0 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
@@ -91,7 +96,7 @@ public class TermMatch {
                 Function2<? super IApplTerm, ? super T, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 1)) {
+                    if(!(appl.getArity() == 1 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return m.match(appl.getArgs().get(0), unifier).map(t -> f.apply(appl, t));
@@ -107,7 +112,7 @@ public class TermMatch {
                 Function3<? super IApplTerm, ? super T1, ? super T2, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 2)) {
+                    if(!(appl.getArity() == 2 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -126,7 +131,7 @@ public class TermMatch {
                 IMatcher<? extends T3> m3, Function4<? super IApplTerm, ? super T1, ? super T2, ? super T3, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 3)) {
+                    if(!(appl.getArity() == 3 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -147,7 +152,7 @@ public class TermMatch {
                 Function5<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 4)) {
+                    if(!(appl.getArity() == 4 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -170,7 +175,7 @@ public class TermMatch {
                 Function6<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, ? super T5, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
-                    if(!(op.equals(appl.getOp()) && appl.getArity() == 5)) {
+                    if(!(appl.getArity() == 5 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
@@ -254,8 +259,11 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> list(Function1<? super IListTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty,
-                    list -> Optional.of(f.apply(list)), this::empty, this::empty, this::empty, this::empty));
+            final Function1<? super IListTerm, ? extends Optional<R>> g = list -> Optional.of(f.apply(list));
+            return (term, unifier) -> {
+                return unifier.findTerm(term)
+                        .match(Terms.<Optional<R>>cases(this::empty, g, this::empty, this::empty, this::empty, g));
+            };
         }
 
         public IMatcher<? extends List<? extends ITerm>> listElems() {
@@ -297,6 +305,10 @@ public class TermMatch {
                 }, this::empty, this::empty));
             }, this::empty, this::empty, this::empty, this::empty));
 
+        }
+
+        public IMatcher<INilTerm> nil() {
+            return nil(t -> t);
         }
 
         public <R> IMatcher<R> nil(Function1<? super INilTerm, R> f) {
@@ -390,15 +402,18 @@ public class TermMatch {
         }
 
         public <T> IMatcher<T> casesFix(Function1<IMatcher<T>, Iterable<IMatcher<? extends T>>> f) {
-            return (term, unifier) -> {
-                for(IMatcher<? extends T> matcher : f.apply(casesFix(f))) {
+            final Ref<IMatcher<T>> ref = new Ref<>();
+            final IMatcher<T> fix = (term, unifier) -> ref.get().match(term, unifier);
+            ref.set((term, unifier) -> {
+                for(IMatcher<? extends T> matcher : f.apply(fix)) {
                     Optional<? extends T> result = matcher.match(term, unifier);
                     if(result.isPresent()) {
                         return Optional.of(result.get());
                     }
                 }
                 return Optional.empty();
-            };
+            });
+            return ref.get();
         }
 
         // metadata

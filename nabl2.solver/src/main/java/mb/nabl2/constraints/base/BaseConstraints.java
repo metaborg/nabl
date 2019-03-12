@@ -5,6 +5,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.stream.Collectors;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
@@ -57,8 +59,8 @@ public final class BaseConstraints {
     }
 
     public static IBaseConstraint substitute(IBaseConstraint constraint, ISubstitution.Immutable subst) {
-        return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
         // @formatter:off
+        return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
             t -> ImmutableCTrue.of(t.getMessageInfo().apply(subst::apply)),
             f -> ImmutableCFalse.of(f.getMessageInfo().apply(subst::apply)),
             c -> {
@@ -77,8 +79,32 @@ public final class BaseConstraints {
                 return ImmutableCNew.of(n.getNVars().stream().map(subst::apply).collect(Collectors.toSet()),
                         n.getMessageInfo().apply(subst::apply));
             }
-            // @formatter:on
         ));
+        // @formatter:on
+    }
+
+    public static IBaseConstraint transform(IBaseConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
+            t -> ImmutableCTrue.of(t.getMessageInfo().apply(map::apply)),
+            f -> ImmutableCFalse.of(f.getMessageInfo().apply(map::apply)),
+            c -> {
+                return ImmutableCConj.of(
+                        Constraints.transform(c.getLeft(), map),
+                        Constraints.transform(c.getRight(), map),
+                        c.getMessageInfo().apply(map::apply));
+            },
+            e -> {
+                return ImmutableCExists.of(e.getEVars(),
+                        Constraints.transform(e.getConstraint(), map),
+                        e.getMessageInfo().apply(map::apply));
+            },
+            n -> {
+                return ImmutableCNew.of(n.getNVars().stream().map(map::apply).collect(Collectors.toSet()),
+                        n.getMessageInfo().apply(map::apply));
+            }
+        ));
+        // @formatter:on
     }
 
 }

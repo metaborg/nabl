@@ -33,7 +33,6 @@ public class ListTerms {
         };
     }
 
-
     public static <T> CaseBuilder<T> cases() {
         return new CaseBuilder<>();
     }
@@ -125,11 +124,53 @@ public class ListTerms {
                 return onVar.apply(var);
             }
 
-            @Override public T apply(IListTerm list) throws E {
-                return list.matchOrThrow(this);
-            }
-
         };
+    }
+
+    public static <T, E extends Throwable> CheckedCaseBuilder<T, E> checkedCases() {
+        return new CheckedCaseBuilder<>();
+    }
+
+    public static class CheckedCaseBuilder<T, E extends Throwable> {
+
+        private CheckedFunction1<? super IConsTerm, T, E> onCons = null;
+        private CheckedFunction1<? super INilTerm, T, E> onNil = null;
+        private CheckedFunction1<? super ITermVar, T, E> onVar = null;
+
+        public CheckedCaseBuilder<T, E> cons(CheckedFunction1<? super IConsTerm, T, E> onCons) {
+            this.onCons = onCons;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> nil(CheckedFunction1<? super INilTerm, T, E> onNil) {
+            this.onNil = onNil;
+            return this;
+        }
+
+        public CheckedCaseBuilder<T, E> var(CheckedFunction1<? super ITermVar, T, E> onVar) {
+            this.onVar = onVar;
+            return this;
+        }
+
+        public IListTerm.CheckedCases<T, E> otherwise(final CheckedFunction1<? super IListTerm, T, E> otherwise) {
+            return new IListTerm.CheckedCases<T, E>() {
+
+                @Override public T caseCons(IConsTerm cons) throws E {
+                    return onCons != null ? onCons.apply(cons) : otherwise.apply(cons);
+                }
+
+                @Override public T caseNil(INilTerm nil) throws E {
+                    return onNil != null ? onNil.apply(nil) : otherwise.apply(nil);
+                }
+
+                @Override public T caseVar(ITermVar var) throws E {
+                    return onVar != null ? onVar.apply(var) : otherwise.apply(var);
+                }
+
+            };
+
+        }
+
     }
 
     public static String toString(IListTerm list) {

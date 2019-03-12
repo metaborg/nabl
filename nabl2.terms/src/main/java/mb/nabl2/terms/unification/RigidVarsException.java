@@ -17,12 +17,16 @@ public class RigidVarsException extends Exception {
     }
 
     public RigidVarsException(Iterable<ITermVar> vars) {
-        super("Rigid " + vars);
+        super("rigid vars", null, false, false);
         this.vars = ImmutableSet.copyOf(vars);
     }
 
     public Set<ITermVar> vars() {
         return vars;
+    }
+
+    @Override public String getMessage() {
+        return "Rigid " + vars;
     }
 
 }

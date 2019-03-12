@@ -2,25 +2,22 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.iterators.Iterables2;
-
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -56,8 +53,8 @@ public class CTellRel implements IConstraint {
         return new CTellRel(scopeTerm, relation, datumTerms, cause);
     }
 
-    @Override public Iterable<Tuple2<ITerm, ITerm>> scopeExtensions(Spec spec) {
-        return Iterables2.from(ImmutableTuple2.of(scopeTerm, relation));
+    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
+        return ImmutableList.of(CriticalEdge.of(scopeTerm, relation));
     }
 
     @Override public CTellRel apply(ISubstitution.Immutable subst) {
@@ -91,34 +88,34 @@ public class CTellRel implements IConstraint {
             throw Delay.ofVars(unifier.getVars(key));
         }
         Optional<ITerm> existingValue = state.scopeGraph().getData().get(scope, relation).stream().filter(dt -> {
-            return unifier.areEqual(key,
-                    B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())));
+            return unifier
+                    .areEqual(key, B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())))
+                    .orElse(false);
         }).findFirst().map(dt -> {
             return B.newTuple(dt.stream().skip(type.getInputArity()).collect(Collectors.toList()));
         });
         if(existingValue.isPresent()) {
             final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
-            final IConstraint eq = new CEqual(value, existingValue.get(), this);
-            return Optional.of(ConstraintResult.of(state, ImmutableSet.of(eq)));
+            return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(value, existingValue.get(), this)));
         } else {
             final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
                     state.scopeGraph().addDatum(scope, relation, datumTerms);
-            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph), ImmutableSet.of()));
+            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
         }
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(unifier.toString(scopeTerm));
+        sb.append(termToString.format(scopeTerm));
         sb.append(" -");
-        sb.append(unifier.toString(relation));
+        sb.append(termToString.format(relation));
         sb.append("-[] ");
-        sb.append(unifier.toString(B.newTuple(datumTerms)));
+        sb.append(termToString.format(B.newTuple(datumTerms)));
         return sb.toString();
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

@@ -4,9 +4,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
@@ -37,17 +37,16 @@ public class CFalse implements IConstraint {
         return this;
     }
 
-    @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
-            throws Delay {
+    @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params) throws Delay {
         return Optional.empty();
     }
 
-    @Override public String toString(IUnifier unifier) {
+    @Override public String toString(TermFormatter termToString) {
         return "false";
     }
 
     @Override public String toString() {
-        return toString(PersistentUnifier.Immutable.of());
+        return toString(ITerm::toString);
     }
 
 }

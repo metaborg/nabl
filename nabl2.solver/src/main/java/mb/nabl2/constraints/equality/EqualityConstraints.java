@@ -3,6 +3,8 @@ package mb.nabl2.constraints.equality;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -46,6 +48,21 @@ public final class EqualityConstraints {
                     subst.apply(ineq.getLeft()),
                     subst.apply(ineq.getRight()),
                     ineq.getMessageInfo().apply(subst::apply))
+        ));
+        // @formatter:on
+    }
+
+    public static IEqualityConstraint transform(IEqualityConstraint constraint, Function1<ITerm, ITerm> map) {
+        // @formatter:off
+        return constraint.match(IEqualityConstraint.Cases.<IEqualityConstraint>of(
+            eq -> ImmutableCEqual.of(
+                    map.apply(eq.getLeft()),
+                    map.apply(eq.getRight()),
+                    eq.getMessageInfo().apply(map::apply)),
+            ineq -> ImmutableCInequal.of(
+                    map.apply(ineq.getLeft()),
+                    map.apply(ineq.getRight()),
+                    ineq.getMessageInfo().apply(map::apply))
         ));
         // @formatter:on
     }

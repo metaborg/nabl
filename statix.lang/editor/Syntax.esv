@@ -14,18 +14,28 @@ language
   block comment : "/*" * "*/"
   fences        : [ ] ( ) { }
 
+views
+
+  outline view  : editor-outline
+    expand to level: 1
+
 menus
-  
+
   menu: "Syntax" (openeditor)
     
-    action: "Show parsed AST"       = debug-show-aterm (source)
-    action: "Format parsed AST"     = format-aterm (source)
+    action: "Show parsed AST"       = show-parsed-aterm (source)
+    action: "Format parsed AST"     = format-parsed (source)
 
     separator
 
-    action: "Show analyzed AST"     = debug-show-analyzed
+    action: "Show desugared AST"    = show-desugared-aterm (source)
+    action: "Format desugared AST"  = format-desugared (source)
+
+    separator
+
+    action: "Show analyzed AST"     = show-analyzed-aterm
     action: "Format analyzed AST"   = format-analyzed
 
     separator
 
-    action: "Show explicated AST"   = debug-show-explicated
+    action: "Show explicated AST"   = show-explicated-aterm

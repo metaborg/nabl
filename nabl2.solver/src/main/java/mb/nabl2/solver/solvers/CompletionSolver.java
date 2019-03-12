@@ -1,6 +1,5 @@
 package mb.nabl2.solver.solvers;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -17,14 +16,12 @@ import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
-import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolution;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.SolverException;
@@ -40,16 +37,13 @@ import mb.nabl2.solver.components.ScopeGraphComponent;
 import mb.nabl2.solver.components.SetComponent;
 import mb.nabl2.solver.components.SymbolicComponent;
 import mb.nabl2.solver.messages.IMessages;
-import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.solver.properties.ActiveDeclTypes;
 import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.solver.properties.HasRelationBuildConstraints;
 import mb.nabl2.solver.properties.PolySafe;
 import mb.nabl2.symbolic.ISymbolicConstraints;
-import mb.nabl2.symbolic.SymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.collections.Properties;
 
 public class CompletionSolver {
 
@@ -61,9 +55,9 @@ public class CompletionSolver {
 
     public ISolution solve(ISolution initial, Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
-        final ISolution graphSolution = solveGraph(initial, fresh, cancel, progress);
-        final ISolution constraintSolution = solveConstraints(graphSolution, fresh, cancel, progress);
-        final ISolution solution = reportUnsolvedConstraints(constraintSolution);
+        ISolution solution;
+        solution = solveGraph(initial, fresh, cancel, progress);
+        solution = solveConstraints(solution, fresh, cancel, progress);
         return solution;
     }
 
@@ -73,11 +67,11 @@ public class CompletionSolver {
 
         // shared
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
-        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
-        final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
+        final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
@@ -133,12 +127,12 @@ public class CompletionSolver {
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
-                new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
+                new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
-        final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
+        final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
         // polymorphism solver
         final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
@@ -196,13 +190,6 @@ public class CompletionSolver {
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
-    }
-
-    private ISolution reportUnsolvedConstraints(ISolution initial) {
-        IMessages.Transient messages = initial.messages().melt();
-        messages.addAll(Messages.unsolvedErrors(initial.constraints()));
-        return ImmutableSolution.builder().from(initial).messages(messages.freeze()).constraints(Collections.emptySet())
-                .build();
     }
 
 }

@@ -8,6 +8,10 @@ imports
   statix/lang/Sugar
   statix/lang/Deprecated
 
+  statix/test/Test
+
+  statix/cli/CLI
+
 template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
@@ -19,3 +23,4 @@ context-free start-symbols
 context-free syntax
 
   Start = Module
+  Start = Test

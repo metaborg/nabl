@@ -5,8 +5,9 @@ imports
   Syntax
   Analysis
   Generate
+  Evaluate
 
 language
 
-  extensions : statix, stx
+  extensions : stx, stxtest
   provider   : target/metaborg/stratego.ctree

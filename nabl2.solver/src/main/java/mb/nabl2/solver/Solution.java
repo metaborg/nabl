@@ -9,9 +9,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.controlflow.terms.CFGNode;
-import mb.nabl2.controlflow.terms.FlowSpecSolution;
-import mb.nabl2.controlflow.terms.IFlowSpecSolution;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -64,8 +61,6 @@ public abstract class Solution implements ISolution {
 
     @Value.Parameter @Override public abstract ISymbolicConstraints symbolic();
 
-    @Value.Parameter @Override public abstract IFlowSpecSolution<CFGNode> flowSpecSolution();
-
     @Value.Parameter @Override public abstract IMessages.Immutable messages();
 
     @Value.Parameter @Override public abstract java.util.Set<IConstraint> constraints();
@@ -73,7 +68,7 @@ public abstract class Solution implements ISolution {
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
-                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), FlowSpecSolution.of(),
+                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(),
                 Messages.Immutable.of(), Collections.emptySet());
     }
 

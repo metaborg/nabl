@@ -3,5 +3,12 @@ module statixlang
 imports
   
   completion/completion
+
+  statix/cli/-
   statix/lang/-
+  statix/test/-
+
+  outline
   pp
+
+  statixruntime

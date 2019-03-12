@@ -1,0 +1,12 @@
+module statix/cli/statixcli
+
+imports
+
+  signatures/statix/cli/-
+
+rules
+
+  [[ Eval(vs, c) ^ (s) ]] :=
+    new s', s' ---> s,
+    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    [[ c ^ (s') ]].

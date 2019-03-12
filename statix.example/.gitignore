@@ -10,3 +10,4 @@
 *.scope-graph
 *.name-resolution
 *.unifier
+*.stxresult

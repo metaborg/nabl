@@ -1,11 +1,13 @@
 package mb.nabl2.terms.unification;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate1;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.matching.MaybeNotInstantiated;
 import mb.nabl2.terms.substitution.ISubstitution;
 
 /**
@@ -135,34 +137,19 @@ public interface IUnifier {
     String toString(ITerm term);
 
     /**
-     * Return a string representation of the given terms.
+     * Return a string representation of the given term, up to a certain term depth.
      */
-    default String toString(Iterable<? extends ITerm> terms) {
-        final StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(ITerm term : terms) {
-            if(!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append(toString(term));
-        }
-        return sb.toString();
-    }
+    String toString(ITerm term, int n);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on two terms
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Test if the two terms are equal relative to this unifier. Further unification preserves equality.
+     * Test if the two terms are equal relative to this unifier. If terms are incomparable under this unifier an
+     * exception is thrown.
      */
-    boolean areEqual(ITerm term1, ITerm term2);
-
-    /**
-     * Test if the two terms are unequal relative to this unifier. Further unification preserves inequality.
-     */
-    boolean areUnequal(ITerm term1, ITerm term2);
+    MaybeNotInstantiated<Boolean> areEqual(ITerm term1, ITerm term2);
 
     public interface Immutable extends IUnifier {
 
@@ -173,18 +160,18 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Result<Immutable> unify(ITerm term1, ITerm term2) throws CannotUnifyException, OccursException;
+        Optional<Result<Immutable>> unify(ITerm term1, ITerm term2) throws OccursException;
 
-        Result<Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
-                throws CannotUnifyException, OccursException, RigidVarsException;
+        Optional<Result<Immutable>> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidVarsException;
 
         /**
          * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Result<Immutable> unify(IUnifier other) throws CannotUnifyException, OccursException;
+        Optional<Result<Immutable>> unify(IUnifier other) throws OccursException;
 
-        Result<Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws CannotUnifyException, OccursException, RigidVarsException;
+        Optional<Result<Immutable>> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidVarsException;
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -237,18 +224,18 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Immutable unify(ITerm term1, ITerm term2) throws CannotUnifyException, OccursException;
+        Optional<Immutable> unify(ITerm term1, ITerm term2) throws OccursException;
 
-        Immutable unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
-                throws CannotUnifyException, OccursException, RigidVarsException;
+        Optional<Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidVarsException;
 
         /**
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Immutable unify(IUnifier other) throws CannotUnifyException, OccursException;
+        Optional<Immutable> unify(IUnifier other) throws OccursException;
 
-        Immutable unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws CannotUnifyException, OccursException, RigidVarsException;
+        Optional<Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidVarsException;
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed

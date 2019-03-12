@@ -1,0 +1,20 @@
+module statix/cli/CLI
+
+imports
+
+  statix/lang/Layout
+  statix/lang/Common
+  statix/lang/Core
+  statix/lang/Sugar
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+context-free start-symbols
+
+  CommandLine
+
+context-free syntax
+
+  CommandLine.Eval = <<LocalVars><Constraint>>

@@ -6,8 +6,6 @@ import java.util.Optional;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.controlflow.terms.CFGNode;
-import mb.nabl2.controlflow.terms.IFlowSpecSolution;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
@@ -15,6 +13,7 @@ import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.messages.IMessages;
+import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
@@ -51,10 +50,6 @@ public interface ISolution {
 
     ISolution withSymbolic(ISymbolicConstraints symbolic);
 
-    IFlowSpecSolution<CFGNode> flowSpecSolution();
-
-    ISolution withFlowSpecSolution(IFlowSpecSolution<CFGNode> value);
-
     IUnifier.Immutable unifier();
 
     ISolution withUnifier(IUnifier.Immutable unifier);
@@ -62,6 +57,12 @@ public interface ISolution {
     IMessages.Immutable messages();
 
     ISolution withMessages(IMessages.Immutable messages);
+
+    default IMessages.Immutable messagesAndUnsolvedErrors() {
+        IMessages.Transient messages = messages().melt();
+        messages.addAll(Messages.unsolvedErrors(constraints()));
+        return messages.freeze();
+    }
 
     java.util.Set<IConstraint> constraints();
 

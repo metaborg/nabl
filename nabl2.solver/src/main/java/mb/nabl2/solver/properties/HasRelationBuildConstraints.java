@@ -45,7 +45,6 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
             )),
             c -> false,
             c -> false,
-            c -> false,
             c -> false
             // @formatter:on
         ));
@@ -75,7 +74,6 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
                 cr -> false,
                 ev -> false
             )),
-            c -> false,
             c -> false,
             c -> false,
             c -> false

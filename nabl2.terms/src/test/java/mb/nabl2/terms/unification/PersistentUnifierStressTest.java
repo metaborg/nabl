@@ -79,13 +79,15 @@ public class PersistentUnifierStressTest {
             Collections.shuffle(equalities);
             for(Entry<ITerm, ITerm> equality : equalities) {
                 if(rnd.nextBoolean()) {
-                    unifier.unify(equality.getKey(), equality.getValue());
+                    unifier.unify(equality.getKey(), equality.getValue())
+                            .orElseThrow(() -> new IllegalArgumentException());
                 } else {
-                    unifier.unify(equality.getValue(), equality.getKey());
+                    unifier.unify(equality.getValue(), equality.getKey())
+                            .orElseThrow(() -> new IllegalArgumentException());
                 }
             }
             return unifier.freeze();
-        } catch(CannotUnifyException | OccursException e) {
+        } catch(OccursException e) {
             throw new IllegalStateException("Inconsistent equalities list.", e);
         }
     }
