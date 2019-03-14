@@ -343,6 +343,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         public TrackingModuleScopeGraph(Map<IModule, ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>> trackers) {
             this.trackers = trackers;
             this.currentModification = ModuleScopeGraph.this.currentModification;
+            
+            trackers.put(owner, this);
             for (ModuleScopeGraph child : children) {
                 ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> tmsg =
                         trackers.computeIfAbsent(child.owner, m -> child.trackingGraph(trackers));
@@ -459,6 +461,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             for (IModule module : trackers.keySet()) {
                 addModules(modules, module);
             }
+            modules.remove(owner);
             
             return modules;
         }
@@ -543,9 +546,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         @Override
         public Map<IModule, Map<IOwnableTerm, ITerm>> aggregateTrackedEdges() {
             Map<IModule, Map<IOwnableTerm, ITerm>> tbr = new HashMap<>();
-            tbr.put(owner, trackedEdges);
             for (ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> tmsg : trackers.values()) {
-                tbr.putAll(tmsg.aggregateTrackedEdges());
+                tbr.put(tmsg.getOwner(), tmsg.getTrackedEdges());
             }
             return tbr;
         }
@@ -553,9 +555,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         @Override
         public Map<IModule, Map<IOwnableTerm, ITerm>> aggregateTrackedData() {
             Map<IModule, Map<IOwnableTerm, ITerm>> tbr = new HashMap<>();
-            tbr.put(owner, trackedData);
             for (ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> tmsg : trackers.values()) {
-                tbr.putAll(tmsg.aggregateTrackedData());
+                tbr.put(tmsg.getOwner(), tmsg.getTrackedData());
             }
             return tbr;
         }

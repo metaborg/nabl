@@ -31,7 +31,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.NullDebugContext;
-import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -46,6 +45,7 @@ import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.query.IMQueryFilter;
 import mb.statix.taico.solver.query.IMQueryMin;
+import mb.statix.taico.solver.query.QueryDetails;
 
 /**
  * Implementation for a query constraint.
@@ -208,8 +208,8 @@ public class CResolveQuery implements IConstraint {
 
         try {
             //TODO TAICO Hide the debug of the query again
-            final IDebugContext subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
-            //final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
+            //final IDebugContext subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
+            final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
             final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
                 if(params.completeness().isComplete(s, l, state)) {
                     subDebug.info("{} complete in {}", s, l);
@@ -235,10 +235,15 @@ public class CResolveQuery implements IConstraint {
                     .build(trackingGraph, relation);
             // @formatter:on
             
-            //TODO TAICO determine from the tracking graph which dependencies this query has.
-            //TODO TAICO figure out how to store these dependencies properly.
-            
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            
+            //Register this query
+            QueryDetails<IOwnableTerm, ITerm, ITerm> details = new QueryDetails<>(
+                    trackingGraph.aggregateTrackedEdges(),
+                    trackingGraph.aggregateTrackedData(),
+                    trackingGraph.getReachedModules());
+            state.owner().addQuery(this, details);
+            
             final List<ITerm> pathTerms;
             if(relation.isPresent()) {
                 pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))

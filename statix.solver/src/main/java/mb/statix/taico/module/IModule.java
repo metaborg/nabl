@@ -1,28 +1,45 @@
 package mb.statix.taico.module;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.constraint.CResolveQuery;
-import mb.statix.taico.paths.IQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.query.QueryDetails;
 
 /**
  * Interface to represent a module.
  */
 public interface IModule {
+    /**
+     * @return
+     *      the unique identifier for this module
+     */
     String getId();
     
+    /**
+     * @return
+     *      the parent of this module, or null if this is the top level module
+     */
     IModule getParent();
     
+    /**
+     * @return
+     *      the children of this module
+     */
     Set<IModule> getChildren();
     
+    /**
+     * Returns the mutable scope graph belonging to this module. Additions can be made to the
+     * returned scope graph, so consecutive calls can yield different results.
+     * 
+     * @return
+     *      the scope graph of this module
+     */
     IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> getScopeGraph();
     
     /**
@@ -38,6 +55,7 @@ public interface IModule {
     /**
      * @param canExtend
      *      the scopes from this module and parents that the child can extend
+     * 
      * @return
      *      the child
      */
@@ -60,11 +78,25 @@ public interface IModule {
      */
     void setCurrentState(MState state);
     
-    //Dependencies
-    Map<CResolveQuery, Collection<IModule>> getDependencies();
+    /**
+     * Adds a query with its resolution details to determine the dependencies.
+     * 
+     * @param query
+     *      the constraint representing the query
+     * @param details
+     *      the details relevant for dependencies related to this query
+     */
+    void addQuery(CResolveQuery query, QueryDetails<IOwnableTerm, ITerm, ITerm> details);
     
-    void addQuery(CResolveQuery query, Collection<IModule> modules);
     
-    Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
+    /**
+     * The aggregated set of all dependencies based on all the queries in this module.
+     * 
+     * @return
+     *      the dependencies of this module
+     */
+    Set<? extends IModule> getDependencies();
+    
+    //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
     
 }

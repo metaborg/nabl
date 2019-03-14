@@ -1,21 +1,21 @@
 package mb.statix.taico.module;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
-import mb.statix.taico.paths.IQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.query.QueryDetails;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.
@@ -28,7 +28,7 @@ public class Module implements IModule {
     private Set<IModule> children = new HashSet<>();
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     private MState state;
-    private Map<CResolveQuery, Collection<IModule>> dependencies = new HashMap<>();
+    private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
     
     /**
      * Creates a new top level module.
@@ -85,13 +85,7 @@ public class Module implements IModule {
     public String getId() {
         return id;
     }
-
-    @Override
-    public Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
+    
     @Override
     public IModule getParent() {
         return parent;
@@ -141,13 +135,13 @@ public class Module implements IModule {
     }
     
     @Override
-    public Map<CResolveQuery, Collection<IModule>> getDependencies() {
-        return dependencies;
+    public Set<IModule> getDependencies() {
+        return queries.values().stream().flatMap(d -> d.getReachedModules().stream()).collect(Collectors.toSet());
     }
     
     @Override
-    public void addQuery(CResolveQuery query, Collection<IModule> modules) {
-        dependencies.put(query, modules);
+    public void addQuery(CResolveQuery query, QueryDetails<IOwnableTerm, ITerm, ITerm> details) {
+        queries.put(query, details);
     }
     
     @Override
@@ -167,5 +161,4 @@ public class Module implements IModule {
     public String toString() {
         return "@" + id;
     }
-
 }

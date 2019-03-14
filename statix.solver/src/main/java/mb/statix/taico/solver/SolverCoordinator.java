@@ -90,14 +90,12 @@ public class SolverCoordinator {
             cdebug.log(Level.Trace, "end of main loop");
         }
         
+        LazyDebugContext lazyDebug = new LazyDebugContext(cdebug);
         //If we end up here, none of the solvers is still able to make progress
         if (solvers.isEmpty()) {
             //All solvers are done!
-            cdebug.info("All solvers finished successfully!");
-            
-            //return results.get(state.owner());
+            lazyDebug.info("All solvers finished successfully!");
         } else {
-            LazyDebugContext lazyDebug = new LazyDebugContext(cdebug);
             lazyDebug.warn("Solving failed, {} unusuccessful solvers: ", solvers.size());
             IDebugContext sub = lazyDebug.subContext();
             for (ModuleSolver solver : solvers) {
@@ -107,17 +105,11 @@ public class SolverCoordinator {
             }
             
             solvers.clear();
-            
-            //Output debug info
-            debug(lazyDebug);
-            
-            //Log all the queued messages
-            lazyDebug.commit();
         }
+        debug(lazyDebug);
+        lazyDebug.commit();
         
-        MSolverResult result = aggregateResults();
-        
-        return result;
+        return aggregateResults();
     }
     
     /**
@@ -198,7 +190,7 @@ public class SolverCoordinator {
     }
     
     private void printModuleHierarchy(IModule module, IDebugContext context) {
-        context.info("{}", module.getId());
+        context.info("{}: dependencies={}", module.getId(), module.getDependencies());
         IDebugContext sub = context.subContext();
         for (IModule child : module.getChildren()) {
             printModuleHierarchy(child, sub);
