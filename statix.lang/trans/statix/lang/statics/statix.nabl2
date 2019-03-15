@@ -144,7 +144,7 @@ rules
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Term(Build)[[ outarg ^ (s_body) : outty ]].
+    Build[[ outarg ^ (s_body) : outty ]].
 
   [[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
