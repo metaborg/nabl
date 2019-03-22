@@ -4,13 +4,14 @@ lexical syntax
 
   INT = [0-9]+
 
-  ID    = [a-zA-Z] [a-zA-Z0-9\_]*
-  UCID  = [A-Z] [a-zA-Z0-9\_]*
-  LCID  = [a-z] [a-zA-Z0-9\_]*
-  VARID = [a-zA-Z] [a-zA-Z0-9\_]* [\']*
+  ID     = [a-zA-Z] [a-zA-Z0-9\_]*
+  UCID   = [A-Z]    [a-zA-Z0-9\_]*
+  LCID   = [a-z]    [a-zA-Z0-9\_]*
+  VARID  = [a-zA-Z] [a-zA-Z0-9\_]* [\']*
 
-  SID = [A-Z] [a-zA-Z0-9\_\-\']*
-  SID = [a-z] [a-zA-Z0-9\_\-\']*
+  // more liberal ID to accept most Stratego sort and op identifiers
+  STRID = [A-Z] [a-zA-Z0-9\_\-\']*
+//STRID = [a-z] [a-zA-Z0-9\_\-\']* // leads to ambiguities with COp
 
   FileId   = [a-zA-Z0-9\_\-\.\~\']+
   ModuleId = FileId ("/" FileId)*
@@ -22,7 +23,7 @@ lexical restrictions
   LCID  -/- [a-zA-Z0-9\_\']
   VARID -/- [a-zA-Z0-9\_\']
 
-  SID -/- [a-zA-Z0-9\_\-\']
+  STRID -/- [a-zA-Z0-9\_\-\']
 
   FileId   -/- [a-zA-Z0-9\_\-\.\~\']
   ModuleId -/- [\/]
