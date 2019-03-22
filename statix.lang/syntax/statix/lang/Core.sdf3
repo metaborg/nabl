@@ -231,8 +231,6 @@ context-free syntax
 
 lexical syntax
 
-  QueryId = ID
-
   Keyword = "filter" | "min" | "and"
 
 /******************************************************************
@@ -278,10 +276,10 @@ context-free syntax
 
 lexical syntax
 
-  SortId = UCID
+  SortId = STRID
   SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "termId" {reject}
 
-  OpId = UCID
+  OpId = STRID
 
 /******************************************************************
  * Terms                                                          *
