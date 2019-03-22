@@ -159,6 +159,7 @@ rules
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
     d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
+    intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
@@ -187,6 +188,7 @@ rules
 
   Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Inline notation can only be used for functional relations.",
+    intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
     Term(V)[[ st ^ (s) : SCOPE() ]].
