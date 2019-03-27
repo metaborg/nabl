@@ -18,20 +18,20 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.taico.solver.MCompleteness;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
 
 public class MConstraintDataLeq implements DataLeq<ITerm> {
 
-    private final Rule constraint;
+    private final IRule constraint;
     private final MState state;
     private final MCompleteness completeness;
     private final IDebugContext debug;
     private volatile Boolean alwaysTrue;
 
-    public MConstraintDataLeq(Rule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
+    public MConstraintDataLeq(IRule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.completeness = completeness;

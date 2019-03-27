@@ -18,16 +18,16 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 public class ConstraintDataWF implements DataWF<ITerm> {
 
-    private final Rule constraint;
+    private final IRule constraint;
     private final State state;
     private final Completeness completeness;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintDataWF(IRule constraint, State state, Completeness completeness, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.completeness = completeness;

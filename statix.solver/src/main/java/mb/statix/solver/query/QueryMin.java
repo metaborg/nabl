@@ -8,16 +8,16 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.taico.solver.query.IMQueryMin;
 import mb.statix.taico.solver.query.MQueryMin;
 
 public class QueryMin implements IQueryMin {
 
-    private final Rule pathConstraint;
-    private final Rule dataConstraint;
+    private final IRule pathConstraint;
+    private final IRule dataConstraint;
 
-    public QueryMin(Rule pathConstraint, Rule dataConstraint) {
+    public QueryMin(IRule pathConstraint, IRule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }

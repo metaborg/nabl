@@ -26,7 +26,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MCompleteness;
@@ -191,7 +191,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
     }
 
     @SuppressWarnings("unchecked")
-    public static MConstraintLabelWF of(Rule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
+    public static MConstraintLabelWF of(IRule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
         final ITermVar lbls = state.freshVar("lbls");
         final Tuple2<Set<ITermVar>, Set<IConstraint>> inst;
         try {

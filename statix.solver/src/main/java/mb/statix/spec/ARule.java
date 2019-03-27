@@ -44,45 +44,16 @@ import mb.statix.taico.solver.MState;
  * <pre>{ paramVars :- {bodyVars} constraints }</pre>
  */
 @Value.Immutable
-public abstract class ARule {
+public abstract class ARule implements IRule {
 
-    /**
-     * @return
-     *      the name of this rule
-     */
     @Value.Parameter public abstract String name();
 
-    /**
-     * @return
-     *      the list of parameter patterns
-     */
     @Value.Parameter public abstract List<Pattern> params();
 
-    /**
-     * @return
-     *      the set of variables that occur in the parameters
-     */
-    public Set<ITermVar> paramVars() {
-        return params().stream().flatMap(t -> t.getVars().stream()).collect(Collectors.toSet());
-    }
-
-    /**
-     * @return
-     *      the set of variables specified for the body
-     */
     @Value.Parameter public abstract Set<ITermVar> bodyVars();
 
-    /**
-     * @return
-     *      the list of constraints that make up the body of this rule
-     */
     @Value.Parameter public abstract List<IConstraint> body();
 
-    /**
-     * @param spec
-     * @return
-     * @throws InterruptedException
-     */
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
         State state = State.of(spec);
         List<ITerm> args = Lists.newArrayList();
@@ -115,35 +86,14 @@ public abstract class ARule {
         }
     }
 
-    /**
-     * @param subst
-     *      the substitution to apply
-     * 
-     * @return
-     *      a copy of this rule with the given substitution applied to the body
-     */
-    public Rule apply(ISubstitution.Immutable subst) {
+    @Override
+    public IRule apply(ISubstitution.Immutable subst) {
         final ISubstitution.Immutable bodySubst = subst.removeAll(paramVars()).removeAll(bodyVars());
         final List<IConstraint> newBody = body().stream().map(c -> c.apply(bodySubst)).collect(Collectors.toList());
         return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
-    /**
-     * Applies the given arguments to this rule.
-     * 
-     * @param args
-     *      the arguments to apply
-     * @param state
-     *      the current state
-     * 
-     * @return
-     *      a tuple with the new state, new variables and the set of new constraints. If the
-     *      arguments do not match the parameters, an empty optional is returned
-     * 
-     * @throws Delay
-     *      If the arguments cannot be matched to the parameters of this rule because one or more
-     *      terms are not ground.
-     */
+    @Override
     public Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
@@ -165,24 +115,7 @@ public abstract class ARule {
         return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
     }
     
-    /**
-     * Applies the given arguments to this rule.
-     * 
-     * @param args
-     *      the arguments to apply
-     * @param state
-     *      the current state
-     * 
-     * @return
-     *      a tuple with the state, the new variables and the set of new constraints. If the
-     *      arguments do not match the parameters, an empty optional is returned
-     * 
-     * @throws Delay
-     *      If the arguments cannot be matched to the parameters of this rule because one or more
-     *      terms are not ground.
-     * @throws IllegalStateException
-     *      If this rule is a module boundary.
-     */
+    @Override
     public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
         if (isModuleBoundary()) throw new IllegalStateException("Cannot apply as non module boundary, since this rule is a module boundary!");
         
@@ -307,14 +240,14 @@ public abstract class ARule {
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    public static java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
+    public static java.util.Comparator<IRule> leftRightPatternOrdering = new LeftRightPatternOrder();
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    private static class LeftRightPatternOrder implements Comparator<Rule> {
+    private static class LeftRightPatternOrder implements Comparator<IRule> {
 
-        @Override public int compare(Rule r1, Rule r2) {
+        @Override public int compare(IRule r1, IRule r2) {
             final Pattern p1 = P.newTuple(r1.params());
             final Pattern p2 = P.newTuple(r2.params());
             return Pattern.leftRightOrdering.compare(p1, p2);

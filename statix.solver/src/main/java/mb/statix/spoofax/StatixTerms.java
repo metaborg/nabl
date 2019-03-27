@@ -64,9 +64,13 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.spec.IRule;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
+import mb.statix.taico.module.IModuleStringComponent;
+import mb.statix.taico.module.ModuleString;
+import mb.statix.taico.spec.ModuleBoundary;
 
 public class StatixTerms {
 
@@ -86,17 +90,17 @@ public class StatixTerms {
     public static IMatcher<Spec> spec() {
         return IMatcher.flatten(M.tuple4(M.req(labels()), M.req(relationDecls()), M.term(), M.req(scopeExtensions()),
                 (t, labels, relations, rulesTerm, ext) -> {
-                    Optional<ListMultimap<String, Rule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
+                    Optional<ListMultimap<String, IRule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
                     return maybeRules.map(rules -> {
                         return Spec.of(rules, labels, END_OF_PATH, relations, ext);
                     });
                 }));
     }
 
-    public static IMatcher<ListMultimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
+    public static IMatcher<ListMultimap<String, IRule>> rules(IAlphabet<ITerm> labels) {
         return M.listElems(M.req(rule(labels))).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder =
-                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
+            final ImmutableListMultimap.Builder<String, IRule> builder =
+                    ImmutableListMultimap.<String, IRule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
             rules.stream().forEach(rule -> {
                 builder.put(rule.name(), rule);
             });
@@ -104,16 +108,25 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Rule> rule(IAlphabet<ITerm> labels) {
-        return M.appl3("Rule", head(), M.listElems(varTerm()), constraints(labels), (r, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), bvs, bc);
-        });
+    public static IMatcher<IRule> rule(IAlphabet<ITerm> labels) {
+        return M.cases(
+            M.appl3("Rule", head(), M.listElems(varTerm()), constraints(labels), (r, h, bvs, bc) -> {
+                return Rule.of(h._1(), h._2(), bvs, bc);
+            }),
+            M.appl4("ModuleRule", head(), moduleString(), M.listElems(varTerm()), constraints(labels), (r, h, mstr, bvs, bc) -> {
+                return ModuleBoundary.of(h._1(), h._2(), mstr, bvs, bc);
+            })
+        );
     }
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
         return M.appl2("C", M.stringValue(), M.listElems(pattern()), (h, name, patterns) -> {
             return ImmutableTuple2.of(name, patterns);
         });
+    }
+    
+    public static IMatcher<ModuleString> moduleString() {
+        return M.listElems(IModuleStringComponent.matcher()).map(cs -> ModuleString.of(cs));
     }
 
     public static IMatcher<Set<IConstraint>> constraints(IAlphabet<ITerm> labels) {

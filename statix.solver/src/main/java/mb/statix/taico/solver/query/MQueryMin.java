@@ -6,17 +6,17 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.taico.solver.MCompleteness;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.query.IMQueryMin;
 
 public class MQueryMin implements IMQueryMin {
 
-    private final Rule pathConstraint;
-    private final Rule dataConstraint;
+    private final IRule pathConstraint;
+    private final IRule dataConstraint;
 
-    public MQueryMin(Rule pathConstraint, Rule dataConstraint) {
+    public MQueryMin(IRule pathConstraint, IRule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }

@@ -41,7 +41,7 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
@@ -60,7 +60,6 @@ public class STX_solve_constraint extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-
         final Spec spec =
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
@@ -157,14 +156,14 @@ public class STX_solve_constraint extends StatixPrimitive {
     }
 
     private void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> overlappingRules = spec.overlappingRules();
+        final ListMultimap<String, IRule> overlappingRules = spec.overlappingRules();
         if(!overlappingRules.isEmpty()) {
             logger.error("+-------------------------+");
             logger.error("| FOUND OVERLAPPING RULES |");
             logger.error("+-------------------------+");
-            for(Map.Entry<String, Collection<Rule>> entry : overlappingRules.asMap().entrySet()) {
+            for(Map.Entry<String, Collection<IRule>> entry : overlappingRules.asMap().entrySet()) {
                 logger.error("| Overlapping rules for: {}", entry.getKey());
-                for(Rule rule : entry.getValue()) {
+                for(IRule rule : entry.getValue()) {
                     logger.error("| * {}", rule);
                 }
             }

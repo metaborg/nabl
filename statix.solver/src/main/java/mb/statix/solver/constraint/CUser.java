@@ -1,7 +1,6 @@
 package mb.statix.solver.constraint;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -30,11 +29,12 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.spec.Spec;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.spec.ModuleBoundary;
 
 /**
  * Implementation for a user constraint (rule application).
@@ -89,7 +89,6 @@ public class CUser implements IConstraint {
     }
 
     @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        //TODO IMPORTANT TAICO CRITICALEDGE this does not work on the correct scope graph yet.
         return spec.scopeExtensions().get(name).stream().map(il -> CriticalEdge.of(args.get(il._1()), il._2()))
                 .collect(Collectors.toList());
     }
@@ -101,14 +100,6 @@ public class CUser implements IConstraint {
     @Override
     public boolean canModifyState() {
         return true;
-    }
-    
-    /**
-     * @return
-     *      true if this rule crosses a module boundary, false otherwise
-     */
-    public final boolean isModuleBoundary() {
-        return name.startsWith("modbound_");
     }
 
     /**
@@ -122,15 +113,15 @@ public class CUser implements IConstraint {
     public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
             throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();
-        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
+        final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
-        final Iterator<Rule> it = rules.iterator();
+        final Iterator<IRule> it = rules.iterator();
         while(it.hasNext()) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
             }
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-            final Rule rawRule = it.next();
+            final IRule rawRule = it.next();
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try rule {}", rawRule.toString());
             }
@@ -165,44 +156,48 @@ public class CUser implements IConstraint {
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
-        if (isModuleBoundary()) {
-            IConstraint moduleConstraint = new CModule(this.name, this.args, this);
-            return Optional.of(MConstraintResult.ofConstraints(state, Collections.singleton(moduleConstraint)));
+        if (name.startsWith("modbound_")) {
+            CModule modc = new CModule(name, args);
+            return Optional.of(MConstraintResult.ofConstraints(state, modc));
         }
-
         final IDebugContext debug = params.debug();
-        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
+        final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
-        final Iterator<Rule> it = rules.iterator();
+        final Iterator<IRule> it = rules.iterator();
         while(it.hasNext()) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
             }
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-            final Rule rawRule = it.next();
+            final IRule rawRule = it.next();
+            final String ruleOrModb = (rawRule instanceof ModuleBoundary) ? "module boundary" : "rule";
             if(proxyDebug.isEnabled(Level.Info)) {
-                proxyDebug.info("Try rule {}", rawRule.toString());
+                proxyDebug.info("Try {} {}", ruleOrModb, rawRule.toString());
             }
             
             final Set<IConstraint> instantiatedBody;
             final Tuple2<Set<ITermVar>, Set<IConstraint>> appl;
             
             try {
-                if((appl = rawRule.apply(args, state).orElse(null)) != null) {
+                //TODO IMPORTANT In the module boundary, I used to have a state copy here. Is this required?
+                if (rawRule instanceof ModuleBoundary) System.err.println("Module boundary encountered, is state copy of original required?");
+                MState copyState = state.copy();
+                if((appl = rawRule.apply(args, copyState).orElse(null)) != null) {
                     instantiatedBody = appl._2();
+                    state = copyState;
                 } else {
-                    proxyDebug.info("Rule rejected (mismatching arguments)");
+                    proxyDebug.info("{} rejected (mismatching arguments)", ruleOrModb);
                     unsuccessfulLog.absorb(proxyDebug.clear());
                     continue;
                 }
             } catch(Delay d) {
-                proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                proxyDebug.info("{} delayed (unsolved guard constraint)", ruleOrModb);
                 unsuccessfulLog.absorb(proxyDebug.clear());
                 unsuccessfulLog.flush(debug);
                 throw d;
             }
             
-            proxyDebug.info("Rule accepted");
+            proxyDebug.info("{} accepted", ruleOrModb);
             proxyDebug.commit();
             return Optional.of(MConstraintResult.ofConstraints(state, instantiatedBody));
         }

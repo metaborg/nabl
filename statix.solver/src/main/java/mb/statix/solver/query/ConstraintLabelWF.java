@@ -30,7 +30,7 @@ import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 public class ConstraintLabelWF implements LabelWF<ITerm> {
 
@@ -132,7 +132,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         }
     }
 
-    public static ConstraintLabelWF of(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
+    public static ConstraintLabelWF of(IRule constraint, State state, Completeness completeness, IDebugContext debug) {
         final Tuple2<ITermVar, State> lbls = state.freshVar("lbls");
         final Tuple3<State, Set<ITermVar>, Set<IConstraint>> inst;
         try {

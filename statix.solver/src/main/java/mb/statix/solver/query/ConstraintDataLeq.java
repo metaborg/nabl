@@ -20,16 +20,16 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 public class ConstraintDataLeq implements DataLeq<ITerm> {
 
-    private final Rule constraint;
+    private final IRule constraint;
     private final State state;
     private final Completeness completeness;
     private final IDebugContext debug;
 
-    public ConstraintDataLeq(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintDataLeq(IRule constraint, State state, Completeness completeness, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.completeness = completeness;

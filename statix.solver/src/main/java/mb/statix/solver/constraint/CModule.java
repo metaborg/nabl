@@ -30,11 +30,12 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.spec.Spec;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.spec.ModuleBoundary;
 
 /**
  * Implementation for a user constraint (rule application).
@@ -123,15 +124,15 @@ public class CModule implements IConstraint {
         final IDebugContext debug = params.debug();
         
         final List<ITerm> args = groundArguments(state.unifier());
-        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
+        final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
-        final Iterator<Rule> it = rules.iterator();
+        final Iterator<IRule> it = rules.iterator();
         while(it.hasNext()) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
             }
             final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-            final Rule rawRule = it.next();
+            final IRule rawRule = it.next();
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try module boundary {}", rawRule.toString());
             }
@@ -142,7 +143,7 @@ public class CModule implements IConstraint {
             final MState childState;
             try {
                 MState copyState = state.copy();
-                if((appl = rawRule.applyModuleBoundary(args, copyState).orElse(null)) != null) {
+                if((appl = ((ModuleBoundary) rawRule).applyModuleBoundary(args, copyState).orElse(null)) != null) {
                     childState = appl._1();
                     instantiatedBody = appl._3();
                     state = copyState;

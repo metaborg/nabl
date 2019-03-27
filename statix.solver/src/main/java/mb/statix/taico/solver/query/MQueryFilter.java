@@ -6,7 +6,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.taico.solver.MCompleteness;
 import mb.statix.taico.solver.MState;
 
@@ -17,10 +17,10 @@ import mb.statix.taico.solver.MState;
  */
 public class MQueryFilter implements IMQueryFilter {
 
-    private final Rule pathConstraint;
-    private final Rule dataConstraint;
+    private final IRule pathConstraint;
+    private final IRule dataConstraint;
 
-    public MQueryFilter(Rule pathConstraint, Rule dataConstraint) {
+    public MQueryFilter(IRule pathConstraint, IRule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }

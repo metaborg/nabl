@@ -8,7 +8,7 @@ import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.taico.solver.query.IMQueryFilter;
 import mb.statix.taico.solver.query.MQueryFilter;
 
@@ -19,10 +19,10 @@ import mb.statix.taico.solver.query.MQueryFilter;
  */
 public class QueryFilter implements IQueryFilter {
 
-    private final Rule pathConstraint;
-    private final Rule dataConstraint;
+    private final IRule pathConstraint;
+    private final IRule dataConstraint;
 
-    public QueryFilter(Rule pathConstraint, Rule dataConstraint) {
+    public QueryFilter(IRule pathConstraint, IRule dataConstraint) {
         this.pathConstraint = pathConstraint;
         this.dataConstraint = dataConstraint;
     }
