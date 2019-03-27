@@ -29,6 +29,8 @@ public class Module implements IModule {
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     private MState state;
     private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
+    private Map<IModule, CResolveQuery> dependants = new HashMap<>();
+    private ModuleCleanliness cleanliness = ModuleCleanliness.CLEAN;
     
     /**
      * Creates a new top level module.
@@ -142,6 +144,26 @@ public class Module implements IModule {
     @Override
     public void addQuery(CResolveQuery query, QueryDetails<IOwnableTerm, ITerm, ITerm> details) {
         queries.put(query, details);
+    }
+    
+    @Override
+    public void addDependant(IModule module, CResolveQuery query) {
+        dependants.put(module, query);
+    }
+    
+    @Override
+    public Map<IModule, CResolveQuery> getDependants() {
+        return dependants;
+    }
+    
+    @Override
+    public void flag(ModuleCleanliness cleanliness) {
+        this.cleanliness = cleanliness;
+    }
+    
+    @Override
+    public ModuleCleanliness getFlag() {
+        return cleanliness;
     }
     
     @Override

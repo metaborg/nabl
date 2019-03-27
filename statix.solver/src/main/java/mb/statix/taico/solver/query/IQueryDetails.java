@@ -1,8 +1,10 @@
 package mb.statix.taico.solver.query;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
+import mb.nabl2.terms.ITerm;
 import mb.statix.taico.module.IModule;
 
 /**
@@ -21,4 +23,6 @@ public interface IQueryDetails<S, L, R> {
     Map<IModule, Map<S, R>> getRelevantData();
     
     Collection<? extends IModule> getReachedModules();
+    
+    List<ITerm> getQueryResult();
 }

@@ -1,5 +1,6 @@
 package mb.statix.taico.module;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 
@@ -96,6 +97,14 @@ public interface IModule {
      *      the dependencies of this module
      */
     Set<? extends IModule> getDependencies();
+    
+    void addDependant(IModule module, CResolveQuery query);
+    
+    Map<IModule, CResolveQuery> getDependants();
+    
+    void flag(ModuleCleanliness cleanliness);
+    
+    ModuleCleanliness getFlag();
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
     

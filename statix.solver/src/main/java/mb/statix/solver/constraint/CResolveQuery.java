@@ -36,6 +36,7 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
+import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
 import mb.statix.taico.scopegraph.OwnableScope;
@@ -237,13 +238,6 @@ public class CResolveQuery implements IConstraint {
             
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             
-            //Register this query
-            QueryDetails<IOwnableTerm, ITerm, ITerm> details = new QueryDetails<>(
-                    trackingGraph.aggregateTrackedEdges(),
-                    trackingGraph.aggregateTrackedData(),
-                    trackingGraph.getReachedModules());
-            state.owner().addQuery(this, details);
-            
             final List<ITerm> pathTerms;
             if(relation.isPresent()) {
                 pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
@@ -251,6 +245,20 @@ public class CResolveQuery implements IConstraint {
             } else {
                 pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
             }
+            
+            //Register this query
+            QueryDetails<IOwnableTerm, ITerm, ITerm> details = new QueryDetails<>(
+                    trackingGraph.aggregateTrackedEdges(),
+                    trackingGraph.aggregateTrackedData(),
+                    trackingGraph.getReachedModules(),
+                    pathTerms);
+            state.owner().addQuery(this, details);
+            
+            //Add reverse dependancies
+            for (IModule module : trackingGraph.getReachedModules()) {
+                module.addDependant(state.owner(), this);
+            }
+            
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
             return Optional.of(MConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
