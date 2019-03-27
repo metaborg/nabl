@@ -1,0 +1,42 @@
+module scopegraphs-modules
+
+language StatixLang
+
+test resolve queries in own module scope works [[[
+resolve {a c}
+  programOK(Program([Module("mod1"), Module("mod2")]))
+
+rules
+  programOK : Program
+  programOK(Program(modules)) :- {programScope}
+    new programScope,
+    programScope -> Mod{"parent"@-},
+    modulesOK(programScope, modules).
+  
+  modulesOK maps moduleOK(*, list(*))
+  
+  moduleOK : scope * Module
+  modbound moduleOK(parentScope, Module(name)) | $[[name]] :- {modScope}
+    new modScope,
+    modScope -P-> parentScope,
+    modScope -> Mod{name@name},
+    query decl
+      filter pathMatch[P*] and { d :- d == Mod{_@_}}
+      min pathLt[$ < P] and true
+      in parentScope |-> [(_, Mod{"parent"@-})].
+
+signature
+  sorts Program constructors
+    Program : list(Module) -> Program
+  
+  sorts Module constructors
+    Module : string -> Module
+  
+  namespaces
+    Mod : string
+  
+  name-resolution
+    labels P 
+    resolve Mod filter pathMatch[P*] min pathLt[$ < P]
+]]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
