@@ -94,3 +94,8 @@ rules
       Rule(hd@F(x, in_ts, out_t), bvs, body) -> Rule(hd, bvs', body)
     with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
          bvs'   := <conc> (bvs, out-vs)
+
+  fix-rule-variables:
+      ModuleRule(hd@F(x, in_ts, out_t), modstr, bvs, body) -> ModuleRule(hd, modstr, bvs', body)
+    with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
+         bvs'   := <conc> (bvs, out-vs)

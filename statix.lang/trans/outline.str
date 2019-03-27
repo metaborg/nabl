@@ -56,7 +56,7 @@ rules
 
   outline-pred(|ast): CDecl(_, x, ty) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"CDecl"))>, node*))
     with
-      head* := <collect-om(?Rule(<keep-origin(outline-rule-head(|x))>, _, _), conc)> ast
+      head* := <collect-om(?Rule(<keep-origin(outline-rule-head(|x))>, _, _) + ?ModuleRule(<keep-origin(outline-rule-head(|x))>, _, _, _), conc)> ast
     ; sorted* := <qsort(rule-head-cmp(patterns-lt))> head*
     ; node* := <map(!Node(<keep-origin(pp-partial-Statix-string(|"RuleHead"))>, []))> sorted*
 

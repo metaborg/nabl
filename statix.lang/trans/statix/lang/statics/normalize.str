@@ -65,6 +65,14 @@ rules
          bvs' := bvs;
          body' := CConj(body, CEqual(out_t, <build-terms(|outtys)> out_ts));
          ts := <conc> (in_ts, out_ts)
+  
+  normalize-functional-head(|a):
+      ModuleRule(F(x, in_ts, out_t), modstr, bvs, body){a*} -> ModuleRule(C(x, ts), modstr, bvs', body'){a*}
+    with FUN(intys, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         out_ts := <make-fresh-vars(|"out")> outtys;
+         bvs' := bvs;
+         body' := CConj(body, CEqual(out_t, <build-terms(|outtys)> out_ts));
+         ts := <conc> (in_ts, out_ts)
 
 rules
 
@@ -82,6 +90,13 @@ rules
 
   normalize-functional-cop(|a):
       Rule(head, bvs, body){a*} -> Rule(head, bvs', body''){a*}
+    with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
+         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
+         new-bvs := <map(Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+  
+  normalize-functional-cop(|a):
+      ModuleRule(head, modstr, bvs, body){a*} -> ModuleRule(head, modstr, bvs', body''){a*}
     with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
          body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
          new-bvs := <map(Snd);all-vars> bmaps;
@@ -228,6 +243,13 @@ rules
     with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
+  
+  normalize-wildcard:
+      ModuleRule(C(x, ps), modstr, bvs, body){a*} -> ModuleRule(C(x, ps'), modstr, bvs', body'){a*}
+    with (ps', _) := <collect-map(replace-wld)> ps
+    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
+         new-bvs := <map(Snd)> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
 
   normalize-wildcard:
       LLam(ps, bvs, body){a*} -> LLam(ps', bvs', body'){a*}
@@ -244,6 +266,11 @@ rules
 
   normalize-as-pattern:
       Rule(C(x, ps), bvs, body){a*} -> Rule(C(x, ps), bvs, body''){a*}
+    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
+         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
+  
+  normalize-as-pattern:
+      ModuleRule(C(x, ps), modstr, bvs, body){a*} -> ModuleRule(C(x, ps), modstr, bvs, body''){a*}
     with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
          body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
 

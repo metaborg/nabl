@@ -40,3 +40,13 @@ rules
 
   lift-type: (IdLift(), ty) -> ty
   lift-type: (ListLift(), ty) -> LIST(ty)
+
+rules
+
+  stringable-type: t@STRING()   -> t
+  stringable-type: t@INT()      -> t
+  stringable-type: t@TERM_ID()  -> t
+  stringable-type: t@TUPLE(tys) -> t
+    where <map(stringable-type)> tys
+  stringable-type: t@LIST(ty)   -> t
+    where <stringable-type> ty

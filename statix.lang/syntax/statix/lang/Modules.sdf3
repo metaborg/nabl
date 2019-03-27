@@ -1,0 +1,28 @@
+module statix/lang/Modules
+
+imports
+
+  statix/lang/Common
+  statix/lang/Core
+
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+lexical syntax
+
+  ModuleString     = ModuleStringChar*
+  ModuleStringChar = ~[\[\]\n]
+
+lexical restrictions
+  ModuleString -/- ~[]
+
+context-free syntax
+
+  Rule.ModuleRule = <
+    modbound <RuleHead> | $[<ModuleStringInside*>] :- <LocalVars>
+      <Constraint>.
+  >
+  
+  ModuleStringInside.Str = ModuleString
+  ModuleStringInside.Var = "[" VARID "]"

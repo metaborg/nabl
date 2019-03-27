@@ -13,7 +13,7 @@ rules
 
   detect-overlapping-rules: ast -> or-e*
     with
-      head*   := <collect-om(?Rule(<id>, _, _), conc)> ast
+      head*   := <collect-om(?Rule(<id>, _, _) + ?ModuleRule(<id>, _, _, _), conc)> ast
     ; o-head* := <group-by(rule-head-cmp(patterns-eq))> head*
     ; or-e*   := <filter(overlap-errors);concat> o-head*
 
