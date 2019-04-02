@@ -304,15 +304,15 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 }
             };
             // @formatter:off
-                        final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
-                                .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
-                                .withDataWF(filter(relation, type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
-                                .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
-                                .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
-                                .withEdgeComplete(isComplete)
-                                .withDataComplete(isComplete)
-                                .build(state.scopeGraph(), relation);
-                        // @formatter:on
+            final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
+                        .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
+                        .withDataWF(filter(relation, type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
+                        .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
+                        .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
+                        .withEdgeComplete(isComplete)
+                        .withDataComplete(isComplete)
+                        .build(state.scopeGraph(), relation);
+            // @formatter:on
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms;
             if(relation.isPresent()) {
