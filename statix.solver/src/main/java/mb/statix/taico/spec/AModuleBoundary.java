@@ -115,6 +115,7 @@ public abstract class AModuleBoundary extends ARule {
      *      If one of the arguments is not ground.
      */
     private List<ITerm> groundArguments(List<ITerm> args, final IUnifier.Immutable unifier) throws Delay {
+        //TODO IMPORTANT This function does not seem to actually ground the arguments.
         for (ITerm term : args) {
             if (!unifier.isGround(term)) {
                 //TODO IMPORTANT Is this correct? How about a term where some of it's innards are unknown, but not all of them? (The delay waits on all vars, but some might be known)
