@@ -50,6 +50,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual-android</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <!-- javax.annotation & jsr305 necessary for annotations in dependencies -->
+    <dependency>
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>
       <scope>provided</scope>
