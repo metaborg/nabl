@@ -19,8 +19,8 @@ public class Actions {
     public static ITerm sourceTerm(String resource, ITerm term) {
         TermIndex index = ImmutableTermIndex.of(resource, 0);
         TermOrigin origin = ImmutableTermOrigin.of(resource);
-        ImmutableClassToInstanceMap<Object> attachments = ImmutableClassToInstanceMap.builder()
-                .put(TermIndex.class, index).put(TermOrigin.class, origin).build();
+        ImmutableClassToInstanceMap<Object> attachments =
+                ImmutableClassToInstanceMap.builder().put(TermIndex.class, index).put(TermOrigin.class, origin).build();
         return term.withAttachments(attachments);
     }
 

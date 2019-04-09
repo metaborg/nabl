@@ -30,8 +30,8 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
             throws InterpreterException {
         final IRelation3<S, Label, ? extends ITerm> edges = getEdges(solution.scopeGraph());
         final IMatcher<S> sourceMatcher = getSourceMatcher();
+        // @formatter:off
         return M.<ITerm>cases(
-            // @formatter:off
             M.term(sourceMatcher, (t, source) -> {
                 List<ITerm> edgeTerms = Lists.newArrayList();
                 for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
@@ -46,8 +46,8 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
                 }
                 return B.newList(targetTerms);
             })
-            // @formatter:on
         ).match(term, solution.unifier());
+        // @formatter:on
     }
 
     protected abstract IMatcher<S> getSourceMatcher();

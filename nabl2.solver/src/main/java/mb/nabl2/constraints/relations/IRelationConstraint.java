@@ -17,13 +17,12 @@ public interface IRelationConstraint extends IConstraint {
 
         T caseEval(CEvalFunction constraint);
 
+        // @formatter:off
         static <T> Cases<T> of(
-            // @formatter:off
             Function1<CBuildRelation,T> onBuild,
             Function1<CCheckRelation,T> onCheck,
             Function1<CEvalFunction,T> onEval
-            // @formatter:on
-        ) {
+        ) /* @formatter:on */ {
             return new Cases<T>() {
 
                 @Override public T caseBuild(CBuildRelation build) {
@@ -53,13 +52,12 @@ public interface IRelationConstraint extends IConstraint {
 
         T caseEval(CEvalFunction constraint) throws E;
 
+        // @formatter:off
         static <T, E extends Throwable> CheckedCases<T, E> of(
-            // @formatter:off
             CheckedFunction1<CBuildRelation,T,E> onBuild,
             CheckedFunction1<CCheckRelation,T,E> onCheck,
             CheckedFunction1<CEvalFunction,T,E> onEval
-            // @formatter:on
-        ) {
+        ) /* @formatter:on */ {
             return new CheckedCases<T, E>() {
 
                 @Override public T caseBuild(CBuildRelation constraint) throws E {

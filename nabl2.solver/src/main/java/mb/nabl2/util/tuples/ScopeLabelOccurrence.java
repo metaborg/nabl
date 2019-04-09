@@ -12,13 +12,10 @@ import mb.nabl2.scopegraph.IScope;
 public abstract class ScopeLabelOccurrence<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements HasScope<S>, HasLabel<L>, HasOccurrence<O> {
 
-    @Value.Parameter
-    public abstract S scope();
+    @Override @Value.Parameter public abstract S scope();
 
-    @Value.Parameter
-    public abstract L label();
+    @Override @Value.Parameter public abstract L label();
 
-    @Value.Parameter
-    public abstract O occurrence();
+    @Override @Value.Parameter public abstract O occurrence();
 
 }

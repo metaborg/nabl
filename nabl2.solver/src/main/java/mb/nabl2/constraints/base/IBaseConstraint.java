@@ -34,7 +34,7 @@ public interface IBaseConstraint extends IConstraint {
                     return onFalse.apply(constraint);
                 }
 
-                public T caseConj(CConj constraint) {
+                @Override public T caseConj(CConj constraint) {
                     return onConj.apply(constraint);
                 }
 
@@ -42,7 +42,7 @@ public interface IBaseConstraint extends IConstraint {
                     return onExists.apply(constraint);
                 }
 
-                public T caseNew(CNew constraint) {
+                @Override public T caseNew(CNew constraint) {
                     return onNew.apply(constraint);
                 }
 

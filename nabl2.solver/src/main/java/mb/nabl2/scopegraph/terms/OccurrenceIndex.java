@@ -33,7 +33,7 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
 
     // IApplTerm
 
-    public boolean isGround() {
+    @Override public boolean isGround() {
         return term.isGround();
     }
 

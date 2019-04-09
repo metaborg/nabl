@@ -16,7 +16,7 @@ public interface IPolyConstraint extends IConstraint {
 
         T caseInstantiate(CInstantiate constraint);
 
-        static <T> Cases<T> of(Function<CGeneralize,T> onGeneralize, Function<CInstantiate,T> onInstantiate) {
+        static <T> Cases<T> of(Function<CGeneralize, T> onGeneralize, Function<CInstantiate, T> onInstantiate) {
             return new Cases<T>() {
 
                 @Override public T caseGeneralize(CGeneralize constraint) {
@@ -32,7 +32,7 @@ public interface IPolyConstraint extends IConstraint {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 
@@ -40,9 +40,9 @@ public interface IPolyConstraint extends IConstraint {
 
         T caseInstantiate(CInstantiate constraint) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CGeneralize,T,E> onGeneralize,
-                CheckedFunction1<CInstantiate,T,E> onInstantiate) {
-            return new CheckedCases<T,E>() {
+        static <T, E extends Throwable> CheckedCases<T, E> of(CheckedFunction1<CGeneralize, T, E> onGeneralize,
+                CheckedFunction1<CInstantiate, T, E> onInstantiate) {
+            return new CheckedCases<T, E>() {
 
                 @Override public T caseGeneralize(CGeneralize constraint) throws E {
                     return onGeneralize.apply(constraint);

@@ -15,13 +15,13 @@ public enum MessageKind {
     private static final String NOTE_OP = "Note";
 
     public static IMatcher<MessageKind> matcher() {
+        // @formatter:off
         return M.cases(
-            // @formatter:off
             M.appl0(ERROR_OP, e -> ERROR),
             M.appl0(WARNING_OP, e -> WARNING),
             M.appl0(NOTE_OP, e -> NOTE)
-            // @formatter:on
         );
+        // @formatter:on
     }
 
     public static ITerm build(MessageKind kind) {

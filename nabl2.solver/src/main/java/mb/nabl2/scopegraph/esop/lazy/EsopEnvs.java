@@ -141,7 +141,7 @@ public class EsopEnvs {
                         return false;
                     }).orElse(true)) {
                         break;
-                    };
+                    }
                 }
                 if(paths == null && _envs.isEmpty()) {
                     paths = _paths.freeze();

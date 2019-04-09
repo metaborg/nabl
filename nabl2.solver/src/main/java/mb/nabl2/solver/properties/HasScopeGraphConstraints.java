@@ -71,7 +71,7 @@ public class HasScopeGraphConstraints implements IConstraintSetProperty {
         ));
     }
 
-    public boolean update(Collection<ITermVar> vars) {
+    @Override public boolean update(Collection<ITermVar> vars) {
         return false;
     }
 

@@ -27,13 +27,11 @@ public class SG_get_decl_resolution extends AnalysisPrimitive {
         return Occurrence.matcher().match(term, solution.unifier()).<ITerm>flatMap(decl -> {
             IEsopNameResolution<Scope, Label, Occurrence> nameResolution = solution.nameResolution();
             nameResolution.resolveAll();
-            Stream<ITerm> resolutions = nameResolution.resolutionEntries().stream()
-                    .flatMap(entry -> {
-                        Occurrence from = entry.getKey();
-                        return entry.getValue().stream()
-                                .filter(path -> path.getDeclaration().equals(decl))
-                                .map(p -> B.newTuple(from, Paths.toTerm(p)));
-                    });
+            Stream<ITerm> resolutions = nameResolution.resolutionEntries().stream().flatMap(entry -> {
+                Occurrence from = entry.getKey();
+                return entry.getValue().stream().filter(path -> path.getDeclaration().equals(decl))
+                        .map(p -> B.newTuple(from, Paths.toTerm(p)));
+            });
             return Optional.of(B.newList(() -> resolutions.iterator()));
         });
     }

@@ -39,11 +39,12 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
     }
 
     public static IMatcher<ResolutionParameters> matcher() {
-        return (term, unifier) -> IMatcher.flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
-            RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
-            return matchWf(builder).match(wfTerm, unifier)
-                    .<ResolutionParameters>map(wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
-        })).match(term, unifier);
+        return (term, unifier) -> IMatcher
+                .flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
+                    RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
+                    return matchWf(builder).match(wfTerm, unifier).<ResolutionParameters>map(
+                            wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
+                })).match(term, unifier);
     }
 
     private static IMatcher<IAlphabet<Label>> matchLabels() {

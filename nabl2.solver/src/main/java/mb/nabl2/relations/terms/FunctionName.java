@@ -39,7 +39,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
 
         // IFunctionName implementation
 
-        public <T> T match(IFunctionName.Cases<T> cases) {
+        @Override public <T> T match(IFunctionName.Cases<T> cases) {
             return cases.caseNamed(getName());
         }
 
@@ -87,7 +87,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
 
         // IFunctionName implementation
 
-        public <T> T match(IFunctionName.Cases<T> cases) {
+        @Override public <T> T match(IFunctionName.Cases<T> cases) {
             return cases.caseExt(getName());
         }
 
@@ -126,14 +126,14 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
     }
 
     public static IMatcher<? extends FunctionName> matcher() {
+        // @formatter:off
         return M.preserveAttachments(M.cases(
-            // @formatter:off
             NamedFunction.matcher(),
             ExtFunction.matcher(),
             M.appl1("Lub", NamedRelation.matcher(), (t, r) -> ImmutableNamedFunction.of(RelationFunctions.LUB.of(r.getName()))),
             M.appl1("Glb", NamedRelation.matcher(), (t, r) -> ImmutableNamedFunction.of(RelationFunctions.GLB.of(r.getName())))
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
 }

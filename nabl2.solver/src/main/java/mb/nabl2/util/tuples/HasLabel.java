@@ -11,9 +11,9 @@ import mb.nabl2.scopegraph.ILabel;
 public interface HasLabel<L extends ILabel> {
 
     L label();
-    
+
     static Predicate<HasLabel<? extends ILabel>> labelEquals(ILabel label) {
         return tuple -> Objects.equals(tuple.label(), label);
     }
-        
+
 }

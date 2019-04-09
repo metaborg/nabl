@@ -90,7 +90,7 @@ public class SingleFileSolver extends BaseSolver {
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
                 polySafe::isInstSafe, nameResolutionSolver::getProperty);
 
-                // @formatter:off
+        // @formatter:off
         final ISolver component = c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
                 .onBase(baseSolver::solve)
                 .onEquality(equalitySolver::solve)
