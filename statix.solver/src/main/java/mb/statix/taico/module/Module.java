@@ -3,6 +3,7 @@ package mb.statix.taico.module;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,7 +49,7 @@ public class Module implements IModule {
         this.manager = manager;
         this.id = id;
         this.parent = null;
-        this.scopeGraph = new ModuleScopeGraph(null, this, labels, endOfPath, relations, Collections.emptySet());
+        this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Collections.emptyList());
         manager.addModule(this);
     }
     
@@ -64,7 +65,7 @@ public class Module implements IModule {
         this.manager = manager;
         this.id = id;
         this.parent = null;
-        this.scopeGraph = new ModuleScopeGraph(null, this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptySet());
+        this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptyList());
         manager.addModule(this);
     }
     
@@ -117,7 +118,7 @@ public class Module implements IModule {
     }
 
     @Override
-    public synchronized Module createChild(Iterable<IOwnableScope> canExtend) {
+    public synchronized Module createChild(List<IOwnableScope> canExtend) {
         final String newId = generateNewChildId();
         
         Module child = new Module(manager, newId, this);
@@ -125,6 +126,22 @@ public class Module implements IModule {
         children.add(child);
         return child;
     }
+    
+//    @Override
+//    public Module copy(ModuleManager newManager, IModule newParent, List<IOwnableScope> newScopes) {
+//        //TODO This needs to be changed. We might need to record the old version, to do comparisons against.
+//        //TODO We also cannot instantiate our children yet. The mechanism needs to be different, based around
+//        //TODO lookups OR creations.
+//        Module copy = new Module(newManager, id, newParent);
+//        copy.flag(ModuleCleanliness.CLIRTY);
+//        copy.scopeGraph = scopeGraph.recreate(newScopes);
+//        
+//        //TODO We cannot really copy the children properly
+//        for (IModule child : children) {
+//            IModule childCopy = child.copy(newManager, newParent);
+//        }
+//        return copy;
+//    }
 
     /**
      * Generates a new identifier for a child of this module.

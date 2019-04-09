@@ -2,6 +2,7 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.matching.TermPattern.P;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -170,7 +171,7 @@ public abstract class ARule implements IRule {
         }
         
         //We don't always want to statically store the child relation. We want to base this on the current owner.
-        Set<IOwnableScope> canExtend = new HashSet<>();
+        List<IOwnableScope> canExtend = new ArrayList<>();
         for (ITerm term : args) {
             OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
             if (scope != null) canExtend.add(scope);

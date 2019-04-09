@@ -50,8 +50,8 @@ public class MState {
         this.coordinator = orig.coordinator;
         this.owner = orig.owner;
         this.spec = orig.spec;
-        //TODO The parent should also be copied, we need a tree copy of the entire scope graph for consistency.
-        this.scopeGraph = orig.scopeGraph.deepCopy(orig.scopeGraph.getParent());
+        //Other scope graphs do not need to be copied, since this module has no idea about their states. It cannot be reliant on their state.
+        this.scopeGraph = orig.scopeGraph.deepCopy();
         this.solver = orig.solver;
         this.unifier = orig.unifier;
         this.varCounter = orig.varCounter;

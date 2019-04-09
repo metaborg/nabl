@@ -1,5 +1,6 @@
 package mb.statix.taico.module;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
@@ -34,6 +35,15 @@ public interface IModule {
      */
     Set<IModule> getChildren();
     
+//    /**
+//     * This method returns the previous version of this module, residing in a different
+//     * module manager.
+//     * 
+//     * @return
+//     *      the previous version of this module, or null if there was none
+//     */
+//    IModule getPreviousVersion();
+    
     /**
      * Returns the mutable scope graph belonging to this module. Additions can be made to the
      * returned scope graph, so consecutive calls can yield different results.
@@ -55,12 +65,19 @@ public interface IModule {
     
     /**
      * @param canExtend
-     *      the scopes from this module and parents that the child can extend
+     *      the scopes from this module and parents that the child can extend, in the order they
+     *      are encountered in the rule
      * 
      * @return
      *      the child
      */
-    IModule createChild(Iterable<IOwnableScope> canExtend);
+    IModule createChild(List<IOwnableScope> canExtend);
+    
+    //TODO IMPORTANT This should be implemented
+    default IModule createChildOrCopyOld(String name, List<IOwnableScope> canExtend) {
+        //The old version is in the 
+        return null;
+    }
     
     /**
      * @return
@@ -107,5 +124,21 @@ public interface IModule {
     ModuleCleanliness getFlag();
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
+    
+//    /**
+//     * Creates a copy of this module with the given manager, the same id as this module and the
+//     * given new parent as well as the scopes that need to be substituted.
+//     * 
+//     * @param newManager
+//     *      the new manager
+//     * @param newParent
+//     *      the new parent module (transitive copying)
+//     * @param newScopes
+//     *      the scopes of the parent that will substitute the old parent scopes
+//     * 
+//     * @return
+//     *      the copied module
+//     */
+//    IModule copy(ModuleManager newManager, IModule newParent, List<IOwnableScope> newScopes);
     
 }

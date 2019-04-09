@@ -71,12 +71,13 @@ public abstract class AModuleBoundary extends ARule {
         }
         
         //We don't always want to statically store the child relation. We want to base this on the current owner.
-        Set<IOwnableScope> canExtend = new HashSet<>();
+        List<IOwnableScope> canExtend = new ArrayList<>();
         for (ITerm term : newArgs) {
             OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
             if (scope != null) canExtend.add(scope);
         }
         
+        //TODO IMPORTANT Create child, or get old child and substitute new scopes, mark as clirty
         IModule child = state.owner().createChild(canExtend);
         
         MState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
@@ -128,6 +129,11 @@ public abstract class AModuleBoundary extends ARule {
             if (term instanceof ITermVar) {
                 //TODO IMPOTANT try catch?
                 ITerm actual = unifier.findRecursive(term);
+                if (actual instanceof ITermVar) {
+                    System.err.println("groundArguments: Recursive find still yielded a variable.");
+                    throw Delay.of();
+                }
+                
                 newArgs.add(actual);
             } else {
                 newArgs.add(term);

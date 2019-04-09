@@ -41,22 +41,16 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
     //Scope graph tree
     
     /**
-     * @return
-     *      the parent of this scope graph, or null if this is the top level scope graph
-     */
-    IMInternalScopeGraph<S, V, L, R> getParent();
-    
-    /**
      * Creates a child scope graph from this scope graph.
      * 
      * @param module
      *      the module that will own the child graph
      * @param canExtend
-     *      the scopes that this child can extend
+     *      the scopes that this child can extend, in the order they are encountered
      * @return
      *      the new scope graph
      */
-    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, Iterable<IOwnableScope> canExtend);
+    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, List<IOwnableScope> canExtend);
     
     /**
      * @return
@@ -90,13 +84,12 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      */
     Immutable<? extends S> getExtensibleScopes();
     
+    List<? extends IOwnableScope> getParentScopes();
+    
     /**
-     * Creates a deep copy of this scope graph, using the given scope graph as a parent.
-     * 
-     * @param parent
-     *      the parent of the copy scope graph
+     * Creates a deep copy of this scope graph.
      */
-    IMInternalScopeGraph<S, V, L, R> deepCopy(IMInternalScopeGraph<S, V, L, R> parent);
+    IMInternalScopeGraph<S, V, L, R> deepCopy();
     
     /**
      * Updates this scope graph to the state of the given copy.
@@ -138,4 +131,30 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      a new tracking graph for this scope graph
      */
     ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<IModule, ITrackingScopeGraph<S, V, L, R>> trackers);
+    
+//    /**
+//     * Copies this scope graph, using the given owner for the copy.
+//     * The copy does not have any links to the old scope graph any more.
+//     * 
+//     * @param newOwner
+//     *      the new owner
+//     * 
+//     * @return
+//     *      a copy of this scope graph
+//     * 
+//     * @throws IllegalArgumentException
+//     *      If the given owner does not have the same identity as the current owner.
+//     */
+//    IMInternalScopeGraph<S, V, L, R> copy(IModule newOwner);
+    
+//    /**
+//     * Substitutes old parent scopes (extensible scopes) with the given new scopes.
+//     * 
+//     * @param newScopes
+//     *      the new scopes
+//     * 
+//     * @throws IllegalArgumentException
+//     *      If the number of new scopes is not the same as the number of old scopes.
+//     */
+//    void substitute(List<? extends S> newScopes);
 }

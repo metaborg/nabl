@@ -27,9 +27,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     protected final Immutable<? extends ITerm> relations;
     /** Scopes from parent that you can extend. Used for checking if an edge addition is valid. */
     protected final Immutable<? extends IOwnableScope> canExtend;
+    protected final List<? extends IOwnableScope> parentScopes;
     
     //Scope graph graph
-    protected final ModuleScopeGraph parent;
     protected final HashSet<ModuleScopeGraph> children = new HashSet<>();
     
     protected final HashSet<IOwnableScope> scopes = new HashSet<>();
@@ -44,31 +44,29 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     private volatile int currentModification;
     
     public ModuleScopeGraph(
-            ModuleScopeGraph parent,
             IModule owner,
             Iterable<? extends ITerm> labels,
             ITerm endOfPath,
             Iterable<? extends ITerm> relations,
-            Iterable<? extends IOwnableScope> canExtend) {
-        this(idCounter.getAndIncrement(), parent, owner, labels, endOfPath, relations, canExtend);
+            List<? extends IOwnableScope> canExtend) {
+        this(idCounter.getAndIncrement(), owner, labels, endOfPath, relations, canExtend);
     }
     
     private ModuleScopeGraph(
             int id,
-            ModuleScopeGraph parent,
             IModule owner,
             Iterable<? extends ITerm> labels,
             ITerm endOfPath,
             Iterable<? extends ITerm> relations,
-            Iterable<? extends IOwnableScope> canExtend) {
+            List<? extends IOwnableScope> canExtend) {
         this.id = id;
-        this.parent = parent;
         this.owner = owner;
         this.labels = labels instanceof Immutable ? (Immutable<? extends ITerm>) labels : Capsules.newSet(labels);
         this.endOfPath = endOfPath;
         assert this.labels.contains(endOfPath);
         this.relations = relations instanceof Immutable ? (Immutable<? extends ITerm>) relations : Capsules.newSet(relations);
-        this.canExtend = canExtend instanceof Immutable ? (Immutable<? extends IOwnableScope>) canExtend : Capsules.newSet(canExtend);
+        this.parentScopes = canExtend;
+        this.canExtend = Capsules.newSet(canExtend);
     }
     
     @Override
@@ -108,6 +106,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     @Override
     public Immutable<? extends IOwnableScope> getExtensibleScopes() {
         return canExtend;
+    }
+    
+    @Override
+    public List<? extends IOwnableScope> getParentScopes() {
+        return parentScopes;
     }
 
     @Override
@@ -215,15 +218,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         return data.put(scope, relation, edge);
     }
     
-    public ModuleScopeGraph getParent() {
-        return parent;
-    }
-    
     @Override
-    public ModuleScopeGraph createChild(IModule module, Iterable<IOwnableScope> canExtend) {
+    public ModuleScopeGraph createChild(IModule module, List<IOwnableScope> canExtend) {
         currentModification++;
         
-        ModuleScopeGraph child = new ModuleScopeGraph(this, module, labels, endOfPath, relations, canExtend);
+        ModuleScopeGraph child = new ModuleScopeGraph(module, labels, endOfPath, relations, canExtend);
         children.add(child);
         return child;
     }
@@ -234,9 +233,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public synchronized ModuleScopeGraph deepCopy(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> parent) {
-        if (parent != null && !(parent instanceof ModuleScopeGraph)) throw new IllegalArgumentException("the parent must be a module scope graph");
-        ModuleScopeGraph msg = new ModuleScopeGraph(id, (ModuleScopeGraph) parent, owner, labels, endOfPath, relations, canExtend);
+    public synchronized ModuleScopeGraph deepCopy() {
+        ModuleScopeGraph msg = new ModuleScopeGraph(id, owner, labels, endOfPath, relations, parentScopes);
         msg.original = this;
         msg.copyId = this.copyId + 1;
         msg.scopeCounter = this.scopeCounter;
@@ -244,7 +242,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         msg.edges.putAll(this.edges);
         msg.data.putAll(this.data);
         for (ModuleScopeGraph child : this.children) {
-            msg.children.add(child.deepCopy(msg));
+            msg.children.add(child.deepCopy());
         }
         
         return msg;
@@ -285,13 +283,40 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
                 copyChild.original.updateToCopy(copyChild, checkConcurrency);
             } else {
                 //Create a copy, make it the original
-                ModuleScopeGraph copyChildCopy = copyChild.deepCopy(this);
+                ModuleScopeGraph copyChildCopy = copyChild.deepCopy();
                 copyChildCopy.original = copyChild.original; //Mark the new child as the original
                 copyChild.original = copyChildCopy; //Create a link from the copy to the "original"
                 this.children.add(copyChildCopy);
             }
         }
     }
+    
+//    @Override
+//    public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> copy(IModule newOwner) {
+//        ModuleScopeGraph msg = new ModuleScopeGraph(id, owner, labels, endOfPath, relations, parentScopes);
+//        msg.original = this;
+//        msg.copyId = this.copyId + 1;
+//        msg.scopeCounter = this.scopeCounter;
+//        msg.scopes.addAll(this.scopes);
+//        msg.edges.putAll(this.edges);
+//        msg.data.putAll(this.data);
+//        
+//        //TODO Children also new identities, and cannot be copied at this point.
+//        for (ModuleScopeGraph child : this.children) {
+//            msg.children.add(child.deepCopy());
+//        }
+//        
+//        //return msg;
+//    }
+    
+//    @Override
+//    public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> recreate(List<? extends IOwnableTerm> newScopes) {
+//        if (newScopes == null) {
+//            //Passed to signal that the scopes will be substituted later
+//        }
+//        List<? extends IOwnableScope> oldScopes = parentScopes;
+//        
+//    }
     
     @Override
     public TrackingModuleScopeGraph trackingGraph() {
@@ -354,13 +379,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         }
 
         @Override
-        public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> getParent() {
-            return parent.trackingGraph();
-        }
-
-        @Override
         public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> createChild(IModule module,
-                Iterable<IOwnableScope> canExtend) {
+                List<IOwnableScope> canExtend) {
             return ModuleScopeGraph.this.createChild(module, canExtend).trackingGraph(trackers);
         }
 
@@ -400,11 +420,15 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         public Immutable<? extends IOwnableTerm> getExtensibleScopes() {
             return canExtend;
         }
+        
+        @Override
+        public List<? extends IOwnableScope> getParentScopes() {
+            return parentScopes;
+        }
 
         @Override
-        public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> deepCopy(
-                IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> parent) {
-            return ModuleScopeGraph.this.deepCopy(parent).trackingGraph(trackers);
+        public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> deepCopy() {
+            return ModuleScopeGraph.this.deepCopy().trackingGraph(trackers);
         }
 
         @Override
@@ -522,6 +546,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         public IModule getOwner() {
             return owner;
         }
+        
+//        @Override
+//        public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> recreate(List<IOwnableTerm> newScopes) {
+//            throw new UnsupportedOperationException("Scope graphs should not be cloned while tracking them!");
+//        }
         
         @Override
         public ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> trackingGraph() {

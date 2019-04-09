@@ -15,12 +15,11 @@ public class ViewModuleScopeGraph extends ModuleScopeGraph {
     //TODO Get rid of these horrible generics issues
     @SuppressWarnings("unchecked")
     public ViewModuleScopeGraph(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> msg) {
-        super(null,
-                msg.getOwner(),
-                msg.getLabels(),
-                msg.getEndOfPath(),
-                msg.getRelations(),
-                (Iterable<? extends IOwnableScope>) msg.getExtensibleScopes());
+        super(msg.getOwner(),
+              msg.getLabels(),
+              msg.getEndOfPath(),
+              msg.getRelations(),
+              msg.getParentScopes());
         this.scopes.addAll((Collection<? extends IOwnableScope>) msg.getScopes());
         this.edges.putAll(msg.getEdges());
         this.data.putAll(msg.getData());
