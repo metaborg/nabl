@@ -16,7 +16,7 @@ import mb.statix.taico.solver.MState;
  * In other words, only modules that are unchanged and that do not transitively depend on modules
  * which are changed, are redone.
  */
-public class BasicIncrementalStrategy implements IncrementalStrategy {
+public class BaselineIncrementalStrategy implements IncrementalStrategy {
     @Override
     public void setupReanalysis(ModuleManager manager, Set<IModule> unchanged, Set<IModule> dirty, Set<IModule> clirty, Set<IModule> clean) {
         //TODO: redo dirty and clirty, with clean in the context
