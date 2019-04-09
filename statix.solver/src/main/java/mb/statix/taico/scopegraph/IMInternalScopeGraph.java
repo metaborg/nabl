@@ -13,6 +13,43 @@ import mb.statix.taico.util.IOwnable;
 
 public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExternalScopeGraph<S, V, L, R> {
     /**
+     * @param sourceScope
+     *      the source scope
+     * @param label
+     *      the label
+     * @param targetScope
+     *      the target scope
+     * 
+     * @return
+     *      true if this edge was added, false if it already existed
+     */
+    boolean addEdge(S sourceScope, L label, S targetScope);
+    
+    /**
+     * @param scope
+     *      the scope
+     * @param relation
+     *      the relation
+     * @param datum
+     *      the datum
+     * 
+     * @return
+     *      true if this scope graph changed as a result of this call, false otherwise
+     */
+    boolean addDatum(S scope, R relation, Iterable<V> datum);
+    
+    
+    /**
+     * Creates a new scope in this scope graph.
+     * 
+     * @param base
+     *      the base string to use for the scope name
+     * @return
+     *      the newly created scope
+     */
+    S createScope(String base);
+    
+    /**
      * Gets the collection of edges from the given scope with the given label, that are
      * either edges owned by the current scope graph, or owned by any of its children.
      * 
@@ -171,4 +208,10 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      */
     @Deprecated
     void substitute(List<? extends S> newScopes);
+    
+    /**
+     * @return
+     *      an external view on this scope graph
+     */
+    IMExternalScopeGraph<S, V, L, R> externalGraph();
 }

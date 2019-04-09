@@ -360,6 +360,22 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
+    public IMExternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> externalGraph() {
+        ModuleScopeGraph msg = new ModuleScopeGraph(owner, labels, endOfPath, relations, parentScopes);
+        for (IOwnableScope scope : parentScopes) {
+            for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> e : edges.get(scope)) {
+                msg.addEdge(scope, e.getKey(), e.getValue().getTarget());
+            }
+            
+            for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> e : data.get(scope)) {
+                msg.addDatum(scope, e.getKey(), e.getValue().getTarget());
+            }
+        }
+        
+        return msg;
+    }
+    
+    @Override
     public TrackingModuleScopeGraph trackingGraph() {
         return new TrackingModuleScopeGraph();
     }
@@ -601,6 +617,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         @Override
         public void substitute(List<? extends IOwnableTerm> newScopes) {
             ModuleScopeGraph.this.substitute(newScopes);
+        }
+        
+        @Override
+        public IMExternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> externalGraph() {
+            return ModuleScopeGraph.this.externalGraph();
         }
         
         @Override
