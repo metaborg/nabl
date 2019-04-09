@@ -176,8 +176,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }
     }
 
-    private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_l(io.usethesource.capsule.Set.Immutable<O> seenImports,
-            IRelation<L> lt, IRegExpMatcher<L> re, L l, IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
+    @SuppressWarnings("unchecked") private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_l(
+            io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
+            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
         return EsopEnvs.guarded((PartialFunction0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
             final S s = path.getTarget();
             if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
@@ -206,7 +207,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_nonD(
             io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
             IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
-        Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter =
+        @SuppressWarnings("unchecked") Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter =
                 (Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> & Serializable) p -> {
                     return env(seenImports, lt, re.match(l), p, filter);
                 };
@@ -223,7 +224,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return envs;
     }
 
-    private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> importScopes(
+    @SuppressWarnings("unchecked") private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> importScopes(
             io.usethesource.capsule.Set.Immutable<O> seenImports, L l, IScopePath<S, L, O> path,
             Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
         List<IEsopEnv<S, L, O, P>> envs = Lists.newArrayList();
@@ -265,7 +266,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                 @Override public <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> apply(
                         io.usethesource.capsule.Set.Immutable<O> seenI, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
                         IEsopEnv.Filter<S, L, O, P> filter, java.util.Map<L, IEsopEnv<S, L, O, P>> env_lCache) {
-                    final IEsopEnv<S, L, O, P> env_l =
+                    @SuppressWarnings("unchecked") final IEsopEnv<S, L, O, P> env_l =
                             EsopEnvs.lazy((Function0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
                                 return env_lCache.computeIfAbsent(l, ll -> env_l(seenI, lt, re, l, path, filter));
                             });
