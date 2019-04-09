@@ -18,18 +18,18 @@ public abstract class ScopeLabelScope<S extends IScope, L extends ILabel, O exte
 
     @Value.Parameter public abstract S sourceScope();
 
-    @Value.Parameter public abstract L label();
+    @Override @Value.Parameter public abstract L label();
 
     @Value.Parameter public abstract S targetScope();
 
-    public final static <S extends IScope, L extends ILabel, O extends IOccurrence> 
-    Predicate<ScopeLabelScope<S, L, O>> sourceScopeEquals(S scope) {
+    public final static <S extends IScope, L extends ILabel, O extends IOccurrence> Predicate<ScopeLabelScope<S, L, O>>
+            sourceScopeEquals(S scope) {
         return tuple -> Objects.equals(tuple.sourceScope(), scope);
-    } 
-    
-    public final static <S extends IScope, L extends ILabel, O extends IOccurrence> 
-    Predicate<ScopeLabelScope<S, L, O>> targetScopeEquals(S scope) {
+    }
+
+    public final static <S extends IScope, L extends ILabel, O extends IOccurrence> Predicate<ScopeLabelScope<S, L, O>>
+            targetScopeEquals(S scope) {
         return tuple -> Objects.equals(tuple.targetScope(), scope);
-    }    
-    
+    }
+
 }

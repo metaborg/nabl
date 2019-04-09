@@ -39,7 +39,7 @@ public abstract class Messages implements IMessages {
             return messages;
         }
 
-        public Messages.Transient melt() {
+        @Override public Messages.Transient melt() {
             return new Messages.Transient(messages.asTransient());
         }
 
@@ -81,11 +81,11 @@ public abstract class Messages implements IMessages {
             return messages;
         }
 
-        public boolean add(IMessageInfo message) {
+        @Override public boolean add(IMessageInfo message) {
             return messages.__insert(message);
         }
 
-        public boolean addAll(Iterable<? extends IMessageInfo> messages) {
+        @Override public boolean addAll(Iterable<? extends IMessageInfo> messages) {
             boolean change = false;
             for(IMessageInfo message : messages) {
                 change |= this.messages.__insert(message);
@@ -93,11 +93,11 @@ public abstract class Messages implements IMessages {
             return change;
         }
 
-        public boolean addAll(IMessages other) {
+        @Override public boolean addAll(IMessages other) {
             return messages.__insertAll(other.getAll());
         }
 
-        public Messages.Immutable freeze() {
+        @Override public Messages.Immutable freeze() {
             return new Messages.Immutable(messages.freeze());
         }
 

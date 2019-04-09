@@ -19,12 +19,12 @@ public abstract class SingleUnitResult implements IResult {
         return false;
     }
 
-    @Value.Parameter public abstract List<IConstraint> constraints();
+    @Override @Value.Parameter public abstract List<IConstraint> constraints();
 
     @Override @Value.Parameter public abstract ISolution solution();
 
     @Override @Value.Parameter public abstract Optional<ITerm> customAnalysis();
 
     @Override @Value.Parameter public abstract Fresh.Immutable fresh();
-    
+
 }

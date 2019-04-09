@@ -11,9 +11,9 @@ import mb.nabl2.scopegraph.IOccurrence;
 public interface HasOccurrence<O extends IOccurrence> {
 
     O occurrence();
-    
+
     static Predicate<HasOccurrence<? extends IOccurrence>> occurrenceEquals(IOccurrence occurrence) {
         return tuple -> Objects.equals(tuple.occurrence(), occurrence);
     }
-        
+
 }

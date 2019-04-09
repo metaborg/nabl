@@ -32,12 +32,12 @@ public class SymbolicComponent extends ASolver {
     }
 
     public Optional<SolveResult> solve(ISymbolicConstraint constraint) throws InterruptedException {
+        // @formatter:off
         constraint.match(ISymbolicConstraint.Cases.of(
-            // @formatter:off
             fact -> facts.__insert(fact.getFact()),
             goal -> goals.__insert(goal.getGoal())
-            // @formatter:on
         ));
+        // @formatter:on
         return Optional.of(SolveResult.empty());
     }
 

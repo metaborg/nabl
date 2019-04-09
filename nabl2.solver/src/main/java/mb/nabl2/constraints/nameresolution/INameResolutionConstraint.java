@@ -17,13 +17,12 @@ public interface INameResolutionConstraint extends IConstraint {
 
         T caseProperty(CDeclProperty property);
 
+        // @formatter:off
         static <T> Cases<T> of(
-            // @formatter:off
             Function1<CResolve,T> onResolve,
             Function1<CAssoc,T> onAssoc,
             Function1<CDeclProperty,T> onProperty
-            // @formatter:on
-        ) {
+        ) /* @formatter:on */ {
             return new Cases<T>() {
 
                 @Override public T caseResolve(CResolve constraint) {
@@ -54,7 +53,7 @@ public interface INameResolutionConstraint extends IConstraint {
         T caseProperty(CDeclProperty property) throws E;
 
         static <T, E extends Throwable> CheckedCases<T, E> of(
-            // @formatter:off
+        // @formatter:off
             CheckedFunction1<CResolve,T,E> onResolve,
             CheckedFunction1<CAssoc,T,E> onAssoc,
             CheckedFunction1<CDeclProperty,T,E> onProperty

@@ -22,7 +22,7 @@ public interface IScopeGraphConstraint extends IConstraint {
         T caseImport(CGImportEdge importEdge);
 
         static <T> Cases<T> of(
-            // @formatter:off
+        // @formatter:off
             Function1<CGDecl,T> onDecl,
             Function1<CGRef,T> onRef,
             Function1<CGDirectEdge,T> onDirectEdge,
@@ -72,7 +72,7 @@ public interface IScopeGraphConstraint extends IConstraint {
         T caseImport(CGImportEdge importEdge) throws E;
 
         static <T, E extends Throwable> CheckedCases<T, E> of(
-            // @formatter:off
+        // @formatter:off
             CheckedFunction1<CGDecl,T,E> onDecl,
             CheckedFunction1<CGRef,T,E> onRef,
             CheckedFunction1<CGDirectEdge,T,E> onDirectEdge,

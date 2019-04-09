@@ -29,7 +29,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
         // IRelationName implementation
 
-        public <T> T match(IRelationName.Cases<T> cases) {
+        @Override public <T> T match(IRelationName.Cases<T> cases) {
             return cases.caseNamed(getName());
         }
 
@@ -48,12 +48,12 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         public static IMatcher<NamedRelation> matcher() {
-            return M.preserveAttachments(M.cases(
             // @formatter:off
+            return M.preserveAttachments(M.cases(
                 M.appl0(OP0, (t) -> ImmutableNamedRelation.of("")),
                 M.appl1(OP1, M.stringValue(), (t, name) -> ImmutableNamedRelation.of(name))
-                // @formatter:on
             ));
+            // @formatter:on
         }
 
         // Object implementation
@@ -82,7 +82,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
         // IRelationName implementation
 
-        public <T> T match(IRelationName.Cases<T> cases) {
+        @Override public <T> T match(IRelationName.Cases<T> cases) {
             return cases.caseExt(getName());
         }
 
@@ -121,12 +121,12 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
     }
 
     public static IMatcher<? extends RelationName> matcher() {
+        // @formatter:off
         return M.preserveAttachments(M.cases(
-            // @formatter:off
             NamedRelation.matcher(),
             ExtRelation.matcher()
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
 }

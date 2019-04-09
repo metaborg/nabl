@@ -28,15 +28,17 @@ public class Constraints {
 
     // TODO Remove after bootstrapping
     public static IMatcher<IConstraint> matchConstraintOrList() {
+        // @formatter:off
         return M.cases(
             M.listElems(Constraints.matcher(), (l, cs) -> CConj.of(cs)),
             Constraints.matcher()
         );
+        // @formatter:on
     }
 
     public static IMatcher<IConstraint> matcher() {
+        // @formatter:off
         return M.req("Not a constraint", M.<IConstraint>cases(
-            // @formatter:off
             AstConstraints.matcher(),
             BaseConstraints.matcher(),
             EqualityConstraints.matcher(),
@@ -46,8 +48,8 @@ public class Constraints {
             SetConstraints.matcher(),
             SymbolicConstraints.matcher(),
             PolyConstraints.matcher()
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
     public static IMatcher<Integer> priorityMatcher() {

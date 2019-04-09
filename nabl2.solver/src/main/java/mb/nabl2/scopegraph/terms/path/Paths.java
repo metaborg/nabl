@@ -85,7 +85,7 @@ public final class Paths {
         List<ITerm> steps = Lists.newArrayList();
         for(IStep<Scope, Label, Occurrence> step : path) {
             steps.add(step.match(IStep.ICases.of(
-                // @formatter:off
+            // @formatter:off
                 (source, label, target) -> B.newAppl("E", source, label),
                 (source, label, importPath, target) -> B.newAppl("N", source, label, importPath.getReference(), toTerm(importPath))
                 // @formatter:on

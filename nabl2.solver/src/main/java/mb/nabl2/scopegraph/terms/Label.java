@@ -59,7 +59,7 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
             case R_OP:
             case I_OP:
             case P_OP:
-            case Q_OP:                
+            case Q_OP:
                 return ImmutableList.of();
             default:
                 return ImmutableList.of((ITerm) B.newString(getName()));
@@ -71,16 +71,16 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     }
 
     public static <R> IMatcher<R> matcher(Function1<Label, R> f) {
+        // @formatter:off
         return M.cases(
-            // @formatter:off
             M.appl0(D_OP, (t) -> f.apply(ImmutableLabel.of(D_OP))),
             M.appl0(R_OP, (t) -> f.apply(ImmutableLabel.of(R_OP))),
             M.appl0(I_OP, (t) -> f.apply(ImmutableLabel.of(I_OP))),
             M.appl0(P_OP, (t) -> f.apply(ImmutableLabel.of(P_OP))),
             M.appl0(Q_OP, (t) -> f.apply(ImmutableLabel.of(Q_OP))),            
             M.appl1(OP, M.stringValue(), (t,l) -> f.apply(ImmutableLabel.of(l)))
-            // @formatter:on
         );
+        // @formatter:on
     }
 
     @Override @Value.Check protected Label check() {
