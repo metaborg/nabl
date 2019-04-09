@@ -1,12 +1,18 @@
 package mb.statix.taico.module;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 public class ModuleManager {
-    private Map<String, IModule> modules = new WeakHashMap<>(); //TODO No longer has to be a weak hashmap?
+    private Map<String, IModule> modules = new HashMap<>();
     
     public ModuleManager() {}
+    
+    public Collection<IModule> getModules() {
+        //TODO Should be a copy
+        return modules.values();
+    }
     
     public synchronized IModule getModule(String id) {
         return modules.get(id);

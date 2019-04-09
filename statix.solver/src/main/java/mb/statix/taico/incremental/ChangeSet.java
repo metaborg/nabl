@@ -1,24 +1,31 @@
 package mb.statix.taico.incremental;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
+import mb.statix.taico.module.ModuleManager;
 
 public interface ChangeSet {
-    Set<IModule> allModules();
-    
     Set<IModule> removed();
     
     Set<IModule> changed();
     
-    default void reanalyze() {
+    /**
+     * Sets up the given manager for reanalysis.
+     * 
+     * @param manager
+     *      the manager
+     * @param strategy
+     *      the incremental strategy
+     */
+    default void setupReanalysis(ModuleManager manager, IncrementalStrategy strategy) {
         //Mark all modules as clean
-        allModules().forEach(m -> m.flag(ModuleCleanliness.CLEAN));
+        manager.getModules().forEach(m -> m.flag(ModuleCleanliness.CLEAN));
         
         //Phase 1: Determine set that is definitely dirty.
         //This is all changed modules and every module depending on a removed module.
@@ -50,7 +57,7 @@ public interface ChangeSet {
             }
         }
         
-        Set<IModule> clean = allModules().stream().filter(m -> m.getFlag() == ModuleCleanliness.CLEAN).collect(Collectors.toSet());
+        Set<IModule> clean = manager.getModules().stream().filter(m -> m.getFlag() == ModuleCleanliness.CLEAN).collect(Collectors.toSet());
         
         System.err.println("Based on the files, we identified:");
         System.err.println("  Dirty:  " + dirty.size()  + " modules (" + removed().size() + " removed)");
@@ -67,5 +74,10 @@ public interface ChangeSet {
         //The new SG needs to be swapped in.
         //Queries of dependent modules (reversed relation?) need to be rechecked.
         //So their old results also need to be stored
+        
+        Set<IModule> unchanged = new HashSet<>(manager.getModules());
+        unchanged.removeAll(removed());
+        unchanged.removeAll(changed());
+        strategy.setupReanalysis(manager, unchanged, dirty, clirty, clean);
     }
 }

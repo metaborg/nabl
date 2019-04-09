@@ -177,7 +177,7 @@ public abstract class ARule implements IRule {
             if (scope != null) canExtend.add(scope);
         }
         
-        IModule child = state.owner().createChild(canExtend);
+        IModule child = state.owner().createOrGetChild(generateNewChildId(state.owner()), canExtend);
         state = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
@@ -189,6 +189,19 @@ public abstract class ARule implements IRule {
         final ISubstitution.Immutable isubst = subst.freeze();
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         return Optional.of(ImmutableTuple3.of(state, freshBodyVars.build(), newBody));
+    }
+    
+    /**
+     * Generates a new identifier for a child of the given module.
+     * 
+     * @param module
+     *      the module
+     * 
+     * @return
+     *      the new identifier
+     */
+    private static String generateNewChildId(IModule module) {
+        return module.getId() + "_" + module.getChildren().size();
     }
     
     /**

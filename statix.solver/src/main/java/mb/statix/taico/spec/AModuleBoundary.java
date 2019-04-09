@@ -4,7 +4,6 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +26,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.ARule;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleString;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.OwnableScope;
@@ -77,9 +77,7 @@ public abstract class AModuleBoundary extends ARule {
             if (scope != null) canExtend.add(scope);
         }
         
-        //TODO IMPORTANT Create child, or get old child and substitute new scopes, mark as clirty
-        IModule child = state.owner().createChild(canExtend);
-        
+        IModule child = state.owner().createOrGetChild(name(), canExtend);
         MState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
@@ -92,8 +90,13 @@ public abstract class AModuleBoundary extends ARule {
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         
         Set<ITermVar> freshVars = freshBodyVars.build();
-        //TODO IMPORTANT Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
-        state.solver().childSolver(childState, newBody, state.solver().isRigid(), state.solver().isClosed());
+        //TODO This condition might need to change
+        if (child.getFlag() == ModuleCleanliness.NEW) {
+            //TODO IMPORTANT Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
+            state.solver().childSolver(childState, newBody, state.solver().isRigid(), state.solver().isClosed());
+        } else {
+            //TODO Add solver without constraints for this module?
+        }
         
         //We return an empty set since we don't want to add constraints to the current solver, as a child is solving it.
         return Optional.of(ImmutableTuple2.of(freshVars, Collections.emptySet()));

@@ -53,6 +53,17 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
     IMInternalScopeGraph<S, V, L, R> createChild(IModule module, List<IOwnableScope> canExtend);
     
     /**
+     * Adds the given module as a child to this scope graph.
+     * 
+     * @param child
+     *      the child module
+     * 
+     * @return
+     *      the child scope graph
+     */
+    IMInternalScopeGraph<S, V, L, R> addChild(IModule child);
+    
+    /**
      * @return
      *      a collection of all the children of this scope graph
      */
@@ -147,14 +158,17 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
 //     */
 //    IMInternalScopeGraph<S, V, L, R> copy(IModule newOwner);
     
-//    /**
-//     * Substitutes old parent scopes (extensible scopes) with the given new scopes.
-//     * 
-//     * @param newScopes
-//     *      the new scopes
-//     * 
-//     * @throws IllegalArgumentException
-//     *      If the number of new scopes is not the same as the number of old scopes.
-//     */
-//    void substitute(List<? extends S> newScopes);
+    /**
+     * Substitutes old parent scopes (extensible scopes) with the given new scopes.
+     * 
+     * @deprecated Should be replaced by a non substituting method.
+     * 
+     * @param newScopes
+     *      the new scopes
+     * 
+     * @throws IllegalArgumentException
+     *      If the number of new scopes is not the same as the number of old scopes.
+     */
+    @Deprecated
+    void substitute(List<? extends S> newScopes);
 }

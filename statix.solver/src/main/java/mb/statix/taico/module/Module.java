@@ -31,7 +31,7 @@ public class Module implements IModule {
     private MState state;
     private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
     private Map<IModule, CResolveQuery> dependants = new HashMap<>();
-    private ModuleCleanliness cleanliness = ModuleCleanliness.CLEAN;
+    private ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     
     /**
      * Creates a new top level module.
@@ -118,10 +118,9 @@ public class Module implements IModule {
     }
 
     @Override
-    public synchronized Module createChild(List<IOwnableScope> canExtend) {
-        final String newId = generateNewChildId();
-        
-        Module child = new Module(manager, newId, this);
+    public synchronized Module createChild(String name, List<IOwnableScope> canExtend) {
+        //TODO name should use the parent module name as well
+        Module child = new Module(manager, name, this);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
         children.add(child);
         return child;

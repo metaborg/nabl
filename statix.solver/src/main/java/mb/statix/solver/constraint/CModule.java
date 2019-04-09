@@ -32,6 +32,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
 import mb.statix.spec.Spec;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -117,6 +118,7 @@ public class CModule implements IConstraint {
     
     @Override public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
+        System.err.println("[Deperecated] Using old module solver constraint mechanism");
         if (state.solver().isSeparateSolver()) {
             System.err.println("Separated solver reaching module boundary!!!!");
         }
@@ -161,7 +163,13 @@ public class CModule implements IConstraint {
             
             //TODO IMPORTANT Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
             proxyDebug.info("Creating new solver for module boundary in {}", this.name);
-            state.solver().childSolver(childState, instantiatedBody, state.solver().isRigid(), state.solver().isClosed());
+            
+            //TODO The condition might need to change
+            if (childState.owner().getFlag() == ModuleCleanliness.NEW) {
+                state.solver().childSolver(childState, instantiatedBody, state.solver().isRigid(), state.solver().isClosed());
+            } else {
+                //TODO Maybe create new solver with no constraints for child
+            }
             proxyDebug.info("Module boundary accepted");
             proxyDebug.commit();
             

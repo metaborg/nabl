@@ -8,5 +8,10 @@ public enum ModuleCleanliness {
     CLIRTY,
     
     /** Indicates that the module is guaranteed to be clean. */
-    CLEAN
+    CLEAN,
+    
+    /**
+     * Indicates that the module is new.
+     */
+    NEW
 }

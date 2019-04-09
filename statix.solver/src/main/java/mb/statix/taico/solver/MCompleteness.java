@@ -11,7 +11,6 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -190,7 +189,7 @@ public class MCompleteness implements IOwnable {
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, MState state) {
         return constraint.criticalEdges(state.spec()).stream().flatMap(ce -> {
             final Optional<CriticalEdge> edge =
-                    Scope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
+                    OwnableScope.ownableMatcher(state.manager()::getModule).match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
     }

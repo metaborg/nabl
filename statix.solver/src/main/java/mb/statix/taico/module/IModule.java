@@ -71,7 +71,20 @@ public interface IModule {
      * @return
      *      the child
      */
-    IModule createChild(List<IOwnableScope> canExtend);
+    IModule createChild(String name, List<IOwnableScope> canExtend);
+    
+    default IModule createOrGetChild(String name, List<IOwnableScope> canExtend) {
+        //TODO Use both the name and the parent name
+        IModule oldModule = getCurrentState().manager().getModule(name);
+        if (oldModule.getFlag() == ModuleCleanliness.CLEAN) {
+            //Update the edges to the new scopes and add it as a child of the current scope graph.
+            oldModule.getScopeGraph().substitute(canExtend);
+            getScopeGraph().addChild(oldModule);
+            return oldModule;
+        } else {
+            return createChild(name, canExtend);
+        }
+    }
     
     //TODO IMPORTANT This should be implemented
     default IModule createChildOrCopyOld(String name, List<IOwnableScope> canExtend) {
