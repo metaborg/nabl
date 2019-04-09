@@ -2,7 +2,7 @@ package mb.nabl2.terms.matching;
 
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
