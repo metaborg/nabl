@@ -10,8 +10,9 @@ public enum ModuleCleanliness {
     /** Indicates that the module is guaranteed to be clean. */
     CLEAN,
     
-    /**
-     * Indicates that the module is new.
-     */
-    NEW
+    /** Indicates that the module is new. */
+    NEW,
+    
+    /** Indicates that the module does no longer exist. */
+    DELETED
 }

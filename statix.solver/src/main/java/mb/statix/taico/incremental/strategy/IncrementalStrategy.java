@@ -1,10 +1,8 @@
 package mb.statix.taico.incremental.strategy;
 
-import java.util.Set;
-
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.module.IModule;
+import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.MState;
 
@@ -14,17 +12,11 @@ public interface IncrementalStrategy {
      * 
      * @param manager
      *      the module manager to set the modules to be solved in (TODO)
-     * @param unchanged
-     *      the set of modules that are unchanged
-     * @param dirty
-     *      the set of modules that are dirty
-     * @param clirty
-     *      the set of modules that are potentially dirty
-     * @param clean
-     *      the set of modules that are definitely clean
+     * @param changeSet
+     *      the change set
      */
-    void setupReanalysis(ModuleManager manager, Set<IModule> unchanged, Set<IModule> dirty, Set<IModule> clirty, Set<IModule> clean);
-    
+    void setupReanalysis(ModuleManager manager, IChangeSet changeSet);
+
     /**
      * Reanalyzes modules in an incremental fashion depending on the strategy.
      * 
