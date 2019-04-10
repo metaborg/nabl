@@ -12,7 +12,7 @@ template options
 lexical syntax
 
   ModuleString     = ModuleStringChar*
-  ModuleStringChar = ~[\[\]\$\n]
+  ModuleStringChar = ~[\[\]\%\n]
 
 lexical restrictions
   ModuleString -/- ~[]
