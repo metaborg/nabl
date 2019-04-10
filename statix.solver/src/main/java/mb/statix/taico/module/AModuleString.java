@@ -19,6 +19,10 @@ public abstract class AModuleString {
         return components().stream().map(c -> c.apply(subst).toString()).collect(Collectors.joining(""));
     }
     
+    public String build(ISubstitution.Transient subst) {
+        return components().stream().map(c -> c.apply(subst).toString()).collect(Collectors.joining(""));
+    }
+    
     /**
      * Applies the given substitution to this module string.
      * 
@@ -29,6 +33,20 @@ public abstract class AModuleString {
      *      a new immutable module string with the given substitution applied
      */
     public ModuleString apply(ISubstitution.Immutable subst) {
+        return ModuleString.of(
+                components().stream().map(c -> c.apply(subst)).collect(Collectors.toList()));
+    }
+    
+    /**
+     * Applies the given substitution to this module string.
+     * 
+     * @param subst
+     *      the substitution to apply
+     * 
+     * @return
+     *      a new immutable module string with the given substitution applied
+     */
+    public ModuleString apply(ISubstitution.Transient subst) {
         return ModuleString.of(
                 components().stream().map(c -> c.apply(subst)).collect(Collectors.toList()));
     }

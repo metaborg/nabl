@@ -3,6 +3,7 @@ package mb.statix.taico.module;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import mb.nabl2.terms.ITerm;
@@ -12,6 +13,7 @@ import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.query.QueryDetails;
+import mb.statix.taico.util.IOwnable;
 
 /**
  * Interface to represent a module.
@@ -19,30 +21,35 @@ import mb.statix.taico.solver.query.QueryDetails;
 public interface IModule {
     /**
      * @return
-     *      the unique identifier for this module
+     *      the name of this module, could be non unique
+     */
+    String getName();
+    
+    /**
+     * The unique identifier for this module, defined in terms of a path separated by $.
+     * 
+     * @return
+     *      the full unique identifier for this module
      */
     String getId();
     
     /**
-     * @return
-     *      the parent of this module, or null if this is the top level module
+     * Sets the parent of this module to the given module.
+     * 
+     * Used for moving modules in the module tree.
+     * 
+     * @param module
+     *      the module
      */
-    IModule getParent();
+    void setParent(IModule module);
     
     /**
      * @return
      *      the children of this module
      */
-    Set<IModule> getChildren();
-    
-//    /**
-//     * This method returns the previous version of this module, residing in a different
-//     * module manager.
-//     * 
-//     * @return
-//     *      the previous version of this module, or null if there was none
-//     */
-//    IModule getPreviousVersion();
+    default Set<IModule> getChildren() {
+        return getScopeGraph().getChildren().stream().map(IOwnable::getOwner).collect(Collectors.toSet());
+    }
     
     /**
      * Returns the mutable scope graph belonging to this module. Additions can be made to the
@@ -64,34 +71,45 @@ public interface IModule {
     }
     
     /**
+     * @param name
+     *      the name of the child module
      * @param canExtend
-     *      the scopes from this module and parents that the child can extend, in the order they
-     *      are encountered in the rule
+     *      the list of scopes from this module and parents that the child can extend, in the order
+     *      they are encountered in the rule
      * 
      * @return
      *      the child
      */
     IModule createChild(String name, List<IOwnableScope> canExtend);
     
+    /**
+     * If the module with the given name already existed as a child of this module, that module is
+     * returned. Otherwise, this method returns a new child module of this module.
+     * 
+     * @param name
+     *      the name of the module to create or get
+     * @param canExtend
+     *      the list of scopes from this module and parents that the child can extend, in the order
+     *      they are encountered in the rule
+     * 
+     * @return
+     *      the new/old child module
+     */
     default IModule createOrGetChild(String name, List<IOwnableScope> canExtend) {
-        //TODO Use both the name and the parent name
-        IModule oldModule = getCurrentState().manager().getModule(name);
-        if (oldModule.getFlag() == ModuleCleanliness.CLEAN) {
+        //TODO Incrementality breaks if parent or child names are changed
+        String id = getId() + "$" + name;
+        IModule oldModule = getCurrentState().manager().getModule(id);
+        if (oldModule != null && oldModule.getFlag() == ModuleCleanliness.CLEAN) {
             //Update the edges to the new scopes and add it as a child of the current scope graph.
             oldModule.getScopeGraph().substitute(canExtend);
+            oldModule.setParent(this);
             getScopeGraph().addChild(oldModule);
             return oldModule;
         } else {
             return createChild(name, canExtend);
         }
     }
-    
-    //TODO IMPORTANT This should be implemented
-    default IModule createChildOrCopyOld(String name, List<IOwnableScope> canExtend) {
-        //The old version is in the 
-        return null;
-    }
-    
+
     /**
      * @return
      *      the state of this module
@@ -103,9 +121,6 @@ public interface IModule {
      * 
      * @param state
      *      the state of this module
-     *      
-     * @throws IllegalStateException
-     *      If the state of this module has already been set.
      */
     void setCurrentState(MState state);
     

@@ -77,7 +77,8 @@ public abstract class AModuleBoundary extends ARule {
             if (scope != null) canExtend.add(scope);
         }
         
-        IModule child = state.owner().createOrGetChild(name(), canExtend);
+        String modName = moduleString().build(subst);
+        IModule child = state.owner().createOrGetChild(modName, canExtend);
         MState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
@@ -132,18 +133,13 @@ public abstract class AModuleBoundary extends ARule {
             if (term instanceof ITermVar) {
                 //TODO IMPOTANT try catch?
                 ITerm actual = unifier.findRecursive(term);
-                if (actual instanceof ITermVar) {
-                    System.err.println("groundArguments: Recursive find still yielded a variable.");
-                    throw Delay.of();
-                }
-                
                 newArgs.add(actual);
             } else {
                 newArgs.add(term);
             }
         }
         
-        return args;
+        return newArgs;
     }
     
     /**

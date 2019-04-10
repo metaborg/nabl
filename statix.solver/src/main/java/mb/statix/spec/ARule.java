@@ -4,7 +4,6 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -160,10 +159,12 @@ public abstract class ARule implements IRule {
      *      If this rule is not a module boundary.
      */
     public Optional<Tuple3<MState, Set<ITermVar>, Set<IConstraint>>> applyModuleBoundary(List<ITerm> args, MState state) throws Delay {
+        System.err.println("Applying module boundary (Rule)");
         if (!isModuleBoundary()) throw new IllegalStateException("Cannot appy as module boundary to a non module boundary rule!");
         
         final ISubstitution.Transient subst;
-        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
+        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()) //TOD
+                .matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
         });
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
@@ -187,7 +188,8 @@ public abstract class ARule implements IRule {
             freshBodyVars.add(term);
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+        final Set<IConstraint> newBody = body().stream() //TOD
+                .map(c -> c.apply(isubst)).collect(Collectors.toSet());
         return Optional.of(ImmutableTuple3.of(state, freshBodyVars.build(), newBody));
     }
     
@@ -201,7 +203,7 @@ public abstract class ARule implements IRule {
      *      the new identifier
      */
     private static String generateNewChildId(IModule module) {
-        return module.getId() + "_" + module.getChildren().size();
+        return String.valueOf(module.getScopeGraph().getChildren().size());
     }
     
     /**

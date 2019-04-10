@@ -2,7 +2,6 @@ package mb.statix.taico.module;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,10 +22,9 @@ import mb.statix.taico.solver.query.QueryDetails;
  */
 //TODO This would be a StatixModule or SGModule
 public class Module implements IModule {
-    private final String id;
+    private final String name;
     private final ModuleManager manager;
     private IModule parent;
-    private Set<IModule> children = new HashSet<>();
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     private MState state;
     private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
@@ -36,8 +34,8 @@ public class Module implements IModule {
     /**
      * Creates a new top level module.
      * 
-     * @param id
-     *      the id of the module
+     * @param name
+     *      the name of the module
      * @param labels
      *      the labels on edges of the scope graph
      * @param endOfPath
@@ -45,9 +43,9 @@ public class Module implements IModule {
      * @param relations
      *      the labels on data edges of the scope graph
      */
-    public Module(ModuleManager manager, String id, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
+    public Module(ModuleManager manager, String name, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
         this.manager = manager;
-        this.id = id;
+        this.name = name;
         this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Collections.emptyList());
         manager.addModule(this);
@@ -56,14 +54,14 @@ public class Module implements IModule {
     /**
      * Creates a new top level module.
      * 
-     * @param id
-     *      the id of the module
+     * @param name
+     *      the name of the module
      * @param spec
      *      the spec
      */
-    public Module(ModuleManager manager, String id, Spec spec) {
+    public Module(ModuleManager manager, String name, Spec spec) {
         this.manager = manager;
-        this.id = id;
+        this.name = name;
         this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptyList());
         manager.addModule(this);
@@ -72,33 +70,31 @@ public class Module implements IModule {
     /**
      * Constructor for creating child modules.
      * 
-     * @param id
-     *      the id of the child
+     * @param name
+     *      the name of the child
      * @param parent
      *      the parent module
      */
-    private Module(ModuleManager manager, String id, IModule parent) {
+    private Module(ModuleManager manager, String name, IModule parent) {
         this.manager = manager;
-        this.id = id;
+        this.name = name;
         this.parent = parent;
         manager.addModule(this);
     }
 
     @Override
+    public String getName() {
+        return name;
+    }
+    
+    @Override
     public String getId() {
-        return id;
+        return parent == null ? name : (parent.getId() + "$" + name);
     }
     
     @Override
-    public IModule getParent() {
-        return parent;
-    }
-    
-    //TODO There should be some way to hang this module under a different module (e.g. change the parent).
-
-    @Override
-    public Set<IModule> getChildren() {
-        return children;
+    public void setParent(IModule module) {
+        this.parent = module;
     }
 
     @Override
@@ -113,7 +109,7 @@ public class Module implements IModule {
     
     @Override
     public void setCurrentState(MState state) {
-        if (this.state != null) throw new IllegalStateException("The state of module " + id + " is already set");
+        if (this.state != null) System.out.println("NOTE: The state of module " + name + " is already set");
         this.state = state;
     }
 
@@ -122,7 +118,6 @@ public class Module implements IModule {
         //TODO name should use the parent module name as well
         Module child = new Module(manager, name, this);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
-        children.add(child);
         return child;
     }
     
@@ -141,16 +136,6 @@ public class Module implements IModule {
 //        }
 //        return copy;
 //    }
-
-    /**
-     * Generates a new identifier for a child of this module.
-     * 
-     * @return
-     *      the new identifier
-     */
-    protected String generateNewChildId() {
-        return id + "_" + children.size();
-    }
     
     @Override
     public Set<IModule> getDependencies() {
@@ -186,17 +171,17 @@ public class Module implements IModule {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Module)) return false;
-        assert !this.id.equals(((Module) obj).id) : "Module identifiers are equal but modules are not the same instance! (id: " + id + ")";
-        return this.id.equals(((Module) obj).id);
+        assert !this.name.equals(((Module) obj).name) : "Module identifiers are equal but modules are not the same instance! (id: " + name + ")";
+        return this.name.equals(((Module) obj).name);
     }
     
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return name.hashCode();
     }
     
     @Override
     public String toString() {
-        return "@" + id;
+        return "@" + name;
     }
 }

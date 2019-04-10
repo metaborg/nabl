@@ -9,6 +9,7 @@ import mb.statix.spoofax.StatixTerms;
 
 public interface IModuleStringComponent {
     IModuleStringComponent apply(ISubstitution.Immutable subst);
+    IModuleStringComponent apply(ISubstitution.Transient subst);
     
     String toString(TermFormatter formatter);
     
