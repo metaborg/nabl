@@ -156,11 +156,6 @@ public class CUser implements IConstraint {
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
-        if (name.startsWith("modbound_")) {
-            CModule modc = new CModule(name, args);
-            //TODO test directly using modc.solveMutable(state, params);
-            return Optional.of(MConstraintResult.ofConstraints(state, modc));
-        }
         final IDebugContext debug = params.debug();
         final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
