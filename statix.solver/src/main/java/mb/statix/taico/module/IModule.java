@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import mb.nabl2.terms.ITerm;
@@ -32,6 +33,12 @@ public interface IModule {
      *      the full unique identifier for this module
      */
     String getId();
+    
+    /**
+     * @return
+     *      the parent of this module
+     */
+    IModule getParent();
     
     /**
      * Sets the parent of this module to the given module.
@@ -64,10 +71,9 @@ public interface IModule {
      * @return
      *      all the modules that are descendent from this module
      */
-    default Iterable<IModule> getDescendants() {
+    default Stream<IModule> getDescendants() {
         return getChildren().stream()
-                .flatMap(m -> StreamSupport.stream(m.getDescendants().spliterator(), false))
-                ::iterator;
+                .flatMap(m -> StreamSupport.stream(m.getDescendants().spliterator(), false));
     }
     
     /**
@@ -97,7 +103,7 @@ public interface IModule {
      */
     default IModule createOrGetChild(String name, List<IOwnableScope> canExtend) {
         //TODO Incrementality breaks if parent or child names are changed
-        String id = getId() + "$" + name;
+        String id = ModulePaths.build(getId(), name);
         IModule oldModule = getCurrentState().manager().getModule(id);
         if (oldModule != null && oldModule.getFlag() == ModuleCleanliness.CLEAN) {
             //Update the edges to the new scopes and add it as a child of the current scope graph.

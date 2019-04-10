@@ -89,7 +89,12 @@ public class Module implements IModule {
     
     @Override
     public String getId() {
-        return parent == null ? name : (parent.getId() + "$" + name);
+        return parent == null ? name : ModulePaths.build(parent.getId(), name);
+    }
+    
+    @Override
+    public IModule getParent() {
+        return parent;
     }
     
     @Override

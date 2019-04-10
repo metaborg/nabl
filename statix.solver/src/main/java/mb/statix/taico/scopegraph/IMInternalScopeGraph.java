@@ -106,6 +106,22 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      */
     Collection<? extends IMInternalScopeGraph<S, V, L, R>> getChildren();
     
+    /**
+     * Removes the given child module.
+     * 
+     * @param child
+     *      the child module to remove
+     * 
+     * @return
+     *      true if this scope graph changed as a result of this call, false otherwise
+     */
+    boolean removeChild(IModule child);
+    
+    /**
+     * Removes all children of this module (transitively).
+     */
+    void purgeChildren();
+    
     //Getters for the internal data structures of the scope graph
     
     /**

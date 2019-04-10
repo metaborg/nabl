@@ -8,6 +8,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.MState;
 
 /**
@@ -24,14 +25,17 @@ public class BaselineIncrementalStrategy implements IncrementalStrategy {
         Set<IModule> redo = new HashSet<>(changeSet.dirty());
         redo.addAll(changeSet.clirty());
 
-        //Nothing to do, there were no changes
         if (redo.isEmpty()) return;
 
-        //TODO IMPORTANT We need to exclude the top level module from the purge
-        //TODO TESTING Verify that the top level module does not cause a purge of all modules
-
         //Delete all modules that need to be redone as well as their children
-        for (IModule module : redo) manager.purgeModules(module);
+        for (IModule module : redo) {
+            if (ModulePaths.pathSegments(module.getId(), 2).length == 1) {
+                //Module is the top module, don't purge its children
+                manager.removeModule(module);
+            } else {
+                manager.purgeModules(module);
+            }
+        }
     }
 
     /**
@@ -48,6 +52,8 @@ public class BaselineIncrementalStrategy implements IncrementalStrategy {
      *      If solving is interrupted.
      */
     public void reanalyze(MState baseState, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
+        IModule topModule = baseState.owner();
+        
         //Solve from the top again, children will be skipped automatically.
         baseState.coordinator().solve(baseState, constraints, debug);
     }

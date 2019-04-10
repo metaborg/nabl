@@ -3,6 +3,7 @@ package mb.statix.taico.incremental.strategy;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
+import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.MState;
 
@@ -10,6 +11,8 @@ public interface IncrementalStrategy {
     /**
      * Reanalyzes using this incremental strategy.
      * 
+     * @param topModule
+     *      the top module
      * @param manager
      *      the module manager to set the modules to be solved in (TODO)
      * @param changeSet

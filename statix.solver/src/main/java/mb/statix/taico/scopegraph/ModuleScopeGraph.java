@@ -239,8 +239,21 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
+    public boolean removeChild(IModule child) {
+        return children.remove(child.getScopeGraph());
+    }
+    
+    @Override
     public Collection<ModuleScopeGraph> getChildren() {
         return children;
+    }
+    
+    @Override
+    public void purgeChildren() {
+        for (ModuleScopeGraph childSg : children) {
+            childSg.purgeChildren();
+        }
+        children.clear();
     }
     
     @Override
@@ -445,7 +458,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> addChild(IModule module) {
             return ModuleScopeGraph.this.addChild(module).trackingGraph(trackers);
         }
+        
+        @Override
+        public boolean removeChild(IModule child) {
+            throw new UnsupportedOperationException("Scope graphs should not be purged while tracking them!");
+        }
 
+        @SuppressWarnings("unlikely-arg-type") //Intentional equality between tracking and non tracking graphs
         @Override
         public Collection<ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>> getChildren() {
             if (ModuleScopeGraph.this.currentModification != this.currentModification) {
@@ -460,6 +479,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             }
             
             return trackedChildren;
+        }
+
+        @Override
+        public void purgeChildren() {
+            throw new UnsupportedOperationException("Scope graphs should not be purged while tracking them!");
         }
 
         @Override

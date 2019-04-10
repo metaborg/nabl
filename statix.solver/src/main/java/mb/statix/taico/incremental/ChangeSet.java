@@ -19,13 +19,17 @@ public class ChangeSet implements IChangeSet {
         this.changed = changed.stream().map(manager::getModule).collect(Collectors.toSet());
 
         init(manager);
+        validate();
     }
 
     private void init(ModuleManager manager) {
         //Mark the initial status of all modules
         all = new HashSet<>(manager.getModules());
         all.forEach(m -> m.flag(ModuleCleanliness.CLEAN));
+        
+        //Mark all removed modules and descendants as deleted
         removed.forEach(m -> m.flag(ModuleCleanliness.DELETED));
+        removed.stream().flatMap(m -> m.getDescendants()).forEach(m -> m.flag(ModuleCleanliness.DELETED));
 
         //#0 Compute unchanged = all - removed - changed
         unchanged = new HashSet<>(all);
@@ -80,6 +84,68 @@ public class ChangeSet implements IChangeSet {
         //The new SG needs to be swapped in.
         //Queries of dependent modules (reversed relation?) need to be rechecked.
         //So their old results also need to be stored
+    }
+
+    public void validate() {
+        for (IModule module : all) {
+            if (module.getFlag() == ModuleCleanliness.NEW) throw new IllegalStateException("Module " + module.getId() + " is flagged as new!");
+        }
+        
+        //Check that the children of each clean module are marked as clean as well
+        for (IModule module : clean) {
+            validateChildren(module, module, ModuleCleanliness.CLEAN);
+        }
+        
+        //Check that the children of each removed module are also marked as deleted
+        for (IModule module : removed) {
+            validateChildren(module, module, ModuleCleanliness.DELETED);
+        }
+        
+        //Check that the tree structure has the correct links
+        //all() - removed()
+        for (IModule module : all) {
+            if (removed.contains(module)) continue;
+            checkTreeIntegrity(module);
+        }
+    }
+    
+    private void checkTreeIntegrity(IModule module) {
+        for (IModule child : module.getChildren()) {
+            if (child.getParent() != module) {
+                throw new IllegalStateException("Module " + child.getId() + " does not have the correct parent set. Is " + child.getParent() + ", should be " + module);
+            } else if (!all.contains(child)) {
+                throw new IllegalStateException("Module " + child.getId() + " is not in the set of all modules!");
+            }
+            
+            checkTreeIntegrity(child);
+        }
+    }
+    
+    private boolean validateParent(IModule module, IModule base, ModuleCleanliness cleanliness) {
+        IModule parent = module.getParent();
+        if (parent == null) return true;
+        switch (parent.getFlag()) {
+            case CLEAN:   return validateParent(parent, base, cleanliness);
+            case DELETED: throw new IllegalStateException(parent.getId() + " has been deleted, but " + base.getId() + " is marked as " + cleanliness + "!");
+            case DIRTY:   throw new IllegalStateException(parent.getId() + " is marked as dirty, but " + base.getId() + " is marked as " + cleanliness + "!");
+            case CLIRTY:  throw new IllegalStateException(parent.getId() + " is marked as clirty, but " + base.getId() + " is marked as " + cleanliness + "!");
+            case NEW:     throw new IllegalStateException(parent.getId() + " is marked as new, which should not be possible (tree structure outdated)!");
+            default:      throw new IllegalStateException(parent.getId() + " has an unknown flag: " + parent.getFlag());
+        }
+    }
+    
+    private void validateChildren(IModule module, IModule base, ModuleCleanliness cleanliness) {
+        for (IModule child : module.getChildren()) {
+            if (child.getFlag() == ModuleCleanliness.NEW) {
+                throw new IllegalStateException(child.getId() + " is marked as new, which should not be possible (tree structure outdated)!");
+            } else if (cleanliness == ModuleCleanliness.DELETED && child.getFlag() != cleanliness) {
+                throw new IllegalStateException("Module " + base.getId() + " has been deleted, but its child " + child.getId() + " is marked as " + child.getFlag() + "!");
+            } else if (cleanliness == ModuleCleanliness.CLEAN && child.getFlag() != cleanliness) {
+                throw new IllegalStateException("Module " + base.getId() + " is marked clean, but its child " + child.getId() + " is marked as " + child.getFlag() + "!");
+            } else {
+                validateChildren(child, base, cleanliness);
+            }
+        }
     }
 
     @Override

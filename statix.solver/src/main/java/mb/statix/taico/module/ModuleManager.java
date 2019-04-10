@@ -93,6 +93,7 @@ public class ModuleManager {
     public synchronized void purgeModules(IModule module) {
         modules.remove(module.getId());
         moduleNames.remove(module.getName(), module);
+        module.getScopeGraph().purgeChildren();
         for (IModule child : module.getChildren()) {
             purgeModules(child);
         }
