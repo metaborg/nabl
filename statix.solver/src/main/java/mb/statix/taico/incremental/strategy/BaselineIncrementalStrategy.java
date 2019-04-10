@@ -52,8 +52,6 @@ public class BaselineIncrementalStrategy implements IncrementalStrategy {
      *      If solving is interrupted.
      */
     public void reanalyze(MState baseState, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        IModule topModule = baseState.owner();
-        
         //Solve from the top again, children will be skipped automatically.
         baseState.coordinator().solve(baseState, constraints, debug);
     }
