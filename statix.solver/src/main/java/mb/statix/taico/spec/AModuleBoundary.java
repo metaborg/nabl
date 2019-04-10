@@ -43,7 +43,7 @@ public abstract class AModuleBoundary extends ARule {
     @Value.Parameter public abstract String name();
 
     @Value.Parameter public abstract List<Pattern> params();
-    
+
     @Value.Parameter public abstract ModuleString moduleString();
 
     @Value.Parameter public abstract Set<ITermVar> bodyVars();
@@ -57,7 +57,7 @@ public abstract class AModuleBoundary extends ARule {
         final List<IConstraint> newBody = body().stream().map(c -> c.apply(bodySubst)).collect(Collectors.toList());
         return ModuleBoundary.of(name(), params(), newModuleString, bodyVars(), newBody);
     }
-    
+
     @Override
     public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
         List<ITerm> newArgs = groundArguments(args, state.unifier());
@@ -102,7 +102,7 @@ public abstract class AModuleBoundary extends ARule {
         //We return an empty set since we don't want to add constraints to the current solver, as a child is solving it.
         return Optional.of(ImmutableTuple2.of(freshVars, Collections.emptySet()));
     }
-    
+
     /**
      * If any of the arguments are not ground, this method throws a delay exception.
      * Otherwise, it recursively and eagerly evaluates each argument so it can be passed to the
@@ -141,7 +141,7 @@ public abstract class AModuleBoundary extends ARule {
         
         return newArgs;
     }
-    
+
     /**
      * Formats this rule where constraints are formatted with the given TermFormatter.
      * 

@@ -2,7 +2,6 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.matching.TermPattern.P;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -31,9 +30,6 @@ import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.IOwnableScope;
-import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MState;
 
 /**
@@ -114,11 +110,9 @@ public abstract class ARule implements IRule {
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
     }
-    
+
     @Override
     public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
-        if (isModuleBoundary()) throw new IllegalStateException("Cannot apply as non module boundary, since this rule is a module boundary!");
-        
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
@@ -136,82 +130,6 @@ public abstract class ARule implements IRule {
         final ISubstitution.Immutable isubst = subst.freeze();
         final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         return Optional.of(ImmutableTuple2.of(freshBodyVars.build(), newBody));
-    }
-    
-    /**
-     * Applies the given arguments to this rule.
-     * 
-     * <p>The state returned by this method is the state of the child module.</p>
-     * 
-     * @param args
-     *      the arguments to apply
-     * @param state
-     *      the current state
-     * 
-     * @return
-     *      a tuple with the state, the new variables and the set of new constraints. If the
-     *      arguments do not match the parameters, an empty optional is returned
-     * 
-     * @throws Delay
-     *      If the arguments cannot be matched to the parameters of this rule because one or more
-     *      terms are not ground.
-     * @throws IllegalStateException
-     *      If this rule is not a module boundary.
-     */
-    public Optional<Tuple3<MState, Set<ITermVar>, Set<IConstraint>>> applyModuleBoundary(List<ITerm> args, MState state) throws Delay {
-        System.err.println("Applying module boundary (Rule)");
-        if (!isModuleBoundary()) throw new IllegalStateException("Cannot appy as module boundary to a non module boundary rule!");
-        
-        final ISubstitution.Transient subst;
-        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()) //TOD
-                .matchOrThrow(r -> r, vars -> {
-            throw Delay.ofVars(vars);
-        });
-        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
-            return Optional.empty();
-        }
-        
-        //We don't always want to statically store the child relation. We want to base this on the current owner.
-        List<IOwnableScope> canExtend = new ArrayList<>();
-        for (ITerm term : args) {
-            OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
-            if (scope != null) canExtend.add(scope);
-        }
-        
-        IModule child = state.owner().createOrGetChild(generateNewChildId(state.owner()), canExtend);
-        state = new MState(state.manager(), state.coordinator(), child, state.spec());
-        
-        final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
-        for(ITermVar var : bodyVars()) {
-            final ITermVar term = state.freshVar(var.getName());
-            subst.put(var, term);
-            freshBodyVars.add(term);
-        }
-        final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IConstraint> newBody = body().stream() //TOD
-                .map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        return Optional.of(ImmutableTuple3.of(state, freshBodyVars.build(), newBody));
-    }
-    
-    /**
-     * Generates a new identifier for a child of the given module.
-     * 
-     * @param module
-     *      the module
-     * 
-     * @return
-     *      the new identifier
-     */
-    private static String generateNewChildId(IModule module) {
-        return String.valueOf(module.getScopeGraph().getChildren().size());
-    }
-    
-    /**
-     * @return
-     *      true if this rule crosses a module boundary, false otherwise
-     */
-    public final boolean isModuleBoundary() {
-        return name().startsWith("modbound_");
     }
 
     /**
