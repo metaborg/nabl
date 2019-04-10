@@ -67,7 +67,7 @@ public class ModuleSolver implements IOwnable {
     private ModuleSolver(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, MCompleteness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, PrefixedDebugContext debug) {
         this.parent = parent;
         this.state = state;
-        this.constraints = new ModuleConstraintStore(constraints, debug);
+        this.constraints = new ModuleConstraintStore(state.manager(), constraints, debug);
         this.completeness = completeness;
         this.completeness.addAll(constraints);
         this.isRigid = isRigid;
@@ -153,6 +153,10 @@ public class ModuleSolver implements IOwnable {
     
     public MCompleteness getCompleteness() {
         return completeness;
+    }
+    
+    public ModuleConstraintStore getStore() {
+        return constraints;
     }
     
     /**
