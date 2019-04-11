@@ -12,7 +12,6 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;

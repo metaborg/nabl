@@ -11,10 +11,8 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.taico.solver.MState;
 
 public interface IRule {
@@ -70,24 +68,6 @@ public interface IRule {
      *      a copy of this rule with the given substitution applied to the body
      */
     IRule apply(ISubstitution.Immutable subst);
-
-    /**
-     * Applies the given arguments to this rule.
-     * 
-     * @param args
-     *      the arguments to apply
-     * @param state
-     *      the current state
-     * 
-     * @return
-     *      a tuple with the new state, new variables and the set of new constraints. If the
-     *      arguments do not match the parameters, an empty optional is returned
-     * 
-     * @throws Delay
-     *      If the arguments cannot be matched to the parameters of this rule because one or more
-     *      terms are not ground.
-     */
-    Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay;
     
     /**
      * Applies the given arguments to this rule.

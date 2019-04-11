@@ -8,11 +8,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -57,19 +54,6 @@ public class CInequal implements IConstraint {
      * @throws Delay
      *      If either of the terms contain variables that cannot be solved yet.
      */
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        final IUnifier.Immutable unifier = state.unifier();
-        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
-            if(result) {
-                return Optional.empty();
-            } else {
-                return Optional.of(ConstraintResult.of(state));
-            }
-        }, vars -> {
-            throw Delay.ofVars(vars);
-        });
-    }
-    
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();

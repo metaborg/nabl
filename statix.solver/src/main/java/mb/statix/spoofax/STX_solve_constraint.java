@@ -32,12 +32,8 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
-import mb.statix.solver.Solver;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
@@ -47,11 +43,11 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverCoordinator;
 
 public class STX_solve_constraint extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
-    private static final boolean MODULES = true;
     private static final boolean DEBUG = true;
 
     @Inject public STX_solve_constraint() {
@@ -82,51 +78,28 @@ public class STX_solve_constraint extends StatixPrimitive {
         final ISolverResult resultConfig;
         final ISubstitution.Immutable isubst;
         final IUnifier.Immutable unifier;
-        if (MODULES) {
-
-            //TODO TAICO Determine ID from somewhere for this module
-            final ModuleManager manager = new ModuleManager();
-            final IModule module = new Module(manager, "G", spec);
-            final SolverCoordinator coordinator = new SolverCoordinator();
-            final MState state = new MState(manager, coordinator, module, spec);
-            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-            for(ITermVar var : vars_constraint._1()) {
-                final ITermVar nvar = state.freshVar(var.getName());
-                subst.put(var, nvar);
-                subst.put(nvar, var);
-            }
-            isubst = subst.freeze();
-            final Set<IConstraint> constraints =
-                    vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-            
-            try {
-                resultConfig = coordinator.solve(state, constraints, debug);
-            } catch(InterruptedException e) {
-                throw new InterpreterException(e);
-            }
-            
-            unifier = state.unifier();
-        } else {
-            State state = State.of(spec);
-            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-            for(ITermVar var : vars_constraint._1()) {
-                final Tuple2<ITermVar, State> var_state = state.freshVar(var.getName());
-                state = var_state._2();
-                subst.put(var, var_state._1());
-                subst.put(var_state._1(), var);
-            }
-            isubst = subst.freeze();
-            final Set<IConstraint> constraints =
-                    vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-            SolverResult resultConfig2;
-            try {
-                resultConfig = resultConfig2 = Solver.solve(state, constraints, new Completeness(), debug);
-            } catch(InterruptedException e) {
-                throw new InterpreterException(e);
-            }
-            final State resultState = resultConfig2.state();
-            unifier = resultState.unifier();
+        //TODO TAICO Determine ID from somewhere for this module
+        final ModuleManager manager = new ModuleManager();
+        final IModule module = new Module(manager, "G", spec);
+        final SolverCoordinator coordinator = new SolverCoordinator();
+        final MState state = new MState(manager, coordinator, module, spec);
+        final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+        for(ITermVar var : vars_constraint._1()) {
+            final ITermVar nvar = state.freshVar(var.getName());
+            subst.put(var, nvar);
+            subst.put(nvar, var);
         }
+        isubst = subst.freeze();
+        final Set<IConstraint> constraints =
+                vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+        
+        try {
+            resultConfig = coordinator.solve(state, constraints, debug);
+        } catch(InterruptedException e) {
+            throw new InterpreterException(e);
+        }
+        
+        unifier = state.unifier();
 
         final List<ITerm> errorList = Lists.newArrayList();
         if(resultConfig.hasErrors()) {
@@ -174,7 +147,7 @@ public class STX_solve_constraint extends StatixPrimitive {
     private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier.Immutable unifier) {
         final ITerm astTerm = findClosestASTTerm(constraint, unifier);
         final StringBuilder message = new StringBuilder();
-        message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
+        message.append(prefix).append(": ").append(constraint.toString(ModuleSolver.shallowTermFormatter(unifier)))
                 .append("\n");
         formatTrace(constraint, unifier, message);
         return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
@@ -195,7 +168,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");
-            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
+            sb.append(constraint.toString(ModuleSolver.shallowTermFormatter(unifier)));
             constraint = constraint.cause().orElse(null);
         }
     }

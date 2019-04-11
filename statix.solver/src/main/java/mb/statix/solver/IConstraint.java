@@ -1,17 +1,13 @@
 package mb.statix.solver;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
-import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -49,26 +45,6 @@ public interface IConstraint {
         return Iterables2.empty();
     }
 
-    /**
-     * Solves this constraint.
-     * 
-     * @param state
-     *            -- monotonic from one call to the next
-     * @param params
-     *      the context containing info about completeness, rigid and closed as well as debug
-     * 
-     * @return
-     *      true if reduced, false if delayed
-     * 
-     * @throws InterruptedException
-     *      Optional exception that is thrown when solving this constraint is interrupted.
-     *      
-     * @throws Delay
-     *      If this constraint cannot be solved in the current state with the given context.
-     *      The exception contains the information about what information is required to solve.
-     */
-    Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
-    
     /**
      * Solves this constraint with mutable state.
      * 
@@ -149,33 +125,6 @@ public interface IConstraint {
             sb.append(constraint.toString(termToString));
         }
         return sb.toString();
-    }
-
-    @Value.Immutable
-    static abstract class AConstraintResult {
-
-        @Value.Parameter public abstract State state();
-
-        @Value.Parameter public abstract List<IConstraint> constraints();
-
-        @Value.Parameter public abstract List<ITermVar> vars();
-
-        public static ConstraintResult of(State state) {
-            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.of());
-        }
-
-        public static ConstraintResult ofConstraints(State state, IConstraint... constraints) {
-            return ofConstraints(state, Arrays.asList(constraints));
-        }
-
-        public static ConstraintResult ofConstraints(State state, Iterable<? extends IConstraint> constraints) {
-            return ConstraintResult.of(state, ImmutableList.copyOf(constraints), ImmutableList.of());
-        }
-
-        public static ConstraintResult ofVars(State state, Iterable<? extends ITermVar> vars) {
-            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.copyOf(vars));
-        }
-
     }
 
 }

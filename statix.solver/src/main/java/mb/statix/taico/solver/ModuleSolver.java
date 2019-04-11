@@ -21,7 +21,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.concurrent.solver.ConcurrentSolver;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
@@ -228,7 +227,7 @@ public class ModuleSolver implements IOwnable {
         IDebugContext subDebug = proxyDebug.subContext();
         final IConstraint constraint = entry.constraint();
         if(proxyDebug.isEnabled(Level.Info)) {
-            proxyDebug.info("Solving {}", constraint.toString(ConcurrentSolver.shallowTermFormatter(state.unifier())));
+            proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
         }
         try {
             final Optional<MConstraintResult> maybeResult;

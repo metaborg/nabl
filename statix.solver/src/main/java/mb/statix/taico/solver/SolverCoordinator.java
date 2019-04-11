@@ -19,10 +19,10 @@ import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 
 public class SolverCoordinator {
-    private final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
-    private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
-    private ModuleSolver root;
-    private MState rootState;
+    protected final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
+    protected final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
+    protected ModuleSolver root;
+    protected MState rootState;
     
     public SolverCoordinator() {}
     
