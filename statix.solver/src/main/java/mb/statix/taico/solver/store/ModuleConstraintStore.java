@@ -108,19 +108,14 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (edges.isEmpty()) return;
         
         for (CriticalEdge edge : edges) {
-            System.err.println("Activating edge because of own progress: " + edge);
             activateFromEdge(edge, debug);
         }
         
-        //The entire operation of adding to the history and activating observers needs to happen "atomically"
         synchronized (edgeObservers) {
-            System.err.println("Delegating activation of edges " + edges);
-            System.err.println("All observers:");
-            System.err.println(edgeObservers);
-            
             //Activate all observers
             for (CriticalEdge edge : edges) {
                 for (ModuleConstraintStore store : edgeObservers.removeAll(edge)) {
+                    System.err.println("Delegating activation of edge " + edge);
                     store.activateFromEdge(edge, debug); //Activate but don't propagate
                 }
             }
@@ -146,9 +141,6 @@ public class ModuleConstraintStore implements IConstraintStore {
             debug.info("no constraints were activated");
         }
         addAll(activated);
-        
-        //TODO Verify that this doesn't need to add to the edge history, (since this edge will only affect this module)
-        //The edge history is for critical edges of this store only, so we don't need to record external activations.
     }
     
     public Iterable<IConstraintStore.Entry> active(IDebugContext debug) {
@@ -264,8 +256,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                     .orElseThrow(() -> new IllegalStateException("Scope of critical edge does not have an owning module: " + edge.scope()));
         }
         
-        debug.info("Registering as observer on {}, waiting on edge {}", edge.cause(), edge);
-        System.err.println("Registering as observer on " + owner + ", waiting on edge " + edge);
+        debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
         //TODO Static state access
         ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
         store.registerObserver(edge, this, debug);

@@ -262,7 +262,7 @@ public class ModuleSolver implements IOwnable {
                     printTrace(constraint, state.unifier(), subDebug);
                 } else {
                     proxyDebug.info("Break early because of errors.");
-                    /* TODO TAICO TEMPORARY */ proxyDebug.commit();
+                    proxyDebug.commit();
                     return false;
                 }
             }
