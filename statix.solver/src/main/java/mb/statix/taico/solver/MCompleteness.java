@@ -24,7 +24,6 @@ import mb.statix.taico.util.IOwnable;
  * signatures, but is mutable.
  */
 public class MCompleteness implements IOwnable {
-    //TODO It is possible that synchronization needs to be added to this class.
     private final IModule owner;
     private final MCompleteness parent;
     private final Set<MCompleteness> children = new HashSet<>();
@@ -101,8 +100,7 @@ public class MCompleteness implements IOwnable {
             return isCompleteFinal(equal);
         } else {
             System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + scopeOwner + ". Redirecting there");
-            //TODO CONCURRENCY This is a concurrency problem, delegation to solvers
-            //TODO Possible state leaking point
+            //TODO CONCURRENCY Delegation to other solver
             MCompleteness target = scopeOwner.getCurrentState().solver().getCompleteness();
             return target.isCompleteFinal(equal);
         }
@@ -118,17 +116,6 @@ public class MCompleteness implements IOwnable {
      *      true if these terms are complete, false otherwise 
      */
     public CompletenessResult isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
-        System.err.println("Completeness of " + owner + " got isCompleteFinal query");
-        //TODO OPTIMIZATION We might want to swap asking our children and asking ourselves.
-        //Ask children
-        for (MCompleteness child : children) {
-            CompletenessResult childResult = child.isCompleteFinal(equal);
-            if (!childResult.isComplete()) {
-                System.err.println("Completeness of " + owner + " result: (child) false");
-                return childResult;
-            }
-        }
-        
         //Ask ourselves
         //TODO OPTIMIZATION point: Use passed spec instead?
         //TODO Possible state inconsistency point (uses current state of module)
@@ -138,7 +125,18 @@ public class MCompleteness implements IOwnable {
                     .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
         }
         System.err.println("Completeness of " + owner + " result: " + complete);
-        return CompletenessResult.of(complete, owner);
+        if (!complete) return CompletenessResult.of(false, owner);
+
+        //Ask children
+        for (MCompleteness child : children) {
+            CompletenessResult childResult = child.isCompleteFinal(equal);
+            if (!childResult.isComplete()) {
+                System.err.println("Completeness of " + owner + " result: (child) false");
+                return childResult;
+            }
+        }
+
+        return CompletenessResult.of(true, owner);
     }
 
     public synchronized MCompleteness add(IConstraint constraint) {
