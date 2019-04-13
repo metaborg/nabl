@@ -19,13 +19,9 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -110,49 +106,6 @@ public class CUser implements IConstraint {
      * @throws Delay
      *      If the guard constraints on one of the rule candidates are not solved.
      */
-    public Optional<ConstraintResult> solve(final State state, ConstraintContext params)
-            throws InterruptedException, Delay {
-        final IDebugContext debug = params.debug();
-        final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));
-        final Log unsuccessfulLog = new Log();
-        final Iterator<IRule> it = rules.iterator();
-        while(it.hasNext()) {
-            if(Thread.interrupted()) {
-                throw new InterruptedException();
-            }
-            final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-            final IRule rawRule = it.next();
-            if(proxyDebug.isEnabled(Level.Info)) {
-                proxyDebug.info("Try rule {}", rawRule.toString());
-            }
-            final State instantiatedState;
-            final Set<IConstraint> instantiatedBody;
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl;
-            try {
-                if((appl = rawRule.apply(args, state).orElse(null)) != null) {
-                    instantiatedState = appl._1();
-                    instantiatedBody = appl._3();
-                } else {
-                    proxyDebug.info("Rule rejected (mismatching arguments)");
-                    unsuccessfulLog.absorb(proxyDebug.clear());
-                    continue;
-                }
-            } catch(Delay d) {
-                proxyDebug.info("Rule delayed (unsolved guard constraint)");
-                unsuccessfulLog.absorb(proxyDebug.clear());
-                unsuccessfulLog.flush(debug);
-                throw d;
-            }
-            
-            proxyDebug.info("Rule accepted");
-            proxyDebug.commit();
-            return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
-        }
-        debug.info("No rule applies");
-        unsuccessfulLog.flush(debug);
-        return Optional.empty();
-    }
-    
     @Override
     public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
