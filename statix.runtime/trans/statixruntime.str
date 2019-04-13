@@ -12,7 +12,15 @@ imports
 
 signature
   constructors
-    C : String * List(Term) -> Constraint
+
+    ProjectAnalysis : Scope * Constraint * Analysis -> AnalysisResult
+    FileAnalysis    : Constraint -> AnalysisResult
+
+    // duplicates from statix.lang
+    Scope : String * String -> Scope
+    CTrue : Constraint
+    CConj : Constraint * Constraint -> Constraint
+    C     : String * List(Term) -> Constraint
 
 rules
 
@@ -22,7 +30,7 @@ rules
  <+ <stx-editor-analyze(id|spec-name, init-constraint)> (<id>, "", "")
   )
 
-rules
+rules // single file analysis
 
   stx-editor-analyze(|spec-name, init-constraint) =
     stx-editor-analyze(id|spec-name, init-constraint)
@@ -41,6 +49,9 @@ rules
                         )
                       })> ast*
 
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
+
   stx--editor-analyze(desugar|spec-name, init-constraint):
       (resource, ast) -> (a, error*, warning*, note*)
     with spec  := <stx--find-spec(|spec-name)>;
@@ -48,6 +59,51 @@ rules
          level := <stx--log-level>;
          (a, error*, warning*, note*) :=
              <stx--solve-constraint(|spec, level)> ([], C)
+
+rules // multi file analysis
+
+  stx-editor-analyze(|spec-name, project-constraint, file-constraint) =
+    stx-editor-analyze(id|spec-name, project-constraint, file-constraint)
+
+  stx-editor-analyze(desugar|spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      switch !project-change
+        case ?Added(_) + ?Changed(_, _):
+          global-scope := Scope("", "$")
+        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope])
+        case ?Cached(ProjectAnalysis(global-scope, project-C, _)):
+          id
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+    ; ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; file-result* := <map({ file-resource, file-ast, file-ast', file-C, file-analysis:
+                             ?(file-resource, file-ast)
+                           ; file-ast' := <desugar;stx--index-ast(|file-resource)> file-ast
+                           ; file-C := C(file-constraint, <map(stx--explode)> [global-scope, file-ast'])
+                           ; ( id
+                             < !(file-resource, Full(file-ast', FileAnalysis(file-C), [], [], []))
+                             + !(file-resource, Failed())
+                             )
+                           })> ast*
+    ; file-C-new* := <map(Snd;?Full(_, FileAnalysis(<id>), _, _, _))> file-result*
+    ; file-C-cached* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
+    ; file-C* := [file-C-new*, file-C-cached*]
+    ; C := <stx--conj> [project-C|file-C*]
+    ; (project-analysis, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+    ; switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-result := Full(project-ast, ProjectAnalysis(global-scope, project-C, project-analysis), error*, warning*, note*)
+        case ?Cached(_):
+          project-result := Update(ProjectAnalysis(global-scope, project-C, project-analysis), error*, warning*, note*)
+      end
+    ; result* := [(project-resource, project-result)|file-result*]
+
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
 
 rules
 
@@ -162,6 +218,11 @@ rules
 
   stx--implode: _ -> <id>
     with warn(|"Cannot implode internal term representation")
+
+
+  stx--conj: [C|C*] -> CConj(C, <stx--conj> C*)
+  stx--conj: [C] -> C
+  stx--conj: [] -> CTrue()
 
 rules
 
