@@ -60,7 +60,7 @@ public class Completeness {
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, State state) {
         return constraint.criticalEdges(state.spec()).stream().flatMap(ce -> {
             final Optional<CriticalEdge> edge =
-                    Scope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
+                    Scope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label(), null));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
     }

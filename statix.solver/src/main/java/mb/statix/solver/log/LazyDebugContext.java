@@ -81,6 +81,16 @@ public class LazyDebugContext implements IDebugContext {
     public Log clear() {
         return log.clear();
     }
+    
+    /**
+     * Returns a log with all the messages queued in this lazy debug context.
+     * 
+     * @return
+     *      a log with all the messages
+     */
+    public Log copy() {
+        return log.copy();
+    }
 
     /**
      * Creates a prefix of {@code "| "} times the offset.

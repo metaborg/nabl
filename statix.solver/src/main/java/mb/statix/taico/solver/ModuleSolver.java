@@ -21,12 +21,10 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.concurrent.solver.ConcurrentSolver;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
 import mb.statix.solver.ISolverResult;
-import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -228,8 +226,9 @@ public class ModuleSolver implements IOwnable {
         IDebugContext subDebug = proxyDebug.subContext();
         final IConstraint constraint = entry.constraint();
         if(proxyDebug.isEnabled(Level.Info)) {
-            proxyDebug.info("Solving {}", constraint.toString(ConcurrentSolver.shallowTermFormatter(state.unifier())));
+            proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
         }
+        
         try {
             final Optional<MConstraintResult> maybeResult;
             maybeResult =
@@ -252,6 +251,8 @@ public class ModuleSolver implements IOwnable {
                 }
                 constraints.activateFromVars(result.vars(), subDebug);
                 //TODO TAICO CRITICALEDGES Fix critical edge mechanism
+                //TODO IMPORTANT As soon as a child solver is made, critical edges are not correct any more
+                //TODO IMPORTANT This does not mean that these critical edges are now gone, only this particular constraint by something else.
                 constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, result.state()), subDebug);
             } else {
                 subDebug.error("Failed");
@@ -272,12 +273,10 @@ public class ModuleSolver implements IOwnable {
             } else if (!d.criticalEdges().isEmpty()) {
                 subDebug.info("Delayed on " + d.criticalEdges());
             }
-            
-            if (constraint instanceof CResolveQuery) System.err.println("Delayed query!");
-            delayedLog.absorb(proxyDebug.clear());
+            delayedLog.absorb(proxyDebug.copy());
+            proxyDebug.commit();
             entry.delay(d);
             delays += 1;
-            /* TODO TAICO TEMPORARY */ proxyDebug.commit();
         }
         return true;
     }
@@ -295,7 +294,8 @@ public class ModuleSolver implements IOwnable {
         }
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();
-        delayedLog.flush(debug);
+        debug.info("Delayed log:");
+        delayedLog.flush(debug.subContext());
         debug.info("Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).",
                 reductions, delays, failed.size(), constraints.delayedSize());
         logTimes("success", successCount, debug);

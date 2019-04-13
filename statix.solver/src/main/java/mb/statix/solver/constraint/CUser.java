@@ -89,7 +89,7 @@ public class CUser implements IConstraint {
     }
 
     @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return spec.scopeExtensions().get(name).stream().map(il -> CriticalEdge.of(args.get(il._1()), il._2()))
+        return spec.scopeExtensions().get(name).stream().map(il -> CriticalEdge.of(args.get(il._1()), il._2(), null))
                 .collect(Collectors.toList());
     }
 

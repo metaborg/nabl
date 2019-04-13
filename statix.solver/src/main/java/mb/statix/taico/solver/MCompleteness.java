@@ -74,12 +74,11 @@ public class MCompleteness implements IOwnable {
         return owner;
     }
     
-    public boolean isComplete(ITerm scope, ITerm label, MState state) {
+    public CompletenessResult isComplete(ITerm scope, ITerm label, MState state) {
         if (state.owner() != owner) {
             throw new IllegalArgumentException("isComplete request with state of " + state.owner() + " redirected to completeness of " + owner);
         }
         
-        //TODO Do we need to use unifiers of other states as well?
         final IUnifier unifier = state.unifier();
         final Predicate2<ITerm, ITerm> equal = (t1, t2) -> {
             return t2.equals(label) && unifier.areEqual(t1, scope).orElse(false /* (1) */);
@@ -120,13 +119,14 @@ public class MCompleteness implements IOwnable {
      * @return
      *      true if these terms are complete, false otherwise 
      */
-    public boolean isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
+    public CompletenessResult isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
         System.err.println("Completeness of " + owner + " got isCompleteFinal query");
         //Ask children
         for (MCompleteness child : children) {
-            if (!child.isCompleteFinal(equal)) {
+            CompletenessResult childResult = child.isCompleteFinal(equal);
+            if (!childResult.isComplete()) {
                 System.err.println("Completeness of " + owner + " result: (child) false");
-                return false;
+                return childResult;
             }
         }
         
@@ -136,7 +136,7 @@ public class MCompleteness implements IOwnable {
         boolean tbr = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))
                 .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
         System.err.println("Completeness of " + owner + " result: " + tbr);
-        return tbr;
+        return CompletenessResult.of(tbr, owner);
     }
 
     public MCompleteness add(IConstraint constraint) {
@@ -189,7 +189,9 @@ public class MCompleteness implements IOwnable {
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, MState state) {
         return constraint.criticalEdges(state.spec()).stream().flatMap(ce -> {
             final Optional<CriticalEdge> edge =
-                    OwnableScope.ownableMatcher(state.manager()::getModule).match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
+                    OwnableScope.ownableMatcher(state.manager()::getModule)
+                        .match(ce.scope(), state.unifier())
+                        .map(s -> CriticalEdge.of(s, ce.label(), state.owner()));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
     }

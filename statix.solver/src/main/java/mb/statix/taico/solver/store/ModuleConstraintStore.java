@@ -1,11 +1,9 @@
 package mb.statix.taico.solver.store;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,7 +31,6 @@ public class ModuleConstraintStore implements IConstraintStore {
     private final Multimap<CriticalEdge, IConstraint> stuckOnEdge;
     
     private final Multimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
-    private final Set<CriticalEdge> edgeHistory;
     
     private boolean progress;
     private AtomicBoolean progressCheck = new AtomicBoolean();
@@ -45,7 +42,6 @@ public class ModuleConstraintStore implements IConstraintStore {
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
         this.edgeObservers = HashMultimap.create();
-        this.edgeHistory = new HashSet<>();
         addAll(constraints);
     }
     
@@ -108,19 +104,21 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
-    public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
+    public void activateFromEdges(Collection<? extends CriticalEdge> edges, IDebugContext debug) {
+        if (edges.isEmpty()) return;
+        
         for (CriticalEdge edge : edges) {
+            System.err.println("Activating edge because of own progress: " + edge);
             activateFromEdge(edge, debug);
         }
         
         //The entire operation of adding to the history and activating observers needs to happen "atomically"
         synchronized (edgeObservers) {
-            //#1 Store the event
-            for (CriticalEdge edge : edges) {
-                edgeHistory.add(edge);
-            }
+            System.err.println("Delegating activation of edges " + edges);
+            System.err.println("All observers:");
+            System.err.println(edgeObservers);
             
-            //#2 Activate all observers
+            //Activate all observers
             for (CriticalEdge edge : edges) {
                 for (ModuleConstraintStore store : edgeObservers.removeAll(edge)) {
                     store.activateFromEdge(edge, debug); //Activate but don't propagate
@@ -130,13 +128,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     public void registerObserver(CriticalEdge edge, ModuleConstraintStore store, IDebugContext debug) {
-        //The entire operations of checking the history and adding the observer needs to happen "atomically"
         synchronized (edgeObservers) {
-            if (edgeHistory.contains(edge)) {
-                store.activateFromEdge(edge, debug);
-                return;
-            }
-            
             edgeObservers.put(edge, store);
         }
     }
@@ -147,7 +139,12 @@ public class ModuleConstraintStore implements IConstraintStore {
             activated = stuckOnEdge.removeAll(edge);
             stuckOnEdge.values().removeAll(activated);
         }
-        debug.info("activating {}", activated);
+        debug.info("activating edge {}", edge);
+        if (activated.isEmpty()) {
+            debug.info("activating {}", activated);
+        } else {
+            debug.info("no constraints were activated");
+        }
         addAll(activated);
         
         //TODO Verify that this doesn't need to add to the edge history, (since this edge will only affect this module)
@@ -211,25 +208,26 @@ public class ModuleConstraintStore implements IConstraintStore {
 
             @Override
             public void delay(Delay d) {
-                if (!d.vars().isEmpty()) {
-                    debug.info("delayed {} on vars {}", constraint, d.vars());
-                    for (ITermVar var : d.vars()) {
-                        stuckOnVar.put(var, constraint);
+                try {
+                    if (!d.vars().isEmpty()) {
+                        debug.info("delayed {} on vars {}", constraint, d.vars());
+                        for (ITermVar var : d.vars()) {
+                            stuckOnVar.put(var, constraint);
+                        }
+                    } else if (!d.criticalEdges().isEmpty()) {
+                        debug.info("delayed {} on critical edges {}", constraint, d.criticalEdges());
+                        for (CriticalEdge edge : d.criticalEdges()) {
+                            stuckOnEdge.put(edge, constraint);
+                            registerAsObserver(edge, debug);
+                        }
+                    } else {
+                        debug.warn("delayed {} for no apparent reason ", constraint);
+                        stuckBecauseStuck.add(constraint);
                     }
-                }
-                //On registration of the critical edges, check the queue of past events
-                //TODO TAICO CRITICALEDGES Implement event based system for propagating this information to other solvers that are interested in it
-                //TODO TAICO CRITICALEDGES Implement system for delaying on critical edges
-                else if (!d.criticalEdges().isEmpty()) {
-                    debug.info("delayed {} on critical edges {}", constraint, d.criticalEdges());
-                    for (CriticalEdge edge : d.criticalEdges()) {
-                        stuckOnEdge.put(edge, constraint);
-                        registerAsObserver(edge, debug);
+                } finally {
+                    if (d.getLockManager() != null) {
+                        d.getLockManager().releaseAll();
                     }
-                }
-                else {
-                    debug.warn("delayed {} for no apparent reason ", constraint);
-                    stuckBecauseStuck.add(constraint);
                 }
             }
 
@@ -254,11 +252,20 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the debug context
      */
     private void registerAsObserver(CriticalEdge edge, IDebugContext debug) {
-        IModule owner = OwnableScope.ownableMatcher(manager::getModule)
-                .match(edge.scope())
-                .map(IOwnable::getOwner)
-                .orElseThrow(() -> new IllegalStateException("Scope of critical edge does not have an owning module: " + edge.scope()));
+        IModule owner;
         
+        if (edge.cause() != null) {
+            owner = edge.cause();
+        } else {
+            System.err.println("ENCOUNTERED CRITIAL EDGE WITHOUT OWNER (" + edge + ")! USING SCOPE OWNER!");
+            owner = OwnableScope.ownableMatcher(manager::getModule)
+                    .match(edge.scope())
+                    .map(IOwnable::getOwner)
+                    .orElseThrow(() -> new IllegalStateException("Scope of critical edge does not have an owning module: " + edge.scope()));
+        }
+        
+        debug.info("Registering as observer on {}, waiting on edge {}", edge.cause(), edge);
+        System.err.println("Registering as observer on " + owner + ", waiting on edge " + edge);
         //TODO Static state access
         ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
         store.registerObserver(edge, this, debug);

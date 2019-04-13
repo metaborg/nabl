@@ -58,7 +58,7 @@ public class SolverCoordinator {
                 //If this solver is not the only solver that has made progress last round, then inform it that someone else has made progress.
                 if (solver != progressed) {
                     cdebug.log(Level.Debug, "[{}] informed of external progress by {}", solver.getOwner().getId(), progressed);
-                    solver.externalProgress();
+//                    solver.externalProgress();
                 } else {
                     cdebug.log(Level.Debug, "[{}] is the only solver who made progress last round", solver.getOwner().getId());
                 }
@@ -83,6 +83,7 @@ public class SolverCoordinator {
                 
                 if (solver.hasFailed()) {
                     cdebug.log(Level.Debug, "[{}] failed", solver.getOwner().getId());
+                    //TODO IMPORTANT Do not break upon failure, other solvers might be able to continue still!
                     break outer;
                 }
             }

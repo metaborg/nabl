@@ -10,12 +10,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.util.Capsules;
 
@@ -41,6 +44,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     private int id;
     private int copyId;
     private ModuleScopeGraph original;
+    
+    private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
     private volatile int currentModification;
     
@@ -115,49 +120,45 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
 
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label) {
+    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label, LockManager lockManager) {
         //TODO Should be possible without passing a scope, but rather something specifying the parent scope number that was passed.
         if (scope.getOwner() == owner) {
-            return getTransitiveEdges(scope, label);
+            return getTransitiveEdges(scope, label, lockManager);
         } else {
-            return scope.getOwner().getScopeGraph().getEdges(scope, label);
+            return scope.getOwner().getScopeGraph().getEdges(scope, label, lockManager);
         }
     }
     
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label) {
+    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label, LockManager lockManager) {
         if (scope.getOwner() == owner) {
-            return getTransitiveData(scope, label);
+            return getTransitiveData(scope, label, lockManager);
         } else {
-            return scope.getOwner().getScopeGraph().getData(scope, label);
+            return scope.getOwner().getScopeGraph().getData(scope, label, lockManager);
         }
     }
     
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label) {
-        // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
-        // TODO relevant for dependency determination?
-        Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>();
-        set.addAll(edges.get(scope, label));
-        //TODO Use the canExtend set to only build this for our children.
+    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label, LockManager lockManager) {
+        lockManager.acquire(getReadLock());
+        Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>(edges.get(scope, label));
+        //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (ModuleScopeGraph child : children) {
             if (child.canExtend.contains(scope)) {
-                set.addAll(child.getTransitiveEdges(scope, label));
+                set.addAll(child.getTransitiveEdges(scope, label, lockManager));
             }
         }
         return set;
     }
 
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label) {
-        System.err.println("[traData] | | getting transitive data of " + owner.getId() + " scope: " + scope);
-        // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
-        // TODO relevant for dependency determination?
-        Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>();
-        set.addAll(data.get(scope, label));
+    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label, LockManager lockManager) {
+        lockManager.acquire(getReadLock());
+        Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>(data.get(scope, label));
+        //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (ModuleScopeGraph child : children) {
             if (child.canExtend.contains(scope)) {
-                set.addAll(child.getTransitiveData(scope, label));
+                set.addAll(child.getTransitiveData(scope, label, lockManager));
             }
         }
         return set;
@@ -193,8 +194,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
                     + "Edge: " + sourceScope + " -" + label + "-> " + targetScope);
         }
         
-        IEdge<IOwnableTerm, ITerm, IOwnableTerm> edge = new Edge<>(this.owner, sourceScope, label, targetScope);
-        return edges.put(sourceScope, label, edge);
+        getWriteLock().lock();
+        try {
+            IEdge<IOwnableTerm, ITerm, IOwnableTerm> edge = new Edge<>(this.owner, sourceScope, label, targetScope);
+            return edges.put(sourceScope, label, edge);
+        } finally {
+            getWriteLock().unlock();
+        }
     }
 
     @Override
@@ -216,17 +222,27 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             datumlist.add(v);
         }
         
-        IEdge<IOwnableTerm, ITerm, List<ITerm>> edge = new Edge<>(this.owner, scope, relation, datumlist);
-        return data.put(scope, relation, edge);
+        getWriteLock().lock();
+        try {
+            IEdge<IOwnableTerm, ITerm, List<ITerm>> edge = new Edge<>(this.owner, scope, relation, datumlist);
+            return data.put(scope, relation, edge);
+        } finally {
+            getWriteLock().unlock();
+        }
     }
     
     @Override
     public ModuleScopeGraph createChild(IModule module, List<IOwnableScope> canExtend) {
         currentModification++;
-        
         ModuleScopeGraph child = new ModuleScopeGraph(module, labels, endOfPath, relations, canExtend);
-        children.add(child);
-        return child;
+        
+        getWriteLock().lock();
+        try {
+            children.add(child);
+            return child;
+        } finally {
+            getWriteLock().unlock();
+        }
     }
     
     @Override
@@ -342,6 +358,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
 //        
 //    }
     
+    @SuppressWarnings("unchecked")
     @Deprecated
     @Override
     public synchronized void substitute(List<? extends IOwnableTerm> newScopes) {
@@ -396,6 +413,16 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     @Override
     public TrackingModuleScopeGraph trackingGraph(Map<IModule, ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>> trackers) {
         return new TrackingModuleScopeGraph(trackers);
+    }
+    
+    @Override
+    public Lock getReadLock() {
+        return lock.readLock();
+    }
+    
+    @Override
+    public Lock getWriteLock() {
+        return lock.writeLock();
     }
     
     @Override
@@ -544,24 +571,24 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         }
         
         @Override
-        public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label) {
+        public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label, LockManager lockManager) {
             if (scope.getOwner() == owner) {
-                return getTransitiveEdges(scope, label);
+                return getTransitiveEdges(scope, label, lockManager);
             } else {
                 ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> tmsg =
                         trackers.computeIfAbsent(scope.getOwner(), o -> o.getScopeGraph().trackingGraph(trackers));
-                return tmsg.getEdges(scope, label);
+                return tmsg.getEdges(scope, label, lockManager);
             }
         }
         
         @Override
-        public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label) {
+        public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label, LockManager lockManager) {
             if (scope.getOwner() == owner) {
-                return getTransitiveData(scope, label);
+                return getTransitiveData(scope, label, lockManager);
             } else {
                 ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> tmsg =
                         trackers.computeIfAbsent(scope.getOwner(), o -> o.getScopeGraph().trackingGraph(trackers));
-                return tmsg.getData(scope, label);
+                return tmsg.getData(scope, label, lockManager);
             }
         }
         
@@ -584,30 +611,30 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         }
         
         @Override
-        public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label) {
-            // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
+        public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label, LockManager lockManager) {
             trackedEdges.put(scope, label);
-            Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>();
-            set.addAll(edges.get(scope, label));
-            //TODO Use the canExtend set to only build this for our children. (based on the spec, perform a better check than just if the scope is passed?)
+            
+            lockManager.acquire(getReadLock());
+            Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>(edges.get(scope, label));
+            //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
             for (ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> child : getChildren()) {
                 if (child.getExtensibleScopes().contains(scope)) {
-                    set.addAll(child.getTransitiveEdges(scope, label));
+                    set.addAll(child.getTransitiveEdges(scope, label, lockManager));
                 }
             }
             return set;
         }
 
         @Override
-        public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label) {
-            // OPTIMIZE Only query children if they can extend scope (currently O(n) in number of modules) 
+        public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label, LockManager lockManager) {
             trackedData.put(scope, label);
-            Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>();
-            set.addAll(data.get(scope, label));
-            //TODO Use the canExtend set to only build this for our children.
+            
+            lockManager.acquire(getReadLock());
+            Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>(data.get(scope, label));
+            //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
             for (ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> child : getChildren()) {
                 if (child.getExtensibleScopes().contains(scope)) {
-                    set.addAll(child.getTransitiveData(scope, label));
+                    set.addAll(child.getTransitiveData(scope, label, lockManager));
                 }
             }
             return set;
@@ -646,6 +673,16 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         @Override
         public IMExternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> externalGraph() {
             return ModuleScopeGraph.this.externalGraph();
+        }
+        
+        @Override
+        public Lock getReadLock() {
+            return lock.readLock();
+        }
+        
+        @Override
+        public Lock getWriteLock() {
+            return lock.writeLock();
         }
         
         @Override

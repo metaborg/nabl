@@ -26,6 +26,7 @@ import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -85,7 +86,7 @@ public class CTellRel implements IConstraint {
     }
 
     @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return ImmutableList.of(CriticalEdge.of(scopeTerm, relation));
+        return ImmutableList.of(CriticalEdge.of(scopeTerm, relation, null));
     }
 
     @Override public CTellRel apply(ISubstitution.Immutable subst) {
@@ -172,31 +173,56 @@ public class CTellRel implements IConstraint {
         if(params.isClosed(scope)) {
             return Optional.empty();
         }
+        
+        //This checks if the type is of the form T * ... * T -> U * ... * U
+        //If the scope is shared, it is not allowed
+        //TODO Determine from the spec if this scope is shared, use that as condition
+//        if (type.getOutputArity() > 0 && state.scopeGraph().getExtensibleScopes().contains(scope)) {
+//            throw new IllegalStateException("Cross module unification of types is not allowed! " + type);
+//        }
 
         final ITerm key = B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(Collectors.toList()));
         if(!unifier.isGround(key)) {
             throw Delay.ofVars(unifier.getVars(key));
         }
-        Optional<ITerm> existingValue = state.scopeGraph().getData(scope, relation).stream().filter(dt -> {
-            return unifier
-                    .areEqual(key, B.newTuple(dt.getTarget().stream().limit(type.getInputArity()).collect(Collectors.toList())))
-                    .orElse(false);
-        }).findFirst().map(dt -> {
-            return B.newTuple(dt.getTarget().stream().skip(type.getInputArity()).collect(Collectors.toList()));
-        });
-        if(existingValue.isPresent()) {
-            final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
-            return Optional.of(new MConstraintResult(state, new CEqual(value, existingValue.get(), this)));
-        } else {
-            //TODO Short moment of inconsistent completeness
-            
-            //TODO Synchronization point
-            state.scopeGraph().addDatum(scope, relation, datumTerms);
-            //TODO CONSISTENCY params.completeness().remove(this);
-            return Optional.of(new MConstraintResult(state));
-        }
-    }
+        
+        //TODO Short moment of inconsistent completeness?
+        //TODO Synchronization point
+        state.scopeGraph().addDatum(scope, relation, datumTerms);
+        //TODO CONSISTENCY params.completeness().remove(this);
+        
+        //TODO The old behavior was to check if this data is equal (perform unification on it). This is now only allowed for a single module
 
+//        LockManager lockManager = new LockManager(state.owner(), this);
+//        List<ITerm> existingValues;
+//        try {
+//            existingValues = state.scopeGraph().getData(scope, relation, lockManager).stream().filter(dt -> {
+//                return unifier
+//                        .areEqual(key, B.newTuple(dt.getTarget().stream().limit(type.getInputArity()).collect(Collectors.toList())))
+//                        .orElse(false);
+//            }).map(dt -> {
+//                return B.newTuple(dt.getTarget().stream().skip(type.getInputArity()).collect(Collectors.toList()));
+//            }).collect(Collectors.toList());
+//        } finally {
+//            lockManager.releaseAll();
+//        }
+//        
+//        //Ensure all existing are equal (unified to be equal)
+//        if(!existingValues.isEmpty()) {
+//            final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
+//            
+//            int i = 0;
+//            IConstraint[] constraints = new IConstraint[existingValues.size()];
+//            for (ITerm existingValue : existingValues) {
+//                constraints[i++] = new CEqual(value, existingValue, this);
+//            }
+//            
+//            return Optional.of(new MConstraintResult(state, constraints));
+//        } else {
+            return Optional.of(new MConstraintResult(state));
+//        }
+    }
+    
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append(termToString.format(scopeTerm));

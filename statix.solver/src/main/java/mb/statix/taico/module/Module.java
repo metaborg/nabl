@@ -176,17 +176,17 @@ public class Module implements IModule {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Module)) return false;
-        assert !this.name.equals(((Module) obj).name) : "Module identifiers are equal but modules are not the same instance! (id: " + name + ")";
-        return this.name.equals(((Module) obj).name);
+        assert !this.getId().equals(((Module) obj).getId()) : "Module identifiers are equal but modules are not the same instance! (id: " + getId() + ")";
+        return this.getId().equals(((Module) obj).getId());
     }
     
     @Override
     public int hashCode() {
-        return name.hashCode();
+        return name.hashCode() + (parent == null ? 0 : (31 * parent.hashCode()));
     }
     
     @Override
     public String toString() {
-        return "@" + name;
+        return "@" + getId();
     }
 }

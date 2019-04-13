@@ -61,7 +61,7 @@ public class BaseConstraintStore implements IConstraintStore {
         }
     }
 
-    public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
+    public void activateFromEdges(Collection<? extends CriticalEdge> edges, IDebugContext debug) {
         for(CriticalEdge edge : edges) {
             final Collection<IConstraint> activated = stuckOnEdge.removeAll(edge);
             stuckOnEdge.values().removeAll(activated);

@@ -5,6 +5,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.taico.scopegraph.locking.LockManager;
 
 /**
  * Throwable to indicate that a certain step of the solver cannot complete until more information
@@ -19,6 +20,7 @@ public class Delay extends Throwable {
 
     private final Set.Immutable<ITermVar> vars;
     private final Set.Immutable<CriticalEdge> criticalEdges;
+    private LockManager lockManager;
 
     /**
      * Creates a new delay for the given variables and critical edges.
@@ -27,11 +29,14 @@ public class Delay extends Throwable {
      *      an iterable of variables
      * @param criticalEdges
      *      an iterable of critical edges
+     * @param lockManager
+     *      the lock manager
      */
-    public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges) {
+    public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges, LockManager lockManager) {
         super("delayed", null, false, false);
         this.vars = CapsuleUtil.toSet(vars);
         this.criticalEdges = CapsuleUtil.toSet(criticalEdges);
+        this.lockManager = lockManager;
     }
 
     /**
@@ -49,6 +54,27 @@ public class Delay extends Throwable {
     public Set.Immutable<CriticalEdge> criticalEdges() {
         return criticalEdges;
     }
+    
+    /**
+     * @return
+     *      the lock manager, or null if none was set
+     */
+    public LockManager getLockManager() {
+        return lockManager;
+    }
+    
+    /**
+     * @param lockManager
+     * 
+     * @throws IllegalStateException
+     *      If the old lock manager still holds locks.
+     */
+    public void setLockManager(LockManager lockManager) {
+        if (this.lockManager != null && !this.lockManager.isDone()) {
+            throw new IllegalStateException("Own lock manager (" + this.lockManager + ") is not empty, but is being replaced with " + lockManager + "!");
+        }
+        this.lockManager = lockManager;
+    }
 
     public Delay retainAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
         final Set.Immutable<ITermVar> retainedVars = this.vars.__retainAll(CapsuleUtil.toSet(vars));
@@ -56,11 +82,11 @@ public class Delay extends Throwable {
         final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
         this.criticalEdges.stream().filter(ce -> scopeSet.contains(ce.scope()))
                 .forEach(retainedCriticalEdges::__insert);
-        return new Delay(retainedVars, retainedCriticalEdges.freeze());
+        return new Delay(retainedVars, retainedCriticalEdges.freeze(), this.lockManager);
     }
 
     public static Delay of() {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of());
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(), null);
     }
 
     /**
@@ -86,7 +112,7 @@ public class Delay extends Throwable {
      * 		the delay
      */
     public static Delay ofVars(Iterable<ITermVar> vars) {
-        return new Delay(vars, Set.Immutable.of());
+        return new Delay(vars, Set.Immutable.of(), null);
     }
 
     /**
@@ -99,7 +125,22 @@ public class Delay extends Throwable {
      *      the delay
      */
     public static Delay ofCriticalEdge(CriticalEdge edge) {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge));
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge), null);
+    }
+    
+    /**
+     * Builds a Delay exception for the given critical edge.
+     * 
+     * @param edge
+     *      the critical edge that we are waiting for
+     * @param lockManager
+     *      the lock manager to release locks from
+     * 
+     * @return
+     *      the delay
+     */
+    public static Delay ofCriticalEdge(CriticalEdge edge, LockManager lockManager) {
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge), lockManager);
     }
 
 }

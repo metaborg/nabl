@@ -5,10 +5,12 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.util.IOwnable;
 
 public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExternalScopeGraph<S, V, L, R> {
@@ -57,10 +59,13 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      the scope to start from
      * @param label
      *      the label for the edges
+     * @param lockManager
+     *      the lock manager
+     * 
      * @return
      *      an iterable with all the edges
      */
-    Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label);
+    Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label, LockManager lockManager);
     
     /**
      * Gets the collection of data from the given scope with the given label, that are
@@ -70,10 +75,13 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      the scope to start from
      * @param label
      *      the label for the data
+     * @param lockManager
+     *      the lock manager
+     * 
      * @return
      *      an iterable with all the data
      */
-    Set<IEdge<S, R, List<V>>> getTransitiveData(S scope, R label);
+    Set<IEdge<S, R, List<V>>> getTransitiveData(S scope, R label, LockManager lockManager);
     
     //Scope graph tree
     
@@ -230,4 +238,10 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      *      an external view on this scope graph
      */
     IMExternalScopeGraph<S, V, L, R> externalGraph();
+    
+    /**
+     * @return
+     *      the write lock for this scope graph (not for children)
+     */
+    Lock getWriteLock();
 }

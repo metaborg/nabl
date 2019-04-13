@@ -1,5 +1,6 @@
 package mb.statix.solver;
 
+import java.util.Collection;
 import java.util.Map;
 
 import mb.nabl2.terms.ITermVar;
@@ -18,7 +19,7 @@ public interface IConstraintStore {
 
     void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);
 
-    void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug);
+    void activateFromEdges(Collection<? extends CriticalEdge> edges, IDebugContext debug);
 
     Iterable<Entry> active(IDebugContext debug);
 

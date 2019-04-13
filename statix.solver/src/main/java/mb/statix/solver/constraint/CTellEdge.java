@@ -68,7 +68,7 @@ public class CTellEdge implements IConstraint {
     }
 
     @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return ImmutableList.of(CriticalEdge.of(sourceTerm, label));
+        return ImmutableList.of(CriticalEdge.of(sourceTerm, label, null));
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {

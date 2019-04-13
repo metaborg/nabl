@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.scopegraph.terms.Scope;
@@ -40,7 +41,9 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.scopegraph.reference.MFastNameResolution;
+import mb.statix.taico.solver.CompletenessResult;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -170,10 +173,10 @@ public class CResolveQuery implements IConstraint {
             return Optional.of(ConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()));
         } catch(IncompleteEdgeException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), e.getModule()));
         } catch(ResolutionDelayException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw e.getCause();
@@ -207,24 +210,26 @@ public class CResolveQuery implements IConstraint {
         final OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
+        //TODO TAICO Hide the debug of the query again
+        //final IDebugContext subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
+        final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
+        final Function2<ITerm, ITerm, CompletenessResult> isComplete = (s, l) -> {
+            CompletenessResult result = params.completeness().isComplete(s, l, state);
+            if(result.isComplete()) {
+                subDebug.info("{} complete in {}", s, l);
+            } else {
+                subDebug.info("{} incomplete in {}", s, l);
+            }
+            return result;
+        };
+        IMQueryFilter filter = this.filter.toMutable();
+        IMQueryMin min = this.min.toMutable();
+        
+        ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
+        final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths;
+        
+        LockManager lockManager = new LockManager(state.owner());
         try {
-            //TODO TAICO Hide the debug of the query again
-            //final IDebugContext subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
-            final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
-            final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
-                if(params.completeness().isComplete(s, l, state)) {
-                    subDebug.info("{} complete in {}", s, l);
-                    return true;
-                } else {
-                    subDebug.info("{} incomplete in {}", s, l);
-                    return false;
-                }
-            };
-            IMQueryFilter filter = this.filter.toMutable();
-            IMQueryMin min = this.min.toMutable();
-            
-            ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
-            
             // @formatter:off
             final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
                     .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
@@ -233,51 +238,62 @@ public class CResolveQuery implements IConstraint {
                     .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
+                    .withLockManager(lockManager)
                     .build(trackingGraph, relation);
             // @formatter:on
             
-            final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             
-            final List<ITerm> pathTerms;
-            if(relation.isPresent()) {
-                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                        .collect(Collectors.toList());
-            } else {
-                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
-            }
-            
-            //Register this query
-            QueryDetails<IOwnableTerm, ITerm, ITerm> details = new QueryDetails<>(
-                    trackingGraph.aggregateTrackedEdges(),
-                    trackingGraph.aggregateTrackedData(),
-                    trackingGraph.getReachedModules(),
-                    pathTerms);
-            state.owner().addQuery(this, details);
-            
-            //Add reverse dependancies
-            for (IModule module : trackingGraph.getReachedModules()) {
-                module.addDependant(state.owner(), this);
-            }
-            
-            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-            return Optional.of(MConstraintResult.ofConstraints(state, C));
+            paths = nameResolution.resolve(scope);
         } catch(IncompleteDataException e) {
             System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             //TODO Add registration of critical edge delay
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()), lockManager);
         } catch(IncompleteEdgeException e) {
             System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), e.getModule()), lockManager);
         } catch(ResolutionDelayException e) {
             System.err.println("Delaying query for unknown reason");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
+            lockManager.absorb(e.getCause().getLockManager());
+            e.getCause().setLockManager(lockManager);
             throw e.getCause();
         } catch(ResolutionException e) {
+            lockManager.releaseAll();
             params.debug().info("Query resolution failed: {}", e.getMessage());
             return Optional.empty();
+        } catch(Exception e) {
+            lockManager.releaseAll();
+            throw e;
         }
+        
+        //If the query was successful, we can release all locks.
+        lockManager.releaseAll();
+        
+        final List<ITerm> pathTerms;
+        if(relation.isPresent()) {
+            pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
+                    .collect(Collectors.toList());
+        } else {
+            pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
+        }
+        
+        //Register this query
+        QueryDetails<IOwnableTerm, ITerm, ITerm> details = new QueryDetails<>(
+                trackingGraph.aggregateTrackedEdges(),
+                trackingGraph.aggregateTrackedData(),
+                trackingGraph.getReachedModules(),
+                pathTerms);
+        state.owner().addQuery(this, details);
+        
+        //Add reverse dependancies
+        for (IModule module : trackingGraph.getReachedModules()) {
+            module.addDependant(state.owner(), this);
+        }
+        
+        final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
+        return Optional.of(MConstraintResult.ofConstraints(state, C));
     }
 
     private DataWF<ITerm> filter(Type type, DataWF<ITerm> filter, IDebugContext debug) {

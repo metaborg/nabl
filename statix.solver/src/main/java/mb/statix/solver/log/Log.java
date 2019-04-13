@@ -104,6 +104,16 @@ public class Log {
         last = null;
         return log;
     }
+    
+    /**
+     * Creates a copy of this log.
+     * 
+     * @return
+     *      a copy of this log
+     */
+    public Log copy() {
+        return new Log(first, last);
+    }
 
     /**
      * Class representing a log entry.
