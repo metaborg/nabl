@@ -48,7 +48,7 @@ public class CFalse implements IConstraint {
      *      an empty optional
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {
         return Optional.empty();
     }
 

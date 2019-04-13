@@ -114,7 +114,7 @@ public class CResolveQuery implements IConstraint {
      *      {@link FastNameResolution#resolve}.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {

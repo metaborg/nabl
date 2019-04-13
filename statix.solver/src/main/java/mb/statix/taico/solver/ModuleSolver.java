@@ -232,7 +232,7 @@ public class ModuleSolver implements IOwnable {
         try {
             final Optional<MConstraintResult> maybeResult;
             maybeResult =
-                    constraint.solveMutable(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    constraint.solve(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
             entry.remove();
             

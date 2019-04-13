@@ -55,7 +55,7 @@ public class CInequal implements IConstraint {
      *      If either of the terms contain variables that cannot be solved yet.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();
         return unifier.areEqual(term1, term2).matchOrThrow(result -> {
             if(result) {

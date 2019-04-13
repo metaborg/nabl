@@ -65,7 +65,7 @@ public class CEqual implements IConstraint {
      *      If the unification between the terms encounters rigid variables.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {

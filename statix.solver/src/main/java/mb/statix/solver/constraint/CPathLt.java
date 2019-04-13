@@ -83,7 +83,7 @@ public class CPathLt implements IConstraint {
      *      If one of the given label terms is not ground.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(label1Term))) {
             throw Delay.ofVars(unifier.getVars(label1Term));

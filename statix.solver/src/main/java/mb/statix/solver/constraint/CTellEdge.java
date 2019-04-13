@@ -84,7 +84,7 @@ public class CTellEdge implements IConstraint {
      *      If the source or target is not ground.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         //Modifies the scope graph
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {

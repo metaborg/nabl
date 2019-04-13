@@ -107,7 +107,7 @@ public class CUser implements IConstraint {
      *      If the guard constraints on one of the rule candidates are not solved.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params)
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();
         final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));

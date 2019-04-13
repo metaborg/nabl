@@ -48,7 +48,7 @@ public class CPathLabels implements IConstraint {
     }
     
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(pathTerm))) {
             throw Delay.ofVars(unifier.getVars(pathTerm));

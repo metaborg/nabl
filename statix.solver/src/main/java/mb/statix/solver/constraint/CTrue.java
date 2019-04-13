@@ -45,7 +45,7 @@ public class CTrue implements IConstraint {
     }
 
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {
         return Optional.of(new MConstraintResult(state));
     }
 

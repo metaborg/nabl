@@ -56,7 +56,7 @@ public class CNew implements IConstraint {
         return true;
     }
 
-    @Override public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) {
+    @Override public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {
         final List<IConstraint> constraints = new ArrayList<>();
         for (ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");

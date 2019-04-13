@@ -85,7 +85,7 @@ public class CPathMatch implements IConstraint {
      *      If the given labels term is not ground.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         // @formatter:off
         return ((IListTerm) unifier.findTerm(labelsTerm)).matchOrThrow(ListTerms.checkedCases(

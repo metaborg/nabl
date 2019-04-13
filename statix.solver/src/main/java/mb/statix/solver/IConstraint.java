@@ -63,7 +63,7 @@ public interface IConstraint {
      *      If this constraint cannot be solved in the current state with the given context.
      *      The exception contains the information about what information is required to solve.
      */
-    Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws InterruptedException, Delay;
+    Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws InterruptedException, Delay;
     
     /**
      * @return

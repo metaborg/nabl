@@ -55,7 +55,7 @@ public class CTermId implements IConstraint {
      *      If the term of this constraint is NOT ground relative to the unifier in the given state.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
             throw Delay.ofVars(unifier.getVars(term));

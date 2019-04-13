@@ -150,6 +150,8 @@ public class MState {
     public synchronized void updateTo(MState state) {
         if (state == this) return;
         if (this.owner != state.owner) throw new IllegalArgumentException("Cannot update to an unrelated state");
+        
+        System.err.println("Updating state of " + this.owner + " to copy");
 
         if (!state.vars.containsAll(this.vars)) {
             throw new ConcurrentModificationException("The original state was modified after the copy was made but before the updates were applied! (vars)");

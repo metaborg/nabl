@@ -102,7 +102,7 @@ public class CTellRel implements IConstraint {
      *      If the scope we are querying is not ground relative to the unifier.
      */
     @Override
-    public Optional<MConstraintResult> solveMutable(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
             params.debug().error("Ignoring data for unknown relation {}", relation);
