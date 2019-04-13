@@ -19,9 +19,22 @@ imports
 rules // Analysis
 
   editor-analyze:
-      AnalyzeUnit(resource, ast) -> UnitResult(ast'', result, error*, warning*, note*)
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with
+      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; result* := <map({ resource, ast, ast', a', error*, warning*, note*:
+                        ?(resource, ast)
+                      ; ( (ast', a', error*, warning*, note*) :=
+                              <editor--analyze> (resource, ast)
+                        < !(resource, Full(ast', a', error*, warning*, note*))
+                        + !(resource, Failed())
+                        )
+                      })> ast*
+
+  editor--analyze:
+      (resource, ast) -> (ast'', result, error*, warning*, note*)
     with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
-         ast' := <desugar-all> ast;
+         ast' := <desugar-all;nabl2--index-ast(|resource)> ast;
          nabl2-custom-analysis-info-msg(|"Desugared AST.");
 
          nabl2-custom-analysis-info-msg(|"Normalizing AST...");
