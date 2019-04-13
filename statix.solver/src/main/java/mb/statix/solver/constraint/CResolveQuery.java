@@ -172,7 +172,6 @@ public class CResolveQuery implements IConstraint {
         } catch(IncompleteDataException e) {
             System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            //TODO Add registration of critical edge delay
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()), lockManager);
         } catch(IncompleteEdgeException e) {
             System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");

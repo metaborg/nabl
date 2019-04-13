@@ -235,7 +235,7 @@ public class ModuleSolver implements IOwnable {
                     constraint.solveMutable(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
             addTime(constraint, 1, successCount, debug);
             entry.remove();
-            completeness.remove(constraint);
+            
             reductions += 1;
             if(maybeResult.isPresent()) {
                 final MConstraintResult result = maybeResult.get();
@@ -249,12 +249,14 @@ public class ModuleSolver implements IOwnable {
                     constraints.addAll(newConstaints);
                     completeness.addAll(newConstaints);
                 }
+                //Only remove the solved constraint once new constraints are added
+                completeness.remove(constraint);
+                
+                //Activate constraints after updating the completeness
                 constraints.activateFromVars(result.vars(), subDebug);
-                //TODO TAICO CRITICALEDGES Fix critical edge mechanism
-                //TODO IMPORTANT As soon as a child solver is made, critical edges are not correct any more
-                //TODO IMPORTANT This does not mean that these critical edges are now gone, only this particular constraint by something else.
                 constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, result.state()), subDebug);
             } else {
+                completeness.remove(constraint);
                 subDebug.error("Failed");
                 failed.add(constraint);
                 if(proxyDebug.isRoot()) {
