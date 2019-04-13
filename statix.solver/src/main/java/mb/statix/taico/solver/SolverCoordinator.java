@@ -3,28 +3,50 @@ package mb.statix.taico.solver;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import org.metaborg.util.log.Level;
 
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 
-public class SolverCoordinator {
+public class SolverCoordinator implements ISolverCoordinator {
     protected final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
     protected final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
     protected ModuleSolver root;
     protected MState rootState;
     
     public SolverCoordinator() {}
+    
+    @Override
+    public ModuleSolver getRootSolver() {
+        return root;
+    }
+    
+    @Override
+    public MState getRootState() {
+        return rootState;
+    }
+    
+    @Override
+    public Map<IModule, MSolverResult> getResults() {
+        return results;
+    }
+    
+    @Override
+    public Set<ModuleSolver> getSolvers() {
+        return solvers;
+    }
+    
+    @Override
+    public void addSolver(ModuleSolver solver) {
+        solvers.add(solver);
+    }
     
     public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug)
         throws InterruptedException {
@@ -107,98 +129,14 @@ public class SolverCoordinator {
             
             solvers.clear();
         }
-        debug(lazyDebug);
+        logDebugInfo(lazyDebug);
         lazyDebug.commit();
         
         return aggregateResults();
     }
     
-    /**
-     * Aggregates results of all the solvers into one SolverResult.
-     * 
-     * @return
-     *      the aggregated results
-     */
-    public MSolverResult aggregateResults() {
-        Set<IConstraint> errors = new LinkedHashSet<>();
-        Map<IConstraint, Delay> delays = new LinkedHashMap<>();
-        for (Entry<IModule, MSolverResult> result : results.entrySet()) {
-            errors.addAll(result.getValue().errors());
-            delays.putAll(result.getValue().delays());
-        }
-        return MSolverResult.of(rootState, rootState.solver().getCompleteness(), errors, delays);
-    }
-    
-    /**
-     * Logs debug output.
-     * 
-     * @param debug
-     *      the debug context to log to
-     */
-    public void debug(IDebugContext debug) {
-        debug.info("Debug output.");
-        debug.info("Module hierarchy:");
-        printModuleHierarchy(root.getOwner(), debug.subContext());
-        
-        LazyDebugContext success = new LazyDebugContext(debug.subContext());
-        LazyDebugContext fail = new LazyDebugContext(debug.subContext());
-        LazyDebugContext stuck = new LazyDebugContext(debug.subContext());
-        LazyDebugContext failDetails = new LazyDebugContext(debug.subContext().subContext());
-        LazyDebugContext stuckDetails = new LazyDebugContext(debug.subContext().subContext());
-        
-        for (Entry<IModule, MSolverResult> entry : results.entrySet()) {
-            String id = entry.getKey().getId();
-            if (entry.getValue().hasErrors()) {
-                fail.info(id);
-                failDetails.info("[{}] Failed constraints:", id);
-                IDebugContext sub = failDetails.subContext();
-                for (IConstraint c : entry.getValue().errors()) {
-                    sub.info(c.toString());
-                }
-            } else if (entry.getValue().hasDelays()) {
-                stuck.info(id);
-                stuckDetails.info("[{}] Stuck constraints:", id);
-                IDebugContext sub = stuckDetails.subContext();
-                for (Entry<IConstraint, Delay> e : entry.getValue().delays().entrySet()) {
-                    Delay delay = e.getValue();
-                    if (!delay.vars().isEmpty()) {
-                        sub.info("on vars {}: {}", delay.vars(), e.getKey());
-                    } else if (!delay.criticalEdges().isEmpty()) {
-                        sub.info("on edges {}: {}", delay.criticalEdges(), e.getKey());
-                    } else {
-                        sub.info("on unknown: {}", e.getKey());
-                    }
-                }
-            } else {
-               success.info(id); 
-            }
-        }
-        
-        debug.info("Finished modules:");
-        success.commit();
-        
-        debug.info("Stuck modules:");
-        stuck.commit();
-        
-        debug.info("Failed modules:");
-        fail.commit();
-        
-        debug.info("Stuck output:");
-        stuckDetails.commit();
-        
-        debug.info("Failed output:");
-        failDetails.commit();
-    }
-    
-    private void printModuleHierarchy(IModule module, IDebugContext context) {
-        context.info("{}: dependencies={}", module.getId(), module.getDependencies());
-        IDebugContext sub = context.subContext();
-        for (IModule child : module.getChildren()) {
-            printModuleHierarchy(child, sub);
-        }
-    }
-    
-    public void addSolver(ModuleSolver solver) {
-        solvers.add(solver);
+    @Override
+    public Future<MSolverResult> solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
+        throw new UnsupportedOperationException();
     }
 }
