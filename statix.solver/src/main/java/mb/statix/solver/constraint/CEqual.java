@@ -76,7 +76,7 @@ public class CEqual implements IConstraint {
                 }
                 //TODO CONSTRAINT-CONCURRENCY Concurrency point for unifier modifications
                 state.setUnifier(result.unifier());
-                return Optional.of(MConstraintResult.ofVars(state, result.result().varSet()));
+                return Optional.of(MConstraintResult.ofVars(result.result().varSet()));
             } else {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));

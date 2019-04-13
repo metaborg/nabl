@@ -46,7 +46,7 @@ public class CTrue implements IConstraint {
 
     @Override
     public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {
-        return Optional.of(new MConstraintResult(state));
+        return Optional.of(new MConstraintResult());
     }
 
     @Override public String toString(TermFormatter termToString) {

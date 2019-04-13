@@ -239,7 +239,6 @@ public class ModuleSolver implements IOwnable {
             reductions += 1;
             if(maybeResult.isPresent()) {
                 final MConstraintResult result = maybeResult.get();
-                state.updateTo(result.state());
                 if(!result.constraints().isEmpty()) {
                     final List<IConstraint> newConstaints = result.constraints().stream()
                             .map(c -> c.withCause(constraint)).collect(Collectors.toList());
@@ -254,7 +253,7 @@ public class ModuleSolver implements IOwnable {
                 
                 //Activate constraints after updating the completeness
                 constraints.activateFromVars(result.vars(), subDebug);
-                constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, result.state()), subDebug);
+                constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, state), subDebug);
             } else {
                 completeness.remove(constraint);
                 subDebug.error("Failed");

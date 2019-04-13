@@ -55,7 +55,7 @@ public class CPathSrc implements IConstraint {
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(MConstraintResult.ofConstraints(state, new CEqual(path.getSource(), srcTerm, this)));
+        return Optional.of(MConstraintResult.ofConstraints(new CEqual(path.getSource(), srcTerm, this)));
     }
 
     @Override public String toString(TermFormatter termToString) {

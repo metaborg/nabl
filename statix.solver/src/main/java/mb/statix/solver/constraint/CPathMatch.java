@@ -100,12 +100,12 @@ public class CPathMatch implements IConstraint {
                 if(re.isEmpty()) {
                     return Optional.empty();
                 } else {
-                    return Optional.of(new MConstraintResult(state, new CPathMatch(re, cons.getTail(), cause)));
+                    return Optional.of(MConstraintResult.ofConstraints(new CPathMatch(re, cons.getTail(), cause)));
                 }
             },
             nil -> {
                 if(re.isAccepting()) {
-                    return Optional.of(new MConstraintResult(state));
+                    return Optional.of(new MConstraintResult());
                 } else {
                     return Optional.empty();
                 }

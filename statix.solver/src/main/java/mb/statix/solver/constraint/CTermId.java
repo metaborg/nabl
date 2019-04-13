@@ -74,7 +74,7 @@ public class CTermId implements IConstraint {
                 eq = new CEqual(idTerm, B.newAppl(StatixTerms.NOID_OP));
             }
         }
-        return Optional.of(new MConstraintResult(state, eq));
+        return Optional.of(MConstraintResult.ofConstraints(eq));
     }
 
     @Override public String toString(TermFormatter termToString) {

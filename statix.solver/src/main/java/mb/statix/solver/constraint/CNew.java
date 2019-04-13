@@ -63,7 +63,7 @@ public class CNew implements IConstraint {
             ITerm ss = state.freshScope(base);
             constraints.add(new CEqual(t, ss, this));
         }
-        return Optional.of(MConstraintResult.ofConstraints(state, constraints));
+        return Optional.of(MConstraintResult.ofConstraints(constraints));
     }
 
     @Override public String toString(TermFormatter termToString) {

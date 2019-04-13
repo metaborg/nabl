@@ -61,7 +61,7 @@ public class CInequal implements IConstraint {
             if(result) {
                 return Optional.empty();
             } else {
-                return Optional.of(new MConstraintResult(state));
+                return Optional.of(new MConstraintResult());
             }
         }, vars -> {
             throw Delay.ofVars(vars);

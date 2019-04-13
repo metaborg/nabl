@@ -165,7 +165,7 @@ public class CTellRel implements IConstraint {
 //            
 //            return Optional.of(new MConstraintResult(state, constraints));
 //        } else {
-            return Optional.of(new MConstraintResult(state));
+            return Optional.of(new MConstraintResult());
 //        }
     }
     

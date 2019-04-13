@@ -96,7 +96,7 @@ public class CPathLt implements IConstraint {
         final ITerm label2 = StatixTerms.label().match(label2Term, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label2Term)));
         if(lt.contains(label1, label2)) {
-            return Optional.of(new MConstraintResult(state));
+            return Optional.of(new MConstraintResult());
         } else {
             return Optional.empty();
         }

@@ -215,7 +215,7 @@ public class CResolveQuery implements IConstraint {
         }
         
         final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-        return Optional.of(MConstraintResult.ofConstraints(state, C));
+        return Optional.of(MConstraintResult.ofConstraints(C));
     }
 
     private DataWF<ITerm> filter(Type type, DataWF<ITerm> filter, IDebugContext debug) {

@@ -55,7 +55,7 @@ public class CPathDst implements IConstraint {
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(new MConstraintResult(state, new CEqual(path.getTarget(), dstTerm, this)));
+        return Optional.of(MConstraintResult.ofConstraints(new CEqual(path.getTarget(), dstTerm, this)));
     }
 
     @Override public String toString(TermFormatter termToString) {

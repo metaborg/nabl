@@ -7,17 +7,12 @@ import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.IConstraint;
 
 public class MConstraintResult {
-    private final MState state;
     private List<IConstraint> constraints = new ArrayList<>();
     private List<ITermVar> vars = new ArrayList<>();
     
-    public MConstraintResult(MState state) {
-        this.state = state;
-    }
+    public MConstraintResult() {}
     
-    public MConstraintResult(MState state, IConstraint... constraints) {
-        this.state = state;
-        
+    public MConstraintResult(IConstraint... constraints) {
         if (constraints != null) {
             for (IConstraint constraint : constraints) {
                 this.constraints.add(constraint);
@@ -25,8 +20,7 @@ public class MConstraintResult {
         }
     }
     
-    public MConstraintResult(MState state, Iterable<? extends IConstraint> constraints, Iterable<? extends ITermVar> vars) {
-        this.state = state;
+    public MConstraintResult(Iterable<? extends IConstraint> constraints, Iterable<? extends ITermVar> vars) {
         if (constraints != null) {
             for (IConstraint constraint : constraints) {
                 this.constraints.add(constraint);
@@ -39,11 +33,6 @@ public class MConstraintResult {
             }
         }
     }
-    
-    public MState state() {
-        //TODO Remove
-        return this.state;
-    }
 
     public List<IConstraint> constraints() {
         return this.constraints;
@@ -52,16 +41,16 @@ public class MConstraintResult {
     public List<ITermVar> vars() {
         return this.vars;
     }
-    
-    public static MConstraintResult ofVars(MState state, Iterable<? extends ITermVar> vars) {
-        return new MConstraintResult(state, null, vars);
+
+    public static MConstraintResult ofVars(Iterable<? extends ITermVar> vars) {
+        return new MConstraintResult(null, vars);
     }
-    
-    public static MConstraintResult ofConstraints(MState state, Iterable<? extends IConstraint> constraints) {
-        return new MConstraintResult(state, constraints, null);
+
+    public static MConstraintResult ofConstraints(Iterable<? extends IConstraint> constraints) {
+        return new MConstraintResult(constraints, null);
     }
-    
-    public static MConstraintResult ofConstraints(MState state, IConstraint... constraints) {
-        return new MConstraintResult(state, constraints);
+
+    public static MConstraintResult ofConstraints(IConstraint... constraints) {
+        return new MConstraintResult(constraints);
     }
 }

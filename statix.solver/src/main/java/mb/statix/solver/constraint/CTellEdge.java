@@ -101,7 +101,7 @@ public class CTellEdge implements IConstraint {
         final OwnableScope target = OwnableScope.ownableMatcher(state.manager()::getModule).match(targetTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(new MConstraintResult(state));
+        return Optional.of(new MConstraintResult());
     }
 
     @Override public String toString(TermFormatter termToString) {
