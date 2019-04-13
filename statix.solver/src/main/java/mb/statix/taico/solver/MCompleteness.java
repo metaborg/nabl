@@ -100,7 +100,7 @@ public class MCompleteness implements IOwnable {
             return isCompleteFinal(equal);
         } else {
             System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + scopeOwner + ". Redirecting there");
-            //TODO CONCURRENCY Delegation to other solver
+            //TODO Static state access
             MCompleteness target = scopeOwner.getCurrentState().solver().getCompleteness();
             return target.isCompleteFinal(equal);
         }
@@ -118,7 +118,7 @@ public class MCompleteness implements IOwnable {
     public CompletenessResult isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
         //Ask ourselves
         //TODO OPTIMIZATION point: Use passed spec instead?
-        //TODO Possible state inconsistency point (uses current state of module)
+        //TODO Static state access
         boolean complete;
         synchronized (this) {
             complete = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))

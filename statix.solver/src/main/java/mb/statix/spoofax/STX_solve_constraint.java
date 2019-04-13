@@ -49,6 +49,7 @@ import mb.statix.taico.solver.SolverCoordinator;
 public class STX_solve_constraint extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
     private static final boolean DEBUG = true;
+    public static final boolean QUERY_DEBUG = false;
 
     @Inject public STX_solve_constraint() {
         super(STX_solve_constraint.class.getSimpleName(), 2);

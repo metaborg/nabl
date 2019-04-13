@@ -120,8 +120,7 @@ public class ModuleSolver implements IOwnable {
             Predicate1<ITerm> isClosed,
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
-        //TODO IMPORTANT TAICO Is this correct?
-        //TODO TAICO can this cross module boundaries?
+        //TODO Can this cross module boundaries?
         ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness.copy(), isRigid, isClosed, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
@@ -175,10 +174,6 @@ public class ModuleSolver implements IOwnable {
     protected boolean checkAndResetProgress() {
         return constraints.checkProgressAndReset();
     }
-    
-    //TODO TAICO Are critical edges determined from the constraints that are left?
-    
-    //TODO TAICO Orchestrate the solvers in such a way that 
     
     /**
      * The solver is guaranteed to be done if it has no more constraints.

@@ -27,8 +27,10 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
+import mb.statix.spoofax.STX_solve_constraint;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IOwnableTerm;
@@ -135,9 +137,12 @@ public class CResolveQuery implements IConstraint {
         final OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
-        //TODO TAICO Hide the debug of the query again
-        //final IDebugContext subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
-        final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
+        final IDebugContext subDebug;
+        if (STX_solve_constraint.QUERY_DEBUG) {
+            subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
+        } else {
+            subDebug = new NullDebugContext(params.debug().getDepth() + 1);
+        }
         final Function2<ITerm, ITerm, CompletenessResult> isComplete = (s, l) -> {
             CompletenessResult result = params.completeness().isComplete(s, l, state);
             if(result.isComplete()) {
