@@ -60,12 +60,7 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
         this.lockManager = lockManager;
     }
     
-    //TODO TAICO
-    //we need to know:
-    //per scope what types of edges we are interested in?
-    //A customized path which adds potential attempts?
-    //Do we calculate it statically or with the help of the solver "attempting" all the different routes?
-//    public Tuple2<java.util.Set<IResolutionPath<V, L, R>, >>
+    //TODO We want to eventually switch to a derivative query scenario. We need to know per scope what types of edges we are interested in?
 
     @Override public java.util.Set<IResolutionPath<V, L, R>> resolve(S scope)
             throws ResolutionException, InterruptedException {
@@ -109,8 +104,6 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
             return Set.Immutable.of();
         }
         final S scope = path.getTarget();
-        //TODO
-        
         CompletenessResult result = relation.map(r -> isDataComplete.apply((V) scope, r)).orElse(null);
         if(result != null && !result.isComplete()) {
             throw new IncompleteDataException(scope, relation.get(), result.cause());

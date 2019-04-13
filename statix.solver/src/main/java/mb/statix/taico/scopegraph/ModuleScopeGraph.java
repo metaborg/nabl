@@ -525,7 +525,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
 
         @Override
         public Set<? extends IOwnableTerm> getScopes() {
-            //TODO Track access?
             return scopes;
         }
 

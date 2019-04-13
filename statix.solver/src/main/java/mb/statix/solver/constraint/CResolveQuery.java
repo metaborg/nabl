@@ -118,7 +118,6 @@ public class CResolveQuery implements IConstraint {
             throws InterruptedException, Delay {
         final Type type;
         if(relation.isPresent()) {
-            //TODO TAICO This might need to be moved to the scope graph instead of the spec, though since it is just a type check, it might be fine.
             type = state.spec().relations().get(relation.get());
             if(type == null) {
                 params.debug().error("Ignoring query for unknown relation {}", relation.get());
@@ -129,7 +128,6 @@ public class CResolveQuery implements IConstraint {
         }
 
         final IUnifier.Immutable unifier = state.unifier();
-        //TODO TAICO We might be trying to query a scope that is not ours, will our unifier still call it ground?
         if(!unifier.isGround(scopeTerm)) {
             System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
             throw Delay.ofVars(unifier.getVars(scopeTerm));

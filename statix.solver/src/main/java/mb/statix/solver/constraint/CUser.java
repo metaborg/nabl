@@ -128,12 +128,8 @@ public class CUser implements IConstraint {
             final Tuple2<Set<ITermVar>, Set<IConstraint>> appl;
             
             try {
-                //TODO IMPORTANT In the module boundary, I used to have a state copy here. Is this required?
-                if (rawRule instanceof ModuleBoundary) System.err.println("Module boundary encountered, is state copy of original required?");
-                MState copyState = state.copy();
-                if((appl = rawRule.apply(args, copyState).orElse(null)) != null) {
+                if((appl = rawRule.apply(args, state).orElse(null)) != null) {
                     instantiatedBody = appl._2();
-                    state = copyState;
                 } else {
                     proxyDebug.info("{} rejected (mismatching arguments)", ruleOrModb);
                     unsuccessfulLog.absorb(proxyDebug.clear());

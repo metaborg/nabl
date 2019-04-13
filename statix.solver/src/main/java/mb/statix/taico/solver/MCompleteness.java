@@ -24,6 +24,7 @@ import mb.statix.taico.util.IOwnable;
  * signatures, but is mutable.
  */
 public class MCompleteness implements IOwnable {
+    //TODO It is possible that synchronization needs to be added to this class.
     private final IModule owner;
     private final MCompleteness parent;
     private final Set<MCompleteness> children = new HashSet<>();
@@ -53,7 +54,7 @@ public class MCompleteness implements IOwnable {
      * @return
      *      the newly created completeness
      */
-    public MCompleteness createChild(IModule owner) {
+    public synchronized MCompleteness createChild(IModule owner) {
         MCompleteness child = new MCompleteness(this, owner);
         children.add(child);
         return child;
@@ -63,7 +64,7 @@ public class MCompleteness implements IOwnable {
      * @return
      *      a copy of this mutable completeness
      */
-    public MCompleteness copy() {
+    public synchronized MCompleteness copy() {
         return new MCompleteness(parent, owner, incomplete);
     }
     
@@ -97,7 +98,6 @@ public class MCompleteness implements IOwnable {
         
         if (scopeOwner == state.owner()) {
             System.err.println("Completeness of " + owner + " got isComplete query from matching owner: " + scope);
-            //Transitive
             return isCompleteFinal(equal);
         } else {
             System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + scopeOwner + ". Redirecting there");
@@ -119,6 +119,7 @@ public class MCompleteness implements IOwnable {
      */
     public CompletenessResult isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
         System.err.println("Completeness of " + owner + " got isCompleteFinal query");
+        //TODO OPTIMIZATION We might want to swap asking our children and asking ourselves.
         //Ask children
         for (MCompleteness child : children) {
             CompletenessResult childResult = child.isCompleteFinal(equal);
@@ -128,45 +129,48 @@ public class MCompleteness implements IOwnable {
             }
         }
         
-        //TODO OPTIMIZATION point
-        //Use passed spec instead?
+        //Ask ourselves
+        //TODO OPTIMIZATION point: Use passed spec instead?
         //TODO Possible state inconsistency point (uses current state of module)
-        boolean tbr = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))
-                .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
-        System.err.println("Completeness of " + owner + " result: " + tbr);
-        return CompletenessResult.of(tbr, owner);
+        boolean complete;
+        synchronized (this) {
+            complete = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))
+                    .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
+        }
+        System.err.println("Completeness of " + owner + " result: " + complete);
+        return CompletenessResult.of(complete, owner);
     }
 
-    public MCompleteness add(IConstraint constraint) {
+    public synchronized MCompleteness add(IConstraint constraint) {
         incomplete.add(constraint);
         return this;
     }
     
-    public MCompleteness addAll(Iterable<IConstraint> constraints) {
+    public synchronized MCompleteness addAll(Iterable<IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             incomplete.add(constraint);
         }
         return this;
     }
     
-    public MCompleteness addAll(Collection<IConstraint> constraints) {
+    public synchronized MCompleteness addAll(Collection<IConstraint> constraints) {
         incomplete.addAll(constraints);
         return this;
     }
 
-    public MCompleteness remove(IConstraint constraint) {
+    public synchronized MCompleteness remove(IConstraint constraint) {
         incomplete.remove(constraint);
         return this;
     }
 
-    public MCompleteness removeAll(Iterable<IConstraint> constraints) {
+    public synchronized MCompleteness removeAll(Iterable<IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             incomplete.remove(constraint);
         }
         return this;
     }
     
-    public MCompleteness removeAll(Collection<IConstraint> constraints) {
+    public synchronized MCompleteness removeAll(Collection<IConstraint> constraints) {
         incomplete.removeAll(constraints);
         return this;
     }

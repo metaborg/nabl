@@ -90,6 +90,10 @@ public abstract class ARule implements IRule {
         return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
+    /**
+     * 
+     * @see mb.statix.spec.IRule#apply(java.util.List, mb.statix.taico.solver.MState)
+     */
     @Override
     public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
         final ISubstitution.Transient subst;

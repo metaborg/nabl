@@ -120,7 +120,6 @@ public class Module implements IModule {
 
     @Override
     public synchronized Module createChild(String name, List<IOwnableScope> canExtend) {
-        //TODO name should use the parent module name as well
         Module child = new Module(manager, name, this);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
         return child;

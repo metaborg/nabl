@@ -1,6 +1,7 @@
 package mb.statix.taico.module;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,11 +17,10 @@ public class ModuleManager {
     
     /**
      * @return
-     *      all the modules registered in this manager
+     *      all the modules registered in this manager (unmodifiable)
      */
     public Collection<IModule> getModules() {
-        //TODO Should be a copy
-        return modules.values();
+        return Collections.unmodifiableCollection(modules.values());
     }
     
     /**

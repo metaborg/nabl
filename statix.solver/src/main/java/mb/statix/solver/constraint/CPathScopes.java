@@ -53,7 +53,6 @@ public class CPathScopes implements IConstraint {
         if(!(unifier.isGround(pathTerm))) {
             throw Delay.ofVars(unifier.getVars(pathTerm));
         }
-        //TODO Taico: does this use the scope graph or not? What is the role of the unifier in paths?
         @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
                 M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));

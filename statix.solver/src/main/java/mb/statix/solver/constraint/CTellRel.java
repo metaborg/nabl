@@ -21,7 +21,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 import mb.statix.spec.Type;
 import mb.statix.taico.scopegraph.OwnableScope;
-import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -136,10 +135,7 @@ public class CTellRel implements IConstraint {
             throw Delay.ofVars(unifier.getVars(key));
         }
         
-        //TODO Short moment of inconsistent completeness?
-        //TODO Synchronization point
         state.scopeGraph().addDatum(scope, relation, datumTerms);
-        //TODO CONSISTENCY params.completeness().remove(this);
         
         //TODO The old behavior was to check if this data is equal (perform unification on it). This is now only allowed for a single module
 
