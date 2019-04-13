@@ -27,40 +27,45 @@ rules
   stx-editor-analyze(|spec-name, init-constraint) =
     stx-editor-analyze(id|spec-name, init-constraint)
 
-  // editor analyze for stratego analyzer
   stx-editor-analyze(desugar|spec-name, init-constraint):
-      (ast, path, project-path) -> (ast', error*, warning*, note*)
-    with resource := $[[project-path]/[path]];
-         (ast', a, error*, warning*, note*) :=
-             <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast)
-
-  // editor analyze for constraint analyzer
-  stx-editor-analyze(desugar|spec-name, init-constraint):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast', a, error*, warning*, note*)
-    with (ast', a, error*, warning*, note*) :=
-             <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast)
-
-  stx-editor-analyze(desugar|spec-name, init-constraint) =
-    debug(!"stx-editor-analyze "); fail
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with
+      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; result* := <map({ resource, ast, ast', a', error*, warning*, note*:
+                        ?(resource, ast)
+                      ; ast' := <desugar;stx--index-ast(|resource)> ast
+                      ; ( (a', error*, warning*, note*) :=
+                              <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast')
+                        < !(resource, Full(ast', a', error*, warning*, note*))
+                        + !(resource, Failed())
+                        )
+                      })> ast*
 
   stx--editor-analyze(desugar|spec-name, init-constraint):
-      (resource, ast) -> (ast', a, error*, warning*, note*)
-    with spec := <stx--find-spec(|spec-name)>;
-         ast' := <desugar;stx--index-ast(|resource)> ast;
-         C    := C(init-constraint, [<stx--explode> ast']);
+      (resource, ast) -> (a, error*, warning*, note*)
+    with spec  := <stx--find-spec(|spec-name)>;
+         C     := C(init-constraint, [<stx--explode> ast]);
          level := <stx--log-level>;
-         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
+         (a, error*, warning*, note*) :=
+             <stx--solve-constraint(|spec, level)> ([], C)
 
 rules
 
   stx-editor-elaborate(desugar|spec-name, init-constraint):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast'', a, error*, warning*, note*)
-    with ast' := <desugar;stx--index-ast(|resource)> ast
-       ; (ast'', a, error*, warning*, note*) :=
-             <stx--evaluate(|spec-name, init-constraint)> [ast']
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with
+      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; result* := <map({ resource, ast, ast', ast'', a', error*, warning*, note*:
+                        ?(resource, ast)
+                      ; ast' := <desugar;stx--index-ast(|resource)> ast
+                      ; ( (ast'', a', error*, warning*, note*) :=
+                              <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast')
+                        < !(resource, Full(ast'', a', error*, warning*, note*))
+                        + !(resource, Failed())
+                        )
+                      })> ast*
 
-  stx-editor-elaborate(desugar|spec-name, init-constraint) =
-    debug(!"stx-editor-elaborate "); fail
+rules
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, a, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*

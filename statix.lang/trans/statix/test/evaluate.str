@@ -43,5 +43,5 @@ rules
          ext    := <nabl2-get-custom-analysis> a;
          spec   := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
          level  := <stx--log-level>;
-         body'  := <eliminate-all;nabl2--index-ast(|""/*path*/)> body;
+         body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
          result := <stx--solve-constraint(|spec, level)> (bvs, body')
