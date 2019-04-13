@@ -1,6 +1,7 @@
 package mb.statix.solver.store;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -119,10 +120,19 @@ public class BaseConstraintStore implements IConstraintStore {
     }
 
     @Override public Map<IConstraint, Delay> delayed() {
-        Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
-        stuckBecauseStuck.stream().forEach(c -> delayed.put(c, Delay.of()));
-        stuckOnVar.entries().stream().forEach(e -> delayed.put(e.getValue(), Delay.ofVar(e.getKey())));
-        stuckOnEdge.entries().stream().forEach(e -> delayed.put(e.getValue(), Delay.ofCriticalEdge(e.getKey())));
+        final Multimap<IConstraint, ITermVar> varStuck = HashMultimap.create();
+        stuckOnVar.entries().stream().forEach(e -> varStuck.put(e.getValue(), e.getKey()));
+
+        final Multimap<IConstraint, CriticalEdge> edgeStuck = HashMultimap.create();
+        stuckOnEdge.entries().stream().forEach(e -> edgeStuck.put(e.getValue(), e.getKey()));
+
+        final Set<IConstraint> stuck = new HashSet<>();
+        stuck.addAll(stuckBecauseStuck);
+        stuck.addAll(varStuck.keys());
+        stuck.addAll(edgeStuck.keys());
+        
+        final Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
+        stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c))));
         return delayed.build();
     }
 
