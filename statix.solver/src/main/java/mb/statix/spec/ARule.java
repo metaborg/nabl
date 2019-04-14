@@ -22,7 +22,6 @@ import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
@@ -66,7 +65,7 @@ public abstract class ARule {
         final Set<IConstraint> instBody = stateAndInst._3();
         try {
             Optional<SolverResult> solverResult =
-                    Solver.entails(state, instBody, new Completeness(), instVars, new NullDebugContext());
+                    Solver.entails(state, instBody, (s, l, st) -> true, instVars, new NullDebugContext());
             if(solverResult.isPresent()) {
                 return Optional.of(true);
             } else {

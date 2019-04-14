@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
-import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableSet;
@@ -20,6 +20,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.log.IDebugContext;
@@ -32,21 +33,20 @@ public class Solver {
     private Solver() {
     }
 
-    public static SolverResult solve(final State state, final Iterable<IConstraint> constraints,
-            final Completeness completeness, final IDebugContext debug) throws InterruptedException {
-        return solve(state, constraints, completeness, v -> false, s -> false, debug);
+    public static SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
+            final IDebugContext debug) throws InterruptedException {
+        return solve(_state, _constraints, (s, l, st) -> true, debug);
     }
 
     public static SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
-            final Completeness _completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed,
-            final IDebugContext debug) throws InterruptedException {
+            final Predicate3<ITerm, ITerm, State> _isComplete, final IDebugContext debug) throws InterruptedException {
         debug.info("Solving constraints");
         final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
         // set-up
         final IConstraintStore constraints = new BaseConstraintStore(_constraints, debug);
         State state = _state;
-        Completeness completeness = _completeness;
+        Completeness completeness = new Completeness();
         completeness = completeness.addAll(_constraints);
 
         // time log
@@ -73,8 +73,11 @@ public class Solver {
                     proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 }
                 try {
+                    final Completeness cc = completeness;
+                    final Predicate3<ITerm, ITerm, State> isComplete =
+                            (s, l, st) -> cc.isComplete(s, l, st) && _isComplete.test(s, l, st);
+                    final ConstraintContext params = new ConstraintContext(isComplete, subDebug);
                     final Optional<ConstraintResult> maybeResult;
-                    final ConstraintContext params = new ConstraintContext(completeness, isRigid, isClosed, subDebug);
                     maybeResult = new StepSolver(state, params).solve(constraint);
                     addTime(constraint, 1, successCount, debug);
                     progress = true;
@@ -150,20 +153,20 @@ public class Solver {
     }
 
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
-            final Completeness completeness, final IDebugContext debug) throws InterruptedException, Delay {
-        return entails(state, constraints, completeness, ImmutableSet.of(), debug);
+            final Predicate3<ITerm, ITerm, State> isComplete, final IDebugContext debug)
+            throws InterruptedException, Delay {
+        return entails(state, constraints, isComplete, ImmutableSet.of(), debug);
     }
 
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
-            final Completeness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
-            throws InterruptedException, Delay {
+            final Predicate3<ITerm, ITerm, State> isComplete, final Iterable<ITermVar> _localVars,
+            final IDebugContext debug) throws InterruptedException, Delay {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
         }
-        final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
-        final Set<ITermVar> rigidVars = Sets.difference(state.vars(), localVars);
-        final SolverResult result = Solver.solve(state, constraints, completeness, rigidVars::contains,
-                state.scopes()::contains, debug.subContext());
+        // remove all previously created variables/scopes to make them rigid/closed
+        final State _state = state.retainVarsAndClearScopes(CapsuleUtil.toSet(_localVars));
+        final SolverResult result = Solver.solve(_state, constraints, isComplete, debug.subContext());
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
             return Optional.empty();
@@ -172,7 +175,8 @@ public class Solver {
             return Optional.of(result);
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            throw result.delay().retainAll(state.vars(), state.scopes());
+            // FIXME this doesn't remove rigid vars, as they are not part of State.vars()
+            throw result.delay().removeAll(result.state().vars(), result.state().scopes());
         }
 
     }

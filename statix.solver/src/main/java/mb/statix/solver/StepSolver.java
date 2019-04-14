@@ -96,7 +96,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result;
-            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
+            if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification succeeded: {}", result.result());
                 }
@@ -295,7 +295,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         try {
             final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
             final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
-                if(params.completeness().isComplete(s, l, state)) {
+                if(params.isComplete(s, l, state)) {
                     subDebug.info("{} complete in {}", s, l);
                     return true;
                 } else {
@@ -305,10 +305,10 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             };
             // @formatter:off
             final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
-                        .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
-                        .withDataWF(filter(relation, type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
-                        .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
-                        .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
+                        .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
+                        .withDataWF(filter(relation, type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
+                        .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
+                        .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params::isComplete, subDebug), subDebug))
                         .withEdgeComplete(isComplete)
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
@@ -386,7 +386,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
         final AScope source = AScope.matcher().match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
-        if(params.isClosed(source)) {
+        if(params.isClosed(source, state)) {
             return Optional.empty();
         }
         final AScope target = AScope.matcher().match(targetTerm, unifier).orElseThrow(
@@ -417,7 +417,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
         final AScope scope = AScope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
-        if(params.isClosed(scope)) {
+        if(params.isClosed(scope, state)) {
             return Optional.empty();
         }
 
