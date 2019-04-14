@@ -40,6 +40,15 @@ public class Delay extends SolverException {
         return new Delay(retainedVars, retainedCriticalEdges.freeze());
     }
 
+    public Delay removeAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
+        final Set.Immutable<ITermVar> retainedVars = this.vars.__removeAll(CapsuleUtil.toSet(vars));
+        final Set.Immutable<ITerm> scopeSet = CapsuleUtil.toSet(scopes);
+        final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
+        this.criticalEdges.stream().filter(ce -> !scopeSet.contains(ce.scope()))
+                .forEach(retainedCriticalEdges::__insert);
+        return new Delay(retainedVars, retainedCriticalEdges.freeze());
+    }
+
     public static Delay of() {
         return new Delay(Set.Immutable.of(), Set.Immutable.of());
     }

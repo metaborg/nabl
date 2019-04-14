@@ -1,11 +1,12 @@
 package mb.statix.solver.query;
 
+import org.metaborg.util.functions.Predicate3;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
@@ -24,12 +25,12 @@ public class QueryFilter implements IQueryFilter {
         return new QueryFilter(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    @Override public LabelWF<ITerm> getLabelWF(State state, Completeness completeness, IDebugContext debug) {
-        return ConstraintLabelWF.of(pathConstraint, state, completeness, debug);
+    @Override public LabelWF<ITerm> getLabelWF(State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) {
+        return ConstraintLabelWF.of(pathConstraint, state, isComplete, debug);
     }
 
-    @Override public DataWF<ITerm> getDataWF(State state, Completeness completeness, IDebugContext debug) {
-        return new ConstraintDataWF(dataConstraint, state, completeness, debug);
+    @Override public DataWF<ITerm> getDataWF(State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) {
+        return new ConstraintDataWF(dataConstraint, state, isComplete, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

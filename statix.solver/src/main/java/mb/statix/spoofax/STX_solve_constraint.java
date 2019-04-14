@@ -34,7 +34,6 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
@@ -83,7 +82,7 @@ public class STX_solve_constraint extends StatixPrimitive {
                 vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(state, constraints, new Completeness(), debug);
+            resultConfig = Solver.solve(state, constraints, debug);
         } catch(InterruptedException e) {
             throw new InterpreterException(e);
         }

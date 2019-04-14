@@ -23,6 +23,18 @@ public abstract class AState {
 
     @Value.Parameter public abstract Spec spec();
 
+    @Value.Default public String resource() {
+        return "";
+    }
+
+    public State clearVarsAndScopes() {
+        return State.copyOf(this).with__vars(Set.Immutable.of()).with__scopes(Set.Immutable.of());
+    }
+
+    public State retainVarsAndClearScopes(Set.Immutable<ITermVar> vars) {
+        return State.copyOf(this).with__vars(Set.Immutable.intersect(vars(), vars)).with__scopes(Set.Immutable.of());
+    }
+
     // --- variables ---
 
     @Value.Default int __varCounter() {
@@ -36,9 +48,17 @@ public abstract class AState {
     public Tuple2<ITermVar, State> freshVar(String base) {
         final int i = __varCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITermVar var = B.newVar("", name);
+        final ITermVar var = B.newVar(resource(), name);
         final Set.Immutable<ITermVar> vars = __vars().__insert(var);
         return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());
+    }
+
+    public Tuple2<ITermVar, State> freshRigidVar(String base) {
+        final int i = __varCounter() + 1;
+        final String name = base.replaceAll("-", "_") + "-" + i;
+        final ITermVar var = B.newVar(resource(), name);
+        // same as freshVar, but do not add to vars
+        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).build());
     }
 
     public Set.Immutable<ITermVar> vars() {
@@ -58,7 +78,7 @@ public abstract class AState {
     public Tuple2<ITerm, State> freshScope(String base) {
         final int i = __scopeCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITerm scope = Scope.of("", name);
+        final ITerm scope = Scope.of(resource(), name);
         final Set.Immutable<ITerm> scopes = __scopes().__insert(scope);
         return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());
     }
