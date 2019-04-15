@@ -42,13 +42,16 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.solver.ISolverCoordinator;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverCoordinator;
+import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 
 public class STX_solve_constraint extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
     private static final boolean DEBUG = true;
+    private static final boolean CONCURRENT = true;
     public static final boolean QUERY_DEBUG = false;
 
     @Inject public STX_solve_constraint() {
@@ -82,7 +85,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         //TODO TAICO Determine ID from somewhere for this module
         final ModuleManager manager = new ModuleManager();
         final IModule module = new Module(manager, "G", spec);
-        final SolverCoordinator coordinator = new SolverCoordinator();
+        final ISolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
         final MState state = new MState(manager, coordinator, module, spec);
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         for(ITermVar var : vars_constraint._1()) {

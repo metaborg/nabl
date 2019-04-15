@@ -1,9 +1,11 @@
 package mb.statix.taico.solver.store;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -32,6 +34,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     private final Multimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
     
+    private volatile IObserver<ModuleConstraintStore> observer;
     private boolean progress;
     private AtomicBoolean progressCheck = new AtomicBoolean();
     
@@ -43,6 +46,10 @@ public class ModuleConstraintStore implements IConstraintStore {
         this.stuckOnEdge = HashMultimap.create();
         this.edgeObservers = HashMultimap.create();
         addAll(constraints);
+    }
+    
+    public void setStoreObserver(IObserver<ModuleConstraintStore> observer) {
+        this.observer = observer;
     }
     
     public int activeSize() {
@@ -71,11 +78,24 @@ public class ModuleConstraintStore implements IConstraintStore {
      * The solver is guaranteed to be done if it has no more constraints.
      * It should be able to be done even if there are child solvers still solving.
      * 
+     * <p>NOTE: This method is not concurrency safe! There is a small window where a true result
+     * does not mean that the solver is done. The result is only correct if it is requested by the
+     * thread currently executing the solver, or if there is no thread currently executing the
+     * solver.
+     * 
      * @return
      *      true if this solver is done, false otherwise
      */
     public boolean isDone() {
         return activeSize() + delayedSize() == 0;
+    }
+    
+    /**
+     * @return
+     *      true if this store can make progress
+     */
+    public boolean canProgress() {
+        return activeSize() > 0;
     }
     
     /**
@@ -111,13 +131,22 @@ public class ModuleConstraintStore implements IConstraintStore {
             activateFromEdge(edge, debug);
         }
         
+        Set<ModuleConstraintStore> stores = new HashSet<>();
         synchronized (edgeObservers) {
             //Activate all observers
             for (CriticalEdge edge : edges) {
                 for (ModuleConstraintStore store : edgeObservers.removeAll(edge)) {
+                    //Only notify if it is currently not doing anything
+                    if (store.activeSize() == 0) stores.add(store);
                     System.err.println("Delegating activation of edge " + edge);
                     store.activateFromEdge(edge, debug); //Activate but don't propagate
+                    
                 }
+            }
+            
+            //Notify each store only once
+            for (ModuleConstraintStore store : stores) {
+                if (store.observer != null) store.observer.notify(this);
             }
         }
     }

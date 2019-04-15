@@ -179,6 +179,11 @@ public class ModuleSolver implements IOwnable {
      * The solver is guaranteed to be done if it has no more constraints.
      * It should be able to be done even if there are child solvers still solving.
      * 
+     * <p>NOTE: This method is not concurrency safe! There is a small window where a true result
+     * does not mean that the solver is done. The result is only correct if it is requested by the
+     * thread currently executing the solver, or if there is no thread currently executing the
+     * solver. 
+     * 
      * @return
      *      true if this solver is done, false otherwise
      */
@@ -281,9 +286,9 @@ public class ModuleSolver implements IOwnable {
      * Called to finish the solving.
      * 
      * @return
-     * @throws InterruptedException
+     *      the solver result
      */
-    public MSolverResult finishSolver() throws InterruptedException {
+    public MSolverResult finishSolver() {
         // invariant: there should be no remaining active constraints
         if(constraints.activeSize() > 0) {
             debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
