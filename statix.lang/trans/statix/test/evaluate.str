@@ -22,10 +22,10 @@ signature
 rules
   
   editor-evaluate:
-    (_, _, Module(_, _), path, project-path) -> None()
+      (_, _, Module(_, _), path, project-path) -> None()
 
   editor-evaluate:
-    (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
+      (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
     with result := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
          filename := <guarantee-extension(|"stxresult")> path
 

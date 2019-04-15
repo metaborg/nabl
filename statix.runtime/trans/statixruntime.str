@@ -16,10 +16,13 @@ signature
     ProjectAnalysis : Scope * Constraint * Analysis -> AnalysisResult
     FileAnalysis    : Constraint -> AnalysisResult
 
-    /* injection */ : List(Var, Term) -> SolveResult
+    SolveResult : List(Var, Term) -> SolveResult
 
-    // duplicates from statix.lang
-    Scope : String * String -> Scope
+    // Term duplicates from statix.lang
+    Var   : String -> Term
+    Scope : String * String -> Term
+
+    // Constraint duplicates from statix.lang
     CTrue : Constraint
     CConj : Constraint * Constraint -> Constraint
     C     : String * List(Term) -> Constraint
@@ -135,8 +138,8 @@ rules
        ; V     := Var("out")
        ; C     := C(constraint, [T*, V])
        ; level := <stx--log-level>
-       ; (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
-       ; out := <substitute(stx--is-var);stx--implode> (a, V)
+       ; (a@SolveResult(subst), error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; out := <debug(!1);substitute(stx--is-var);debug(!2);stx--implode;debug(!3)> (subst, V)
 
 rules
 
