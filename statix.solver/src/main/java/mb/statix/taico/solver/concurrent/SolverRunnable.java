@@ -1,42 +1,60 @@
 package mb.statix.taico.solver.concurrent;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import mb.statix.taico.solver.ModuleSolver;
 
 /**
  * Implementation for a runnable that represents the execution of a single solver.
- * This runnable will (re)schedule itself multiple times once more work needs to be done.
+ * This runnable will reschedule itself once more work needs to be done.
  * 
- * In each run, this solver runnable will execute its solver as far as possible. It then returns
- * to free the executor (yield). This solver is rescheduled with the executor whenever the
- * {@link #notifyOfWork()} method is called.
+ * <p>In each run, this solver runnable will execute its solver as far as possible. It then returns
+ * to free the executor (yield). This solver is rescheduled whenever the {@link #notifyOfWork()}
+ * method is called.
+ * 
+ * <p>Global progress is tracked with {@link ProgressCounter}.
  */
 public class SolverRunnable implements Runnable {
     private final ModuleSolver solver;
     private final Consumer<Runnable> schedule;
-    
+    private final ProgressCounter progress;
+    private final Consumer<ModuleSolver> onSuccess, onFailure;
+
     private volatile boolean notified;
     private volatile boolean done;
     private volatile boolean working;
     private volatile boolean pending;
     
-    private final AtomicInteger working2;
-    
-    
     /**
      * @param solver
      *      the solver to execute
-     * @param working
-     *      a counter for working solvers
      * @param schedule
      *      a consumer to schedule this solver runnable
+     * @param progress
+     *      a counter to check if we are still making any progress (globally)
      */
-    public SolverRunnable(ModuleSolver solver, AtomicInteger working, Consumer<Runnable> schedule) {
+    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress) {
+        this(solver, schedule, progress, m -> {}, m -> {});
+    }
+
+    /**
+     * @param solver
+     *      the solver to execute
+     * @param schedule
+     *      a consumer to schedule this solver runnable
+     * @param progress
+     *      a counter to check if we are still making any progress (globally)
+     * @param onSuccess
+     *      a callback to execute on successful completion
+     * @param onFailure
+     *      a callback to execute on failing completion
+     */
+    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress, Consumer<ModuleSolver> onSuccess, Consumer<ModuleSolver> onFailure) {
         this.solver = solver;
-        this.working2 = working;
         this.schedule = schedule;
+        this.progress = progress;
+        this.onSuccess = onSuccess;
+        this.onFailure = onFailure;
     }
 
     @Override
@@ -45,29 +63,36 @@ public class SolverRunnable implements Runnable {
             working = true;
             pending = false;
         }
-        working2.incrementAndGet();
+
         try {
             do {
                 //Solve as far as possible. After each step, ignore the notifications since we are still solving anyways.
                 do {
                     notified = false;
                 } while (solver.solveStep());
-                
+
                 //If we are done, signal that we are no longer working and return
-                if (done = solver.isDone()) {
+                if (done = (solver.isDone() || solver.hasFailed())) {
                     setWorkingFalse();
+                    onCompletion();
                     return;
                 }
                 //Continue the process if we have been notified before the previous step completed
             } while (checkNotifiedAndResetWorking());
         } catch (InterruptedException e) {
-            //We cannot guarantee consistent state any longer
+            //We cannot guarantee consistent state any longer, so set done to true
             done = true;
             setWorkingFalse();
-            throw new RuntimeException("FATAL: Solver executor of module " + solver.getOwner() + " was interrupted unexpectedly.", e);
+            throw new RuntimeException("FATAL: Solver executor of module " + solver.getOwner() + " was interrupted unexpectedly! Giving up.", e);
+        } finally {
+            if (done) {
+                progress.switchToDone();
+            } else {
+                progress.switchToWaiting();
+            }
         }
     }
-    
+
     /**
      * <b>Note that this method is synchronized!</b>
      * 
@@ -76,7 +101,7 @@ public class SolverRunnable implements Runnable {
     private synchronized void setWorkingFalse() {
         working = false;
     }
-    
+
     /**
      * <b>Note that this method is synchronized!</b>
      * 
@@ -93,46 +118,60 @@ public class SolverRunnable implements Runnable {
     }
     
     /**
+     * Executes the proper completion functions.
+     */
+    private void onCompletion() {
+        assert done : "The on completion method should not be called when we are not done!";
+        if (solver.hasFailed()) {
+            onFailure.accept(solver);
+        } else {
+            onSuccess.accept(solver);
+        }
+    }
+
+    /**
      * Notifies this executor that there is more work to do.
      * 
      * <p>If the executor is currently not scheduled or running, it is scheduled by this method.
      */
     public void notifyOfWork() {
         if (done) return;
-        
+
         synchronized (this) {
             if (done) return;
-            
+
             notified = true;
-            
+
             //If we are currently being executed or scheduled, we can ignore the notification
             if (working || pending) return;
             pending = true;
         }
-        
+
         schedule();
     }
-    
+
     /**
      * Schedules this solver runnable with its executor.
      */
     public void schedule() {
+        progress.switchToPending();
         try {
             schedule.accept(this);
         } catch (Throwable t) {
-            throw new RuntimeException("FATAL: Unable to schedule solver for module " + solver.getOwner() + ". Giving up.", t);
+            progress.switchToDone();
+            throw new RuntimeException("FATAL: Unable to schedule solver for module " + solver.getOwner() + "! Giving up.", t);
         }
     }
 
     /**
      * @return
-     *      true if this executor is done working (will not perform any work in the future), false
+     *      true if this runnable is done working (will not perform any work in the future), false
      *      otherwise
      */
     public boolean isDone() {
         return done;
     }
-    
+
     /**
      * @return
      *      true if this executor is currently working, false otherwise
@@ -147,5 +186,23 @@ public class SolverRunnable implements Runnable {
      */
     public synchronized boolean isWaiting() {
         return !done && !pending && !working;
+    }
+    
+    /**
+     * Recovers this solver after a mild execution failure has occurred (e.g. interrupted).
+     * This runnable is rescheduled if the solver it belongs to has not reached a finishing state
+     * (done or failed).
+     */
+    public void recoverAfterFailure() {
+        synchronized (this) {
+            if (!done || working || pending) return;
+            
+            done = (solver.isDone() || solver.hasFailed());
+            if (done) return;
+            
+            pending = true;
+        }
+        
+        schedule();
     }
 }

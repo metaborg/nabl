@@ -2,17 +2,16 @@ package mb.statix.taico.solver.concurrent;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ISolverCoordinator;
 import mb.statix.taico.solver.MSolverResult;
@@ -20,15 +19,16 @@ import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.ModuleSolver;
 
 public class ConcurrentSolverCoordinator implements ISolverCoordinator {
-//    private final Map<ModuleSolver, Thread> solvers = Collections.synchronizedMap(new HashMap<>());
-    private final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
+    private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());
     private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
+    private final ProgressCounter progressCounter = new ProgressCounter(this::onFinished);
     private final ExecutorService executors;
-//    private AtomicInteger solving = new AtomicInteger(0);
-    private AtomicInteger pending = new AtomicInteger(0);
-//    private volatile boolean done;
+    
+    private IDebugContext debug;
     private ModuleSolver root;
     private MState rootState;
+    private Consumer<MSolverResult> onFinished;
+    private MSolverResult finalResult;
     
     public ConcurrentSolverCoordinator() {
         this(Executors.newWorkStealingPool());
@@ -55,83 +55,51 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     
     @Override
     public Set<ModuleSolver> getSolvers() {
-        return solvers;
+        return solvers.keySet();
     }
     
     @Override
     public void addSolver(ModuleSolver solver) {
-        solver.getStore().setStoreObserver(store -> executeSolverCycle(solver));
-        solvers.add(solver);
-        executeSolverCycle(solver);
-    }
-    
-    private void executeSolverCycle(ModuleSolver solver) {
-        pending.incrementAndGet();
-        executors.submit(() -> {
-//            solving.incrementAndGet();
-            try {
-                if (solver.isDone() || solver.hasFailed()) {
-                    finishSolver(solver);
-                    return false;
-                }
-                
-                System.err.println("[" + solver.getOwner() + "] Start of cycle");
-                synchronized (solver) {
-                    while (solver.solveStep());
-                }
-                System.err.println("[" + solver.getOwner() + "] End of cycle");
-                return true;
-            } finally {
-//                solving.decrementAndGet();
-                pending.decrementAndGet();
-            }
-        });
+        SolverRunnable runner = new SolverRunnable(solver, executors::submit, progressCounter, this::finishSolver, this::finishSolver);
+        solver.getStore().setStoreObserver(store -> runner.notifyOfWork());
+        solvers.put(solver, runner);
+        runner.schedule();
     }
     
     private void finishSolver(ModuleSolver solver) {
-//        boolean lastOne;
         synchronized (solvers) {
-            if (!solvers.remove(solver)) {
-                System.err.println("[" + solver.getOwner() + "] FinishSolver: ignoring, solver already removed");
+            if (solvers.remove(solver) == null) {
+                debug.warn("[" + solver.getOwner() + "] FinishSolver: ignoring, solver already removed");
                 return;
             }
-            
-//            lastOne = solvers.isEmpty(); 
         }
         
         results.put(solver.getOwner(), solver.finishSolver());
-        
-        //TODO Check pending here, if pending is 1, then we can safely complete the solving process.
-        
-        //If we are the last solver, then set done to true
-//        if (lastOne) this.done = true;
-        
     }
     
     @Override
     public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        rootState = state;
-        root = ModuleSolver.topLevelSolver(state, constraints, debug);
-        addSolver(root);
-        
-        //TODO I Should use a better threading mechanism for the whole thing
-//        while (!done) {
-//            Thread.sleep(100L);
-//            
-//            //TODO Find a better way to detect stuckness
-//            for (int i = 0; solving.get() == 0 && i < 5; i++) {
-//                System.err.println("No solvers are currently solving. Waiting...");
-//                Thread.sleep(200L);
-//            }
-//        }
-        
-        while (pending.get() > 0) {
-            Thread.sleep(100L);
+        solveAsync(state, constraints, debug, null);
+
+        synchronized (this) {
+            while (finalResult == null) {
+                wait();
+            }
         }
-        
-        System.err.println("Deducted that we are done solving");
-        
-        return finishSolving(debug);
+        return finalResult;
+    }
+    
+    @Override
+    public void solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
+        this.debug = new PrefixedDebugContext("Coordinator", debug);
+        this.onFinished = onFinished;
+        this.rootState = state;
+        this.root = ModuleSolver.topLevelSolver(state, constraints, debug);
+        addSolver(root);
+    }
+    
+    private void onFinished() {
+        finishSolving(debug);
     }
     
     /**
@@ -152,7 +120,7 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
         } else {
             lazyDebug.warn("Solving failed, {} unusuccessful solvers: ", solvers.size());
             IDebugContext sub = lazyDebug.subContext();
-            for (ModuleSolver solver : solvers) {
+            for (ModuleSolver solver : getSolvers()) {
                 sub.warn(solver.getOwner().getId());
                 
                 results.put(solver.getOwner(), solver.finishSolver());
@@ -163,11 +131,17 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
         logDebugInfo(lazyDebug);
         lazyDebug.commit();
         
-        return aggregateResults();
-    }
-
-    @Override
-    public Future<MSolverResult> solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
-        throw new UnsupportedOperationException();
+        finalResult = aggregateResults();
+        if (onFinished != null) {
+            try {
+                onFinished.accept(finalResult);
+            } catch (Throwable t) {
+                debug.error("On finished consumer threw an exception: {}", t.getMessage());
+            }
+        }
+        synchronized (this) {
+            notify();
+        }
+        return finalResult;
     }
 }

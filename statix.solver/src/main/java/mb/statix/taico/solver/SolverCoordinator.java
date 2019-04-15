@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import org.metaborg.util.log.Level;
 
@@ -136,7 +136,14 @@ public class SolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public Future<MSolverResult> solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
+    public void solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
         throw new UnsupportedOperationException();
+//        MSolverResult result;
+//        try {
+//            result = solve(state, constraints, debug);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException("Interrupted!", e);
+//        }
+//        onFinished.accept(result);
     }
 }

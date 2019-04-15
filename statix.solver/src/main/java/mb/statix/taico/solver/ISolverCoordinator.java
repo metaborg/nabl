@@ -5,8 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.Map.Entry;
 
 import mb.statix.solver.Delay;
@@ -66,14 +65,7 @@ public interface ISolverCoordinator {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public default MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        try {
-            return solveAsync(state, constraints, debug).get();
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
-            throw new RuntimeException(e.getCause());
-        }
-    }
+    public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException;
     
     /**
      * Solves the given constraints in a modularized fashion.
@@ -86,6 +78,8 @@ public interface ISolverCoordinator {
      *      the constraints to solve
      * @param debug
      *      the debug context to log to
+     * @param onFinished
+     *      called whenever solving is finished
      * 
      * @return
      *      a future to get the solve result from
@@ -93,7 +87,7 @@ public interface ISolverCoordinator {
      * @throws UnsupportedOperationException
      *      If this solver does not support asynchronous solving.
      */
-    public Future<MSolverResult> solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug);
+    public void solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
     
     /**
      * Aggregates results of all the solvers into one SolverResult.
