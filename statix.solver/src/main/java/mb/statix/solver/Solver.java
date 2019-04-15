@@ -131,7 +131,7 @@ public class Solver {
         logTimes("success", successCount, debug);
         logTimes("delay", delayCount, debug);
 
-        return SolverResult.of(state, completeness, failed, delayed);
+        return SolverResult.of(state, failed, delayed);
     }
 
     private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
@@ -208,8 +208,6 @@ public class Solver {
     public static abstract class ASolverResult {
 
         @Value.Parameter public abstract State state();
-
-        @Value.Parameter public abstract Completeness completeness();
 
         @Value.Parameter public abstract Set<IConstraint> errors();
 
