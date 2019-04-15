@@ -15,8 +15,7 @@ template options
 context-free syntax
 
   TestResult = <
-    substitution
-      <{SubstEntry "\n"}*>
+    <SolveResult>
 
     errors
       <{EditorMessage "\n"}*>
@@ -26,6 +25,11 @@ context-free syntax
 
     notes
       <{EditorMessage "\n"}*>
+  >
+
+  SolveResult.SolveResult = <
+    substitution
+      <{SubstEntry "\n"}*>
   >
 
   SubstEntry = [[Var] |-> [Term]]

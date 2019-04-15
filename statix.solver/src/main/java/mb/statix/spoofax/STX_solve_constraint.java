@@ -99,7 +99,7 @@ public class STX_solve_constraint extends StatixPrimitive {
             unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
         }
 
-        List<ITerm> vsubst = Lists.newArrayList();
+        final List<ITerm> vsubst = Lists.newArrayList();
         for(ITermVar var : vars_constraint._1()) {
             final ITerm key = isubst.apply(var);
             final ITerm value = unifier.findRecursive(key);
@@ -109,10 +109,11 @@ public class STX_solve_constraint extends StatixPrimitive {
             }
         }
         final ITerm substTerm = B.newList(vsubst);
+        final ITerm solveResultTerm = B.newAppl("SolveResult", substTerm);
         final IListTerm errors = B.newList(errorList);
         final IListTerm warnings = B.EMPTY_LIST;
         final IListTerm notes = B.EMPTY_LIST;
-        final ITerm resultTerm = B.newTuple(substTerm, errors, warnings, notes);
+        final ITerm resultTerm = B.newTuple(solveResultTerm, errors, warnings, notes);
         return Optional.of(resultTerm);
     }
 
