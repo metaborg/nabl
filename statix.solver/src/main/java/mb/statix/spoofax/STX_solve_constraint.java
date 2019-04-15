@@ -108,11 +108,11 @@ public class STX_solve_constraint extends StatixPrimitive {
                 vsubst.add(B.newTuple(StatixTerms.explicate(var), StatixTerms.explicate(varTerm)));
             }
         }
-        final ITerm solution = B.newList(vsubst);
+        final ITerm substTerm = B.newList(vsubst);
         final IListTerm errors = B.newList(errorList);
         final IListTerm warnings = B.EMPTY_LIST;
         final IListTerm notes = B.EMPTY_LIST;
-        final ITerm resultTerm = B.newTuple(solution, errors, warnings, notes);
+        final ITerm resultTerm = B.newTuple(substTerm, errors, warnings, notes);
         return Optional.of(resultTerm);
     }
 

@@ -16,6 +16,8 @@ signature
     ProjectAnalysis : Scope * Constraint * Analysis -> AnalysisResult
     FileAnalysis    : Constraint -> AnalysisResult
 
+    /* injection */ : List(Var, Term) -> SolveResult
+
     // duplicates from statix.lang
     Scope : String * String -> Scope
     CTrue : Constraint
@@ -43,7 +45,7 @@ rules // single file analysis
                         ?(resource, ast)
                       ; ast' := <desugar;stx--index-ast(|resource)> ast
                       ; ( (a', error*, warning*, note*) :=
-                              <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast')
+                              <stx--editor-analyze(desugar|spec-name, init-constraint)> ast'
                         < !(resource, Full(ast', a', error*, warning*, note*))
                         + !(resource, Failed())
                         )
@@ -53,12 +55,28 @@ rules // single file analysis
       AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
 
   stx--editor-analyze(desugar|spec-name, init-constraint):
-      (resource, ast) -> (a, error*, warning*, note*)
+      ast -> (a, error*, warning*, note*)
     with spec  := <stx--find-spec(|spec-name)>;
          C     := C(init-constraint, [<stx--explode> ast]);
          level := <stx--log-level>;
          (a, error*, warning*, note*) :=
              <stx--solve-constraint(|spec, level)> ([], C)
+
+rules // single file elaboration
+
+  stx-editor-elaborate(desugar|spec-name, init-constraint):
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with
+      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; result* := <map({ resource, ast, ast', ast'', a', error*, warning*, note*:
+                        ?(resource, ast)
+                      ; ast' := <desugar;stx--index-ast(|resource)> ast
+                      ; ( (ast'', a', error*, warning*, note*) :=
+                              <stx--evaluate(|spec-name, init-constraint)> [ast']
+                        < !(resource, Full(ast'', a', error*, warning*, note*))
+                        + !(resource, Failed())
+                        )
+                      })> ast*
 
 rules // multi file analysis
 
@@ -107,22 +125,6 @@ rules // multi file analysis
 
 rules
 
-  stx-editor-elaborate(desugar|spec-name, init-constraint):
-      AnalyzeSingle(change*) -> AnalysisResult(result*)
-    with
-      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; result* := <map({ resource, ast, ast', ast'', a', error*, warning*, note*:
-                        ?(resource, ast)
-                      ; ast' := <desugar;stx--index-ast(|resource)> ast
-                      ; ( (ast'', a', error*, warning*, note*) :=
-                              <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast')
-                        < !(resource, Full(ast'', a', error*, warning*, note*))
-                        + !(resource, Failed())
-                        )
-                      })> ast*
-
-rules
-
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, a, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
@@ -149,7 +151,7 @@ rules
                <ReadFromFile> spec-file
             })
 
-  // solve-constraint : ([Var], Constraint, LogLevel) -> (Solution, [Error], [Warning], [Note])
+  // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> (SolveResult, [Error], [Warning], [Note])
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
 
 rules
