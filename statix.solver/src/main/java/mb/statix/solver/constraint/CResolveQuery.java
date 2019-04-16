@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate2;
 
+import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
@@ -23,11 +25,16 @@ import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
+import mb.statix.solver.query.IQueryFilter;
+import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.STX_solve_constraint;
@@ -58,19 +65,19 @@ import mb.statix.taico.solver.query.QueryDetails;
 public class CResolveQuery implements IConstraint {
 
     private final Optional<ITerm> relation;
-    private final IMQueryFilter filter;
-    private final IMQueryMin min;
+    private final IQueryFilter filter;
+    private final IQueryMin min;
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
     private final @Nullable IConstraint cause;
 
-    public CResolveQuery(Optional<ITerm> relation, IMQueryFilter filter, IMQueryMin min, ITerm scopeTerm,
+    public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
             ITerm resultTerm) {
         this(relation, filter, min, scopeTerm, resultTerm, null);
     }
 
-    public CResolveQuery(Optional<ITerm> relation, IMQueryFilter filter, IMQueryMin min, ITerm scopeTerm,
+    public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
             ITerm resultTerm, @Nullable IConstraint cause) {
         this.relation = relation;
         this.filter = filter;
@@ -115,6 +122,72 @@ public class CResolveQuery implements IConstraint {
      *      If the resolution throws a ResolutionDelayException from
      *      {@link FastNameResolution#resolve}.
      */
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params)
+            throws InterruptedException, Delay {
+        final Type type;
+        if(relation.isPresent()) {
+            type = state.spec().relations().get(relation.get());
+            if(type == null) {
+                params.debug().error("Ignoring query for unknown relation {}", relation.get());
+                return Optional.empty();
+            }
+        } else {
+            type = StatixTerms.SCOPE_REL_TYPE;
+        }
+
+        final IUnifier.Immutable unifier = state.unifier();
+        if(!unifier.isGround(scopeTerm)) {
+            throw Delay.ofVars(unifier.getVars(scopeTerm));
+        }
+        final Scope scope = Scope.matcher().match(scopeTerm, unifier)
+                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
+
+        try {
+            final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
+            final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
+                if(params.completeness().isComplete(s, l, state)) {
+                    subDebug.info("{} complete in {}", s, l);
+                    return true;
+                } else {
+                    subDebug.info("{} incomplete in {}", s, l);
+                    return false;
+                }
+            };
+            // @formatter:off
+            final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
+                    .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
+                    .withDataWF(filter(type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
+                    .withDataEquiv(filter(type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
+                    .withEdgeComplete(isComplete)
+                    .withDataComplete(isComplete)
+                    .build(state.scopeGraph(), relation);
+            // @formatter:on
+            final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            final List<ITerm> pathTerms;
+            if(relation.isPresent()) {
+                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
+                        .collect(Collectors.toList());
+            } else {
+                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
+            }
+            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
+            return Optional.of(ConstraintResult.ofConstraints(state, C));
+        } catch(IncompleteDataException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), null));
+        } catch(IncompleteEdgeException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), null));
+        } catch(ResolutionDelayException e) {
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw e.getCause();
+        } catch(ResolutionException e) {
+            params.debug().info("Query resolution failed: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+    
     @Override
     public Optional<MConstraintResult> solve(MState state, MConstraintContext params)
             throws InterruptedException, Delay {
@@ -153,6 +226,9 @@ public class CResolveQuery implements IConstraint {
             return result;
         };
         
+        IMQueryFilter filter = this.filter.toMutable();
+        IMQueryMin min = this.min.toMutable();
+        
         ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
         final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths;
         
@@ -169,8 +245,7 @@ public class CResolveQuery implements IConstraint {
                     .withLockManager(lockManager)
                     .build(trackingGraph, relation);
             // @formatter:on
-            
-            
+
             paths = nameResolution.resolve(scope);
         } catch(IncompleteDataException e) {
             System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");

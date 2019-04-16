@@ -1,4 +1,4 @@
-package mb.statix.taico.solver.query;
+package mb.statix.solver.query;
 
 import java.util.Set;
 
@@ -8,29 +8,27 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelOrder;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
+import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MState;
-import mb.statix.taico.solver.ModuleSolver;
 
 /**
  * Class to represent a label order imposed in the form of a constraint (rule).
  */
-public class MConstraintLabelOrder implements LabelOrder<ITerm> {
+public class ConstraintLabelOrder implements LabelOrder<ITerm> {
 
     private final IRule constraint;
-    private final MState state;
-    private final MCompleteness completeness;
+    private final State state;
+    private final Completeness completeness;
     private final IDebugContext debug;
 
-    public MConstraintLabelOrder(IRule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
+    public ConstraintLabelOrder(IRule constraint, State state, Completeness completeness, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.completeness = completeness;
@@ -52,19 +50,18 @@ public class MConstraintLabelOrder implements LabelOrder<ITerm> {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }
         try {
-            MState resultState = state.copy();
-            final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
-            if((result = constraint.apply(ImmutableList.of(l1, l2), resultState).orElse(null)) == null) {
+            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            if((result = constraint.apply(ImmutableList.of(l1, l2), state).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug.subContext()).isPresent()) {
+            if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug.subContext()).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Ordered {} < {}", resultState.unifier().toString(l1), resultState.unifier().toString(l2));
+                    debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Unordered {} < {}", resultState.unifier().toString(l1), resultState.unifier().toString(l2));
+                    debug.info("Unordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
                 }
                 return false;
             }

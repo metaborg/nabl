@@ -7,13 +7,18 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MConstraintContext;
@@ -83,6 +88,25 @@ public class CTellEdge implements IConstraint {
      * @throws Delay
      *      If the source or target is not ground.
      */
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
+        final IUnifier.Immutable unifier = state.unifier();
+        if(!unifier.isGround(sourceTerm)) {
+            throw Delay.ofVars(unifier.getVars(sourceTerm));
+        }
+        if(!unifier.isGround(targetTerm)) {
+            throw Delay.ofVars(unifier.getVars(targetTerm));
+        }
+        final Scope source = Scope.matcher().match(sourceTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
+        if(params.isClosed(source)) {
+            return Optional.empty();
+        }
+        final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
+        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
+        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
+    }
+    
     @Override
     public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         //Modifies the scope graph

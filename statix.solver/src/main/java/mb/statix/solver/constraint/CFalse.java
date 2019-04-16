@@ -7,7 +7,10 @@ import javax.annotation.Nullable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.State;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -47,6 +50,10 @@ public class CFalse implements IConstraint {
      * @return
      *      an empty optional
      */
+    @Override public Optional<ConstraintResult> solve(final State state, ConstraintContext params) {
+        return Optional.empty();
+    }
+    
     @Override
     public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {
         return Optional.empty();

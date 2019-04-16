@@ -19,10 +19,16 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
+import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.Solver;
+import mb.statix.solver.SolverResult;
+import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
@@ -50,11 +56,44 @@ public abstract class ARule implements IRule {
     @Value.Parameter public abstract Set<ITermVar> bodyVars();
 
     @Value.Parameter public abstract List<IConstraint> body();
+    
+    @Value.Lazy public Optional<Boolean> isAlways(State oldState) throws InterruptedException {
+        State state = State.of(oldState.spec());
+        List<ITerm> args = Lists.newArrayList();
+        for(@SuppressWarnings("unused") Pattern param : params()) {
+            final Tuple2<ITermVar, State> stateAndVar = state.freshVar("arg");
+            args.add(stateAndVar._1());
+            state = stateAndVar._2();
+        }
+        Tuple3<State, Set<ITermVar>, Set<IConstraint>> stateAndInst;
+        try {
+            if((stateAndInst = apply(args, state).orElse(null)) == null) {
+                return Optional.of(false);
+            }
+        } catch(Delay e) {
+            return Optional.of(false);
+        }
+        state = stateAndInst._1();
+        final Set<ITermVar> instVars = stateAndInst._2();
+        final Set<IConstraint> instBody = stateAndInst._3();
+        try {
+            Optional<SolverResult> solverResult =
+                    Solver.entails(state, instBody, new Completeness(), instVars, new NullDebugContext());
+            if(solverResult.isPresent()) {
+                return Optional.of(true);
+            } else {
+                return Optional.of(false);
+            }
+        } catch(Delay d) {
+            return Optional.empty();
+        }
+    }
 
-    @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+    @Value.Lazy public Optional<Boolean> isAlways(MState oldState) throws InterruptedException {
         ModuleManager manager = new ModuleManager();
-        IModule owner = new Module(manager, "entails", spec);
-        MState state = new MState(manager, new EntailsCoordinator(), owner, spec);
+        IModule owner = new Module(manager, "entails", oldState.spec());
+        MState state = new MState(manager, new EntailsCoordinator(), owner, oldState.spec());
+        
         List<ITerm> args = Lists.newArrayList();
         for(@SuppressWarnings("unused") Pattern param : params()) {
             args.add(state.freshVar("arg"));
@@ -67,7 +106,7 @@ public abstract class ARule implements IRule {
         } catch(Delay e) {
             return Optional.of(false);
         }
-
+        
         final Set<ITermVar> instVars = stateAndInst._1();
         final Set<IConstraint> instBody = stateAndInst._2();
         try {
@@ -90,10 +129,28 @@ public abstract class ARule implements IRule {
         return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
-    /**
-     * 
-     * @see mb.statix.spec.IRule#apply(java.util.List, mb.statix.taico.solver.MState)
-     */
+    @Override
+    public Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
+        final ISubstitution.Transient subst;
+        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
+            throw Delay.ofVars(vars);
+        });
+        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
+            return Optional.empty();
+        }
+        State newState = state;
+        final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
+        for(ITermVar var : bodyVars()) {
+            final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
+            subst.put(var, vs._1());
+            freshBodyVars.add(vs._1());
+            newState = vs._2();
+        }
+        final ISubstitution.Immutable isubst = subst.freeze();
+        final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
+    }
+
     @Override
     public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
         final ISubstitution.Transient subst;

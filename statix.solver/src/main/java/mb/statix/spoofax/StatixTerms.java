@@ -60,10 +60,10 @@ import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
 import mb.statix.solver.constraint.CUser;
-import mb.statix.taico.solver.query.IMQueryFilter;
-import mb.statix.taico.solver.query.IMQueryMin;
-import mb.statix.taico.solver.query.MQueryFilter;
-import mb.statix.taico.solver.query.MQueryMin;
+import mb.statix.solver.query.IQueryFilter;
+import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.IRule;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -218,15 +218,15 @@ public class StatixTerms {
         );
     }
 
-    public static IMatcher<IMQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
+    public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
         return M.appl2("Filter", hoconstraint(labels), hoconstraint(labels), (f, pathConstraint, dataConstraint) -> {
-            return new MQueryFilter(pathConstraint, dataConstraint);
+            return new QueryFilter(pathConstraint, dataConstraint);
         });
     }
 
-    public static IMatcher<IMQueryMin> queryMin(IAlphabet<ITerm> labels) {
+    public static IMatcher<IQueryMin> queryMin(IAlphabet<ITerm> labels) {
         return M.appl2("Min", hoconstraint(labels), hoconstraint(labels), (m, pathConstraint, dataConstraint) -> {
-            return new MQueryMin(pathConstraint, dataConstraint);
+            return new QueryMin(pathConstraint, dataConstraint);
         });
     }
 

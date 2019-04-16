@@ -12,8 +12,11 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
@@ -64,6 +67,33 @@ public class CEqual implements IConstraint {
      * @throws Delay
      *      If the unification between the terms encounters rigid variables.
      */
+    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
+        IDebugContext debug = params.debug();
+        IUnifier.Immutable unifier = state.unifier();
+        try {
+            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
+            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification succeeded: {}", result.result());
+                }
+                final State newState = state.withUnifier(result.unifier());
+                return Optional.of(ConstraintResult.ofVars(newState, result.result().varSet()));
+            } else {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                }
+                return Optional.empty();
+            }
+        } catch(OccursException e) {
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            }
+            return Optional.empty();
+        } catch(RigidVarsException e) {
+            throw Delay.ofVars(e.vars());
+        }
+    }
+    
     @Override
     public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
         IDebugContext debug = params.debug();
