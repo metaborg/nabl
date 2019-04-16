@@ -19,7 +19,7 @@ sorts
 context-free syntax
 
   TestResult = <
-    <SolveResult>
+    <Solution>
 
     errors
       <{EditorMessage "\n"}*>
@@ -31,7 +31,7 @@ context-free syntax
       <{EditorMessage "\n"}*>
   >
 
-  SolveResult.SolveResult = <
+  Solution.Solution = <
     substitution
       <{SubstEntry "\n"}*>
 
