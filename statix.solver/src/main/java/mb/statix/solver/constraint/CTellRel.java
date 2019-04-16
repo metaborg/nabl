@@ -2,6 +2,7 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +15,8 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CTellRel implements IConstraint {
+public class CTellRel implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final ITerm scopeTerm;
     private final ITerm relation;

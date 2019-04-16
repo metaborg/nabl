@@ -1,5 +1,6 @@
 package mb.statix.solver.constraint;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -10,7 +11,8 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CPathLt implements IConstraint {
+public class CPathLt implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final IRelation.Immutable<ITerm> lt;
     private final ITerm label1Term;

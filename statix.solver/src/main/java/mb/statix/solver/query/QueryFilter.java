@@ -1,5 +1,7 @@
 package mb.statix.solver.query;
 
+import java.io.Serializable;
+
 import org.metaborg.util.functions.Predicate3;
 
 import mb.nabl2.terms.ITerm;
@@ -11,7 +13,8 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
-public class QueryFilter implements IQueryFilter {
+public class QueryFilter implements IQueryFilter, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final Rule pathConstraint;
     private final Rule dataConstraint;
@@ -25,11 +28,13 @@ public class QueryFilter implements IQueryFilter {
         return new QueryFilter(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    @Override public LabelWF<ITerm> getLabelWF(State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) {
+    @Override public LabelWF<ITerm> getLabelWF(State state, Predicate3<ITerm, ITerm, State> isComplete,
+            IDebugContext debug) {
         return ConstraintLabelWF.of(pathConstraint, state, isComplete, debug);
     }
 
-    @Override public DataWF<ITerm> getDataWF(State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) {
+    @Override public DataWF<ITerm> getDataWF(State state, Predicate3<ITerm, ITerm, State> isComplete,
+            IDebugContext debug) {
         return new ConstraintDataWF(dataConstraint, state, isComplete, debug);
     }
 
