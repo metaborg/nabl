@@ -9,6 +9,8 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
+import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -25,6 +27,27 @@ public abstract class AState {
 
     @Value.Default public String resource() {
         return "";
+    }
+
+    public State add(State other) {
+        final Set.Immutable<ITermVar> vars = vars().union(other.vars());
+        final Set.Immutable<ITerm> scopes = scopes().union(other.scopes());
+        final IUnifier.Immutable unifier;
+        try {
+            unifier = unifier().unify(other.unifier()).map(Result::unifier)
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot merge unifiers."));
+        } catch(OccursException e) {
+            throw new IllegalArgumentException("Cannot merge unifiers.");
+        }
+        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
+        // @formatter:off
+        return State.builder().from(this)
+            .__vars(vars)
+            .__scopes(scopes)
+            .unifier(unifier)
+            .scopeGraph(scopeGraph)
+            .build();
+        // @formatter:on
     }
 
     public State clearVarsAndScopes() {

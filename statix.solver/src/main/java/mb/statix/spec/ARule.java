@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableSet;
@@ -30,6 +31,7 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
 
 @Value.Immutable
+@Serial.Version(42L)
 public abstract class ARule {
 
     @Value.Parameter public abstract String name();
