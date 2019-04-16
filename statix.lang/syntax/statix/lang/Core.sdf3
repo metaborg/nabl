@@ -37,7 +37,12 @@ context-free syntax
       <{CDecl "\n"}*>
   > {longest-match}
 
-  CDecl.CDecl      = [[CInd][ConstraintId] : [Type]]
+  CName = ConstraintId
+  CName.ResolveFilterWf = "resolveFilterWf"
+  CName.ResolveFilterEq = "resolveFilterEq"
+  CName.ResolveMinOrd   = "resolveMinOrd"
+
+  CDecl.CDecl      = [[CInd][CName] : [Type]]
 
   CInd.InductiveC   =
   CInd.CoinductiveC = <coinductive >
@@ -53,14 +58,19 @@ context-free syntax
 
   Constraint = UserConstraint
 
-  UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
+  UserConstraint.C = [[CName]([{Term ", "}*])]
 
   HoConstraint.LLam = <{ <{Term ", "}+> :- <LocalVars> <Constraint> }>
 
 lexical syntax
 
   ConstraintId = LCID
+  ConstraintId = BuiltinConstraint {reject}
   ConstraintId = Keyword {reject}
+
+  BuiltinConstraint = "resolveFilterWf"
+                    | "resolveFilterEq"
+                    | "resolveMinOrd"
 
   Keyword = "coinductive"
 
