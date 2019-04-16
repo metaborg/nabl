@@ -7,7 +7,7 @@ imports
 rules
 
   [[ Test(vs, c, sections) ^ (s) ]] :=
-    Sections[[ sections ^ (s) ]],
+    TopLevelSections[[ sections ^ (s) ]],
     new s', s' ---> s,
     Map1T(VarDecl)[[ vs ^ (s') : _ ]],
     distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,

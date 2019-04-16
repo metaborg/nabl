@@ -20,13 +20,13 @@ context-free syntax
   Rule             = <constraint <CDerive>>
   Rule             = CDerive
 
-  Rule.CDecl       = [[CInd]constraint [ConstraintId] : [Type]]
-  Rule.CDecl       = [[CInd][ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd]constraint [CName] : [Type]]
+  Rule.CDecl       = [[CInd][CName] : [Type]]
 
   CDecl            = CDerive
 
-  CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*])]
-  CDerive.FDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*]) = [LiftTerm]]
+  CDerive.CDeriveMap = [[CName] maps [CName]([{Lift ", "}*])]
+  CDerive.FDeriveMap = [[CName] maps [CName]([{Lift ", "}*]) = [LiftTerm]]
 
   Lift.IdLift   = "*"
   Lift.ListLift = "list(*)"
@@ -42,17 +42,17 @@ context-free syntax
     <RuleHead>.
   >
 
-  RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
+  RuleHead.F = [[CName]([{Term ", "}*]) = [Term]]
 
   LocalVars.NoLocalVars = <>
 
   HoConstraint.LLam = <{ <{Term ", "}+> }>
 
-  HoConstraint.LC = ConstraintId
+  HoConstraint.LC = CName
 
 syntax
 
-  Term-CF.COp = ConstraintId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+  Term-CF.COp = CName-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
 /******************************************************************
  * Base Constraints                                               *
