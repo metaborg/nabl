@@ -1,5 +1,6 @@
 package mb.statix.solver.constraint;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,7 +13,8 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CNew implements IConstraint {
+public class CNew implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final List<ITerm> terms;
 
