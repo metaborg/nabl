@@ -425,21 +425,9 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         if(!unifier.isGround(key)) {
             throw Delay.ofVars(unifier.getVars(key));
         }
-        Optional<ITerm> existingValue = state.scopeGraph().getData().get(scope, relation).stream().filter(dt -> {
-            return unifier
-                    .areEqual(key, B.newTuple(dt.stream().limit(type.getInputArity()).collect(Collectors.toList())))
-                    .orElse(false);
-        }).findFirst().map(dt -> {
-            return B.newTuple(dt.stream().skip(type.getInputArity()).collect(Collectors.toList()));
-        });
-        if(existingValue.isPresent()) {
-            final ITerm value = B.newTuple(datumTerms.stream().skip(type.getInputArity()).collect(Collectors.toList()));
-            return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(value, existingValue.get(), c)));
-        } else {
-            final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
-                    state.scopeGraph().addDatum(scope, relation, datumTerms);
-            return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
-        }
+        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
+                state.scopeGraph().addDatum(scope, relation, datumTerms);
+        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 
     @Override public Optional<ConstraintResult> caseTermId(CTermId c) throws SolverException {
