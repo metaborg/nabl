@@ -511,4 +511,13 @@ public class StatixTerms {
         return Iterables2.stream(terms).map(StatixTerms::explicate).collect(Collectors.toList());
     }
 
+    public static IListTerm explicateList(Iterable<? extends ITerm> terms) {
+        return B.newList(explicate(terms));
+    }
+
+    public static IListTerm
+            explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
+        return B.newList(Iterables2.stream(entries).map(e -> B.newTuple(explicate(e.getKey()), explicate(e.getValue())))
+                .collect(Collectors.toList()));
+    }
 }

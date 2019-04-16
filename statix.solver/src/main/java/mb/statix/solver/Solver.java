@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.Level;
@@ -205,6 +206,7 @@ public class Solver {
 
 
     @Value.Immutable
+    @Serial.Version(42L)
     public static abstract class ASolverResult {
 
         @Value.Parameter public abstract State state();
