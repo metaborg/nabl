@@ -31,6 +31,10 @@ public interface IScopeGraph<V, L, R> {
 
         Immutable<V, L, R> addDatum(V scope, R relation, Iterable<V> datum);
 
+        Immutable<V, L, R> addAll(IScopeGraph<V, L, R> other);
+
+        IScopeGraph.Transient<V, L, R> melt();
+
     }
 
     interface Transient<V, L, R> extends IScopeGraph<V, L, R> {
