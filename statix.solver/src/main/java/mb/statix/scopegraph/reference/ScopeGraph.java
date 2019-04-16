@@ -81,9 +81,14 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
                     data.put(sourceScope, relation, ImmutableList.copyOf(datum)));
         }
 
+        @Override public IScopeGraph.Immutable<V, L, R> addAll(IScopeGraph<V, L, R> other) {
+            return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges.putAll(other.getEdges()),
+                    data.putAll(other.getData()));
+        }
+
         // ------------------------------------------------------------
 
-        public ScopeGraph.Transient<V, L, R> melt() {
+        @Override public ScopeGraph.Transient<V, L, R> melt() {
             return new ScopeGraph.Transient<>(labels, endOfPath, relations, edges.melt(), data.melt());
         }
 
