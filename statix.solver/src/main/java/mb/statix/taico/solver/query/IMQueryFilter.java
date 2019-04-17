@@ -7,8 +7,8 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Interface to represent query filters.
@@ -30,9 +30,9 @@ public interface IMQueryFilter {
 
     /**
      * @param state
-     *      the state (will be copied)
-     * @param completeness
-     *      the completeness (will be copied)
+     *      the state
+     * @param isComplete
+     *      the isComplete predicate
      * @param debug
      *      the debug
      * 
@@ -41,13 +41,13 @@ public interface IMQueryFilter {
      * 
      * @throws ResolutionException
      */
-    LabelWF<ITerm> getLabelWF(MState state, MCompleteness completeness, IDebugContext debug) throws ResolutionException;
+    LabelWF<ITerm> getLabelWF(IMState state, ICompleteness isComplete, IDebugContext debug) throws ResolutionException;
 
     /**
      * @param state
-     *      the state (will be copied)
-     * @param completeness
-     *      the completeness (will be copied)
+     *      the state
+     * @param isComplete
+     *      the isComplete predicate
      * @param debug
      *      the debug
      * 
@@ -56,7 +56,7 @@ public interface IMQueryFilter {
      * 
      * @throws ResolutionException
      */
-    DataWF<ITerm> getDataWF(MState state, MCompleteness completeness, IDebugContext debug) throws ResolutionException;
+    DataWF<ITerm> getDataWF(IMState state, ICompleteness isComplete, IDebugContext debug) throws ResolutionException;
 
     /**
      * Converts this query filter into string representation, where terms are formatted with the

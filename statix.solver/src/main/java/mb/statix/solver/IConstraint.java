@@ -23,9 +23,9 @@ import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
 
 /**
  * Interface to represent a constraint.
@@ -67,7 +67,7 @@ public interface IConstraint {
      *      If this constraint cannot be solved in the current state with the given context.
      *      The exception contains the information about what information is required to solve.
      */
-    Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws InterruptedException, Delay;
+    Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws InterruptedException, Delay;
 
     <R> R match(Cases<R> cases);
 

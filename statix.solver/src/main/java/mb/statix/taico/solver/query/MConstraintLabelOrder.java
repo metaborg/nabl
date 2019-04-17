@@ -16,8 +16,8 @@ import mb.statix.solver.Solver;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
 
 /**
@@ -26,14 +26,14 @@ import mb.statix.taico.solver.ModuleSolver;
 public class MConstraintLabelOrder implements LabelOrder<ITerm> {
 
     private final IRule constraint;
-    private final MState state;
-    private final MCompleteness completeness;
+    private final IMState state;
+    private final ICompleteness isComplete;
     private final IDebugContext debug;
 
-    public MConstraintLabelOrder(IRule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
+    public MConstraintLabelOrder(IRule constraint, IMState state, ICompleteness isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
         this.debug = debug;
     }
 
@@ -52,12 +52,12 @@ public class MConstraintLabelOrder implements LabelOrder<ITerm> {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }
         try {
-            MState resultState = state.copy();
+            IMState resultState = state.delegate();
             final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(l1, l2), resultState).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug.subContext()).isPresent()) {
+            if(ModuleSolver.entails(resultState, result._2(), isComplete, result._1(), debug.subContext()).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Ordered {} < {}", resultState.unifier().toString(l1), resultState.unifier().toString(l2));
                 }

@@ -15,7 +15,7 @@ import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ISolverCoordinator;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
 
 public class ConcurrentSolverCoordinator implements ISolverCoordinator {
@@ -26,7 +26,7 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     
     private IDebugContext debug;
     private ModuleSolver root;
-    private MState rootState;
+    private IMState rootState;
     private Consumer<MSolverResult> onFinished;
     private MSolverResult finalResult;
     
@@ -44,7 +44,7 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public MState getRootState() {
+    public IMState getRootState() {
         return rootState;
     }
     
@@ -78,7 +78,7 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
+    public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
         solveAsync(state, constraints, debug, null);
 
         synchronized (this) {
@@ -90,7 +90,7 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public void solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
+    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
         this.debug = new PrefixedDebugContext("Coordinator", debug);
         this.onFinished = onFinished;
         this.rootState = state;

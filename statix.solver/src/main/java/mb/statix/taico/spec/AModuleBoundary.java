@@ -30,6 +30,7 @@ import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleString;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MState;
 
 /**
@@ -59,7 +60,11 @@ public abstract class AModuleBoundary extends ARule {
     }
 
     @Override
-    public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
+    public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, IMState state) throws Delay {
+        if (state.solver().isSeparateSolver()) {
+            throw new UnsupportedOperationException("Separate solvers (entailment) cannot cross module boundaries. (At " + this + ")");
+        }
+        
         List<ITerm> newArgs = groundArguments(args, state.unifier());
         
         final ISubstitution.Transient subst;
@@ -79,7 +84,7 @@ public abstract class AModuleBoundary extends ARule {
         
         String modName = moduleString().build(subst);
         IModule child = state.owner().createOrGetChild(modName, canExtend);
-        MState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
+        IMState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {
@@ -94,7 +99,7 @@ public abstract class AModuleBoundary extends ARule {
         //TODO This condition might need to change
         if (child.getFlag() == ModuleCleanliness.NEW) {
             //TODO IMPORTANT Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
-            state.solver().childSolver(childState, newBody, state.solver().isRigid(), state.solver().isClosed());
+            state.solver().childSolver(childState, newBody);
         } else {
             //TODO Add solver without constraints for this module?
         }

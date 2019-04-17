@@ -13,7 +13,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for the inequality constraint.
@@ -67,7 +67,7 @@ public class CInequal implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         final IUnifier.Immutable unifier = state.unifier();
         return unifier.areEqual(term1, term2).matchOrThrow(result -> {
             if(result) {

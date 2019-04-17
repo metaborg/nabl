@@ -19,7 +19,7 @@ public class SolverCoordinator implements ISolverCoordinator {
     protected final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
     protected final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
     protected ModuleSolver root;
-    protected MState rootState;
+    protected IMState rootState;
     
     public SolverCoordinator() {}
     
@@ -29,7 +29,7 @@ public class SolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public MState getRootState() {
+    public IMState getRootState() {
         return rootState;
     }
     
@@ -48,7 +48,7 @@ public class SolverCoordinator implements ISolverCoordinator {
         solvers.add(solver);
     }
     
-    public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug)
+    public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug)
         throws InterruptedException {
         rootState = state;
         root = ModuleSolver.topLevelSolver(state, constraints, debug);
@@ -136,7 +136,7 @@ public class SolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public void solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
+    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
         throw new UnsupportedOperationException();
 //        MSolverResult result;
 //        try {

@@ -11,14 +11,17 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
+import com.google.common.collect.Iterables;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.util.IOwnable;
+import mb.statix.taico.util.Scopes;
 import mb.statix.util.Capsules;
 
 /**
@@ -27,46 +30,28 @@ import mb.statix.util.Capsules;
  */
 public class MCompleteness implements IOwnable {
     private final IModule owner;
-    private final MCompleteness parent;
-    private final Set<MCompleteness> children = new HashSet<>();
     private final Set<IConstraint> incomplete = new HashSet<>();
 
-    private MCompleteness(MCompleteness parent, IModule owner) {
-        this.parent = parent;
+    public MCompleteness(IModule owner) {
         this.owner = owner;
     }
     
-    private MCompleteness(MCompleteness parent, IModule owner, Collection<IConstraint> incomplete) {
-        this.parent = parent;
+    public MCompleteness(IModule owner, Iterable<IConstraint> incomplete) {
         this.owner = owner;
-        this.incomplete.addAll(incomplete);
+        Iterables.addAll(this.incomplete, incomplete);
     }
     
     public static MCompleteness topLevelCompleteness(IModule owner) {
-        return new MCompleteness(null, owner);
-    }
-    
-    /**
-     * Creates a child completeness.
-     * 
-     * @param owner
-     *      the owner of the new completeness
-     * 
-     * @return
-     *      the newly created completeness
-     */
-    public synchronized MCompleteness createChild(IModule owner) {
-        MCompleteness child = new MCompleteness(this, owner);
-        children.add(child);
-        return child;
+        return new MCompleteness(owner);
     }
     
     /**
      * @return
      *      a copy of this mutable completeness
      */
+    @Deprecated
     public synchronized MCompleteness copy() {
-        return new MCompleteness(parent, owner, incomplete);
+        return new MCompleteness(owner, incomplete);
     }
     
     @Override
@@ -74,11 +59,7 @@ public class MCompleteness implements IOwnable {
         return owner;
     }
     
-    public CompletenessResult isComplete(ITerm scope, ITerm label, MState state) {
-        if (state.owner() != owner) {
-            throw new IllegalArgumentException("isComplete request with state of " + state.owner() + " redirected to completeness of " + owner);
-        }
-        
+    public CompletenessResult isComplete(ITerm scope, ITerm label, IMState state) {
         final IUnifier unifier = state.unifier();
         final Predicate2<ITerm, ITerm> equal = (t1, t2) -> {
             return t2.equals(label) && unifier.areEqual(t1, scope).orElse(false /* (1) */);
@@ -88,57 +69,13 @@ public class MCompleteness implements IOwnable {
              */
         };
         
-        IModule scopeOwner;
-        if (scope instanceof IOwnable) {
-            scopeOwner = ((IOwnable) scope).getOwner();
-        } else {
-            OwnableScope oscope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scope, unifier)
-                    .orElseThrow(() -> new IllegalArgumentException("Scope " + scope + " is not an ownable scope!"));
-            scopeOwner = oscope.getOwner();
-        }
-        
-        if (scopeOwner == state.owner()) {
-            System.err.println("Completeness of " + owner + " got isComplete query from matching owner: " + scope);
-            return isCompleteFinal(equal);
-        } else {
-            System.err.println("Completeness of " + owner + " got isComplete query on scope owned by " + scopeOwner + ". Redirecting there");
-            //TODO Static state access
-            MCompleteness target = scopeOwner.getCurrentState().solver().getCompleteness();
-            return target.isCompleteFinal(equal);
-        }
-    }
-    
-    /**
-     * Determines if the terms matching the given predicate are complete according to the view of
-     * this completeness.
-     * 
-     * @param equal
-     *      the predicate to determine which terms we should match 
-     * @return
-     *      true if these terms are complete, false otherwise 
-     */
-    public CompletenessResult isCompleteFinal(Predicate2<ITerm, ITerm> equal) {
-        //Ask ourselves
-        //TODO OPTIMIZATION point: Use passed spec instead?
-        //TODO Static state access
         boolean complete;
         synchronized (this) {
-            complete = incomplete.stream().flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getCurrentState().spec())))
+            complete = incomplete.stream()
+                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getCurrentState().spec())))
                     .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
         }
-        System.err.println("Completeness of " + owner + " result: " + complete);
-        if (!complete) return CompletenessResult.of(false, owner);
-
-        //Ask children
-        for (MCompleteness child : children) {
-            CompletenessResult childResult = child.isCompleteFinal(equal);
-            if (!childResult.isComplete()) {
-                System.err.println("Completeness of " + owner + " result: (child) false");
-                return childResult;
-            }
-        }
-
-        return CompletenessResult.of(true, owner);
+        return CompletenessResult.of(complete, owner);
     }
 
     public synchronized MCompleteness add(IConstraint constraint) {
@@ -147,14 +84,7 @@ public class MCompleteness implements IOwnable {
     }
     
     public synchronized MCompleteness addAll(Iterable<IConstraint> constraints) {
-        for (IConstraint constraint : constraints) {
-            incomplete.add(constraint);
-        }
-        return this;
-    }
-    
-    public synchronized MCompleteness addAll(Collection<IConstraint> constraints) {
-        incomplete.addAll(constraints);
+        Iterables.addAll(incomplete, constraints);
         return this;
     }
 
@@ -188,12 +118,12 @@ public class MCompleteness implements IOwnable {
         return new Completeness(Capsules.newSet(incomplete));
     }
     
-    public static List<CriticalEdge> criticalEdges(IConstraint constraint, MState state) {
+    public static List<CriticalEdge> criticalEdges(IConstraint constraint, IMState state) {
         return Completeness.criticalEdges(constraint, state.spec()).stream().flatMap(ce -> {
             final Optional<CriticalEdge> edge =
-                    OwnableScope.ownableMatcher(state.manager()::getModule)
+                    Scope.matcher()
                         .match(ce.scope(), state.unifier())
-                        .map(s -> CriticalEdge.of(s, ce.label(), state.owner()));
+                        .map(s -> CriticalEdge.of(s, ce.label(), Scopes.getOwner(s, state.manager())));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
     }

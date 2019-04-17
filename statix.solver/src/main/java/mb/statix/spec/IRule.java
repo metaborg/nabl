@@ -15,7 +15,7 @@ import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 public interface IRule {
 
@@ -107,7 +107,7 @@ public interface IRule {
      * @throws IllegalStateException
      *      If this rule is a module boundary.
      */
-    Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay;
+    Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, IMState state) throws Delay;
 
     /**
      * Formats this rule where constraints are formatted with the given TermFormatter.

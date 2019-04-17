@@ -4,7 +4,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 public interface IncrementalStrategy {
     /**
@@ -34,5 +34,5 @@ public interface IncrementalStrategy {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    void reanalyze(MState baseState, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException;
+    void reanalyze(IMState baseState, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException;
 }

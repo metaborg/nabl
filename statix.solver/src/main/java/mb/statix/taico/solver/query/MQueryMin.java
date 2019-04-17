@@ -1,5 +1,7 @@
 package mb.statix.taico.solver.query;
 
+import java.io.Serializable;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -7,11 +9,11 @@ import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MState;
-import mb.statix.taico.solver.query.IMQueryMin;
+import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IMState;
 
-public class MQueryMin implements IMQueryMin {
+public class MQueryMin implements IMQueryMin, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final IRule pathConstraint;
     private final IRule dataConstraint;
@@ -25,12 +27,12 @@ public class MQueryMin implements IMQueryMin {
         return new MQueryMin(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    public LabelOrder<ITerm> getLabelOrder(MState state, MCompleteness completeness, IDebugContext debug) {
-        return new MConstraintLabelOrder(pathConstraint, state.copy(), completeness.copy(), debug);
+    public LabelOrder<ITerm> getLabelOrder(IMState state, ICompleteness isComplete, IDebugContext debug) {
+        return new MConstraintLabelOrder(pathConstraint, state, isComplete, debug);
     }
 
-    public DataLeq<ITerm> getDataEquiv(MState state, MCompleteness completeness, IDebugContext debug) {
-        return new MConstraintDataLeq(dataConstraint, state.copy(), completeness.copy(), debug);
+    public DataLeq<ITerm> getDataEquiv(IMState state, ICompleteness isComplete, IDebugContext debug) {
+        return new MConstraintDataLeq(dataConstraint, state, isComplete, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

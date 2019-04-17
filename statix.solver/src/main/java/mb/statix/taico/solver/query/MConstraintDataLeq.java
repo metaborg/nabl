@@ -19,22 +19,22 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
 
 public class MConstraintDataLeq implements DataLeq<ITerm> {
 
     private final IRule constraint;
-    private final MState state;
-    private final MCompleteness completeness;
+    private final IMState state;
+    private final ICompleteness isComplete;
     private final IDebugContext debug;
     private volatile Boolean alwaysTrue;
 
-    public MConstraintDataLeq(IRule constraint, MState state, MCompleteness completeness, IDebugContext debug) {
+    public MConstraintDataLeq(IRule constraint, IMState state, ICompleteness isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
         this.debug = debug;
     }
 
@@ -43,12 +43,12 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
         final ITerm term1 = B.newTuple(datum1);
         final ITerm term2 = B.newTuple(datum2);
         try {
-            MState resultState = state.copy();
+            IMState resultState = state.delegate();
             final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(term1, term2), resultState).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(resultState, result._2(), completeness.copy(), result._1(), debug).isPresent()) {
+            if(ModuleSolver.entails(resultState, result._2(), isComplete, result._1(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("{} shadows {}", resultState.unifier().toString(term1), resultState.unifier().toString(term2));
                 }

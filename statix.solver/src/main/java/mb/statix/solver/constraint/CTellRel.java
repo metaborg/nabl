@@ -21,7 +21,7 @@ import mb.statix.spec.Type;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for a tell relation constraint.
@@ -103,7 +103,7 @@ public class CTellRel implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         final Type type = state.spec().relations().get(relation);
         if(type == null) {
             params.debug().error("Ignoring data for unknown relation {}", relation);
@@ -121,7 +121,7 @@ public class CTellRel implements IConstraint, Serializable {
         }
         final OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
-        if(params.isClosed(scope)) {
+        if(params.isClosed(scope, state)) {
             return Optional.empty();
         }
         

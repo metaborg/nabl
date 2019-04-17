@@ -17,7 +17,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 public class CPathScopes implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
@@ -66,7 +66,7 @@ public class CPathScopes implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(pathTerm))) {
             throw Delay.ofVars(unifier.getVars(pathTerm));

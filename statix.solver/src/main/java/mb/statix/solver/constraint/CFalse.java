@@ -11,7 +11,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for the {@code false} constraint.
@@ -48,7 +48,7 @@ public class CFalse implements IConstraint, Serializable {
     }
 
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) {
         return Optional.empty();
     }
 

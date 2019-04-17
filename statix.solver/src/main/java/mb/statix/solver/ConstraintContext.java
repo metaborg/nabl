@@ -29,7 +29,6 @@ public class ConstraintContext {
     }
 
     public boolean isClosed(ITerm scope, State state) {
-        //TODO Verify correctness. Should be the scopes local to the module (owned and inherited)
         return !state.scopes().contains(scope);
     }
 

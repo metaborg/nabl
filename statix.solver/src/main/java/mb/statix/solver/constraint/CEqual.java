@@ -18,7 +18,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for an equality constraint.
@@ -72,12 +72,12 @@ public class CEqual implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {
             final IUnifier.Immutable.Result<IUnifier.Immutable> result;
-            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
+            if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification succeeded: {}", result.result());
                 }

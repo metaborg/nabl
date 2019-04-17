@@ -12,7 +12,7 @@ import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.util.IOwnable;
 
@@ -120,7 +120,7 @@ public interface IModule {
      * @return
      *      the state of this module
      */
-    MState getCurrentState();
+    IMState getCurrentState();
     
     /**
      * Method used once when a module state has been constructed.
@@ -128,7 +128,7 @@ public interface IModule {
      * @param state
      *      the state of this module
      */
-    void setCurrentState(MState state);
+    void setCurrentState(IMState state);
     
     /**
      * Adds a query with its resolution details to determine the dependencies.

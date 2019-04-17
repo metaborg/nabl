@@ -14,7 +14,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for a tell edge constraint.
@@ -84,7 +84,7 @@ public class CTellEdge implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         //Modifies the scope graph
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {
@@ -95,7 +95,7 @@ public class CTellEdge implements IConstraint, Serializable {
         }
         final OwnableScope source = OwnableScope.ownableMatcher(state.manager()::getModule).match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
-        if(params.isClosed(source)) {
+        if(params.isClosed(source, state)) {
             return Optional.empty();
         }
         final OwnableScope target = OwnableScope.ownableMatcher(state.manager()::getModule).match(targetTerm, unifier).orElseThrow(

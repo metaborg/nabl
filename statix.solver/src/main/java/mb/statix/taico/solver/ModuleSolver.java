@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
-import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableSet;
@@ -20,7 +19,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
@@ -30,21 +31,20 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
+import mb.statix.taico.util.Scopes;
 
 public class ModuleSolver implements IOwnable {
     private ModuleSolver parent;
-    private MState state;
+    private IMState state;
     private ModuleConstraintStore constraints;
     private MCompleteness completeness;
     private PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
     private boolean separateSolver;
     
-    private Predicate1<ITermVar> isRigid;
-    private Predicate1<ITerm> isClosed;
+    private ICompleteness isComplete;
     
     // time log
     private final Map<Class<? extends IConstraint>, Long> successCount = new HashMap<>();
@@ -56,20 +56,17 @@ public class ModuleSolver implements IOwnable {
     private int reductions = 0;
     private int delays = 0;
     
-    public static ModuleSolver topLevelSolver(MState state, Iterable<IConstraint> constraints, IDebugContext debug) {
+    public static ModuleSolver topLevelSolver(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
-        MCompleteness completeness = MCompleteness.topLevelCompleteness(state.owner());
-        return new ModuleSolver(null, state, constraints, completeness, v -> false, s -> false, topDebug);
+        return new ModuleSolver(null, state, constraints, (s, l, st) -> CompletenessResult.of(true, null), topDebug);
     }
     
-    private ModuleSolver(ModuleSolver parent, MState state, Iterable<IConstraint> constraints, MCompleteness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed, PrefixedDebugContext debug) {
+    private ModuleSolver(ModuleSolver parent, IMState state, Iterable<IConstraint> constraints, ICompleteness isComplete, PrefixedDebugContext debug) {
         this.parent = parent;
         this.state = state;
         this.constraints = new ModuleConstraintStore(state.manager(), constraints, debug);
-        this.completeness = completeness;
-        this.completeness.addAll(constraints);
-        this.isRigid = isRigid;
-        this.isClosed = isClosed;
+        this.completeness = new MCompleteness(state.owner(), constraints);
+        this.isComplete = isComplete;
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
         
@@ -83,17 +80,12 @@ public class ModuleSolver implements IOwnable {
      *      the newly created state for this solver
      * @param constraints
      *      the constraints to solve
-     * @param isRigid
-     *      predicate to determine if term variables are rigid
-     * @param isClosed
-     *      predicate to determine of scopes are closed
      * @return
      *      the new solver
      */
-    public ModuleSolver childSolver(MState state, Iterable<IConstraint> constraints, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed) {
+    public ModuleSolver childSolver(IMState state, Iterable<IConstraint> constraints) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
-        MCompleteness childCompleteness = completeness.createChild(state.owner());
-        ModuleSolver solver = new ModuleSolver(this, state, constraints, childCompleteness, isRigid, isClosed, debug);
+        ModuleSolver solver = new ModuleSolver(this, state, constraints, this.isComplete, debug);
         
         this.state.coordinator().addSolver(solver);
         
@@ -101,27 +93,33 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
-     * Solves the given arguments separately from other solvers, in an isolated context.
+     * Solves the given arguments separately from other solvers. Separate solvers are not allowed
+     * to cross module boundaries. 
      * 
      * @param state
+     *      a (delegating) state
      * @param constraints
-     * @param completeness
-     * @param isRigid
-     * @param isClosed
+     *      the constraints to solve
+     * @param isComplete
+     *      the isComplete completeness predicate
      * @param debug
+     *      the debug context
+     * 
      * @return
+     *      the result
+     * 
      * @throws InterruptedException
+     *      If the solver is interrupted.
+     * @throws UnsupportedOperationException
+     *      If the solver crosses a module boundary.
      */
     public static MSolverResult solveSeparately(
-            MState state,
+            IMState state,
             Iterable<IConstraint> constraints,
-            MCompleteness completeness,
-            Predicate1<ITermVar> isRigid,
-            Predicate1<ITerm> isClosed,
+            ICompleteness isComplete,
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
-        //TODO Can this cross module boundaries?
-        ModuleSolver solver = new ModuleSolver(null, state.copy(), constraints, completeness.copy(), isRigid, isClosed, debug2);
+        ModuleSolver solver = new ModuleSolver(null, state, constraints, isComplete, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
         return solver.finishSolver();
@@ -138,14 +136,6 @@ public class ModuleSolver implements IOwnable {
      */
     public ModuleSolver getParent() {
         return parent;
-    }
-    
-    public Predicate1<ITermVar> isRigid() {
-        return isRigid;
-    }
-    
-    public Predicate1<ITerm> isClosed() {
-        return isClosed;
     }
     
     public MCompleteness getCompleteness() {
@@ -230,9 +220,10 @@ public class ModuleSolver implements IOwnable {
         }
         
         try {
+            final ICompleteness isComplete = this::isComplete;
             final Optional<MConstraintResult> maybeResult;
             maybeResult =
-                    constraint.solve(state, new MConstraintContext(completeness, isRigid, isClosed, subDebug));
+                    constraint.solve(state, new MConstraintContext(isComplete, subDebug));
             addTime(constraint, 1, successCount, debug);
             entry.remove();
             
@@ -248,7 +239,7 @@ public class ModuleSolver implements IOwnable {
                     constraints.addAll(newConstaints);
                     completeness.addAll(newConstaints);
                 }
-                //Only remove the solved constraint once new constraints are added
+                //Only remove the solved constraint after new constraints are added (for concurrent consistency)
                 completeness.remove(constraint);
                 
                 //Activate constraints after updating the completeness
@@ -283,6 +274,56 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
+     * Checks if the given scope and label are complete. The result is delegated to children where
+     * necessary.
+     * 
+     * @param scope
+     *      the scope
+     * @param label
+     *      the label
+     * @param state
+     *      the state
+     * 
+     * @return
+     *      the completeness result
+     */
+    public CompletenessResult isComplete(ITerm scopeTerm, ITerm label, IMState state) {
+        if (state.getOwner() != getOwner()) debug.warn("Received isComplete query on {} for state of {}", getOwner(), state.getOwner());
+
+        Scope scope = Scopes.getScope(scopeTerm);
+        IModule scopeOwner = state.manager().getModule(scope.getResource());
+        if (scopeOwner == null) throw new IllegalStateException("Encountered scope without owning module: " + scope);
+        
+        CompletenessResult result;
+        if (scopeOwner != getOwner()) {
+            result = scopeOwner.getCurrentState().solver().isCompleteFinal(scope, label, state);
+        } else {
+            result = isCompleteFinal(scope, label, state);
+        }
+        if (!result.isComplete()) return result;
+
+        return isComplete.apply(scopeTerm, label, state);
+    }
+    
+    private CompletenessResult isCompleteFinal(Scope scope, ITerm label, IMState state) {
+        CompletenessResult r = completeness.isComplete(scope, label, state);
+        if (!r.isComplete()) return r;
+        
+        for (IModule child : getOwner().getChildren()) {
+            //TODO OPTIMIZATION Only delegate to children who get passed the scope
+            //if (!child.getScopeGraph().getExtensibleScopes().contains(scope)) continue;
+            
+            CompletenessResult childResult = child.getCurrentState().solver().isCompleteFinal(scope, label, state);
+            if (!childResult.isComplete()) {
+                System.err.println("Completeness of " + getOwner() + " result: (child) false");
+                return childResult;
+            }
+        }
+        
+        return isComplete.apply(scope, label, state);
+    }
+    
+    /**
      * Called to finish the solving.
      * 
      * @return
@@ -302,10 +343,10 @@ public class ModuleSolver implements IOwnable {
         logTimes("success", successCount, debug);
         logTimes("delay", delayCount, debug);
 
-        return MSolverResult.of(state, completeness, failed, delayed);
+        return MSolverResult.of(state, failed, delayed);
     }
 
-    private void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
+    private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
             IDebugContext debug) {
         if(!debug.isEnabled(Level.Info)) {
             return;
@@ -315,7 +356,7 @@ public class ModuleSolver implements IOwnable {
         times.put(key, t);
     }
 
-    private void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
+    private static void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
         debug.info("# ----- {} -----", name);
         for(Map.Entry<Class<? extends IConstraint>, Long> entry : times.entrySet()) {
             debug.info("{} : {}x", entry.getKey().getSimpleName(), entry.getValue());
@@ -323,58 +364,23 @@ public class ModuleSolver implements IOwnable {
         debug.info("# ----- {} -----", "-");
     }
 
-    public static Optional<MSolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
-            final MCompleteness completeness, final IDebugContext debug) throws InterruptedException, Delay {
-        return entails(state, constraints, completeness, ImmutableSet.of(), debug);
+    public static Optional<MSolverResult> entails(IMState state, Iterable<IConstraint> constraints,
+            ICompleteness isComplete, IDebugContext debug)
+            throws InterruptedException, Delay {
+        return entails(state, constraints, isComplete, ImmutableSet.of(), debug);
     }
 
-    public static Optional<MSolverResult> entails(final MState state, final Iterable<IConstraint> constraints,
-            final MCompleteness completeness, final Iterable<ITermVar> _localVars, final IDebugContext debug)
+    public static Optional<MSolverResult> entails(final IMState state, final Iterable<IConstraint> constraints,
+            final ICompleteness isComplete, final Iterable<ITermVar> _localVars, final IDebugContext debug)
             throws InterruptedException, Delay {
         debug.debug("Entails for {}", state.owner().getId());
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
         }
         
-        //Rigid vars = all variables in the state that are not in the local variables + all variables owned by other modules
-        final Set<ITermVar> localVars = ImmutableSet.copyOf(_localVars);
-        final Set<ITermVar> rigidVars = new HashSet<>(state.vars());
-        rigidVars.removeAll(localVars);
-        PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
-        
-        final Predicate1<ITermVar> isRigid = v -> {
-            //if owner == state.owner, return false.
-            if (rigidVars.contains(v)) return true;
-            
-            IModule owner = state.manager().getModule(v.getResource());
-            System.err.println("[1] isRigid matcher with new owner " + owner);
-            return owner != state.owner();
-        };
-        
-        final Predicate1<ITerm> isClosed = s -> {
-            if (state.scopeGraph().getScopes().contains(s)) return true;
-            
-            IModule owner;
-            if (s instanceof IOwnable) {
-                System.err.println("isClosed in MConstraintLabelWF (accepting), s is ownable");
-                owner = ((IOwnable) s).getOwner();
-            } else {
-                System.err.println("isClosed in MConstraintLabelWF (accepting), s is NOT ownable");
-                OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(s, state.unifier()).orElse(null);
-                if (scope == null) {
-                    System.err.println("Unable to convert scope term to scope in isClosed predicate in MConstraintLabelWF (accepting)");
-                    return false;
-                }
-                owner = scope.getOwner();
-            }
-            return owner != state.owner();
-        };
-        //TODO IMPORTANT TAICO Is this correct?
-        //TODO TAICO can this cross module boundaries?
-        ModuleSolver solver = new ModuleSolver(null, state, constraints, completeness, isRigid, isClosed, debug2);
-        solver.separateSolver = true;
-        while (solver.solveStep());
-        final MSolverResult result = solver.finishSolver();
+        // remove all previously created variables/scopes to make them rigid/closed
+        final IMState _state = state.delegate(CapsuleUtil.toSet(_localVars), true);
+        final MSolverResult result = solveSeparately(_state, constraints, isComplete, debug);
         
         debug.trace("Completed entails");
         
@@ -386,7 +392,8 @@ public class ModuleSolver implements IOwnable {
             return Optional.of(result);
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            throw result.delay().retainAll(state.vars(), state.scopes());
+            // FIXME this doesn't remove rigid vars, as they are not part of State.vars()
+            throw result.delay().removeAll(_state.vars(), _state.scopes());
         }
     }
 
@@ -415,9 +422,7 @@ public class ModuleSolver implements IOwnable {
     @Value.Immutable
     public static abstract class AMSolverResult implements ISolverResult {
 
-        @Value.Parameter public abstract MState state();
-
-        @Value.Parameter public abstract MCompleteness completeness();
+        @Value.Parameter public abstract IMState state();
 
         @Value.Parameter public abstract Set<IConstraint> errors();
 

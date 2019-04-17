@@ -19,7 +19,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for a path match constraint.
@@ -105,7 +105,7 @@ public class CPathMatch implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         // @formatter:off
         return ((IListTerm) unifier.findTerm(labelsTerm)).matchOrThrow(ListTerms.checkedCases(

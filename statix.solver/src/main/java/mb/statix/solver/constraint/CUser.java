@@ -26,7 +26,7 @@ import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.spec.ModuleBoundary;
 
 /**
@@ -99,7 +99,7 @@ public class CUser implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params)
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final IDebugContext debug = params.debug();
         final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));

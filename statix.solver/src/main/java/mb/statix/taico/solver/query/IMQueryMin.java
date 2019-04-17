@@ -7,8 +7,8 @@ import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Interface to represent query min.
@@ -21,9 +21,9 @@ public interface IMQueryMin {
 
     /**
      * @param state
-     *      the state (will be copied)
-     * @param iCompleteness
-     *      the completeness (will be copied)
+     *      the state
+     * @param isComplete
+     *      the isComplete predicate
      * @param debug
      *      the debug context
      * 
@@ -32,14 +32,14 @@ public interface IMQueryMin {
      * 
      * @throws ResolutionException
      */
-    LabelOrder<ITerm> getLabelOrder(MState state, MCompleteness iCompleteness, IDebugContext debug)
+    LabelOrder<ITerm> getLabelOrder(IMState state, ICompleteness isComplete, IDebugContext debug)
             throws ResolutionException;
 
     /**
      * @param state
-     *      the state (will be copied)
-     * @param iCompleteness
-     *      the completeness (will be copied)
+     *      the state
+     * @param isComplete
+     *      the isComplete predicate
      * @param debug
      *      the debug context
      * 
@@ -48,7 +48,7 @@ public interface IMQueryMin {
      * 
      * @throws ResolutionException
      */
-    DataLeq<ITerm> getDataEquiv(MState state, MCompleteness iCompleteness, IDebugContext debug)
+    DataLeq<ITerm> getDataEquiv(IMState state, ICompleteness isComplete, IDebugContext debug)
             throws ResolutionException;
 
     String toString(TermFormatter termToString);

@@ -30,14 +30,7 @@ import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.NullDebugContext;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.Module;
-import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.solver.EntailsCoordinator;
-import mb.statix.taico.solver.MCompleteness;
-import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.MState;
-import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Class which describes a statix rule.
@@ -120,7 +113,7 @@ public abstract class ARule implements IRule {
     }
 
     @Override
-    public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, MState state) throws Delay {
+    public Optional<Tuple2<Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, IMState state) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);

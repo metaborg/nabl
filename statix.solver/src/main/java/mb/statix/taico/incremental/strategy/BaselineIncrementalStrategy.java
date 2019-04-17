@@ -9,7 +9,7 @@ import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Incremental strategy which is naive and simply redoes all modules that have changed and all
@@ -51,7 +51,7 @@ public class BaselineIncrementalStrategy implements IncrementalStrategy {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public void reanalyze(MState baseState, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
+    public void reanalyze(IMState baseState, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
         //Solve from the top again, children will be skipped automatically.
         baseState.coordinator().solve(baseState, constraints, debug);
     }

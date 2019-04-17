@@ -19,7 +19,7 @@ import mb.statix.taico.scopegraph.IOwnableTerm;
 /**
  * Implementation of mutable state.
  */
-public class MState {
+public class MState implements IMState {
     private final ModuleManager manager;
     private final ISolverCoordinator coordinator;
     private final IModule owner;
@@ -45,93 +45,138 @@ public class MState {
         owner.setCurrentState(this);
     }
     
-    private MState(MState orig) {
-        this.manager = orig.manager;
-        this.coordinator = orig.coordinator;
-        this.owner = orig.owner;
-        this.spec = orig.spec;
-        //Other scope graphs do not need to be copied, since this module has no idea about their states. It cannot be reliant on their state.
-        this.scopeGraph = orig.scopeGraph.deepCopy();
-        this.solver = orig.solver;
-        this.unifier = orig.unifier;
-        this.varCounter = orig.varCounter;
-        this.vars = new HashSet<>(orig.vars);
+    /**
+     * Protected constructor for {@link DelegatingMState} and {@link #copy()}.
+     * 
+     * @param original
+     *      the original state
+     * @param vars
+     *      the new variables
+     * @param scopeGraph
+     *      the new scopeGraph
+     */
+    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph) {
+        this.manager = original.manager();
+        this.coordinator = original.coordinator();
+        this.owner = original.owner();
+        this.spec = original.spec();
+        this.scopeGraph = scopeGraph;
+        this.vars = vars;
+        this.varCounter = original.varCounter;
+        this.unifier = original.unifier();
+        this.solver = original.solver();
     }
     
+    @Override
     public IModule owner() {
         return owner;
     }
     
+    @Override
     public Spec spec() {
         return spec;
     }
     
+    @Override
     public ModuleManager manager() {
         return manager;
     }
     
+    @Override
     public ISolverCoordinator coordinator() {
         return coordinator;
     }
     
+    @Override
     public ModuleSolver solver() {
         return solver;
     }
     
+    @Override
     public void setSolver(ModuleSolver solver) {
         this.solver = solver;
     }
 
     // --- variables ---
 
+    @Override
     public synchronized ITermVar freshVar(String base) {
+        //TODO Reuse freshRigidVar code?
         int i = ++varCounter;
         String name = base.replaceAll("-", "_") + "-" + i;
         ITermVar var = B.newVar(owner.getId(), name);
         vars.add(var);
         return var;
     }
+    
+    @Override
+    public ITermVar freshRigidVar(String base) {
+        int i = ++varCounter;
+        String name = base.replaceAll("-", "_") + "-" + i;
+        ITermVar var = B.newVar(owner.getId(), name);
+        return var;
+    }
 
+    @Override
     public Set<ITermVar> vars() {
         return this.vars;
     }
 
     // --- scopes ---
 
+    @Override
     public synchronized IOwnableTerm freshScope(String base) {
         return scopeGraph.createScope(base);
     }
 
+    @Override
     public Set<? extends IOwnableTerm> scopes() {
-        return scopeGraph().getScopes();
+        return scopeGraph.getScopes();
     }
 
     // --- solution ---
 
+    @Override
     public IUnifier.Immutable unifier() {
         return unifier;
     }
     
+    @Override
     public void setUnifier(IUnifier.Immutable unifier) {
         this.unifier = unifier;
     }
 
+    @Override
     public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph() {
         return scopeGraph;
     }
 
     // --- other ---
+    @Override
+    public synchronized DelegatingMState delegate(Set<ITermVar> vars, boolean clearScopes) {
+        return new DelegatingMState(this, vars, clearScopes);
+    }
+    
+    @Override
+    public MState delegate() {
+        return delegate(vars(), false);
+    }
+    
     /**
      * Creates a copy of this mutable state. The copy uses the same mutable scope graph, but all
      * other aspects are cloned.
      * 
      * <p>Any modifications made directly on the clone will not end up in the original state.</p>
      * 
+     * @deprecated 
+     *      Prefer {@link #delegate()} or {@link #delegate(Set, boolean)} over a copy.
+     * 
      * @return
      *      a copy of this mutable state
      */
+    @Deprecated
     public synchronized MState copy() {
-        return new MState(this);
+        return new MState(this, new HashSet<>(vars()), scopeGraph().deepCopy());
     }
     
     /**

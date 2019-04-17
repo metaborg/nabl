@@ -25,7 +25,7 @@ public interface ISolverCoordinator {
      * @return
      *      the state of the root solver
      */
-    public MState getRootState();
+    public IMState getRootState();
     
     /**
      * @return
@@ -65,7 +65,7 @@ public interface ISolverCoordinator {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public MSolverResult solve(MState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException;
+    public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException;
     
     /**
      * Solves the given constraints in a modularized fashion.
@@ -87,7 +87,7 @@ public interface ISolverCoordinator {
      * @throws UnsupportedOperationException
      *      If this solver does not support asynchronous solving.
      */
-    public void solveAsync(MState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
+    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
     
     /**
      * Aggregates results of all the solvers into one SolverResult.
@@ -102,7 +102,7 @@ public interface ISolverCoordinator {
             errors.addAll(result.getValue().errors());
             delays.putAll(result.getValue().delays());
         }
-        return MSolverResult.of(getRootState(), getRootSolver().getCompleteness(), errors, delays);
+        return MSolverResult.of(getRootState(), errors, delays);
     }
     
     /**

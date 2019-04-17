@@ -15,7 +15,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 /**
  * Implementation for the pathlt constraint.
@@ -89,7 +89,7 @@ public class CPathLt implements IConstraint, Serializable {
     }
 
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(label1Term))) {
             throw Delay.ofVars(unifier.getVars(label1Term));

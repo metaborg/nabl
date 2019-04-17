@@ -43,7 +43,7 @@ import mb.statix.taico.scopegraph.reference.MFastNameResolution;
 import mb.statix.taico.solver.CompletenessResult;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.query.IMQueryFilter;
 import mb.statix.taico.solver.query.IMQueryMin;
 import mb.statix.taico.solver.query.QueryDetails;
@@ -104,7 +104,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params)
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final Type type;
         if(relation != null) {
@@ -132,7 +132,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             subDebug = new NullDebugContext(params.debug().getDepth() + 1);
         }
         final Function2<ITerm, ITerm, CompletenessResult> isComplete = (s, l) -> {
-            CompletenessResult result = params.completeness().isComplete(s, l, state);
+            CompletenessResult result = params.isComplete(s, l, state);
             if(result.isComplete()) {
                 subDebug.info("{} complete in {}", s, l);
             } else {
@@ -151,10 +151,10 @@ public class CResolveQuery implements IConstraint, Serializable {
         try {
             // @formatter:off
             final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
-                    .withLabelWF(filter.getLabelWF(state, params.completeness(), subDebug))
-                    .withDataWF(filter(relation(), type, filter.getDataWF(state, params.completeness(), subDebug), subDebug))
-                    .withLabelOrder(min.getLabelOrder(state, params.completeness(), subDebug))
-                    .withDataEquiv(filter(relation(), type, min.getDataEquiv(state, params.completeness(), subDebug), subDebug))
+                    .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
+                    .withDataWF(filter(relation(), type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
+                    .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
+                    .withDataEquiv(filter(relation(), type, min.getDataEquiv(state, params::isComplete, subDebug), subDebug))
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
                     .withLockManager(lockManager)

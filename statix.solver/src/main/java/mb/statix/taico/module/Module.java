@@ -14,7 +14,7 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.query.QueryDetails;
 
 /**
@@ -26,7 +26,7 @@ public class Module implements IModule {
     private final ModuleManager manager;
     private IModule parent;
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
-    private MState state;
+    private IMState state;
     private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
     private Map<IModule, CResolveQuery> dependants = new HashMap<>();
     private ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
@@ -108,12 +108,12 @@ public class Module implements IModule {
     }
     
     @Override
-    public MState getCurrentState() {
+    public IMState getCurrentState() {
         return state;
     }
     
     @Override
-    public void setCurrentState(MState state) {
+    public void setCurrentState(IMState state) {
         if (this.state != null) System.out.println("NOTE: The state of module " + name + " is already set");
         this.state = state;
     }

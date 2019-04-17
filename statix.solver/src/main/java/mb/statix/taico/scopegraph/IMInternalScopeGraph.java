@@ -156,6 +156,10 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      */
     Immutable<? extends S> getExtensibleScopes();
     
+    /**
+     * @return
+     *      the list of parent scopes, in the order we received them
+     */
     List<? extends IOwnableScope> getParentScopes();
     
     /**
@@ -179,14 +183,6 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
     void updateToCopy(IMInternalScopeGraph<S, V, L, R> copy, boolean checkConcurrency);
     
     /**
-     * Deletes the given scope (e.g. for a rollback).
-     * 
-     * @param scope
-     *      the scope to delete
-     */
-    void revokeScope(S scope);
-    
-    /**
      * @return
      *      a new tracking graph for this scope graph
      */
@@ -204,20 +200,20 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      */
     ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<IModule, ITrackingScopeGraph<S, V, L, R>> trackers);
     
-//    /**
-//     * Copies this scope graph, using the given owner for the copy.
-//     * The copy does not have any links to the old scope graph any more.
-//     * 
-//     * @param newOwner
-//     *      the new owner
-//     * 
-//     * @return
-//     *      a copy of this scope graph
-//     * 
-//     * @throws IllegalArgumentException
-//     *      If the given owner does not have the same identity as the current owner.
-//     */
-//    IMInternalScopeGraph<S, V, L, R> copy(IModule newOwner);
+    /**
+     * @return
+     *      an external view on this scope graph
+     */
+    IMExternalScopeGraph<S, V, L, R> externalGraph();
+    
+    /**
+     * @param clearScopes
+     *      if true, scopes of the original are cleared in the delegate
+     * 
+     * @return
+     *      a delegating scope graph
+     */
+    IMInternalScopeGraph<S, V, L, R> delegatingGraph(boolean clearScopes);
     
     /**
      * Substitutes old parent scopes (extensible scopes) with the given new scopes.
@@ -232,12 +228,6 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      */
     @Deprecated
     void substitute(List<? extends S> newScopes);
-    
-    /**
-     * @return
-     *      an external view on this scope graph
-     */
-    IMExternalScopeGraph<S, V, L, R> externalGraph();
     
     /**
      * @return

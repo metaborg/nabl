@@ -18,7 +18,7 @@ import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.IMState;
 
 public class CTermId implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
@@ -67,7 +67,7 @@ public class CTermId implements IConstraint, Serializable {
     }
     
     @Override
-    public Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws Delay {
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
             throw Delay.ofVars(unifier.getVars(term));
