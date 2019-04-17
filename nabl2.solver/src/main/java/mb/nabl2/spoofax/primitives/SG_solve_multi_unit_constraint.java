@@ -32,7 +32,8 @@ import mb.nabl2.util.Tuple2;
 
 public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
 
-    private static ILogger logger = LoggerUtils.logger(SG_solve_multi_unit_constraint.class);
+    @SuppressWarnings("unused") private static ILogger logger =
+            LoggerUtils.logger(SG_solve_multi_unit_constraint.class);
 
     public SG_solve_multi_unit_constraint() {
         super(SG_solve_multi_unit_constraint.class.getSimpleName(), 0);

@@ -13,7 +13,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.IRelation2;
 
@@ -25,11 +25,11 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
     protected abstract IRelation<T> baseRelation();
 
 
-    public Set.Immutable<T> smaller(T t) {
+    @Override public Set.Immutable<T> smaller(T t) {
         return baseRelation().smaller(t);
     }
 
-    public Set.Immutable<T> larger(T t) {
+    @Override public Set.Immutable<T> larger(T t) {
         return baseRelation().larger(t);
     }
 
@@ -113,7 +113,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
         return baseRelation().greatestLowerBound(t1, t2);
     }
 
-    public Stream<Tuple2<T, T>> stream() {
+    @Override public Stream<Tuple2<T, T>> stream() {
         return entries().stream();
     }
 
@@ -132,7 +132,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
             return baseRelation;
         }
 
-        public RelationDescription getDescription() {
+        @Override public RelationDescription getDescription() {
             return description.relationDescription();
         }
 
@@ -140,7 +140,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
             return description.variantMatchers();
         }
 
-        public IRelation2<T, T> entries() {
+        @Override public IRelation2<T, T> entries() {
             return baseRelation.entries();
         }
 
@@ -170,7 +170,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
             return baseRelation;
         }
 
-        public RelationDescription getDescription() {
+        @Override public RelationDescription getDescription() {
             return description.relationDescription();
         }
 
@@ -178,7 +178,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
             return description.variantMatchers();
         }
 
-        public IRelation2<T, T> entries() {
+        @Override public IRelation2<T, T> entries() {
             return baseRelation.entries();
         }
 

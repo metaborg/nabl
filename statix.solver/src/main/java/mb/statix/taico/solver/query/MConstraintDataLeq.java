@@ -69,7 +69,7 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
     @Override public boolean alwaysTrue() throws InterruptedException {
         if (alwaysTrue != null) return alwaysTrue;
         
-        return alwaysTrue = constraint.isAlways(state).orElse(false);
+        return alwaysTrue = constraint.isAlways(state.spec()).orElse(false);
     }
 
 }

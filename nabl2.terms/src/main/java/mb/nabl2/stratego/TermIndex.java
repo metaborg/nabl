@@ -25,9 +25,9 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
 
     // ITermIndex implementation
 
-    @Value.Parameter public abstract String getResource();
+    @Override @Value.Parameter public abstract String getResource();
 
-    @Value.Parameter public abstract int getId();
+    @Override @Value.Parameter public abstract int getId();
 
     // IApplTerm implementation
 

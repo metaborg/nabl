@@ -69,7 +69,7 @@ public class FastNameResolution<V, L, R> implements INameResolution<V, L, R> {
         for(L l : max_L) {
             final Set.Immutable<IResolutionPath<V, L, R>> env1 = env_L(smaller(L, l), re, path, specifics);
             env.__insertAll(env1);
-            if(!dataEquiv.alwaysTrue() || env1.isEmpty()) {
+            if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
                 final Set.Immutable<IResolutionPath<V, L, R>> env2 =
                         env_l(l, re, path, Set.Immutable.union(specifics, env1));
                 env.__insertAll(env2);

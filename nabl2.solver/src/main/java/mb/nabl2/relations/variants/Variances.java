@@ -45,13 +45,13 @@ public class Variances {
     }
 
     public static IMatcher<IVariance> matcher() {
+        // @formatter:off
         return M.cases(
-            // @formatter:off
             M.appl0("Invar", t -> ImmutableInvariant.of()),
             M.appl1("Covar", RelationName.matcher(), (t,r) -> ImmutableCovariant.of(r)),
             M.appl1("Contravar", RelationName.matcher(), (t,r) -> ImmutableContravariant.of(r))
-            // @formatter:on
         );
+        // @formatter:on
     }
 
 }

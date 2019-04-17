@@ -1,5 +1,6 @@
 package mb.statix.solver.constraint;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -8,11 +9,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -22,7 +20,8 @@ import mb.statix.taico.solver.MState;
  * 
  * <pre>term1 != term2</pre>
  */
-public class CInequal implements IConstraint {
+public class CInequal implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final ITerm term1;
     private final ITerm term2;
@@ -39,6 +38,14 @@ public class CInequal implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm term1() {
+        return term1;
+    }
+
+    public ITerm term2() {
+        return term2;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -47,27 +54,16 @@ public class CInequal implements IConstraint {
         return new CInequal(term1, term2, cause);
     }
 
-    @Override public CInequal apply(ISubstitution.Immutable subst) {
-        return new CInequal(subst.apply(term1), subst.apply(term2), cause);
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseInequal(this);
     }
 
-    /**
-     * @see IConstraint#solve
-     * 
-     * @throws Delay
-     *      If either of the terms contain variables that cannot be solved yet.
-     */
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        final IUnifier.Immutable unifier = state.unifier();
-        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
-            if(result) {
-                return Optional.empty();
-            } else {
-                return Optional.of(ConstraintResult.of(state));
-            }
-        }, vars -> {
-            throw Delay.ofVars(vars);
-        });
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseInequal(this);
+    }
+
+    @Override public CInequal apply(ISubstitution.Immutable subst) {
+        return new CInequal(subst.apply(term1), subst.apply(term2), cause);
     }
     
     @Override

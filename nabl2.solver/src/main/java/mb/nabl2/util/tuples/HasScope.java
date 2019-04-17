@@ -11,9 +11,9 @@ import mb.nabl2.scopegraph.IScope;
 public interface HasScope<S extends IScope> {
 
     S scope();
-    
+
     static Predicate<HasScope<? extends IScope>> scopeEquals(IScope scope) {
         return tuple -> Objects.equals(tuple.scope(), scope);
     }
-        
+
 }

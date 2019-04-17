@@ -16,8 +16,8 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 public class SetEvaluator {
 
     public static <T> IMatcher<Set<IElement<T>>> matcher(IMatcher<Set<IElement<T>>> elemMatcher) {
-        return M.<Set<IElement<T>>> casesFix(m -> Iterables2.from(
-            // @formatter:off
+        // @formatter:off
+        return M.<Set<IElement<T>>>casesFix(m -> Iterables2.from(
             elemMatcher,
             M.appl0("EmptySet",(t) -> Sets.newHashSet()),
             M.appl2("Union", m, m, (t, leftSet, rightSet) -> {
@@ -52,13 +52,13 @@ public class SetEvaluator {
                 result.keySet().removeAll(rightProj.keySet());
                 return (Set<IElement<T>>)Sets.newHashSet(result.values());
             })
-            // @formatter:on
         ));
+        // @formatter:on
     }
 
-    public static <T> Multimap<Object,IElement<T>> project(Set<IElement<T>> elems, Optional<String> proj) {
-        Multimap<Object,IElement<T>> result = HashMultimap.create();
-        for (IElement<T> elem : elems) {
+    public static <T> Multimap<Object, IElement<T>> project(Set<IElement<T>> elems, Optional<String> proj) {
+        Multimap<Object, IElement<T>> result = HashMultimap.create();
+        for(IElement<T> elem : elems) {
             result.put(proj.map(p -> elem.project(p)).orElseGet(() -> elem.getValue()), elem);
         }
         return result;

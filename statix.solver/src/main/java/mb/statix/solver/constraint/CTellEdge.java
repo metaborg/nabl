@@ -1,25 +1,16 @@
 package mb.statix.solver.constraint;
 
-import java.util.Collection;
+import java.io.Serializable;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
-
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
-import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
@@ -30,7 +21,8 @@ import mb.statix.taico.solver.MState;
  * 
  * <pre>sourceScope -label-> targetScope</pre>
  */
-public class CTellEdge implements IConstraint {
+public class CTellEdge implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final ITerm sourceTerm;
     private final ITerm label;
@@ -59,6 +51,18 @@ public class CTellEdge implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm sourceTerm() {
+        return sourceTerm;
+    }
+
+    public ITerm label() {
+        return label;
+    }
+
+    public ITerm targetTerm() {
+        return targetTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -67,44 +71,16 @@ public class CTellEdge implements IConstraint {
         return new CTellEdge(sourceTerm, label, targetTerm, cause);
     }
 
-    @Override public Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return ImmutableList.of(CriticalEdge.of(sourceTerm, label, null));
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTellEdge(this);
+    }
+
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseTellEdge(this);
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
-    }
-    
-    @Override
-    public boolean canModifyState() {
-        return true;
-    }
-
-    /**
-     * @see IConstraint#solve
-     * 
-     * @throws IllegalArgumentException
-     *      If the source or target is not a scope.
-     * @throws Delay
-     *      If the source or target is not ground.
-     */
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        final IUnifier.Immutable unifier = state.unifier();
-        if(!unifier.isGround(sourceTerm)) {
-            throw Delay.ofVars(unifier.getVars(sourceTerm));
-        }
-        if(!unifier.isGround(targetTerm)) {
-            throw Delay.ofVars(unifier.getVars(targetTerm));
-        }
-        final Scope source = Scope.matcher().match(sourceTerm, unifier).orElseThrow(
-                () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
-        if(params.isClosed(source)) {
-            return Optional.empty();
-        }
-        final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
-                () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
     
     @Override

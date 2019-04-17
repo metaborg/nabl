@@ -8,20 +8,23 @@ import mb.nabl2.regexp.IRegExpBuilder;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class EmptySet<S> implements IRegExp<S> {
+abstract class Complement<S> implements IRegExp<S> {
 
+    @Value.Parameter public abstract IRegExp<S> getRE();
+
+    @Override
     @Value.Parameter public abstract IRegExpBuilder<S> getBuilder();
 
-    @Override public boolean isNullable() {
-        return false;
+    @Value.Lazy @Override public boolean isNullable() {
+        return !getRE().isNullable();
     }
 
     @Override public <T> T match(IRegExp.ICases<S, T> visitor) {
-        return visitor.emptySet();
+        return visitor.complement(getRE());
     }
 
     @Override public String toString() {
-        return "0";
+        return "~(" + getRE() + ")";
     }
 
 }

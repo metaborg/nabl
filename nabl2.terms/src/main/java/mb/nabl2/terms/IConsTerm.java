@@ -8,6 +8,7 @@ public interface IConsTerm extends IListTerm {
 
     IListTerm getTail();
 
+    @Override
     IConsTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

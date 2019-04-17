@@ -22,7 +22,7 @@ public abstract class MultiInitialResult implements IResult {
         return true;
     }
 
-    @Value.Parameter public abstract List<IConstraint> constraints();
+    @Override @Value.Parameter public abstract List<IConstraint> constraints();
 
     @Override @Value.Parameter public abstract ISolution solution();
 
@@ -32,6 +32,6 @@ public abstract class MultiInitialResult implements IResult {
 
     @Value.Parameter public abstract Set<Scope> globalScopes();
 
-    @Value.Parameter public abstract Fresh.Immutable fresh();
+    @Override @Value.Parameter public abstract Fresh.Immutable fresh();
 
 }

@@ -2,6 +2,7 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -14,11 +15,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -28,7 +25,8 @@ import mb.statix.taico.solver.MState;
  * 
  * <pre>new scopes</pre>
  */
-public class CNew implements IConstraint {
+public class CNew implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final List<ITerm> terms;
 
@@ -43,6 +41,18 @@ public class CNew implements IConstraint {
         this.cause = cause;
     }
 
+    public List<ITerm> terms() {
+        return terms;
+    }
+
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseNew(this);
+    }
+
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseNew(this);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -53,23 +63,6 @@ public class CNew implements IConstraint {
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
         return new CNew(subst.apply(terms), cause);
-    }
-    
-    @Override
-    public boolean canModifyState() {
-        return true;
-    }
-
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) {
-        final List<IConstraint> constraints = new ArrayList<>();
-        State newState = state;
-        for(ITerm t : terms) {
-            final String base = M.var(ITermVar::getName).match(t).orElse("s");
-            Tuple2<ITerm, State> ss = newState.freshScope(base);
-            constraints.add(new CEqual(t, ss._1(), this));
-            newState = ss._2();
-        }
-        return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
     }
     
     @Override public Optional<MConstraintResult> solve(MState state, MConstraintContext params) {

@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableSet;
@@ -23,7 +24,6 @@ import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
@@ -47,6 +47,7 @@ import mb.statix.taico.solver.ModuleSolver;
  * <pre>{ paramVars :- {bodyVars} constraints }</pre>
  */
 @Value.Immutable
+@Serial.Version(42L)
 public abstract class ARule implements IRule {
 
     @Value.Parameter public abstract String name();
@@ -57,8 +58,8 @@ public abstract class ARule implements IRule {
 
     @Value.Parameter public abstract List<IConstraint> body();
     
-    @Value.Lazy public Optional<Boolean> isAlways(State oldState) throws InterruptedException {
-        State state = State.of(oldState.spec());
+    @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+        State state = State.of(spec);
         List<ITerm> args = Lists.newArrayList();
         for(@SuppressWarnings("unused") Pattern param : params()) {
             final Tuple2<ITermVar, State> stateAndVar = state.freshVar("arg");
@@ -78,40 +79,7 @@ public abstract class ARule implements IRule {
         final Set<IConstraint> instBody = stateAndInst._3();
         try {
             Optional<SolverResult> solverResult =
-                    Solver.entails(state, instBody, new Completeness(), instVars, new NullDebugContext());
-            if(solverResult.isPresent()) {
-                return Optional.of(true);
-            } else {
-                return Optional.of(false);
-            }
-        } catch(Delay d) {
-            return Optional.empty();
-        }
-    }
-
-    @Value.Lazy public Optional<Boolean> isAlways(MState oldState) throws InterruptedException {
-        ModuleManager manager = new ModuleManager();
-        IModule owner = new Module(manager, "entails", oldState.spec());
-        MState state = new MState(manager, new EntailsCoordinator(), owner, oldState.spec());
-        
-        List<ITerm> args = Lists.newArrayList();
-        for(@SuppressWarnings("unused") Pattern param : params()) {
-            args.add(state.freshVar("arg"));
-        }
-        Tuple2<Set<ITermVar>, Set<IConstraint>> stateAndInst;
-        try {
-            if((stateAndInst = apply(args, state).orElse(null)) == null) {
-                return Optional.of(false);
-            }
-        } catch(Delay e) {
-            return Optional.of(false);
-        }
-        
-        final Set<ITermVar> instVars = stateAndInst._1();
-        final Set<IConstraint> instBody = stateAndInst._2();
-        try {
-            Optional<MSolverResult> solverResult =
-                    ModuleSolver.entails(state, instBody, MCompleteness.topLevelCompleteness(owner), instVars, new NullDebugContext());
+                    Solver.entails(state, instBody, (s, l, st) -> true, instVars, new NullDebugContext());
             if(solverResult.isPresent()) {
                 return Optional.of(true);
             } else {

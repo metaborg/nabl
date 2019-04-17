@@ -1,21 +1,28 @@
 package mb.statix.solver;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
-import org.immutables.value.Value;
-import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.functions.CheckedFunction1;
+import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableList;
-
-import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.spec.Spec;
+import mb.statix.solver.constraint.CEqual;
+import mb.statix.solver.constraint.CFalse;
+import mb.statix.solver.constraint.CInequal;
+import mb.statix.solver.constraint.CNew;
+import mb.statix.solver.constraint.CPathDst;
+import mb.statix.solver.constraint.CPathLabels;
+import mb.statix.solver.constraint.CPathLt;
+import mb.statix.solver.constraint.CPathMatch;
+import mb.statix.solver.constraint.CPathScopes;
+import mb.statix.solver.constraint.CPathSrc;
+import mb.statix.solver.constraint.CResolveQuery;
+import mb.statix.solver.constraint.CTellEdge;
+import mb.statix.solver.constraint.CTellRel;
+import mb.statix.solver.constraint.CTermId;
+import mb.statix.solver.constraint.CTrue;
+import mb.statix.solver.constraint.CUser;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
@@ -26,49 +33,22 @@ import mb.statix.taico.solver.MState;
 public interface IConstraint {
 
     /**
-     * Applies the given substitution to this constraint.
-     * 
-     * @param subst
-     *      the substitution
-     * 
      * @return
-     *      a copy of this constraint with the given substitution applied
+     *      the constraint that caused this constraint to be added
      */
-    IConstraint apply(ISubstitution.Immutable subst);
-
-    default Collection<CriticalEdge> criticalEdges(Spec spec) {
-        return ImmutableList.of();
-    }
+    Optional<IConstraint> cause();
 
     /**
-     * Return the terms that are used as constraint arguments.
-     *
-     * @return Constraint argument terms.
-     */
-    default Iterable<ITerm> terms() {
-        return Iterables2.empty();
-    }
-
-    /**
-     * Solves this constraint.
+     * Creates a copy of the current constraint with the given cause set as cause.
      * 
-     * @param state
-     *            -- monotonic from one call to the next
-     * @param params
-     *      the context containing info about completeness, rigid and closed as well as debug
+     * @param cause
+     *      the cause
      * 
      * @return
-     *      true if reduced, false if delayed
-     * 
-     * @throws InterruptedException
-     *      Optional exception that is thrown when solving this constraint is interrupted.
-     *      
-     * @throws Delay
-     *      If this constraint cannot be solved in the current state with the given context.
-     *      The exception contains the information about what information is required to solve.
+     *      the copied constraint
      */
-    Optional<ConstraintResult> solve(State state, ConstraintContext params) throws InterruptedException, Delay;
-    
+    IConstraint withCause(IConstraint cause);
+
     /**
      * Solves this constraint with mutable state.
      * 
@@ -88,14 +68,21 @@ public interface IConstraint {
      *      The exception contains the information about what information is required to solve.
      */
     Optional<MConstraintResult> solve(MState state, MConstraintContext params) throws InterruptedException, Delay;
-    
+
+    <R> R match(Cases<R> cases);
+
+    <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
+
     /**
+     * Applies the given substitution to this constraint.
+     * 
+     * @param subst
+     *      the substitution
+     * 
      * @return
-     *      true if this constraint could cause state modifications, false otherwise
+     *      a copy of this constraint with the given substitution applied
      */
-    default boolean canModifyState() {
-        return false;
-    }
+    IConstraint apply(ISubstitution.Immutable subst);
 
     /**
      * Converts this constraint to a string, where terms are formatted using the given term
@@ -108,23 +95,6 @@ public interface IConstraint {
      *      the string
      */
     String toString(TermFormatter termToString);
-
-    /**
-     * @return
-     *      the constraint that caused this constraint to be added
-     */
-    Optional<IConstraint> cause();
-
-    /**
-     * Creates a copy of the current constraint with the given cause set as cause.
-     * 
-     * @param cause
-     *      the cause
-     * 
-     * @return
-     *      the copied constraint
-     */
-    IConstraint withCause(IConstraint cause);
 
     /**
      * Converts the given constraints to a comma separated string, using the given TermFormatter to
@@ -151,29 +121,82 @@ public interface IConstraint {
         return sb.toString();
     }
 
-    @Value.Immutable
-    static abstract class AConstraintResult {
+    interface Cases<R> extends Function1<IConstraint, R> {
 
-        @Value.Parameter public abstract State state();
+        R caseEqual(CEqual c);
 
-        @Value.Parameter public abstract List<IConstraint> constraints();
+        R caseFalse(CFalse c);
 
-        @Value.Parameter public abstract List<ITermVar> vars();
+        R caseInequal(CInequal c);
 
-        public static ConstraintResult of(State state) {
-            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.of());
+        R caseNew(CNew c);
+
+        R casePathDst(CPathDst c);
+
+        R casePathLabels(CPathLabels c);
+
+        R casePathLt(CPathLt c);
+
+        R casePathMatch(CPathMatch c);
+
+        R casePathScopes(CPathScopes c);
+
+        R casePathSrc(CPathSrc c);
+
+        R caseResolveQuery(CResolveQuery c);
+
+        R caseTellEdge(CTellEdge c);
+
+        R caseTellRel(CTellRel c);
+
+        R caseTermId(CTermId c);
+
+        R caseTrue(CTrue c);
+
+        R caseUser(CUser c);
+
+        @Override default R apply(IConstraint c) {
+            return c.match(this);
         }
 
-        public static ConstraintResult ofConstraints(State state, IConstraint... constraints) {
-            return ofConstraints(state, Arrays.asList(constraints));
-        }
+    }
 
-        public static ConstraintResult ofConstraints(State state, Iterable<? extends IConstraint> constraints) {
-            return ConstraintResult.of(state, ImmutableList.copyOf(constraints), ImmutableList.of());
-        }
+    interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
 
-        public static ConstraintResult ofVars(State state, Iterable<? extends ITermVar> vars) {
-            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.copyOf(vars));
+        R caseEqual(CEqual c) throws E;
+
+        R caseFalse(CFalse c) throws E;
+
+        R caseInequal(CInequal c) throws E;
+
+        R caseNew(CNew c) throws E;
+
+        R casePathDst(CPathDst c) throws E;
+
+        R casePathLabels(CPathLabels c) throws E;
+
+        R casePathLt(CPathLt c) throws E;
+
+        R casePathMatch(CPathMatch c) throws E;
+
+        R casePathScopes(CPathScopes c) throws E;
+
+        R casePathSrc(CPathSrc c) throws E;
+
+        R caseResolveQuery(CResolveQuery c) throws E;
+
+        R caseTellEdge(CTellEdge c) throws E;
+
+        R caseTellRel(CTellRel c) throws E;
+
+        R caseTermId(CTermId c) throws E;
+
+        R caseTrue(CTrue c) throws E;
+
+        R caseUser(CUser c) throws E;
+
+        @Override default R apply(IConstraint c) throws E {
+            return c.matchOrThrow(this);
         }
 
     }

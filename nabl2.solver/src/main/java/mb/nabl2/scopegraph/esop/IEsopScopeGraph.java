@@ -40,9 +40,9 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
     interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends IEsopScopeGraph<S, L, O, V>, IScopeGraph.Immutable<S, L, O> {
 
-        IRelation3.Immutable<S, L, V> incompleteDirectEdges();
+        @Override IRelation3.Immutable<S, L, V> incompleteDirectEdges();
 
-        IRelation3.Immutable<S, L, V> incompleteImportEdges();
+        @Override IRelation3.Immutable<S, L, V> incompleteImportEdges();
 
         IEsopScopeGraph.Transient<S, L, O, V> melt();
 

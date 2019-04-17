@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITermVar;
@@ -124,8 +125,8 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
-    public void activateFromEdges(Collection<? extends CriticalEdge> edges, IDebugContext debug) {
-        if (edges.isEmpty()) return;
+    public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
+        if (Iterables.isEmpty(edges)) return;
         
         for (CriticalEdge edge : edges) {
             activateFromEdge(edge, debug);

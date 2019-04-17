@@ -16,7 +16,7 @@ public interface IEqualityConstraint extends IConstraint {
 
         T caseInequal(CInequal inequal);
 
-        static <T> Cases<T> of(Function<CEqual,T> onEqual, Function<CInequal,T> onInequal) {
+        static <T> Cases<T> of(Function<CEqual, T> onEqual, Function<CInequal, T> onInequal) {
             return new Cases<T>() {
 
                 @Override public T caseEqual(CEqual constraint) {
@@ -32,7 +32,7 @@ public interface IEqualityConstraint extends IConstraint {
 
     }
 
-    <T, E extends Throwable> T matchOrThrow(CheckedCases<T,E> function) throws E;
+    <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> function) throws E;
 
     interface CheckedCases<T, E extends Throwable> {
 
@@ -40,9 +40,9 @@ public interface IEqualityConstraint extends IConstraint {
 
         T caseInequal(CInequal inequal) throws E;
 
-        static <T, E extends Throwable> CheckedCases<T,E> of(CheckedFunction1<CEqual,T,E> onEqual,
-                CheckedFunction1<CInequal,T,E> onInequal) {
-            return new CheckedCases<T,E>() {
+        static <T, E extends Throwable> CheckedCases<T, E> of(CheckedFunction1<CEqual, T, E> onEqual,
+                CheckedFunction1<CInequal, T, E> onInequal) {
+            return new CheckedCases<T, E>() {
 
                 @Override public T caseEqual(CEqual constraint) throws E {
                     return onEqual.apply(constraint);

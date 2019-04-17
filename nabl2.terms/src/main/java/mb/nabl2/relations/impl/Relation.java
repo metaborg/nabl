@@ -1,4 +1,4 @@
-package mb.nabl2.relations.terms;
+package mb.nabl2.relations.impl;
 
 import java.io.Serializable;
 import java.util.Optional;

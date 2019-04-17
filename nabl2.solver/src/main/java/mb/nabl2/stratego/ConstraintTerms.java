@@ -33,8 +33,8 @@ public class ConstraintTerms {
      */
     public static ITerm specialize(ITerm term) {
         // fromStratego
-        term = term.match(Terms.cases(
         // @formatter:off
+        term = term.match(Terms.cases(
             appl -> {
                 List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(Collectors.toList());
                 return B.newAppl(appl.getOp(), args);
@@ -44,18 +44,18 @@ public class ConstraintTerms {
             integer -> integer,
             blob -> blob,
             var -> { throw new IllegalArgumentException("Term is already specialized."); }
-            // @formatter:on
         )).withAttachments(term.getAttachments());
+        // @formatter:on
+        // @formatter:off
         term = M.<ITerm>cases(
-            // @formatter:off
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
                     B.newVar(resource, name)),
             M.appl1(LIST_CTOR, M.list(), (t, xs) ->
                     xs),
             M.appl2(LISTTAIL_CTOR, M.listElems(), M.term(), (t, xs, ys) ->
                     B.newListTail(xs, (IListTerm) ys))
-            // @formatter:on
         ).match(term).orElse(term);
+        // @formatter:on
         return term;
     }
 
@@ -65,8 +65,8 @@ public class ConstraintTerms {
         final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
         final Ref<ITermVar> varTail = new Ref<>();
         while(list != null) {
-            list = list.match(ListTerms.cases(
             // @formatter:off
+            list = list.match(ListTerms.cases(
                 cons -> {
                     terms.add(specialize(cons.getHead()));
                     attachments.add(cons.getAttachments());
@@ -80,8 +80,8 @@ public class ConstraintTerms {
                     varTail.set(var);
                     return null;
                 }
-                // @formatter:on
             ));
+            // @formatter:on
         }
         if(varTail.get() != null) {
             return B.newListTail(terms, varTail.get(), attachments);
@@ -119,8 +119,8 @@ public class ConstraintTerms {
         final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
-            list = list.match(ListTerms.cases(
             // @formatter:off
+            list = list.match(ListTerms.cases(
                 cons -> {
                     terms.add(explicate(cons.getHead()));
                     attachments.add(cons.getAttachments());
@@ -135,8 +135,8 @@ public class ConstraintTerms {
                     attachments.add(ImmutableClassToInstanceMap.builder().build());
                     return null;
                 }
-                // @formatter:on
             ));
+            // @formatter:on
         }
         list = B.newList(terms, attachments);
         if(varTail.get() != null) {
@@ -147,7 +147,7 @@ public class ConstraintTerms {
     }
 
     private static ITerm explicate(ITermVar var) {
-        return  B.newAppl(VAR_CTOR, Arrays.asList(B.newString(var.getResource()), B.newString(var.getName())));
+        return B.newAppl(VAR_CTOR, Arrays.asList(B.newString(var.getResource()), B.newString(var.getName())));
     }
 
     public static <R> IMatcher<R> explicate(IMatcher<R> m) {

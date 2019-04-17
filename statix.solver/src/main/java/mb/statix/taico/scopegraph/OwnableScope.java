@@ -8,14 +8,14 @@ import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.taico.module.IModule;
 
 /**
  * (Immutable) Scope implementation with an owner.
  */
-public class OwnableScope extends Scope implements IOwnableScope {
+public class OwnableScope extends AScope implements IOwnableScope {
     private final IModule owner;
     private final String resource;
     private final String name;

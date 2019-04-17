@@ -68,8 +68,8 @@ public abstract class Solution implements ISolution {
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
-                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(),
-                Messages.Immutable.of(), Collections.emptySet());
+                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
+                Collections.emptySet());
     }
 
 }

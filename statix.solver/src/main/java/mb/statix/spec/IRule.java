@@ -52,26 +52,15 @@ public interface IRule {
     List<IConstraint> body();
 
     /**
-     * @param state
-     *      the state
+     * @param spec
+     *      the spec
      * 
      * @return
      *      true if this rule always holds, false otherwise
      * 
      * @throws InterruptedException
      */
-    Optional<Boolean> isAlways(State state) throws InterruptedException;
-    
-    /**
-     * @param state
-     *      the state
-     * 
-     * @return
-     *      true if this rule always holds, false otherwise
-     * 
-     * @throws InterruptedException
-     */
-    Optional<Boolean> isAlways(MState state) throws InterruptedException;
+    Optional<Boolean> isAlways(Spec spec) throws InterruptedException;
 
     /**
      * @param subst

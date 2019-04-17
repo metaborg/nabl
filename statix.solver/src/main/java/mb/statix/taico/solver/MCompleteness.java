@@ -123,7 +123,7 @@ public class MCompleteness implements IOwnable {
         //TODO Static state access
         boolean complete;
         synchronized (this) {
-            complete = incomplete.stream().flatMap(c -> Iterables2.stream(c.criticalEdges(owner.getCurrentState().spec())))
+            complete = incomplete.stream().flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getCurrentState().spec())))
                     .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
         }
         System.err.println("Completeness of " + owner + " result: " + complete);
@@ -189,7 +189,7 @@ public class MCompleteness implements IOwnable {
     }
     
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, MState state) {
-        return constraint.criticalEdges(state.spec()).stream().flatMap(ce -> {
+        return Completeness.criticalEdges(constraint, state.spec()).stream().flatMap(ce -> {
             final Optional<CriticalEdge> edge =
                     OwnableScope.ownableMatcher(state.manager()::getModule)
                         .match(ce.scope(), state.unifier())

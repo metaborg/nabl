@@ -16,7 +16,7 @@ import mb.nabl2.regexp.impl.RegExpBuilder;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.scopegraph.IResolutionParameters;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
@@ -39,11 +39,12 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
     }
 
     public static IMatcher<ResolutionParameters> matcher() {
-        return (term, unifier) -> IMatcher.flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
-            RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
-            return matchWf(builder).match(wfTerm, unifier)
-                    .<ResolutionParameters>map(wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
-        })).match(term, unifier);
+        return (term, unifier) -> IMatcher
+                .flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
+                    RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
+                    return matchWf(builder).match(wfTerm, unifier).<ResolutionParameters>map(
+                            wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
+                })).match(term, unifier);
     }
 
     private static IMatcher<IAlphabet<Label>> matchLabels() {

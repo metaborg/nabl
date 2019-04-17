@@ -2,6 +2,7 @@ package mb.statix.solver.constraint;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -11,16 +12,14 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MState;
 
-public class CPathSrc implements IConstraint {
+public class CPathSrc implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final ITerm pathTerm;
     private final ITerm srcTerm;
@@ -37,6 +36,14 @@ public class CPathSrc implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm pathTerm() {
+        return pathTerm;
+    }
+
+    public ITerm srcTerm() {
+        return srcTerm;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -45,19 +52,16 @@ public class CPathSrc implements IConstraint {
         return new CPathSrc(pathTerm, srcTerm, cause);
     }
 
-    @Override public CPathSrc apply(ISubstitution.Immutable subst) {
-        return new CPathSrc(subst.apply(pathTerm), subst.apply(srcTerm), cause);
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.casePathSrc(this);
     }
 
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(path.getSource(), srcTerm, this)));
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.casePathSrc(this);
+    }
+
+    @Override public CPathSrc apply(ISubstitution.Immutable subst) {
+        return new CPathSrc(subst.apply(pathTerm), subst.apply(srcTerm), cause);
     }
     
     @Override

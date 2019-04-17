@@ -14,7 +14,7 @@ import mb.nabl2.util.Tuple2;
 public interface IEsopEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
         extends Serializable {
 
-    Optional<Tuple2<Set.Immutable<P>,Set.Immutable<String>>> get();
+    Optional<Tuple2<Set.Immutable<P>, Set.Immutable<String>>> get();
 
     interface Filter<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
             extends Serializable {

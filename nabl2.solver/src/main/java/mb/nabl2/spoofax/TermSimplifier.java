@@ -14,8 +14,8 @@ import mb.nabl2.terms.matching.Transform.T;
 public class TermSimplifier {
 
     public static ITerm focus(String resource, ITerm term) {
+        // @formatter:off
         return T.somebu(M.preserveAttachments(M.cases(
-            // @formatter:off
             M.var(var -> {
                 String r = (resource ==  null || var.getResource().equals(resource)) ? "" : var.getResource();
                 return B.newVar(r, var.getName());
@@ -29,8 +29,8 @@ public class TermSimplifier {
                 return ImmutableTermIndex.of(r, i.getId());
             }),
             Occurrence.matcher()
-            // @formatter:on
         ))::match).apply(term);
+        // @formatter:on
     }
 
 }

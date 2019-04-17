@@ -14,14 +14,18 @@ import mb.statix.taico.scopegraph.locking.LockManager;
  * <p>This throwable contains the variables and/or the scopes that are required before we can
  * continue solving the constraint that threw Delay.
  */
-public class Delay extends Throwable {
+public class Delay extends SolverException {
 
     private static final long serialVersionUID = 1L;
 
     private final Set.Immutable<ITermVar> vars;
     private final Set.Immutable<CriticalEdge> criticalEdges;
-    private LockManager lockManager;
+    private transient LockManager lockManager;
 
+    public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges) {
+        this(vars, criticalEdges, null);
+    }
+    
     /**
      * Creates a new delay for the given variables and critical edges.
      * 
@@ -33,10 +37,14 @@ public class Delay extends Throwable {
      *      the lock manager
      */
     public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges, LockManager lockManager) {
-        super("delayed", null, false, false);
+        super("delayed");
         this.vars = CapsuleUtil.toSet(vars);
         this.criticalEdges = CapsuleUtil.toSet(criticalEdges);
         this.lockManager = lockManager;
+    }
+
+    @Override public void rethrow() throws Delay, InterruptedException {
+        throw this;
     }
 
     /**
@@ -83,6 +91,15 @@ public class Delay extends Throwable {
         this.criticalEdges.stream().filter(ce -> scopeSet.contains(ce.scope()))
                 .forEach(retainedCriticalEdges::__insert);
         return new Delay(retainedVars, retainedCriticalEdges.freeze(), this.lockManager);
+    }
+
+    public Delay removeAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
+        final Set.Immutable<ITermVar> retainedVars = this.vars.__removeAll(CapsuleUtil.toSet(vars));
+        final Set.Immutable<ITerm> scopeSet = CapsuleUtil.toSet(scopes);
+        final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
+        this.criticalEdges.stream().filter(ce -> !scopeSet.contains(ce.scope()))
+                .forEach(retainedCriticalEdges::__insert);
+        return new Delay(retainedVars, retainedCriticalEdges.freeze());
     }
 
     public static Delay of() {

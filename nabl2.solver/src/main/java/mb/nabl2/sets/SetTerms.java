@@ -15,7 +15,7 @@ public class SetTerms {
 
     public static IMatcher<Optional<String>> projectionMatcher() {
         return M.cases(
-            // @formatter:off
+        // @formatter:off
             M.appl0(NO_PROJECTION, t -> Optional.empty()),
             M.appl1(PROJECTION, M.stringValue(), (t, p) -> Optional.of(p))
             // @formatter:on
