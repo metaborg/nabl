@@ -58,4 +58,29 @@ public interface ISolverResult {
         });
         return new Delay(vars.build(), scopes.build(), null);
     }
+    
+    /**
+     * Creates a copy of this solver result by replacing the {@link #delays()} map with the
+     * specified map.
+     * Nulls are not permitted as keyrs or values.
+     * 
+     * @param entries
+     *      the entries to be set as the delays map
+     * 
+     * @return
+     *      a modified copy of this solver result
+     */
+    ISolverResult withDelays(Map<? extends IConstraint, ? extends Delay> entries);
+    
+    /**
+     * Creates a copy of this solver result by replacing the {@link #errors()} set with the
+     * specified elements.
+     * 
+     * @param elements
+     *      the constraints to be set
+     * 
+     * @return
+     *      a modified copy of this solver result
+     */
+    ISolverResult withErrors(Iterable<? extends IConstraint> elements);
 }
