@@ -94,7 +94,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         }
 
         final ITerm substTerm =
-                StatixTerms.explicateMapEntries(toplevelSubstitution(topLevelVars, subst, resultState).entrySet());
+                StatixTerms.explicateMapEntries(toplevelSubstitution(topLevelVars, subst, resultState.unifier()).entrySet());
         final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableSet.of()));
         final ITerm solveResultTerm = B.newAppl("Solution", substTerm, solverTerm);
         final IListTerm errors = B.newList(errorList);

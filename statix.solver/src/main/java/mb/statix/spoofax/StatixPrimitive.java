@@ -136,11 +136,11 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
      * The returned Map preserves iteration order of vars.
      */
     protected Map<ITermVar, ITerm> toplevelSubstitution(Iterable<ITermVar> vars, ISubstitution.Immutable subst,
-            State state) {
+            IUnifier.Immutable unifier) {
         final ImmutableMap.Builder<ITermVar, ITerm> vsubst = ImmutableMap.builder();
         for(ITermVar var : vars) {
             final ITerm key = subst.apply(var);
-            final ITerm value = state.unifier().findRecursive(key);
+            final ITerm value = unifier.findRecursive(key);
             final ITerm varTerm = subst.apply(value);
             if(!var.equals(varTerm)) {
                 vsubst.put(var, varTerm);
