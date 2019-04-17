@@ -15,4 +15,4 @@ Name binding is specified in terms of
 
 ## Documentation
 
-We maintain the NaBL documentation in [our documentation repository](https://github.com/metaborg/doc/tree/master/meta-languages/nabl). 
+We maintain the NaBL documentation in [our documentation repository](https://github.com/metaborg/documentation/blob/master/source/langdev/meta/lang/nabl2/index.rst). 
