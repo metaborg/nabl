@@ -48,7 +48,27 @@ rules
     new s',
     Lang{x} <- s, Lang{x} ===> s', @x.decl := Lang{x},
     Lang{x} -> s, Lang{x} <=== s',
+    TopLevelSections[[ sections ^ (s') ]].
+
+  TopLevelSections[[ sections ^ (s) ]] :=
+
+    C{ResolveFilterWf()} <- s',
+    C{ResolveFilterWf()} : PRED([OCCURRENCE(), LIST(LABEL())]) !!,
+    C{ResolveFilterWf()}.ind := InductiveC() !!,
+    C{ResolveFilterWf()}.kind := DeclaredC() !!,
+
+    C{ResolveFilterEq()} <- s',
+    C{ResolveFilterEq()} : PRED([OCCURRENCE(), OCCURRENCE()]) !!,
+    C{ResolveFilterEq()}.ind := InductiveC() !!,
+    C{ResolveFilterEq()}.kind := DeclaredC() !!,
+
+    C{ResolveMinOrd()} <- s',
+    C{ResolveMinOrd()} : PRED([OCCURRENCE(), LABEL(), LABEL()]) !!,
+    C{ResolveMinOrd()}.ind := InductiveC() !!,
+    C{ResolveMinOrd()}.kind := DeclaredC() !!,
+
     Sections[[ sections ^ (s') ]].
+
 
   Sections[[ sections ^ (s') ]] :=
     Map1[[ sections ^ (s') ]],

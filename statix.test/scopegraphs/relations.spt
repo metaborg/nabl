@@ -25,17 +25,13 @@ test query multiple items in the same scope succeeds [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test multiple data for same key gives a single result [[
+test multiple data for same key gives multiple results [[
   resolve {s i j k}
     new s, !r[7, j] in s, !r[7, i] in s,
-    query r filter true and { 7 } in s |-> [(_, (7, k))],
-    eq(i, k), eq(j, k)
+    query r filter true and { 7 } in s |-> [_, _]
   signature
     relations
       r : int -> int
-  rules
-    eq : int * int
-    eq(x, x).
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 

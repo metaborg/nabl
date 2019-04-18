@@ -120,7 +120,7 @@ public class StatixTerms {
     }
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
-        return M.appl2("C", M.stringValue(), M.listElems(pattern()), (h, name, patterns) -> {
+        return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
             return ImmutableTuple2.of(name, patterns);
         });
     }
@@ -197,7 +197,7 @@ public class StatixTerms {
                     constraints.add(new CPathScopes(p, rt));
                     return Unit.unit;
                 }),
-                M.appl2("C", M.stringValue(), M.listElems(term()), (c, name, args) -> {
+                M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
                     constraints.add(new CUser(name, args));
                     return Unit.unit;
                 }),
@@ -209,13 +209,22 @@ public class StatixTerms {
         };
     }
 
-    public static IMatcher<Optional<ITerm>> queryTarget() {
-        return M.cases(
+    private static IMatcher<String> constraintName() {
         // @formatter:off
+        return M.cases(
+            M.stringValue(),
+            M.appl().filter(t -> t.getArity() == 0).map(t -> t.getOp())
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<Optional<ITerm>> queryTarget() {
+        // @formatter:off
+        return M.cases(
             M.appl0("NoTarget", t -> Optional.empty()),
             M.appl1("RelTarget", relation(), (t, rel) -> Optional.of(rel))
-            // @formatter:on
         );
+        // @formatter:on
     }
 
     public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {

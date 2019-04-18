@@ -31,4 +31,4 @@ rules
 
   explicate-resolve(|a):
       Eval(vs, body) -> Eval(vs, body')
-    with body' := body // FIXME : <bottomup(try(normalize-resolves(|wf, eq, ord)))> body
+    with body' := <normalize-resolves> body
