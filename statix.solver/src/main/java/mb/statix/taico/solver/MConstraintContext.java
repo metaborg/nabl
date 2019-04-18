@@ -3,6 +3,7 @@ package mb.statix.taico.solver;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.util.Scopes;
 
 public class MConstraintContext {
 
@@ -19,15 +20,21 @@ public class MConstraintContext {
     }
     
     public CompletenessResult isComplete(ITerm scope, ITerm label, IMState state) {
-        return isComplete.apply(scope, label, state);
+        CompletenessResult result = isComplete.apply(scope, label, state);
+        System.err.println("MCC: isComplete: scope of " + Scopes.getScope(scope).getResource() + ", state of " + state.owner() + ". IsComplete: " + result);
+        return result;
     }
 
     public boolean isRigid(ITermVar var, IMState state) {
-        return !state.vars().contains(var);
+        boolean result = !state.vars().contains(var);
+        System.err.println("MCC: isRigid: variable of " + var.getResource() + ", state of " + state.owner() + ". Rigid: " + result);
+        return result;
     }
 
     public boolean isClosed(ITerm scope, IMState state) {
-        return !state.scopes().contains(scope) && !state.scopeGraph().getExtensibleScopes().contains(scope);
+        boolean result = !state.scopes().contains(scope) && !state.scopeGraph().getExtensibleScopes().contains(scope);
+        System.err.println("MCC: isClosed: scope of " + Scopes.getScope(scope).getResource() + ", state of " + state.owner() + ". Closed: " + result);
+        return result;
     }
 
 }

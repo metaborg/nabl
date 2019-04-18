@@ -290,6 +290,7 @@ public class ModuleSolver implements IOwnable {
      *      the completeness result
      */
     public CompletenessResult isComplete(ITerm scopeTerm, ITerm label, IMState state) {
+        System.err.println(getOwner() + " received isComplete query for " + scopeTerm);
         if (state.getOwner() != getOwner()) debug.warn("Received isComplete query on {} for state of {}", getOwner(), state.getOwner());
 
         Scope scope = Scopes.getScope(scopeTerm);
@@ -308,8 +309,12 @@ public class ModuleSolver implements IOwnable {
     }
     
     private CompletenessResult isCompleteFinal(Scope scope, ITerm label, IMState state) {
+        System.err.println("Completeness of " + getOwner() + " got isCompleteFinal request.");
         CompletenessResult r = completeness.isComplete(scope, label, state);
-        if (!r.isComplete()) return r;
+        if (!r.isComplete()) {
+            System.err.println("Completeness of " + getOwner() + " result: (own completeness) false");
+            return r;
+        }
         
         for (IModule child : getOwner().getChildren()) {
             //TODO OPTIMIZATION Only delegate to children who get passed the scope
@@ -322,7 +327,9 @@ public class ModuleSolver implements IOwnable {
             }
         }
         
-        return isComplete.apply(scope, label, state);
+        r = isComplete.apply(scope, label, state);
+        System.err.println("Completeness of " + getOwner() + " result: (isComplete predicate) " + r.isComplete());
+        return r;
     }
     
     /**
