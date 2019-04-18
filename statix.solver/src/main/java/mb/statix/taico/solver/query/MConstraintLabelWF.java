@@ -125,7 +125,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
     public static MConstraintLabelWF of(IRule constraint, IMState state, ICompleteness isComplete, IDebugContext debug) {
         // duplicate logic from entails, because we call solve directly in step()
         final IMState _state = state.delegate(new HashSet<>(), true);
-        final ITermVar lbls = state.freshVar("lbls");
+        final ITermVar lbls = _state.freshVar("lbls");
         final Tuple2<Set<ITermVar>, Set<IConstraint>> inst;
         try {
             if((inst = constraint.apply(ImmutableList.of(lbls), state).orElse(null)) == null) {
