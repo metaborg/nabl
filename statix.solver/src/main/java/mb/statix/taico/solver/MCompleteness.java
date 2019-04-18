@@ -21,7 +21,6 @@ import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
-import mb.statix.taico.util.Scopes;
 import mb.statix.util.Capsules;
 
 /**
@@ -123,7 +122,7 @@ public class MCompleteness implements IOwnable {
             final Optional<CriticalEdge> edge =
                     Scope.matcher()
                         .match(ce.scope(), state.unifier())
-                        .map(s -> CriticalEdge.of(s, ce.label(), Scopes.getOwner(s, state.manager())));
+                        .map(s -> CriticalEdge.of(s, ce.label(), state.owner()));
             return Optionals.stream(edge);
         }).collect(Collectors.toList());
     }
