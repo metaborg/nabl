@@ -164,8 +164,8 @@ public class ModuleConstraintStore implements IConstraintStore {
             activated = stuckOnEdge.removeAll(edge);
             stuckOnEdge.values().removeAll(activated);
         }
-        debug.info("activating edge {}", edge);
-        if (activated.isEmpty()) {
+        debug.info("activating edge {}, cause {}", edge, edge.cause());
+        if (!activated.isEmpty()) {
             debug.info("activating {}", activated);
         } else {
             debug.info("no constraints were activated");
@@ -285,10 +285,13 @@ public class ModuleConstraintStore implements IConstraintStore {
                     .map(IOwnable::getOwner)
                     .orElseThrow(() -> new IllegalStateException("Scope of critical edge does not have an owning module: " + edge.scope()));
         }
-        
-        debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
+
         //TODO Static state access
         ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
+        //A module shouldn't have to register on itself
+        if (store == this) return;
+        
+        debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
         store.registerObserver(edge, this, debug);
     }
     
