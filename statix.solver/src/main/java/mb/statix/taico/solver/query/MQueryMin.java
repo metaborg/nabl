@@ -23,16 +23,16 @@ public class MQueryMin implements IMQueryMin, Serializable {
         this.dataConstraint = dataConstraint;
     }
 
-    public IMQueryMin apply(ISubstitution.Immutable subst) {
+    @Override public IMQueryMin apply(ISubstitution.Immutable subst) {
         return new MQueryMin(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    public LabelOrder<ITerm> getLabelOrder(IMState state, ICompleteness isComplete, IDebugContext debug) {
-        return new MConstraintLabelOrder(pathConstraint, state, isComplete, debug);
+    @Override public LabelOrder<ITerm> getLabelOrder(IMState state, ICompleteness isComplete, IDebugContext debug) {
+        return new MConstraintLabelOrder(pathConstraint, state.delegate(), isComplete, debug);
     }
 
-    public DataLeq<ITerm> getDataEquiv(IMState state, ICompleteness isComplete, IDebugContext debug) {
-        return new MConstraintDataLeq(dataConstraint, state, isComplete, debug);
+    @Override public DataLeq<ITerm> getDataEquiv(IMState state, ICompleteness isComplete, IDebugContext debug) {
+        return new MConstraintDataLeq(dataConstraint, state.delegate(), isComplete, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

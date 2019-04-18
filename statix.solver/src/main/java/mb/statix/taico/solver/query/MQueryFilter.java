@@ -28,16 +28,16 @@ public class MQueryFilter implements IMQueryFilter, Serializable {
         this.dataConstraint = dataConstraint;
     }
 
-    public IMQueryFilter apply(ISubstitution.Immutable subst) {
+    @Override public IMQueryFilter apply(ISubstitution.Immutable subst) {
         return new MQueryFilter(pathConstraint.apply(subst), dataConstraint.apply(subst));
     }
 
-    public LabelWF<ITerm> getLabelWF(IMState state, ICompleteness isComplete, IDebugContext debug) {
-        return MConstraintLabelWF.of(pathConstraint, state, isComplete, debug);
+    @Override public LabelWF<ITerm> getLabelWF(IMState state, ICompleteness isComplete, IDebugContext debug) {
+        return MConstraintLabelWF.of(pathConstraint, state.delegate(), isComplete, debug);
     }
 
-    public DataWF<ITerm> getDataWF(IMState state, ICompleteness isComplete, IDebugContext debug) {
-        return new MConstraintDataWF(dataConstraint, state, isComplete, debug);
+    @Override public DataWF<ITerm> getDataWF(IMState state, ICompleteness isComplete, IDebugContext debug) {
+        return new MConstraintDataWF(dataConstraint, state.delegate(), isComplete, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

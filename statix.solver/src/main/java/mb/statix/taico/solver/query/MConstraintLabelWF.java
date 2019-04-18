@@ -61,10 +61,10 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         final Result<IUnifier.Immutable> unifyResult;
         try {
             if((unifyResult = newState.unifier().unify(tail, B.newCons(l, tailVar)).orElse(null)) == null) {
-                throw new ResolutionException("Instantiation tail failed unexpectedly.");
+                throw new ResolutionException("Instantiating tail failed unexpectedly.");
             }
         } catch(OccursException e) {
-            throw new ResolutionException("Instantiation tail failed unexpectedly.");
+            throw new ResolutionException("Instantiating tail failed unexpectedly.");
         }
         final IUnifier.Immutable newUnifier = unifyResult.unifier();
         newState.setUnifier(newUnifier);
