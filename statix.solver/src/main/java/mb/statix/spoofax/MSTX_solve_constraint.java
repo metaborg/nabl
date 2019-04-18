@@ -38,8 +38,10 @@ import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 
 public class MSTX_solve_constraint extends StatixPrimitive {
-    private static final boolean DEBUG = true;
-    private static final boolean CONCURRENT = true;
+    public static final boolean MODULES_OVERRIDE = true;
+    public static final boolean OVERRIDE_LOGLEVEL = true;
+    public static final String LOGLEVEL = "info"; //"debug" "none"
+    private static final boolean CONCURRENT = false;
     public static final boolean QUERY_DEBUG = false;
 
     @Inject public MSTX_solve_constraint() {
@@ -52,7 +54,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final IDebugContext debug = getDebugContext(DEBUG ? B.newString("debug") : terms.get(1));
+        final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(1));
 
         final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
                 .tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),

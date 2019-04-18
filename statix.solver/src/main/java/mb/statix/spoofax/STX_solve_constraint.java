@@ -42,7 +42,13 @@ public class STX_solve_constraint extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-
+        
+        //TODO Temporary override for convenience
+        if (MSTX_solve_constraint.MODULES_OVERRIDE) {
+            System.err.println("Running modularized solver!");
+            return new MSTX_solve_constraint().call(env, term, terms);
+        }
+        
         final Spec spec =
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
