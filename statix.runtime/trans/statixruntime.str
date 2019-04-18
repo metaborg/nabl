@@ -187,6 +187,8 @@ rules // multi file analysis
 
   // @type SolverResult -> (SolverResult, [Error], [Warning], [Note])
   stx--extract-messages = prim("STX_extract_messages")
+  
+  //TODO mstx-editor-analyze for multifile
 
 rules
 
