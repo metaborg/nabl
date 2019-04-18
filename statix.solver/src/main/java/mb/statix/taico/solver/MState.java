@@ -114,6 +114,7 @@ public class MState implements IMState {
         int i = ++varCounter;
         String name = base.replaceAll("-", "_") + "-" + i;
         ITermVar var = B.newVar(owner.getId(), name);
+        // same as freshVar, but do not add to vars
         return var;
     }
 

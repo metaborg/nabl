@@ -6,6 +6,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
 
 /**
@@ -83,4 +84,10 @@ public interface ISolverResult {
      *      a modified copy of this solver result
      */
     ISolverResult withErrors(Iterable<? extends IConstraint> elements);
+    
+    /**
+     * @return
+     *      the unifier of the final result
+     */
+    IUnifier.Immutable unifier();
 }

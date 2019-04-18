@@ -21,6 +21,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.log.IDebugContext;
@@ -230,6 +231,11 @@ public class Solver {
         @Value.Parameter public abstract Set<IConstraint> errors();
 
         @Value.Parameter public abstract Map<IConstraint, Delay> delays();
+        
+        @Override
+        public Immutable unifier() {
+            return state().unifier();
+        }
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {

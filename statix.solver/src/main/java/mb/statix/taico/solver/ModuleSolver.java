@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.log.Level;
 
@@ -19,6 +20,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.terms.Scope;
@@ -420,6 +422,7 @@ public class ModuleSolver implements IOwnable {
     }
     
     @Value.Immutable
+    @Serial.Version(42L)
     public static abstract class AMSolverResult implements ISolverResult {
 
         @Value.Parameter public abstract IMState state();
@@ -428,6 +431,10 @@ public class ModuleSolver implements IOwnable {
 
         @Value.Parameter public abstract Map<IConstraint, Delay> delays();
 
+        @Override
+        public Immutable unifier() {
+            return state().unifier();
+        }
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {

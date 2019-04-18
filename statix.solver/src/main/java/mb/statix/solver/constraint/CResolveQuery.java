@@ -107,8 +107,8 @@ public class CResolveQuery implements IConstraint, Serializable {
     public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final Type type;
-        if(relation != null) {
-            type = state.spec().relations().get(relation);
+        if(relation().isPresent()) {
+            type = state.spec().relations().get(relation().get());
             if(type == null) {
                 params.debug().error("Ignoring query for unknown relation {}", relation);
                 return Optional.empty();
