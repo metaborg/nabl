@@ -33,11 +33,11 @@ public class MQueryFilter implements IMQueryFilter, Serializable {
     }
 
     @Override public LabelWF<ITerm> getLabelWF(IMState state, ICompleteness isComplete, IDebugContext debug) {
-        return MConstraintLabelWF.of(pathConstraint, state.delegate(), isComplete, debug);
+        return MConstraintLabelWF.of(pathConstraint, state, isComplete, debug);
     }
 
     @Override public DataWF<ITerm> getDataWF(IMState state, ICompleteness isComplete, IDebugContext debug) {
-        return new MConstraintDataWF(dataConstraint, state.delegate(), isComplete, debug);
+        return new MConstraintDataWF(dataConstraint, state, isComplete, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {
