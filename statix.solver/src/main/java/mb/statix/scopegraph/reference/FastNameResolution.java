@@ -94,7 +94,8 @@ public class FastNameResolution<V, L, R> implements INameResolution<V, L, R> {
         }
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         if(relation.isPresent()) {
-            for(List<V> datum : scopeGraph.getData().get(path.getTarget(), relation.get())) {
+            final java.util.Set<List<V>> data = scopeGraph.getData().get(path.getTarget(), relation.get());
+            for(List<V> datum : data) {
                 if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                     env.__insert(Paths.resolve(path, relation, datum));
                 }

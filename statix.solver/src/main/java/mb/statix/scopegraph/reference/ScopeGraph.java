@@ -2,6 +2,7 @@ package mb.statix.scopegraph.reference;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.ImmutableList;
 
@@ -119,6 +120,33 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
                 Iterable<R> relations) {
             return new ScopeGraph.Immutable<>(Capsules.newSet(labels), endOfPath, Capsules.newSet(relations),
                     HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of());
+        }
+
+        // ------------------------------------------------------------
+
+        @Override public String toString() {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            final AtomicBoolean first = new AtomicBoolean(true);
+            edges.stream().forEach(edge -> {
+                sb.append(first.getAndSet(false) ? " " : ", ");
+                sb.append(edge._1());
+                sb.append(" -");
+                sb.append(edge._2());
+                sb.append("-> ");
+                sb.append(edge._3());
+            });
+            data.stream().forEach(datum -> {
+                sb.append(first.getAndSet(false) ? " " : ", ");
+                sb.append(datum._1());
+                sb.append(" -");
+                sb.append(datum._2());
+                sb.append("-[ ");
+                sb.append(datum._3());
+                sb.append("] ");
+            });
+            sb.append(first.get() ? "}" : " }");
+            return sb.toString();
         }
 
     }
