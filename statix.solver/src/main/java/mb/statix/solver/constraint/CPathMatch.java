@@ -3,7 +3,7 @@ package mb.statix.solver.constraint;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;

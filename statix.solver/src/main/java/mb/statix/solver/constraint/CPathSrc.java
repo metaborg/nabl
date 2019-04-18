@@ -5,7 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;

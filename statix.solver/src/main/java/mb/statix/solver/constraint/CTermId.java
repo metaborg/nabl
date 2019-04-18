@@ -5,7 +5,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;

@@ -3,8 +3,7 @@ package mb.statix.solver.constraint;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.log.Level;
 
 import mb.nabl2.terms.ITerm;

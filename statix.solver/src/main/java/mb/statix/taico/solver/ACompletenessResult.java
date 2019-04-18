@@ -1,6 +1,6 @@
 package mb.statix.taico.solver;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.immutables.value.Value;
 
