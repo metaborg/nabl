@@ -109,37 +109,37 @@ rules
 
 
   replace-cop(|a): NewOp() -> v
-    with v := Var(<newname> "new")
+    with v := <make-fresh-var> "new"
 
   cop-to-c(|a): (NewOp(), v) -> CNew([v])
 
 
   replace-cop(|a): TermIdOp(_) -> v
-    with v := Var(<newname> "termId")
+    with v := <make-fresh-var> "termId"
 
   cop-to-c(|a): (TermIdOp(t), v) -> CTermId(t, v)
 
 
   replace-cop(|a): PathSrcOp(_) -> v
-    with v := Var(<newname> "src")
+    with v := <make-fresh-var> "src"
 
   cop-to-c(|a): (PathSrcOp(t), v) -> CPathSrc(t, v)
 
 
   replace-cop(|a): PathDstOp(_) -> v
-    with v := Var(<newname> "dst")
+    with v := <make-fresh-var> "dst"
 
   cop-to-c(|a): (PathDstOp(t), v) -> CPathDst(t, v)
 
 
   replace-cop(|a): PathScopesOp(_) -> v
-    with v := Var(<newname> "scopes")
+    with v := <make-fresh-var> "scopes"
 
   cop-to-c(|a): (PathScopesOp(t), v) -> CPathScopes(t, v)
 
 
   replace-cop(|a): PathLabelsOp(_) -> v
-    with v := Var(<newname> "labels")
+    with v := <make-fresh-var> "labels"
 
   cop-to-c(|a): (PathLabelsOp(t), v) -> CPathLabels(t, v)
 
@@ -236,7 +236,7 @@ rules
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
-  replace-wld: Wld() -> Var(<newname> "wld")
+  replace-wld: Wld() -> <make-fresh-var> "wld"
 
 rules
 
@@ -344,7 +344,7 @@ rules
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
          r := Occurrence(ns, ts, p);
-         lbls := Var(<newname> "lbls");
+         lbls := <make-fresh-var> "lbls";
          if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (filter, [lbls])
          else
@@ -361,7 +361,7 @@ rules
          us := <make-fresh-vars(|"u")> tys;
          [pr, pd] := <map(!Wld())> [(),()];
          r := Occurrence(ns, ts, pr);
-         d := Var(<newname> "d");
+         d := <make-fresh-var> "d";
          eq-d := CEqual(d, Occurrence(ns, us, pd));
          eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
          body := CConj(eq-d, <list-to-conj> eqs)
@@ -373,8 +373,8 @@ rules
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
          r := Occurrence(ns, ts, p);
-         l1 := Var(<newname> "l1");
-         l2 := Var(<newname> "l2");
+         l1 := <make-fresh-var> "l1";
+         l2 := <make-fresh-var> "l2";
          if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (min, [l1, l2])
          else
@@ -393,20 +393,22 @@ rules
   normalize-resolves = bottomup(try(normalize-resolve))
 
   normalize-resolve: ResolveFilter(rt) -> Filter(wf-c, eq-c)
-    with lbls := Var(<newname> "lbls");
+    with lbls := <make-fresh-var> "lbls";
          wf-c := LLam([lbls], [], C(ResolveFilterWf(), [rt, lbls]));
-         d := Var(<newname> "d");
+         d := <make-fresh-var> "d";
          eq-c := LLam([d], [], C(ResolveFilterEq(), [rt, d]))
 
   normalize-resolve: ResolveMin(rt) -> Min(ord-c, eq-c)
-    with l1 := Var(<newname> "l1");
-         l2 := Var(<newname> "l2");
+    with l1 := <make-fresh-var> "l1";
+         l2 := <make-fresh-var> "l2";
          ord-c := LLam([l1, l2], [], C(ResolveMinOrd(), [rt, l1, l2]));
          eq-c  := LLam([Wld(), Wld()], [], CTrue())
 
 rules
 
   make-fresh-vars(|x) = map(!Var(<newname> x))
+
+  make-fresh-var = !Var(<newname>)
 
   make-seq-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
 
