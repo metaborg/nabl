@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -21,6 +23,7 @@ import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 
 public class STX_solve_multi_project extends StatixPrimitive {
+    private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
     @Inject public STX_solve_multi_project() {
         super(STX_solve_multi_project.class.getSimpleName(), 2);
@@ -48,7 +51,10 @@ public class STX_solve_multi_project extends StatixPrimitive {
 
         final SolverResult resultConfig;
         try {
+            final double t0 = System.currentTimeMillis();
             resultConfig = Solver.solve(state, constraints, (s, l, st) -> true, debug);
+            final double dt = System.currentTimeMillis() - t0;
+            logger.info("project analyzed in {} s", (dt / 1_000d));
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

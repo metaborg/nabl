@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate3;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -27,6 +29,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi_file extends StatixPrimitive {
+    private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
     @Inject public STX_solve_multi_file() {
         super(STX_solve_multi_file.class.getSimpleName(), 2);
@@ -48,8 +51,11 @@ public class STX_solve_multi_file extends StatixPrimitive {
                         resource_constraints._2(), debug);
         final List<Tuple2<String, Set<IConstraint>>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
+        final double t0 = System.currentTimeMillis();
         final List<ITerm> results =
-                constraints.parallelStream().map(solveConstraint::apply).collect(Collectors.toList());
+                constraints.stream().parallel().map(solveConstraint::apply).collect(Collectors.toList());
+        final double dt = System.currentTimeMillis() - t0;
+        logger.info("files analyzed in {} s", (dt / 1_000d));
         return Optional.of(B.newList(results));
     }
 

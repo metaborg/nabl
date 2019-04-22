@@ -58,7 +58,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         return M.cases(
             constraintMatcher.map(solveConstraint::apply),
             M.listElems(constraintMatcher).map(vars_constraints -> {
-                return B.newList(vars_constraints.parallelStream().map(solveConstraint::apply).collect(Collectors.toList()));
+                return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(Collectors.toList()));
             })
         ).match(term);
         // @formatter:on
