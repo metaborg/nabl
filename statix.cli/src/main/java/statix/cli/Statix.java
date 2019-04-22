@@ -77,9 +77,6 @@ public class Statix implements Callable<Void> {
         cli = new CLIUtils(S);
         lang = loadLanguage();
         project = cli.getOrCreateCWDProject();
-        if(!S.contextService.available(lang)) {
-            throw new MetaborgException("Cannot create project context.");
-        }
         context = S.contextService.get(project.location(), project, lang);
         final PrintStream msgStream = System.out;
         messagePrinter = new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, msgStream);
@@ -162,7 +159,7 @@ public class Statix implements Callable<Void> {
     }
 
     private Optional<ISpoofaxAnalyzeUnit> analyze(ISpoofaxParseUnit parseUnit) throws MetaborgException {
-        if(!S.analysisService.available(lang) || !S.contextService.available(lang)) {
+        if(!S.analysisService.available(lang)) {
             throw new MetaborgException("Analysis not available.");
         }
         final ISpoofaxAnalyzeUnit analysisUnit;
