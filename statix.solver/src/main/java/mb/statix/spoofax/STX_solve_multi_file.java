@@ -55,7 +55,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
         final List<ITerm> results =
                 constraints.stream().parallel().map(solveConstraint::apply).collect(Collectors.toList());
         final double dt = System.currentTimeMillis() - t0;
-        logger.info("files analyzed in {} s", (dt / 1_000d));
+        logger.info("Files analyzed in {} s", (dt / 1_000d));
         return Optional.of(B.newList(results));
     }
 

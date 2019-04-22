@@ -24,6 +24,9 @@ import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -47,8 +50,8 @@ public class Solver {
         // set-up
         final IConstraintStore constraints = new BaseConstraintStore(_constraints, debug);
         State state = _state;
-        Completeness completeness = new Completeness();
-        completeness = completeness.addAll(_constraints);
+        final ICompleteness completeness = new IncrementalCompleteness(state.spec());
+        completeness.addAll(_constraints, state.unifier());
 
         // time log
         final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
@@ -74,16 +77,16 @@ public class Solver {
                     proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 }
                 try {
-                    final Completeness cc = completeness;
+                    final ICompleteness cc = completeness;
                     final Predicate3<ITerm, ITerm, State> isComplete =
-                            (s, l, st) -> cc.isComplete(s, l, st) && _isComplete.test(s, l, st);
+                            (s, l, st) -> cc.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
                     final ConstraintContext params = new ConstraintContext(isComplete, subDebug);
                     final Optional<ConstraintResult> maybeResult;
                     maybeResult = new StepSolver(state, params).solve(constraint);
                     addTime(constraint, 1, successCount, debug);
                     progress = true;
                     entry.remove();
-                    completeness = completeness.remove(constraint);
+                    completeness.remove(constraint, state.unifier());
                     reductions += 1;
                     if(maybeResult.isPresent()) {
                         final ConstraintResult result = maybeResult.get();
@@ -95,10 +98,11 @@ public class Solver {
                                 subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
                             }
                             constraints.addAll(newConstaints);
-                            completeness = completeness.addAll(newConstaints);
+                            completeness.addAll(newConstaints, state.unifier());
                         }
                         constraints.activateFromVars(result.vars(), subDebug);
                         constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
+                        completeness.updateAll(result.vars(), state.unifier());
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);

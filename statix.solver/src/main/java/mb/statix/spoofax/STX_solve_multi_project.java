@@ -54,7 +54,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
             final double t0 = System.currentTimeMillis();
             resultConfig = Solver.solve(state, constraints, (s, l, st) -> true, debug);
             final double dt = System.currentTimeMillis() - t0;
-            logger.info("project analyzed in {} s", (dt / 1_000d));
+            logger.info("Project analyzed in {} s", (dt / 1_000d));
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

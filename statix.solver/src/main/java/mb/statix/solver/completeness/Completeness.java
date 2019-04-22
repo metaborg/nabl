@@ -1,8 +1,10 @@
-package mb.statix.solver;
+package mb.statix.solver.completeness;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
@@ -11,30 +13,28 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.AScope;
+import mb.statix.solver.IConstraint;
+import mb.statix.solver.State;
 import mb.statix.solver.constraint.Constraints;
 import mb.statix.spec.Spec;
 
-public class Completeness {
+public class Completeness implements ICompleteness {
 
-    private final Set.Immutable<IConstraint> incomplete;
+    private final Spec spec;
+    private final Set<IConstraint> incomplete;
 
-    public Completeness() {
-        this(Set.Immutable.of());
+    public Completeness(Spec spec) {
+        this.spec = spec;
+        this.incomplete = new HashSet<>();
     }
 
-    public Completeness(Set.Immutable<IConstraint> incomplete) {
-        this.incomplete = incomplete;
-    }
-
-    public boolean isComplete(ITerm scope, ITerm label, State state) {
-        final IUnifier unifier = state.unifier();
+    @Override public boolean isComplete(ITerm scope, ITerm label, IUnifier unifier) {
         final Predicate2<ITerm, ITerm> equal = (t1, t2) -> {
             return t2.equals(label) && unifier.areEqual(t1, scope).orElse(false /* (1) */);
             /* (1) This assumes well-formed constraints and specifications,
@@ -42,27 +42,22 @@ public class Completeness {
              * instantiated to an already known scope.
              */
         };
-        return incomplete.stream().flatMap(c -> Iterables2.stream(criticalEdges(c, state.spec())))
+        return incomplete.stream().flatMap(c -> Iterables2.stream(criticalEdges(c, spec)))
                 .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
     }
 
-    public Completeness add(IConstraint constraint) {
-        return new Completeness(incomplete.__insert(constraint));
+    @Override public void add(IConstraint constraint, IUnifier unifier) {
+        incomplete.add(constraint);
     }
 
-    public Completeness addAll(Iterable<IConstraint> constraints) {
-        return new Completeness(incomplete.__insertAll(ImmutableSet.copyOf(constraints)));
+    @Override public void remove(IConstraint constraint, IUnifier unifier) {
+        incomplete.remove(constraint);
     }
 
-    public Completeness remove(IConstraint constraint) {
-        return new Completeness(incomplete.__remove(constraint));
+    @Override public void update(ITermVar var, IUnifier unifier) {
     }
 
-    public Completeness removeAll(Iterable<IConstraint> constraints) {
-        return new Completeness(incomplete.__removeAll(ImmutableSet.copyOf(constraints)));
-    }
-
-    private static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
+    static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
         // @formatter:off
         final Function1<IConstraint, Collection<CriticalEdge>> criticalEdges = Constraints.cases(
             onEqual -> ImmutableList.of(),
