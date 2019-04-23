@@ -5,9 +5,10 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
+
+import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
@@ -40,7 +41,13 @@ public abstract class PersistentSubstitution implements ISubstitution {
     @Override public ITerm apply(ITerm term) {
         // @formatter:off
         return term.match(Terms.cases(
-            appl -> B.newAppl(appl.getOp(), appl.getArgs().stream().map(this::apply).collect(Collectors.toList()), appl.getAttachments()),
+            appl -> {
+                final ImmutableList.Builder<ITerm> args = ImmutableList.builder();
+                for(ITerm arg : appl.getArgs()) {
+                    args.add(apply(arg));
+                }
+                return B.newAppl(appl.getOp(), args.build());
+            },
             list -> apply(list),
             string -> string,
             integer -> integer,

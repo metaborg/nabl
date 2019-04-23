@@ -126,7 +126,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         // duplicate logic from entails, because we call solve directly in step()
         final State _state = state.clearVarsAndScopes();
         final Tuple2<ITermVar, State> lbls = _state.freshVar("lbls");
-        final Tuple3<State, Set<ITermVar>, Set<IConstraint>> inst;
+        final Tuple3<State, Set<ITermVar>, List<IConstraint>> inst;
         try {
             if((inst = constraint.apply(ImmutableList.of(lbls._1()), lbls._2()).orElse(null)) == null) {
                 throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");

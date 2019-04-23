@@ -36,7 +36,7 @@ public class ConstraintDataWF implements DataWF<ITerm> {
 
     @Override public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
             if((result = constraint.apply(datum, state).orElse(null)) == null) {
                 return false;
             }

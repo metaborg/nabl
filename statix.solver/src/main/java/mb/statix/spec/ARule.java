@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -38,7 +39,7 @@ public abstract class ARule {
 
     @Value.Parameter public abstract List<Pattern> params();
 
-    public Set<ITermVar> paramVars() {
+    @Value.Lazy public Set<ITermVar> paramVars() {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(Collectors.toSet());
     }
 
@@ -54,7 +55,7 @@ public abstract class ARule {
             args.add(stateAndVar._1());
             state = stateAndVar._2();
         }
-        Tuple3<State, Set<ITermVar>, Set<IConstraint>> stateAndInst;
+        Tuple3<State, Set<ITermVar>, List<IConstraint>> stateAndInst;
         try {
             if((stateAndInst = apply(args, state).orElse(null)) == null) {
                 return Optional.of(false);
@@ -64,7 +65,7 @@ public abstract class ARule {
         }
         state = stateAndInst._1();
         final Set<ITermVar> instVars = stateAndInst._2();
-        final Set<IConstraint> instBody = stateAndInst._3();
+        final List<IConstraint> instBody = stateAndInst._3();
         try {
             Optional<SolverResult> solverResult =
                     Solver.entails(state, instBody, (s, l, st) -> true, instVars, new NullDebugContext());
@@ -80,11 +81,14 @@ public abstract class ARule {
 
     public Rule apply(ISubstitution.Immutable subst) {
         final ISubstitution.Immutable bodySubst = subst.removeAll(paramVars()).removeAll(bodyVars());
-        final List<IConstraint> newBody = body().stream().map(c -> c.apply(bodySubst)).collect(Collectors.toList());
-        return Rule.of(name(), params(), bodyVars(), newBody);
+        final ImmutableList.Builder<IConstraint> newBody = ImmutableList.builder();
+        for(IConstraint c : body()) {
+            newBody.add(c.apply(bodySubst));
+        }
+        return Rule.of(name(), params(), bodyVars(), newBody.build());
     }
 
-    public Optional<Tuple3<State, Set<ITermVar>, Set<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
+    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
@@ -101,8 +105,11 @@ public abstract class ARule {
             newState = vs._2();
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IConstraint> newBody = body().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
-        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
+        final ImmutableList.Builder<IConstraint> newBody = ImmutableList.builder();
+        for(IConstraint c : body()) {
+            newBody.add(c.apply(isubst));
+        }
+        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody.build()));
     }
 
     public String toString(TermFormatter termToString) {

@@ -1,5 +1,6 @@
 package mb.statix.solver.query;
 
+import java.util.List;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate3;
@@ -38,7 +39,7 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(l1, l2), state).orElse(null)) == null) {
                 return false;
             }

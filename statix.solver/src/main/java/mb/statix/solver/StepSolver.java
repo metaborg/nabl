@@ -314,14 +314,17 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         .build(state.scopeGraph(), relation);
             // @formatter:on
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
-            final List<ITerm> pathTerms;
+            final ImmutableList.Builder<ITerm> pathTerms = ImmutableList.builder();
             if(relation.isPresent()) {
-                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                        .collect(Collectors.toList());
+                for(IResolutionPath<ITerm, ITerm, ITerm> path : paths) {
+                    pathTerms.add(B.newTuple(B.newBlob(path.getPath()), B.newTuple(path.getDatum())));
+                }
             } else {
-                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
+                for(IResolutionPath<ITerm, ITerm, ITerm> path : paths) {
+                    pathTerms.add(B.newBlob(path.getPath()));
+                }
             }
-            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
+            final IConstraint C = new CEqual(B.newList(pathTerms.build()), resultTerm, c);
             return Optional.of(ConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
@@ -477,8 +480,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 proxyDebug.info("Try rule {}", rawRule.toString());
             }
             final State instantiatedState;
-            final Set<IConstraint> instantiatedBody;
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> appl;
+            final List<IConstraint> instantiatedBody;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> appl;
             try {
                 if((appl = rawRule.apply(args, state).orElse(null)) != null) {
                     instantiatedState = appl._1();

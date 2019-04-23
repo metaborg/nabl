@@ -42,7 +42,7 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
         final ITerm term1 = B.newTuple(datum1);
         final ITerm term2 = B.newTuple(datum2);
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(term1, term2), state).orElse(null)) == null) {
                 return false;
             }

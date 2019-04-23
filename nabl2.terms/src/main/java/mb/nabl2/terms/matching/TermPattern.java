@@ -3,7 +3,6 @@ package mb.nabl2.terms.matching;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
@@ -103,8 +102,13 @@ public class TermPattern {
         public Pattern fromTerm(ITerm term) {
             // @formatter:off
             return term.match(Terms.cases(
-                appl -> new ApplPattern(appl.getOp(),
-                        appl.getArgs().stream().map(this::fromTerm).collect(Collectors.toList())),
+                appl -> {
+                    final ImmutableList.Builder<Pattern> args = ImmutableList.builder();
+                    for(ITerm arg : appl.getArgs()) {
+                        args.add(fromTerm(arg));
+                    }
+                    return new ApplPattern(appl.getOp(), args.build());
+                },
                 list -> list.match(ListTerms.cases(
                     cons -> new ConsPattern(fromTerm(cons.getHead()), fromTerm(cons.getTail())),
                     nil -> new NilPattern(),
