@@ -1,16 +1,19 @@
 package mb.statix.solver.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITermVar;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -21,14 +24,14 @@ import mb.statix.solver.log.IDebugContext;
 
 public class BaseConstraintStore implements IConstraintStore {
 
-    private final Set<IConstraint> active;
-    private final Set<IConstraint> stuckBecauseStuck;
+    private final Deque<IConstraint> active;
+    private final List<IConstraint> stuckBecauseStuck;
     private final Multimap<ITermVar, IConstraint> stuckOnVar;
     private final Multimap<CriticalEdge, IConstraint> stuckOnEdge;
 
     public BaseConstraintStore(Iterable<? extends IConstraint> constraints, IDebugContext debug) {
-        this.active = Sets.newConcurrentHashSet();
-        this.stuckBecauseStuck = Sets.newHashSet();
+        this.active = new ConcurrentLinkedDeque<>();
+        this.stuckBecauseStuck = new ArrayList<>();
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
         addAll(constraints);
@@ -43,7 +46,7 @@ public class BaseConstraintStore implements IConstraintStore {
     }
 
     @Override public void add(IConstraint constraint) {
-        active.add(constraint);
+        active.addFirst(constraint);
     }
 
     @Override public void activateStray() {
