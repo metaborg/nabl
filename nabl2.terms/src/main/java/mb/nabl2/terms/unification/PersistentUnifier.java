@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Predicate1;
@@ -1067,7 +1066,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
                 }
                 if(isFinite()) {
                     final Set<ITermVar> cyclicVars =
-                            result.stream().filter(v -> isCyclic(v)).collect(Collectors.toSet());
+                            result.stream().filter(v -> isCyclic(v)).collect(ImmutableSet.toImmutableSet());
                     if(!cyclicVars.isEmpty()) {
                         throw new OccursException(cyclicVars);
                     }
@@ -1256,8 +1255,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         // retain(ITermVar)
         ///////////////////////////////////////////
 
-        @Override
-        public ISubstitution.Immutable retain(ITermVar var) {
+        @Override public ISubstitution.Immutable retain(ITermVar var) {
             return retainAll(Collections.singleton(var));
         }
 
@@ -1345,8 +1343,7 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
             return result;
         }
 
-        @Override
-        public IUnifier.Immutable unifier() {
+        @Override public IUnifier.Immutable unifier() {
             return unifier;
         }
 
