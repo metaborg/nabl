@@ -31,11 +31,8 @@ public class Transform {
             // @formatter:off
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
-                    final ImmutableList.Builder<ITerm> args = ImmutableList.builder();
-                    for(ITerm arg : appl.getArgs()) {
-                        args.add(sometd(m).apply(arg));
-                    }
-                    return B.newAppl(appl.getOp(), args.build(), appl.getAttachments());
+                    final List<ITerm> args = appl.getArgs().stream().map(arg -> sometd(m).apply(arg)).collect(ImmutableList.toImmutableList());
+                    return B.newAppl(appl.getOp(), args, appl.getAttachments());
                 },
                 (list) -> list.match(ListTerms.<IListTerm> cases(
                     (cons) -> B.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
@@ -52,14 +49,11 @@ public class Transform {
 
         public static Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
             return term -> {
-                ITerm next = term.match(Terms.<ITerm>cases(
                 // @formatter:off
+                ITerm next = term.match(Terms.<ITerm>cases(
                     (appl) -> {
-                        final ImmutableList.Builder<ITerm> args = ImmutableList.builder();
-                        for(ITerm arg : appl.getArgs()) {
-                            args.add(somebu(m).apply(arg));
-                        }
-                        return B.newAppl(appl.getOp(), args.build(), appl.getAttachments());
+                        final List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(ImmutableList.toImmutableList());
+                        return B.newAppl(appl.getOp(), args, appl.getAttachments());
                     },
                     (list) -> list.match(ListTerms.<IListTerm> cases(
                         (cons) -> B.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
@@ -70,8 +64,8 @@ public class Transform {
                     (integer) -> integer,
                     (blob) -> blob,
                     (var) -> var
-                    // @formatter:on
                 ));
+                // @formatter:on
                 return m.apply(next).orElse(next);
             };
         }

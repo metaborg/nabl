@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Function1;
@@ -76,7 +75,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
         final ITerm term = strategoTerms.fromStratego(sterm);
-        final List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).collect(Collectors.toList());
+        final List<ITerm> terms =
+                sterms.stream().map(strategoTerms::fromStratego).collect(ImmutableList.toImmutableList());
         final Optional<? extends ITerm> result = call(env, term, terms);
         return result.map(strategoTerms::toStratego);
     }

@@ -3,10 +3,9 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate3;
@@ -15,6 +14,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -44,22 +44,22 @@ public class STX_solve_multi_file extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<Tuple2<String, Set<IConstraint>>> constraintMatcher = M.tuple2(M.stringValue(),
+        final IMatcher<Tuple2<String, List<IConstraint>>> constraintMatcher = M.tuple2(M.stringValue(),
                 StatixTerms.constraints(spec.labels()), (t, r, c) -> ImmutableTuple2.of(r, c));
-        final Function1<Tuple2<String, Set<IConstraint>>, ITerm> solveConstraint =
+        final Function1<Tuple2<String, List<IConstraint>>, ITerm> solveConstraint =
                 resource_constraints -> solveConstraint(initial.state().withResource(resource_constraints._1()),
                         resource_constraints._2(), debug);
-        final List<Tuple2<String, Set<IConstraint>>> constraints = M.listElems(constraintMatcher).match(term)
+        final List<Tuple2<String, List<IConstraint>>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
         final double t0 = System.currentTimeMillis();
         final List<ITerm> results =
-                constraints.stream().parallel().map(solveConstraint::apply).collect(Collectors.toList());
+                constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList());
         final double dt = System.currentTimeMillis() - t0;
         logger.info("Files analyzed in {} s", (dt / 1_000d));
         return Optional.of(B.newList(results));
     }
 
-    private ITerm solveConstraint(State state, Set<IConstraint> constraints, IDebugContext debug) {
+    private ITerm solveConstraint(State state, Collection<IConstraint> constraints, IDebugContext debug) {
         final Predicate3<ITerm, ITerm, State> isComplete = (s, l, st) -> !state.scopes().contains(s);
         final SolverResult resultConfig;
         try {

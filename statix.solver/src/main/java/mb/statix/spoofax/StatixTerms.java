@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
@@ -21,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -116,9 +113,9 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Set<IConstraint>> constraints(IAlphabet<ITerm> labels) {
+    public static IMatcher<List<IConstraint>> constraints(IAlphabet<ITerm> labels) {
         return (t, u) -> {
-            final ImmutableSet.Builder<IConstraint> constraints = ImmutableSet.builder();
+            final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
             return M.casesFix(m -> Iterables2.from(
             // @formatter:off
                 M.appl2("CConj", m, m, (c, t1, t2) -> {
@@ -517,7 +514,7 @@ public class StatixTerms {
     }
 
     private static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(Collectors.toList());
+        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
     }
 
     public static IListTerm explicateList(Iterable<? extends ITerm> terms) {
@@ -527,6 +524,6 @@ public class StatixTerms {
     public static IListTerm
             explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
         return B.newList(Iterables2.stream(entries).map(e -> B.newTuple(explicate(e.getKey()), explicate(e.getValue())))
-                .collect(Collectors.toList()));
+                .collect(ImmutableList.toImmutableList()));
     }
 }

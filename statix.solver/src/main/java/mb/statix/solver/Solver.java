@@ -1,10 +1,8 @@
 package mb.statix.solver;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -92,13 +90,15 @@ public class Solver {
                         final ConstraintResult result = maybeResult.get();
                         state = result.state();
                         if(!result.constraints().isEmpty()) {
-                            final List<IConstraint> newConstaints = result.constraints().stream()
-                                    .map(c -> c.withCause(constraint)).collect(Collectors.toList());
-                            if(subDebug.isEnabled(Level.Info)) {
-                                subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
+                            subDebug.info("Simplified to:");
+                            for(IConstraint newConstraint : result.constraints()) {
+                                newConstraint = newConstraint.withCause(constraint);
+                                if(subDebug.isEnabled(Level.Info)) {
+                                    subDebug.info(" * {}", toString(newConstraint, state.unifier()));
+                                }
+                                constraints.add(newConstraint);
+                                completeness.add(newConstraint, state.unifier());
                             }
-                            constraints.addAll(newConstaints);
-                            completeness.addAll(newConstaints, state.unifier());
                         }
                         constraints.activateFromVars(result.vars(), subDebug);
                         constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
@@ -192,6 +192,10 @@ public class Solver {
             debug.error(" * {}", constraint.toString(Solver.shallowTermFormatter(unifier)));
             constraint = constraint.cause().orElse(null);
         }
+    }
+
+    private static String toString(IConstraint constraint, IUnifier.Immutable unifier) {
+        return constraint.toString(Solver.shallowTermFormatter(unifier));
     }
 
     private static String toString(Iterable<IConstraint> constraints, IUnifier.Immutable unifier) {

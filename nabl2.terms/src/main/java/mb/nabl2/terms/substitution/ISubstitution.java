@@ -22,11 +22,7 @@ public interface ISubstitution {
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        final ImmutableList.Builder<ITerm> applied = ImmutableList.builder();
-        for(ITerm term : terms) {
-            applied.add(apply(term));
-        }
-        return applied.build();
+        return terms.stream().map(this::apply).collect(ImmutableList.toImmutableList());
     }
 
     interface Immutable extends ISubstitution {

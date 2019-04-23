@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate2;
@@ -314,17 +313,14 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         .build(state.scopeGraph(), relation);
             // @formatter:on
             final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
-            final ImmutableList.Builder<ITerm> pathTerms = ImmutableList.builder();
+            final List<ITerm> pathTerms;
             if(relation.isPresent()) {
-                for(IResolutionPath<ITerm, ITerm, ITerm> path : paths) {
-                    pathTerms.add(B.newTuple(B.newBlob(path.getPath()), B.newTuple(path.getDatum())));
-                }
+                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
+                        .collect(ImmutableList.toImmutableList());
             } else {
-                for(IResolutionPath<ITerm, ITerm, ITerm> path : paths) {
-                    pathTerms.add(B.newBlob(path.getPath()));
-                }
+                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(ImmutableList.toImmutableList());
             }
-            final IConstraint C = new CEqual(B.newList(pathTerms.build()), resultTerm, c);
+            final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
             return Optional.of(ConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
@@ -372,7 +368,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             debug.error("Ignoring {}-ary data for {}-ary relation {}", datum.size(), type.getArity(), relation);
             throw new ResolutionException("Wrong data arity.");
         }
-        return datum.stream().limit(type.getInputArity()).collect(Collectors.toList());
+        return datum.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList());
     }
 
     @Override public Optional<ConstraintResult> caseTellEdge(CTellEdge c) throws SolverException {
@@ -424,7 +420,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             return Optional.empty();
         }
 
-        final ITerm key = B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(Collectors.toList()));
+        final ITerm key =
+                B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList()));
         if(!unifier.isGround(key)) {
             throw Delay.ofVars(unifier.getVars(key));
         }

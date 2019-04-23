@@ -42,10 +42,8 @@ public class BaseConstraintStore implements IConstraintStore {
         return stuckBecauseStuck.size() + stuckOnVar.size() + stuckOnEdge.size();
     }
 
-    @Override public void addAll(Iterable<? extends IConstraint> constraints) {
-        for(IConstraint constraint : constraints) {
-            active.add(constraint);
-        }
+    @Override public void add(IConstraint constraint) {
+        active.add(constraint);
     }
 
     @Override public void activateStray() {
@@ -130,7 +128,7 @@ public class BaseConstraintStore implements IConstraintStore {
         stuck.addAll(stuckBecauseStuck);
         stuck.addAll(varStuck.keys());
         stuck.addAll(edgeStuck.keys());
-        
+
         final Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
         stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c))));
         return delayed.build();

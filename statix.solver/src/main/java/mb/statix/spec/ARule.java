@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -40,7 +39,7 @@ public abstract class ARule {
     @Value.Parameter public abstract List<Pattern> params();
 
     @Value.Lazy public Set<ITermVar> paramVars() {
-        return params().stream().flatMap(t -> t.getVars().stream()).collect(Collectors.toSet());
+        return params().stream().flatMap(t -> t.getVars().stream()).collect(ImmutableSet.toImmutableSet());
     }
 
     @Value.Parameter public abstract Set<ITermVar> bodyVars();
@@ -81,11 +80,9 @@ public abstract class ARule {
 
     public Rule apply(ISubstitution.Immutable subst) {
         final ISubstitution.Immutable bodySubst = subst.removeAll(paramVars()).removeAll(bodyVars());
-        final ImmutableList.Builder<IConstraint> newBody = ImmutableList.builder();
-        for(IConstraint c : body()) {
-            newBody.add(c.apply(bodySubst));
-        }
-        return Rule.of(name(), params(), bodyVars(), newBody.build());
+        final List<IConstraint> newBody =
+                body().stream().map(c -> c.apply(bodySubst)).collect(ImmutableList.toImmutableList());
+        return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
     public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
@@ -105,11 +102,9 @@ public abstract class ARule {
             newState = vs._2();
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final ImmutableList.Builder<IConstraint> newBody = ImmutableList.builder();
-        for(IConstraint c : body()) {
-            newBody.add(c.apply(isubst));
-        }
-        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody.build()));
+        final List<IConstraint> newBody =
+                body().stream().map(c -> c.apply(isubst)).collect(ImmutableList.toImmutableList());
+        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
     }
 
     public String toString(TermFormatter termToString) {

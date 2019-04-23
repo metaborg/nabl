@@ -6,13 +6,13 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -49,22 +49,22 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<Tuple2<List<ITermVar>, Set<IConstraint>>> constraintMatcher =
+        final IMatcher<Tuple2<List<ITermVar>, List<IConstraint>>> constraintMatcher =
                 M.tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
                         (t, vs, c) -> ImmutableTuple2.of(vs, c));
-        final Function1<Tuple2<List<ITermVar>, Set<IConstraint>>, ITerm> solveConstraint =
+        final Function1<Tuple2<List<ITermVar>, List<IConstraint>>, ITerm> solveConstraint =
                 vars_constraint -> solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), debug);
         // @formatter:off
         return M.cases(
             constraintMatcher.map(solveConstraint::apply),
             M.listElems(constraintMatcher).map(vars_constraints -> {
-                return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(Collectors.toList()));
+                return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList()));
             })
         ).match(term);
         // @formatter:on
     }
 
-    private ITerm solveConstraint(Spec spec, List<ITermVar> topLevelVars, Set<IConstraint> constraints,
+    private ITerm solveConstraint(Spec spec, List<ITermVar> topLevelVars, Collection<IConstraint> constraints,
             IDebugContext debug) {
         State state = State.of(spec);
 

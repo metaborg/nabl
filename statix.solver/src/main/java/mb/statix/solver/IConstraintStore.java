@@ -12,7 +12,13 @@ public interface IConstraintStore {
 
     int delayedSize();
 
-    void addAll(Iterable<? extends IConstraint> constraints);
+    void add(IConstraint constraint);
+
+    default void addAll(Iterable<? extends IConstraint> constraints) {
+        for(IConstraint constraint : constraints) {
+            add(constraint);
+        }
+    }
 
     void activateStray();
 

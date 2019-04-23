@@ -3,18 +3,20 @@ package mb.statix.solver.completeness;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.IConstraint;
@@ -73,25 +75,20 @@ public class Completeness implements ICompleteness {
             onTellRel -> ImmutableList.of(CriticalEdge.of(onTellRel.scopeTerm(), onTellRel.relation())),
             onTermId -> ImmutableList.of(),
             onTrue -> ImmutableList.of(),
-            onUser -> {
-                final ImmutableList.Builder<CriticalEdge> edges = ImmutableList.builder();
-                for(Tuple2<Integer, ITerm> il : spec.scopeExtensions().get(onUser.name())) {
-                    edges.add(CriticalEdge.of(onUser.args().get(il._1()), il._2()));
-                }
-                return edges.build();
-            }
+            onUser -> spec.scopeExtensions().get(onUser.name()).stream()
+                              .map(il -> CriticalEdge.of(onUser.args().get(il._1()), il._2()))
+                              .collect(Collectors.toList())
         );
         // @formatter:on
         return criticalEdges.apply(constraint);
     }
 
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, State state) {
-        final ImmutableList.Builder<CriticalEdge> edges = ImmutableList.builder();
-        for(CriticalEdge ce : criticalEdges(constraint, state.spec())) {
-            AScope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()))
-                    .ifPresent(edges::add);
-        }
-        return edges.build();
+        return criticalEdges(constraint, state.spec()).stream().flatMap(ce -> {
+            final Optional<CriticalEdge> edge =
+                    AScope.matcher().match(ce.scope(), state.unifier()).map(s -> CriticalEdge.of(s, ce.label()));
+            return Optionals.stream(edge);
+        }).collect(Collectors.toList());
     }
 
 }
