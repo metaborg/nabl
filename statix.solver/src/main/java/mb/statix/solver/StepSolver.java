@@ -144,7 +144,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         State newState = state;
         for(ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");
-            Tuple2<ITerm, State> ss = newState.freshScope(base);
+            Tuple2<Scope, State> ss = newState.freshScope(base);
             constraints.add(new CEqual(t, ss._1(), c));
             newState = ss._2();
         }
@@ -293,7 +293,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         try {
             final IDebugContext subDebug = new NullDebugContext(params.debug().getDepth() + 1);
-            final Predicate2<ITerm, ITerm> isComplete = (s, l) -> {
+            final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
                 if(params.isComplete(s, l, state)) {
                     subDebug.info("{} complete in {}", s, l);
                     return true;
@@ -303,7 +303,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 }
             };
             // @formatter:off
-            final FastNameResolution<ITerm, ITerm, ITerm> nameResolution = FastNameResolution.<ITerm, ITerm, ITerm>builder()
+            final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
                         .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
                         .withDataWF(filter(relation, type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
                         .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
@@ -312,7 +312,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
             // @formatter:on
-            final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms;
             if(relation.isPresent()) {
                 pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
@@ -383,14 +383,14 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         if(!unifier.isGround(targetTerm)) {
             throw Delay.ofVars(unifier.getVars(targetTerm));
         }
-        final AScope source = AScope.matcher().match(sourceTerm, unifier).orElseThrow(
+        final Scope source = AScope.matcher().match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
         if(params.isClosed(source, state)) {
             return Optional.empty();
         }
-        final AScope target = AScope.matcher().match(targetTerm, unifier).orElseThrow(
+        final Scope target = AScope.matcher().match(targetTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
+        final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 
@@ -414,7 +414,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         if(!unifier.isGround(scopeTerm)) {
             throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
-        final AScope scope = AScope.matcher().match(scopeTerm, unifier)
+        final Scope scope = AScope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
         if(params.isClosed(scope, state)) {
             return Optional.empty();
@@ -425,7 +425,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         if(!unifier.isGround(key)) {
             throw Delay.ofVars(unifier.getVars(key));
         }
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph =
+        final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                 state.scopeGraph().addDatum(scope, relation, datumTerms);
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }

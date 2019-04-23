@@ -3,12 +3,12 @@ package mb.statix.scopegraph.path;
 import java.util.List;
 import java.util.Optional;
 
-public interface IResolutionPath<V, L, R> extends IPath<V, L> {
+public interface IResolutionPath<S, L, D> extends IPath<S, L> {
 
-    IScopePath<V, L> getPath();
+    IScopePath<S, L> getPath();
 
-    Optional<R> getRelation();
+    Optional<L> getRelation();
 
-    List<V> getDatum();
+    List<D> getDatum();
 
 }

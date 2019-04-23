@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
@@ -25,6 +24,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
@@ -60,7 +60,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
     }
 
     private ITerm solveConstraint(State state, Collection<IConstraint> constraints, IDebugContext debug) {
-        final Predicate3<ITerm, ITerm, State> isComplete = (s, l, st) -> !state.scopes().contains(s);
+        final IsComplete isComplete = (s, l, st) -> !state.scopes().contains(s);
         final SolverResult resultConfig;
         try {
             resultConfig = Solver.solve(state, constraints, isComplete, debug);

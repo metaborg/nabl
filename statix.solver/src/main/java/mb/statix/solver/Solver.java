@@ -8,14 +8,12 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
@@ -25,6 +23,7 @@ import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -41,7 +40,7 @@ public class Solver {
     }
 
     public static SolverResult solve(final State _state, final Iterable<IConstraint> _constraints,
-            final Predicate3<ITerm, ITerm, State> _isComplete, final IDebugContext debug) throws InterruptedException {
+            final IsComplete _isComplete, final IDebugContext debug) throws InterruptedException {
         debug.info("Solving constraints");
         final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
@@ -76,7 +75,7 @@ public class Solver {
                 }
                 try {
                     final ICompleteness cc = completeness;
-                    final Predicate3<ITerm, ITerm, State> isComplete =
+                    final IsComplete isComplete =
                             (s, l, st) -> cc.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
                     final ConstraintContext params = new ConstraintContext(isComplete, subDebug);
                     final Optional<ConstraintResult> maybeResult;
@@ -158,14 +157,13 @@ public class Solver {
     }
 
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
-            final Predicate3<ITerm, ITerm, State> isComplete, final IDebugContext debug)
-            throws InterruptedException, Delay {
+            final IsComplete isComplete, final IDebugContext debug) throws InterruptedException, Delay {
         return entails(state, constraints, isComplete, ImmutableSet.of(), debug);
     }
 
     public static Optional<SolverResult> entails(final State state, final Iterable<IConstraint> constraints,
-            final Predicate3<ITerm, ITerm, State> isComplete, final Iterable<ITermVar> _localVars,
-            final IDebugContext debug) throws InterruptedException, Delay {
+            final IsComplete isComplete, final Iterable<ITermVar> _localVars, final IDebugContext debug)
+            throws InterruptedException, Delay {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraints, state.unifier()));
         }

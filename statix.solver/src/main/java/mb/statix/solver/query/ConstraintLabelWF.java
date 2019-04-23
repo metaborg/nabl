@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
@@ -28,6 +27,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -35,14 +35,14 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
 
     private final List<IConstraint> constraints;
     private final State state;
-    private final Predicate3<ITerm, ITerm, State> isComplete;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
 
     private final IListTerm labels;
     private final IListTerm tail;
 
-    private ConstraintLabelWF(Collection<IConstraint> constraints, State state,
-            Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug, IListTerm labels, IListTerm tail) {
+    private ConstraintLabelWF(Collection<IConstraint> constraints, State state, IsComplete isComplete,
+            IDebugContext debug, IListTerm labels, IListTerm tail) {
         this.constraints = ImmutableList.copyOf(constraints);
         this.state = state;
         this.isComplete = isComplete;
@@ -121,8 +121,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         }
     }
 
-    public static ConstraintLabelWF of(Rule constraint, State state, Predicate3<ITerm, ITerm, State> isComplete,
-            IDebugContext debug) {
+    public static ConstraintLabelWF of(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         // duplicate logic from entails, because we call solve directly in step()
         final State _state = state.clearVarsAndScopes();
         final Tuple2<ITermVar, State> lbls = _state.freshVar("lbls");

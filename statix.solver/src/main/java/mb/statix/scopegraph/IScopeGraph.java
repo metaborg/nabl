@@ -5,49 +5,49 @@ import java.util.List;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.IRelation3;
 
-public interface IScopeGraph<V, L, R> {
+public interface IScopeGraph<S, L, D> {
 
     Set.Immutable<L> getLabels();
 
     L getEndOfPath();
 
-    Set.Immutable<R> getRelations();
+    Set.Immutable<L> getRelations();
 
-    Set<V> getAllScopes();
+    Set<S> getAllScopes();
 
-    IRelation3<V, L, V> getEdges();
+    IRelation3<S, L, S> getEdges();
 
-    IRelation3<V, R, List<V>> getData();
+    IRelation3<S, L, List<D>> getData();
 
-    interface Immutable<V, L, R> extends IScopeGraph<V, L, R> {
+    interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
 
-        @Override Set.Immutable<V> getAllScopes();
+        @Override Set.Immutable<S> getAllScopes();
 
-        @Override IRelation3.Immutable<V, L, V> getEdges();
+        @Override IRelation3.Immutable<S, L, S> getEdges();
 
-        @Override IRelation3.Immutable<V, R, List<V>> getData();
+        @Override IRelation3.Immutable<S, L, List<D>> getData();
 
-        Immutable<V, L, R> addEdge(V sourceScope, L label, V targetScope);
+        Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 
-        Immutable<V, L, R> addDatum(V scope, R relation, Iterable<V> datum);
+        Immutable<S, L, D> addDatum(S scope, L relation, Iterable<D> datum);
 
-        Immutable<V, L, R> addAll(IScopeGraph<V, L, R> other);
+        Immutable<S, L, D> addAll(IScopeGraph<S, L, D> other);
 
-        IScopeGraph.Transient<V, L, R> melt();
+        IScopeGraph.Transient<S, L, D> melt();
 
     }
 
-    interface Transient<V, L, R> extends IScopeGraph<V, L, R> {
+    interface Transient<S, L, D> extends IScopeGraph<S, L, D> {
 
-        boolean addEdge(V sourceScope, L label, V targetScope);
+        boolean addEdge(S sourceScope, L label, S targetScope);
 
-        boolean addDatum(V scope, R relation, Iterable<V> datum);
+        boolean addDatum(S scope, L relation, Iterable<D> datum);
 
-        boolean addAll(IScopeGraph<V, L, R> other);
+        boolean addAll(IScopeGraph<S, L, D> other);
 
         // -----------------------
 
-        IScopeGraph.Immutable<V, L, R> freeze();
+        IScopeGraph.Immutable<S, L, D> freeze();
 
     }
 

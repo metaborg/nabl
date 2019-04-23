@@ -5,7 +5,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.List;
 import java.util.Set;
 
-import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
@@ -19,6 +18,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -26,11 +26,11 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
 
     private final Rule constraint;
     private final State state;
-    private final Predicate3<ITerm, ITerm, State> isComplete;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
     private volatile Boolean alwaysTrue;
 
-    public ConstraintDataLeq(Rule constraint, State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) {
+    public ConstraintDataLeq(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
@@ -64,8 +64,9 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
     }
 
     @Override public boolean alwaysTrue() throws InterruptedException {
-        if (alwaysTrue != null) return alwaysTrue.booleanValue();
-        
+        if(alwaysTrue != null)
+            return alwaysTrue.booleanValue();
+
         return alwaysTrue = constraint.isAlways(state.spec()).orElse(false);
     }
 

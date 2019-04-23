@@ -15,23 +15,23 @@ import mb.statix.scopegraph.path.IScopePath;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AResolutionPath<V, L, R> implements IResolutionPath<V, L, R> {
+abstract class AResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
 
-    @Value.Parameter @Override public abstract IScopePath<V, L> getPath();
+    @Value.Parameter @Override public abstract IScopePath<S, L> getPath();
 
-    @Value.Parameter @Override public abstract Optional<R> getRelation();
+    @Value.Parameter @Override public abstract Optional<L> getRelation();
 
-    @Value.Parameter @Override public abstract List<V> getDatum();
+    @Value.Parameter @Override public abstract List<D> getDatum();
 
-    @Value.Check public @Nullable AResolutionPath<V, L, R> check() {
+    @Value.Check public @Nullable AResolutionPath<S, L, D> check() {
         return this;
     }
 
-    @Value.Lazy @Override public PSequence<V> scopes() {
+    @Value.Lazy @Override public PSequence<S> scopes() {
         return getPath().scopes();
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
+    @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
         return getPath().scopeSet();
     }
 

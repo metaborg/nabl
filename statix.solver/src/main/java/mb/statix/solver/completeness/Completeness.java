@@ -19,6 +19,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.State;
 import mb.statix.solver.constraint.Constraints;
@@ -34,7 +35,7 @@ public class Completeness implements ICompleteness {
         this.incomplete = new HashSet<>();
     }
 
-    @Override public boolean isComplete(ITerm scope, ITerm label, IUnifier unifier) {
+    @Override public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
         final Predicate2<ITerm, ITerm> equal = (t1, t2) -> {
             return t2.equals(label) && unifier.areEqual(t1, scope).orElse(false /* (1) */);
             /* (1) This assumes well-formed constraints and specifications,

@@ -31,7 +31,7 @@ public abstract class AState {
 
     public State add(State other) {
         final Set.Immutable<ITermVar> vars = vars().union(other.vars());
-        final Set.Immutable<ITerm> scopes = scopes().union(other.scopes());
+        final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
         final IUnifier.Immutable unifier;
         try {
             unifier = unifier().unify(other.unifier()).map(Result::unifier)
@@ -39,7 +39,7 @@ public abstract class AState {
         } catch(OccursException e) {
             throw new IllegalArgumentException("Cannot merge unifiers.");
         }
-        final IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
+        final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
         // @formatter:off
         return State.builder().from(this)
             .__vars(vars)
@@ -94,19 +94,19 @@ public abstract class AState {
         return 0;
     }
 
-    @Value.Default Set.Immutable<ITerm> __scopes() {
+    @Value.Default Set.Immutable<Scope> __scopes() {
         return Set.Immutable.of();
     }
 
-    public Tuple2<ITerm, State> freshScope(String base) {
+    public Tuple2<Scope, State> freshScope(String base) {
         final int i = __scopeCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITerm scope = Scope.of(resource(), name);
-        final Set.Immutable<ITerm> scopes = __scopes().__insert(scope);
+        final Scope scope = Scope.of(resource(), name);
+        final Set.Immutable<Scope> scopes = __scopes().__insert(scope);
         return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());
     }
 
-    public Set.Immutable<ITerm> scopes() {
+    public Set.Immutable<Scope> scopes() {
         return __scopes();
     }
 
@@ -116,7 +116,7 @@ public abstract class AState {
         return PersistentUnifier.Immutable.of();
     }
 
-    @Value.Default public IScopeGraph.Immutable<ITerm, ITerm, ITerm> scopeGraph() {
+    @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
     }
 

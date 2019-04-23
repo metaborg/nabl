@@ -26,10 +26,7 @@ public class IncrementalCompleteness implements ICompleteness {
         this.incomplete = new HashMap<>();
     }
 
-    @Override public boolean isComplete(ITerm scope, ITerm label, IUnifier unifier) {
-        if(!scope.isGround()) {
-            throw new IllegalArgumentException("Scope must be ground");
-        }
+    @Override public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
         if(!label.isGround()) {
             throw new IllegalArgumentException("Label must be ground");
         }

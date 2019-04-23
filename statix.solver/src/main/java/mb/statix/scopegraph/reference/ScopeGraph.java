@@ -12,13 +12,13 @@ import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.util.Capsules;
 
-public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
+public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L, D> {
 
     protected ScopeGraph() {
     }
 
-    @Override public Set.Immutable<V> getAllScopes() {
-        Set.Transient<V> allScopes = Set.Transient.of();
+    @Override public Set.Immutable<S> getAllScopes() {
+        Set.Transient<S> allScopes = Set.Transient.of();
         allScopes.__insertAll(getEdges().keySet());
         allScopes.__insertAll(getEdges().valueSet());
         allScopes.__insertAll(getData().keySet());
@@ -27,19 +27,19 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
 
     // ------------------------------------
 
-    public static class Immutable<V, L, R> extends ScopeGraph<V, L, R>
-            implements IScopeGraph.Immutable<V, L, R>, Serializable {
+    public static class Immutable<S extends D, L, D> extends ScopeGraph<S, L, D>
+            implements IScopeGraph.Immutable<S, L, D>, Serializable {
         private static final long serialVersionUID = 42L;
 
         private final Set.Immutable<L> labels;
         private final L endOfPath;
-        private final Set.Immutable<R> relations;
+        private final Set.Immutable<L> relations;
 
-        private final IRelation3.Immutable<V, L, V> edges;
-        private final IRelation3.Immutable<V, R, List<V>> data;
+        private final IRelation3.Immutable<S, L, S> edges;
+        private final IRelation3.Immutable<S, L, List<D>> data;
 
-        Immutable(Set.Immutable<L> labels, L endOfPath, Set.Immutable<R> relations, IRelation3.Immutable<V, L, V> edges,
-                IRelation3.Immutable<V, R, List<V>> data) {
+        Immutable(Set.Immutable<L> labels, L endOfPath, Set.Immutable<L> relations, IRelation3.Immutable<S, L, S> edges,
+                IRelation3.Immutable<S, L, List<D>> data) {
             this.labels = labels;
             this.endOfPath = endOfPath;
             assert labels.contains(endOfPath);
@@ -56,40 +56,40 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             return endOfPath;
         }
 
-        @Override public Set.Immutable<R> getRelations() {
+        @Override public Set.Immutable<L> getRelations() {
             return relations;
         }
 
         // ------------------------------------------------------------
 
-        @Override public IRelation3.Immutable<V, L, V> getEdges() {
+        @Override public IRelation3.Immutable<S, L, S> getEdges() {
             return edges;
         }
 
-        @Override public IRelation3.Immutable<V, R, List<V>> getData() {
+        @Override public IRelation3.Immutable<S, L, List<D>> getData() {
             return data;
         }
 
         // ------------------------------------------------------------
 
-        @Override public ScopeGraph.Immutable<V, L, R> addEdge(V sourceScope, L label, V targetScope) {
+        @Override public ScopeGraph.Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope) {
             return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges.put(sourceScope, label, targetScope),
                     data);
         }
 
-        @Override public ScopeGraph.Immutable<V, L, R> addDatum(V sourceScope, R relation, Iterable<V> datum) {
+        @Override public ScopeGraph.Immutable<S, L, D> addDatum(S sourceScope, L relation, Iterable<D> datum) {
             return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges,
                     data.put(sourceScope, relation, ImmutableList.copyOf(datum)));
         }
 
-        @Override public IScopeGraph.Immutable<V, L, R> addAll(IScopeGraph<V, L, R> other) {
+        @Override public IScopeGraph.Immutable<S, L, D> addAll(IScopeGraph<S, L, D> other) {
             return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges.putAll(other.getEdges()),
                     data.putAll(other.getData()));
         }
 
         // ------------------------------------------------------------
 
-        @Override public ScopeGraph.Transient<V, L, R> melt() {
+        @Override public ScopeGraph.Transient<S, L, D> melt() {
             return new ScopeGraph.Transient<>(labels, endOfPath, relations, edges.melt(), data.melt());
         }
 
@@ -108,7 +108,7 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
                 return false;
             if(getClass() != obj.getClass())
                 return false;
-            @SuppressWarnings("unchecked") ScopeGraph.Immutable<V, L, R> other = (ScopeGraph.Immutable<V, L, R>) obj;
+            @SuppressWarnings("unchecked") ScopeGraph.Immutable<S, L, D> other = (ScopeGraph.Immutable<S, L, D>) obj;
             if(!edges.equals(other.edges))
                 return false;
             if(!data.equals(other.data))
@@ -116,8 +116,8 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             return true;
         }
 
-        public static <V, L, R> ScopeGraph.Immutable<V, L, R> of(Iterable<L> labels, L endOfPath,
-                Iterable<R> relations) {
+        public static <S extends D, L, D> ScopeGraph.Immutable<S, L, D> of(Iterable<L> labels, L endOfPath,
+                Iterable<L> relations) {
             return new ScopeGraph.Immutable<>(Capsules.newSet(labels), endOfPath, Capsules.newSet(relations),
                     HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of());
         }
@@ -151,17 +151,18 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
 
     }
 
-    public static class Transient<V, L, R> extends ScopeGraph<V, L, R> implements IScopeGraph.Transient<V, L, R> {
+    public static class Transient<S extends D, L, D> extends ScopeGraph<S, L, D>
+            implements IScopeGraph.Transient<S, L, D> {
 
         private final Set.Immutable<L> labels;
         private final L endOfPath;
-        private final Set.Immutable<R> relations;
+        private final Set.Immutable<L> relations;
 
-        private final IRelation3.Transient<V, L, V> edges;
-        private final IRelation3.Transient<V, R, List<V>> data;
+        private final IRelation3.Transient<S, L, S> edges;
+        private final IRelation3.Transient<S, L, List<D>> data;
 
-        Transient(Set.Immutable<L> labels, L endOfPath, Set.Immutable<R> relations, IRelation3.Transient<V, L, V> edges,
-                IRelation3.Transient<V, R, List<V>> data) {
+        Transient(Set.Immutable<L> labels, L endOfPath, Set.Immutable<L> relations, IRelation3.Transient<S, L, S> edges,
+                IRelation3.Transient<S, L, List<D>> data) {
             this.labels = labels;
             this.endOfPath = endOfPath;
             assert labels.contains(endOfPath);
@@ -178,31 +179,31 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
             return endOfPath;
         }
 
-        @Override public Set.Immutable<R> getRelations() {
+        @Override public Set.Immutable<L> getRelations() {
             return relations;
         }
 
         // ------------------------------------------------------------
 
-        @Override public IRelation3<V, L, V> getEdges() {
+        @Override public IRelation3<S, L, S> getEdges() {
             return edges;
         }
 
-        @Override public IRelation3<V, R, List<V>> getData() {
+        @Override public IRelation3<S, L, List<D>> getData() {
             return data;
         }
 
         // ------------------------------------------------------------
 
-        @Override public boolean addEdge(V sourceScope, L label, V targetScope) {
+        @Override public boolean addEdge(S sourceScope, L label, S targetScope) {
             return edges.put(sourceScope, label, targetScope);
         }
 
-        @Override public boolean addDatum(V scope, R relation, Iterable<V> datum) {
+        @Override public boolean addDatum(S scope, L relation, Iterable<D> datum) {
             return data.put(scope, relation, ImmutableList.copyOf(datum));
         }
 
-        @Override public boolean addAll(IScopeGraph<V, L, R> other) {
+        @Override public boolean addAll(IScopeGraph<S, L, D> other) {
             boolean change = false;
             change |= edges.putAll(other.getEdges());
             change |= data.putAll(other.getData());
@@ -211,12 +212,12 @@ public abstract class ScopeGraph<V, L, R> implements IScopeGraph<V, L, R> {
 
         // ------------------------------------------------------------
 
-        @Override public ScopeGraph.Immutable<V, L, R> freeze() {
+        @Override public ScopeGraph.Immutable<S, L, D> freeze() {
             return new ScopeGraph.Immutable<>(labels, endOfPath, relations, edges.freeze(), data.freeze());
         }
 
-        public static <V, L, R> ScopeGraph.Transient<V, L, R> of(Set.Immutable<L> labels, L endOfPath,
-                Set.Immutable<R> relations) {
+        public static <S extends D, L, D> ScopeGraph.Transient<S, L, D> of(Set.Immutable<L> labels, L endOfPath,
+                Set.Immutable<L> relations) {
             return new ScopeGraph.Transient<>(labels, endOfPath, relations, HashTrieRelation3.Transient.of(),
                     HashTrieRelation3.Transient.of());
         }

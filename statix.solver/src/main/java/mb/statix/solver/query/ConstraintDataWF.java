@@ -5,7 +5,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.List;
 import java.util.Set;
 
-import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.log.Level;
 
 import mb.nabl2.terms.ITerm;
@@ -17,6 +16,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -24,10 +24,10 @@ public class ConstraintDataWF implements DataWF<ITerm> {
 
     private final Rule constraint;
     private final State state;
-    private final Predicate3<ITerm, ITerm, State> isComplete;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(Rule constraint, State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) {
+    public ConstraintDataWF(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
