@@ -3,10 +3,9 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -40,8 +39,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
         final List<SolverResult> results = M.listElems(M.blobValue(SolverResult.class)).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
 
-        final Set<IConstraint> constraints = new HashSet<>(initial.delays().keySet());
-        final Set<IConstraint> errors = new HashSet<>(initial.errors());
+        final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
+        final List<IConstraint> errors = new ArrayList<>(initial.errors());
         State state = initial.state();
         for(SolverResult result : results) {
             state = state.add(result.state());

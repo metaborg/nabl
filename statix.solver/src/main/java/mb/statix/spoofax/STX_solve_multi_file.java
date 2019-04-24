@@ -60,7 +60,9 @@ public class STX_solve_multi_file extends StatixPrimitive {
     }
 
     private ITerm solveConstraint(State state, Collection<IConstraint> constraints, IDebugContext debug) {
-        final IsComplete isComplete = (s, l, st) -> !state.scopes().contains(s);
+        final IsComplete isComplete = (s, l, st) -> {
+            return !state.scopes().contains(s);
+        };
         final SolverResult resultConfig;
         try {
             resultConfig = Solver.solve(state, constraints, isComplete, debug);

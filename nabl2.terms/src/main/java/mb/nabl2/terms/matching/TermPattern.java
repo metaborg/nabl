@@ -1,5 +1,7 @@
 package mb.nabl2.terms.matching;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +12,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 
@@ -122,12 +123,12 @@ public class TermPattern {
         }
 
         public Optional<ISubstitution.Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms) {
-            return TermPattern.P.newTuple(patterns).match(TermBuild.B.newTuple(terms));
+            return TermPattern.P.newTuple(patterns).match(B.newTuple(terms));
         }
 
         public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(final Iterable<Pattern> patterns,
                 final Iterable<ITerm> terms, IUnifier unifier) {
-            return TermPattern.P.newTuple(patterns).match(TermBuild.B.newTuple(terms), unifier);
+            return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
         }
 
     }

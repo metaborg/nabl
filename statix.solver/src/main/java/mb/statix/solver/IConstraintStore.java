@@ -20,24 +20,14 @@ public interface IConstraintStore {
         }
     }
 
-    void activateStray();
+    IConstraint remove();
+
+    void delay(IConstraint constraint, Delay delay);
+
+    Map<IConstraint, Delay> delayed();
 
     void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);
 
     void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug);
-
-    Iterable<Entry> active(IDebugContext debug);
-
-    Map<IConstraint, Delay> delayed();
-
-    interface Entry {
-
-        IConstraint constraint();
-
-        void delay(Delay d);
-
-        void remove();
-
-    }
 
 }

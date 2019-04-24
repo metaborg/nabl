@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -86,6 +87,10 @@ public abstract class ARule {
     }
 
     public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
+        return apply(args, state, null);
+    }
+
+    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state, @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
@@ -103,7 +108,7 @@ public abstract class ARule {
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final List<IConstraint> newBody =
-                body().stream().map(c -> c.apply(isubst)).collect(ImmutableList.toImmutableList());
+                body().stream().map(c -> c.apply(isubst).withCause(cause)).collect(ImmutableList.toImmutableList());
         return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
     }
 

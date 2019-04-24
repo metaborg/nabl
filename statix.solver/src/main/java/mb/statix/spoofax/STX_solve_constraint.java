@@ -6,7 +6,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.core.IContext;
@@ -14,7 +13,6 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
@@ -72,7 +70,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         final ISubstitution.Immutable subst = freshVarsAndState._1();
         state = freshVarsAndState._2();
 
-        constraints = constraints.stream().map(c -> c.apply(subst)).collect(Collectors.toSet());
+        constraints = constraints.stream().map(c -> c.apply(subst)).collect(ImmutableList.toImmutableList());
 
         final SolverResult resultConfig;
         try {
@@ -95,7 +93,7 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final ITerm substTerm =
                 StatixTerms.explicateMapEntries(toplevelSubstitution(topLevelVars, subst, resultState).entrySet());
-        final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableSet.of()));
+        final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableList.of()));
         final ITerm solveResultTerm = B.newAppl("Solution", substTerm, solverTerm);
         final IListTerm errors = B.newList(errorList);
         final IListTerm warnings = B.EMPTY_LIST;

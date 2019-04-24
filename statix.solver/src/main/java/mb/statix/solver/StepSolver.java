@@ -3,9 +3,11 @@ package mb.statix.solver;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -15,6 +17,7 @@ import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.relations.IRelation;
@@ -41,6 +44,10 @@ import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.SolverException.SolverInterrupted;
+import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.completeness.IncrementalCompleteness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
@@ -64,22 +71,139 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
+import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
 
 public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintResult>, SolverException> {
 
-    private final State state;
+    private State state;
+    private final IsComplete isComplete;
+    private final ICompleteness completeness;
     private final ConstraintContext params;
 
-    public StepSolver(State state, ConstraintContext params) {
-        super();
+    private final IDebugContext debug;
+    private final LazyDebugContext proxyDebug;
+    private final IDebugContext subDebug;
+
+    public StepSolver(State state, IsComplete _isComplete, IDebugContext debug) {
         this.state = state;
-        this.params = params;
+        this.completeness = new IncrementalCompleteness(state.spec());
+        this.isComplete = (s, l, st) -> completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
+        this.debug = debug;
+        this.proxyDebug = new LazyDebugContext(debug);
+        this.subDebug = proxyDebug.subContext();
+        this.params = new ConstraintContext(this.isComplete, subDebug);
     }
 
-    public Optional<ConstraintResult> solve(final IConstraint constraint) throws Delay, InterruptedException {
+    public SolverResult solve(final Iterable<IConstraint> _constraints) throws InterruptedException {
+        debug.info("Solving constraints");
+
+        // set-up
+        completeness.addAll(_constraints, state.unifier());
+        final IConstraintStore constraints = new BaseConstraintStore(debug);
+        constraints.addAll(_constraints);
+
+        // time log
+        final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
+        final Map<Class<? extends IConstraint>, Long> delayCount = Maps.newHashMap();
+
+        // fixed point
+        final List<IConstraint> failed = new ArrayList<>();
+        final Log delayedLog = new Log();
+        boolean progress = true;
+        int reductions = 0;
+        int delays = 0;
+        outer: while(progress) {
+            progress = false;
+            delayedLog.clear();
+            IConstraint constraint;
+            while((constraint = constraints.remove()) != null) {
+                if(Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
+                if(proxyDebug.isEnabled(Level.Info)) {
+                    proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+                }
+                try {
+                    final Optional<ConstraintResult> maybeResult;
+                    maybeResult = solve(constraint);
+                    addTime(constraint, 1, successCount, debug);
+                    progress = true;
+                    completeness.remove(constraint, state.unifier());
+                    reductions += 1;
+                    if(maybeResult.isPresent()) {
+                        final ConstraintResult result = maybeResult.get();
+                        state = result.state();
+                        if(!result.constraints().isEmpty()) {
+                            subDebug.info("Simplified to:");
+                            for(IConstraint newConstraint : result.constraints()) {
+                                if(subDebug.isEnabled(Level.Info)) {
+                                    subDebug.info(" * {}", Solver.toString(newConstraint, state.unifier()));
+                                }
+                                completeness.add(newConstraint, state.unifier());
+                                constraints.add(newConstraint);
+                            }
+                        }
+                        completeness.updateAll(result.vars(), state.unifier());
+                        constraints.activateFromVars(result.vars(), subDebug);
+                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
+                    } else {
+                        subDebug.error("Failed");
+                        failed.add(constraint);
+                        if(proxyDebug.isRoot()) {
+                            Solver.printTrace(constraint, state.unifier(), subDebug);
+                        } else {
+                            proxyDebug.info("Break early because of errors.");
+                            break outer;
+                        }
+                    }
+                    proxyDebug.commit();
+                } catch(Delay d) {
+                    addTime(constraint, 1, delayCount, debug);
+                    subDebug.info("Delayed");
+                    delayedLog.absorb(proxyDebug.clear());
+                    constraints.delay(constraint, d);
+                    delays += 1;
+                }
+            }
+        }
+
+        // invariant: there should be no remaining active constraints
+        if(constraints.activeSize() > 0) {
+            debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
+        }
+
+        final Map<IConstraint, Delay> delayed = constraints.delayed();
+        delayedLog.flush(debug);
+        debug.info("Solved {} constraints ({} delays) with {} failed, and {} remaining constraint(s).", reductions,
+                delays, failed.size(), constraints.delayedSize());
+        logTimes("success", successCount, debug);
+        logTimes("delay", delayCount, debug);
+
+        return SolverResult.of(state, failed, delayed);
+    }
+
+    private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
+            IDebugContext debug) {
+        if(!debug.isEnabled(Level.Info)) {
+            return;
+        }
+        final Class<? extends IConstraint> key = c.getClass();
+        final long t = times.getOrDefault(key, 0L).longValue() + dt;
+        times.put(key, t);
+    }
+
+    private static void logTimes(String name, Map<Class<? extends IConstraint>, Long> times, IDebugContext debug) {
+        debug.info("# ----- {} -----", name);
+        for(Map.Entry<Class<? extends IConstraint>, Long> entry : times.entrySet()) {
+            debug.info("{} : {}x", entry.getKey().getSimpleName(), entry.getValue());
+        }
+        debug.info("# ----- {} -----", "-");
+    }
+
+    private Optional<ConstraintResult> solve(final IConstraint constraint) throws Delay, InterruptedException {
         try {
             return constraint.matchOrThrow(this);
         } catch(SolverException ex) {
@@ -480,7 +604,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             final List<IConstraint> instantiatedBody;
             final Tuple3<State, Set<ITermVar>, List<IConstraint>> appl;
             try {
-                if((appl = rawRule.apply(args, state).orElse(null)) != null) {
+                if((appl = rawRule.apply(args, state, c).orElse(null)) != null) {
                     instantiatedState = appl._1();
                     instantiatedBody = appl._3();
                 } else {
