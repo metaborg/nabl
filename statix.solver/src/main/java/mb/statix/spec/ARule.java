@@ -19,7 +19,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
@@ -92,7 +91,7 @@ public abstract class ARule {
 
     public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state, @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
-        final Optional<Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
+        final Optional<ISubstitution.Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
             throw Delay.ofVars(vars);
         });
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
