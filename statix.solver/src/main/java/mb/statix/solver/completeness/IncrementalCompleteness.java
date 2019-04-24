@@ -34,19 +34,18 @@ public class IncrementalCompleteness implements ICompleteness {
     }
 
     @Override public void add(IConstraint constraint, IUnifier unifier) {
-        Completeness.criticalEdges(constraint, spec).stream().forEach(c -> {
-            getVarOrScope(c.scope(), unifier).ifPresent(scope -> {
-                final ITerm label = c.label();
+        Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
+            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
                 final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> HashMultiset.create());
                 labels.add(label);
             });
+
         });
     }
 
     @Override public void remove(IConstraint constraint, IUnifier unifier) {
-        Completeness.criticalEdges(constraint, spec).stream().forEach(c -> {
-            getVarOrScope(c.scope(), unifier).ifPresent(scope -> {
-                final ITerm label = c.label();
+        Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
+            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
                 final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> HashMultiset.create());
                 labels.remove(label);
             });
