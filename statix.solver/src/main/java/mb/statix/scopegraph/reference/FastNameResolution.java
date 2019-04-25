@@ -94,7 +94,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         }
         final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
         if(relation.isPresent()) {
-            final java.util.Set<List<D>> data = scopeGraph.getData().get(path.getTarget(), relation.get());
+            final java.util.Set<List<D>> data = scopeGraph.getData(path.getTarget(), relation.get());
             for(List<D> datum : data) {
                 if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                     env.__insert(Paths.resolve(path, relation, datum));
@@ -129,7 +129,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
         final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
-        for(S nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
+        for(S nextScope : scopeGraph.getEdges(path.getTarget(), l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
                 env.__insertAll(env(newRe.get(), p.get(), specifics));

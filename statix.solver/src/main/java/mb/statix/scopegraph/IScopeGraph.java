@@ -17,15 +17,15 @@ public interface IScopeGraph<S, L, D> {
 
     IRelation3<S, L, S> getEdges();
 
+    java.util.Set<S> getEdges(S scope, L label);
+
     IRelation3<S, L, List<D>> getData();
+
+    java.util.Set<List<D>> getData(S scope, L relation);
 
     interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
 
         @Override Set.Immutable<S> getAllScopes();
-
-        @Override IRelation3.Immutable<S, L, S> getEdges();
-
-        @Override IRelation3.Immutable<S, L, List<D>> getData();
 
         Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 
